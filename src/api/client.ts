@@ -1,50 +1,40 @@
-import axios from 'axios'
-import { message } from 'ant-design-vue'
-import { apiBaseUrl } from '@/utils/env'
-import { clearStoredUser, clearToken, getToken } from '@/utils/storage'
-import { isMockEnabled } from '@/utils/env'
-import { mockRequest } from '@/mock/rest'
+export { http, authHttp } from './http'
+export { restoreRedirectedHistoryRoute } from '@/utils/route-helpers'
 
-export const http = axios.create({
-  baseURL: apiBaseUrl,
-  timeout: 300_000,
-})
+import { http } from './http'
+import { setupAuthInterceptors } from './auth/auth-interceptor'
 
-http.interceptors.request.use((config) => {
-  const token = getToken()
-  if (token) {
-    config.headers['X-Access-Token'] = token
+setupAuthInterceptors(http)
+
+export function isSuccessCode(code: unknown) {
+  return Number(code) === 0
+}
+
+export function assertApiSuccess<T extends { code?: number; message?: string }>(
+  response: T,
+  fallbackMessage = '请求失败',
+) {
+  if (!isSuccessCode(response?.code)) {
+    throw new Error(response?.message || fallbackMessage)
   }
 
-  return config
-})
+  return response
+}
 
-http.interceptors.response.use(
-  (response) => response.data,
-  (error) => {
-    const status = error.response?.status
-    const description =
-      error.response?.data?.message || error.message || '请求失败，请稍后重试'
+const HANDLED_REQUEST_ERROR_FLAG = '__leoRequestErrorHandled'
 
-    if (status === 401) {
-      clearToken()
-      clearStoredUser()
-      window.location.href = '/login'
-    }
-
-    message.error(description)
-    return Promise.reject(error)
-  },
-)
+export function isHandledRequestError(error: unknown) {
+  return Boolean(
+    error
+    && typeof error === 'object'
+    && (error as Record<string, unknown>)[HANDLED_REQUEST_ERROR_FLAG] === true
+  )
+}
 
 export function restGet<T>(
   url: string,
   params?: Record<string, unknown>,
 ): Promise<T> {
-  if (isMockEnabled) {
-    return mockRequest<T>('GET', url, { params })
-  }
-
   return http.get<T, T>(url, { params })
 }
 
@@ -52,20 +42,19 @@ export function restPost<T>(
   url: string,
   data?: Record<string, unknown>,
 ): Promise<T> {
-  if (isMockEnabled) {
-    return mockRequest<T>('POST', url, { data })
-  }
-
   return http.post<T, T>(url, data)
+}
+
+export function restPut<T>(
+  url: string,
+  data?: Record<string, unknown>,
+): Promise<T> {
+  return http.put<T, T>(url, data)
 }
 
 export function restDelete<T>(
   url: string,
   params?: Record<string, unknown>,
 ): Promise<T> {
-  if (isMockEnabled) {
-    return mockRequest<T>('DELETE', url, { params })
-  }
-
   return http.delete<T, T>(url, { params })
 }

@@ -1,55 +1,39 @@
-import md5 from 'md5'
 import { http } from './client'
-import {
-  mockGetCaptcha,
-  mockGetCheckcodeFlag,
-  mockLogin,
-  mockLogout,
-} from '@/mock/server'
 import type {
   ApiResponse,
-  CaptchaData,
+  Login2faPayload,
   LoginPayload,
+  LoginResult,
   LoginResponseData,
 } from '@/types/auth'
-import { isMockEnabled } from '@/utils/env'
-
-export function getCheckcodeFlag() {
-  if (isMockEnabled) {
-    return mockGetCheckcodeFlag()
-  }
-
-  return http.get<string, string>('/platformConfig/getPlatform/checkcodeFlag')
-}
-
-export function getCaptcha() {
-  if (isMockEnabled) {
-    return mockGetCaptcha()
-  }
-
-  return http.get<ApiResponse<CaptchaData>, ApiResponse<CaptchaData>>(
-    '/user/randomImage',
-  )
-}
+import { authHttp } from './client'
 
 export function login(payload: LoginPayload) {
-  if (isMockEnabled) {
-    return mockLogin(payload)
-  }
-
-  return http.post<ApiResponse<LoginResponseData>, ApiResponse<LoginResponseData>>(
-    '/user/login',
+  return http.post<ApiResponse<LoginResult>, ApiResponse<LoginResult>>(
+    '/auth/login',
     {
-      ...payload,
-      password: md5(payload.password),
+      loginName: payload.loginName,
+      password: payload.password,
     },
   )
 }
 
-export function logout() {
-  if (isMockEnabled) {
-    return mockLogout()
-  }
+export function login2fa(payload: Login2faPayload) {
+  return http.post<ApiResponse<LoginResponseData>, ApiResponse<LoginResponseData>>(
+    '/auth/login-2fa',
+    payload,
+  )
+}
 
-  return http.get('/user/logout')
+export function logout() {
+  return http.post('/auth/logout', {})
+}
+
+export function refreshSession() {
+  return authHttp.post<ApiResponse<LoginResponseData>>('/auth/refresh', {})
+    .then((response) => response.data)
+}
+
+export function pingAuth() {
+  return http.get<ApiResponse<string>, ApiResponse<string>>('/auth/ping')
 }

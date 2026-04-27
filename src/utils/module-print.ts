@@ -45,12 +45,16 @@ function renderFieldRows(fields: PrintableField[]) {
   for (let index = 0; index < fields.length; index += 2) {
     const left = fields[index]
     const right = fields[index + 1]
+    const rightHtml = right
+      ? `<th style="width: 14%;">${escapeHtml(right.label)}</th>
+        <td style="width: 36%;">${escapeHtml(right.value).replaceAll('\n', '<br>')}</td>`
+      : `<td style="width: 14%; background: none;"></td>
+        <td style="width: 36%;"></td>`
     rows.push(
       `<tr>
         <th style="width: 14%;">${escapeHtml(left.label)}</th>
         <td style="width: 36%;">${escapeHtml(left.value).replaceAll('\n', '<br>')}</td>
-        <th style="width: 14%;">${right ? escapeHtml(right.label) : ''}</th>
-        <td style="width: 36%;">${right ? escapeHtml(right.value).replaceAll('\n', '<br>') : ''}</td>
+        ${rightHtml}
       </tr>`,
     )
   }

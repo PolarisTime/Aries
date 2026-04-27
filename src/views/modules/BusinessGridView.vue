@@ -1,173 +1,415 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, reactive, ref, watch, type Ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import dayjs, { type Dayjs } from 'dayjs'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { MenuOutlined, PaperClipOutlined } from '@ant-design/icons-vue'
+import { MenuOutlined, PaperClipOutlined, SearchOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { MenuProps } from 'ant-design-vue'
-import { getDefaultPrintTemplate } from '@/api/print-template'
-import { deleteBusinessModule, listBusinessModule, saveBusinessModule } from '@/api/business'
+import type { SelectValue } from 'ant-design-vue/es/select'
+import {
+  deleteBusinessModule,
+  generateBusinessPrimaryNo,
+  getBusinessModuleDetail,
+  listAllBusinessModuleRows,
+} from '@/api/business'
 import { businessPageConfigs } from '@/config/business-pages'
+import { useRequestError } from '@/composables/use-request-error'
+import {
+  buildWeightOverview,
+  compactWeightOnlyPurchaseItemColumns,
+} from '@/config/business-pages/shared'
+import { usePermissionStore } from '@/stores/permission'
+import { resolveResourceKey } from '@/constants/resource-permissions'
 import type {
-  ListColumnSettings,
+  ModuleActionDefinition,
   ModuleColumnDefinition,
-  ModuleDetailField,
   ModuleFormFieldDefinition,
   ModuleLineItem,
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
-import { execPrintCode, isCLodopCode, loadCLodop, printHtml } from '@/utils/clodop'
 import { exportRecordsToExcel } from '@/utils/export-excel'
-import { normalizeTableResponse } from '@/utils/list'
-import { buildModulePrintHtml } from '@/utils/module-print'
-import { renderPrintTemplate } from '@/utils/print-template-engine'
+import ModuleSelectionOverlay from './components/ModuleSelectionOverlay.vue'
+import ModuleAttachmentModal from './components/ModuleAttachmentModal.vue'
+import ModuleFreightPickupListOverlay from './components/ModuleFreightPickupListOverlay.vue'
+import ModuleMaterialImportDialogs from './components/ModuleMaterialImportDialogs.vue'
+import ModuleParentSelectorOverlay from './components/ModuleParentSelectorOverlay.vue'
+import ModuleRecordDetailOverlay from './components/ModuleRecordDetailOverlay.vue'
 import {
-  clearListColumnSettings,
-  getStoredUser,
-  getListColumnSettings,
-  setListColumnSettings,
-} from '@/utils/storage'
+  buildEditorAuditTarget,
+  resolveModuleActionKind,
+  resolveModuleActionPermissionCodes,
+  type PermissionActionCode,
+} from './module-adapter-actions'
+import {
+  canModuleEditLineItems,
+  canManageEditorLineItems,
+  getEditorItemMin,
+  getEditorItemPrecision,
+  isNumberEditorColumn,
+  isEditorFieldDisabledForModule,
+  isEditorItemColumnEditableForModule,
+  isSalesOrderLineLocked,
+} from './module-adapter-editor'
+import {
+  generatePrimaryNo as buildModulePrimaryNo,
+  getFriendlyTagColor,
+  getModuleRecordPrimaryNo,
+  getTagListValues,
+  isFriendlyTagColumnKey,
+  isTagListColumnKey,
+  parseParentRelationNos,
+} from './module-adapter-shared'
+import {
+  buildCustomerStatementOptions,
+  buildFreightStatementOptions,
+  buildSupplierStatementOptions,
+} from './module-adapter-finance-links'
+import { useStatementGeneratorSupport } from './use-statement-generator-support'
+import { useSystemModuleSupport } from './use-system-module-support'
+import { useUploadRuleSupport } from './use-upload-rule-support'
+import { useModuleDisplaySupport } from '@/composables/use-module-display-support'
+import { useAttachmentSupport } from '@/composables/use-attachment-support'
+import { useColumnSettingsSupport } from '@/composables/use-column-settings-support'
+import { useDetailSupport } from '@/composables/use-detail-support'
+import { useEditorItemSupport } from './use-editor-item-support'
+import { useEditorFormSupport } from './use-editor-form-support'
+import { useBusinessQueries } from './use-business-queries'
+import { useInvoiceSync } from './use-invoice-sync'
+import { useMaterialImport } from './use-material-import'
+import { useFreightPickupList } from './use-freight-pickup-list'
+import { useMaterialSelector } from './use-material-selector'
+import { useParentImportSupport } from './use-parent-import-support'
+import { getStoredUser } from '@/utils/storage'
+import { cloneLineItems, resetReactiveObject } from '@/utils/clone-utils'
+import { inferColumnAlign } from '@/utils/column-utils'
+import {
+  isUploadRuleListRow as isUploadRuleRowForModule,
+  shouldHideUploadRuleListValue,
+  UPLOAD_RULE_DEFAULT_CODE,
+  UPLOAD_RULE_DEFAULT_NAME,
+  UPLOAD_RULE_DEFAULT_TITLE,
+} from './use-upload-rule-support'
 
 const props = defineProps<{
   moduleKey: string
 }>()
-
-interface AttachmentItem {
-  id: string
-  name: string
-  uploader: string
-  uploadTime: string
-}
-
-interface FreightSummaryRow {
-  id: string
-  carrierName: string
-  statementCount: number
-  totalWeight: number
-  totalFreight: number
-  paidAmount: number
-  unpaidAmount: number
-}
-
-const permissionLabelMap: Record<string, string> = {
-  PURCHASE_ORDER_VIEW: '采购订单查看',
-  PURCHASE_INBOUND_EDIT: '采购入库编辑',
-  SALES_ORDER_AUDIT: '销售订单审核',
-  FINANCE_PAYMENT_DELETE: '付款单删除',
-  CONTRACT_VIEW: '合同管理查看',
-  SYSTEM_SETTING_EDIT: '系统设置维护',
-}
-
-const rolePermissionCodeMap: Record<string, string[]> = {
-  系统管理员: ['PURCHASE_ORDER_VIEW', 'PURCHASE_INBOUND_EDIT', 'SALES_ORDER_AUDIT', 'FINANCE_PAYMENT_DELETE', 'CONTRACT_VIEW', 'SYSTEM_SETTING_EDIT'],
-  采购主管: ['PURCHASE_ORDER_VIEW', 'PURCHASE_INBOUND_EDIT', 'CONTRACT_VIEW'],
-  销售经理: ['SALES_ORDER_AUDIT', 'CONTRACT_VIEW'],
-  财务专员: ['FINANCE_PAYMENT_DELETE'],
-  仓库主管: ['PURCHASE_INBOUND_EDIT', 'CONTRACT_VIEW'],
+type PrimitiveModelValue = string | number | boolean
+type TextModelValue = string | number | undefined
+type DateRangeModelValue = [Dayjs, Dayjs] | undefined
+type DynamicColumn = {
+  key?: unknown
+  dataIndex?: unknown
 }
 
 const route = useRoute()
-const editableItemColumnModuleKeys = new Set([
-  'purchase-orders',
-  'purchase-inbounds',
-  'sales-orders',
-  'sales-outbounds',
-  'freight-bills',
-  'freight-statements',
-  'purchase-contracts',
-  'sales-contracts',
-])
-
+const router = useRouter()
 const queryClient = useQueryClient()
+const permissionStore = usePermissionStore()
+const showRequestError = useRequestError()
 
 const pagination = reactive({
   currentPage: 1,
   pageSize: 20,
 })
 
-const detailVisible = ref(false)
-const detailPrintLoading = ref(false)
-const activeRecord = ref<ModuleRecord | null>(null)
 const autoOpenedDocNo = ref('')
 const submittedFilters = ref<Record<string, unknown>>({})
-const filters = reactive<Record<string, string | Dayjs[] | undefined>>({})
+const filters = reactive<Record<string, unknown>>({})
 const toggleSearchStatus = ref(false)
-const columnSettingItems = ref<
-  Array<{ key: string; title: string; visible: boolean }>
->([])
-const formFieldSettingItems = ref<
-  Array<{ key: string; title: string; visible: boolean }>
->([])
-const editorColumnSettingItems = ref<
-  Array<{ key: string; title: string; visible: boolean }>
->([])
-
 const editorVisible = ref(false)
 const editorMode = ref<'create' | 'edit'>('create')
 const editorSaving = ref(false)
 const editorForm = reactive<Record<string, unknown>>({})
 const editorSourceRecordId = ref('')
-const selectedParentId = ref<string>()
-const parentSelectorVisible = ref(false)
-const parentSelectorKeyword = ref('')
 const selectedRowKeys = ref<string[]>([])
 const selectedRowMap = ref<Record<string, ModuleRecord>>({})
 const exportLoading = ref(false)
-const attachmentVisible = ref(false)
-const attachmentSaving = ref(false)
-const attachmentRecord = ref<ModuleRecord | null>(null)
-const attachmentDraftName = ref('')
-const supplierStatementGeneratorVisible = ref(false)
-const supplierStatementGeneratorLoading = ref(false)
-const supplierStatementCandidateRows = ref<ModuleRecord[]>([])
-const supplierStatementSelectedInboundKeys = ref<string[]>([])
-const customerStatementGeneratorVisible = ref(false)
-const customerStatementGeneratorLoading = ref(false)
-const customerStatementCandidateRows = ref<ModuleRecord[]>([])
-const customerStatementSelectedOrderKeys = ref<string[]>([])
-const freightStatementGeneratorVisible = ref(false)
-const freightStatementGeneratorLoading = ref(false)
-const freightStatementCandidateRows = ref<ModuleRecord[]>([])
-const freightStatementSelectedBillKeys = ref<string[]>([])
-const freightSummaryVisible = ref(false)
-const freightSummaryLoading = ref(false)
-const freightSummaryRows = ref<FreightSummaryRow[]>([])
-const draggedEditorItemId = ref<string>()
-const dragOverEditorItemId = ref<string>()
-const dragOverEditorItemPosition = ref<'before' | 'after'>('after')
-const draggedColumnSettingKey = ref<string>()
-const dragOverColumnSettingKey = ref<string>()
-const dragOverColumnSettingPosition = ref<'before' | 'after'>('after')
-const draggedFormFieldSettingKey = ref<string>()
-const dragOverFormFieldSettingKey = ref<string>()
-const dragOverFormFieldSettingPosition = ref<'before' | 'after'>('after')
-const draggedEditorColumnSettingKey = ref<string>()
-const dragOverEditorColumnSettingKey = ref<string>()
-const dragOverEditorColumnSettingPosition = ref<'before' | 'after'>('after')
+const materialSelectorKeyword = ref('')
+
+const FREIGHT_PICKUP_LIST_COLUMNS: ModuleColumnDefinition[] = [
+  { title: '品牌', dataIndex: 'brand', width: 100 },
+  { title: '材质', dataIndex: 'material', width: 110 },
+  { title: '规格', dataIndex: 'spec', width: 100 },
+  { title: '长度', dataIndex: 'length', width: 100 },
+  { title: '数量', dataIndex: 'quantity', width: 100, align: 'right', type: 'count' },
+  { title: '数量单位', dataIndex: 'quantityUnit', width: 100 },
+  { title: '总重', dataIndex: 'totalWeight', width: 110, align: 'right', type: 'weight' },
+  { title: '重量单位', dataIndex: 'weightUnit', width: 100, align: 'center' },
+  { title: '仓库名称', dataIndex: 'warehouseName', width: 140 },
+  { title: '客户名', dataIndex: 'customerName', width: 160 },
+]
+
+const WEIGHT_ONLY_VIEW_SETTING_CODES: Record<string, string> = {
+  'purchase-inbounds': 'UI_WEIGHT_ONLY_PURCHASE_INBOUNDS',
+  'sales-outbounds': 'UI_WEIGHT_ONLY_SALES_OUTBOUNDS',
+}
+
+const INVOICE_ASSIST_MODULE_KEYS = new Set(['invoice-receipts', 'invoice-issues'])
+
+const supportsWeightOnlyViewSwitch = computed(() => props.moduleKey in WEIGHT_ONLY_VIEW_SETTING_CODES)
+const supportsInvoiceAssist = computed(() => INVOICE_ASSIST_MODULE_KEYS.has(props.moduleKey))
+const weightOnlyViewSettingsQuery = useQuery({
+  queryKey: ['business-grid-all', 'general-settings', 'weight-only-view-switches'],
+  queryFn: async () => {
+    try {
+      return await listAllBusinessModuleRows('general-settings', {})
+    } catch {
+      return []
+    }
+  },
+  enabled: supportsWeightOnlyViewSwitch,
+  placeholderData: keepPreviousData,
+})
+
+function buildWeightOnlyViewConfig(baseConfig: ModulePageConfig) {
+  return {
+    ...baseConfig,
+    columns: baseConfig.columns.filter((column) => column.dataIndex !== 'totalAmount'),
+    detailFields: baseConfig.detailFields.filter((field) => field.key !== 'totalAmount'),
+    itemColumns: compactWeightOnlyPurchaseItemColumns,
+    buildOverview: (rows: ModuleRecord[]) => buildWeightOverview(rows),
+  }
+}
 
 const config = computed<ModulePageConfig>(() => {
   const found = businessPageConfigs[props.moduleKey]
   if (!found) {
     throw new Error(`Unknown module key: ${props.moduleKey}`)
   }
-  return found
+
+  const switchCode = WEIGHT_ONLY_VIEW_SETTING_CODES[props.moduleKey]
+  const isWeightOnlyViewEnabled = Boolean(
+    switchCode
+    && (weightOnlyViewSettingsQuery.data.value || []).some((row) =>
+      String(row.settingCode || '') === switchCode && String(row.status || '') === '正常',
+    ),
+  )
+
+  return isWeightOnlyViewEnabled ? buildWeightOnlyViewConfig(found) : found
 })
 
-const canEditItemColumns = computed(() =>
-  editableItemColumnModuleKeys.has(props.moduleKey) && Boolean(config.value.itemColumns?.length),
+const isMaterialModule = computed(() => props.moduleKey === 'materials')
+const moduleResource = computed(() => resolveResourceKey(props.moduleKey))
+const canViewRecords = computed(() => permissionStore.can(moduleResource.value, 'read'))
+const canCreateRecords = computed(() => permissionStore.can(moduleResource.value, 'create'))
+const canEditRecords = computed(() => permissionStore.can(moduleResource.value, 'update'))
+const canDeleteRecords = computed(() => permissionStore.can(moduleResource.value, 'delete'))
+const canAuditRecords = computed(() => permissionStore.can(moduleResource.value, 'audit'))
+const canExportRecords = computed(() => permissionStore.can(moduleResource.value, 'export'))
+const canPrintRecords = computed(() => permissionStore.can(moduleResource.value, 'print'))
+const canImportMaterials = computed(() => canEditRecords.value)
+const canSaveCurrentEditor = computed(() =>
+  editorMode.value === 'edit' ? canEditRecords.value : canCreateRecords.value,
 )
+const canSaveAndAuditCurrentEditor = computed(() =>
+  canSaveCurrentEditor.value && canAuditRecords.value && canAuditEditor.value,
+)
+
+function hasAnyModuleAction(actionCodes: PermissionActionCode[]) {
+  return actionCodes.some((actionCode) => permissionStore.can(moduleResource.value, actionCode))
+}
+
+function canViewModuleRecords(moduleKey: string | null | undefined) {
+  return Boolean(moduleKey) && permissionStore.can(resolveResourceKey(String(moduleKey)), 'read')
+}
+
+function openCreateEditorWithDraft(draft: ModuleRecord) {
+  editorMode.value = 'create'
+  editorSourceRecordId.value = ''
+  resetParentImportState()
+  resetReactiveObject(editorForm, draft)
+  editorVisible.value = true
+}
+
+function createEditorBaseDraft() {
+  return buildEditorDraft('create') as ModuleRecord
+}
+
+const {
+  checkedRoleNames,
+  handleRoleTreeCheck,
+  isRoleTreeField,
+  roleTreeData,
+  selectedRolePermissionLabels,
+  syncEditorState: syncSystemEditorState,
+  systemHelperTitle,
+  systemHelperVisible,
+} = useSystemModuleSupport({
+  moduleKey: computed(() => props.moduleKey),
+  editorVisible,
+  editorForm,
+  canViewModuleRecords: (moduleKey) => canViewModuleRecords(moduleKey),
+})
+
+const {
+  closeCustomerStatementGenerator,
+  closeFreightStatementGenerator,
+  closeSupplierStatementGenerator,
+  customerStatementCandidateRows,
+  customerStatementGeneratorLoading,
+  customerStatementGeneratorVisible,
+  customerStatementRowSelection,
+  customerStatementSelectedCustomerName,
+  customerStatementSelectedOrders,
+  customerStatementSelectedProjectName,
+  freightStatementCandidateRows,
+  freightStatementGeneratorLoading,
+  freightStatementGeneratorVisible,
+  freightStatementRowSelection,
+  freightStatementSelectedBills,
+  freightStatementSelectedCarrierName,
+  freightSummaryLoading,
+  freightSummaryRows,
+  freightSummaryVisible,
+  handleGenerateCustomerStatement,
+  handleGenerateFreightStatement,
+  handleGenerateSupplierStatement,
+  openCustomerStatementGenerator,
+  openFreightStatementGenerator,
+  openFreightSummary,
+  openSupplierStatementGenerator,
+  resetStatementSupportState,
+  supplierStatementCandidateRows,
+  supplierStatementGeneratorLoading,
+  supplierStatementGeneratorVisible,
+  supplierStatementRowSelection,
+  supplierStatementSelectedInbounds,
+  supplierStatementSelectedSupplierName,
+} = useStatementGeneratorSupport({
+  canViewRecords,
+  moduleKey: computed(() => props.moduleKey),
+  submittedFilters,
+  createBaseDraft: createEditorBaseDraft,
+  openEditorWithDraft: (draft) => {
+    openCreateEditorWithDraft(draft)
+  },
+  showRequestError,
+})
+
+const {
+  activeUploadRuleRowId,
+  closeUploadRuleDialog,
+  handleSaveUploadRule,
+  openUploadRuleDialog,
+  resetUploadRuleState,
+  uploadRuleDetailRows,
+  uploadRuleForm,
+  uploadRuleLoading,
+  uploadRuleSaving,
+  uploadRuleStatusText,
+  uploadRuleVisible,
+} = useUploadRuleSupport({
+  canEditRecords,
+  canViewRecords,
+  isSuccessCode,
+  refreshModuleQueries,
+  showRequestError,
+})
+
+function canUseAction(actionLabel: string) {
+  return hasAnyModuleAction(resolveModuleActionPermissionCodes(actionLabel))
+}
+
+const visibleToolbarActions = computed<ModuleActionDefinition[]>(() =>
+  (config.value.actions || []).filter((action) => canUseAction(action.label)),
+)
+
+const canEditItemColumns = computed(() => canModuleEditLineItems(props.moduleKey, Boolean(config.value.itemColumns?.length)))
 const canEditFormFields = computed(() => Boolean(formFields.value.length))
-const canEditLineItems = computed(() =>
-  editableItemColumnModuleKeys.has(props.moduleKey) && Boolean(config.value.itemColumns?.length),
-)
+const canEditLineItems = computed(() => canModuleEditLineItems(props.moduleKey, Boolean(config.value.itemColumns?.length)))
 const formFields = computed(() => config.value.formFields || [])
+const isReadOnly = computed(() => Boolean(config.value.readOnly))
 const parentImportConfig = computed(() => config.value.parentImport)
+const {
+  listQuery,
+  uploadRuleDetailQuery,
+  parentListQuery,
+  materialListQuery,
+  customerStatementRowsQuery,
+  supplierStatementRowsQuery,
+  freightStatementRowsQuery,
+  listResult,
+  parentRows,
+  moduleRows,
+  materialRows,
+  filteredMaterialSelectorRows,
+  warehouseRows,
+  departmentRows,
+  customerStatementRows,
+  supplierStatementRows,
+  freightStatementRows,
+  downstreamSalesOutbounds,
+  materialMap,
+  currentInvoiceTaxRate,
+} = useBusinessQueries({
+  moduleKey: computed(() => props.moduleKey),
+  submittedFilters,
+  paginationCurrentPage: computed(() => pagination.currentPage),
+  paginationPageSize: computed(() => pagination.pageSize),
+  canViewRecords,
+  isReadOnly,
+  canEditLineItems,
+  editorVisible,
+  supportsInvoiceAssist,
+  parentImportConfig,
+  canViewModuleRecords: (moduleKey) => canViewModuleRecords(moduleKey),
+  materialSelectorKeyword,
+})
 const visibleFilters = computed(() =>
   toggleSearchStatus.value ? config.value.filters : config.value.filters.slice(0, 3),
 )
+const quickFilters = computed(() => config.value.quickFilters || [])
 const hasAdvancedFilters = computed(() => config.value.filters.length > 3)
+const shouldShowItemAmountSummary = computed(() =>
+  Boolean(config.value.itemColumns?.some((column) => column.dataIndex === 'amount')),
+)
+const editorItemQuantityTotal = computed(() => sumLineItemsBy(editorItems.value, 'quantity'))
+const editorItemWeightTotal = computed(() => sumLineItemsBy(editorItems.value, 'weightTon'))
+const editorItemAmountTotal = computed(() => sumLineItemsBy(editorItems.value, 'amount'))
+
+const {
+  columnSettingItems,
+  editorColumnSettingItems,
+  formFieldSettingItems,
+  getColumnSettingItemClass,
+  getEditorColumnSettingItemClass,
+  getFormFieldSettingItemClass,
+  handleColumnSettingDragOver,
+  handleColumnSettingDragStart,
+  handleColumnSettingDrop,
+  handleColumnVisibleChange,
+  handleEditorColumnSettingDragOver,
+  handleEditorColumnSettingDragStart,
+  handleEditorColumnSettingDrop,
+  handleEditorColumnVisibleChange,
+  handleFormFieldSettingDragOver,
+  handleFormFieldSettingDragStart,
+  handleFormFieldSettingDrop,
+  handleFormFieldVisibleChange,
+  initColumnSettings,
+  initEditorColumnSettings,
+  initFormFieldSettings,
+  resetColumnSettings,
+  resetEditorColumnSettings,
+  resetEditorColumnSettingDragState,
+  resetFormFieldSettingDragState,
+  resetFormFieldSettings,
+  resetListColumnSettingDragState,
+} = useColumnSettingsSupport({
+  moduleKey: computed(() => props.moduleKey),
+  config,
+  formFields,
+})
+
+function getFilterFieldId(fieldKey: string) {
+  return `filter-field-${props.moduleKey}-${fieldKey}`
+}
+
+function getEditorFieldId(fieldKey: string) {
+  return `editor-field-${props.moduleKey}-${fieldKey}`
+}
 
 function createFilters(pageConfig: ModulePageConfig) {
   return Object.fromEntries(
@@ -175,63 +417,74 @@ function createFilters(pageConfig: ModulePageConfig) {
   ) as Record<string, string | Dayjs[] | undefined>
 }
 
-function resetReactiveObject(target: Record<string, unknown>, next: Record<string, unknown>) {
-  Object.keys(target).forEach((key) => {
-    delete target[key]
+function resolveFilterOptions(filter: ModulePageConfig['filters'][number]) {
+  if (!filter.options) {
+    return []
+  }
+  return typeof filter.options === 'function'
+    ? filter.options(filters as Record<string, unknown>)
+    : filter.options
+}
+
+function isFilterOptionGroup(option: { label: string } | { label: string; options: unknown[] }) {
+  return 'options' in option
+}
+
+function flattenFilterOptions(filter: ModulePageConfig['filters'][number]) {
+  return resolveFilterOptions(filter).flatMap((option) =>
+    isFilterOptionGroup(option) ? option.options : [option],
+  )
+}
+
+function areFilterValuesEqual(left: unknown, right: unknown) {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return false
+  }
+  return String(left ?? '').trim() === String(right ?? '').trim()
+}
+
+function isQuickFilterActive(filterPreset: { values: Record<string, string | undefined> }) {
+  return config.value.filters.every((filter) => {
+    const currentValue = filters[filter.key]
+    const expectedValue = filterPreset.values[filter.key]
+    if (filter.type === 'dateRange') {
+      return expectedValue === undefined && (currentValue === undefined || currentValue === null)
+    }
+    return areFilterValuesEqual(currentValue, expectedValue)
   })
-  Object.assign(target, next)
 }
 
-function resetPageState() {
+const activeQuickFilterKey = computed(() =>
+  quickFilters.value.find((filterPreset) => isQuickFilterActive(filterPreset))?.key || '',
+)
+
+function applyQuickFilter(filterPreset: { values: Record<string, string | undefined> }) {
   resetReactiveObject(filters as Record<string, unknown>, createFilters(config.value))
-  submittedFilters.value = {}
-  pagination.currentPage = 1
-  detailVisible.value = false
-  activeRecord.value = null
-  autoOpenedDocNo.value = ''
-  toggleSearchStatus.value = false
-  selectedRowKeys.value = []
-  selectedRowMap.value = {}
-  closeSupplierStatementGenerator()
-  closeCustomerStatementGenerator()
-  closeFreightStatementGenerator()
-  closeEditor()
-  initColumnSettings()
-  initFormFieldSettings()
-  initEditorColumnSettings()
+  Object.entries(filterPreset.values).forEach(([key, value]) => {
+    filters[key] = value ?? ''
+  })
+  handleSearch()
 }
 
-function applyRouteDocNo() {
-  const docNo = String(route.query.docNo || '').trim()
-  const hasKeywordFilter = config.value.filters.some((item) => item.key === 'keyword')
-  if (!docNo || !hasKeywordFilter) {
-    return
-  }
-
-  filters.keyword = docNo
-  submittedFilters.value = {
-    ...submittedFilters.value,
-    keyword: docNo,
-  }
-  pagination.currentPage = 1
+function handleFilterValueChange() {
+  config.value.filters.forEach((filter) => {
+    if (filter.type !== 'select') {
+      return
+    }
+    const currentValue = String(filters[filter.key] ?? '').trim()
+    if (!currentValue) {
+      return
+    }
+    const availableOptions = flattenFilterOptions(filter)
+    if (!availableOptions.some((option) => option.value === currentValue)) {
+      filters[filter.key] = ''
+    }
+  })
 }
 
-watch(
-  () => props.moduleKey,
-  () => {
-    resetPageState()
-    applyRouteDocNo()
-  },
-  { immediate: true },
-)
-
-watch(
-  () => route.query.docNo,
-  () => {
-    autoOpenedDocNo.value = ''
-    applyRouteDocNo()
-  },
-)
+function isUploadRuleListRow(record: ModuleRecord | null | undefined) {
+  return isUploadRuleRowForModule(props.moduleKey, record)
+}
 
 function buildSubmittedFilters() {
   return Object.fromEntries(
@@ -254,87 +507,77 @@ function buildSubmittedFilters() {
   )
 }
 
-const listQuery = useQuery({
-  queryKey: computed(() => [
-    'business-grid',
-    props.moduleKey,
-    submittedFilters.value,
-    pagination.currentPage,
-    pagination.pageSize,
-  ]),
-  queryFn: () =>
-    listBusinessModule(props.moduleKey, submittedFilters.value, {
-      currentPage: pagination.currentPage,
-      pageSize: pagination.pageSize,
-    }),
-  placeholderData: keepPreviousData,
-})
-
-const parentListQuery = useQuery({
-  queryKey: computed(() => [
-    'business-parent-options',
-    props.moduleKey,
-    parentImportConfig.value?.parentModuleKey || '',
-  ]),
-  queryFn: () =>
-    listBusinessModule(parentImportConfig.value!.parentModuleKey, {}, {
-      currentPage: 1,
-      pageSize: 200,
-    }),
-  enabled: computed(() => editorVisible.value && Boolean(parentImportConfig.value?.parentModuleKey)),
-  placeholderData: keepPreviousData,
-})
-
-const moduleRowsQuery = useQuery({
-  queryKey: computed(() => [
-    'business-grid-all',
-    props.moduleKey,
-  ]),
-  queryFn: () =>
-    listBusinessModule(props.moduleKey, {}, {
-      currentPage: 1,
-      pageSize: 500,
-    }),
-  enabled: computed(() => editorVisible.value && Boolean(parentImportConfig.value?.enforceUniqueRelation)),
-  placeholderData: keepPreviousData,
-})
-
-const materialListQuery = useQuery({
-  queryKey: ['business-grid-all', 'materials'],
-  queryFn: () =>
-    listBusinessModule('materials', {}, {
-      currentPage: 1,
-      pageSize: 500,
-    }),
-  enabled: computed(() => editorVisible.value && canEditLineItems.value),
-  placeholderData: keepPreviousData,
-})
-
-const downstreamSalesOutboundsQuery = useQuery({
-  queryKey: ['business-grid-all', 'sales-outbounds', 'editor-lock'],
-  queryFn: () =>
-    listBusinessModule('sales-outbounds', {}, {
-      currentPage: 1,
-      pageSize: 500,
-    }),
-  enabled: computed(() => editorVisible.value && props.moduleKey === 'sales-orders'),
-  placeholderData: keepPreviousData,
-})
-
-const listResult = computed(() => normalizeTableResponse(listQuery.data.value))
-const parentRows = computed(() => normalizeTableResponse(parentListQuery.data.value).rows)
-const moduleRows = computed(() => normalizeTableResponse(moduleRowsQuery.data.value).rows)
-const materialRows = computed(() => normalizeTableResponse(materialListQuery.data.value).rows)
-const downstreamSalesOutbounds = computed(() => normalizeTableResponse(downstreamSalesOutboundsQuery.data.value).rows)
 const statusMap = computed(() => config.value.statusMap || {})
-const materialMap = computed<Record<string, ModuleRecord>>(() =>
-  Object.fromEntries(materialRows.value.map((record) => [String(record.materialCode || ''), record])),
-)
+const {
+  formatAmount,
+  formatCellValue,
+  formatWeight,
+  getStatusMeta,
+} = useModuleDisplaySupport(statusMap)
 const rawColumnMetaMap = computed<Record<string, ModuleColumnDefinition>>(() =>
   Object.fromEntries(config.value.columns.map((column) => [column.dataIndex, column])),
 )
 const rawFormFieldMetaMap = computed<Record<string, ModuleFormFieldDefinition>>(() =>
-  Object.fromEntries(formFields.value.map((field) => [field.key, field])),
+  Object.fromEntries(formFields.value.map((field) => {
+    if (field.key === 'warehouseName' && field.type === 'select') {
+      return [field.key, {
+        ...field,
+        options: warehouseRows.value.map((warehouse) => ({
+          label: String(warehouse.warehouseName || ''),
+          value: String(warehouse.warehouseName || ''),
+        })),
+      }]
+    }
+    if (props.moduleKey === 'departments' && field.key === 'parentId') {
+      const currentDepartmentId = String(editorForm.id || '')
+      return [field.key, {
+        ...field,
+        type: 'select',
+        options: departmentRows.value
+          .filter((department) =>
+            String(department.status || '') === '正常'
+            && String(department.id || '') !== currentDepartmentId,
+          )
+          .map((department) => ({
+            label: String(department.departmentName || department.departmentCode || ''),
+            value: Number(department.id),
+          })),
+      }]
+    }
+    if (field.key === 'sourceStatementId' && props.moduleKey === 'receipts') {
+      return [field.key, {
+        ...field,
+        type: 'select',
+        label: '关联客户对账单',
+        options: receiptStatementOptions.value,
+        placeholder: receiptStatementFieldPlaceholder.value,
+        disabled: Boolean(field.disabled) || !receiptStatementOptions.value.length,
+      }]
+    }
+    if (field.key === 'sourceStatementId' && props.moduleKey === 'payments') {
+      return [field.key, {
+        ...field,
+        type: 'select',
+        label: paymentStatementFieldLabel.value,
+        options: paymentStatementOptions.value,
+        placeholder: paymentStatementFieldPlaceholder.value,
+        disabled: Boolean(field.disabled) || !paymentStatementOptions.value.length,
+      }]
+    }
+    return [field.key, field]
+  })),
+)
+
+const attachmentFeatureEnabled = computed(() => {
+  const response = uploadRuleDetailQuery.data.value
+  if (!response || !isSuccessCode(response.code) || !response.data) {
+    return true
+  }
+  return String(response.data.status || '正常') === '正常'
+})
+
+const canManageAttachments = computed(() =>
+  canEditRecords.value && attachmentFeatureEnabled.value,
 )
 
 const visibleConfigColumns = computed(() =>
@@ -359,7 +602,7 @@ const tableColumns = computed(() => [
     title: '操作',
     dataIndex: 'action',
     key: 'action',
-    width: 172,
+    width: isReadOnly.value ? 84 : 172,
     align: 'center' as const,
     fixed: 'left' as const,
   },
@@ -463,6 +706,9 @@ const rowSelection = computed(() => ({
   selectedRowKeys: selectedRowKeys.value,
   preserveSelectedRowKeys: true,
   fixed: true,
+  getCheckboxProps: (record: ModuleRecord) => ({
+    disabled: isUploadRuleListRow(record),
+  }),
   onChange: (keys: Array<string | number>) => {
     selectedRowKeys.value = keys.map((key) => String(key))
   },
@@ -490,13 +736,32 @@ const rowSelection = computed(() => ({
   },
 }))
 
-const expandable = computed(() =>
-  config.value.itemColumns?.length
-    ? {
-        rowExpandable: (record: ModuleRecord) => Boolean(record.items?.length),
-      }
-    : undefined,
-)
+const expandable = computed(() => {
+  if (props.moduleKey === 'general-settings' && canViewRecords.value) {
+    return {
+      expandedRowKeys: uploadRuleVisible.value && activeUploadRuleRowId.value ? [activeUploadRuleRowId.value] : [],
+      rowExpandable: (record: ModuleRecord) => isUploadRuleListRow(record),
+      onExpand: (expanded: boolean, record: ModuleRecord) => {
+        if (!isUploadRuleListRow(record)) {
+          return
+        }
+        if (expanded) {
+          void openUploadRuleDialog(record)
+          return
+        }
+        closeUploadRuleDialog()
+      },
+    }
+  }
+
+  if (config.value.itemColumns?.length) {
+    return {
+      rowExpandable: (record: ModuleRecord) => Boolean(record.items?.length),
+    }
+  }
+
+  return undefined
+})
 
 const masterTableSummary = computed(() => `共 ${listResult.value.total} 条记录`)
 
@@ -510,6 +775,83 @@ const editorTitle = computed(() => {
 const editorItems = computed<ModuleLineItem[]>(() =>
   Array.isArray(editorForm.items) ? (editorForm.items as ModuleLineItem[]) : [],
 )
+
+const paymentBusinessType = computed(() => String(editorForm.businessType || '').trim())
+const receiptStatementOptions = computed(() =>
+  buildCustomerStatementOptions(customerStatementRows.value, {
+    currentStatementId: Number(editorForm.sourceStatementId || 0),
+    customerName: String(editorForm.customerName || ''),
+    projectName: String(editorForm.projectName || ''),
+  }),
+)
+const paymentStatementOptions = computed(() => {
+  if (paymentBusinessType.value === '供应商') {
+    return buildSupplierStatementOptions(supplierStatementRows.value, {
+      currentStatementId: Number(editorForm.sourceStatementId || 0),
+      counterpartyName: String(editorForm.counterpartyName || ''),
+    })
+  }
+  if (paymentBusinessType.value === '物流商') {
+    return buildFreightStatementOptions(freightStatementRows.value, {
+      currentStatementId: Number(editorForm.sourceStatementId || 0),
+      counterpartyName: String(editorForm.counterpartyName || ''),
+    })
+  }
+  return []
+})
+const paymentStatementFieldLabel = computed(() => {
+  if (paymentBusinessType.value === '供应商') {
+    return '关联供应商对账单'
+  }
+  if (paymentBusinessType.value === '物流商') {
+    return '关联物流对账单'
+  }
+  return '关联对账单'
+})
+const receiptStatementFieldPlaceholder = computed(() => {
+  if (!String(editorForm.customerName || '').trim() || !String(editorForm.projectName || '').trim()) {
+    return '可先选择对账单，系统会自动回填客户和项目'
+  }
+  return receiptStatementOptions.value.length ? '请选择关联客户对账单' : '没有可选的客户对账单'
+})
+const paymentStatementFieldPlaceholder = computed(() => {
+  if (!paymentBusinessType.value) {
+    return '请先选择业务类型'
+  }
+  if (paymentBusinessType.value === '供应商' && !String(editorForm.counterpartyName || '').trim()) {
+    return '可先选择供应商对账单，系统会自动回填往来单位'
+  }
+  if (paymentBusinessType.value === '物流商' && !String(editorForm.counterpartyName || '').trim()) {
+    return '可先选择物流对账单，系统会自动回填往来单位'
+  }
+  return paymentStatementOptions.value.length ? `请选择${paymentStatementFieldLabel.value}` : `没有可选的${paymentStatementFieldLabel.value}`
+})
+const sourceStatementOptions = computed(() => {
+  if (props.moduleKey === 'receipts') {
+    return receiptStatementOptions.value
+  }
+  if (props.moduleKey === 'payments') {
+    return paymentStatementOptions.value
+  }
+  return []
+})
+const sourceStatementOptionsReady = computed(() => {
+  if (!editorVisible.value) {
+    return false
+  }
+  if (props.moduleKey === 'receipts') {
+    return customerStatementRowsQuery.isFetched.value
+  }
+  if (props.moduleKey === 'payments') {
+    if (paymentBusinessType.value === '供应商') {
+      return supplierStatementRowsQuery.isFetched.value
+    }
+    if (paymentBusinessType.value === '物流商') {
+      return freightStatementRowsQuery.isFetched.value
+    }
+  }
+  return false
+})
 
 const salesOrderRelatedOutbounds = computed(() => {
   if (props.moduleKey !== 'sales-orders') {
@@ -528,94 +870,279 @@ const salesOrderRelatedOutbounds = computed(() => {
 
 const salesOrderLineLocked = computed(() =>
   props.moduleKey === 'sales-orders'
-  && salesOrderRelatedOutbounds.value.some((record) =>
-    ['已审核', '价格核准'].includes(String(record.status || '')),
-  ),
+  && isSalesOrderLineLocked(salesOrderRelatedOutbounds.value.map((record) => String(record.status || ''))),
 )
 
 const editorAuditTarget = computed(() => {
-  if (props.moduleKey === 'sales-orders') {
-    return {
-      key: 'status',
-      value: salesOrderLineLocked.value ? '完成销售' : '已审核',
-    }
-  }
-
-  if (['purchase-orders', 'purchase-inbounds', 'sales-outbounds', 'freight-bills'].includes(props.moduleKey)) {
-    return { key: 'status', value: '已审核' }
-  }
-
   const statusField = formFields.value.find((field) => field.key === 'status')
-  const statusOptions = (statusField?.options || []).map((option) => String(option.value))
-  if (statusOptions.includes('已审核')) {
-    return { key: 'status', value: '已审核' }
-  }
-  if (statusOptions.includes('已核准')) {
-    return { key: 'status', value: '已核准' }
-  }
-
-  return null
+  return buildEditorAuditTarget(
+    props.moduleKey,
+    (statusField?.options || []).map((option) => String(option.value)),
+    salesOrderLineLocked.value,
+  )
 })
 
 const canAuditEditor = computed(() => Boolean(editorAuditTarget.value))
 const canManageEditorItems = computed(() =>
-  canEditLineItems.value && !(props.moduleKey === 'sales-orders' && salesOrderLineLocked.value),
+  canManageEditorLineItems(
+    props.moduleKey,
+    canEditLineItems.value,
+    canSaveCurrentEditor.value,
+    salesOrderLineLocked.value,
+  ),
+)
+const canAddManualEditorItems = computed(() =>
+  canManageEditorItems.value && props.moduleKey !== 'invoice-issues',
 )
 
-const selectedParentRecord = computed(() =>
-  availableParentRows.value.find((record) => record.id === selectedParentId.value)
-    || parentRows.value.find((record) => record.id === selectedParentId.value)
-    || null,
-)
-
-const parentSelectorRows = computed(() => {
-  const keyword = parentSelectorKeyword.value.trim().toLowerCase()
-  if (!keyword) {
-    return availableParentRows.value
-  }
-
-  return availableParentRows.value.filter((record) =>
-    getParentOptionLabel(record).toLowerCase().includes(keyword),
-  )
+useInvoiceSync({
+  moduleKey: computed(() => props.moduleKey),
+  editorVisible,
+  editorForm,
+  editorItems,
+  currentInvoiceTaxRate,
+  customerStatementRows,
+  supplierStatementRows,
+  freightStatementRows,
+  paymentBusinessType,
+  sourceStatementOptions,
+  sourceStatementOptionsReady,
 })
 
-function parseParentRelationNos(value: unknown) {
-  return Array.from(
-    new Set(
-      String(value || '')
-        .split(/[，,\s]+/)
-        .map((item) => item.trim())
-        .filter(Boolean),
-    ),
-  )
+const {
+  materialImportVisible,
+  materialImportLoading,
+  materialImportFile,
+  materialImportResultVisible,
+  materialImportResult,
+  closeMaterialImportModal,
+  closeMaterialImportResultModal,
+  handleMaterialImportClick,
+  handleMaterialTemplateDownload,
+  handleMaterialImportBeforeUpload,
+  handleMaterialImportSubmit,
+  exportMaterialRows,
+} = useMaterialImport({
+  moduleKey: computed(() => props.moduleKey),
+  isMaterialModule,
+  canImportMaterials,
+  canExportRecords,
+  isSuccessCode,
+  refreshModuleQueries,
+})
+
+const {
+  freightPickupListVisible,
+  freightPickupListLoading,
+  freightPickupListRows,
+  freightPickupListSelectedBills,
+  freightPickupListCarrierNames,
+  freightPickupListBillNos,
+  freightPickupListTotalWeight,
+  closeFreightPickupList,
+  openFreightPickupList,
+  markSelectedFreightDelivered,
+} = useFreightPickupList({
+  moduleKey: computed(() => props.moduleKey),
+  canExportRecords,
+  canAuditRecords,
+  selectedRowKeys: selectedRowKeys as Ref<Array<string | number>>,
+  selectedRowMap,
+  isSuccessCode,
+  showRequestError,
+  refreshModuleQueries,
+})
+
+async function fetchParentImportDetail(record: ModuleRecord) {
+  if (!parentImportConfig.value?.parentModuleKey) {
+    return record
+  }
+
+  const response = await getBusinessModuleDetail(parentImportConfig.value.parentModuleKey, String(record.id))
+  if (!isSuccessCode(response.code) || !response.data) {
+    throw new Error(response.message || '获取上级单据详情失败')
+  }
+
+  return response.data
 }
 
-const occupiedParentMap = computed<Record<string, ModuleRecord>>(() => {
-  if (!parentImportConfig.value?.enforceUniqueRelation) {
-    return {}
-  }
-
-  return Object.fromEntries(
-    moduleRows.value
-      .filter((record) => String(record.id) !== String(editorSourceRecordId.value || ''))
-      .flatMap((record) =>
-        parseParentRelationNos(record[parentImportConfig.value!.parentFieldKey]).map((parentNo) => [parentNo, record] as const),
-      ),
-  )
+const {
+  closeParentSelector,
+  getParentOptionLabel,
+  getParentRelationNo,
+  getParentSelectorRowProps,
+  handleImportParentItems,
+  occupiedParentMap,
+  openParentSelector,
+  parentSelectorKeyword,
+  parentSelectorRowSelection,
+  parentSelectorRows,
+  parentSelectorVisible,
+  resetParentImportState,
+} = useParentImportSupport({
+  editorForm,
+  editorItems,
+  editorSourceRecordId,
+  editorVisible,
+  parentImportConfig,
+  parentRows,
+  moduleRows,
+  cloneLineItems,
+  fetchParentDetail: fetchParentImportDetail,
 })
 
-const availableParentRows = computed(() => {
-  if (!parentImportConfig.value?.enforceUniqueRelation) {
-    return parentRows.value
+const {
+  activeRecord,
+  detailPrintLoading,
+  detailVisible,
+  handleCloseDetail,
+  handlePrintDetail,
+  handleView,
+  resolveRecordForDetail,
+} = useDetailSupport({
+  moduleKey: computed(() => props.moduleKey),
+  config,
+  statusMap,
+  canViewRecords,
+  canPrintRecords,
+  activeUploadRuleRowId,
+  uploadRuleVisible,
+  isUploadRuleListRow,
+  closeUploadRuleDialog,
+  openUploadRuleDialog,
+  isSuccessCode,
+  showRequestError,
+  getPrimaryNo,
+})
+
+const {
+  addEditorItem,
+  filterMaterialOption,
+  getEditorItemRowClassName,
+  getEditorItemRowProps,
+  handleEditorItemDragEnd,
+  handleEditorItemDragStart,
+  handleEditorItemInputChange,
+  handleEditorItemMaterialSelect,
+  handleEditorItemNumberChange,
+  handleEditorItemValueChange,
+  removeEditorItem,
+} = useEditorItemSupport({
+  editorForm,
+  editorItems,
+  materialMap,
+  canManageEditorItems,
+})
+
+const {
+  materialSelectorVisible,
+  materialSelectorSelectedCode,
+  activeMaterialSelectorItem,
+  materialSelectorRowSelection,
+  openMaterialSelector,
+  closeMaterialSelector,
+  confirmMaterialSelector,
+  getMaterialSelectorRowProps,
+} = useMaterialSelector({
+  editorItems,
+  materialSelectorKeyword,
+  handleEditorItemMaterialSelect,
+})
+
+const {
+  buildEditorDraft,
+  closeEditor,
+  getEditorDateValue,
+  handleEditorDateChange,
+  handleSaveEditor,
+  openCreateEditor,
+} = useEditorFormSupport({
+  moduleKey: computed(() => props.moduleKey),
+  config,
+  formFields,
+  parentImportConfig,
+  occupiedParentMap,
+  editorSession: {
+    editorForm,
+    editorMode,
+    editorVisible,
+    editorSaving,
+    editorSourceRecordId,
+    setMode: (mode) => { editorMode.value = mode },
+    setSaving: (value) => { editorSaving.value = value },
+    setVisible: (value) => { editorVisible.value = value },
+    setSourceRecordId: (value) => { editorSourceRecordId.value = value },
+  },
+  editorItems,
+  canCreateRecords,
+  canSaveCurrentEditor,
+  canAuditRecords,
+  isReadOnly,
+  editorAuditTarget,
+  getCurrentOperatorName,
+  getPrimaryNo,
+  generatePrimaryNo,
+  generatePrimaryNoAsync,
+  sumLineItemsBy,
+  resetParentImportState,
+  syncSystemEditorState,
+  refreshModuleQueries,
+  showRequestError,
+  isSuccessCode,
+  setPaginationCurrentPage: (value) => {
+    pagination.currentPage = value
+  },
+})
+
+function resetPageState() {
+  resetReactiveObject(filters as Record<string, unknown>, createFilters(config.value))
+  submittedFilters.value = {}
+  pagination.currentPage = 1
+  detailVisible.value = false
+  activeRecord.value = null
+  autoOpenedDocNo.value = ''
+  toggleSearchStatus.value = false
+  selectedRowKeys.value = []
+  selectedRowMap.value = {}
+  closeFreightPickupList()
+  resetStatementSupportState()
+  closeMaterialImportModal()
+  resetUploadRuleState()
+  closeEditor()
+  initColumnSettings()
+  initFormFieldSettings()
+  initEditorColumnSettings()
+}
+
+function applyRouteDocNo() {
+  const docNo = String(route.query.docNo || '').trim()
+  const hasKeywordFilter = config.value.filters.some((item) => item.key === 'keyword')
+  if (!docNo || !hasKeywordFilter) {
+    return
   }
 
-  return parentRows.value.filter((record) => !occupiedParentMap.value[getParentRelationNo(record)])
-})
+  filters.keyword = docNo
+  submittedFilters.value = {
+    ...submittedFilters.value,
+    keyword: docNo,
+  }
+  pagination.currentPage = 1
+}
 
 watch(
-  () => [editorVisible.value, parentRows.value, parentImportConfig.value?.parentFieldKey] as const,
+  () => props.moduleKey,
   () => {
-    syncSelectedParentRecord()
+    resetPageState()
+    applyRouteDocNo()
+  },
+  { immediate: true },
+)
+
+watch(
+  () => route.query.docNo,
+  () => {
+    autoOpenedDocNo.value = ''
+    applyRouteDocNo()
   },
 )
 
@@ -649,479 +1176,17 @@ watch(
   { immediate: true },
 )
 
-function inferColumnAlign(column?: ModuleColumnDefinition): 'center' {
-  void column
-  return 'center'
-}
-
-function buildDefaultColumnSettingItems() {
-  return config.value.columns.map((column) => ({
-    key: column.dataIndex,
-    title: column.title,
-    visible: column.dataIndex !== 'piecesPerBundle',
-  }))
-}
-
-function buildDefaultFormFieldSettingItems() {
-  return formFields.value.map((field) => ({
-    key: field.key,
-    title: field.label,
-    visible: true,
-  }))
-}
-
-function buildDefaultEditorColumnSettingItems() {
-  return (config.value.itemColumns || []).map((column) => ({
-    key: column.dataIndex,
-    title: column.title,
-    visible: column.dataIndex !== 'piecesPerBundle',
-  }))
-}
-
-function applySavedColumnSettings(
-  defaults: Array<{ key: string; title: string; visible: boolean }>,
-  saved: ListColumnSettings | null,
-) {
-  if (!saved) {
-    return defaults
-  }
-
-  const defaultMap = Object.fromEntries(defaults.map((item) => [item.key, item]))
-  const orderedKeys = [
-    ...saved.orderedKeys.filter((key) => defaultMap[key]),
-    ...defaults.map((item) => item.key).filter((key) => !saved.orderedKeys.includes(key)),
-  ]
-  const hiddenSet = new Set(saved.hiddenKeys.filter((key) => defaultMap[key]))
-
-  return orderedKeys.map((key) => ({
-    ...defaultMap[key],
-    visible: !hiddenSet.has(key),
-  }))
-}
-
-function persistColumnSettings() {
-  setListColumnSettings(props.moduleKey, {
-    orderedKeys: columnSettingItems.value.map((item) => item.key),
-    hiddenKeys: columnSettingItems.value
-      .filter((item) => !item.visible)
-      .map((item) => item.key),
-  })
-}
-
-function initColumnSettings() {
-  const defaults = buildDefaultColumnSettingItems()
-  const saved = getListColumnSettings(props.moduleKey)
-  columnSettingItems.value = applySavedColumnSettings(defaults, saved)
-}
-
-function persistFormFieldSettings() {
-  setListColumnSettings(`${props.moduleKey}:editor-form-fields`, {
-    orderedKeys: formFieldSettingItems.value.map((item) => item.key),
-    hiddenKeys: formFieldSettingItems.value
-      .filter((item) => !item.visible)
-      .map((item) => item.key),
-  })
-}
-
-function initFormFieldSettings() {
-  const defaults = buildDefaultFormFieldSettingItems()
-  if (!defaults.length) {
-    formFieldSettingItems.value = []
-    return
-  }
-
-  const saved = getListColumnSettings(`${props.moduleKey}:editor-form-fields`)
-  formFieldSettingItems.value = applySavedColumnSettings(defaults, saved)
-}
-
-function initEditorColumnSettings() {
-  const defaults = buildDefaultEditorColumnSettingItems()
-  if (!defaults.length) {
-    editorColumnSettingItems.value = []
-    return
-  }
-
-  const saved = getListColumnSettings(`${props.moduleKey}:editor-items`)
-  editorColumnSettingItems.value = applySavedColumnSettings(defaults, saved)
-}
-
-function handleColumnVisibleChange(key: string, checked: boolean) {
-  const visibleCount = columnSettingItems.value.filter((item) => item.visible).length
-  const target = columnSettingItems.value.find((item) => item.key === key)
-  if (!target) {
-    return
-  }
-
-  if (!checked && target.visible && visibleCount === 1) {
-    message.warning('至少保留一列显示')
-    return
-  }
-
-  columnSettingItems.value = columnSettingItems.value.map((item) =>
-    item.key === key ? { ...item, visible: checked } : item,
-  )
-  persistColumnSettings()
-}
-
-function resetColumnSettings() {
-  clearListColumnSettings(props.moduleKey)
-  columnSettingItems.value = buildDefaultColumnSettingItems()
-}
-
-function handleFormFieldVisibleChange(key: string, checked: boolean) {
-  const visibleCount = formFieldSettingItems.value.filter((item) => item.visible).length
-  const target = formFieldSettingItems.value.find((item) => item.key === key)
-  if (!target) {
-    return
-  }
-
-  if (!checked && target.visible && visibleCount === 1) {
-    message.warning('至少保留一列显示')
-    return
-  }
-
-  formFieldSettingItems.value = formFieldSettingItems.value.map((item) =>
-    item.key === key ? { ...item, visible: checked } : item,
-  )
-  persistFormFieldSettings()
-}
-
-function resetFormFieldSettings() {
-  clearListColumnSettings(`${props.moduleKey}:editor-form-fields`)
-  formFieldSettingItems.value = buildDefaultFormFieldSettingItems()
-}
-
-function persistEditorColumnSettings() {
-  setListColumnSettings(`${props.moduleKey}:editor-items`, {
-    orderedKeys: editorColumnSettingItems.value.map((item) => item.key),
-    hiddenKeys: editorColumnSettingItems.value
-      .filter((item) => !item.visible)
-      .map((item) => item.key),
-  })
-}
-
-function handleEditorColumnVisibleChange(key: string, checked: boolean) {
-  const visibleCount = editorColumnSettingItems.value.filter((item) => item.visible).length
-  const target = editorColumnSettingItems.value.find((item) => item.key === key)
-  if (!target) {
-    return
-  }
-
-  if (!checked && target.visible && visibleCount === 1) {
-    message.warning('至少保留一列显示')
-    return
-  }
-
-  editorColumnSettingItems.value = editorColumnSettingItems.value.map((item) =>
-    item.key === key ? { ...item, visible: checked } : item,
-  )
-  persistEditorColumnSettings()
-}
-
-function reorderSettingItems(
-  items: Array<{ key: string; title: string; visible: boolean }>,
-  sourceKey: string,
-  targetKey: string,
-  position: 'before' | 'after',
-) {
-  if (sourceKey === targetKey) {
-    return items
-  }
-
-  const sourceItem = items.find((item) => item.key === sourceKey)
-  if (!sourceItem) {
-    return items
-  }
-
-  const nextItems = items.filter((item) => item.key !== sourceKey)
-  const targetIndex = nextItems.findIndex((item) => item.key === targetKey)
-  if (targetIndex < 0) {
-    return items
-  }
-
-  const insertIndex = position === 'before' ? targetIndex : targetIndex + 1
-  nextItems.splice(insertIndex, 0, sourceItem)
-  return nextItems
-}
-
-function resetEditorColumnSettings() {
-  clearListColumnSettings(`${props.moduleKey}:editor-items`)
-  editorColumnSettingItems.value = buildDefaultEditorColumnSettingItems()
-}
-
-function handleSettingDragStart(
-  key: string,
-  event: DragEvent,
-  draggedKey: typeof draggedColumnSettingKey,
-  dragOverKey: typeof dragOverColumnSettingKey,
-  dragOverPosition: typeof dragOverColumnSettingPosition,
-) {
-  draggedKey.value = key
-  dragOverKey.value = key
-  dragOverPosition.value = 'after'
-
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', key)
-  }
-}
-
-function handleSettingDragOver(
-  key: string,
-  event: DragEvent,
-  draggedKey: typeof draggedColumnSettingKey,
-  dragOverKey: typeof dragOverColumnSettingKey,
-  dragOverPosition: typeof dragOverColumnSettingPosition,
-) {
-  if (!draggedKey.value) {
-    return
-  }
-
-  event.preventDefault()
-  const currentTarget = event.currentTarget as HTMLElement | null
-  if (currentTarget) {
-    const rect = currentTarget.getBoundingClientRect()
-    dragOverPosition.value = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
-  }
-  dragOverKey.value = key
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'move'
-  }
-}
-
-function resetListColumnSettingDragState() {
-  draggedColumnSettingKey.value = undefined
-  dragOverColumnSettingKey.value = undefined
-  dragOverColumnSettingPosition.value = 'after'
-}
-
-function resetFormFieldSettingDragState() {
-  draggedFormFieldSettingKey.value = undefined
-  dragOverFormFieldSettingKey.value = undefined
-  dragOverFormFieldSettingPosition.value = 'after'
-}
-
-function resetEditorColumnSettingDragState() {
-  draggedEditorColumnSettingKey.value = undefined
-  dragOverEditorColumnSettingKey.value = undefined
-  dragOverEditorColumnSettingPosition.value = 'after'
-}
-
-function handleColumnSettingDragStart(key: string, event: DragEvent) {
-  handleSettingDragStart(
-    key,
-    event,
-    draggedColumnSettingKey,
-    dragOverColumnSettingKey,
-    dragOverColumnSettingPosition,
-  )
-}
-
-function handleColumnSettingDragOver(key: string, event: DragEvent) {
-  handleSettingDragOver(
-    key,
-    event,
-    draggedColumnSettingKey,
-    dragOverColumnSettingKey,
-    dragOverColumnSettingPosition,
-  )
-}
-
-function handleColumnSettingDrop(key: string) {
-  if (!draggedColumnSettingKey.value) {
-    return
-  }
-
-  columnSettingItems.value = reorderSettingItems(
-    columnSettingItems.value,
-    draggedColumnSettingKey.value,
-    key,
-    dragOverColumnSettingPosition.value,
-  )
-  persistColumnSettings()
-  resetListColumnSettingDragState()
-}
-
-function getColumnSettingItemClass(key: string) {
-  if (!draggedColumnSettingKey.value || dragOverColumnSettingKey.value !== key || draggedColumnSettingKey.value === key) {
-    return ''
-  }
-
-  return dragOverColumnSettingPosition.value === 'before'
-    ? 'column-setting-item-target-before'
-    : 'column-setting-item-target-after'
-}
-
-function handleFormFieldSettingDragStart(key: string, event: DragEvent) {
-  handleSettingDragStart(
-    key,
-    event,
-    draggedFormFieldSettingKey,
-    dragOverFormFieldSettingKey,
-    dragOverFormFieldSettingPosition,
-  )
-}
-
-function handleFormFieldSettingDragOver(key: string, event: DragEvent) {
-  handleSettingDragOver(
-    key,
-    event,
-    draggedFormFieldSettingKey,
-    dragOverFormFieldSettingKey,
-    dragOverFormFieldSettingPosition,
-  )
-}
-
-function handleFormFieldSettingDrop(key: string) {
-  if (!draggedFormFieldSettingKey.value) {
-    return
-  }
-
-  formFieldSettingItems.value = reorderSettingItems(
-    formFieldSettingItems.value,
-    draggedFormFieldSettingKey.value,
-    key,
-    dragOverFormFieldSettingPosition.value,
-  )
-  persistFormFieldSettings()
-  resetFormFieldSettingDragState()
-}
-
-function getFormFieldSettingItemClass(key: string) {
-  if (!draggedFormFieldSettingKey.value || dragOverFormFieldSettingKey.value !== key || draggedFormFieldSettingKey.value === key) {
-    return ''
-  }
-
-  return dragOverFormFieldSettingPosition.value === 'before'
-    ? 'column-setting-item-target-before'
-    : 'column-setting-item-target-after'
-}
-
-function handleEditorColumnSettingDragStart(key: string, event: DragEvent) {
-  handleSettingDragStart(
-    key,
-    event,
-    draggedEditorColumnSettingKey,
-    dragOverEditorColumnSettingKey,
-    dragOverEditorColumnSettingPosition,
-  )
-}
-
-function handleEditorColumnSettingDragOver(key: string, event: DragEvent) {
-  handleSettingDragOver(
-    key,
-    event,
-    draggedEditorColumnSettingKey,
-    dragOverEditorColumnSettingKey,
-    dragOverEditorColumnSettingPosition,
-  )
-}
-
-function handleEditorColumnSettingDrop(key: string) {
-  if (!draggedEditorColumnSettingKey.value) {
-    return
-  }
-
-  editorColumnSettingItems.value = reorderSettingItems(
-    editorColumnSettingItems.value,
-    draggedEditorColumnSettingKey.value,
-    key,
-    dragOverEditorColumnSettingPosition.value,
-  )
-  persistEditorColumnSettings()
-  resetEditorColumnSettingDragState()
-}
-
-function getEditorColumnSettingItemClass(key: string) {
-  if (!draggedEditorColumnSettingKey.value || dragOverEditorColumnSettingKey.value !== key || draggedEditorColumnSettingKey.value === key) {
-    return ''
-  }
-
-  return dragOverEditorColumnSettingPosition.value === 'before'
-    ? 'column-setting-item-target-before'
-    : 'column-setting-item-target-after'
-}
-
 function sumColumnWidths(columns: ModuleColumnDefinition[]) {
   return columns.reduce((sum, column) => sum + (column.width || 120), 0)
-}
-
-function formatAmount(value: unknown) {
-  const amount = Number(value)
-  return Number.isFinite(amount) ? amount.toFixed(2) : '--'
-}
-
-function formatWeight(value: unknown) {
-  const weight = Number(value)
-  return Number.isFinite(weight) ? weight.toFixed(3) : '--'
-}
-
-function formatCount(value: unknown) {
-  const count = Number(value)
-  return Number.isFinite(count) ? String(count) : '--'
-}
-
-function formatCellValue(column: ModuleColumnDefinition | undefined, value: unknown) {
-  if (!column) {
-    if (Array.isArray(value)) {
-      return value.length ? value.map((item) => String(item)).join('、') : '--'
-    }
-    return value ? String(value) : '--'
-  }
-  if (column.type === 'amount') {
-    return formatAmount(value)
-  }
-  if (column.type === 'weight') {
-    return formatWeight(value)
-  }
-  if (column.type === 'count') {
-    return formatCount(value)
-  }
-  if (column.type === 'date') {
-    return value ? dayjs(String(value)).format('YYYY-MM-DD') : '--'
-  }
-  if (Array.isArray(value)) {
-    return value.length ? value.map((item) => String(item)).join('、') : '--'
-  }
-  return value ? String(value) : '--'
-}
-
-function formatDetailValue(field: ModuleDetailField, record: ModuleRecord | null) {
-  if (!record) {
-    return '--'
-  }
-  const value = record[field.key]
-  if (field.type === 'amount') {
-    return formatAmount(value)
-  }
-  if (field.type === 'weight') {
-    return formatWeight(value)
-  }
-  if (field.type === 'count') {
-    return formatCount(value)
-  }
-  if (field.type === 'status') {
-    return statusMap.value[String(value || '')]?.text || String(value || '--')
-  }
-  if (field.type === 'date') {
-    return value ? dayjs(String(value)).format('YYYY-MM-DD') : '--'
-  }
-  if (Array.isArray(value)) {
-    return value.length ? value.map((item) => String(item)).join('、') : '--'
-  }
-  return value ? String(value) : '--'
-}
-
-function getStatusMeta(value: unknown) {
-  return statusMap.value[String(value || '')] || {
-    text: String(value || '--'),
-    color: 'default',
-  }
 }
 
 function handleSearch() {
   submittedFilters.value = buildSubmittedFilters()
   pagination.currentPage = 1
+}
+
+function isSuccessCode(code: unknown) {
+  return Number(code) === 0
 }
 
 function handleReset() {
@@ -1139,590 +1204,56 @@ async function refreshModuleQueries() {
   ])
 }
 
-async function persistModuleRecord(record: ModuleRecord) {
-  const response = await saveBusinessModule(props.moduleKey, record)
-  if (response.code !== 200) {
-    throw new Error(response.message || '保存失败')
-  }
-
-  await refreshModuleQueries()
-  return response.data || record
-}
-
-function buildAttachmentItems(record: ModuleRecord | null) {
-  if (!record) {
-    return []
-  }
-
-  const rawAttachments = Array.isArray(record.attachments) ? record.attachments : []
-  if (rawAttachments.length) {
-    return rawAttachments.map((item, index) => ({
-      id: String(item.id || `attachment-${index + 1}`),
-      name: String(item.name || item.fileName || `附件${index + 1}`),
-      uploader: String(item.uploader || item.operatorName || getCurrentOperatorName()),
-      uploadTime: String(item.uploadTime || item.createTime || dayjs().format('YYYY-MM-DD HH:mm:ss')),
-    }))
-  }
-
-  return String(record.attachment || '')
-    .split(/[，,]+/)
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map((name, index) => ({
-      id: `attachment-${index + 1}`,
-      name,
-      uploader: getCurrentOperatorName(),
-      uploadTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-    }))
-}
-
-const attachmentRows = computed(() => buildAttachmentItems(attachmentRecord.value))
-const supplierStatementSelectedInbounds = computed(() =>
-  supplierStatementCandidateRows.value.filter((record) =>
-    supplierStatementSelectedInboundKeys.value.includes(String(record.id)),
-  ),
-)
-const supplierStatementSelectedSupplierName = computed(() =>
-  String(supplierStatementSelectedInbounds.value[0]?.supplierName || ''),
-)
-const customerStatementSelectedOrders = computed(() =>
-  customerStatementCandidateRows.value.filter((record) =>
-    customerStatementSelectedOrderKeys.value.includes(String(record.id)),
-  ),
-)
-const customerStatementSelectedCustomerName = computed(() =>
-  String(customerStatementSelectedOrders.value[0]?.customerName || ''),
-)
-const customerStatementSelectedProjectName = computed(() =>
-  String(customerStatementSelectedOrders.value[0]?.projectName || ''),
-)
-const freightStatementSelectedBills = computed(() =>
-  freightStatementCandidateRows.value.filter((record) =>
-    freightStatementSelectedBillKeys.value.includes(String(record.id)),
-  ),
-)
-const freightStatementSelectedCarrierName = computed(() =>
-  String(freightStatementSelectedBills.value[0]?.carrierName || ''),
-)
-
-function closeAttachmentDialog() {
-  attachmentVisible.value = false
-  attachmentSaving.value = false
-  attachmentDraftName.value = ''
-  attachmentRecord.value = null
-}
-
-function closeSupplierStatementGenerator() {
-  supplierStatementGeneratorVisible.value = false
-  supplierStatementGeneratorLoading.value = false
-  supplierStatementCandidateRows.value = []
-  supplierStatementSelectedInboundKeys.value = []
-}
-
-function closeCustomerStatementGenerator() {
-  customerStatementGeneratorVisible.value = false
-  customerStatementGeneratorLoading.value = false
-  customerStatementCandidateRows.value = []
-  customerStatementSelectedOrderKeys.value = []
-}
-
-function closeFreightStatementGenerator() {
-  freightStatementGeneratorVisible.value = false
-  freightStatementGeneratorLoading.value = false
-  freightStatementCandidateRows.value = []
-  freightStatementSelectedBillKeys.value = []
-}
-
-async function saveAttachmentList(nextAttachments: AttachmentItem[]) {
-  if (!attachmentRecord.value) {
-    return
-  }
-
-  attachmentSaving.value = true
-  try {
-    const nextRecord: ModuleRecord = {
-      ...cloneRecord(attachmentRecord.value),
-      attachments: nextAttachments,
-      attachment: nextAttachments.map((item) => item.name).join(', '),
-    }
-    const savedRecord = await persistModuleRecord(nextRecord)
-    attachmentRecord.value = savedRecord
-    if (activeRecord.value?.id === savedRecord.id) {
-      activeRecord.value = savedRecord
-    }
-  } finally {
-    attachmentSaving.value = false
-  }
-}
-
-async function handleAddAttachment() {
-  const name = attachmentDraftName.value.trim()
-  if (!name) {
-    message.warning('请先输入附件名称')
-    return
-  }
-
-  try {
-    await saveAttachmentList([
-      ...attachmentRows.value,
-      {
-        id: `attachment-${Date.now()}`,
-        name,
-        uploader: getCurrentOperatorName(),
-        uploadTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-      },
-    ])
-    attachmentDraftName.value = ''
-    message.success('附件已保存到 mock 数据')
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '附件保存失败')
-  }
-}
-
-async function handleRemoveAttachment(attachmentId: string) {
-  try {
-    await saveAttachmentList(attachmentRows.value.filter((item) => item.id !== attachmentId))
-    message.success('附件已删除')
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '附件删除失败')
-  }
-}
-
-async function openFreightSummary() {
-  freightSummaryLoading.value = true
-  try {
-    const response = await listBusinessModule(props.moduleKey, submittedFilters.value, {
-      currentPage: 1,
-      pageSize: Math.max(listResult.value.total || 0, 500),
-    })
-    const rows = normalizeTableResponse(response).rows
-    if (!rows.length) {
-      message.warning('当前筛选条件下没有可汇总的数据')
-      return
-    }
-
-    const summaryMap: Record<string, FreightSummaryRow> = {}
-    rows.forEach((record) => {
-      const carrierName = String(record.carrierName || '未设置物流商')
-      if (!summaryMap[carrierName]) {
-        summaryMap[carrierName] = {
-          id: carrierName,
-          carrierName,
-          statementCount: 0,
-          totalWeight: 0,
-          totalFreight: 0,
-          paidAmount: 0,
-          unpaidAmount: 0,
-        }
-      }
-
-      summaryMap[carrierName].statementCount += 1
-      summaryMap[carrierName].totalWeight += Number(record.totalWeight || 0)
-      summaryMap[carrierName].totalFreight += Number(record.totalFreight || 0)
-      summaryMap[carrierName].paidAmount += Number(record.paidAmount || 0)
-      summaryMap[carrierName].unpaidAmount += Number(record.unpaidAmount || 0)
-    })
-
-    freightSummaryRows.value = Object.values(summaryMap).map((item) => ({
-      ...item,
-      totalWeight: Number(item.totalWeight.toFixed(3)),
-      totalFreight: Number(item.totalFreight.toFixed(2)),
-      paidAmount: Number(item.paidAmount.toFixed(2)),
-      unpaidAmount: Number(item.unpaidAmount.toFixed(2)),
-    }))
-    freightSummaryVisible.value = true
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '汇总加载失败')
-  } finally {
-    freightSummaryLoading.value = false
-  }
-}
-
-async function openSupplierStatementGenerator() {
-  supplierStatementGeneratorLoading.value = true
-  supplierStatementSelectedInboundKeys.value = []
-  supplierStatementGeneratorVisible.value = true
-
-  try {
-    const [inboundResponse, statementResponse] = await Promise.all([
-      listBusinessModule('purchase-inbounds', {}, {
-        currentPage: 1,
-        pageSize: 500,
-      }),
-      listBusinessModule('supplier-statements', {}, {
-        currentPage: 1,
-        pageSize: 500,
-      }),
-    ])
-
-    const inbounds = normalizeTableResponse(inboundResponse).rows
-    const statements = normalizeTableResponse(statementResponse).rows
-    const occupiedInboundNoSet = new Set(
-      statements.flatMap((record) => parseParentRelationNos(record.sourceInboundNos)),
-    )
-
-    supplierStatementCandidateRows.value = inbounds.filter((record) => {
-      const inboundNo = String(record.inboundNo || '')
-      return inboundNo
-        && String(record.status || '') !== '草稿'
-        && !occupiedInboundNoSet.has(inboundNo)
-    })
-
-    if (!supplierStatementCandidateRows.value.length) {
-      message.warning('没有可生成对账单的采购入库单')
-    }
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '采购入库单加载失败')
-    closeSupplierStatementGenerator()
-  } finally {
-    supplierStatementGeneratorLoading.value = false
-  }
-}
-
-async function openCustomerStatementGenerator() {
-  customerStatementGeneratorLoading.value = true
-  customerStatementSelectedOrderKeys.value = []
-  customerStatementGeneratorVisible.value = true
-
-  try {
-    const [orderResponse, statementResponse] = await Promise.all([
-      listBusinessModule('sales-orders', {}, {
-        currentPage: 1,
-        pageSize: 500,
-      }),
-      listBusinessModule('customer-statements', {}, {
-        currentPage: 1,
-        pageSize: 500,
-      }),
-    ])
-
-    const orders = normalizeTableResponse(orderResponse).rows
-    const statements = normalizeTableResponse(statementResponse).rows
-    const occupiedOrderNoSet = new Set(
-      statements.flatMap((record) => parseParentRelationNos(record.sourceOrderNos)),
-    )
-
-    customerStatementCandidateRows.value = orders.filter((record) => {
-      const orderNo = String(record.orderNo || '')
-      return orderNo
-        && String(record.status || '') === '完成销售'
-        && !occupiedOrderNoSet.has(orderNo)
-    })
-
-    if (!customerStatementCandidateRows.value.length) {
-      message.warning('没有可生成对账单的销售订单')
-    }
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '销售订单加载失败')
-    closeCustomerStatementGenerator()
-  } finally {
-    customerStatementGeneratorLoading.value = false
-  }
-}
-
-async function openFreightStatementGenerator() {
-  freightStatementGeneratorLoading.value = true
-  freightStatementSelectedBillKeys.value = []
-  freightStatementGeneratorVisible.value = true
-
-  try {
-    const [billResponse, statementResponse] = await Promise.all([
-      listBusinessModule('freight-bills', {}, {
-        currentPage: 1,
-        pageSize: 500,
-      }),
-      listBusinessModule('freight-statements', {}, {
-        currentPage: 1,
-        pageSize: 500,
-      }),
-    ])
-
-    const bills = normalizeTableResponse(billResponse).rows
-    const statements = normalizeTableResponse(statementResponse).rows
-    const occupiedBillNoSet = new Set(
-      statements.flatMap((record) => parseParentRelationNos(record.sourceBillNos)),
-    )
-
-    freightStatementCandidateRows.value = bills.filter((record) => {
-      const billNo = String(record.billNo || '')
-      return billNo && !occupiedBillNoSet.has(billNo)
-    })
-
-    if (!freightStatementCandidateRows.value.length) {
-      message.warning('没有可生成对账单的物流单')
-    }
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '物流单加载失败')
-    closeFreightStatementGenerator()
-  } finally {
-    freightStatementGeneratorLoading.value = false
-  }
-}
-
-async function buildSupplierStatementDraft(sourceInbounds: ModuleRecord[]) {
-  const baseDraft = buildEditorDraft('create') as ModuleRecord
-  const sortedInbounds = cloneRecord(sourceInbounds).sort((left, right) =>
-    dayjs(String(left.inboundDate || '')).valueOf() - dayjs(String(right.inboundDate || '')).valueOf(),
-  )
-  const firstInbound = sortedInbounds[0]
-  const sourceInboundNos = sortedInbounds.map((record) => String(record.inboundNo || '')).filter(Boolean).join(', ')
-  const startDate = String(sortedInbounds[0]?.inboundDate || dayjs().format('YYYY-MM-DD'))
-  const endDate = String(sortedInbounds[sortedInbounds.length - 1]?.inboundDate || dayjs().format('YYYY-MM-DD'))
-  const purchaseAmount = Number(sortedInbounds.reduce((sum, record) => sum + Number(record.totalAmount || 0), 0).toFixed(2))
-
-  const paymentResponse = await listBusinessModule('payments', {}, {
-    currentPage: 1,
-    pageSize: 500,
-  })
-  const payments = normalizeTableResponse(paymentResponse).rows
-  const paymentAmount = Number(
-    payments
-      .filter((record) => {
-        const paymentDate = dayjs(String(record.paymentDate || ''))
-        return record.businessType === '供应商'
-          && String(record.counterpartyName || '') === String(firstInbound?.supplierName || '')
-          && String(record.status || '') === '已付款'
-          && (
-            paymentDate.isAfter(dayjs(startDate).startOf('day'))
-            || paymentDate.isSame(dayjs(startDate).startOf('day'))
-          )
-          && (
-            paymentDate.isBefore(dayjs(endDate).endOf('day'))
-            || paymentDate.isSame(dayjs(endDate).endOf('day'))
-          )
-      })
-      .reduce((sum, record) => sum + Number(record.amount || 0), 0)
-      .toFixed(2),
-  )
-
-  return {
-    ...baseDraft,
-    supplierName: firstInbound?.supplierName || '',
-    startDate,
-    endDate,
-    purchaseAmount,
-    paymentAmount,
-    closingAmount: Number((purchaseAmount - paymentAmount).toFixed(2)),
-    sourceInboundNos,
-    remark: `由采购入库单 ${sourceInboundNos} 生成`,
-  }
-}
-
-function buildCustomerStatementDraft(sourceOrders: ModuleRecord[]) {
-  const baseDraft = buildEditorDraft('create') as ModuleRecord
-  const sortedOrders = cloneRecord(sourceOrders).sort((left, right) =>
-    dayjs(String(left.orderDate || '')).valueOf() - dayjs(String(right.orderDate || '')).valueOf(),
-  )
-  const firstOrder = sortedOrders[0]
-  const sourceOrderNos = sortedOrders.map((order) => String(order.orderNo || '')).filter(Boolean).join(', ')
-  const salesAmount = Number(sortedOrders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0).toFixed(2))
-
-  return {
-    ...baseDraft,
-    customerName: firstOrder?.customerName || '',
-    projectName: firstOrder?.projectName || '',
-    startDate: String(sortedOrders[0]?.orderDate || dayjs().format('YYYY-MM-DD')),
-    endDate: String(sortedOrders[sortedOrders.length - 1]?.orderDate || dayjs().format('YYYY-MM-DD')),
-    salesAmount,
-    receiptAmount: 0,
-    closingAmount: salesAmount,
-    sourceOrderNos,
-    remark: `由销售订单 ${sourceOrderNos} 生成`,
-  }
-}
-
-function buildFreightStatementDraft(sourceBills: ModuleRecord[]) {
-  const baseDraft = buildEditorDraft('create') as ModuleRecord
-  const sortedBills = cloneRecord(sourceBills).sort((left, right) =>
-    dayjs(String(left.billTime || '')).valueOf() - dayjs(String(right.billTime || '')).valueOf(),
-  )
-  const firstBill = sortedBills[0]
-  const statementItems = sortedBills.flatMap((bill) =>
-    cloneLineItems(bill.items).map((item) => ({
-      ...item,
-      id: buildEditorItemId(),
-      sourceBillNo: bill.billNo || '',
-    })),
-  )
-  const sourceBillNos = sortedBills.map((bill) => String(bill.billNo || '')).filter(Boolean).join(', ')
-  const totalWeight = Number(sortedBills.reduce((sum, bill) => sum + Number(bill.totalWeight || 0), 0).toFixed(3))
-  const totalFreight = Number(sortedBills.reduce((sum, bill) => sum + Number(bill.totalFreight || 0), 0).toFixed(2))
-
-  return {
-    ...baseDraft,
-    carrierName: firstBill?.carrierName || '',
-    startDate: String(sortedBills[0]?.billTime || dayjs().format('YYYY-MM-DD')),
-    endDate: String(sortedBills[sortedBills.length - 1]?.billTime || dayjs().format('YYYY-MM-DD')),
-    totalWeight,
-    totalFreight,
-    paidAmount: 0,
-    unpaidAmount: totalFreight,
-    status: '待审核',
-    signStatus: '未签署',
-    sourceBillNos,
-    attachment: '',
-    attachments: [],
-    remark: `由物流单 ${sourceBillNos} 生成`,
-    items: statementItems,
-  }
-}
-
-function handleSupplierStatementGeneratorSelection(keys: Array<string | number>) {
-  supplierStatementSelectedInboundKeys.value = keys.map((key) => String(key))
-}
-
-function handleCustomerStatementGeneratorSelection(keys: Array<string | number>) {
-  customerStatementSelectedOrderKeys.value = keys.map((key) => String(key))
-}
-
-function handleFreightStatementGeneratorSelection(keys: Array<string | number>) {
-  freightStatementSelectedBillKeys.value = keys.map((key) => String(key))
-}
-
-function handleGenerateCustomerStatement() {
-  if (!customerStatementSelectedOrders.value.length) {
-    message.warning('请先选择销售订单')
-    return
-  }
-
-  const customerNames = Array.from(
-    new Set(customerStatementSelectedOrders.value.map((record) => String(record.customerName || ''))),
-  )
-  const projectNames = Array.from(
-    new Set(customerStatementSelectedOrders.value.map((record) => String(record.projectName || ''))),
-  )
-  if (customerNames.length !== 1 || projectNames.length !== 1) {
-    message.warning('仅支持同一客户同一项目的销售订单合并生成')
-    return
-  }
-
-  editorMode.value = 'create'
-  editorSourceRecordId.value = ''
-  selectedParentId.value = undefined
-  parentSelectorVisible.value = false
-  parentSelectorKeyword.value = ''
-  resetReactiveObject(editorForm, buildCustomerStatementDraft(customerStatementSelectedOrders.value))
-  editorVisible.value = true
-  closeCustomerStatementGenerator()
-}
-
-async function handleGenerateSupplierStatement() {
-  if (!supplierStatementSelectedInbounds.value.length) {
-    message.warning('请先选择采购入库单')
-    return
-  }
-
-  const supplierNames = Array.from(
-    new Set(supplierStatementSelectedInbounds.value.map((record) => String(record.supplierName || ''))),
-  )
-  if (supplierNames.length !== 1) {
-    message.warning('仅支持同一供应商的采购入库单合并生成')
-    return
-  }
-
-  try {
-    editorMode.value = 'create'
-    editorSourceRecordId.value = ''
-    selectedParentId.value = undefined
-    parentSelectorVisible.value = false
-    parentSelectorKeyword.value = ''
-    resetReactiveObject(editorForm, await buildSupplierStatementDraft(supplierStatementSelectedInbounds.value))
-    editorVisible.value = true
-    closeSupplierStatementGenerator()
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '供应商对账单草稿生成失败')
-  }
-}
-
-function handleGenerateFreightStatement() {
-  if (!freightStatementSelectedBills.value.length) {
-    message.warning('请先选择物流单')
-    return
-  }
-
-  const carrierNames = Array.from(
-    new Set(freightStatementSelectedBills.value.map((record) => String(record.carrierName || ''))),
-  )
-  if (carrierNames.length !== 1) {
-    message.warning('仅支持同一物流商的物流单合并生成')
-    return
-  }
-
-  editorMode.value = 'create'
-  editorSourceRecordId.value = ''
-  selectedParentId.value = undefined
-  parentSelectorVisible.value = false
-  parentSelectorKeyword.value = ''
-  resetReactiveObject(editorForm, buildFreightStatementDraft(freightStatementSelectedBills.value))
-  editorVisible.value = true
-  closeFreightStatementGenerator()
-}
-
-async function markSelectedFreightDelivered() {
-  const selectedRecords = selectedRowKeys.value
-    .map((key) => selectedRowMap.value[key])
-    .filter(Boolean)
-
-  if (!selectedRecords.length) {
-    message.warning('请先勾选需要标记送达的物流单')
-    return
-  }
-
-  try {
-    await Promise.all(
-      selectedRecords.map((record) =>
-        persistModuleRecord({
-          ...cloneRecord(record),
-          deliveryStatus: '已送达',
-          status: String(record.status || '') === '未审核' ? '已审核' : record.status,
-        }),
-      ),
-    )
-    selectedRowKeys.value = []
-    selectedRowMap.value = {}
-    message.success(`已更新 ${selectedRecords.length} 张物流单`)
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '批量更新失败')
-  }
-}
-
 async function handleAction(actionLabel: string) {
-  if (props.moduleKey === 'supplier-statements' && actionLabel === '生成对账单') {
-    await openSupplierStatementGenerator()
+  if (!canUseAction(actionLabel)) {
+    message.warning(`暂无${actionLabel}权限`)
     return
   }
 
-  if (props.moduleKey === 'customer-statements' && actionLabel === '生成对账单') {
-    await openCustomerStatementGenerator()
-    return
+  switch (resolveModuleActionKind({
+    moduleKey: props.moduleKey,
+    actionLabel,
+    hasFormFields: formFields.value.length > 0,
+    isMaterialModule: isMaterialModule.value,
+  })) {
+    case 'openSupplierStatementGenerator':
+      await openSupplierStatementGenerator()
+      return
+    case 'openCustomerStatementGenerator':
+      await openCustomerStatementGenerator()
+      return
+    case 'openFreightStatementGenerator':
+      await openFreightStatementGenerator()
+      return
+    case 'openCreateEditor':
+      await openCreateEditor()
+      return
+    case 'exportMaterialRows':
+      exportLoading.value = true
+      try {
+        await exportMaterialRows(submittedFilters.value, config.value.title)
+      } finally {
+        exportLoading.value = false
+      }
+      return
+    case 'exportRows':
+      await exportRows('filtered')
+      return
+    case 'openFreightPickupList':
+      await openFreightPickupList()
+      return
+    case 'markSelectedFreightDelivered':
+      await markSelectedFreightDelivered()
+      return
+    case 'openFreightSummary':
+      await openFreightSummary()
+      return
+    case 'navigateToRoleActionEditor':
+      router.push('/role-action-editor')
+      return
+    default:
+      message.info(`${actionLabel} 当前没有额外处理逻辑。`)
   }
-
-  if (props.moduleKey === 'freight-statements' && actionLabel === '生成物流对账单') {
-    await openFreightStatementGenerator()
-    return
-  }
-
-  if ((actionLabel.includes('新增') || actionLabel.includes('生成')) && formFields.value.length) {
-    openCreateEditor()
-    return
-  }
-
-  if (actionLabel.includes('导出')) {
-    await exportRows('filtered')
-    return
-  }
-
-  if (props.moduleKey === 'freight-bills' && actionLabel === '标记送达') {
-    await markSelectedFreightDelivered()
-    return
-  }
-
-  if (props.moduleKey === 'freight-statements' && actionLabel === '查看运费对账汇总') {
-    await openFreightSummary()
-    return
-  }
-
-  message.info(`${actionLabel} 当前没有额外的 mock 处理逻辑。`)
 }
 
 function formatExportCellValue(column: ModuleColumnDefinition, value: unknown) {
@@ -1735,12 +1266,12 @@ function formatExportCellValue(column: ModuleColumnDefinition, value: unknown) {
 }
 
 async function exportRows(mode: 'selected' | 'page' | 'filtered') {
+  if (!canExportRecords.value) {
+    message.warning('暂无导出权限')
+    return
+  }
   if (mode === 'filtered') {
-    const response = await listBusinessModule(props.moduleKey, submittedFilters.value, {
-      currentPage: 1,
-      pageSize: Math.max(listResult.value.total || 0, 200),
-    })
-    const filteredRows = normalizeTableResponse(response).rows
+    const filteredRows = await listAllBusinessModuleRows(props.moduleKey, submittedFilters.value)
     if (!filteredRows.length) {
       message.warning('没有可导出的数据')
       return
@@ -1766,11 +1297,12 @@ async function exportRows(mode: 'selected' | 'page' | 'filtered') {
   message.success('Excel 导出已开始')
 }
 
-async function handleExportMenuClick(info: { key: string }) {
+async function handleExportMenuClick(info: { key: string | number }) {
   exportLoading.value = true
   try {
-    if (info.key === 'selected' || info.key === 'page' || info.key === 'filtered') {
-      await exportRows(info.key)
+    const key = String(info.key)
+    if (key === 'selected' || key === 'page' || key === 'filtered') {
+      await exportRows(key)
     }
   } finally {
     exportLoading.value = false
@@ -1782,30 +1314,56 @@ function handleTableChange(page: { current?: number; pageSize?: number }) {
   pagination.pageSize = page.pageSize || 20
 }
 
-function handleView(record: ModuleRecord) {
-  activeRecord.value = record
-  detailVisible.value = true
-}
-
-function handleEdit(record: ModuleRecord) {
-  if (!formFields.value.length) {
-    handleView(record)
+async function handleEdit(record: ModuleRecord) {
+  if (isUploadRuleListRow(record)) {
+    if (!canEditRecords.value) {
+      message.warning('暂无编辑权限')
+      return
+    }
+    await openUploadRuleDialog(record)
+    return
+  }
+  if (!canEditRecords.value) {
+    message.warning('暂无编辑权限')
+    return
+  }
+  if (isReadOnly.value) {
+    await handleView(record)
     return
   }
 
+  if (!formFields.value.length) {
+    await handleView(record)
+    return
+  }
+
+  const detailRecord = await resolveRecordForDetail(record)
+
   editorMode.value = 'edit'
-  editorSourceRecordId.value = String(record.id || '')
-  selectedParentId.value = undefined
-  parentSelectorVisible.value = false
-  parentSelectorKeyword.value = ''
-  resetReactiveObject(editorForm, buildEditorDraft('edit', record))
+  editorSourceRecordId.value = String(detailRecord.id || '')
+  resetParentImportState()
+  resetReactiveObject(editorForm, buildEditorDraft('edit', detailRecord))
+  syncSystemEditorState()
   editorVisible.value = true
 }
 
 async function handleDelete(record: ModuleRecord) {
+  if (isUploadRuleListRow(record)) {
+    message.warning('页面上传命名规则不支持删除')
+    return
+  }
+  if (!canDeleteRecords.value) {
+    message.warning('暂无删除权限')
+    return
+  }
+  if (isReadOnly.value) {
+    message.warning('当前模块为只读模式')
+    return
+  }
+
   try {
     const response = await deleteBusinessModule(props.moduleKey, String(record.id))
-    if (response.code !== 200) {
+    if (!isSuccessCode(response.code)) {
       throw new Error(response.message || '删除失败')
     }
 
@@ -1825,258 +1383,55 @@ async function handleDelete(record: ModuleRecord) {
     await refreshModuleQueries()
     message.success(response.message || `已删除 ${getPrimaryNo(record)}`)
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '删除失败')
+    showRequestError(error, '删除失败')
   }
-}
-
-function handleAttachment(record: ModuleRecord) {
-  attachmentRecord.value = cloneRecord(record)
-  attachmentDraftName.value = ''
-  attachmentVisible.value = true
-}
-
-function handleCloseDetail() {
-  detailVisible.value = false
-}
-
-function buildDetailPrintHtml(record: ModuleRecord) {
-  const fields = config.value.detailFields.map((field) => ({
-    label: field.label,
-    value: String(formatDetailValue(field, record)),
-  }))
-  const columns = (config.value.itemColumns || []).map((column) => ({
-    title: column.title,
-    align: inferColumnAlign(column),
-  }))
-  const rows = (record.items || []).map((item) =>
-    (config.value.itemColumns || []).map((column) =>
-      String(formatCellValue(column, item[column.dataIndex])),
-    ),
-  )
-
-  return buildModulePrintHtml({
-    title: `${config.value.title}打印单`,
-    subtitle: getPrimaryNo(record),
-    fields,
-    columns,
-    rows,
-  })
-}
-
-function buildPrintContext(record: ModuleRecord) {
-  const model = cloneRecord(record) as Record<string, unknown>
-  const details = cloneLineItems(record.items) as Array<Record<string, unknown>>
-  return {
-    model,
-    details,
-  }
-}
-
-async function handlePrintDetail(preview: boolean) {
-  if (!activeRecord.value) {
-    return
-  }
-
-  detailPrintLoading.value = true
-  try {
-    const loaded = await loadCLodop()
-    if (!loaded) {
-      message.warning('未检测到 CLodop，本机安装并启动 CLodop 后再试')
-      return
-    }
-
-    const printTitle = `${config.value.title}-${getPrimaryNo(activeRecord.value)}`
-    let templateContent = ''
-    try {
-      const templateResponse = await getDefaultPrintTemplate(props.moduleKey)
-      templateContent = String(templateResponse.data?.templateHtml || '').trim()
-    } catch {
-      templateContent = ''
-    }
-
-    let success = false
-    if (templateContent) {
-      const { model, details } = buildPrintContext(activeRecord.value)
-      const rendered = renderPrintTemplate(templateContent, model, details)
-      success = isCLodopCode(templateContent)
-        ? execPrintCode(rendered, { preview, title: printTitle })
-        : printHtml(rendered, { preview, title: printTitle })
-    } else {
-      success = printHtml(buildDetailPrintHtml(activeRecord.value), {
-        preview,
-        title: printTitle,
-      })
-    }
-
-    if (!success) {
-      message.error('CLodop 打印调用失败，请检查本机打印服务状态')
-    }
-  } finally {
-    detailPrintLoading.value = false
-  }
-}
-
-function closeEditor() {
-  editorVisible.value = false
-  editorSaving.value = false
-  editorSourceRecordId.value = ''
-  selectedParentId.value = undefined
-  parentSelectorVisible.value = false
-  parentSelectorKeyword.value = ''
-  resetReactiveObject(editorForm, {})
-}
-
-function openCreateEditor() {
-  editorMode.value = 'create'
-  editorSourceRecordId.value = ''
-  selectedParentId.value = undefined
-  parentSelectorVisible.value = false
-  parentSelectorKeyword.value = ''
-  resetReactiveObject(editorForm, buildEditorDraft('create'))
-  editorVisible.value = true
-}
-
-function buildEditorDraft(mode: 'create' | 'edit', sourceRecord?: ModuleRecord) {
-  const baseDraft = buildDefaultEditorDraft()
-
-  if (!sourceRecord) {
-    return baseDraft
-  }
-
-  const sourceDraft = cloneRecord(sourceRecord)
-  const mergedDraft: Record<string, unknown> = {
-    ...baseDraft,
-    ...sourceDraft,
-    items: cloneLineItems(sourceRecord.items),
-  }
-
-  if (mode === 'edit') {
-    return mergedDraft
-  }
-
-  if (config.value.primaryNoKey) {
-    mergedDraft[config.value.primaryNoKey] = generatePrimaryNo()
-  }
-
-  mergedDraft.id = ''
-  formFields.value
-    .filter((field) => field.type === 'date')
-    .forEach((field) => {
-      mergedDraft[field.key] = baseDraft[field.key]
-    })
-  formFields.value
-    .filter((field) => field.defaultValue !== undefined)
-    .forEach((field) => {
-      mergedDraft[field.key] = field.defaultValue
-    })
-
-  return mergedDraft
-}
-
-function buildDefaultEditorDraft() {
-  const draft: Record<string, unknown> = {
-    items: [],
-  }
-
-  formFields.value.forEach((field) => {
-    draft[field.key] = getDefaultFieldValue(field)
-  })
-
-  if (config.value.primaryNoKey && !draft[config.value.primaryNoKey]) {
-    draft[config.value.primaryNoKey] = generatePrimaryNo()
-  }
-
-  if (props.moduleKey === 'carriers') {
-    draft.priceMode = '按吨'
-  }
-
-  if (props.moduleKey === 'purchase-orders') {
-    draft.buyerName = getCurrentOperatorName()
-  }
-
-  if (props.moduleKey === 'receipts' || props.moduleKey === 'payments') {
-    draft.operatorName = getCurrentOperatorName()
-  }
-
-  return draft
 }
 
 function getCurrentOperatorName() {
   const user = getStoredUser()
-  return String(user?.username || user?.loginName || '当前用户')
+  return String(user?.userName || user?.loginName || '当前用户')
 }
 
-function getDefaultFieldValue(field: ModuleFormFieldDefinition) {
-  if (field.defaultValue !== undefined) {
-    return field.defaultValue
-  }
-  if (field.type === 'multiSelect') {
-    return []
-  }
-  if (field.type === 'date') {
-    return dayjs().format('YYYY-MM-DD')
-  }
-  if (field.type === 'number') {
-    return 0
-  }
-  return ''
-}
-
-function cloneRecord<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T
-}
-
-function cloneLineItems(value: unknown) {
-  if (!Array.isArray(value)) {
-    return []
-  }
-
-  return cloneRecord(value) as ModuleLineItem[]
-}
+const {
+  attachmentDraftName,
+  attachmentPasteEnabled,
+  attachmentRecord,
+  attachmentRows,
+  attachmentSaving,
+  attachmentVisible,
+  closeAttachmentDialog,
+  handleAddAttachment,
+  handleAttachmentBeforeUpload,
+  handleDownloadAttachment,
+  handlePreviewAttachment,
+  handleRemoveAttachment,
+  openAttachmentDialog,
+} = useAttachmentSupport({
+  activeRecord,
+  canManageAttachments,
+  isReadOnly,
+  isSuccessCode,
+  getCurrentOperatorName,
+  moduleKey: computed(() => props.moduleKey),
+  showRequestError,
+})
 
 function generatePrimaryNo() {
   const serial = String(Date.now()).slice(-6)
   const year = dayjs().format('YYYY')
-  const prefixMap: Record<string, string> = {
-    'purchase-orders': 'CG',
-    'purchase-inbounds': 'RK',
-    'sales-orders': 'XS',
-    'sales-outbounds': 'CK',
-    'freight-bills': 'W',
-    'purchase-contracts': 'CGHT',
-    'sales-contracts': 'XSHT',
-    'supplier-statements': 'GYDZ',
-    'customer-statements': 'KHDZ',
-    'freight-statements': 'WDZ',
-    receipts: 'SK',
-    payments: 'FK',
-  }
+  return buildModulePrimaryNo(props.moduleKey, year, serial)
+}
 
-  return `${year}${prefixMap[props.moduleKey] || 'NO'}${serial}`
+async function generatePrimaryNoAsync() {
+  try {
+    return await generateBusinessPrimaryNo(props.moduleKey)
+  } catch {
+    return generatePrimaryNo()
+  }
 }
 
 function getPrimaryNo(record: ModuleRecord) {
-  const configuredKey = config.value.primaryNoKey
-  if (configuredKey && record[configuredKey]) {
-    return String(record[configuredKey])
-  }
-
-  const firstNoField = [
-    'orderNo',
-    'inboundNo',
-    'outboundNo',
-    'billNo',
-    'settingCode',
-    'permissionCode',
-    'loginName',
-    'roleCode',
-    'ticketNo',
-    'statementNo',
-    'receiptNo',
-    'paymentNo',
-    'materialCode',
-  ].find((key) => record[key])
-  return firstNoField ? String(record[firstNoField]) : String(record.id)
+  return getModuleRecordPrimaryNo(record, config.value.primaryNoKey)
 }
 
 function getRowClassName(record: ModuleRecord) {
@@ -2084,571 +1439,193 @@ function getRowClassName(record: ModuleRecord) {
   return config.value.rowHighlightStatuses?.includes(status) ? 'table-row-emphasis' : ''
 }
 
-function getParentRecordLabel(record: ModuleRecord) {
-  const primaryNo = parentImportConfig.value
-    ? String(record[parentImportConfig.value.parentDisplayFieldKey] || record.id)
-    : getPrimaryNo(record)
-  const extras = [
-    record.customerName,
-    record.supplierName,
-    record.projectName,
-    record.warehouseName,
-  ]
-    .filter(Boolean)
-    .map((item) => String(item))
-
-  return [primaryNo, ...extras.slice(0, 2)].join(' / ')
-}
-
-function getParentRelationNo(record: ModuleRecord) {
-  if (!parentImportConfig.value) {
-    return ''
-  }
-
-  return String(record[parentImportConfig.value.parentDisplayFieldKey] || '')
-}
-
-function getParentOptionLabel(parentRecord: ModuleRecord) {
-  return getParentRecordLabel(parentRecord)
-}
-
-function openParentSelector() {
-  parentSelectorKeyword.value = ''
-  parentSelectorVisible.value = true
-}
-
-function closeParentSelector() {
-  parentSelectorVisible.value = false
-}
-
-function getParentSelectorRowProps(record: ModuleRecord) {
-  return {
-    onDblclick: () => {
-      selectedParentId.value = String(record.id)
-      handleImportParentItems(record)
-    },
-  }
-}
-
-function syncSelectedParentRecord() {
-  if (!editorVisible.value || !parentImportConfig.value || selectedParentId.value || !parentRows.value.length) {
-    return
-  }
-
-  const currentParentNos = parseParentRelationNos(editorForm[parentImportConfig.value.parentFieldKey])
-  if (currentParentNos.length !== 1) {
-    return
-  }
-
-  const matchedParent = parentRows.value.find(
-    (record) =>
-      String(record[parentImportConfig.value!.parentDisplayFieldKey] || '') === currentParentNos[0],
-  )
-
-  if (matchedParent) {
-    selectedParentId.value = matchedParent.id
-  }
-}
-
-function handleImportParentItems(targetParentRecord?: ModuleRecord) {
-  if (!parentImportConfig.value) {
-    return
-  }
-
-  const parentRecord = targetParentRecord || selectedParentRecord.value
-  if (!parentRecord) {
-    message.warning('请先选择上级单据')
-    return
-  }
-
-  if (parentImportConfig.value.enforceUniqueRelation && occupiedParentMap.value[getParentRelationNo(parentRecord)]) {
-    message.warning(`${parentImportConfig.value.label}已被其他单据占用，请重新选择`)
-    return
-  }
-
-  const parentNo = String(parentRecord[parentImportConfig.value.parentDisplayFieldKey] || '')
-  const currentParentNos = parseParentRelationNos(editorForm[parentImportConfig.value.parentFieldKey])
-  const hasImportedCurrentParent = currentParentNos.includes(parentNo)
-  const mergedParentNos = hasImportedCurrentParent
-    ? currentParentNos
-    : [...currentParentNos, parentNo]
-
-  editorForm[parentImportConfig.value.parentFieldKey] = mergedParentNos.join(', ')
-
-  const mappedValues = parentImportConfig.value.mapParentToDraft?.(parentRecord) || {}
-  if (!currentParentNos.length || (currentParentNos.length === 1 && hasImportedCurrentParent)) {
-    Object.assign(editorForm, mappedValues)
-  }
-
-  const existingItems = cloneRecord(editorItems.value)
-  if (parentImportConfig.value.transformItems) {
-    editorForm.items = parentImportConfig.value.transformItems(parentRecord)
-  } else if (Array.isArray(parentRecord.items)) {
-    editorForm.items = cloneLineItems(parentRecord.items)
-  }
-  const importedItems = cloneRecord(Array.isArray(editorForm.items) ? editorForm.items : []).map((item) => ({
-    ...item,
-    _parentRelationNo: parentNo,
-  }))
-  editorForm.items = hasImportedCurrentParent
-    ? [
-        ...existingItems.filter((item) => String(item._parentRelationNo || '') !== parentNo),
-        ...importedItems,
-      ]
-    : [
-        ...existingItems,
-        ...importedItems,
-      ]
-
-  closeParentSelector()
-  message.success(hasImportedCurrentParent ? `${parentImportConfig.value.label}明细已更新` : `${parentImportConfig.value.label}明细已追加`)
-}
-
-function hasEditorValue(value: unknown) {
-  if (value === undefined || value === null) {
-    return false
-  }
-  if (Array.isArray(value)) {
-    return value.length > 0
-  }
-  if (typeof value === 'string') {
-    return value.trim().length > 0
-  }
-  return true
-}
-
-function validateEditorForm() {
-  for (const field of formFields.value) {
-    if (field.required && !hasEditorValue(editorForm[field.key])) {
-      message.warning(`请填写${field.label}`)
-      return false
-    }
-  }
-
-  if (config.value.itemColumns?.length && editorItems.value.length === 0) {
-    message.warning('请至少填写一条明细')
-    return false
-  }
-
-  if (parentImportConfig.value?.enforceUniqueRelation) {
-    const parentNos = parseParentRelationNos(editorForm[parentImportConfig.value.parentFieldKey])
-    for (const parentNo of parentNos) {
-      if (occupiedParentMap.value[parentNo]) {
-        message.warning(`${parentImportConfig.value.label}已被${getPrimaryNo(occupiedParentMap.value[parentNo])}关联`)
-        return false
-      }
-    }
-  }
-
-  return true
-}
-
 function sumLineItemsBy(items: ModuleLineItem[], key: string) {
   return items.reduce((sum, item) => sum + Number(item[key] || 0), 0)
 }
 
-function buildEditorItemId() {
-  return `item-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+function isEditorFieldDisabled(field: ModuleFormFieldDefinition) {
+  return isEditorFieldDisabledForModule(
+    props.moduleKey,
+    field.key,
+    Boolean(field.disabled),
+    canSaveCurrentEditor.value,
+    salesOrderLineLocked.value,
+  )
 }
 
-function updateEditorItems(nextItems: ModuleLineItem[]) {
-  editorForm.items = nextItems
+function isEditorItemColumnEditable(columnKey: string) {
+  return isEditorItemColumnEditableForModule(
+    props.moduleKey,
+    columnKey,
+    canEditLineItems.value,
+    salesOrderLineLocked.value,
+  )
 }
 
-function resetEditorItemDragState() {
-  draggedEditorItemId.value = undefined
-  dragOverEditorItemId.value = undefined
-  dragOverEditorItemPosition.value = 'after'
+function asModuleRecord(record: Record<string, unknown>) {
+  return record as ModuleRecord
 }
 
-function addEditorItem() {
-  const nextItems = [
-    ...editorItems.value,
-    {
-      id: buildEditorItemId(),
-      materialCode: '',
-      brand: '',
-      category: '',
-      material: '',
-      spec: '',
-      length: '',
-      unit: '吨',
-      pieceWeightTon: 0,
-      piecesPerBundle: 0,
-      quantity: 0,
-      weightTon: 0,
-      unitPrice: 0,
-      amount: 0,
-    },
-  ]
-  updateEditorItems(nextItems)
+function asModuleLineItem(record: Record<string, unknown>) {
+  return record as ModuleLineItem
 }
 
-function removeEditorItem(itemId: string) {
-  updateEditorItems(editorItems.value.filter((item) => String(item.id) !== itemId))
-}
-
-function handleEditorItemDragStart(itemId: string, event: DragEvent) {
-  draggedEditorItemId.value = itemId
-  dragOverEditorItemId.value = itemId
-  dragOverEditorItemPosition.value = 'after'
-
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', itemId)
+function getTextModelValue(source: Record<string, unknown>, key: string): TextModelValue {
+  const value = source[key]
+  if (typeof value === 'string' || typeof value === 'number') {
+    return value
   }
-}
-
-function handleEditorItemDragEnd() {
-  resetEditorItemDragState()
-}
-
-function getEditorItemRowClassName(record: ModuleLineItem) {
-  const recordId = String(record.id)
-  if (!draggedEditorItemId.value || dragOverEditorItemId.value !== recordId || draggedEditorItemId.value === recordId) {
-    return ''
-  }
-
-  return dragOverEditorItemPosition.value === 'before'
-    ? 'editor-draggable-row-target-before'
-    : 'editor-draggable-row-target-after'
-}
-
-function moveEditorItemByDrag(targetId: string) {
-  const sourceId = draggedEditorItemId.value
-  if (!sourceId || sourceId === targetId) {
-    resetEditorItemDragState()
-    return
-  }
-
-  const sourceItem = editorItems.value.find((item) => String(item.id) === sourceId)
-  if (!sourceItem) {
-    resetEditorItemDragState()
-    return
-  }
-
-  const nextItems = editorItems.value.filter((item) => String(item.id) !== sourceId)
-  const targetIndex = nextItems.findIndex((item) => String(item.id) === targetId)
-  if (targetIndex < 0) {
-    resetEditorItemDragState()
-    return
-  }
-
-  const insertIndex = dragOverEditorItemPosition.value === 'before' ? targetIndex : targetIndex + 1
-  nextItems.splice(insertIndex, 0, sourceItem)
-  updateEditorItems(nextItems)
-  resetEditorItemDragState()
-}
-
-function getEditorItemRowProps(record: ModuleLineItem) {
-  if (!canManageEditorItems.value) {
-    return {}
-  }
-
-  const recordId = String(record.id)
-  return {
-    onDragover: (event: DragEvent) => {
-      if (!draggedEditorItemId.value) {
-        return
-      }
-
-      event.preventDefault()
-      const currentTarget = event.currentTarget as HTMLElement | null
-      if (currentTarget) {
-        const rect = currentTarget.getBoundingClientRect()
-        dragOverEditorItemPosition.value = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
-      }
-      dragOverEditorItemId.value = recordId
-      if (event.dataTransfer) {
-        event.dataTransfer.dropEffect = 'move'
-      }
-    },
-    onDrop: (event: DragEvent) => {
-      event.preventDefault()
-      moveEditorItemByDrag(recordId)
-    },
-  }
-}
-
-function toRoundedNumber(value: unknown, precision: number) {
-  const numericValue = Number(value)
-  if (!Number.isFinite(numericValue)) {
-    return 0
-  }
-  return Number(numericValue.toFixed(precision))
-}
-
-function recalculateLineItem(item: ModuleLineItem, changedKey?: string) {
-  if (changedKey === 'quantity' || changedKey === 'pieceWeightTon') {
-    item.weightTon = toRoundedNumber(Number(item.quantity || 0) * Number(item.pieceWeightTon || 0), 3)
-  }
-
-  if (changedKey === 'amount' && Number(item.weightTon || 0) > 0) {
-    item.unitPrice = toRoundedNumber(Number(item.amount || 0) / Number(item.weightTon || 0), 2)
-    return
-  }
-
-  if (
-    changedKey === 'quantity'
-    || changedKey === 'pieceWeightTon'
-    || changedKey === 'weightTon'
-    || changedKey === 'unitPrice'
-  ) {
-    item.amount = toRoundedNumber(Number(item.weightTon || 0) * Number(item.unitPrice || 0), 2)
-  }
-}
-
-function handleEditorItemNumberChange(item: ModuleLineItem, key: string, value: number | null) {
-  item[key] = value ?? 0
-  recalculateLineItem(item, key)
-}
-
-function handleEditorItemTextChange(item: ModuleLineItem, key: string, value: string) {
-  item[key] = value
-}
-
-function handleEditorItemMaterialChange(item: ModuleLineItem, materialCode: string) {
-  item.materialCode = materialCode
-  const materialRecord = materialMap.value[materialCode]
-  if (!materialRecord) {
-    return
-  }
-
-  item.brand = materialRecord.brand || ''
-  item.category = materialRecord.category || ''
-  item.material = materialRecord.material || ''
-  item.spec = materialRecord.spec || ''
-  item.length = materialRecord.length || ''
-  item.unit = materialRecord.unit || '吨'
-  item.pieceWeightTon = toRoundedNumber(materialRecord.pieceWeightTon || 0, 3)
-  item.piecesPerBundle = toRoundedNumber(materialRecord.piecesPerBundle || 0, 0)
-  item.unitPrice = toRoundedNumber(materialRecord.unitPrice || 0, 2)
-  recalculateLineItem(item, 'quantity')
-}
-
-function handleEditorItemMaterialSelect(item: ModuleLineItem, value: string | number | undefined) {
-  handleEditorItemMaterialChange(item, String(value || ''))
-}
-
-function handleEditorItemInputChange(item: ModuleLineItem, key: string, event: Event) {
-  handleEditorItemTextChange(item, key, (event.target as HTMLInputElement)?.value || '')
-}
-
-function filterMaterialOption(input: string, option: { label?: unknown } | undefined) {
-  return String(option?.label || '').toLowerCase().includes(input.toLowerCase())
-}
-
-function isNumberEditorColumn(columnKey: string) {
-  return [
-    'pieceWeightTon',
-    'piecesPerBundle',
-    'quantity',
-    'weightTon',
-    'unitPrice',
-    'amount',
-  ].includes(columnKey)
-}
-
-function getEditorItemPrecision(columnKey: string) {
-  if (['pieceWeightTon', 'weightTon'].includes(columnKey)) {
-    return 3
-  }
-  if (['unitPrice', 'amount'].includes(columnKey)) {
-    return 2
-  }
-  return 0
-}
-
-function getEditorItemMin(columnKey: string) {
-  if (isNumberEditorColumn(columnKey)) {
-    return 0
+  if (typeof value === 'boolean') {
+    return String(value)
   }
   return undefined
 }
 
-function normalizeDraftRecord() {
-  const items = cloneLineItems(editorForm.items)
-  const record: ModuleRecord = {
-    ...(cloneRecord(editorForm) as ModuleRecord),
-    id: editorMode.value === 'edit'
-      ? String(editorSourceRecordId.value || editorForm.id || '')
-      : String(editorForm.id || ''),
-    items,
-  }
-
-  if (config.value.primaryNoKey && !record[config.value.primaryNoKey]) {
-    record[config.value.primaryNoKey] = generatePrimaryNo()
-  }
-
-  if (props.moduleKey === 'carriers') {
-    record.priceMode = '按吨'
-  }
-
-  if (props.moduleKey === 'purchase-orders') {
-    record.buyerName = getCurrentOperatorName()
-  }
-
-  if (
-    props.moduleKey === 'purchase-orders'
-    || props.moduleKey === 'purchase-inbounds'
-    || props.moduleKey === 'sales-orders'
-    || props.moduleKey === 'sales-outbounds'
-    || props.moduleKey === 'purchase-contracts'
-    || props.moduleKey === 'sales-contracts'
-  ) {
-    record.totalWeight = Number(sumLineItemsBy(items, 'weightTon').toFixed(3))
-    record.totalAmount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
-  }
-
-  if (props.moduleKey === 'freight-bills') {
-    record.totalWeight = Number(sumLineItemsBy(items, 'weightTon').toFixed(3))
-    record.totalFreight = Number((Number(record.unitPrice || 0) * Number(record.totalWeight || 0)).toFixed(2))
-    if (!record.deliveryStatus) {
-      record.deliveryStatus = '未送达'
-    }
-  }
-
-  if (props.moduleKey === 'freight-statements' && items.length) {
-    record.totalWeight = Number(sumLineItemsBy(items, 'weightTon').toFixed(3))
-  }
-
-  if (props.moduleKey === 'supplier-statements') {
-    record.closingAmount = Number((Number(record.purchaseAmount || 0) - Number(record.paymentAmount || 0)).toFixed(2))
-  }
-
-  if (props.moduleKey === 'customer-statements') {
-    record.closingAmount = Number((Number(record.salesAmount || 0) - Number(record.receiptAmount || 0)).toFixed(2))
-  }
-
-  if (props.moduleKey === 'freight-statements') {
-    record.unpaidAmount = Number((Number(record.totalFreight || 0) - Number(record.paidAmount || 0)).toFixed(2))
-    if (Array.isArray(record.attachments)) {
-      record.attachment = record.attachments
-        .map((item) => String((item as Record<string, unknown>).name || ''))
-        .filter(Boolean)
-        .join(', ')
-    }
-  }
-
-  if (props.moduleKey === 'role-settings') {
-    const permissionCodes = Array.isArray(record.permissionCodes)
-      ? record.permissionCodes.map((item) => String(item))
-      : []
-    const permissionLabels = permissionCodes.map((code) => permissionLabelMap[code] || code)
-    record.permissionCodes = permissionCodes
-    record.permissionCount = permissionCodes.length
-    record.permissionSummary = permissionLabels.join('、')
-  }
-
-  if (props.moduleKey === 'user-accounts') {
-    const roleNames = Array.isArray(record.roleNames)
-      ? record.roleNames.map((item) => String(item))
-      : []
-    const permissionCodes = Array.from(
-      new Set(
-        roleNames.flatMap((roleName) => rolePermissionCodeMap[roleName] || []),
-      ),
+function getSelectModelValue(source: Record<string, unknown>, key: string): SelectValue {
+  const value = source[key]
+  if (Array.isArray(value)) {
+    const normalized = value.filter((item): item is PrimitiveModelValue =>
+      typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean',
     )
-    const permissionLabels = permissionCodes.map((code) => permissionLabelMap[code] || code)
-    record.roleNames = roleNames
-    record.permissionSummary = permissionLabels.join('、')
+    return normalized as unknown as SelectValue
   }
-
-  if (
-    (props.moduleKey === 'purchase-orders'
-      || props.moduleKey === 'purchase-inbounds'
-      || props.moduleKey === 'sales-orders'
-      || props.moduleKey === 'sales-outbounds')
-    && !record.status
-  ) {
-    record.status = '草稿'
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value as unknown as SelectValue
   }
-
-  if (props.moduleKey === 'freight-bills' && !record.status) {
-    record.status = '未审核'
-  }
-
-  if (props.moduleKey === 'receipts' && !record.status) {
-    record.status = '草稿'
-  }
-
-  if (props.moduleKey === 'payments' && !record.status) {
-    record.status = '草稿'
-  }
-
-  if ((props.moduleKey === 'receipts' || props.moduleKey === 'payments') && !record.operatorName) {
-    record.operatorName = getCurrentOperatorName()
-  }
-
-  return record
+  return undefined
 }
 
-async function handleSaveEditor(audit = false) {
-  if (!validateEditorForm()) {
-    return
+function getDateRangeModelValue(source: Record<string, unknown>, key: string): DateRangeModelValue {
+  const value = source[key]
+  if (Array.isArray(value) && value.length === 2 && dayjs.isDayjs(value[0]) && dayjs.isDayjs(value[1])) {
+    return [value[0], value[1]]
   }
-
-  editorSaving.value = true
-  try {
-    const payload = normalizeDraftRecord()
-    if (audit && editorAuditTarget.value) {
-      payload[editorAuditTarget.value.key] = editorAuditTarget.value.value
-    }
-    const response = await saveBusinessModule(props.moduleKey, payload)
-    if (response.code !== 200) {
-      throw new Error(response.message || '保存失败')
-    }
-
-    pagination.currentPage = 1
-    await refreshModuleQueries()
-    message.success(response.message || (audit ? '保存并审核成功' : '保存成功'))
-    closeEditor()
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : audit ? '保存并审核失败' : '保存失败')
-  } finally {
-    editorSaving.value = false
-  }
+  return undefined
 }
 
-function getEditorDateValue(key: string) {
-  const value = editorForm[key]
-  return value ? dayjs(String(value)) : undefined
+function getNumberModelValue(source: Record<string, unknown>, key: string) {
+  const value = source[key]
+  if (typeof value === 'number') {
+    return value
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value)
+    return Number.isNaN(parsed) ? undefined : parsed
+  }
+  return undefined
 }
 
-function handleEditorDateChange(key: string, value: Dayjs | null) {
-  editorForm[key] = value ? value.format('YYYY-MM-DD') : ''
+function setFilterValue(key: string, value: unknown) {
+  filters[key] = value
 }
 
-function isEditorFieldDisabled(field: ModuleFormFieldDefinition) {
-  if (field.disabled) {
-    return true
-  }
-
-  if (props.moduleKey === 'sales-orders' && salesOrderLineLocked.value) {
-    return !['orderDate', 'remark'].includes(field.key)
-  }
-
-  return false
+function setEditorFormValue(key: string, value: unknown) {
+  editorForm[key] = value
 }
 
-function isEditorItemColumnEditable(columnKey: string) {
-  if (!canEditLineItems.value) {
-    return false
-  }
+function asDynamicColumn(column: unknown): DynamicColumn {
+  return column && typeof column === 'object' ? column as DynamicColumn : {}
+}
 
-  if (props.moduleKey === 'sales-orders' && salesOrderLineLocked.value) {
-    return ['unitPrice', 'amount'].includes(columnKey)
+function getTableColumnKey(column: unknown) {
+  const target = asDynamicColumn(column)
+  if (typeof target.key === 'string' || typeof target.key === 'number') {
+    return String(target.key)
   }
+  if (typeof target.dataIndex === 'string' || typeof target.dataIndex === 'number') {
+    return String(target.dataIndex)
+  }
+  return ''
+}
 
-  return true
+function getTableColumnDataIndex(column: unknown) {
+  const target = asDynamicColumn(column)
+  if (typeof target.dataIndex === 'string' || typeof target.dataIndex === 'number') {
+    return String(target.dataIndex)
+  }
+  return ''
+}
+
+function getRecordCellValue(record: unknown, column: unknown) {
+  const dataIndex = getTableColumnDataIndex(column)
+  if (!dataIndex || !record || typeof record !== 'object') {
+    return undefined
+  }
+  return (record as Record<string, unknown>)[dataIndex]
+}
+
+function getListColumnMeta(column: unknown) {
+  const key = getTableColumnKey(column)
+  return key ? columnMetaMap.value[key] : undefined
+}
+
+function getDetailItemColumnMeta(column: unknown) {
+  const key = getTableColumnKey(column)
+  return key ? config.value.itemColumns?.find((item) => item.dataIndex === key) : undefined
+}
+
+function getEditorSummaryCellValue(column: unknown) {
+  const key = getTableColumnKey(column)
+  if (key === 'editorAction') {
+    return '合计'
+  }
+  if (key === 'quantity') {
+    return editorItemQuantityTotal.value.toFixed(0)
+  }
+  if (key === 'weightTon') {
+    return formatWeight(editorItemWeightTotal.value)
+  }
+  if (key === 'amount' && shouldShowItemAmountSummary.value) {
+    return formatAmount(editorItemAmountTotal.value)
+  }
+  return ''
+}
+
+function handleRoleTreeCheckChange(
+  checkedKeys: Array<string | number> | { checked: Array<string | number>; halfChecked?: Array<string | number> },
+) {
+  handleRoleTreeCheck(checkedKeys)
+}
+
+function handleEditorDateValueChange(key: string, value: unknown) {
+  if (value === null || dayjs.isDayjs(value)) {
+    handleEditorDateChange(key, value)
+  }
 }
 </script>
 
 <template>
   <div class="page-stack">
     <a-card :bordered="false" class="module-panel-card">
+      <a-alert
+        v-if="isReadOnly && config.description"
+        type="info"
+        show-icon
+        :message="config.description"
+        style="margin-bottom: 16px"
+      >
+        <template v-if="moduleKey === 'permission-management'" #message>
+          {{ config.description }}
+          <span class="table-action-link" style="margin-left: 8px" @click="router.push('/role-action-editor')">前往角色权限配置 →</span>
+        </template>
+      </a-alert>
       <div class="table-page-search-wrapper">
-        <a-form layout="inline" @submit.prevent="handleSearch">
+        <div
+          v-if="quickFilters.length"
+          style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;"
+        >
+          <span style="color: rgba(0, 0, 0, 0.45);">快捷筛选</span>
+          <a-button
+            v-for="filterPreset in quickFilters"
+            :key="filterPreset.key"
+            size="small"
+            :type="activeQuickFilterKey === filterPreset.key ? 'primary' : 'default'"
+            @click="applyQuickFilter(filterPreset)"
+          >
+            {{ filterPreset.label }}
+          </a-button>
+        </div>
+        <a-form :model="filters" layout="inline" @submit.prevent="handleSearch">
           <a-row :gutter="24">
             <a-col
               v-for="filter in visibleFilters"
@@ -2656,34 +1633,61 @@ function isEditorItemColumnEditable(columnKey: string) {
               :md="8"
               :sm="24"
             >
-              <a-form-item :label="filter.label">
+              <a-form-item
+                :label="filter.label"
+                :html-for="getFilterFieldId(filter.key)"
+              >
                 <a-input
                   v-if="filter.type === 'input'"
-                  v-model:value="filters[filter.key]"
+                  :id="getFilterFieldId(filter.key)"
+                  :value="getTextModelValue(filters, filter.key)"
+                  :name="filter.key"
                   :placeholder="filter.placeholder"
                   allow-clear
+                  @update:value="(value) => setFilterValue(filter.key, value)"
                   @press-enter="handleSearch"
                 />
                 <a-select
                   v-else-if="filter.type === 'select'"
-                  v-model:value="filters[filter.key]"
+                  :id="getFilterFieldId(filter.key)"
+                  :value="getSelectModelValue(filters, filter.key)"
                   allow-clear
                   :placeholder="filter.placeholder || `请选择${filter.label}`"
+                  @update:value="(value) => setFilterValue(filter.key, value)"
+                  @change="handleFilterValueChange"
                 >
-                  <a-select-option
-                    v-for="option in filter.options || []"
-                    :key="option.value"
-                    :value="option.value"
+                  <template
+                    v-for="option in resolveFilterOptions(filter)"
+                    :key="isFilterOptionGroup(option) ? option.label : option.value"
                   >
-                    {{ option.label }}
-                  </a-select-option>
+                    <a-select-opt-group
+                      v-if="isFilterOptionGroup(option)"
+                      :label="option.label"
+                    >
+                      <a-select-option
+                        v-for="groupOption in option.options"
+                        :key="groupOption.value"
+                        :value="groupOption.value"
+                      >
+                        {{ groupOption.label }}
+                      </a-select-option>
+                    </a-select-opt-group>
+                    <a-select-option
+                      v-else
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </a-select-option>
+                  </template>
                 </a-select>
                 <a-range-picker
                   v-else
-                  v-model:value="filters[filter.key]"
+                  :id="getFilterFieldId(filter.key)"
+                  :value="getDateRangeModelValue(filters, filter.key)"
                   style="width: 100%"
                   format="YYYY-MM-DD"
                   :placeholder="['开始时间', '结束时间']"
+                  @update:value="(value) => setFilterValue(filter.key, value)"
                 />
               </a-form-item>
             </a-col>
@@ -2709,9 +1713,15 @@ function isEditorItemColumnEditable(columnKey: string) {
         <div class="module-table-head">
           <div class="module-table-head-title">{{ config.title }}</div>
           <div class="module-table-head-actions">
-            <template v-for="action in config.actions || []" :key="action.label">
+            <a-button v-if="isMaterialModule && canExportRecords" @click="handleMaterialTemplateDownload">
+              模板下载
+            </a-button>
+            <a-button v-if="isMaterialModule && canImportMaterials" @click="handleMaterialImportClick">
+              导入
+            </a-button>
+            <template v-for="action in visibleToolbarActions" :key="action.label">
               <a-dropdown
-                v-if="action.label === '导出'"
+                v-if="action.label === '导出' && !isMaterialModule"
                 :menu="{ items: exportMenuItems, onClick: handleExportMenuClick }"
                 trigger="click"
               >
@@ -2731,7 +1741,7 @@ function isEditorItemColumnEditable(columnKey: string) {
                 <div class="column-setting-panel">
                   <div class="column-setting-header">
                     <span>列设置</span>
-                    <a @click.prevent="resetColumnSettings">恢复默认</a>
+                    <span class="table-action-link" @click="resetColumnSettings">恢复默认</span>
                   </div>
                   <div class="column-setting-list">
                     <div
@@ -2782,32 +1792,138 @@ function isEditorItemColumnEditable(columnKey: string) {
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'action'">
               <div class="table-action-group">
-                <a @click.prevent="handleView(record)">查看</a>
-                <a-divider type="vertical" />
-                <a @click.prevent="handleEdit(record)">编辑</a>
-                <a-divider type="vertical" />
-                <a-popconfirm title="确定删除吗?" @confirm="handleDelete(record)">
-                  <a>删除</a>
-                </a-popconfirm>
-                <a-divider type="vertical" />
-                <a class="table-attachment-link" @click.prevent="handleAttachment(record)">
-                  <PaperClipOutlined />
-                  <span>附件</span>
-                </a>
+                <template v-if="isUploadRuleListRow(asModuleRecord(record))">
+                  <span v-if="canViewRecords" class="table-action-link" @click="handleView(asModuleRecord(record))">
+                    {{ uploadRuleVisible && activeUploadRuleRowId === String(record.id || '') ? '收起' : canEditRecords ? '编辑' : '查看' }}
+                  </span>
+                  <span v-else>--</span>
+                </template>
+                <template v-else>
+                  <span v-if="canViewRecords" class="table-action-link" @click="handleView(asModuleRecord(record))">查看</span>
+                  <template v-if="!isReadOnly && canEditRecords">
+                    <a-divider v-if="canViewRecords" type="vertical" />
+                    <span class="table-action-link" @click="handleEdit(asModuleRecord(record))">编辑</span>
+                  </template>
+                  <template v-if="!isReadOnly && canDeleteRecords">
+                    <a-divider v-if="canViewRecords || canEditRecords" type="vertical" />
+                    <a-popconfirm title="确定删除吗?" @confirm="handleDelete(asModuleRecord(record))">
+                      <span class="table-action-link">删除</span>
+                    </a-popconfirm>
+                  </template>
+                  <template v-if="!isReadOnly && canManageAttachments">
+                    <a-divider v-if="canViewRecords || canEditRecords || canDeleteRecords" type="vertical" />
+                    <span class="table-action-link" @click="openAttachmentDialog(asModuleRecord(record))">
+                      <PaperClipOutlined />
+                      <span>附件</span>
+                    </span>
+                  </template>
+                  <span
+                    v-if="!canViewRecords && !(!isReadOnly && canEditRecords) && !(!isReadOnly && canDeleteRecords) && !(!isReadOnly && canManageAttachments)"
+                  >
+                    --
+                  </span>
+                </template>
               </div>
             </template>
-            <template v-else-if="columnMetaMap[column.key]?.type === 'status'">
-              <a-tag :color="getStatusMeta(record[column.dataIndex]).color">
-                {{ getStatusMeta(record[column.dataIndex]).text }}
+            <template v-else-if="isTagListColumnKey(String(column.key))">
+              <div class="cell-tag-group">
+                <a-tag
+                  v-for="item in getTagListValues(getRecordCellValue(record, column))"
+                  :key="item"
+                  color="processing"
+                >
+                  {{ item }}
+                </a-tag>
+              </div>
+            </template>
+            <template v-else-if="isFriendlyTagColumnKey(String(column.key))">
+              <a-tag :color="getFriendlyTagColor(String(column.key), getRecordCellValue(record, column))">
+                {{ formatCellValue(getListColumnMeta(column), getRecordCellValue(record, column)) }}
               </a-tag>
             </template>
+            <template v-else-if="getListColumnMeta(column)?.type === 'status'">
+              <a-tag :color="getStatusMeta(getRecordCellValue(record, column)).color">
+                {{ getStatusMeta(getRecordCellValue(record, column)).text }}
+              </a-tag>
+            </template>
+            <template v-else-if="shouldHideUploadRuleListValue(asModuleRecord(record), String(column.key))">
+              --
+            </template>
             <template v-else>
-              {{ formatCellValue(columnMetaMap[column.key], record[column.dataIndex]) }}
+              {{ formatCellValue(getListColumnMeta(column), getRecordCellValue(record, column)) }}
             </template>
           </template>
 
-          <template v-if="config.itemColumns?.length" #expandedRowRender="{ record }">
+          <template v-if="expandable" #expandedRowRender="{ record }">
+            <div v-if="isUploadRuleListRow(record)">
+              <a-spin :spinning="uploadRuleLoading">
+                <div class="editor-items-head upload-rule-section-head">
+                  <div class="editor-items-title-block">
+                    <h3 class="detail-section-title">{{ uploadRuleForm.ruleName || UPLOAD_RULE_DEFAULT_TITLE }}</h3>
+                    <span class="parent-selector-hint">{ext} 为扩展名本体，不带点号；系统会自动补齐最终文件后缀</span>
+                  </div>
+                </div>
+                <a-table
+                  size="small"
+                  bordered
+                  row-key="key"
+                  :data-source="uploadRuleDetailRows"
+                  :pagination="false"
+                  :scroll="{ x: 980 }"
+                  class="module-detail-table upload-rule-config-table"
+                >
+                  <a-table-column key="label" title="项目" data-index="label" width="180" />
+                  <a-table-column key="description" title="说明" data-index="description" width="360" />
+                  <a-table-column key="value" title="配置值 / 示例" width="380">
+                    <template #default="{ record: detailRecord }">
+                      <span v-if="detailRecord.type === 'token'">
+                        {{ detailRecord.example || '--' }}
+                      </span>
+                      <span v-else-if="detailRecord.key === 'ruleCode'">
+                        {{ uploadRuleForm.ruleCode || UPLOAD_RULE_DEFAULT_CODE }}
+                      </span>
+                      <span v-else-if="detailRecord.key === 'ruleName'">
+                        {{ uploadRuleForm.ruleName || UPLOAD_RULE_DEFAULT_NAME }}
+                      </span>
+                      <span v-else-if="detailRecord.key === 'status'">
+                        {{ uploadRuleStatusText }}
+                      </span>
+                      <a-input
+                        v-else-if="detailRecord.key === 'renamePattern'"
+                        v-model:value="uploadRuleForm.renamePattern"
+                        :disabled="uploadRuleLoading"
+                        class="editor-item-field"
+                        placeholder="{yyyyMMddHHmmss}_{random8}"
+                      />
+                      <a-textarea
+                        v-else-if="detailRecord.key === 'remark'"
+                        v-model:value="uploadRuleForm.remark"
+                        :disabled="uploadRuleLoading"
+                        class="editor-item-field"
+                        :auto-size="{ minRows: 2, maxRows: 4 }"
+                        placeholder="说明该规则的适用范围"
+                      />
+                      <span v-else>
+                        {{ uploadRuleForm.previewFileName || '--' }}
+                      </span>
+                    </template>
+                  </a-table-column>
+                </a-table>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+                  <a-button @click="closeUploadRuleDialog">收起</a-button>
+                  <a-button
+                    v-if="canEditRecords"
+                    type="primary"
+                    :loading="uploadRuleSaving"
+                    @click="handleSaveUploadRule"
+                  >
+                    保存
+                  </a-button>
+                </div>
+              </a-spin>
+            </div>
             <a-table
+              v-else-if="config.itemColumns?.length"
               size="small"
               bordered
               row-key="id"
@@ -2818,16 +1934,16 @@ function isEditorItemColumnEditable(columnKey: string) {
               class="module-detail-table"
             >
               <template #bodyCell="{ column, record: itemRecord }">
-                <template v-if="config.itemColumns?.find((item) => item.dataIndex === column.key)?.type === 'status'">
-                  <a-tag :color="getStatusMeta(itemRecord[column.dataIndex]).color">
-                    {{ getStatusMeta(itemRecord[column.dataIndex]).text }}
+                <template v-if="getDetailItemColumnMeta(column)?.type === 'status'">
+                  <a-tag :color="getStatusMeta(getRecordCellValue(itemRecord, column)).color">
+                    {{ getStatusMeta(getRecordCellValue(itemRecord, column)).text }}
                   </a-tag>
                 </template>
                 <template v-else>
                   {{
                     formatCellValue(
-                      config.itemColumns?.find((item) => item.dataIndex === column.key),
-                      itemRecord[column.dataIndex],
+                      getDetailItemColumnMeta(column),
+                      getRecordCellValue(itemRecord, column),
                     )
                   }}
                 </template>
@@ -2860,7 +1976,7 @@ function isEditorItemColumnEditable(columnKey: string) {
                 <div class="column-setting-panel">
                   <div class="column-setting-header">
                     <span>表单字段设置</span>
-                    <a @click.prevent="resetFormFieldSettings">恢复默认</a>
+                    <span class="table-action-link" @click="resetFormFieldSettings">恢复默认</span>
                   </div>
                   <div class="column-setting-list">
                     <div
@@ -2893,20 +2009,56 @@ function isEditorItemColumnEditable(columnKey: string) {
             </a-popover>
             <template v-if="!config.itemColumns?.length">
               <a-button class="overlay-action-button" @click="closeEditor">取消</a-button>
-              <a-button type="primary" class="overlay-action-button" :loading="editorSaving" @click="handleSaveEditor">保存</a-button>
               <a-button
-                v-if="canAuditEditor"
+                v-if="canSaveCurrentEditor"
                 type="primary"
                 class="overlay-action-button"
                 :loading="editorSaving"
-                @click="handleSaveEditor(true)"
+                @click="() => void handleSaveEditor()"
+              >
+                保存
+              </a-button>
+              <a-button
+                v-if="canSaveAndAuditCurrentEditor"
+                type="primary"
+                class="overlay-action-button"
+                :loading="editorSaving"
+                @click="() => void handleSaveEditor(true)"
               >
                 保存并审核
               </a-button>
             </template>
           </div>
         </div>
-        <a-form layout="vertical" class="editor-form-shell">
+        <a-form :model="editorForm" layout="vertical" class="editor-form-shell">
+          <div v-if="systemHelperVisible" class="rbac-helper-panel">
+            <div class="rbac-helper-title">{{ systemHelperTitle }}</div>
+            <div class="rbac-helper-grid">
+              <div class="rbac-helper-item">
+                <span class="rbac-helper-label">已选角色</span>
+                <strong>{{ checkedRoleNames.length }}</strong>
+              </div>
+              <div class="rbac-helper-item">
+                <span class="rbac-helper-label">自动汇总权限</span>
+                <strong>{{ selectedRolePermissionLabels.length }}</strong>
+              </div>
+              <div class="rbac-helper-item">
+                <span class="rbac-helper-label">数据范围</span>
+                <strong>{{ editorForm.dataScope || '--' }}</strong>
+              </div>
+              <div class="rbac-helper-item">
+                <span class="rbac-helper-label">权限摘要</span>
+                <strong>{{ editorForm.permissionSummary || '--' }}</strong>
+              </div>
+            </div>
+            <a
+              v-if="moduleKey === 'role-settings'"
+              class="rbac-helper-link"
+              @click="router.push('/role-action-editor')"
+            >
+              前往角色权限配置，管理详细权限矩阵 →
+            </a>
+          </div>
           <a-row :gutter="16">
             <a-col
               v-for="field in visibleFormFields"
@@ -2915,18 +2067,28 @@ function isEditorItemColumnEditable(columnKey: string) {
               :sm="12"
               :lg="field.type === 'textarea' ? 24 : 6"
             >
-              <a-form-item :label="field.label" :required="field.required">
+              <a-form-item
+                :label="field.label"
+                :html-for="getEditorFieldId(field.key)"
+                :required="field.required"
+              >
                 <a-input
                   v-if="field.type === 'input'"
-                  v-model:value="editorForm[field.key]"
+                  :id="getEditorFieldId(field.key)"
+                  :value="getTextModelValue(editorForm, field.key)"
+                  :name="field.key"
                   :disabled="isEditorFieldDisabled(field)"
                   :placeholder="field.placeholder || `请输入${field.label}`"
+                  @update:value="(value) => setEditorFormValue(field.key, value)"
                 />
                 <a-select
                   v-else-if="field.type === 'select'"
-                  v-model:value="editorForm[field.key]"
+                  :id="getEditorFieldId(field.key)"
+                  :value="getSelectModelValue(editorForm, field.key)"
+                  :allow-clear="field.allowClear || !field.required"
                   :disabled="isEditorFieldDisabled(field)"
                   :placeholder="field.placeholder || `请选择${field.label}`"
+                  @update:value="(value) => setEditorFormValue(field.key, value)"
                 >
                   <a-select-option
                     v-for="option in field.options || []"
@@ -2936,12 +2098,35 @@ function isEditorItemColumnEditable(columnKey: string) {
                     {{ option.label }}
                   </a-select-option>
                 </a-select>
+                <div
+                  v-else-if="isRoleTreeField(field)"
+                  :id="getEditorFieldId(field.key)"
+                  class="rbac-tree-field"
+                >
+                  <div class="rbac-tree-field-meta">
+                    <span>已选 {{ checkedRoleNames.length }} 项</span>
+                    <span class="rbac-tree-field-hint">按角色类型分组勾选</span>
+                  </div>
+                  <a-tree
+                    checkable
+                    block-node
+                    default-expand-all
+                    :checked-keys="checkedRoleNames"
+                    :tree-data="roleTreeData"
+                    @check="handleRoleTreeCheckChange"
+                  />
+                  <div v-if="selectedRolePermissionLabels.length" class="rbac-tree-field-summary">
+                    自动汇总权限：{{ selectedRolePermissionLabels.join('、') }}
+                  </div>
+                </div>
                 <a-select
                   v-else-if="field.type === 'multiSelect'"
-                  v-model:value="editorForm[field.key]"
+                  :id="getEditorFieldId(field.key)"
+                  :value="getSelectModelValue(editorForm, field.key)"
                   mode="multiple"
                   :disabled="isEditorFieldDisabled(field)"
                   :placeholder="field.placeholder || `请选择${field.label}`"
+                  @update:value="(value) => setEditorFormValue(field.key, value)"
                 >
                   <a-select-option
                     v-for="option in field.options || []"
@@ -2953,27 +2138,34 @@ function isEditorItemColumnEditable(columnKey: string) {
                 </a-select>
                 <a-date-picker
                   v-else-if="field.type === 'date'"
+                  :id="getEditorFieldId(field.key)"
                   style="width: 100%"
                   format="YYYY-MM-DD"
                   :disabled="isEditorFieldDisabled(field)"
                   :value="getEditorDateValue(field.key)"
-                  @change="handleEditorDateChange(field.key, $event)"
+                  @change="(value) => handleEditorDateValueChange(field.key, value)"
                 />
                 <a-input-number
                   v-else-if="field.type === 'number'"
-                  v-model:value="editorForm[field.key]"
+                  :id="getEditorFieldId(field.key)"
+                  :value="getNumberModelValue(editorForm, field.key)"
+                  :name="field.key"
                   style="width: 100%"
                   :disabled="isEditorFieldDisabled(field)"
                   :min="field.min"
                   :precision="field.precision"
                   :placeholder="field.placeholder || `请输入${field.label}`"
+                  @update:value="(value) => setEditorFormValue(field.key, value)"
                 />
                 <a-textarea
                   v-else
-                  v-model:value="editorForm[field.key]"
+                  :id="getEditorFieldId(field.key)"
+                  :value="getTextModelValue(editorForm, field.key)"
+                  :name="field.key"
                   :rows="3"
                   :disabled="isEditorFieldDisabled(field)"
                   :placeholder="field.placeholder || `请输入${field.label}`"
+                  @update:value="(value) => setEditorFormValue(field.key, value)"
                 />
               </a-form-item>
             </a-col>
@@ -2987,7 +2179,7 @@ function isEditorItemColumnEditable(columnKey: string) {
             </div>
             <div class="editor-items-actions">
               <a-button
-                v-if="canManageEditorItems"
+                v-if="canAddManualEditorItems"
                 type="primary"
                 class="overlay-action-button"
                 @click="addEditorItem"
@@ -3009,7 +2201,7 @@ function isEditorItemColumnEditable(columnKey: string) {
                   <div class="column-setting-panel">
                     <div class="column-setting-header">
                       <span>明细列设置</span>
-                      <a @click.prevent="resetEditorColumnSettings">恢复默认</a>
+                      <span class="table-action-link" @click="resetEditorColumnSettings">恢复默认</span>
                     </div>
                     <div class="column-setting-list">
                       <div
@@ -3041,22 +2233,37 @@ function isEditorItemColumnEditable(columnKey: string) {
                 <a-button class="overlay-action-button">明细列设置</a-button>
               </a-popover>
               <a-button class="overlay-action-button" @click="closeEditor">取消</a-button>
-              <a-button type="primary" class="overlay-action-button" :loading="editorSaving" @click="handleSaveEditor">保存</a-button>
               <a-button
-                v-if="canAuditEditor"
+                v-if="canSaveCurrentEditor"
                 type="primary"
                 class="overlay-action-button"
                 :loading="editorSaving"
-                @click="handleSaveEditor(true)"
+                @click="() => void handleSaveEditor()"
+              >
+                保存
+              </a-button>
+              <a-button
+                v-if="canSaveAndAuditCurrentEditor"
+                type="primary"
+                class="overlay-action-button"
+                :loading="editorSaving"
+                @click="() => void handleSaveEditor(true)"
               >
                 保存并审核
               </a-button>
+              <div class="editor-items-summary editor-items-summary-inline">
+                <span>明细数 {{ editorItems.length }}</span>
+                <span>吨位 {{ formatWeight(editorItemWeightTotal) }}</span>
+                <span v-if="shouldShowItemAmountSummary">
+                  金额 {{ formatAmount(editorItemAmountTotal) }}
+                </span>
+              </div>
             </div>
-            <div class="editor-items-summary">
+            <div class="editor-items-summary editor-items-summary-mobile">
               <span>明细数 {{ editorItems.length }}</span>
-              <span>吨位 {{ formatWeight(editorItems.reduce((sum, item) => sum + Number(item.weightTon || 0), 0)) }}</span>
-              <span v-if="props.moduleKey !== 'freight-bills'">
-                金额 {{ formatAmount(editorItems.reduce((sum, item) => sum + Number(item.amount || 0), 0)) }}
+              <span>吨位 {{ formatWeight(editorItemWeightTotal) }}</span>
+              <span v-if="shouldShowItemAmountSummary">
+                金额 {{ formatAmount(editorItemAmountTotal) }}
               </span>
             </div>
           </div>
@@ -3064,7 +2271,7 @@ function isEditorItemColumnEditable(columnKey: string) {
             {{ parentImportConfig.enforceUniqueRelation ? '当前单据链按上级单据唯一占用控制；重复导入同单号会更新，选择不同单号会追加明细' : '重复导入同单号会更新，选择不同单号会追加明细' }}
           </div>
           <div v-if="props.moduleKey === 'sales-orders' && salesOrderLineLocked" class="parent-import-note">
-            当前销售订单已存在下游销售出库，数量和商品信息已锁定，仅允许调整单价、金额、日期和备注。
+            当前销售订单已存在已审核的销售出库，数量和商品信息已锁定，仅允许调整单价、金额、送货日期和备注。
           </div>
           <a-table
             size="small"
@@ -3099,22 +2306,58 @@ function isEditorItemColumnEditable(columnKey: string) {
               <template
                 v-else-if="isEditorItemColumnEditable(String(column.key)) && column.key === 'materialCode'"
               >
+                <div class="editor-material-selector">
+                  <a-select
+                    :value="record.materialCode"
+                    show-search
+                    allow-clear
+                    class="editor-item-field"
+                    style="width: 100%"
+                    placeholder="选择商品编码"
+                    :filter-option="filterMaterialOption"
+                    @change="handleEditorItemMaterialSelect(asModuleLineItem(record), $event)"
+                  >
+                    <a-select-option
+                      v-for="material in materialRows"
+                      :key="String(material.materialCode)"
+                      :value="String(material.materialCode)"
+                      :label="`${material.materialCode} ${material.brand || ''} ${material.spec || ''}`"
+                    >
+                      {{ material.materialCode }} / {{ material.brand }} / {{ material.spec }}
+                    </a-select-option>
+                  </a-select>
+                  <a-button
+                    type="text"
+                    class="editor-material-selector-button"
+                    title="弹窗选择商品"
+                    @mousedown.prevent
+                    @click.stop="openMaterialSelector(asModuleLineItem(record))"
+                  >
+                    <template #icon>
+                      <SearchOutlined />
+                    </template>
+                  </a-button>
+                </div>
+              </template>
+              <template
+                v-else-if="isEditorItemColumnEditable(String(column.key)) && column.key === 'warehouseName'"
+              >
                 <a-select
-                  :value="record.materialCode"
+                  :value="record.warehouseName"
                   show-search
                   allow-clear
                   class="editor-item-field"
-                  placeholder="选择商品编码"
+                  placeholder="选择码头"
                   :filter-option="filterMaterialOption"
-                  @change="handleEditorItemMaterialSelect(record, $event)"
+                  @change="handleEditorItemValueChange(asModuleLineItem(record), 'warehouseName', $event)"
                 >
                   <a-select-option
-                    v-for="material in materialRows"
-                    :key="String(material.materialCode)"
-                    :value="String(material.materialCode)"
-                    :label="`${material.materialCode} ${material.brand || ''} ${material.spec || ''}`"
+                    v-for="warehouse in warehouseRows"
+                    :key="String(warehouse.warehouseName)"
+                    :value="String(warehouse.warehouseName)"
+                    :label="String(warehouse.warehouseName || '')"
                   >
-                    {{ material.materialCode }} / {{ material.brand }} / {{ material.spec }}
+                    {{ warehouse.warehouseName }}
                   </a-select-option>
                 </a-select>
               </template>
@@ -3122,40 +2365,53 @@ function isEditorItemColumnEditable(columnKey: string) {
                 v-else-if="isEditorItemColumnEditable(String(column.key)) && isNumberEditorColumn(String(column.key))"
               >
                 <a-input-number
-                  :value="Number(record[column.dataIndex] || 0)"
+                  :value="Number(getRecordCellValue(record, column) || 0)"
                   class="editor-item-field"
                   style="width: 100%"
                   :min="getEditorItemMin(String(column.key))"
                   :precision="getEditorItemPrecision(String(column.key))"
-                  @change="handleEditorItemNumberChange(record, String(column.key), $event)"
+                  @change="handleEditorItemNumberChange(asModuleLineItem(record), String(column.key), $event)"
                 />
               </template>
               <template v-else-if="isEditorItemColumnEditable(String(column.key))">
                 <a-input
-                  :value="String(record[column.dataIndex] || '')"
+                  :value="String(getRecordCellValue(record, column) || '')"
                   class="editor-item-field"
-                  @change="handleEditorItemInputChange(record, String(column.key), $event)"
+                  @change="handleEditorItemInputChange(asModuleLineItem(record), String(column.key), $event)"
                 />
               </template>
               <template
-                v-else-if="config.itemColumns?.find((item) => item.dataIndex === column.key)?.type === 'status'"
+                v-else-if="getDetailItemColumnMeta(column)?.type === 'status'"
               >
-                <a-tag :color="getStatusMeta(record[column.dataIndex]).color">
-                  {{ getStatusMeta(record[column.dataIndex]).text }}
+                <a-tag :color="getStatusMeta(getRecordCellValue(record, column)).color">
+                  {{ getStatusMeta(getRecordCellValue(record, column)).text }}
                 </a-tag>
               </template>
               <template v-else>
                 {{
                   formatCellValue(
-                    config.itemColumns?.find((item) => item.dataIndex === column.key),
-                    record[column.dataIndex],
+                    getDetailItemColumnMeta(column),
+                    getRecordCellValue(record, column),
                   )
                 }}
               </template>
             </template>
 
             <template #emptyText>
-              <a-empty :description="parentImportConfig ? '当前没有明细，可手动新增或从上级单据导入' : '当前没有明细，可手动新增'" />
+              <a-empty :description="parentImportConfig ? (canAddManualEditorItems ? '当前没有明细，可手动新增或从上级单据导入' : '当前没有明细，请从上级单据导入') : '当前没有明细，可手动新增'" />
+            </template>
+
+            <template #summary>
+              <a-table-summary-row>
+                <a-table-summary-cell
+                  v-for="(column, index) in editorDetailTableColumns"
+                  :key="getTableColumnKey(column)"
+                  :index="index"
+                  :align="column.align"
+                >
+                  {{ getEditorSummaryCellValue(column) }}
+                </a-table-summary-cell>
+              </a-table-summary-row>
             </template>
           </a-table>
         </template>
@@ -3163,491 +2419,324 @@ function isEditorItemColumnEditable(columnKey: string) {
       </section>
     </div>
 
-    <div v-if="detailVisible" class="workspace-overlay">
-      <div class="workspace-overlay-mask"></div>
-      <section class="workspace-overlay-panel">
-        <header class="workspace-overlay-header">
-          <span class="workspace-overlay-title">
-            {{ activeRecord ? `${config.title}详情` : `${config.title}详情` }}
-          </span>
-        </header>
+    <ModuleRecordDetailOverlay
+      :visible="detailVisible"
+      :title="`${config.title}详情`"
+      :detail-fields="config.detailFields"
+      :item-columns="config.itemColumns"
+      :active-record="activeRecord"
+      :can-print-records="canPrintRecords"
+      :detail-print-loading="detailPrintLoading"
+      :should-show-item-amount-summary="shouldShowItemAmountSummary"
+      :detail-table-columns="detailTableColumns"
+      :detail-table-scroll="detailTableScroll"
+      :status-map="statusMap"
+      @close="handleCloseDetail"
+      @print="handlePrintDetail"
+    />
 
-        <div class="workspace-overlay-body bill-detail-body">
-        <a-row class="bill-detail-row" :gutter="16">
-          <a-col
-            v-for="field in config.detailFields"
-            :key="field.key"
-            :xs="24"
-            :sm="12"
-            :lg="8"
-            class="bill-detail-col"
-          >
-            <div class="bill-detail-item">
-              <span class="bill-detail-label">{{ field.label }}</span>
-              <span class="bill-detail-value">{{ formatDetailValue(field, activeRecord) }}</span>
-            </div>
-          </a-col>
-        </a-row>
-
-        <template v-if="config.itemColumns">
-          <div class="editor-items-head">
-            <div class="editor-items-title-block">
-              <h3 class="detail-section-title">明细列表</h3>
-            </div>
-            <div class="editor-items-actions">
-              <a-button class="overlay-action-button" :loading="detailPrintLoading" @click="handlePrintDetail(true)">打印预览</a-button>
-              <a-button type="primary" class="overlay-action-button" :loading="detailPrintLoading" @click="handlePrintDetail(false)">直接打印</a-button>
-              <a-button class="overlay-action-button" @click="handleCloseDetail">关闭</a-button>
-            </div>
-            <div class="editor-items-summary">
-              <span>明细数 {{ activeRecord?.items?.length || 0 }}</span>
-              <span>
-                吨位
-                {{ formatWeight((activeRecord?.items || []).reduce((sum, item) => sum + Number(item.weightTon || 0), 0)) }}
-              </span>
-              <span v-if="props.moduleKey !== 'freight-bills'">
-                金额
-                {{ formatAmount((activeRecord?.items || []).reduce((sum, item) => sum + Number(item.amount || 0), 0)) }}
-              </span>
-            </div>
-          </div>
-          <a-table
-            v-if="activeRecord?.items?.length"
-            size="small"
-            bordered
-            row-key="id"
-            :columns="detailTableColumns"
-            :data-source="activeRecord.items || []"
-            :pagination="false"
-            :scroll="detailTableScroll"
-            class="module-detail-table"
-          >
-            <template #bodyCell="{ column, record }">
-              <template
-                v-if="config.itemColumns?.find((item) => item.dataIndex === column.key)?.type === 'status'"
-              >
-                <a-tag :color="getStatusMeta(record[column.dataIndex]).color">
-                  {{ getStatusMeta(record[column.dataIndex]).text }}
-                </a-tag>
-              </template>
-              <template v-else>
-                {{
-                  formatCellValue(
-                    config.itemColumns?.find((item) => item.dataIndex === column.key),
-                    record[column.dataIndex],
-                  )
-                }}
-              </template>
-            </template>
-          </a-table>
-          <a-empty v-else description="暂无明细数据" />
-        </template>
-        <div v-else class="editor-items-head editor-items-head-standalone">
-          <div class="editor-items-title-block">
-            <h3 class="detail-section-title">操作</h3>
-          </div>
-          <div class="editor-items-actions">
-            <a-button class="overlay-action-button" :loading="detailPrintLoading" @click="handlePrintDetail(true)">打印预览</a-button>
-            <a-button type="primary" class="overlay-action-button" :loading="detailPrintLoading" @click="handlePrintDetail(false)">直接打印</a-button>
-            <a-button class="overlay-action-button" @click="handleCloseDetail">关闭</a-button>
-          </div>
-        </div>
-        </div>
-      </section>
-    </div>
-
-    <a-modal
-      v-model:open="attachmentVisible"
+    <ModuleAttachmentModal
+      :visible="attachmentVisible"
       :title="attachmentRecord ? `${getPrimaryNo(attachmentRecord)} 附件` : '附件'"
-      width="760px"
-      :mask-closable="false"
+      :paste-enabled="attachmentPasteEnabled"
+      :can-manage-attachments="canManageAttachments"
+      :draft-name="attachmentDraftName"
+      :rows="attachmentRows"
+      :saving="attachmentSaving"
+      :before-upload="handleAttachmentBeforeUpload"
+      :add-attachment="handleAddAttachment"
+      :preview-attachment="handlePreviewAttachment"
+      :download-attachment="handleDownloadAttachment"
+      :remove-attachment="handleRemoveAttachment"
       @cancel="closeAttachmentDialog"
+      @update:draft-name="attachmentDraftName = $event"
+    />
+
+    <ModuleSelectionOverlay
+      :visible="materialSelectorVisible"
+      title="选择商品"
+      panel-title="商品列表"
+      hint="可按商品编码、品牌、材质、规格搜索，双击行可直接确认。"
+      :rows="filteredMaterialSelectorRows"
+      :loading="materialListQuery.isFetching.value"
+      :row-selection="materialSelectorRowSelection"
+      :custom-row="getMaterialSelectorRowProps"
+      empty-description="暂无可选商品"
+      confirm-text="选择商品"
+      :confirm-disabled="!materialSelectorSelectedCode || !activeMaterialSelectorItem"
+      row-key="materialCode"
+      @cancel="closeMaterialSelector"
+      @confirm="confirmMaterialSelector"
     >
-      <div class="parent-selector-toolbar">
-        <a-input
-          v-model:value="attachmentDraftName"
-          allow-clear
-          class="parent-selector-search"
-          placeholder="输入附件名称，保存为 mock 附件"
-          @press-enter="handleAddAttachment"
-        />
-        <a-button type="primary" :loading="attachmentSaving" @click="handleAddAttachment">
-          新增附件
-        </a-button>
-      </div>
-
-      <a-table
-        size="small"
-        bordered
-        row-key="id"
-        :data-source="attachmentRows"
-        :pagination="false"
-        :loading="attachmentSaving"
-      >
-        <a-table-column key="name" title="附件名称" data-index="name" />
-        <a-table-column key="uploader" title="上传人" data-index="uploader" width="120" />
-        <a-table-column key="uploadTime" title="上传时间" data-index="uploadTime" width="180" />
-        <a-table-column key="action" title="操作" width="100" align="center">
-          <template #default="{ record }">
-            <a-popconfirm title="确定删除该附件吗?" @confirm="handleRemoveAttachment(String(record.id))">
-              <a>删除</a>
-            </a-popconfirm>
-          </template>
-        </a-table-column>
-        <template #emptyText>
-          <a-empty description="当前没有附件，可直接新增 mock 附件" />
-        </template>
-      </a-table>
-
-      <template #footer>
-        <a-button @click="closeAttachmentDialog">关闭</a-button>
+      <template #meta>
+        <div class="module-table-head-meta statement-generator-meta">
+          <span class="module-table-head-title">商品列表</span>
+          <a-input
+            v-model:value="materialSelectorKeyword"
+            allow-clear
+            class="parent-selector-search"
+            placeholder="输入商品编码、品牌、材质、规格搜索"
+          />
+          <span class="parent-selector-hint">双击行可直接确认</span>
+        </div>
       </template>
-    </a-modal>
 
-    <a-modal
-      v-model:open="supplierStatementGeneratorVisible"
+      <template #summary>
+        <span v-if="materialSelectorSelectedCode">已选 {{ materialSelectorSelectedCode }}</span>
+      </template>
+
+      <a-table-column key="materialCode" title="商品编码" data-index="materialCode" width="160" />
+      <a-table-column key="brand" title="品牌" data-index="brand" width="120" />
+      <a-table-column key="material" title="材质" data-index="material" width="120" />
+      <a-table-column key="spec" title="规格" data-index="spec" width="120" />
+      <a-table-column key="length" title="长度" data-index="length" width="100" />
+      <a-table-column key="unit" title="单位" data-index="unit" width="90" />
+      <a-table-column key="unitPrice" title="单价" width="110" align="right">
+        <template #default="{ record }">
+          {{ formatAmount(record.unitPrice) }}
+        </template>
+      </a-table-column>
+    </ModuleSelectionOverlay>
+
+    <ModuleSelectionOverlay
+      :visible="supplierStatementGeneratorVisible"
       title="生成供应商对账单"
-      width="1080px"
-      :mask-closable="false"
+      panel-title="采购入库单选择"
+      hint="选择采购入库单生成供应商对账单草稿；仅支持同一供应商合并。启用系统开关时默认按所选采购单据总金额全额付款，关闭后按账期自动汇总已付款记录。"
+      :rows="supplierStatementCandidateRows"
+      :loading="supplierStatementGeneratorLoading"
+      :row-selection="supplierStatementRowSelection"
+      empty-description="当前没有可生成对账单的采购入库单"
+      confirm-text="生成草稿"
       @cancel="closeSupplierStatementGenerator"
+      @confirm="handleGenerateSupplierStatement"
     >
-      <div class="parent-selector-toolbar">
-        <span class="parent-selector-hint">
-          选择采购入库单生成供应商对账单草稿；仅支持同一供应商合并，付款金额会按账期自动汇总已付款记录。
-        </span>
-        <span class="parent-selector-hint">
-          已选 {{ supplierStatementSelectedInbounds.length }} 张
-          <template v-if="supplierStatementSelectedSupplierName">
-            / 供应商 {{ supplierStatementSelectedSupplierName }}
-          </template>
-          / 采购金额 {{ formatAmount(supplierStatementSelectedInbounds.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0)) }}
-        </span>
-      </div>
-
-      <a-table
-        size="small"
-        bordered
-        row-key="id"
-        :data-source="supplierStatementCandidateRows"
-        :loading="supplierStatementGeneratorLoading"
-        :pagination="{ pageSize: 8, showSizeChanger: false }"
-        :row-selection="{
-          selectedRowKeys: supplierStatementSelectedInboundKeys,
-          onChange: handleSupplierStatementGeneratorSelection,
-          getCheckboxProps: (record: ModuleRecord) => ({
-            disabled: Boolean(
-              supplierStatementSelectedSupplierName
-              && supplierStatementSelectedSupplierName !== String(record.supplierName || ''),
-            ),
-          }),
-        }"
-      >
-        <a-table-column key="inboundNo" title="采购入库单号" data-index="inboundNo" width="160" />
-        <a-table-column key="supplierName" title="供应商" data-index="supplierName" width="140" />
-        <a-table-column key="warehouseName" title="仓库" data-index="warehouseName" width="120" />
-        <a-table-column key="inboundDate" title="入库日期" width="120">
-          <template #default="{ record }">
-            {{ formatCellValue({ title: '入库日期', dataIndex: 'inboundDate', type: 'date' }, record.inboundDate) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="settlementMode" title="结算方式" data-index="settlementMode" width="100" />
-        <a-table-column key="totalWeight" title="总吨位" width="110" align="right">
-          <template #default="{ record }">
-            {{ formatWeight(record.totalWeight) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="totalAmount" title="总金额" width="110" align="right">
-          <template #default="{ record }">
-            {{ formatAmount(record.totalAmount) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="status" title="状态" width="110" align="center">
-          <template #default="{ record }">
-            <a-tag :color="getStatusMeta(record.status).color">
-              {{ getStatusMeta(record.status).text }}
-            </a-tag>
-          </template>
-        </a-table-column>
-        <template #emptyText>
-          <a-empty description="当前没有可生成对账单的采购入库单" />
-        </template>
-      </a-table>
-
-      <template #footer>
-        <a-button @click="closeSupplierStatementGenerator">取消</a-button>
-        <a-button type="primary" @click="handleGenerateSupplierStatement">生成草稿</a-button>
+      <template #summary>
+        <span>已选 {{ supplierStatementSelectedInbounds.length }} 张</span>
+        <span v-if="supplierStatementSelectedSupplierName">供应商 {{ supplierStatementSelectedSupplierName }}</span>
+        <span>采购金额 {{ formatAmount(supplierStatementSelectedInbounds.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0)) }}</span>
       </template>
-    </a-modal>
 
-    <a-modal
-      v-model:open="customerStatementGeneratorVisible"
+      <a-table-column key="inboundNo" title="采购入库单号" data-index="inboundNo" width="160" />
+      <a-table-column key="supplierName" title="供应商" data-index="supplierName" width="140" />
+      <a-table-column key="warehouseName" title="仓库" data-index="warehouseName" width="120" />
+      <a-table-column key="inboundDate" title="入库日期" width="120">
+        <template #default="{ record }">
+          {{ formatCellValue({ title: '入库日期', dataIndex: 'inboundDate', type: 'date' }, record.inboundDate) }}
+        </template>
+      </a-table-column>
+      <a-table-column key="settlementMode" title="结算方式" data-index="settlementMode" width="100" />
+      <a-table-column key="totalWeight" title="总吨位" width="110" align="right">
+        <template #default="{ record }">
+          {{ formatWeight(record.totalWeight) }}
+        </template>
+      </a-table-column>
+      <a-table-column key="totalAmount" title="总金额" width="110" align="right">
+        <template #default="{ record }">
+          {{ formatAmount(record.totalAmount) }}
+        </template>
+      </a-table-column>
+      <a-table-column key="status" title="状态" width="110" align="center">
+        <template #default="{ record }">
+          <a-tag :color="getStatusMeta(record.status).color">
+            {{ getStatusMeta(record.status).text }}
+          </a-tag>
+        </template>
+      </a-table-column>
+    </ModuleSelectionOverlay>
+
+    <ModuleSelectionOverlay
+      :visible="customerStatementGeneratorVisible"
       title="生成客户对账单"
-      width="1080px"
-      :mask-closable="false"
+      panel-title="销售订单选择"
+      hint="选择已完成销售的销售订单生成客户对账单草稿；仅支持同一客户同一项目合并。启用系统开关时默认按所选销售订单总金额挂账，关闭后默认按所选销售订单总金额收款。"
+      :rows="customerStatementCandidateRows"
+      :loading="customerStatementGeneratorLoading"
+      :row-selection="customerStatementRowSelection"
+      empty-description="当前没有可生成对账单的销售订单"
+      confirm-text="生成草稿"
       @cancel="closeCustomerStatementGenerator"
+      @confirm="handleGenerateCustomerStatement"
     >
-      <div class="parent-selector-toolbar">
-        <span class="parent-selector-hint">
-          选择已完成销售的销售订单生成客户对账单草稿；仅支持同一客户同一项目合并。
-        </span>
-        <span class="parent-selector-hint">
-          已选 {{ customerStatementSelectedOrders.length }} 张
-          <template v-if="customerStatementSelectedCustomerName">
-            / 客户 {{ customerStatementSelectedCustomerName }}
-          </template>
-          <template v-if="customerStatementSelectedProjectName">
-            / 项目 {{ customerStatementSelectedProjectName }}
-          </template>
-          / 金额 {{ formatAmount(customerStatementSelectedOrders.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0)) }}
-        </span>
-      </div>
-
-      <a-table
-        size="small"
-        bordered
-        row-key="id"
-        :data-source="customerStatementCandidateRows"
-        :loading="customerStatementGeneratorLoading"
-        :pagination="{ pageSize: 8, showSizeChanger: false }"
-        :row-selection="{
-          selectedRowKeys: customerStatementSelectedOrderKeys,
-          onChange: handleCustomerStatementGeneratorSelection,
-          getCheckboxProps: (record: ModuleRecord) => ({
-            disabled: Boolean(
-              (
-                customerStatementSelectedCustomerName
-                && customerStatementSelectedCustomerName !== String(record.customerName || '')
-              ) || (
-                customerStatementSelectedProjectName
-                && customerStatementSelectedProjectName !== String(record.projectName || '')
-              ),
-            ),
-          }),
-        }"
-      >
-        <a-table-column key="orderNo" title="销售订单号" data-index="orderNo" width="160" />
-        <a-table-column key="customerName" title="客户" data-index="customerName" width="140" />
-        <a-table-column key="projectName" title="项目" data-index="projectName" />
-        <a-table-column key="orderDate" title="订单日期" width="120">
-          <template #default="{ record }">
-            {{ formatCellValue({ title: '订单日期', dataIndex: 'orderDate', type: 'date' }, record.orderDate) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="salesName" title="销售员" data-index="salesName" width="100" />
-        <a-table-column key="totalWeight" title="总吨位" width="110" align="right">
-          <template #default="{ record }">
-            {{ formatWeight(record.totalWeight) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="totalAmount" title="总金额" width="110" align="right">
-          <template #default="{ record }">
-            {{ formatAmount(record.totalAmount) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="status" title="状态" width="110" align="center">
-          <template #default="{ record }">
-            <a-tag :color="getStatusMeta(record.status).color">
-              {{ getStatusMeta(record.status).text }}
-            </a-tag>
-          </template>
-        </a-table-column>
-        <template #emptyText>
-          <a-empty description="当前没有可生成对账单的销售订单" />
-        </template>
-      </a-table>
-
-      <template #footer>
-        <a-button @click="closeCustomerStatementGenerator">取消</a-button>
-        <a-button type="primary" @click="handleGenerateCustomerStatement">生成草稿</a-button>
+      <template #summary>
+        <span>已选 {{ customerStatementSelectedOrders.length }} 张</span>
+        <span v-if="customerStatementSelectedCustomerName">客户 {{ customerStatementSelectedCustomerName }}</span>
+        <span v-if="customerStatementSelectedProjectName">项目 {{ customerStatementSelectedProjectName }}</span>
+        <span>金额 {{ formatAmount(customerStatementSelectedOrders.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0)) }}</span>
       </template>
-    </a-modal>
 
-    <a-modal
-      v-model:open="freightStatementGeneratorVisible"
+      <a-table-column key="orderNo" title="销售订单号" data-index="orderNo" width="160" />
+      <a-table-column key="customerName" title="客户" data-index="customerName" width="140" />
+      <a-table-column key="projectName" title="项目" data-index="projectName" />
+      <a-table-column key="deliveryDate" title="送货日期" width="120">
+        <template #default="{ record }">
+          {{ formatCellValue({ title: '送货日期', dataIndex: 'deliveryDate', type: 'date' }, record.deliveryDate) }}
+        </template>
+      </a-table-column>
+      <a-table-column key="salesName" title="销售员" data-index="salesName" width="100" />
+      <a-table-column key="totalWeight" title="总吨位" width="110" align="right">
+        <template #default="{ record }">
+          {{ formatWeight(record.totalWeight) }}
+        </template>
+      </a-table-column>
+      <a-table-column key="totalAmount" title="总金额" width="110" align="right">
+        <template #default="{ record }">
+          {{ formatAmount(record.totalAmount) }}
+        </template>
+      </a-table-column>
+      <a-table-column key="status" title="状态" width="110" align="center">
+        <template #default="{ record }">
+          <a-tag :color="getStatusMeta(record.status).color">
+            {{ getStatusMeta(record.status).text }}
+          </a-tag>
+        </template>
+      </a-table-column>
+    </ModuleSelectionOverlay>
+
+    <ModuleSelectionOverlay
+      :visible="freightStatementGeneratorVisible"
       title="生成物流对账单"
-      width="1080px"
-      :mask-closable="false"
+      panel-title="物流单选择"
+      hint="选择物流单生成对账单草稿；同一物流商可合并生成，已被占用的物流单不会重复显示。"
+      :rows="freightStatementCandidateRows"
+      :loading="freightStatementGeneratorLoading"
+      :row-selection="freightStatementRowSelection"
+      empty-description="当前没有可生成对账单的物流单"
+      confirm-text="生成草稿"
       @cancel="closeFreightStatementGenerator"
+      @confirm="handleGenerateFreightStatement"
     >
-      <div class="parent-selector-toolbar">
-        <span class="parent-selector-hint">
-          选择物流单生成对账单草稿；同一物流商可合并生成，已被占用的物流单不会重复显示。
-        </span>
-        <span class="parent-selector-hint">
-          已选 {{ freightStatementSelectedBills.length }} 张
-          <template v-if="freightStatementSelectedCarrierName">
-            / 物流商 {{ freightStatementSelectedCarrierName }}
-          </template>
-          / 吨位 {{ formatWeight(freightStatementSelectedBills.reduce((sum, item) => sum + Number(item.totalWeight || 0), 0)) }}
-          / 运费 {{ formatAmount(freightStatementSelectedBills.reduce((sum, item) => sum + Number(item.totalFreight || 0), 0)) }}
-        </span>
-      </div>
-
-      <a-table
-        size="small"
-        bordered
-        row-key="id"
-        :data-source="freightStatementCandidateRows"
-        :loading="freightStatementGeneratorLoading"
-        :pagination="{ pageSize: 8, showSizeChanger: false }"
-        :row-selection="{
-          selectedRowKeys: freightStatementSelectedBillKeys,
-          onChange: handleFreightStatementGeneratorSelection,
-          getCheckboxProps: (record: ModuleRecord) => ({
-            disabled: Boolean(
-              freightStatementSelectedCarrierName
-              && freightStatementSelectedCarrierName !== String(record.carrierName || ''),
-            ),
-          }),
-        }"
-      >
-        <a-table-column key="billNo" title="物流单号" data-index="billNo" width="150" />
-        <a-table-column key="carrierName" title="物流商" data-index="carrierName" width="140" />
-        <a-table-column key="customerName" title="客户" data-index="customerName" width="140" />
-        <a-table-column key="projectName" title="项目" data-index="projectName" />
-        <a-table-column key="billTime" title="单据日期" width="120">
-          <template #default="{ record }">
-            {{ formatCellValue({ title: '单据日期', dataIndex: 'billTime', type: 'date' }, record.billTime) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="totalWeight" title="总吨位" width="110" align="right">
-          <template #default="{ record }">
-            {{ formatWeight(record.totalWeight) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="totalFreight" title="总运费" width="110" align="right">
-          <template #default="{ record }">
-            {{ formatAmount(record.totalFreight) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="status" title="审核状态" width="110" align="center">
-          <template #default="{ record }">
-            <a-tag :color="getStatusMeta(record.status).color">
-              {{ getStatusMeta(record.status).text }}
-            </a-tag>
-          </template>
-        </a-table-column>
-        <a-table-column key="deliveryStatus" title="送达状态" width="110" align="center">
-          <template #default="{ record }">
-            <a-tag :color="getStatusMeta(record.deliveryStatus).color">
-              {{ getStatusMeta(record.deliveryStatus).text }}
-            </a-tag>
-          </template>
-        </a-table-column>
-        <template #emptyText>
-          <a-empty description="当前没有可生成对账单的物流单" />
-        </template>
-      </a-table>
-
-      <template #footer>
-        <a-button @click="closeFreightStatementGenerator">取消</a-button>
-        <a-button type="primary" @click="handleGenerateFreightStatement">生成草稿</a-button>
+      <template #summary>
+        <span>已选 {{ freightStatementSelectedBills.length }} 张</span>
+        <span v-if="freightStatementSelectedCarrierName">物流商 {{ freightStatementSelectedCarrierName }}</span>
+        <span>吨位 {{ formatWeight(freightStatementSelectedBills.reduce((sum, item) => sum + Number(item.totalWeight || 0), 0)) }}</span>
+        <span>运费 {{ formatAmount(freightStatementSelectedBills.reduce((sum, item) => sum + Number(item.totalFreight || 0), 0)) }}</span>
       </template>
-    </a-modal>
 
-    <a-modal
-      v-model:open="freightSummaryVisible"
+      <a-table-column key="billNo" title="物流单号" data-index="billNo" width="150" />
+      <a-table-column key="carrierName" title="物流商" data-index="carrierName" width="140" />
+      <a-table-column key="customerName" title="客户" data-index="customerName" width="140" />
+      <a-table-column key="projectName" title="项目" data-index="projectName" />
+      <a-table-column key="billTime" title="单据日期" width="120">
+        <template #default="{ record }">
+          {{ formatCellValue({ title: '单据日期', dataIndex: 'billTime', type: 'date' }, record.billTime) }}
+        </template>
+      </a-table-column>
+      <a-table-column key="totalWeight" title="总吨位" width="110" align="right">
+        <template #default="{ record }">
+          {{ formatWeight(record.totalWeight) }}
+        </template>
+      </a-table-column>
+      <a-table-column key="totalFreight" title="总运费" width="110" align="right">
+        <template #default="{ record }">
+          {{ formatAmount(record.totalFreight) }}
+        </template>
+      </a-table-column>
+      <a-table-column key="status" title="审核状态" width="110" align="center">
+        <template #default="{ record }">
+          <a-tag :color="getStatusMeta(record.status).color">
+            {{ getStatusMeta(record.status).text }}
+          </a-tag>
+        </template>
+      </a-table-column>
+      <a-table-column key="deliveryStatus" title="送达状态" width="110" align="center">
+        <template #default="{ record }">
+          <a-tag :color="getStatusMeta(record.deliveryStatus).color">
+            {{ getStatusMeta(record.deliveryStatus).text }}
+          </a-tag>
+        </template>
+      </a-table-column>
+    </ModuleSelectionOverlay>
+
+    <ModuleSelectionOverlay
+      :visible="freightSummaryVisible"
       title="运费对账汇总"
-      width="860px"
-      :mask-closable="false"
+      panel-title="物流商汇总"
+      hint="按当前筛选条件汇总各物流商的对账单数、吨位、应付与已付金额。"
+      :rows="freightSummaryRows"
+      :loading="freightSummaryLoading"
+      :pagination="false"
+      empty-description="暂无汇总数据"
+      cancel-text="关闭"
+      :confirm-visible="false"
       @cancel="freightSummaryVisible = false"
     >
-      <a-table
-        size="small"
-        bordered
-        row-key="id"
-        :data-source="freightSummaryRows"
-        :pagination="false"
-        :loading="freightSummaryLoading"
-      >
-        <a-table-column key="carrierName" title="物流商" data-index="carrierName" />
-        <a-table-column key="statementCount" title="对账单数" data-index="statementCount" width="100" align="right" />
-        <a-table-column key="totalWeight" title="总吨位" width="120" align="right">
-          <template #default="{ record }">
-            {{ formatWeight(record.totalWeight) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="totalFreight" title="总运费" width="120" align="right">
-          <template #default="{ record }">
-            {{ formatAmount(record.totalFreight) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="paidAmount" title="已付金额" width="120" align="right">
-          <template #default="{ record }">
-            {{ formatAmount(record.paidAmount) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="unpaidAmount" title="未付金额" width="120" align="right">
-          <template #default="{ record }">
-            {{ formatAmount(record.unpaidAmount) }}
-          </template>
-        </a-table-column>
-        <template #emptyText>
-          <a-empty description="暂无汇总数据" />
+      <a-table-column key="carrierName" title="物流商" data-index="carrierName" />
+      <a-table-column key="statementCount" title="对账单数" data-index="statementCount" width="100" align="right" />
+      <a-table-column key="totalWeight" title="总吨位" width="120" align="right">
+        <template #default="{ record }">
+          {{ formatWeight(record.totalWeight) }}
         </template>
-      </a-table>
+      </a-table-column>
+      <a-table-column key="totalFreight" title="总运费" width="120" align="right">
+        <template #default="{ record }">
+          {{ formatAmount(record.totalFreight) }}
+        </template>
+      </a-table-column>
+      <a-table-column key="paidAmount" title="已付金额" width="120" align="right">
+        <template #default="{ record }">
+          {{ formatAmount(record.paidAmount) }}
+        </template>
+      </a-table-column>
+      <a-table-column key="unpaidAmount" title="未付金额" width="120" align="right">
+        <template #default="{ record }">
+          {{ formatAmount(record.unpaidAmount) }}
+        </template>
+      </a-table-column>
+    </ModuleSelectionOverlay>
 
-      <template #footer>
-        <a-button @click="freightSummaryVisible = false">关闭</a-button>
-      </template>
-    </a-modal>
+    <ModuleFreightPickupListOverlay
+      :visible="freightPickupListVisible"
+      :rows="freightPickupListRows"
+      :loading="freightPickupListLoading"
+      :selected-bill-count="freightPickupListSelectedBills.length"
+      :carrier-names="freightPickupListCarrierNames"
+      :bill-nos="freightPickupListBillNos"
+      :total-weight="freightPickupListTotalWeight"
+      :quantity-column="FREIGHT_PICKUP_LIST_COLUMNS[4]"
+      @close="closeFreightPickupList"
+    />
 
-    <a-modal
-      v-model:open="parentSelectorVisible"
+    <ModuleParentSelectorOverlay
+      :visible="parentSelectorVisible"
       :title="parentImportConfig?.label ? `选择${parentImportConfig.label}` : '选择上级单据'"
-      width="960px"
-      :mask-closable="false"
+      :rows="parentSelectorRows"
+      :loading="parentListQuery.isFetching.value"
+      :row-selection="parentSelectorRowSelection"
+      :custom-row="getParentSelectorRowProps"
+      :keyword="parentSelectorKeyword"
+      :can-confirm="canSaveCurrentEditor"
+      :get-parent-relation-no="getParentRelationNo"
+      :get-parent-option-label="getParentOptionLabel"
+      :get-status-meta="getStatusMeta"
       @cancel="closeParentSelector"
-    >
-      <div class="parent-selector-toolbar">
-        <a-input
-          v-model:value="parentSelectorKeyword"
-          allow-clear
-          class="parent-selector-search"
-          placeholder="输入单号、客户、供应商、项目搜索"
-        />
-        <span class="parent-selector-hint">双击行可直接导入</span>
-      </div>
+      @confirm="handleImportParentItems()"
+      @update:keyword="parentSelectorKeyword = $event"
+    />
 
-      <a-table
-        size="small"
-        bordered
-        row-key="id"
-        :data-source="parentSelectorRows"
-        :loading="parentListQuery.isFetching.value"
-        :pagination="{ pageSize: 8, showSizeChanger: false }"
-        :row-selection="{
-          type: 'radio',
-          selectedRowKeys: selectedParentId ? [selectedParentId] : [],
-          onChange: (keys: Array<string | number>) => {
-            selectedParentId = keys[0] ? String(keys[0]) : undefined
-          },
-        }"
-        :custom-row="getParentSelectorRowProps"
-      >
-        <a-table-column key="parentNo" title="单据编号" width="180">
-          <template #default="{ record }">
-            {{ getParentRelationNo(record) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="summary" title="摘要">
-          <template #default="{ record }">
-            {{ getParentOptionLabel(record) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="status" title="状态" width="120" align="center">
-          <template #default="{ record }">
-            <a-tag :color="getStatusMeta(record.status).color">
-              {{ getStatusMeta(record.status).text }}
-            </a-tag>
-          </template>
-        </a-table-column>
-      </a-table>
-
-      <template #footer>
-        <a-button @click="closeParentSelector">取消</a-button>
-        <a-button type="primary" @click="handleImportParentItems()">导入明细</a-button>
-      </template>
-    </a-modal>
+    <ModuleMaterialImportDialogs
+      :import-visible="materialImportVisible"
+      :import-loading="materialImportLoading"
+      :import-file="materialImportFile"
+      :result-visible="materialImportResultVisible"
+      :result="materialImportResult"
+      :before-upload="handleMaterialImportBeforeUpload"
+      @cancel-import="closeMaterialImportModal"
+      @submit-import="handleMaterialImportSubmit"
+      @close-result="closeMaterialImportResultModal"
+    />
   </div>
 </template>
+
+<style scoped>
+.table-action-link {
+  color: #1890ff;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.table-action-link:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+</style>

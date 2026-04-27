@@ -5,23 +5,26 @@ export interface PrintTemplateTargetOption {
   label: string
 }
 
-const excludedModuleKeys = new Set([
-  'materials',
-  'suppliers',
-  'customers',
-  'carriers',
-  'inventory-report',
-  'io-report',
-  'receivables-payables',
-  'general-settings',
-  'permission-management',
-  'user-accounts',
-  'role-settings',
-  'ops-support',
-])
+export const allowedPrintTemplateTargetKeys = [
+  'purchase-orders',
+  'purchase-inbounds',
+  'sales-orders',
+  'sales-outbounds',
+  'freight-bills',
+  'purchase-contracts',
+  'sales-contracts',
+  'supplier-statements',
+  'customer-statements',
+  'freight-statements',
+  'receipts',
+  'payments',
+  'invoice-receipts',
+  'invoice-issues',
+] as const
 
-export const printTemplateTargetOptions: PrintTemplateTargetOption[] = Object.values(businessPageConfigs)
-  .filter((config) => !excludedModuleKeys.has(config.key))
+export const printTemplateTargetOptions: PrintTemplateTargetOption[] = allowedPrintTemplateTargetKeys
+  .map((key) => businessPageConfigs[key])
+  .filter((config) => Boolean(config))
   .map((config) => ({
     value: config.key,
     label: config.title,

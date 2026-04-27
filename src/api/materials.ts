@@ -1,45 +1,15 @@
 import { http } from './client'
-import {
-  mockGetMaterialCategoryTree,
-  mockListMaterials,
-} from '@/mock/server'
-import type { TableResponse } from '@/types/api'
-import type {
-  MaterialCategoryNode,
-  MaterialListSearch,
-  MaterialRecord,
-} from '@/types/material'
-import { isMockEnabled } from '@/utils/env'
-import type { ListQueryOptions } from '@/utils/list'
-import { buildListParams } from '@/utils/list'
+import type { ApiResponse } from '@/types/auth'
+import type { MaterialImportResult } from '@/types/material'
 
-export function listMaterials(
-  search: MaterialListSearch,
-  options: ListQueryOptions,
-) {
-  if (isMockEnabled) {
-    return mockListMaterials(search, options)
-  }
-
-  return http.get<TableResponse<MaterialRecord>, TableResponse<MaterialRecord>>(
-    '/material/list',
+export function importMaterialsCsv(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return http.post<ApiResponse<MaterialImportResult>, ApiResponse<MaterialImportResult>>(
+    '/materials/import',
+    formData,
     {
-      params: buildListParams(search, options),
-    },
-  )
-}
-
-export function getMaterialCategoryTree() {
-  if (isMockEnabled) {
-    return mockGetMaterialCategoryTree()
-  }
-
-  return http.get<MaterialCategoryNode[], MaterialCategoryNode[]>(
-    '/materialCategory/getMaterialCategoryTree',
-    {
-      params: {
-        id: '',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     },
   )
 }

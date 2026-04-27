@@ -1,14 +1,16 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { login, logout } from '@/api/auth'
-import type { LoginPayload, LoginUser } from '@/types/auth'
+import { login, login2fa, logout, refreshSession } from '@/api/auth'
+import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
+import type { LoginPayload, LoginResponseData, LoginUser, Login2faPayload } from '@/types/auth'
 import {
   clearStoredUser,
   clearToken,
+  type AuthPersistenceMode,
+  getAuthPersistenceMode,
   getStoredUser,
   getToken,
-  setStoredUser,
-  setToken,
+  setAuthSession,
 } from '@/utils/storage'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -21,21 +23,61 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = getStoredUser()
   }
 
+  if (typeof window !== 'undefined') {
+    window.addEventListener(AUTH_STATE_CHANGED_EVENT, hydrate)
+  }
+
+  function applyLoginResult(data: LoginResponseData, mode?: AuthPersistenceMode) {
+    token.value = data.accessToken
+    user.value = data.user
+    setAuthSession(data.user, data.accessToken, mode || getAuthPersistenceMode())
+  }
+
   async function signIn(payload: LoginPayload) {
     const response = await login(payload)
 
-    if (response.code !== 200 || response.data.msgTip !== 'user can login') {
-      throw new Error(response.message || response.data.msgTip || '登录失败')
+    if (response.code !== 0) {
+      throw new Error(response.message || '登录失败')
     }
 
-    if (!response.data.token || !response.data.user) {
+    if ('requires2fa' in response.data && response.data.requires2fa) {
+      if (!response.data.tempToken) {
+        throw new Error('登录响应缺少二次验证令牌')
+      }
+      return {
+        requires2fa: true as const,
+        tempToken: response.data.tempToken,
+      }
+    }
+
+    if (
+      !('accessToken' in response.data) ||
+      !response.data.accessToken ||
+      !response.data.user
+    ) {
       throw new Error('登录响应缺少 token 或用户信息')
     }
 
-    token.value = response.data.token
-    user.value = response.data.user
-    setToken(response.data.token)
-    setStoredUser(response.data.user)
+    applyLoginResult(response.data, payload.remember === false ? 'session' : 'local')
+
+    return {
+      requires2fa: false as const,
+      ...response.data,
+    }
+  }
+
+  async function verify2fa(payload: Login2faPayload) {
+    const response = await login2fa(payload)
+
+    if (response.code !== 0) {
+      throw new Error(response.message || '二次验证失败')
+    }
+
+    if (!response.data.accessToken || !response.data.user) {
+      throw new Error('二次验证响应缺少 token 或用户信息')
+    }
+
+    applyLoginResult(response.data, payload.remember === false ? 'session' : 'local')
 
     return response.data
   }
@@ -51,12 +93,36 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function restoreSession() {
+    hydrate()
+    if (token.value && user.value) {
+      return true
+    }
+
+    try {
+      const response = await refreshSession()
+      if (response.code !== 0 || !response.data?.accessToken || !response.data?.user) {
+        throw new Error(response.message || '恢复登录状态失败')
+      }
+      applyLoginResult(response.data)
+      return true
+    } catch {
+      token.value = ''
+      user.value = null
+      clearToken()
+      clearStoredUser()
+      return false
+    }
+  }
+
   return {
     token,
     user,
     isAuthenticated,
     hydrate,
     signIn,
+    verify2fa,
     signOut,
+    restoreSession,
   }
 })
