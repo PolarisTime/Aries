@@ -130,10 +130,10 @@ export function useAttachmentSupport(options: UseAttachmentSupportOptions) {
     return nextRecord
   }
 
-  async function fetchAttachmentBlob(url: string) {
-    return http.get(withAttachmentModuleKey(url), {
+  async function fetchAttachmentBlob(url: string): Promise<Blob> {
+    return http.instance.get(withAttachmentModuleKey(url), {
       responseType: 'blob',
-    }) as unknown as Blob
+    }).then((res) => res.data)
   }
 
   function openBlobPreview(blob: Blob) {
@@ -272,13 +272,12 @@ export function useAttachmentSupport(options: UseAttachmentSupportOptions) {
 
     attachmentSaving.value = true
     try {
-      const nextAttachments = [...attachmentRows.value]
-      for (const file of files) {
+      const uploadTasks = files.map(async (file) => {
         const response = await uploadAttachment(file, options.moduleKey.value, sourceType)
         if (!options.isSuccessCode(response.code) || !response.data) {
           throw new Error(response.message || '附件上传失败')
         }
-        nextAttachments.push({
+        return {
           id: String(response.data.id || ''),
           name: String(response.data.name || response.data.fileName || file.name),
           uploader: String(response.data.uploader || options.getCurrentOperatorName()),
@@ -288,11 +287,27 @@ export function useAttachmentSupport(options: UseAttachmentSupportOptions) {
           previewUrl: response.data.previewUrl ? String(response.data.previewUrl) : '',
           downloadUrl: response.data.downloadUrl ? String(response.data.downloadUrl) : '',
           originalFileName: String(response.data.originalFileName || file.name),
-        })
+        }
+      })
+
+      const results = await Promise.allSettled(uploadTasks)
+      const nextAttachments = [...attachmentRows.value]
+      let failedCount = 0
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          nextAttachments.push(result.value)
+        } else {
+          failedCount++
+        }
       }
 
       await saveAttachmentList(nextAttachments)
-      message.success(`已上传 ${files.length} 个附件`)
+      if (failedCount > 0) {
+        message.warning(`已上传 ${results.length - failedCount} 个附件，${failedCount} 个失败`)
+      } else {
+        message.success(`已上传 ${files.length} 个附件`)
+      }
     } finally {
       attachmentSaving.value = false
     }

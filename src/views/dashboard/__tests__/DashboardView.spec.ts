@@ -18,7 +18,7 @@ function flushPromises() {
 
 describe('DashboardView', () => {
   beforeEach(() => {
-    i18n.global.locale.value = 'zh-CN'
+    ;(i18n.global.locale as unknown as { value: string }).value = 'zh-CN'
     dashboardApiMocks.getDashboardSummary.mockReset()
     dashboardApiMocks.getDashboardSummary.mockResolvedValue({
       appName: 'leo',

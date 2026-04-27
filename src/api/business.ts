@@ -1,5 +1,5 @@
 import { businessPageConfigs } from '@/config/business-pages'
-import { assertApiSuccess, http, restDelete } from '@/api/client'
+import { assertApiSuccess, http, isSuccessCode, restDelete } from '@/api/client'
 import {
   getModuleConfig,
   type ModuleEndpointConfig,
@@ -57,9 +57,9 @@ export interface AttachmentRecord {
 
 export async function generateBusinessPrimaryNo(moduleKey: string) {
   const response = assertApiSuccess(
-    await http.post('/general-settings/number-rules/next', null, {
+    await http.post<ApiResponse<NumberRuleGenerateRecord>>('/general-settings/number-rules/next', null, {
       params: { moduleKey },
-    }) as unknown as ApiResponse<NumberRuleGenerateRecord>,
+    }),
     '生成单号失败',
   )
   return String(response.data?.generatedNo || '')
@@ -82,25 +82,26 @@ interface LeoPageData<T> {
 }
 
 const FULL_SCAN_PAGE_SIZE = 200
+const MAX_CLIENT_FILTER_PAGES = 10  // hard cap: 2000 rows before refusing fallback
+const MAX_CLIENT_FILTER_ROWS = FULL_SCAN_PAGE_SIZE * MAX_CLIENT_FILTER_PAGES
 
-const REPORTED_CLIENT_FILTER_SIGNATURES = new Set<string>()
+const REPORTED_CLIENT_FILTER_SIGNATURES = new Map<string, number>()
+const CLIENT_FILTER_REPORT_INTERVAL_MS = 5 * 60 * 1000
 
 function toArray<T>(value: T[] | undefined) {
   return Array.isArray(value) ? value : []
 }
 
-function normalizeLineItem(item: Record<string, unknown>) {
-  return Object.entries(item).reduce<ModuleLineItem>(
-    (result, [key, value]) => {
-      if (key === 'id' || key === 'lineNo') {
-        result[key] = value == null ? '' : String(value)
-        return result
-      }
-      result[key] = value as never
-      return result
-    },
-    { id: String(item.id ?? item.lineNo ?? '') },
-  )
+function normalizeLineItem(item: Record<string, unknown>): ModuleLineItem {
+  const result: ModuleLineItem = { id: String(item.id ?? item.lineNo ?? '') }
+  for (const [key, value] of Object.entries(item)) {
+    if (key === 'id' || key === 'lineNo') {
+      ;(result as Record<string, unknown>)[key] = value == null ? '' : String(value)
+    } else {
+      ;(result as Record<string, unknown>)[key] = value
+    }
+  }
+  return result
 }
 
 function normalizeRecord(record: Record<string, unknown>) {
@@ -197,22 +198,22 @@ function reportClientFilterFallback(
   }
 
   const signature = `${moduleKey}:${unsupportedKeys.sort().join(',')}`
-  if (REPORTED_CLIENT_FILTER_SIGNATURES.has(signature)) {
+  const lastReported = REPORTED_CLIENT_FILTER_SIGNATURES.get(signature)
+  if (lastReported && Date.now() - lastReported < CLIENT_FILTER_REPORT_INTERVAL_MS) {
     return
   }
 
-  REPORTED_CLIENT_FILTER_SIGNATURES.add(signature)
+  REPORTED_CLIENT_FILTER_SIGNATURES.set(signature, Date.now())
+  const countSuffix = lastReported ? ' (recurring)' : ''
   console.warn(
-    `[business-api] ${moduleKey} fell back to client-side filtering for unsupported filters: ${unsupportedKeys.join(', ')}`,
+    `[business-api] ${moduleKey} fell back to client-side filtering for unsupported filters: ${unsupportedKeys.join(', ')}${countSuffix}`,
+    '\nConsider adding these keys to module-contracts.ts nativeFilterKeys.',
   )
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
       new CustomEvent('leo:client-filter-fallback', {
-        detail: {
-          moduleKey,
-          unsupportedKeys,
-        },
+        detail: { moduleKey, unsupportedKeys, recurring: Boolean(lastReported) },
       }),
     )
   }
@@ -299,9 +300,13 @@ function paginateRows(rows: ModuleRecord[], options: ListQueryOptions) {
 function buildTableResponse(
   rows: ModuleRecord[],
   total: number,
+  truncated = false,
 ): TableResponse<ModuleRecord> {
   return {
-    code: 0,
+    code: truncated ? 4000 : 0,
+    message: truncated
+      ? `结果不完整：已达客户端过滤上限 ${MAX_CLIENT_FILTER_ROWS} 条。请缩小筛选范围或联系管理员启用服务端过滤。`
+      : undefined,
     data: {
       rows,
       total,
@@ -316,10 +321,7 @@ async function fetchModulePage(
   size: number,
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
-  const response = await http.get<
-    ApiResponse<LeoPageData<Record<string, unknown>>>,
-    ApiResponse<LeoPageData<Record<string, unknown>>>
-  >(endpointConfig.path, {
+  const response = await http.get<ApiResponse<LeoPageData<Record<string, unknown>>>>(endpointConfig.path, {
     params: {
       ...params,
       page,
@@ -338,10 +340,13 @@ async function fetchModulePage(
 async function fetchAllModuleRows(
   moduleKey: string,
   search: Record<string, unknown>,
-) {
+  enforceLimit = false,
+): Promise<{ rows: ModuleRecord[]; truncated: boolean }> {
   const filterParams = buildFilterParams(moduleKey, search)
   const allRows: ModuleRecord[] = []
   let page = 0
+  let totalFetched = 0
+  let truncated = false
 
   while (true) {
     const current = await fetchModulePage(
@@ -351,6 +356,16 @@ async function fetchAllModuleRows(
       FULL_SCAN_PAGE_SIZE,
     )
     allRows.push(...current.rows)
+    totalFetched += current.rows.length
+
+    if (enforceLimit && totalFetched >= MAX_CLIENT_FILTER_ROWS) {
+      console.error(
+        `[business-api] ${moduleKey} client-filter hit the hard limit of ${MAX_CLIENT_FILTER_ROWS} rows. ` +
+        'Results are truncated. Add the filter keys to module-contracts.ts nativeFilterKeys to enable server-side filtering.',
+      )
+      truncated = true
+      break
+    }
 
     if (current.last || page >= current.totalPages - 1) {
       break
@@ -359,7 +374,7 @@ async function fetchAllModuleRows(
     page += 1
   }
 
-  return allRows
+  return { rows: allRows, truncated }
 }
 
 export async function listBusinessModule(
@@ -370,11 +385,12 @@ export async function listBusinessModule(
   const useClientFilter = shouldClientFilter(moduleKey, search)
   if (useClientFilter) {
     reportClientFilterFallback(moduleKey, search)
-    const rows = await fetchAllModuleRows(moduleKey, search)
-    const filteredRows = applyClientFilters(moduleKey, rows, search)
+    const { rows: fetchedRows, truncated } = await fetchAllModuleRows(moduleKey, search, true)
+    const filteredRows = applyClientFilters(moduleKey, fetchedRows, search)
     return buildTableResponse(
       paginateRows(filteredRows, options),
       filteredRows.length,
+      truncated,
     )
   }
 
@@ -388,6 +404,31 @@ export async function listBusinessModule(
   return buildTableResponse(current.rows, current.totalElements)
 }
 
+const SOFT_WARN_ROW_THRESHOLD = 5000
+
+/**
+ * Lightweight server-side keyword search for dropdowns and selectors.
+ * Returns up to `limit` matching rows (max 500). Replaces client-side full-scan.
+ */
+export async function searchBusinessModule(
+  moduleKey: string,
+  keyword = '',
+  limit = 100,
+): Promise<ModuleRecord[]> {
+  const endpointConfig = getModuleConfig(moduleKey)
+  if (endpointConfig.readOnly) {
+    return []
+  }
+  const response = await http.get<ApiResponse<Record<string, unknown>[]>>(
+    `${endpointConfig.path}/search`,
+    { params: { keyword: keyword.trim(), limit: Math.min(limit, 500) } },
+  )
+  if (!isSuccessCode(response.code) || !Array.isArray(response.data)) {
+    return []
+  }
+  return normalizeRows(response.data)
+}
+
 export async function listAllBusinessModuleRows(
   moduleKey: string,
   search: Record<string, unknown>,
@@ -396,8 +437,14 @@ export async function listAllBusinessModuleRows(
   if (useClientFilter) {
     reportClientFilterFallback(moduleKey, search)
   }
-  const rows = await fetchAllModuleRows(moduleKey, search)
-  return useClientFilter ? applyClientFilters(moduleKey, rows, search) : rows
+  const { rows: fetchedRows } = await fetchAllModuleRows(moduleKey, search)
+  if (fetchedRows.length > SOFT_WARN_ROW_THRESHOLD) {
+    console.warn(
+      `[business-api] ${moduleKey} listAllBusinessModuleRows fetched ${fetchedRows.length} rows without pagination. ` +
+      'Consider adding a dedicated server-side endpoint for this use case to avoid browser performance issues.',
+    )
+  }
+  return useClientFilter ? applyClientFilters(moduleKey, fetchedRows, search) : fetchedRows
 }
 
 export async function getBusinessModuleDetail(moduleKey: string, id: string) {
@@ -406,10 +453,7 @@ export async function getBusinessModuleDetail(moduleKey: string, id: string) {
     throw new Error('当前模块不支持详情接口')
   }
 
-  const response = await http.get<
-    ApiResponse<Record<string, unknown>>,
-    ApiResponse<Record<string, unknown>>
-  >(`${endpointConfig.path}/${encodeURIComponent(id)}`)
+  const response = await http.get<ApiResponse<Record<string, unknown>>>(`${endpointConfig.path}/${encodeURIComponent(id)}`)
 
   return {
     code: response.code,
@@ -430,17 +474,11 @@ export async function saveBusinessModule(
   const payload = serializeBusinessRecordForSave(moduleKey, record)
   const hasId = Boolean(record.id)
   const response = hasId
-    ? await http.put<
-        ApiResponse<Record<string, unknown>>,
-        ApiResponse<Record<string, unknown>>
-      >(
+    ? await http.put<ApiResponse<Record<string, unknown>>>(
         `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`,
         payload,
       )
-    : await http.post<
-        ApiResponse<Record<string, unknown>>,
-        ApiResponse<Record<string, unknown>>
-      >(endpointConfig.path, payload)
+    : await http.post<ApiResponse<Record<string, unknown>>>(endpointConfig.path, payload)
 
   return {
     code: response.code,
@@ -459,19 +497,16 @@ export async function uploadAttachment(
   formData.append('moduleKey', moduleKey)
   formData.append('sourceType', sourceType)
 
-  return http.post('/attachments/upload', formData, {
+  return http.post<ApiResponse<Record<string, unknown>>>('/attachments/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
-  }) as Promise<ApiResponse<Record<string, unknown>>>
+  })
 }
 
 export async function getAttachmentBindings(
   moduleKey: string,
   recordId: string | number,
 ) {
-  return http.get<
-    ApiResponse<AttachmentBindingRecord>,
-    ApiResponse<AttachmentBindingRecord>
-  >('/attachments/bindings', {
+  return http.get<ApiResponse<AttachmentBindingRecord>>('/attachments/bindings', {
     params: {
       moduleKey,
       recordId,
@@ -488,10 +523,7 @@ export async function updateAttachmentBindings(
     .map((item) => String(item).trim())
     .filter((item) => /^\d+$/.test(item) && item !== '0')
 
-  return http.put<
-    ApiResponse<AttachmentBindingRecord>,
-    ApiResponse<AttachmentBindingRecord>
-  >('/attachments/bindings', {
+  return http.put<ApiResponse<AttachmentBindingRecord>>('/attachments/bindings', {
     moduleKey,
     recordId: String(recordId).trim(),
     attachmentIds: normalizedAttachmentIds,
@@ -499,10 +531,7 @@ export async function updateAttachmentBindings(
 }
 
 export async function getPageUploadRule(moduleKey: string) {
-  return http.get<
-    ApiResponse<UploadRuleRecord>,
-    ApiResponse<UploadRuleRecord>
-  >('/general-settings/upload-rule', {
+  return http.get<ApiResponse<UploadRuleRecord>>('/general-settings/upload-rule', {
     params: {
       moduleKey,
     },
@@ -513,10 +542,7 @@ export async function updatePageUploadRule(
   moduleKey: string,
   payload: UploadRulePayload,
 ) {
-  return http.put<
-    ApiResponse<UploadRuleRecord>,
-    ApiResponse<UploadRuleRecord>
-  >('/general-settings/upload-rule', payload, {
+  return http.put<ApiResponse<UploadRuleRecord>>('/general-settings/upload-rule', payload, {
     params: {
       moduleKey,
     },

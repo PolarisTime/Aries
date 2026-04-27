@@ -5,6 +5,11 @@ import {
   getPageRoutePath,
   getSearchableModuleKeys,
 } from '@/config/module-registry'
+import { moduleEndpointContracts } from '@/api/module-contracts'
+import {
+  menuResourceMap,
+  resourceLabelMap,
+} from '@/constants/resource-permissions'
 
 describe('module registry helpers', () => {
   it('derives route paths from menu keys instead of storing duplicate route config', () => {
@@ -47,5 +52,12 @@ describe('module registry helpers', () => {
         'freight-bills',
       ]),
     )
+  })
+
+  it('does not expose the retired settlement accounts module', () => {
+    expect(getPageDefinition('settlement-accounts')).toBeUndefined()
+    expect(moduleEndpointContracts).not.toHaveProperty('settlement-accounts')
+    expect(menuResourceMap).not.toHaveProperty('settlement-accounts')
+    expect(resourceLabelMap).not.toHaveProperty('settlement-account')
   })
 })

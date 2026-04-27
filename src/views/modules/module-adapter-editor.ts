@@ -5,22 +5,11 @@ import type {
   ModuleParentImportDefinition,
   ModuleRecord,
 } from '@/types/module-page'
+import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import { getPermissionLabels, getRolePermissionLabels } from './module-adapter-system'
 import { normalizeStringArray, parseParentRelationNos } from './module-adapter-shared'
 
 export type EditorItemDragPosition = 'before' | 'after'
-
-const defaultDraftValueByModuleKey: Record<string, Record<string, unknown> | undefined> = {
-  carriers: { priceMode: '按吨' },
-}
-
-const editableLockedFieldKeysByModuleKey: Record<string, string[]> = {
-  'sales-orders': ['deliveryDate', 'remark'],
-}
-
-const editableLockedItemColumnKeysByModuleKey: Record<string, string[]> = {
-  'sales-orders': ['unitPrice'],
-}
 
 const derivedReadonlyItemColumnKeySet = new Set([
   'brand',
@@ -35,40 +24,6 @@ const derivedReadonlyItemColumnKeySet = new Set([
   'weightTon',
   'amount',
 ])
-
-const editableLineItemModuleKeySet = new Set([
-  'purchase-orders',
-  'purchase-inbounds',
-  'sales-orders',
-  'sales-outbounds',
-  'freight-bills',
-  'freight-statements',
-  'purchase-contracts',
-  'sales-contracts',
-  'invoice-receipts',
-  'invoice-issues',
-])
-
-const computedAmountModuleKeys = new Set([
-  'purchase-orders',
-  'purchase-inbounds',
-  'sales-orders',
-  'sales-outbounds',
-  'purchase-contracts',
-  'sales-contracts',
-])
-
-const defaultStatusByModuleKey: Record<string, string> = {
-  'purchase-orders': '草稿',
-  'purchase-inbounds': '草稿',
-  'sales-orders': '草稿',
-  'sales-outbounds': '草稿',
-  'freight-bills': '未审核',
-  receipts: '草稿',
-  payments: '草稿',
-  'invoice-receipts': '草稿',
-  'invoice-issues': '草稿',
-}
 
 function toRoundedNumber(value: unknown, precision: number) {
   const numericValue = Number(value)
@@ -125,7 +80,7 @@ function getLineItemValidationMessage(
 }
 
 export function canModuleEditLineItems(moduleKey: string, hasItemColumns: boolean) {
-  return editableLineItemModuleKeySet.has(moduleKey) && hasItemColumns
+  return hasBehavior(moduleKey, 'supportsLineItems') && hasItemColumns
 }
 
 export function isSalesOrderLineLocked(statuses: string[]) {
@@ -146,9 +101,9 @@ export function applyModuleDefaultEditorDraft(
   draft: Record<string, unknown>,
   currentOperatorName: string,
 ) {
-  const defaultDraftValues = defaultDraftValueByModuleKey[moduleKey]
+  const defaultDraftValues = getBehaviorValue(moduleKey, 'defaultDraftValues')
   if (defaultDraftValues) {
-    Object.assign(draft, defaultDraftValues)
+    Object.assign(draft, defaultDraftValues as Record<string, unknown>)
   }
 
   if (moduleKey === 'purchase-orders') {
@@ -187,7 +142,8 @@ export function isEditorFieldDisabledForModule(
   }
 
   if (moduleKey === 'sales-orders' && salesOrderLineLocked) {
-    return !editableLockedFieldKeysByModuleKey['sales-orders'].includes(fieldKey)
+    const lockedFields = getBehaviorValue(moduleKey, 'editableLockedFields') as string[] | undefined
+    return !(lockedFields || []).includes(fieldKey)
   }
 
   return false
@@ -208,7 +164,8 @@ export function isEditorItemColumnEditableForModule(
   }
 
   if (moduleKey === 'sales-orders' && salesOrderLineLocked) {
-    return editableLockedItemColumnKeysByModuleKey['sales-orders'].includes(columnKey)
+    const lockedItemColumns = getBehaviorValue(moduleKey, 'editableLockedItemColumns') as string[] | undefined
+    return (lockedItemColumns || []).includes(columnKey)
   }
 
   return true
@@ -460,7 +417,7 @@ export function normalizeDraftRecordForModule(options: {
 
   applyModuleDefaultEditorDraft(moduleKey, record, currentOperatorName)
 
-  if (computedAmountModuleKeys.has(moduleKey)) {
+  if (hasBehavior(moduleKey, 'computesAmounts')) {
     record.totalWeight = Number(sumLineItemsBy(items, 'weightTon').toFixed(3))
     record.totalAmount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
   }
@@ -560,8 +517,11 @@ export function normalizeDraftRecordForModule(options: {
     record.permissionSummary = getRolePermissionLabels(roleNames).join('、')
   }
 
-  if (!record.status && defaultStatusByModuleKey[moduleKey]) {
-    record.status = defaultStatusByModuleKey[moduleKey]
+  if (!record.status) {
+    const defaultStatus = getBehaviorValue(moduleKey, 'defaultStatus')
+    if (defaultStatus) {
+      record.status = defaultStatus as string
+    }
   }
 
   if (

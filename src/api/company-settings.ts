@@ -1,4 +1,5 @@
 import { assertApiSuccess, http } from '@/api/client'
+import { ENDPOINTS } from '@/constants/endpoints'
 
 export interface CompanySettlementAccount {
   id?: string | number
@@ -29,10 +30,7 @@ interface CompanyResponse<T> {
 }
 
 function normalizeProfile(record: Record<string, unknown> | null | undefined): CompanySettingProfile | null {
-  if (!record) {
-    return null
-  }
-
+  if (!record) return null
   return {
     id: String(record.id || ''),
     companyName: String(record.companyName || ''),
@@ -61,7 +59,7 @@ function normalizeProfile(record: Record<string, unknown> | null | undefined): C
 
 export async function getCompanySettingProfile() {
   const response = assertApiSuccess(
-    await http.get('/company-settings/current') as unknown as CompanyResponse<Record<string, unknown> | null>,
+    await http.get<CompanyResponse<Record<string, unknown> | null>>(ENDPOINTS.COMPANY_SETTINGS_CURRENT),
     '加载公司信息失败',
   )
   return normalizeProfile(response.data)
@@ -69,7 +67,7 @@ export async function getCompanySettingProfile() {
 
 export async function saveCompanySettingProfile(payload: Omit<CompanySettingProfile, 'id'>) {
   const response = assertApiSuccess(
-    await http.put('/company-settings/current', payload) as unknown as CompanyResponse<Record<string, unknown>>,
+    await http.put<CompanyResponse<Record<string, unknown>>>(ENDPOINTS.COMPANY_SETTINGS_CURRENT, payload),
     '保存公司信息失败',
   )
   return normalizeProfile(response.data)

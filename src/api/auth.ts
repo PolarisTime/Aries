@@ -1,4 +1,5 @@
-import { http } from './client'
+import { http, authHttp } from './client'
+import { ENDPOINTS } from '@/constants/endpoints'
 import type {
   ApiResponse,
   Login2faPayload,
@@ -6,34 +7,27 @@ import type {
   LoginResult,
   LoginResponseData,
 } from '@/types/auth'
-import { authHttp } from './client'
 
 export function login(payload: LoginPayload) {
-  return http.post<ApiResponse<LoginResult>, ApiResponse<LoginResult>>(
-    '/auth/login',
-    {
-      loginName: payload.loginName,
-      password: payload.password,
-    },
-  )
+  return http.post<ApiResponse<LoginResult>>(ENDPOINTS.AUTH_LOGIN, {
+    loginName: payload.loginName,
+    password: payload.password,
+  })
 }
 
 export function login2fa(payload: Login2faPayload) {
-  return http.post<ApiResponse<LoginResponseData>, ApiResponse<LoginResponseData>>(
-    '/auth/login-2fa',
-    payload,
-  )
+  return http.post<ApiResponse<LoginResponseData>>(ENDPOINTS.AUTH_LOGIN_2FA, payload)
 }
 
 export function logout() {
-  return http.post('/auth/logout', {})
+  return http.post(ENDPOINTS.AUTH_LOGOUT, {})
 }
 
 export function refreshSession() {
-  return authHttp.post<ApiResponse<LoginResponseData>>('/auth/refresh', {})
+  return authHttp.post<ApiResponse<LoginResponseData>>(ENDPOINTS.AUTH_REFRESH, {})
     .then((response) => response.data)
 }
 
 export function pingAuth() {
-  return http.get<ApiResponse<string>, ApiResponse<string>>('/auth/ping')
+  return http.get<ApiResponse<string>>(ENDPOINTS.AUTH_PING)
 }

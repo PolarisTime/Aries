@@ -25,409 +25,251 @@ interface UseColumnSettingsSupportOptions {
 
 type DragPosition = 'before' | 'after'
 
+interface SettingGroup {
+  items: Ref<SettingItem[]>
+  draggedKey: Ref<string | undefined>
+  dragOverKey: Ref<string | undefined>
+  dragOverPosition: Ref<DragPosition>
+}
+
+function buildDefaultItemsFromColumns(columns: { dataIndex: string; title: string }[]) {
+  return columns.map((column) => ({
+    key: column.dataIndex,
+    title: column.title,
+    visible: column.dataIndex !== 'piecesPerBundle',
+  }))
+}
+
+function buildDefaultItemsFromFormFields(fields: ModuleFormFieldDefinition[]) {
+  return fields.map((field) => ({
+    key: field.key,
+    title: field.label,
+    visible: true,
+  }))
+}
+
+function applySavedSettings(defaults: SettingItem[], saved: ListColumnSettings | null) {
+  if (!saved) {
+    return defaults
+  }
+
+  const defaultMap = Object.fromEntries(defaults.map((item) => [item.key, item]))
+  const orderedKeys = [
+    ...saved.orderedKeys.filter((key) => defaultMap[key]),
+    ...defaults.map((item) => item.key).filter((key) => !saved.orderedKeys.includes(key)),
+  ]
+  const hiddenSet = new Set(saved.hiddenKeys.filter((key) => defaultMap[key]))
+
+  return orderedKeys.map((key) => ({
+    ...defaultMap[key],
+    visible: !hiddenSet.has(key),
+  }))
+}
+
+function persistSettings(storageKey: string, items: SettingItem[]) {
+  setListColumnSettings(storageKey, {
+    orderedKeys: items.map((item) => item.key),
+    hiddenKeys: items.filter((item) => !item.visible).map((item) => item.key),
+  })
+}
+
+function handleVisibleChange(items: SettingItem[], key: string, checked: boolean) {
+  const visibleCount = items.filter((item) => item.visible).length
+  const target = items.find((item) => item.key === key)
+  if (!target) {
+    return items
+  }
+
+  if (!checked && target.visible && visibleCount === 1) {
+    message.warning('至少保留一列显示')
+    return items
+  }
+
+  return items.map((item) => (item.key === key ? { ...item, visible: checked } : item))
+}
+
+function reorderItems(items: SettingItem[], sourceKey: string, targetKey: string, position: DragPosition) {
+  if (sourceKey === targetKey) {
+    return items
+  }
+
+  const sourceItem = items.find((item) => item.key === sourceKey)
+  if (!sourceItem) {
+    return items
+  }
+
+  const nextItems = items.filter((item) => item.key !== sourceKey)
+  const targetIndex = nextItems.findIndex((item) => item.key === targetKey)
+  if (targetIndex < 0) {
+    return items
+  }
+
+  const insertIndex = position === 'before' ? targetIndex : targetIndex + 1
+  nextItems.splice(insertIndex, 0, sourceItem)
+  return nextItems
+}
+
+function getItemClass(
+  key: string,
+  draggedKey: string | undefined,
+  dragOverKey: string | undefined,
+  dragOverPosition: DragPosition,
+) {
+  if (!draggedKey || dragOverKey !== key || draggedKey === key) {
+    return ''
+  }
+  return dragOverPosition === 'before'
+    ? 'column-setting-item-target-before'
+    : 'column-setting-item-target-after'
+}
+
+function createSettingGroup(): SettingGroup {
+  return {
+    items: ref<SettingItem[]>([]),
+    draggedKey: ref<string>(),
+    dragOverKey: ref<string>(),
+    dragOverPosition: ref<DragPosition>('after'),
+  }
+}
+
+function handleGroupDragStart(group: SettingGroup, key: string, event: DragEvent) {
+  group.draggedKey.value = key
+  group.dragOverKey.value = key
+  group.dragOverPosition.value = 'after'
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', key)
+  }
+}
+
+function handleGroupDragOver(group: SettingGroup, key: string, event: DragEvent) {
+  if (!group.draggedKey.value) {
+    return
+  }
+  event.preventDefault()
+  const currentTarget = event.currentTarget as HTMLElement | null
+  if (currentTarget) {
+    const rect = currentTarget.getBoundingClientRect()
+    group.dragOverPosition.value = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+  }
+  group.dragOverKey.value = key
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+function handleGroupDrop(group: SettingGroup, key: string, storageKey: string) {
+  if (!group.draggedKey.value) {
+    return
+  }
+  group.items.value = reorderItems(group.items.value, group.draggedKey.value, key, group.dragOverPosition.value)
+  persistSettings(storageKey, group.items.value)
+  resetGroupDragState(group)
+}
+
+function resetGroupDragState(group: SettingGroup) {
+  group.draggedKey.value = undefined
+  group.dragOverKey.value = undefined
+  group.dragOverPosition.value = 'after'
+}
+
+function initGroupSettings(group: SettingGroup, defaults: SettingItem[], storageKey: string) {
+  const saved = getListColumnSettings(storageKey)
+  group.items.value = applySavedSettings(defaults, saved)
+}
+
 export function useColumnSettingsSupport(options: UseColumnSettingsSupportOptions) {
-  const columnSettingItems = ref<SettingItem[]>([])
-  const formFieldSettingItems = ref<SettingItem[]>([])
-  const editorColumnSettingItems = ref<SettingItem[]>([])
+  const columns = createSettingGroup()
+  const formFields = createSettingGroup()
+  const editorColumns = createSettingGroup()
 
-  const draggedColumnSettingKey = ref<string>()
-  const dragOverColumnSettingKey = ref<string>()
-  const dragOverColumnSettingPosition = ref<DragPosition>('after')
-  const draggedFormFieldSettingKey = ref<string>()
-  const dragOverFormFieldSettingKey = ref<string>()
-  const dragOverFormFieldSettingPosition = ref<DragPosition>('after')
-  const draggedEditorColumnSettingKey = ref<string>()
-  const dragOverEditorColumnSettingKey = ref<string>()
-  const dragOverEditorColumnSettingPosition = ref<DragPosition>('after')
-
-  function buildDefaultColumnSettingItems() {
-    return options.config.value.columns.map((column) => ({
-      key: column.dataIndex,
-      title: column.title,
-      visible: column.dataIndex !== 'piecesPerBundle',
-    }))
-  }
-
-  function buildDefaultFormFieldSettingItems() {
-    return options.formFields.value.map((field) => ({
-      key: field.key,
-      title: field.label,
-      visible: true,
-    }))
-  }
-
-  function buildDefaultEditorColumnSettingItems() {
-    return (options.config.value.itemColumns || []).map((column) => ({
-      key: column.dataIndex,
-      title: column.title,
-      visible: column.dataIndex !== 'piecesPerBundle',
-    }))
-  }
-
-  function applySavedColumnSettings(defaults: SettingItem[], saved: ListColumnSettings | null) {
-    if (!saved) {
-      return defaults
-    }
-
-    const defaultMap = Object.fromEntries(defaults.map((item) => [item.key, item]))
-    const orderedKeys = [
-      ...saved.orderedKeys.filter((key) => defaultMap[key]),
-      ...defaults.map((item) => item.key).filter((key) => !saved.orderedKeys.includes(key)),
-    ]
-    const hiddenSet = new Set(saved.hiddenKeys.filter((key) => defaultMap[key]))
-
-    return orderedKeys.map((key) => ({
-      ...defaultMap[key],
-      visible: !hiddenSet.has(key),
-    }))
-  }
-
-  function persistSettingItems(storageKey: string, items: SettingItem[]) {
-    setListColumnSettings(storageKey, {
-      orderedKeys: items.map((item) => item.key),
-      hiddenKeys: items
-        .filter((item) => !item.visible)
-        .map((item) => item.key),
-    })
-  }
-
-  function handleSettingVisibleChange(
-    items: SettingItem[],
-    key: string,
-    checked: boolean,
-  ) {
-    const visibleCount = items.filter((item) => item.visible).length
-    const target = items.find((item) => item.key === key)
-    if (!target) {
-      return items
-    }
-
-    if (!checked && target.visible && visibleCount === 1) {
-      message.warning('至少保留一列显示')
-      return items
-    }
-
-    return items.map((item) =>
-      item.key === key ? { ...item, visible: checked } : item,
-    )
-  }
-
-  function reorderSettingItems(
-    items: SettingItem[],
-    sourceKey: string,
-    targetKey: string,
-    position: DragPosition,
-  ) {
-    if (sourceKey === targetKey) {
-      return items
-    }
-
-    const sourceItem = items.find((item) => item.key === sourceKey)
-    if (!sourceItem) {
-      return items
-    }
-
-    const nextItems = items.filter((item) => item.key !== sourceKey)
-    const targetIndex = nextItems.findIndex((item) => item.key === targetKey)
-    if (targetIndex < 0) {
-      return items
-    }
-
-    const insertIndex = position === 'before' ? targetIndex : targetIndex + 1
-    nextItems.splice(insertIndex, 0, sourceItem)
-    return nextItems
-  }
-
-  function handleSettingDragStart(
-    key: string,
-    event: DragEvent,
-    draggedKey: Ref<string | undefined>,
-    dragOverKey: Ref<string | undefined>,
-    dragOverPosition: Ref<DragPosition>,
-  ) {
-    draggedKey.value = key
-    dragOverKey.value = key
-    dragOverPosition.value = 'after'
-
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move'
-      event.dataTransfer.setData('text/plain', key)
-    }
-  }
-
-  function handleSettingDragOver(
-    key: string,
-    event: DragEvent,
-    draggedKey: Ref<string | undefined>,
-    dragOverKey: Ref<string | undefined>,
-    dragOverPosition: Ref<DragPosition>,
-  ) {
-    if (!draggedKey.value) {
-      return
-    }
-
-    event.preventDefault()
-    const currentTarget = event.currentTarget as HTMLElement | null
-    if (currentTarget) {
-      const rect = currentTarget.getBoundingClientRect()
-      dragOverPosition.value = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
-    }
-    dragOverKey.value = key
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'move'
-    }
-  }
-
-  function getSettingItemClass(
-    key: string,
-    draggedKey: string | undefined,
-    dragOverKey: string | undefined,
-    dragOverPosition: DragPosition,
-  ) {
-    if (!draggedKey || dragOverKey !== key || draggedKey === key) {
-      return ''
-    }
-
-    return dragOverPosition === 'before'
-      ? 'column-setting-item-target-before'
-      : 'column-setting-item-target-after'
-  }
+  const columnStorageKey = options.moduleKey.value
+  const formFieldStorageKey = `${options.moduleKey.value}:editor-form-fields`
+  const editorColumnStorageKey = `${options.moduleKey.value}:editor-items`
 
   function initColumnSettings() {
-    const defaults = buildDefaultColumnSettingItems()
-    const saved = getListColumnSettings(options.moduleKey.value)
-    columnSettingItems.value = applySavedColumnSettings(defaults, saved)
+    const defaults = buildDefaultItemsFromColumns(options.config.value.columns)
+    initGroupSettings(columns, defaults, columnStorageKey)
   }
 
   function initFormFieldSettings() {
-    const defaults = buildDefaultFormFieldSettingItems()
+    const defaults = buildDefaultItemsFromFormFields(options.formFields.value)
     if (!defaults.length) {
-      formFieldSettingItems.value = []
+      formFields.items.value = []
       return
     }
-
-    const saved = getListColumnSettings(`${options.moduleKey.value}:editor-form-fields`)
-    formFieldSettingItems.value = applySavedColumnSettings(defaults, saved)
+    initGroupSettings(formFields, defaults, formFieldStorageKey)
   }
 
   function initEditorColumnSettings() {
-    const defaults = buildDefaultEditorColumnSettingItems()
+    const defaults = buildDefaultItemsFromColumns(options.config.value.itemColumns || [])
     if (!defaults.length) {
-      editorColumnSettingItems.value = []
+      editorColumns.items.value = []
       return
     }
-
-    const saved = getListColumnSettings(`${options.moduleKey.value}:editor-items`)
-    editorColumnSettingItems.value = applySavedColumnSettings(defaults, saved)
+    initGroupSettings(editorColumns, defaults, editorColumnStorageKey)
   }
 
   function handleColumnVisibleChange(key: string, checked: boolean) {
-    columnSettingItems.value = handleSettingVisibleChange(columnSettingItems.value, key, checked)
-    persistSettingItems(options.moduleKey.value, columnSettingItems.value)
+    columns.items.value = handleVisibleChange(columns.items.value, key, checked)
+    persistSettings(columnStorageKey, columns.items.value)
   }
 
   function handleFormFieldVisibleChange(key: string, checked: boolean) {
-    formFieldSettingItems.value = handleSettingVisibleChange(formFieldSettingItems.value, key, checked)
-    persistSettingItems(`${options.moduleKey.value}:editor-form-fields`, formFieldSettingItems.value)
+    formFields.items.value = handleVisibleChange(formFields.items.value, key, checked)
+    persistSettings(formFieldStorageKey, formFields.items.value)
   }
 
   function handleEditorColumnVisibleChange(key: string, checked: boolean) {
-    editorColumnSettingItems.value = handleSettingVisibleChange(editorColumnSettingItems.value, key, checked)
-    persistSettingItems(`${options.moduleKey.value}:editor-items`, editorColumnSettingItems.value)
+    editorColumns.items.value = handleVisibleChange(editorColumns.items.value, key, checked)
+    persistSettings(editorColumnStorageKey, editorColumns.items.value)
   }
 
   function resetColumnSettings() {
-    clearListColumnSettings(options.moduleKey.value)
-    columnSettingItems.value = buildDefaultColumnSettingItems()
+    clearListColumnSettings(columnStorageKey)
+    columns.items.value = buildDefaultItemsFromColumns(options.config.value.columns)
   }
 
   function resetFormFieldSettings() {
-    clearListColumnSettings(`${options.moduleKey.value}:editor-form-fields`)
-    formFieldSettingItems.value = buildDefaultFormFieldSettingItems()
+    clearListColumnSettings(formFieldStorageKey)
+    formFields.items.value = buildDefaultItemsFromFormFields(options.formFields.value)
   }
 
   function resetEditorColumnSettings() {
-    clearListColumnSettings(`${options.moduleKey.value}:editor-items`)
-    editorColumnSettingItems.value = buildDefaultEditorColumnSettingItems()
-  }
-
-  function resetListColumnSettingDragState() {
-    draggedColumnSettingKey.value = undefined
-    dragOverColumnSettingKey.value = undefined
-    dragOverColumnSettingPosition.value = 'after'
-  }
-
-  function resetFormFieldSettingDragState() {
-    draggedFormFieldSettingKey.value = undefined
-    dragOverFormFieldSettingKey.value = undefined
-    dragOverFormFieldSettingPosition.value = 'after'
-  }
-
-  function resetEditorColumnSettingDragState() {
-    draggedEditorColumnSettingKey.value = undefined
-    dragOverEditorColumnSettingKey.value = undefined
-    dragOverEditorColumnSettingPosition.value = 'after'
-  }
-
-  function handleColumnSettingDragStart(key: string, event: DragEvent) {
-    handleSettingDragStart(
-      key,
-      event,
-      draggedColumnSettingKey,
-      dragOverColumnSettingKey,
-      dragOverColumnSettingPosition,
-    )
-  }
-
-  function handleColumnSettingDragOver(key: string, event: DragEvent) {
-    handleSettingDragOver(
-      key,
-      event,
-      draggedColumnSettingKey,
-      dragOverColumnSettingKey,
-      dragOverColumnSettingPosition,
-    )
-  }
-
-  function handleColumnSettingDrop(key: string) {
-    if (!draggedColumnSettingKey.value) {
-      return
-    }
-
-    columnSettingItems.value = reorderSettingItems(
-      columnSettingItems.value,
-      draggedColumnSettingKey.value,
-      key,
-      dragOverColumnSettingPosition.value,
-    )
-    persistSettingItems(options.moduleKey.value, columnSettingItems.value)
-    resetListColumnSettingDragState()
-  }
-
-  function getColumnSettingItemClass(key: string) {
-    return getSettingItemClass(
-      key,
-      draggedColumnSettingKey.value,
-      dragOverColumnSettingKey.value,
-      dragOverColumnSettingPosition.value,
-    )
-  }
-
-  function handleFormFieldSettingDragStart(key: string, event: DragEvent) {
-    handleSettingDragStart(
-      key,
-      event,
-      draggedFormFieldSettingKey,
-      dragOverFormFieldSettingKey,
-      dragOverFormFieldSettingPosition,
-    )
-  }
-
-  function handleFormFieldSettingDragOver(key: string, event: DragEvent) {
-    handleSettingDragOver(
-      key,
-      event,
-      draggedFormFieldSettingKey,
-      dragOverFormFieldSettingKey,
-      dragOverFormFieldSettingPosition,
-    )
-  }
-
-  function handleFormFieldSettingDrop(key: string) {
-    if (!draggedFormFieldSettingKey.value) {
-      return
-    }
-
-    formFieldSettingItems.value = reorderSettingItems(
-      formFieldSettingItems.value,
-      draggedFormFieldSettingKey.value,
-      key,
-      dragOverFormFieldSettingPosition.value,
-    )
-    persistSettingItems(`${options.moduleKey.value}:editor-form-fields`, formFieldSettingItems.value)
-    resetFormFieldSettingDragState()
-  }
-
-  function getFormFieldSettingItemClass(key: string) {
-    return getSettingItemClass(
-      key,
-      draggedFormFieldSettingKey.value,
-      dragOverFormFieldSettingKey.value,
-      dragOverFormFieldSettingPosition.value,
-    )
-  }
-
-  function handleEditorColumnSettingDragStart(key: string, event: DragEvent) {
-    handleSettingDragStart(
-      key,
-      event,
-      draggedEditorColumnSettingKey,
-      dragOverEditorColumnSettingKey,
-      dragOverEditorColumnSettingPosition,
-    )
-  }
-
-  function handleEditorColumnSettingDragOver(key: string, event: DragEvent) {
-    handleSettingDragOver(
-      key,
-      event,
-      draggedEditorColumnSettingKey,
-      dragOverEditorColumnSettingKey,
-      dragOverEditorColumnSettingPosition,
-    )
-  }
-
-  function handleEditorColumnSettingDrop(key: string) {
-    if (!draggedEditorColumnSettingKey.value) {
-      return
-    }
-
-    editorColumnSettingItems.value = reorderSettingItems(
-      editorColumnSettingItems.value,
-      draggedEditorColumnSettingKey.value,
-      key,
-      dragOverEditorColumnSettingPosition.value,
-    )
-    persistSettingItems(`${options.moduleKey.value}:editor-items`, editorColumnSettingItems.value)
-    resetEditorColumnSettingDragState()
-  }
-
-  function getEditorColumnSettingItemClass(key: string) {
-    return getSettingItemClass(
-      key,
-      draggedEditorColumnSettingKey.value,
-      dragOverEditorColumnSettingKey.value,
-      dragOverEditorColumnSettingPosition.value,
-    )
+    clearListColumnSettings(editorColumnStorageKey)
+    editorColumns.items.value = buildDefaultItemsFromColumns(options.config.value.itemColumns || [])
   }
 
   return {
-    columnSettingItems,
-    editorColumnSettingItems,
-    formFieldSettingItems,
-    getColumnSettingItemClass,
-    getEditorColumnSettingItemClass,
-    getFormFieldSettingItemClass,
-    handleColumnSettingDragOver,
-    handleColumnSettingDragStart,
-    handleColumnSettingDrop,
+    columnSettingItems: columns.items,
+    editorColumnSettingItems: editorColumns.items,
+    formFieldSettingItems: formFields.items,
+    getColumnSettingItemClass: (key: string) =>
+      getItemClass(key, columns.draggedKey.value, columns.dragOverKey.value, columns.dragOverPosition.value),
+    getEditorColumnSettingItemClass: (key: string) =>
+      getItemClass(key, editorColumns.draggedKey.value, editorColumns.dragOverKey.value, editorColumns.dragOverPosition.value),
+    getFormFieldSettingItemClass: (key: string) =>
+      getItemClass(key, formFields.draggedKey.value, formFields.dragOverKey.value, formFields.dragOverPosition.value),
+    handleColumnSettingDragOver: (key: string, event: DragEvent) => handleGroupDragOver(columns, key, event),
+    handleColumnSettingDragStart: (key: string, event: DragEvent) => handleGroupDragStart(columns, key, event),
+    handleColumnSettingDrop: (key: string) => handleGroupDrop(columns, key, columnStorageKey),
     handleColumnVisibleChange,
-    handleEditorColumnSettingDragOver,
-    handleEditorColumnSettingDragStart,
-    handleEditorColumnSettingDrop,
+    handleEditorColumnSettingDragOver: (key: string, event: DragEvent) => handleGroupDragOver(editorColumns, key, event),
+    handleEditorColumnSettingDragStart: (key: string, event: DragEvent) => handleGroupDragStart(editorColumns, key, event),
+    handleEditorColumnSettingDrop: (key: string) => handleGroupDrop(editorColumns, key, editorColumnStorageKey),
     handleEditorColumnVisibleChange,
-    handleFormFieldSettingDragOver,
-    handleFormFieldSettingDragStart,
-    handleFormFieldSettingDrop,
+    handleFormFieldSettingDragOver: (key: string, event: DragEvent) => handleGroupDragOver(formFields, key, event),
+    handleFormFieldSettingDragStart: (key: string, event: DragEvent) => handleGroupDragStart(formFields, key, event),
+    handleFormFieldSettingDrop: (key: string) => handleGroupDrop(formFields, key, formFieldStorageKey),
     handleFormFieldVisibleChange,
     initColumnSettings,
     initEditorColumnSettings,
     initFormFieldSettings,
     resetColumnSettings,
     resetEditorColumnSettings,
-    resetEditorColumnSettingDragState,
-    resetFormFieldSettingDragState,
+    resetEditorColumnSettingDragState: () => resetGroupDragState(editorColumns),
+    resetFormFieldSettingDragState: () => resetGroupDragState(formFields),
     resetFormFieldSettings,
-    resetListColumnSettingDragState,
+    resetListColumnSettingDragState: () => resetGroupDragState(columns),
   }
 }

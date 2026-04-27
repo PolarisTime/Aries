@@ -1,4 +1,5 @@
 import { assertApiSuccess, http } from '@/api/client'
+import { ENDPOINTS } from '@/constants/endpoints'
 
 export interface DashboardSummary {
   appName: string
@@ -23,7 +24,7 @@ interface DashboardSummaryResponse<T> {
 
 export async function getDashboardSummary() {
   const response = assertApiSuccess(
-    (await http.get('/dashboard/summary')) as unknown as DashboardSummaryResponse<DashboardSummary>,
+    await http.get<DashboardSummaryResponse<DashboardSummary>>(ENDPOINTS.DASHBOARD_SUMMARY),
     '加载工作台摘要失败',
   )
   return response.data

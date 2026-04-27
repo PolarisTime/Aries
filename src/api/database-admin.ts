@@ -1,4 +1,5 @@
 import { assertApiSuccess, http } from '@/api/client'
+import { ENDPOINTS } from '@/constants/endpoints'
 
 export interface PostgresStatus {
   host: string
@@ -67,7 +68,7 @@ function buildTotpHeaders(totpCode: string) {
 
 export async function getDatabaseStatus() {
   const response = assertApiSuccess(
-    await http.get('/system/database/status') as unknown as DatabaseResponse<DatabaseStatus>,
+    await http.get<DatabaseResponse<DatabaseStatus>>(ENDPOINTS.DATABASE_STATUS),
     '加载数据库状态失败',
   )
   return response.data
@@ -90,9 +91,9 @@ function normalizeTask(record: Record<string, unknown>): DatabaseExportTask {
 
 export async function createDatabaseExportTask(totpCode: string) {
   const response = assertApiSuccess(
-    await http.post('/system/database/export-tasks', null, {
+    await http.post<DatabaseResponse<Record<string, unknown>>>(ENDPOINTS.DATABASE_EXPORT_TASKS, null, {
       headers: buildTotpHeaders(totpCode),
-    }) as unknown as DatabaseResponse<Record<string, unknown>>,
+    }),
     '提交数据库导出任务失败',
   )
   return normalizeTask(response.data || {})
@@ -100,7 +101,7 @@ export async function createDatabaseExportTask(totpCode: string) {
 
 export async function listDatabaseExportTasks() {
   const response = assertApiSuccess(
-    await http.get('/system/database/export-tasks') as unknown as DatabaseResponse<Record<string, unknown>[]>,
+    await http.get<DatabaseResponse<Record<string, unknown>[]>>(ENDPOINTS.DATABASE_EXPORT_TASKS),
     '加载数据库导出任务失败',
   )
   return Array.isArray(response.data) ? response.data.map((item) => normalizeTask(item)) : []
@@ -108,7 +109,7 @@ export async function listDatabaseExportTasks() {
 
 export async function generateDatabaseExportDownloadLink(taskId: string) {
   const response = assertApiSuccess(
-    await http.post(`/system/database/export-tasks/${encodeURIComponent(taskId)}/download-link`) as unknown as DatabaseResponse<Record<string, unknown>>,
+    await http.post<DatabaseResponse<Record<string, unknown>>>(`${ENDPOINTS.DATABASE_EXPORT_TASKS}/${encodeURIComponent(taskId)}/download-link`),
     '生成下载链接失败',
   )
   return {
@@ -124,12 +125,12 @@ export async function importDatabaseBackup(file: File, totpCode: string, databas
   formData.append('databasePassword', databasePassword)
 
   return assertApiSuccess(
-    await http.post('/system/database/import', formData, {
+    await http.post<DatabaseResponse<null>>(ENDPOINTS.DATABASE_IMPORT, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         ...buildTotpHeaders(totpCode),
       },
-    }) as unknown as DatabaseResponse<null>,
+    }),
     '导入数据库备份失败',
   )
 }

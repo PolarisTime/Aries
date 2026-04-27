@@ -126,7 +126,7 @@ const selectedRoleDataScope = computed(() => {
     .reduce((effective, current) => (dataScopeRank(current) > dataScopeRank(effective) ? current : effective), '本人')
 })
 
-const editorTitle = computed(() => (editorMode.value === 'create' ? '新增用户账户' : '编辑用户账户'))
+const editorTitle = computed(() => (editorMode.value === 'create' ? '新增用户账户' : '编辑用户账户')) // UI uses this directly; Chinese is intentional for now
 const loginNameValidateStatus = computed(() => {
   if (loginNameChecking.value) {
     return 'validating'
@@ -665,11 +665,11 @@ onMounted(() => {
         <div class="user-account-toolbar-right">
           <a-button @click="loadUsers">
             <template #icon><ReloadOutlined /></template>
-            刷新
+            {{ $t('common.refresh') }}
           </a-button>
           <a-button v-if="canCreate" type="primary" @click="openCreateModal">
             <template #icon><PlusOutlined /></template>
-            新增用户
+            {{ $t('common.create') }}
           </a-button>
         </div>
       </div>
@@ -685,7 +685,7 @@ onMounted(() => {
           pageSize: pageSize,
           total: totalElements,
           showSizeChanger: true,
-          showTotal: (total: number) => `共 ${total} 条`,
+          showTotal: (total: number) => $t('common.total', { count: total }),
           onChange: (page: number, size: number) => { currentPage = page; pageSize = size },
         }"
       >
@@ -744,16 +744,16 @@ onMounted(() => {
           <template #default="{ record }">
             <a-space :size="10">
               <a @click.prevent="openDetailModal(record)">
-                <EyeOutlined /> 查看
+                <EyeOutlined /> {{ $t('common.detail') }}
               </a>
               <a v-if="canEdit" @click.prevent="openEditModal(record)">
-                <EditOutlined /> 编辑
+                <EditOutlined /> {{ $t('common.edit') }}
               </a>
               <a v-if="canEdit" @click.prevent="open2faModal(record)">
-                <SafetyCertificateOutlined /> 2FA 管理
+                <SafetyCertificateOutlined /> 2FA
               </a>
               <a v-if="canDelete" class="action-danger" @click.prevent="handleDelete(record)">
-                <DeleteOutlined /> 删除
+                <DeleteOutlined /> {{ $t('common.delete') }}
               </a>
             </a-space>
           </template>

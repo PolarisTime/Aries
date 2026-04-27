@@ -6,14 +6,13 @@ import {
   enableOwn2fa,
   setupOwn2fa,
 } from '@/api/account-security'
-import { useRequestError } from '@/composables/use-request-error'
+import { showRequestError } from '@/composables/use-request-error'
 import { useAuthStore } from '@/stores/auth'
 import type { TotpSetupResponse } from '@/types/auth'
 import { setStoredUser } from '@/utils/storage'
 
 export function useAccountSecurity() {
   const authStore = useAuthStore()
-  const showRequestError = useRequestError()
 
   const passwordSaving = ref(false)
   const twoFactorSetupLoading = ref(false)

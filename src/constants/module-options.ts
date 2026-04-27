@@ -1,3 +1,7 @@
+// NOTE: These are fallback/default values for dropdown selects.
+// In production, warehouse/customer/supplier options should come from dedicated
+// API endpoints (e.g., GET /warehouses/search, GET /customers/search) to stay
+// in sync with the master data tables. Hardcoded lists here will drift.
 function createOptionList(values: readonly string[]) {
   return values.map((value) => ({ label: value, value }))
 }

@@ -172,7 +172,7 @@ onMounted(() => {
 
           <template v-else>
             <div class="initial-setup-head">
-              <h2>首次初始化</h2>
+              <h2>{{ $t('auth.initialSetup') }}</h2>
               <p>检测系统是否已经完成管理员与公司主体配置。</p>
             </div>
 
@@ -276,14 +276,14 @@ onMounted(() => {
               />
 
               <div class="initial-setup-actions">
-                <a-button @click="loadStatus">刷新状态</a-button>
+                <a-button @click="loadStatus">{{ $t('common.refresh') }}</a-button>
                 <a-button
                   type="primary"
                   :loading="setupMutation.isPending.value"
                   :disabled="!canSubmit"
                   @click="handleSubmit"
                 >
-                  完成首次初始化
+                  {{ $t('common.submit') }}
                 </a-button>
               </div>
             </a-form>

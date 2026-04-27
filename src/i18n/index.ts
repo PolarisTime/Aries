@@ -1,4 +1,5 @@
 import { createI18n } from 'vue-i18n'
+import type { MessageSchema } from '@/types/i18n'
 import enUS from '@/locales/en-US'
 import zhCN from '@/locales/zh-CN'
 
@@ -19,7 +20,7 @@ function resolveInitialLocale() {
   return browserLocale.startsWith('en') ? 'en-US' : DEFAULT_LOCALE
 }
 
-export const i18n = createI18n({
+export const i18n = createI18n<[MessageSchema], 'zh-CN' | 'en-US'>({
   legacy: false,
   globalInjection: true,
   locale: resolveInitialLocale(),

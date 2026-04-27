@@ -1,3 +1,4 @@
+import { businessPageConfigs } from '@/config/business-pages'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 
 type PayloadBuilder = (record: ModuleRecord) => Record<string, unknown>
@@ -17,283 +18,54 @@ const lineItemPayloadModuleKeys = new Set([
   'invoice-issues',
 ])
 
-const scalarFieldsByModule: Record<string, readonly string[]> = {
-  materials: [
-    'materialCode',
-    'brand',
-    'material',
-    'category',
-    'spec',
-    'length',
-    'unit',
-    'quantityUnit',
-    'pieceWeightTon',
-    'piecesPerBundle',
-    'unitPrice',
-    'batchNoEnabled',
-    'remark',
-  ],
-  suppliers: [
-    'supplierCode',
-    'supplierName',
-    'contactName',
-    'contactPhone',
-    'city',
-    'status',
-    'remark',
-  ],
-  customers: [
-    'customerCode',
-    'customerName',
-    'contactName',
-    'contactPhone',
-    'city',
-    'settlementMode',
-    'status',
-    'remark',
-  ],
-  carriers: [
-    'carrierCode',
-    'carrierName',
-    'contactName',
-    'contactPhone',
-    'vehicleType',
-    'priceMode',
-    'status',
-    'remark',
-  ],
-  warehouses: [
-    'warehouseCode',
-    'warehouseName',
-    'warehouseType',
-    'contactName',
-    'contactPhone',
-    'address',
-    'status',
-    'remark',
-  ],
-  'purchase-orders': [
-    'orderNo',
-    'supplierName',
-    'orderDate',
-    'buyerName',
-    'status',
-    'remark',
-  ],
-  'purchase-inbounds': [
-    'inboundNo',
-    'purchaseOrderNo',
-    'supplierName',
-    'warehouseName',
-    'inboundDate',
-    'settlementMode',
-    'status',
-    'remark',
-  ],
-  'sales-orders': [
-    'orderNo',
-    'purchaseInboundNo',
-    'customerName',
-    'projectName',
-    'deliveryDate',
-    'salesName',
-    'status',
-    'remark',
-  ],
-  'sales-outbounds': [
-    'outboundNo',
-    'salesOrderNo',
-    'customerName',
-    'projectName',
-    'warehouseName',
-    'outboundDate',
-    'status',
-    'remark',
-  ],
-  'freight-bills': [
-    'billNo',
-    'outboundNo',
-    'carrierName',
-    'customerName',
-    'projectName',
-    'billTime',
-    'unitPrice',
-    'status',
-    'deliveryStatus',
-    'remark',
-  ],
-  'purchase-contracts': [
-    'contractNo',
-    'supplierName',
-    'signDate',
-    'effectiveDate',
-    'expireDate',
-    'buyerName',
-    'status',
-    'remark',
-  ],
-  'sales-contracts': [
-    'contractNo',
-    'customerName',
-    'projectName',
-    'signDate',
-    'effectiveDate',
-    'expireDate',
-    'salesName',
-    'status',
-    'remark',
-  ],
-  'supplier-statements': [
-    'statementNo',
-    'sourceInboundNos',
-    'supplierName',
-    'startDate',
-    'endDate',
-    'purchaseAmount',
-    'status',
-    'remark',
-  ],
-  'customer-statements': [
-    'statementNo',
-    'sourceOrderNos',
-    'customerName',
-    'projectName',
-    'startDate',
-    'endDate',
-    'salesAmount',
-    'status',
-    'remark',
-  ],
-  'freight-statements': [
-    'statementNo',
-    'sourceBillNos',
-    'carrierName',
-    'startDate',
-    'endDate',
-    'totalWeight',
-    'totalFreight',
-    'status',
-    'signStatus',
-    'attachment',
-    'remark',
-  ],
-  receipts: [
-    'receiptNo',
-    'customerName',
-    'projectName',
-    'sourceStatementId',
-    'receiptDate',
-    'payType',
-    'amount',
-    'status',
-    'operatorName',
-    'remark',
-  ],
-  payments: [
-    'paymentNo',
-    'businessType',
-    'counterpartyName',
-    'sourceStatementId',
-    'paymentDate',
-    'payType',
-    'amount',
-    'status',
-    'operatorName',
-    'remark',
-  ],
-  'invoice-receipts': [
-    'receiveNo',
-    'invoiceNo',
-    'sourcePurchaseOrderNos',
-    'supplierName',
-    'invoiceTitle',
-    'invoiceDate',
-    'invoiceType',
-    'amount',
-    'taxAmount',
-    'status',
-    'operatorName',
-    'remark',
-  ],
-  'invoice-issues': [
-    'issueNo',
-    'invoiceNo',
-    'sourceSalesOrderNos',
-    'customerName',
-    'projectName',
-    'invoiceDate',
-    'invoiceType',
-    'amount',
-    'taxAmount',
-    'status',
-    'operatorName',
-    'remark',
-  ],
-  'general-settings': [
-    'settingCode',
-    'settingName',
-    'billName',
-    'prefix',
-    'dateRule',
-    'serialLength',
-    'resetRule',
-    'sampleNo',
-    'status',
-    'remark',
-  ],
-  'company-settings': [
-    'companyName',
-    'taxNo',
-    'bankName',
-    'bankAccount',
-    'taxRate',
-    'status',
-    'remark',
-  ],
-  'permission-management': [
-    'permissionCode',
-    'permissionName',
-    'moduleName',
-    'permissionType',
-    'actionName',
-    'scopeName',
-    'resourceKey',
-    'status',
-    'remark',
-  ],
-  departments: [
-    'departmentCode',
-    'departmentName',
-    'parentId',
-    'managerName',
-    'contactPhone',
-    'sortOrder',
-    'status',
-    'remark',
-  ],
-  'user-accounts': [
-    'loginName',
-    'password',
-    'userName',
-    'mobile',
-    'departmentId',
-    'roleNames',
-    'dataScope',
-    'permissionSummary',
-    'status',
-    'remark',
-  ],
-  'role-settings': [
-    'roleCode',
-    'roleName',
-    'roleType',
-    'dataScope',
-    'permissionCodes',
-    'permissionSummary',
-    'userCount',
-    'status',
-    'remark',
-  ],
+// Computed fields that the server calculates — never included in save payloads.
+const COMPUTED_FIELD_KEYS = new Set([
+  'totalWeight',
+  'totalAmount',
+  'totalFreight',
+  'purchaseAmount',
+  'salesAmount',
+  'taxAmount',
+  'amount',
+  'permissionSummary',
+  'userCount',
+])
+
+// Certain modules need extra fields that aren't in their detailFields definition.
+const EXTRA_SCALAR_FIELDS: Record<string, string[]> = {
+  'freight-statements': ['attachment'],
+  'purchase-orders': ['buyerName'],
+  'purchase-inbounds': ['buyerName'],
+  'sales-orders': ['salesName'],
+  'sales-outbounds': ['salesName'],
+  'purchase-contracts': ['buyerName'],
+  'sales-contracts': ['salesName'],
+}
+
+function resolveScalarFields(moduleKey: string): string[] {
+  const config = businessPageConfigs[moduleKey]
+  if (!config) {
+    return []
+  }
+
+  const fromDetailFields = (config.detailFields || [])
+    .map((f) => f.key)
+    .filter((key) => !COMPUTED_FIELD_KEYS.has(key))
+
+  const extras = EXTRA_SCALAR_FIELDS[moduleKey] || []
+  return [...new Set([...fromDetailFields, ...extras])]
+}
+
+const scalarFieldCache = new Map<string, string[]>()
+
+function getScalarFields(moduleKey: string): readonly string[] {
+  const cached = scalarFieldCache.get(moduleKey)
+  if (cached) {
+    return cached
+  }
+  const fields: readonly string[] = Object.freeze(resolveScalarFields(moduleKey))
+  scalarFieldCache.set(moduleKey, fields as unknown as string[])
+  return fields
 }
 
 function toArray<T>(value: T[] | undefined) {
@@ -321,52 +93,67 @@ function toPersistedLineItemId(value: unknown) {
   return /^\d+$/.test(normalized) ? normalized : undefined
 }
 
+type LineItemFieldSpec = { key: string; numeric?: boolean }
+
+const LINE_ITEM_FIELDS: readonly LineItemFieldSpec[] = [
+  { key: 'materialCode' },
+  { key: 'brand' },
+  { key: 'category' },
+  { key: 'material' },
+  { key: 'spec' },
+  { key: 'length' },
+  { key: 'unit' },
+  { key: 'batchNo' },
+  { key: 'quantity', numeric: true },
+  { key: 'quantityUnit' },
+  { key: 'pieceWeightTon' },
+  { key: 'piecesPerBundle', numeric: true },
+  { key: 'weightTon' },
+  { key: 'unitPrice' },
+  { key: 'amount' },
+  { key: 'sourcePurchaseOrderItemId' },
+  { key: 'sourceSalesOrderItemId' },
+  { key: 'sourceInboundItemId' },
+  { key: 'sourceNo' },
+  { key: 'customerName' },
+  { key: 'projectName' },
+  { key: 'materialName' },
+  { key: 'warehouseName' },
+]
+
 function serializeLineItem(item: ModuleLineItem) {
   const persistedId = toPersistedLineItemId(item.id)
-  return {
-    ...(persistedId ? { id: persistedId } : {}),
-    materialCode: item.materialCode,
-    brand: item.brand,
-    category: item.category,
-    material: item.material,
-    spec: item.spec,
-    length: item.length,
-    unit: item.unit,
-    batchNo: item.batchNo,
-    quantity: Number(item.quantity || 0),
-    quantityUnit: item.quantityUnit,
-    pieceWeightTon: item.pieceWeightTon,
-    piecesPerBundle: Number(item.piecesPerBundle || 0),
-    weightTon: item.weightTon,
-    unitPrice: item.unitPrice,
-    amount: item.amount,
-    sourcePurchaseOrderItemId: item.sourcePurchaseOrderItemId,
-    sourceSalesOrderItemId: item.sourceSalesOrderItemId,
-    sourceInboundItemId: item.sourceInboundItemId,
-    sourceNo: item.sourceNo,
-    customerName: item.customerName,
-    projectName: item.projectName,
-    materialName: item.materialName,
-    warehouseName: item.warehouseName,
+  const result: Record<string, unknown> = {}
+  if (persistedId) {
+    result.id = persistedId
   }
+  for (const field of LINE_ITEM_FIELDS) {
+    const value = item[field.key]
+    if (value !== undefined) {
+      result[field.key] = field.numeric ? Number(value || 0) : value
+    }
+  }
+  return result
 }
 
-const scalarPayloadBuilders: Record<string, PayloadBuilder> =
-  Object.fromEntries(
-    Object.entries(scalarFieldsByModule).map(([moduleKey, fields]) => [
-      moduleKey,
-      (record: ModuleRecord) => pickDefinedFields(record, fields),
-    ]),
-  ) as Record<string, PayloadBuilder>
+const scalarPayloadBuilders = new Map<string, PayloadBuilder>()
+
+function getPayloadBuilder(moduleKey: string): PayloadBuilder {
+  const cached = scalarPayloadBuilders.get(moduleKey)
+  if (cached) {
+    return cached
+  }
+  const fields = getScalarFields(moduleKey)
+  const builder: PayloadBuilder = (record: ModuleRecord) => pickDefinedFields(record, fields)
+  scalarPayloadBuilders.set(moduleKey, builder)
+  return builder
+}
 
 export function serializeBusinessRecordForSave(
   moduleKey: string,
   record: ModuleRecord,
 ) {
-  const builder = scalarPayloadBuilders[moduleKey]
-  if (!builder) {
-    throw new Error(`未配置模块保存映射: ${moduleKey}`)
-  }
+  const builder = getPayloadBuilder(moduleKey)
 
   const payload = builder(record)
 

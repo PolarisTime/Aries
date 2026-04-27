@@ -11,6 +11,7 @@ import {
 import { message } from 'ant-design-vue'
 import { getInitialSetupStatus } from '@/api/setup'
 import { useAuthStore } from '@/stores/auth'
+import { requiresForcedTotpSetup } from '@/router'
 import type { LoginUser } from '@/types/auth'
 import { appTitle } from '@/utils/env'
 
@@ -70,7 +71,7 @@ function resolveRedirectTarget() {
 
 function resolvePostLoginTarget(user: LoginUser | null | undefined) {
   const redirect = resolveRedirectTarget()
-  if (user?.forceTotpSetup && user?.totpEnabled !== true) {
+  if (requiresForcedTotpSetup(user)) {
     return {
       path: '/setup-2fa',
       query: redirect ? { redirect } : undefined,
@@ -103,7 +104,7 @@ const loginMutation = useMutation({
       return
     }
 
-    if (result.user?.forceTotpSetup && result.user?.totpEnabled !== true) {
+    if (requiresForcedTotpSetup(result.user)) {
       message.warning('账号已登录，请先完成 2FA 绑定后再进入系统。')
     } else {
       message.success('登录成功，已接入现有后端认证接口。')
@@ -220,7 +221,7 @@ onBeforeUnmount(() => {
 
       <a-card :bordered="false" class="login-form-card">
         <div class="login-form-head">
-          <h2>用户登录</h2>
+          <h2>{{ $t('auth.login') }}</h2>
           <p>当前环境：Leo 业务接口</p>
         </div>
 
@@ -245,7 +246,7 @@ onBeforeUnmount(() => {
                 name="loginName"
                 size="large"
                 autocomplete="username"
-                placeholder="请输入账号"
+                :placeholder="$t('auth.loginName')"
                 @press-enter="handleLogin"
               >
                 <template #prefix>
@@ -261,7 +262,7 @@ onBeforeUnmount(() => {
                 name="password"
                 size="large"
                 autocomplete="current-password"
-                placeholder="请输入密码"
+                :placeholder="$t('auth.password')"
                 @press-enter="handleLogin"
               >
                 <template #prefix>
@@ -271,7 +272,7 @@ onBeforeUnmount(() => {
             </a-form-item>
 
             <a-form-item class="login-options">
-              <a-checkbox v-model:checked="formState.remember" name="remember">记住账号</a-checkbox>
+              <a-checkbox v-model:checked="formState.remember" name="remember">{{ $t('auth.remember') }}</a-checkbox>
             </a-form-item>
 
             <a-form-item>
@@ -284,7 +285,7 @@ onBeforeUnmount(() => {
                 :disabled="isSubmitDisabled"
                 @click.prevent="handleLogin"
               >
-                登录
+                {{ $t('auth.login') }}
               </a-button>
             </a-form-item>
 
@@ -300,18 +301,18 @@ onBeforeUnmount(() => {
             <a-alert
               type="warning"
               show-icon
-              message="二次验证"
+              :message="$t('auth.twoFactorTitle')"
               :description="`账号 ${formState.loginName} 已开启动态验证码，请输入 6 位 TOTP 验证码。`"
               style="margin-bottom: 16px"
             />
 
-            <a-form-item label="动态验证码">
+            <a-form-item :label="$t('auth.twoFactorCode')">
                 <a-input
                   v-model:value="totpCode"
                   size="large"
                   :maxlength="6"
                   autocomplete="one-time-code"
-                  placeholder="请输入 6 位验证码"
+                  :placeholder="$t('auth.twoFactorHint')"
                   @press-enter="handleVerify2fa"
                 >
                 <template #prefix>

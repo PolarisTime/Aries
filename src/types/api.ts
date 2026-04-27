@@ -10,4 +10,6 @@ export interface TableResponse<T> {
 export interface PagedResult<T> {
   rows: T[]
   total: number
+  errorCode?: number
+  errorMessage?: string
 }

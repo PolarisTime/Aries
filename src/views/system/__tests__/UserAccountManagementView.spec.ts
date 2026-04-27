@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import type { VueWrapper } from '@vue/test-utils'
 import Antd from 'ant-design-vue'
 import { createPinia, setActivePinia } from 'pinia'
+import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionStore } from '@/stores/permission'
 import UserAccountManagementView from '@/views/system/UserAccountManagementView.vue'
@@ -70,7 +71,7 @@ function mountWithPermissions() {
   const wrapper = mount(UserAccountManagementView, {
     attachTo: document.body,
     global: {
-      plugins: [Antd, pinia],
+      plugins: [Antd, pinia, i18n],
     },
   })
   mountedWrappers.push(wrapper)
@@ -183,7 +184,7 @@ describe('UserAccountManagementView', () => {
     const wrapper = mountWithPermissions()
     await flushPromises()
 
-    const createButton = wrapper.findAll('button').find((button) => getNormalizedText(button.text()) === '新增用户')
+    const createButton = wrapper.findAll('button').find((button) => getNormalizedText(button.text()) === '新增')
     expect(createButton).toBeDefined()
 
     await createButton!.trigger('click')
@@ -197,7 +198,7 @@ describe('UserAccountManagementView', () => {
     const wrapper = mountWithPermissions()
     await flushPromises()
 
-    const createButton = wrapper.findAll('button').find((button) => getNormalizedText(button.text()) === '新增用户')
+    const createButton = wrapper.findAll('button').find((button) => getNormalizedText(button.text()) === '新增')
     await createButton!.trigger('click')
     await flushPromises()
 
@@ -248,7 +249,7 @@ describe('UserAccountManagementView', () => {
     const wrapper = mountWithPermissions()
     await flushPromises()
 
-    const createButton = wrapper.findAll('button').find((button) => getNormalizedText(button.text()) === '新增用户')
+    const createButton = wrapper.findAll('button').find((button) => getNormalizedText(button.text()) === '新增')
     await createButton!.trigger('click')
     await flushPromises()
 
@@ -292,7 +293,7 @@ describe('UserAccountManagementView', () => {
     const wrapper = mountWithPermissions()
     await flushPromises()
 
-    const createButton = wrapper.findAll('button').find((button) => getNormalizedText(button.text()) === '新增用户')
+    const createButton = wrapper.findAll('button').find((button) => getNormalizedText(button.text()) === '新增')
     await createButton!.trigger('click')
     await flushPromises()
 
@@ -346,7 +347,7 @@ describe('UserAccountManagementView', () => {
     const wrapper = mountWithPermissions()
     await flushPromises()
 
-    const createButton = wrapper.findAll('button').find((button) => getNormalizedText(button.text()) === '新增用户')
+    const createButton = wrapper.findAll('button').find((button) => getNormalizedText(button.text()) === '新增')
     await createButton!.trigger('click')
     await flushPromises()
 
