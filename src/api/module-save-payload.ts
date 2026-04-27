@@ -72,15 +72,6 @@ const scalarFieldsByModule: Record<string, readonly string[]> = {
     'status',
     'remark',
   ],
-  'settlement-accounts': [
-    'accountName',
-    'companyName',
-    'bankName',
-    'bankAccount',
-    'usageType',
-    'status',
-    'remark',
-  ],
   'purchase-orders': [
     'orderNo',
     'supplierName',
@@ -319,8 +310,21 @@ function pickDefinedFields(record: ModuleRecord, fields: readonly string[]) {
   return next
 }
 
+function toPersistedLineItemId(value: unknown) {
+  if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
+    return String(value)
+  }
+  if (typeof value !== 'string') {
+    return undefined
+  }
+  const normalized = value.trim()
+  return /^\d+$/.test(normalized) ? normalized : undefined
+}
+
 function serializeLineItem(item: ModuleLineItem) {
+  const persistedId = toPersistedLineItemId(item.id)
   return {
+    ...(persistedId ? { id: persistedId } : {}),
     materialCode: item.materialCode,
     brand: item.brand,
     category: item.category,

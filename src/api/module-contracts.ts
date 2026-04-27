@@ -19,31 +19,75 @@ export const moduleEndpointContracts: Record<string, ModuleEndpointConfig> = {
     path: '/warehouses',
     nativeFilterKeys: ['keyword', 'warehouseType', 'status'],
   },
-  'settlement-accounts': {
-    path: '/settlement-accounts',
-    nativeFilterKeys: ['keyword', 'usageType', 'status'],
-  },
   'purchase-orders': {
     path: '/purchase-orders',
-    nativeFilterKeys: ['keyword'],
+    nativeFilterKeys: ['keyword', 'supplierName', 'status', 'startDate', 'endDate'],
+    dateRangeMapping: {
+      orderDate: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
   },
   'purchase-inbounds': {
     path: '/purchase-inbounds',
-    nativeFilterKeys: ['keyword'],
+    nativeFilterKeys: ['keyword', 'supplierName', 'status', 'startDate', 'endDate'],
+    dateRangeMapping: {
+      inboundDate: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
   },
-  'sales-orders': { path: '/sales-orders', nativeFilterKeys: ['keyword'] },
+  'sales-orders': {
+    path: '/sales-orders',
+    nativeFilterKeys: ['keyword', 'customerName', 'status', 'startDate', 'endDate'],
+    dateRangeMapping: {
+      deliveryDate: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
+  },
   'sales-outbounds': {
     path: '/sales-outbounds',
-    nativeFilterKeys: ['keyword'],
+    nativeFilterKeys: ['keyword', 'customerName', 'status', 'startDate', 'endDate'],
+    dateRangeMapping: {
+      outboundDate: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
   },
-  'freight-bills': { path: '/freight-bills', nativeFilterKeys: ['keyword'] },
+  'freight-bills': {
+    path: '/freight-bills',
+    nativeFilterKeys: ['keyword', 'carrierName', 'status', 'startDate', 'endDate'],
+    dateRangeMapping: {
+      billTime: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
+  },
   'purchase-contracts': {
     path: '/purchase-contracts',
-    nativeFilterKeys: ['keyword'],
+    nativeFilterKeys: ['keyword', 'supplierName', 'status', 'startDate', 'endDate'],
+    dateRangeMapping: {
+      signDate: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
   },
   'sales-contracts': {
     path: '/sales-contracts',
-    nativeFilterKeys: ['keyword'],
+    nativeFilterKeys: ['keyword', 'customerName', 'status', 'startDate', 'endDate'],
+    dateRangeMapping: {
+      signDate: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
   },
   'supplier-statements': {
     path: '/supplier-statements',
@@ -75,8 +119,26 @@ export const moduleEndpointContracts: Record<string, ModuleEndpointConfig> = {
       },
     },
   },
-  receipts: { path: '/receipts', nativeFilterKeys: ['keyword'] },
-  payments: { path: '/payments', nativeFilterKeys: ['keyword'] },
+  receipts: {
+    path: '/receipts',
+    nativeFilterKeys: ['keyword', 'customerName', 'status', 'startDate', 'endDate'],
+    dateRangeMapping: {
+      receiptDate: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
+  },
+  payments: {
+    path: '/payments',
+    nativeFilterKeys: ['keyword', 'businessType', 'status', 'startDate', 'endDate'],
+    dateRangeMapping: {
+      paymentDate: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
+  },
   'invoice-receipts': {
     path: '/invoice-receipts',
     nativeFilterKeys: [
@@ -182,7 +244,7 @@ export const moduleEndpointContracts: Record<string, ModuleEndpointConfig> = {
   'receivables-payables': {
     path: '/receivables-payables',
     readOnly: true,
-    nativeFilterKeys: ['keyword', 'direction', 'counterpartyType'],
+    nativeFilterKeys: ['keyword', 'direction', 'counterpartyType', 'status'],
   },
 }
 

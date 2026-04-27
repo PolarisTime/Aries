@@ -194,6 +194,81 @@ describe('business api read-only modules', () => {
     )
   })
 
+  it('serializes persisted line-item ids only for existing rows', async () => {
+    clientMocks.httpPut.mockResolvedValue({
+      code: 0,
+      data: {
+        id: '1',
+      },
+    })
+
+    const { saveBusinessModule } = await import('@/api/business')
+
+    await saveBusinessModule('purchase-orders', {
+      id: '1',
+      orderNo: 'PO-1',
+      supplierName: '供应商甲',
+      orderDate: '2026-04-25',
+      buyerName: '采购A',
+      status: '草稿',
+      remark: '',
+      items: [
+        {
+          id: '1914876201459236001',
+          materialCode: 'MAT-1',
+          brand: '宝钢',
+          category: '板材',
+          material: 'Q235',
+          spec: '10',
+          length: '6000',
+          unit: '吨',
+          warehouseName: '一号库',
+          batchNo: 'B1',
+          quantity: 2,
+          quantityUnit: '件',
+          pieceWeightTon: 1.25,
+          piecesPerBundle: 0,
+          weightTon: 2.5,
+          unitPrice: 48,
+          amount: 120,
+        },
+        {
+          id: 'purchase-order-item-local-1',
+          materialCode: 'MAT-2',
+          brand: '鞍钢',
+          category: '卷板',
+          material: 'Q355',
+          spec: '12',
+          length: '9000',
+          unit: '吨',
+          warehouseName: '二号库',
+          batchNo: 'B2',
+          quantity: 4,
+          quantityUnit: '件',
+          pieceWeightTon: 1.5,
+          piecesPerBundle: 0,
+          weightTon: 6,
+          unitPrice: 36.67,
+          amount: 220,
+        },
+      ],
+    })
+
+    expect(clientMocks.httpPut).toHaveBeenCalledWith(
+      '/purchase-orders/1',
+      expect.objectContaining({
+        items: [
+          expect.objectContaining({
+            id: '1914876201459236001',
+          }),
+          expect.not.objectContaining({
+            id: expect.anything(),
+          }),
+        ],
+      }),
+    )
+  })
+
   it('passes user account status filters through to the backend instead of client-side scanning', async () => {
     clientMocks.httpGet.mockResolvedValue({
       code: 0,
@@ -489,6 +564,200 @@ describe('business api read-only modules', () => {
     )
   })
 
+  it('passes operation document filters and date ranges through to backend queries', async () => {
+    clientMocks.httpGet.mockResolvedValue({
+      code: 0,
+      data: {
+        records: [],
+        totalElements: 0,
+        totalPages: 0,
+        last: true,
+      },
+    })
+
+    const { listBusinessModule } = await import('@/api/business')
+
+    await listBusinessModule(
+      'purchase-orders',
+      {
+        supplierName: '供应商甲',
+        status: '已审核',
+        orderDate: ['2026-04-01', '2026-04-30'],
+      },
+      {
+        currentPage: 1,
+        pageSize: 20,
+      },
+    )
+
+    await listBusinessModule(
+      'sales-orders',
+      {
+        customerName: '客户甲',
+        status: '完成销售',
+        deliveryDate: ['2026-04-01', '2026-04-30'],
+      },
+      {
+        currentPage: 2,
+        pageSize: 10,
+      },
+    )
+
+    await listBusinessModule(
+      'freight-bills',
+      {
+        carrierName: '物流甲',
+        status: '已审核',
+        billTime: ['2026-04-01', '2026-04-30'],
+      },
+      {
+        currentPage: 3,
+        pageSize: 15,
+      },
+    )
+
+    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(1, '/purchase-orders', {
+      params: {
+        supplierName: '供应商甲',
+        status: '已审核',
+        startDate: '2026-04-01',
+        endDate: '2026-04-30',
+        page: 0,
+        size: 20,
+      },
+    })
+    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(2, '/sales-orders', {
+      params: {
+        customerName: '客户甲',
+        status: '完成销售',
+        startDate: '2026-04-01',
+        endDate: '2026-04-30',
+        page: 1,
+        size: 10,
+      },
+    })
+    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(3, '/freight-bills', {
+      params: {
+        carrierName: '物流甲',
+        status: '已审核',
+        startDate: '2026-04-01',
+        endDate: '2026-04-30',
+        page: 2,
+        size: 15,
+      },
+    })
+  })
+
+  it('passes contract and finance filters through to backend queries', async () => {
+    clientMocks.httpGet.mockResolvedValue({
+      code: 0,
+      data: {
+        records: [],
+        totalElements: 0,
+        totalPages: 0,
+        last: true,
+      },
+    })
+
+    const { listBusinessModule } = await import('@/api/business')
+
+    await listBusinessModule(
+      'purchase-contracts',
+      {
+        supplierName: '供应商甲',
+        status: '已签署',
+        signDate: ['2026-04-01', '2026-04-30'],
+      },
+      {
+        currentPage: 1,
+        pageSize: 20,
+      },
+    )
+
+    await listBusinessModule(
+      'receipts',
+      {
+        customerName: '客户甲',
+        status: '已收款',
+        receiptDate: ['2026-04-01', '2026-04-30'],
+      },
+      {
+        currentPage: 2,
+        pageSize: 15,
+      },
+    )
+
+    await listBusinessModule(
+      'payments',
+      {
+        businessType: '供应商',
+        status: '已付款',
+        paymentDate: ['2026-04-01', '2026-04-30'],
+      },
+      {
+        currentPage: 3,
+        pageSize: 15,
+      },
+    )
+
+    await listBusinessModule(
+      'receivables-payables',
+      {
+        direction: '应付',
+        counterpartyType: '供应商',
+        status: '已确认',
+      },
+      {
+        currentPage: 1,
+        pageSize: 30,
+      },
+    )
+
+    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(1, '/purchase-contracts', {
+      params: {
+        supplierName: '供应商甲',
+        status: '已签署',
+        startDate: '2026-04-01',
+        endDate: '2026-04-30',
+        page: 0,
+        size: 20,
+      },
+    })
+    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(2, '/receipts', {
+      params: {
+        customerName: '客户甲',
+        status: '已收款',
+        startDate: '2026-04-01',
+        endDate: '2026-04-30',
+        page: 1,
+        size: 15,
+      },
+    })
+    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(3, '/payments', {
+      params: {
+        businessType: '供应商',
+        status: '已付款',
+        startDate: '2026-04-01',
+        endDate: '2026-04-30',
+        page: 2,
+        size: 15,
+      },
+    })
+    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(
+      4,
+      '/receivables-payables',
+      {
+        params: {
+          direction: '应付',
+          counterpartyType: '供应商',
+          status: '已确认',
+          page: 0,
+          size: 30,
+        },
+      },
+    )
+  })
+
   it('passes invoice filters and date ranges through to backend queries', async () => {
     clientMocks.httpGet.mockResolvedValue({
       code: 0,
@@ -593,7 +862,7 @@ describe('business api read-only modules', () => {
     )
   })
 
-  it('warns once when unsupported filters trigger client-side fallback scanning', async () => {
+  it('warns once when unexpected filters trigger client-side fallback scanning', async () => {
     clientMocks.httpGet.mockResolvedValue({
       code: 0,
       data: {
@@ -610,7 +879,7 @@ describe('business api read-only modules', () => {
     await listBusinessModule(
       'purchase-orders',
       {
-        supplierName: '供应商甲',
+        unexpectedFilter: '供应商甲',
       },
       {
         currentPage: 1,
@@ -621,7 +890,7 @@ describe('business api read-only modules', () => {
     await listBusinessModule(
       'purchase-orders',
       {
-        supplierName: '供应商乙',
+        unexpectedFilter: '供应商乙',
       },
       {
         currentPage: 2,
@@ -631,7 +900,7 @@ describe('business api read-only modules', () => {
 
     expect(warnSpy).toHaveBeenCalledTimes(1)
     expect(warnSpy).toHaveBeenCalledWith(
-      '[business-api] purchase-orders fell back to client-side filtering for unsupported filters: supplierName',
+      '[business-api] purchase-orders fell back to client-side filtering for unsupported filters: unexpectedFilter',
     )
     warnSpy.mockRestore()
   })
