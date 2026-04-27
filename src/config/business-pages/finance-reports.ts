@@ -3,7 +3,6 @@ import {
   buildValueOptions,
   carrierOptions,
   customerOptions,
-  enabledStatusOptions,
   materialCategoryOptions,
   statementStatusOptions,
   supplierOptions,
@@ -664,7 +663,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
         { label: '供应商', value: '供应商' },
         { label: '物流商', value: '物流商' },
       ] },
-      { key: 'status', label: '状态', type: 'select', options: enabledStatusOptions },
+      { key: 'status', label: '状态', type: 'select', options: buildValueOptions('待确认', '已确认', '待审核', '已审核') },
     ],
     columns: [
       { title: '方向', dataIndex: 'direction', width: 100 },
@@ -694,6 +693,6 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
       { label: '应付余额', value: formatAmount(sumBy(rows.filter((row) => row.direction === '应付'), 'balanceAmount')) },
     ],
     statusMap,
-    rowHighlightStatuses: ['禁用'],
+    rowHighlightStatuses: ['待确认', '待审核'],
   },
 }
