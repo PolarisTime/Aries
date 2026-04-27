@@ -1,17 +1,15 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import { apiBaseUrl } from '@/utils/env'
 
-const rawHttp = axios.create({
+const defaultConfig = {
   baseURL: apiBaseUrl,
   timeout: 300_000,
   withCredentials: true,
-})
+}
 
-export const authHttp = axios.create({
-  baseURL: apiBaseUrl,
-  timeout: 300_000,
-  withCredentials: true,
-})
+const rawHttp = axios.create(defaultConfig)
+
+export const authHttp = axios.create(defaultConfig)
 
 // Response interceptor strips response.data, so the effective return type is T, not AxiosResponse<T>.
 // This wrapper provides correctly-typed methods that reflect the interceptor behavior.

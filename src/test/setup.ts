@@ -11,3 +11,10 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: () => false,
   }),
 })
+
+Object.defineProperty(window.navigator, 'language', {
+  configurable: true,
+  value: 'zh-CN',
+})
+
+window.localStorage.setItem('leo-locale', 'zh-CN')

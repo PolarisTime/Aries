@@ -45,13 +45,23 @@ function flushPromises() {
   return new Promise((resolve) => setTimeout(resolve, 0))
 }
 
-function findButtonByText(wrapper: ReturnType<typeof mount>, text: string) {
-  return wrapper.findAll('button').find((button) => button.text().includes(text))
+function findButtonsByType(wrapper: ReturnType<typeof mount>, type: string) {
+  return wrapper.findAllComponents({ name: 'AButton' }).filter((component) => component.props('type') === type)
+}
+
+async function setInputValue(wrapper: ReturnType<typeof mount>, placeholder: string, value: string) {
+  const input = wrapper
+    .findAllComponents({ name: 'AInput' })
+    .find((component) => component.props('placeholder') === placeholder)
+  expect(input).toBeDefined()
+  input!.vm.$emit('update:value', value)
+  await flushPromises()
 }
 
 describe('SetupTwoFactorView', () => {
   beforeEach(() => {
     localStorage.clear()
+    ;(i18n.global.locale as unknown as { value: string }).value = 'zh-CN'
     routerMocks.replace.mockReset()
     routerMocks.route.query.redirect = '/purchase-orders'
     accountSecurityMocks.changeOwnPassword.mockReset()
@@ -97,13 +107,16 @@ describe('SetupTwoFactorView', () => {
       },
     })
 
-    await findButtonByText(wrapper, '生成绑定二维码')?.trigger('click')
+    const setupButton = findButtonsByType(wrapper, 'primary').at(0)
+    expect(setupButton).toBeDefined()
+    setupButton!.vm.$emit('click')
     await flushPromises()
 
-    const codeInput = wrapper.find('input[placeholder="输入认证器中的 6 位验证码"]')
-    await codeInput.setValue('123456')
+    await setInputValue(wrapper, '输入认证器中的 6 位验证码', '123456')
 
-    await findButtonByText(wrapper, '提交')?.trigger('click')
+    const submitButton = findButtonsByType(wrapper, 'primary').at(-1)
+    expect(submitButton).toBeDefined()
+    submitButton!.vm.$emit('click')
     await flushPromises()
 
     expect(accountSecurityMocks.setupOwn2fa).toHaveBeenCalledTimes(1)

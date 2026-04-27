@@ -28,6 +28,7 @@ import {
   listAllBusinessModuleRows,
 } from '@/api/business'
 import { businessPageConfigs } from '@/config/business-pages'
+import { isSuccessCode } from '@/api/client'
 import { showRequestError } from '@/composables/use-request-error'
 import {
   buildWeightOverview,
@@ -790,7 +791,7 @@ const masterTableSummary = computed(() => `共 ${listResult.value.total} 条记�
 const tableErrorMessage = ref('')
 
 function handleTableError(event: Event) {
-  const detail = (event as CustomEvent).detail as { code: number; message: string } | undefined
+  const detail = (event as Event & { detail?: { code: number; message: string } }).detail
   if (detail?.message) {
     tableErrorMessage.value = detail.message
   }
@@ -1226,10 +1227,6 @@ function sumColumnWidths(columns: ModuleColumnDefinition[]) {
 function handleSearch() {
   submittedFilters.value = buildSubmittedFilters()
   pagination.currentPage = 1
-}
-
-function isSuccessCode(code: unknown) {
-  return Number(code) === 0
 }
 
 function handleReset() {
@@ -1687,7 +1684,7 @@ function handleEditorDateValueChange(key: string, value: unknown) {
                   :name="filter.key"
                   :placeholder="filter.placeholder"
                   allow-clear
-                  @update:value="(value) => setFilterValue(filter.key, value)"
+                  @update:value="setFilterValue(filter.key, $event)"
                   @press-enter="handleSearch"
                 />
                 <a-select
@@ -1696,7 +1693,7 @@ function handleEditorDateValueChange(key: string, value: unknown) {
                   :value="getSelectModelValue(filters, filter.key)"
                   allow-clear
                   :placeholder="filter.placeholder || `请选择${filter.label}`"
-                  @update:value="(value) => setFilterValue(filter.key, value)"
+                  @update:value="setFilterValue(filter.key, $event)"
                   @change="handleFilterValueChange"
                 >
                   <template
@@ -1816,6 +1813,7 @@ function handleEditorDateValueChange(key: string, value: unknown) {
                 @delete="(r) => handleDelete(r)"
                 @attachment="openAttachmentDialog"
               />
+            </template>
             <template v-else-if="isTagListColumnKey(String(column.key))">
               <div class="cell-tag-group">
                 <a-tag
@@ -2077,7 +2075,7 @@ function handleEditorDateValueChange(key: string, value: unknown) {
                   format="YYYY-MM-DD"
                   :disabled="isEditorFieldDisabled(field)"
                   :value="getEditorDateValue(field.key)"
-                  @change="(value) => handleEditorDateValueChange(field.key, value)"
+                  @change="handleEditorDateValueChange(field.key, $event)"
                 />
                 <a-input-number
                   v-else-if="field.type === 'number'"
@@ -2125,20 +2123,18 @@ function handleEditorDateValueChange(key: string, value: unknown) {
                   {{ parentImportConfig.buttonText || '选择上级单据导入' }}
                 </a-button>
               </template>
-              <a-popover
+              <ColumnSettingsPopover
                 v-if="canEditItemColumns"
-              >
-                <ColumnSettingsPopover
-                  label="明细列设置"
-                  :items="editorColumnSettingItems"
-                  :get-item-class="getEditorColumnSettingItemClass"
-                  :on-drag-start="handleEditorColumnSettingDragStart"
-                  :on-drag-over="handleEditorColumnSettingDragOver"
-                  :on-drop="handleEditorColumnSettingDrop"
-                  :on-drag-end="resetEditorColumnSettingDragState"
-                  :on-visible-change="handleEditorColumnVisibleChange"
-                  :on-reset="resetEditorColumnSettings"
-                />
+                label="明细列设置"
+                :items="editorColumnSettingItems"
+                :get-item-class="getEditorColumnSettingItemClass"
+                :on-drag-start="handleEditorColumnSettingDragStart"
+                :on-drag-over="handleEditorColumnSettingDragOver"
+                :on-drop="handleEditorColumnSettingDrop"
+                :on-drag-end="resetEditorColumnSettingDragState"
+                :on-visible-change="handleEditorColumnVisibleChange"
+                :on-reset="resetEditorColumnSettings"
+              />
               <EditorFooterActions
                 :can-save="canSaveCurrentEditor"
                 :can-audit="canSaveAndAuditCurrentEditor"

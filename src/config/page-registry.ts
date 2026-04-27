@@ -27,6 +27,8 @@ export interface AppPageDefinition {
   hiddenInMenu?: boolean
   activeMenuKey?: string
   openPageKey?: string
+  /** Explicit permission resource code. Takes priority over menuKey-based resolution. */
+  resourceKey?: string
 }
 
 export const appPageDefinitions: AppPageDefinition[] = [

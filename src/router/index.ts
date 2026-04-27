@@ -5,6 +5,7 @@ import { appTitle } from '@/utils/env'
 import type { LoginUser } from '@/types/auth'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionStore } from '@/stores/permission'
+import { loadPermissionCatalog } from '@/constants/resource-permissions'
 
 function resolveRoutePath(route: RouteRecordRaw) {
   if (!route.path) {
@@ -87,6 +88,7 @@ router.beforeEach((to) => {
   const permissionStore = usePermissionStore()
   authStore.hydrate()
   permissionStore.syncFromAuth()
+  loadPermissionCatalog()
 
   const hasToken = Boolean(authStore.token)
   const currentUser = authStore.user
