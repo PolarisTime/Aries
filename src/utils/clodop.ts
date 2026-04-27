@@ -141,12 +141,13 @@ export function getPrinterList() {
 
 function wrapHtml(body: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-    @page { size: A4 portrait; margin: 12mm; }
-    html, body { margin: 0; padding: 0; color: #000; font-family: SimSun, serif; font-size: 12px; }
-    body { padding: 0; }
+    @page { size: A4 portrait; margin: 10mm; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; color: #1f2329; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; font-size: 12px; }
+    body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    th, td { border: 1px solid #000; padding: 6px 8px; font-size: 12px; vertical-align: top; word-break: break-all; }
-    th { background: #f5f5f5; font-weight: 700; }
+    th, td { border: 1px solid #111827; padding: 7px 8px; font-size: 12px; vertical-align: middle; word-break: break-all; }
+    th { background: #eff4f9; font-weight: 700; }
     h1 { margin: 0 0 10px; text-align: center; font-size: 20px; }
     .print-subtitle { margin: 0 0 12px; text-align: center; font-size: 12px; }
     .print-block { margin-top: 12px; }

@@ -14,9 +14,17 @@ export interface ModuleFilterOption {
   value: string
 }
 
+export interface ModuleFilterOptionGroup {
+  label: string
+  options: ModuleFilterOption[]
+}
+
+export type ModuleFilterOptionEntry = ModuleFilterOption | ModuleFilterOptionGroup
+export type ModuleFilterOptionResolver = (filters: Record<string, unknown>) => ModuleFilterOptionEntry[]
+
 export interface ModuleFormFieldOption {
   label: string
-  value: string
+  value: string | number | boolean
 }
 
 export interface ModuleFilterDefinition {
@@ -24,7 +32,13 @@ export interface ModuleFilterDefinition {
   label: string
   type: ModuleFilterType
   placeholder?: string
-  options?: ModuleFilterOption[]
+  options?: ModuleFilterOptionEntry[] | ModuleFilterOptionResolver
+}
+
+export interface ModuleQuickFilterDefinition {
+  key: string
+  label: string
+  values: Record<string, string | undefined>
 }
 
 export interface ModuleColumnDefinition {
@@ -33,6 +47,7 @@ export interface ModuleColumnDefinition {
   width?: number
   align?: 'left' | 'center' | 'right'
   type?: ModuleColumnType
+  required?: boolean
 }
 
 export interface ModuleDetailField {
@@ -65,7 +80,8 @@ export interface ModuleFormFieldDefinition {
   options?: ModuleFormFieldOption[]
   required?: boolean
   disabled?: boolean
-  defaultValue?: string | number
+  allowClear?: boolean
+  defaultValue?: string | number | boolean
   min?: number
   precision?: number
 }
@@ -102,7 +118,9 @@ export interface ModulePageConfig {
   description: string
   primaryNoKey?: string
   hidePageHeader?: boolean
+  readOnly?: boolean
   filters: ModuleFilterDefinition[]
+  quickFilters?: ModuleQuickFilterDefinition[]
   columns: ModuleColumnDefinition[]
   detailFields: ModuleDetailField[]
   formFields?: ModuleFormFieldDefinition[]

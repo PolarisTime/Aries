@@ -1,5 +1,5 @@
 export interface PrintTemplateRecord {
-  id: number | string
+  id: string
   templateName: string
   templateHtml: string
   isDefault: string
@@ -17,7 +17,7 @@ export interface PrintTemplateResponse<T = unknown> {
 }
 
 export interface SavePrintTemplatePayload {
-  id?: number
+  id?: string
   billType: string
   templateName: string
   templateHtml: string

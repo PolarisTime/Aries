@@ -6,20 +6,106 @@ export interface PersonalSettings {
   fontSize?: number
 }
 
-export function getToken() {
-  return localStorage.getItem(STORAGE_KEYS.token)
+export type AuthPersistenceMode = 'local' | 'session'
+
+let accessToken = ''
+
+function getStorage(mode: AuthPersistenceMode) {
+  return mode === 'session' ? sessionStorage : localStorage
 }
 
-export function setToken(token: string) {
-  localStorage.setItem(STORAGE_KEYS.token, token)
+function clearLegacyAuthStorage() {
+  if (typeof window === 'undefined') {
+    return
+  }
+  localStorage.removeItem(STORAGE_KEYS.refreshToken)
+}
+
+function clearStorageItem(key: string) {
+  if (typeof window === 'undefined') {
+    return
+  }
+  localStorage.removeItem(key)
+  sessionStorage.removeItem(key)
+}
+
+function getStoredPersistenceMode(): AuthPersistenceMode | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const raw = localStorage.getItem(STORAGE_KEYS.authPersistence)
+    || sessionStorage.getItem(STORAGE_KEYS.authPersistence)
+
+  return raw === 'local' || raw === 'session' ? raw : null
+}
+
+function setStoredPersistenceMode(mode: AuthPersistenceMode) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  clearStorageItem(STORAGE_KEYS.authPersistence)
+  getStorage(mode).setItem(STORAGE_KEYS.authPersistence, mode)
+}
+
+function resolvePersistenceMode(preferred?: AuthPersistenceMode): AuthPersistenceMode {
+  if (preferred) {
+    return preferred
+  }
+
+  const storedMode = getStoredPersistenceMode()
+  if (storedMode) {
+    return storedMode
+  }
+
+  if (typeof window !== 'undefined') {
+    if (sessionStorage.getItem(STORAGE_KEYS.token) || sessionStorage.getItem(STORAGE_KEYS.user)) {
+      return 'session'
+    }
+    if (localStorage.getItem(STORAGE_KEYS.token) || localStorage.getItem(STORAGE_KEYS.user)) {
+      return 'local'
+    }
+  }
+
+  return 'local'
+}
+
+export function getToken() {
+  if (typeof window === 'undefined') {
+    return accessToken
+  }
+
+  if (!accessToken) {
+    const mode = resolvePersistenceMode()
+    accessToken = getStorage(mode).getItem(STORAGE_KEYS.token) || ''
+  }
+  return accessToken
+}
+
+export function setToken(token: string, mode?: AuthPersistenceMode) {
+  const persistenceMode = resolvePersistenceMode(mode)
+  accessToken = token
+  clearStorageItem(STORAGE_KEYS.token)
+  getStorage(persistenceMode).setItem(STORAGE_KEYS.token, token)
+  setStoredPersistenceMode(persistenceMode)
+  clearLegacyAuthStorage()
 }
 
 export function clearToken() {
-  localStorage.removeItem(STORAGE_KEYS.token)
+  accessToken = ''
+  clearStorageItem(STORAGE_KEYS.token)
+  clearStorageItem(STORAGE_KEYS.authPersistence)
+  clearLegacyAuthStorage()
 }
 
 export function getStoredUser() {
-  const raw = localStorage.getItem(STORAGE_KEYS.user)
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const mode = resolvePersistenceMode()
+  const raw = getStorage(mode).getItem(STORAGE_KEYS.user)
   if (!raw) {
     return null
   }
@@ -33,11 +119,28 @@ export function getStoredUser() {
 }
 
 export function setStoredUser(user: LoginUser) {
-  localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user))
+  const persistenceMode = resolvePersistenceMode()
+  clearStorageItem(STORAGE_KEYS.user)
+  getStorage(persistenceMode).setItem(STORAGE_KEYS.user, JSON.stringify(user))
+  setStoredPersistenceMode(persistenceMode)
 }
 
 export function clearStoredUser() {
-  localStorage.removeItem(STORAGE_KEYS.user)
+  clearStorageItem(STORAGE_KEYS.user)
+}
+
+export function setAuthSession(user: LoginUser, token: string, mode: AuthPersistenceMode) {
+  accessToken = token
+  clearStorageItem(STORAGE_KEYS.token)
+  clearStorageItem(STORAGE_KEYS.user)
+  getStorage(mode).setItem(STORAGE_KEYS.token, token)
+  getStorage(mode).setItem(STORAGE_KEYS.user, JSON.stringify(user))
+  setStoredPersistenceMode(mode)
+  clearLegacyAuthStorage()
+}
+
+export function getAuthPersistenceMode() {
+  return resolvePersistenceMode()
 }
 
 export function getPersonalSettings() {

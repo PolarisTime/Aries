@@ -1,15 +1,24 @@
 import path from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import Components from 'unplugin-vue-components/vite'
+import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const useMock =
-    env.VITE_USE_MOCK === 'true' ||
-    (mode === 'development' && env.VITE_USE_MOCK !== 'false')
 
   return {
-    plugins: [vue()],
+    plugins: [
+      vue(),
+      Components({
+        dts: 'src/components.d.ts',
+        resolvers: [
+          AntDesignVueResolver({
+            importStyle: false,
+          }),
+        ],
+      }),
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
@@ -18,9 +27,9 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: 3100,
-      proxy: !useMock && env.VITE_PROXY_TARGET
+      proxy: env.VITE_PROXY_TARGET
         ? {
-            '/jshERP-boot': {
+            '/api': {
               target: env.VITE_PROXY_TARGET,
               changeOrigin: true,
             },
@@ -44,10 +53,6 @@ export default defineConfig(({ mode }) => {
           manualChunks(id) {
             if (id.includes('ag-grid-community') || id.includes('ag-grid-vue3')) {
               return 'grid'
-            }
-
-            if (id.includes('ant-design-vue') || id.includes('@ant-design/icons-vue')) {
-              return 'antd'
             }
 
             if (
