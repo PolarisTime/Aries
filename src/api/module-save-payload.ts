@@ -48,6 +48,14 @@ function resolveScalarFields(moduleKey: string): string[] {
     return []
   }
 
+  // Per-module saveFields take priority over global lists
+  const moduleSaveFields = config.saveFields
+  if (moduleSaveFields) {
+    const scalar = moduleSaveFields.scalar || []
+    const computed = new Set(moduleSaveFields.computed || [])
+    return scalar.filter((key) => !computed.has(key))
+  }
+
   const fromDetailFields = (config.detailFields || [])
     .map((f) => f.key)
     .filter((key) => !COMPUTED_FIELD_KEYS.has(key))
@@ -121,13 +129,33 @@ const LINE_ITEM_FIELDS: readonly LineItemFieldSpec[] = [
   { key: 'warehouseName' },
 ]
 
-function serializeLineItem(item: ModuleLineItem) {
+function getLineItemFields(moduleKey: string): readonly LineItemFieldSpec[] {
+  const config = businessPageConfigs[moduleKey]
+  const moduleSaveFields = config?.saveFields
+  if (moduleSaveFields?.lineItem) {
+    return moduleSaveFields.lineItem.map((key) => ({ key }))
+  }
+  // numeric fields only matter for the global list
+  return LINE_ITEM_FIELDS
+}
+
+const lineItemFieldCache = new Map<string, readonly LineItemFieldSpec[]>()
+
+function getCachedLineItemFields(moduleKey: string): readonly LineItemFieldSpec[] {
+  const cached = lineItemFieldCache.get(moduleKey)
+  if (cached) return cached
+  const fields = Object.freeze(getLineItemFields(moduleKey))
+  lineItemFieldCache.set(moduleKey, fields)
+  return fields
+}
+
+function serializeLineItem(item: ModuleLineItem, moduleKey: string) {
   const persistedId = toPersistedLineItemId(item.id)
   const result: Record<string, unknown> = {}
   if (persistedId) {
     result.id = persistedId
   }
-  for (const field of LINE_ITEM_FIELDS) {
+  for (const field of getCachedLineItemFields(moduleKey)) {
     const value = item[field.key]
     if (value !== undefined) {
       result[field.key] = field.numeric ? Number(value || 0) : value
@@ -157,6 +185,18 @@ export function serializeBusinessRecordForSave(
 
   const payload = builder(record)
 
+  if (import.meta.env.DEV) {
+    const scalarFields = new Set(getScalarFields(moduleKey))
+    for (const key of Object.keys(record)) {
+      if (key === 'id' || key === 'items' || key === 'attachmentIds') continue
+      if (record[key] !== undefined && !scalarFields.has(key)) {
+        console.warn(
+          `[save-payload] ${moduleKey}: field "${key}" not in save schema, will be silently dropped`
+        )
+      }
+    }
+  }
+
   if (
     moduleKey === 'freight-statements' &&
     Array.isArray(record.attachmentIds)
@@ -165,7 +205,7 @@ export function serializeBusinessRecordForSave(
   }
 
   if (lineItemPayloadModuleKeys.has(moduleKey)) {
-    payload.items = toArray(record.items).map((item) => serializeLineItem(item))
+    payload.items = toArray(record.items).map((item) => serializeLineItem(item, moduleKey))
   }
 
   return payload

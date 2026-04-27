@@ -14,6 +14,7 @@ export const useSystemMenuStore = defineStore('system-menu', () => {
     menus.value = []
     loaded.value = false
     pendingLoad = null
+    REPORTED_MENU_ISSUES.clear()
   }
 
   function reportContractIssues(nextMenus: MenuNode[]) {

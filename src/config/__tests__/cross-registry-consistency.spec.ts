@@ -14,8 +14,8 @@ import {
  * This prevents silent drift when modules are added/renamed/removed.
  */
 
-const ALL_MODULE_KEYS = new Set([
-  ...appPageDefinitions.map((d) => d.moduleKey).filter(Boolean) as string[],
+const RESOURCE_MAP_OWNER_KEYS = new Set([
+  ...appPageDefinitions.flatMap((d) => [d.key, d.moduleKey].filter(Boolean) as string[]),
   ...Object.keys(moduleEndpointContracts),
   ...Object.keys(businessPageConfigs),
 ])
@@ -111,7 +111,7 @@ describe('cross-registry consistency', () => {
 
   it('no orphaned resource map entries exist without a module', () => {
     for (const key of Object.keys(menuResourceMap)) {
-      const exists = ALL_MODULE_KEYS.has(key) || READ_ONLY_MODULE_KEYS.has(key)
+      const exists = RESOURCE_MAP_OWNER_KEYS.has(key) || READ_ONLY_MODULE_KEYS.has(key)
       expect(
         exists,
         `menuResourceMap key "${key}" has no matching module in page-registry, endpoint-contracts, or business-pages`,

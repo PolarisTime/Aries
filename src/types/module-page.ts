@@ -131,4 +131,10 @@ export interface ModulePageConfig {
   buildOverview: (rows: ModuleRecord[]) => ModuleOverviewItem[]
   statusMap?: Record<string, ModuleStatusMeta>
   rowHighlightStatuses?: string[]
+  /** Per-module save field schema. Replaces global COMPUTED_FIELD_KEYS + EXTRA_SCALAR_FIELDS + LINE_ITEM_FIELDS. */
+  saveFields?: {
+    scalar?: string[]
+    lineItem?: string[]
+    computed?: string[]
+  }
 }

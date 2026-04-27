@@ -3,7 +3,8 @@ import { message } from 'ant-design-vue'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { ERROR_CODE } from '@/constants/error-codes'
-import type { ApiResponse, LoginResponseData } from '@/types/auth'
+import type { ApiResponse } from '@/types/api'
+import type { LoginResponseData } from '@/types/auth'
 import {
   clearStoredUser,
   clearToken,
@@ -13,6 +14,7 @@ import {
 } from '@/utils/storage'
 import { authHttp } from '@/api/http'
 import { getCurrentAppRoute } from '@/utils/route-helpers'
+import router from '@/router'
 
 let authFailureHandled = false
 
@@ -61,7 +63,7 @@ function redirectToLogin() {
     return
   }
 
-  window.location.replace(`/login?redirect=${encodeURIComponent(currentRoute)}`)
+  router.push(`/login?redirect=${encodeURIComponent(currentRoute)}`)
 }
 
 let refreshPromise: Promise<void> | null = null

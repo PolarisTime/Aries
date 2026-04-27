@@ -1,6 +1,6 @@
 import { http } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/auth'
+import type { ApiResponse } from '@/types/api'
 import type { MaterialImportResult } from '@/types/material'
 
 export function importMaterialsCsv(file: File) {

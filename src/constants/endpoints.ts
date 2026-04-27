@@ -33,6 +33,9 @@ export const ENDPOINTS = {
   USER_ACCOUNTS: '/user-accounts',
   USER_ACCOUNTS_LOGIN_NAME_CHECK: '/user-accounts/login-name-availability',
 
+  // Permission catalog
+  PERMISSION_CATALOG: '/permission-management/catalog',
+
   // Roles
   ROLE_SETTINGS: '/role-settings',
   ROLE_PERMISSION_OPTIONS: '/role-settings/permission-options',

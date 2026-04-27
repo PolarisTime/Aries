@@ -1,7 +1,7 @@
 import { http, authHttp } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import type { ApiResponse } from '@/types/api'
 import type {
-  ApiResponse,
   Login2faPayload,
   LoginPayload,
   LoginResult,

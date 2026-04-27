@@ -14,7 +14,7 @@ import type {
 } from '@/types/module-page'
 import type { ListQueryOptions } from '@/utils/list'
 
-import type { ApiResponse } from '@/types/auth'
+import type { ApiResponse } from '@/types/api'
 
 export interface UploadRulePayload {
   renamePattern: string
@@ -87,6 +87,10 @@ const MAX_CLIENT_FILTER_ROWS = FULL_SCAN_PAGE_SIZE * MAX_CLIENT_FILTER_PAGES
 
 const REPORTED_CLIENT_FILTER_SIGNATURES = new Map<string, number>()
 const CLIENT_FILTER_REPORT_INTERVAL_MS = 5 * 60 * 1000
+
+export function resetReportedClientFilterSignatures() {
+  REPORTED_CLIENT_FILTER_SIGNATURES.clear()
+}
 
 function toArray<T>(value: T[] | undefined) {
   return Array.isArray(value) ? value : []
@@ -453,7 +457,9 @@ export async function getBusinessModuleDetail(moduleKey: string, id: string) {
     throw new Error('当前模块不支持详情接口')
   }
 
-  const response = await http.get<ApiResponse<Record<string, unknown>>>(`${endpointConfig.path}/${encodeURIComponent(id)}`)
+  const response = assertApiSuccess(
+    await http.get<ApiResponse<Record<string, unknown>>>(`${endpointConfig.path}/${encodeURIComponent(id)}`)
+  )
 
   return {
     code: response.code,
@@ -473,12 +479,14 @@ export async function saveBusinessModule(
 
   const payload = serializeBusinessRecordForSave(moduleKey, record)
   const hasId = Boolean(record.id)
-  const response = hasId
-    ? await http.put<ApiResponse<Record<string, unknown>>>(
-        `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`,
-        payload,
-      )
-    : await http.post<ApiResponse<Record<string, unknown>>>(endpointConfig.path, payload)
+  const response = assertApiSuccess(
+    hasId
+      ? await http.put<ApiResponse<Record<string, unknown>>>(
+          `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`,
+          payload,
+        )
+      : await http.post<ApiResponse<Record<string, unknown>>>(endpointConfig.path, payload)
+  )
 
   return {
     code: response.code,
