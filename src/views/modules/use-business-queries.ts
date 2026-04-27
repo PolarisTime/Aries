@@ -4,6 +4,7 @@ import {
   getPageUploadRule,
   listAllBusinessModuleRows,
   listBusinessModule,
+  searchBusinessModule,
 } from '@/api/business'
 import { normalizeTableResponse } from '@/utils/list'
 import type { ModuleRecord } from '@/types/module-page'
@@ -71,12 +72,12 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
 
   const parentListQuery = useQuery({
     queryKey: computed(() => [
-      'business-parent-options',
+      'business-parent-search',
       moduleKey.value,
       parentImportConfig.value?.parentModuleKey || '',
     ]),
     queryFn: () =>
-      listAllBusinessModuleRows(String(parentImportConfig.value?.parentModuleKey || ''), {}),
+      searchBusinessModule(String(parentImportConfig.value?.parentModuleKey || ''), '', 200),
     enabled: computed(() =>
       editorVisible.value
       && Boolean(parentImportConfig.value?.parentModuleKey)

@@ -1,6 +1,8 @@
 import { AxiosHeaders } from 'axios'
 import { message } from 'ant-design-vue'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
+import { ENDPOINTS } from '@/constants/endpoints'
+import { ERROR_CODE } from '@/constants/error-codes'
 import type { ApiResponse, LoginResponseData } from '@/types/auth'
 import {
   clearStoredUser,
@@ -45,6 +47,10 @@ export function handleAuthFailure(messageText: string) {
   redirectToLogin()
 }
 
+export function resetAuthFailureHandling() {
+  authFailureHandled = false
+}
+
 function redirectToLogin() {
   if (typeof window === 'undefined') {
     return
@@ -61,10 +67,10 @@ function redirectToLogin() {
 let refreshPromise: Promise<void> | null = null
 
 export async function refreshAccessToken() {
-  const response = await authHttp.post<ApiResponse<LoginResponseData>>('/auth/refresh', {})
+  const response = await authHttp.post<ApiResponse<LoginResponseData>>(ENDPOINTS.AUTH_REFRESH, {})
   const payload = response.data
 
-  if (payload.code !== 0 || !payload.data?.accessToken || !payload.data?.user) {
+  if (payload.code !== ERROR_CODE.SUCCESS || !payload.data?.accessToken || !payload.data?.user) {
     throw new Error(payload.message || '刷新登录状态失败')
   }
 
@@ -83,16 +89,15 @@ type SetHeaderFn = (name: string, value: string) => void
 
 export function retryWithToken(request: { headers?: Record<string, unknown> | { set?: SetHeaderFn } }) {
   const latestToken = getToken()
-  if (latestToken && request.headers) {
-    const h = request.headers
-    const setFn = (h as { set?: SetHeaderFn }).set
-    if (typeof setFn === 'function') {
-      setFn('Authorization', `Bearer ${latestToken}`)
-    } else {
-      request.headers = AxiosHeaders.from({
-        ...(h as Record<string, unknown>),
-        Authorization: `Bearer ${latestToken}`,
-      })
-    }
+  if (!latestToken || !request.headers) {
+    return
+  }
+  const h = request.headers
+  // Prefer AxiosHeaders.set() when available; fall back to constructing new headers.
+  if (typeof (h as { set?: SetHeaderFn }).set === 'function') {
+    (h as { set: SetHeaderFn }).set('Authorization', `Bearer ${latestToken}`)
+  } else {
+    const merged = { ...(h as Record<string, string | undefined>), Authorization: `Bearer ${latestToken}` }
+    request.headers = new AxiosHeaders(merged as Record<string, string>)
   }
 }

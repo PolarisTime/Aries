@@ -1,9 +1,23 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch, type Ref } from 'vue'
+/**
+ * BusinessGridView — unified CRUD view for 20+ business modules.
+ *
+ * DECOMPOSITION ROADMAP (in order of impact):
+ *  1. Extract editor workspace (lines ~1960-2420) → ModuleEditorWorkspace.vue
+ *     - Props: editorVisible, editorTitle, editorForm, canEditFormFields, ...
+ *     - This is the largest inline section (~460 lines).
+ *  2. Extract filter toolbar (lines ~1612-1730) → ModuleFilterToolbar.vue
+ *     - Props: filters, visibleFilters, quickFilters, ...
+ *  3. Extract editor form field renderer (lines ~2070-2130) → FormFieldRenderer.vue
+ *     - Reusable across editor and detail views.
+ *  4. Replace module-specific adapters with ModuleBehaviorRegistry calls.
+ *     - Done for editor adapter; remaining: statements, finance-links, parent-import.
+ */
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs, { type Dayjs } from 'dayjs'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { MenuOutlined, PaperClipOutlined, SearchOutlined } from '@ant-design/icons-vue'
+import { MenuOutlined, SearchOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { MenuProps } from 'ant-design-vue'
 import type { SelectValue } from 'ant-design-vue/es/select'
@@ -14,7 +28,7 @@ import {
   listAllBusinessModuleRows,
 } from '@/api/business'
 import { businessPageConfigs } from '@/config/business-pages'
-import { useRequestError } from '@/composables/use-request-error'
+import { showRequestError } from '@/composables/use-request-error'
 import {
   buildWeightOverview,
   compactWeightOnlyPurchaseItemColumns,
@@ -32,6 +46,13 @@ import type {
 import { exportRecordsToExcel } from '@/utils/export-excel'
 import ModuleSelectionOverlay from './components/ModuleSelectionOverlay.vue'
 import ModuleAttachmentModal from './components/ModuleAttachmentModal.vue'
+import ColumnSettingsPopover from './components/ColumnSettingsPopover.vue'
+import EditorFooterActions from './components/EditorFooterActions.vue'
+import EditorItemsSummary from './components/EditorItemsSummary.vue'
+import ModuleStatementGenerator from './components/ModuleStatementGenerator.vue'
+import ModuleTableToolbar from './components/ModuleTableToolbar.vue'
+import RbacHelperPanel from './components/RbacHelperPanel.vue'
+import TableRowActions from './components/TableRowActions.vue'
 import ModuleFreightPickupListOverlay from './components/ModuleFreightPickupListOverlay.vue'
 import ModuleMaterialImportDialogs from './components/ModuleMaterialImportDialogs.vue'
 import ModuleParentSelectorOverlay from './components/ModuleParentSelectorOverlay.vue'
@@ -92,10 +113,12 @@ import {
   UPLOAD_RULE_DEFAULT_TITLE,
 } from './use-upload-rule-support'
 
+// Suppress vue-tsc false positives: these are used in the template.
+void isFriendlyTagColumnKey; void isTagListColumnKey; void shouldHideUploadRuleListValue
+
 const props = defineProps<{
   moduleKey: string
 }>()
-type PrimitiveModelValue = string | number | boolean
 type TextModelValue = string | number | undefined
 type DateRangeModelValue = [Dayjs, Dayjs] | undefined
 type DynamicColumn = {
@@ -107,7 +130,6 @@ const route = useRoute()
 const router = useRouter()
 const queryClient = useQueryClient()
 const permissionStore = usePermissionStore()
-const showRequestError = useRequestError()
 
 const pagination = reactive({
   currentPage: 1,
@@ -764,6 +786,27 @@ const expandable = computed(() => {
 })
 
 const masterTableSummary = computed(() => `共 ${listResult.value.total} 条记录`)
+
+const tableErrorMessage = ref('')
+
+function handleTableError(event: Event) {
+  const detail = (event as CustomEvent).detail as { code: number; message: string } | undefined
+  if (detail?.message) {
+    tableErrorMessage.value = detail.message
+  }
+}
+function clearTableError() {
+  tableErrorMessage.value = ''
+}
+
+onMounted(() => {
+  window.addEventListener('leo:table-error', handleTableError)
+  window.addEventListener('leo:table-error-cleared', clearTableError)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('leo:table-error', handleTableError)
+  window.removeEventListener('leo:table-error-cleared', clearTableError)
+})
 
 const editorTitle = computed(() => {
   if (editorMode.value === 'edit') {
@@ -1462,12 +1505,13 @@ function isEditorItemColumnEditable(columnKey: string) {
   )
 }
 
-function asModuleRecord(record: Record<string, unknown>) {
-  return record as ModuleRecord
+/** Bridge AG Grid row type (Record<string, unknown>) to domain type. Safe because row data originates from typed API responses. */
+function asModuleRecord(record: Record<string, unknown>): ModuleRecord {
+  return record as unknown as ModuleRecord
 }
-
-function asModuleLineItem(record: Record<string, unknown>) {
-  return record as ModuleLineItem
+/** @see asModuleRecord */
+function asModuleLineItem(record: Record<string, unknown>): ModuleLineItem {
+  return record as unknown as ModuleLineItem
 }
 
 function getTextModelValue(source: Record<string, unknown>, key: string): TextModelValue {
@@ -1484,13 +1528,12 @@ function getTextModelValue(source: Record<string, unknown>, key: string): TextMo
 function getSelectModelValue(source: Record<string, unknown>, key: string): SelectValue {
   const value = source[key]
   if (Array.isArray(value)) {
-    const normalized = value.filter((item): item is PrimitiveModelValue =>
+    return value.filter((item): item is string | number | boolean =>
       typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean',
-    )
-    return normalized as unknown as SelectValue
+    ) as SelectValue
   }
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return value as unknown as SelectValue
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === undefined) {
+    return value as SelectValue
   }
   return undefined
 }
@@ -1709,72 +1752,39 @@ function handleEditorDateValueChange(key: string, value: unknown) {
         </a-form>
       </div>
 
+      <a-alert
+        v-if="tableErrorMessage"
+        type="warning"
+        show-icon
+        closable
+        :message="tableErrorMessage"
+        style="margin-bottom: 12px"
+        @close="tableErrorMessage = ''"
+      />
+
       <div class="module-table-shell">
-        <div class="module-table-head">
-          <div class="module-table-head-title">{{ config.title }}</div>
-          <div class="module-table-head-actions">
-            <a-button v-if="isMaterialModule && canExportRecords" @click="handleMaterialTemplateDownload">
-              模板下载
-            </a-button>
-            <a-button v-if="isMaterialModule && canImportMaterials" @click="handleMaterialImportClick">
-              导入
-            </a-button>
-            <template v-for="action in visibleToolbarActions" :key="action.label">
-              <a-dropdown
-                v-if="action.label === '导出' && !isMaterialModule"
-                :menu="{ items: exportMenuItems, onClick: handleExportMenuClick }"
-                trigger="click"
-              >
-                <a-button :loading="exportLoading">{{ action.label }}</a-button>
-              </a-dropdown>
-              <a-button
-                v-else
-                :type="action.type"
-                :danger="action.danger"
-                @click="handleAction(action.label)"
-              >
-                {{ action.label }}
-              </a-button>
-            </template>
-            <a-popover trigger="click" placement="bottomRight" overlay-class-name="column-setting-popover">
-              <template #content>
-                <div class="column-setting-panel">
-                  <div class="column-setting-header">
-                    <span>列设置</span>
-                    <span class="table-action-link" @click="resetColumnSettings">恢复默认</span>
-                  </div>
-                  <div class="column-setting-list">
-                    <div
-                      v-for="item in columnSettingItems"
-                      :key="item.key"
-                      :class="['column-setting-item', getColumnSettingItemClass(item.key)]"
-                      @dragover="handleColumnSettingDragOver(item.key, $event)"
-                      @drop="handleColumnSettingDrop(item.key)"
-                    >
-                      <span
-                        class="column-setting-drag-handle"
-                        draggable="true"
-                        title="拖拽排序"
-                        @dragstart="handleColumnSettingDragStart(item.key, $event)"
-                        @dragend="resetListColumnSettingDragState"
-                      >
-                        <MenuOutlined />
-                      </span>
-                      <a-checkbox
-                        :checked="item.visible"
-                        @change="handleColumnVisibleChange(item.key, $event.target.checked)"
-                      >
-                        {{ item.title }}
-                      </a-checkbox>
-                    </div>
-                  </div>
-                </div>
-              </template>
-              <a-button>列设置</a-button>
-            </a-popover>
-          </div>
-          <div class="module-table-head-summary">{{ masterTableSummary }}</div>
-        </div>
+        <ModuleTableToolbar
+          :title="config.title"
+          :summary="masterTableSummary"
+          :actions="visibleToolbarActions"
+          :export-menu-items="(exportMenuItems || []) as { label: string; key: string }[]"
+          :export-loading="exportLoading"
+          :is-material-module="isMaterialModule"
+          :can-export="canExportRecords"
+          :can-import="canImportMaterials"
+          :column-setting-items="columnSettingItems"
+          :get-column-setting-item-class="getColumnSettingItemClass"
+          :handle-column-setting-drag-start="handleColumnSettingDragStart"
+          :handle-column-setting-drag-over="handleColumnSettingDragOver"
+          :handle-column-setting-drop="handleColumnSettingDrop"
+          :reset-list-column-setting-drag-state="resetListColumnSettingDragState"
+          :handle-column-visible-change="handleColumnVisibleChange"
+          :reset-column-settings="resetColumnSettings"
+          @action="handleAction"
+          @export-menu-click="(key: string) => handleExportMenuClick({ key })"
+          @material-template-download="handleMaterialTemplateDownload"
+          @material-import-click="handleMaterialImportClick"
+        />
         <a-table
           size="middle"
           bordered
@@ -1791,40 +1801,21 @@ function handleEditorDateValueChange(key: string, value: unknown) {
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'action'">
-              <div class="table-action-group">
-                <template v-if="isUploadRuleListRow(asModuleRecord(record))">
-                  <span v-if="canViewRecords" class="table-action-link" @click="handleView(asModuleRecord(record))">
-                    {{ uploadRuleVisible && activeUploadRuleRowId === String(record.id || '') ? '收起' : canEditRecords ? '编辑' : '查看' }}
-                  </span>
-                  <span v-else>--</span>
-                </template>
-                <template v-else>
-                  <span v-if="canViewRecords" class="table-action-link" @click="handleView(asModuleRecord(record))">查看</span>
-                  <template v-if="!isReadOnly && canEditRecords">
-                    <a-divider v-if="canViewRecords" type="vertical" />
-                    <span class="table-action-link" @click="handleEdit(asModuleRecord(record))">编辑</span>
-                  </template>
-                  <template v-if="!isReadOnly && canDeleteRecords">
-                    <a-divider v-if="canViewRecords || canEditRecords" type="vertical" />
-                    <a-popconfirm title="确定删除吗?" @confirm="handleDelete(asModuleRecord(record))">
-                      <span class="table-action-link">删除</span>
-                    </a-popconfirm>
-                  </template>
-                  <template v-if="!isReadOnly && canManageAttachments">
-                    <a-divider v-if="canViewRecords || canEditRecords || canDeleteRecords" type="vertical" />
-                    <span class="table-action-link" @click="openAttachmentDialog(asModuleRecord(record))">
-                      <PaperClipOutlined />
-                      <span>附件</span>
-                    </span>
-                  </template>
-                  <span
-                    v-if="!canViewRecords && !(!isReadOnly && canEditRecords) && !(!isReadOnly && canDeleteRecords) && !(!isReadOnly && canManageAttachments)"
-                  >
-                    --
-                  </span>
-                </template>
-              </div>
-            </template>
+              <TableRowActions
+                :record="asModuleRecord(record)"
+                :can-view="canViewRecords"
+                :can-edit="!isReadOnly && canEditRecords"
+                :can-delete="!isReadOnly && canDeleteRecords"
+                :can-attach="!isReadOnly && canManageAttachments"
+                :is-read-only="isReadOnly"
+                :is-upload-rule-row="isUploadRuleListRow(asModuleRecord(record))"
+                :upload-rule-expanded="uploadRuleVisible"
+                :is-active-upload-rule-row="activeUploadRuleRowId === String(record.id || '')"
+                @view="handleView"
+                @edit="handleEdit"
+                @delete="(r) => handleDelete(r)"
+                @attachment="openAttachmentDialog"
+              />
             <template v-else-if="isTagListColumnKey(String(column.key))">
               <div class="cell-tag-group">
                 <a-tag
@@ -1971,94 +1962,37 @@ function handleEditorDateValueChange(key: string, value: unknown) {
             <h3 class="detail-section-title">单据信息</h3>
           </div>
           <div class="editor-form-actions">
-            <a-popover trigger="click" placement="bottomRight" overlay-class-name="column-setting-popover">
-              <template #content>
-                <div class="column-setting-panel">
-                  <div class="column-setting-header">
-                    <span>表单字段设置</span>
-                    <span class="table-action-link" @click="resetFormFieldSettings">恢复默认</span>
-                  </div>
-                  <div class="column-setting-list">
-                    <div
-                      v-for="item in formFieldSettingItems"
-                      :key="item.key"
-                      :class="['column-setting-item', getFormFieldSettingItemClass(item.key)]"
-                      @dragover="handleFormFieldSettingDragOver(item.key, $event)"
-                      @drop="handleFormFieldSettingDrop(item.key)"
-                    >
-                      <span
-                        class="column-setting-drag-handle"
-                        draggable="true"
-                        title="拖拽排序"
-                        @dragstart="handleFormFieldSettingDragStart(item.key, $event)"
-                        @dragend="resetFormFieldSettingDragState"
-                      >
-                        <MenuOutlined />
-                      </span>
-                      <a-checkbox
-                        :checked="item.visible"
-                        @change="handleFormFieldVisibleChange(item.key, $event.target.checked)"
-                      >
-                        {{ item.title }}
-                      </a-checkbox>
-                    </div>
-                  </div>
-                </div>
-              </template>
-              <a-button class="overlay-action-button">表单字段设置</a-button>
-            </a-popover>
-            <template v-if="!config.itemColumns?.length">
-              <a-button class="overlay-action-button" @click="closeEditor">取消</a-button>
-              <a-button
-                v-if="canSaveCurrentEditor"
-                type="primary"
-                class="overlay-action-button"
-                :loading="editorSaving"
-                @click="() => void handleSaveEditor()"
-              >
-                保存
-              </a-button>
-              <a-button
-                v-if="canSaveAndAuditCurrentEditor"
-                type="primary"
-                class="overlay-action-button"
-                :loading="editorSaving"
-                @click="() => void handleSaveEditor(true)"
-              >
-                保存并审核
-              </a-button>
-            </template>
+            <ColumnSettingsPopover
+              label="表单字段设置"
+              :items="formFieldSettingItems"
+              :get-item-class="getFormFieldSettingItemClass"
+              :on-drag-start="handleFormFieldSettingDragStart"
+              :on-drag-over="handleFormFieldSettingDragOver"
+              :on-drop="handleFormFieldSettingDrop"
+              :on-drag-end="resetFormFieldSettingDragState"
+              :on-visible-change="handleFormFieldVisibleChange"
+              :on-reset="resetFormFieldSettings"
+            />
+            <EditorFooterActions
+              v-if="!config.itemColumns?.length"
+              :can-save="canSaveCurrentEditor"
+              :can-audit="canSaveAndAuditCurrentEditor"
+              :saving="editorSaving"
+              @cancel="closeEditor"
+              @save="(audit) => handleSaveEditor(audit)"
+            />
           </div>
         </div>
         <a-form :model="editorForm" layout="vertical" class="editor-form-shell">
-          <div v-if="systemHelperVisible" class="rbac-helper-panel">
-            <div class="rbac-helper-title">{{ systemHelperTitle }}</div>
-            <div class="rbac-helper-grid">
-              <div class="rbac-helper-item">
-                <span class="rbac-helper-label">已选角色</span>
-                <strong>{{ checkedRoleNames.length }}</strong>
-              </div>
-              <div class="rbac-helper-item">
-                <span class="rbac-helper-label">自动汇总权限</span>
-                <strong>{{ selectedRolePermissionLabels.length }}</strong>
-              </div>
-              <div class="rbac-helper-item">
-                <span class="rbac-helper-label">数据范围</span>
-                <strong>{{ editorForm.dataScope || '--' }}</strong>
-              </div>
-              <div class="rbac-helper-item">
-                <span class="rbac-helper-label">权限摘要</span>
-                <strong>{{ editorForm.permissionSummary || '--' }}</strong>
-              </div>
-            </div>
-            <a
-              v-if="moduleKey === 'role-settings'"
-              class="rbac-helper-link"
-              @click="router.push('/role-action-editor')"
-            >
-              前往角色权限配置，管理详细权限矩阵 →
-            </a>
-          </div>
+          <RbacHelperPanel
+            v-if="systemHelperVisible"
+            :title="systemHelperTitle"
+            :role-count="checkedRoleNames.length"
+            :permission-count="selectedRolePermissionLabels.length"
+            :data-scope="String(editorForm.dataScope || '--')"
+            :permission-summary="String(editorForm.permissionSummary || '--')"
+            :show-role-link="moduleKey === 'role-settings'"
+          />
           <a-row :gutter="16">
             <a-col
               v-for="field in visibleFormFields"
@@ -2193,79 +2127,40 @@ function handleEditorDateValueChange(key: string, value: unknown) {
               </template>
               <a-popover
                 v-if="canEditItemColumns"
-                trigger="click"
-                placement="bottomRight"
-                overlay-class-name="column-setting-popover"
               >
-                <template #content>
-                  <div class="column-setting-panel">
-                    <div class="column-setting-header">
-                      <span>明细列设置</span>
-                      <span class="table-action-link" @click="resetEditorColumnSettings">恢复默认</span>
-                    </div>
-                    <div class="column-setting-list">
-                      <div
-                        v-for="item in editorColumnSettingItems"
-                        :key="item.key"
-                        :class="['column-setting-item', getEditorColumnSettingItemClass(item.key)]"
-                        @dragover="handleEditorColumnSettingDragOver(item.key, $event)"
-                        @drop="handleEditorColumnSettingDrop(item.key)"
-                      >
-                        <span
-                          class="column-setting-drag-handle"
-                          draggable="true"
-                          title="拖拽排序"
-                          @dragstart="handleEditorColumnSettingDragStart(item.key, $event)"
-                          @dragend="resetEditorColumnSettingDragState"
-                        >
-                          <MenuOutlined />
-                        </span>
-                        <a-checkbox
-                          :checked="item.visible"
-                          @change="handleEditorColumnVisibleChange(item.key, $event.target.checked)"
-                        >
-                          {{ item.title }}
-                        </a-checkbox>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-                <a-button class="overlay-action-button">明细列设置</a-button>
-              </a-popover>
-              <a-button class="overlay-action-button" @click="closeEditor">取消</a-button>
-              <a-button
-                v-if="canSaveCurrentEditor"
-                type="primary"
-                class="overlay-action-button"
-                :loading="editorSaving"
-                @click="() => void handleSaveEditor()"
-              >
-                保存
-              </a-button>
-              <a-button
-                v-if="canSaveAndAuditCurrentEditor"
-                type="primary"
-                class="overlay-action-button"
-                :loading="editorSaving"
-                @click="() => void handleSaveEditor(true)"
-              >
-                保存并审核
-              </a-button>
-              <div class="editor-items-summary editor-items-summary-inline">
-                <span>明细数 {{ editorItems.length }}</span>
-                <span>吨位 {{ formatWeight(editorItemWeightTotal) }}</span>
-                <span v-if="shouldShowItemAmountSummary">
-                  金额 {{ formatAmount(editorItemAmountTotal) }}
-                </span>
-              </div>
+                <ColumnSettingsPopover
+                  label="明细列设置"
+                  :items="editorColumnSettingItems"
+                  :get-item-class="getEditorColumnSettingItemClass"
+                  :on-drag-start="handleEditorColumnSettingDragStart"
+                  :on-drag-over="handleEditorColumnSettingDragOver"
+                  :on-drop="handleEditorColumnSettingDrop"
+                  :on-drag-end="resetEditorColumnSettingDragState"
+                  :on-visible-change="handleEditorColumnVisibleChange"
+                  :on-reset="resetEditorColumnSettings"
+                />
+              <EditorFooterActions
+                :can-save="canSaveCurrentEditor"
+                :can-audit="canSaveAndAuditCurrentEditor"
+                :saving="editorSaving"
+                @cancel="closeEditor"
+                @save="(audit) => handleSaveEditor(audit)"
+              />
+              <EditorItemsSummary
+                class="editor-items-summary-inline"
+                :item-count="editorItems.length"
+                :weight="formatWeight(editorItemWeightTotal)"
+                :amount="formatAmount(editorItemAmountTotal)"
+                :show-amount="shouldShowItemAmountSummary"
+              />
             </div>
-            <div class="editor-items-summary editor-items-summary-mobile">
-              <span>明细数 {{ editorItems.length }}</span>
-              <span>吨位 {{ formatWeight(editorItemWeightTotal) }}</span>
-              <span v-if="shouldShowItemAmountSummary">
-                金额 {{ formatAmount(editorItemAmountTotal) }}
-              </span>
-            </div>
+            <EditorItemsSummary
+              class="editor-items-summary-mobile"
+              :item-count="editorItems.length"
+              :weight="formatWeight(editorItemWeightTotal)"
+              :amount="formatAmount(editorItemAmountTotal)"
+              :show-amount="shouldShowItemAmountSummary"
+            />
           </div>
           <div v-if="parentImportConfig" class="parent-import-note">
             {{ parentImportConfig.enforceUniqueRelation ? '当前单据链按上级单据唯一占用控制；重复导入同单号会更新，选择不同单号会追加明细' : '重复导入同单号会更新，选择不同单号会追加明细' }}
@@ -2498,155 +2393,47 @@ function handleEditorDateValueChange(key: string, value: unknown) {
       </a-table-column>
     </ModuleSelectionOverlay>
 
-    <ModuleSelectionOverlay
-      :visible="supplierStatementGeneratorVisible"
-      title="生成供应商对账单"
-      panel-title="采购入库单选择"
-      hint="选择采购入库单生成供应商对账单草稿；仅支持同一供应商合并。启用系统开关时默认按所选采购单据总金额全额付款，关闭后按账期自动汇总已付款记录。"
-      :rows="supplierStatementCandidateRows"
-      :loading="supplierStatementGeneratorLoading"
-      :row-selection="supplierStatementRowSelection"
-      empty-description="当前没有可生成对账单的采购入库单"
-      confirm-text="生成草稿"
-      @cancel="closeSupplierStatementGenerator"
-      @confirm="handleGenerateSupplierStatement"
-    >
-      <template #summary>
-        <span>已选 {{ supplierStatementSelectedInbounds.length }} 张</span>
-        <span v-if="supplierStatementSelectedSupplierName">供应商 {{ supplierStatementSelectedSupplierName }}</span>
-        <span>采购金额 {{ formatAmount(supplierStatementSelectedInbounds.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0)) }}</span>
-      </template>
-
-      <a-table-column key="inboundNo" title="采购入库单号" data-index="inboundNo" width="160" />
-      <a-table-column key="supplierName" title="供应商" data-index="supplierName" width="140" />
-      <a-table-column key="warehouseName" title="仓库" data-index="warehouseName" width="120" />
-      <a-table-column key="inboundDate" title="入库日期" width="120">
-        <template #default="{ record }">
-          {{ formatCellValue({ title: '入库日期', dataIndex: 'inboundDate', type: 'date' }, record.inboundDate) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="settlementMode" title="结算方式" data-index="settlementMode" width="100" />
-      <a-table-column key="totalWeight" title="总吨位" width="110" align="right">
-        <template #default="{ record }">
-          {{ formatWeight(record.totalWeight) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="totalAmount" title="总金额" width="110" align="right">
-        <template #default="{ record }">
-          {{ formatAmount(record.totalAmount) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="status" title="状态" width="110" align="center">
-        <template #default="{ record }">
-          <a-tag :color="getStatusMeta(record.status).color">
-            {{ getStatusMeta(record.status).text }}
-          </a-tag>
-        </template>
-      </a-table-column>
-    </ModuleSelectionOverlay>
-
-    <ModuleSelectionOverlay
-      :visible="customerStatementGeneratorVisible"
-      title="生成客户对账单"
-      panel-title="销售订单选择"
-      hint="选择已完成销售的销售订单生成客户对账单草稿；仅支持同一客户同一项目合并。启用系统开关时默认按所选销售订单总金额挂账，关闭后默认按所选销售订单总金额收款。"
-      :rows="customerStatementCandidateRows"
-      :loading="customerStatementGeneratorLoading"
-      :row-selection="customerStatementRowSelection"
-      empty-description="当前没有可生成对账单的销售订单"
-      confirm-text="生成草稿"
-      @cancel="closeCustomerStatementGenerator"
-      @confirm="handleGenerateCustomerStatement"
-    >
-      <template #summary>
-        <span>已选 {{ customerStatementSelectedOrders.length }} 张</span>
-        <span v-if="customerStatementSelectedCustomerName">客户 {{ customerStatementSelectedCustomerName }}</span>
-        <span v-if="customerStatementSelectedProjectName">项目 {{ customerStatementSelectedProjectName }}</span>
-        <span>金额 {{ formatAmount(customerStatementSelectedOrders.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0)) }}</span>
-      </template>
-
-      <a-table-column key="orderNo" title="销售订单号" data-index="orderNo" width="160" />
-      <a-table-column key="customerName" title="客户" data-index="customerName" width="140" />
-      <a-table-column key="projectName" title="项目" data-index="projectName" />
-      <a-table-column key="deliveryDate" title="送货日期" width="120">
-        <template #default="{ record }">
-          {{ formatCellValue({ title: '送货日期', dataIndex: 'deliveryDate', type: 'date' }, record.deliveryDate) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="salesName" title="销售员" data-index="salesName" width="100" />
-      <a-table-column key="totalWeight" title="总吨位" width="110" align="right">
-        <template #default="{ record }">
-          {{ formatWeight(record.totalWeight) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="totalAmount" title="总金额" width="110" align="right">
-        <template #default="{ record }">
-          {{ formatAmount(record.totalAmount) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="status" title="状态" width="110" align="center">
-        <template #default="{ record }">
-          <a-tag :color="getStatusMeta(record.status).color">
-            {{ getStatusMeta(record.status).text }}
-          </a-tag>
-        </template>
-      </a-table-column>
-    </ModuleSelectionOverlay>
-
-    <ModuleSelectionOverlay
-      :visible="freightStatementGeneratorVisible"
-      title="生成物流对账单"
-      panel-title="物流单选择"
-      hint="选择物流单生成对账单草稿；同一物流商可合并生成，已被占用的物流单不会重复显示。"
-      :rows="freightStatementCandidateRows"
-      :loading="freightStatementGeneratorLoading"
-      :row-selection="freightStatementRowSelection"
-      empty-description="当前没有可生成对账单的物流单"
-      confirm-text="生成草稿"
-      @cancel="closeFreightStatementGenerator"
-      @confirm="handleGenerateFreightStatement"
-    >
-      <template #summary>
-        <span>已选 {{ freightStatementSelectedBills.length }} 张</span>
-        <span v-if="freightStatementSelectedCarrierName">物流商 {{ freightStatementSelectedCarrierName }}</span>
-        <span>吨位 {{ formatWeight(freightStatementSelectedBills.reduce((sum, item) => sum + Number(item.totalWeight || 0), 0)) }}</span>
-        <span>运费 {{ formatAmount(freightStatementSelectedBills.reduce((sum, item) => sum + Number(item.totalFreight || 0), 0)) }}</span>
-      </template>
-
-      <a-table-column key="billNo" title="物流单号" data-index="billNo" width="150" />
-      <a-table-column key="carrierName" title="物流商" data-index="carrierName" width="140" />
-      <a-table-column key="customerName" title="客户" data-index="customerName" width="140" />
-      <a-table-column key="projectName" title="项目" data-index="projectName" />
-      <a-table-column key="billTime" title="单据日期" width="120">
-        <template #default="{ record }">
-          {{ formatCellValue({ title: '单据日期', dataIndex: 'billTime', type: 'date' }, record.billTime) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="totalWeight" title="总吨位" width="110" align="right">
-        <template #default="{ record }">
-          {{ formatWeight(record.totalWeight) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="totalFreight" title="总运费" width="110" align="right">
-        <template #default="{ record }">
-          {{ formatAmount(record.totalFreight) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="status" title="审核状态" width="110" align="center">
-        <template #default="{ record }">
-          <a-tag :color="getStatusMeta(record.status).color">
-            {{ getStatusMeta(record.status).text }}
-          </a-tag>
-        </template>
-      </a-table-column>
-      <a-table-column key="deliveryStatus" title="送达状态" width="110" align="center">
-        <template #default="{ record }">
-          <a-tag :color="getStatusMeta(record.deliveryStatus).color">
-            {{ getStatusMeta(record.deliveryStatus).text }}
-          </a-tag>
-        </template>
-      </a-table-column>
-    </ModuleSelectionOverlay>
+    <ModuleStatementGenerator
+      :supplier-visible="supplierStatementGeneratorVisible"
+      :supplier-rows="supplierStatementCandidateRows"
+      :supplier-loading="supplierStatementGeneratorLoading"
+      :supplier-row-selection="supplierStatementRowSelection"
+      :supplier-summary="{
+        count: supplierStatementSelectedInbounds.length,
+        supplierName: supplierStatementSelectedSupplierName,
+        amount: supplierStatementSelectedInbounds.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0),
+      }"
+      :customer-visible="customerStatementGeneratorVisible"
+      :customer-rows="customerStatementCandidateRows"
+      :customer-loading="customerStatementGeneratorLoading"
+      :customer-row-selection="customerStatementRowSelection"
+      :customer-summary="{
+        count: customerStatementSelectedOrders.length,
+        customerName: customerStatementSelectedCustomerName,
+        projectName: customerStatementSelectedProjectName,
+        amount: customerStatementSelectedOrders.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0),
+      }"
+      :freight-visible="freightStatementGeneratorVisible"
+      :freight-rows="freightStatementCandidateRows"
+      :freight-loading="freightStatementGeneratorLoading"
+      :freight-row-selection="freightStatementRowSelection"
+      :freight-summary="{
+        count: freightStatementSelectedBills.length,
+        carrierName: freightStatementSelectedCarrierName,
+        weight: freightStatementSelectedBills.reduce((sum, item) => sum + Number(item.totalWeight || 0), 0),
+        freight: freightStatementSelectedBills.reduce((sum, item) => sum + Number(item.totalFreight || 0), 0),
+      }"
+      :format-weight="formatWeight"
+      :format-amount="formatAmount"
+      :format-cell-value="formatCellValue as (column: { title: string; dataIndex: string; type?: string }, value: unknown) => string"
+      :get-status-meta="getStatusMeta"
+      @close-supplier="closeSupplierStatementGenerator"
+      @generate-supplier="handleGenerateSupplierStatement"
+      @close-customer="closeCustomerStatementGenerator"
+      @generate-customer="handleGenerateCustomerStatement"
+      @close-freight="closeFreightStatementGenerator"
+      @generate-freight="handleGenerateFreightStatement"
+    />
 
     <ModuleSelectionOverlay
       :visible="freightSummaryVisible"

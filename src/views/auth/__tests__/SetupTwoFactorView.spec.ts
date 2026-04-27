@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import Antd from 'ant-design-vue'
 import { createPinia, setActivePinia } from 'pinia'
+import { i18n } from '@/i18n'
 import SetupTwoFactorView from '@/views/auth/SetupTwoFactorView.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -92,7 +93,7 @@ describe('SetupTwoFactorView', () => {
 
     const wrapper = mount(SetupTwoFactorView, {
       global: {
-        plugins: [Antd, pinia],
+        plugins: [Antd, pinia, i18n],
       },
     })
 
@@ -102,7 +103,7 @@ describe('SetupTwoFactorView', () => {
     const codeInput = wrapper.find('input[placeholder="输入认证器中的 6 位验证码"]')
     await codeInput.setValue('123456')
 
-    await findButtonByText(wrapper, '完成绑定并进入系统')?.trigger('click')
+    await findButtonByText(wrapper, '提交')?.trigger('click')
     await flushPromises()
 
     expect(accountSecurityMocks.setupOwn2fa).toHaveBeenCalledTimes(1)

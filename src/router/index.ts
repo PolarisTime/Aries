@@ -42,7 +42,7 @@ function canAccessTargetRoute(
   return permissionStore.canAccessMenuKey(typeof menuKey === 'string' ? menuKey : '')
 }
 
-function requiresForcedTotpSetup(user: LoginUser | null | undefined) {
+export function requiresForcedTotpSetup(user: LoginUser | null | undefined) {
   return Boolean(user?.forceTotpSetup && user?.totpEnabled !== true)
 }
 

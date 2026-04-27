@@ -1,4 +1,5 @@
 import { assertApiSuccess, http } from '@/api/client'
+import { ENDPOINTS } from '@/constants/endpoints'
 
 export interface MenuNode {
   menuCode: string
@@ -20,9 +21,7 @@ interface MenuResponse<T> {
 
 export async function listSystemMenus() {
   const response = assertApiSuccess(
-    (await http.get('/system/menus/tree')) as unknown as MenuResponse<
-      MenuNode[]
-    >,
+    await http.get<MenuResponse<MenuNode[]>>(ENDPOINTS.SYSTEM_MENUS_TREE),
     '加载菜单失败',
   )
   return response.data || []

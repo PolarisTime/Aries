@@ -150,7 +150,7 @@ async function handleLogout() {
         </div>
         <a-button ghost class="setup-logout-button" @click="handleLogout">
           <template #icon><LogoutOutlined /></template>
-          退出当前账号
+          {{ $t('auth.logout') }}
         </a-button>
       </section>
 
@@ -165,7 +165,7 @@ async function handleLogout() {
         <a-card :bordered="false" class="setup-card">
           <template #title>第一步：确认个人密码</template>
           <a-form layout="vertical">
-            <a-form-item label="当前密码" required>
+            <a-form-item :label="$t('auth.password')" required>
               <a-input-password
                 v-model:value="passwordForm.currentPassword"
                 :maxlength="128"
@@ -193,7 +193,7 @@ async function handleLogout() {
               </a-input-password>
             </a-form-item>
             <a-button type="default" :loading="passwordSaving" @click="handleChangePassword">
-              更新密码
+              {{ $t('common.save') }}
             </a-button>
           </a-form>
         </a-card>
@@ -221,7 +221,7 @@ async function handleLogout() {
                   <a-form-item label="手动绑定密钥">
                     <a-input :value="totpSetup.secret" readonly />
                   </a-form-item>
-                  <a-form-item label="动态验证码" required>
+                  <a-form-item :label="$t('auth.twoFactorCode')" required>
                     <a-input
                       v-model:value="totpCode"
                       :maxlength="6"
@@ -231,9 +231,9 @@ async function handleLogout() {
                     </a-input>
                   </a-form-item>
                   <a-space>
-                    <a-button @click="handleSetup2fa">重新生成</a-button>
+                    <a-button @click="handleSetup2fa">{{ $t('common.refresh') }}</a-button>
                     <a-button type="primary" :loading="enableLoading" @click="handleEnable2fa">
-                      完成绑定并进入系统
+                      {{ $t('common.submit') }}
                     </a-button>
                   </a-space>
                 </a-form>

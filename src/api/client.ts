@@ -1,13 +1,14 @@
-export { http, authHttp } from './http'
+export { http, authHttp, type ApiClient } from './http'
 export { restoreRedirectedHistoryRoute } from '@/utils/route-helpers'
 
 import { http } from './http'
+import { ERROR_CODE } from '@/constants/error-codes'
 import { setupAuthInterceptors } from './auth/auth-interceptor'
 
-setupAuthInterceptors(http)
+setupAuthInterceptors(http.instance)
 
 export function isSuccessCode(code: unknown) {
-  return Number(code) === 0
+  return Number(code) === ERROR_CODE.SUCCESS
 }
 
 export function assertApiSuccess<T extends { code?: number; message?: string }>(
@@ -31,30 +32,18 @@ export function isHandledRequestError(error: unknown) {
   )
 }
 
-export function restGet<T>(
-  url: string,
-  params?: Record<string, unknown>,
-): Promise<T> {
-  return http.get<T, T>(url, { params })
+export function restGet<T>(url: string, params?: Record<string, unknown>): Promise<T> {
+  return http.get<T>(url, { params })
 }
 
-export function restPost<T>(
-  url: string,
-  data?: Record<string, unknown>,
-): Promise<T> {
-  return http.post<T, T>(url, data)
+export function restPost<T>(url: string, data?: Record<string, unknown>): Promise<T> {
+  return http.post<T>(url, data)
 }
 
-export function restPut<T>(
-  url: string,
-  data?: Record<string, unknown>,
-): Promise<T> {
-  return http.put<T, T>(url, data)
+export function restPut<T>(url: string, data?: Record<string, unknown>): Promise<T> {
+  return http.put<T>(url, data)
 }
 
-export function restDelete<T>(
-  url: string,
-  params?: Record<string, unknown>,
-): Promise<T> {
-  return http.delete<T, T>(url, { params })
+export function restDelete<T>(url: string, params?: Record<string, unknown>): Promise<T> {
+  return http.delete<T>(url, { params })
 }

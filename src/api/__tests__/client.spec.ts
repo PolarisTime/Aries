@@ -165,7 +165,7 @@ describe('api client auth refresh', () => {
       | ((error: unknown) => Promise<unknown>)
       | undefined
 
-    expect(http).toBe(axiosMockState.httpInstance)
+    expect((http as unknown as { instance: unknown }).instance).toBe(axiosMockState.httpInstance)
     expect(rejected).toBeTypeOf('function')
 
     const result = await rejected!(createUnauthorizedError('/customers'))

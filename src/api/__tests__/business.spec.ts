@@ -901,7 +901,34 @@ describe('business api read-only modules', () => {
     expect(warnSpy).toHaveBeenCalledTimes(1)
     expect(warnSpy).toHaveBeenCalledWith(
       '[business-api] purchase-orders fell back to client-side filtering for unsupported filters: unexpectedFilter',
+      '\nConsider adding these keys to module-contracts.ts nativeFilterKeys.',
     )
     warnSpy.mockRestore()
+  })
+
+  it('returns code=4000 with warning message when client filter hits row limit', async () => {
+    const { listBusinessModule } = await import('@/api/business')
+    // Each page returns 200 rows, not last. After 10 pages (2000 rows), the hard limit triggers.
+    const pageRecords = Array.from({ length: 200 }, (_, i) => ({
+      id: String(i + 1),
+      supplierName: `供应商${i + 1}`,
+    }))
+    const pageResponse = {
+      code: 0,
+      data: { records: pageRecords, totalElements: 5000, totalPages: 25, last: false },
+    }
+    for (let i = 0; i < 15; i++) {
+      clientMocks.httpGet.mockResolvedValueOnce(pageResponse)
+    }
+
+    const result = await listBusinessModule(
+      'purchase-orders',
+      { unexpectedFilter: '供应商乙' },
+      { currentPage: 1, pageSize: 20 },
+    )
+
+    expect(result.code).toBe(4000)
+    expect(result.message).toContain('结果不完整')
+    expect(result.message).toContain('2000')
   })
 })

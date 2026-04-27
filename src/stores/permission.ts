@@ -53,6 +53,7 @@ function buildLegacyPermissionMap(codes: string[], actions: Record<string, strin
 export const usePermissionStore = defineStore('permission', () => {
   const permissionMap = ref<Record<string, Set<string>>>({})
   const dataScopes = ref<Record<string, string>>({})
+  let lastSyncedUserId: number | null | undefined = undefined
 
   function setPermissions(
     itemsOrCodes: ResourcePermission[] | string[],
@@ -93,6 +94,10 @@ export const usePermissionStore = defineStore('permission', () => {
   function syncFromAuth() {
     const authStore = useAuthStore()
     const currentUser = authStore.user
+    if (currentUser?.id === lastSyncedUserId) {
+      return
+    }
+    lastSyncedUserId = currentUser?.id != null ? Number(currentUser.id) : null
     if (hasPermissionPayload(currentUser)) {
       setPermissions(currentUser?.permissions || [], undefined, currentUser?.dataScopes || {})
     } else {

@@ -17,6 +17,19 @@ const viewLoaders = {
   'security-keys': () => import('@/views/system/SecurityKeyManagementView.vue'),
 } as const
 
+// Validate view-loader mappings in development to catch missing imports early.
+if (import.meta.env.DEV) {
+  const validViewKeys = new Set(Object.keys(viewLoaders))
+  for (const def of appPageDefinitions) {
+    if (def.view && !validViewKeys.has(def.view)) {
+      console.error(
+        `[router] Page "${def.key}" references unknown view "${def.view}". ` +
+        `Add it to viewLoaders in src/router/routes.ts.`,
+      )
+    }
+  }
+}
+
 const childRoutes: RouteRecordRaw[] = appPageDefinitions.map((definition) => {
   const meta = {
     title: definition.title,

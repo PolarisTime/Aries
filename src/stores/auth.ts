@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { login, login2fa, logout, refreshSession } from '@/api/auth'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
+import { ERROR_CODE } from '@/constants/error-codes'
 import type { LoginPayload, LoginResponseData, LoginUser, Login2faPayload } from '@/types/auth'
 import {
   clearStoredUser,
@@ -36,7 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function signIn(payload: LoginPayload) {
     const response = await login(payload)
 
-    if (response.code !== 0) {
+    if (response.code !== ERROR_CODE.SUCCESS) {
       throw new Error(response.message || '登录失败')
     }
 
@@ -69,7 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function verify2fa(payload: Login2faPayload) {
     const response = await login2fa(payload)
 
-    if (response.code !== 0) {
+    if (response.code !== ERROR_CODE.SUCCESS) {
       throw new Error(response.message || '二次验证失败')
     }
 
@@ -101,12 +102,15 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const response = await refreshSession()
-      if (response.code !== 0 || !response.data?.accessToken || !response.data?.user) {
+      if (response.code !== ERROR_CODE.SUCCESS || !response.data?.accessToken || !response.data?.user) {
         throw new Error(response.message || '恢复登录状态失败')
       }
       applyLoginResult(response.data)
       return true
-    } catch {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message !== '取消请求') {
+        console.error('恢复登录状态失败', error)
+      }
       token.value = ''
       user.value = null
       clearToken()
