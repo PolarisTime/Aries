@@ -14,7 +14,7 @@ import {
 } from '@/utils/storage'
 import { authHttp } from '@/api/http'
 import { getCurrentAppRoute } from '@/utils/route-helpers'
-import router from '@/router'
+import { router } from '@/router'
 
 let authFailureHandled = false
 

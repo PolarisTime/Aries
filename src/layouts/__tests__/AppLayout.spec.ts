@@ -43,6 +43,13 @@ vi.mock('vue-router', () => ({
   useRoute: () => routerMocks.route,
 }))
 
+vi.mock('@/router', () => ({
+  router: {
+    push: routerMocks.push,
+    replace: routerMocks.replace,
+  },
+}))
+
 vi.mock('@/api/business', () => ({
   listBusinessModule: businessMocks.listBusinessModule,
 }))

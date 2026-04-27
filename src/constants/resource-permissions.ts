@@ -77,9 +77,9 @@ const FALLBACK_ACTION_LABEL_MAP: Record<string, string> = {
 let catalogReady = false
 let catalogPromise: Promise<void> | null = null
 
-let menuResourceMap: Record<string, string> = { ...FALLBACK_MENU_RESOURCE_MAP }
-let resourceLabelMap: Record<string, string> = { ...FALLBACK_RESOURCE_LABEL_MAP }
-let actionLabelMap: Record<string, string> = { ...FALLBACK_ACTION_LABEL_MAP }
+export let menuResourceMap: Record<string, string> = { ...FALLBACK_MENU_RESOURCE_MAP }
+export let resourceLabelMap: Record<string, string> = { ...FALLBACK_RESOURCE_LABEL_MAP }
+export let actionLabelMap: Record<string, string> = { ...FALLBACK_ACTION_LABEL_MAP }
 
 export function isCatalogReady() {
   return catalogReady

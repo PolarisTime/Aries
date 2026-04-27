@@ -11,6 +11,12 @@ vi.mock('@/api/client', () => ({
     post: clientMocks.httpPost,
     put: clientMocks.httpPut,
   },
+  assertApiSuccess: <T extends { code?: number; message?: string }>(response: T) => {
+    if (response.code != null && response.code !== 0) {
+      throw new Error(response.message || '请求失败')
+    }
+    return response
+  },
   restDelete: clientMocks.restDelete,
 }))
 
