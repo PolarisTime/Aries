@@ -6,8 +6,7 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
-import { getPermissionLabels, getRolePermissionLabels } from './module-adapter-system'
-import { normalizeStringArray, parseParentRelationNos } from './module-adapter-shared'
+import { parseParentRelationNos } from './module-adapter-shared'
 
 export type EditorItemDragPosition = 'before' | 'after'
 
@@ -84,16 +83,26 @@ export function canModuleEditLineItems(moduleKey: string, hasItemColumns: boolea
 }
 
 export function isSalesOrderLineLocked(statuses: string[]) {
-  return statuses.some((status) => status === '已审核')
+  return isModuleLineItemsLocked('sales-orders', statuses)
+}
+
+export function isModuleLineItemsLocked(moduleKey: string, statuses: string[]) {
+  const lockedStatuses = getBehaviorValue(moduleKey, 'lineItemLockStatuses') as string[] | undefined
+  if (!lockedStatuses?.length) {
+    return false
+  }
+  return statuses.some((status) => lockedStatuses.includes(status))
 }
 
 export function canManageEditorLineItems(
   moduleKey: string,
   canEditLineItems: boolean,
   canSaveCurrentEditor: boolean,
-  salesOrderLineLocked: boolean,
+  lineItemsLocked: boolean,
 ) {
-  return canEditLineItems && canSaveCurrentEditor && !(moduleKey === 'sales-orders' && salesOrderLineLocked)
+  return canEditLineItems
+    && canSaveCurrentEditor
+    && !(Boolean(getBehaviorValue(moduleKey, 'locksLineItemsWhenRecordLocked')) && lineItemsLocked)
 }
 
 export function applyModuleDefaultEditorDraft(
@@ -106,17 +115,9 @@ export function applyModuleDefaultEditorDraft(
     Object.assign(draft, defaultDraftValues as Record<string, unknown>)
   }
 
-  if (moduleKey === 'purchase-orders') {
-    draft.buyerName = currentOperatorName
-  }
-
-  if (
-    moduleKey === 'receipts'
-    || moduleKey === 'payments'
-    || moduleKey === 'invoice-receipts'
-    || moduleKey === 'invoice-issues'
-  ) {
-    draft.operatorName = currentOperatorName
+  const defaultOperatorField = getBehaviorValue(moduleKey, 'defaultOperatorField')
+  if (typeof defaultOperatorField === 'string') {
+    draft[defaultOperatorField] = currentOperatorName
   }
 
   return draft
@@ -127,7 +128,7 @@ export function isEditorFieldDisabledForModule(
   fieldKey: string,
   fieldDisabled: boolean,
   canSaveCurrentEditor: boolean,
-  salesOrderLineLocked: boolean,
+  lineItemsLocked: boolean,
 ) {
   if (!canSaveCurrentEditor) {
     return true
@@ -137,11 +138,12 @@ export function isEditorFieldDisabledForModule(
     return true
   }
 
-  if (moduleKey === 'role-settings' && fieldKey === 'userCount') {
+  const readonlyFields = getBehaviorValue(moduleKey, 'readonlyEditorFields') as string[] | undefined
+  if ((readonlyFields || []).includes(fieldKey)) {
     return true
   }
 
-  if (moduleKey === 'sales-orders' && salesOrderLineLocked) {
+  if (Boolean(getBehaviorValue(moduleKey, 'locksLineItemsWhenRecordLocked')) && lineItemsLocked) {
     const lockedFields = getBehaviorValue(moduleKey, 'editableLockedFields') as string[] | undefined
     return !(lockedFields || []).includes(fieldKey)
   }
@@ -153,7 +155,7 @@ export function isEditorItemColumnEditableForModule(
   moduleKey: string,
   columnKey: string,
   canEditLineItems: boolean,
-  salesOrderLineLocked: boolean,
+  lineItemsLocked: boolean,
 ) {
   if (!canEditLineItems) {
     return false
@@ -163,7 +165,7 @@ export function isEditorItemColumnEditableForModule(
     return false
   }
 
-  if (moduleKey === 'sales-orders' && salesOrderLineLocked) {
+  if (Boolean(getBehaviorValue(moduleKey, 'locksLineItemsWhenRecordLocked')) && lineItemsLocked) {
     const lockedItemColumns = getBehaviorValue(moduleKey, 'editableLockedItemColumns') as string[] | undefined
     return (lockedItemColumns || []).includes(columnKey)
   }
@@ -231,11 +233,12 @@ function isEmptyPurchaseOrderLineItem(item: ModuleLineItem) {
 }
 
 export function trimEditorItemsForModule(moduleKey: string, items: ModuleLineItem[]) {
-  if (moduleKey === 'purchase-orders') {
+  const strategy = getBehaviorValue(moduleKey, 'lineItemTrimStrategy')
+  if (strategy === 'purchaseOrderBlank') {
     return items.filter((item) => !isEmptyPurchaseOrderLineItem(item))
   }
 
-  if (moduleKey === 'invoice-receipts' || moduleKey === 'invoice-issues') {
+  if (strategy === 'positiveWeightOrAmount') {
     return items.filter((item) => Number(item.weightTon || 0) > 0 || Number(item.amount || 0) > 0)
   }
 
@@ -422,99 +425,9 @@ export function normalizeDraftRecordForModule(options: {
     record.totalAmount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
   }
 
-  if (moduleKey === 'freight-bills') {
-    record.totalWeight = Number(sumLineItemsBy(items, 'weightTon').toFixed(3))
-    record.totalFreight = Number((Number(record.unitPrice || 0) * Number(record.totalWeight || 0)).toFixed(2))
-    if (!record.deliveryStatus) {
-      record.deliveryStatus = '未送达'
-    }
-  }
-
-  if (moduleKey === 'freight-statements' && items.length) {
-    record.totalWeight = Number(sumLineItemsBy(items, 'weightTon').toFixed(3))
-  }
-
-  if (moduleKey === 'supplier-statements') {
-    if (items.length) {
-      record.purchaseAmount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
-      const sourceInboundNos = Array.from(
-        new Set(
-          items
-            .map((item) => String(item.sourceNo || '').trim())
-            .filter(Boolean),
-        ),
-      )
-      record.sourceInboundNos = sourceInboundNos.join(', ')
-    }
-    record.paymentAmount = Number(record.paymentAmount || 0)
-    record.closingAmount = Number(Number(record.purchaseAmount || 0).toFixed(2))
-  }
-
-  if (moduleKey === 'customer-statements') {
-    if (items.length) {
-      record.salesAmount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
-      const sourceOrderNos = Array.from(
-        new Set(
-          items
-            .map((item) => String(item.sourceNo || '').trim())
-            .filter(Boolean),
-        ),
-      )
-      record.sourceOrderNos = sourceOrderNos.join(', ')
-    }
-    record.receiptAmount = Number(record.receiptAmount || 0)
-    record.closingAmount = Number(Number(record.salesAmount || 0).toFixed(2))
-  }
-
-  if (moduleKey === 'invoice-receipts') {
-    if (items.length) {
-      record.amount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
-      const sourcePurchaseOrderNos = Array.from(
-        new Set(
-          items
-            .map((item) => String(item.sourceNo || '').trim())
-            .filter(Boolean),
-        ),
-      )
-      record.sourcePurchaseOrderNos = sourcePurchaseOrderNos.join(', ')
-    }
-  }
-
-  if (moduleKey === 'invoice-issues') {
-    if (items.length) {
-      record.amount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
-      const sourceSalesOrderNos = Array.from(
-        new Set(
-          items
-            .map((item) => String(item.sourceNo || '').trim())
-            .filter(Boolean),
-        ),
-      )
-      record.sourceSalesOrderNos = sourceSalesOrderNos.join(', ')
-    }
-  }
-
-  if (moduleKey === 'freight-statements') {
-    record.unpaidAmount = Number((Number(record.totalFreight || 0) - Number(record.paidAmount || 0)).toFixed(2))
-    if (Array.isArray(record.attachments)) {
-      record.attachment = record.attachments
-        .map((item) => String((item as Record<string, unknown>).name || ''))
-        .filter(Boolean)
-        .join(', ')
-    }
-  }
-
-  if (moduleKey === 'role-settings') {
-    const permissionCodes = normalizeStringArray(record.permissionCodes)
-    record.permissionCodes = permissionCodes
-    record.permissionCount = permissionCodes.length
-    record.permissionSummary = getPermissionLabels(permissionCodes).join('、')
-  }
-
-  if (moduleKey === 'user-accounts') {
-    const roleNames = normalizeStringArray(record.roleNames)
-    record.roleNames = roleNames
-    record.permissionSummary = getRolePermissionLabels(roleNames).join('、')
+  const normalizeFn = getBehaviorValue(moduleKey, 'normalizeDraftRecord')
+  if (normalizeFn) {
+    normalizeFn(record, items, { primaryNoKey, generatePrimaryNo: createPrimaryNo, currentOperatorName, sumLineItemsBy })
   }
 
   if (!record.status) {
@@ -522,17 +435,6 @@ export function normalizeDraftRecordForModule(options: {
     if (defaultStatus) {
       record.status = defaultStatus as string
     }
-  }
-
-  if (
-    (
-      moduleKey === 'receipts'
-      || moduleKey === 'payments'
-      || moduleKey === 'invoice-receipts'
-      || moduleKey === 'invoice-issues'
-    ) && !record.operatorName
-  ) {
-    record.operatorName = currentOperatorName
   }
 
   return record

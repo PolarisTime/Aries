@@ -2,6 +2,7 @@ import type { ModuleLineItem, ModuleParentImportDefinition } from '@/types/modul
 import {
   applyMaterialToEditorLineItem,
   buildEditorAuditTarget,
+  canManageEditorLineItems,
   buildCustomerStatementDraftData,
   buildDefaultEditorLineItem,
   buildFreightStatementDraftData,
@@ -16,6 +17,7 @@ import {
   getFreightStatementSelectionError,
   isEditorFieldDisabledForModule,
   isEditorItemColumnEditableForModule,
+  isModuleLineItemsLocked,
   isSalesOrderLineLocked,
   normalizeDraftRecordForModule,
   getSupplierStatementSelectionError,
@@ -57,6 +59,29 @@ describe('module-adapters', () => {
       hasFormFields: true,
       isMaterialModule: false,
     })).toBe('openFreightPickupList')
+  })
+
+  it('routes registry-configured toolbar actions before generic create/export matching', () => {
+    expect(resolveModuleActionKind({
+      moduleKey: 'supplier-statements',
+      actionLabel: '生成对账单',
+      hasFormFields: true,
+      isMaterialModule: false,
+    })).toBe('openSupplierStatementGenerator')
+
+    expect(resolveModuleActionKind({
+      moduleKey: 'freight-statements',
+      actionLabel: '查看运费对账汇总',
+      hasFormFields: true,
+      isMaterialModule: false,
+    })).toBe('openFreightSummary')
+
+    expect(resolveModuleActionKind({
+      moduleKey: 'role-settings',
+      actionLabel: '配置权限',
+      hasFormFields: true,
+      isMaterialModule: false,
+    })).toBe('navigateToRoleActionEditor')
   })
 
   it('recalculates item weight and amount after applying material defaults', () => {
@@ -668,6 +693,8 @@ describe('module-adapters', () => {
     expect(isSalesOrderLineLocked(['草稿'])).toBe(false)
     expect(isSalesOrderLineLocked(['价格核准'])).toBe(false)
     expect(isSalesOrderLineLocked(['已审核'])).toBe(true)
+    expect(isModuleLineItemsLocked('sales-orders', ['已审核'])).toBe(true)
+    expect(isModuleLineItemsLocked('purchase-orders', ['已审核'])).toBe(false)
 
     expect(buildEditorAuditTarget('sales-orders', ['草稿', '已审核', '完成销售'], false)).toEqual({
       key: 'status',
@@ -676,6 +703,10 @@ describe('module-adapters', () => {
     expect(buildEditorAuditTarget('sales-orders', ['草稿', '已审核', '完成销售'], true)).toEqual({
       key: 'status',
       value: '完成销售',
+    })
+    expect(buildEditorAuditTarget('purchase-inbounds', ['草稿', '已审核'], false)).toEqual({
+      key: 'status',
+      value: '已审核',
     })
 
     expect(isEditorFieldDisabledForModule('sales-orders', 'deliveryDate', false, true, true)).toBe(false)
@@ -693,6 +724,27 @@ describe('module-adapters', () => {
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'unitPrice', true, false)).toBe(true)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'warehouseName', true, false)).toBe(true)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'batchNo', true, false)).toBe(true)
+
+    expect(canManageEditorLineItems('sales-orders', true, true, true)).toBe(false)
+    expect(canManageEditorLineItems('purchase-orders', true, true, true)).toBe(true)
+  })
+
+  it('applies registry configured current-operator defaults', () => {
+    const purchaseDraft = normalizeDraftRecordForModule({
+      moduleKey: 'purchase-orders',
+      record: { id: 'po-1' },
+      items: [],
+      primaryNoKey: 'orderNo',
+      generatePrimaryNo: () => 'PO0001',
+      currentOperatorName: '采购A',
+      sumLineItemsBy: (items, key) => items.reduce((sum, item) => sum + Number(item[key] || 0), 0),
+    })
+
+    expect(purchaseDraft).toMatchObject({
+      orderNo: 'PO0001',
+      buyerName: '采购A',
+      status: '草稿',
+    })
   })
 
   it('normalizes invoice drafts from imported detail rows', () => {
@@ -744,5 +796,128 @@ describe('module-adapters', () => {
     ])).toEqual([
       { id: 'i-1', amount: 120, weightTon: 3 },
     ])
+  })
+})
+
+describe('normalizeDraftRecordForModule — registry callback delegation', () => {
+  const ctx = {
+    generatePrimaryNo: () => 'NO-001',
+    currentOperatorName: '测试员',
+    sumLineItemsBy: (items: ModuleLineItem[], key: string) =>
+      items.reduce((sum, i) => sum + Number(i[key] || 0), 0),
+  }
+
+  it('freight-bills: delegates to registry callback for totalWeight/totalFreight/deliveryStatus', () => {
+    const result = normalizeDraftRecordForModule({
+      moduleKey: 'freight-bills',
+      record: { unitPrice: '200' },
+      items: [{ weightTon: 5 }, { weightTon: 3 }] as ModuleLineItem[],
+      ...ctx,
+    })
+    expect(result.totalWeight).toBe(8)
+    expect(result.totalFreight).toBe(1600)
+    expect(result.deliveryStatus).toBe('未送达')
+  })
+
+  it('supplier-statements: delegates to registry callback for purchaseAmount/closingAmount', () => {
+    const result = normalizeDraftRecordForModule({
+      moduleKey: 'supplier-statements',
+      record: {},
+      items: [
+        { amount: 100, sourceNo: 'INB-001' },
+        { amount: 200, sourceNo: 'INB-002' },
+      ] as ModuleLineItem[],
+      ...ctx,
+    })
+    expect(result.purchaseAmount).toBe(300)
+    expect(result.closingAmount).toBe(300)
+    expect(result.sourceInboundNos).toContain('INB-001')
+  })
+
+  it('customer-statements: delegates to registry for salesAmount/sourceOrderNos', () => {
+    const result = normalizeDraftRecordForModule({
+      moduleKey: 'customer-statements',
+      record: {},
+      items: [{ amount: 500, sourceNo: 'SO-X' }] as ModuleLineItem[],
+      ...ctx,
+    })
+    expect(result.salesAmount).toBe(500)
+    expect(result.sourceOrderNos).toBe('SO-X')
+  })
+
+  it('freight-statements: computes weight, unpaidAmount, and attachment string', () => {
+    const result = normalizeDraftRecordForModule({
+      moduleKey: 'freight-statements',
+      record: { totalFreight: 1000, paidAmount: 300, attachments: [{ name: 'a.pdf' }, { name: 'b.pdf' }] },
+      items: [{ weightTon: 2 }, { weightTon: 3 }] as ModuleLineItem[],
+      ...ctx,
+    })
+    expect(result.totalWeight).toBe(5)
+    expect(result.unpaidAmount).toBe(700)
+    expect(result.attachment).toBe('a.pdf, b.pdf')
+  })
+
+  it('role-settings: normalizes permissionCodes array', () => {
+    const result = normalizeDraftRecordForModule({
+      moduleKey: 'role-settings',
+      record: { permissionCodes: ['perm:a', 'perm:b'] },
+      items: [],
+      ...ctx,
+    })
+    expect(result.permissionCount).toBe(2)
+  })
+
+  it('invoice-receipts: computes amount and deduplicates source nos', () => {
+    const result = normalizeDraftRecordForModule({
+      moduleKey: 'invoice-receipts',
+      record: {},
+      items: [
+        { amount: 100, sourceNo: 'PO-A' },
+        { amount: 50, sourceNo: 'PO-A' },
+      ] as ModuleLineItem[],
+      ...ctx,
+    })
+    expect(result.amount).toBe(150)
+    expect(result.sourcePurchaseOrderNos).toBe('PO-A')
+  })
+
+  it('unknown module: no crash, defaults applied', () => {
+    const result = normalizeDraftRecordForModule({
+      moduleKey: 'nonexistent-module',
+      record: {},
+      items: [],
+      ...ctx,
+    })
+    expect(result).toBeDefined()
+  })
+
+  it('applies defaultStatus when record.status is empty', () => {
+    const result = normalizeDraftRecordForModule({
+      moduleKey: 'purchase-orders',
+      record: {},
+      items: [],
+      ...ctx,
+    })
+    expect(result.status).toBe('草稿')
+  })
+})
+
+describe('syncSystemEditorState — registry callback delegation', () => {
+  it('role-settings: delegates to syncEditorForm callback', () => {
+    const form = { permissionCodes: ['perm:x', 'perm:y'] }
+    syncSystemEditorState('role-settings', form)
+    expect(form.permissionCount).toBe(2)
+  })
+
+  it('user-accounts: delegates to syncEditorForm callback', () => {
+    const form = { roleNames: '管理员, 采购' }
+    syncSystemEditorState('user-accounts', form)
+    expect(form.roleNames).toEqual(['管理员', '采购'])
+  })
+
+  it('unknown module: no-op without crashing', () => {
+    const form = { someKey: 'value' }
+    syncSystemEditorState('unknown-module', form)
+    expect(form.someKey).toBe('value')
   })
 })

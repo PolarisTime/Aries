@@ -1,3 +1,4 @@
+import { getBehaviorValue } from './module-behavior-registry'
 import { roleTypeValues } from '@/constants/module-options'
 import { getResourcePermissionLabel } from '@/constants/resource-permissions'
 import { normalizeStringArray } from './module-adapter-shared'
@@ -52,18 +53,9 @@ export function syncSystemEditorState(
   moduleKey: string,
   editorForm: Record<string, unknown>,
 ) {
-  if (moduleKey === 'role-settings') {
-    const permissionCodes = normalizeStringArray(editorForm.permissionCodes)
-    editorForm.permissionCodes = permissionCodes
-    editorForm.permissionCount = permissionCodes.length
-    editorForm.permissionSummary = getPermissionLabels(permissionCodes).join('、')
-    return
-  }
-
-  if (moduleKey === 'user-accounts') {
-    const roleNames = normalizeStringArray(editorForm.roleNames)
-    editorForm.roleNames = roleNames
-    editorForm.permissionSummary = getRolePermissionLabels(roleNames).join('、')
+  const syncFn = getBehaviorValue(moduleKey, 'syncEditorForm')
+  if (syncFn) {
+    syncFn(editorForm)
   }
 }
 
