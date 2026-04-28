@@ -1,7 +1,6 @@
 import { getBehaviorValue } from './module-behavior-registry'
 import { roleTypeValues } from '@/constants/module-options'
 import { getResourcePermissionLabel } from '@/constants/resource-permissions'
-import { normalizeStringArray } from './module-adapter-shared'
 
 export interface RbacRoleMeta {
   roleName: string

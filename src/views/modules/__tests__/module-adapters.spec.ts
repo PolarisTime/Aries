@@ -140,7 +140,7 @@ describe('module-adapters', () => {
       },
       currentParentNos: ['PO-1', 'PO-2'],
       currentItems,
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
     })
 
     expect(nextState.parentNosText).toBe('PO-1, PO-2')
@@ -176,7 +176,7 @@ describe('module-adapters', () => {
       currentItems: [
         { id: 'item-a', sourceInboundItemId: 'src-1', materialCode: 'A', quantity: 4, _parentRelationNo: 'IN-001' },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
     })
 
     expect(nextState.importedItemCount).toBe(1)
@@ -212,7 +212,7 @@ describe('module-adapters', () => {
         { id: 'item-a', sourceInboundItemId: 'src-1', materialCode: 'A', quantity: 2, _parentRelationNo: 'IN-001' },
         { id: 'item-b', sourceInboundItemId: 'src-1', materialCode: 'A', quantity: 3, _parentRelationNo: 'IN-001' },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
     })
 
     expect(nextState.nextItems).toEqual([
@@ -247,7 +247,7 @@ describe('module-adapters', () => {
       currentItems: [
         { id: 'item-a', sourcePurchaseOrderItemId: 'src-po-1', materialCode: 'A', quantity: 2, _parentRelationNo: 'PO-001' },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
     })
 
     expect(nextState.importedItemCount).toBe(1)
@@ -282,7 +282,7 @@ describe('module-adapters', () => {
       currentItems: [
         { id: 'item-a', sourceSalesOrderItemId: 'src-so-1', materialCode: 'A', quantity: 4, _parentRelationNo: 'SO-001' },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
     })
 
     expect(nextState.nextItems).toEqual([
@@ -333,7 +333,7 @@ describe('module-adapters', () => {
           _parentRelationNo: 'SO-001',
         },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
     })
 
     expect(nextState.nextItems).toEqual([
@@ -497,7 +497,7 @@ describe('module-adapters', () => {
       ],
       today: '2026-04-25',
       defaultFullPayment: false,
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       supplierName: '供应商甲',
@@ -538,7 +538,7 @@ describe('module-adapters', () => {
       ],
       today: '2026-04-25',
       defaultFullPayment: true,
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       purchaseAmount: 220,
@@ -570,7 +570,7 @@ describe('module-adapters', () => {
       ],
       today: '2026-04-25',
       defaultReceiptAmountZero: true,
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       customerName: '客户甲',
@@ -611,7 +611,7 @@ describe('module-adapters', () => {
       ],
       today: '2026-04-25',
       defaultReceiptAmountZero: false,
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       salesAmount: 220,
@@ -626,7 +626,7 @@ describe('module-adapters', () => {
         { id: '1', billNo: 'FB-1', billTime: '2026-04-10', carrierName: '物流甲', totalWeight: 2.1, totalFreight: 30, items: [{ id: 'a', weightTon: 2.1 }] },
       ],
       today: '2026-04-25',
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       carrierName: '物流甲',
@@ -810,8 +810,8 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('freight-bills: delegates to registry callback for totalWeight/totalFreight/deliveryStatus', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'freight-bills',
-      record: { unitPrice: '200' },
-      items: [{ weightTon: 5 }, { weightTon: 3 }] as ModuleLineItem[],
+      record: { id: 0, unitPrice: '200' } as any,
+      items: [{ weightTon: 5 }, { weightTon: 3 }] as any,
       ...ctx,
     })
     expect(result.totalWeight).toBe(8)
@@ -822,11 +822,11 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('supplier-statements: delegates to registry callback for purchaseAmount/closingAmount', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'supplier-statements',
-      record: {},
+      record: { id: 0 } as any,
       items: [
         { amount: 100, sourceNo: 'INB-001' },
         { amount: 200, sourceNo: 'INB-002' },
-      ] as ModuleLineItem[],
+      ] as any,
       ...ctx,
     })
     expect(result.purchaseAmount).toBe(300)
@@ -837,8 +837,8 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('customer-statements: delegates to registry for salesAmount/sourceOrderNos', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'customer-statements',
-      record: {},
-      items: [{ amount: 500, sourceNo: 'SO-X' }] as ModuleLineItem[],
+      record: { id: 0 } as any,
+      items: [{ amount: 500, sourceNo: 'SO-X' }] as any,
       ...ctx,
     })
     expect(result.salesAmount).toBe(500)
@@ -848,8 +848,8 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('freight-statements: computes weight, unpaidAmount, and attachment string', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'freight-statements',
-      record: { totalFreight: 1000, paidAmount: 300, attachments: [{ name: 'a.pdf' }, { name: 'b.pdf' }] },
-      items: [{ weightTon: 2 }, { weightTon: 3 }] as ModuleLineItem[],
+      record: { id: 0, totalFreight: 1000, paidAmount: 300, attachments: [{ name: 'a.pdf' }, { name: 'b.pdf' }] } as any,
+      items: [{ weightTon: 2 }, { weightTon: 3 }] as any,
       ...ctx,
     })
     expect(result.totalWeight).toBe(5)
@@ -860,7 +860,7 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('role-settings: normalizes permissionCodes array', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'role-settings',
-      record: { permissionCodes: ['perm:a', 'perm:b'] },
+      record: { id: 0, permissionCodes: ['perm:a', 'perm:b'] } as any,
       items: [],
       ...ctx,
     })
@@ -870,11 +870,11 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('invoice-receipts: computes amount and deduplicates source nos', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'invoice-receipts',
-      record: {},
+      record: { id: 0 } as any,
       items: [
         { amount: 100, sourceNo: 'PO-A' },
         { amount: 50, sourceNo: 'PO-A' },
-      ] as ModuleLineItem[],
+      ] as any,
       ...ctx,
     })
     expect(result.amount).toBe(150)
@@ -884,7 +884,7 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('unknown module: no crash, defaults applied', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'nonexistent-module',
-      record: {},
+      record: { id: 0 } as any,
       items: [],
       ...ctx,
     })
@@ -894,7 +894,7 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('applies defaultStatus when record.status is empty', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'purchase-orders',
-      record: {},
+      record: { id: 0 } as any,
       items: [],
       ...ctx,
     })
@@ -904,19 +904,19 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
 
 describe('syncSystemEditorState — registry callback delegation', () => {
   it('role-settings: delegates to syncEditorForm callback', () => {
-    const form = { permissionCodes: ['perm:x', 'perm:y'] }
+    const form: Record<string, unknown> = { permissionCodes: ['perm:x', 'perm:y'] }
     syncSystemEditorState('role-settings', form)
     expect(form.permissionCount).toBe(2)
   })
 
   it('user-accounts: delegates to syncEditorForm callback', () => {
-    const form = { roleNames: '管理员, 采购' }
+    const form: Record<string, unknown> = { roleNames: '管理员, 采购' }
     syncSystemEditorState('user-accounts', form)
     expect(form.roleNames).toEqual(['管理员', '采购'])
   })
 
   it('unknown module: no-op without crashing', () => {
-    const form = { someKey: 'value' }
+    const form: Record<string, unknown> = { someKey: 'value' }
     syncSystemEditorState('unknown-module', form)
     expect(form.someKey).toBe('value')
   })
