@@ -2,7 +2,8 @@ import axios from 'axios'
 import type { InternalAxiosRequestConfig, AxiosInstance } from 'axios'
 import { message } from 'ant-design-vue'
 import { getToken } from '@/utils/storage'
-import { isExactAuthEndpoint } from '@/utils/route-helpers'
+import { ENDPOINTS } from '@/constants/endpoints'
+import { getRequestPath, isExactAuthEndpoint } from '@/utils/route-helpers'
 import { normalizeErrorMessage } from './error-messages'
 import { shouldTriggerRefresh, shouldClearAuthState } from './auth-guard'
 import {
@@ -19,6 +20,13 @@ type RetryableRequestConfig = InternalAxiosRequestConfig & {
 }
 
 const HANDLED_REQUEST_ERROR_FLAG = '__leoRequestErrorHandled'
+const PUBLIC_ENDPOINTS = [
+  ENDPOINTS.SETUP_STATUS,
+  ENDPOINTS.SETUP_INITIALIZE,
+  ENDPOINTS.SETUP_ADMIN_2FA,
+  ENDPOINTS.SETUP_ADMIN,
+  ENDPOINTS.SETUP_COMPANY,
+]
 
 function markHandledRequestError(error: unknown) {
   if (error && typeof error === 'object') {
@@ -26,11 +34,18 @@ function markHandledRequestError(error: unknown) {
   }
 }
 
+function isPublicEndpoint(url: string) {
+  const path = getRequestPath(url)
+  return PUBLIC_ENDPOINTS.some((endpoint) => path === endpoint || path === `/api${endpoint}`)
+}
+
 export function setupAuthInterceptors(http: AxiosInstance) {
   http.interceptors.request.use((config) => {
     const token = getToken()
     const url = String(config.url || '')
+    const publicEndpoint = isPublicEndpoint(url)
     const shouldSkipAuth =
+      publicEndpoint ||
       isExactAuthEndpoint(url, '/auth/login') ||
       isExactAuthEndpoint(url, '/auth/login-2fa') ||
       isExactAuthEndpoint(url, '/auth/refresh')
@@ -54,8 +69,9 @@ export function setupAuthInterceptors(http: AxiosInstance) {
         isExactAuthEndpoint(url, '/auth/login-2fa') ||
         isExactAuthEndpoint(url, '/auth/logout') ||
         isExactAuthEndpoint(url, '/auth/refresh')
+      const publicEndpoint = isPublicEndpoint(url)
 
-      if (shouldTriggerRefresh(status, error, isAuthRequest, originalRequest)) {
+      if (shouldTriggerRefresh(status, error, isAuthRequest || publicEndpoint, originalRequest)) {
         try {
           const retryRequest = originalRequest as RetryableRequestConfig
           retryRequest._retry = true
@@ -92,7 +108,7 @@ export function setupAuthInterceptors(http: AxiosInstance) {
 
       const description = normalizeErrorMessage(error.response?.data?.message || error.message, status)
 
-      if (shouldClearAuthState(status, error, isAuthRequest, originalRequest)) {
+      if (shouldClearAuthState(status, error, isAuthRequest || publicEndpoint, originalRequest)) {
         markHandledRequestError(error)
         handleAuthFailure(description)
       } else {
