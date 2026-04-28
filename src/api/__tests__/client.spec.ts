@@ -293,6 +293,33 @@ describe('api client auth refresh', () => {
     expect(requestConfig.headers.Authorization).toBe('Bearer access-token')
   })
 
+  it('does not attach authorization or refresh sessions for public setup requests', async () => {
+    const { setToken } = await import('@/utils/storage')
+    setToken('expired-access-token')
+
+    await import('@/api/client')
+    const requestFulfilled = axiosMockState.httpInstance.interceptors.request.use.mock.calls[0]?.[0] as
+      | ((config: { url?: string; headers: Record<string, string> }) => { url?: string; headers: Record<string, string> })
+      | undefined
+    const rejected = axiosMockState.httpInstance.interceptors.response.use.mock.calls[0]?.[1] as
+      | ((error: unknown) => Promise<unknown>)
+      | undefined
+
+    const requestConfig = requestFulfilled!({
+      url: '/setup/status',
+      headers: {},
+    })
+
+    expect(requestConfig.headers.Authorization).toBeUndefined()
+
+    await expect(rejected!(createUnauthorizedError('/setup/status'))).rejects.toMatchObject({
+      message: '未登录',
+    })
+
+    expect(axiosMockState.authInstance.post).not.toHaveBeenCalled()
+    expect(messageError).toHaveBeenCalledWith('未登录')
+  })
+
   it('restores redirected history route from __redirect query', async () => {
     window.history.replaceState({}, '', '/?__redirect=%2Fsession-management%3Fpage%3D2')
 
