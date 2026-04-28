@@ -72,8 +72,12 @@ export async function refreshAccessToken() {
   const response = await authHttp.post<ApiResponse<LoginResponseData>>(ENDPOINTS.AUTH_REFRESH, {})
   const payload = response.data
 
-  if (payload.code !== ERROR_CODE.SUCCESS || !payload.data?.accessToken || !payload.data?.user) {
+  if (payload.code !== ERROR_CODE.SUCCESS) {
     throw new Error(payload.message || '刷新登录状态失败')
+  }
+
+  if (!payload.data?.accessToken || !payload.data?.user) {
+    return
   }
 
   applyTokenResponse(payload.data)
