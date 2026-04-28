@@ -11,6 +11,21 @@ export interface InitialSetupAdminPayload {
   mobile?: string
 }
 
+export interface InitialSetupTotpPayload {
+  loginName: string
+}
+
+export interface InitialSetupTotpResult {
+  qrCodeBase64: string
+  secret: string
+}
+
+export interface InitialSetupAdminSubmitPayload {
+  admin: InitialSetupAdminPayload
+  totpSecret: string
+  totpCode: string
+}
+
 export interface InitialSetupCompanyPayload {
   companyName: string
   taxNo: string
@@ -21,7 +36,7 @@ export interface InitialSetupCompanyPayload {
 }
 
 export interface InitialSetupPayload {
-  admin?: InitialSetupAdminPayload
+  admin?: InitialSetupAdminSubmitPayload
   company?: InitialSetupCompanyPayload
 }
 
