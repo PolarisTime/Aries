@@ -1,22 +1,8 @@
 import { businessPageConfigs } from '@/config/business-pages'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import { hasBehavior, getBehaviorValue } from '@/views/modules/module-behavior-registry'
 
 type PayloadBuilder = (record: ModuleRecord) => Record<string, unknown>
-
-const lineItemPayloadModuleKeys = new Set([
-  'purchase-orders',
-  'purchase-inbounds',
-  'sales-orders',
-  'sales-outbounds',
-  'freight-bills',
-  'purchase-contracts',
-  'sales-contracts',
-  'supplier-statements',
-  'customer-statements',
-  'freight-statements',
-  'invoice-receipts',
-  'invoice-issues',
-])
 
 // Computed fields that the server calculates — never included in save payloads.
 const COMPUTED_FIELD_KEYS = new Set([
@@ -31,24 +17,12 @@ const COMPUTED_FIELD_KEYS = new Set([
   'userCount',
 ])
 
-// Certain modules need extra fields that aren't in their detailFields definition.
-const EXTRA_SCALAR_FIELDS: Record<string, string[]> = {
-  'freight-statements': ['attachment'],
-  'purchase-orders': ['buyerName'],
-  'purchase-inbounds': ['buyerName'],
-  'sales-orders': ['salesName'],
-  'sales-outbounds': ['salesName'],
-  'purchase-contracts': ['buyerName'],
-  'sales-contracts': ['salesName'],
-}
-
 function resolveScalarFields(moduleKey: string): string[] {
   const config = businessPageConfigs[moduleKey]
   if (!config) {
     return []
   }
 
-  // Per-module saveFields take priority over global lists
   const moduleSaveFields = config.saveFields
   if (moduleSaveFields) {
     const scalar = moduleSaveFields.scalar || []
@@ -60,7 +34,7 @@ function resolveScalarFields(moduleKey: string): string[] {
     .map((f) => f.key)
     .filter((key) => !COMPUTED_FIELD_KEYS.has(key))
 
-  const extras = EXTRA_SCALAR_FIELDS[moduleKey] || []
+  const extras = getBehaviorValue(moduleKey, 'extraScalarFields') || []
   return [...new Set([...fromDetailFields, ...extras])]
 }
 
@@ -198,13 +172,13 @@ export function serializeBusinessRecordForSave(
   }
 
   if (
-    moduleKey === 'freight-statements' &&
+    hasBehavior(moduleKey, 'includeAttachmentIds') &&
     Array.isArray(record.attachmentIds)
   ) {
     payload.attachmentIds = record.attachmentIds
   }
 
-  if (lineItemPayloadModuleKeys.has(moduleKey)) {
+  if (hasBehavior(moduleKey, 'savePayloadLineItems')) {
     payload.items = toArray(record.items).map((item) => serializeLineItem(item, moduleKey))
   }
 

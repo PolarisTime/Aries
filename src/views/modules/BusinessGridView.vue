@@ -6,10 +6,8 @@
  *  1. Extract editor workspace (lines ~1960-2420) → ModuleEditorWorkspace.vue
  *     - Props: editorVisible, editorTitle, editorForm, canEditFormFields, ...
  *     - This is the largest inline section (~460 lines).
- *  2. Extract filter toolbar (lines ~1612-1730) → ModuleFilterToolbar.vue
- *     - Props: filters, visibleFilters, quickFilters, ...
- *  3. Extract editor form field renderer (lines ~2070-2130) → FormFieldRenderer.vue
- *     - Reusable across editor and detail views.
+ *  2. Extract filter toolbar → ModuleFilterToolbar.vue (done)
+ *  3. Extract editor form field renderer → FormFieldRenderer.vue (done)
  *  4. Replace module-specific adapters with ModuleBehaviorRegistry calls.
  *     - Done for editor adapter; remaining: statements, finance-links, parent-import.
  */
@@ -17,10 +15,8 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, type Ref } 
 import { useRoute, useRouter } from 'vue-router'
 import dayjs, { type Dayjs } from 'dayjs'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { MenuOutlined, SearchOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { MenuProps } from 'ant-design-vue'
-import type { SelectValue } from 'ant-design-vue/es/select'
 import {
   deleteBusinessModule,
   generateBusinessPrimaryNo,
@@ -47,12 +43,10 @@ import type {
 import { exportRecordsToExcel } from '@/utils/export-excel'
 import ModuleSelectionOverlay from './components/ModuleSelectionOverlay.vue'
 import ModuleAttachmentModal from './components/ModuleAttachmentModal.vue'
-import ColumnSettingsPopover from './components/ColumnSettingsPopover.vue'
-import EditorFooterActions from './components/EditorFooterActions.vue'
-import EditorItemsSummary from './components/EditorItemsSummary.vue'
+import ModuleEditorWorkspace from './components/ModuleEditorWorkspace.vue'
+import ModuleFilterToolbar from './components/ModuleFilterToolbar.vue'
 import ModuleStatementGenerator from './components/ModuleStatementGenerator.vue'
 import ModuleTableToolbar from './components/ModuleTableToolbar.vue'
-import RbacHelperPanel from './components/RbacHelperPanel.vue'
 import TableRowActions from './components/TableRowActions.vue'
 import ModuleFreightPickupListOverlay from './components/ModuleFreightPickupListOverlay.vue'
 import ModuleMaterialImportDialogs from './components/ModuleMaterialImportDialogs.vue'
@@ -72,7 +66,7 @@ import {
   isNumberEditorColumn,
   isEditorFieldDisabledForModule,
   isEditorItemColumnEditableForModule,
-  isSalesOrderLineLocked,
+  isModuleLineItemsLocked,
 } from './module-adapter-editor'
 import {
   generatePrimaryNo as buildModulePrimaryNo,
@@ -81,13 +75,8 @@ import {
   getTagListValues,
   isFriendlyTagColumnKey,
   isTagListColumnKey,
-  parseParentRelationNos,
 } from './module-adapter-shared'
-import {
-  buildCustomerStatementOptions,
-  buildFreightStatementOptions,
-  buildSupplierStatementOptions,
-} from './module-adapter-finance-links'
+import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import { useStatementGeneratorSupport } from './use-statement-generator-support'
 import { useSystemModuleSupport } from './use-system-module-support'
 import { useUploadRuleSupport } from './use-upload-rule-support'
@@ -100,6 +89,7 @@ import { useEditorFormSupport } from './use-editor-form-support'
 import { useBusinessQueries } from './use-business-queries'
 import { useInvoiceSync } from './use-invoice-sync'
 import { useMaterialImport } from './use-material-import'
+import { useFinanceStatementLinkSupport } from './use-finance-statement-link-support'
 import { useFreightPickupList } from './use-freight-pickup-list'
 import { useMaterialSelector } from './use-material-selector'
 import { useParentImportSupport } from './use-parent-import-support'
@@ -120,8 +110,6 @@ void isFriendlyTagColumnKey; void isTagListColumnKey; void shouldHideUploadRuleL
 const props = defineProps<{
   moduleKey: string
 }>()
-type TextModelValue = string | number | undefined
-type DateRangeModelValue = [Dayjs, Dayjs] | undefined
 type DynamicColumn = {
   key?: unknown
   dataIndex?: unknown
@@ -213,7 +201,7 @@ const config = computed<ModulePageConfig>(() => {
   return isWeightOnlyViewEnabled ? buildWeightOnlyViewConfig(found) : found
 })
 
-const isMaterialModule = computed(() => props.moduleKey === 'materials')
+const isMaterialModule = computed(() => hasBehavior(props.moduleKey, 'supportsMaterialImport'))
 const moduleResource = computed(() => resolveResourceKey(props.moduleKey))
 const canViewRecords = computed(() => permissionStore.can(moduleResource.value, 'read'))
 const canCreateRecords = computed(() => permissionStore.can(moduleResource.value, 'create'))
@@ -363,7 +351,7 @@ const {
   customerStatementRows,
   supplierStatementRows,
   freightStatementRows,
-  downstreamSalesOutbounds,
+  lineItemLockRelatedRows,
   materialMap,
   currentInvoiceTaxRate,
 } = useBusinessQueries({
@@ -375,6 +363,7 @@ const {
   isReadOnly,
   canEditLineItems,
   editorVisible,
+  editorForm,
   supportsInvoiceAssist,
   parentImportConfig,
   canViewModuleRecords: (moduleKey) => canViewModuleRecords(moduleKey),
@@ -388,7 +377,6 @@ const hasAdvancedFilters = computed(() => config.value.filters.length > 3)
 const shouldShowItemAmountSummary = computed(() =>
   Boolean(config.value.itemColumns?.some((column) => column.dataIndex === 'amount')),
 )
-const editorItemQuantityTotal = computed(() => sumLineItemsBy(editorItems.value, 'quantity'))
 const editorItemWeightTotal = computed(() => sumLineItemsBy(editorItems.value, 'weightTon'))
 const editorItemAmountTotal = computed(() => sumLineItemsBy(editorItems.value, 'amount'))
 
@@ -425,14 +413,6 @@ const {
   config,
   formFields,
 })
-
-function getFilterFieldId(fieldKey: string) {
-  return `filter-field-${props.moduleKey}-${fieldKey}`
-}
-
-function getEditorFieldId(fieldKey: string) {
-  return `editor-field-${props.moduleKey}-${fieldKey}`
-}
 
 function createFilters(pageConfig: ModulePageConfig) {
   return Object.fromEntries(
@@ -551,7 +531,7 @@ const rawFormFieldMetaMap = computed<Record<string, ModuleFormFieldDefinition>>(
         })),
       }]
     }
-    if (props.moduleKey === 'departments' && field.key === 'parentId') {
+    if (hasBehavior(props.moduleKey, 'isSettingsModule') && field.key === 'parentId') {
       const currentDepartmentId = String(editorForm.id || '')
       return [field.key, {
         ...field,
@@ -567,25 +547,8 @@ const rawFormFieldMetaMap = computed<Record<string, ModuleFormFieldDefinition>>(
           })),
       }]
     }
-    if (field.key === 'sourceStatementId' && props.moduleKey === 'receipts') {
-      return [field.key, {
-        ...field,
-        type: 'select',
-        label: '关联客户对账单',
-        options: receiptStatementOptions.value,
-        placeholder: receiptStatementFieldPlaceholder.value,
-        disabled: Boolean(field.disabled) || !receiptStatementOptions.value.length,
-      }]
-    }
-    if (field.key === 'sourceStatementId' && props.moduleKey === 'payments') {
-      return [field.key, {
-        ...field,
-        type: 'select',
-        label: paymentStatementFieldLabel.value,
-        options: paymentStatementOptions.value,
-        placeholder: paymentStatementFieldPlaceholder.value,
-        disabled: Boolean(field.disabled) || !paymentStatementOptions.value.length,
-      }]
+    if (field.key === 'sourceStatementId') {
+      return [field.key, resolveSourceStatementField(field)]
     }
     return [field.key, field]
   })),
@@ -760,7 +723,7 @@ const rowSelection = computed(() => ({
 }))
 
 const expandable = computed(() => {
-  if (props.moduleKey === 'general-settings' && canViewRecords.value) {
+  if (hasBehavior(props.moduleKey, 'hasUploadRuleExpandedRow') && canViewRecords.value) {
     return {
       expandedRowKeys: uploadRuleVisible.value && activeUploadRuleRowId.value ? [activeUploadRuleRowId.value] : [],
       rowExpandable: (record: ModuleRecord) => isUploadRuleListRow(record),
@@ -820,101 +783,28 @@ const editorItems = computed<ModuleLineItem[]>(() =>
   Array.isArray(editorForm.items) ? (editorForm.items as ModuleLineItem[]) : [],
 )
 
-const paymentBusinessType = computed(() => String(editorForm.businessType || '').trim())
-const receiptStatementOptions = computed(() =>
-  buildCustomerStatementOptions(customerStatementRows.value, {
-    currentStatementId: Number(editorForm.sourceStatementId || 0),
-    customerName: String(editorForm.customerName || ''),
-    projectName: String(editorForm.projectName || ''),
-  }),
-)
-const paymentStatementOptions = computed(() => {
-  if (paymentBusinessType.value === '供应商') {
-    return buildSupplierStatementOptions(supplierStatementRows.value, {
-      currentStatementId: Number(editorForm.sourceStatementId || 0),
-      counterpartyName: String(editorForm.counterpartyName || ''),
-    })
-  }
-  if (paymentBusinessType.value === '物流商') {
-    return buildFreightStatementOptions(freightStatementRows.value, {
-      currentStatementId: Number(editorForm.sourceStatementId || 0),
-      counterpartyName: String(editorForm.counterpartyName || ''),
-    })
-  }
-  return []
-})
-const paymentStatementFieldLabel = computed(() => {
-  if (paymentBusinessType.value === '供应商') {
-    return '关联供应商对账单'
-  }
-  if (paymentBusinessType.value === '物流商') {
-    return '关联物流对账单'
-  }
-  return '关联对账单'
-})
-const receiptStatementFieldPlaceholder = computed(() => {
-  if (!String(editorForm.customerName || '').trim() || !String(editorForm.projectName || '').trim()) {
-    return '可先选择对账单，系统会自动回填客户和项目'
-  }
-  return receiptStatementOptions.value.length ? '请选择关联客户对账单' : '没有可选的客户对账单'
-})
-const paymentStatementFieldPlaceholder = computed(() => {
-  if (!paymentBusinessType.value) {
-    return '请先选择业务类型'
-  }
-  if (paymentBusinessType.value === '供应商' && !String(editorForm.counterpartyName || '').trim()) {
-    return '可先选择供应商对账单，系统会自动回填往来单位'
-  }
-  if (paymentBusinessType.value === '物流商' && !String(editorForm.counterpartyName || '').trim()) {
-    return '可先选择物流对账单，系统会自动回填往来单位'
-  }
-  return paymentStatementOptions.value.length ? `请选择${paymentStatementFieldLabel.value}` : `没有可选的${paymentStatementFieldLabel.value}`
-})
-const sourceStatementOptions = computed(() => {
-  if (props.moduleKey === 'receipts') {
-    return receiptStatementOptions.value
-  }
-  if (props.moduleKey === 'payments') {
-    return paymentStatementOptions.value
-  }
-  return []
-})
-const sourceStatementOptionsReady = computed(() => {
-  if (!editorVisible.value) {
-    return false
-  }
-  if (props.moduleKey === 'receipts') {
-    return customerStatementRowsQuery.isFetched.value
-  }
-  if (props.moduleKey === 'payments') {
-    if (paymentBusinessType.value === '供应商') {
-      return supplierStatementRowsQuery.isFetched.value
-    }
-    if (paymentBusinessType.value === '物流商') {
-      return freightStatementRowsQuery.isFetched.value
-    }
-  }
-  return false
+const {
+  paymentBusinessType,
+  resolveSourceStatementField,
+  sourceStatementOptions,
+  sourceStatementOptionsReady,
+} = useFinanceStatementLinkSupport({
+  moduleKey: computed(() => props.moduleKey),
+  editorVisible,
+  editorForm,
+  customerStatementRows,
+  supplierStatementRows,
+  freightStatementRows,
+  customerStatementRowsFetched: customerStatementRowsQuery.isFetched,
+  supplierStatementRowsFetched: supplierStatementRowsQuery.isFetched,
+  freightStatementRowsFetched: freightStatementRowsQuery.isFetched,
 })
 
-const salesOrderRelatedOutbounds = computed(() => {
-  if (props.moduleKey !== 'sales-orders') {
-    return []
-  }
-
-  const orderNo = String(editorForm.orderNo || '').trim()
-  if (!orderNo) {
-    return []
-  }
-
-  return downstreamSalesOutbounds.value.filter((record) =>
-    parseParentRelationNos(record.salesOrderNo).includes(orderNo),
-  )
-})
-
-const salesOrderLineLocked = computed(() =>
-  props.moduleKey === 'sales-orders'
-  && isSalesOrderLineLocked(salesOrderRelatedOutbounds.value.map((record) => String(record.status || ''))),
+const lineItemsLocked = computed(() =>
+  isModuleLineItemsLocked(
+    props.moduleKey,
+    lineItemLockRelatedRows.value.map((record) => String(record.status || '')),
+  ),
 )
 
 const editorAuditTarget = computed(() => {
@@ -922,7 +812,7 @@ const editorAuditTarget = computed(() => {
   return buildEditorAuditTarget(
     props.moduleKey,
     (statusField?.options || []).map((option) => String(option.value)),
-    salesOrderLineLocked.value,
+    lineItemsLocked.value,
   )
 })
 
@@ -932,11 +822,16 @@ const canManageEditorItems = computed(() =>
     props.moduleKey,
     canEditLineItems.value,
     canSaveCurrentEditor.value,
-    salesOrderLineLocked.value,
+    lineItemsLocked.value,
   ),
 )
 const canAddManualEditorItems = computed(() =>
-  canManageEditorItems.value && props.moduleKey !== 'invoice-issues',
+  canManageEditorItems.value && getBehaviorValue(props.moduleKey, 'allowsManualLineItems') !== false,
+)
+const lockedLineItemsNotice = computed(() =>
+  lineItemsLocked.value
+    ? String(getBehaviorValue(props.moduleKey, 'lockedLineItemsNotice') || '')
+    : '',
 )
 
 useInvoiceSync({
@@ -1489,7 +1384,7 @@ function isEditorFieldDisabled(field: ModuleFormFieldDefinition) {
     field.key,
     Boolean(field.disabled),
     canSaveCurrentEditor.value,
-    salesOrderLineLocked.value,
+    lineItemsLocked.value,
   )
 }
 
@@ -1498,7 +1393,7 @@ function isEditorItemColumnEditable(columnKey: string) {
     props.moduleKey,
     columnKey,
     canEditLineItems.value,
-    salesOrderLineLocked.value,
+    lineItemsLocked.value,
   )
 }
 
@@ -1506,55 +1401,6 @@ function isEditorItemColumnEditable(columnKey: string) {
 function asModuleRecord(record: Record<string, unknown>): ModuleRecord {
   return record as unknown as ModuleRecord
 }
-/** @see asModuleRecord */
-function asModuleLineItem(record: Record<string, unknown>): ModuleLineItem {
-  return record as unknown as ModuleLineItem
-}
-
-function getTextModelValue(source: Record<string, unknown>, key: string): TextModelValue {
-  const value = source[key]
-  if (typeof value === 'string' || typeof value === 'number') {
-    return value
-  }
-  if (typeof value === 'boolean') {
-    return String(value)
-  }
-  return undefined
-}
-
-function getSelectModelValue(source: Record<string, unknown>, key: string): SelectValue {
-  const value = source[key]
-  if (Array.isArray(value)) {
-    return value.filter((item): item is string | number | boolean =>
-      typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean',
-    ) as SelectValue
-  }
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === undefined) {
-    return value as SelectValue
-  }
-  return undefined
-}
-
-function getDateRangeModelValue(source: Record<string, unknown>, key: string): DateRangeModelValue {
-  const value = source[key]
-  if (Array.isArray(value) && value.length === 2 && dayjs.isDayjs(value[0]) && dayjs.isDayjs(value[1])) {
-    return [value[0], value[1]]
-  }
-  return undefined
-}
-
-function getNumberModelValue(source: Record<string, unknown>, key: string) {
-  const value = source[key]
-  if (typeof value === 'number') {
-    return value
-  }
-  if (typeof value === 'string' && value.trim()) {
-    const parsed = Number(value)
-    return Number.isNaN(parsed) ? undefined : parsed
-  }
-  return undefined
-}
-
 function setFilterValue(key: string, value: unknown) {
   filters[key] = value
 }
@@ -1604,23 +1450,6 @@ function getDetailItemColumnMeta(column: unknown) {
   return key ? config.value.itemColumns?.find((item) => item.dataIndex === key) : undefined
 }
 
-function getEditorSummaryCellValue(column: unknown) {
-  const key = getTableColumnKey(column)
-  if (key === 'editorAction') {
-    return '合计'
-  }
-  if (key === 'quantity') {
-    return editorItemQuantityTotal.value.toFixed(0)
-  }
-  if (key === 'weightTon') {
-    return formatWeight(editorItemWeightTotal.value)
-  }
-  if (key === 'amount' && shouldShowItemAmountSummary.value) {
-    return formatAmount(editorItemAmountTotal.value)
-  }
-  return ''
-}
-
 function handleRoleTreeCheckChange(
   checkedKeys: Array<string | number> | { checked: Array<string | number>; halfChecked?: Array<string | number> },
 ) {
@@ -1644,110 +1473,26 @@ function handleEditorDateValueChange(key: string, value: unknown) {
         :message="config.description"
         style="margin-bottom: 16px"
       >
-        <template v-if="moduleKey === 'permission-management'" #message>
+        <template v-if="getBehaviorValue(moduleKey, 'alertActionLink')" #message>
           {{ config.description }}
-          <span class="table-action-link" style="margin-left: 8px" @click="router.push('/role-action-editor')">前往角色权限配置 →</span>
+          <span class="table-action-link" style="margin-left: 8px" @click="router.push(getBehaviorValue(moduleKey, 'alertActionLink')!.to)">{{ getBehaviorValue(moduleKey, 'alertActionLink')!.text }}</span>
         </template>
       </a-alert>
-      <div class="table-page-search-wrapper">
-        <div
-          v-if="quickFilters.length"
-          style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;"
-        >
-          <span style="color: rgba(0, 0, 0, 0.45);">快捷筛选</span>
-          <a-button
-            v-for="filterPreset in quickFilters"
-            :key="filterPreset.key"
-            size="small"
-            :type="activeQuickFilterKey === filterPreset.key ? 'primary' : 'default'"
-            @click="applyQuickFilter(filterPreset)"
-          >
-            {{ filterPreset.label }}
-          </a-button>
-        </div>
-        <a-form :model="filters" layout="inline" @submit.prevent="handleSearch">
-          <a-row :gutter="24">
-            <a-col
-              v-for="filter in visibleFilters"
-              :key="filter.key"
-              :md="8"
-              :sm="24"
-            >
-              <a-form-item
-                :label="filter.label"
-                :html-for="getFilterFieldId(filter.key)"
-              >
-                <a-input
-                  v-if="filter.type === 'input'"
-                  :id="getFilterFieldId(filter.key)"
-                  :value="getTextModelValue(filters, filter.key)"
-                  :name="filter.key"
-                  :placeholder="filter.placeholder"
-                  allow-clear
-                  @update:value="setFilterValue(filter.key, $event)"
-                  @press-enter="handleSearch"
-                />
-                <a-select
-                  v-else-if="filter.type === 'select'"
-                  :id="getFilterFieldId(filter.key)"
-                  :value="getSelectModelValue(filters, filter.key)"
-                  allow-clear
-                  :placeholder="filter.placeholder || `请选择${filter.label}`"
-                  @update:value="setFilterValue(filter.key, $event)"
-                  @change="handleFilterValueChange"
-                >
-                  <template
-                    v-for="option in resolveFilterOptions(filter)"
-                    :key="isFilterOptionGroup(option) ? option.label : option.value"
-                  >
-                    <a-select-opt-group
-                      v-if="isFilterOptionGroup(option)"
-                      :label="option.label"
-                    >
-                      <a-select-option
-                        v-for="groupOption in option.options"
-                        :key="groupOption.value"
-                        :value="groupOption.value"
-                      >
-                        {{ groupOption.label }}
-                      </a-select-option>
-                    </a-select-opt-group>
-                    <a-select-option
-                      v-else
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </a-select-option>
-                  </template>
-                </a-select>
-                <a-range-picker
-                  v-else
-                  :id="getFilterFieldId(filter.key)"
-                  :value="getDateRangeModelValue(filters, filter.key)"
-                  style="width: 100%"
-                  format="YYYY-MM-DD"
-                  :placeholder="['开始时间', '结束时间']"
-                  @update:value="(value) => setFilterValue(filter.key, value)"
-                />
-              </a-form-item>
-            </a-col>
-
-            <a-col :md="8" :sm="24" class="search-action-col">
-              <div class="table-page-search-submitButtons">
-                <a-button type="primary" @click="handleSearch">查询</a-button>
-                <a-button style="margin-left: 8px" @click="handleReset">重置</a-button>
-                <a
-                  v-if="hasAdvancedFilters"
-                  style="margin-left: 8px"
-                  @click="toggleSearchStatus = !toggleSearchStatus"
-                >
-                  {{ toggleSearchStatus ? '收起' : '展开' }}
-                </a>
-              </div>
-            </a-col>
-          </a-row>
-        </a-form>
-      </div>
+      <ModuleFilterToolbar
+        :module-key="moduleKey"
+        :filters="filters"
+        :visible-filters="visibleFilters"
+        :quick-filters="quickFilters"
+        :active-quick-filter-key="activeQuickFilterKey"
+        :has-advanced-filters="hasAdvancedFilters"
+        :expanded="toggleSearchStatus"
+        @apply-quick-filter="applyQuickFilter"
+        @update-filter="setFilterValue"
+        @filter-change="handleFilterValueChange"
+        @update:expanded="toggleSearchStatus = $event"
+        @search="handleSearch"
+        @reset="handleReset"
+      />
 
       <a-alert
         v-if="tableErrorMessage"
@@ -1947,368 +1692,81 @@ function handleEditorDateValueChange(key: string, value: unknown) {
       </div>
     </a-card>
 
-    <div v-if="editorVisible" class="workspace-overlay">
-      <div class="workspace-overlay-mask"></div>
-      <section class="workspace-overlay-panel">
-        <header class="workspace-overlay-header">
-          <span class="workspace-overlay-title">{{ editorTitle }}</span>
-        </header>
-
-        <div class="workspace-overlay-body bill-detail-body">
-        <div v-if="canEditFormFields" class="editor-form-head">
-          <div class="editor-form-title-block">
-            <h3 class="detail-section-title">单据信息</h3>
-          </div>
-          <div class="editor-form-actions">
-            <ColumnSettingsPopover
-              label="表单字段设置"
-              :items="formFieldSettingItems"
-              :get-item-class="getFormFieldSettingItemClass"
-              :on-drag-start="handleFormFieldSettingDragStart"
-              :on-drag-over="handleFormFieldSettingDragOver"
-              :on-drop="handleFormFieldSettingDrop"
-              :on-drag-end="resetFormFieldSettingDragState"
-              :on-visible-change="handleFormFieldVisibleChange"
-              :on-reset="resetFormFieldSettings"
-            />
-            <EditorFooterActions
-              v-if="!config.itemColumns?.length"
-              :can-save="canSaveCurrentEditor"
-              :can-audit="canSaveAndAuditCurrentEditor"
-              :saving="editorSaving"
-              @cancel="closeEditor"
-              @save="(audit) => handleSaveEditor(audit)"
-            />
-          </div>
-        </div>
-        <a-form :model="editorForm" layout="vertical" class="editor-form-shell">
-          <RbacHelperPanel
-            v-if="systemHelperVisible"
-            :title="systemHelperTitle"
-            :role-count="checkedRoleNames.length"
-            :permission-count="selectedRolePermissionLabels.length"
-            :data-scope="String(editorForm.dataScope || '--')"
-            :permission-summary="String(editorForm.permissionSummary || '--')"
-            :show-role-link="moduleKey === 'role-settings'"
-          />
-          <a-row :gutter="16">
-            <a-col
-              v-for="field in visibleFormFields"
-              :key="field.key"
-              :xs="24"
-              :sm="12"
-              :lg="field.type === 'textarea' ? 24 : 6"
-            >
-              <a-form-item
-                :label="field.label"
-                :html-for="getEditorFieldId(field.key)"
-                :required="field.required"
-              >
-                <a-input
-                  v-if="field.type === 'input'"
-                  :id="getEditorFieldId(field.key)"
-                  :value="getTextModelValue(editorForm, field.key)"
-                  :name="field.key"
-                  :disabled="isEditorFieldDisabled(field)"
-                  :placeholder="field.placeholder || `请输入${field.label}`"
-                  @update:value="(value) => setEditorFormValue(field.key, value)"
-                />
-                <a-select
-                  v-else-if="field.type === 'select'"
-                  :id="getEditorFieldId(field.key)"
-                  :value="getSelectModelValue(editorForm, field.key)"
-                  :allow-clear="field.allowClear || !field.required"
-                  :disabled="isEditorFieldDisabled(field)"
-                  :placeholder="field.placeholder || `请选择${field.label}`"
-                  @update:value="(value) => setEditorFormValue(field.key, value)"
-                >
-                  <a-select-option
-                    v-for="option in field.options || []"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </a-select-option>
-                </a-select>
-                <div
-                  v-else-if="isRoleTreeField(field)"
-                  :id="getEditorFieldId(field.key)"
-                  class="rbac-tree-field"
-                >
-                  <div class="rbac-tree-field-meta">
-                    <span>已选 {{ checkedRoleNames.length }} 项</span>
-                    <span class="rbac-tree-field-hint">按角色类型分组勾选</span>
-                  </div>
-                  <a-tree
-                    checkable
-                    block-node
-                    default-expand-all
-                    :checked-keys="checkedRoleNames"
-                    :tree-data="roleTreeData"
-                    @check="handleRoleTreeCheckChange"
-                  />
-                  <div v-if="selectedRolePermissionLabels.length" class="rbac-tree-field-summary">
-                    自动汇总权限：{{ selectedRolePermissionLabels.join('、') }}
-                  </div>
-                </div>
-                <a-select
-                  v-else-if="field.type === 'multiSelect'"
-                  :id="getEditorFieldId(field.key)"
-                  :value="getSelectModelValue(editorForm, field.key)"
-                  mode="multiple"
-                  :disabled="isEditorFieldDisabled(field)"
-                  :placeholder="field.placeholder || `请选择${field.label}`"
-                  @update:value="(value) => setEditorFormValue(field.key, value)"
-                >
-                  <a-select-option
-                    v-for="option in field.options || []"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </a-select-option>
-                </a-select>
-                <a-date-picker
-                  v-else-if="field.type === 'date'"
-                  :id="getEditorFieldId(field.key)"
-                  style="width: 100%"
-                  format="YYYY-MM-DD"
-                  :disabled="isEditorFieldDisabled(field)"
-                  :value="getEditorDateValue(field.key)"
-                  @change="handleEditorDateValueChange(field.key, $event)"
-                />
-                <a-input-number
-                  v-else-if="field.type === 'number'"
-                  :id="getEditorFieldId(field.key)"
-                  :value="getNumberModelValue(editorForm, field.key)"
-                  :name="field.key"
-                  style="width: 100%"
-                  :disabled="isEditorFieldDisabled(field)"
-                  :min="field.min"
-                  :precision="field.precision"
-                  :placeholder="field.placeholder || `请输入${field.label}`"
-                  @update:value="(value) => setEditorFormValue(field.key, value)"
-                />
-                <a-textarea
-                  v-else
-                  :id="getEditorFieldId(field.key)"
-                  :value="getTextModelValue(editorForm, field.key)"
-                  :name="field.key"
-                  :rows="3"
-                  :disabled="isEditorFieldDisabled(field)"
-                  :placeholder="field.placeholder || `请输入${field.label}`"
-                  @update:value="(value) => setEditorFormValue(field.key, value)"
-                />
-              </a-form-item>
-            </a-col>
-          </a-row>
-        </a-form>
-
-        <template v-if="config.itemColumns?.length">
-          <div class="editor-items-head">
-            <div class="editor-items-title-block">
-              <h3 class="detail-section-title">明细列表</h3>
-            </div>
-            <div class="editor-items-actions">
-              <a-button
-                v-if="canAddManualEditorItems"
-                type="primary"
-                class="overlay-action-button"
-                @click="addEditorItem"
-              >
-                新增明细
-              </a-button>
-              <template v-if="parentImportConfig && canManageEditorItems">
-                <a-button type="primary" class="overlay-action-button" @click="openParentSelector">
-                  {{ parentImportConfig.buttonText || '选择上级单据导入' }}
-                </a-button>
-              </template>
-              <ColumnSettingsPopover
-                v-if="canEditItemColumns"
-                label="明细列设置"
-                :items="editorColumnSettingItems"
-                :get-item-class="getEditorColumnSettingItemClass"
-                :on-drag-start="handleEditorColumnSettingDragStart"
-                :on-drag-over="handleEditorColumnSettingDragOver"
-                :on-drop="handleEditorColumnSettingDrop"
-                :on-drag-end="resetEditorColumnSettingDragState"
-                :on-visible-change="handleEditorColumnVisibleChange"
-                :on-reset="resetEditorColumnSettings"
-              />
-              <EditorFooterActions
-                :can-save="canSaveCurrentEditor"
-                :can-audit="canSaveAndAuditCurrentEditor"
-                :saving="editorSaving"
-                @cancel="closeEditor"
-                @save="(audit) => handleSaveEditor(audit)"
-              />
-              <EditorItemsSummary
-                class="editor-items-summary-inline"
-                :item-count="editorItems.length"
-                :weight="formatWeight(editorItemWeightTotal)"
-                :amount="formatAmount(editorItemAmountTotal)"
-                :show-amount="shouldShowItemAmountSummary"
-              />
-            </div>
-            <EditorItemsSummary
-              class="editor-items-summary-mobile"
-              :item-count="editorItems.length"
-              :weight="formatWeight(editorItemWeightTotal)"
-              :amount="formatAmount(editorItemAmountTotal)"
-              :show-amount="shouldShowItemAmountSummary"
-            />
-          </div>
-          <div v-if="parentImportConfig" class="parent-import-note">
-            {{ parentImportConfig.enforceUniqueRelation ? '当前单据链按上级单据唯一占用控制；重复导入同单号会更新，选择不同单号会追加明细' : '重复导入同单号会更新，选择不同单号会追加明细' }}
-          </div>
-          <div v-if="props.moduleKey === 'sales-orders' && salesOrderLineLocked" class="parent-import-note">
-            当前销售订单已存在已审核的销售出库，数量和商品信息已锁定，仅允许调整单价、金额、送货日期和备注。
-          </div>
-          <a-table
-            size="small"
-            bordered
-            row-key="id"
-            :columns="editorDetailTableColumns"
-            :data-source="editorItems"
-            :pagination="false"
-            :scroll="editorDetailTableScroll"
-            :custom-row="getEditorItemRowProps"
-            :row-class-name="getEditorItemRowClassName"
-            class="module-detail-table"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'editorAction'">
-                <div v-if="canManageEditorItems" class="editor-row-action-group">
-                  <span
-                    class="editor-row-drag-handle"
-                    draggable="true"
-                    title="拖动排序"
-                    @dragstart="handleEditorItemDragStart(String(record.id), $event)"
-                    @dragend="handleEditorItemDragEnd"
-                  >
-                    <MenuOutlined />
-                  </span>
-                  <a-button type="link" class="editor-row-action" @click="removeEditorItem(String(record.id))">
-                    删除
-                  </a-button>
-                </div>
-                <span v-else class="editor-row-action-lock">已锁定</span>
-              </template>
-              <template
-                v-else-if="isEditorItemColumnEditable(String(column.key)) && column.key === 'materialCode'"
-              >
-                <div class="editor-material-selector">
-                  <a-select
-                    :value="record.materialCode"
-                    show-search
-                    allow-clear
-                    class="editor-item-field"
-                    style="width: 100%"
-                    placeholder="选择商品编码"
-                    :filter-option="filterMaterialOption"
-                    @change="handleEditorItemMaterialSelect(asModuleLineItem(record), $event)"
-                  >
-                    <a-select-option
-                      v-for="material in materialRows"
-                      :key="String(material.materialCode)"
-                      :value="String(material.materialCode)"
-                      :label="`${material.materialCode} ${material.brand || ''} ${material.spec || ''}`"
-                    >
-                      {{ material.materialCode }} / {{ material.brand }} / {{ material.spec }}
-                    </a-select-option>
-                  </a-select>
-                  <a-button
-                    type="text"
-                    class="editor-material-selector-button"
-                    title="弹窗选择商品"
-                    @mousedown.prevent
-                    @click.stop="openMaterialSelector(asModuleLineItem(record))"
-                  >
-                    <template #icon>
-                      <SearchOutlined />
-                    </template>
-                  </a-button>
-                </div>
-              </template>
-              <template
-                v-else-if="isEditorItemColumnEditable(String(column.key)) && column.key === 'warehouseName'"
-              >
-                <a-select
-                  :value="record.warehouseName"
-                  show-search
-                  allow-clear
-                  class="editor-item-field"
-                  placeholder="选择码头"
-                  :filter-option="filterMaterialOption"
-                  @change="handleEditorItemValueChange(asModuleLineItem(record), 'warehouseName', $event)"
-                >
-                  <a-select-option
-                    v-for="warehouse in warehouseRows"
-                    :key="String(warehouse.warehouseName)"
-                    :value="String(warehouse.warehouseName)"
-                    :label="String(warehouse.warehouseName || '')"
-                  >
-                    {{ warehouse.warehouseName }}
-                  </a-select-option>
-                </a-select>
-              </template>
-              <template
-                v-else-if="isEditorItemColumnEditable(String(column.key)) && isNumberEditorColumn(String(column.key))"
-              >
-                <a-input-number
-                  :value="Number(getRecordCellValue(record, column) || 0)"
-                  class="editor-item-field"
-                  style="width: 100%"
-                  :min="getEditorItemMin(String(column.key))"
-                  :precision="getEditorItemPrecision(String(column.key))"
-                  @change="handleEditorItemNumberChange(asModuleLineItem(record), String(column.key), $event)"
-                />
-              </template>
-              <template v-else-if="isEditorItemColumnEditable(String(column.key))">
-                <a-input
-                  :value="String(getRecordCellValue(record, column) || '')"
-                  class="editor-item-field"
-                  @change="handleEditorItemInputChange(asModuleLineItem(record), String(column.key), $event)"
-                />
-              </template>
-              <template
-                v-else-if="getDetailItemColumnMeta(column)?.type === 'status'"
-              >
-                <a-tag :color="getStatusMeta(getRecordCellValue(record, column)).color">
-                  {{ getStatusMeta(getRecordCellValue(record, column)).text }}
-                </a-tag>
-              </template>
-              <template v-else>
-                {{
-                  formatCellValue(
-                    getDetailItemColumnMeta(column),
-                    getRecordCellValue(record, column),
-                  )
-                }}
-              </template>
-            </template>
-
-            <template #emptyText>
-              <a-empty :description="parentImportConfig ? (canAddManualEditorItems ? '当前没有明细，可手动新增或从上级单据导入' : '当前没有明细，请从上级单据导入') : '当前没有明细，可手动新增'" />
-            </template>
-
-            <template #summary>
-              <a-table-summary-row>
-                <a-table-summary-cell
-                  v-for="(column, index) in editorDetailTableColumns"
-                  :key="getTableColumnKey(column)"
-                  :index="index"
-                  :align="column.align"
-                >
-                  {{ getEditorSummaryCellValue(column) }}
-                </a-table-summary-cell>
-              </a-table-summary-row>
-            </template>
-          </a-table>
-        </template>
-        </div>
-      </section>
-    </div>
+    <ModuleEditorWorkspace
+      :visible="editorVisible"
+      :title="editorTitle"
+      :module-key="moduleKey"
+      :editor-form="editorForm"
+      :can-edit-form-fields="canEditFormFields"
+      :item-columns="config.itemColumns"
+      :visible-form-fields="visibleFormFields"
+      :system-helper-visible="systemHelperVisible"
+      :system-helper-title="systemHelperTitle"
+      :checked-role-names="checkedRoleNames"
+      :selected-role-permission-labels="selectedRolePermissionLabels"
+      :role-tree-data="roleTreeData"
+      :can-save-current-editor="canSaveCurrentEditor"
+      :can-save-and-audit-current-editor="canSaveAndAuditCurrentEditor"
+      :editor-saving="editorSaving"
+      :form-field-setting-items="formFieldSettingItems"
+      :get-form-field-setting-item-class="getFormFieldSettingItemClass"
+      :handle-form-field-setting-drag-start="handleFormFieldSettingDragStart"
+      :handle-form-field-setting-drag-over="handleFormFieldSettingDragOver"
+      :handle-form-field-setting-drop="handleFormFieldSettingDrop"
+      :reset-form-field-setting-drag-state="resetFormFieldSettingDragState"
+      :handle-form-field-visible-change="handleFormFieldVisibleChange"
+      :reset-form-field-settings="resetFormFieldSettings"
+      :is-editor-field-disabled="isEditorFieldDisabled"
+      :get-editor-date-value="getEditorDateValue"
+      :is-role-tree-field="isRoleTreeField"
+      :parent-import-config="parentImportConfig"
+      :can-manage-editor-items="canManageEditorItems"
+      :can-add-manual-editor-items="canAddManualEditorItems"
+      :can-edit-item-columns="canEditItemColumns"
+      :editor-column-setting-items="editorColumnSettingItems"
+      :get-editor-column-setting-item-class="getEditorColumnSettingItemClass"
+      :handle-editor-column-setting-drag-start="handleEditorColumnSettingDragStart"
+      :handle-editor-column-setting-drag-over="handleEditorColumnSettingDragOver"
+      :handle-editor-column-setting-drop="handleEditorColumnSettingDrop"
+      :reset-editor-column-setting-drag-state="resetEditorColumnSettingDragState"
+      :handle-editor-column-visible-change="handleEditorColumnVisibleChange"
+      :reset-editor-column-settings="resetEditorColumnSettings"
+      :editor-items="editorItems"
+      :editor-item-weight-total="editorItemWeightTotal"
+      :editor-item-amount-total="editorItemAmountTotal"
+      :should-show-item-amount-summary="shouldShowItemAmountSummary"
+      :locked-line-items-notice="lockedLineItemsNotice"
+      :editor-detail-table-columns="editorDetailTableColumns"
+      :editor-detail-table-scroll="editorDetailTableScroll"
+      :get-editor-item-row-props="getEditorItemRowProps"
+      :get-editor-item-row-class-name="getEditorItemRowClassName"
+      :is-editor-item-column-editable="isEditorItemColumnEditable"
+      :is-number-editor-column="isNumberEditorColumn"
+      :get-editor-item-min="getEditorItemMin"
+      :get-editor-item-precision="getEditorItemPrecision"
+      :material-rows="materialRows"
+      :warehouse-rows="warehouseRows"
+      :filter-material-option="filterMaterialOption"
+      :format-weight="formatWeight"
+      :format-amount="formatAmount"
+      :format-cell-value="formatCellValue"
+      :get-status-meta="getStatusMeta"
+      @cancel="closeEditor"
+      @save="(audit) => handleSaveEditor(audit)"
+      @update-form-value="setEditorFormValue"
+      @date-change="handleEditorDateValueChange"
+      @role-tree-check="handleRoleTreeCheckChange"
+      @add-editor-item="addEditorItem"
+      @open-parent-selector="openParentSelector"
+      @editor-item-drag-start="handleEditorItemDragStart"
+      @editor-item-drag-end="handleEditorItemDragEnd"
+      @remove-editor-item="removeEditorItem"
+      @editor-item-material-select="handleEditorItemMaterialSelect"
+      @open-material-selector="openMaterialSelector"
+      @editor-item-value-change="handleEditorItemValueChange"
+      @editor-item-number-change="handleEditorItemNumberChange"
+      @editor-item-input-change="handleEditorItemInputChange"
+    />
 
     <ModuleRecordDetailOverlay
       :visible="detailVisible"
