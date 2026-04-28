@@ -17,7 +17,6 @@ export interface InitialSetupCompanyPayload {
   bankName: string
   bankAccount: string
   taxRate: number
-  status: string
   remark?: string
 }
 

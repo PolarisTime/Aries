@@ -30,7 +30,6 @@ const formState = reactive({
   bankName: '',
   bankAccount: '',
   taxRate: 0.13,
-  status: '正常',
   remark: '',
 })
 
@@ -80,7 +79,6 @@ const setupMutation = useMutation({
             bankName: formState.bankName.trim(),
             bankAccount: formState.bankAccount.trim(),
             taxRate: formState.taxRate,
-            status: formState.status.trim() || '正常',
             remark: formState.remark.trim(),
           }
         : undefined,
@@ -243,21 +241,16 @@ onMounted(() => {
                 <a-form-item label="银行账号" required>
                   <a-input v-model:value="formState.bankAccount" placeholder="请输入银行账号" />
                 </a-form-item>
-                <div class="initial-setup-inline">
-                  <a-form-item label="默认税率" required>
-                    <a-input-number
-                      v-model:value="formState.taxRate"
-                      :min="0"
-                      :max="1"
-                      :step="0.01"
-                      :precision="4"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                  <a-form-item label="状态" required>
-                    <a-input v-model:value="formState.status" />
-                  </a-form-item>
-                </div>
+                <a-form-item label="默认税率" required>
+                  <a-input-number
+                    v-model:value="formState.taxRate"
+                    :min="0"
+                    :max="1"
+                    :step="0.01"
+                    :precision="4"
+                    style="width: 100%"
+                  />
+                </a-form-item>
                 <a-form-item label="备注">
                   <a-textarea
                     v-model:value="formState.remark"
@@ -441,12 +434,6 @@ onMounted(() => {
   background: #fcfdff;
 }
 
-.initial-setup-inline {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
 .initial-setup-actions {
   display: flex;
   justify-content: flex-end;
@@ -465,8 +452,7 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
-  .initial-setup-status-grid,
-  .initial-setup-inline {
+  .initial-setup-status-grid {
     grid-template-columns: 1fr;
   }
 
