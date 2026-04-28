@@ -1,3 +1,5 @@
+import { getBehaviorValue } from './module-behavior-registry'
+
 export type ModuleActionKind =
   | 'openSupplierStatementGenerator'
   | 'openCustomerStatementGenerator'
@@ -21,23 +23,6 @@ export type PermissionActionCode =
   | 'print'
   | 'manage_permissions'
 
-const actionKindByModuleAndLabel: Record<string, ModuleActionKind> = {
-  'supplier-statements:生成对账单': 'openSupplierStatementGenerator',
-  'customer-statements:生成对账单': 'openCustomerStatementGenerator',
-  'freight-statements:生成物流对账单': 'openFreightStatementGenerator',
-  'freight-bills:生成提货清单': 'openFreightPickupList',
-  'freight-bills:标记送达': 'markSelectedFreightDelivered',
-  'freight-statements:查看运费对账汇总': 'openFreightSummary',
-  'role-settings:配置权限': 'navigateToRoleActionEditor',
-}
-
-const auditStatusByModuleKey: Record<string, string> = {
-  'purchase-orders': '已审核',
-  'purchase-inbounds': '已审核',
-  'sales-outbounds': '已审核',
-  'freight-bills': '已审核',
-}
-
 export function resolveModuleActionKind(options: {
   moduleKey: string
   actionLabel: string
@@ -46,7 +31,8 @@ export function resolveModuleActionKind(options: {
 }): ModuleActionKind {
   const { moduleKey, actionLabel, hasFormFields, isMaterialModule } = options
 
-  const mappedActionKind = actionKindByModuleAndLabel[`${moduleKey}:${actionLabel}`]
+  const actionKindsByLabel = getBehaviorValue(moduleKey, 'actionKindsByLabel') as Record<string, ModuleActionKind> | undefined
+  const mappedActionKind = actionKindsByLabel?.[actionLabel]
   if (mappedActionKind) {
     return mappedActionKind
   }
@@ -121,17 +107,16 @@ export function resolveModuleActionPermissionCodes(actionLabel: string): Permiss
 export function buildEditorAuditTarget(
   moduleKey: string,
   statusOptions: string[],
-  salesOrderLineLocked: boolean,
+  lineItemsLocked: boolean,
 ) {
-  if (moduleKey === 'sales-orders') {
-    return {
-      key: 'status',
-      value: salesOrderLineLocked ? '完成销售' : '已审核',
-    }
+  const lockedAuditStatus = getBehaviorValue(moduleKey, 'lockedAuditStatus')
+  if (lineItemsLocked && typeof lockedAuditStatus === 'string') {
+    return { key: 'status', value: lockedAuditStatus }
   }
 
-  if (auditStatusByModuleKey[moduleKey]) {
-    return { key: 'status', value: auditStatusByModuleKey[moduleKey] }
+  const auditStatus = getBehaviorValue(moduleKey, 'auditStatus')
+  if (typeof auditStatus === 'string') {
+    return { key: 'status', value: auditStatus }
   }
 
   if (statusOptions.includes('已审核')) {

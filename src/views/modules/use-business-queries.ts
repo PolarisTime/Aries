@@ -8,6 +8,8 @@ import {
 } from '@/api/business'
 import { normalizeTableResponse } from '@/utils/list'
 import type { ModuleRecord } from '@/types/module-page'
+import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
+import { parseParentRelationNos } from './module-adapter-shared'
 
 interface UseBusinessQueriesOptions {
   moduleKey: Ref<string>
@@ -18,10 +20,26 @@ interface UseBusinessQueriesOptions {
   isReadOnly: Ref<boolean>
   canEditLineItems: Ref<boolean>
   editorVisible: Ref<boolean>
+  editorForm: Record<string, unknown>
   supportsInvoiceAssist: Ref<boolean>
   parentImportConfig: Ref<{ parentModuleKey?: string; enforceUniqueRelation?: boolean } | undefined>
   canViewModuleRecords: (moduleKey: string | null | undefined) => boolean
   materialSelectorKeyword: Ref<string>
+}
+
+export function findRowsByRelation(
+  rows: ModuleRecord[],
+  sourceField: string,
+  targetValue: string,
+) {
+  const normalizedTarget = targetValue.trim()
+  if (!sourceField || !normalizedTarget) {
+    return []
+  }
+
+  return rows.filter((record) =>
+    parseParentRelationNos(record[sourceField]).includes(normalizedTarget),
+  )
 }
 
 export function useBusinessQueries(options: UseBusinessQueriesOptions) {
@@ -34,6 +52,7 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     isReadOnly,
     canEditLineItems,
     editorVisible,
+    editorForm,
     supportsInvoiceAssist,
     parentImportConfig,
     canViewModuleRecords,
@@ -176,13 +195,24 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     placeholderData: keepPreviousData,
   })
 
-  const downstreamSalesOutboundsQuery = useQuery({
-    queryKey: ['business-grid-all', 'sales-outbounds', 'editor-lock'],
-    queryFn: () => listAllBusinessModuleRows('sales-outbounds', {}),
+  const lineItemLockSourceModule = computed(() =>
+    String(getBehaviorValue(moduleKey.value, 'lineItemLockSourceModule') || ''),
+  )
+  const lineItemLockSourceField = computed(() =>
+    String(getBehaviorValue(moduleKey.value, 'lineItemLockSourceField') || ''),
+  )
+  const lineItemLockTargetField = computed(() =>
+    String(getBehaviorValue(moduleKey.value, 'lineItemLockTargetField') || ''),
+  )
+
+  const lineItemLockSourceRowsQuery = useQuery({
+    queryKey: computed(() => ['business-grid-all', lineItemLockSourceModule.value, 'editor-lock']),
+    queryFn: () => listAllBusinessModuleRows(lineItemLockSourceModule.value, {}),
     enabled: computed(() =>
       editorVisible.value
-      && moduleKey.value === 'sales-orders'
-      && canViewModuleRecords('sales-outbounds'),
+      && hasBehavior(moduleKey.value, 'locksLineItemsWhenRecordLocked')
+      && Boolean(lineItemLockSourceModule.value)
+      && canViewModuleRecords(lineItemLockSourceModule.value),
     ),
     placeholderData: keepPreviousData,
   })
@@ -214,7 +244,21 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
   const customerStatementRows = computed(() => customerStatementRowsQuery.data.value || [])
   const supplierStatementRows = computed(() => supplierStatementRowsQuery.data.value || [])
   const freightStatementRows = computed(() => freightStatementRowsQuery.data.value || [])
-  const downstreamSalesOutbounds = computed(() => downstreamSalesOutboundsQuery.data.value || [])
+  const lineItemLockSourceRows = computed(() => lineItemLockSourceRowsQuery.data.value || [])
+  const lineItemLockRelatedRows = computed(() => {
+    const sourceField = lineItemLockSourceField.value
+    const targetField = lineItemLockTargetField.value
+    if (!sourceField || !targetField) {
+      return []
+    }
+
+    const targetValue = String(editorForm[targetField] || '').trim()
+    if (!targetValue) {
+      return []
+    }
+
+    return findRowsByRelation(lineItemLockSourceRows.value, sourceField, targetValue)
+  })
   const materialMap = computed<Record<string, ModuleRecord>>(() =>
     Object.fromEntries(materialRows.value.map((record) => [String(record.materialCode || ''), record])),
   )
@@ -227,7 +271,6 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     const rate = Number(currentCompanySetting.value?.taxRate)
     return Number.isFinite(rate) ? Number(rate.toFixed(4)) : 0
   })
-  const salesOrderRelatedOutbounds = computed(() => [] as ModuleRecord[])
 
   return {
     listQuery,
@@ -241,7 +284,7 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     customerStatementRowsQuery,
     supplierStatementRowsQuery,
     freightStatementRowsQuery,
-    downstreamSalesOutboundsQuery,
+    lineItemLockSourceRowsQuery,
     listResult,
     parentRows,
     moduleRows,
@@ -253,10 +296,10 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     customerStatementRows,
     supplierStatementRows,
     freightStatementRows,
-    downstreamSalesOutbounds,
+    lineItemLockSourceRows,
+    lineItemLockRelatedRows,
     materialMap,
     currentCompanySetting,
     currentInvoiceTaxRate,
-    salesOrderRelatedOutbounds,
   }
 }
