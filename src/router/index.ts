@@ -88,9 +88,11 @@ router.beforeEach((to) => {
   const permissionStore = usePermissionStore()
   authStore.hydrate()
   permissionStore.syncFromAuth()
-  loadPermissionCatalog()
 
   const hasToken = Boolean(authStore.token)
+  if (hasToken) {
+    loadPermissionCatalog()
+  }
   const currentUser = authStore.user
   const forceTotpSetupRequired = requiresForcedTotpSetup(currentUser)
 
