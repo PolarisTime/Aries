@@ -394,6 +394,7 @@ void loadActionOptions()
         row-key="id"
         size="middle"
         bordered
+        :scroll="{ x: 'max-content' }"
         :data-source="keyRows"
         :loading="loading"
         :pagination="{
