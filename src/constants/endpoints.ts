@@ -63,6 +63,9 @@ export const ENDPOINTS = {
   // Setup
   SETUP_STATUS: '/setup/status',
   SETUP_INITIALIZE: '/setup/initialize',
+  SETUP_ADMIN_2FA: '/setup/admin/2fa/setup',
+  SETUP_ADMIN: '/setup/admin',
+  SETUP_COMPANY: '/setup/company',
 
   // Attachments & general settings
   ATTACHMENTS_UPLOAD: '/attachments/upload',
