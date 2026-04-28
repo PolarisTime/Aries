@@ -17,7 +17,19 @@ const pinia = createPinia()
 app.use(pinia)
 
 const authStore = useAuthStore(pinia)
-await authStore.restoreSession()
+
+function shouldRestoreSessionOnBoot() {
+  if (typeof window === 'undefined') {
+    return true
+  }
+  return !['/login', '/setup'].includes(window.location.pathname)
+}
+
+if (shouldRestoreSessionOnBoot()) {
+  await authStore.restoreSession()
+} else {
+  authStore.hydrate()
+}
 
 app.use(i18n)
 app.use(router)
