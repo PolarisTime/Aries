@@ -145,6 +145,7 @@ export function useEditorItemSupport(options: UseEditorItemSupportOptions) {
 
   function handleEditorItemValueChange(item: ModuleLineItem, key: string, value: unknown) {
     handleEditorItemTextChange(item, key, String(normalizeSelectValue(value) || ''))
+    recalculateEditorLineItem(item, key)
   }
 
   function handleEditorItemMaterialChange(item: ModuleLineItem, materialCode: string) {

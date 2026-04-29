@@ -14,7 +14,7 @@ interface RoleTreeNode {
   children?: RoleTreeNode[]
 }
 
-defineProps<{
+const props = defineProps<{
   field: ModuleFormFieldDefinition
   fieldId: string
   form: Record<string, unknown>
@@ -25,6 +25,13 @@ defineProps<{
   roleTreeData: RoleTreeNode[]
   selectedRolePermissionLabels: string[]
 }>()
+
+import { computed } from 'vue'
+
+const resolvedOptions = computed(() => {
+  if (!props.field.options) return []
+  return typeof props.field.options === 'function' ? props.field.options() : props.field.options
+})
 
 const emit = defineEmits<{
   'update-value': [key: string, value: unknown]
@@ -96,7 +103,7 @@ function getNumberModelValue(source: Record<string, unknown>, key: string) {
       @update:value="(value) => emit('update-value', field.key, value)"
     >
       <a-select-option
-        v-for="option in field.options || []"
+        v-for="option in resolvedOptions"
         :key="option.value"
         :value="option.value"
       >
@@ -134,7 +141,7 @@ function getNumberModelValue(source: Record<string, unknown>, key: string) {
       @update:value="(value) => emit('update-value', field.key, value)"
     >
       <a-select-option
-        v-for="option in field.options || []"
+        v-for="option in resolvedOptions"
         :key="option.value"
         :value="option.value"
       >

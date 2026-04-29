@@ -50,7 +50,6 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     paginationPageSize,
     canViewRecords,
     isReadOnly,
-    canEditLineItems,
     editorVisible,
     editorForm,
     supportsInvoiceAssist,
@@ -124,7 +123,6 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     queryFn: () => listAllBusinessModuleRows('materials', {}),
     enabled: computed(() =>
       editorVisible.value
-      && canEditLineItems.value
       && canViewModuleRecords('materials'),
     ),
     placeholderData: keepPreviousData,

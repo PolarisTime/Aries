@@ -40,7 +40,7 @@ const authStore = useAuthStore()
 const permissionStore = usePermissionStore()
 const systemMenuStore = useSystemMenuStore()
 
-// Pre-fetch master data options before business module pages render
+// Pre-fetch master data options when entering business module pages
 const syncState = ref<'idle' | 'syncing' | 'success' | 'failed'>('idle')
 let syncTimer: number | null = null
 const BUSINESS_MODULE_PREFIXES = [
@@ -51,25 +51,39 @@ const BUSINESS_MODULE_PREFIXES = [
   '/receipts', '/payments', '/invoice-receipts', '/invoice-issues',
 ]
 
-router.beforeResolve(async (to) => {
-  if (to.path === '/login' || to.path === '/setup') return
-  if (!BUSINESS_MODULE_PREFIXES.some(p => to.path.startsWith(p))) return
+async function refreshOptions() {
+  if (!authStore.token) return
   syncState.value = 'syncing'
-  const results = await Promise.allSettled([
-    fetchSupplierOptions(),
-    fetchCustomerOptions(),
-    fetchCarrierOptions(),
-    fetchWarehouseOptions(),
-    fetchMaterialCategories(),
-  ])
-  syncState.value = results.every(r => r.status === 'fulfilled') ? 'success' : 'failed'
+  try {
+    const results = await Promise.allSettled([
+      fetchSupplierOptions(),
+      fetchCustomerOptions(),
+      fetchCarrierOptions(),
+      fetchWarehouseOptions(),
+      fetchMaterialCategories(),
+    ])
+    syncState.value = results.every(r => r.status === 'fulfilled') ? 'success' : 'failed'
+  } catch {
+    syncState.value = 'failed'
+  }
   if (syncTimer) window.clearTimeout(syncTimer)
   syncTimer = window.setTimeout(() => { syncState.value = 'idle' }, 2000)
+}
+
+watch(() => route.path, (path) => {
+  if (path === '/login' || path === '/setup') return
+  if (BUSINESS_MODULE_PREFIXES.some(p => path.startsWith(p))) {
+    refreshOptions()
+  }
 })
 
 onBeforeUnmount(() => {
   if (syncTimer) window.clearTimeout(syncTimer)
 })
+
+// Redirect to login when auth state is lost
+watch(() => authStore.token, (t) => { if (!t) router.replace('/login') })
+
 const { user } = storeToRefs(authStore)
 const { menus: systemMenuTree } = storeToRefs(systemMenuStore)
 

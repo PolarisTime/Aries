@@ -3,9 +3,9 @@ import {
   buildValueOptions,
   carrierOptions,
   customerOptions,
+  getSupplierOptions,
   materialCategoryOptions,
   statementStatusOptions,
-  supplierOptions,
   warehouseOptions,
 } from '@/constants/module-options'
 import {
@@ -129,7 +129,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
     actions: [{ label: '导出', type: 'primary' }],
     filters: [
       { key: 'keyword', label: '关键字', type: 'input', placeholder: '采购单号 / 供应商 / 商品编码 / 规格' },
-      { key: 'supplierName', label: '供应商', type: 'select', options: supplierOptions() },
+      { key: 'supplierName', label: '供应商', type: 'select', options: getSupplierOptions },
       { key: 'orderDate', label: '采购日期', type: 'dateRange' },
     ],
     columns: [
@@ -193,7 +193,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
     primaryNoKey: 'statementNo',
     actions: [{ label: '生成对账单', type: 'primary' }],
     filters: [
-      { key: 'supplierName', label: '供应商', type: 'select', options: supplierOptions() },
+      { key: 'supplierName', label: '供应商', type: 'select', options: getSupplierOptions },
       { key: 'status', label: '状态', type: 'select', options: statementStatusOptions },
       { key: 'endDate', label: '账期', type: 'dateRange' },
     ],
@@ -220,7 +220,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
     ],
     formFields: [
       { key: 'statementNo', label: '对账单号', type: 'input', required: true },
-      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: supplierOptions() },
+      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: getSupplierOptions },
       { key: 'startDate', label: '开始日期', type: 'date', required: true },
       { key: 'endDate', label: '结束日期', type: 'date', required: true },
       { key: 'purchaseAmount', label: '采购金额', type: 'number', required: true, min: 0, precision: 2, defaultValue: 0, disabled: true },
@@ -490,7 +490,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
     primaryNoKey: 'receiveNo',
     actions: [{ label: '新增收票单', type: 'primary' }],
     filters: [
-      { key: 'supplierName', label: '供应商', type: 'select', options: supplierOptions() },
+      { key: 'supplierName', label: '供应商', type: 'select', options: getSupplierOptions },
       { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已收票') },
       { key: 'invoiceDate', label: '发票日期', type: 'dateRange' },
     ],
@@ -524,7 +524,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
       { key: 'receiveNo', label: '收票单号', type: 'input', required: true },
       { key: 'sourcePurchaseOrderNos', label: '关联采购订单', type: 'input', disabled: true, placeholder: '通过采购订单明细导入，可追加多个单号' },
       { key: 'invoiceNo', label: '发票号码', type: 'input', required: true },
-      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: supplierOptions() },
+      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: getSupplierOptions },
       { key: 'invoiceTitle', label: '开票方抬头', type: 'input', required: true },
       { key: 'invoiceDate', label: '发票日期', type: 'date', required: true },
       { key: 'invoiceType', label: '票种', type: 'select', required: true, options: buildValueOptions('增值税专票', '增值税普票') },

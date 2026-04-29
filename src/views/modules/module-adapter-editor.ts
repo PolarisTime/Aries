@@ -5,6 +5,7 @@ import type {
   ModuleParentImportDefinition,
   ModuleRecord,
 } from '@/types/module-page'
+import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
 import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import { parseParentRelationNos } from './module-adapter-shared'
 
@@ -21,6 +22,8 @@ const derivedReadonlyItemColumnKeySet = new Set([
   'pieceWeightTon',
   'piecesPerBundle',
   'weightTon',
+  'weightAdjustmentTon',
+  'weightAdjustmentAmount',
   'amount',
 ])
 
@@ -57,16 +60,23 @@ function hasEditorValue(value: unknown) {
 function getLineItemValidationMessage(
   items: ModuleLineItem[],
   itemColumns: ModuleColumnDefinition[],
+  moduleKey?: string,
 ) {
   const requiredColumns = itemColumns.filter((column) => column.required)
-  if (!requiredColumns.length) {
-    return null
-  }
 
   for (const [index, item] of items.entries()) {
     const maxImportQuantity = Number(item._maxImportQuantity)
     if (Number.isFinite(maxImportQuantity) && Number(item.quantity || 0) > maxImportQuantity) {
       return `第${index + 1}行可关联数量不能超过${maxImportQuantity}件`
+    }
+    if (moduleKey === 'purchase-inbounds') {
+      const isWeighSettlement = String(item.settlementMode || '').trim() === '过磅'
+      if (isPurchaseWeighRequiredCategory(item.category) && !isWeighSettlement) {
+        return `第${index + 1}行商品类别需按过磅入库，请将本行结算方式改为过磅`
+      }
+      if (isWeighSettlement && (!hasEditorValue(item.weighWeightTon) || Number(item.weighWeightTon || 0) <= 0)) {
+        return `请填写第${index + 1}行过磅重量`
+      }
     }
     for (const column of requiredColumns) {
       if (!hasEditorValue(item[column.dataIndex])) {
@@ -193,6 +203,8 @@ export function buildDefaultEditorLineItem(itemId = buildModuleLineItemId()): Mo
     piecesPerBundle: 0,
     quantity: 0,
     weightTon: 0,
+    weightAdjustmentTon: 0,
+    weightAdjustmentAmount: 0,
     unitPrice: 0,
     amount: 0,
   }
@@ -228,6 +240,9 @@ function isEmptyPurchaseOrderLineItem(item: ModuleLineItem) {
     && isZeroLike(item.pieceWeightTon)
     && isZeroLike(item.piecesPerBundle)
     && isZeroLike(item.weightTon)
+    && isZeroLike(item.weighWeightTon)
+    && isZeroLike(item.weightAdjustmentTon)
+    && isZeroLike(item.weightAdjustmentAmount)
     && isZeroLike(item.unitPrice)
     && isZeroLike(item.amount)
 }
@@ -272,8 +287,26 @@ export function moveEditorLineItemByDrag(
 }
 
 export function recalculateEditorLineItem(item: ModuleLineItem, changedKey?: string) {
-  if (changedKey === 'quantity' || changedKey === 'pieceWeightTon') {
-    item.weightTon = toRoundedNumber(Number(item.quantity || 0) * Number(item.pieceWeightTon || 0), 3)
+  const theoreticalWeightTon = toRoundedNumber(Number(item.quantity || 0) * Number(item.pieceWeightTon || 0), 3)
+  const isWeighSettlement = String(item.settlementMode || '').trim() === '过磅'
+  const hasWeighWeightTon = isWeighSettlement
+    && item.weighWeightTon !== undefined
+    && item.weighWeightTon !== null
+    && item.weighWeightTon !== ''
+
+  if (changedKey === 'settlementMode' && !isWeighSettlement) {
+    item.weighWeightTon = undefined
+    item.weightTon = theoreticalWeightTon
+  }
+
+  if (changedKey === 'quantity' || changedKey === 'pieceWeightTon' || changedKey === 'settlementMode') {
+    item.weightTon = hasWeighWeightTon
+      ? toRoundedNumber(item.weighWeightTon, 3)
+      : theoreticalWeightTon
+  }
+
+  if (changedKey === 'weighWeightTon' && isWeighSettlement) {
+    item.weightTon = toRoundedNumber(item.weighWeightTon, 3)
   }
 
   if (changedKey === 'amount' && Number(item.weightTon || 0) > 0) {
@@ -284,10 +317,24 @@ export function recalculateEditorLineItem(item: ModuleLineItem, changedKey?: str
   if (
     changedKey === 'quantity'
     || changedKey === 'pieceWeightTon'
+    || changedKey === 'weighWeightTon'
+    || changedKey === 'settlementMode'
     || changedKey === 'weightTon'
     || changedKey === 'unitPrice'
   ) {
     item.amount = toRoundedNumber(Number(item.weightTon || 0) * Number(item.unitPrice || 0), 2)
+  }
+
+  if (
+    changedKey === 'quantity'
+    || changedKey === 'pieceWeightTon'
+    || changedKey === 'weighWeightTon'
+    || changedKey === 'settlementMode'
+    || changedKey === 'weightTon'
+    || changedKey === 'unitPrice'
+  ) {
+    item.weightAdjustmentTon = toRoundedNumber(Number(item.weightTon || 0) - theoreticalWeightTon, 3)
+    item.weightAdjustmentAmount = toRoundedNumber(Number(item.weightAdjustmentTon || 0) * Number(item.unitPrice || 0), 2)
   }
 
   return item
@@ -312,12 +359,19 @@ export function applyMaterialToEditorLineItem(
   item.pieceWeightTon = toRoundedNumber(materialRecord.pieceWeightTon || 0, 3)
   item.piecesPerBundle = toRoundedNumber(materialRecord.piecesPerBundle || 0, 0)
   item.unitPrice = toRoundedNumber(materialRecord.unitPrice || 0, 2)
+  item.settlementMode = isPurchaseWeighRequiredCategory(item.category)
+    ? '过磅'
+    : String(item.settlementMode || '理算')
+  item.weighWeightTon = undefined
+  item.weightAdjustmentTon = 0
+  item.weightAdjustmentAmount = 0
   return recalculateEditorLineItem(item, 'quantity')
 }
 
 export function getEditorValidationMessage(options: {
   fields: ModuleFormFieldDefinition[]
   editorForm: Record<string, unknown>
+  moduleKey?: string
   hasItemColumns: boolean
   itemColumns?: ModuleColumnDefinition[]
   items?: ModuleLineItem[]
@@ -349,7 +403,7 @@ export function getEditorValidationMessage(options: {
   }
 
   if (hasItemColumns) {
-    const itemValidationMessage = getLineItemValidationMessage(items, itemColumns)
+    const itemValidationMessage = getLineItemValidationMessage(items, itemColumns, options.moduleKey)
     if (itemValidationMessage) {
       return itemValidationMessage
     }
@@ -373,22 +427,28 @@ export function isNumberEditorColumn(columnKey: string) {
     'piecesPerBundle',
     'quantity',
     'weightTon',
+    'weighWeightTon',
+    'weightAdjustmentTon',
+    'weightAdjustmentAmount',
     'unitPrice',
     'amount',
   ].includes(columnKey)
 }
 
 export function getEditorItemPrecision(columnKey: string) {
-  if (['pieceWeightTon', 'weightTon'].includes(columnKey)) {
+  if (['pieceWeightTon', 'weightTon', 'weighWeightTon', 'weightAdjustmentTon'].includes(columnKey)) {
     return 3
   }
-  if (['unitPrice', 'amount'].includes(columnKey)) {
+  if (['unitPrice', 'amount', 'weightAdjustmentAmount'].includes(columnKey)) {
     return 2
   }
   return 0
 }
 
 export function getEditorItemMin(columnKey: string) {
+  if (['weightAdjustmentTon', 'weightAdjustmentAmount'].includes(columnKey)) {
+    return undefined
+  }
   if (isNumberEditorColumn(columnKey)) {
     return 0
   }

@@ -18,6 +18,16 @@ export function useModuleDisplaySupport(statusMap: Ref<Record<string, StatusMeta
     return '--'
   }
 
+  function formatBooleanRequired(value: unknown) {
+    if (value === true) {
+      return '需要'
+    }
+    if (value === false) {
+      return '不需要'
+    }
+    return '--'
+  }
+
   function formatAmount(value: unknown) {
     const amount = Number(value)
     return Number.isFinite(amount) ? amount.toFixed(2) : '--'
@@ -55,6 +65,9 @@ export function useModuleDisplaySupport(statusMap: Ref<Record<string, StatusMeta
     if (column.dataIndex === 'batchNoEnabled') {
       return formatBatchNoEnabled(value)
     }
+    if (column.dataIndex === 'purchaseWeighRequired') {
+      return formatBooleanRequired(value)
+    }
     if (Array.isArray(value)) {
       return value.length ? value.map((item) => String(item)).join('、') : '--'
     }
@@ -84,6 +97,9 @@ export function useModuleDisplaySupport(statusMap: Ref<Record<string, StatusMeta
     }
     if (field.key === 'batchNoEnabled') {
       return formatBatchNoEnabled(value)
+    }
+    if (field.key === 'purchaseWeighRequired') {
+      return formatBooleanRequired(value)
     }
     if (Array.isArray(value)) {
       return value.length ? value.map((item) => String(item)).join('、') : '--'

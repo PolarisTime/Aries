@@ -1,39 +1,79 @@
 // NOTE: These are fallback/default values for dropdown selects.
-// In production, warehouse/customer/supplier options should come from dedicated
-// API endpoints (e.g., GET /warehouses/search, GET /customers/search) to stay
-// in sync with the master data tables. Hardcoded lists here will drift.
+// Supplier options intentionally have no fallback: purchase modules must use
+// the supplier master-data API so stale hardcoded supplier names cannot be saved.
+import type { MaterialCategoryOption } from '@/api/material-categories'
+
 function createOptionList(values: readonly string[]) {
   return values.map((value) => ({ label: value, value }))
 }
 
 const materialCategoryValues = ['螺纹钢', '盘螺', '线材'] as const
-const materialCategoryFallbackOptions = createOptionList(materialCategoryValues)
+const materialCategoryFallbackOptions: MaterialCategoryOption[] = materialCategoryValues.map((value) => ({
+  label: value,
+  value,
+  purchaseWeighRequired: value === '盘螺' || value === '线材',
+}))
 
-let _categoryOptions = materialCategoryFallbackOptions
+let _categoryOptions: MaterialCategoryOption[] = materialCategoryFallbackOptions
+let categoryOptionsLoading = false
+
+function ensureMaterialCategoriesLoaded() {
+  if (categoryOptionsLoading) {
+    return
+  }
+  categoryOptionsLoading = true
+  fetchMaterialCategories().then((data) => {
+    if (data.length > 0) {
+      _categoryOptions = data
+    }
+  })
+}
 
 export function materialCategoryOptions() {
+  ensureMaterialCategoriesLoaded()
   return _categoryOptions
 }
 
 export function getMaterialCategoryOptions() {
+  ensureMaterialCategoriesLoaded()
   return _categoryOptions
+}
+
+export function isPurchaseWeighRequiredCategory(category: unknown) {
+  ensureMaterialCategoriesLoaded()
+  const normalized = String(category || '').trim()
+  if (!normalized) {
+    return false
+  }
+  return _categoryOptions.some((option) =>
+    String(option.value || '').trim() === normalized
+    && Boolean(option.purchaseWeighRequired),
+  )
 }
 
 export { materialCategoryFallbackOptions }
 
 import { fetchMaterialCategories } from '@/api/material-categories'
 
-fetchMaterialCategories().then((data) => {
-  if (data.length > 0) {
-    _categoryOptions = data
-  }
-})
-
 const materialGradeFallbackOptions = createOptionList(['HRB400', 'HRB500'] as const)
 
 let _gradeOptions = materialGradeFallbackOptions
+let gradeOptionsLoading = false
+
+function ensureMaterialGradesLoaded() {
+  if (gradeOptionsLoading) {
+    return
+  }
+  gradeOptionsLoading = true
+  fetchMaterialGrades().then((data) => {
+    if (data.length > 0) {
+      _gradeOptions = data
+    }
+  })
+}
 
 export function materialGradeOptions() {
+  ensureMaterialGradesLoaded()
   return _gradeOptions
 }
 
@@ -41,25 +81,19 @@ export { materialGradeFallbackOptions }
 
 import { fetchMaterialGrades } from '@/api/material-grades'
 
-fetchMaterialGrades().then((data) => {
-  if (data.length > 0) {
-    _gradeOptions = data
-  }
-})
-
-const supplierFallbackOptions = createOptionList(['江苏沙钢', '中天钢铁', '永锋钢铁'] as const)
+const supplierFallbackOptions: ReturnType<typeof createOptionList> = []
 
 let _supplierOptions = supplierFallbackOptions
 
 export function supplierOptions() {
-  return _supplierOptions
+  const dynamic = apiGetSupplierOptions()
+  return dynamic.length > 0 ? dynamic : _supplierOptions
 }
 
 import { getSupplierOptions as apiGetSupplierOptions } from '@/api/supplier-options'
 
 export function getSupplierOptions() {
-  const dynamic = apiGetSupplierOptions()
-  return dynamic.length > 0 ? dynamic : _supplierOptions
+  return supplierOptions()
 }
 
 export { supplierFallbackOptions }

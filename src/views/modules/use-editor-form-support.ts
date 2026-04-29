@@ -188,6 +188,7 @@ export function useEditorFormSupport(options: UseEditorFormSupportOptions) {
     const validationMessage = getEditorValidationMessage({
       fields: options.formFields.value,
       editorForm: s.editorForm,
+      moduleKey: options.moduleKey.value,
       hasItemColumns: Boolean(options.config.value.itemColumns?.length),
       itemColumns: options.config.value.itemColumns,
       items: trimmedItems,

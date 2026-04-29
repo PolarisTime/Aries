@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 type TableBinding = Record<string, unknown>
 type TableRowHandler = {
   bivarianceHack(record: unknown): TableBinding
 }['bivarianceHack']
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   visible: boolean
   title: string
   panelTitle: string
@@ -13,6 +15,7 @@ withDefaults(defineProps<{
   loading?: boolean
   rowSelection?: TableBinding
   pagination?: TableBinding | false
+  scroll?: TableBinding
   emptyDescription: string
   cancelText?: string
   confirmText?: string
@@ -24,7 +27,8 @@ withDefaults(defineProps<{
   hint: '',
   loading: false,
   rowSelection: undefined,
-  pagination: () => ({ pageSize: 12, showSizeChanger: false }),
+  pagination: () => ({ pageSize: 12, showSizeChanger: false, position: ['bottomRight'] }),
+  scroll: undefined,
   cancelText: '取消',
   confirmText: '确认',
   confirmVisible: true,
@@ -32,6 +36,11 @@ withDefaults(defineProps<{
   rowKey: 'id',
   customRow: undefined,
 })
+
+const resolvedScroll = computed(() => ({
+  y: 'var(--app-selection-scroll-y, calc(100vh - 284px))',
+  ...(props.scroll || {}),
+}))
 
 defineEmits<{
   cancel: []
@@ -42,7 +51,7 @@ defineEmits<{
 <template>
   <div v-if="visible" class="workspace-overlay">
     <div class="workspace-overlay-mask"></div>
-    <section class="workspace-overlay-panel">
+    <section class="workspace-overlay-panel module-selection-overlay-panel">
       <header class="workspace-overlay-header">
         <span class="workspace-overlay-title">{{ title }}</span>
         <div class="workspace-overlay-header-actions">
@@ -59,7 +68,7 @@ defineEmits<{
         </div>
       </header>
 
-      <div class="workspace-overlay-body statement-generator-body">
+      <div class="workspace-overlay-body statement-generator-body module-selection-overlay-body">
         <div class="module-table-head">
           <div class="module-table-head-meta statement-generator-meta">
             <slot name="meta">
@@ -72,7 +81,7 @@ defineEmits<{
           </div>
         </div>
 
-        <div class="module-table-shell statement-generator-table-shell">
+        <div class="module-table-shell statement-generator-table-shell module-selection-table-shell">
           <a-table
             size="small"
             bordered
@@ -80,6 +89,7 @@ defineEmits<{
             :data-source="rows"
             :loading="loading"
             :pagination="pagination"
+            :scroll="resolvedScroll"
             :row-selection="rowSelection"
             :custom-row="customRow"
           >

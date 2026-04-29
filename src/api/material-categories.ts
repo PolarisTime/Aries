@@ -5,6 +5,7 @@ import type { ApiResponse } from '@/types/api'
 export interface MaterialCategoryOption {
   value: string
   label: string
+  purchaseWeighRequired?: boolean
 }
 
 let cachedCategories: MaterialCategoryOption[] | null = null

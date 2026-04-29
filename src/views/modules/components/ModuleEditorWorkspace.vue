@@ -43,6 +43,8 @@ type TableColumn = {
 type TableScroll = Record<string, unknown>
 type FilterOption = { label?: unknown }
 
+const settlementModeOptions = ['理算', '过磅']
+
 const props = defineProps<{
   visible: boolean
   title: string
@@ -91,7 +93,7 @@ const props = defineProps<{
   editorDetailTableScroll: TableScroll
   getEditorItemRowProps: (record: ModuleLineItem) => Record<string, unknown>
   getEditorItemRowClassName: (record: ModuleLineItem) => string
-  isEditorItemColumnEditable: (columnKey: string) => boolean
+  isEditorItemColumnEditable: (columnKey: string, record?: ModuleLineItem) => boolean
   isNumberEditorColumn: (columnKey: string) => boolean
   getEditorItemMin: (columnKey: string) => number | undefined
   getEditorItemPrecision: (columnKey: string) => number
@@ -102,6 +104,7 @@ const props = defineProps<{
   formatAmount: (value: unknown) => string
   formatCellValue: (column: ModuleColumnDefinition | undefined, value: unknown) => string
   getStatusMeta: (value: unknown) => StatusMeta
+  selectedItemIds?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -114,7 +117,9 @@ const emit = defineEmits<{
   'open-parent-selector': []
   'editor-item-drag-start': [itemId: string, event: DragEvent]
   'editor-item-drag-end': []
+  'update:selectedItemIds': [keys: string[]]
   'remove-editor-item': [itemId: string]
+  'remove-selected-items': []
   'editor-item-material-select': [item: ModuleLineItem, value: unknown]
   'open-material-selector': [item: ModuleLineItem]
   'editor-item-value-change': [item: ModuleLineItem, key: string, value: unknown]
@@ -293,6 +298,14 @@ function getEditorSummaryCellValue(column: unknown) {
                   {{ parentImportConfig.buttonText || '选择上级单据导入' }}
                 </a-button>
               </template>
+              <a-button
+                v-if="canManageEditorItems && (selectedItemIds?.length || 0) > 0"
+                danger
+                class="overlay-action-button"
+                @click="emit('remove-selected-items')"
+              >
+                删除选中 ({{ selectedItemIds?.length || 0 }})
+              </a-button>
               <ColumnSettingsPopover
                 v-if="canEditItemColumns"
                 label="明细列设置"
@@ -344,32 +357,25 @@ function getEditorSummaryCellValue(column: unknown) {
             :scroll="editorDetailTableScroll"
             :custom-row="getEditorItemRowProps"
             :row-class-name="getEditorItemRowClassName"
+            :row-selection="canManageEditorItems ? { selectedRowKeys: selectedItemIds, onChange: (keys) => emit('update:selectedItemIds', keys as string[]) } : undefined"
             class="module-detail-table"
           >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'editorAction'">
-                <div v-if="canManageEditorItems" class="editor-row-action-group">
-                  <span
-                    class="editor-row-drag-handle"
-                    draggable="true"
-                    title="拖动排序"
-                    @dragstart="emit('editor-item-drag-start', String(record.id), $event)"
-                    @dragend="emit('editor-item-drag-end')"
-                  >
-                    <MenuOutlined />
-                  </span>
-                  <a-button
-                    type="link"
-                    class="editor-row-action"
-                    @click="emit('remove-editor-item', String(record.id))"
-                  >
-                    删除
-                  </a-button>
-                </div>
-                <span v-else class="editor-row-action-lock">已锁定</span>
+            <template #bodyCell="{ column, record, index }">
+              <template v-if="column.key === '_index'">
+                <span
+                  v-if="canManageEditorItems"
+                  class="editor-row-drag-handle"
+                  draggable="true"
+                  title="拖动排序"
+                  @dragstart="emit('editor-item-drag-start', String(record.id), $event)"
+                  @dragend="emit('editor-item-drag-end')"
+                >
+                  <MenuOutlined style="margin-right: 4px; cursor: grab; font-size: 12px; opacity: 0.45" />
+                </span>
+                {{ index + 1 }}
               </template>
               <template
-                v-else-if="isEditorItemColumnEditable(String(column.key)) && column.key === 'materialCode'"
+                v-else-if="isEditorItemColumnEditable(String(column.key), asModuleLineItem(record)) && column.key === 'materialCode'"
               >
                 <div class="editor-material-selector">
                   <a-select
@@ -405,7 +411,7 @@ function getEditorSummaryCellValue(column: unknown) {
                 </div>
               </template>
               <template
-                v-else-if="isEditorItemColumnEditable(String(column.key)) && column.key === 'warehouseName'"
+                v-else-if="isEditorItemColumnEditable(String(column.key), asModuleLineItem(record)) && column.key === 'warehouseName'"
               >
                 <a-select
                   :value="record.warehouseName"
@@ -427,7 +433,26 @@ function getEditorSummaryCellValue(column: unknown) {
                 </a-select>
               </template>
               <template
-                v-else-if="isEditorItemColumnEditable(String(column.key)) && isNumberEditorColumn(String(column.key))"
+                v-else-if="isEditorItemColumnEditable(String(column.key), asModuleLineItem(record)) && column.key === 'settlementMode'"
+              >
+                <a-select
+                  :value="record.settlementMode"
+                  class="editor-item-field"
+                  placeholder="选择结算方式"
+                  @change="emit('editor-item-value-change', asModuleLineItem(record), 'settlementMode', $event)"
+                >
+                  <a-select-option
+                    v-for="mode in settlementModeOptions"
+                    :key="mode"
+                    :value="mode"
+                    :label="mode"
+                  >
+                    {{ mode }}
+                  </a-select-option>
+                </a-select>
+              </template>
+              <template
+                v-else-if="isEditorItemColumnEditable(String(column.key), asModuleLineItem(record)) && isNumberEditorColumn(String(column.key))"
               >
                 <a-input-number
                   :value="Number(getRecordCellValue(record, column) || 0)"
@@ -438,7 +463,7 @@ function getEditorSummaryCellValue(column: unknown) {
                   @change="emit('editor-item-number-change', asModuleLineItem(record), String(column.key), $event)"
                 />
               </template>
-              <template v-else-if="isEditorItemColumnEditable(String(column.key))">
+              <template v-else-if="isEditorItemColumnEditable(String(column.key), asModuleLineItem(record))">
                 <a-input
                   :value="String(getRecordCellValue(record, column) || '')"
                   class="editor-item-field"

@@ -5,6 +5,7 @@ import {
   getCustomerOptions,
   getSupplierOptions,
   getWarehouseOptions,
+  isPurchaseWeighRequiredCategory,
 } from '@/constants/module-options'
 import {
   actionSet,
@@ -12,6 +13,7 @@ import {
   cloneLineItems,
   compactFreightItemColumns,
   compactOrderItemColumns,
+  compactPurchaseInboundItemColumns,
   compactPurchaseItemColumns,
   statusMap,
   transformFreightItems,
@@ -28,7 +30,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     actions: actionSet,
     filters: [
       { key: 'keyword', label: '单据编号', type: 'input', placeholder: '输入采购订单号' },
-      { key: 'supplierName', label: '供应商', type: 'select', options: getSupplierOptions() },
+      { key: 'supplierName', label: '供应商', type: 'select', options: getSupplierOptions },
       { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已审核', '完成采购') },
       { key: 'orderDate', label: '订单日期', type: 'dateRange' },
     ],
@@ -53,7 +55,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { label: '备注', key: 'remark' },
     ],
     formFields: [
-      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: getSupplierOptions() },
+      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: getSupplierOptions },
       { key: 'orderNo', label: '订单编号', type: 'input', required: true },
       { key: 'orderDate', label: '订单日期', type: 'date', required: true },
       { key: 'remark', label: '备注', type: 'input' },
@@ -68,12 +70,12 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     key: 'purchase-inbounds',
     title: '采购入库',
     kicker: 'Purchase',
-    description: '采购入库页面承接采购订单，展示入库仓库、批号、吨位和金额，适合作为后续库存和供应商对账入口。',
+    description: '采购入库页面承接采购订单，明细行展示码头、批号、结算方式、吨位和金额，适合作为后续库存和供应商对账入口。',
     primaryNoKey: 'inboundNo',
     actions: actionSet,
     filters: [
       { key: 'keyword', label: '入库单号', type: 'input', placeholder: '输入采购入库单号' },
-      { key: 'supplierName', label: '供应商', type: 'select', options: getSupplierOptions() },
+      { key: 'supplierName', label: '供应商', type: 'select', options: getSupplierOptions },
       { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已审核', '完成入库') },
       { key: 'inboundDate', label: '入库日期', type: 'dateRange' },
     ],
@@ -81,9 +83,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { title: '入库单号', dataIndex: 'inboundNo', width: 160 },
       { title: '关联订单', dataIndex: 'purchaseOrderNo', width: 160 },
       { title: '供应商', dataIndex: 'supplierName', width: 140 },
-      { title: '仓库', dataIndex: 'warehouseName', width: 120 },
       { title: '入库日期', dataIndex: 'inboundDate', width: 120, type: 'date' },
-      { title: '结算方式', dataIndex: 'settlementMode', width: 110 },
       { title: '总吨位', dataIndex: 'totalWeight', width: 100, align: 'right', type: 'weight' },
       { title: '总金额', dataIndex: 'totalAmount', width: 110, align: 'right', type: 'amount' },
       { title: '状态', dataIndex: 'status', width: 110, type: 'status', align: 'center' },
@@ -93,9 +93,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { label: '入库单号', key: 'inboundNo' },
       { label: '关联订单', key: 'purchaseOrderNo' },
       { label: '供应商', key: 'supplierName' },
-      { label: '仓库', key: 'warehouseName' },
       { label: '入库日期', key: 'inboundDate', type: 'date' },
-      { label: '结算方式', key: 'settlementMode' },
       { label: '总吨位', key: 'totalWeight', type: 'weight' },
       { label: '总金额', key: 'totalAmount', type: 'amount' },
       { label: '状态', key: 'status', type: 'status' },
@@ -104,13 +102,8 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     formFields: [
       { key: 'inboundNo', label: '入库单号', type: 'input', required: true },
       { key: 'purchaseOrderNo', label: '关联订单', type: 'input', disabled: true, placeholder: '通过上级单据导入' },
-      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: getSupplierOptions() },
-      { key: 'warehouseName', label: '仓库', type: 'select', required: true, options: getWarehouseOptions() },
+      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: getSupplierOptions },
       { key: 'inboundDate', label: '入库日期', type: 'date', required: true },
-      { key: 'settlementMode', label: '结算方式', type: 'select', required: true, options: [
-        { label: '理算', value: '理算' },
-        { label: '过磅', value: '过磅' },
-      ] },
       { key: 'remark', label: '备注', type: 'input' },
     ],
     parentImport: {
@@ -127,12 +120,13 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
           ? parentRecord.items.map((item) => ({
               ...item,
               sourcePurchaseOrderItemId: item.id,
+              settlementMode: isPurchaseWeighRequiredCategory(item.category) ? '过磅' : '理算',
             }))
           : [],
         'purchase-inbound-item',
       ),
     },
-    itemColumns: compactPurchaseItemColumns,
+    itemColumns: compactPurchaseInboundItemColumns,
     data: [],
     buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
     statusMap,
@@ -362,7 +356,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     actions: actionSet,
     filters: [
       { key: 'keyword', label: '合同编号', type: 'input', placeholder: '输入采购合同号' },
-      { key: 'supplierName', label: '供应商', type: 'select', options: getSupplierOptions() },
+      { key: 'supplierName', label: '供应商', type: 'select', options: getSupplierOptions },
       { key: 'status', label: '状态', type: 'select', options: [
         { label: '草稿', value: '草稿' },
         { label: '执行中', value: '执行中' },
@@ -397,7 +391,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     ],
     formFields: [
       { key: 'contractNo', label: '合同编号', type: 'input', required: true },
-      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: getSupplierOptions() },
+      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: getSupplierOptions },
       { key: 'signDate', label: '签订日期', type: 'date', required: true },
       { key: 'effectiveDate', label: '生效日期', type: 'date', required: true },
       { key: 'expireDate', label: '截止日期', type: 'date', required: true },
