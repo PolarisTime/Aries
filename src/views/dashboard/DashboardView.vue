@@ -17,7 +17,7 @@ import {
   ApartmentOutlined,
 } from '@ant-design/icons-vue'
 
-const { t } = useI18n()
+useI18n()
 const router = useRouter()
 
 const summaryQuery = useQuery({
