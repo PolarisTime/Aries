@@ -411,15 +411,15 @@ onBeforeUnmount(() => {
 
           <div class="user-wrapper">
             <span class="action action-tag">
-              <a-tag v-if="companyName" color="blue">{{ companyName }}</a-tag>
-              <a-tag :color="backendOnline ? 'green' : 'red'">
-                {{ backendOnline ? 'API 正常' : 'API 离线' }}
-              </a-tag>
               <Transition name="fade">
                 <a-tag v-if="syncState === 'syncing'" color="processing">同步中</a-tag>
                 <a-tag v-else-if="syncState === 'success'" color="success">已同步</a-tag>
                 <a-tag v-else-if="syncState === 'failed'" color="error">同步失败</a-tag>
               </Transition>
+              <a-tag v-if="companyName" color="blue">{{ companyName }}</a-tag>
+              <a-tag :color="backendOnline ? 'green' : 'red'">
+                {{ backendOnline ? 'API 正常' : 'API 离线' }}
+              </a-tag>
               <a-tag color="default">{{ clock.format('HH:mm:ss') }}</a-tag>
             </span>
             <span class="action user-name">
