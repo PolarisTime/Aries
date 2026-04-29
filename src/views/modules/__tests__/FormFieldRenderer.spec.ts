@@ -89,4 +89,18 @@ describe('FormFieldRenderer', () => {
     wrapper.findComponent({ name: 'ATree' }).vm.$emit('check', ['采购主管'])
     expect(wrapper.emitted('role-tree-check')?.[0]).toEqual([['采购主管']])
   })
+
+  it('passes the current form to dynamic option resolvers', () => {
+    const optionResolver = vi.fn((form) => [
+      { label: `项目-${form.customerName}`, value: '项目A' },
+    ])
+    mountRenderer({
+      key: 'projectName',
+      label: '项目',
+      type: 'select',
+      options: optionResolver,
+    })
+
+    expect(optionResolver).toHaveBeenCalledWith(expect.objectContaining({ customerName: '客户甲' }))
+  })
 })

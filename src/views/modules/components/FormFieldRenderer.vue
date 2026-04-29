@@ -30,7 +30,7 @@ import { computed } from 'vue'
 
 const resolvedOptions = computed(() => {
   if (!props.field.options) return []
-  return typeof props.field.options === 'function' ? props.field.options() : props.field.options
+  return typeof props.field.options === 'function' ? props.field.options(props.form) : props.field.options
 })
 
 const emit = defineEmits<{
