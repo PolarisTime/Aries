@@ -24,6 +24,7 @@ export type AppIconKey =
   | 'ShoppingCartOutlined'
   | 'SwapOutlined'
   | 'TableOutlined'
+  | 'TagsOutlined'
   | 'TeamOutlined'
   | 'UserOutlined'
   | 'WalletOutlined'
