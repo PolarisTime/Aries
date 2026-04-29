@@ -1,8 +1,8 @@
 import type { ModulePageConfig } from '@/types/module-page'
 import {
   enabledStatusOptions,
+  getMaterialCategoryOptions,
   materialCategoryOptions,
-  materialCategoryFallbackOptions,
   materialGradeOptions,
 } from '@/constants/module-options'
 import {
@@ -59,7 +59,7 @@ export const masterDataPageConfigs: Record<string, ModulePageConfig> = {
       { key: 'materialCode', label: '商品编码', type: 'input', required: true },
       { key: 'brand', label: '品牌', type: 'input', required: true },
       { key: 'material', label: '材质', type: 'input', required: true },
-      { key: 'category', label: '类别', type: 'select', required: true, options: materialCategoryFallbackOptions },
+      { key: 'category', label: '类别', type: 'select', required: true, options: getMaterialCategoryOptions() },
       { key: 'spec', label: '规格', type: 'input', required: true },
       { key: 'length', label: '长度', type: 'input', required: true },
       { key: 'unit', label: '单位', type: 'input', required: true },
@@ -67,9 +67,9 @@ export const masterDataPageConfigs: Record<string, ModulePageConfig> = {
       { key: 'pieceWeightTon', label: '件重/吨', type: 'number', required: true, min: 0, precision: 3, defaultValue: 0 },
       { key: 'piecesPerBundle', label: '每件支数', type: 'number', required: true, min: 0, precision: 0, defaultValue: 0 },
       { key: 'unitPrice', label: '单价', type: 'number', required: true, min: 0, precision: 2, defaultValue: 0 },
-      { key: 'batchNoEnabled', label: '批号管理', type: 'select', defaultValue: false, options: [
-        { label: '关闭', value: false },
+      { key: 'batchNoEnabled', label: '批号管理', type: 'select', defaultValue: true, options: [
         { label: '启用', value: true },
+        { label: '关闭', value: false },
       ] },
       { key: 'remark', label: '备注', type: 'textarea' },
     ],
