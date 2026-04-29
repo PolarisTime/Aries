@@ -38,7 +38,7 @@ export function exportMaterialsToCsv(rows: ModuleRecord[], title = '商品资料
     ]),
   ]
   const csv = lines.map((line) => line.map(escapeCsvCell).join(',')).join('\r\n')
-  const blob = new Blob([`﻿${csv}`], {
+  const blob = new Blob([`\uFEFF${csv}`], {
     type: 'text/csv;charset=utf-8;',
   })
   const url = URL.createObjectURL(blob)
