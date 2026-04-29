@@ -225,30 +225,24 @@ export const systemPageConfigs: Record<string, ModulePageConfig> = {
     actions: [...actionSet],
     filters: [
       { key: 'keyword', label: '关键字', type: 'input', placeholder: '公司名称 / 税号 / 银行 / 账号' },
-      { key: 'status', label: '状态', type: 'select', options: enabledStatusOptions },
     ],
     columns: [
       { title: '公司名称', dataIndex: 'companyName', width: 180 },
       { title: '税号', dataIndex: 'taxNo', width: 180 },
-      { title: '状态', dataIndex: 'status', width: 100, type: 'status', align: 'center' },
       { title: '备注', dataIndex: 'remark', width: 220 },
     ],
     detailFields: [
       { label: '公司名称', key: 'companyName' },
       { label: '税号', key: 'taxNo' },
-      { label: '状态', key: 'status', type: 'status' },
       { label: '备注', key: 'remark' },
     ],
     formFields: [
       { key: 'companyName', label: '公司名称', type: 'input', required: true },
       { key: 'taxNo', label: '税号', type: 'input', required: true },
-      { key: 'status', label: '状态', type: 'select', defaultValue: '正常', options: enabledStatusOptions },
       { key: 'remark', label: '备注', type: 'textarea' },
     ],
     data: [],
     buildOverview: (rows) => buildMasterOverview(rows),
-    statusMap,
-    rowHighlightStatuses: ['禁用'],
   },
   'operation-logs': {
     key: 'operation-logs',

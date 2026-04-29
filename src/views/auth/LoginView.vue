@@ -20,20 +20,44 @@ import { appTitle } from '@/utils/env'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const loginStep = ref<'password' | 'totp'>('password')
-const tempToken = ref('')
+const TOTP_SESSION_KEY = 'aries-totp-session'
+
+function saveTotpSession(token: string, deadline: number, loginName: string) {
+  sessionStorage.setItem(TOTP_SESSION_KEY, JSON.stringify({ token, deadline, loginName }))
+}
+
+function clearTotpSession() {
+  sessionStorage.removeItem(TOTP_SESSION_KEY)
+}
+
+function restoreTotpSession(): { token: string; deadline: number; loginName: string } | null {
+  try {
+    const raw = sessionStorage.getItem(TOTP_SESSION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (parsed.token && parsed.deadline && Date.now() < parsed.deadline) {
+      return parsed
+    }
+  } catch { /* ignore */ }
+  sessionStorage.removeItem(TOTP_SESSION_KEY)
+  return null
+}
+
+const savedSession = restoreTotpSession()
+const loginStep = ref<'password' | 'totp'>(savedSession ? 'totp' : 'password')
+const tempToken = ref(savedSession?.token || '')
+
+const formState = reactive({
+  loginName: savedSession?.loginName || '',
+  password: '',
+  remember: true,
+})
 const totpCode = ref('')
-const stepDeadline = ref(0)
+const stepDeadline = ref(savedSession?.deadline || 0)
 const now = ref(Date.now())
 const checkingSetup = ref(true)
 const companyName = ref('')
 let countdownTimer: ReturnType<typeof window.setInterval> | null = null
-
-const formState = reactive({
-  loginName: '',
-  password: '',
-  remember: true,
-})
 
 const isSubmitDisabled = computed(() => !formState.loginName || !formState.password)
 
@@ -102,6 +126,8 @@ const loginMutation = useMutation({
       tempToken.value = result.tempToken
       totpCode.value = ''
       loginStep.value = 'totp'
+      stepDeadline.value = Date.now() + 5 * 60 * 1000
+      saveTotpSession(result.tempToken, stepDeadline.value, formState.loginName)
       startStepCountdown()
       message.info('账号密码已验证，请继续输入动态验证码')
       return
@@ -125,6 +151,7 @@ const login2faMutation = useMutation({
     }),
   onSuccess: () => {
     stopStepCountdown()
+    clearTotpSession()
     message.success('登录成功，二次验证已通过。')
     void router.replace(resolvePostLoginTarget(authStore.user))
   },
@@ -151,6 +178,7 @@ function startStepCountdown() {
 
 function reset2faStep(showMessage = false) {
   stopStepCountdown()
+  clearTotpSession()
   loginStep.value = 'password'
   tempToken.value = ''
   totpCode.value = ''
@@ -201,6 +229,9 @@ async function checkSetupStatus() {
 onMounted(async () => {
   authStore.hydrate()
   await checkSetupStatus()
+  if (loginStep.value === 'totp') {
+    startStepCountdown()
+  }
   try {
     const res = await http.get<{ data: string }>(ENDPOINTS.COMPANY_NAME)
     companyName.value = res.data || ''
@@ -229,7 +260,7 @@ onBeforeUnmount(() => {
       <a-card :bordered="false" class="login-form-card">
         <div class="login-form-head">
           <h2>{{ $t('auth.login') }}</h2>
-          <p>企业级钢贸管理平台</p>
+          <p>{{ companyName || '企业级钢贸管理平台' }}</p>
         </div>
 
         <div class="centered-form-stage centered-form-stage-login">
@@ -296,9 +327,6 @@ onBeforeUnmount(() => {
               </a-button>
             </a-form-item>
 
-            <div v-if="companyName" class="login-company-badge">
-              {{ companyName }}
-            </div>
           </a-form>
 
           <a-form v-else layout="vertical" class="centered-form-shell" @keydown.enter.prevent="handleVerify2fa">
@@ -374,5 +402,13 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.login-company-footer {
+  text-align: center;
+  margin-top: 24px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  letter-spacing: 1px;
 }
 </style>
