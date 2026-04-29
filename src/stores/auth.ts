@@ -1,6 +1,11 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { login, login2fa, logout, refreshSession } from '@/api/auth'
+import { reloadSupplierOptions } from '@/api/supplier-options'
+import { reloadCustomerOptions } from '@/api/customer-options'
+import { reloadCarrierOptions } from '@/api/carrier-options'
+import { reloadWarehouseOptions } from '@/api/warehouse-options'
+import { reloadMaterialCategories } from '@/api/material-categories'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { ERROR_CODE } from '@/constants/error-codes'
 import type { LoginPayload, LoginResponseData, LoginUser, Login2faPayload } from '@/types/auth'
@@ -35,6 +40,11 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = data.accessToken
     user.value = data.user
     setAuthSession(data.user, data.accessToken, mode || getAuthPersistenceMode())
+    reloadSupplierOptions()
+    reloadCustomerOptions()
+    reloadCarrierOptions()
+    reloadWarehouseOptions()
+    reloadMaterialCategories()
   }
 
   async function signIn(payload: LoginPayload) {
