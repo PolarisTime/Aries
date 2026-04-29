@@ -40,7 +40,7 @@ const authStore = useAuthStore()
 const permissionStore = usePermissionStore()
 const systemMenuStore = useSystemMenuStore()
 
-// Lazy-load master data options when entering business module pages
+// Pre-fetch master data options before business module pages render
 const syncingData = ref(false)
 const BUSINESS_MODULE_PREFIXES = [
   '/materials', '/suppliers', '/customers', '/carriers', '/warehouses',
@@ -49,18 +49,19 @@ const BUSINESS_MODULE_PREFIXES = [
   '/supplier-statements', '/customer-statements', '/freight-statements',
   '/receipts', '/payments', '/invoice-receipts', '/invoice-issues',
 ]
-watch(() => route.path, async (path) => {
-  if (BUSINESS_MODULE_PREFIXES.some(p => path.startsWith(p))) {
-    syncingData.value = true
-    await Promise.allSettled([
-      fetchSupplierOptions(),
-      fetchCustomerOptions(),
-      fetchCarrierOptions(),
-      fetchWarehouseOptions(),
-      fetchMaterialCategories(),
-    ])
-    syncingData.value = false
-  }
+
+router.beforeResolve(async (to) => {
+  if (to.path === '/login' || to.path === '/setup') return
+  if (!BUSINESS_MODULE_PREFIXES.some(p => to.path.startsWith(p))) return
+  syncingData.value = true
+  await Promise.allSettled([
+    fetchSupplierOptions(),
+    fetchCustomerOptions(),
+    fetchCarrierOptions(),
+    fetchWarehouseOptions(),
+    fetchMaterialCategories(),
+  ])
+  setTimeout(() => { syncingData.value = false }, 500)
 })
 const { user } = storeToRefs(authStore)
 const { menus: systemMenuTree } = storeToRefs(systemMenuStore)
@@ -407,8 +408,10 @@ onBeforeUnmount(() => {
               <a-tag :color="backendOnline ? 'green' : 'red'">
                 {{ backendOnline ? 'API 正常' : 'API 离线' }}
               </a-tag>
+              <Transition name="fade">
+                <a-tag v-if="syncingData" color="processing">同步中</a-tag>
+              </Transition>
               <a-tag color="default">{{ clock.format('HH:mm:ss') }}</a-tag>
-              <a-tag v-if="syncingData" color="processing">同步中</a-tag>
             </span>
             <span class="action user-name">
               {{ user?.userName || user?.loginName || '未登录' }}

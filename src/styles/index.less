@@ -1850,3 +1850,12 @@ a {
     transition: width 8s cubic-bezier(0.1, 0.7, 0.4, 1);
   }
 }
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.4s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
