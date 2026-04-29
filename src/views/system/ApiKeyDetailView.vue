@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Tag } from 'ant-design-vue'
 import { ArrowLeftOutlined } from '@ant-design/icons-vue'
 import { getApiKeyDetail, listApiKeyActionOptions, listApiKeyResourceOptions } from '@/api/api-keys'
 import type { ApiKeyActionOption, ApiKeyRecord, ApiKeyResourceOption } from '@/api/api-keys'
