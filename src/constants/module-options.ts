@@ -29,8 +29,23 @@ fetchMaterialCategories().then((data) => {
   }
 })
 
-export const materialGradeValues = ['HRB400', 'HRB500'] as const
-export const materialGradeOptions = createOptionList(materialGradeValues)
+const materialGradeFallbackOptions = createOptionList(['HRB400', 'HRB500'] as const)
+
+let _gradeOptions = materialGradeFallbackOptions
+
+export function materialGradeOptions() {
+  return _gradeOptions
+}
+
+export { materialGradeFallbackOptions }
+
+import { fetchMaterialGrades } from '@/api/material-grades'
+
+fetchMaterialGrades().then((data) => {
+  if (data.length > 0) {
+    _gradeOptions = data
+  }
+})
 
 export const supplierValues = ['江苏沙钢', '中天钢铁', '永锋钢铁'] as const
 export const supplierOptions = createOptionList(supplierValues)

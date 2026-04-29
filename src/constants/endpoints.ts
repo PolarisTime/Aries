@@ -77,6 +77,7 @@ export const ENDPOINTS = {
   MATERIALS_IMPORT: '/materials/import',
   MATERIALS_TEMPLATE: '/materials/template',
   MATERIALS_EXPORT: '/materials/export',
+  MATERIAL_GRADES: '/materials/grades',
 
   // Departments (used by user-accounts)
   DEPARTMENTS_OPTIONS: '/departments/options',

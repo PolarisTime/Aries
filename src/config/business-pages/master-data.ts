@@ -3,6 +3,7 @@ import {
   enabledStatusOptions,
   materialCategoryOptions,
   materialCategoryFallbackOptions,
+  materialGradeOptions,
 } from '@/constants/module-options'
 import {
   actionSet,
@@ -22,7 +23,7 @@ export const masterDataPageConfigs: Record<string, ModulePageConfig> = {
     filters: [
       { key: 'keyword', label: '关键字', type: 'input', placeholder: '商品编码 / 品牌 / 规格' },
       { key: 'category', label: '类别', type: 'select', options: materialCategoryOptions },
-      { key: 'material', label: '材质', type: 'input', placeholder: '材质' },
+      { key: 'material', label: '材质', type: 'select', options: materialGradeOptions },
     ],
     columns: [
       { title: '商品编码', dataIndex: 'materialCode', width: 150 },
