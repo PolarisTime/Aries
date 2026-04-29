@@ -1,6 +1,7 @@
 import type { ModulePageConfig } from '@/types/module-page'
 import {
   enabledStatusOptions,
+  getMaterialCategoryOptions,
   materialCategoryOptions,
   materialGradeOptions,
 } from '@/constants/module-options'
@@ -58,7 +59,7 @@ export const masterDataPageConfigs: Record<string, ModulePageConfig> = {
       { key: 'materialCode', label: '商品编码', type: 'input', required: true },
       { key: 'brand', label: '品牌', type: 'input', required: true },
       { key: 'material', label: '材质', type: 'input', required: true },
-      { key: 'category', label: '类别', type: 'select', required: true, options: materialCategoryOptions },
+      { key: 'category', label: '类别', type: 'select', required: true, options: getMaterialCategoryOptions() },
       { key: 'spec', label: '规格', type: 'input', required: true },
       { key: 'length', label: '长度', type: 'input', required: true },
       { key: 'unit', label: '单位', type: 'input', required: true },

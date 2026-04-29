@@ -286,11 +286,11 @@ a {
 }
 
 .app-fixed-header.app-side-opened {
-  width: calc(100% - 220px);
+  width: calc(100% - 180px);
 }
 
 .app-fixed-header.app-side-closed {
-  width: calc(100% - 76px);
+  width: calc(100% - 60px);
 }
 
 .leo-header {
@@ -505,7 +505,7 @@ a {
   top: 62px;
   right: 0;
   z-index: 80;
-  width: calc(100% - 220px);
+  width: calc(100% - 180px);
   padding: 0 12px;
   background: rgba(255, 255, 255, 0.94);
   border-bottom: 1px solid var(--theme-card-border);
@@ -514,7 +514,7 @@ a {
 }
 
 .app-side-closed + .tab-layout-tabs.ant-tabs {
-  width: calc(100% - 76px);
+  width: calc(100% - 60px);
 }
 
 .tab-layout-tabs.ant-tabs .ant-tabs-nav {
@@ -682,41 +682,33 @@ a {
   border-bottom: 1px solid #e8e8e8;
 }
 
-.table-page-search-wrapper .ant-row {
+.filter-inline-group {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 0 16px;
 }
 
-.table-page-search-wrapper .ant-form-item {
-  width: 100%;
-  margin-bottom: 12px;
+.filter-inline-group .ant-form-item {
+  margin-bottom: 8px;
 }
 
-.table-page-search-wrapper .ant-form-item-label {
-  width: 72px;
-  min-width: 72px;
-  padding-right: 8px;
+.filter-inline-group .ant-form-item-label {
+  padding-right: 6px;
   text-align: right;
+  white-space: nowrap;
 }
 
-.table-page-search-wrapper .ant-form-item-control {
-  flex: 1 1 auto;
-  min-width: 0;
+.filter-inline-group .ant-form-item-control {
+  min-width: 130px;
 }
 
-.table-page-search-wrapper .ant-form-item-row {
+.filter-inline-group .table-page-search-submitButtons {
   display: flex;
   align-items: center;
-  width: 100%;
-}
-
-.table-page-search-wrapper .ant-form-item .ant-form-item-control,
-.table-page-search-wrapper .ant-form-item .ant-form-item-control-input,
-.table-page-search-wrapper .ant-form-item .ant-form-item-control-input-content,
-.table-page-search-wrapper .ant-input-affix-wrapper,
-.table-page-search-wrapper .ant-select,
-.table-page-search-wrapper .ant-picker {
-  width: 100%;
+  gap: 8px;
+  margin-bottom: 8px;
+  white-space: nowrap;
 }
 
 .table-page-search-submitButtons {
@@ -725,11 +717,6 @@ a {
   min-height: 32px;
   padding-top: 1px;
   white-space: nowrap;
-}
-
-.search-action-col {
-  display: flex;
-  align-items: center;
 }
 
 .table-operator {
@@ -1018,6 +1005,12 @@ a {
   color: #262626;
   font-size: calc(var(--app-font-size) + 4px);
   font-weight: 500;
+}
+
+.workspace-overlay-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .workspace-overlay-body {

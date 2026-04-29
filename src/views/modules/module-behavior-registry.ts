@@ -177,6 +177,7 @@ register('role-settings', { readonlyEditorFields: ['userCount'] })
 
 // ── Current-operator defaults ──
 register('purchase-orders', { defaultOperatorField: 'buyerName' })
+register('sales-orders', { defaultOperatorField: 'salesName' })
 const operatorNameModules = ['receipts', 'payments', 'invoice-receipts', 'invoice-issues']
 operatorNameModules.forEach((key) => register(key, { defaultOperatorField: 'operatorName' }))
 
