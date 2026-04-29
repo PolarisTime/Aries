@@ -242,7 +242,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
     primaryNoKey: 'statementNo',
     actions: [{ label: '生成对账单', type: 'primary' }],
     filters: [
-      { key: 'customerName', label: '客户', type: 'select', options: customerOptions() },
+      { key: 'customerName', label: '客户', type: 'select', options: customerOptions },
       { key: 'status', label: '状态', type: 'select', options: statementStatusOptions },
       { key: 'endDate', label: '账期', type: 'dateRange' },
     ],
@@ -271,7 +271,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
     ],
     formFields: [
       { key: 'statementNo', label: '对账单号', type: 'input', required: true },
-      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions() },
+      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions },
       { key: 'projectName', label: '项目', type: 'input', required: true },
       { key: 'startDate', label: '开始日期', type: 'date', required: true },
       { key: 'endDate', label: '结束日期', type: 'date', required: true },
@@ -363,7 +363,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
     primaryNoKey: 'receiptNo',
     actions: [{ label: '新增收款单', type: 'primary' }],
     filters: [
-      { key: 'customerName', label: '客户', type: 'select', options: customerOptions() },
+      { key: 'customerName', label: '客户', type: 'select', options: customerOptions },
       { key: 'status', label: '状态', type: 'select', options: [
         { label: '草稿', value: '草稿' },
         { label: '已收款', value: '已收款' },
@@ -393,7 +393,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
     ],
     formFields: [
       { key: 'receiptNo', label: '收款单号', type: 'input', required: true },
-      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions() },
+      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions },
       { key: 'projectName', label: '项目', type: 'input', required: true },
       { key: 'sourceStatementId', label: '关联对账单', type: 'select', required: true },
       { key: 'receiptDate', label: '收款日期', type: 'date', required: true },
@@ -572,7 +572,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
     primaryNoKey: 'issueNo',
     actions: [{ label: '新增开票单', type: 'primary' }],
     filters: [
-      { key: 'customerName', label: '客户', type: 'select', options: customerOptions() },
+      { key: 'customerName', label: '客户', type: 'select', options: customerOptions },
       { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已开票') },
       { key: 'invoiceDate', label: '发票日期', type: 'dateRange' },
     ],
@@ -606,7 +606,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
       { key: 'issueNo', label: '开票单号', type: 'input', required: true },
       { key: 'sourceSalesOrderNos', label: '关联销售订单', type: 'input', disabled: true, placeholder: '通过销售订单明细导入，可追加多个单号' },
       { key: 'invoiceNo', label: '发票号码', type: 'input', required: true },
-      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions() },
+      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions },
       { key: 'projectName', label: '项目', type: 'input', required: true },
       { key: 'invoiceDate', label: '发票日期', type: 'date', required: true },
       { key: 'invoiceType', label: '票种', type: 'select', required: true, options: buildValueOptions('增值税专票', '增值税普票') },

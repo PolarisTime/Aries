@@ -23,6 +23,10 @@ import {
   getBusinessModuleDetail,
   listAllBusinessModuleRows,
 } from '@/api/business'
+import {
+  findCustomerOption,
+  resolveSingleCustomerProjectName,
+} from '@/api/customer-options'
 import { businessPageConfigs } from '@/config/business-pages'
 import { isSuccessCode } from '@/api/client'
 import { showRequestError } from '@/composables/use-request-error'
@@ -1423,6 +1427,32 @@ function setFilterValue(key: string, value: unknown) {
 
 function setEditorFormValue(key: string, value: unknown) {
   editorForm[key] = value
+  syncSalesOrderCustomerProjectFields(key, value)
+}
+
+function syncSalesOrderCustomerProjectFields(key: string, value: unknown) {
+  if (props.moduleKey !== 'sales-orders') {
+    return
+  }
+  if (key === 'customerName') {
+    const customerName = String(value || '').trim()
+    const currentProjectName = String(editorForm.projectName || '').trim()
+    if (!customerName) {
+      editorForm.projectName = ''
+      return
+    }
+    if (currentProjectName && findCustomerOption(customerName, currentProjectName)) {
+      return
+    }
+    editorForm.projectName = resolveSingleCustomerProjectName(customerName)
+    return
+  }
+  if (key === 'projectName') {
+    const selected = findCustomerOption(editorForm.customerName, value)
+    if (selected?.customerName) {
+      editorForm.customerName = selected.customerName
+    }
+  }
 }
 
 function asDynamicColumn(column: unknown): DynamicColumn {

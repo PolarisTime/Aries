@@ -99,19 +99,26 @@ export function getSupplierOptions() {
 export { supplierFallbackOptions }
 
 
-const customerFallbackOptions = createOptionList(['中建八局', '上海城建', '中铁建工'] as const)
+const customerFallbackOptions: ReturnType<typeof createOptionList> = []
 
 let _customerOptions = customerFallbackOptions
 
 export function customerOptions() {
-  return _customerOptions
-}
-
-import { getCustomerOptions as apiGetCustomerOptions } from '@/api/customer-options'
-
-export function getCustomerOptions() {
   const dynamic = apiGetCustomerOptions()
   return dynamic.length > 0 ? dynamic : _customerOptions
+}
+
+import {
+  getCustomerOptions as apiGetCustomerOptions,
+  getCustomerProjectOptions as apiGetCustomerProjectOptions,
+} from '@/api/customer-options'
+
+export function getCustomerOptions() {
+  return customerOptions()
+}
+
+export function getCustomerProjectOptions(form?: Record<string, unknown>) {
+  return apiGetCustomerProjectOptions(form)
 }
 
 

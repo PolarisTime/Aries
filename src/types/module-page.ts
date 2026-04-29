@@ -25,9 +25,14 @@ export type ModuleFilterOptionResolver = (filters: Record<string, unknown>) => M
 export interface ModuleFormFieldOption {
   label: string
   value: string | number | boolean
+  customerCode?: string
+  customerName?: string
+  projectName?: string
+  projectNameAbbr?: string
+  purchaseWeighRequired?: boolean
 }
 
-export type ModuleFormFieldOptionResolver = () => ModuleFormFieldOption[]
+export type ModuleFormFieldOptionResolver = (form?: Record<string, unknown>) => ModuleFormFieldOption[]
 
 export interface ModuleFilterDefinition {
   key: string
