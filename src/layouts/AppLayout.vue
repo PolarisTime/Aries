@@ -25,6 +25,11 @@ import { usePermissionStore } from '@/stores/permission'
 import { useSystemMenuStore } from '@/stores/system-menu'
 import dayjs from 'dayjs'
 import { apiBaseUrl, appTitle } from '@/utils/env'
+import { fetchSupplierOptions } from '@/api/supplier-options'
+import { fetchCustomerOptions } from '@/api/customer-options'
+import { fetchCarrierOptions } from '@/api/carrier-options'
+import { fetchWarehouseOptions } from '@/api/warehouse-options'
+import { fetchMaterialCategories } from '@/api/material-categories'
 
 const router = useRouter()
 
@@ -34,6 +39,24 @@ const route = useRoute()
 const authStore = useAuthStore()
 const permissionStore = usePermissionStore()
 const systemMenuStore = useSystemMenuStore()
+
+// Lazy-load master data options when entering business module pages
+const BUSINESS_MODULE_PREFIXES = [
+  '/materials', '/suppliers', '/customers', '/carriers', '/warehouses',
+  '/purchase-orders', '/purchase-inbounds', '/sales-orders', '/sales-outbounds',
+  '/freight-bills', '/purchase-contracts', '/sales-contracts',
+  '/supplier-statements', '/customer-statements', '/freight-statements',
+  '/receipts', '/payments', '/invoice-receipts', '/invoice-issues',
+]
+watch(() => route.path, (path) => {
+  if (BUSINESS_MODULE_PREFIXES.some(p => path.startsWith(p))) {
+    fetchSupplierOptions()
+    fetchCustomerOptions()
+    fetchCarrierOptions()
+    fetchWarehouseOptions()
+    fetchMaterialCategories()
+  }
+})
 const { user } = storeToRefs(authStore)
 const { menus: systemMenuTree } = storeToRefs(systemMenuStore)
 
