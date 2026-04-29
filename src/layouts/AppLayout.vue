@@ -248,9 +248,10 @@ function handleLogout() {
     content: '确定要退出登录吗？',
     okText: '确认退出',
     cancelText: '取消',
-    onOk: async () => {
-      await authStore.signOut()
-      await router.replace('/login')
+    onOk: () => {
+      authStore.signOut().finally(() => {
+        window.location.replace('/login')
+      })
     },
   })
 }
@@ -417,7 +418,7 @@ onBeforeUnmount(() => {
 
       <a-layout-content class="leo-content">
         <div class="leo-content-inner">
-          <router-view />
+          <router-view :key="$route.path" />
         </div>
       </a-layout-content>
     </a-layout>

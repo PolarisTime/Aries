@@ -28,7 +28,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     actions: actionSet,
     filters: [
       { key: 'keyword', label: '单据编号', type: 'input', placeholder: '输入采购订单号' },
-      { key: 'supplierName', label: '供应商', type: 'select', options: supplierOptions },
+      { key: 'supplierName', label: '供应商', type: 'select', options: supplierOptions() },
       { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已审核', '完成采购') },
       { key: 'orderDate', label: '订单日期', type: 'dateRange' },
     ],
@@ -53,7 +53,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { label: '备注', key: 'remark' },
     ],
     formFields: [
-      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: supplierOptions },
+      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: supplierOptions() },
       { key: 'orderNo', label: '订单编号', type: 'input', required: true },
       { key: 'orderDate', label: '订单日期', type: 'date', required: true },
       { key: 'remark', label: '备注', type: 'input' },
@@ -73,7 +73,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     actions: actionSet,
     filters: [
       { key: 'keyword', label: '入库单号', type: 'input', placeholder: '输入采购入库单号' },
-      { key: 'supplierName', label: '供应商', type: 'select', options: supplierOptions },
+      { key: 'supplierName', label: '供应商', type: 'select', options: supplierOptions() },
       { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已审核', '完成入库') },
       { key: 'inboundDate', label: '入库日期', type: 'dateRange' },
     ],
@@ -104,8 +104,8 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     formFields: [
       { key: 'inboundNo', label: '入库单号', type: 'input', required: true },
       { key: 'purchaseOrderNo', label: '关联订单', type: 'input', disabled: true, placeholder: '通过上级单据导入' },
-      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: supplierOptions },
-      { key: 'warehouseName', label: '仓库', type: 'select', required: true, options: warehouseOptions },
+      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: supplierOptions() },
+      { key: 'warehouseName', label: '仓库', type: 'select', required: true, options: warehouseOptions() },
       { key: 'inboundDate', label: '入库日期', type: 'date', required: true },
       { key: 'settlementMode', label: '结算方式', type: 'select', required: true, options: [
         { label: '理算', value: '理算' },
@@ -147,7 +147,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     actions: actionSet,
     filters: [
       { key: 'keyword', label: '订单编号', type: 'input', placeholder: '输入销售订单号' },
-      { key: 'customerName', label: '客户', type: 'select', options: customerOptions },
+      { key: 'customerName', label: '客户', type: 'select', options: customerOptions() },
       { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已审核', '完成销售') },
       { key: 'deliveryDate', label: '送货日期', type: 'dateRange' },
     ],
@@ -178,7 +178,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     formFields: [
       { key: 'orderNo', label: '订单编号', type: 'input', required: true },
       { key: 'purchaseInboundNo', label: '关联入库单', type: 'input', disabled: true, placeholder: '通过采购入库导入，可追加多个单号' },
-      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions },
+      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions() },
       { key: 'projectName', label: '项目', type: 'input', required: true },
       { key: 'deliveryDate', label: '送货日期', type: 'date', required: true },
       { key: 'salesName', label: '销售员', type: 'input', required: true },
@@ -215,7 +215,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     actions: actionSet,
     filters: [
       { key: 'keyword', label: '出库单号', type: 'input', placeholder: '输入销售出库单号' },
-      { key: 'customerName', label: '客户', type: 'select', options: customerOptions },
+      { key: 'customerName', label: '客户', type: 'select', options: customerOptions() },
       { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已审核') },
       { key: 'outboundDate', label: '出库日期', type: 'dateRange' },
     ],
@@ -246,9 +246,9 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     formFields: [
       { key: 'outboundNo', label: '出库单号', type: 'input', required: true },
       { key: 'salesOrderNo', label: '关联订单', type: 'input', disabled: true, placeholder: '通过上级单据导入' },
-      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions },
+      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions() },
       { key: 'projectName', label: '项目', type: 'input', required: true },
-      { key: 'warehouseName', label: '仓库', type: 'select', required: true, options: warehouseOptions },
+      { key: 'warehouseName', label: '仓库', type: 'select', required: true, options: warehouseOptions() },
       { key: 'outboundDate', label: '出库日期', type: 'date', required: true },
       { key: 'remark', label: '备注', type: 'input' },
     ],
@@ -284,7 +284,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     ],
     filters: [
       { key: 'keyword', label: '物流单号', type: 'input', placeholder: '输入物流单号' },
-      { key: 'carrierName', label: '物流商', type: 'select', options: carrierOptions },
+      { key: 'carrierName', label: '物流商', type: 'select', options: carrierOptions() },
       { key: 'status', label: '审核状态', type: 'select', options: [
         { label: '未审核', value: '未审核' },
         { label: '已审核', value: '已审核' },
@@ -320,8 +320,8 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     formFields: [
       { key: 'billNo', label: '物流单号', type: 'input', required: true },
       { key: 'outboundNo', label: '关联出库单', type: 'input', disabled: true, placeholder: '通过上级单据导入' },
-      { key: 'carrierName', label: '物流商', type: 'select', required: true, options: carrierOptions },
-      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions },
+      { key: 'carrierName', label: '物流商', type: 'select', required: true, options: carrierOptions() },
+      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions() },
       { key: 'projectName', label: '项目', type: 'input', required: true },
       { key: 'billTime', label: '单据日期', type: 'date', required: true },
       { key: 'unitPrice', label: '单价', type: 'number', required: true, min: 0, precision: 2, defaultValue: 0 },
@@ -362,7 +362,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     actions: actionSet,
     filters: [
       { key: 'keyword', label: '合同编号', type: 'input', placeholder: '输入采购合同号' },
-      { key: 'supplierName', label: '供应商', type: 'select', options: supplierOptions },
+      { key: 'supplierName', label: '供应商', type: 'select', options: supplierOptions() },
       { key: 'status', label: '状态', type: 'select', options: [
         { label: '草稿', value: '草稿' },
         { label: '执行中', value: '执行中' },
@@ -397,7 +397,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     ],
     formFields: [
       { key: 'contractNo', label: '合同编号', type: 'input', required: true },
-      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: supplierOptions },
+      { key: 'supplierName', label: '供应商', type: 'select', required: true, options: supplierOptions() },
       { key: 'signDate', label: '签订日期', type: 'date', required: true },
       { key: 'effectiveDate', label: '生效日期', type: 'date', required: true },
       { key: 'expireDate', label: '截止日期', type: 'date', required: true },
@@ -425,7 +425,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     actions: actionSet,
     filters: [
       { key: 'keyword', label: '合同编号', type: 'input', placeholder: '输入销售合同号' },
-      { key: 'customerName', label: '客户', type: 'select', options: customerOptions },
+      { key: 'customerName', label: '客户', type: 'select', options: customerOptions() },
       { key: 'status', label: '状态', type: 'select', options: [
         { label: '草稿', value: '草稿' },
         { label: '执行中', value: '执行中' },
@@ -461,7 +461,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     ],
     formFields: [
       { key: 'contractNo', label: '合同编号', type: 'input', required: true },
-      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions },
+      { key: 'customerName', label: '客户', type: 'select', required: true, options: customerOptions() },
       { key: 'projectName', label: '项目', type: 'input', required: true },
       { key: 'signDate', label: '签订日期', type: 'date', required: true },
       { key: 'effectiveDate', label: '生效日期', type: 'date', required: true },

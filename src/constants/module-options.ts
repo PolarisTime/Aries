@@ -55,6 +55,10 @@ export function supplierOptions() {
   return _supplierOptions
 }
 
+export function getSupplierOptions() {
+  return _supplierOptions
+}
+
 export { supplierFallbackOptions }
 
 import { fetchSupplierOptions } from '@/api/supplier-options'
@@ -73,6 +77,10 @@ export function customerOptions() {
   return _customerOptions
 }
 
+export function getCustomerOptions() {
+  return _customerOptions
+}
+
 import { fetchCustomerOptions } from '@/api/customer-options'
 
 fetchCustomerOptions().then((data) => {
@@ -86,6 +94,10 @@ const carrierFallbackOptions = createOptionList(['中外运华东', '申通大�
 let _carrierOptions = carrierFallbackOptions
 
 export function carrierOptions() {
+  return _carrierOptions
+}
+
+export function getCarrierOptions() {
   return _carrierOptions
 }
 
