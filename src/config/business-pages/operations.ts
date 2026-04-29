@@ -53,9 +53,9 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { label: '备注', key: 'remark' },
     ],
     formFields: [
-      { key: 'orderNo', label: '订单编号', type: 'input', required: true },
       { key: 'supplierName', label: '供应商', type: 'select', required: true, options: supplierOptions },
       { key: 'orderDate', label: '订单日期', type: 'date', required: true },
+      { key: 'orderNo', label: '订单编号', type: 'input', required: true },
       { key: 'remark', label: '备注', type: 'input' },
     ],
     itemColumns: compactPurchaseItemColumns,
