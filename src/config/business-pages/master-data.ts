@@ -86,7 +86,7 @@ export const masterDataPageConfigs: Record<string, ModulePageConfig> = {
     kicker: 'Master Data',
     description: '管理商品类别字典，支持按编码和名称增删改查。',
     primaryNoKey: 'categoryCode',
-    actions: { ...actionSet, create: { label: '新增类别', type: 'primary' } },
+    actions: actionSet,
     filters: [
       { key: 'keyword', label: '关键字', type: 'input', placeholder: '类别编码 / 类别名称' },
       { key: 'status', label: '状态', type: 'select', options: enabledStatusOptions },
