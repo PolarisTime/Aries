@@ -1805,3 +1805,27 @@ a {
     margin-bottom: 12px;
   }
 }
+
+.leo-page-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  height: 2px;
+  pointer-events: none;
+
+  &::before {
+    content: '';
+    display: block;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #1677ff, #69b1ff);
+    transition: width 0s;
+  }
+
+  &.is-loading::before {
+    width: 40%;
+    transition: width 8s cubic-bezier(0.1, 0.7, 0.4, 1);
+  }
+}

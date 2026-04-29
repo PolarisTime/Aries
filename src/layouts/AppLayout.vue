@@ -222,6 +222,22 @@ if (!isE2eMode.value) {
   })
 }
 
+const pageLoading = ref(false)
+let pageLoadingTimer: ReturnType<typeof setTimeout> | null = null
+
+function startPageLoading() {
+  pageLoadingTimer = setTimeout(() => { pageLoading.value = true }, 80)
+}
+
+function stopPageLoading() {
+  if (pageLoadingTimer) { clearTimeout(pageLoadingTimer); pageLoadingTimer = null }
+  pageLoading.value = false
+}
+
+router.beforeResolve(() => { startPageLoading() })
+router.afterEach(() => { stopPageLoading() })
+router.onError(() => { stopPageLoading() })
+
 onMounted(() => {
   fetchCompanyName()
   checkBackendHealth()
@@ -237,6 +253,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <div class="leo-page-loader" :class="{ 'is-loading': pageLoading }" />
   <a-layout class="app-shell leo-shell">
     <a-layout-sider
       collapsible
