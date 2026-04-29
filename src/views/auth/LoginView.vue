@@ -9,6 +9,8 @@ import {
   UserOutlined,
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import { http } from '@/api/client'
+import { ENDPOINTS } from '@/constants/endpoints'
 import { getInitialSetupStatus } from '@/api/setup'
 import { useAuthStore } from '@/stores/auth'
 import { requiresForcedTotpSetup } from '@/router'
@@ -24,6 +26,7 @@ const totpCode = ref('')
 const stepDeadline = ref(0)
 const now = ref(Date.now())
 const checkingSetup = ref(true)
+const companyName = ref('')
 let countdownTimer: ReturnType<typeof window.setInterval> | null = null
 
 const formState = reactive({
@@ -201,6 +204,10 @@ async function checkSetupStatus() {
 onMounted(async () => {
   authStore.hydrate()
   await checkSetupStatus()
+  try {
+    const res = await http.get<{ data: string }>(ENDPOINTS.COMPANY_NAME)
+    companyName.value = res.data || ''
+  } catch { /* silent */ }
 })
 
 onBeforeUnmount(() => {
@@ -292,12 +299,9 @@ onBeforeUnmount(() => {
               </a-button>
             </a-form-item>
 
-            <a-alert
-              type="info"
-              show-icon
-              message="接口说明"
-              description="默认通过 Vite 代理访问 Leo 后端认证接口，可直接使用统一账号体系登录。"
-            />
+            <div v-if="companyName" class="login-company-badge">
+              {{ companyName }}
+            </div>
           </a-form>
 
           <a-form v-else layout="vertical" class="centered-form-shell" @keydown.enter.prevent="handleVerify2fa">
