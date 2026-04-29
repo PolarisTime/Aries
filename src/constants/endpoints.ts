@@ -85,6 +85,7 @@ export const ENDPOINTS = {
   WAREHOUSES_OPTIONS: '/warehouses/options',
   CUSTOMERS_OPTIONS: '/customers/options',
   SUPPLIERS_OPTIONS: '/suppliers/options',
+  MATERIAL_CATEGORIES: '/materials/categories',
 } as const
 
 export type EndpointKey = keyof typeof ENDPOINTS
