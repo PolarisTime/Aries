@@ -47,17 +47,71 @@ fetchMaterialGrades().then((data) => {
   }
 })
 
-export const supplierValues = ['江苏沙钢', '中天钢铁', '永锋钢铁'] as const
-export const supplierOptions = createOptionList(supplierValues)
+const supplierFallbackOptions = createOptionList(['江苏沙钢', '中天钢铁', '永锋钢铁'] as const)
 
-export const customerValues = ['中建八局', '上海城建', '中铁建工'] as const
-export const customerOptions = createOptionList(customerValues)
+let _supplierOptions = supplierFallbackOptions
 
-export const carrierValues = ['中外运华东', '申通大件', '德邦钢材专线'] as const
-export const carrierOptions = createOptionList(carrierValues)
+export function supplierOptions() {
+  return _supplierOptions
+}
 
-export const warehouseValues = ['一号库', '二号库'] as const
-export const warehouseOptions = createOptionList(warehouseValues)
+export { supplierFallbackOptions }
+
+import { fetchSupplierOptions } from '@/api/supplier-options'
+
+fetchSupplierOptions().then((data) => {
+  if (data.length > 0) {
+    _supplierOptions = data
+  }
+})
+
+const customerFallbackOptions = createOptionList(['中建八局', '上海城建', '中铁建工'] as const)
+
+let _customerOptions = customerFallbackOptions
+
+export function customerOptions() {
+  return _customerOptions
+}
+
+import { fetchCustomerOptions } from '@/api/customer-options'
+
+fetchCustomerOptions().then((data) => {
+  if (data.length > 0) {
+    _customerOptions = data
+  }
+})
+
+const carrierFallbackOptions = createOptionList(['中外运华东', '申通大件', '德邦钢材专线'] as const)
+
+let _carrierOptions = carrierFallbackOptions
+
+export function carrierOptions() {
+  return _carrierOptions
+}
+
+import { fetchCarrierOptions } from '@/api/carrier-options'
+
+fetchCarrierOptions().then((data) => {
+  if (data.length > 0) {
+    _carrierOptions = data
+  }
+})
+
+const warehouseFallbackOptions = createOptionList(['一号库', '二号库'] as const)
+
+let _warehouseOptions = warehouseFallbackOptions
+
+export function warehouseOptions() {
+  return _warehouseOptions
+}
+
+import { fetchWarehouseOptions } from '@/api/warehouse-options'
+
+fetchWarehouseOptions().then((data) => {
+  if (data.length > 0) {
+    _warehouseOptions = data
+  }
+})
 
 export const enabledStatusValues = ['正常', '禁用'] as const
 export const enabledStatusOptions = createOptionList(enabledStatusValues)

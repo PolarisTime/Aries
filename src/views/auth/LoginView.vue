@@ -213,16 +213,19 @@ onBeforeUnmount(() => {
     <div class="login-container">
       <div class="login-slogan">
         <h1>{{ appTitle }}</h1>
-        <p>Vue 3 + Vite + TypeScript</p>
+        <p class="login-slogan-subtitle">钢贸业务中台管理系统</p>
         <p class="login-slogan-desc">
-          面向钢贸业务的独立前端工作台，默认直接对接 Leo 后端 REST API，保留紧凑录入和整单查看体验。
+          面向钢材贸易企业的一站式数字化管理平台，覆盖采购、销售、物流、财务全链路。
         </p>
+        <div class="login-slogan-footer">
+          <span>高效 · 精准 · 可靠</span>
+        </div>
       </div>
 
       <a-card :bordered="false" class="login-form-card">
         <div class="login-form-head">
           <h2>{{ $t('auth.login') }}</h2>
-          <p>当前环境：Leo 业务接口</p>
+          <p>企业级钢贸管理平台</p>
         </div>
 
         <div class="centered-form-stage centered-form-stage-login">
