@@ -64,13 +64,6 @@ export function getSupplierOptions() {
 
 export { supplierFallbackOptions }
 
-import { fetchSupplierOptions } from '@/api/supplier-options'
-
-fetchSupplierOptions().then((data) => {
-  if (data.length > 0) {
-    _supplierOptions = data
-  }
-})
 
 const customerFallbackOptions = createOptionList(['中建八局', '上海城建', '中铁建工'] as const)
 
@@ -87,13 +80,6 @@ export function getCustomerOptions() {
   return dynamic.length > 0 ? dynamic : _customerOptions
 }
 
-import { fetchCustomerOptions } from '@/api/customer-options'
-
-fetchCustomerOptions().then((data) => {
-  if (data.length > 0) {
-    _customerOptions = data
-  }
-})
 
 const carrierFallbackOptions = createOptionList(['中外运华东', '申通大件', '德邦钢材专线'] as const)
 
@@ -110,13 +96,6 @@ export function getCarrierOptions() {
   return dynamic.length > 0 ? dynamic : _carrierOptions
 }
 
-import { fetchCarrierOptions } from '@/api/carrier-options'
-
-fetchCarrierOptions().then((data) => {
-  if (data.length > 0) {
-    _carrierOptions = data
-  }
-})
 
 const warehouseFallbackOptions = createOptionList(['一号库', '二号库'] as const)
 
@@ -133,13 +112,6 @@ export function getWarehouseOptions() {
   return dynamic.length > 0 ? dynamic : _warehouseOptions
 }
 
-import { fetchWarehouseOptions } from '@/api/warehouse-options'
-
-fetchWarehouseOptions().then((data) => {
-  if (data.length > 0) {
-    _warehouseOptions = data
-  }
-})
 
 export const enabledStatusValues = ['正常', '禁用'] as const
 export const enabledStatusOptions = createOptionList(enabledStatusValues)
