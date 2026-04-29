@@ -23,9 +23,13 @@ import { usePersonalSettings } from '@/layouts/use-personal-settings'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionStore } from '@/stores/permission'
 import { useSystemMenuStore } from '@/stores/system-menu'
+import dayjs from 'dayjs'
 import { apiBaseUrl, appTitle } from '@/utils/env'
 
 const router = useRouter()
+
+const clock = ref(dayjs())
+let clockTimer: number | null = null
 const route = useRoute()
 const authStore = useAuthStore()
 const permissionStore = usePermissionStore()
@@ -268,12 +272,17 @@ router.onError(() => { stopPageLoading() })
 onMounted(() => {
   fetchCompanyName()
   startHealthPolling()
+  clockTimer = window.setInterval(() => { clock.value = dayjs() }, 1000)
 })
 
 onBeforeUnmount(() => {
   if (healthTimer) {
     window.clearInterval(healthTimer)
     healthTimer = null
+  }
+  if (clockTimer) {
+    window.clearInterval(clockTimer)
+    clockTimer = null
   }
 })
 </script>
@@ -361,6 +370,7 @@ onBeforeUnmount(() => {
               <a-tag :color="backendOnline ? 'green' : 'red'">
                 {{ backendOnline ? 'API 正常' : 'API 离线' }}
               </a-tag>
+              <a-tag color="default">{{ clock.format('HH:mm:ss') }}</a-tag>
             </span>
             <span class="action user-name">
               {{ user?.userName || user?.loginName || '未登录' }}
