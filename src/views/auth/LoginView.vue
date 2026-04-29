@@ -190,9 +190,6 @@ async function checkSetupStatus() {
       await router.replace('/setup')
       return
     }
-    if (typeof route.query.loginName === 'string' && route.query.loginName) {
-      formState.loginName = route.query.loginName
-    }
     if (route.query.initialized === '1') {
       message.success('首次初始化完成，请使用刚创建的管理员账号登录。')
     }

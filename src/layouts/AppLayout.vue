@@ -2,7 +2,7 @@
 import { computed, h, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { message, type MenuProps } from 'ant-design-vue'
+import { message, Modal, type MenuProps } from 'ant-design-vue'
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -242,9 +242,17 @@ watch(personalSettingVisible, (visible) => {
   }
 })
 
-async function handleLogout() {
-  await authStore.signOut()
-  await router.replace('/login')
+function handleLogout() {
+  Modal.confirm({
+    title: '确认退出',
+    content: '确定要退出登录吗？',
+    okText: '确认退出',
+    cancelText: '取消',
+    onOk: async () => {
+      await authStore.signOut()
+      await router.replace('/login')
+    },
+  })
 }
 
 if (!isE2eMode.value) {
