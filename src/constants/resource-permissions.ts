@@ -46,6 +46,7 @@ const FALLBACK_MENU_RESOURCE_MAP: Record<string, string> = {
   'role-action-editor': 'role', 'database-management': 'database',
   'session-management': 'session', 'api-key-management': 'api-key',
   'security-keys': 'security-key', 'print-templates': 'print-template',
+  'material-categories': 'material',
 }
 
 const FALLBACK_RESOURCE_LABEL_MAP: Record<string, string> = {
