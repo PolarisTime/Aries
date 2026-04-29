@@ -68,6 +68,16 @@ childRoutes.push({
   redirect: '/database-management',
 })
 
+childRoutes.push({
+  path: 'api-key-management/:id',
+  name: 'api-key-detail',
+  component: () => import('@/views/system/ApiKeyDetailView.vue'),
+  meta: {
+    title: 'API Key 详情',
+    menuKey: 'api-key-management',
+  },
+})
+
 export const routes: RouteRecordRaw[] = [
   {
     path: '/login',
