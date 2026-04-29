@@ -24,6 +24,7 @@ export const ENDPOINTS = {
   REFRESH_TOKENS_SUMMARY: '/auth/refresh-tokens/summary',
 
   // Account security
+  ACCOUNT_SECURITY_STATUS: '/account/security',
   ACCOUNT_PASSWORD: '/account/security/password',
   ACCOUNT_2FA_SETUP: '/account/security/2fa/setup',
   ACCOUNT_2FA_ENABLE: '/account/security/2fa/enable',

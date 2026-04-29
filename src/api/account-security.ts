@@ -14,6 +14,7 @@ export interface CurrentUserSecurityState {
   userName: string
   totpEnabled: boolean
   forceTotpSetup?: boolean
+  forbidDisable2fa?: boolean
 }
 
 function buildTotpHeaders(totpCode: string) {
@@ -46,4 +47,9 @@ export async function disableOwn2fa(totpCode: string) {
     buildTotpHeaders(totpCode),
   )
   return assertApiSuccess(response, '关闭 2FA 失败')
+}
+
+export async function fetchAccountSecurityStatus() {
+  const response = await http.get<ApiResponse<CurrentUserSecurityState>>(ENDPOINTS.ACCOUNT_SECURITY_STATUS)
+  return assertApiSuccess(response, '加载安全状态失败')
 }
