@@ -26,6 +26,7 @@ const PUBLIC_ENDPOINTS = [
   ENDPOINTS.SETUP_ADMIN_2FA,
   ENDPOINTS.SETUP_ADMIN,
   ENDPOINTS.SETUP_COMPANY,
+  ENDPOINTS.HEALTH,
 ]
 
 function markHandledRequestError(error: unknown) {
