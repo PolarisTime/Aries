@@ -15,6 +15,7 @@ export const moduleEndpointContracts: Record<string, ModuleEndpointConfig> = {
   suppliers: { path: '/suppliers', nativeFilterKeys: ['keyword', 'status'] },
   customers: { path: '/customers', nativeFilterKeys: ['keyword', 'status'] },
   carriers: { path: '/carriers', nativeFilterKeys: ['keyword', 'status'] },
+  'material-categories': { path: '/material-categories', nativeFilterKeys: ['keyword', 'status'] },
   warehouses: {
     path: '/warehouses',
     nativeFilterKeys: ['keyword', 'warehouseType', 'status'],

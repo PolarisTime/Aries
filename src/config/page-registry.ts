@@ -49,6 +49,15 @@ export const appPageDefinitions: AppPageDefinition[] = [
     moduleKey: 'materials',
   },
   {
+    key: 'material-categories',
+    title: '商品类别',
+    menuKey: '/material-categories',
+    view: 'business-grid',
+    icon: 'TagsOutlined',
+    menuParent: 'master',
+    moduleKey: 'material-categories',
+  },
+  {
     key: 'suppliers',
     title: '供应商资料',
     menuKey: '/suppliers',
