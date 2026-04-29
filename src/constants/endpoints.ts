@@ -90,6 +90,7 @@ export const ENDPOINTS = {
   WAREHOUSES_OPTIONS: '/warehouses/options',
   CUSTOMERS_OPTIONS: '/customers/options',
   SUPPLIERS_OPTIONS: '/suppliers/options',
+  CARRIERS_OPTIONS: '/carriers/options',
   MATERIAL_CATEGORIES: '/material-categories/options',
 } as const
 
