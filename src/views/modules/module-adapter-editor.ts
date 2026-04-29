@@ -171,7 +171,10 @@ export function isEditorItemColumnEditableForModule(
     return false
   }
 
-  if (derivedReadonlyItemColumnKeySet.has(columnKey)) {
+  if (
+    derivedReadonlyItemColumnKeySet.has(columnKey)
+    && !(moduleKey === 'purchase-inbounds' && columnKey === 'weightTon')
+  ) {
     return false
   }
 
@@ -307,6 +310,10 @@ export function recalculateEditorLineItem(item: ModuleLineItem, changedKey?: str
 
   if (changedKey === 'weighWeightTon' && isWeighSettlement) {
     item.weightTon = toRoundedNumber(item.weighWeightTon, 3)
+  }
+
+  if (changedKey === 'weightTon' && isWeighSettlement) {
+    item.weighWeightTon = toRoundedNumber(item.weightTon, 3)
   }
 
   if (changedKey === 'amount' && Number(item.weightTon || 0) > 0) {

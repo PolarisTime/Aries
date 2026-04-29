@@ -1405,6 +1405,11 @@ function isEditorItemColumnEditable(columnKey: string, record?: ModuleLineItem) 
       && props.moduleKey === 'purchase-inbounds'
       && String(record?.settlementMode || '').trim() === '过磅'
   }
+  if (columnKey === 'weightTon') {
+    return baseEditable
+      && props.moduleKey === 'purchase-inbounds'
+      && String(record?.settlementMode || '').trim() === '过磅'
+  }
   return baseEditable
 }
 

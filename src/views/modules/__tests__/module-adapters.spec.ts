@@ -118,6 +118,19 @@ describe('module-adapters', () => {
     item.amount = 18525
     recalculateEditorLineItem(item, 'amount')
     expect(item.unitPrice).toBe(5000)
+
+    const weighItem: ModuleLineItem = {
+      ...buildDefaultEditorLineItem('weigh-item'),
+      settlementMode: '过磅',
+      quantity: 1,
+      pieceWeightTon: 2.3,
+      weightTon: 2.45,
+      unitPrice: 3000,
+    }
+    recalculateEditorLineItem(weighItem, 'weightTon')
+    expect(weighItem.weighWeightTon).toBe(2.45)
+    expect(weighItem.weightAdjustmentTon).toBe(0.15)
+    expect(weighItem.weightAdjustmentAmount).toBe(450)
   })
 
   it('merges imported parent items and replaces items from the same parent relation', () => {
@@ -843,6 +856,7 @@ describe('module-adapters', () => {
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'brand', true, false)).toBe(false)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'quantityUnit', true, false)).toBe(false)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'amount', true, false)).toBe(false)
+    expect(isEditorItemColumnEditableForModule('purchase-inbounds', 'weightTon', true, false)).toBe(true)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'quantity', true, false)).toBe(true)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'unitPrice', true, false)).toBe(true)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'warehouseName', true, false)).toBe(true)
