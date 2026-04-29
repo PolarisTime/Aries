@@ -13,6 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AAlert: typeof import('ant-design-vue/es')['Alert']
     AAutoComplete: typeof import('ant-design-vue/es')['AutoComplete']
+    AAvatar: typeof import('ant-design-vue/es')['Avatar']
     AButton: typeof import('ant-design-vue/es')['Button']
     ACard: typeof import('ant-design-vue/es')['Card']
     ACheckbox: typeof import('ant-design-vue/es')['Checkbox']

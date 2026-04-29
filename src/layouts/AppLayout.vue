@@ -71,6 +71,8 @@ const {
   passwordForm,
   disableTwoFactorForm,
   currentUserTotpEnabled,
+  forbidDisable2fa,
+  loadSecurityStatus,
   resetSecurityForms,
   handleChangeOwnPassword,
   handleSetupOwn2fa,
@@ -185,6 +187,7 @@ const {
 function handleOpenPersonalSettings() {
   personalSettingsTab.value = 'display'
   resetSecurityForms()
+  loadSecurityStatus()
   openPersonalSettings()
 }
 
@@ -292,17 +295,12 @@ onBeforeUnmount(() => {
                 v-model:value="globalSearchKeyword"
                 :options="globalSearchOptions"
                 class="header-global-search-box"
+                placeholder="搜索单号、合同号、对账单号"
                 @search="handleGlobalSearch"
                 @select="handleGlobalSearchSelect"
-              >
-                <a-input
-                  v-model:value="globalSearchKeyword"
-                  class="header-global-search-input"
-                  placeholder="搜索单号、合同号、对账单号"
-                  @press-enter="handleGlobalSearchSubmit(globalSearchKeyword)"
-                  @blur="handleGlobalSearchBlur"
-                />
-              </a-auto-complete>
+                @press-enter="handleGlobalSearchSubmit(globalSearchKeyword)"
+                @blur="handleGlobalSearchBlur"
+              />
               <a-button
                 type="primary"
                 class="header-global-search-button"
@@ -492,6 +490,14 @@ onBeforeUnmount(() => {
                       </a-space>
                     </a-form>
                   </template>
+                </template>
+
+                <template v-else-if="forbidDisable2fa">
+                  <a-alert
+                    show-icon
+                    type="info"
+                    message="当前账号已启用 2FA。系统设置禁止关闭 2FA，如需关闭请联系管理员。"
+                  />
                 </template>
 
                 <template v-else>

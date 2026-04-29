@@ -5,6 +5,7 @@ import {
   disableOwn2fa,
   enableOwn2fa,
   setupOwn2fa,
+  fetchAccountSecurityStatus,
 } from '@/api/account-security'
 import { showRequestError } from '@/composables/use-request-error'
 import { useAuthStore } from '@/stores/auth'
@@ -20,6 +21,7 @@ export function useAccountSecurity() {
   const twoFactorDisableLoading = ref(false)
   const twoFactorSetup = ref<TotpSetupResponse | null>(null)
   const twoFactorCode = ref('')
+  const forbidDisable2fa = ref(false)
 
   const passwordForm = reactive({
     currentPassword: '',
@@ -32,6 +34,13 @@ export function useAccountSecurity() {
   })
 
   const currentUserTotpEnabled = computed(() => Boolean(authStore.user?.totpEnabled))
+
+  async function loadSecurityStatus() {
+    try {
+      const response = await fetchAccountSecurityStatus()
+      forbidDisable2fa.value = Boolean(response.data?.forbidDisable2fa)
+    } catch { /* silent */ }
+  }
 
   function syncCurrentUserSecurity(security: { totpEnabled?: boolean; forceTotpSetup?: boolean }) {
     if (!authStore.user) {
@@ -151,6 +160,8 @@ export function useAccountSecurity() {
     passwordForm,
     disableTwoFactorForm,
     currentUserTotpEnabled,
+    forbidDisable2fa,
+    loadSecurityStatus,
     syncCurrentUserSecurity,
     resetSecurityForms,
     handleChangeOwnPassword,
