@@ -31,3 +31,9 @@ export function getSupplierOptions(): SupplierOption[] {
   }
   return cachedSuppliers || []
 }
+
+export function reloadSupplierOptions() {
+  cachedSuppliers = null
+  fetchFailed = false
+  return fetchSupplierOptions()
+}

@@ -23,3 +23,8 @@ export async function fetchMaterialCategories(): Promise<MaterialCategoryOption[
 export function getCachedMaterialCategories(): MaterialCategoryOption[] {
   return cachedCategories || []
 }
+
+export function reloadMaterialCategories() {
+  cachedCategories = null
+  return fetchMaterialCategories()
+}
