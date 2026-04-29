@@ -244,7 +244,7 @@ watch(personalSettingVisible, (visible) => {
 
 async function handleLogout() {
   await authStore.signOut()
-  void router.replace('/login')
+  await router.replace('/login')
 }
 
 if (!isE2eMode.value) {
