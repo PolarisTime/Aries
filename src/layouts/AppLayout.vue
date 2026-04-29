@@ -41,7 +41,8 @@ const permissionStore = usePermissionStore()
 const systemMenuStore = useSystemMenuStore()
 
 // Pre-fetch master data options before business module pages render
-const syncingData = ref(false)
+const syncState = ref<'idle' | 'syncing' | 'success' | 'failed'>('idle')
+let syncTimer: number | null = null
 const BUSINESS_MODULE_PREFIXES = [
   '/materials', '/suppliers', '/customers', '/carriers', '/warehouses',
   '/purchase-orders', '/purchase-inbounds', '/sales-orders', '/sales-outbounds',
@@ -53,15 +54,21 @@ const BUSINESS_MODULE_PREFIXES = [
 router.beforeResolve(async (to) => {
   if (to.path === '/login' || to.path === '/setup') return
   if (!BUSINESS_MODULE_PREFIXES.some(p => to.path.startsWith(p))) return
-  syncingData.value = true
-  await Promise.allSettled([
+  syncState.value = 'syncing'
+  const results = await Promise.allSettled([
     fetchSupplierOptions(),
     fetchCustomerOptions(),
     fetchCarrierOptions(),
     fetchWarehouseOptions(),
     fetchMaterialCategories(),
   ])
-  setTimeout(() => { syncingData.value = false }, 500)
+  syncState.value = results.every(r => r.status === 'fulfilled') ? 'success' : 'failed'
+  if (syncTimer) window.clearTimeout(syncTimer)
+  syncTimer = window.setTimeout(() => { syncState.value = 'idle' }, 2000)
+})
+
+onBeforeUnmount(() => {
+  if (syncTimer) window.clearTimeout(syncTimer)
 })
 const { user } = storeToRefs(authStore)
 const { menus: systemMenuTree } = storeToRefs(systemMenuStore)
@@ -409,7 +416,9 @@ onBeforeUnmount(() => {
                 {{ backendOnline ? 'API 正常' : 'API 离线' }}
               </a-tag>
               <Transition name="fade">
-                <a-tag v-if="syncingData" color="processing">同步中</a-tag>
+                <a-tag v-if="syncState === 'syncing'" color="processing">同步中</a-tag>
+                <a-tag v-else-if="syncState === 'success'" color="success">已同步</a-tag>
+                <a-tag v-else-if="syncState === 'failed'" color="error">同步失败</a-tag>
               </Transition>
               <a-tag color="default">{{ clock.format('HH:mm:ss') }}</a-tag>
             </span>
