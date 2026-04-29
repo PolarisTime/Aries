@@ -90,6 +90,7 @@ const { menus: systemMenuTree } = storeToRefs(systemMenuStore)
 const collapsed = ref(false)
 const companyName = ref('')
 const backendOnline = ref(false)
+const traceId = ref('')
 let healthTimer: number | null = null
 let healthRetries = 0
 const MAX_HEALTH_RETRIES = 5
@@ -113,9 +114,11 @@ async function checkBackendHealth() {
     if (res.ok) {
       const body = await res.json()
       backendOnline.value = body.status === 'UP'
+      traceId.value = body.traceId || ''
       healthRetries = 0
     } else {
       backendOnline.value = false
+      traceId.value = ''
     }
   } catch {
     backendOnline.value = false
@@ -431,7 +434,10 @@ onBeforeUnmount(() => {
                 <a-tag v-else-if="syncState === 'failed'" color="error">同步失败</a-tag>
               </Transition>
               <a-tag v-if="companyName" color="blue">{{ companyName }}</a-tag>
-              <a-tag :color="backendOnline ? 'green' : 'red'">
+              <a-tooltip v-if="!backendOnline && traceId" :title="'Trace: ' + traceId">
+                <a-tag color="red">API 离线</a-tag>
+              </a-tooltip>
+              <a-tag v-else :color="backendOnline ? 'green' : 'red'">
                 {{ backendOnline ? 'API 正常' : 'API 离线' }}
               </a-tag>
               <a-tag color="default">{{ clock.format('HH:mm:ss') }}</a-tag>
