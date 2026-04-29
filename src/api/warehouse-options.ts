@@ -7,15 +7,27 @@ export interface WarehouseOption {
   label: string
 }
 
-let cachedWarehouses: WarehouseOption[] | null = null
+let cached: WarehouseOption[] | null = null
+let fetchFailed = false
 
 export async function fetchWarehouseOptions(): Promise<WarehouseOption[]> {
-  if (cachedWarehouses) return cachedWarehouses
+  if (cached && cached.length > 0) return cached
   try {
     const response = await http.get<ApiResponse<WarehouseOption[]>>(ENDPOINTS.WAREHOUSES_OPTIONS)
-    cachedWarehouses = response.data || []
-    return cachedWarehouses
+    cached = response.data || []
+    fetchFailed = false
+    return cached
   } catch {
+    fetchFailed = true
     return []
   }
+}
+
+export function getWarehouseOptions(): WarehouseOption[] {
+  if (fetchFailed || (cached && cached.length === 0)) {
+    cached = null
+    fetchFailed = false
+    fetchWarehouseOptions()
+  }
+  return cached || []
 }

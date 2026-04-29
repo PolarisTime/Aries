@@ -304,8 +304,8 @@ onBeforeUnmount(() => {
       :collapsed="collapsed"
       :trigger="null"
       theme="light"
-      :width="220"
-      :collapsed-width="76"
+      :width="180"
+      :collapsed-width="60"
       class="app-sider leo-sider"
     >
       <div class="leo-brand">
@@ -330,7 +330,7 @@ onBeforeUnmount(() => {
 
     <a-layout
       class="leo-main"
-      :style="{ paddingLeft: `${collapsed ? 76 : 220}px` }"
+      :style="{ paddingLeft: `${collapsed ? 60 : 180}px` }"
     >
       <a-layout-header
         :class="[

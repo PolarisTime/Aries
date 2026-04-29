@@ -55,8 +55,11 @@ export function supplierOptions() {
   return _supplierOptions
 }
 
+import { getSupplierOptions as apiGetSupplierOptions } from '@/api/supplier-options'
+
 export function getSupplierOptions() {
-  return _supplierOptions
+  const dynamic = apiGetSupplierOptions()
+  return dynamic.length > 0 ? dynamic : _supplierOptions
 }
 
 export { supplierFallbackOptions }
@@ -77,8 +80,11 @@ export function customerOptions() {
   return _customerOptions
 }
 
+import { getCustomerOptions as apiGetCustomerOptions } from '@/api/customer-options'
+
 export function getCustomerOptions() {
-  return _customerOptions
+  const dynamic = apiGetCustomerOptions()
+  return dynamic.length > 0 ? dynamic : _customerOptions
 }
 
 import { fetchCustomerOptions } from '@/api/customer-options'
@@ -97,8 +103,11 @@ export function carrierOptions() {
   return _carrierOptions
 }
 
+import { getCarrierOptions as apiGetCarrierOptions } from '@/api/carrier-options'
+
 export function getCarrierOptions() {
-  return _carrierOptions
+  const dynamic = apiGetCarrierOptions()
+  return dynamic.length > 0 ? dynamic : _carrierOptions
 }
 
 import { fetchCarrierOptions } from '@/api/carrier-options'
@@ -115,6 +124,13 @@ let _warehouseOptions = warehouseFallbackOptions
 
 export function warehouseOptions() {
   return _warehouseOptions
+}
+
+import { getWarehouseOptions as apiGetWarehouseOptions } from '@/api/warehouse-options'
+
+export function getWarehouseOptions() {
+  const dynamic = apiGetWarehouseOptions()
+  return dynamic.length > 0 ? dynamic : _warehouseOptions
 }
 
 import { fetchWarehouseOptions } from '@/api/warehouse-options'

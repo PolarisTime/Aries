@@ -252,6 +252,21 @@ function getEditorSummaryCellValue(column: unknown) {
                 @role-tree-check="(checkedKeys) => emit('role-tree-check', checkedKeys)"
               />
             </a-col>
+            <a-col
+              v-if="parentImportConfig && canManageEditorItems && !itemColumns?.length"
+              :xs="24"
+              :sm="12"
+              :lg="6"
+            >
+              <a-form-item label=" ">
+                <a-button
+                  type="primary"
+                  @click="emit('open-parent-selector')"
+                >
+                  {{ parentImportConfig.buttonText || '选择上级单据导入' }}
+                </a-button>
+              </a-form-item>
+            </a-col>
           </a-row>
         </a-form>
 

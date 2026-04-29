@@ -45,6 +45,18 @@ defineEmits<{
     <section class="workspace-overlay-panel">
       <header class="workspace-overlay-header">
         <span class="workspace-overlay-title">{{ title }}</span>
+        <div class="workspace-overlay-header-actions">
+          <a-button class="overlay-action-button" @click="$emit('cancel')">{{ cancelText }}</a-button>
+          <a-button
+            v-if="confirmVisible"
+            type="primary"
+            class="overlay-action-button"
+            :disabled="confirmDisabled"
+            @click="$emit('confirm')"
+          >
+            {{ confirmText }}
+          </a-button>
+        </div>
       </header>
 
       <div class="workspace-overlay-body statement-generator-body">
@@ -79,17 +91,8 @@ defineEmits<{
         </div>
       </div>
 
-      <footer class="workspace-overlay-footer">
+      <footer v-if="!confirmVisible" class="workspace-overlay-footer">
         <a-button class="overlay-action-button" @click="$emit('cancel')">{{ cancelText }}</a-button>
-        <a-button
-          v-if="confirmVisible"
-          type="primary"
-          class="overlay-action-button"
-          :disabled="confirmDisabled"
-          @click="$emit('confirm')"
-        >
-          {{ confirmText }}
-        </a-button>
       </footer>
     </section>
   </div>

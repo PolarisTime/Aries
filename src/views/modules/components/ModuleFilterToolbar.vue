@@ -98,86 +98,77 @@ function isFilterOptionGroup(option: ModuleFilterOptionEntry): option is ModuleF
       </a-button>
     </div>
     <a-form :model="filters" layout="inline" @submit.prevent="emit('search')">
-      <a-row :gutter="24">
-        <a-col
+      <div class="filter-inline-group">
+        <a-form-item
           v-for="filter in visibleFilters"
           :key="filter.key"
-          :md="8"
-          :sm="24"
+          :label="filter.label"
+          :html-for="getFilterFieldId(filter.key)"
         >
-          <a-form-item
-            :label="filter.label"
-            :html-for="getFilterFieldId(filter.key)"
+          <a-input
+            v-if="filter.type === 'input'"
+            :id="getFilterFieldId(filter.key)"
+            :value="getTextModelValue(filters, filter.key)"
+            :name="filter.key"
+            :placeholder="filter.placeholder"
+            allow-clear
+            @update:value="emit('update-filter', filter.key, $event)"
+            @press-enter="emit('search')"
+          />
+          <a-select
+            v-else-if="filter.type === 'select'"
+            :id="getFilterFieldId(filter.key)"
+            :value="getSelectModelValue(filters, filter.key)"
+            allow-clear
+            :placeholder="filter.placeholder || `请选择${filter.label}`"
+            @update:value="emit('update-filter', filter.key, $event)"
+            @change="emit('filter-change')"
           >
-            <a-input
-              v-if="filter.type === 'input'"
-              :id="getFilterFieldId(filter.key)"
-              :value="getTextModelValue(filters, filter.key)"
-              :name="filter.key"
-              :placeholder="filter.placeholder"
-              allow-clear
-              @update:value="emit('update-filter', filter.key, $event)"
-              @press-enter="emit('search')"
-            />
-            <a-select
-              v-else-if="filter.type === 'select'"
-              :id="getFilterFieldId(filter.key)"
-              :value="getSelectModelValue(filters, filter.key)"
-              allow-clear
-              :placeholder="filter.placeholder || `请选择${filter.label}`"
-              @update:value="emit('update-filter', filter.key, $event)"
-              @change="emit('filter-change')"
+            <template
+              v-for="option in resolveFilterOptions(filter)"
+              :key="isFilterOptionGroup(option) ? option.label : option.value"
             >
-              <template
-                v-for="option in resolveFilterOptions(filter)"
-                :key="isFilterOptionGroup(option) ? option.label : option.value"
+              <a-select-opt-group
+                v-if="isFilterOptionGroup(option)"
+                :label="option.label"
               >
-                <a-select-opt-group
-                  v-if="isFilterOptionGroup(option)"
-                  :label="option.label"
-                >
-                  <a-select-option
-                    v-for="groupOption in option.options"
-                    :key="groupOption.value"
-                    :value="groupOption.value"
-                  >
-                    {{ groupOption.label }}
-                  </a-select-option>
-                </a-select-opt-group>
                 <a-select-option
-                  v-else
-                  :value="option.value"
+                  v-for="groupOption in option.options"
+                  :key="groupOption.value"
+                  :value="groupOption.value"
                 >
-                  {{ option.label }}
+                  {{ groupOption.label }}
                 </a-select-option>
-              </template>
-            </a-select>
-            <a-range-picker
-              v-else
-              :id="getFilterFieldId(filter.key)"
-              :value="getDateRangeModelValue(filters, filter.key)"
-              style="width: 100%"
-              format="YYYY-MM-DD"
-              :placeholder="['开始时间', '结束时间']"
-              @update:value="(value) => emit('update-filter', filter.key, value)"
-            />
-          </a-form-item>
-        </a-col>
-
-        <a-col :md="8" :sm="24" class="search-action-col">
-          <div class="table-page-search-submitButtons">
-            <a-button type="primary" @click="emit('search')">查询</a-button>
-            <a-button style="margin-left: 8px" @click="emit('reset')">重置</a-button>
-            <a
-              v-if="hasAdvancedFilters"
-              style="margin-left: 8px"
-              @click="emit('update:expanded', !expanded)"
-            >
-              {{ expanded ? '收起' : '展开' }}
-            </a>
-          </div>
-        </a-col>
-      </a-row>
+              </a-select-opt-group>
+              <a-select-option
+                v-else
+                :value="option.value"
+              >
+                {{ option.label }}
+              </a-select-option>
+            </template>
+          </a-select>
+          <a-range-picker
+            v-else
+            :id="getFilterFieldId(filter.key)"
+            :value="getDateRangeModelValue(filters, filter.key)"
+            format="YYYY-MM-DD"
+            :placeholder="['开始时间', '结束时间']"
+            @update:value="(value) => emit('update-filter', filter.key, value)"
+          />
+        </a-form-item>
+        <div class="table-page-search-submitButtons">
+          <a-button type="primary" @click="emit('search')">查询</a-button>
+          <a-button style="margin-left: 8px" @click="emit('reset')">重置</a-button>
+          <a
+            v-if="hasAdvancedFilters"
+            style="margin-left: 8px"
+            @click="emit('update:expanded', !expanded)"
+          >
+            {{ expanded ? '收起' : '展开' }}
+          </a>
+        </div>
+      </div>
     </a-form>
   </div>
 </template>

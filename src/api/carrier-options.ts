@@ -7,15 +7,27 @@ export interface CarrierOption {
   label: string
 }
 
-let cachedCarriers: CarrierOption[] | null = null
+let cached: CarrierOption[] | null = null
+let fetchFailed = false
 
 export async function fetchCarrierOptions(): Promise<CarrierOption[]> {
-  if (cachedCarriers) return cachedCarriers
+  if (cached && cached.length > 0) return cached
   try {
     const response = await http.get<ApiResponse<CarrierOption[]>>(ENDPOINTS.CARRIERS_OPTIONS)
-    cachedCarriers = response.data || []
-    return cachedCarriers
+    cached = response.data || []
+    fetchFailed = false
+    return cached
   } catch {
+    fetchFailed = true
     return []
   }
+}
+
+export function getCarrierOptions(): CarrierOption[] {
+  if (fetchFailed || (cached && cached.length === 0)) {
+    cached = null
+    fetchFailed = false
+    fetchCarrierOptions()
+  }
+  return cached || []
 }
