@@ -10,3 +10,7 @@ export function importMaterialsCsv(file: File) {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }
+
+export function downloadMaterialsTemplate() {
+  return http.get(ENDPOINTS.MATERIALS_TEMPLATE, { responseType: 'blob' })
+}

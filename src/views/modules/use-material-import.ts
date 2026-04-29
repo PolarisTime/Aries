@@ -47,13 +47,17 @@ export function useMaterialImport(options: UseMaterialImportOptions) {
     materialImportVisible.value = true
   }
 
-  function handleMaterialTemplateDownload() {
+  async function handleMaterialTemplateDownload() {
     if (!canExportRecords.value) {
       message.warning('暂无导出权限')
       return
     }
-    downloadMaterialImportTemplate()
-    message.success('导入模板已开始下载')
+    try {
+      await downloadMaterialImportTemplate()
+      message.success('导入模板已开始下载')
+    } catch {
+      message.error('模板下载失败')
+    }
   }
 
   function handleMaterialImportBeforeUpload(file: File) {

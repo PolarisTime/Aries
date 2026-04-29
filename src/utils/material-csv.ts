@@ -1,4 +1,6 @@
 import type { ModuleRecord } from '@/types/module-page'
+import { http } from '@/api/http'
+import { ENDPOINTS } from '@/constants/endpoints'
 
 const MATERIAL_CSV_HEADERS = [
   '商品编码',
@@ -36,7 +38,7 @@ export function exportMaterialsToCsv(rows: ModuleRecord[], title = '商品资料
     ]),
   ]
   const csv = lines.map((line) => line.map(escapeCsvCell).join(',')).join('\r\n')
-  const blob = new Blob([`\uFEFF${csv}`], {
+  const blob = new Blob([`﻿${csv}`], {
     type: 'text/csv;charset=utf-8;',
   })
   const url = URL.createObjectURL(blob)
@@ -51,28 +53,8 @@ export function exportMaterialsToCsv(rows: ModuleRecord[], title = '商品资料
   URL.revokeObjectURL(url)
 }
 
-export function downloadMaterialImportTemplate() {
-  const sampleRow = [
-    'RB400-18-12',
-    '敬业',
-    'HRB400',
-    '螺纹钢',
-    '18',
-    '12米',
-    '吨',
-    '件',
-    '0.002',
-    '1',
-    '3500.00',
-    '否',
-    '示例数据，可删除',
-  ]
-  const csv = [MATERIAL_CSV_HEADERS, sampleRow]
-    .map((line) => line.map(escapeCsvCell).join(','))
-    .join('\r\n')
-  const blob = new Blob([`\uFEFF${csv}`], {
-    type: 'text/csv;charset=utf-8;',
-  })
+export async function downloadMaterialImportTemplate() {
+  const blob = await http.get<Blob>(ENDPOINTS.MATERIALS_TEMPLATE, { responseType: 'blob' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
