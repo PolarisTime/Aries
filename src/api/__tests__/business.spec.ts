@@ -200,6 +200,70 @@ describe('business api read-only modules', () => {
     )
   })
 
+  it('saves purchase inbound settlement and warehouse at line level only', async () => {
+    clientMocks.httpPost.mockResolvedValue({
+      code: 0,
+      data: {
+        id: '1',
+      },
+    })
+
+    const { saveBusinessModule } = await import('@/api/business')
+
+    await saveBusinessModule('purchase-inbounds', {
+      id: '',
+      inboundNo: 'PI0001',
+      purchaseOrderNo: 'PO-1',
+      supplierName: '供应商甲',
+      inboundDate: '2026-04-25',
+      status: '草稿',
+      remark: '',
+      items: [
+        {
+          id: 'line-1',
+          sourcePurchaseOrderItemId: '11',
+          materialCode: 'MAT-1',
+          brand: '宝钢',
+          category: '盘螺',
+          material: 'HRB400',
+          spec: '10',
+          length: '6000',
+          unit: '吨',
+          warehouseName: '一号库',
+          settlementMode: '过磅',
+          batchNo: 'B1',
+          quantity: 2,
+          quantityUnit: '件',
+          pieceWeightTon: 1.25,
+          piecesPerBundle: 0,
+          weightTon: 2.55,
+          weighWeightTon: 2.55,
+          weightAdjustmentTon: 0.05,
+          weightAdjustmentAmount: 200,
+          unitPrice: 4000,
+          amount: 10200,
+        },
+      ],
+    })
+
+    const payload = clientMocks.httpPost.mock.calls[0][1]
+    expect(payload).not.toHaveProperty('warehouseName')
+    expect(payload).not.toHaveProperty('settlementMode')
+    expect(clientMocks.httpPost).toHaveBeenCalledWith(
+      '/purchase-inbounds',
+      expect.objectContaining({
+        supplierName: '供应商甲',
+        items: [
+          expect.objectContaining({
+            warehouseName: '一号库',
+            settlementMode: '过磅',
+            weighWeightTon: 2.55,
+          }),
+        ],
+      }),
+    )
+  })
+
   it('serializes persisted line-item ids only for existing rows', async () => {
     clientMocks.httpPut.mockResolvedValue({
       code: 0,

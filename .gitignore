@@ -14,6 +14,7 @@ dist-ssr
 .codex
 temppic
 test-results
+coverage
 
 # Editor directories and files
 .vscode/*

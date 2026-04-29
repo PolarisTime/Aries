@@ -27,6 +27,8 @@ export interface ModuleFormFieldOption {
   value: string | number | boolean
 }
 
+export type ModuleFormFieldOptionResolver = () => ModuleFormFieldOption[]
+
 export interface ModuleFilterDefinition {
   key: string
   label: string
@@ -77,7 +79,7 @@ export interface ModuleFormFieldDefinition {
   label: string
   type: ModuleFormFieldType
   placeholder?: string
-  options?: ModuleFormFieldOption[]
+  options?: ModuleFormFieldOption[] | ModuleFormFieldOptionResolver
   required?: boolean
   disabled?: boolean
   allowClear?: boolean

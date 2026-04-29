@@ -24,6 +24,23 @@
   --theme-header-text: #0f172a;
   --theme-header-muted: #64748b;
   --theme-card-border: #dbe3ee;
+  --app-header-height: 62px;
+  --app-tabs-height: 40px;
+  --app-tab-card-height: 34px;
+  --app-tab-card-top-gap: 6px;
+  --app-top-offset: calc(var(--app-header-height) + var(--app-tabs-height));
+  --app-content-padding: 16px;
+  --app-page-gap: 12px;
+  --app-card-body-padding: 12px;
+  --app-filter-gap-x: 16px;
+  --app-filter-margin-bottom: 8px;
+  --app-table-head-padding-y: 10px;
+  --app-table-head-padding-x: 12px;
+  --app-table-cell-padding-y: 12px;
+  --app-table-th-padding-y: 10px;
+  --app-overlay-header-height: 55px;
+  --app-overlay-body-padding: 16px;
+  --app-selection-scroll-y: calc(100vh - 284px);
   color: #333;
   background: var(--theme-shell-bg);
   font-family:
@@ -45,7 +62,7 @@ body,
 
 body {
   margin: 0;
-  min-width: 1280px;
+  min-width: 320px;
   background: var(--theme-shell-bg);
   color: #333;
   font-size: var(--app-font-size);
@@ -294,9 +311,9 @@ a {
 }
 
 .leo-header {
-  height: 62px !important;
+  height: var(--app-header-height) !important;
   padding: 0 !important;
-  line-height: 62px !important;
+  line-height: var(--app-header-height) !important;
   background: var(--theme-header-bg) !important;
   border-bottom: 1px solid rgba(219, 227, 238, 0.9);
 }
@@ -304,7 +321,7 @@ a {
 .app-header-bar {
   display: flex;
   align-items: center;
-  height: 62px;
+  height: var(--app-header-height);
   padding: 0 18px 0 8px;
   background: transparent;
 }
@@ -314,7 +331,7 @@ a {
   align-items: center;
   justify-content: center;
   width: 52px;
-  height: 62px;
+  height: var(--app-header-height);
   cursor: pointer;
   font-size: calc(var(--app-font-size) + 6px);
   color: var(--theme-header-text);
@@ -339,7 +356,7 @@ a {
   flex: 1 1 360px;
   max-width: 420px;
   min-width: 260px;
-  height: 62px;
+  height: var(--app-header-height);
   margin-left: 24px;
   line-height: 1;
   align-self: center;
@@ -476,7 +493,7 @@ a {
 .user-wrapper .action {
   display: inline-flex;
   align-items: center;
-  height: 62px;
+  height: var(--app-header-height);
   padding: 0 10px;
   color: var(--theme-header-text);
 }
@@ -502,7 +519,7 @@ a {
 
 .tab-layout-tabs.ant-tabs {
   position: fixed;
-  top: 62px;
+  top: var(--app-header-height);
   right: 0;
   z-index: 80;
   width: calc(100% - 180px);
@@ -519,7 +536,7 @@ a {
 
 .tab-layout-tabs.ant-tabs .ant-tabs-nav {
   margin: 0;
-  height: 40px;
+  height: var(--app-tabs-height);
 }
 
 .tab-layout-tabs.ant-tabs .ant-tabs-content-holder {
@@ -531,9 +548,9 @@ a {
 }
 
 .tab-layout-tabs.ant-tabs.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
-  height: 34px;
+  height: var(--app-tab-card-height);
   padding: 0 16px !important;
-  margin-top: 6px;
+  margin-top: var(--app-tab-card-top-gap);
   margin-right: 6px !important;
   background: #eef4fb !important;
   border: 1px solid var(--theme-card-border) !important;
@@ -551,21 +568,21 @@ a {
 }
 
 .leo-content {
-  padding-top: 102px;
+  padding-top: var(--app-top-offset);
 }
 
 .leo-content-inner {
-  min-height: calc(100vh - 102px);
-  padding: 16px;
+  min-height: calc(100vh - var(--app-top-offset));
+  padding: var(--app-content-padding);
 }
 
 .page-stack {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--app-page-gap);
   flex: 1 1 auto;
-  min-height: calc(100vh - 108px);
+  min-height: calc(100vh - var(--app-top-offset) - 6px);
 }
 
 .ant-card {
@@ -575,7 +592,7 @@ a {
 
 .module-panel-card > .ant-card-body,
 .dashboard-card > .ant-card-body {
-  padding: 12px;
+  padding: var(--app-card-body-padding);
 }
 
 .module-panel-card {
@@ -677,8 +694,8 @@ a {
 }
 
 .table-page-search-wrapper {
-  padding-bottom: 10px;
-  margin-bottom: 8px;
+  padding-bottom: var(--app-filter-margin-bottom);
+  margin-bottom: var(--app-filter-margin-bottom);
   border-bottom: 1px solid #e8e8e8;
 }
 
@@ -686,11 +703,11 @@ a {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0 16px;
+  gap: 0 var(--app-filter-gap-x);
 }
 
 .filter-inline-group .ant-form-item {
-  margin-bottom: 8px;
+  margin-bottom: var(--app-filter-margin-bottom);
 }
 
 .filter-inline-group .ant-form-item-label {
@@ -707,7 +724,7 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: var(--app-filter-margin-bottom);
   white-space: nowrap;
 }
 
@@ -724,7 +741,7 @@ a {
 }
 
 .table-operator .ant-btn {
-  margin: 0 8px 8px 0;
+  margin: 0 8px var(--app-filter-margin-bottom) 0;
 }
 
 .module-table-head {
@@ -733,7 +750,7 @@ a {
   justify-content: flex-start;
   flex-wrap: wrap;
   gap: 16px;
-  padding: 10px 12px;
+  padding: var(--app-table-head-padding-y) var(--app-table-head-padding-x);
   border: 1px solid #f0f0f0;
   border-bottom: 0;
   background: linear-gradient(180deg, #ffffff 0%, #fafcff 100%);
@@ -901,8 +918,8 @@ a {
 
 .module-table-shell .ant-table-thead > tr > th,
 .module-detail-table .ant-table-thead > tr > th {
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-top: var(--app-table-th-padding-y);
+  padding-bottom: var(--app-table-th-padding-y);
   background: #fafafa;
   color: #595959;
   font-size: var(--app-font-size);
@@ -917,8 +934,8 @@ a {
 
 .module-table-shell .ant-table-tbody > tr > td,
 .module-detail-table .ant-table-tbody > tr > td {
-  padding-top: 12px;
-  padding-bottom: 12px;
+  padding-top: var(--app-table-cell-padding-y);
+  padding-bottom: var(--app-table-cell-padding-y);
   font-size: var(--app-font-size);
   text-align: center;
   vertical-align: middle;
@@ -996,7 +1013,7 @@ a {
   align-items: center;
   justify-content: space-between;
   flex: 0 0 auto;
-  min-height: 55px;
+  min-height: var(--app-overlay-header-height);
   padding: 0 16px;
   border-bottom: 1px solid #f0f0f0;
 }
@@ -1016,7 +1033,7 @@ a {
 .workspace-overlay-body {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 16px;
+  padding: var(--app-overlay-body-padding);
   overflow-y: auto;
 }
 
@@ -1050,6 +1067,36 @@ a {
   flex: 1 1 auto;
   min-height: 0;
   flex-direction: column;
+}
+
+.module-selection-overlay-body {
+  overflow: hidden;
+}
+
+.module-selection-table-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.module-selection-table-shell .ant-table-wrapper {
+  width: 100%;
+}
+
+.module-selection-table-shell .ant-table-wrapper .ant-table {
+  flex: 1 1 auto;
+}
+
+.module-selection-table-shell .ant-table-wrapper .ant-table-body {
+  min-height: 0;
+}
+
+.module-selection-table-shell .ant-table-wrapper .ant-table-pagination.ant-pagination {
+  display: flex;
+  flex: 0 0 auto;
+  margin: 12px 0 0;
+  width: 100%;
+  justify-content: flex-end;
 }
 
 .workspace-overlay-footer {
@@ -1731,9 +1778,244 @@ a {
   object-fit: cover;
 }
 
+@media (max-width: 1440px), (max-height: 900px) {
+  :root {
+    --app-header-height: 56px;
+    --app-tabs-height: 36px;
+    --app-tab-card-height: 30px;
+    --app-tab-card-top-gap: 5px;
+    --app-content-padding: 10px;
+    --app-page-gap: 8px;
+    --app-card-body-padding: 10px;
+    --app-filter-gap-x: 12px;
+    --app-filter-margin-bottom: 6px;
+    --app-table-head-padding-y: 8px;
+    --app-table-cell-padding-y: 9px;
+    --app-table-th-padding-y: 8px;
+    --app-overlay-header-height: 48px;
+    --app-overlay-body-padding: 10px;
+    --app-selection-scroll-y: calc(100vh - 224px);
+  }
+
+  .leo-brand {
+    height: 60px;
+    padding: 0 14px;
+  }
+
+  .leo-brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .leo-menu {
+    height: calc(100vh - 60px);
+  }
+
+  .leo-menu .ant-menu-item,
+  .leo-menu .ant-menu-submenu-title {
+    height: 38px;
+    line-height: 38px;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    border-radius: 8px;
+  }
+
+  .app-header-bar {
+    padding-right: 12px;
+  }
+
+  .app-trigger {
+    width: 46px;
+  }
+
+  .header-global-search {
+    flex-basis: 300px;
+    max-width: 360px;
+    min-width: 220px;
+    margin-left: 14px;
+  }
+
+  .user-wrapper .action {
+    padding: 0 6px;
+  }
+
+  .tab-layout-tabs.ant-tabs {
+    padding: 0 8px;
+  }
+
+  .tab-layout-tabs.ant-tabs.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+    padding: 0 12px !important;
+    margin-right: 4px !important;
+    border-radius: 8px 8px 0 0 !important;
+  }
+
+  .module-page-header {
+    gap: 12px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .module-page-desc {
+    line-height: 1.5;
+  }
+
+  .module-overview {
+    min-width: 300px;
+    gap: 6px;
+  }
+
+  .module-overview-item {
+    padding: 6px 8px;
+  }
+
+  .filter-inline-group .ant-form-item-control {
+    min-width: 120px;
+  }
+
+  .module-table-head {
+    gap: 10px;
+  }
+
+  .module-selection-table-shell .ant-table-wrapper .ant-table-pagination.ant-pagination {
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 1280px) {
+  :root {
+    --app-content-padding: 8px;
+    --app-card-body-padding: 8px;
+    --app-filter-gap-x: 10px;
+    --app-selection-scroll-y: calc(100vh - 212px);
+  }
+
+  .header-page-desc {
+    display: none;
+  }
+
+  .header-global-search {
+    flex-basis: 220px;
+    max-width: 300px;
+    min-width: 160px;
+    margin-left: 10px;
+  }
+
+  .user-wrapper .action-tag {
+    display: none;
+  }
+
+  .user-wrapper .action {
+    padding: 0 5px;
+  }
+
+  .module-overview {
+    min-width: 0;
+    grid-template-columns: repeat(3, minmax(90px, 1fr));
+  }
+
+  .module-table-head-summary {
+    margin-left: 0;
+  }
+}
+
+@media (max-height: 800px) {
+  :root {
+    --app-header-height: 50px;
+    --app-tabs-height: 34px;
+    --app-tab-card-height: 28px;
+    --app-tab-card-top-gap: 4px;
+    --app-content-padding: 8px;
+    --app-page-gap: 6px;
+    --app-card-body-padding: 8px;
+    --app-filter-margin-bottom: 4px;
+    --app-table-head-padding-y: 6px;
+    --app-table-cell-padding-y: 7px;
+    --app-table-th-padding-y: 6px;
+    --app-overlay-header-height: 44px;
+    --app-overlay-body-padding: 8px;
+    --app-selection-scroll-y: calc(100vh - 190px);
+  }
+
+  .leo-brand {
+    height: 54px;
+  }
+
+  .leo-menu {
+    height: calc(100vh - 54px);
+  }
+
+  .leo-menu .ant-menu-item,
+  .leo-menu .ant-menu-submenu-title {
+    height: 34px;
+    line-height: 34px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+  }
+
+  .module-page-title {
+    font-size: calc(var(--app-font-size) + 3px);
+  }
+
+  .workspace-overlay-header {
+    padding: 0 12px;
+  }
+}
+
 @media (max-width: 960px) {
   body {
     min-width: 320px;
+  }
+
+  :root {
+    --app-header-height: 48px;
+    --app-tabs-height: 34px;
+    --app-tab-card-height: 28px;
+    --app-tab-card-top-gap: 4px;
+    --app-content-padding: 8px;
+    --app-selection-scroll-y: calc(100vh - 186px);
+  }
+
+  .leo-main {
+    padding-left: 60px !important;
+  }
+
+  .leo-sider {
+    width: 60px !important;
+    min-width: 60px !important;
+    max-width: 60px !important;
+    flex: 0 0 60px !important;
+  }
+
+  .leo-brand {
+    justify-content: center;
+    height: 54px;
+    padding: 0 10px;
+  }
+
+  .leo-brand-copy {
+    display: none;
+  }
+
+  .leo-menu {
+    height: calc(100vh - 54px);
+  }
+
+  .leo-menu .ant-menu-title-content,
+  .leo-menu .ant-menu-submenu-arrow {
+    display: none;
+  }
+
+  .leo-menu .ant-menu-item,
+  .leo-menu .ant-menu-submenu-title {
+    padding-inline: calc(50% - 8px) !important;
+  }
+
+  .app-fixed-header.app-side-opened,
+  .app-fixed-header.app-side-closed,
+  .tab-layout-tabs.ant-tabs,
+  .app-side-closed + .tab-layout-tabs.ant-tabs {
+    width: calc(100% - 60px);
   }
 
   .ant-modal-root .ant-modal-wrap {
@@ -1824,6 +2106,90 @@ a {
   .table-page-search-submitButtons {
     padding-top: 0;
     margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --app-content-padding: 6px;
+    --app-overlay-body-padding: 6px;
+    --app-selection-scroll-y: calc(100vh - 174px);
+  }
+
+  .leo-main {
+    padding-left: 52px !important;
+  }
+
+  .leo-sider {
+    width: 52px !important;
+    min-width: 52px !important;
+    max-width: 52px !important;
+    flex-basis: 52px !important;
+  }
+
+  .leo-brand {
+    height: 50px;
+    padding: 0 8px;
+  }
+
+  .leo-brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .leo-menu {
+    height: calc(100vh - 50px);
+  }
+
+  .app-fixed-header.app-side-opened,
+  .app-fixed-header.app-side-closed,
+  .tab-layout-tabs.ant-tabs,
+  .app-side-closed + .tab-layout-tabs.ant-tabs {
+    width: calc(100% - 52px);
+  }
+
+  .header-page-meta,
+  .user-wrapper .action-tag,
+  .user-wrapper .user-name {
+    display: none;
+  }
+
+  .app-header-bar {
+    gap: 6px;
+    padding-right: 6px;
+  }
+
+  .app-trigger {
+    width: 40px;
+  }
+
+  .header-global-search {
+    max-width: none;
+  }
+
+  .user-wrapper .action {
+    padding: 0 4px;
+  }
+
+  .tab-layout-tabs.ant-tabs {
+    padding: 0 4px;
+  }
+
+  .tab-layout-tabs.ant-tabs.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+    padding: 0 8px !important;
+  }
+
+  .module-table-head {
+    gap: 6px;
+  }
+
+  .parent-selector-hint {
+    display: none;
+  }
+
+  .module-selection-table-shell .ant-table-wrapper .ant-table-pagination.ant-pagination {
+    justify-content: center;
   }
 }
 

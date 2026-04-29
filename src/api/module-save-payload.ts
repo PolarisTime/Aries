@@ -91,6 +91,10 @@ const LINE_ITEM_FIELDS: readonly LineItemFieldSpec[] = [
   { key: 'pieceWeightTon' },
   { key: 'piecesPerBundle', numeric: true },
   { key: 'weightTon' },
+  { key: 'settlementMode' },
+  { key: 'weighWeightTon' },
+  { key: 'weightAdjustmentTon' },
+  { key: 'weightAdjustmentAmount' },
   { key: 'unitPrice' },
   { key: 'amount' },
   { key: 'sourcePurchaseOrderItemId' },
@@ -130,6 +134,9 @@ function serializeLineItem(item: ModuleLineItem, moduleKey: string) {
     result.id = persistedId
   }
   for (const field of getCachedLineItemFields(moduleKey)) {
+    if (field.key === 'settlementMode' && moduleKey !== 'purchase-inbounds') {
+      continue
+    }
     const value = item[field.key]
     if (value !== undefined) {
       result[field.key] = field.numeric ? Number(value || 0) : value

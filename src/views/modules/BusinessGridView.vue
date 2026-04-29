@@ -134,6 +134,7 @@ const editorMode = ref<'create' | 'edit'>('create')
 const editorSaving = ref(false)
 const editorForm = reactive<Record<string, unknown>>({})
 const editorSourceRecordId = ref('')
+const selectedEditorItemIds = ref<string[]>([])
 const selectedRowKeys = ref<string[]>([])
 const selectedRowMap = ref<Record<string, ModuleRecord>>({})
 const exportLoading = ref(false)
@@ -429,6 +430,13 @@ function resolveFilterOptions(filter: ModulePageConfig['filters'][number]) {
     : filter.options
 }
 
+function resolveFormFieldOptions(field: ModuleFormFieldDefinition | undefined) {
+  if (!field?.options) {
+    return []
+  }
+  return typeof field.options === 'function' ? field.options() : field.options
+}
+
 function isFilterOptionGroup(option: { label: string } | { label: string; options: unknown[] }) {
   return 'options' in option
 }
@@ -646,16 +654,7 @@ const visibleEditorColumns = computed(() => {
 
 const editorDetailTableColumns = computed(() =>
   [
-    ...(canEditLineItems.value
-      ? [{
-          title: '操作',
-          dataIndex: 'editorAction',
-          key: 'editorAction',
-          width: 116,
-          align: 'center' as const,
-          fixed: 'left' as const,
-        }]
-      : []),
+    { title: '序号', dataIndex: '_index', key: '_index', width: 56, align: 'center' as const, fixed: 'left' as const },
     ...visibleEditorColumns.value.map((column) => ({
       title: column.title,
       dataIndex: column.dataIndex,
@@ -676,7 +675,7 @@ const detailTableScroll = computed(() => ({
 }))
 
 const editorDetailTableScroll = computed(() => ({
-  x: sumColumnWidths(visibleEditorColumns.value) + (canEditLineItems.value ? 116 : 0),
+  x: sumColumnWidths(visibleEditorColumns.value) + 56,
 }))
 
 const tablePagination = computed(() => ({
@@ -811,7 +810,7 @@ const editorAuditTarget = computed(() => {
   const statusField = formFields.value.find((field) => field.key === 'status')
   return buildEditorAuditTarget(
     props.moduleKey,
-    (statusField?.options || []).map((option) => String(option.value)),
+    resolveFormFieldOptions(statusField).map((option) => String(option.value)),
     lineItemsLocked.value,
   )
 })
@@ -972,6 +971,12 @@ const {
   materialMap,
   canManageEditorItems,
 })
+
+function removeSelectedEditorItems() {
+  if (!selectedEditorItemIds.value.length) return
+  selectedEditorItemIds.value.forEach((id) => removeEditorItem(id))
+  selectedEditorItemIds.value = []
+}
 
 const {
   materialSelectorVisible,
@@ -1388,13 +1393,19 @@ function isEditorFieldDisabled(field: ModuleFormFieldDefinition) {
   )
 }
 
-function isEditorItemColumnEditable(columnKey: string) {
-  return isEditorItemColumnEditableForModule(
+function isEditorItemColumnEditable(columnKey: string, record?: ModuleLineItem) {
+  const baseEditable = isEditorItemColumnEditableForModule(
     props.moduleKey,
     columnKey,
     canEditLineItems.value,
     lineItemsLocked.value,
   )
+  if (columnKey === 'weighWeightTon') {
+    return baseEditable
+      && props.moduleKey === 'purchase-inbounds'
+      && String(record?.settlementMode || '').trim() === '过磅'
+  }
+  return baseEditable
 }
 
 /** Bridge AG Grid row type (Record<string, unknown>) to domain type. Safe because row data originates from typed API responses. */
@@ -1751,6 +1762,7 @@ function handleEditorDateValueChange(key: string, value: unknown) {
       :format-amount="formatAmount"
       :format-cell-value="formatCellValue"
       :get-status-meta="getStatusMeta"
+      v-model:selected-item-ids="selectedEditorItemIds"
       @cancel="closeEditor"
       @save="(audit) => handleSaveEditor(audit)"
       @update-form-value="setEditorFormValue"
@@ -1761,6 +1773,7 @@ function handleEditorDateValueChange(key: string, value: unknown) {
       @editor-item-drag-start="handleEditorItemDragStart"
       @editor-item-drag-end="handleEditorItemDragEnd"
       @remove-editor-item="removeEditorItem"
+      @remove-selected-items="removeSelectedEditorItems"
       @editor-item-material-select="handleEditorItemMaterialSelect"
       @open-material-selector="openMaterialSelector"
       @editor-item-value-change="handleEditorItemValueChange"
@@ -1809,6 +1822,7 @@ function handleEditorDateValueChange(key: string, value: unknown) {
       :rows="filteredMaterialSelectorRows"
       :loading="materialListQuery.isFetching.value"
       :row-selection="materialSelectorRowSelection"
+      :scroll="{ x: 900 }"
       :custom-row="getMaterialSelectorRowProps"
       empty-description="暂无可选商品"
       confirm-text="选择商品"

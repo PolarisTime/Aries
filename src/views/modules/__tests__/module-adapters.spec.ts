@@ -1,4 +1,6 @@
 import type { ModuleLineItem, ModuleParentImportDefinition } from '@/types/module-page'
+import { financeAndReportPageConfigs } from '@/config/business-pages/finance-reports'
+import { operationsPageConfigs } from '@/config/business-pages/operations'
 import {
   applyMaterialToEditorLineItem,
   buildEditorAuditTarget,
@@ -28,6 +30,13 @@ import {
   syncSystemEditorState,
   trimEditorItemsForModule,
 } from '@/views/modules/module-adapters'
+
+const parentImportCases = Object.values({
+  ...operationsPageConfigs,
+  ...financeAndReportPageConfigs,
+})
+  .filter((config) => config.parentImport)
+  .map((config) => [config.key, config.parentImport!] as const)
 
 describe('module-adapters', () => {
   it('routes material export actions through the material-specific handler', () => {
@@ -261,6 +270,88 @@ describe('module-adapters', () => {
     ])
   })
 
+  it('drops the default empty draft row when importing parent items into purchase inbound', () => {
+    const parentImportConfig: ModuleParentImportDefinition = {
+      parentModuleKey: 'purchase-orders',
+      label: '上级采购订单',
+      parentFieldKey: 'purchaseOrderNo',
+      parentDisplayFieldKey: 'orderNo',
+    }
+
+    const nextState = buildParentImportState({
+      parentImportConfig,
+      parentRecord: {
+        id: 'po-1',
+        orderNo: 'PO-001',
+        items: [
+          { id: 'generated-1', sourcePurchaseOrderItemId: 'src-po-1', materialCode: 'A', remainingQuantity: 7, quantity: 10 },
+        ],
+      },
+      currentParentNos: [],
+      currentItems: [
+        buildDefaultEditorLineItem('empty-draft-row'),
+        { id: 'manual-row', materialCode: 'MANUAL', quantity: 1 },
+      ],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+    })
+
+    expect(nextState.nextItems).toEqual([
+      expect.objectContaining({ id: 'manual-row', materialCode: 'MANUAL' }),
+      expect.objectContaining({
+        sourcePurchaseOrderItemId: 'src-po-1',
+        quantity: 7,
+        _parentRelationNo: 'PO-001',
+      }),
+    ])
+    expect(nextState.nextItems).not.toContainEqual(expect.objectContaining({ id: 'empty-draft-row' }))
+  })
+
+  it.each(parentImportCases)('drops the default empty draft row for %s parent imports', (moduleKey, parentImportConfig) => {
+    const parentNo = `${moduleKey}-source`
+    const nextState = buildParentImportState({
+      parentImportConfig,
+      parentRecord: {
+        id: `${moduleKey}-parent`,
+        [parentImportConfig.parentDisplayFieldKey]: parentNo,
+        supplierName: '供应商甲',
+        customerName: '客户甲',
+        projectName: '项目A',
+        warehouseName: '一号库',
+        items: [
+          {
+            id: `${moduleKey}-source-item`,
+            materialCode: 'MAT-001',
+            brand: '宝钢',
+            category: '螺纹钢',
+            material: 'HRB400',
+            spec: '10',
+            length: '9m',
+            unit: '吨',
+            batchNo: 'B-001',
+            warehouseName: '一号库',
+            quantity: 2,
+            quantityUnit: '件',
+            pieceWeightTon: 1.2,
+            weightTon: 2.4,
+            unitPrice: 4000,
+            amount: 9600,
+          },
+        ],
+      },
+      currentParentNos: [],
+      currentItems: [
+        buildDefaultEditorLineItem('empty-draft-row'),
+        { id: 'manual-row', materialCode: 'MANUAL', quantity: 1 },
+      ],
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+    })
+
+    expect(nextState.nextItems).toHaveLength(2)
+    expect(nextState.nextItems).toContainEqual(expect.objectContaining({ id: 'manual-row', materialCode: 'MANUAL' }))
+    expect(nextState.nextItems).toContainEqual(expect.objectContaining({ _parentRelationNo: parentNo }))
+    expect(nextState.nextItems).not.toContainEqual(expect.objectContaining({ id: 'empty-draft-row' }))
+  })
+
   it('imports sales order parent items using sales order source ids', () => {
     const parentImportConfig: ModuleParentImportDefinition = {
       parentModuleKey: 'sales-orders',
@@ -424,6 +515,38 @@ describe('module-adapters', () => {
 
     expect(getEditorValidationMessage({
       fields: [],
+      editorForm: {},
+      moduleKey: 'purchase-inbounds',
+      hasItemColumns: true,
+      itemColumns: [
+        { title: '商品编码', dataIndex: 'materialCode', required: true },
+      ],
+      items: [
+        { id: 'item-1', materialCode: 'MAT-001', category: '盘螺', settlementMode: '理算', quantity: 1 },
+      ],
+      itemCount: 1,
+      occupiedParentMap: {},
+      getPrimaryNo: (record) => String(record.orderNo || record.id),
+    })).toBe('第1行商品类别需按过磅入库，请将本行结算方式改为过磅')
+
+    expect(getEditorValidationMessage({
+      fields: [],
+      editorForm: {},
+      moduleKey: 'purchase-inbounds',
+      hasItemColumns: true,
+      itemColumns: [
+        { title: '商品编码', dataIndex: 'materialCode', required: true },
+      ],
+      items: [
+        { id: 'item-1', materialCode: 'MAT-001', category: '盘螺', settlementMode: '过磅', quantity: 1 },
+      ],
+      itemCount: 1,
+      occupiedParentMap: {},
+      getPrimaryNo: (record) => String(record.orderNo || record.id),
+    })).toBe('请填写第1行过磅重量')
+
+    expect(getEditorValidationMessage({
+      fields: [],
       editorForm: { sourceOrderNo: 'PO-1' },
       hasItemColumns: false,
       itemCount: 1,
@@ -472,7 +595,7 @@ describe('module-adapters', () => {
 
   it('builds statement drafts from selected source records', () => {
     expect(buildSupplierStatementDraftData({
-      baseDraft: { id: 'draft-1' },
+      baseDraft: { id: 'draft-1', items: [buildDefaultEditorLineItem('empty-draft-row')] },
       sourceInbounds: [
         {
           id: '2',
@@ -547,7 +670,7 @@ describe('module-adapters', () => {
     })
 
     expect(buildCustomerStatementDraftData({
-      baseDraft: { id: 'draft-2' },
+      baseDraft: { id: 'draft-2', items: [buildDefaultEditorLineItem('empty-draft-row')] },
       sourceOrders: [
         {
           id: '2',
@@ -620,7 +743,7 @@ describe('module-adapters', () => {
     })
 
     expect(buildFreightStatementDraftData({
-      baseDraft: { id: 'draft-3' },
+      baseDraft: { id: 'draft-3', items: [buildDefaultEditorLineItem('empty-draft-row')] },
       sourceBills: [
         { id: '2', billNo: 'FB-2', billTime: '2026-04-12', carrierName: '物流甲', totalWeight: 3.2, totalFreight: 40, items: [{ id: 'b', weightTon: 3.2 }] },
         { id: '1', billNo: 'FB-1', billTime: '2026-04-10', carrierName: '物流甲', totalWeight: 2.1, totalFreight: 30, items: [{ id: 'a', weightTon: 2.1 }] },

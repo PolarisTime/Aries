@@ -14,6 +14,54 @@ function toFiniteNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
+function isBlankString(value: unknown) {
+  return String(value ?? '').trim() === ''
+}
+
+function isZeroLike(value: unknown) {
+  if (value === undefined || value === null || value === '') {
+    return true
+  }
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) && numericValue === 0
+}
+
+function isEmptyDraftLineItem(item: ModuleLineItem) {
+  if (String(item._parentRelationNo || '').trim() || getSourceParentItemId(item)) {
+    return false
+  }
+
+  const unit = String(item.unit ?? '').trim()
+  const quantityUnit = String(item.quantityUnit ?? '').trim()
+  return [
+    item.materialCode,
+    item.brand,
+    item.category,
+    item.material,
+    item.spec,
+    item.length,
+    item.batchNo,
+    item.warehouseName,
+    item.sourceNo,
+    item.customerName,
+    item.projectName,
+    item.materialName,
+  ].every(isBlankString)
+    && (!unit || unit === '吨')
+    && (!quantityUnit || quantityUnit === '件')
+    && [
+      item.quantity,
+      item.pieceWeightTon,
+      item.piecesPerBundle,
+      item.weightTon,
+      item.weighWeightTon,
+      item.weightAdjustmentTon,
+      item.weightAdjustmentAmount,
+      item.unitPrice,
+      item.amount,
+    ].every(isZeroLike)
+}
+
 export function findParentRecordByRelationNo(
   rows: ModuleRecord[],
   parentDisplayFieldKey: string,
@@ -48,7 +96,8 @@ export function buildParentImportState(options: {
   const sourceItems = parentImportConfig.transformItems
     ? parentImportConfig.transformItems(parentRecord)
     : Array.isArray(parentRecord.items) ? cloneLineItems(parentRecord.items) : []
-  const currentParentItems = currentItems.filter((item) => String(item._parentRelationNo || '') === parentNo)
+  const effectiveCurrentItems = currentItems.filter((item) => !isEmptyDraftLineItem(item))
+  const currentParentItems = effectiveCurrentItems.filter((item) => String(item._parentRelationNo || '') === parentNo)
   const currentAllocatedQuantityMap = new Map<string, number>()
   const currentAllocatedWeightTonMap = new Map<string, number>()
   const currentAllocatedAmountMap = new Map<string, number>()
@@ -127,11 +176,11 @@ export function buildParentImportState(options: {
     shouldApplyMappedValues,
     nextItems: hasImportedCurrentParent
       ? [
-          ...currentItems.filter((item) => String(item._parentRelationNo || '') !== parentNo),
+          ...effectiveCurrentItems.filter((item) => String(item._parentRelationNo || '') !== parentNo),
           ...importedItems,
         ]
       : [
-          ...currentItems,
+          ...effectiveCurrentItems,
           ...importedItems,
         ],
   }
