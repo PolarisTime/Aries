@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, ref, watch } from 'vue'
+import { computed, h, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { message, type MenuProps } from 'ant-design-vue'
@@ -11,6 +11,8 @@ import {
 } from '@ant-design/icons-vue'
 import { useAccountSecurity } from '@/composables/use-account-security'
 import { pingAuth } from '@/api/auth'
+import { http } from '@/api/client'
+import { ENDPOINTS } from '@/constants/endpoints'
 import { isKnownAppIconKey, resolveAppIcon } from '@/config/app-icons'
 import { type AppIconKey } from '@/config/navigation-registry'
 import { useAuthHeartbeat } from '@/layouts/use-auth-heartbeat'
@@ -32,6 +34,26 @@ const { user } = storeToRefs(authStore)
 const { menus: systemMenuTree } = storeToRefs(systemMenuStore)
 
 const collapsed = ref(false)
+const companyName = ref('')
+const backendOnline = ref(false)
+let healthTimer: number | null = null
+
+async function fetchCompanyName() {
+  try {
+    const res = await http.get<{ data: { companyName?: string } }>(ENDPOINTS.COMPANY_SETTINGS_CURRENT)
+    companyName.value = res.data?.companyName || ''
+  } catch { /* silent */ }
+}
+
+async function checkBackendHealth() {
+  try {
+    const res = await http.get<{ status: string }>(ENDPOINTS.HEALTH)
+    backendOnline.value = res.status === 'UP'
+  } catch {
+    backendOnline.value = false
+  }
+}
+
 const isE2eMode = computed(() =>
   typeof window !== 'undefined' && window.localStorage.getItem('aries-e2e-mode') === '1',
 )
@@ -143,7 +165,7 @@ const {
   canAccessModule: (moduleKey) => permissionStore.canAccessMenuKey(moduleKey),
 })
 
-const { activeTabKey, openKeys, openPages, handleTabChange, handleTabEdit } =
+const { activeTabKey, openKeys, openPages, closeTab, handleTabChange, handleTabEdit } =
   useOpenPages({
     route,
     router,
@@ -196,6 +218,19 @@ if (!isE2eMode.value) {
     ping: pingAuth,
   })
 }
+
+onMounted(() => {
+  fetchCompanyName()
+  checkBackendHealth()
+  healthTimer = window.setInterval(checkBackendHealth, 30_000)
+})
+
+onBeforeUnmount(() => {
+  if (healthTimer) {
+    window.clearInterval(healthTimer)
+    healthTimer = null
+  }
+})
 </script>
 
 <template>
@@ -281,7 +316,10 @@ if (!isE2eMode.value) {
 
           <div class="user-wrapper">
             <span class="action action-tag">
-              <a-tag color="green">LIVE API</a-tag>
+              <a-tag v-if="companyName" color="blue">{{ companyName }}</a-tag>
+              <a-tag :color="backendOnline ? 'green' : 'red'">
+                {{ backendOnline ? 'API 正常' : 'API 离线' }}
+              </a-tag>
             </span>
             <span class="action user-name">
               {{ user?.userName || user?.loginName || '未登录' }}
@@ -312,7 +350,9 @@ if (!isE2eMode.value) {
           :key="page.key"
           :closable="page.closable"
         >
-          <template #tab>{{ page.title }}</template>
+          <template #tab>
+            <span @dblclick="page.closable && closeTab(page.key)">{{ page.title }}</span>
+          </template>
         </a-tab-pane>
       </a-tabs>
 

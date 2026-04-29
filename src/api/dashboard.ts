@@ -14,6 +14,9 @@ export interface DashboardSummary {
   totpEnabled: boolean
   lastLoginAt: string | null
   serverTime: string
+  materialCount: number
+  supplierCount: number
+  customerCount: number
 }
 
 interface DashboardSummaryResponse<T> {

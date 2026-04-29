@@ -46,6 +46,9 @@ export const ENDPOINTS = {
   // Company settings
   COMPANY_SETTINGS_CURRENT: '/company-settings/current',
 
+  // Health
+  HEALTH: '/health',
+
   // Dashboard
   DASHBOARD_SUMMARY: '/dashboard/summary',
 
