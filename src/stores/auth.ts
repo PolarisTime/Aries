@@ -29,6 +29,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function applyLoginResult(data: LoginResponseData, mode?: AuthPersistenceMode) {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem('aries-logged-out')
+    }
     token.value = data.accessToken
     user.value = data.user
     setAuthSession(data.user, data.accessToken, mode || getAuthPersistenceMode())
@@ -87,6 +90,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await logout()
     } finally {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('aries-logged-out', '1')
+      }
       token.value = ''
       user.value = null
       clearToken()

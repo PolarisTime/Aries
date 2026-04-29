@@ -22,6 +22,10 @@ function shouldRestoreSessionOnBoot() {
   if (typeof window === 'undefined') {
     return true
   }
+  if (window.sessionStorage.getItem('aries-logged-out') === '1') {
+    window.sessionStorage.removeItem('aries-logged-out')
+    return false
+  }
   return !['/login', '/setup'].includes(window.location.pathname)
 }
 
