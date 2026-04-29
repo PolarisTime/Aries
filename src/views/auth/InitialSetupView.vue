@@ -30,7 +30,7 @@ const lastAdminLoginName = ref('')
 const totpSetup = ref<InitialSetupTotpResult | null>(null)
 
 const formState = reactive({
-  adminLoginName: 'admin',
+  adminLoginName: '',
   adminPassword: '',
   adminConfirmPassword: '',
   adminUserName: '系统管理员',
@@ -117,7 +117,6 @@ const companyMutation = useMutation({
       path: '/login',
       query: {
         initialized: '1',
-        loginName: response.data.adminLoginName || lastAdminLoginName.value || formState.adminLoginName,
       },
     })
   },
@@ -272,7 +271,7 @@ onMounted(() => {
                   <div class="initial-setup-section">
                     <div class="initial-setup-section-title">管理员账号</div>
                     <a-form-item label="登录账号" required>
-                      <a-input v-model:value="formState.adminLoginName" placeholder="建议使用 admin">
+                      <a-input v-model:value="formState.adminLoginName" placeholder="请输入管理员登录账号">
                         <template #prefix><UserOutlined /></template>
                       </a-input>
                     </a-form-item>
