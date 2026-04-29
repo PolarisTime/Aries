@@ -23,7 +23,7 @@ import { usePersonalSettings } from '@/layouts/use-personal-settings'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionStore } from '@/stores/permission'
 import { useSystemMenuStore } from '@/stores/system-menu'
-import { appTitle } from '@/utils/env'
+import { apiBaseUrl, appTitle } from '@/utils/env'
 
 const router = useRouter()
 const route = useRoute()
@@ -37,6 +37,8 @@ const collapsed = ref(false)
 const companyName = ref('')
 const backendOnline = ref(false)
 let healthTimer: number | null = null
+let healthRetries = 0
+const MAX_HEALTH_RETRIES = 5
 
 async function fetchCompanyName() {
   try {
@@ -47,11 +49,36 @@ async function fetchCompanyName() {
 
 async function checkBackendHealth() {
   try {
-    const res = await http.get<{ status: string }>(ENDPOINTS.HEALTH)
-    backendOnline.value = res.status === 'UP'
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5_000)
+    const res = await fetch(`${apiBaseUrl}/health`, {
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' },
+    })
+    clearTimeout(timeout)
+    if (res.ok) {
+      const body = await res.json()
+      backendOnline.value = body.status === 'UP'
+      healthRetries = 0
+    } else {
+      backendOnline.value = false
+    }
   } catch {
     backendOnline.value = false
+    healthRetries++
+    if (healthRetries <= MAX_HEALTH_RETRIES) {
+      const delay = Math.min(1000 * Math.pow(2, healthRetries), 30_000)
+      if (healthTimer) window.clearInterval(healthTimer)
+      healthTimer = window.setTimeout(checkBackendHealth, delay)
+    }
   }
+}
+
+function startHealthPolling() {
+  checkBackendHealth()
+  healthTimer = window.setInterval(() => {
+    if (healthRetries === 0) checkBackendHealth()
+  }, 30_000)
 }
 
 const isE2eMode = computed(() =>
@@ -240,8 +267,7 @@ router.onError(() => { stopPageLoading() })
 
 onMounted(() => {
   fetchCompanyName()
-  checkBackendHealth()
-  healthTimer = window.setInterval(checkBackendHealth, 30_000)
+  startHealthPolling()
 })
 
 onBeforeUnmount(() => {
