@@ -7,16 +7,16 @@ export interface WarehouseOption {
   label: string
 }
 
-let cached: WarehouseOption[] | null = null
+let cachedWarehouses: WarehouseOption[] | null = null
 let fetchFailed = false
 
 export async function fetchWarehouseOptions(): Promise<WarehouseOption[]> {
-  if (cached && cached.length > 0) return cached
+  if (cachedWarehouses && cachedWarehouses.length > 0) return cachedWarehouses
   try {
     const response = await http.get<ApiResponse<WarehouseOption[]>>(ENDPOINTS.WAREHOUSES_OPTIONS)
-    cached = response.data || []
+    cachedWarehouses = response.data || []
     fetchFailed = false
-    return cached
+    return cachedWarehouses
   } catch {
     fetchFailed = true
     return []
@@ -24,10 +24,16 @@ export async function fetchWarehouseOptions(): Promise<WarehouseOption[]> {
 }
 
 export function getWarehouseOptions(): WarehouseOption[] {
-  if (fetchFailed || (cached && cached.length === 0)) {
-    cached = null
+  if (fetchFailed || (cachedWarehouses && cachedWarehouses.length === 0)) {
+    cachedWarehouses = null
     fetchFailed = false
     fetchWarehouseOptions()
   }
-  return cached || []
+  return cachedWarehouses || []
+}
+
+export function reloadWarehouseOptions() {
+  cachedWarehouses = null
+  fetchFailed = false
+  return fetchWarehouseOptions()
 }

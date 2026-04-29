@@ -7,16 +7,16 @@ export interface CustomerOption {
   label: string
 }
 
-let cached: CustomerOption[] | null = null
+let cachedCustomers: CustomerOption[] | null = null
 let fetchFailed = false
 
 export async function fetchCustomerOptions(): Promise<CustomerOption[]> {
-  if (cached && cached.length > 0) return cached
+  if (cachedCustomers && cachedCustomers.length > 0) return cachedCustomers
   try {
     const response = await http.get<ApiResponse<CustomerOption[]>>(ENDPOINTS.CUSTOMERS_OPTIONS)
-    cached = response.data || []
+    cachedCustomers = response.data || []
     fetchFailed = false
-    return cached
+    return cachedCustomers
   } catch {
     fetchFailed = true
     return []
@@ -24,10 +24,16 @@ export async function fetchCustomerOptions(): Promise<CustomerOption[]> {
 }
 
 export function getCustomerOptions(): CustomerOption[] {
-  if (fetchFailed || (cached && cached.length === 0)) {
-    cached = null
+  if (fetchFailed || (cachedCustomers && cachedCustomers.length === 0)) {
+    cachedCustomers = null
     fetchFailed = false
     fetchCustomerOptions()
   }
-  return cached || []
+  return cachedCustomers || []
+}
+
+export function reloadCustomerOptions() {
+  cachedCustomers = null
+  fetchFailed = false
+  return fetchCustomerOptions()
 }
