@@ -6,8 +6,28 @@ function createOptionList(values: readonly string[]) {
   return values.map((value) => ({ label: value, value }))
 }
 
-export const materialCategoryValues = ['螺纹钢', '盘螺', '线材'] as const
-export const materialCategoryOptions = createOptionList(materialCategoryValues)
+const materialCategoryValues = ['螺纹钢', '盘螺', '线材'] as const
+const materialCategoryFallbackOptions = createOptionList(materialCategoryValues)
+
+let _categoryOptions = materialCategoryFallbackOptions
+
+export function materialCategoryOptions() {
+  return _categoryOptions
+}
+
+export function getMaterialCategoryOptions() {
+  return _categoryOptions
+}
+
+export { materialCategoryFallbackOptions }
+
+import { fetchMaterialCategories } from '@/api/material-categories'
+
+fetchMaterialCategories().then((data) => {
+  if (data.length > 0) {
+    _categoryOptions = data
+  }
+})
 
 export const materialGradeValues = ['HRB400', 'HRB500'] as const
 export const materialGradeOptions = createOptionList(materialGradeValues)
