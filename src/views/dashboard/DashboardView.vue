@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
@@ -24,6 +24,17 @@ const summaryQuery = useQuery({
   queryKey: ['dashboard-summary'],
   queryFn: getDashboardSummary,
   refetchInterval: 120_000,
+})
+
+const now = ref(dayjs())
+let clockTimer: number | null = null
+
+onMounted(() => {
+  clockTimer = window.setInterval(() => { now.value = dayjs() }, 1000)
+})
+
+onBeforeUnmount(() => {
+  if (clockTimer) { window.clearInterval(clockTimer); clockTimer = null }
 })
 
 const summary = computed(() => summaryQuery.data.value)
@@ -94,7 +105,7 @@ function goModule(path: string) {
           <p class="dashboard-hero-desc">
             {{ summary?.companyName || '钢贸业务中台' }}
             <a-divider type="vertical" />
-            {{ formatDateTime(summary?.serverTime) }}
+            {{ now.format('YYYY-MM-DD HH:mm:ss') }}
           </p>
         </div>
         <div class="dashboard-hero-right">
