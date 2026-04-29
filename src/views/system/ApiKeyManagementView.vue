@@ -394,6 +394,23 @@ void loadActionOptions()
           onChange: (page: number, size: number) => { currentPage = page; pageSize = size },
         }"
       >
+        <a-table-column key="action" title="操作" width="150" align="center" :fixed="'left'">
+          <template #default="{ record }">
+            <a-space :size="10">
+              <a @click.prevent="viewDetail(record)">
+                <EyeOutlined /> 查看
+              </a>
+              <a
+                v-if="canEdit && record.status === '有效'"
+                class="api-key-action-danger"
+                @click.prevent="handleRevoke(record)"
+              >
+                <StopOutlined /> 禁用
+              </a>
+              <span v-else>--</span>
+            </a-space>
+          </template>
+        </a-table-column>
         <a-table-column key="keyName" title="密钥名称" data-index="keyName" width="180" />
         <a-table-column key="usageScope" title="使用范围" data-index="usageScope" width="130" />
         <a-table-column key="allowedResources" title="允许资源" width="240" :ellipsis="true">
@@ -435,23 +452,6 @@ void loadActionOptions()
             <a-tag :color="getStatusColor(record.status)">
               {{ record.status }}
             </a-tag>
-          </template>
-        </a-table-column>
-        <a-table-column key="action" title="操作" width="150" align="center">
-          <template #default="{ record }">
-            <a-space :size="10">
-              <a @click.prevent="viewDetail(record)">
-                <EyeOutlined /> 查看
-              </a>
-              <a
-                v-if="canEdit && record.status === '有效'"
-                class="api-key-action-danger"
-                @click.prevent="handleRevoke(record)"
-              >
-                <StopOutlined /> 禁用
-              </a>
-              <span v-else>--</span>
-            </a-space>
           </template>
         </a-table-column>
       </a-table>
