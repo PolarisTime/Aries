@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { Modal, message } from 'ant-design-vue'
 import {
   EyeOutlined,
@@ -10,7 +11,6 @@ import {
 import TwoFactorConfirmModal from '@/components/TwoFactorConfirmModal.vue'
 import {
   createApiKey,
-  getApiKeyDetail,
   listApiKeyActionOptions,
   listApiKeys,
   listApiKeyResourceOptions,
@@ -25,6 +25,7 @@ import { useRequestError } from '@/composables/use-request-error'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionStore } from '@/stores/permission'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const permissionStore = usePermissionStore()
 
@@ -53,10 +54,6 @@ const formAllowedActions = ref<string[]>(['read', 'create', 'update', 'delete', 
 const formExpireDays = ref<number | undefined>(undefined)
 const generatedKey = ref<string | null>(null)
 const showGenerateTotpModal = ref(false)
-
-const showDetailModal = ref(false)
-const detailLoading = ref(false)
-const detailRecord = ref<ApiKeyRecord | null>(null)
 
 const canView = computed(() => permissionStore.can('api-key', 'read'))
 const canCreate = computed(() => permissionStore.can('api-key', 'create'))
@@ -196,17 +193,8 @@ async function handleRevoke(record: ApiKeyRecord) {
   }
 }
 
-async function openDetailModal(record: ApiKeyRecord) {
-  showDetailModal.value = true
-  detailLoading.value = true
-  try {
-    detailRecord.value = await getApiKeyDetail(record.id)
-  } catch (error) {
-    showRequestError(error, '加载详情失败')
-    showDetailModal.value = false
-  } finally {
-    detailLoading.value = false
-  }
+function viewDetail(record: ApiKeyRecord) {
+  router.push(`/api-key-management/${record.id}`)
 }
 
 function closeGenerateModal() {
@@ -452,7 +440,7 @@ void loadActionOptions()
         <a-table-column key="action" title="操作" width="150" align="center">
           <template #default="{ record }">
             <a-space :size="10">
-              <a @click.prevent="openDetailModal(record)">
+              <a @click.prevent="viewDetail(record)">
                 <EyeOutlined /> 查看
               </a>
               <a
@@ -584,43 +572,6 @@ void loadActionOptions()
       </template>
     </a-modal>
 
-    <a-modal
-      v-model:open="showDetailModal"
-      title="API Key 详情"
-      :footer="null"
-      :mask-closable="false"
-      @cancel="showDetailModal = false"
-    >
-      <a-spin :spinning="detailLoading">
-        <a-descriptions v-if="detailRecord" bordered :column="1" size="small">
-          <a-descriptions-item label="密钥名称">{{ detailRecord.keyName }}</a-descriptions-item>
-          <a-descriptions-item label="使用范围">{{ detailRecord.usageScope }}</a-descriptions-item>
-          <a-descriptions-item label="允许资源">{{ getAllowedResourceText(detailRecord.allowedResources) }}</a-descriptions-item>
-          <a-descriptions-item label="允许动作">{{ getAllowedActionText(detailRecord.allowedActions) }}</a-descriptions-item>
-          <a-descriptions-item label="所属用户">
-            {{ detailRecord.userName || detailRecord.loginName }}（{{ detailRecord.loginName }}）
-          </a-descriptions-item>
-          <a-descriptions-item label="用户 ID">{{ detailRecord.userId }}</a-descriptions-item>
-          <a-descriptions-item label="密钥前缀">
-            <a-typography-paragraph copyable :code="true" style="margin: 0">
-              {{ detailRecord.keyPrefix }}
-            </a-typography-paragraph>
-          </a-descriptions-item>
-          <a-descriptions-item label="状态">
-            <a-tag :color="getStatusColor(detailRecord.status)">
-              {{ detailRecord.status }}
-            </a-tag>
-          </a-descriptions-item>
-          <a-descriptions-item label="创建时间">{{ detailRecord.createdAt }}</a-descriptions-item>
-          <a-descriptions-item label="过期时间">
-            {{ detailRecord.expiresAt || '永不过期' }}
-          </a-descriptions-item>
-          <a-descriptions-item label="最后使用">
-            {{ detailRecord.lastUsedAt || '--' }}
-          </a-descriptions-item>
-        </a-descriptions>
-      </a-spin>
-    </a-modal>
     <TwoFactorConfirmModal
       :open="showGenerateTotpModal"
       title="验证 2FA 后生成 API Key"
