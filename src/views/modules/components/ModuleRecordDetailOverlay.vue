@@ -1,17 +1,27 @@
 <script setup lang="ts">
-import { toRef, type Ref } from 'vue'
+import { computed, h, toRef, type Ref } from 'vue'
+import { type ColumnDef } from '@tanstack/vue-table'
 import type {
   ModuleColumnDefinition,
   ModuleDetailField,
+  ModuleLineItem,
   ModuleRecord,
 } from '@/types/module-page'
 import { useModuleDisplaySupport, type StatusMeta } from '@/composables/use-module-display-support'
+import { useDataTable } from '@/composables/use-data-table'
+import DataTable from '@/components/DataTable.vue'
+import ColumnSettingsPopover from './ColumnSettingsPopover.vue'
 
 type TableColumn = Record<string, unknown>
 type TableScroll = Record<string, unknown>
 type TableColumnLike = {
   key?: unknown
   dataIndex?: unknown
+}
+interface SettingItem {
+  key: string
+  title: string
+  visible: boolean
 }
 
 function getTableColumnKey(column: TableColumnLike) {
@@ -20,41 +30,9 @@ function getTableColumnKey(column: TableColumnLike) {
     : ''
 }
 
-function getTableColumnDataIndex(column: TableColumnLike) {
-  if (typeof column.dataIndex === 'string' || typeof column.dataIndex === 'number') {
-    return String(column.dataIndex)
-  }
-  return ''
-}
-
-function getTableCellValue(record: Record<string, unknown>, column: TableColumnLike) {
-  const dataIndex = getTableColumnDataIndex(column)
-  return dataIndex ? record[dataIndex] : undefined
-}
-
 function getItemColumnMeta(itemColumns: ModuleColumnDefinition[] | undefined, column: TableColumnLike) {
   const key = getTableColumnKey(column)
   return itemColumns?.find((item) => item.dataIndex === key)
-}
-
-function getDetailSummaryCellValue(column: TableColumnLike) {
-  const key = getTableColumnKey(column)
-  const firstColumnKey = getTableColumnKey(props.detailTableColumns[0] || {})
-  const items = props.activeRecord?.items || []
-
-  if (key === firstColumnKey) {
-    return '合计'
-  }
-  if (key === 'quantity') {
-    return items.reduce((sum, item) => sum + Number(item.quantity || 0), 0).toFixed(0)
-  }
-  if (key === 'weightTon') {
-    return display.formatWeight(items.reduce((sum, item) => sum + Number(item.weightTon || 0), 0))
-  }
-  if (key === 'amount' && props.shouldShowItemAmountSummary) {
-    return display.formatAmount(items.reduce((sum, item) => sum + Number(item.amount || 0), 0))
-  }
-  return ''
 }
 
 const props = defineProps<{
@@ -68,10 +46,52 @@ const props = defineProps<{
   shouldShowItemAmountSummary: boolean
   detailTableColumns: TableColumn[]
   detailTableScroll: TableScroll
+  canEditItemColumns: boolean
+  editorColumnSettingItems: SettingItem[]
+  getEditorColumnSettingItemClass: (key: string) => string
+  handleEditorColumnSettingDragStart: (key: string, event: DragEvent) => void
+  handleEditorColumnSettingDragOver: (key: string, event: DragEvent) => void
+  handleEditorColumnSettingDrop: (key: string) => void
+  resetEditorColumnSettingDragState: () => void
+  handleEditorColumnVisibleChange: (key: string, checked: boolean) => void
+  resetEditorColumnSettings: () => void
   statusMap: Record<string, StatusMeta>
 }>()
 
 const display = useModuleDisplaySupport(toRef(props, 'statusMap') as Ref<Record<string, StatusMeta>>)
+
+function toColumnDef(col: Record<string, unknown>): ColumnDef<ModuleLineItem, unknown> {
+  const key = String(col.dataIndex || col.key || '')
+  const meta = getItemColumnMeta(props.itemColumns, col as TableColumnLike)
+  const isStatus = meta?.type === 'status'
+  const width = typeof col.width === 'number' ? col.width : undefined
+  const align = (col.align as 'left' | 'center' | 'right' | undefined)
+
+  return {
+    id: key,
+    accessorKey: key,
+    header: () => String(col.title || ''),
+    cell: isStatus
+      ? (info) => {
+          const s = display.getStatusMeta(info.getValue())
+          return h('span', { class: `ant-tag ant-tag-${s.color}` }, s.text)
+        }
+      : (info) => display.formatCellValue(meta, info.getValue()),
+    meta: { width, align },
+  }
+}
+
+const detailColumns = computed<ColumnDef<ModuleLineItem, unknown>[]>(() =>
+  props.detailTableColumns.map(toColumnDef),
+)
+
+const { table: detailTable } = useDataTable({
+  data: computed(() => (props.activeRecord?.items || []) as ModuleLineItem[]),
+  columns: detailColumns,
+  getRowId: (row) => String(row.id ?? ''),
+  manualPagination: false,
+  enableSorting: false,
+})
 
 defineEmits<{
   close: []
@@ -111,6 +131,18 @@ defineEmits<{
             </div>
             <div class="editor-items-actions">
               <a-button class="overlay-action-button" @click="$emit('close')">关闭</a-button>
+              <ColumnSettingsPopover
+                v-if="canEditItemColumns"
+                label="明细列设置"
+                :items="editorColumnSettingItems"
+                :get-item-class="getEditorColumnSettingItemClass"
+                :on-drag-start="handleEditorColumnSettingDragStart"
+                :on-drag-over="handleEditorColumnSettingDragOver"
+                :on-drop="handleEditorColumnSettingDrop"
+                :on-drag-end="resetEditorColumnSettingDragState"
+                :on-visible-change="handleEditorColumnVisibleChange"
+                :on-reset="resetEditorColumnSettings"
+              />
               <a-button
                 v-if="canPrintRecords"
                 class="overlay-action-button"
@@ -131,7 +163,7 @@ defineEmits<{
               <div class="editor-items-summary editor-items-summary-inline">
                 <span>明细数 {{ activeRecord?.items?.length || 0 }}</span>
                 <span>
-                  吨位
+                  总重量（吨）
                   {{ display.formatWeight((activeRecord?.items || []).reduce((sum, item) => sum + Number(item.weightTon || 0), 0)) }}
                 </span>
                 <span v-if="shouldShowItemAmountSummary">
@@ -143,7 +175,7 @@ defineEmits<{
             <div class="editor-items-summary editor-items-summary-mobile">
               <span>明细数 {{ activeRecord?.items?.length || 0 }}</span>
               <span>
-                吨位
+                总重量（吨）
                 {{ display.formatWeight((activeRecord?.items || []).reduce((sum, item) => sum + Number(item.weightTon || 0), 0)) }}
               </span>
               <span v-if="shouldShowItemAmountSummary">
@@ -152,47 +184,11 @@ defineEmits<{
               </span>
             </div>
           </div>
-          <a-table
+          <DataTable
             v-if="activeRecord?.items?.length"
+            :table="detailTable"
             size="small"
-            bordered
-            row-key="id"
-            :columns="detailTableColumns"
-            :data-source="activeRecord.items || []"
-            :pagination="false"
-            :scroll="detailTableScroll"
-            class="module-detail-table"
-          >
-            <template #bodyCell="{ column, record }">
-              <template
-                v-if="getItemColumnMeta(itemColumns, column)?.type === 'status'"
-              >
-                <a-tag :color="display.getStatusMeta(getTableCellValue(record, column)).color">
-                  {{ display.getStatusMeta(getTableCellValue(record, column)).text }}
-                </a-tag>
-              </template>
-              <template v-else>
-                {{
-                  display.formatCellValue(
-                    getItemColumnMeta(itemColumns, column),
-                    getTableCellValue(record, column),
-                  )
-                }}
-              </template>
-            </template>
-            <template #summary>
-              <a-table-summary-row>
-                <a-table-summary-cell
-                  v-for="(column, index) in detailTableColumns"
-                  :key="getTableColumnKey(column)"
-                  :index="index"
-                  :align="column.align"
-                >
-                  {{ getDetailSummaryCellValue(column) }}
-                </a-table-summary-cell>
-              </a-table-summary-row>
-            </template>
-          </a-table>
+          />
           <a-empty v-else description="暂无明细数据" />
         </template>
         <div v-else class="editor-items-head editor-items-head-standalone">

@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { UploadProps } from 'ant-design-vue'
-import type { MaterialImportResult } from '@/types/material'
+import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
+import type { MaterialImportFailure, MaterialImportResult } from '@/types/material'
+import { useDataTable } from '@/composables/use-data-table'
+import DataTable from '@/components/DataTable.vue'
 
-defineProps<{
+const props = defineProps<{
   importVisible: boolean
   importLoading: boolean
   importFile: File | null
@@ -16,6 +20,33 @@ defineEmits<{
   submitImport: []
   closeResult: []
 }>()
+
+const failures = computed(() => props.result?.failures ?? [])
+
+const columnHelper = createColumnHelper<MaterialImportFailure>()
+
+const columns = computed<ColumnDef<MaterialImportFailure, unknown>[]>(() => [
+  columnHelper.accessor('rowNumber', {
+    header: () => '失败行',
+    meta: { width: 100, align: 'right' },
+  }),
+  columnHelper.accessor('materialCode', {
+    header: () => '商品编码',
+    meta: { width: 180 },
+  }),
+  columnHelper.accessor('reason', {
+    header: () => '失败原因',
+  }),
+])
+
+const { table } = useDataTable({
+  data: failures,
+  columns,
+  getRowId: (row) => `${row.rowNumber}-${row.materialCode}-${row.reason}`,
+  manualPagination: false,
+  initialPageSize: 8,
+  enableSorting: false,
+})
 </script>
 
 <template>
@@ -79,17 +110,7 @@ defineEmits<{
         />
       </div>
       <div v-if="result.failedCount > 0" style="margin-top: 16px">
-        <a-table
-          size="small"
-          bordered
-          :row-key="(record: MaterialImportResult['failures'][number]) => `${record.rowNumber}-${record.materialCode}-${record.reason}`"
-          :pagination="{ pageSize: 8, showSizeChanger: false }"
-          :data-source="result.failures"
-        >
-          <a-table-column key="rowNumber" title="失败行" data-index="rowNumber" width="100" align="right" />
-          <a-table-column key="materialCode" title="商品编码" data-index="materialCode" width="180" />
-          <a-table-column key="reason" title="失败原因" data-index="reason" />
-        </a-table>
+        <DataTable :table="table" size="small" />
       </div>
     </template>
     <template #footer>
