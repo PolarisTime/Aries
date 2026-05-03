@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, h, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Modal, message } from 'ant-design-vue'
 import {
@@ -24,6 +24,9 @@ import {
 import { useRequestError } from '@/composables/use-request-error'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionStore } from '@/stores/permission'
+import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
+import { useDataTable } from '@/composables/use-data-table'
+import DataTable from '@/components/DataTable.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -271,6 +274,67 @@ function getAllowedActionText(allowedActions: string[]) {
   return allowedActions.map((item) => titleByCode.get(item) || item).join('、')
 }
 
+const keyColumnHelper = createColumnHelper<ApiKeyRecord>()
+const apiKeyColumns = computed<ColumnDef<ApiKeyRecord, unknown>[]>(() => [
+  keyColumnHelper.display({
+    id: 'action',
+    header: () => '操作',
+    meta: { width: 150, align: 'center', fixed: 'left' },
+  }),
+  keyColumnHelper.accessor('keyName', { header: () => '密钥名称', meta: { width: 180 } }),
+  keyColumnHelper.accessor('usageScope', { header: () => '使用范围', meta: { width: 130 } }),
+  keyColumnHelper.accessor('allowedResources', {
+    header: () => '允许资源',
+    cell: (info) => getAllowedResourceText(info.getValue() as string[]),
+    meta: { width: 240, ellipsis: true },
+  }),
+  keyColumnHelper.accessor('allowedActions', {
+    header: () => '允许动作',
+    cell: (info) => getAllowedActionText(info.getValue() as string[]),
+    meta: { width: 180, ellipsis: true },
+  }),
+  keyColumnHelper.display({
+    id: 'user',
+    header: () => '所属用户',
+    cell: (info) => {
+      const r = info.row.original
+      return h('div', { class: 'api-key-user-cell' }, [
+        h('strong', r.userName || r.loginName),
+        h('span', r.loginName),
+      ])
+    },
+    meta: { width: 200 },
+  }),
+  keyColumnHelper.accessor('keyPrefix', { header: () => '前缀', meta: { width: 110 } }),
+  keyColumnHelper.accessor('createdAt', { header: () => '创建时间', meta: { width: 180 } }),
+  keyColumnHelper.accessor('expiresAt', {
+    header: () => '过期时间',
+    cell: (info) => info.getValue() || '永不过期',
+    meta: { width: 180 },
+  }),
+  keyColumnHelper.accessor('lastUsedAt', {
+    header: () => '最后使用',
+    cell: (info) => info.getValue() || '--',
+    meta: { width: 180 },
+  }),
+  keyColumnHelper.accessor('status', {
+    header: () => '状态',
+    cell: (info) => {
+      const v = String(info.getValue() ?? '')
+      return h('span', { class: `ant-tag ant-tag-${getStatusColor(v)}` }, v)
+    },
+    meta: { width: 110, align: 'center' },
+  }),
+])
+
+const { table: apiKeyTable } = useDataTable({
+  data: computed(() => keyRows.value),
+  columns: apiKeyColumns,
+  getRowId: (row) => row.id,
+  manualPagination: true,
+  enableSorting: false,
+})
+
 void loadKeys()
 if (canLoadUserOptions.value) {
   void loadUserOptions()
@@ -378,83 +442,38 @@ void loadActionOptions()
         </div>
       </div>
 
-      <a-table
-        row-key="id"
+      <DataTable
+        :table="apiKeyTable"
         size="middle"
-        bordered
-        :scroll="{ x: 1800 }"
-        :data-source="keyRows"
         :loading="loading"
-        :pagination="{
-          current: currentPage,
-          pageSize: pageSize,
-          total: totalElements,
-          showSizeChanger: true,
-          showTotal: (total: number) => `共 ${total} 条`,
-          onChange: (page: number, size: number) => { currentPage = page; pageSize = size },
-        }"
+        :scroll-x="1800"
       >
-        <a-table-column key="action" title="操作" width="150" align="center" :fixed="'left'">
-          <template #default="{ record }">
-            <a-space :size="10">
-              <a @click.prevent="viewDetail(record)">
-                <EyeOutlined /> 查看
-              </a>
-              <a
-                v-if="canEdit && record.status === '有效'"
-                class="api-key-action-danger"
-                @click.prevent="handleRevoke(record)"
-              >
-                <StopOutlined /> 禁用
-              </a>
-              <span v-else>--</span>
-            </a-space>
-          </template>
-        </a-table-column>
-        <a-table-column key="keyName" title="密钥名称" data-index="keyName" width="180" />
-        <a-table-column key="usageScope" title="使用范围" data-index="usageScope" width="130" />
-        <a-table-column key="allowedResources" title="允许资源" width="240" :ellipsis="true">
-          <template #default="{ record }">
-            <a-tooltip :title="getAllowedResourceText(record.allowedResources)">
-              {{ getAllowedResourceText(record.allowedResources) }}
-            </a-tooltip>
-          </template>
-        </a-table-column>
-        <a-table-column key="allowedActions" title="允许动作" width="180" :ellipsis="true">
-          <template #default="{ record }">
-            <a-tooltip :title="getAllowedActionText(record.allowedActions)">
-              {{ getAllowedActionText(record.allowedActions) }}
-            </a-tooltip>
-          </template>
-        </a-table-column>
-        <a-table-column key="user" title="所属用户" width="200">
-          <template #default="{ record }">
-            <div class="api-key-user-cell">
-              <strong>{{ record.userName || record.loginName }}</strong>
-              <span>{{ record.loginName }}</span>
-            </div>
-          </template>
-        </a-table-column>
-        <a-table-column key="keyPrefix" title="前缀" data-index="keyPrefix" width="110" />
-        <a-table-column key="createdAt" title="创建时间" data-index="createdAt" width="180" />
-        <a-table-column key="expiresAt" title="过期时间" data-index="expiresAt" width="180">
-          <template #default="{ record }">
-            {{ record.expiresAt || '永不过期' }}
-          </template>
-        </a-table-column>
-        <a-table-column key="lastUsedAt" title="最后使用" data-index="lastUsedAt" width="180">
-          <template #default="{ record }">
-            {{ record.lastUsedAt || '--' }}
-          </template>
-        </a-table-column>
-        <a-table-column key="status" title="状态" width="110" align="center">
-          <template #default="{ record }">
-            <a-tag :color="getStatusColor(record.status)">
-              {{ record.status }}
-            </a-tag>
-          </template>
-        </a-table-column>
-      </a-table>
+        <template #cell-action="{ row }">
+          <a-space :size="10">
+            <a @click.prevent="viewDetail(row)">
+              <EyeOutlined /> 查看
+            </a>
+            <a
+              v-if="canEdit && row.status === '有效'"
+              class="api-key-action-danger"
+              @click.prevent="handleRevoke(row)"
+            >
+              <StopOutlined /> 禁用
+            </a>
+            <span v-else>--</span>
+          </a-space>
+        </template>
+      </DataTable>
+      <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+        <a-pagination
+          :current="currentPage"
+          :page-size="pageSize"
+          :total="totalElements"
+          show-size-changer
+          :show-total="(total: number) => `共 ${total} 条`"
+          @change="(page: number, size: number) => { currentPage = page; pageSize = size }"
+        />
+      </div>
     </a-card>
 
     <a-modal

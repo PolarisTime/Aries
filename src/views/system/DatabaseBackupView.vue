@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, h, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { DownloadOutlined, UploadOutlined, ReloadOutlined, DatabaseOutlined } from '@ant-design/icons-vue'
+import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
 import TwoFactorConfirmModal from '@/components/TwoFactorConfirmModal.vue'
+import { useDataTable } from '@/composables/use-data-table'
+import DataTable from '@/components/DataTable.vue'
 import {
   createDatabaseExportTask,
   getDatabaseStatus,
@@ -138,6 +141,54 @@ function isNormal(status: string): boolean {
 function isRunningTask(status: string): boolean {
   return status === '排队中' || status === '执行中'
 }
+
+const taskColumnHelper = createColumnHelper<DatabaseExportTask>()
+const exportTaskColumns = computed<ColumnDef<DatabaseExportTask, unknown>[]>(() => [
+  taskColumnHelper.accessor('taskNo', { header: () => '任务编号', meta: { width: 220 } }),
+  taskColumnHelper.accessor('status', {
+    header: () => '状态',
+    cell: (info) => h('span', { class: `ant-tag ant-tag-${formatTaskStatusColor(info.getValue())}` }, info.getValue()),
+    meta: { width: 110, align: 'center' },
+  }),
+  taskColumnHelper.accessor('fileName', {
+    header: () => '备份文件',
+    cell: (info) => info.getValue() || '--',
+    meta: { width: 220 },
+  }),
+  taskColumnHelper.accessor('fileSize', {
+    header: () => '大小',
+    cell: (info) => info.getValue() ? formatMemory(info.getValue()!) : '--',
+    meta: { width: 120, align: 'right' },
+  }),
+  taskColumnHelper.accessor('createdAt', {
+    header: () => '提交时间',
+    cell: (info) => formatDateTime(info.getValue()),
+    meta: { width: 180 },
+  }),
+  taskColumnHelper.accessor('expiresAt', {
+    header: () => '文件保留至',
+    cell: (info) => formatDateTime(info.getValue()),
+    meta: { width: 180 },
+  }),
+  taskColumnHelper.accessor('failureReason', {
+    header: () => '结果说明',
+    cell: (info) => info.getValue() || (info.row.original.status === '已完成' ? '导出完成，可下载' : '--'),
+    meta: { width: 260 },
+  }),
+  taskColumnHelper.display({
+    id: 'action',
+    header: () => '操作',
+    meta: { width: 120, align: 'center', fixed: 'right' },
+  }),
+])
+
+const { table: exportTaskTable } = useDataTable({
+  data: computed(() => exportTasks.value),
+  columns: exportTaskColumns,
+  getRowId: (row) => row.id,
+  manualPagination: false,
+  enableSorting: false,
+})
 
 function formatTaskStatusColor(status: string) {
   if (status === '已完成') return 'success'
@@ -448,59 +499,22 @@ function closeImportModal() {
         </a-button>
       </div>
 
-      <a-table
-        :data-source="exportTasks"
+      <DataTable
+        :table="exportTaskTable"
         :loading="exportTaskLoading"
-        :pagination="false"
         size="small"
-        row-key="id"
-        :scroll="{ x: 1100 }"
+        :scroll-x="1100"
       >
-        <a-table-column key="taskNo" title="任务编号" data-index="taskNo" width="220" />
-        <a-table-column key="status" title="状态" width="110" align="center">
-          <template #default="{ record }">
-            <a-tag :color="formatTaskStatusColor(record.status)">
-              {{ record.status }}
-            </a-tag>
-          </template>
-        </a-table-column>
-        <a-table-column key="fileName" title="备份文件" width="220">
-          <template #default="{ record }">
-            {{ record.fileName || '--' }}
-          </template>
-        </a-table-column>
-        <a-table-column key="fileSize" title="大小" width="120" align="right">
-          <template #default="{ record }">
-            {{ record.fileSize ? formatMemory(record.fileSize) : '--' }}
-          </template>
-        </a-table-column>
-        <a-table-column key="createdAt" title="提交时间" width="180">
-          <template #default="{ record }">
-            {{ formatDateTime(record.createdAt) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="expiresAt" title="文件保留至" width="180">
-          <template #default="{ record }">
-            {{ formatDateTime(record.expiresAt) }}
-          </template>
-        </a-table-column>
-        <a-table-column key="failureReason" title="结果说明" width="260">
-          <template #default="{ record }">
-            {{ record.failureReason || (record.status === '已完成' ? '导出完成，可下载' : '--') }}
-          </template>
-        </a-table-column>
-        <a-table-column key="action" title="操作" width="120" fixed="right" align="center">
-          <template #default="{ record }">
-            <a
-              v-if="record.status === '已完成'"
-              @click="handleGenerateDownloadLink(record.id)"
-            >
-              生成链接
-            </a>
-            <span v-else>--</span>
-          </template>
-        </a-table-column>
-      </a-table>
+        <template #cell-action="{ row }">
+          <a
+            v-if="row.status === '已完成'"
+            @click="handleGenerateDownloadLink(row.id)"
+          >
+            生成链接
+          </a>
+          <span v-else>--</span>
+        </template>
+      </DataTable>
     </a-card>
 
     <a-modal
