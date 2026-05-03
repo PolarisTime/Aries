@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Modal, message } from 'ant-design-vue'
 import { ReloadOutlined, StopOutlined, DeleteOutlined } from '@ant-design/icons-vue'
+import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
+import { useDataTable } from '@/composables/use-data-table'
+import DataTable from '@/components/DataTable.vue'
 import {
   getRefreshTokenSummary,
   listRefreshTokens,
@@ -137,10 +140,61 @@ function getOnlineLabel(record: RefreshTokenRecord) {
   return record.online ? '在线' : '离线'
 }
 
-function truncateDeviceInfo(text: string | null) {
-  if (!text) return '--'
-  return text.length > 60 ? text.slice(0, 60) + '...' : text
+function truncateDeviceInfo(text: unknown) {
+  const s = String(text ?? '')
+  if (!s) return '--'
+  return s.length > 60 ? s.slice(0, 60) + '...' : s
 }
+
+const sessionColumnHelper = createColumnHelper<RefreshTokenRecord>()
+const sessionColumns = computed<ColumnDef<RefreshTokenRecord, unknown>[]>(() => [
+  sessionColumnHelper.accessor('tokenId', { header: () => 'Token ID', meta: { width: 200, ellipsis: true } }),
+  sessionColumnHelper.accessor('loginName', { header: () => '登录名', meta: { width: 120 } }),
+  sessionColumnHelper.accessor('userName', { header: () => '用户名', meta: { width: 120 } }),
+  sessionColumnHelper.accessor('loginIp', { header: () => '登录IP', meta: { width: 140 } }),
+  sessionColumnHelper.accessor('deviceInfo', {
+    header: () => '设备信息',
+    cell: (info) => {
+      const text = String(info.getValue() ?? '')
+      return text ? truncateDeviceInfo(text) : '--'
+    },
+    meta: { width: 280, ellipsis: true },
+  }),
+  sessionColumnHelper.accessor('createdAt', { header: () => '创建时间', meta: { width: 170 } }),
+  sessionColumnHelper.accessor('lastActiveAt', {
+    header: () => '最近活跃',
+    cell: (info) => info.getValue() || '--',
+    meta: { width: 170 },
+  }),
+  sessionColumnHelper.accessor('expiresAt', { header: () => '过期时间', meta: { width: 170 } }),
+  sessionColumnHelper.display({
+    id: 'online',
+    header: () => '在线状态',
+    cell: (info) => {
+      const record = info.row.original
+      return h('span', { class: `ant-tag ant-tag-${getOnlineColor(record)}` }, getOnlineLabel(record))
+    },
+    meta: { width: 100, align: 'center' },
+  }),
+  sessionColumnHelper.accessor('status', {
+    header: () => '状态',
+    cell: (info) => h('span', { class: `ant-tag ant-tag-${getStatusColor(String(info.getValue()))}` }, info.getValue() as string),
+    meta: { width: 100, align: 'center' },
+  }),
+  sessionColumnHelper.display({
+    id: 'action',
+    header: () => '操作',
+    meta: { width: 100, align: 'center' },
+  }),
+])
+
+const { table: sessionTable } = useDataTable({
+  data: computed(() => tokenRows.value),
+  columns: sessionColumns,
+  getRowId: (row) => row.id,
+  manualPagination: true,
+  enableSorting: false,
+})
 
 function startAutoRefresh() {
   refreshTimer = window.setInterval(() => {
@@ -192,66 +246,32 @@ onBeforeUnmount(() => {
         </a-button>
       </div>
 
-      <a-table
-        row-key="id"
+      <DataTable
+        :table="sessionTable"
         size="middle"
-        bordered
-        :data-source="tokenRows"
         :loading="loading"
-        :pagination="{
-          current: currentPage,
-          pageSize: pageSize,
-          total: totalElements,
-          showSizeChanger: true,
-          showTotal: (total: number) => `共 ${total} 条`,
-          onChange: (page: number, size: number) => { currentPage = page; pageSize = size },
-        }"
       >
-        <a-table-column key="tokenId" title="Token ID" data-index="tokenId" width="200" :ellipsis="true" />
-        <a-table-column key="loginName" title="登录名" data-index="loginName" width="120" />
-        <a-table-column key="userName" title="用户名" data-index="userName" width="120" />
-        <a-table-column key="loginIp" title="登录IP" data-index="loginIp" width="140" />
-        <a-table-column key="deviceInfo" title="设备信息" width="280" :ellipsis="true">
-          <template #default="{ record }">
-            <a-tooltip :title="record.deviceInfo">
-              {{ truncateDeviceInfo(record.deviceInfo) }}
-            </a-tooltip>
-          </template>
-        </a-table-column>
-        <a-table-column key="createdAt" title="创建时间" data-index="createdAt" width="170" />
-        <a-table-column key="lastActiveAt" title="最近活跃" width="170">
-          <template #default="{ record }">
-            {{ record.lastActiveAt || '--' }}
-          </template>
-        </a-table-column>
-        <a-table-column key="expiresAt" title="过期时间" data-index="expiresAt" width="170" />
-        <a-table-column key="online" title="在线状态" width="100" align="center">
-          <template #default="{ record }">
-            <a-tag :color="getOnlineColor(record)">
-              {{ getOnlineLabel(record) }}
-            </a-tag>
-          </template>
-        </a-table-column>
-        <a-table-column key="status" title="状态" width="100" align="center">
-          <template #default="{ record }">
-            <a-tag :color="getStatusColor(record.status)">
-              {{ record.status }}
-            </a-tag>
-          </template>
-        </a-table-column>
-        <a-table-column key="action" title="操作" width="100" align="center">
-          <template #default="{ record }">
-            <a
-              v-if="canEdit && record.status === '有效'"
-              style="color: #ff4d4f"
-              @click.prevent="handleRevoke(record)"
-            >
-              <StopOutlined /> 禁用
-            </a>
-            <span v-else style="color: #bfbfbf">--</span>
-          </template>
-        </a-table-column>
-      </a-table>
+        <template #cell-action="{ row }">
+          <a
+            v-if="canEdit && row.status === '有效'"
+            style="color: #ff4d4f"
+            @click.prevent="handleRevoke(row)"
+          >
+            <StopOutlined /> 禁用
+          </a>
+          <span v-else style="color: #bfbfbf">--</span>
+        </template>
+      </DataTable>
+      <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+        <a-pagination
+          :current="currentPage"
+          :page-size="pageSize"
+          :total="totalElements"
+          show-size-changer
+          :show-total="(total: number) => `共 ${total} 条`"
+          @change="(page: number, size: number) => { currentPage = page; pageSize = size }"
+        />
+      </div>
     </a-card>
   </div>
 </template>

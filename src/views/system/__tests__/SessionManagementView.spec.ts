@@ -104,9 +104,8 @@ describe('SessionManagementView', () => {
 
     clientMocks.httpGet.mockClear()
 
-    const table = wrapper.findComponent({ name: 'ATable' })
-    const pagination = table.props('pagination') as { onChange: (page: number, size: number) => void }
-    pagination.onChange(2, 20)
+    const pagination = wrapper.findComponent({ name: 'APagination' })
+    pagination.vm.$emit('change', 2, 20)
     await flushPromises()
 
     clientMocks.httpGet.mockClear()

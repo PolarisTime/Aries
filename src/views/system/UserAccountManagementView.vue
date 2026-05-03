@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, h, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Modal, message } from 'ant-design-vue'
 import {
@@ -40,6 +40,9 @@ import type {
   UserAccountRecord,
 } from '@/types/user-account'
 import { setStoredUser } from '@/utils/storage'
+import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
+import { useDataTable } from '@/composables/use-data-table'
+import DataTable from '@/components/DataTable.vue'
 
 type EditorMode = 'create' | 'edit'
 
@@ -239,6 +242,69 @@ function normalizeDataScopeLabel(value: string | null | undefined) {
   }
   return '本人'
 }
+
+const userColumnHelper = createColumnHelper<UserAccountRecord>()
+const userAccountColumns = computed<ColumnDef<UserAccountRecord, unknown>[]>(() => [
+  userColumnHelper.accessor('loginName', { header: () => '登录账号', meta: { width: 140 } }),
+  userColumnHelper.accessor('userName', { header: () => '用户姓名', meta: { width: 140 } }),
+  userColumnHelper.accessor('departmentName', {
+    header: () => '所属部门',
+    cell: (info) => info.getValue() || '--',
+    meta: { width: 140 },
+  }),
+  userColumnHelper.accessor('mobile', {
+    header: () => '手机号',
+    cell: (info) => info.getValue() || '--',
+    meta: { width: 140 },
+  }),
+  userColumnHelper.accessor('roleNames', {
+    header: () => '所属角色',
+    cell: (info) => {
+      const names = info.getValue()
+      return Array.isArray(names) ? names.join('、') : '--'
+    },
+    meta: { width: 220 },
+  }),
+  userColumnHelper.accessor('dataScope', {
+    header: () => '数据范围',
+    cell: (info) => info.getValue() || '--',
+    meta: { width: 120 },
+  }),
+  userColumnHelper.accessor('totpEnabled', {
+    header: () => '2FA 状态',
+    cell: (info) => {
+      const enabled = info.getValue()
+      return h('span', { class: `ant-tag ant-tag-${getTotpColor(!!enabled)}` }, enabled ? '已启用' : '未启用')
+    },
+    meta: { width: 110, align: 'center' },
+  }),
+  userColumnHelper.accessor('status', {
+    header: () => '状态',
+    cell: (info) => {
+      const v = String(info.getValue() ?? '')
+      return h('span', { class: `ant-tag ant-tag-${getStatusColor(v)}` }, v)
+    },
+    meta: { width: 100, align: 'center' },
+  }),
+  userColumnHelper.accessor('lastLoginDate', {
+    header: () => '最近登录',
+    cell: (info) => info.getValue() || '--',
+    meta: { width: 180 },
+  }),
+  userColumnHelper.display({
+    id: 'action',
+    header: () => '操作',
+    meta: { width: 260, align: 'center', fixed: 'right' },
+  }),
+])
+
+const { table: userAccountTable } = useDataTable({
+  data: computed(() => rows.value),
+  columns: userAccountColumns,
+  getRowId: (row) => String(row.id ?? ''),
+  manualPagination: true,
+  enableSorting: false,
+})
 
 function dataScopeRank(value: string) {
   switch (normalizeDataScopeLabel(value)) {
@@ -674,91 +740,38 @@ onMounted(() => {
         </div>
       </div>
 
-      <a-table
-        row-key="id"
+      <DataTable
+        :table="userAccountTable"
         size="middle"
-        bordered
-        :data-source="rows"
         :loading="loading"
-        :pagination="{
-          current: currentPage,
-          pageSize: pageSize,
-          total: totalElements,
-          showSizeChanger: true,
-          showTotal: (total: number) => $t('common.total', { count: total }),
-          onChange: (page: number, size: number) => { currentPage = page; pageSize = size },
-        }"
       >
-        <a-table-column key="loginName" title="登录账号" data-index="loginName" width="140" />
-        <a-table-column key="userName" title="用户姓名" data-index="userName" width="140" />
-        <a-table-column key="departmentName" title="所属部门" data-index="departmentName" width="140">
-          <template #default="{ record }">
-            {{ record.departmentName || '--' }}
-          </template>
-        </a-table-column>
-        <a-table-column key="mobile" title="手机号" data-index="mobile" width="140">
-          <template #default="{ record }">
-            {{ record.mobile || '--' }}
-          </template>
-        </a-table-column>
-        <a-table-column key="roleNames" title="所属角色" data-index="roleNames" width="220">
-          <template #default="{ record }">
-            <template v-if="record.roleNames?.length">
-              <a
-                v-for="(roleName, index) in record.roleNames"
-                :key="roleName"
-                style="margin-right: 4px"
-                @click="router.push({ path: '/role-action-editor', query: { keyword: roleName } })"
-              >
-                {{ roleName }}<template v-if="Number(index) < record.roleNames.length - 1">、</template>
-              </a>
-            </template>
-            <template v-else>--</template>
-          </template>
-        </a-table-column>
-        <a-table-column key="dataScope" title="数据范围" data-index="dataScope" width="120">
-          <template #default="{ record }">
-            {{ record.dataScope || '--' }}
-          </template>
-        </a-table-column>
-        <a-table-column key="totpEnabled" title="2FA 状态" width="110" align="center">
-          <template #default="{ record }">
-            <a-tag :color="getTotpColor(record.totpEnabled)">
-              {{ record.totpEnabled ? '已启用' : '未启用' }}
-            </a-tag>
-          </template>
-        </a-table-column>
-        <a-table-column key="status" title="状态" width="100" align="center">
-          <template #default="{ record }">
-            <a-tag :color="getStatusColor(record.status)">
-              {{ record.status }}
-            </a-tag>
-          </template>
-        </a-table-column>
-        <a-table-column key="lastLoginDate" title="最近登录" data-index="lastLoginDate" width="180">
-          <template #default="{ record }">
-            {{ record.lastLoginDate || '--' }}
-          </template>
-        </a-table-column>
-        <a-table-column key="action" title="操作" width="260" align="center" fixed="right">
-          <template #default="{ record }">
-            <a-space :size="10">
-              <a @click.prevent="openDetailModal(record)">
-                <EyeOutlined /> {{ $t('common.detail') }}
-              </a>
-              <a v-if="canEdit" @click.prevent="openEditModal(record)">
-                <EditOutlined /> {{ $t('common.edit') }}
-              </a>
-              <a v-if="canEdit" @click.prevent="open2faModal(record)">
-                <SafetyCertificateOutlined /> 2FA
-              </a>
-              <a v-if="canDelete" class="action-danger" @click.prevent="handleDelete(record)">
-                <DeleteOutlined /> {{ $t('common.delete') }}
-              </a>
-            </a-space>
-          </template>
-        </a-table-column>
-      </a-table>
+        <template #cell-action="{ row }">
+          <a-space :size="10">
+            <a @click.prevent="openDetailModal(row)">
+              <EyeOutlined /> {{ $t('common.detail') }}
+            </a>
+            <a v-if="canEdit" @click.prevent="openEditModal(row)">
+              <EditOutlined /> {{ $t('common.edit') }}
+            </a>
+            <a v-if="canEdit" @click.prevent="open2faModal(row)">
+              <SafetyCertificateOutlined /> 2FA
+            </a>
+            <a v-if="canDelete && row.loginName !== 'admin'" @click.prevent="handleDelete(row)">
+              <DeleteOutlined /> {{ $t('common.delete') }}
+            </a>
+          </a-space>
+        </template>
+      </DataTable>
+      <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+        <a-pagination
+          :current="currentPage"
+          :page-size="pageSize"
+          :total="totalElements"
+          show-size-changer
+          :show-total="(total: number) => $t('common.total', { count: total })"
+          @change="(page: number, size: number) => { currentPage = page; pageSize = size }"
+        />
+      </div>
     </a-card>
 
     <a-modal

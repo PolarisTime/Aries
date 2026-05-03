@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, h, onMounted, reactive, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { EditOutlined, ReloadOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons-vue'
+import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
+import { useDataTable } from '@/composables/use-data-table'
+import DataTable from '@/components/DataTable.vue'
 import {
   getPageUploadRule,
   listAllBusinessModuleRows,
@@ -154,6 +157,79 @@ const numberRulePreview = computed(() =>
 const uploadRulePreview = computed(() =>
   buildUploadRulePreview(uploadRuleForm.renamePattern) || uploadRuleForm.previewFileName || '--',
 )
+
+const rulesColumnHelper = createColumnHelper<ModuleRecord>()
+
+const numberRuleColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
+  rulesColumnHelper.accessor('billName', { header: () => '单据', meta: { width: 140 } }),
+  rulesColumnHelper.accessor('settingName', { header: () => '规则名称', meta: { width: 180 } }),
+  rulesColumnHelper.accessor('prefix', { header: () => '规则模板', meta: { width: 240 } }),
+  rulesColumnHelper.display({
+    id: 'dateRule',
+    header: () => '日期规则',
+    cell: (info) => formatDateRuleLabel(info.row.original.dateRule as string),
+    meta: { width: 150 },
+  }),
+  rulesColumnHelper.accessor('serialLength', { header: () => '流水位数', meta: { width: 100, align: 'right' } }),
+  rulesColumnHelper.display({
+    id: 'resetRule',
+    header: () => '重置规则',
+    cell: (info) => formatResetRuleLabel(info.row.original.resetRule as string),
+    meta: { width: 120 },
+  }),
+  rulesColumnHelper.accessor('sampleNo', { header: () => '示例单号', meta: { width: 180 } }),
+  rulesColumnHelper.accessor('status', {
+    header: () => '状态',
+    cell: (info) => {
+      const v = String(info.getValue() ?? '')
+      return h('span', { class: `ant-tag ant-tag-${formatStatusColor(v)}` }, formatStatusText(v))
+    },
+    meta: { width: 100, align: 'center' },
+  }),
+  rulesColumnHelper.accessor('remark', { header: () => '备注', meta: { width: 220 } }),
+  rulesColumnHelper.display({
+    id: 'action',
+    header: () => '操作',
+    meta: { width: 90, align: 'center', fixed: 'right' },
+  }),
+])
+
+const uploadRuleColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
+  rulesColumnHelper.accessor('moduleKey', { header: () => '页面标识', meta: { width: 180 } }),
+  rulesColumnHelper.accessor('billName', { header: () => '适用页面', meta: { width: 160 } }),
+  rulesColumnHelper.accessor('prefix', { header: () => '命名规则', meta: { width: 300 } }),
+  rulesColumnHelper.accessor('sampleNo', { header: () => '预览文件名', meta: { width: 220 } }),
+  rulesColumnHelper.accessor('status', {
+    header: () => '状态',
+    cell: (info) => {
+      const v = String(info.getValue() ?? '')
+      return h('span', { class: `ant-tag ant-tag-${formatStatusColor(v)}` }, formatStatusText(v))
+    },
+    meta: { width: 100, align: 'center' },
+  }),
+  rulesColumnHelper.accessor('remark', { header: () => '备注', meta: { width: 220 } }),
+  rulesColumnHelper.display({
+    id: 'action',
+    header: () => '操作',
+    meta: { width: 90, align: 'center', fixed: 'right' },
+  }),
+])
+
+const { table: numberRuleTable } = useDataTable({
+  data: numberRuleRows,
+  columns: numberRuleColumns,
+  getRowId: (row) => row.id,
+  manualPagination: false,
+  enableSorting: false,
+})
+
+const { table: uploadRuleTable } = useDataTable({
+  data: uploadRuleRows,
+  columns: uploadRuleColumns,
+  getRowId: (row) => row.id,
+  manualPagination: false,
+  enableSorting: false,
+})
 
 function formatStatusText(value: string | null | undefined) {
   return String(value || '') === '正常' ? '正常' : '禁用'
@@ -316,8 +392,8 @@ async function openUploadRuleEditor(record: ModuleRecord) {
   saving.value = false
   try {
     const response = await getPageUploadRule(String(record.moduleKey || 'general-settings'))
-    if (Number(response.code) !== 0 || !response.data) {
-      throw new Error(response.message || '加载上传规则失败')
+    if (!response || Number(response.code) !== 0 || !response.data) {
+      throw new Error(response?.message || '加载上传规则失败')
     }
     fillUploadRuleForm(response.data)
   } catch (error) {
@@ -449,42 +525,18 @@ function appendNumberRuleToken(token: string) {
           </div>
           <span class="setting-group-count">{{ numberRuleRows.length }} 项</span>
         </div>
-        <a-table
-          row-key="id"
+        <DataTable
+          :table="numberRuleTable"
           size="middle"
-          bordered
-          :data-source="numberRuleRows"
           :loading="loading"
-          :pagination="false"
-          :scroll="{ x: 1320 }"
+          :scroll-x="1320"
         >
-          <a-table-column key="billName" title="单据" data-index="billName" width="140" />
-          <a-table-column key="settingName" title="规则名称" data-index="settingName" width="180" />
-          <a-table-column key="prefix" title="规则模板" data-index="prefix" width="240" />
-          <a-table-column key="dateRule" title="日期规则" width="150">
-            <template #default="{ record }">{{ formatDateRuleLabel(record.dateRule) }}</template>
-          </a-table-column>
-          <a-table-column key="serialLength" title="流水位数" data-index="serialLength" width="100" align="right" />
-          <a-table-column key="resetRule" title="重置规则" width="120">
-            <template #default="{ record }">{{ formatResetRuleLabel(record.resetRule) }}</template>
-          </a-table-column>
-          <a-table-column key="sampleNo" title="示例单号" data-index="sampleNo" width="180" />
-          <a-table-column key="status" title="状态" width="100" align="center">
-            <template #default="{ record }">
-              <a-tag :color="formatStatusColor(String(record.status || ''))">
-                {{ formatStatusText(String(record.status || '')) }}
-              </a-tag>
-            </template>
-          </a-table-column>
-          <a-table-column key="remark" title="备注" data-index="remark" width="220" />
-          <a-table-column key="action" title="操作" width="90" align="center" fixed="right">
-            <template #default="{ record }">
-              <a-button type="link" :disabled="!canEdit" @click="openNumberRuleEditor(record)">
-                <EditOutlined /> 编辑
-              </a-button>
-            </template>
-          </a-table-column>
-        </a-table>
+          <template #cell-action="{ row }">
+            <a-button type="link" :disabled="!canEdit" @click="openNumberRuleEditor(row)">
+              <EditOutlined /> 编辑
+            </a-button>
+          </template>
+        </DataTable>
       </section>
 
       <section class="setting-group">
@@ -495,35 +547,18 @@ function appendNumberRuleToken(token: string) {
           </div>
           <span class="setting-group-count">{{ uploadRuleRows.length }} 项</span>
         </div>
-        <a-table
-          row-key="id"
+        <DataTable
+          :table="uploadRuleTable"
           size="middle"
-          bordered
-          :data-source="uploadRuleRows"
           :loading="loading"
-          :pagination="false"
-          :scroll="{ x: 1160 }"
+          :scroll-x="1160"
         >
-          <a-table-column key="moduleKey" title="页面标识" data-index="moduleKey" width="180" />
-          <a-table-column key="billName" title="适用页面" data-index="billName" width="160" />
-          <a-table-column key="prefix" title="命名规则" data-index="prefix" width="300" />
-          <a-table-column key="sampleNo" title="预览文件名" data-index="sampleNo" width="220" />
-          <a-table-column key="status" title="状态" width="100" align="center">
-            <template #default="{ record }">
-              <a-tag :color="formatStatusColor(String(record.status || ''))">
-                {{ formatStatusText(String(record.status || '')) }}
-              </a-tag>
-            </template>
-          </a-table-column>
-          <a-table-column key="remark" title="备注" data-index="remark" width="220" />
-          <a-table-column key="action" title="操作" width="90" align="center" fixed="right">
-            <template #default="{ record }">
-              <a-button type="link" :disabled="!canEdit" @click="openUploadRuleEditor(record)">
-                <EditOutlined /> 编辑
-              </a-button>
-            </template>
-          </a-table-column>
-        </a-table>
+          <template #cell-action="{ row }">
+            <a-button type="link" :disabled="!canEdit" @click="openUploadRuleEditor(row)">
+              <EditOutlined /> 编辑
+            </a-button>
+          </template>
+        </DataTable>
       </section>
     </a-card>
 

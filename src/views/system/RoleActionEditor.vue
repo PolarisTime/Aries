@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
-import { Modal, message } from 'ant-design-vue'
+import { h, ref, onMounted, computed, watch } from 'vue'
+import { Modal, Checkbox, message } from 'ant-design-vue'
+import { type ColumnDef } from '@tanstack/vue-table'
+import { useDataTable } from '@/composables/use-data-table'
+import DataTable from '@/components/DataTable.vue'
 import { useRoute } from 'vue-router'
 import {
   PlusOutlined,
@@ -242,35 +245,6 @@ const flatMenus = computed(() => {
     }
   }
   return result
-})
-
-const matrixColumns = computed(() => {
-  const cols = [
-    {
-      title: '菜单名称',
-      dataIndex: 'menuName',
-      key: 'menuName',
-      width: 160,
-      fixed: 'left' as const,
-    },
-  ]
-  for (const action of ALL_ACTIONS) {
-    cols.push({
-      title: action,
-      dataIndex: action,
-      key: action,
-      width: 70,
-      fixed: undefined as unknown as 'left',
-    })
-  }
-  cols.push({
-    title: '已授权',
-    dataIndex: '_count',
-    key: '_count',
-    width: 70,
-    fixed: undefined as unknown as 'left',
-  })
-  return cols
 })
 
 const matrixData = computed(() => {
@@ -555,10 +529,6 @@ function resolveActionCode(value: unknown): ActionCode | null {
   return (ALL_ACTIONS as readonly string[]).includes(value) ? value as ActionCode : null
 }
 
-function isActionColumn(value: unknown) {
-  return resolveActionCode(value) != null
-}
-
 function getActionLabel(value: unknown) {
   const action = resolveActionCode(value)
   return action ? ACTION_LABELS[action] || action : String(value || '')
@@ -572,13 +542,6 @@ function isAnyMenuSupportingAction(value: unknown) {
 function getActionColumnCheckState(value: unknown) {
   const action = resolveActionCode(value)
   return action ? actionColumnState.value[action] : undefined
-}
-
-function toggleActionColumnByKey(value: unknown) {
-  const action = resolveActionCode(value)
-  if (action) {
-    toggleActionColumn(action)
-  }
 }
 
 function matrixRowSupportsAction(record: Record<string, unknown>, value: unknown) {
@@ -603,6 +566,62 @@ function toggleMatrixCellByKey(record: Record<string, unknown>, value: unknown) 
     toggleMatrixCell(String(record.menuCode || ''), action)
   }
 }
+
+const matrixTanstackColumns = computed<ColumnDef<Record<string, unknown>, unknown>[]>(() => {
+  const cols: ColumnDef<Record<string, unknown>, unknown>[] = [
+    {
+      id: 'menuName',
+      accessorKey: 'menuName',
+      header: () => '菜单名称',
+      meta: { width: 160, fixed: 'left' },
+    },
+  ]
+  for (const action of ALL_ACTIONS) {
+    cols.push({
+      id: action,
+      accessorKey: action,
+      header: () => {
+        const label = getActionLabel(action)
+        if (!isAnyMenuSupportingAction(action)) return label
+        const state = getActionColumnCheckState(action)
+        return h('div', { class: 'matrix-col-header' }, [
+          h(Checkbox, {
+            checked: state?.allChecked ?? false,
+            indeterminate: state?.indeterminate ?? false,
+            disabled: !canEditPermissions.value,
+            onChange: () => toggleActionColumn(action),
+          }),
+          h('span', label),
+        ])
+      },
+      cell: (info) => {
+        const record = info.row.original
+        if (!matrixRowSupportsAction(record, action)) return h('span', { class: 'matrix-unsupported' }, '-')
+        return h(Checkbox, {
+          checked: isMatrixActionSelected(record, action),
+          disabled: !canEditPermissions.value,
+          onChange: () => toggleMatrixCellByKey(record, action),
+        })
+      },
+      meta: { width: 70 },
+    })
+  }
+  cols.push({
+    id: '_count',
+    accessorKey: '_count',
+    header: () => '已授权',
+    meta: { width: 70 },
+  })
+  return cols
+})
+
+const { table: matrixTable } = useDataTable({
+  data: computed(() => matrixData.value),
+  columns: matrixTanstackColumns,
+  getRowId: (row) => String(row.key ?? ''),
+  manualPagination: false,
+  enableSorting: false,
+})
 </script>
 
 <template>
@@ -785,40 +804,11 @@ function toggleMatrixCellByKey(record: Record<string, unknown>, value: unknown) 
           v-if="selectedRoleInfo && viewMode === 'matrix'"
           class="matrix-view"
         >
-          <a-table
-            :columns="matrixColumns"
-            :data-source="matrixData"
-            :pagination="false"
+          <DataTable
+            :table="matrixTable"
             size="small"
-            :scroll="{ y: 'calc(100vh - 280px)' }"
             bordered
-          >
-            <template #headerCell="{ column }">
-              <template v-if="isActionColumn(column.key)">
-                <div class="matrix-col-header">
-                  <a-checkbox
-                    v-if="isAnyMenuSupportingAction(column.key)"
-                    :checked="getActionColumnCheckState(column.key)?.allChecked ?? false"
-                    :indeterminate="getActionColumnCheckState(column.key)?.indeterminate ?? false"
-                    :disabled="!canEditPermissions"
-                    @change="toggleActionColumnByKey(column.key)"
-                  />
-                  <span>{{ getActionLabel(column.key) }}</span>
-                </div>
-              </template>
-            </template>
-            <template #bodyCell="{ column, record }">
-              <template v-if="isActionColumn(column.key)">
-                <a-checkbox
-                  v-if="matrixRowSupportsAction(record, column.key)"
-                  :checked="isMatrixActionSelected(record, column.key)"
-                  :disabled="!canEditPermissions"
-                  @change="toggleMatrixCellByKey(record, column.key)"
-                />
-                <span v-else class="matrix-unsupported">-</span>
-              </template>
-            </template>
-          </a-table>
+          />
         </div>
 
         <a-empty

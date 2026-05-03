@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, h, onMounted, reactive, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { EditOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons-vue'
+import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
+import { useDataTable } from '@/composables/use-data-table'
+import DataTable from '@/components/DataTable.vue'
 import { listAllBusinessModuleRows, saveBusinessModule } from '@/api/business'
 import { useRequestError } from '@/composables/use-request-error'
 import { usePermissionStore } from '@/stores/permission'
@@ -23,6 +26,8 @@ const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_OPERATION_LOG_RECORD_AUTH_EVENTS: '启用后，登录成功、登录失败、2FA 验证失败和退出登录会写入操作日志，便于审计账号访问行为；关闭后不记录这些认证事件。',
   SYS_FORCE_USER_TOTP_ON_FIRST_LOGIN: '启用后，管理员新增的账号首次使用密码登录时，会先进入专用安全引导页；在完成 2FA 绑定前不能进入业务页面，但仍允许先用初始密码修改为个人密码。',
   SYS_BATCH_NO_AUTO_GENERATE: '启用后，批号管理商品在明细未填写批号时，系统按“单号规则”中的批号生成规则自动补齐；关闭后仍按当前手工录入与必填校验处理。',
+  UI_HIDE_AUDITED_LIST_RECORDS: '启用后，业务列表分页查询默认不显示状态为“已审核”的单据；关闭后按原筛选条件显示。',
+  UI_SHOW_SNOWFLAKE_ID: '启用后，业务列表显示系统雪花 ID 列，便于排查数据问题；关闭后隐藏该列。',
 }
 
 const DETAILED_OPERATION_ACTION_OPTIONS = [
@@ -129,6 +134,61 @@ function formatSwitchState(record: ModuleRecord) {
 function formatSwitchColor(record: ModuleRecord) {
   return String(record.status || '') === '正常' ? 'processing' : 'default'
 }
+
+const settingColumnHelper = createColumnHelper<ModuleRecord>()
+
+const basicSettingColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
+  settingColumnHelper.accessor('billName', { header: () => '适用范围', meta: { width: 160 } }),
+  settingColumnHelper.accessor('settingName', { header: () => '参数名称', meta: { width: 240 } }),
+  settingColumnHelper.display({
+    id: 'sampleNo',
+    header: () => '当前值',
+    cell: (info) => formatSettingValue(info.row.original),
+    meta: { width: 140, align: 'right' },
+  }),
+  settingColumnHelper.accessor('remark', { header: () => '说明', meta: { width: 420 } }),
+  settingColumnHelper.display({
+    id: 'action',
+    header: () => '操作',
+    meta: { width: 90, align: 'center', fixed: 'right' },
+  }),
+])
+
+const switchColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
+  settingColumnHelper.accessor('billName', { header: () => '适用范围', meta: { width: 160 } }),
+  settingColumnHelper.accessor('settingName', { header: () => '开关名称', meta: { width: 300 } }),
+  settingColumnHelper.display({
+    id: 'switchState',
+    header: () => '当前状态',
+    cell: (info) => {
+      const record = info.row.original
+      return h('span', { class: `ant-tag ant-tag-${formatSwitchColor(record)}` }, formatSwitchState(record))
+    },
+    meta: { width: 120, align: 'center' },
+  }),
+  settingColumnHelper.accessor('remark', { header: () => '说明', meta: { width: 420 } }),
+  settingColumnHelper.display({
+    id: 'action',
+    header: () => '操作',
+    meta: { width: 90, align: 'center', fixed: 'right' },
+  }),
+])
+
+const { table: basicSettingTable } = useDataTable({
+  data: basicSettingRows,
+  columns: basicSettingColumns,
+  getRowId: (row) => row.id,
+  manualPagination: false,
+  enableSorting: false,
+})
+
+const { table: switchTable } = useDataTable({
+  data: switchRows,
+  columns: switchColumns,
+  getRowId: (row) => row.id,
+  manualPagination: false,
+  enableSorting: false,
+})
 
 function formatSettingValue(record: ModuleRecord) {
   if (isDefaultTaxRateSetting(record)) {
@@ -304,31 +364,18 @@ onMounted(() => {
           </div>
           <span class="setting-group-count">{{ basicSettingRows.length }} 项</span>
         </div>
-        <a-table
-          row-key="id"
+        <DataTable
+          :table="basicSettingTable"
           size="middle"
-          bordered
-          :data-source="basicSettingRows"
           :loading="loading"
-          :pagination="false"
-          :scroll="{ x: 900 }"
+          :scroll-x="900"
         >
-          <a-table-column key="billName" title="适用范围" data-index="billName" width="160" />
-          <a-table-column key="settingName" title="参数名称" data-index="settingName" width="240" />
-          <a-table-column key="sampleNo" title="当前值" width="140" align="right">
-            <template #default="{ record }">
-              {{ formatSettingValue(record) }}
-            </template>
-          </a-table-column>
-          <a-table-column key="remark" title="说明" data-index="remark" width="420" />
-          <a-table-column key="action" title="操作" width="90" align="center" fixed="right">
-            <template #default="{ record }">
-              <a-button type="link" :disabled="!canEdit" @click="openSettingEditor(record)">
-                <EditOutlined /> 编辑
-              </a-button>
-            </template>
-          </a-table-column>
-        </a-table>
+          <template #cell-action="{ row }">
+            <a-button type="link" :disabled="!canEdit" @click="openSettingEditor(row)">
+              <EditOutlined /> 编辑
+            </a-button>
+          </template>
+        </DataTable>
       </section>
 
       <section class="setting-group">
@@ -339,31 +386,18 @@ onMounted(() => {
           </div>
           <span class="setting-group-count">{{ switchRows.length }} 项</span>
         </div>
-        <a-table
-          row-key="id"
+        <DataTable
+          :table="switchTable"
           size="middle"
-          bordered
-          :data-source="switchRows"
           :loading="loading"
-          :pagination="false"
-          :scroll="{ x: 980 }"
+          :scroll-x="980"
         >
-          <a-table-column key="billName" title="适用范围" data-index="billName" width="160" />
-          <a-table-column key="settingName" title="开关名称" data-index="settingName" width="300" />
-          <a-table-column key="switchState" title="当前状态" width="120" align="center">
-            <template #default="{ record }">
-              <a-tag :color="formatSwitchColor(record)">{{ formatSwitchState(record) }}</a-tag>
-            </template>
-          </a-table-column>
-          <a-table-column key="remark" title="说明" data-index="remark" width="420" />
-          <a-table-column key="action" title="操作" width="90" align="center" fixed="right">
-            <template #default="{ record }">
-              <a-button type="link" :disabled="!canEdit" @click="openSettingEditor(record)">
-                <EditOutlined /> 编辑
-              </a-button>
-            </template>
-          </a-table-column>
-        </a-table>
+          <template #cell-action="{ row }">
+            <a-button type="link" :disabled="!canEdit" @click="openSettingEditor(row)">
+              <EditOutlined /> 编辑
+            </a-button>
+          </template>
+        </DataTable>
       </section>
     </a-card>
 
