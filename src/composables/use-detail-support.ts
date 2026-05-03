@@ -21,11 +21,7 @@ interface UseDetailSupportOptions {
   statusMap: Ref<Record<string, StatusMeta>>
   canViewRecords: Ref<boolean>
   canPrintRecords: Ref<boolean>
-  activeUploadRuleRowId: Ref<string>
-  uploadRuleVisible: Ref<boolean>
-  isUploadRuleListRow: (record: ModuleRecord) => boolean
-  closeUploadRuleDialog: () => void
-  openUploadRuleDialog: (record: ModuleRecord) => Promise<void> | void
+  handleCustomViewRecord?: (record: ModuleRecord) => Promise<boolean> | boolean
   isSuccessCode: (code: unknown) => boolean
   showRequestError: (error: unknown, fallbackMessage: string) => void
   getPrimaryNo: (record: ModuleRecord) => string
@@ -37,6 +33,28 @@ export function useDetailSupport(options: UseDetailSupportOptions) {
   const detailVisible = ref(false)
   const detailPrintLoading = ref(false)
   const activeRecord = ref<ModuleRecord | null>(null)
+
+  async function resolveRecordById(trackId: string) {
+    const normalizedTrackId = trackId.trim()
+    if (!normalizedTrackId) {
+      return null
+    }
+    if (!options.canViewRecords.value) {
+      message.warning('暂无查看权限')
+      return null
+    }
+
+    try {
+      const response = await getBusinessModuleDetail(options.moduleKey.value, normalizedTrackId)
+      if (!options.isSuccessCode(response.code) || !response.data) {
+        throw new Error(response.message || '获取详情失败')
+      }
+      return response.data
+    } catch (error) {
+      options.showRequestError(error, '获取详情失败')
+      return null
+    }
+  }
 
   async function resolveRecordForDetail(record: ModuleRecord) {
     if (!options.config.value.itemColumns?.length) {
@@ -60,12 +78,7 @@ export function useDetailSupport(options: UseDetailSupportOptions) {
   }
 
   async function handleView(record: ModuleRecord) {
-    if (options.isUploadRuleListRow(record)) {
-      if (options.uploadRuleVisible.value && options.activeUploadRuleRowId.value === String(record.id || '')) {
-        options.closeUploadRuleDialog()
-        return
-      }
-      await options.openUploadRuleDialog(record)
+    if (await options.handleCustomViewRecord?.(record)) {
       return
     }
 
@@ -116,12 +129,24 @@ export function useDetailSupport(options: UseDetailSupportOptions) {
     }
   }
 
-  async function handlePrintDetail(preview: boolean) {
+  function wrapPrintPage(html: string) {
+    return `<section class="print-page">${html}</section>`
+  }
+
+  function buildBatchHtml(records: ModuleRecord[], renderRecord: (record: ModuleRecord) => string) {
+    if (records.length === 1) {
+      return renderRecord(records[0])
+    }
+    return records.map((record) => wrapPrintPage(renderRecord(record))).join('')
+  }
+
+  async function printRecords(records: ModuleRecord[], preview: boolean) {
     if (!options.canPrintRecords.value) {
       message.warning('暂无打印权限')
       return
     }
-    if (!activeRecord.value) {
+    if (!records.length) {
+      message.warning('请先勾选需要打印的单据')
       return
     }
 
@@ -133,7 +158,10 @@ export function useDetailSupport(options: UseDetailSupportOptions) {
         return
       }
 
-      const printTitle = `${options.config.value.title}-${options.getPrimaryNo(activeRecord.value)}`
+      const resolvedRecords = await Promise.all(records.map((record) => resolveRecordForDetail(record)))
+      const printTitle = resolvedRecords.length === 1
+        ? `${options.config.value.title}-${options.getPrimaryNo(resolvedRecords[0])}`
+        : `${options.config.value.title}-批量打印-${resolvedRecords.length}条`
       let templateContent = ''
       try {
         const templateResponse = await getDefaultPrintTemplate(options.moduleKey.value)
@@ -144,13 +172,24 @@ export function useDetailSupport(options: UseDetailSupportOptions) {
 
       let success = false
       if (templateContent) {
-        const { model, details } = buildPrintContext(activeRecord.value)
-        const rendered = renderPrintTemplate(templateContent, model, details)
-        success = isCLodopCode(templateContent)
-          ? execPrintCode(rendered, { preview, title: printTitle })
-          : printHtml(rendered, { preview, title: printTitle })
+        if (isCLodopCode(templateContent)) {
+          success = resolvedRecords.every((record) => {
+            const { model, details } = buildPrintContext(record)
+            const rendered = renderPrintTemplate(templateContent, model, details)
+            return execPrintCode(rendered, {
+              preview,
+              title: `${options.config.value.title}-${options.getPrimaryNo(record)}`,
+            })
+          })
+        } else {
+          const rendered = buildBatchHtml(resolvedRecords, (record) => {
+            const { model, details } = buildPrintContext(record)
+            return renderPrintTemplate(templateContent, model, details)
+          })
+          success = printHtml(rendered, { preview, title: printTitle })
+        }
       } else {
-        success = printHtml(buildDetailPrintHtml(activeRecord.value), {
+        success = printHtml(buildBatchHtml(resolvedRecords, buildDetailPrintHtml), {
           preview,
           title: printTitle,
         })
@@ -164,6 +203,13 @@ export function useDetailSupport(options: UseDetailSupportOptions) {
     }
   }
 
+  async function handlePrintDetail(preview: boolean) {
+    if (!activeRecord.value) {
+      return
+    }
+    await printRecords([activeRecord.value], preview)
+  }
+
   return {
     activeRecord,
     detailPrintLoading,
@@ -171,6 +217,8 @@ export function useDetailSupport(options: UseDetailSupportOptions) {
     handleCloseDetail,
     handlePrintDetail,
     handleView,
+    printRecords,
+    resolveRecordById,
     resolveRecordForDetail,
   }
 }

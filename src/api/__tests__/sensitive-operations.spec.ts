@@ -62,7 +62,10 @@ describe('sensitive operation apis', () => {
         'X-TOTP-Code': '123456',
       },
     })
-    expect(clientMocks.httpPost).toHaveBeenNthCalledWith(2, '/system/database/import', expect.any(FormData), {
+    const importBackupCall = clientMocks.httpPost.mock.calls[1]
+    expect(importBackupCall?.[0]).toBe('/system/database/import')
+    expect(importBackupCall?.[1]).toBeInstanceOf(FormData)
+    expect(importBackupCall?.[2]).toEqual({
       headers: {
         'Content-Type': 'multipart/form-data',
         'X-TOTP-Code': '654321',

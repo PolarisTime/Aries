@@ -119,8 +119,13 @@ export function useEditorItemSupport(options: UseEditorItemSupportOptions) {
   }
 
   function handleEditorItemNumberChange(item: ModuleLineItem, key: string, value: unknown) {
+    if (value === undefined || value === null || value === '') {
+      item[key] = undefined
+      recalculateEditorLineItem(item, key)
+      return
+    }
     const numericValue = typeof value === 'number' ? value : Number(value)
-    item[key] = Number.isFinite(numericValue) ? numericValue : 0
+    item[key] = Number.isFinite(numericValue) ? numericValue : undefined
     recalculateEditorLineItem(item, key)
   }
 
@@ -149,12 +154,15 @@ export function useEditorItemSupport(options: UseEditorItemSupportOptions) {
   }
 
   function handleEditorItemMaterialChange(item: ModuleLineItem, materialCode: string) {
-    item.materialCode = materialCode
-    applyMaterialToEditorLineItem(item, options.materialMap.value[materialCode])
+    const normalizedMaterialCode = String(materialCode ?? '').trim()
+    item.materialCode = normalizedMaterialCode
+    applyMaterialToEditorLineItem(item, options.materialMap.value[normalizedMaterialCode])
+    updateEditorItems([...options.editorItems.value])
   }
 
   function handleEditorItemMaterialSelect(item: ModuleLineItem, value: unknown) {
-    handleEditorItemMaterialChange(item, String(normalizeSelectValue(value) || ''))
+    const normalizedValue = normalizeSelectValue(value)
+    handleEditorItemMaterialChange(item, normalizedValue == null ? '' : String(normalizedValue))
   }
 
   function handleEditorItemInputChange(item: ModuleLineItem, key: string, event: Event) {

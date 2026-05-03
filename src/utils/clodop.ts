@@ -152,6 +152,8 @@ function wrapHtml(body: string) {
     .print-subtitle { margin: 0 0 12px; text-align: center; font-size: 12px; }
     .print-block { margin-top: 12px; }
     .print-footnote { margin-top: 12px; text-align: right; font-size: 11px; }
+    .print-page { page-break-after: always; break-after: page; }
+    .print-page:last-child { page-break-after: auto; break-after: auto; }
   </style></head><body>${body}</body></html>`
 }
 

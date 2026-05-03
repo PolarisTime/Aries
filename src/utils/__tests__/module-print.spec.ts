@@ -12,7 +12,7 @@ describe('buildModulePrintHtml', () => {
       ],
       columns: [
         { title: '商品编码' },
-        { title: '吨位', align: 'right' },
+        { title: '总重量（吨）', align: 'right' },
       ],
       rows: [['RB400-18-12', '45.260']],
     })

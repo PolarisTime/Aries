@@ -29,7 +29,7 @@ export function buildAmountWeightOverview(
 ): ModuleOverviewItem[] {
   return [
     { label: '记录数', value: formatInteger(rows.length) },
-    { label: '吨位合计', value: formatWeight(sumBy(rows, weightKey)) },
+    { label: '总重量合计（吨）', value: formatWeight(sumBy(rows, weightKey)) },
     { label: '金额合计', value: formatAmount(sumBy(rows, amountKey)) },
   ]
 }
@@ -40,7 +40,7 @@ export function buildWeightOverview(
 ): ModuleOverviewItem[] {
   return [
     { label: '记录数', value: formatInteger(rows.length) },
-    { label: '吨位合计', value: formatWeight(sumBy(rows, weightKey)) },
+    { label: '总重量合计（吨）', value: formatWeight(sumBy(rows, weightKey)) },
   ]
 }
 
@@ -80,58 +80,58 @@ export function buildMasterOverview(
 }
 
 const materialInfoColumns: ModuleColumnDefinition[] = [
-  { title: '商品编码', dataIndex: 'materialCode', width: 140, required: true, align: 'center' },
-  { title: '品牌', dataIndex: 'brand', width: 110, required: true, align: 'center' },
-  { title: '类别', dataIndex: 'category', width: 100, required: true, align: 'center' },
-  { title: '材质', dataIndex: 'material', width: 120, required: true, align: 'center' },
-  { title: '规格', dataIndex: 'spec', width: 100, required: true, align: 'center' },
-  { title: '长度', dataIndex: 'length', width: 100, align: 'center' },
-  { title: '单位', dataIndex: 'unit', width: 80, required: true, align: 'center' },
-  { title: '件重/吨', dataIndex: 'pieceWeightTon', width: 110, align: 'center', type: 'weight', required: true },
-  { title: '每件支数', dataIndex: 'piecesPerBundle', width: 110, align: 'center', type: 'count' },
+  { title: '商品编码', dataIndex: 'materialCode', width: 128, required: true, align: 'center' },
+  { title: '品牌', dataIndex: 'brand', width: 86, required: true, align: 'center' },
+  { title: '类别', dataIndex: 'category', width: 72, required: true, align: 'center' },
+  { title: '材质', dataIndex: 'material', width: 82, required: true, align: 'center' },
+  { title: '规格', dataIndex: 'spec', width: 78, required: true, align: 'center' },
+  { title: '长度', dataIndex: 'length', width: 70, align: 'center' },
+  { title: '单位', dataIndex: 'unit', width: 58, required: true, align: 'center' },
+  { title: '件重/吨', dataIndex: 'pieceWeightTon', width: 82, align: 'center', type: 'weight', required: true },
+  { title: '每件支数', dataIndex: 'piecesPerBundle', width: 76, align: 'center', type: 'count' },
 ]
 
 const orderItemColumns: ModuleColumnDefinition[] = [
   ...materialInfoColumns.slice(0, 7),
-  { title: '数量', dataIndex: 'quantity', width: 100, align: 'center', type: 'count', required: true },
-  { title: '数量单位', dataIndex: 'quantityUnit', width: 90 },
+  { title: '数量', dataIndex: 'quantity', width: 76, align: 'center', type: 'count', required: true },
+  { title: '数量单位', dataIndex: 'quantityUnit', width: 64, align: 'center' },
   ...materialInfoColumns.slice(7),
-  { title: '吨位', dataIndex: 'weightTon', width: 100, align: 'center', type: 'weight', required: true },
-  { title: '单价', dataIndex: 'unitPrice', width: 110, align: 'center', type: 'amount', required: true },
-  { title: '金额', dataIndex: 'amount', width: 110, align: 'center', type: 'amount', required: true },
+  { title: '总重量（吨）', dataIndex: 'weightTon', width: 108, align: 'center', type: 'weight', required: true },
+  { title: '单价', dataIndex: 'unitPrice', width: 88, align: 'center', type: 'amount', required: true },
+  { title: '金额', dataIndex: 'amount', width: 92, align: 'center', type: 'amount', required: true },
 ]
 
 const batchOrderItemColumns: ModuleColumnDefinition[] = [
   ...materialInfoColumns.slice(0, 7),
-  { title: '批号', dataIndex: 'batchNo', width: 120 },
-  { title: '数量', dataIndex: 'quantity', width: 100, align: 'center', type: 'count', required: true },
-  { title: '数量单位', dataIndex: 'quantityUnit', width: 90 },
+  { title: '批号', dataIndex: 'batchNo', width: 100 },
+  { title: '数量', dataIndex: 'quantity', width: 76, align: 'center', type: 'count', required: true },
+  { title: '数量单位', dataIndex: 'quantityUnit', width: 64, align: 'center' },
   ...materialInfoColumns.slice(7),
-  { title: '吨位', dataIndex: 'weightTon', width: 100, align: 'center', type: 'weight', required: true },
-  { title: '单价', dataIndex: 'unitPrice', width: 110, align: 'center', type: 'amount', required: true },
-  { title: '金额', dataIndex: 'amount', width: 110, align: 'center', type: 'amount', required: true },
+  { title: '总重量（吨）', dataIndex: 'weightTon', width: 108, align: 'center', type: 'weight', required: true },
+  { title: '单价', dataIndex: 'unitPrice', width: 88, align: 'center', type: 'amount', required: true },
+  { title: '金额', dataIndex: 'amount', width: 92, align: 'center', type: 'amount', required: true },
 ]
 
 const purchaseItemColumns: ModuleColumnDefinition[] = [
   ...materialInfoColumns.slice(0, 7),
-  { title: '码头', dataIndex: 'warehouseName', width: 120, required: true },
-  { title: '批号', dataIndex: 'batchNo', width: 120 },
-  { title: '数量', dataIndex: 'quantity', width: 100, align: 'center', type: 'count', required: true },
-  { title: '数量单位', dataIndex: 'quantityUnit', width: 90 },
+  { title: '码头', dataIndex: 'warehouseName', width: 96, required: true },
+  { title: '批号', dataIndex: 'batchNo', width: 100 },
+  { title: '数量', dataIndex: 'quantity', width: 76, align: 'center', type: 'count', required: true },
+  { title: '数量单位', dataIndex: 'quantityUnit', width: 64, align: 'center' },
   ...materialInfoColumns.slice(7),
-  { title: '吨位', dataIndex: 'weightTon', width: 100, align: 'center', type: 'weight', required: true },
-  { title: '单价', dataIndex: 'unitPrice', width: 110, align: 'center', type: 'amount', required: true },
-  { title: '金额', dataIndex: 'amount', width: 110, align: 'center', type: 'amount', required: true },
+  { title: '总重量（吨）', dataIndex: 'weightTon', width: 108, align: 'center', type: 'weight', required: true },
+  { title: '单价', dataIndex: 'unitPrice', width: 88, align: 'center', type: 'amount', required: true },
+  { title: '金额', dataIndex: 'amount', width: 92, align: 'center', type: 'amount', required: true },
 ]
 
 const purchaseWeighColumns: ModuleColumnDefinition[] = [
-  { title: '过磅重量', dataIndex: 'weighWeightTon', width: 110, align: 'center', type: 'weight' },
-  { title: '差额吨位', dataIndex: 'weightAdjustmentTon', width: 100, align: 'center', type: 'weight' },
-  { title: '差额金额', dataIndex: 'weightAdjustmentAmount', width: 110, align: 'center', type: 'amount' },
+  { title: '过磅重量', dataIndex: 'weighWeightTon', width: 88, align: 'center', type: 'weight' },
+  { title: '差额重量（吨）', dataIndex: 'weightAdjustmentTon', width: 106, align: 'center', type: 'weight' },
+  { title: '差额金额', dataIndex: 'weightAdjustmentAmount', width: 92, align: 'center', type: 'amount' },
 ]
 
 const purchaseInboundSettlementColumns: ModuleColumnDefinition[] = [
-  { title: '结算方式', dataIndex: 'settlementMode', width: 96, align: 'center', required: true },
+  { title: '结算方式', dataIndex: 'settlementMode', width: 76, align: 'center', required: true },
   ...purchaseWeighColumns,
 ]
 
@@ -167,45 +167,45 @@ function applyCompactItemLayout(
 }
 
 const compactTradeItemWidthMap: Record<string, number> = {
-  sourceNo: 160,
-  materialCode: 170,
-  brand: 80,
-  category: 64,
-  material: 96,
-  spec: 80,
-  length: 80,
-  unit: 80,
-  warehouseName: 110,
-  quantity: 80,
-  quantityUnit: 90,
-  batchNo: 120,
-  pieceWeightTon: 80,
-  weightTon: 96,
-  settlementMode: 96,
-  weighWeightTon: 96,
-  weightAdjustmentTon: 96,
-  weightAdjustmentAmount: 96,
-  unitPrice: 96,
-  amount: 96,
+  sourceNo: 140,
+  materialCode: 136,
+  brand: 68,
+  category: 58,
+  material: 76,
+  spec: 72,
+  length: 64,
+  unit: 56,
+  warehouseName: 88,
+  quantity: 70,
+  quantityUnit: 64,
+  batchNo: 96,
+  pieceWeightTon: 76,
+  weightTon: 108,
+  settlementMode: 76,
+  weighWeightTon: 86,
+  weightAdjustmentTon: 106,
+  weightAdjustmentAmount: 90,
+  unitPrice: 86,
+  amount: 90,
 }
 
 const compactFreightItemWidthMap: Record<string, number> = {
-  sourceNo: 160,
-  customerName: 120,
-  projectName: 160,
-  materialCode: 170,
-  materialName: 120,
-  brand: 80,
-  category: 64,
-  material: 96,
-  spec: 80,
-  length: 80,
-  quantity: 80,
-  quantityUnit: 90,
-  pieceWeightTon: 80,
-  weightTon: 96,
-  warehouseName: 96,
-  batchNo: 120,
+  sourceNo: 140,
+  customerName: 104,
+  projectName: 130,
+  materialCode: 136,
+  materialName: 104,
+  brand: 68,
+  category: 58,
+  material: 76,
+  spec: 72,
+  length: 64,
+  quantity: 70,
+  quantityUnit: 64,
+  pieceWeightTon: 76,
+  weightTon: 108,
+  warehouseName: 88,
+  batchNo: 96,
 }
 
 export const compactOrderItemColumns = applyCompactItemLayout(
@@ -299,23 +299,23 @@ export const compactInvoiceIssueItemColumns = applyCompactItemLayout(
 )
 
 export const freightItemColumns: ModuleColumnDefinition[] = [
-  { title: '出库单号', dataIndex: 'sourceNo', width: 160 },
-  { title: '客户', dataIndex: 'customerName', width: 140 },
-  { title: '项目', dataIndex: 'projectName', width: 180 },
-  { title: '商品编码', dataIndex: 'materialCode', width: 140 },
-  { title: '商品名称', dataIndex: 'materialName', width: 140 },
-  { title: '品牌', dataIndex: 'brand', width: 110 },
-  { title: '类别', dataIndex: 'category', width: 100 },
-  { title: '材质', dataIndex: 'material', width: 120 },
-  { title: '规格', dataIndex: 'spec', width: 100 },
-  { title: '长度', dataIndex: 'length', width: 100 },
-  { title: '数量', dataIndex: 'quantity', width: 100, align: 'center', type: 'count' },
-  { title: '数量单位', dataIndex: 'quantityUnit', width: 90 },
-  { title: '件重/吨', dataIndex: 'pieceWeightTon', width: 110, align: 'center', type: 'weight' },
-  { title: '每件支数', dataIndex: 'piecesPerBundle', width: 110, align: 'center', type: 'count' },
-  { title: '批号', dataIndex: 'batchNo', width: 140 },
-  { title: '吨位', dataIndex: 'weightTon', width: 100, align: 'center', type: 'weight' },
-  { title: '仓库', dataIndex: 'warehouseName', width: 120 },
+  { title: '出库单号', dataIndex: 'sourceNo', width: 140 },
+  { title: '客户', dataIndex: 'customerName', width: 104 },
+  { title: '项目', dataIndex: 'projectName', width: 130 },
+  { title: '商品编码', dataIndex: 'materialCode', width: 128 },
+  { title: '商品名称', dataIndex: 'materialName', width: 104 },
+  { title: '品牌', dataIndex: 'brand', width: 86 },
+  { title: '类别', dataIndex: 'category', width: 72 },
+  { title: '材质', dataIndex: 'material', width: 82 },
+  { title: '规格', dataIndex: 'spec', width: 78 },
+  { title: '长度', dataIndex: 'length', width: 70 },
+  { title: '数量', dataIndex: 'quantity', width: 76, align: 'center', type: 'count' },
+  { title: '数量单位', dataIndex: 'quantityUnit', width: 64, align: 'center' },
+  { title: '件重/吨', dataIndex: 'pieceWeightTon', width: 82, align: 'center', type: 'weight' },
+  { title: '每件支数', dataIndex: 'piecesPerBundle', width: 76, align: 'center', type: 'count' },
+  { title: '批号', dataIndex: 'batchNo', width: 100 },
+  { title: '总重量（吨）', dataIndex: 'weightTon', width: 108, align: 'center', type: 'weight' },
+  { title: '仓库', dataIndex: 'warehouseName', width: 96 },
 ]
 
 export const compactFreightItemColumns = applyCompactItemLayout(

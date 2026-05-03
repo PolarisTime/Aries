@@ -38,6 +38,10 @@ const parentImportCases = Object.values({
   .filter((config) => config.parentImport)
   .map((config) => [config.key, config.parentImport!] as const)
 
+function cloneLineItems(value: unknown): ModuleLineItem[] {
+  return JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[]
+}
+
 describe('module-adapters', () => {
   it('routes material export actions through the material-specific handler', () => {
     expect(resolveModuleActionKind({
@@ -131,6 +135,73 @@ describe('module-adapters', () => {
     expect(weighItem.weighWeightTon).toBe(2.45)
     expect(weighItem.weightAdjustmentTon).toBe(0.15)
     expect(weighItem.weightAdjustmentAmount).toBe(450)
+
+    const manualWeighItem: ModuleLineItem = {
+      ...buildDefaultEditorLineItem('manual-weigh-item'),
+      settlementMode: '过磅',
+      quantity: 3,
+      pieceWeightTon: 4.7,
+      weightTon: 14.258,
+      unitPrice: 3000,
+    }
+    recalculateEditorLineItem(manualWeighItem, 'weightTon')
+    expect(manualWeighItem.weightTon).toBe(14.258)
+    expect(manualWeighItem.weighWeightTon).toBe(14.258)
+    expect(manualWeighItem.pieceWeightTon).toBe(4.753)
+
+    manualWeighItem.weightTon = undefined
+    recalculateEditorLineItem(manualWeighItem, 'weightTon')
+    expect(manualWeighItem.weightTon).toBeUndefined()
+    expect(manualWeighItem.weighWeightTon).toBeUndefined()
+
+    const roundedWeighItem: ModuleLineItem = {
+      ...buildDefaultEditorLineItem('rounded-weigh-item'),
+      settlementMode: '过磅',
+      category: '盘螺',
+      quantity: 4,
+      pieceWeightTon: 0.1,
+      _sourcePieceWeightTon: 0.1,
+      weighWeightTon: 0.43,
+      unitPrice: 4000,
+    }
+    recalculateEditorLineItem(roundedWeighItem, 'weighWeightTon')
+    expect(roundedWeighItem.pieceWeightTon).toBe(0.108)
+    expect(roundedWeighItem.weighWeightTon).toBe(0.43)
+    expect(roundedWeighItem.weightTon).toBe(0.432)
+    expect(roundedWeighItem.weightAdjustmentTon).toBe(0.032)
+    expect(roundedWeighItem.weightAdjustmentAmount).toBe(128)
+    expect(roundedWeighItem.amount).toBe(1728)
+
+    const finalSalesItem: ModuleLineItem = {
+      ...buildDefaultEditorLineItem('final-sales-item'),
+      sourceInboundItemId: 'inbound-item-1',
+      quantity: 1,
+      pieceWeightTon: 0.108,
+      unitPrice: 4000,
+      _sourceTotalQuantity: 4,
+      _sourcePieceWeightTon: 0.108,
+      _sourceWeighWeightTon: 0.43,
+      _maxImportQuantity: 1,
+    }
+    recalculateEditorLineItem(finalSalesItem, 'quantity')
+    expect(finalSalesItem.weightTon).toBe(0.106)
+    expect(finalSalesItem.amount).toBe(424)
+
+    const finalPurchaseOrderSalesItem: ModuleLineItem = {
+      ...buildDefaultEditorLineItem('final-po-sales-item'),
+      sourcePurchaseOrderItemId: 'po-item-1',
+      quantity: 7,
+      pieceWeightTon: 2.037,
+      unitPrice: 3000,
+      _sourceTotalQuantity: 7,
+      _sourceTotalWeightTon: 14.258,
+      _sourcePieceWeightTon: 2.037,
+      _maxImportQuantity: 7,
+      _maxImportWeightTon: 14.258,
+    }
+    recalculateEditorLineItem(finalPurchaseOrderSalesItem, 'quantity')
+    expect(finalPurchaseOrderSalesItem.weightTon).toBe(14.258)
+    expect(finalPurchaseOrderSalesItem.amount).toBe(42774)
   })
 
   it('merges imported parent items and replaces items from the same parent relation', () => {
@@ -162,7 +233,7 @@ describe('module-adapters', () => {
       },
       currentParentNos: ['PO-1', 'PO-2'],
       currentItems,
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
     })
 
     expect(nextState.parentNosText).toBe('PO-1, PO-2')
@@ -176,38 +247,110 @@ describe('module-adapters', () => {
     ])
   })
 
-  it('imports sales order parent items by remaining quantity and preserves current allocations on refresh', () => {
+  it('imports sales order purchase order parent items by sales remaining quantity and preserves current allocations on refresh', () => {
     const parentImportConfig: ModuleParentImportDefinition = {
-      parentModuleKey: 'purchase-inbounds',
-      label: '上级采购入库单',
-      parentFieldKey: 'purchaseInboundNo',
-      parentDisplayFieldKey: 'inboundNo',
+      parentModuleKey: 'purchase-orders',
+      label: '上级采购订单',
+      parentFieldKey: 'purchaseOrderNo',
+      parentDisplayFieldKey: 'orderNo',
     }
 
     const nextState = buildParentImportState({
       parentImportConfig,
       parentRecord: {
-        id: 'in-1',
-        inboundNo: 'IN-001',
+        id: 'po-1',
+        orderNo: 'PO-001',
         items: [
-          { id: 'generated-1', sourceInboundItemId: 'src-1', materialCode: 'A', remainingQuantity: 6, quantity: 10 },
-          { id: 'generated-2', sourceInboundItemId: 'src-2', materialCode: 'B', remainingQuantity: 0, quantity: 4 },
+          { id: 'generated-1', sourcePurchaseOrderItemId: 'src-1', materialCode: 'A', remainingQuantity: 6, quantity: 10 },
+          { id: 'generated-2', sourcePurchaseOrderItemId: 'src-2', materialCode: 'B', remainingQuantity: 0, quantity: 4 },
         ],
       },
-      currentParentNos: ['IN-001'],
+      currentParentNos: ['PO-001'],
       currentItems: [
-        { id: 'item-a', sourceInboundItemId: 'src-1', materialCode: 'A', quantity: 4, _parentRelationNo: 'IN-001' },
+        { id: 'item-a', sourcePurchaseOrderItemId: 'src-1', materialCode: 'A', quantity: 4, _parentRelationNo: 'PO-001' },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
     })
 
     expect(nextState.importedItemCount).toBe(1)
     expect(nextState.nextItems).toEqual([
       expect.objectContaining({
-        sourceInboundItemId: 'src-1',
+        sourcePurchaseOrderItemId: 'src-1',
         quantity: 4,
-        _parentRelationNo: 'IN-001',
+        _parentRelationNo: 'PO-001',
         _maxImportQuantity: 10,
+      }),
+    ])
+  })
+
+  it('uses purchase order total weight to derive sales order import piece weight', () => {
+    const parentImportConfig = operationsPageConfigs['sales-orders'].parentImport!
+    const nextState = buildParentImportState({
+      parentImportConfig,
+      parentRecord: {
+        id: 'po-1',
+        orderNo: 'PO-001',
+        items: [
+          {
+            id: 'src-po-1',
+            materialCode: 'A',
+            quantity: 10,
+            salesRemainingQuantity: 10,
+            pieceWeightTon: 2.4,
+            weightTon: 23.55,
+            unitPrice: 3000,
+          },
+          {
+            id: 'src-po-2',
+            materialCode: 'B',
+            quantity: 7,
+            salesRemainingQuantity: 7,
+            pieceWeightTon: 2.037,
+            weightTon: 14.258,
+            unitPrice: 3000,
+          },
+          {
+            id: 'src-po-3',
+            materialCode: 'C',
+            quantity: 7,
+            salesRemainingQuantity: 1,
+            salesRemainingWeightTon: 2.036,
+            pieceWeightTon: 2.037,
+            weightTon: 14.258,
+            unitPrice: 3000,
+          },
+        ],
+      },
+      currentParentNos: [],
+      currentItems: [],
+      cloneLineItems,
+    })
+
+    expect(nextState.nextItems).toEqual([
+      expect.objectContaining({
+        sourcePurchaseOrderItemId: 'src-po-1',
+        quantity: 10,
+        pieceWeightTon: 2.355,
+        weightTon: 23.55,
+        amount: 70650,
+        _parentRelationNo: 'PO-001',
+      }),
+      expect.objectContaining({
+        sourcePurchaseOrderItemId: 'src-po-2',
+        quantity: 7,
+        pieceWeightTon: 2.037,
+        weightTon: 14.258,
+        amount: 42774,
+        _sourceTotalWeightTon: 14.258,
+        _parentRelationNo: 'PO-001',
+      }),
+      expect.objectContaining({
+        sourcePurchaseOrderItemId: 'src-po-3',
+        quantity: 1,
+        pieceWeightTon: 2.037,
+        weightTon: 2.036,
+        amount: 6108,
+        _parentRelationNo: 'PO-001',
       }),
     ])
   })
@@ -234,7 +377,7 @@ describe('module-adapters', () => {
         { id: 'item-a', sourceInboundItemId: 'src-1', materialCode: 'A', quantity: 2, _parentRelationNo: 'IN-001' },
         { id: 'item-b', sourceInboundItemId: 'src-1', materialCode: 'A', quantity: 3, _parentRelationNo: 'IN-001' },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
     })
 
     expect(nextState.nextItems).toEqual([
@@ -269,7 +412,7 @@ describe('module-adapters', () => {
       currentItems: [
         { id: 'item-a', sourcePurchaseOrderItemId: 'src-po-1', materialCode: 'A', quantity: 2, _parentRelationNo: 'PO-001' },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
     })
 
     expect(nextState.importedItemCount).toBe(1)
@@ -305,7 +448,7 @@ describe('module-adapters', () => {
         buildDefaultEditorLineItem('empty-draft-row'),
         { id: 'manual-row', materialCode: 'MANUAL', quantity: 1 },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
     })
 
     expect(nextState.nextItems).toEqual([
@@ -356,7 +499,7 @@ describe('module-adapters', () => {
         buildDefaultEditorLineItem('empty-draft-row'),
         { id: 'manual-row', materialCode: 'MANUAL', quantity: 1 },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
     })
 
     expect(nextState.nextItems).toHaveLength(2)
@@ -386,7 +529,7 @@ describe('module-adapters', () => {
       currentItems: [
         { id: 'item-a', sourceSalesOrderItemId: 'src-so-1', materialCode: 'A', quantity: 4, _parentRelationNo: 'SO-001' },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
     })
 
     expect(nextState.nextItems).toEqual([
@@ -437,7 +580,7 @@ describe('module-adapters', () => {
           _parentRelationNo: 'SO-001',
         },
       ],
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
     })
 
     expect(nextState.nextItems).toEqual([
@@ -633,7 +776,7 @@ describe('module-adapters', () => {
       ],
       today: '2026-04-25',
       defaultFullPayment: false,
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       supplierName: '供应商甲',
@@ -674,7 +817,7 @@ describe('module-adapters', () => {
       ],
       today: '2026-04-25',
       defaultFullPayment: true,
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       purchaseAmount: 220,
@@ -706,7 +849,7 @@ describe('module-adapters', () => {
       ],
       today: '2026-04-25',
       defaultReceiptAmountZero: true,
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       customerName: '客户甲',
@@ -747,7 +890,7 @@ describe('module-adapters', () => {
       ],
       today: '2026-04-25',
       defaultReceiptAmountZero: false,
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       salesAmount: 220,
@@ -762,7 +905,7 @@ describe('module-adapters', () => {
         { id: '1', billNo: 'FB-1', billTime: '2026-04-10', carrierName: '物流甲', totalWeight: 2.1, totalFreight: 30, items: [{ id: 'a', weightTon: 2.1 }] },
       ],
       today: '2026-04-25',
-      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as any,
+      cloneLineItems,
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       carrierName: '物流甲',
@@ -857,6 +1000,9 @@ describe('module-adapters', () => {
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'quantityUnit', true, false)).toBe(false)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'amount', true, false)).toBe(false)
     expect(isEditorItemColumnEditableForModule('purchase-inbounds', 'weightTon', true, false)).toBe(true)
+    expect(isEditorItemColumnEditableForModule('purchase-inbounds', 'pieceWeightTon', true, false)).toBe(false)
+    expect(isEditorItemColumnEditableForModule('purchase-inbounds', 'warehouseName', true, false)).toBe(true)
+    expect(isEditorItemColumnEditableForModule('purchase-inbounds', 'batchNo', true, false)).toBe(false)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'quantity', true, false)).toBe(true)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'unitPrice', true, false)).toBe(true)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'warehouseName', true, false)).toBe(true)
@@ -947,8 +1093,8 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('freight-bills: delegates to registry callback for totalWeight/totalFreight/deliveryStatus', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'freight-bills',
-      record: { id: 0, unitPrice: '200' } as any,
-      items: [{ weightTon: 5 }, { weightTon: 3 }] as any,
+      record: { id: '0', unitPrice: '200' },
+      items: [{ id: 'item-1', weightTon: 5 }, { id: 'item-2', weightTon: 3 }],
       ...ctx,
     })
     expect(result.totalWeight).toBe(8)
@@ -959,11 +1105,11 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('supplier-statements: delegates to registry callback for purchaseAmount/closingAmount', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'supplier-statements',
-      record: { id: 0 } as any,
+      record: { id: '0' },
       items: [
-        { amount: 100, sourceNo: 'INB-001' },
-        { amount: 200, sourceNo: 'INB-002' },
-      ] as any,
+        { id: 'item-1', amount: 100, sourceNo: 'INB-001' },
+        { id: 'item-2', amount: 200, sourceNo: 'INB-002' },
+      ],
       ...ctx,
     })
     expect(result.purchaseAmount).toBe(300)
@@ -974,8 +1120,8 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('customer-statements: delegates to registry for salesAmount/sourceOrderNos', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'customer-statements',
-      record: { id: 0 } as any,
-      items: [{ amount: 500, sourceNo: 'SO-X' }] as any,
+      record: { id: '0' },
+      items: [{ id: 'item-1', amount: 500, sourceNo: 'SO-X' }],
       ...ctx,
     })
     expect(result.salesAmount).toBe(500)
@@ -985,8 +1131,8 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('freight-statements: computes weight, unpaidAmount, and attachment string', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'freight-statements',
-      record: { id: 0, totalFreight: 1000, paidAmount: 300, attachments: [{ name: 'a.pdf' }, { name: 'b.pdf' }] } as any,
-      items: [{ weightTon: 2 }, { weightTon: 3 }] as any,
+      record: { id: '0', totalFreight: 1000, paidAmount: 300, attachments: [{ name: 'a.pdf' }, { name: 'b.pdf' }] },
+      items: [{ id: 'item-1', weightTon: 2 }, { id: 'item-2', weightTon: 3 }],
       ...ctx,
     })
     expect(result.totalWeight).toBe(5)
@@ -997,7 +1143,7 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('role-settings: normalizes permissionCodes array', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'role-settings',
-      record: { id: 0, permissionCodes: ['perm:a', 'perm:b'] } as any,
+      record: { id: '0', permissionCodes: ['perm:a', 'perm:b'] },
       items: [],
       ...ctx,
     })
@@ -1007,11 +1153,11 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('invoice-receipts: computes amount and deduplicates source nos', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'invoice-receipts',
-      record: { id: 0 } as any,
+      record: { id: '0' },
       items: [
-        { amount: 100, sourceNo: 'PO-A' },
-        { amount: 50, sourceNo: 'PO-A' },
-      ] as any,
+        { id: 'item-1', amount: 100, sourceNo: 'PO-A' },
+        { id: 'item-2', amount: 50, sourceNo: 'PO-A' },
+      ],
       ...ctx,
     })
     expect(result.amount).toBe(150)
@@ -1021,7 +1167,7 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('unknown module: no crash, defaults applied', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'nonexistent-module',
-      record: { id: 0 } as any,
+      record: { id: '0' },
       items: [],
       ...ctx,
     })
@@ -1031,7 +1177,7 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('applies defaultStatus when record.status is empty', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'purchase-orders',
-      record: { id: 0 } as any,
+      record: { id: '0' },
       items: [],
       ...ctx,
     })

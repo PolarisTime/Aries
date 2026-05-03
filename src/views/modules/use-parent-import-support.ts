@@ -28,12 +28,112 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
   const selectedParentId = ref<string>()
   const parentSelectorVisible = ref(false)
   const parentSelectorKeyword = ref('')
+  const parentDetailMap = ref<Record<string, ModuleRecord>>({})
+  const parentAvailabilityLoading = ref(false)
+  let parentAvailabilityHydrateToken = 0
 
   const selectedParentRecord = computed(() =>
     availableParentRows.value.find((record) => record.id === selectedParentId.value)
       || options.parentRows.value.find((record) => record.id === selectedParentId.value)
       || null,
   )
+
+  function shouldFilterByImportableQuantity() {
+    const config = options.parentImportConfig.value
+    return config?.parentModuleKey === 'purchase-orders' && config.parentFieldKey === 'purchaseOrderNo'
+  }
+
+  const parentImportableQuantityVisible = computed(() => shouldFilterByImportableQuantity())
+
+  function getSourceParentItemId(item: ModuleLineItem) {
+    return String(item.sourceInboundItemId || item.sourcePurchaseOrderItemId || item.sourceSalesOrderItemId || item.id || '').trim()
+  }
+
+  function toSafeNumber(value: unknown) {
+    const numericValue = Number(value)
+    return Number.isFinite(numericValue) ? numericValue : 0
+  }
+
+  function resolveParentRecordWithDetail(record: ModuleRecord) {
+    return parentDetailMap.value[String(record.id)] || record
+  }
+
+  function buildCurrentAllocatedQuantityMap(parentNo: string) {
+    const currentAllocatedQuantityMap = new Map<string, number>()
+    options.editorItems.value
+      .filter((item) => String(item._parentRelationNo || '') === parentNo)
+      .forEach((item) => {
+        const sourceParentItemId = getSourceParentItemId(item)
+        if (!sourceParentItemId) {
+          return
+        }
+        currentAllocatedQuantityMap.set(
+          sourceParentItemId,
+          toSafeNumber(currentAllocatedQuantityMap.get(sourceParentItemId)) + toSafeNumber(item.quantity),
+        )
+      })
+    return currentAllocatedQuantityMap
+  }
+
+  function getParentImportableQuantity(record: ModuleRecord) {
+    if (!shouldFilterByImportableQuantity()) {
+      return undefined
+    }
+    const quantityKey = options.parentImportConfig.value?.remainingQuantityKey || 'remainingQuantity'
+    const parentRecord = resolveParentRecordWithDetail(record)
+    if (!Array.isArray(parentRecord.items)) {
+      return undefined
+    }
+    const currentAllocatedQuantityMap = buildCurrentAllocatedQuantityMap(getParentRelationNo(parentRecord))
+    return parentRecord.items.reduce((sum, item) => {
+      const sourceParentItemId = getSourceParentItemId(item)
+      const remainingQuantity = toSafeNumber(item[quantityKey] ?? item.remainingQuantity ?? item.quantity)
+      const currentAllocatedQuantity = sourceParentItemId
+        ? toSafeNumber(currentAllocatedQuantityMap.get(sourceParentItemId))
+        : 0
+      return sum + remainingQuantity + currentAllocatedQuantity
+    }, 0)
+  }
+
+  async function hydrateParentAvailabilityDetails() {
+    if (!shouldFilterByImportableQuantity() || !options.fetchParentDetail || !options.parentRows.value.length) {
+      return
+    }
+    const token = ++parentAvailabilityHydrateToken
+    parentAvailabilityLoading.value = true
+    try {
+      const rowsNeedingDetail = options.parentRows.value.filter((record) =>
+        !Array.isArray(record.items) && !parentDetailMap.value[String(record.id)],
+      )
+      const nextDetailMap: Record<string, ModuleRecord> = { ...parentDetailMap.value }
+      const concurrency = 8
+      for (let index = 0; index < rowsNeedingDetail.length; index += concurrency) {
+        if (token !== parentAvailabilityHydrateToken) {
+          return
+        }
+        const batch = rowsNeedingDetail.slice(index, index + concurrency)
+        const detailRows = await Promise.all(
+          batch.map(async (record) => {
+            try {
+              return await options.fetchParentDetail?.(record)
+            } catch {
+              return null
+            }
+          }),
+        )
+        detailRows.forEach((detail, detailIndex) => {
+          if (detail) {
+            nextDetailMap[String(batch[detailIndex].id)] = detail
+          }
+        })
+        parentDetailMap.value = { ...nextDetailMap }
+      }
+    } finally {
+      if (token === parentAvailabilityHydrateToken) {
+        parentAvailabilityLoading.value = false
+      }
+    }
+  }
 
   function getParentRecordLabel(record: ModuleRecord) {
     const primaryNo = options.parentImportConfig.value
@@ -76,11 +176,16 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
   })
 
   const availableParentRows = computed(() => {
+    const rows = options.parentRows.value
     if (!options.parentImportConfig.value?.enforceUniqueRelation) {
-      return options.parentRows.value
+      return shouldFilterByImportableQuantity()
+        ? rows.filter((record) => toSafeNumber(getParentImportableQuantity(record)) > 0)
+        : rows
     }
 
-    return options.parentRows.value.filter((record) => !occupiedParentMap.value[getParentRelationNo(record)])
+    return rows
+      .filter((record) => !occupiedParentMap.value[getParentRelationNo(record)])
+      .filter((record) => !shouldFilterByImportableQuantity() || toSafeNumber(getParentImportableQuantity(record)) > 0)
   })
 
   const parentSelectorRows = computed(() => {
@@ -109,6 +214,7 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
   function openParentSelector() {
     parentSelectorKeyword.value = ''
     parentSelectorVisible.value = true
+    void hydrateParentAvailabilityDetails()
   }
 
   function syncSelectedParentRecord() {
@@ -217,15 +323,27 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
     },
   )
 
+  watch(
+    () => options.parentRows.value.map((record) => String(record.id)).join('\u0001'),
+    () => {
+      if (parentSelectorVisible.value) {
+        void hydrateParentAvailabilityDetails()
+      }
+    },
+  )
+
   return {
     availableParentRows,
     closeParentSelector,
     getParentOptionLabel,
+    getParentImportableQuantity,
     getParentRelationNo,
     getParentSelectorRowProps,
     handleImportParentItems,
     occupiedParentMap,
     openParentSelector,
+    parentAvailabilityLoading,
+    parentImportableQuantityVisible,
     parentSelectorKeyword,
     parentSelectorRowSelection,
     parentSelectorRows,

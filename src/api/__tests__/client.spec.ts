@@ -101,6 +101,7 @@ vi.mock('ant-design-vue', () => ({
 
 vi.mock('@/utils/env', () => ({
   apiBaseUrl: '/api',
+  appTitle: 'Leo ERP',
 }))
 
 function createDeferred<T>() {
@@ -234,6 +235,30 @@ describe('api client auth refresh', () => {
     expect(results.every((item) => item.status === 'rejected')).toBe(true)
     expect((results[0] as PromiseRejectedResult).reason.message).toBe('refreshToken无效或已过期')
     expect((results[1] as PromiseRejectedResult).reason.message).toBe('refreshToken无效或已过期')
+  })
+
+  it('clears auth when refresh returns success without a new access token', async () => {
+    window.history.replaceState({}, '', '/login')
+    const { getToken, setToken } = await import('@/utils/storage')
+    setToken('expired-access-token')
+
+    axiosMockState.authInstance.post.mockResolvedValueOnce({
+      data: { code: 0, message: '未登录', data: null },
+    })
+
+    await import('@/api/client')
+    const rejected = axiosMockState.httpInstance.interceptors.response.use.mock.calls[0]?.[1] as
+      | ((error: unknown) => Promise<unknown>)
+      | undefined
+
+    await expect(rejected!(createUnauthorizedError('/purchase-orders/1'))).rejects.toMatchObject({
+      message: '未登录',
+    })
+
+    expect(axiosMockState.authInstance.post).toHaveBeenCalledWith('/auth/refresh', {})
+    expect(axiosMockState.httpInstance).not.toHaveBeenCalled()
+    expect(messageError).toHaveBeenCalledWith('未登录')
+    expect(getToken()).toBe('')
   })
 
   it('resets auth failure deduplication after a new authenticated request starts', async () => {

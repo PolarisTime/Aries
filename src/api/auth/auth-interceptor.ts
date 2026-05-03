@@ -96,7 +96,9 @@ export function setupAuthInterceptors(http: AxiosInstance) {
           const refreshMessage = normalizeErrorMessage(
             axios.isAxiosError(refreshError)
               ? refreshError.response?.data?.message || refreshError.message
-              : error.message,
+              : refreshError instanceof Error
+                ? refreshError.message
+                : error.message,
             refreshStatus,
           )
 

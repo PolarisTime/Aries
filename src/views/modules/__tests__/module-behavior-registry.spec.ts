@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest'
+import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import {
   getModuleBehavior,
   getBehaviorValue,
   hasBehavior,
+  isDeleteBlockedByStatus,
   type NormalizeDraftContext,
 } from '../module-behavior-registry'
 
@@ -80,6 +82,20 @@ describe('module-behavior-registry', () => {
     })
   })
 
+  describe('isDeleteBlockedByStatus', () => {
+    it('blocks audited and completed document statuses', () => {
+      expect(isDeleteBlockedByStatus('已审核')).toBe(true)
+      expect(isDeleteBlockedByStatus('完成销售')).toBe(true)
+      expect(isDeleteBlockedByStatus('已收款')).toBe(true)
+    })
+
+    it('allows draft and master-data active statuses', () => {
+      expect(isDeleteBlockedByStatus('草稿')).toBe(false)
+      expect(isDeleteBlockedByStatus('正常')).toBe(false)
+      expect(isDeleteBlockedByStatus(undefined)).toBe(false)
+    })
+  })
+
   describe('normalizeDraftRecord callbacks', () => {
     const createCtx = (overrides?: Partial<NormalizeDraftContext>): NormalizeDraftContext => ({
       primaryNoKey: undefined,
@@ -95,8 +111,8 @@ describe('module-behavior-registry', () => {
 
     it('freight-bills: computes totalWeight, totalFreight, deliveryStatus', () => {
       const config = getModuleBehavior('freight-bills')
-      const record: any ={ id: 1, unitPrice: '200' }
-      const items = [{ weightTon: 5 }, { weightTon: 3 }] as any
+      const record: ModuleRecord = { id: '1', unitPrice: '200' }
+      const items: ModuleLineItem[] = [{ id: 'item-1', weightTon: 5 }, { id: 'item-2', weightTon: 3 }]
       config.normalizeDraftRecord!(record, items, createCtx())
       expect(record.totalWeight).toBe(8)
       expect(record.totalFreight).toBe(1600)
@@ -105,8 +121,11 @@ describe('module-behavior-registry', () => {
 
     it('supplier-statements: computes purchaseAmount and closingAmount', () => {
       const config = getModuleBehavior('supplier-statements')
-      const record: any ={ id: 1 }
-      const items = [{ amount: 100, sourceNo: 'INB-001' }, { amount: 200, sourceNo: 'INB-002' }] as any
+      const record: ModuleRecord = { id: '1' }
+      const items: ModuleLineItem[] = [
+        { id: 'item-1', amount: 100, sourceNo: 'INB-001' },
+        { id: 'item-2', amount: 200, sourceNo: 'INB-002' },
+      ]
       config.normalizeDraftRecord!(record, items, createCtx())
       expect(record.purchaseAmount).toBe(300)
       expect(record.closingAmount).toBe(300)
@@ -115,8 +134,8 @@ describe('module-behavior-registry', () => {
 
     it('customer-statements: computes salesAmount and closingAmount', () => {
       const config = getModuleBehavior('customer-statements')
-      const record: any ={ id: 1 }
-      const items = [{ amount: 500, sourceNo: 'ORD-001' }] as any
+      const record: ModuleRecord = { id: '1' }
+      const items: ModuleLineItem[] = [{ id: 'item-1', amount: 500, sourceNo: 'ORD-001' }]
       config.normalizeDraftRecord!(record, items, createCtx())
       expect(record.salesAmount).toBe(500)
       expect(record.closingAmount).toBe(500)
@@ -125,8 +144,11 @@ describe('module-behavior-registry', () => {
 
     it('invoice-receipts: computes amount and sourcePurchaseOrderNos', () => {
       const config = getModuleBehavior('invoice-receipts')
-      const record: any ={ id: 1 }
-      const items = [{ amount: 300, sourceNo: 'PO-001' }, { amount: 150, sourceNo: 'PO-002' }] as any
+      const record: ModuleRecord = { id: '1' }
+      const items: ModuleLineItem[] = [
+        { id: 'item-1', amount: 300, sourceNo: 'PO-001' },
+        { id: 'item-2', amount: 150, sourceNo: 'PO-002' },
+      ]
       config.normalizeDraftRecord!(record, items, createCtx())
       expect(record.amount).toBe(450)
       expect(record.sourcePurchaseOrderNos).toBe('PO-001, PO-002')
@@ -134,8 +156,8 @@ describe('module-behavior-registry', () => {
 
     it('invoice-issues: computes amount and sourceSalesOrderNos', () => {
       const config = getModuleBehavior('invoice-issues')
-      const record: any ={ id: 1 }
-      const items = [{ amount: 200, sourceNo: 'SO-001' }] as any
+      const record: ModuleRecord = { id: '1' }
+      const items: ModuleLineItem[] = [{ id: 'item-1', amount: 200, sourceNo: 'SO-001' }]
       config.normalizeDraftRecord!(record, items, createCtx())
       expect(record.amount).toBe(200)
       expect(record.sourceSalesOrderNos).toBe('SO-001')
@@ -143,7 +165,7 @@ describe('module-behavior-registry', () => {
 
     it('role-settings: normalizes permissionCodes', () => {
       const config = getModuleBehavior('role-settings')
-      const record: any ={ id: 1, permissionCodes: ['perm:a', 'perm:b'] }
+      const record: ModuleRecord = { id: '1', permissionCodes: ['perm:a', 'perm:b'] }
       config.normalizeDraftRecord!(record, [], createCtx())
       expect(record.permissionCodes).toEqual(['perm:a', 'perm:b'])
       expect(record.permissionCount).toBe(2)
@@ -151,7 +173,7 @@ describe('module-behavior-registry', () => {
 
     it('user-accounts: normalizes roleNames', () => {
       const config = getModuleBehavior('user-accounts')
-      const record: any ={ id: 1, roleNames: '管理员, 采购' }
+      const record: ModuleRecord = { id: '1', roleNames: '管理员, 采购' }
       config.normalizeDraftRecord!(record, [], createCtx())
       expect(record.roleNames).toEqual(['管理员', '采购'])
     })
