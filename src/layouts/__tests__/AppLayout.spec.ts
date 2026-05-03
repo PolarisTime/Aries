@@ -21,6 +21,7 @@ const routerMocks = vi.hoisted(() => ({
 }))
 
 const businessMocks = vi.hoisted(() => ({
+  getBusinessModuleDetail: vi.fn(),
   listBusinessModule: vi.fn(),
 }))
 
@@ -51,6 +52,7 @@ vi.mock('@/router', () => ({
 }))
 
 vi.mock('@/api/business', () => ({
+  getBusinessModuleDetail: businessMocks.getBusinessModuleDetail,
   listBusinessModule: businessMocks.listBusinessModule,
 }))
 
@@ -296,6 +298,7 @@ describe('AppLayout', () => {
       path: '/purchase-orders',
       query: {
         docNo: 'CG20260001',
+        trackId: 'purchase-order-1',
         openDetail: '1',
       },
     })
