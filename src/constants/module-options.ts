@@ -83,7 +83,7 @@ import { fetchMaterialGrades } from '@/api/material-grades'
 
 const supplierFallbackOptions: ReturnType<typeof createOptionList> = []
 
-let _supplierOptions = supplierFallbackOptions
+const _supplierOptions = supplierFallbackOptions
 
 export function supplierOptions() {
   const dynamic = apiGetSupplierOptions()
@@ -101,7 +101,7 @@ export { supplierFallbackOptions }
 
 const customerFallbackOptions: ReturnType<typeof createOptionList> = []
 
-let _customerOptions = customerFallbackOptions
+const _customerOptions = customerFallbackOptions
 
 export function customerOptions() {
   const dynamic = apiGetCustomerOptions()
@@ -124,7 +124,7 @@ export function getCustomerProjectOptions(form?: Record<string, unknown>) {
 
 const carrierFallbackOptions = createOptionList(['中外运华东', '申通大件', '德邦钢材专线'] as const)
 
-let _carrierOptions = carrierFallbackOptions
+const _carrierOptions = carrierFallbackOptions
 
 export function carrierOptions() {
   return _carrierOptions
@@ -140,7 +140,7 @@ export function getCarrierOptions() {
 
 const warehouseFallbackOptions = createOptionList(['一号库', '二号库'] as const)
 
-let _warehouseOptions = warehouseFallbackOptions
+const _warehouseOptions = warehouseFallbackOptions
 
 export function warehouseOptions() {
   return _warehouseOptions

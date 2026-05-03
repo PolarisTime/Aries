@@ -19,17 +19,21 @@ export function useMaterialSelector(options: UseMaterialSelectorOptions) {
     editorItems.value.find((item) => String(item.id || '') === materialSelectorItemId.value) || null,
   )
 
+  function normalizeMaterialCode(value: unknown) {
+    return String(value ?? '').trim()
+  }
+
   const materialSelectorRowSelection = computed(() => ({
     type: 'radio' as const,
     selectedRowKeys: materialSelectorSelectedCode.value ? [materialSelectorSelectedCode.value] : [],
     onChange: (keys: Array<string | number>) => {
-      materialSelectorSelectedCode.value = keys[0] ? String(keys[0]) : ''
+      materialSelectorSelectedCode.value = normalizeMaterialCode(keys[0])
     },
   }))
 
   function openMaterialSelector(item: ModuleLineItem) {
     materialSelectorItemId.value = String(item.id || '')
-    materialSelectorSelectedCode.value = String(item.materialCode || '')
+    materialSelectorSelectedCode.value = normalizeMaterialCode(item.materialCode)
     materialSelectorKeyword.value = ''
     materialSelectorVisible.value = true
   }
@@ -43,10 +47,11 @@ export function useMaterialSelector(options: UseMaterialSelectorOptions) {
 
   function applyMaterialSelectorChoice(materialCode: string) {
     const item = activeMaterialSelectorItem.value
-    if (!item || !materialCode) {
+    const normalizedMaterialCode = normalizeMaterialCode(materialCode)
+    if (!item || !normalizedMaterialCode) {
       return
     }
-    handleEditorItemMaterialSelect(item, materialCode)
+    handleEditorItemMaterialSelect(item, normalizedMaterialCode)
     closeMaterialSelector()
   }
 
@@ -55,7 +60,7 @@ export function useMaterialSelector(options: UseMaterialSelectorOptions) {
   }
 
   function getMaterialSelectorRowProps(record: ModuleRecord) {
-    const materialCode = String(record.materialCode || '')
+    const materialCode = normalizeMaterialCode(record.materialCode)
     return {
       onClick: () => {
         materialSelectorSelectedCode.value = materialCode

@@ -3,6 +3,7 @@ import {
   resolveModuleActionKind,
   resolveModuleActionPermissionCodes,
   buildEditorAuditTarget,
+  buildReverseAuditTarget,
 } from '../module-adapter-actions'
 
 describe('resolveModuleActionKind', () => {
@@ -128,6 +129,28 @@ describe('buildEditorAuditTarget', () => {
 
   it('returns null when no matching status found', () => {
     const result = buildEditorAuditTarget('materials', ['草稿', '待审批'], false)
+    expect(result).toBeNull()
+  })
+})
+
+describe('buildReverseAuditTarget', () => {
+  it('uses preferred status when available', () => {
+    const result = buildReverseAuditTarget('freight-statements', ['待审核', '已审核'], '待审核')
+    expect(result).toEqual({ key: 'status', value: '待审核' })
+  })
+
+  it('uses module default status when preferred status is unavailable', () => {
+    const result = buildReverseAuditTarget('freight-bills', ['未审核', '已审核'])
+    expect(result).toEqual({ key: 'status', value: '未审核' })
+  })
+
+  it('falls back to draft-like statuses', () => {
+    const result = buildReverseAuditTarget('custom-module', ['待确认', '已审核'])
+    expect(result).toEqual({ key: 'status', value: '待确认' })
+  })
+
+  it('returns null when no reverse status is available', () => {
+    const result = buildReverseAuditTarget('custom-module', ['正常', '已审核'])
     expect(result).toBeNull()
   })
 })

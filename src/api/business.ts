@@ -539,11 +539,11 @@ export async function updateAttachmentBindings(
 }
 
 export async function getPageUploadRule(moduleKey: string) {
-  return http.get<ApiResponse<UploadRuleRecord>>('/general-settings/upload-rule', {
+  return (await http.get<ApiResponse<UploadRuleRecord> | undefined>('/general-settings/upload-rule', {
     params: {
       moduleKey,
     },
-  })
+  })) ?? null
 }
 
 export async function updatePageUploadRule(

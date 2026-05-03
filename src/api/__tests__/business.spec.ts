@@ -80,6 +80,19 @@ describe('business api read-only modules', () => {
     })
   })
 
+  it('normalizes empty page upload rule responses to null', async () => {
+    clientMocks.httpGet.mockResolvedValue(undefined)
+
+    const { getPageUploadRule } = await import('@/api/business')
+
+    await expect(getPageUploadRule('purchase-orders')).resolves.toBeNull()
+    expect(clientMocks.httpGet).toHaveBeenCalledWith('/general-settings/upload-rule', {
+      params: {
+        moduleKey: 'purchase-orders',
+      },
+    })
+  })
+
   it('saves invoice modules with source order summaries and line item payloads', async () => {
     clientMocks.httpPost.mockResolvedValue({
       code: 0,
@@ -258,6 +271,64 @@ describe('business api read-only modules', () => {
             warehouseName: '一号库',
             settlementMode: '过磅',
             weighWeightTon: 2.55,
+          }),
+        ],
+      }),
+    )
+  })
+
+  it('saves sales outbound warehouse at line level only', async () => {
+    clientMocks.httpPost.mockResolvedValue({
+      code: 0,
+      data: {
+        id: '1',
+      },
+    })
+
+    const { saveBusinessModule } = await import('@/api/business')
+
+    await saveBusinessModule('sales-outbounds', {
+      id: '',
+      outboundNo: 'SOO0001',
+      salesOrderNo: 'SO-1',
+      customerName: '客户甲',
+      projectName: '项目A',
+      warehouseName: '表头仓库',
+      outboundDate: '2026-04-25',
+      status: '草稿',
+      remark: '',
+      items: [
+        {
+          id: 'line-1',
+          materialCode: 'MAT-1',
+          brand: '宝钢',
+          category: '盘螺',
+          material: 'HRB400',
+          spec: '10',
+          length: '6000',
+          unit: '吨',
+          warehouseName: '一号码头',
+          batchNo: 'B1',
+          quantity: 2,
+          quantityUnit: '件',
+          pieceWeightTon: 1.25,
+          piecesPerBundle: 0,
+          weightTon: 2.5,
+          unitPrice: 4000,
+          amount: 10000,
+        },
+      ],
+    })
+
+    const payload = clientMocks.httpPost.mock.calls[0][1]
+    expect(payload).not.toHaveProperty('warehouseName')
+    expect(clientMocks.httpPost).toHaveBeenCalledWith(
+      '/sales-outbounds',
+      expect.objectContaining({
+        customerName: '客户甲',
+        items: [
+          expect.objectContaining({
+            warehouseName: '一号码头',
           }),
         ],
       }),

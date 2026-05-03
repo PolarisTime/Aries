@@ -45,17 +45,17 @@ describe('parseParentRelationNos', () => {
 
 describe('getModuleRecordPrimaryNo', () => {
   it('uses configured key when present', () => {
-    expect(getModuleRecordPrimaryNo({ id: 1, orderNo: 'PO-001' } as any, 'orderNo')).toBe('PO-001')
+    expect(getModuleRecordPrimaryNo({ id: '1', orderNo: 'PO-001' }, 'orderNo')).toBe('PO-001')
   })
   it('falls back to first matching key', () => {
-    expect(getModuleRecordPrimaryNo({ id: 1, inboundNo: 'INB-001' } as any)).toBe('INB-001')
+    expect(getModuleRecordPrimaryNo({ id: '1', inboundNo: 'INB-001' })).toBe('INB-001')
   })
   it('falls back to id as string', () => {
-    expect(getModuleRecordPrimaryNo({ id: 99 } as any)).toBe('99')
+    expect(getModuleRecordPrimaryNo({ id: '99' })).toBe('99')
   })
   it('prioritizes configured key over fallback', () => {
     expect(getModuleRecordPrimaryNo(
-      { id: 1, orderNo: 'PO-001', inboundNo: 'INB-001' } as any, 'inboundNo',
+      { id: '1', orderNo: 'PO-001', inboundNo: 'INB-001' }, 'inboundNo',
     )).toBe('INB-001')
   })
 })

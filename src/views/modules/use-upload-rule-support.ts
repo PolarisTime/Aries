@@ -1,8 +1,13 @@
-import { computed, reactive, ref, type Ref } from 'vue'
-import { message } from 'ant-design-vue'
+import { computed, h, reactive, ref, type Ref, type VNodeChild } from 'vue'
+import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
+import { keepPreviousData, useQuery } from '@tanstack/vue-query'
+import { Input, message, Textarea } from 'ant-design-vue'
 import { getPageUploadRule, updatePageUploadRule } from '@/api/business'
+import { useDataTable } from '@/composables/use-data-table'
 import { enabledStatusValues } from '@/constants/module-options'
 import type { ModuleRecord } from '@/types/module-page'
+import ModuleUploadRuleExpandedRow from './components/ModuleUploadRuleExpandedRow.vue'
+import ModuleUploadRuleRowActions from './components/ModuleUploadRuleRowActions.vue'
 
 interface UploadRuleFormState {
   id: string
@@ -23,7 +28,7 @@ interface UploadRuleTokenItem {
   example: string
 }
 
-interface UploadRuleDetailRow {
+interface UploadRuleDetailRow extends Record<string, unknown> {
   key: string
   label: string
   description: string
@@ -32,11 +37,20 @@ interface UploadRuleDetailRow {
 }
 
 interface UseUploadRuleSupportOptions {
+  moduleKey: Ref<string>
   canEditRecords: Ref<boolean>
   canViewRecords: Ref<boolean>
+  isReadOnly: Ref<boolean>
   isSuccessCode: (code: unknown) => boolean
   refreshModuleQueries: () => Promise<void>
   showRequestError: (error: unknown, fallbackMessage: string) => void
+}
+
+type UploadRuleFeatureResponse = {
+  code?: unknown
+  data?: {
+    status?: unknown
+  } | null
 }
 
 export const UPLOAD_RULE_DEFAULT_CODE = 'PAGE_UPLOAD'
@@ -56,12 +70,61 @@ const uploadRuleTokenRows: UploadRuleTokenItem[] = [
   { key: 'ext', placeholder: '{ext}', description: '原扩展名，不含点号', example: 'pdf' },
 ]
 
+const uploadRuleDetailHelper = createColumnHelper<Record<string, unknown>>()
+
+function createUploadRuleColumns(
+  uploadRuleForm: Record<string, unknown>,
+  uploadRuleStatusText: Ref<string>,
+  uploadRuleLoading: Ref<boolean>,
+) {
+  return computed<ColumnDef<Record<string, unknown>, unknown>[]>(() => [
+    uploadRuleDetailHelper.accessor('label', { header: () => '项目', meta: { width: 180 } }),
+    uploadRuleDetailHelper.accessor('description', { header: () => '说明', meta: { width: 360 } }),
+    {
+      id: 'value',
+      header: () => '配置值 / 示例',
+      cell: (info: { row: { original: Record<string, unknown> } }) => {
+        const row = info.row.original
+        if (row.type === 'token') return row.example || '--'
+        if (row.key === 'ruleCode') return (uploadRuleForm.ruleCode as string) || ''
+        if (row.key === 'ruleName') return (uploadRuleForm.ruleName as string) || ''
+        if (row.key === 'status') return uploadRuleStatusText.value
+        if (row.key === 'renamePattern') {
+          return h(Input, {
+            value: String(uploadRuleForm.renamePattern || ''),
+            'onUpdate:value': (value: string) => { uploadRuleForm.renamePattern = value },
+            disabled: uploadRuleLoading.value,
+            class: 'editor-item-field',
+            placeholder: '{yyyyMMddHHmmss}_{random8}',
+          })
+        }
+        if (row.key === 'remark') {
+          return h(Textarea, {
+            value: String(uploadRuleForm.remark || ''),
+            'onUpdate:value': (value: string) => { uploadRuleForm.remark = value },
+            disabled: uploadRuleLoading.value,
+            class: 'editor-item-field',
+            autoSize: { minRows: 2, maxRows: 4 },
+            placeholder: '说明该规则的适用范围',
+          })
+        }
+        return (uploadRuleForm.previewFileName as string) || '--'
+      },
+      meta: { width: 380 },
+    },
+  ])
+}
+
 export function isUploadRuleListRow(moduleKey: string, record: ModuleRecord | null | undefined) {
   return moduleKey === 'general-settings' && String(record?.ruleType || '') === 'UPLOAD_RULE'
 }
 
 export function shouldHideUploadRuleListValue(record: ModuleRecord | null | undefined, columnKey: string) {
   return String(record?.ruleType || '') === 'UPLOAD_RULE' && uploadRuleHiddenListKeys.has(columnKey)
+}
+
+function isUploadRuleFeatureResponse(value: unknown): value is UploadRuleFeatureResponse {
+  return Boolean(value && typeof value === 'object' && 'code' in value)
 }
 
 export function useUploadRuleSupport(options: UseUploadRuleSupportOptions) {
@@ -79,6 +142,26 @@ export function useUploadRuleSupport(options: UseUploadRuleSupportOptions) {
     status: '',
     remark: '',
     previewFileName: '',
+  })
+  const uploadRuleStatusText = computed(() => uploadRuleForm.status || enabledStatusValues[0])
+  const uploadRuleFeatureQuery = useQuery({
+    queryKey: computed(() => ['page-upload-rule', options.moduleKey.value]),
+    queryFn: async () => {
+      try {
+        return (await getPageUploadRule(options.moduleKey.value)) ?? null
+      } catch {
+        return null
+      }
+    },
+    enabled: computed(() => Boolean(options.moduleKey.value) && !options.isReadOnly.value),
+    placeholderData: keepPreviousData,
+  })
+  const attachmentFeatureEnabled = computed(() => {
+    const response = uploadRuleFeatureQuery.data.value
+    if (!isUploadRuleFeatureResponse(response) || !options.isSuccessCode(response.code) || !response.data) {
+      return true
+    }
+    return String(response.data.status || '正常') === '正常'
   })
 
   const uploadRuleDetailRows = computed<UploadRuleDetailRow[]>(() => [
@@ -126,9 +209,28 @@ export function useUploadRuleSupport(options: UseUploadRuleSupportOptions) {
       type: 'token' as const,
     })),
   ])
+  const uploadRuleTableColumns = createUploadRuleColumns(
+    uploadRuleForm,
+    uploadRuleStatusText,
+    uploadRuleLoading,
+  )
+  const { table: uploadRuleTable } = useDataTable({
+    data: computed(() => uploadRuleDetailRows.value as Record<string, unknown>[]),
+    columns: uploadRuleTableColumns,
+    getRowId: (row) => String(row.key ?? ''),
+    manualPagination: false,
+    enableSorting: false,
+  })
+  const uploadRuleExpandedRowKeys = computed(() =>
+    uploadRuleVisible.value && activeUploadRuleRowId.value ? [activeUploadRuleRowId.value] : [],
+  )
 
   function getUploadRuleModuleKey(record: ModuleRecord | null | undefined) {
     return String(record?.moduleKey || '')
+  }
+
+  function isCurrentUploadRuleListRow(record: ModuleRecord | null | undefined) {
+    return isUploadRuleListRow(options.moduleKey.value, record)
   }
 
   function resetUploadRuleForm() {
@@ -168,8 +270,8 @@ export function useUploadRuleSupport(options: UseUploadRuleSupportOptions) {
     resetUploadRuleForm()
     try {
       const response = await getPageUploadRule(moduleKey)
-      if (!options.isSuccessCode(response.code) || !response.data) {
-        throw new Error(response.message || '加载页面上传命名规则失败')
+      if (!response || !options.isSuccessCode(response.code) || !response.data) {
+        throw new Error(response?.message || '加载页面上传命名规则失败')
       }
       uploadRuleForm.id = String(response.data.id || '')
       uploadRuleForm.moduleKey = String(response.data.moduleKey || moduleKey)
@@ -202,6 +304,89 @@ export function useUploadRuleSupport(options: UseUploadRuleSupportOptions) {
     activeUploadRuleRowId.value = String(record.id || '')
     uploadRuleVisible.value = true
     await loadUploadRule(moduleKey, true)
+  }
+
+  function handleUploadRuleRowExpand(expanded: boolean, record: ModuleRecord) {
+    if (!isCurrentUploadRuleListRow(record)) {
+      return
+    }
+    if (expanded) {
+      void openUploadRuleDialog(record)
+      return
+    }
+    closeUploadRuleDialog()
+  }
+
+  async function handleUploadRuleRecordView(record: ModuleRecord) {
+    if (!isCurrentUploadRuleListRow(record)) {
+      return false
+    }
+    if (uploadRuleVisible.value && activeUploadRuleRowId.value === String(record.id || '')) {
+      closeUploadRuleDialog()
+      return true
+    }
+    await openUploadRuleDialog(record)
+    return true
+  }
+
+  async function handleUploadRuleRecordEdit(record: ModuleRecord) {
+    if (!isCurrentUploadRuleListRow(record)) {
+      return false
+    }
+    if (!options.canEditRecords.value) {
+      message.warning('暂无编辑权限')
+      return true
+    }
+    await openUploadRuleDialog(record)
+    return true
+  }
+
+  function canSelectGridRecord(record: ModuleRecord) {
+    return !isCurrentUploadRuleListRow(record)
+  }
+
+  function canUseRecordActions(record: ModuleRecord | null | undefined) {
+    return !isCurrentUploadRuleListRow(record)
+  }
+
+  function getRecordActionBlockedMessage(record: ModuleRecord | null | undefined, actionLabel: string) {
+    if (!isCurrentUploadRuleListRow(record)) {
+      return ''
+    }
+    return `页面上传命名规则不支持${actionLabel}`
+  }
+
+  function renderUploadRuleRowActions(record: ModuleRecord): VNodeChild {
+    if (!isCurrentUploadRuleListRow(record)) {
+      return null
+    }
+    return h(ModuleUploadRuleRowActions, {
+      record,
+      canView: options.canViewRecords.value,
+      canEdit: !options.isReadOnly.value && options.canEditRecords.value,
+      expanded: uploadRuleVisible.value,
+      active: activeUploadRuleRowId.value === String(record.id || ''),
+      onToggle: (row: ModuleRecord) => {
+        void handleUploadRuleRecordView(row)
+      },
+    })
+  }
+
+  function renderUploadRuleExpandedRow(record: ModuleRecord): VNodeChild {
+    if (!isCurrentUploadRuleListRow(record)) {
+      return null
+    }
+    return h(ModuleUploadRuleExpandedRow, {
+      loading: uploadRuleLoading.value,
+      form: uploadRuleForm,
+      table: uploadRuleTable,
+      saving: uploadRuleSaving.value,
+      canEdit: options.canEditRecords.value,
+      onClose: closeUploadRuleDialog,
+      onSave: () => {
+        void handleSaveUploadRule()
+      },
+    })
   }
 
   async function handleSaveUploadRule() {
@@ -237,7 +422,10 @@ export function useUploadRuleSupport(options: UseUploadRuleSupportOptions) {
       uploadRuleForm.status = String(response.data.status || '')
       uploadRuleForm.remark = String(response.data.remark || '')
       uploadRuleForm.previewFileName = String(response.data.previewFileName || '')
-      await options.refreshModuleQueries()
+      await Promise.all([
+        options.refreshModuleQueries(),
+        uploadRuleFeatureQuery.refetch(),
+      ])
       message.success(response.message || '页面上传命名规则已更新')
     } catch (error) {
       options.showRequestError(error, '保存页面上传命名规则失败')
@@ -246,17 +434,31 @@ export function useUploadRuleSupport(options: UseUploadRuleSupportOptions) {
     }
   }
 
+  const uploadRuleGridTableHooks = {
+    canSelectRecord: canSelectGridRecord,
+    customExpandedRowKeys: uploadRuleExpandedRowKeys,
+    isCustomExpandableRow: isCurrentUploadRuleListRow,
+    handleCustomRowExpand: handleUploadRuleRowExpand,
+  }
+
+  const uploadRuleRecordActionGuards = {
+    canUseRecordActions,
+    getRecordActionBlockedMessage,
+  }
+
+  const uploadRuleGridRowRenderers = {
+    isCustomGridRow: isCurrentUploadRuleListRow,
+    customRowActionsRenderer: renderUploadRuleRowActions,
+    customExpandedRowRenderer: renderUploadRuleExpandedRow,
+  }
+
   return {
-    activeUploadRuleRowId,
-    closeUploadRuleDialog,
-    handleSaveUploadRule,
-    openUploadRuleDialog,
+    attachmentFeatureEnabled,
+    handleUploadRuleRecordEdit,
+    handleUploadRuleRecordView,
     resetUploadRuleState,
-    uploadRuleDetailRows,
-    uploadRuleForm,
-    uploadRuleLoading,
-    uploadRuleSaving,
-    uploadRuleStatusText: computed(() => uploadRuleForm.status || enabledStatusValues[0]),
-    uploadRuleVisible,
+    uploadRuleGridTableHooks,
+    uploadRuleGridRowRenderers,
+    uploadRuleRecordActionGuards,
   }
 }

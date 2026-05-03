@@ -140,6 +140,18 @@ const approvedStatusModules = ['purchase-orders', 'purchase-inbounds', 'sales-or
 approvedStatusModules.forEach((key) => register(key, { auditStatus: '已审核' }))
 register('sales-orders', { lockedAuditStatus: '完成销售' })
 
+const protectedDeleteStatuses = new Set([
+  '已审核',
+  '已完成',
+  '完成采购',
+  '完成入库',
+  '完成销售',
+  '已付款',
+  '已收款',
+  '已签署',
+  '已送达',
+])
+
 // ── Toolbar action routing ──
 register('supplier-statements', { actionKindsByLabel: { 生成对账单: 'openSupplierStatementGenerator' } })
 register('customer-statements', { actionKindsByLabel: { 生成对账单: 'openCustomerStatementGenerator' } })
@@ -347,4 +359,8 @@ export function getBehaviorValue<K extends keyof ModuleBehaviorConfig>(
   flag: K,
 ): ModuleBehaviorConfig[K] | undefined {
   return registry.get(moduleKey)?.[flag]
+}
+
+export function isDeleteBlockedByStatus(status: unknown): boolean {
+  return protectedDeleteStatuses.has(String(status ?? '').trim())
 }

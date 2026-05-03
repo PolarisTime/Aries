@@ -77,7 +77,7 @@ export async function refreshAccessToken() {
   }
 
   if (!payload.data?.accessToken || !payload.data?.user) {
-    return
+    throw new Error(payload.message || '登录状态已失效，请重新登录')
   }
 
   applyTokenResponse(payload.data)

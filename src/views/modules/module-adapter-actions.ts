@@ -128,3 +128,23 @@ export function buildEditorAuditTarget(
 
   return null
 }
+
+export function buildReverseAuditTarget(
+  moduleKey: string,
+  statusOptions: string[],
+  preferredStatus?: unknown,
+) {
+  const preferred = String(preferredStatus ?? '').trim()
+  if (preferred && statusOptions.includes(preferred)) {
+    return { key: 'status', value: preferred }
+  }
+
+  const defaultStatus = getBehaviorValue(moduleKey, 'defaultStatus')
+  if (typeof defaultStatus === 'string' && statusOptions.includes(defaultStatus)) {
+    return { key: 'status', value: defaultStatus }
+  }
+
+  const fallbackStatuses = ['草稿', '未审核', '待审核', '待确认', '未核准']
+  const fallback = fallbackStatuses.find((status) => statusOptions.includes(status))
+  return fallback ? { key: 'status', value: fallback } : null
+}

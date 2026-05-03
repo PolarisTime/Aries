@@ -77,6 +77,8 @@ export interface ModuleActionDefinition {
   label: string
   type?: 'primary' | 'default' | 'dashed'
   danger?: boolean
+  disabled?: boolean
+  loading?: boolean
 }
 
 export interface ModuleFormFieldDefinition {
@@ -114,6 +116,7 @@ export interface ModuleParentImportDefinition {
   parentDisplayFieldKey: string
   buttonText?: string
   enforceUniqueRelation?: boolean
+  remainingQuantityKey?: string
   mapParentToDraft?: (parentRecord: ModuleRecord) => Partial<ModuleRecord>
   transformItems?: (parentRecord: ModuleRecord) => ModuleLineItem[]
 }

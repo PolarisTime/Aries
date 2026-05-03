@@ -1,7 +1,6 @@
 import { computed, type Ref } from 'vue'
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import {
-  getPageUploadRule,
   listAllBusinessModuleRows,
   listBusinessModule,
   searchBusinessModule,
@@ -17,7 +16,6 @@ interface UseBusinessQueriesOptions {
   paginationCurrentPage: Ref<number>
   paginationPageSize: Ref<number>
   canViewRecords: Ref<boolean>
-  isReadOnly: Ref<boolean>
   canEditLineItems: Ref<boolean>
   editorVisible: Ref<boolean>
   editorForm: Record<string, unknown>
@@ -49,7 +47,6 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     paginationCurrentPage,
     paginationPageSize,
     canViewRecords,
-    isReadOnly,
     editorVisible,
     editorForm,
     supportsInvoiceAssist,
@@ -72,19 +69,6 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
         pageSize: paginationPageSize.value,
       }),
     enabled: canViewRecords,
-    placeholderData: keepPreviousData,
-  })
-
-  const uploadRuleDetailQuery = useQuery({
-    queryKey: computed(() => ['page-upload-rule', moduleKey.value]),
-    queryFn: async () => {
-      try {
-        return await getPageUploadRule(moduleKey.value)
-      } catch {
-        return null
-      }
-    },
-    enabled: computed(() => Boolean(moduleKey.value) && !isReadOnly.value),
     placeholderData: keepPreviousData,
   })
 
@@ -258,7 +242,7 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     return findRowsByRelation(lineItemLockSourceRows.value, sourceField, targetValue)
   })
   const materialMap = computed<Record<string, ModuleRecord>>(() =>
-    Object.fromEntries(materialRows.value.map((record) => [String(record.materialCode || ''), record])),
+    Object.fromEntries(materialRows.value.map((record) => [String(record.materialCode ?? '').trim(), record])),
   )
   const currentCompanySetting = computed(() =>
     companySettingRows.value.find((record) => String(record.status || '') === '正常')
@@ -272,7 +256,6 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
 
   return {
     listQuery,
-    uploadRuleDetailQuery,
     parentListQuery,
     moduleRowsQuery,
     materialListQuery,

@@ -4,11 +4,14 @@ export function inferColumnAlign(column?: ModuleColumnDefinition): 'left' | 'cen
   if (column?.align) {
     return column.align
   }
+  if (['unit', 'quantityUnit'].includes(String(column?.dataIndex || ''))) {
+    return 'center'
+  }
   if (column?.type === 'amount' || column?.type === 'weight' || column?.type === 'count') {
     return 'right'
   }
   if (column?.type === 'status' || column?.type === 'date') {
     return 'center'
   }
-  return 'left'
+  return 'center'
 }

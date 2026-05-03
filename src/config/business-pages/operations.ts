@@ -5,7 +5,6 @@ import {
   getCustomerOptions,
   getCustomerProjectOptions,
   getSupplierOptions,
-  getWarehouseOptions,
   isPurchaseWeighRequiredCategory,
 } from '@/constants/module-options'
 import {
@@ -40,7 +39,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { title: '供应商', dataIndex: 'supplierName', width: 140 },
       { title: '采购员', dataIndex: 'buyerName', width: 110 },
       { title: '订单日期', dataIndex: 'orderDate', width: 120, type: 'date' },
-      { title: '总吨位', dataIndex: 'totalWeight', width: 100, align: 'right', type: 'weight' },
+      { title: '总重量（吨）', dataIndex: 'totalWeight', width: 116, align: 'right', type: 'weight' },
       { title: '总金额', dataIndex: 'totalAmount', width: 110, align: 'right', type: 'amount' },
       { title: '状态', dataIndex: 'status', width: 110, type: 'status', align: 'center' },
       { title: '备注', dataIndex: 'remark', width: 120 },
@@ -50,7 +49,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { label: '供应商', key: 'supplierName' },
       { label: '订单日期', key: 'orderDate', type: 'date' },
       { label: '采购员', key: 'buyerName' },
-      { label: '总吨位', key: 'totalWeight', type: 'weight' },
+      { label: '总重量（吨）', key: 'totalWeight', type: 'weight' },
       { label: '总金额', key: 'totalAmount', type: 'amount' },
       { label: '状态', key: 'status', type: 'status' },
       { label: '备注', key: 'remark' },
@@ -71,7 +70,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     key: 'purchase-inbounds',
     title: '采购入库',
     kicker: 'Purchase',
-    description: '采购入库页面承接采购订单，明细行展示码头、批号、结算方式、吨位和金额，适合作为后续库存和供应商对账入口。',
+    description: '采购入库页面承接采购订单，明细行展示码头、批号、结算方式、重量（吨）和金额，适合作为后续库存和供应商对账入口。',
     primaryNoKey: 'inboundNo',
     actions: actionSet,
     filters: [
@@ -85,7 +84,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { title: '关联订单', dataIndex: 'purchaseOrderNo', width: 160 },
       { title: '供应商', dataIndex: 'supplierName', width: 140 },
       { title: '入库日期', dataIndex: 'inboundDate', width: 120, type: 'date' },
-      { title: '总吨位', dataIndex: 'totalWeight', width: 100, align: 'right', type: 'weight' },
+      { title: '总重量（吨）', dataIndex: 'totalWeight', width: 116, align: 'right', type: 'weight' },
       { title: '总金额', dataIndex: 'totalAmount', width: 110, align: 'right', type: 'amount' },
       { title: '状态', dataIndex: 'status', width: 110, type: 'status', align: 'center' },
       { title: '备注', dataIndex: 'remark', width: 180 },
@@ -95,7 +94,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { label: '关联订单', key: 'purchaseOrderNo' },
       { label: '供应商', key: 'supplierName' },
       { label: '入库日期', key: 'inboundDate', type: 'date' },
-      { label: '总吨位', key: 'totalWeight', type: 'weight' },
+      { label: '总重量（吨）', key: 'totalWeight', type: 'weight' },
       { label: '总金额', key: 'totalAmount', type: 'amount' },
       { label: '状态', key: 'status', type: 'status' },
       { label: '备注', key: 'remark' },
@@ -121,6 +120,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
           ? parentRecord.items.map((item) => ({
               ...item,
               sourcePurchaseOrderItemId: item.id,
+              _sourcePieceWeightTon: item.pieceWeightTon,
               settlementMode: isPurchaseWeighRequiredCategory(item.category) ? '过磅' : '理算',
             }))
           : [],
@@ -147,31 +147,31 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { key: 'deliveryDate', label: '送货日期', type: 'dateRange' },
     ],
     columns: [
-      { title: '关联入库单', dataIndex: 'purchaseInboundNo', width: 180 },
+      { title: '关联采购订单', dataIndex: 'purchaseOrderNo', width: 180 },
       { title: '订单编号', dataIndex: 'orderNo', width: 160 },
       { title: '项目', dataIndex: 'projectName', width: 180 },
       { title: '客户', dataIndex: 'customerName', width: 140 },
       { title: '销售员', dataIndex: 'salesName', width: 110 },
       { title: '送货日期', dataIndex: 'deliveryDate', width: 120, type: 'date' },
-      { title: '总吨位', dataIndex: 'totalWeight', width: 100, align: 'right', type: 'weight' },
+      { title: '总重量（吨）', dataIndex: 'totalWeight', width: 116, align: 'right', type: 'weight' },
       { title: '总金额', dataIndex: 'totalAmount', width: 110, align: 'right', type: 'amount' },
       { title: '状态', dataIndex: 'status', width: 110, type: 'status', align: 'center' },
       { title: '备注', dataIndex: 'remark', width: 180 },
     ],
     detailFields: [
-      { label: '关联入库单', key: 'purchaseInboundNo' },
+      { label: '关联采购订单', key: 'purchaseOrderNo' },
       { label: '订单编号', key: 'orderNo' },
       { label: '项目', key: 'projectName' },
       { label: '客户', key: 'customerName' },
       { label: '销售员', key: 'salesName' },
       { label: '送货日期', key: 'deliveryDate', type: 'date' },
-      { label: '总吨位', key: 'totalWeight', type: 'weight' },
+      { label: '总重量（吨）', key: 'totalWeight', type: 'weight' },
       { label: '总金额', key: 'totalAmount', type: 'amount' },
       { label: '状态', key: 'status', type: 'status' },
       { label: '备注', key: 'remark' },
     ],
     formFields: [
-      { key: 'purchaseInboundNo', label: '关联入库单', type: 'input', disabled: true, placeholder: '通过采购入库导入，可追加多个单号' },
+      { key: 'purchaseOrderNo', label: '关联采购订单', type: 'input', disabled: true, placeholder: '通过采购订单导入，可追加多个单号' },
       { key: 'orderNo', label: '订单编号', type: 'input', required: true },
       { key: 'customerName', label: '客户', type: 'select', required: true, options: getCustomerOptions },
       { key: 'projectName', label: '项目', type: 'select', required: true, options: getCustomerProjectOptions },
@@ -180,17 +180,45 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { key: 'remark', label: '备注', type: 'input' },
     ],
     parentImport: {
-      parentModuleKey: 'purchase-inbounds',
-      label: '上级采购入库单',
-      parentFieldKey: 'purchaseInboundNo',
-      parentDisplayFieldKey: 'inboundNo',
-      buttonText: '导入采购入库明细',
+      parentModuleKey: 'purchase-orders',
+      label: '上级采购订单',
+      parentFieldKey: 'purchaseOrderNo',
+      parentDisplayFieldKey: 'orderNo',
+      buttonText: '导入采购订单明细',
+      remainingQuantityKey: 'salesRemainingQuantity',
       transformItems: (parentRecord) => cloneLineItems(
         Array.isArray(parentRecord.items)
-          ? parentRecord.items.map((item) => ({
-              ...item,
-              sourceInboundItemId: item.id,
-            }))
+          ? parentRecord.items.map((item) => {
+              const rawRemainingQuantity = Number(item.salesRemainingQuantity ?? item.remainingQuantity ?? item.quantity ?? 0)
+              const rawTotalQuantity = Number(item.quantity || 0)
+              const rawTotalWeightTon = Number(item.weightTon || 0)
+              const rawRemainingWeightTon = Number(item.salesRemainingWeightTon ?? 0)
+              const rawPieceWeightTon = rawTotalQuantity > 0 && rawTotalWeightTon > 0
+                ? Number((rawTotalWeightTon / rawTotalQuantity).toFixed(3))
+                : Number(item.pieceWeightTon || 0)
+              const rawUnitPrice = Number(item.unitPrice || 0)
+              const remainingQuantity = Number.isFinite(rawRemainingQuantity) ? rawRemainingQuantity : 0
+              const pieceWeightTon = Number.isFinite(rawPieceWeightTon) ? rawPieceWeightTon : 0
+              const unitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0
+              const remainingWeightTon = rawRemainingWeightTon > 0
+                ? Number(rawRemainingWeightTon.toFixed(3))
+                : rawTotalQuantity > 0
+                && rawTotalWeightTon > 0
+                && remainingQuantity === rawTotalQuantity
+                ? Number(rawTotalWeightTon.toFixed(3))
+                : Number((remainingQuantity * pieceWeightTon).toFixed(3))
+              return {
+                ...item,
+                sourcePurchaseOrderItemId: item.id,
+                pieceWeightTon,
+                remainingQuantity,
+                remainingWeightTon,
+                remainingAmount: Number((remainingWeightTon * unitPrice).toFixed(2)),
+                _sourceTotalQuantity: item.quantity,
+                _sourceTotalWeightTon: item.weightTon,
+                _sourcePieceWeightTon: item.pieceWeightTon,
+              }
+            })
           : [],
         'sales-order-item',
       ),
@@ -219,9 +247,8 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { title: '关联订单', dataIndex: 'salesOrderNo', width: 160 },
       { title: '客户', dataIndex: 'customerName', width: 140 },
       { title: '项目', dataIndex: 'projectName', width: 180 },
-      { title: '仓库', dataIndex: 'warehouseName', width: 120 },
       { title: '出库日期', dataIndex: 'outboundDate', width: 120, type: 'date' },
-      { title: '总吨位', dataIndex: 'totalWeight', width: 100, align: 'right', type: 'weight' },
+      { title: '总重量（吨）', dataIndex: 'totalWeight', width: 116, align: 'right', type: 'weight' },
       { title: '总金额', dataIndex: 'totalAmount', width: 110, align: 'right', type: 'amount' },
       { title: '状态', dataIndex: 'status', width: 110, type: 'status', align: 'center' },
       { title: '备注', dataIndex: 'remark', width: 180 },
@@ -231,9 +258,8 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { label: '关联订单', key: 'salesOrderNo' },
       { label: '客户', key: 'customerName' },
       { label: '项目', key: 'projectName' },
-      { label: '仓库', key: 'warehouseName' },
       { label: '出库日期', key: 'outboundDate', type: 'date' },
-      { label: '总吨位', key: 'totalWeight', type: 'weight' },
+      { label: '总重量（吨）', key: 'totalWeight', type: 'weight' },
       { label: '总金额', key: 'totalAmount', type: 'amount' },
       { label: '状态', key: 'status', type: 'status' },
       { label: '备注', key: 'remark' },
@@ -243,7 +269,6 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { key: 'salesOrderNo', label: '关联订单', type: 'input', disabled: true, placeholder: '通过上级单据导入' },
       { key: 'customerName', label: '客户', type: 'select', required: true, options: getCustomerOptions },
       { key: 'projectName', label: '项目', type: 'input', required: true },
-      { key: 'warehouseName', label: '仓库', type: 'select', required: true, options: getWarehouseOptions() },
       { key: 'outboundDate', label: '出库日期', type: 'date', required: true },
       { key: 'remark', label: '备注', type: 'input' },
     ],
@@ -292,7 +317,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { title: '客户', dataIndex: 'customerName', width: 140 },
       { title: '项目', dataIndex: 'projectName', width: 180 },
       { title: '单据日期', dataIndex: 'billTime', width: 120, type: 'date' },
-      { title: '总吨位', dataIndex: 'totalWeight', width: 100, align: 'right', type: 'weight' },
+      { title: '总重量（吨）', dataIndex: 'totalWeight', width: 116, align: 'right', type: 'weight' },
       { title: '单价', dataIndex: 'unitPrice', width: 100, align: 'right', type: 'amount' },
       { title: '总运费', dataIndex: 'totalFreight', width: 110, align: 'right', type: 'amount' },
       { title: '审核状态', dataIndex: 'status', width: 110, type: 'status', align: 'center' },
@@ -306,7 +331,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { label: '项目', key: 'projectName' },
       { label: '单据日期', key: 'billTime', type: 'date' },
       { label: '单价', key: 'unitPrice', type: 'amount' },
-      { label: '总吨位', key: 'totalWeight', type: 'weight' },
+      { label: '总重量（吨）', key: 'totalWeight', type: 'weight' },
       { label: '总运费', key: 'totalFreight', type: 'amount' },
       { label: '审核状态', key: 'status', type: 'status' },
       { label: '送达状态', key: 'deliveryStatus', type: 'status' },
@@ -373,7 +398,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { title: '生效日期', dataIndex: 'effectiveDate', width: 120, type: 'date' },
       { title: '截止日期', dataIndex: 'expireDate', width: 120, type: 'date' },
       { title: '采购员', dataIndex: 'buyerName', width: 110 },
-      { title: '总吨位', dataIndex: 'totalWeight', width: 100, align: 'right', type: 'weight' },
+      { title: '总重量（吨）', dataIndex: 'totalWeight', width: 116, align: 'right', type: 'weight' },
       { title: '总金额', dataIndex: 'totalAmount', width: 110, align: 'right', type: 'amount' },
       { title: '状态', dataIndex: 'status', width: 110, type: 'status', align: 'center' },
       { title: '备注', dataIndex: 'remark', width: 180 },
@@ -385,7 +410,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { label: '生效日期', key: 'effectiveDate', type: 'date' },
       { label: '截止日期', key: 'expireDate', type: 'date' },
       { label: '采购员', key: 'buyerName' },
-      { label: '总吨位', key: 'totalWeight', type: 'weight' },
+      { label: '总重量（吨）', key: 'totalWeight', type: 'weight' },
       { label: '总金额', key: 'totalAmount', type: 'amount' },
       { label: '状态', key: 'status', type: 'status' },
       { label: '备注', key: 'remark' },
@@ -437,7 +462,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { title: '生效日期', dataIndex: 'effectiveDate', width: 120, type: 'date' },
       { title: '截止日期', dataIndex: 'expireDate', width: 120, type: 'date' },
       { title: '销售员', dataIndex: 'salesName', width: 110 },
-      { title: '总吨位', dataIndex: 'totalWeight', width: 100, align: 'right', type: 'weight' },
+      { title: '总重量（吨）', dataIndex: 'totalWeight', width: 116, align: 'right', type: 'weight' },
       { title: '总金额', dataIndex: 'totalAmount', width: 110, align: 'right', type: 'amount' },
       { title: '状态', dataIndex: 'status', width: 110, type: 'status', align: 'center' },
     ],
@@ -449,7 +474,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       { label: '生效日期', key: 'effectiveDate', type: 'date' },
       { label: '截止日期', key: 'expireDate', type: 'date' },
       { label: '销售员', key: 'salesName' },
-      { label: '总吨位', key: 'totalWeight', type: 'weight' },
+      { label: '总重量（吨）', key: 'totalWeight', type: 'weight' },
       { label: '总金额', key: 'totalAmount', type: 'amount' },
       { label: '状态', key: 'status', type: 'status' },
       { label: '备注', key: 'remark' },
