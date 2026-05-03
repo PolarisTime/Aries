@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { DownloadOutlined, EyeOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import type { UploadProps } from 'ant-design-vue'
+import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
 import type { AttachmentItem } from '@/composables/use-attachment-support'
+import { useDataTable } from '@/composables/use-data-table'
+import DataTable from '@/components/DataTable.vue'
 
-defineProps<{
+const props = defineProps<{
   visible: boolean
   title: string
   pasteEnabled: boolean
@@ -22,6 +26,31 @@ defineEmits<{
   cancel: []
   'update:draftName': [value: string]
 }>()
+
+const columnHelper = createColumnHelper<AttachmentItem>()
+
+const columns = computed<ColumnDef<AttachmentItem, unknown>[]>(() => [
+  columnHelper.accessor('name', { header: () => '附件名称', meta: { ellipsis: true } }),
+  columnHelper.accessor('uploader', { header: () => '上传人', meta: { width: 120 } }),
+  columnHelper.accessor('uploadTime', { header: () => '上传时间', meta: { width: 180 } }),
+  columnHelper.display({
+    id: 'action',
+    header: () => '操作',
+    meta: { width: 180, align: 'center' },
+  }),
+])
+
+const { table } = useDataTable({
+  data: computed(() => props.rows),
+  columns,
+  getRowId: (row) => row.id,
+  manualPagination: false,
+  enableSorting: false,
+})
+
+const emptyText = computed(() =>
+  props.pasteEnabled ? '当前没有附件，可上传文件或直接粘贴' : '当前没有附件，可直接新增',
+)
 </script>
 
 <template>
@@ -62,48 +91,33 @@ defineEmits<{
       </template>
     </div>
 
-    <a-table
-      size="small"
-      bordered
-      row-key="id"
-      :data-source="rows"
-      :pagination="false"
-      :loading="saving"
-    >
-      <a-table-column key="name" title="附件名称" data-index="name" />
-      <a-table-column key="uploader" title="上传人" data-index="uploader" width="120" />
-      <a-table-column key="uploadTime" title="上传时间" data-index="uploadTime" width="180" />
-      <a-table-column key="action" title="操作" width="180" align="center">
-        <template #default="{ record }">
-          <div class="attachment-action-group">
-            <a
-              v-if="record.previewSupported && record.previewUrl"
-              @click.prevent="previewAttachment(record)"
-            >
-              <EyeOutlined />
-              <span>预览</span>
-            </a>
-            <a
-              v-if="record.downloadUrl"
-              @click.prevent="downloadAttachment(record)"
-            >
-              <DownloadOutlined />
-              <span>下载</span>
-            </a>
-            <a-popconfirm
-              v-if="canManageAttachments"
-              title="确定删除该附件吗?"
-              @confirm="removeAttachment(String(record.id))"
-            >
-              <a>删除</a>
-            </a-popconfirm>
-          </div>
-        </template>
-      </a-table-column>
-      <template #emptyText>
-        <a-empty :description="pasteEnabled ? '当前没有附件，可上传文件或直接粘贴' : '当前没有附件，可直接新增'" />
+    <DataTable :table="table" :loading="saving" size="small" :empty-text="emptyText">
+      <template #cell-action="{ row }">
+        <div class="attachment-action-group">
+          <a
+            v-if="row.previewSupported && row.previewUrl"
+            @click.prevent="previewAttachment(row)"
+          >
+            <EyeOutlined />
+            <span>预览</span>
+          </a>
+          <a
+            v-if="row.downloadUrl"
+            @click.prevent="downloadAttachment(row)"
+          >
+            <DownloadOutlined />
+            <span>下载</span>
+          </a>
+          <a-popconfirm
+            v-if="canManageAttachments"
+            title="确定删除该附件吗?"
+            @confirm="removeAttachment(String(row.id))"
+          >
+            <a>删除</a>
+          </a-popconfirm>
+        </div>
       </template>
-    </a-table>
+    </DataTable>
 
     <template #footer>
       <a-button @click="$emit('cancel')">关闭</a-button>

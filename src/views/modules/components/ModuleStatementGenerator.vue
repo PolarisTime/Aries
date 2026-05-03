@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { computed, h } from 'vue'
+import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
 import ModuleSelectionOverlay from './ModuleSelectionOverlay.vue'
 import type { ModuleRecord } from '@/types/module-page'
 
-defineProps<{
+const props = defineProps<{
   supplierVisible: boolean
   supplierRows: ModuleRecord[]
   supplierLoading: boolean
@@ -32,6 +34,94 @@ const emit = defineEmits<{
   closeFreight: []
   generateFreight: []
 }>()
+
+const helper = createColumnHelper<ModuleRecord>()
+
+function statusCell(status: unknown) {
+  const meta = props.getStatusMeta(String(status ?? ''))
+  return h('span', { class: `ant-tag ant-tag-${meta.color}` }, meta.text)
+}
+
+const supplierColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
+  helper.accessor('inboundNo', { header: () => '采购入库单号', meta: { width: 160 } }),
+  helper.accessor('supplierName', { header: () => '供应商', meta: { width: 140 } }),
+  helper.accessor('warehouseName', { header: () => '仓库', meta: { width: 120 } }),
+  helper.accessor('inboundDate', {
+    header: () => '入库日期',
+    cell: (info) => props.formatCellValue({ title: '入库日期', dataIndex: 'inboundDate', type: 'date' }, info.getValue()),
+    meta: { width: 120 },
+  }),
+  helper.accessor('settlementMode', { header: () => '结算方式', meta: { width: 100 } }),
+  helper.accessor('totalWeight', {
+    header: () => '总重量（吨）',
+    cell: (info) => props.formatWeight(info.getValue()),
+    meta: { width: 120, align: 'right' },
+  }),
+  helper.accessor('totalAmount', {
+    header: () => '总金额',
+    cell: (info) => props.formatAmount(info.getValue()),
+    meta: { width: 110, align: 'right' },
+  }),
+  helper.accessor('status', {
+    header: () => '状态',
+    cell: (info) => statusCell(info.getValue()),
+    meta: { width: 110, align: 'center' },
+  }),
+])
+
+const customerColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
+  helper.accessor('orderNo', { header: () => '销售订单号', meta: { width: 160 } }),
+  helper.accessor('customerName', { header: () => '客户', meta: { width: 140 } }),
+  helper.accessor('projectName', { header: () => '项目' }),
+  helper.accessor('deliveryDate', {
+    header: () => '送货日期',
+    cell: (info) => props.formatCellValue({ title: '送货日期', dataIndex: 'deliveryDate', type: 'date' }, info.getValue()),
+    meta: { width: 120 },
+  }),
+  helper.accessor('salesName', { header: () => '销售员', meta: { width: 100 } }),
+  helper.accessor('totalWeight', {
+    header: () => '总重量（吨）',
+    cell: (info) => props.formatWeight(info.getValue()),
+    meta: { width: 120, align: 'right' },
+  }),
+  helper.accessor('totalAmount', {
+    header: () => '总金额',
+    cell: (info) => props.formatAmount(info.getValue()),
+    meta: { width: 110, align: 'right' },
+  }),
+  helper.accessor('status', {
+    header: () => '状态',
+    cell: (info) => statusCell(info.getValue()),
+    meta: { width: 110, align: 'center' },
+  }),
+])
+
+const freightColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
+  helper.accessor('billNo', { header: () => '物流单号', meta: { width: 150 } }),
+  helper.accessor('carrierName', { header: () => '物流商', meta: { width: 140 } }),
+  helper.accessor('customerName', { header: () => '客户', meta: { width: 140 } }),
+  helper.accessor('projectName', { header: () => '项目' }),
+  helper.accessor('billTime', {
+    header: () => '单据日期',
+    cell: (info) => props.formatCellValue({ title: '单据日期', dataIndex: 'billTime', type: 'date' }, info.getValue()),
+    meta: { width: 120 },
+  }),
+  helper.accessor('totalWeight', {
+    header: () => '总重量（吨）',
+    cell: (info) => props.formatWeight(info.getValue()),
+    meta: { width: 120, align: 'right' },
+  }),
+  helper.accessor('totalFreight', {
+    header: () => '运费',
+    cell: (info) => props.formatAmount(info.getValue()),
+    meta: { width: 110, align: 'right' },
+  }),
+  helper.accessor('status', {
+    header: () => '状态',
+    cell: (info) => statusCell(info.getValue()),
+    meta: { width: 110, align: 'center' },
+  }),
+])
 </script>
 
 <template>
@@ -41,6 +131,7 @@ const emit = defineEmits<{
     panel-title="采购入库单选择"
     hint="选择采购入库单生成供应商对账单草稿；仅支持同一供应商合并。启用系统开关时默认按所选采购单据总金额全额付款，关闭后按账期自动汇总已付款记录。"
     :rows="supplierRows"
+    :columns="supplierColumns"
     :loading="supplierLoading"
     :row-selection="supplierRowSelection"
     empty-description="当前没有可生成对账单的采购入库单"
@@ -53,32 +144,6 @@ const emit = defineEmits<{
       <span v-if="supplierSummary.supplierName">供应商 {{ supplierSummary.supplierName }}</span>
       <span>采购金额 {{ formatAmount(supplierSummary.amount) }}</span>
     </template>
-    <a-table-column key="inboundNo" title="采购入库单号" data-index="inboundNo" width="160" />
-    <a-table-column key="supplierName" title="供应商" data-index="supplierName" width="140" />
-    <a-table-column key="warehouseName" title="仓库" data-index="warehouseName" width="120" />
-    <a-table-column key="inboundDate" title="入库日期" width="120">
-      <template #default="{ record }">
-        {{ formatCellValue({ title: '入库日期', dataIndex: 'inboundDate', type: 'date' }, record.inboundDate) }}
-      </template>
-    </a-table-column>
-    <a-table-column key="settlementMode" title="结算方式" data-index="settlementMode" width="100" />
-    <a-table-column key="totalWeight" title="总吨位" width="110" align="right">
-      <template #default="{ record }">
-        {{ formatWeight(record.totalWeight) }}
-      </template>
-    </a-table-column>
-    <a-table-column key="totalAmount" title="总金额" width="110" align="right">
-      <template #default="{ record }">
-        {{ formatAmount(record.totalAmount) }}
-      </template>
-    </a-table-column>
-    <a-table-column key="status" title="状态" width="110" align="center">
-      <template #default="{ record }">
-        <a-tag :color="getStatusMeta(record.status).color">
-          {{ getStatusMeta(record.status).text }}
-        </a-tag>
-      </template>
-    </a-table-column>
   </ModuleSelectionOverlay>
 
   <ModuleSelectionOverlay
@@ -87,6 +152,7 @@ const emit = defineEmits<{
     panel-title="销售订单选择"
     hint="选择已完成销售的销售订单生成客户对账单草稿；仅支持同一客户同一项目合并。启用系统开关时默认按所选销售订单总金额挂账，关闭后默认按所选销售订单总金额收款。"
     :rows="customerRows"
+    :columns="customerColumns"
     :loading="customerLoading"
     :row-selection="customerRowSelection"
     empty-description="当前没有可生成对账单的销售订单"
@@ -100,32 +166,6 @@ const emit = defineEmits<{
       <span v-if="customerSummary.projectName">项目 {{ customerSummary.projectName }}</span>
       <span>金额 {{ formatAmount(customerSummary.amount) }}</span>
     </template>
-    <a-table-column key="orderNo" title="销售订单号" data-index="orderNo" width="160" />
-    <a-table-column key="customerName" title="客户" data-index="customerName" width="140" />
-    <a-table-column key="projectName" title="项目" data-index="projectName" />
-    <a-table-column key="deliveryDate" title="送货日期" width="120">
-      <template #default="{ record }">
-        {{ formatCellValue({ title: '送货日期', dataIndex: 'deliveryDate', type: 'date' }, record.deliveryDate) }}
-      </template>
-    </a-table-column>
-    <a-table-column key="salesName" title="销售员" data-index="salesName" width="100" />
-    <a-table-column key="totalWeight" title="总吨位" width="110" align="right">
-      <template #default="{ record }">
-        {{ formatWeight(record.totalWeight) }}
-      </template>
-    </a-table-column>
-    <a-table-column key="totalAmount" title="总金额" width="110" align="right">
-      <template #default="{ record }">
-        {{ formatAmount(record.totalAmount) }}
-      </template>
-    </a-table-column>
-    <a-table-column key="status" title="状态" width="110" align="center">
-      <template #default="{ record }">
-        <a-tag :color="getStatusMeta(record.status).color">
-          {{ getStatusMeta(record.status).text }}
-        </a-tag>
-      </template>
-    </a-table-column>
   </ModuleSelectionOverlay>
 
   <ModuleSelectionOverlay
@@ -134,6 +174,7 @@ const emit = defineEmits<{
     panel-title="物流单选择"
     hint="选择物流单生成对账单草稿；同一物流商可合并生成，已被占用的物流单不会重复显示。"
     :rows="freightRows"
+    :columns="freightColumns"
     :loading="freightLoading"
     :row-selection="freightRowSelection"
     empty-description="当前没有可生成对账单的物流单"
@@ -144,34 +185,8 @@ const emit = defineEmits<{
     <template #summary>
       <span>已选 {{ freightSummary.count }} 张</span>
       <span v-if="freightSummary.carrierName">物流商 {{ freightSummary.carrierName }}</span>
-      <span>吨位 {{ formatWeight(freightSummary.weight) }}</span>
+      <span>总重量（吨） {{ formatWeight(freightSummary.weight) }}</span>
       <span>运费 {{ formatAmount(freightSummary.freight) }}</span>
     </template>
-    <a-table-column key="billNo" title="物流单号" data-index="billNo" width="150" />
-    <a-table-column key="carrierName" title="物流商" data-index="carrierName" width="140" />
-    <a-table-column key="customerName" title="客户" data-index="customerName" width="140" />
-    <a-table-column key="projectName" title="项目" data-index="projectName" />
-    <a-table-column key="billTime" title="单据日期" width="120">
-      <template #default="{ record }">
-        {{ formatCellValue({ title: '单据日期', dataIndex: 'billTime', type: 'date' }, record.billTime) }}
-      </template>
-    </a-table-column>
-    <a-table-column key="totalWeight" title="吨位" width="110" align="right">
-      <template #default="{ record }">
-        {{ formatWeight(record.totalWeight) }}
-      </template>
-    </a-table-column>
-    <a-table-column key="totalFreight" title="运费" width="110" align="right">
-      <template #default="{ record }">
-        {{ formatAmount(record.totalFreight) }}
-      </template>
-    </a-table-column>
-    <a-table-column key="status" title="状态" width="110" align="center">
-      <template #default="{ record }">
-        <a-tag :color="getStatusMeta(record.status).color">
-          {{ getStatusMeta(record.status).text }}
-        </a-tag>
-      </template>
-    </a-table-column>
   </ModuleSelectionOverlay>
 </template>
