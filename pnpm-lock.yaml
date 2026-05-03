@@ -14,15 +14,12 @@ importers:
       '@tanstack/vue-query':
         specifier: ^5.99.2
         version: 5.99.2(vue@3.5.33(typescript@5.9.3))
+      '@tanstack/vue-table':
+        specifier: ^8.21.3
+        version: 8.21.3(vue@3.5.33(typescript@5.9.3))
       '@vueuse/core':
         specifier: ^14.2.1
         version: 14.2.1(vue@3.5.33(typescript@5.9.3))
-      ag-grid-community:
-        specifier: ^34.2.0
-        version: 34.3.1
-      ag-grid-vue3:
-        specifier: ^34.2.0
-        version: 34.3.1(vue@3.5.33(typescript@5.9.3))
       ant-design-vue:
         specifier: ^4.2.6
         version: 4.2.6(vue@3.5.33(typescript@5.9.3))
@@ -489,6 +486,10 @@ packages:
   '@tanstack/query-core@5.99.2':
     resolution: {integrity: sha512-1HunU0bXVsR1ZJMZbcOPE6VtaBJxsW809RE9xPe4Gz7MlB0GWwQvuTPhMoEmQ/hIzFKJ/DWAuttIe7BOaWx0tA==}
 
+  '@tanstack/table-core@8.21.3':
+    resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
+    engines: {node: '>=12'}
+
   '@tanstack/vue-query@5.99.2':
     resolution: {integrity: sha512-ll7dzgeM/3/ckNsp+J0ZrUuvJEZan3RlOrb1T4M47CJPM0rS0WNanSYQWPgK0A+Eu/ihwm/kEBmAZOA7toHP8g==}
     peerDependencies:
@@ -497,6 +498,12 @@ packages:
     peerDependenciesMeta:
       '@vue/composition-api':
         optional: true
+
+  '@tanstack/vue-table@8.21.3':
+    resolution: {integrity: sha512-rusRyd77c5tDPloPskctMyPLFEQUeBzxdQ+2Eow4F7gDPlPOB1UnnhzfpdvqZ8ZyX2rRNGmqNnQWm87OI2OQPw==}
+    engines: {node: '>=12'}
+    peerDependencies:
+      vue: '>=3.2'
 
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -722,17 +729,6 @@ packages:
     resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-
-  ag-charts-types@12.3.1:
-    resolution: {integrity: sha512-5216xYoawnvMXDFI6kTpPku+mH0Csiwu/FE7lsAm8Z22HEN6ciSG/V7g+IrpLWncELqksgENebCTP75PZ3CsHA==}
-
-  ag-grid-community@34.3.1:
-    resolution: {integrity: sha512-PwlrPudsFOzGumphi2y9ihWeaUlIwKhOra/MXu2LjeV2U8DgLLcYS8CartE5Hszhn1poJHawwI9HWrxlKliwdw==}
-
-  ag-grid-vue3@34.3.1:
-    resolution: {integrity: sha512-DSurKDsOPk8zX+goy4BsDcAi4wSXP4hZ/YtGc2cQTvh72ceTCqrVxAitI2CB/MfDkvvB05ybbpa4wPxWEmxchw==}
-    peerDependencies:
-      vue: ^3.5.0
 
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
@@ -2804,6 +2800,8 @@ snapshots:
 
   '@tanstack/query-core@5.99.2': {}
 
+  '@tanstack/table-core@8.21.3': {}
+
   '@tanstack/vue-query@5.99.2(vue@3.5.33(typescript@5.9.3))':
     dependencies:
       '@tanstack/match-sorter-utils': 8.19.4
@@ -2811,6 +2809,11 @@ snapshots:
       '@vue/devtools-api': 6.6.4
       vue: 3.5.33(typescript@5.9.3)
       vue-demi: 0.14.10(vue@3.5.33(typescript@5.9.3))
+
+  '@tanstack/vue-table@8.21.3(vue@3.5.33(typescript@5.9.3))':
+    dependencies:
+      '@tanstack/table-core': 8.21.3
+      vue: 3.5.33(typescript@5.9.3)
 
   '@tybys/wasm-util@0.10.1':
     dependencies:
@@ -3116,17 +3119,6 @@ snapshots:
       acorn: 8.16.0
 
   acorn@8.16.0: {}
-
-  ag-charts-types@12.3.1: {}
-
-  ag-grid-community@34.3.1:
-    dependencies:
-      ag-charts-types: 12.3.1
-
-  ag-grid-vue3@34.3.1(vue@3.5.33(typescript@5.9.3)):
-    dependencies:
-      ag-grid-community: 34.3.1
-      vue: 3.5.33(typescript@5.9.3)
 
   agent-base@7.1.4: {}
 

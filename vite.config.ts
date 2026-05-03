@@ -51,10 +51,6 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes('ag-grid-community') || id.includes('ag-grid-vue3')) {
-              return 'grid'
-            }
-
             if (
               id.includes('/vue/') ||
               id.includes('vue-router') ||

@@ -25,9 +25,8 @@
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.1",
     "@tanstack/vue-query": "^5.99.2",
+    "@tanstack/vue-table": "^8.21.3",
     "@vueuse/core": "^14.2.1",
-    "ag-grid-community": "^34.2.0",
-    "ag-grid-vue3": "^34.2.0",
     "ant-design-vue": "^4.2.6",
     "axios": "^1.15.2",
     "dayjs": "^1.11.20",
