@@ -1,6 +1,17 @@
 <script setup lang="ts">
+import { computed, h } from 'vue'
 import type { Dayjs } from 'dayjs'
 import { MenuOutlined, SearchOutlined } from '@ant-design/icons-vue'
+import { Input, InputNumber, Select, SelectOption } from 'ant-design-vue'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ASelect = Select as any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AInput = Input as any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AInputNumber = InputNumber as any
+import { type ColumnDef } from '@tanstack/vue-table'
+import { useDataTable } from '@/composables/use-data-table'
+import DataTable from '@/components/DataTable.vue'
 import type {
   ModuleColumnDefinition,
   ModuleFormFieldDefinition,
@@ -131,10 +142,6 @@ function getEditorFieldId(fieldKey: string) {
   return `editor-field-${props.moduleKey}-${fieldKey}`
 }
 
-function asModuleLineItem(record: Record<string, unknown>): ModuleLineItem {
-  return record as unknown as ModuleLineItem
-}
-
 function asTableColumn(column: unknown): TableColumn {
   return column && typeof column === 'object' ? column as TableColumn : {}
 }
@@ -166,27 +173,159 @@ function getRecordCellValue(record: unknown, column: unknown) {
   return (record as Record<string, unknown>)[dataIndex]
 }
 
+function getRecordNumberValue(record: unknown, column: unknown) {
+  const value = getRecordCellValue(record, column)
+  if (value === undefined || value === null || value === '') {
+    return undefined
+  }
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? numericValue : undefined
+}
+
 function getItemColumnMeta(column: unknown) {
   const key = getTableColumnKey(column)
   return key ? props.itemColumns?.find((item) => item.dataIndex === key) : undefined
 }
 
-function getEditorSummaryCellValue(column: unknown) {
-  const key = getTableColumnKey(column)
-  if (key === 'editorAction') {
-    return '合计'
-  }
-  if (key === 'quantity') {
-    return props.editorItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0).toFixed(0)
-  }
-  if (key === 'weightTon') {
-    return props.formatWeight(props.editorItemWeightTotal)
-  }
-  if (key === 'amount' && props.shouldShowItemAmountSummary) {
-    return props.formatAmount(props.editorItemAmountTotal)
-  }
-  return ''
+function shouldHideNumberInputControls(columnKey: string) {
+  return ['quantity', 'unitPrice', 'weightTon'].includes(columnKey)
 }
+
+function normalizeOptionValue(value: unknown) {
+  return String(value ?? '').trim()
+}
+
+const editorTanstackColumns = computed<ColumnDef<ModuleLineItem, unknown>[]>(() =>
+  props.editorDetailTableColumns.map((col: TableColumn) => {
+    const key = String(col.key || col.dataIndex || '')
+    const isIndex = key === '_index'
+    const isMaterial = key === 'materialCode'
+    const isWarehouse = key === 'warehouseName'
+    const isSettlement = key === 'settlementMode'
+    const isNumber = props.isNumberEditorColumn(key)
+    const meta = getItemColumnMeta(col)
+    const isStatus = meta?.type === 'status'
+    const width = typeof col.width === 'number' ? col.width : undefined
+    const align = (col.align as 'left' | 'center' | 'right' | undefined)
+
+    if (isIndex) {
+      return {
+        id: '_index',
+        header: () => '序号',
+        cell: (info: { row: { index: number; original: ModuleLineItem } }) => [
+          props.canManageEditorItems ? h('span', {
+            class: 'editor-row-drag-handle',
+            draggable: true,
+            title: '拖动排序',
+            onDragstart: (e: DragEvent) => emit('editor-item-drag-start', String(info.row.original.id), e),
+            onDragend: () => emit('editor-item-drag-end'),
+          }, [h(MenuOutlined, { style: { marginRight: '4px', cursor: 'grab', fontSize: '12px', opacity: 0.45 } })]) : null,
+          String(info.row.index + 1),
+        ],
+        meta: { width: 56, align: 'center', fixed: 'left' },
+      }
+    }
+
+    const editable = (record?: ModuleLineItem) => props.isEditorItemColumnEditable(key, record)
+
+    return {
+      id: key,
+      accessorKey: key,
+      header: () => String(col.title || ''),
+      cell: (info: { getValue: () => unknown; row: { original: ModuleLineItem } }) => {
+        const record = info.row.original
+        if (!editable(record)) {
+          if (isStatus) {
+            const s = props.getStatusMeta(info.getValue())
+            return h('span', { class: `ant-tag ant-tag-${s.color}` }, s.text)
+          }
+          return props.formatCellValue(meta, info.getValue())
+        }
+        if (isMaterial) return h('div', { class: 'editor-material-selector' }, [
+          h(ASelect, {
+            value: record.materialCode,
+            showSearch: true,
+            allowClear: true,
+            class: 'editor-item-field',
+            style: 'width: calc(100% - 32px)',
+            placeholder: '选择商品编码',
+            filterOption: props.filterMaterialOption,
+            onChange: (val: unknown) => emit('editor-item-material-select', record, val),
+          }, () => props.materialRows.map((m: ModuleRecord) => {
+            const materialCode = normalizeOptionValue(m.materialCode)
+            return h(SelectOption, {
+              key: materialCode,
+              value: materialCode,
+              label: `${materialCode} ${m.brand || ''} ${m.spec || ''}`,
+            }, () => `${materialCode} / ${m.brand} / ${m.spec}`)
+          })),
+          h('button', {
+            type: 'button',
+            class: 'ant-btn ant-btn-text editor-material-selector-button',
+            onMousedown: (e: Event) => e.preventDefault(),
+            onClick: (e: Event) => { e.stopPropagation(); emit('open-material-selector', record) },
+          }, [h(SearchOutlined)]),
+        ])
+        if (isWarehouse) return h(ASelect, {
+          value: record.warehouseName,
+          showSearch: true,
+          allowClear: true,
+          class: 'editor-item-field',
+          placeholder: '选择码头',
+          filterOption: props.filterMaterialOption,
+          onChange: (val: unknown) => emit('editor-item-value-change', record, 'warehouseName', val),
+        }, () => props.warehouseRows.map((w: ModuleRecord) => h(SelectOption, {
+          key: String(w.warehouseName),
+          value: String(w.warehouseName),
+          label: String(w.warehouseName || ''),
+        }, () => String(w.warehouseName || ''))))
+        if (isSettlement) return h(ASelect, {
+          value: record.settlementMode,
+          class: 'editor-item-field',
+          placeholder: '选择结算方式',
+          onChange: (val: unknown) => emit('editor-item-value-change', record, 'settlementMode', val),
+        }, () => settlementModeOptions.map((mode: string) => h(SelectOption, { key: mode, value: mode, label: mode }, () => mode)))
+        if (isNumber) return h(AInputNumber, {
+          value: getRecordNumberValue(record, col),
+          class: ['editor-item-field', { 'editor-item-field-centered': shouldHideNumberInputControls(key) }],
+          style: 'width: 100%',
+          min: props.getEditorItemMin(key),
+          precision: props.getEditorItemPrecision(key),
+          controls: !shouldHideNumberInputControls(key),
+          onChange: (val: unknown) => emit('editor-item-number-change', record, key, val),
+        })
+        return h(AInput, {
+          value: String(getRecordCellValue(record, col) || ''),
+          class: 'editor-item-field',
+          onChange: (e: Event) => emit('editor-item-input-change', record, key, e),
+        })
+      },
+      meta: { width, align, ellipsis: col.ellipsis === true },
+    }
+  }),
+)
+
+const editorRowSelection = computed(() => {
+  const result: Record<string, boolean> = {}
+  for (const id of (props.selectedItemIds || [])) result[id] = true
+  return result
+})
+
+const { table: editorTable } = useDataTable({
+  data: computed(() => props.editorItems),
+  columns: editorTanstackColumns,
+  getRowId: (row) => String(row.id ?? ''),
+  manualPagination: false,
+  enableSorting: false,
+  enableRowSelection: computed(() => props.canManageEditorItems),
+  rowSelection: editorRowSelection,
+  onRowSelectionChange: (updater: unknown) => {
+    const next = typeof updater === 'function'
+      ? (updater as (s: Record<string, boolean>) => Record<string, boolean>)(editorRowSelection.value)
+      : (updater as Record<string, boolean>)
+    emit('update:selectedItemIds', Object.keys(next))
+  },
+})
 </script>
 
 <template>
@@ -347,163 +486,14 @@ function getEditorSummaryCellValue(column: unknown) {
           <div v-if="lockedLineItemsNotice" class="parent-import-note">
             {{ lockedLineItemsNotice }}
           </div>
-          <a-table
+          <DataTable
+            :table="editorTable"
             size="small"
-            bordered
-            row-key="id"
-            :columns="editorDetailTableColumns"
-            :data-source="editorItems"
-            :pagination="false"
-            :scroll="editorDetailTableScroll"
-            :custom-row="getEditorItemRowProps"
-            :row-class-name="getEditorItemRowClassName"
-            :row-selection="canManageEditorItems ? { selectedRowKeys: selectedItemIds, onChange: (keys) => emit('update:selectedItemIds', keys as string[]) } : undefined"
             class="module-detail-table"
-          >
-            <template #bodyCell="{ column, record, index }">
-              <template v-if="column.key === '_index'">
-                <span
-                  v-if="canManageEditorItems"
-                  class="editor-row-drag-handle"
-                  draggable="true"
-                  title="拖动排序"
-                  @dragstart="emit('editor-item-drag-start', String(record.id), $event)"
-                  @dragend="emit('editor-item-drag-end')"
-                >
-                  <MenuOutlined style="margin-right: 4px; cursor: grab; font-size: 12px; opacity: 0.45" />
-                </span>
-                {{ index + 1 }}
-              </template>
-              <template
-                v-else-if="isEditorItemColumnEditable(String(column.key), asModuleLineItem(record)) && column.key === 'materialCode'"
-              >
-                <div class="editor-material-selector">
-                  <a-select
-                    :value="record.materialCode"
-                    show-search
-                    allow-clear
-                    class="editor-item-field"
-                    style="width: 100%"
-                    placeholder="选择商品编码"
-                    :filter-option="filterMaterialOption"
-                    @change="emit('editor-item-material-select', asModuleLineItem(record), $event)"
-                  >
-                    <a-select-option
-                      v-for="material in materialRows"
-                      :key="String(material.materialCode)"
-                      :value="String(material.materialCode)"
-                      :label="`${material.materialCode} ${material.brand || ''} ${material.spec || ''}`"
-                    >
-                      {{ material.materialCode }} / {{ material.brand }} / {{ material.spec }}
-                    </a-select-option>
-                  </a-select>
-                  <a-button
-                    type="text"
-                    class="editor-material-selector-button"
-                    title="弹窗选择商品"
-                    @mousedown.prevent
-                    @click.stop="emit('open-material-selector', asModuleLineItem(record))"
-                  >
-                    <template #icon>
-                      <SearchOutlined />
-                    </template>
-                  </a-button>
-                </div>
-              </template>
-              <template
-                v-else-if="isEditorItemColumnEditable(String(column.key), asModuleLineItem(record)) && column.key === 'warehouseName'"
-              >
-                <a-select
-                  :value="record.warehouseName"
-                  show-search
-                  allow-clear
-                  class="editor-item-field"
-                  placeholder="选择码头"
-                  :filter-option="filterMaterialOption"
-                  @change="emit('editor-item-value-change', asModuleLineItem(record), 'warehouseName', $event)"
-                >
-                  <a-select-option
-                    v-for="warehouse in warehouseRows"
-                    :key="String(warehouse.warehouseName)"
-                    :value="String(warehouse.warehouseName)"
-                    :label="String(warehouse.warehouseName || '')"
-                  >
-                    {{ warehouse.warehouseName }}
-                  </a-select-option>
-                </a-select>
-              </template>
-              <template
-                v-else-if="isEditorItemColumnEditable(String(column.key), asModuleLineItem(record)) && column.key === 'settlementMode'"
-              >
-                <a-select
-                  :value="record.settlementMode"
-                  class="editor-item-field"
-                  placeholder="选择结算方式"
-                  @change="emit('editor-item-value-change', asModuleLineItem(record), 'settlementMode', $event)"
-                >
-                  <a-select-option
-                    v-for="mode in settlementModeOptions"
-                    :key="mode"
-                    :value="mode"
-                    :label="mode"
-                  >
-                    {{ mode }}
-                  </a-select-option>
-                </a-select>
-              </template>
-              <template
-                v-else-if="isEditorItemColumnEditable(String(column.key), asModuleLineItem(record)) && isNumberEditorColumn(String(column.key))"
-              >
-                <a-input-number
-                  :value="Number(getRecordCellValue(record, column) || 0)"
-                  class="editor-item-field"
-                  style="width: 100%"
-                  :min="getEditorItemMin(String(column.key))"
-                  :precision="getEditorItemPrecision(String(column.key))"
-                  @change="emit('editor-item-number-change', asModuleLineItem(record), String(column.key), $event)"
-                />
-              </template>
-              <template v-else-if="isEditorItemColumnEditable(String(column.key), asModuleLineItem(record))">
-                <a-input
-                  :value="String(getRecordCellValue(record, column) || '')"
-                  class="editor-item-field"
-                  @change="emit('editor-item-input-change', asModuleLineItem(record), String(column.key), $event)"
-                />
-              </template>
-              <template
-                v-else-if="getItemColumnMeta(column)?.type === 'status'"
-              >
-                <a-tag :color="getStatusMeta(getRecordCellValue(record, column)).color">
-                  {{ getStatusMeta(getRecordCellValue(record, column)).text }}
-                </a-tag>
-              </template>
-              <template v-else>
-                {{
-                  formatCellValue(
-                    getItemColumnMeta(column),
-                    getRecordCellValue(record, column),
-                  )
-                }}
-              </template>
-            </template>
-
-            <template #emptyText>
-              <a-empty :description="parentImportConfig ? (canAddManualEditorItems ? '当前没有明细，可手动新增或从上级单据导入' : '当前没有明细，请从上级单据导入') : '当前没有明细，可手动新增'" />
-            </template>
-
-            <template #summary>
-              <a-table-summary-row>
-                <a-table-summary-cell
-                  v-for="(column, index) in editorDetailTableColumns"
-                  :key="getTableColumnKey(column)"
-                  :index="index"
-                  :align="column.align"
-                >
-                  {{ getEditorSummaryCellValue(column) }}
-                </a-table-summary-cell>
-              </a-table-summary-row>
-            </template>
-          </a-table>
+            :row-class="getEditorItemRowClassName"
+            :row-props="getEditorItemRowProps"
+            :empty-text="parentImportConfig ? (canAddManualEditorItems ? '当前没有明细，可手动新增或从上级单据导入' : '当前没有明细，请从上级单据导入') : '当前没有明细，可手动新增'"
+          />
         </template>
       </div>
     </section>

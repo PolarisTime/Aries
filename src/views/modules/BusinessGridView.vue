@@ -3,84 +3,69 @@
  * BusinessGridView — unified CRUD view for 20+ business modules.
  *
  * DECOMPOSITION ROADMAP (in order of impact):
- *  1. Extract editor workspace (lines ~1960-2420) → ModuleEditorWorkspace.vue
- *     - Props: editorVisible, editorTitle, editorForm, canEditFormFields, ...
- *     - This is the largest inline section (~460 lines).
+ *  1. Extract editor workspace → ModuleEditorWorkspace.vue (done)
  *  2. Extract filter toolbar → ModuleFilterToolbar.vue (done)
  *  3. Extract editor form field renderer → FormFieldRenderer.vue (done)
- *  4. Replace module-specific adapters with ModuleBehaviorRegistry calls.
+ *  4. Extract list panel → ModuleGridPanel.vue (done)
+ *  5. Extract overlay composition → ModuleGridOverlays.vue (done)
+ *  6. Extract page config/filter state → useModulePageConfig/useModuleFilters (done)
+ *  7. Extract record actions/export support → useModuleRecordActions/useModuleExportSupport (done)
+ *  8. Extract grid table state → useModuleGridTable (done)
+ *  9. Extract toolbar/editor capabilities/permissions → dedicated composables (done)
+ * 10. Extract visible fields/columns and attachment feature gates → useModuleVisibleFields (done)
+ * 11. Extract page reset/route auto-open lifecycle → useModulePageLifecycle (done)
+ * 12. Extract editor entry and field/item edit bindings → useModuleEditorEntry (done)
+ * 13. Extract table error event wiring → useModuleTableErrors (done)
+ * 14. Extract record identity/format helpers → useModuleRecordHelpers (done)
+ * 15. Extract basic view derived state → useModuleViewState (done)
+ * 16. Extract query refresh and parent import detail fetch → dedicated composables (done)
+ * 17. Extract statement generator/editor draft bridge → useModuleStatementEditorBridge (done)
+ * 18. Extract editor item selection state → useModuleEditorItemSelection (done)
+ * 19. Extract editor template event adapters → useModuleEditorEvents (done)
+ * 20. Extract material export action wrapper → useModuleMaterialExportAction (done)
+ * 21. Move remaining selected/audit derived state into owning composables (done)
+ * 22. Extract list summary/upload-rule row state → useModuleListState (done)
+ * 23. Extract grid panel template bindings → useModuleGridPanelBindings (done)
+ * 24. Extract editor workspace template bindings → useModuleEditorWorkspaceBindings (done)
+ * 25. Replace module-specific adapters with ModuleBehaviorRegistry calls.
  *     - Done for editor adapter; remaining: statements, finance-links, parent-import.
  */
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, type Ref } from 'vue'
+import { computed, reactive, ref, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import dayjs, { type Dayjs } from 'dayjs'
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { message } from 'ant-design-vue'
-import type { MenuProps } from 'ant-design-vue'
-import {
-  deleteBusinessModule,
-  generateBusinessPrimaryNo,
-  getBusinessModuleDetail,
-  listAllBusinessModuleRows,
-} from '@/api/business'
-import {
-  findCustomerOption,
-  resolveSingleCustomerProjectName,
-} from '@/api/customer-options'
-import { businessPageConfigs } from '@/config/business-pages'
 import { isSuccessCode } from '@/api/client'
 import { showRequestError } from '@/composables/use-request-error'
-import {
-  buildWeightOverview,
-  compactWeightOnlyPurchaseItemColumns,
-} from '@/config/business-pages/shared'
-import { usePermissionStore } from '@/stores/permission'
-import { resolveResourceKey } from '@/constants/resource-permissions'
-import type {
-  ModuleActionDefinition,
-  ModuleColumnDefinition,
-  ModuleFormFieldDefinition,
-  ModuleLineItem,
-  ModulePageConfig,
-  ModuleRecord,
-} from '@/types/module-page'
-import { exportRecordsToExcel } from '@/utils/export-excel'
-import ModuleSelectionOverlay from './components/ModuleSelectionOverlay.vue'
-import ModuleAttachmentModal from './components/ModuleAttachmentModal.vue'
 import ModuleEditorWorkspace from './components/ModuleEditorWorkspace.vue'
-import ModuleFilterToolbar from './components/ModuleFilterToolbar.vue'
-import ModuleStatementGenerator from './components/ModuleStatementGenerator.vue'
-import ModuleTableToolbar from './components/ModuleTableToolbar.vue'
-import TableRowActions from './components/TableRowActions.vue'
-import ModuleFreightPickupListOverlay from './components/ModuleFreightPickupListOverlay.vue'
-import ModuleMaterialImportDialogs from './components/ModuleMaterialImportDialogs.vue'
-import ModuleParentSelectorOverlay from './components/ModuleParentSelectorOverlay.vue'
-import ModuleRecordDetailOverlay from './components/ModuleRecordDetailOverlay.vue'
+import ModuleGridOverlays from './components/ModuleGridOverlays.vue'
+import ModuleGridPanel from './components/ModuleGridPanel.vue'
 import {
-  buildEditorAuditTarget,
-  resolveModuleActionKind,
-  resolveModuleActionPermissionCodes,
-  type PermissionActionCode,
-} from './module-adapter-actions'
-import {
-  canModuleEditLineItems,
-  canManageEditorLineItems,
   getEditorItemMin,
   getEditorItemPrecision,
   isNumberEditorColumn,
-  isEditorFieldDisabledForModule,
-  isEditorItemColumnEditableForModule,
-  isModuleLineItemsLocked,
 } from './module-adapter-editor'
-import {
-  generatePrimaryNo as buildModulePrimaryNo,
-  getFriendlyTagColor,
-  getModuleRecordPrimaryNo,
-  getTagListValues,
-  isFriendlyTagColumnKey,
-  isTagListColumnKey,
-} from './module-adapter-shared'
-import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
+import { useModuleEditorCapabilities } from './use-module-editor-capabilities'
+import { useModuleEditorEntry } from './use-module-editor-entry'
+import { useModuleEditorEvents } from './use-module-editor-events'
+import { useModuleEditorItemSelection } from './use-module-editor-item-selection'
+import { useModuleEditorWorkspaceBindings } from './use-module-editor-workspace-bindings'
+import { useModuleExportSupport } from './use-module-export-support'
+import { useModuleFilters } from './use-module-filters'
+import { useModuleGridPanelBindings } from './use-module-grid-panel-bindings'
+import { useModuleGridRowRenderers } from './use-module-grid-row-renderers'
+import { useModuleGridTable } from './use-module-grid-table'
+import { useModuleListState } from './use-module-list-state'
+import { useModuleMaterialExportAction } from './use-module-material-export-action'
+import { useModulePageConfig } from './use-module-page-config'
+import { useModulePageLifecycle } from './use-module-page-lifecycle'
+import { useModuleParentImportDetail } from './use-module-parent-import-detail'
+import { useModulePermissions } from './use-module-permissions'
+import { useModuleQueryRefresh } from './use-module-query-refresh'
+import { useModuleRecordActions } from './use-module-record-actions'
+import { useModuleRecordHelpers } from './use-module-record-helpers'
+import { useModuleTableErrors } from './use-module-table-errors'
+import { useModuleStatementEditorBridge } from './use-module-statement-editor-bridge'
+import { useModuleToolbarActions } from './use-module-toolbar-actions'
+import { useModuleViewState } from './use-module-view-state'
+import { useModuleVisibleFields } from './use-module-visible-fields'
 import { useStatementGeneratorSupport } from './use-statement-generator-support'
 import { useSystemModuleSupport } from './use-system-module-support'
 import { useUploadRuleSupport } from './use-upload-rule-support'
@@ -97,151 +82,117 @@ import { useFinanceStatementLinkSupport } from './use-finance-statement-link-sup
 import { useFreightPickupList } from './use-freight-pickup-list'
 import { useMaterialSelector } from './use-material-selector'
 import { useParentImportSupport } from './use-parent-import-support'
-import { getStoredUser } from '@/utils/storage'
-import { cloneLineItems, resetReactiveObject } from '@/utils/clone-utils'
-import { inferColumnAlign } from '@/utils/column-utils'
-import {
-  isUploadRuleListRow as isUploadRuleRowForModule,
-  shouldHideUploadRuleListValue,
-  UPLOAD_RULE_DEFAULT_CODE,
-  UPLOAD_RULE_DEFAULT_NAME,
-  UPLOAD_RULE_DEFAULT_TITLE,
-} from './use-upload-rule-support'
-
-// Suppress vue-tsc false positives: these are used in the template.
-void isFriendlyTagColumnKey; void isTagListColumnKey; void shouldHideUploadRuleListValue
+import { cloneLineItems } from '@/utils/clone-utils'
 
 const props = defineProps<{
   moduleKey: string
 }>()
-type DynamicColumn = {
-  key?: unknown
-  dataIndex?: unknown
-}
-
 const route = useRoute()
 const router = useRouter()
-const queryClient = useQueryClient()
-const permissionStore = usePermissionStore()
 
 const pagination = reactive({
   currentPage: 1,
   pageSize: 20,
 })
+const { refreshModuleQueries } = useModuleQueryRefresh(computed(() => props.moduleKey))
 
-const autoOpenedDocNo = ref('')
-const submittedFilters = ref<Record<string, unknown>>({})
-const filters = reactive<Record<string, unknown>>({})
-const toggleSearchStatus = ref(false)
 const editorVisible = ref(false)
 const editorMode = ref<'create' | 'edit'>('create')
 const editorSaving = ref(false)
 const editorForm = reactive<Record<string, unknown>>({})
 const editorSourceRecordId = ref('')
-const selectedEditorItemIds = ref<string[]>([])
-const selectedRowKeys = ref<string[]>([])
-const selectedRowMap = ref<Record<string, ModuleRecord>>({})
-const exportLoading = ref(false)
 const materialSelectorKeyword = ref('')
 
-const FREIGHT_PICKUP_LIST_COLUMNS: ModuleColumnDefinition[] = [
-  { title: '品牌', dataIndex: 'brand', width: 100 },
-  { title: '材质', dataIndex: 'material', width: 110 },
-  { title: '规格', dataIndex: 'spec', width: 100 },
-  { title: '长度', dataIndex: 'length', width: 100 },
-  { title: '数量', dataIndex: 'quantity', width: 100, align: 'right', type: 'count' },
-  { title: '数量单位', dataIndex: 'quantityUnit', width: 100 },
-  { title: '总重', dataIndex: 'totalWeight', width: 110, align: 'right', type: 'weight' },
-  { title: '重量单位', dataIndex: 'weightUnit', width: 100, align: 'center' },
-  { title: '仓库名称', dataIndex: 'warehouseName', width: 140 },
-  { title: '客户名', dataIndex: 'customerName', width: 160 },
-]
-
-const WEIGHT_ONLY_VIEW_SETTING_CODES: Record<string, string> = {
-  'purchase-inbounds': 'UI_WEIGHT_ONLY_PURCHASE_INBOUNDS',
-  'sales-outbounds': 'UI_WEIGHT_ONLY_SALES_OUTBOUNDS',
-}
-
-const INVOICE_ASSIST_MODULE_KEYS = new Set(['invoice-receipts', 'invoice-issues'])
-
-const supportsWeightOnlyViewSwitch = computed(() => props.moduleKey in WEIGHT_ONLY_VIEW_SETTING_CODES)
-const supportsInvoiceAssist = computed(() => INVOICE_ASSIST_MODULE_KEYS.has(props.moduleKey))
-const weightOnlyViewSettingsQuery = useQuery({
-  queryKey: ['business-grid-all', 'general-settings', 'weight-only-view-switches'],
-  queryFn: async () => {
-    try {
-      return await listAllBusinessModuleRows('general-settings', {})
-    } catch {
-      return []
-    }
+const {
+  config,
+  readOnlyAlertActionLink,
+  showSnowflakeId,
+  supportsInvoiceAssist,
+} = useModulePageConfig(computed(() => props.moduleKey))
+const {
+  activeQuickFilterKey,
+  applyKeywordFilter,
+  applyQuickFilter,
+  filters,
+  handleFilterValueChange,
+  handleSearch,
+  hasAdvancedFilters,
+  quickFilters,
+  resetFilters,
+  resolveModuleStatusOptions,
+  searchExpanded,
+  setFilterValue,
+  submittedFilters,
+  visibleFilters,
+} = useModuleFilters({
+  config,
+  setCurrentPage: (value) => {
+    pagination.currentPage = value
   },
-  enabled: supportsWeightOnlyViewSwitch,
-  placeholderData: keepPreviousData,
+})
+const {
+  canAuditRecords,
+  canCreateRecords,
+  canDeleteRecords,
+  canEditRecords,
+  canExportRecords,
+  canPrintRecords,
+  canViewModuleRecords,
+  canViewRecords,
+  hasAnyModuleAction,
+} = useModulePermissions(computed(() => props.moduleKey))
+const {
+  generatePrimaryNo,
+  generatePrimaryNoAsync,
+  getCurrentOperatorName,
+  getPrimaryNo,
+  getRowClassName,
+  sumLineItemsBy,
+} = useModuleRecordHelpers({
+  moduleKey: computed(() => props.moduleKey),
+  config,
+})
+const {
+  canEditFormFields,
+  canEditItemColumns,
+  canEditLineItems,
+  canImportMaterials,
+  canSaveCurrentEditor,
+  editorItemAmountTotal,
+  editorItems,
+  editorItemWeightTotal,
+  editorTitle,
+  formFields,
+  isMaterialModule,
+  isReadOnly,
+  parentImportConfig,
+  shouldShowItemAmountSummary,
+  statusMap,
+} = useModuleViewState({
+  moduleKey: computed(() => props.moduleKey),
+  config,
+  editorMode,
+  editorForm,
+  canCreateRecords,
+  canEditRecords,
+  sumLineItemsBy,
+})
+const { fetchParentImportDetail } = useModuleParentImportDetail({
+  parentImportConfig,
+  isSuccessCode,
 })
 
-function buildWeightOnlyViewConfig(baseConfig: ModulePageConfig) {
-  return {
-    ...baseConfig,
-    columns: baseConfig.columns.filter((column) => column.dataIndex !== 'totalAmount'),
-    detailFields: baseConfig.detailFields.filter((field) => field.key !== 'totalAmount'),
-    itemColumns: compactWeightOnlyPurchaseItemColumns,
-    buildOverview: (rows: ModuleRecord[]) => buildWeightOverview(rows),
-  }
-}
-
-const config = computed<ModulePageConfig>(() => {
-  const found = businessPageConfigs[props.moduleKey]
-  if (!found) {
-    throw new Error(`Unknown module key: ${props.moduleKey}`)
-  }
-
-  const switchCode = WEIGHT_ONLY_VIEW_SETTING_CODES[props.moduleKey]
-  const isWeightOnlyViewEnabled = Boolean(
-    switchCode
-    && (weightOnlyViewSettingsQuery.data.value || []).some((row) =>
-      String(row.settingCode || '') === switchCode && String(row.status || '') === '正常',
-    ),
-  )
-
-  return isWeightOnlyViewEnabled ? buildWeightOnlyViewConfig(found) : found
+const {
+  createEditorBaseDraft,
+  openCreateEditorWithDraft,
+} = useModuleStatementEditorBridge({
+  editorForm,
+  editorMode,
+  editorVisible,
+  editorSourceRecordId,
+  resetParentImportState: () => resetParentImportState(),
+  buildEditorDraft: (mode, sourceRecord) => buildEditorDraft(mode, sourceRecord),
 })
-
-const isMaterialModule = computed(() => hasBehavior(props.moduleKey, 'supportsMaterialImport'))
-const moduleResource = computed(() => resolveResourceKey(props.moduleKey))
-const canViewRecords = computed(() => permissionStore.can(moduleResource.value, 'read'))
-const canCreateRecords = computed(() => permissionStore.can(moduleResource.value, 'create'))
-const canEditRecords = computed(() => permissionStore.can(moduleResource.value, 'update'))
-const canDeleteRecords = computed(() => permissionStore.can(moduleResource.value, 'delete'))
-const canAuditRecords = computed(() => permissionStore.can(moduleResource.value, 'audit'))
-const canExportRecords = computed(() => permissionStore.can(moduleResource.value, 'export'))
-const canPrintRecords = computed(() => permissionStore.can(moduleResource.value, 'print'))
-const canImportMaterials = computed(() => canEditRecords.value)
-const canSaveCurrentEditor = computed(() =>
-  editorMode.value === 'edit' ? canEditRecords.value : canCreateRecords.value,
-)
-const canSaveAndAuditCurrentEditor = computed(() =>
-  canSaveCurrentEditor.value && canAuditRecords.value && canAuditEditor.value,
-)
-
-function hasAnyModuleAction(actionCodes: PermissionActionCode[]) {
-  return actionCodes.some((actionCode) => permissionStore.can(moduleResource.value, actionCode))
-}
-
-function canViewModuleRecords(moduleKey: string | null | undefined) {
-  return Boolean(moduleKey) && permissionStore.can(resolveResourceKey(String(moduleKey)), 'read')
-}
-
-function openCreateEditorWithDraft(draft: ModuleRecord) {
-  editorMode.value = 'create'
-  editorSourceRecordId.value = ''
-  resetParentImportState()
-  resetReactiveObject(editorForm, draft)
-  editorVisible.value = true
-}
-
-function createEditorBaseDraft() {
-  return buildEditorDraft('create') as ModuleRecord
-}
 
 const {
   checkedRoleNames,
@@ -305,42 +256,25 @@ const {
 })
 
 const {
-  activeUploadRuleRowId,
-  closeUploadRuleDialog,
-  handleSaveUploadRule,
-  openUploadRuleDialog,
+  attachmentFeatureEnabled,
+  handleUploadRuleRecordEdit,
+  handleUploadRuleRecordView,
   resetUploadRuleState,
-  uploadRuleDetailRows,
-  uploadRuleForm,
-  uploadRuleLoading,
-  uploadRuleSaving,
-  uploadRuleStatusText,
-  uploadRuleVisible,
+  uploadRuleGridRowRenderers,
+  uploadRuleGridTableHooks,
+  uploadRuleRecordActionGuards,
 } = useUploadRuleSupport({
+  moduleKey: computed(() => props.moduleKey),
   canEditRecords,
   canViewRecords,
+  isReadOnly,
   isSuccessCode,
   refreshModuleQueries,
   showRequestError,
 })
 
-function canUseAction(actionLabel: string) {
-  return hasAnyModuleAction(resolveModuleActionPermissionCodes(actionLabel))
-}
-
-const visibleToolbarActions = computed<ModuleActionDefinition[]>(() =>
-  (config.value.actions || []).filter((action) => canUseAction(action.label)),
-)
-
-const canEditItemColumns = computed(() => canModuleEditLineItems(props.moduleKey, Boolean(config.value.itemColumns?.length)))
-const canEditFormFields = computed(() => Boolean(formFields.value.length))
-const canEditLineItems = computed(() => canModuleEditLineItems(props.moduleKey, Boolean(config.value.itemColumns?.length)))
-const formFields = computed(() => config.value.formFields || [])
-const isReadOnly = computed(() => Boolean(config.value.readOnly))
-const parentImportConfig = computed(() => config.value.parentImport)
 const {
   listQuery,
-  uploadRuleDetailQuery,
   parentListQuery,
   materialListQuery,
   customerStatementRowsQuery,
@@ -365,7 +299,6 @@ const {
   paginationCurrentPage: computed(() => pagination.currentPage),
   paginationPageSize: computed(() => pagination.pageSize),
   canViewRecords,
-  isReadOnly,
   canEditLineItems,
   editorVisible,
   editorForm,
@@ -374,16 +307,6 @@ const {
   canViewModuleRecords: (moduleKey) => canViewModuleRecords(moduleKey),
   materialSelectorKeyword,
 })
-const visibleFilters = computed(() =>
-  toggleSearchStatus.value ? config.value.filters : config.value.filters.slice(0, 3),
-)
-const quickFilters = computed(() => config.value.quickFilters || [])
-const hasAdvancedFilters = computed(() => config.value.filters.length > 3)
-const shouldShowItemAmountSummary = computed(() =>
-  Boolean(config.value.itemColumns?.some((column) => column.dataIndex === 'amount')),
-)
-const editorItemWeightTotal = computed(() => sumLineItemsBy(editorItems.value, 'weightTon'))
-const editorItemAmountTotal = computed(() => sumLineItemsBy(editorItems.value, 'amount'))
 
 const {
   columnSettingItems,
@@ -419,372 +342,88 @@ const {
   formFields,
 })
 
-function createFilters(pageConfig: ModulePageConfig) {
-  return Object.fromEntries(
-    pageConfig.filters.map((filter) => [filter.key, filter.type === 'dateRange' ? undefined : '']),
-  ) as Record<string, string | Dayjs[] | undefined>
-}
+const { masterTableSummary } = useModuleListState(computed(() => listResult.value.total))
 
-function resolveFilterOptions(filter: ModulePageConfig['filters'][number]) {
-  if (!filter.options) {
-    return []
-  }
-  return typeof filter.options === 'function'
-    ? filter.options(filters as Record<string, unknown>)
-    : filter.options
-}
-
-function resolveFormFieldOptions(field: ModuleFormFieldDefinition | undefined) {
-  if (!field?.options) {
-    return []
-  }
-  return typeof field.options === 'function' ? field.options() : field.options
-}
-
-function isFilterOptionGroup(option: { label: string } | { label: string; options: unknown[] }) {
-  return 'options' in option
-}
-
-function flattenFilterOptions(filter: ModulePageConfig['filters'][number]) {
-  return resolveFilterOptions(filter).flatMap((option) =>
-    isFilterOptionGroup(option) ? option.options : [option],
-  )
-}
-
-function areFilterValuesEqual(left: unknown, right: unknown) {
-  if (Array.isArray(left) || Array.isArray(right)) {
-    return false
-  }
-  return String(left ?? '').trim() === String(right ?? '').trim()
-}
-
-function isQuickFilterActive(filterPreset: { values: Record<string, string | undefined> }) {
-  return config.value.filters.every((filter) => {
-    const currentValue = filters[filter.key]
-    const expectedValue = filterPreset.values[filter.key]
-    if (filter.type === 'dateRange') {
-      return expectedValue === undefined && (currentValue === undefined || currentValue === null)
-    }
-    return areFilterValuesEqual(currentValue, expectedValue)
-  })
-}
-
-const activeQuickFilterKey = computed(() =>
-  quickFilters.value.find((filterPreset) => isQuickFilterActive(filterPreset))?.key || '',
-)
-
-function applyQuickFilter(filterPreset: { values: Record<string, string | undefined> }) {
-  resetReactiveObject(filters as Record<string, unknown>, createFilters(config.value))
-  Object.entries(filterPreset.values).forEach(([key, value]) => {
-    filters[key] = value ?? ''
-  })
-  handleSearch()
-}
-
-function handleFilterValueChange() {
-  config.value.filters.forEach((filter) => {
-    if (filter.type !== 'select') {
-      return
-    }
-    const currentValue = String(filters[filter.key] ?? '').trim()
-    if (!currentValue) {
-      return
-    }
-    const availableOptions = flattenFilterOptions(filter)
-    if (!availableOptions.some((option) => option.value === currentValue)) {
-      filters[filter.key] = ''
-    }
-  })
-}
-
-function isUploadRuleListRow(record: ModuleRecord | null | undefined) {
-  return isUploadRuleRowForModule(props.moduleKey, record)
-}
-
-function buildSubmittedFilters() {
-  return Object.fromEntries(
-    Object.entries(filters)
-      .map(([key, value]) => {
-        if (Array.isArray(value) && value.length === 2) {
-          return [key, value.map((item) => item.format('YYYY-MM-DD'))]
-        }
-        return [key, value]
-      })
-      .filter(([, value]) => {
-        if (value === undefined || value === null) {
-          return false
-        }
-        if (Array.isArray(value)) {
-          return value.length === 2 && value.every(Boolean)
-        }
-        return String(value).trim().length > 0
-      }),
-  )
-}
-
-const statusMap = computed(() => config.value.statusMap || {})
 const {
   formatAmount,
   formatCellValue,
   formatWeight,
   getStatusMeta,
 } = useModuleDisplaySupport(statusMap)
-const rawColumnMetaMap = computed<Record<string, ModuleColumnDefinition>>(() =>
-  Object.fromEntries(config.value.columns.map((column) => [column.dataIndex, column])),
-)
-const rawFormFieldMetaMap = computed<Record<string, ModuleFormFieldDefinition>>(() =>
-  Object.fromEntries(formFields.value.map((field) => {
-    if (field.key === 'warehouseName' && field.type === 'select') {
-      return [field.key, {
-        ...field,
-        options: warehouseRows.value.map((warehouse) => ({
-          label: String(warehouse.warehouseName || ''),
-          value: String(warehouse.warehouseName || ''),
-        })),
-      }]
-    }
-    if (hasBehavior(props.moduleKey, 'isSettingsModule') && field.key === 'parentId') {
-      const currentDepartmentId = String(editorForm.id || '')
-      return [field.key, {
-        ...field,
-        type: 'select',
-        options: departmentRows.value
-          .filter((department) =>
-            String(department.status || '') === '正常'
-            && String(department.id || '') !== currentDepartmentId,
-          )
-          .map((department) => ({
-            label: String(department.departmentName || department.departmentCode || ''),
-            value: Number(department.id),
-          })),
-      }]
-    }
-    if (field.key === 'sourceStatementId') {
-      return [field.key, resolveSourceStatementField(field)]
-    }
-    return [field.key, field]
-  })),
-)
 
-const attachmentFeatureEnabled = computed(() => {
-  const response = uploadRuleDetailQuery.data.value
-  if (!response || !isSuccessCode(response.code) || !response.data) {
-    return true
-  }
-  return String(response.data.status || '正常') === '正常'
+const {
+  canManageAttachments,
+  columnMetaMap,
+  visibleConfigColumns,
+  visibleFormFields,
+} = useModuleVisibleFields({
+  moduleKey: computed(() => props.moduleKey),
+  config,
+  formFields,
+  warehouseRows,
+  departmentRows,
+  editorForm,
+  showSnowflakeId,
+  columnSettingItems,
+  formFieldSettingItems,
+  attachmentFeatureEnabled,
+  canEditRecords,
+  resolveSourceStatementField: (field) => resolveSourceStatementField(field),
 })
 
-const canManageAttachments = computed(() =>
-  canEditRecords.value && attachmentFeatureEnabled.value,
-)
-
-const visibleConfigColumns = computed(() =>
-  columnSettingItems.value
-    .filter((item) => item.visible)
-    .map((item) => rawColumnMetaMap.value[item.key])
-    .filter(Boolean),
-)
-
-const columnMetaMap = computed<Record<string, ModuleColumnDefinition>>(() =>
-  Object.fromEntries(visibleConfigColumns.value.map((column) => [column.dataIndex, column])),
-)
-const visibleFormFields = computed(() =>
-  formFieldSettingItems.value
-    .filter((item) => item.visible)
-    .map((item) => rawFormFieldMetaMap.value[item.key])
-    .filter(Boolean),
-)
-
-const tableColumns = computed(() => [
-  {
-    title: '操作',
-    dataIndex: 'action',
-    key: 'action',
-    width: isReadOnly.value ? 84 : 172,
-    align: 'center' as const,
-    fixed: 'left' as const,
-  },
-  ...visibleConfigColumns.value.map((column) => ({
-    title: column.title,
-    dataIndex: column.dataIndex,
-    key: column.dataIndex,
-    align: inferColumnAlign(column),
-  })),
-])
-
-const exportMenuItems = computed<MenuProps['items']>(() => [
-  {
-    key: 'selected',
-    label: `导出选中 (${selectedRowKeys.value.length})`,
-    disabled: selectedRowKeys.value.length === 0,
-  },
-  {
-    key: 'page',
-    label: `导出当前页 (${listResult.value.rows.length})`,
-    disabled: listResult.value.rows.length === 0,
-  },
-  {
-    key: 'filtered',
-    label: `导出当前筛选 (${listResult.value.total})`,
-    disabled: listResult.value.total === 0,
-  },
-])
-
-const detailTableColumns = computed(() =>
-  (config.value.itemColumns || []).map((column) => ({
-    title: column.title,
-    dataIndex: column.dataIndex,
-    key: column.dataIndex,
-    width: column.width || 120,
-    align: inferColumnAlign(column),
-    ellipsis: true,
-  })),
-)
-
-const rawEditorColumnMetaMap = computed<Record<string, ModuleColumnDefinition>>(() =>
-  Object.fromEntries((config.value.itemColumns || []).map((column) => [column.dataIndex, column])),
-)
-
-const visibleEditorColumns = computed(() => {
-  if (!canEditItemColumns.value) {
-    return config.value.itemColumns || []
-  }
-
-  return editorColumnSettingItems.value
-    .filter((item) => item.visible)
-    .map((item) => rawEditorColumnMetaMap.value[item.key])
-    .filter(Boolean)
+const {
+  detailTableColumns,
+  detailTableScroll,
+  editorDetailTableColumns,
+  editorDetailTableScroll,
+  expandable,
+  expandedDetailRecordMap,
+  freightSummaryColumns,
+  getExpandedDetailItems,
+  isExpandedDetailLoading,
+  mainTable,
+  materialSelectorColumns,
+  resetGridTableState,
+  selectedRowCount,
+  selectedRowKeys,
+  selectedRowMap,
+} = useModuleGridTable({
+  moduleKey: computed(() => props.moduleKey),
+  config,
+  listRows: computed(() => listResult.value.rows),
+  canViewRecords,
+  canEditItemColumns,
+  isReadOnly,
+  visibleConfigColumns,
+  columnMetaMap,
+  editorColumnSettingItems,
+  formatCellValue,
+  getStatusMeta,
+  ...uploadRuleGridTableHooks,
+  isSuccessCode,
+  showRequestError,
 })
 
-const editorDetailTableColumns = computed(() =>
-  [
-    { title: '序号', dataIndex: '_index', key: '_index', width: 56, align: 'center' as const, fixed: 'left' as const },
-    ...visibleEditorColumns.value.map((column) => ({
-      title: column.title,
-      dataIndex: column.dataIndex,
-      key: column.dataIndex,
-      width: column.width || 120,
-      align: inferColumnAlign(column),
-      ellipsis: true,
-    })),
-  ],
-)
-
-const tableScroll = computed(() => ({
-  x: 'max-content' as const,
-}))
-
-const detailTableScroll = computed(() => ({
-  x: sumColumnWidths(config.value.itemColumns || []),
-}))
-
-const editorDetailTableScroll = computed(() => ({
-  x: sumColumnWidths(visibleEditorColumns.value) + 56,
-}))
-
-const tablePagination = computed(() => ({
-  current: pagination.currentPage,
-  pageSize: pagination.pageSize,
-  total: listResult.value.total,
-  showSizeChanger: true,
-  pageSizeOptions: ['10', '20', '50', '100'],
-  showTotal: (total: number) => `共 ${total} 条`,
-}))
-
-const rowSelection = computed(() => ({
-  selectedRowKeys: selectedRowKeys.value,
-  preserveSelectedRowKeys: true,
-  fixed: true,
-  getCheckboxProps: (record: ModuleRecord) => ({
-    disabled: isUploadRuleListRow(record),
-  }),
-  onChange: (keys: Array<string | number>) => {
-    selectedRowKeys.value = keys.map((key) => String(key))
-  },
-  onSelect: (record: ModuleRecord, selected: boolean) => {
-    const nextMap = { ...selectedRowMap.value }
-    if (selected) {
-      nextMap[String(record.id)] = record
-    } else {
-      delete nextMap[String(record.id)]
-    }
-    selectedRowMap.value = nextMap
-  },
-  onSelectAll: (selected: boolean, selectedRows: ModuleRecord[], changeRows: ModuleRecord[]) => {
-    const nextMap = { ...selectedRowMap.value }
-    if (selected) {
-      selectedRows.forEach((row: ModuleRecord) => {
-        nextMap[String(row.id)] = row
-      })
-    } else {
-      changeRows.forEach((row: ModuleRecord) => {
-        delete nextMap[String(row.id)]
-      })
-    }
-    selectedRowMap.value = nextMap
-  },
-}))
-
-const expandable = computed(() => {
-  if (hasBehavior(props.moduleKey, 'hasUploadRuleExpandedRow') && canViewRecords.value) {
-    return {
-      expandedRowKeys: uploadRuleVisible.value && activeUploadRuleRowId.value ? [activeUploadRuleRowId.value] : [],
-      rowExpandable: (record: ModuleRecord) => isUploadRuleListRow(record),
-      onExpand: (expanded: boolean, record: ModuleRecord) => {
-        if (!isUploadRuleListRow(record)) {
-          return
-        }
-        if (expanded) {
-          void openUploadRuleDialog(record)
-          return
-        }
-        closeUploadRuleDialog()
-      },
-    }
-  }
-
-  if (config.value.itemColumns?.length) {
-    return {
-      rowExpandable: (record: ModuleRecord) => Boolean(record.items?.length),
-    }
-  }
-
-  return undefined
+const {
+  exportLoading,
+  exportMenuItems,
+  exportRows,
+  handleExportMenuClick,
+} = useModuleExportSupport({
+  moduleKey: computed(() => props.moduleKey),
+  config,
+  visibleConfigColumns,
+  listRows: computed(() => listResult.value.rows),
+  listTotal: computed(() => listResult.value.total),
+  selectedRowKeys,
+  selectedRowMap,
+  submittedFilters,
+  canExportRecords,
+  formatCellValue,
+  getStatusText: (value) => getStatusMeta(value).text,
 })
 
-const masterTableSummary = computed(() => `共 ${listResult.value.total} 条记录`)
-
-const tableErrorMessage = ref('')
-
-function handleTableError(event: Event) {
-  const detail = (event as Event & { detail?: { code: number; message: string } }).detail
-  if (detail?.message) {
-    tableErrorMessage.value = detail.message
-  }
-}
-function clearTableError() {
-  tableErrorMessage.value = ''
-}
-
-onMounted(() => {
-  window.addEventListener('leo:table-error', handleTableError)
-  window.addEventListener('leo:table-error-cleared', clearTableError)
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('leo:table-error', handleTableError)
-  window.removeEventListener('leo:table-error-cleared', clearTableError)
-})
-
-const editorTitle = computed(() => {
-  if (editorMode.value === 'edit') {
-    return `编辑${config.value.title}`
-  }
-  return `新增${config.value.title}`
-})
-
-const editorItems = computed<ModuleLineItem[]>(() =>
-  Array.isArray(editorForm.items) ? (editorForm.items as ModuleLineItem[]) : [],
-)
+const { clearTableError, tableErrorMessage } = useModuleTableErrors()
 
 const {
   paymentBusinessType,
@@ -803,39 +442,31 @@ const {
   freightStatementRowsFetched: freightStatementRowsQuery.isFetched,
 })
 
-const lineItemsLocked = computed(() =>
-  isModuleLineItemsLocked(
-    props.moduleKey,
-    lineItemLockRelatedRows.value.map((record) => String(record.status || '')),
-  ),
-)
-
-const editorAuditTarget = computed(() => {
-  const statusField = formFields.value.find((field) => field.key === 'status')
-  return buildEditorAuditTarget(
-    props.moduleKey,
-    resolveFormFieldOptions(statusField).map((option) => String(option.value)),
-    lineItemsLocked.value,
-  )
+const {
+  canAddManualEditorItems,
+  canManageEditorItems,
+  canSaveAndAuditCurrentEditor,
+  canUseBulkAuditActions,
+  canUseBulkDeleteActions,
+  canUseBulkPrintActions,
+  editorAuditTarget,
+  lineItemsLocked,
+  listAuditTarget,
+  listReverseAuditTarget,
+  listStatusOptions,
+  lockedLineItemsNotice,
+} = useModuleEditorCapabilities({
+  moduleKey: computed(() => props.moduleKey),
+  formFields,
+  lineItemLockRelatedRows,
+  canEditLineItems,
+  canSaveCurrentEditor,
+  canAuditRecords,
+  canPrintRecords,
+  canDeleteRecords,
+  isReadOnly,
+  resolveModuleStatusOptions,
 })
-
-const canAuditEditor = computed(() => Boolean(editorAuditTarget.value))
-const canManageEditorItems = computed(() =>
-  canManageEditorLineItems(
-    props.moduleKey,
-    canEditLineItems.value,
-    canSaveCurrentEditor.value,
-    lineItemsLocked.value,
-  ),
-)
-const canAddManualEditorItems = computed(() =>
-  canManageEditorItems.value && getBehaviorValue(props.moduleKey, 'allowsManualLineItems') !== false,
-)
-const lockedLineItemsNotice = computed(() =>
-  lineItemsLocked.value
-    ? String(getBehaviorValue(props.moduleKey, 'lockedLineItemsNotice') || '')
-    : '',
-)
 
 useInvoiceSync({
   moduleKey: computed(() => props.moduleKey),
@@ -895,27 +526,17 @@ const {
   refreshModuleQueries,
 })
 
-async function fetchParentImportDetail(record: ModuleRecord) {
-  if (!parentImportConfig.value?.parentModuleKey) {
-    return record
-  }
-
-  const response = await getBusinessModuleDetail(parentImportConfig.value.parentModuleKey, String(record.id))
-  if (!isSuccessCode(response.code) || !response.data) {
-    throw new Error(response.message || '获取上级单据详情失败')
-  }
-
-  return response.data
-}
-
 const {
   closeParentSelector,
+  getParentImportableQuantity,
   getParentOptionLabel,
   getParentRelationNo,
   getParentSelectorRowProps,
   handleImportParentItems,
   occupiedParentMap,
   openParentSelector,
+  parentAvailabilityLoading,
+  parentImportableQuantityVisible,
   parentSelectorKeyword,
   parentSelectorRowSelection,
   parentSelectorRows,
@@ -940,6 +561,8 @@ const {
   handleCloseDetail,
   handlePrintDetail,
   handleView,
+  printRecords,
+  resolveRecordById,
   resolveRecordForDetail,
 } = useDetailSupport({
   moduleKey: computed(() => props.moduleKey),
@@ -947,11 +570,7 @@ const {
   statusMap,
   canViewRecords,
   canPrintRecords,
-  activeUploadRuleRowId,
-  uploadRuleVisible,
-  isUploadRuleListRow,
-  closeUploadRuleDialog,
-  openUploadRuleDialog,
+  handleCustomViewRecord: handleUploadRuleRecordView,
   isSuccessCode,
   showRequestError,
   getPrimaryNo,
@@ -976,11 +595,10 @@ const {
   canManageEditorItems,
 })
 
-function removeSelectedEditorItems() {
-  if (!selectedEditorItemIds.value.length) return
-  selectedEditorItemIds.value.forEach((id) => removeEditorItem(id))
-  selectedEditorItemIds.value = []
-}
+const {
+  removeSelectedEditorItems,
+  selectedEditorItemIds,
+} = useModuleEditorItemSelection(removeEditorItem)
 
 const {
   materialSelectorVisible,
@@ -1042,299 +660,59 @@ const {
   },
 })
 
-function resetPageState() {
-  resetReactiveObject(filters as Record<string, unknown>, createFilters(config.value))
-  submittedFilters.value = {}
-  pagination.currentPage = 1
-  detailVisible.value = false
-  activeRecord.value = null
-  autoOpenedDocNo.value = ''
-  toggleSearchStatus.value = false
-  selectedRowKeys.value = []
-  selectedRowMap.value = {}
-  closeFreightPickupList()
-  resetStatementSupportState()
-  closeMaterialImportModal()
-  resetUploadRuleState()
-  closeEditor()
-  initColumnSettings()
-  initFormFieldSettings()
-  initEditorColumnSettings()
-}
-
-function applyRouteDocNo() {
-  const docNo = String(route.query.docNo || '').trim()
-  const hasKeywordFilter = config.value.filters.some((item) => item.key === 'keyword')
-  if (!docNo || !hasKeywordFilter) {
-    return
-  }
-
-  filters.keyword = docNo
-  submittedFilters.value = {
-    ...submittedFilters.value,
-    keyword: docNo,
-  }
-  pagination.currentPage = 1
-}
-
-watch(
-  () => props.moduleKey,
-  () => {
-    resetPageState()
-    applyRouteDocNo()
+const { handleReset } = useModulePageLifecycle({
+  moduleKey: computed(() => props.moduleKey),
+  routeDocNo: computed(() => route.query.docNo),
+  routeTrackId: computed(() => route.query.trackId ?? route.query.trackid),
+  routeOpenDetail: computed(() => route.query.openDetail),
+  listRows: computed(() => listResult.value.rows),
+  selectedRowKeys,
+  selectedRowMap,
+  detailVisible,
+  activeRecord,
+  resetFilters,
+  setPaginationCurrentPage: (value) => {
+    pagination.currentPage = value
   },
-  { immediate: true },
-)
+  resetGridTableState,
+  closeFreightPickupList,
+  resetStatementSupportState,
+  closeMaterialImportModal,
+  resetUploadRuleState,
+  closeEditor,
+  initColumnSettings,
+  initFormFieldSettings,
+  initEditorColumnSettings,
+  applyKeywordFilter,
+  getPrimaryNo,
+  fetchRecordById: resolveRecordById,
+  handleView,
+})
 
-watch(
-  () => route.query.docNo,
-  () => {
-    autoOpenedDocNo.value = ''
-    applyRouteDocNo()
-  },
-)
-
-watch(
-  () => listResult.value.rows,
-  (rows) => {
-    if (!rows.length) {
-      return
-    }
-
-    const nextMap = { ...selectedRowMap.value }
-    rows.forEach((row) => {
-      if (selectedRowKeys.value.includes(String(row.id))) {
-        nextMap[String(row.id)] = row
-      }
-    })
-    selectedRowMap.value = nextMap
-
-    const docNo = String(route.query.docNo || '').trim()
-    const openDetail = String(route.query.openDetail || '') === '1'
-    if (!docNo || !openDetail || autoOpenedDocNo.value === docNo) {
-      return
-    }
-
-    const matched = rows.find((record) => getPrimaryNo(record) === docNo)
-    if (matched) {
-      autoOpenedDocNo.value = docNo
-      handleView(matched)
-    }
-  },
-  { immediate: true },
-)
-
-function sumColumnWidths(columns: ModuleColumnDefinition[]) {
-  return columns.reduce((sum, column) => sum + (column.width || 120), 0)
-}
-
-function handleSearch() {
-  submittedFilters.value = buildSubmittedFilters()
-  pagination.currentPage = 1
-}
-
-function handleReset() {
-  resetPageState()
-}
-
-async function refreshModuleQueries() {
-  await Promise.all([
-    queryClient.invalidateQueries({
-      queryKey: ['business-grid', props.moduleKey],
-    }),
-    queryClient.invalidateQueries({
-      queryKey: ['business-grid-all', props.moduleKey],
-    }),
-  ])
-}
-
-async function handleAction(actionLabel: string) {
-  if (!canUseAction(actionLabel)) {
-    message.warning(`暂无${actionLabel}权限`)
-    return
-  }
-
-  switch (resolveModuleActionKind({
-    moduleKey: props.moduleKey,
-    actionLabel,
-    hasFormFields: formFields.value.length > 0,
-    isMaterialModule: isMaterialModule.value,
-  })) {
-    case 'openSupplierStatementGenerator':
-      await openSupplierStatementGenerator()
-      return
-    case 'openCustomerStatementGenerator':
-      await openCustomerStatementGenerator()
-      return
-    case 'openFreightStatementGenerator':
-      await openFreightStatementGenerator()
-      return
-    case 'openCreateEditor':
-      await openCreateEditor()
-      return
-    case 'exportMaterialRows':
-      exportLoading.value = true
-      try {
-        await exportMaterialRows(submittedFilters.value, config.value.title)
-      } finally {
-        exportLoading.value = false
-      }
-      return
-    case 'exportRows':
-      await exportRows('filtered')
-      return
-    case 'openFreightPickupList':
-      await openFreightPickupList()
-      return
-    case 'markSelectedFreightDelivered':
-      await markSelectedFreightDelivered()
-      return
-    case 'openFreightSummary':
-      await openFreightSummary()
-      return
-    case 'navigateToRoleActionEditor':
-      router.push('/role-action-editor')
-      return
-    default:
-      message.info(`${actionLabel} 当前没有额外处理逻辑。`)
-  }
-}
-
-function formatExportCellValue(column: ModuleColumnDefinition, value: unknown) {
-  if (column.type === 'status') {
-    return getStatusMeta(value).text
-  }
-
-  const rendered = formatCellValue(column, value)
-  return rendered === '--' ? '' : String(rendered)
-}
-
-async function exportRows(mode: 'selected' | 'page' | 'filtered') {
-  if (!canExportRecords.value) {
-    message.warning('暂无导出权限')
-    return
-  }
-  if (mode === 'filtered') {
-    const filteredRows = await listAllBusinessModuleRows(props.moduleKey, submittedFilters.value)
-    if (!filteredRows.length) {
-      message.warning('没有可导出的数据')
-      return
-    }
-
-    exportRecordsToExcel(config.value.title, visibleConfigColumns.value, filteredRows, formatExportCellValue)
-    message.success('Excel 导出已开始')
-    return
-  }
-
-  const rows = mode === 'selected'
-    ? selectedRowKeys.value
-      .map((key) => selectedRowMap.value[key])
-      .filter(Boolean)
-    : listResult.value.rows
-
-  if (!rows.length) {
-    message.warning('没有可导出的数据')
-    return
-  }
-
-  exportRecordsToExcel(config.value.title, visibleConfigColumns.value, rows, formatExportCellValue)
-  message.success('Excel 导出已开始')
-}
-
-async function handleExportMenuClick(info: { key: string | number }) {
-  exportLoading.value = true
-  try {
-    const key = String(info.key)
-    if (key === 'selected' || key === 'page' || key === 'filtered') {
-      await exportRows(key)
-    }
-  } finally {
-    exportLoading.value = false
-  }
-}
-
-function handleTableChange(page: { current?: number; pageSize?: number }) {
-  pagination.currentPage = page.current || 1
-  pagination.pageSize = page.pageSize || 20
-}
-
-async function handleEdit(record: ModuleRecord) {
-  if (isUploadRuleListRow(record)) {
-    if (!canEditRecords.value) {
-      message.warning('暂无编辑权限')
-      return
-    }
-    await openUploadRuleDialog(record)
-    return
-  }
-  if (!canEditRecords.value) {
-    message.warning('暂无编辑权限')
-    return
-  }
-  if (isReadOnly.value) {
-    await handleView(record)
-    return
-  }
-
-  if (!formFields.value.length) {
-    await handleView(record)
-    return
-  }
-
-  const detailRecord = await resolveRecordForDetail(record)
-
-  editorMode.value = 'edit'
-  editorSourceRecordId.value = String(detailRecord.id || '')
-  resetParentImportState()
-  resetReactiveObject(editorForm, buildEditorDraft('edit', detailRecord))
-  syncSystemEditorState()
-  editorVisible.value = true
-}
-
-async function handleDelete(record: ModuleRecord) {
-  if (isUploadRuleListRow(record)) {
-    message.warning('页面上传命名规则不支持删除')
-    return
-  }
-  if (!canDeleteRecords.value) {
-    message.warning('暂无删除权限')
-    return
-  }
-  if (isReadOnly.value) {
-    message.warning('当前模块为只读模式')
-    return
-  }
-
-  try {
-    const response = await deleteBusinessModule(props.moduleKey, String(record.id))
-    if (!isSuccessCode(response.code)) {
-      throw new Error(response.message || '删除失败')
-    }
-
-    selectedRowKeys.value = selectedRowKeys.value.filter((key) => key !== String(record.id))
-    if (selectedRowMap.value[String(record.id)]) {
-      const nextMap = { ...selectedRowMap.value }
-      delete nextMap[String(record.id)]
-      selectedRowMap.value = nextMap
-    }
-    if (activeRecord.value?.id === record.id) {
-      handleCloseDetail()
-    }
-    if (attachmentRecord.value?.id === record.id) {
-      closeAttachmentDialog()
-    }
-
-    await refreshModuleQueries()
-    message.success(response.message || `已删除 ${getPrimaryNo(record)}`)
-  } catch (error) {
-    showRequestError(error, '删除失败')
-  }
-}
-
-function getCurrentOperatorName() {
-  const user = getStoredUser()
-  return String(user?.userName || user?.loginName || '当前用户')
-}
+const {
+  handleEdit,
+  isEditorFieldDisabled,
+  isEditorItemColumnEditable,
+  setEditorFormValue,
+} = useModuleEditorEntry({
+  moduleKey: computed(() => props.moduleKey),
+  editorForm,
+  editorMode,
+  editorVisible,
+  editorSourceRecordId,
+  formFields,
+  canEditRecords,
+  canSaveCurrentEditor,
+  canEditLineItems,
+  lineItemsLocked,
+  isReadOnly,
+  handleCustomEditRecord: handleUploadRuleRecordEdit,
+  handleView,
+  resolveRecordForDetail,
+  resetParentImportState,
+  buildEditorDraft,
+  syncSystemEditorState,
+})
 
 const {
   attachmentDraftName,
@@ -1360,414 +738,266 @@ const {
   showRequestError,
 })
 
-function generatePrimaryNo() {
-  const serial = String(Date.now()).slice(-6)
-  const year = dayjs().format('YYYY')
-  return buildModulePrimaryNo(props.moduleKey, year, serial)
-}
+const {
+  canDeleteRecord,
+  handleAuditRecord,
+  handleDelete,
+  handlePrintSelectedRecords,
+  handleReverseAuditRecord,
+  handleSelectedAuditRecords,
+  handleSelectedDeleteRecords,
+  handleSelectedReverseAuditRecords,
+} = useModuleRecordActions({
+  moduleKey: computed(() => props.moduleKey),
+  selectedRowKeys,
+  selectedRowMap,
+  expandedDetailRecordMap,
+  activeRecord,
+  attachmentRecord,
+  isReadOnly,
+  canDeleteRecords,
+  canAuditRecords,
+  canUseBulkDeleteActions,
+  listAuditTarget,
+  listReverseAuditTarget,
+  listStatusOptions,
+  ...uploadRuleRecordActionGuards,
+  getPrimaryNo,
+  handleCloseDetail,
+  closeAttachmentDialog,
+  printRecords,
+  refreshModuleQueries,
+  isSuccessCode,
+  showRequestError,
+})
 
-async function generatePrimaryNoAsync() {
-  try {
-    return await generateBusinessPrimaryNo(props.moduleKey)
-  } catch {
-    return generatePrimaryNo()
-  }
-}
+const {
+  expandedRowRenderer,
+  rowActionsRenderer,
+} = useModuleGridRowRenderers({
+  isReadOnly,
+  canViewRecords,
+  canEditRecords,
+  canManageAttachments,
+  canDeleteRecord,
+  ...uploadRuleGridRowRenderers,
+  itemColumns: computed(() => config.value.itemColumns),
+  isExpandedDetailLoading,
+  getExpandedDetailItems,
+  detailTableColumns,
+  detailTableScroll,
+  formatCellValue,
+  getStatusMeta,
+  handleView,
+  handleEdit,
+  handleAuditRecord,
+  handleReverseAuditRecord,
+  handleDelete,
+  openAttachmentDialog,
+})
 
-function getPrimaryNo(record: ModuleRecord) {
-  return getModuleRecordPrimaryNo(record, config.value.primaryNoKey)
-}
+const {
+  handleEditorDateValueChange,
+  handleRoleTreeCheckChange,
+} = useModuleEditorEvents({
+  handleRoleTreeCheck,
+  handleEditorDateChange,
+})
 
-function getRowClassName(record: ModuleRecord) {
-  const status = String(record.status || '')
-  return config.value.rowHighlightStatuses?.includes(status) ? 'table-row-emphasis' : ''
-}
+const { handleExportMaterialRows } = useModuleMaterialExportAction({
+  exportLoading,
+  submittedFilters,
+  moduleTitle: computed(() => config.value.title),
+  exportMaterialRows,
+})
 
-function sumLineItemsBy(items: ModuleLineItem[], key: string) {
-  return items.reduce((sum, item) => sum + Number(item[key] || 0), 0)
-}
+const {
+  handleAction,
+  visibleToolbarActions,
+} = useModuleToolbarActions({
+  moduleKey: computed(() => props.moduleKey),
+  config,
+  formFields,
+  isMaterialModule,
+  selectedRowCount,
+  canUseBulkAuditActions,
+  canUseBulkDeleteActions,
+  canUseBulkPrintActions,
+  detailPrintLoading,
+  hasAnyModuleAction,
+  handlers: {
+    exportMaterialRows: handleExportMaterialRows,
+    exportRows,
+    handlePrintSelectedRecords,
+    handleSelectedAuditRecords,
+    handleSelectedDeleteRecords,
+    handleSelectedReverseAuditRecords,
+    markSelectedFreightDelivered,
+    navigateToRoleActionEditor: () => {
+      router.push('/role-action-editor')
+    },
+    openCreateEditor,
+    openCustomerStatementGenerator,
+    openFreightPickupList,
+    openFreightStatementGenerator,
+    openFreightSummary,
+    openSupplierStatementGenerator,
+  },
+})
 
-function isEditorFieldDisabled(field: ModuleFormFieldDefinition) {
-  return isEditorFieldDisabledForModule(
-    props.moduleKey,
-    field.key,
-    Boolean(field.disabled),
-    canSaveCurrentEditor.value,
-    lineItemsLocked.value,
-  )
-}
+const {
+  gridPanelEvents,
+  gridPanelProps,
+} = useModuleGridPanelBindings({
+  moduleKey: computed(() => props.moduleKey),
+  config,
+  isReadOnly,
+  readOnlyAlertActionLink,
+  filters,
+  visibleFilters,
+  quickFilters,
+  activeQuickFilterKey,
+  hasAdvancedFilters,
+  searchExpanded,
+  tableErrorMessage,
+  masterTableSummary,
+  visibleToolbarActions,
+  exportMenuItems,
+  exportLoading,
+  isMaterialModule,
+  canExportRecords,
+  canImportMaterials,
+  columnSettingItems,
+  getColumnSettingItemClass,
+  handleColumnSettingDragStart,
+  handleColumnSettingDragOver,
+  handleColumnSettingDrop,
+  resetListColumnSettingDragState,
+  handleColumnVisibleChange,
+  resetColumnSettings,
+  mainTable,
+  tableLoading: listQuery.isFetching,
+  getRowClassName,
+  hasExpandableRows: computed(() => Boolean(expandable.value)),
+  rowActionsRenderer,
+  expandedRowRenderer,
+  pagination,
+  paginationTotal: computed(() => listResult.value.total),
+  navigateTo: (to) => router.push(to),
+  applyQuickFilter,
+  setFilterValue,
+  handleFilterValueChange,
+  handleSearch,
+  handleReset,
+  clearTableError,
+  handleAction,
+  handleExportMenuClick,
+  handleMaterialTemplateDownload,
+  handleMaterialImportClick,
+})
 
-function isEditorItemColumnEditable(columnKey: string, record?: ModuleLineItem) {
-  const baseEditable = isEditorItemColumnEditableForModule(
-    props.moduleKey,
-    columnKey,
-    canEditLineItems.value,
-    lineItemsLocked.value,
-  )
-  if (columnKey === 'weighWeightTon') {
-    return baseEditable
-      && props.moduleKey === 'purchase-inbounds'
-      && String(record?.settlementMode || '').trim() === '过磅'
-  }
-  if (columnKey === 'weightTon') {
-    return baseEditable
-      && props.moduleKey === 'purchase-inbounds'
-      && String(record?.settlementMode || '').trim() === '过磅'
-  }
-  return baseEditable
-}
-
-/** Bridge AG Grid row type (Record<string, unknown>) to domain type. Safe because row data originates from typed API responses. */
-function asModuleRecord(record: Record<string, unknown>): ModuleRecord {
-  return record as unknown as ModuleRecord
-}
-function setFilterValue(key: string, value: unknown) {
-  filters[key] = value
-}
-
-function setEditorFormValue(key: string, value: unknown) {
-  editorForm[key] = value
-  syncSalesOrderCustomerProjectFields(key, value)
-}
-
-function syncSalesOrderCustomerProjectFields(key: string, value: unknown) {
-  if (props.moduleKey !== 'sales-orders') {
-    return
-  }
-  if (key === 'customerName') {
-    const customerName = String(value || '').trim()
-    const currentProjectName = String(editorForm.projectName || '').trim()
-    if (!customerName) {
-      editorForm.projectName = ''
-      return
-    }
-    if (currentProjectName && findCustomerOption(customerName, currentProjectName)) {
-      return
-    }
-    editorForm.projectName = resolveSingleCustomerProjectName(customerName)
-    return
-  }
-  if (key === 'projectName') {
-    const selected = findCustomerOption(editorForm.customerName, value)
-    if (selected?.customerName) {
-      editorForm.customerName = selected.customerName
-    }
-  }
-}
-
-function asDynamicColumn(column: unknown): DynamicColumn {
-  return column && typeof column === 'object' ? column as DynamicColumn : {}
-}
-
-function getTableColumnKey(column: unknown) {
-  const target = asDynamicColumn(column)
-  if (typeof target.key === 'string' || typeof target.key === 'number') {
-    return String(target.key)
-  }
-  if (typeof target.dataIndex === 'string' || typeof target.dataIndex === 'number') {
-    return String(target.dataIndex)
-  }
-  return ''
-}
-
-function getTableColumnDataIndex(column: unknown) {
-  const target = asDynamicColumn(column)
-  if (typeof target.dataIndex === 'string' || typeof target.dataIndex === 'number') {
-    return String(target.dataIndex)
-  }
-  return ''
-}
-
-function getRecordCellValue(record: unknown, column: unknown) {
-  const dataIndex = getTableColumnDataIndex(column)
-  if (!dataIndex || !record || typeof record !== 'object') {
-    return undefined
-  }
-  return (record as Record<string, unknown>)[dataIndex]
-}
-
-function getListColumnMeta(column: unknown) {
-  const key = getTableColumnKey(column)
-  return key ? columnMetaMap.value[key] : undefined
-}
-
-function getDetailItemColumnMeta(column: unknown) {
-  const key = getTableColumnKey(column)
-  return key ? config.value.itemColumns?.find((item) => item.dataIndex === key) : undefined
-}
-
-function handleRoleTreeCheckChange(
-  checkedKeys: Array<string | number> | { checked: Array<string | number>; halfChecked?: Array<string | number> },
-) {
-  handleRoleTreeCheck(checkedKeys)
-}
-
-function handleEditorDateValueChange(key: string, value: unknown) {
-  if (value === null || dayjs.isDayjs(value)) {
-    handleEditorDateChange(key, value)
-  }
-}
+const {
+  editorWorkspaceEvents,
+  editorWorkspaceProps,
+} = useModuleEditorWorkspaceBindings({
+  visible: editorVisible,
+  title: editorTitle,
+  moduleKey: computed(() => props.moduleKey),
+  editorForm,
+  canEditFormFields,
+  itemColumns: computed(() => config.value.itemColumns),
+  visibleFormFields,
+  systemHelperVisible,
+  systemHelperTitle,
+  checkedRoleNames,
+  selectedRolePermissionLabels,
+  roleTreeData,
+  canSaveCurrentEditor,
+  canSaveAndAuditCurrentEditor,
+  editorSaving,
+  formFieldSettingItems,
+  getFormFieldSettingItemClass,
+  handleFormFieldSettingDragStart,
+  handleFormFieldSettingDragOver,
+  handleFormFieldSettingDrop,
+  resetFormFieldSettingDragState,
+  handleFormFieldVisibleChange,
+  resetFormFieldSettings,
+  isEditorFieldDisabled,
+  getEditorDateValue,
+  isRoleTreeField,
+  parentImportConfig,
+  canManageEditorItems,
+  canAddManualEditorItems,
+  canEditItemColumns,
+  editorColumnSettingItems,
+  getEditorColumnSettingItemClass,
+  handleEditorColumnSettingDragStart,
+  handleEditorColumnSettingDragOver,
+  handleEditorColumnSettingDrop,
+  resetEditorColumnSettingDragState,
+  handleEditorColumnVisibleChange,
+  resetEditorColumnSettings,
+  editorItems,
+  editorItemWeightTotal,
+  editorItemAmountTotal,
+  shouldShowItemAmountSummary,
+  lockedLineItemsNotice,
+  editorDetailTableColumns,
+  editorDetailTableScroll,
+  getEditorItemRowProps,
+  getEditorItemRowClassName,
+  isEditorItemColumnEditable,
+  isNumberEditorColumn,
+  getEditorItemMin,
+  getEditorItemPrecision,
+  materialRows,
+  warehouseRows,
+  filterMaterialOption,
+  formatWeight,
+  formatAmount,
+  formatCellValue,
+  getStatusMeta,
+  closeEditor,
+  handleSaveEditor,
+  setEditorFormValue,
+  handleEditorDateValueChange,
+  handleRoleTreeCheckChange,
+  addEditorItem,
+  openParentSelector,
+  handleEditorItemDragStart,
+  handleEditorItemDragEnd,
+  removeEditorItem,
+  removeSelectedEditorItems,
+  handleEditorItemMaterialSelect,
+  openMaterialSelector,
+  handleEditorItemValueChange,
+  handleEditorItemNumberChange,
+  handleEditorItemInputChange,
+})
 </script>
 
 <template>
   <div class="page-stack">
-    <a-card :bordered="false" class="module-panel-card">
-      <a-alert
-        v-if="isReadOnly && config.description"
-        type="info"
-        show-icon
-        :message="config.description"
-        style="margin-bottom: 16px"
-      >
-        <template v-if="getBehaviorValue(moduleKey, 'alertActionLink')" #message>
-          {{ config.description }}
-          <span class="table-action-link" style="margin-left: 8px" @click="router.push(getBehaviorValue(moduleKey, 'alertActionLink')!.to)">{{ getBehaviorValue(moduleKey, 'alertActionLink')!.text }}</span>
-        </template>
-      </a-alert>
-      <ModuleFilterToolbar
-        :module-key="moduleKey"
-        :filters="filters"
-        :visible-filters="visibleFilters"
-        :quick-filters="quickFilters"
-        :active-quick-filter-key="activeQuickFilterKey"
-        :has-advanced-filters="hasAdvancedFilters"
-        :expanded="toggleSearchStatus"
-        @apply-quick-filter="applyQuickFilter"
-        @update-filter="setFilterValue"
-        @filter-change="handleFilterValueChange"
-        @update:expanded="toggleSearchStatus = $event"
-        @search="handleSearch"
-        @reset="handleReset"
-      />
-
-      <a-alert
-        v-if="tableErrorMessage"
-        type="warning"
-        show-icon
-        closable
-        :message="tableErrorMessage"
-        style="margin-bottom: 12px"
-        @close="tableErrorMessage = ''"
-      />
-
-      <div class="module-table-shell">
-        <ModuleTableToolbar
-          :title="config.title"
-          :summary="masterTableSummary"
-          :actions="visibleToolbarActions"
-          :export-menu-items="(exportMenuItems || []) as { label: string; key: string }[]"
-          :export-loading="exportLoading"
-          :is-material-module="isMaterialModule"
-          :can-export="canExportRecords"
-          :can-import="canImportMaterials"
-          :column-setting-items="columnSettingItems"
-          :get-column-setting-item-class="getColumnSettingItemClass"
-          :handle-column-setting-drag-start="handleColumnSettingDragStart"
-          :handle-column-setting-drag-over="handleColumnSettingDragOver"
-          :handle-column-setting-drop="handleColumnSettingDrop"
-          :reset-list-column-setting-drag-state="resetListColumnSettingDragState"
-          :handle-column-visible-change="handleColumnVisibleChange"
-          :reset-column-settings="resetColumnSettings"
-          @action="handleAction"
-          @export-menu-click="(key: string) => handleExportMenuClick({ key })"
-          @material-template-download="handleMaterialTemplateDownload"
-          @material-import-click="handleMaterialImportClick"
-        />
-        <a-table
-          size="middle"
-          bordered
-          row-key="id"
-          :columns="tableColumns"
-          :data-source="listResult.rows"
-          :loading="listQuery.isFetching.value"
-          :row-selection="rowSelection"
-          :pagination="tablePagination"
-          :scroll="tableScroll"
-          :expandable="expandable"
-          :row-class-name="getRowClassName"
-          @change="handleTableChange"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'action'">
-              <TableRowActions
-                :record="asModuleRecord(record)"
-                :can-view="canViewRecords"
-                :can-edit="!isReadOnly && canEditRecords"
-                :can-delete="!isReadOnly && canDeleteRecords"
-                :can-attach="!isReadOnly && canManageAttachments"
-                :is-read-only="isReadOnly"
-                :is-upload-rule-row="isUploadRuleListRow(asModuleRecord(record))"
-                :upload-rule-expanded="uploadRuleVisible"
-                :is-active-upload-rule-row="activeUploadRuleRowId === String(record.id || '')"
-                @view="handleView"
-                @edit="handleEdit"
-                @delete="(r) => handleDelete(r)"
-                @attachment="openAttachmentDialog"
-              />
-            </template>
-            <template v-else-if="isTagListColumnKey(String(column.key))">
-              <div class="cell-tag-group">
-                <a-tag
-                  v-for="item in getTagListValues(getRecordCellValue(record, column))"
-                  :key="item"
-                  color="processing"
-                >
-                  {{ item }}
-                </a-tag>
-              </div>
-            </template>
-            <template v-else-if="isFriendlyTagColumnKey(String(column.key))">
-              <a-tag :color="getFriendlyTagColor(String(column.key), getRecordCellValue(record, column))">
-                {{ formatCellValue(getListColumnMeta(column), getRecordCellValue(record, column)) }}
-              </a-tag>
-            </template>
-            <template v-else-if="getListColumnMeta(column)?.type === 'status'">
-              <a-tag :color="getStatusMeta(getRecordCellValue(record, column)).color">
-                {{ getStatusMeta(getRecordCellValue(record, column)).text }}
-              </a-tag>
-            </template>
-            <template v-else-if="shouldHideUploadRuleListValue(asModuleRecord(record), String(column.key))">
-              --
-            </template>
-            <template v-else>
-              {{ formatCellValue(getListColumnMeta(column), getRecordCellValue(record, column)) }}
-            </template>
-          </template>
-
-          <template v-if="expandable" #expandedRowRender="{ record }">
-            <div v-if="isUploadRuleListRow(record)">
-              <a-spin :spinning="uploadRuleLoading">
-                <div class="editor-items-head upload-rule-section-head">
-                  <div class="editor-items-title-block">
-                    <h3 class="detail-section-title">{{ uploadRuleForm.ruleName || UPLOAD_RULE_DEFAULT_TITLE }}</h3>
-                    <span class="parent-selector-hint">{ext} 为扩展名本体，不带点号；系统会自动补齐最终文件后缀</span>
-                  </div>
-                </div>
-                <a-table
-                  size="small"
-                  bordered
-                  row-key="key"
-                  :data-source="uploadRuleDetailRows"
-                  :pagination="false"
-                  :scroll="{ x: 980 }"
-                  class="module-detail-table upload-rule-config-table"
-                >
-                  <a-table-column key="label" title="项目" data-index="label" width="180" />
-                  <a-table-column key="description" title="说明" data-index="description" width="360" />
-                  <a-table-column key="value" title="配置值 / 示例" width="380">
-                    <template #default="{ record: detailRecord }">
-                      <span v-if="detailRecord.type === 'token'">
-                        {{ detailRecord.example || '--' }}
-                      </span>
-                      <span v-else-if="detailRecord.key === 'ruleCode'">
-                        {{ uploadRuleForm.ruleCode || UPLOAD_RULE_DEFAULT_CODE }}
-                      </span>
-                      <span v-else-if="detailRecord.key === 'ruleName'">
-                        {{ uploadRuleForm.ruleName || UPLOAD_RULE_DEFAULT_NAME }}
-                      </span>
-                      <span v-else-if="detailRecord.key === 'status'">
-                        {{ uploadRuleStatusText }}
-                      </span>
-                      <a-input
-                        v-else-if="detailRecord.key === 'renamePattern'"
-                        v-model:value="uploadRuleForm.renamePattern"
-                        :disabled="uploadRuleLoading"
-                        class="editor-item-field"
-                        placeholder="{yyyyMMddHHmmss}_{random8}"
-                      />
-                      <a-textarea
-                        v-else-if="detailRecord.key === 'remark'"
-                        v-model:value="uploadRuleForm.remark"
-                        :disabled="uploadRuleLoading"
-                        class="editor-item-field"
-                        :auto-size="{ minRows: 2, maxRows: 4 }"
-                        placeholder="说明该规则的适用范围"
-                      />
-                      <span v-else>
-                        {{ uploadRuleForm.previewFileName || '--' }}
-                      </span>
-                    </template>
-                  </a-table-column>
-                </a-table>
-                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
-                  <a-button @click="closeUploadRuleDialog">收起</a-button>
-                  <a-button
-                    v-if="canEditRecords"
-                    type="primary"
-                    :loading="uploadRuleSaving"
-                    @click="handleSaveUploadRule"
-                  >
-                    保存
-                  </a-button>
-                </div>
-              </a-spin>
-            </div>
-            <a-table
-              v-else-if="config.itemColumns?.length"
-              size="small"
-              bordered
-              row-key="id"
-              :columns="detailTableColumns"
-              :data-source="record.items || []"
-              :pagination="false"
-              :scroll="detailTableScroll"
-              class="module-detail-table"
-            >
-              <template #bodyCell="{ column, record: itemRecord }">
-                <template v-if="getDetailItemColumnMeta(column)?.type === 'status'">
-                  <a-tag :color="getStatusMeta(getRecordCellValue(itemRecord, column)).color">
-                    {{ getStatusMeta(getRecordCellValue(itemRecord, column)).text }}
-                  </a-tag>
-                </template>
-                <template v-else>
-                  {{
-                    formatCellValue(
-                      getDetailItemColumnMeta(column),
-                      getRecordCellValue(itemRecord, column),
-                    )
-                  }}
-                </template>
-              </template>
-            </a-table>
-          </template>
-
-          <template #emptyText>
-            <a-empty description="当前筛选条件下暂无数据" />
-          </template>
-        </a-table>
-      </div>
-    </a-card>
+    <ModuleGridPanel v-bind="gridPanelProps" v-on="gridPanelEvents" />
 
     <ModuleEditorWorkspace
-      :visible="editorVisible"
-      :title="editorTitle"
-      :module-key="moduleKey"
-      :editor-form="editorForm"
-      :can-edit-form-fields="canEditFormFields"
+      v-model:selected-item-ids="selectedEditorItemIds"
+      v-bind="editorWorkspaceProps"
+      v-on="editorWorkspaceEvents"
+    />
+
+    <ModuleGridOverlays
+      :detail-visible="detailVisible"
+      :detail-title="`${config.title}详情`"
+      :detail-fields="config.detailFields"
       :item-columns="config.itemColumns"
-      :visible-form-fields="visibleFormFields"
-      :system-helper-visible="systemHelperVisible"
-      :system-helper-title="systemHelperTitle"
-      :checked-role-names="checkedRoleNames"
-      :selected-role-permission-labels="selectedRolePermissionLabels"
-      :role-tree-data="roleTreeData"
-      :can-save-current-editor="canSaveCurrentEditor"
-      :can-save-and-audit-current-editor="canSaveAndAuditCurrentEditor"
-      :editor-saving="editorSaving"
-      :form-field-setting-items="formFieldSettingItems"
-      :get-form-field-setting-item-class="getFormFieldSettingItemClass"
-      :handle-form-field-setting-drag-start="handleFormFieldSettingDragStart"
-      :handle-form-field-setting-drag-over="handleFormFieldSettingDragOver"
-      :handle-form-field-setting-drop="handleFormFieldSettingDrop"
-      :reset-form-field-setting-drag-state="resetFormFieldSettingDragState"
-      :handle-form-field-visible-change="handleFormFieldVisibleChange"
-      :reset-form-field-settings="resetFormFieldSettings"
-      :is-editor-field-disabled="isEditorFieldDisabled"
-      :get-editor-date-value="getEditorDateValue"
-      :is-role-tree-field="isRoleTreeField"
-      :parent-import-config="parentImportConfig"
-      :can-manage-editor-items="canManageEditorItems"
-      :can-add-manual-editor-items="canAddManualEditorItems"
+      :active-record="activeRecord"
+      :can-print-records="canPrintRecords"
+      :detail-print-loading="detailPrintLoading"
+      :should-show-item-amount-summary="shouldShowItemAmountSummary"
+      :detail-table-columns="detailTableColumns"
+      :detail-table-scroll="detailTableScroll"
       :can-edit-item-columns="canEditItemColumns"
       :editor-column-setting-items="editorColumnSettingItems"
       :get-editor-column-setting-item-class="getEditorColumnSettingItemClass"
@@ -1777,256 +1007,101 @@ function handleEditorDateValueChange(key: string, value: unknown) {
       :reset-editor-column-setting-drag-state="resetEditorColumnSettingDragState"
       :handle-editor-column-visible-change="handleEditorColumnVisibleChange"
       :reset-editor-column-settings="resetEditorColumnSettings"
-      :editor-items="editorItems"
-      :editor-item-weight-total="editorItemWeightTotal"
-      :editor-item-amount-total="editorItemAmountTotal"
-      :should-show-item-amount-summary="shouldShowItemAmountSummary"
-      :locked-line-items-notice="lockedLineItemsNotice"
-      :editor-detail-table-columns="editorDetailTableColumns"
-      :editor-detail-table-scroll="editorDetailTableScroll"
-      :get-editor-item-row-props="getEditorItemRowProps"
-      :get-editor-item-row-class-name="getEditorItemRowClassName"
-      :is-editor-item-column-editable="isEditorItemColumnEditable"
-      :is-number-editor-column="isNumberEditorColumn"
-      :get-editor-item-min="getEditorItemMin"
-      :get-editor-item-precision="getEditorItemPrecision"
-      :material-rows="materialRows"
-      :warehouse-rows="warehouseRows"
-      :filter-material-option="filterMaterialOption"
+      :status-map="statusMap"
+      :attachment-visible="attachmentVisible"
+      :attachment-title="attachmentRecord ? `${getPrimaryNo(attachmentRecord)} 附件` : '附件'"
+      :attachment-paste-enabled="attachmentPasteEnabled"
+      :can-manage-attachments="canManageAttachments"
+      :attachment-draft-name="attachmentDraftName"
+      :attachment-rows="attachmentRows"
+      :attachment-saving="attachmentSaving"
+      :handle-attachment-before-upload="handleAttachmentBeforeUpload"
+      :handle-add-attachment="handleAddAttachment"
+      :handle-preview-attachment="handlePreviewAttachment"
+      :handle-download-attachment="handleDownloadAttachment"
+      :handle-remove-attachment="handleRemoveAttachment"
+      :material-selector-visible="materialSelectorVisible"
+      :filtered-material-selector-rows="filteredMaterialSelectorRows"
+      :material-selector-columns="materialSelectorColumns"
+      :material-selector-loading="materialListQuery.isFetching.value"
+      :material-selector-row-selection="materialSelectorRowSelection"
+      :material-selector-keyword="materialSelectorKeyword"
+      :get-material-selector-row-props="getMaterialSelectorRowProps"
+      :material-selector-selected-code="materialSelectorSelectedCode"
+      :has-active-material-selector-item="Boolean(activeMaterialSelectorItem)"
+      :supplier-statement-generator-visible="supplierStatementGeneratorVisible"
+      :supplier-statement-candidate-rows="supplierStatementCandidateRows"
+      :supplier-statement-generator-loading="supplierStatementGeneratorLoading"
+      :supplier-statement-row-selection="supplierStatementRowSelection"
+      :supplier-statement-selected-inbounds="supplierStatementSelectedInbounds"
+      :supplier-statement-selected-supplier-name="supplierStatementSelectedSupplierName"
+      :customer-statement-generator-visible="customerStatementGeneratorVisible"
+      :customer-statement-candidate-rows="customerStatementCandidateRows"
+      :customer-statement-generator-loading="customerStatementGeneratorLoading"
+      :customer-statement-row-selection="customerStatementRowSelection"
+      :customer-statement-selected-orders="customerStatementSelectedOrders"
+      :customer-statement-selected-customer-name="customerStatementSelectedCustomerName"
+      :customer-statement-selected-project-name="customerStatementSelectedProjectName"
+      :freight-statement-generator-visible="freightStatementGeneratorVisible"
+      :freight-statement-candidate-rows="freightStatementCandidateRows"
+      :freight-statement-generator-loading="freightStatementGeneratorLoading"
+      :freight-statement-row-selection="freightStatementRowSelection"
+      :freight-statement-selected-bills="freightStatementSelectedBills"
+      :freight-statement-selected-carrier-name="freightStatementSelectedCarrierName"
+      :freight-summary-visible="freightSummaryVisible"
+      :freight-summary-rows="freightSummaryRows"
+      :freight-summary-columns="freightSummaryColumns"
+      :freight-summary-loading="freightSummaryLoading"
+      :freight-pickup-list-visible="freightPickupListVisible"
+      :freight-pickup-list-rows="freightPickupListRows"
+      :freight-pickup-list-loading="freightPickupListLoading"
+      :freight-pickup-list-selected-bills="freightPickupListSelectedBills"
+      :freight-pickup-list-carrier-names="freightPickupListCarrierNames"
+      :freight-pickup-list-bill-nos="freightPickupListBillNos"
+      :freight-pickup-list-total-weight="freightPickupListTotalWeight"
+      :parent-selector-visible="parentSelectorVisible"
+      :parent-import-config="parentImportConfig"
+      :parent-selector-rows="parentSelectorRows"
+      :parent-selector-loading="parentListQuery.isFetching.value || parentAvailabilityLoading"
+      :parent-selector-row-selection="parentSelectorRowSelection"
+      :get-parent-selector-row-props="getParentSelectorRowProps"
+      :parent-selector-keyword="parentSelectorKeyword"
+      :can-save-current-editor="canSaveCurrentEditor"
+      :parent-importable-quantity-visible="parentImportableQuantityVisible"
+      :get-parent-importable-quantity="getParentImportableQuantity"
+      :get-parent-relation-no="getParentRelationNo"
+      :get-parent-option-label="getParentOptionLabel"
+      :material-import-visible="materialImportVisible"
+      :material-import-loading="materialImportLoading"
+      :material-import-file="materialImportFile"
+      :material-import-result-visible="materialImportResultVisible"
+      :material-import-result="materialImportResult"
+      :handle-material-import-before-upload="handleMaterialImportBeforeUpload"
       :format-weight="formatWeight"
       :format-amount="formatAmount"
       :format-cell-value="formatCellValue"
       :get-status-meta="getStatusMeta"
-      v-model:selected-item-ids="selectedEditorItemIds"
-      @cancel="closeEditor"
-      @save="(audit) => handleSaveEditor(audit)"
-      @update-form-value="setEditorFormValue"
-      @date-change="handleEditorDateValueChange"
-      @role-tree-check="handleRoleTreeCheckChange"
-      @add-editor-item="addEditorItem"
-      @open-parent-selector="openParentSelector"
-      @editor-item-drag-start="handleEditorItemDragStart"
-      @editor-item-drag-end="handleEditorItemDragEnd"
-      @remove-editor-item="removeEditorItem"
-      @remove-selected-items="removeSelectedEditorItems"
-      @editor-item-material-select="handleEditorItemMaterialSelect"
-      @open-material-selector="openMaterialSelector"
-      @editor-item-value-change="handleEditorItemValueChange"
-      @editor-item-number-change="handleEditorItemNumberChange"
-      @editor-item-input-change="handleEditorItemInputChange"
-    />
-
-    <ModuleRecordDetailOverlay
-      :visible="detailVisible"
-      :title="`${config.title}详情`"
-      :detail-fields="config.detailFields"
-      :item-columns="config.itemColumns"
-      :active-record="activeRecord"
-      :can-print-records="canPrintRecords"
-      :detail-print-loading="detailPrintLoading"
-      :should-show-item-amount-summary="shouldShowItemAmountSummary"
-      :detail-table-columns="detailTableColumns"
-      :detail-table-scroll="detailTableScroll"
-      :status-map="statusMap"
-      @close="handleCloseDetail"
-      @print="handlePrintDetail"
-    />
-
-    <ModuleAttachmentModal
-      :visible="attachmentVisible"
-      :title="attachmentRecord ? `${getPrimaryNo(attachmentRecord)} 附件` : '附件'"
-      :paste-enabled="attachmentPasteEnabled"
-      :can-manage-attachments="canManageAttachments"
-      :draft-name="attachmentDraftName"
-      :rows="attachmentRows"
-      :saving="attachmentSaving"
-      :before-upload="handleAttachmentBeforeUpload"
-      :add-attachment="handleAddAttachment"
-      :preview-attachment="handlePreviewAttachment"
-      :download-attachment="handleDownloadAttachment"
-      :remove-attachment="handleRemoveAttachment"
-      @cancel="closeAttachmentDialog"
-      @update:draft-name="attachmentDraftName = $event"
-    />
-
-    <ModuleSelectionOverlay
-      :visible="materialSelectorVisible"
-      title="选择商品"
-      panel-title="商品列表"
-      hint="可按商品编码、品牌、材质、规格搜索，双击行可直接确认。"
-      :rows="filteredMaterialSelectorRows"
-      :loading="materialListQuery.isFetching.value"
-      :row-selection="materialSelectorRowSelection"
-      :scroll="{ x: 900 }"
-      :custom-row="getMaterialSelectorRowProps"
-      empty-description="暂无可选商品"
-      confirm-text="选择商品"
-      :confirm-disabled="!materialSelectorSelectedCode || !activeMaterialSelectorItem"
-      row-key="materialCode"
-      @cancel="closeMaterialSelector"
-      @confirm="confirmMaterialSelector"
-    >
-      <template #meta>
-        <div class="module-table-head-meta statement-generator-meta">
-          <span class="module-table-head-title">商品列表</span>
-          <a-input
-            v-model:value="materialSelectorKeyword"
-            allow-clear
-            class="parent-selector-search"
-            placeholder="输入商品编码、品牌、材质、规格搜索"
-          />
-          <span class="parent-selector-hint">双击行可直接确认</span>
-        </div>
-      </template>
-
-      <template #summary>
-        <span v-if="materialSelectorSelectedCode">已选 {{ materialSelectorSelectedCode }}</span>
-      </template>
-
-      <a-table-column key="materialCode" title="商品编码" data-index="materialCode" width="160" />
-      <a-table-column key="brand" title="品牌" data-index="brand" width="120" />
-      <a-table-column key="material" title="材质" data-index="material" width="120" />
-      <a-table-column key="spec" title="规格" data-index="spec" width="120" />
-      <a-table-column key="length" title="长度" data-index="length" width="100" />
-      <a-table-column key="unit" title="单位" data-index="unit" width="90" />
-      <a-table-column key="unitPrice" title="单价" width="110" align="right">
-        <template #default="{ record }">
-          {{ formatAmount(record.unitPrice) }}
-        </template>
-      </a-table-column>
-    </ModuleSelectionOverlay>
-
-    <ModuleStatementGenerator
-      :supplier-visible="supplierStatementGeneratorVisible"
-      :supplier-rows="supplierStatementCandidateRows"
-      :supplier-loading="supplierStatementGeneratorLoading"
-      :supplier-row-selection="supplierStatementRowSelection"
-      :supplier-summary="{
-        count: supplierStatementSelectedInbounds.length,
-        supplierName: supplierStatementSelectedSupplierName,
-        amount: supplierStatementSelectedInbounds.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0),
-      }"
-      :customer-visible="customerStatementGeneratorVisible"
-      :customer-rows="customerStatementCandidateRows"
-      :customer-loading="customerStatementGeneratorLoading"
-      :customer-row-selection="customerStatementRowSelection"
-      :customer-summary="{
-        count: customerStatementSelectedOrders.length,
-        customerName: customerStatementSelectedCustomerName,
-        projectName: customerStatementSelectedProjectName,
-        amount: customerStatementSelectedOrders.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0),
-      }"
-      :freight-visible="freightStatementGeneratorVisible"
-      :freight-rows="freightStatementCandidateRows"
-      :freight-loading="freightStatementGeneratorLoading"
-      :freight-row-selection="freightStatementRowSelection"
-      :freight-summary="{
-        count: freightStatementSelectedBills.length,
-        carrierName: freightStatementSelectedCarrierName,
-        weight: freightStatementSelectedBills.reduce((sum, item) => sum + Number(item.totalWeight || 0), 0),
-        freight: freightStatementSelectedBills.reduce((sum, item) => sum + Number(item.totalFreight || 0), 0),
-      }"
-      :format-weight="formatWeight"
-      :format-amount="formatAmount"
-      :format-cell-value="formatCellValue as (column: { title: string; dataIndex: string; type?: string }, value: unknown) => string"
-      :get-status-meta="getStatusMeta"
-      @close-supplier="closeSupplierStatementGenerator"
-      @generate-supplier="handleGenerateSupplierStatement"
-      @close-customer="closeCustomerStatementGenerator"
-      @generate-customer="handleGenerateCustomerStatement"
-      @close-freight="closeFreightStatementGenerator"
-      @generate-freight="handleGenerateFreightStatement"
-    />
-
-    <ModuleSelectionOverlay
-      :visible="freightSummaryVisible"
-      title="运费对账汇总"
-      panel-title="物流商汇总"
-      hint="按当前筛选条件汇总各物流商的对账单数、吨位、应付与已付金额。"
-      :rows="freightSummaryRows"
-      :loading="freightSummaryLoading"
-      :pagination="false"
-      empty-description="暂无汇总数据"
-      cancel-text="关闭"
-      :confirm-visible="false"
-      @cancel="freightSummaryVisible = false"
-    >
-      <a-table-column key="carrierName" title="物流商" data-index="carrierName" />
-      <a-table-column key="statementCount" title="对账单数" data-index="statementCount" width="100" align="right" />
-      <a-table-column key="totalWeight" title="总吨位" width="120" align="right">
-        <template #default="{ record }">
-          {{ formatWeight(record.totalWeight) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="totalFreight" title="总运费" width="120" align="right">
-        <template #default="{ record }">
-          {{ formatAmount(record.totalFreight) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="paidAmount" title="已付金额" width="120" align="right">
-        <template #default="{ record }">
-          {{ formatAmount(record.paidAmount) }}
-        </template>
-      </a-table-column>
-      <a-table-column key="unpaidAmount" title="未付金额" width="120" align="right">
-        <template #default="{ record }">
-          {{ formatAmount(record.unpaidAmount) }}
-        </template>
-      </a-table-column>
-    </ModuleSelectionOverlay>
-
-    <ModuleFreightPickupListOverlay
-      :visible="freightPickupListVisible"
-      :rows="freightPickupListRows"
-      :loading="freightPickupListLoading"
-      :selected-bill-count="freightPickupListSelectedBills.length"
-      :carrier-names="freightPickupListCarrierNames"
-      :bill-nos="freightPickupListBillNos"
-      :total-weight="freightPickupListTotalWeight"
-      :quantity-column="FREIGHT_PICKUP_LIST_COLUMNS[4]"
-      @close="closeFreightPickupList"
-    />
-
-    <ModuleParentSelectorOverlay
-      :visible="parentSelectorVisible"
-      :title="parentImportConfig?.label ? `选择${parentImportConfig.label}` : '选择上级单据'"
-      :rows="parentSelectorRows"
-      :loading="parentListQuery.isFetching.value"
-      :row-selection="parentSelectorRowSelection"
-      :custom-row="getParentSelectorRowProps"
-      :keyword="parentSelectorKeyword"
-      :can-confirm="canSaveCurrentEditor"
-      :get-parent-relation-no="getParentRelationNo"
-      :get-parent-option-label="getParentOptionLabel"
-      :get-status-meta="getStatusMeta"
-      @cancel="closeParentSelector"
-      @confirm="handleImportParentItems()"
-      @update:keyword="parentSelectorKeyword = $event"
-    />
-
-    <ModuleMaterialImportDialogs
-      :import-visible="materialImportVisible"
-      :import-loading="materialImportLoading"
-      :import-file="materialImportFile"
-      :result-visible="materialImportResultVisible"
-      :result="materialImportResult"
-      :before-upload="handleMaterialImportBeforeUpload"
-      @cancel-import="closeMaterialImportModal"
-      @submit-import="handleMaterialImportSubmit"
-      @close-result="closeMaterialImportResultModal"
+      @close-detail="handleCloseDetail"
+      @print-detail="handlePrintDetail"
+      @close-attachment="closeAttachmentDialog"
+      @update-attachment-draft-name="attachmentDraftName = $event"
+      @close-material-selector="closeMaterialSelector"
+      @confirm-material-selector="confirmMaterialSelector"
+      @update-material-selector-keyword="materialSelectorKeyword = $event"
+      @close-supplier-statement-generator="closeSupplierStatementGenerator"
+      @generate-supplier-statement="handleGenerateSupplierStatement"
+      @close-customer-statement-generator="closeCustomerStatementGenerator"
+      @generate-customer-statement="handleGenerateCustomerStatement"
+      @close-freight-statement-generator="closeFreightStatementGenerator"
+      @generate-freight-statement="handleGenerateFreightStatement"
+      @close-freight-summary="freightSummaryVisible = false"
+      @close-freight-pickup-list="closeFreightPickupList"
+      @close-parent-selector="closeParentSelector"
+      @confirm-parent-import="handleImportParentItems()"
+      @update-parent-selector-keyword="parentSelectorKeyword = $event"
+      @cancel-material-import="closeMaterialImportModal"
+      @submit-material-import="handleMaterialImportSubmit"
+      @close-material-import-result="closeMaterialImportResultModal"
     />
   </div>
 </template>
-
-<style scoped>
-.table-action-link {
-  color: #1890ff;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.table-action-link:hover {
-  color: #40a9ff;
-  text-decoration: underline;
-}
-</style>
