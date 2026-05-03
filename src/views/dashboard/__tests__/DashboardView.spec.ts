@@ -44,7 +44,7 @@ describe('DashboardView', () => {
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('系统首页')
+    expect(wrapper.text()).toContain('Leo ERP')
     expect(wrapper.text()).toContain('演示公司')
     expect(wrapper.text()).toContain('系统管理员')
     expect(wrapper.text()).toContain('Leo')
