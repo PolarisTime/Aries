@@ -177,7 +177,7 @@ test.describe('@real live backend smoke', () => {
     await expect(dropdown).toBeVisible()
     await dropdown.locator('.ant-select-item-option', { hasText: orderNo }).first().click()
 
-    await expect(page).toHaveURL(new RegExp(`/purchase-orders\\?docNo=${orderNo}&openDetail=1$`))
+    await expect(page).toHaveURL(new RegExp(`/purchase-orders\\?docNo=${orderNo}&openDetail=1(?:&trackId=[^&]+)?$`))
     await expect(page.locator('.workspace-overlay-title', { hasText: '采购订单详情' })).toBeVisible()
     await expect(page.locator('.bill-detail-body')).toContainText(orderNo)
     if (purchaseOrder?.supplierName) {

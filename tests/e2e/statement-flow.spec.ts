@@ -154,7 +154,7 @@ test.describe('statement generation flow', () => {
 
     await page.goto('/login')
     await page.getByPlaceholder('请输入账号').fill('e2e-admin')
-    await page.getByPlaceholder('请输入密码').fill('any')
+    await page.getByPlaceholder('请输入密码').fill('mock-password')
     await page.getByRole('button', { name: /登\s*录/ }).click()
 
     // Step 1: Verify purchase order exists with items
@@ -253,7 +253,7 @@ test.describe('statement generation flow', () => {
 
     await page.goto('/login')
     await page.getByPlaceholder('请输入账号').fill('e2e-admin')
-    await page.getByPlaceholder('请输入密码').fill('any')
+    await page.getByPlaceholder('请输入密码').fill('mock-password')
     await page.getByRole('button', { name: /登\s*录/ }).click()
 
     // Verify freight bill

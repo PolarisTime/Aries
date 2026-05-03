@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { listBusinessModule } from '@/api/business'
+import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
 import { businessPageConfigs } from '@/config/business-pages'
 import { getSearchableModuleKeys } from '@/config/page-registry'
 import {
@@ -28,6 +28,7 @@ interface UseGlobalSearchSupportOptions {
     moduleKey: string,
     keyword: string,
   ) => Promise<ModuleSearchResponse>
+  lookupRecordById?: (moduleKey: string, id: string) => Promise<ModuleRecord | null>
   buildSummary?: (record: ModuleRecord) => string
 }
 
@@ -75,6 +76,16 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
               { keyword },
               { currentPage: 1, pageSize: 6 },
             )),
+        lookupRecordById:
+          options.lookupRecordById ||
+          (async (moduleKey, id) => {
+            try {
+              const response = await getBusinessModuleDetail(moduleKey, id)
+              return response.data || null
+            } catch {
+              return null
+            }
+          }),
         buildSummary: options.buildSummary || buildGlobalSearchSummary,
       })
 
@@ -93,9 +104,16 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
 
   function jumpToResult(result: GlobalSearchResult) {
     clearResults()
+    const query: Record<string, string> = {
+      docNo: result.primaryNo,
+      openDetail: '1',
+    }
+    if (result.trackId) {
+      query.trackId = result.trackId
+    }
     void options.router.push({
       path: `/${result.moduleKey}`,
-      query: { docNo: result.primaryNo, openDetail: '1' },
+      query,
     })
   }
 
@@ -135,7 +153,7 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
 
     const matchedResults = await performSearch(normalizedKeyword)
     const exactMatched = matchedResults.find(
-      (item) => item.primaryNo === normalizedKeyword,
+      (item) => item.primaryNo === normalizedKeyword || item.trackId === normalizedKeyword,
     )
     if (exactMatched) {
       jumpToResult(exactMatched)

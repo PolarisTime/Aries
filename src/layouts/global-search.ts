@@ -5,8 +5,10 @@ export interface GlobalSearchResult {
   label: string
   moduleKey: string
   title: string
+  trackId: string
   primaryNo: string
   summary: string
+  matchedByTrackId: boolean
 }
 
 interface ModuleSearchResponse {
@@ -21,6 +23,7 @@ interface AccessibleGlobalSearchOptions {
   pageConfigs: Record<string, ModulePageConfig>
   canAccessModule: (moduleKey: string) => boolean
   searchModule: (moduleKey: string, keyword: string) => Promise<ModuleSearchResponse>
+  lookupRecordById?: (moduleKey: string, id: string) => Promise<ModuleRecord | null>
   buildSummary: (record: ModuleRecord) => string
 }
 
@@ -38,6 +41,35 @@ export function buildGlobalSearchSummary(record: ModuleRecord) {
     .join(' / ')
 }
 
+function isLikelyTrackId(value: string) {
+  return /^\d{12,}$/.test(value.trim())
+}
+
+function buildGlobalSearchResult(
+  moduleKey: string,
+  config: ModulePageConfig,
+  record: ModuleRecord,
+  keyword: string,
+  buildSummary: (record: ModuleRecord) => string,
+) {
+  const trackId = String(record.id || '')
+  const primaryNo = String(record[config.primaryNoKey || 'id'] || record.id)
+  const summary = buildSummary(record)
+  const matchedByTrackId = Boolean(trackId && trackId === keyword)
+  const idText = matchedByTrackId && trackId !== primaryNo ? ` | ID ${trackId}` : ''
+
+  return {
+    value: `${moduleKey}::${primaryNo || trackId}`,
+    label: `${config.title} | ${primaryNo}${idText}${summary ? ` | ${summary}` : ''}`,
+    moduleKey,
+    title: config.title,
+    trackId,
+    primaryNo,
+    summary,
+    matchedByTrackId,
+  } satisfies GlobalSearchResult
+}
+
 export async function searchAccessibleModules(options: AccessibleGlobalSearchOptions) {
   const normalizedKeyword = options.keyword.trim()
   if (!normalizedKeyword) {
@@ -49,22 +81,48 @@ export async function searchAccessibleModules(options: AccessibleGlobalSearchOpt
     accessibleModuleKeys.map(async (moduleKey) => {
       try {
         const config = options.pageConfigs[moduleKey]
-        const response = await options.searchModule(moduleKey, normalizedKeyword)
-        const rows = response.data?.rows || []
+        if (!config) {
+          return []
+        }
 
-        return rows.map((record) => {
-          const primaryNo = String(record[config.primaryNoKey || 'id'] || record.id)
-          const summary = options.buildSummary(record)
+        const rows: ModuleRecord[] = []
+        try {
+          const response = await options.searchModule(moduleKey, normalizedKeyword)
+          rows.push(...(response.data?.rows || []))
+        } catch {
+          // A failed keyword search should not block direct trackId lookup below.
+        }
 
-          return {
-            value: `${moduleKey}::${primaryNo}`,
-            label: `${config.title} | ${primaryNo}${summary ? ` | ${summary}` : ''}`,
-            moduleKey,
-            title: config.title,
-            primaryNo,
-            summary,
-          } satisfies GlobalSearchResult
-        })
+        if (options.lookupRecordById && isLikelyTrackId(normalizedKeyword)) {
+          try {
+            const record = await options.lookupRecordById(moduleKey, normalizedKeyword)
+            if (record) {
+              rows.push(record)
+            }
+          } catch {
+            // A snowflake id belongs to at most one module; misses in other modules are expected.
+          }
+        }
+
+        const seenKeys = new Set<string>()
+        return rows
+          .filter((record) => {
+            const key = String(record.id || record[config.primaryNoKey || 'id'] || '')
+            if (!key || seenKeys.has(key)) {
+              return false
+            }
+            seenKeys.add(key)
+            return true
+          })
+          .map((record) =>
+            buildGlobalSearchResult(
+              moduleKey,
+              config,
+              record,
+              normalizedKeyword,
+              options.buildSummary,
+            ),
+          )
       } catch {
         return []
       }

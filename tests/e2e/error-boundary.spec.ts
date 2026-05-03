@@ -7,7 +7,7 @@ test.describe('error and boundary handling', () => {
 
     await page.goto('/login')
     await page.getByPlaceholder('请输入账号').fill('e2e-admin')
-    await page.getByPlaceholder('请输入密码').fill('any')
+    await page.getByPlaceholder('请输入密码').fill('mock-password')
     await page.getByRole('button', { name: /登\s*录/ }).click()
     await expect(page).toHaveURL(/\/dashboard$/)
 
@@ -20,7 +20,7 @@ test.describe('error and boundary handling', () => {
 
     await page.goto('/login')
     await page.getByPlaceholder('请输入账号').fill('e2e-admin')
-    await page.getByPlaceholder('请输入密码').fill('any')
+    await page.getByPlaceholder('请输入密码').fill('mock-password')
     await page.getByRole('button', { name: /登\s*录/ }).click()
     await expect(page).toHaveURL(/\/dashboard$/)
 
@@ -35,7 +35,7 @@ test.describe('error and boundary handling', () => {
 
     await page.goto('/login')
     await page.getByPlaceholder('请输入账号').fill('e2e-admin')
-    await page.getByPlaceholder('请输入密码').fill('any')
+    await page.getByPlaceholder('请输入密码').fill('mock-password')
     await page.getByRole('button', { name: /登\s*录/ }).click()
 
     // Route the materials API to return 500
@@ -64,7 +64,7 @@ test.describe('error and boundary handling', () => {
 
     await page.goto('/login')
     await page.getByPlaceholder('请输入账号').fill('e2e-admin')
-    await page.getByPlaceholder('请输入密码').fill('any')
+    await page.getByPlaceholder('请输入密码').fill('mock-password')
     await page.getByRole('button', { name: /登\s*录/ }).click()
 
     // Try accessing a page the user doesn't have permission for
@@ -83,7 +83,7 @@ test.describe('error and boundary handling', () => {
 
     await page.goto('/login')
     await page.getByPlaceholder('请输入账号').fill('e2e-admin')
-    await page.getByPlaceholder('请输入密码').fill('any')
+    await page.getByPlaceholder('请输入密码').fill('mock-password')
     await page.getByRole('button', { name: /登\s*录/ }).click()
 
     await page.goto('/materials')

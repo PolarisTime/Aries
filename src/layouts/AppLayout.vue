@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, h, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type Router } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { message, Modal, type MenuProps } from 'ant-design-vue'
 import {
@@ -317,6 +317,9 @@ if (!isE2eMode.value) {
 
 const pageLoading = ref(false)
 let pageLoadingTimer: ReturnType<typeof setTimeout> | null = null
+let removePageLoadingBeforeResolve: (() => void) | undefined
+let removePageLoadingAfterEach: (() => void) | undefined
+let removePageLoadingOnError: (() => void) | undefined
 
 function startPageLoading() {
   pageLoadingTimer = setTimeout(() => { pageLoading.value = true }, 80)
@@ -327,17 +330,32 @@ function stopPageLoading() {
   pageLoading.value = false
 }
 
-router.beforeResolve(() => { startPageLoading() })
-router.afterEach(() => { stopPageLoading() })
-router.onError(() => { stopPageLoading() })
+function registerPageLoadingHooks() {
+  const routeController = router as Partial<Pick<Router, 'beforeResolve' | 'afterEach' | 'onError'>>
+  removePageLoadingBeforeResolve = routeController.beforeResolve?.(() => { startPageLoading() })
+  removePageLoadingAfterEach = routeController.afterEach?.(() => { stopPageLoading() })
+  removePageLoadingOnError = routeController.onError?.(() => { stopPageLoading() })
+}
+
+function unregisterPageLoadingHooks() {
+  removePageLoadingBeforeResolve?.()
+  removePageLoadingAfterEach?.()
+  removePageLoadingOnError?.()
+  removePageLoadingBeforeResolve = undefined
+  removePageLoadingAfterEach = undefined
+  removePageLoadingOnError = undefined
+  stopPageLoading()
+}
 
 onMounted(() => {
+  registerPageLoadingHooks()
   fetchCompanyName()
   startHealthPolling()
   clockTimer = window.setInterval(() => { clock.value = dayjs() }, 1000)
 })
 
 onBeforeUnmount(() => {
+  unregisterPageLoadingHooks()
   if (healthTimer) {
     window.clearInterval(healthTimer)
     healthTimer = null
@@ -479,7 +497,7 @@ onBeforeUnmount(() => {
 
       <a-layout-content class="leo-content">
         <div class="leo-content-inner">
-          <router-view :key="$route.path" />
+          <router-view :key="route.path" />
         </div>
       </a-layout-content>
     </a-layout>

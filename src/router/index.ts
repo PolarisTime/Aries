@@ -6,6 +6,11 @@ import type { LoginUser } from '@/types/auth'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionStore } from '@/stores/permission'
 import { loadPermissionCatalog } from '@/constants/resource-permissions'
+import {
+  clearRouteLoadRecoveryMarker,
+  isRecoverableRouteLoadError,
+  recoverRouteLoadError,
+} from './route-load-recovery'
 
 function resolveRoutePath(route: RouteRecordRaw) {
   if (!route.path) {
@@ -147,5 +152,15 @@ router.beforeEach((to) => {
     query: {
       redirect: to.fullPath,
     },
+  }
+})
+
+router.afterEach(() => {
+  clearRouteLoadRecoveryMarker()
+})
+
+router.onError((error, to) => {
+  if (isRecoverableRouteLoadError(error)) {
+    recoverRouteLoadError(to?.fullPath)
   }
 })
