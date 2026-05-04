@@ -223,7 +223,7 @@ async function loadUsers() {
       status: status.value || undefined,
     })
     rows.value = data.records || []
-    totalElements.value = data.totalElements || 0
+    totalElements.value = Number(data.totalElements) || 0
   } catch (error) {
     showRequestError(error, '加载用户失败')
   } finally {
