@@ -30,7 +30,14 @@ export function isUnauthorizedPayload(error: unknown) {
   const code = Number(data?.code)
   const messageText = String(data?.message || '').trim()
 
-  return code === ERROR_CODE.UNAUTHORIZED || /未登录|登录已失效|登录状态已失效/i.test(messageText)
+  return code === ERROR_CODE.UNAUTHORIZED
+    || code === ERROR_CODE.SESSION_EVICTED
+    || /未登录|登录已失效|登录状态已失效/i.test(messageText)
+}
+
+function isSessionEvicted(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false
+  return Number(error.response?.data?.code) === ERROR_CODE.SESSION_EVICTED
 }
 
 export function shouldTriggerRefresh(
@@ -40,6 +47,10 @@ export function shouldTriggerRefresh(
   originalRequest: RetryableRequestConfig | undefined,
 ) {
   if (isAuthRequest || !originalRequest || originalRequest._retry) {
+    return false
+  }
+
+  if (isSessionEvicted(error)) {
     return false
   }
 

@@ -2,6 +2,14 @@ export interface LoginPayload {
   loginName: string
   password: string
   remember?: boolean
+  captchaId?: string
+  captchaCode?: string
+}
+
+export interface CaptchaData {
+  captchaId: string
+  captchaImage: string
+  required: boolean
 }
 
 export interface Login2faPayload {
@@ -32,6 +40,7 @@ export interface LoginResponseData {
   accessToken: string
   tokenType: string
   expiresIn: number
+  refreshExpiresIn?: number
   user: LoginUser
 }
 

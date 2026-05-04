@@ -22,7 +22,7 @@ function actionLabels(overrides: Record<string, unknown>) {
       plugins: [Antd],
     },
   })
-  return wrapper.findAll('.table-action-link').map((link) => link.text())
+  return wrapper.findAll('.table-action-btn').map((link) => link.text())
 }
 
 describe('TableRowActions', () => {

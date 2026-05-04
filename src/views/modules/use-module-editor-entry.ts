@@ -4,6 +4,7 @@ import {
   findCustomerOption,
   resolveSingleCustomerProjectName,
 } from '@/api/customer-options'
+import { getCarrierVehiclePlateOptions } from '@/api/carrier-options'
 import type { ModuleFormFieldDefinition, ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { resetReactiveObject } from '@/utils/clone-utils'
 import {
@@ -119,9 +120,22 @@ export function useModuleEditorEntry(options: UseModuleEditorEntryOptions) {
     }
   }
 
+  function syncFreightBillVehiclePlateField(key: string) {
+    if (options.moduleKey.value !== 'freight-bills' || key !== 'carrierName') {
+      return
+    }
+    const vehiclePlateOptions = getCarrierVehiclePlateOptions(options.editorForm)
+    const currentVehiclePlate = String(options.editorForm.vehiclePlate || '').trim()
+    if (currentVehiclePlate) {
+      return
+    }
+    options.editorForm.vehiclePlate = vehiclePlateOptions.length === 1 ? vehiclePlateOptions[0].value : ''
+  }
+
   function setEditorFormValue(key: string, value: unknown) {
     options.editorForm[key] = value
     syncSalesOrderCustomerProjectFields(key, value)
+    syncFreightBillVehiclePlateField(key)
   }
 
   return {

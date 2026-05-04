@@ -97,7 +97,7 @@ const emit = defineEmits<{
       <template v-if="alertActionLink" #message>
         {{ readOnlyDescription }}
         <span
-          class="table-action-link"
+          class="table-action-btn"
           style="margin-left: 8px"
           @click="emit('alertAction', alertActionLink.to)"
         >
@@ -188,14 +188,4 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.table-action-link {
-  color: #1890ff;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.table-action-link:hover {
-  color: #40a9ff;
-  text-decoration: underline;
-}
 </style>

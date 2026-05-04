@@ -176,16 +176,24 @@ export function useModuleGridTable(options: UseModuleGridTableOptions) {
   })
 
   function handleGridSelectionChange(updater: unknown) {
-    const lookup = new Set(Object.keys(
-      typeof updater === 'function'
-        ? (updater as (s: Record<string, boolean>) => Record<string, boolean>)(gridRowSelection.value)
-        : (updater as Record<string, boolean>),
-    ))
+    const nextSelection = typeof updater === 'function'
+      ? (updater as (s: Record<string, boolean>) => Record<string, boolean>)(gridRowSelection.value)
+      : (updater as Record<string, boolean>)
+    const selectedKeys = Object.keys(nextSelection).filter((key) => nextSelection[key])
+    const currentRowMap = new Map(
+      options.listRows.value.map((record) => [getRecordKey(record), record] as const),
+    )
     const nextKeys: string[] = []
     const nextMap: Record<string, ModuleRecord> = {}
-    for (const key of Object.keys(lookup)) {
+    for (const key of selectedKeys) {
       nextKeys.push(key)
-      if (selectedRowMap.value[key]) nextMap[key] = selectedRowMap.value[key]
+      const currentRecord = currentRowMap.get(key)
+      if (currentRecord) {
+        nextMap[key] = currentRecord
+      }
+      else if (selectedRowMap.value[key]) {
+        nextMap[key] = selectedRowMap.value[key]
+      }
     }
     selectedRowKeys.value = nextKeys
     selectedRowMap.value = nextMap

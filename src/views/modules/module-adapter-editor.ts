@@ -230,6 +230,10 @@ export function isEditorItemColumnEditableForModule(
     return false
   }
 
+  if (getBehaviorValue(moduleKey, 'readonlyLineItems') === true) {
+    return false
+  }
+
   if (
     derivedReadonlyItemColumnKeySet.has(columnKey)
     && !(moduleKey === 'purchase-inbounds' && columnKey === 'weightTon')

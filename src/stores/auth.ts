@@ -39,7 +39,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     token.value = data.accessToken
     user.value = data.user
-    setAuthSession(data.user, data.accessToken, mode || getAuthPersistenceMode())
+    setAuthSession(data.user, data.accessToken, data.expiresIn, mode || getAuthPersistenceMode())
     reloadSupplierOptions()
     reloadCustomerOptions()
     reloadCarrierOptions()

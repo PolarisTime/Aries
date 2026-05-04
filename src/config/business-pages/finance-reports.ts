@@ -1,8 +1,8 @@
 import type { ModulePageConfig } from '@/types/module-page'
 import {
   buildValueOptions,
-  carrierOptions,
   customerOptions,
+  getCarrierOptions,
   getSupplierOptions,
   materialCategoryOptions,
   statementStatusOptions,
@@ -61,6 +61,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
       { label: '数量', key: 'quantity', type: 'count' },
       { label: '数量单位', key: 'quantityUnit' },
       { label: '结存重量（吨）', key: 'weightTon', type: 'weight' },
+      { label: '每件件重（吨）', key: 'pieceWeightTon', type: 'weight' },
       { label: '单位', key: 'unit' },
     ],
     data: [],
@@ -297,7 +298,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
       { label: '查看运费对账汇总', type: 'default' },
     ],
     filters: [
-      { key: 'carrierName', label: '物流商', type: 'select', options: carrierOptions() },
+      { key: 'carrierName', label: '物流商', type: 'select', options: getCarrierOptions },
       { key: 'status', label: '审核状态', type: 'select', options: [
         { label: '待审核', value: '待审核' },
         { label: '已审核', value: '已审核' },
@@ -334,7 +335,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
     ],
     formFields: [
       { key: 'statementNo', label: '对账单号', type: 'input', required: true },
-      { key: 'carrierName', label: '物流商', type: 'select', required: true, options: carrierOptions() },
+      { key: 'carrierName', label: '物流商', type: 'select', required: true, options: getCarrierOptions },
       { key: 'startDate', label: '开始日期', type: 'date', required: true },
       { key: 'endDate', label: '结束日期', type: 'date', required: true },
       { key: 'totalWeight', label: '总重量（吨）', type: 'number', required: true, min: 0, precision: 3, defaultValue: 0 },

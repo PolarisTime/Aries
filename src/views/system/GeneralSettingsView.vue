@@ -5,6 +5,9 @@ import { EditOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons
 import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
 import { useDataTable } from '@/composables/use-data-table'
 import DataTable from '@/components/DataTable.vue'
+import TableActions from '@/components/TableActions.vue'
+import type { ActionItem } from '@/components/TableActions.vue'
+import StatusTag from '@/components/StatusTag.vue'
 import { listAllBusinessModuleRows, saveBusinessModule } from '@/api/business'
 import { useRequestError } from '@/composables/use-request-error'
 import { usePermissionStore } from '@/stores/permission'
@@ -15,8 +18,11 @@ defineProps<{
 }>()
 
 const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
+const MAX_CONCURRENT_SESSIONS_CODE = 'SYS_MAX_CONCURRENT_SESSIONS'
+
 const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_DEFAULT_TAX_RATE: '用于发票默认税率与税额自动计算，修改后新开票草稿会使用该值。',
+  SYS_MAX_CONCURRENT_SESSIONS: '限制同一用户同时保持的有效会话数量，超出后最早的会话将被自动清理。设为 0 或留空表示不限制。',
   UI_WEIGHT_ONLY_PURCHASE_INBOUNDS: '启用后，采购入库页面切换到重量视图，隐藏金额和单价字段。',
   UI_WEIGHT_ONLY_SALES_OUTBOUNDS: '启用后，销售出库页面切换到重量视图，隐藏金额和单价字段。',
   SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER: '启用后，生成客户对账单草稿时默认收款金额为 0，期末余额等于所选销售订单总金额；关闭后默认收款金额等于所选销售订单总金额。',
@@ -25,9 +31,10 @@ const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS: '启用后，会按照下方勾选项自动记录页面层操作。开启时优先使用勾选动作控制自动日志范围；未显式勾选的查询、查看、编辑等页面操作不会自动记录。',
   SYS_OPERATION_LOG_RECORD_AUTH_EVENTS: '启用后，登录成功、登录失败、2FA 验证失败和退出登录会写入操作日志，便于审计账号访问行为；关闭后不记录这些认证事件。',
   SYS_FORCE_USER_TOTP_ON_FIRST_LOGIN: '启用后，管理员新增的账号首次使用密码登录时，会先进入专用安全引导页；在完成 2FA 绑定前不能进入业务页面，但仍允许先用初始密码修改为个人密码。',
-  SYS_BATCH_NO_AUTO_GENERATE: '启用后，批号管理商品在明细未填写批号时，系统按“单号规则”中的批号生成规则自动补齐；关闭后仍按当前手工录入与必填校验处理。',
-  UI_HIDE_AUDITED_LIST_RECORDS: '启用后，业务列表分页查询默认不显示状态为“已审核”的单据；关闭后按原筛选条件显示。',
+  SYS_BATCH_NO_AUTO_GENERATE: '启用后，批号管理商品在明细未填写批号时，系统按”单号规则”中的批号生成规则自动补齐；关闭后仍按当前手工录入与必填校验处理。',
+  UI_HIDE_AUDITED_LIST_RECORDS: '启用后，业务列表分页查询默认不显示下方勾选状态的单据；关闭后按原筛选条件显示。',
   UI_SHOW_SNOWFLAKE_ID: '启用后，业务列表显示系统雪花 ID 列，便于排查数据问题；关闭后隐藏该列。',
+  SYS_LOGIN_CAPTCHA: '启用后，登录时需输入图形验证码，增加暴力破解防护；关闭后仅需账号密码即可登录。',
 }
 
 const DETAILED_OPERATION_ACTION_OPTIONS = [
@@ -42,6 +49,19 @@ const DETAILED_OPERATION_ACTION_OPTIONS = [
 ]
 
 const DETAILED_OPERATION_SWITCH_CODE = 'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS'
+const HIDE_AUDITED_SWITCH_CODE = 'UI_HIDE_AUDITED_LIST_RECORDS'
+
+const HIDE_AUDITED_STATUS_OPTIONS = [
+  { label: '已审核', value: '已审核' },
+  { label: '已完成', value: '已完成' },
+  { label: '完成采购', value: '完成采购' },
+  { label: '完成入库', value: '完成入库' },
+  { label: '完成销售', value: '完成销售' },
+  { label: '已付款', value: '已付款' },
+  { label: '已收款', value: '已收款' },
+  { label: '已签署', value: '已签署' },
+  { label: '已送达', value: '已送达' },
+]
 
 interface SettingFormState {
   id: string
@@ -76,6 +96,18 @@ const settingForm = reactive<SettingFormState>({
 
 const canEdit = computed(() => permissionStore.can('general-setting', 'update'))
 
+function getSettingEditAction(onClick: () => void): ActionItem[] {
+  return [
+    {
+      key: 'edit',
+      label: '编辑',
+      icon: EditOutlined,
+      disabled: !canEdit.value,
+      onClick
+    }
+  ]
+}
+
 function isUploadRule(record: ModuleRecord) {
   return String(record.ruleType || '') === 'UPLOAD_RULE'
 }
@@ -92,8 +124,16 @@ function isDefaultTaxRateSetting(record: ModuleRecord | SettingFormState) {
   return String(record.settingCode || '').trim() === DEFAULT_TAX_RATE_SETTING_CODE
 }
 
+function isMaxConcurrentSetting(record: ModuleRecord | SettingFormState) {
+  return String(record.settingCode || '').trim() === MAX_CONCURRENT_SESSIONS_CODE
+}
+
+function isNumericSetting(record: ModuleRecord | SettingFormState) {
+  return isDefaultTaxRateSetting(record) || isMaxConcurrentSetting(record)
+}
+
 function isToggleSetting(record: ModuleRecord | SettingFormState) {
-  return !isDefaultTaxRateSetting(record)
+  return !isNumericSetting(record)
 }
 
 function matchesKeyword(record: ModuleRecord, searchKeyword: string) {
@@ -118,7 +158,7 @@ const filteredRows = computed(() =>
   }),
 )
 
-const basicSettingRows = computed(() => filteredRows.value.filter((record) => isDefaultTaxRateSetting(record)))
+const basicSettingRows = computed(() => filteredRows.value.filter((record) => isNumericSetting(record)))
 const switchRows = computed(() => filteredRows.value.filter((record) => isToggleSetting(record)))
 
 const overviewItems = computed(() => ([
@@ -128,7 +168,12 @@ const overviewItems = computed(() => ([
 ]))
 
 function formatSwitchState(record: ModuleRecord) {
-  return String(record.status || '') === '正常' ? '已启用' : '已关闭'
+  if (String(record.status || '') !== '正常') return '已关闭'
+  if (isHideAuditedSwitch(String(record.settingCode || ''))) {
+    const hidden = parseHiddenStatuses(record.sampleNo)
+    return '隐藏: ' + (hidden.length ? hidden.join('、') : '无')
+  }
+  return '已启用'
 }
 
 function formatSwitchColor(record: ModuleRecord) {
@@ -162,7 +207,7 @@ const switchColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
     header: () => '当前状态',
     cell: (info) => {
       const record = info.row.original
-      return h('span', { class: `ant-tag ant-tag-${formatSwitchColor(record)}` }, formatSwitchState(record))
+      return h(StatusTag, { status: formatSwitchState(record), color: formatSwitchColor(record) })
     },
     meta: { width: 120, align: 'center' },
   }),
@@ -195,6 +240,10 @@ function formatSettingValue(record: ModuleRecord) {
     const numericValue = Number(record.sampleNo || 0)
     return Number.isFinite(numericValue) ? numericValue.toFixed(4) : '0.0000'
   }
+  if (isMaxConcurrentSetting(record)) {
+    const val = parseInt(String(record.sampleNo || ''), 10)
+    return Number.isFinite(val) ? String(val) : '3'
+  }
   return String(record.sampleNo || '--')
 }
 
@@ -207,6 +256,14 @@ function isDetailedOperationSwitch(settingCode: string | null | undefined) {
   return String(settingCode || '').trim() === DETAILED_OPERATION_SWITCH_CODE
 }
 
+function isHideAuditedSwitch(settingCode: string | null | undefined) {
+  return String(settingCode || '').trim() === HIDE_AUDITED_SWITCH_CODE
+}
+
+function isMultiSelectSwitch(settingCode: string | null | undefined) {
+  return isDetailedOperationSwitch(settingCode) || isHideAuditedSwitch(settingCode)
+}
+
 function parseDetailedOperationActions(sampleNo: unknown) {
   const raw = String(sampleNo || '').trim()
   const selected = raw
@@ -215,6 +272,19 @@ function parseDetailedOperationActions(sampleNo: unknown) {
   return DETAILED_OPERATION_ACTION_OPTIONS
     .map((item) => item.value)
     .filter((value) => selected.includes(value))
+}
+
+function parseHiddenStatuses(sampleNo: unknown) {
+  const raw = String(sampleNo || '').trim()
+  if (!raw || raw === 'ON') return ['已审核']
+  if (raw === 'OFF') return []
+  return raw.split(',').map((item) => item.trim()).filter(Boolean)
+}
+
+function getSelectOptionsForSwitch(settingCode: string | null | undefined) {
+  if (isDetailedOperationSwitch(settingCode)) return DETAILED_OPERATION_ACTION_OPTIONS
+  if (isHideAuditedSwitch(settingCode)) return HIDE_AUDITED_STATUS_OPTIONS
+  return []
 }
 
 function resetEditorState() {
@@ -249,8 +319,12 @@ function openSettingEditor(record: ModuleRecord) {
   settingForm.enabled = String(record.status || '') === '正常'
   settingForm.selectedActions = isDetailedOperationSwitch(String(record.settingCode || ''))
     ? parseDetailedOperationActions(record.sampleNo)
-    : []
-  settingForm.numericValue = Number(record.sampleNo || 0.13)
+    : isHideAuditedSwitch(String(record.settingCode || ''))
+      ? parseHiddenStatuses(record.sampleNo)
+      : []
+  settingForm.numericValue = isMaxConcurrentSetting(record)
+    ? parseInt(String(record.sampleNo || '3'), 10)
+    : Number(record.sampleNo || 0.13)
   settingForm.remark = String(record.remark || '')
   editorVisible.value = true
 }
@@ -271,8 +345,16 @@ async function handleSave() {
       message.warning('请至少勾选一个页面操作动作')
       return
     }
+    if (isHideAuditedSwitch(settingForm.settingCode) && settingForm.enabled && !settingForm.selectedActions.length) {
+      message.warning('请至少勾选一种需要隐藏的状态')
+      return
+    }
     if (isDefaultTaxRateSetting(settingForm) && settingForm.numericValue < 0) {
       message.warning('默认税率不能小于 0')
+      return
+    }
+    if (isMaxConcurrentSetting(settingForm) && settingForm.numericValue < 0) {
+      message.warning('最大同时在线会话数不能小于 0')
       return
     }
     await saveBusinessModule('general-settings', {
@@ -286,13 +368,17 @@ async function handleSave() {
       resetRule: String(source.resetRule || 'YEARLY'),
       sampleNo: isDefaultTaxRateSetting(settingForm)
         ? Number(settingForm.numericValue || 0).toFixed(4)
-        : isDetailedOperationSwitch(settingForm.settingCode)
-          ? settingForm.selectedActions.join(',')
-          : settingForm.enabled ? 'ON' : 'OFF',
-      status: isDefaultTaxRateSetting(settingForm) ? '正常' : settingForm.enabled ? '正常' : '禁用',
+        : isMaxConcurrentSetting(settingForm)
+          ? String(Math.max(0, Math.round(settingForm.numericValue || 3)))
+          : isHideAuditedSwitch(settingForm.settingCode)
+            ? (settingForm.enabled ? settingForm.selectedActions.join(',') : 'OFF')
+            : isDetailedOperationSwitch(settingForm.settingCode)
+              ? settingForm.selectedActions.join(',')
+              : settingForm.enabled ? 'ON' : 'OFF',
+      status: isNumericSetting(settingForm) ? '正常' : settingForm.enabled ? '正常' : '禁用',
       remark: settingForm.remark.trim(),
     })
-    message.success(isDefaultTaxRateSetting(settingForm) ? '默认税率已更新' : '系统开关已更新')
+    message.success(isDefaultTaxRateSetting(settingForm) ? '默认税率已更新' : isMaxConcurrentSetting(settingForm) ? '最大同时在线会话数已更新' : '系统开关已更新')
     await loadSettings()
     editorVisible.value = false
   } catch (error) {
@@ -371,9 +457,7 @@ onMounted(() => {
           :scroll-x="900"
         >
           <template #cell-action="{ row }">
-            <a-button type="link" :disabled="!canEdit" @click="openSettingEditor(row)">
-              <EditOutlined /> 编辑
-            </a-button>
+            <TableActions :items="getSettingEditAction(() => openSettingEditor(row))" />
           </template>
         </DataTable>
       </section>
@@ -393,9 +477,7 @@ onMounted(() => {
           :scroll-x="980"
         >
           <template #cell-action="{ row }">
-            <a-button type="link" :disabled="!canEdit" @click="openSettingEditor(row)">
-              <EditOutlined /> 编辑
-            </a-button>
+            <TableActions :items="getSettingEditAction(() => openSettingEditor(row))" />
           </template>
         </DataTable>
       </section>
@@ -403,7 +485,7 @@ onMounted(() => {
 
     <a-modal
       :open="editorVisible"
-      :title="isDefaultTaxRateSetting(settingForm) ? '编辑默认税率' : '编辑系统开关'"
+      :title="isDefaultTaxRateSetting(settingForm) ? '编辑默认税率' : isMaxConcurrentSetting(settingForm) ? '编辑最大同时在线会话数' : '编辑系统开关'"
       :confirm-loading="saving"
       :width="640"
       ok-text="保存"
@@ -430,6 +512,19 @@ onMounted(() => {
             {{ getSystemSwitchHelpText(settingForm.settingCode) }}
           </div>
         </a-form-item>
+        <a-form-item v-else-if="isMaxConcurrentSetting(settingForm)" label="最大会话数">
+          <a-input-number
+            v-model:value="settingForm.numericValue"
+            :min="0"
+            :max="100"
+            :step="1"
+            :precision="0"
+            style="width: 100%"
+          />
+          <div class="field-help-text">
+            {{ getSystemSwitchHelpText(settingForm.settingCode) }}
+          </div>
+        </a-form-item>
         <template v-else>
           <a-form-item label="启用状态">
             <a-switch
@@ -442,16 +537,16 @@ onMounted(() => {
             </div>
           </a-form-item>
           <a-form-item
-            v-if="isDetailedOperationSwitch(settingForm.settingCode)"
-            label="记录动作"
+            v-if="isMultiSelectSwitch(settingForm.settingCode)"
+            :label="isHideAuditedSwitch(settingForm.settingCode) ? '隐藏状态' : '记录动作'"
           >
             <a-checkbox-group
               v-model:value="settingForm.selectedActions"
-              :options="DETAILED_OPERATION_ACTION_OPTIONS"
+              :options="getSelectOptionsForSwitch(settingForm.settingCode)"
               class="action-checkbox-group"
             />
             <div class="field-help-text">
-              勾选后才会自动记录对应页面动作；显式声明的高风险日志不受这里影响。
+              {{ isHideAuditedSwitch(settingForm.settingCode) ? '勾选后，业务列表分页查询默认不显示对应状态的单据。' : '勾选后才会自动记录对应页面动作；显式声明的高风险日志不受这里影响。' }}
             </div>
           </a-form-item>
         </template>

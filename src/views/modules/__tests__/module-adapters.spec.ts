@@ -1007,6 +1007,8 @@ describe('module-adapters', () => {
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'unitPrice', true, false)).toBe(true)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'warehouseName', true, false)).toBe(true)
     expect(isEditorItemColumnEditableForModule('purchase-orders', 'batchNo', true, false)).toBe(true)
+    expect(isEditorItemColumnEditableForModule('freight-bills', 'materialCode', true, false)).toBe(false)
+    expect(isEditorItemColumnEditableForModule('freight-bills', 'quantity', true, false)).toBe(false)
 
     expect(canManageEditorLineItems('sales-orders', true, true, true)).toBe(false)
     expect(canManageEditorLineItems('purchase-orders', true, true, true)).toBe(true)
@@ -1090,13 +1092,19 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
       items.reduce((sum, i) => sum + Number(i[key] || 0), 0),
   }
 
-  it('freight-bills: delegates to registry callback for totalWeight/totalFreight/deliveryStatus', () => {
+  it('freight-bills: delegates to registry callback for hidden headers and totals', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'freight-bills',
       record: { id: '0', unitPrice: '200' },
-      items: [{ id: 'item-1', weightTon: 5 }, { id: 'item-2', weightTon: 3 }],
+      items: [
+        { id: 'item-1', sourceNo: 'SO-OUT-001', customerName: '客户甲', projectName: '项目A', weightTon: 5 },
+        { id: 'item-2', weightTon: 3 },
+      ],
       ...ctx,
     })
+    expect(result.outboundNo).toBe('SO-OUT-001')
+    expect(result.customerName).toBe('客户甲')
+    expect(result.projectName).toBe('项目A')
     expect(result.totalWeight).toBe(8)
     expect(result.totalFreight).toBe(1600)
     expect(result.deliveryStatus).toBe('未送达')

@@ -5,6 +5,9 @@ import { ReloadOutlined, StopOutlined, DeleteOutlined } from '@ant-design/icons-
 import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
 import { useDataTable } from '@/composables/use-data-table'
 import DataTable from '@/components/DataTable.vue'
+import TableActions from '@/components/TableActions.vue'
+import type { ActionItem } from '@/components/TableActions.vue'
+import StatusTag from '@/components/StatusTag.vue'
 import {
   getRefreshTokenSummary,
   listRefreshTokens,
@@ -29,6 +32,20 @@ const pageSize = ref(20)
 const keyword = ref('')
 const permissionStore = usePermissionStore()
 const canEdit = computed(() => permissionStore.can('session', 'update'))
+
+function getSessionActions(row: RefreshTokenRecord): ActionItem[] {
+  return [
+    {
+      key: 'revoke',
+      label: '禁用',
+      icon: StopOutlined,
+      danger: true,
+      visible: canEdit.value && row.status === '有效',
+      onClick: () => handleRevoke(row)
+    }
+  ]
+}
+
 let refreshTimer: ReturnType<typeof window.setInterval> | null = null
 const showRequestError = useRequestError()
 
@@ -172,13 +189,13 @@ const sessionColumns = computed<ColumnDef<RefreshTokenRecord, unknown>[]>(() => 
     header: () => '在线状态',
     cell: (info) => {
       const record = info.row.original
-      return h('span', { class: `ant-tag ant-tag-${getOnlineColor(record)}` }, getOnlineLabel(record))
+      return h(StatusTag, { status: getOnlineLabel(record), color: getOnlineColor(record) })
     },
     meta: { width: 100, align: 'center' },
   }),
   sessionColumnHelper.accessor('status', {
     header: () => '状态',
-    cell: (info) => h('span', { class: `ant-tag ant-tag-${getStatusColor(String(info.getValue()))}` }, info.getValue() as string),
+    cell: (info) => h(StatusTag, { status: info.getValue() as string, color: getStatusColor(String(info.getValue())) }),
     meta: { width: 100, align: 'center' },
   }),
   sessionColumnHelper.display({
@@ -252,14 +269,7 @@ onBeforeUnmount(() => {
         :loading="loading"
       >
         <template #cell-action="{ row }">
-          <a
-            v-if="canEdit && row.status === '有效'"
-            style="color: #ff4d4f"
-            @click.prevent="handleRevoke(row)"
-          >
-            <StopOutlined /> 禁用
-          </a>
-          <span v-else style="color: #bfbfbf">--</span>
+          <TableActions :items="getSessionActions(row)" />
         </template>
       </DataTable>
       <div style="display: flex; justify-content: flex-end; margin-top: 16px">

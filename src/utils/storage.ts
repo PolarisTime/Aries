@@ -95,6 +95,7 @@ export function setToken(token: string, mode?: AuthPersistenceMode) {
 export function clearToken() {
   accessToken = ''
   clearStorageItem(STORAGE_KEYS.token)
+  clearStorageItem(STORAGE_KEYS.tokenExpiresAt)
   clearStorageItem(STORAGE_KEYS.authPersistence)
   clearLegacyAuthStorage()
 }
@@ -129,12 +130,14 @@ export function clearStoredUser() {
   clearStorageItem(STORAGE_KEYS.user)
 }
 
-export function setAuthSession(user: LoginUser, token: string, mode: AuthPersistenceMode) {
+export function setAuthSession(user: LoginUser, token: string, expiresIn: number, mode: AuthPersistenceMode) {
   accessToken = token
   clearStorageItem(STORAGE_KEYS.token)
   clearStorageItem(STORAGE_KEYS.user)
+  clearStorageItem(STORAGE_KEYS.tokenExpiresAt)
   getStorage(mode).setItem(STORAGE_KEYS.token, token)
   getStorage(mode).setItem(STORAGE_KEYS.user, JSON.stringify(user))
+  getStorage(mode).setItem(STORAGE_KEYS.tokenExpiresAt, String(Date.now() + expiresIn * 1000))
   setStoredPersistenceMode(mode)
   clearLegacyAuthStorage()
 }
@@ -185,4 +188,15 @@ export function setListColumnSettings(pageKey: string, settings: ListColumnSetti
 
 export function clearListColumnSettings(pageKey: string) {
   localStorage.removeItem(getListColumnSettingsKey(pageKey))
+}
+
+export function getTokenExpiresAt(): number | null {
+  if (typeof window === 'undefined') return null
+  const raw = localStorage.getItem(STORAGE_KEYS.tokenExpiresAt)
+    || sessionStorage.getItem(STORAGE_KEYS.tokenExpiresAt)
+  return raw ? Number(raw) : null
+}
+
+export function clearTokenExpiresAt() {
+  clearStorageItem(STORAGE_KEYS.tokenExpiresAt)
 }

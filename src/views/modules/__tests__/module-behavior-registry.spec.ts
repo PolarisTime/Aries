@@ -109,11 +109,17 @@ describe('module-behavior-registry', () => {
       ...overrides,
     })
 
-    it('freight-bills: computes totalWeight, totalFreight, deliveryStatus', () => {
+    it('freight-bills: computes totals and derives hidden header fields from imported items', () => {
       const config = getModuleBehavior('freight-bills')
       const record: ModuleRecord = { id: '1', unitPrice: '200' }
-      const items: ModuleLineItem[] = [{ id: 'item-1', weightTon: 5 }, { id: 'item-2', weightTon: 3 }]
+      const items: ModuleLineItem[] = [
+        { id: 'item-1', sourceNo: 'SO-OUT-001', customerName: '客户甲', projectName: '项目A', weightTon: 5 },
+        { id: 'item-2', weightTon: 3 },
+      ]
       config.normalizeDraftRecord!(record, items, createCtx())
+      expect(record.outboundNo).toBe('SO-OUT-001')
+      expect(record.customerName).toBe('客户甲')
+      expect(record.projectName).toBe('项目A')
       expect(record.totalWeight).toBe(8)
       expect(record.totalFreight).toBe(1600)
       expect(record.deliveryStatus).toBe('未送达')

@@ -32,8 +32,11 @@
   --app-content-padding: 16px;
   --app-page-gap: 12px;
   --app-card-body-padding: 12px;
-  --app-filter-gap-x: 16px;
+  --app-filter-gap-x: 36px;
   --app-filter-margin-bottom: 8px;
+  --app-filter-label-width: 104px;
+  --app-filter-control-width: 288px;
+  --app-filter-button-width: 96px;
   --app-table-head-padding-y: 10px;
   --app-table-head-padding-x: 12px;
   --app-table-cell-padding-y: 12px;
@@ -711,13 +714,29 @@ a {
 }
 
 .filter-inline-group .ant-form-item-label {
+  flex: 0 0 var(--app-filter-label-width);
+  width: var(--app-filter-label-width);
   padding-right: 6px;
   text-align: right;
   white-space: nowrap;
 }
 
 .filter-inline-group .ant-form-item-control {
-  min-width: 130px;
+  flex: 0 0 var(--app-filter-control-width);
+  width: var(--app-filter-control-width);
+  min-width: var(--app-filter-control-width);
+}
+
+.module-filter-item .ant-input-affix-wrapper,
+.module-filter-item .ant-input,
+.module-filter-item .ant-select,
+.module-filter-item .ant-picker {
+  width: var(--app-filter-control-width);
+}
+
+.module-filter-item .ant-select-selector,
+.module-filter-item .ant-picker {
+  min-width: var(--app-filter-control-width);
 }
 
 .filter-inline-group .table-page-search-submitButtons {
@@ -728,12 +747,29 @@ a {
   white-space: nowrap;
 }
 
+.table-page-search-submitButtons .ant-btn {
+  width: var(--app-filter-button-width);
+}
+
 .table-page-search-submitButtons {
   display: flex;
   align-items: center;
   min-height: 32px;
   padding-top: 1px;
   white-space: nowrap;
+}
+
+.filter-expand-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 72px;
+  color: #1677ff;
+}
+
+.filter-expand-link:hover {
+  color: #4096ff;
 }
 
 .table-operator {
@@ -954,6 +990,49 @@ a {
 
 .table-action-group .ant-divider-vertical {
   margin: 0 6px;
+}
+
+.table-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: var(--app-font-size);
+  .ant-divider-vertical {
+    margin: 0 6px;
+  }
+}
+
+.table-action-btn {
+  color: #1890ff;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  &:hover {
+    color: #40a9ff;
+    text-decoration: underline;
+  }
+}
+
+.table-action-danger {
+  color: #ff4d4f;
+  &:hover {
+    color: #ff7875;
+  }
+}
+
+.table-action-disabled {
+  color: #bfbfbf;
+  cursor: not-allowed;
+  &:hover {
+    color: #bfbfbf;
+    text-decoration: none;
+  }
+}
+
+.table-action-empty {
+  color: #bfbfbf;
 }
 
 .cell-tag-group {
@@ -2065,8 +2144,9 @@ a {
   }
 
   .table-page-search-wrapper .ant-form-item-label {
-    width: 64px;
-    min-width: 64px;
+    flex-basis: 72px;
+    width: 72px;
+    min-width: 72px;
   }
 
   .parent-import-toolbar,

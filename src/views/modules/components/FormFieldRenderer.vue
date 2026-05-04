@@ -33,6 +33,11 @@ const resolvedOptions = computed(() => {
   return typeof props.field.options === 'function' ? props.field.options(props.form) : props.field.options
 })
 
+const resolvedAutoCompleteOptions = computed(() => resolvedOptions.value.map((option) => ({
+  label: option.label,
+  value: String(option.value),
+})))
+
 const emit = defineEmits<{
   'update-value': [key: string, value: unknown]
   'date-change': [key: string, value: unknown]
@@ -110,6 +115,17 @@ function getNumberModelValue(source: Record<string, unknown>, key: string) {
         {{ option.label }}
       </a-select-option>
     </a-select>
+    <a-auto-complete
+      v-else-if="field.type === 'autoComplete'"
+      :id="fieldId"
+      :value="getTextModelValue(form, field.key)"
+      :options="resolvedAutoCompleteOptions"
+      :allow-clear="field.allowClear || !field.required"
+      style="width: 100%"
+      :disabled="disabled"
+      :placeholder="field.placeholder || `请输入或选择${field.label}`"
+      @update:value="(value) => emit('update-value', field.key, value)"
+    />
     <div
       v-else-if="roleTreeField"
       :id="fieldId"

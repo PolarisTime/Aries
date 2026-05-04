@@ -2,6 +2,7 @@ import type { ModulePageConfig } from '@/types/module-page'
 import {
   buildValueOptions,
   getCarrierOptions,
+  getCarrierVehiclePlateOptions,
   getCustomerOptions,
   getCustomerProjectOptions,
   getSupplierOptions,
@@ -140,11 +141,13 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     description: '销售订单围绕客户、项目和商品明细展开，页面默认展示完整业务字段，保持录入和查看口径一致。',
     primaryNoKey: 'orderNo',
     actions: actionSet,
+    defaultVisibleFilterCount: 5,
     filters: [
       { key: 'keyword', label: '订单编号', type: 'input', placeholder: '输入销售订单号' },
-      { key: 'customerName', label: '客户', type: 'select', options: getCustomerOptions },
       { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已审核', '完成销售') },
       { key: 'deliveryDate', label: '送货日期', type: 'dateRange' },
+      { key: 'customerName', label: '客户', type: 'select', options: getCustomerOptions, row: 2 },
+      { key: 'projectName', label: '项目名称', type: 'select', options: getCustomerProjectOptions, row: 2 },
     ],
     columns: [
       { title: '关联采购订单', dataIndex: 'purchaseOrderNo', width: 180 },
@@ -236,11 +239,13 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     description: '销售出库页承担发货和库存扣减，单据审核后会驱动关联销售订单进入完成销售，物流单和客户对账继续沿此单据下游流转。',
     primaryNoKey: 'outboundNo',
     actions: actionSet,
+    defaultVisibleFilterCount: 5,
     filters: [
       { key: 'keyword', label: '出库单号', type: 'input', placeholder: '输入销售出库单号' },
-      { key: 'customerName', label: '客户', type: 'select', options: getCustomerOptions },
       { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已审核') },
       { key: 'outboundDate', label: '出库日期', type: 'dateRange' },
+      { key: 'customerName', label: '客户', type: 'select', options: getCustomerOptions, row: 2 },
+      { key: 'projectName', label: '项目名称', type: 'select', options: getCustomerProjectOptions, row: 2 },
     ],
     columns: [
       { title: '出库单号', dataIndex: 'outboundNo', width: 160 },
@@ -304,7 +309,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     ],
     filters: [
       { key: 'keyword', label: '物流单号', type: 'input', placeholder: '输入物流单号' },
-      { key: 'carrierName', label: '物流商', type: 'select', options: getCarrierOptions() },
+      { key: 'carrierName', label: '物流商', type: 'select', options: getCarrierOptions },
       { key: 'status', label: '审核状态', type: 'select', options: [
         { label: '未审核', value: '未审核' },
         { label: '已审核', value: '已审核' },
@@ -314,19 +319,17 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     columns: [
       { title: '物流单号', dataIndex: 'billNo', width: 160 },
       { title: '物流商', dataIndex: 'carrierName', width: 140 },
-      { title: '客户', dataIndex: 'customerName', width: 140 },
-      { title: '项目', dataIndex: 'projectName', width: 180 },
+      { title: '车号', dataIndex: 'vehiclePlate', width: 120 },
       { title: '单据日期', dataIndex: 'billTime', width: 120, type: 'date' },
       { title: '总重量（吨）', dataIndex: 'totalWeight', width: 116, align: 'right', type: 'weight' },
       { title: '单价', dataIndex: 'unitPrice', width: 100, align: 'right', type: 'amount' },
       { title: '总运费', dataIndex: 'totalFreight', width: 110, align: 'right', type: 'amount' },
-      { title: '审核状态', dataIndex: 'status', width: 110, type: 'status', align: 'center' },
-      { title: '送达状态', dataIndex: 'deliveryStatus', width: 110, type: 'status', align: 'center' },
     ],
     detailFields: [
       { label: '物流单号', key: 'billNo' },
       { label: '关联出库单', key: 'outboundNo' },
       { label: '物流商', key: 'carrierName' },
+      { label: '车号', key: 'vehiclePlate' },
       { label: '客户', key: 'customerName' },
       { label: '项目', key: 'projectName' },
       { label: '单据日期', key: 'billTime', type: 'date' },
@@ -340,19 +343,10 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     formFields: [
       { key: 'billNo', label: '物流单号', type: 'input', required: true },
       { key: 'outboundNo', label: '关联出库单', type: 'input', disabled: true, placeholder: '通过上级单据导入' },
-      { key: 'carrierName', label: '物流商', type: 'select', required: true, options: getCarrierOptions() },
-      { key: 'customerName', label: '客户', type: 'select', required: true, options: getCustomerOptions },
-      { key: 'projectName', label: '项目', type: 'input', required: true },
+      { key: 'carrierName', label: '物流商', type: 'select', required: true, options: getCarrierOptions },
+      { key: 'vehiclePlate', label: '车号', type: 'autoComplete', options: getCarrierVehiclePlateOptions },
       { key: 'billTime', label: '单据日期', type: 'date', required: true },
       { key: 'unitPrice', label: '单价', type: 'number', required: true, min: 0, precision: 2, defaultValue: 0 },
-      { key: 'status', label: '审核状态', type: 'select', defaultValue: '未审核', options: [
-        { label: '未审核', value: '未审核' },
-        { label: '已审核', value: '已审核' },
-      ] },
-      { key: 'deliveryStatus', label: '送达状态', type: 'select', defaultValue: '未送达', options: [
-        { label: '未送达', value: '未送达' },
-        { label: '已送达', value: '已送达' },
-      ] },
       { key: 'remark', label: '备注', type: 'input' },
     ],
     parentImport: {

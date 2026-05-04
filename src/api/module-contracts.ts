@@ -42,7 +42,7 @@ export const moduleEndpointContracts: Record<string, ModuleEndpointConfig> = {
   },
   'sales-orders': {
     path: '/sales-orders',
-    nativeFilterKeys: ['keyword', 'customerName', 'status', 'startDate', 'endDate'],
+    nativeFilterKeys: ['keyword', 'customerName', 'projectName', 'status', 'startDate', 'endDate'],
     dateRangeMapping: {
       deliveryDate: {
         startKey: 'startDate',
@@ -52,7 +52,7 @@ export const moduleEndpointContracts: Record<string, ModuleEndpointConfig> = {
   },
   'sales-outbounds': {
     path: '/sales-outbounds',
-    nativeFilterKeys: ['keyword', 'customerName', 'status', 'startDate', 'endDate'],
+    nativeFilterKeys: ['keyword', 'customerName', 'projectName', 'status', 'startDate', 'endDate'],
     dateRangeMapping: {
       outboundDate: {
         startKey: 'startDate',

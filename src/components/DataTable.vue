@@ -68,8 +68,10 @@ function tdClass(cell: ReturnType<Row<TData>['getVisibleCells']>[number]) {
 }
 
 function getRowClasses(row: Row<TData>) {
+  const canSelect = row.getCanSelect()
   const classes: Record<string, boolean> = {
     'leo-data-table-row': true,
+    'leo-data-table-row-selectable': canSelect,
     'leo-data-table-row-selected': row.getIsSelected(),
   }
   if (props.rowClass) {
@@ -84,9 +86,52 @@ function getRowClasses(row: Row<TData>) {
 
 function getRowAttrs(row: Row<TData>) {
   const customProps = props.rowProps?.(row.original) || {}
+  const customOnClick = customProps.onClick
   return {
     ...customProps,
     class: [getRowClasses(row), customProps.class],
+    onClick: (e: MouseEvent) => {
+      if (callRowClickHandler(customOnClick, e)) return
+      if (isInteractiveClickTarget(e.target)) return
+      onRowClick(row)
+    },
+  }
+}
+
+function callRowClickHandler(handler: unknown, event: MouseEvent) {
+  if (typeof handler !== 'function') {
+    return false
+  }
+  const clickHandler = handler as (event: MouseEvent) => void
+  clickHandler(event)
+  return true
+}
+
+function isInteractiveClickTarget(target: MouseEvent['target']) {
+  const element = target as HTMLElement | null
+  if (!element || typeof element.closest !== 'function') {
+    return false
+  }
+  return Boolean(element.closest([
+    '.table-actions',
+    '.ant-checkbox-wrapper',
+    '.ant-checkbox',
+    '.ant-radio-wrapper',
+    '.ant-radio',
+    '.ant-btn',
+    '.leo-data-table-expanded-row',
+    'button',
+    'a',
+    'input',
+    'select',
+    'textarea',
+    '[role="button"]',
+  ].join(',')))
+}
+
+function onRowClick(row: Row<TData>) {
+  if (row.getCanSelect()) {
+    row.toggleSelected()
   }
 }
 

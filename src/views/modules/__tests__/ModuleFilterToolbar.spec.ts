@@ -24,6 +24,18 @@ const visibleFilters: ModuleFilterDefinition[] = [
     label: '创建日期',
     type: 'dateRange',
   },
+  {
+    key: 'customerName',
+    label: '客户',
+    type: 'select',
+    row: 2,
+  },
+  {
+    key: 'projectName',
+    label: '项目名称',
+    type: 'input',
+    row: 2,
+  },
 ]
 
 const quickFilters: ModuleQuickFilterDefinition[] = [
@@ -42,6 +54,8 @@ function mountToolbar() {
         keyword: '',
         status: '',
         createdAt: undefined,
+        customerName: '',
+        projectName: '',
       },
       visibleFilters,
       quickFilters,
@@ -62,6 +76,16 @@ describe('ModuleFilterToolbar', () => {
     expect(wrapper.text()).toContain('关键词')
     expect(wrapper.text()).toContain('状态')
     expect(wrapper.findComponent({ name: 'ARangePicker' }).exists()).toBe(true)
+    expect(wrapper.find('.module-filter-item-input').exists()).toBe(true)
+    expect(wrapper.find('.module-filter-item-select').exists()).toBe(true)
+    expect(wrapper.find('.module-filter-item-date-range').exists()).toBe(true)
+    const filterRows = wrapper.findAll('.filter-inline-group')
+    expect(filterRows).toHaveLength(2)
+    expect(filterRows[0].text()).toContain('创建日期')
+    expect(filterRows[0].findAll('button')).toHaveLength(2)
+    expect(filterRows[1].text()).toContain('客户')
+    expect(filterRows[1].text()).toContain('项目名称')
+    expect(filterRows[1].findAll('button')).toHaveLength(0)
 
     const quickFilterButton = wrapper.findAll('button').find((button) => button.text() === '待审核')
     expect(quickFilterButton).toBeDefined()
@@ -75,8 +99,7 @@ describe('ModuleFilterToolbar', () => {
     expect(wrapper.emitted('search')).toHaveLength(1)
 
     const select = wrapper.findComponent({ name: 'ASelect' })
-    select.vm.$emit('update:value', 'active')
-    select.vm.$emit('change')
+    select.vm.$emit('change', 'active')
     expect(wrapper.emitted('update-filter')?.[1]).toEqual(['status', 'active'])
     expect(wrapper.emitted('filter-change')).toHaveLength(1)
 

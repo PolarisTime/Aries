@@ -2,6 +2,7 @@ import { http, authHttp } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
 import type {
+  CaptchaData,
   Login2faPayload,
   LoginPayload,
   LoginResult,
@@ -12,7 +13,13 @@ export function login(payload: LoginPayload) {
   return http.post<ApiResponse<LoginResult>>(ENDPOINTS.AUTH_LOGIN, {
     loginName: payload.loginName,
     password: payload.password,
+    captchaId: payload.captchaId,
+    captchaCode: payload.captchaCode,
   })
+}
+
+export function fetchCaptcha() {
+  return http.get<ApiResponse<CaptchaData>>('/auth/captcha')
 }
 
 export function login2fa(payload: Login2faPayload) {

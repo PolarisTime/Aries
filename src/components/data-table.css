@@ -85,6 +85,10 @@
   cursor: pointer;
 }
 
+.leo-data-table .leo-data-table-row-selectable {
+  cursor: pointer;
+}
+
 .leo-data-table tr.module-selection-row-disabled {
   cursor: not-allowed;
   opacity: 0.56;

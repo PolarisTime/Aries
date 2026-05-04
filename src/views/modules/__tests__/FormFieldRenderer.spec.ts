@@ -20,6 +20,7 @@ function mountRenderer(field: ModuleFormFieldDefinition = baseField) {
         status: '草稿',
         roleNames: ['采购主管'],
         orderDate: '2026-04-28',
+        vehiclePlate: '苏A12345',
       },
       disabled: false,
       dateValue: dayjs('2026-04-28'),
@@ -58,6 +59,18 @@ describe('FormFieldRenderer', () => {
     })
     wrapper.findComponent({ name: 'ASelect' }).vm.$emit('update:value', '已审核')
     expect(wrapper.emitted('update-value')?.[1]).toEqual(['status', '已审核'])
+
+    await wrapper.setProps({
+      field: {
+        key: 'vehiclePlate',
+        label: '车号',
+        type: 'autoComplete',
+        options: [{ label: '苏A12345', value: '苏A12345' }],
+      },
+      fieldId: 'editor-field-vehiclePlate',
+    })
+    wrapper.findComponent({ name: 'AAutoComplete' }).vm.$emit('update:value', '苏A99999')
+    expect(wrapper.emitted('update-value')?.[2]).toEqual(['vehiclePlate', '苏A99999'])
 
     await wrapper.setProps({
       field: {

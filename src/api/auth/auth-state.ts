@@ -1,5 +1,5 @@
 import { AxiosHeaders } from 'axios'
-import { message } from 'ant-design-vue'
+import { message, notification } from 'ant-design-vue'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { ERROR_CODE } from '@/constants/error-codes'
@@ -8,8 +8,10 @@ import type { LoginResponseData } from '@/types/auth'
 import {
   clearStoredUser,
   clearToken,
+  clearTokenExpiresAt,
   getAuthPersistenceMode,
   getToken,
+  getTokenExpiresAt,
   setAuthSession,
 } from '@/utils/storage'
 import { authHttp } from '@/api/http'
@@ -17,6 +19,13 @@ import { getCurrentAppRoute } from '@/utils/route-helpers'
 import { router } from '@/router'
 
 let authFailureHandled = false
+
+const PRE_REFRESH_ADVANCE_MS = 5 * 60 * 1000
+const REFRESH_EXPIRES_AT_KEY = 'aries-refresh-expires-at'
+const REFRESH_WARNED_KEY = 'aries-refresh-warned'
+const ONE_DAY_MS = 24 * 60 * 60 * 1000
+
+let preRefreshTimer: ReturnType<typeof setTimeout> | null = null
 
 function notifyAuthStateChanged() {
   if (typeof window !== 'undefined') {
@@ -27,14 +36,25 @@ function notifyAuthStateChanged() {
 export function clearAuthState() {
   clearToken()
   clearStoredUser()
+  clearTokenExpiresAt()
+  cancelPreRefresh()
   notifyAuthStateChanged()
 }
 
 export function applyTokenResponse(data: LoginResponseData) {
   authFailureHandled = false
   if (data.user) {
-    setAuthSession(data.user, data.accessToken, getAuthPersistenceMode())
+    setAuthSession(data.user, data.accessToken, data.expiresIn, getAuthPersistenceMode())
   }
+  if (data.refreshExpiresIn) {
+    const expiresAt = Date.now() + data.refreshExpiresIn * 1000
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(REFRESH_EXPIRES_AT_KEY, String(expiresAt))
+      localStorage.removeItem(REFRESH_WARNED_KEY)
+    }
+  }
+  cancelPreRefresh()
+  schedulePreRefresh()
   notifyAuthStateChanged()
 }
 
@@ -64,6 +84,76 @@ function redirectToLogin() {
   }
 
   router.push(`/login?redirect=${encodeURIComponent(currentRoute)}`)
+}
+
+export function schedulePreRefresh(delayMs?: number) {
+  cancelPreRefresh()
+  if (typeof window === 'undefined') return
+
+  const delay = delayMs ?? computePreRefreshDelay()
+  if (delay <= 0) {
+    executePreRefresh()
+    return
+  }
+  preRefreshTimer = setTimeout(() => {
+    preRefreshTimer = null
+    executePreRefresh()
+  }, Math.min(delay, 2_147_483_647))
+}
+
+export function cancelPreRefresh() {
+  if (preRefreshTimer !== null) {
+    clearTimeout(preRefreshTimer)
+    preRefreshTimer = null
+  }
+}
+
+function computePreRefreshDelay(): number {
+  const expiresAt = getTokenExpiresAt()
+  if (!expiresAt) return PRE_REFRESH_ADVANCE_MS
+  const remaining = expiresAt - Date.now()
+  const advance = Math.min(PRE_REFRESH_ADVANCE_MS, Math.max(60_000, remaining * 0.2))
+  return remaining - advance
+}
+
+async function executePreRefresh() {
+  const existing = getRefreshPromise()
+  if (existing) {
+    await existing
+    return
+  }
+
+  let myPromise: Promise<void> | null = null
+  try {
+    myPromise = refreshAccessToken()
+    setRefreshPromise(myPromise)
+    await myPromise
+  } catch {
+    // silent fail: next real 401 will trigger passive refresh
+  } finally {
+    if (myPromise !== null && getRefreshPromise() === myPromise) {
+      setRefreshPromise(null)
+    }
+  }
+}
+
+export function checkRefreshTokenExpiry() {
+  if (typeof window === 'undefined') return
+  const raw = localStorage.getItem(REFRESH_EXPIRES_AT_KEY)
+  if (!raw) return
+  if (localStorage.getItem(REFRESH_WARNED_KEY)) return
+
+  const expiresAt = Number(raw)
+  const remaining = expiresAt - Date.now()
+
+  if (remaining > 0 && remaining <= ONE_DAY_MS) {
+    notification.warning({
+      message: '登录即将过期',
+      description: '您的登录状态将在明天过期，请及时保存工作并重新登录',
+      duration: 0,
+    })
+    localStorage.setItem(REFRESH_WARNED_KEY, '1')
+  }
 }
 
 let refreshPromise: Promise<void> | null = null
@@ -99,7 +189,6 @@ export function retryWithToken(request: { headers?: Record<string, unknown> | { 
     return
   }
   const h = request.headers
-  // Prefer AxiosHeaders.set() when available; fall back to constructing new headers.
   if (typeof (h as { set?: SetHeaderFn }).set === 'function') {
     (h as { set: SetHeaderFn }).set('Authorization', `Bearer ${latestToken}`)
   } else {

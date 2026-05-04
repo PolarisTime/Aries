@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { EditOutlined, EyeOutlined } from '@ant-design/icons-vue'
 import type { ModuleRecord } from '@/types/module-page'
+import TableActions from '@/components/TableActions.vue'
+import type { ActionItem } from '@/components/TableActions.vue'
 
-defineProps<{
+const props = defineProps<{
   record: ModuleRecord
   canView: boolean
   canEdit: boolean
@@ -12,13 +16,20 @@ defineProps<{
 const emit = defineEmits<{
   toggle: [record: ModuleRecord]
 }>()
+
+const actions = computed<ActionItem[]>(() => {
+  if (!props.canView) return []
+
+  const isExpanded = props.expanded && props.active
+  return [{
+    key: 'toggle',
+    label: isExpanded ? '收起' : props.canEdit ? '编辑' : '查看',
+    icon: isExpanded ? EyeOutlined : props.canEdit ? EditOutlined : EyeOutlined,
+    onClick: () => emit('toggle', props.record)
+  }]
+})
 </script>
 
 <template>
-  <div class="table-action-group">
-    <span v-if="canView" class="table-action-link" @click="emit('toggle', record)">
-      {{ expanded && active ? '收起' : canEdit ? '编辑' : '查看' }}
-    </span>
-    <span v-else>--</span>
-  </div>
+  <TableActions :items="actions" />
 </template>

@@ -35,6 +35,7 @@ defineProps<{
   detailVisible: boolean
   detailTitle: string
   detailFields: ModuleDetailField[]
+  detailColumnCount?: number
   itemColumns?: ModuleColumnDefinition[] | undefined
   activeRecord: ModuleRecord | null
   canPrintRecords: boolean
@@ -161,6 +162,7 @@ function sumRecordsBy(rows: ModuleRecord[], key: string) {
     :visible="detailVisible"
     :title="detailTitle"
     :detail-fields="detailFields"
+    :detail-column-count="detailColumnCount"
     :item-columns="itemColumns"
     :active-record="activeRecord"
     :can-print-records="canPrintRecords"
