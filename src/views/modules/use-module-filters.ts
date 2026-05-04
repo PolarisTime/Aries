@@ -67,12 +67,13 @@ export function useModuleFilters(options: UseModuleFiltersOptions) {
   const submittedFilters = ref<Record<string, unknown>>({})
   const filters = reactive<Record<string, unknown>>({})
   const searchExpanded = ref(false)
+  const defaultVisibleFilterCount = computed(() => config.value.defaultVisibleFilterCount ?? 3)
 
   const visibleFilters = computed(() =>
-    searchExpanded.value ? config.value.filters : config.value.filters.slice(0, 3),
+    searchExpanded.value ? config.value.filters : config.value.filters.slice(0, defaultVisibleFilterCount.value),
   )
   const quickFilters = computed(() => config.value.quickFilters || [])
-  const hasAdvancedFilters = computed(() => config.value.filters.length > 3)
+  const hasAdvancedFilters = computed(() => config.value.filters.length > defaultVisibleFilterCount.value)
 
   function resolveFilterOptions(filter: ModuleFilterDefinition) {
     if (!filter.options) {
@@ -144,6 +145,9 @@ export function useModuleFilters(options: UseModuleFiltersOptions) {
         return
       }
       const availableOptions = flattenFilterOptions(filter)
+      if (!availableOptions.length) {
+        return
+      }
       if (!availableOptions.some((option) => option.value === currentValue)) {
         filters[filter.key] = ''
       }

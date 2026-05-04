@@ -39,6 +39,7 @@ const props = defineProps<{
   visible: boolean
   title: string
   detailFields: ModuleDetailField[]
+  detailColumnCount?: number
   itemColumns?: ModuleColumnDefinition[] | undefined
   activeRecord: ModuleRecord | null
   canPrintRecords: boolean
@@ -59,6 +60,11 @@ const props = defineProps<{
 }>()
 
 const display = useModuleDisplaySupport(toRef(props, 'statusMap') as Ref<Record<string, StatusMeta>>)
+
+const detailColumnLgSpan = computed(() => {
+  const columnCount = Math.min(Math.max(Number(props.detailColumnCount || 3), 1), 4)
+  return 24 / columnCount
+})
 
 function toColumnDef(col: Record<string, unknown>): ColumnDef<ModuleLineItem, unknown> {
   const key = String(col.dataIndex || col.key || '')
@@ -114,7 +120,7 @@ defineEmits<{
             :key="field.key"
             :xs="24"
             :sm="12"
-            :lg="8"
+            :lg="detailColumnLgSpan"
             class="bill-detail-col"
           >
             <div class="bill-detail-item">

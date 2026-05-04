@@ -105,25 +105,28 @@ export function useModuleGridPanelBindings(options: UseModuleGridPanelBindingsOp
   }))
 
   const gridPanelEvents = {
-    'alert-action': (to: string) => {
+    alertAction: (to: string) => {
       void options.navigateTo(to)
     },
-    'apply-quick-filter': options.applyQuickFilter,
-    'update-filter': options.setFilterValue,
-    'filter-change': options.handleFilterValueChange,
-    'update-search-expanded': (value: boolean) => {
+    applyQuickFilter: options.applyQuickFilter,
+    updateFilter: options.setFilterValue,
+    filterChange: () => {
+      options.handleFilterValueChange()
+      options.handleSearch()
+    },
+    updateSearchExpanded: (value: boolean) => {
       options.searchExpanded.value = value
     },
     search: options.handleSearch,
     reset: options.handleReset,
-    'clear-table-error': options.clearTableError,
+    clearTableError: options.clearTableError,
     action: options.handleAction,
-    'export-menu-click': (key: string) => {
+    exportMenuClick: (key: string) => {
       void options.handleExportMenuClick({ key })
     },
-    'material-template-download': options.handleMaterialTemplateDownload,
-    'material-import-click': options.handleMaterialImportClick,
-    'pagination-change': (page: number, size: number) => {
+    materialTemplateDownload: options.handleMaterialTemplateDownload,
+    materialImportClick: options.handleMaterialImportClick,
+    paginationChange: (page: number, size: number) => {
       options.pagination.currentPage = page
       options.pagination.pageSize = size
     },

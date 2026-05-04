@@ -10,6 +10,9 @@ import {
   ReloadOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons-vue'
+import TableActions from '@/components/TableActions.vue'
+import type { ActionItem } from '@/components/TableActions.vue'
+import StatusTag from '@/components/StatusTag.vue'
 import {
   checkUserAccountLoginName,
   createUserAccount,
@@ -110,6 +113,39 @@ const canViewDepartmentCatalog = computed(() => permissionStore.can('department'
 const canCreate = computed(() => permissionStore.can('user-account', 'create'))
 const canEdit = computed(() => permissionStore.can('user-account', 'update'))
 const canDelete = computed(() => permissionStore.can('user-account', 'delete'))
+
+function getUserActions(row: UserAccountRecord): ActionItem[] {
+  return [
+    {
+      key: 'view',
+      label: '查看',
+      icon: EyeOutlined,
+      onClick: () => openDetailModal(row)
+    },
+    {
+      key: 'edit',
+      label: '编辑',
+      icon: EditOutlined,
+      visible: canEdit.value,
+      onClick: () => openEditModal(row)
+    },
+    {
+      key: '2fa',
+      label: '2FA',
+      icon: SafetyCertificateOutlined,
+      visible: canEdit.value,
+      onClick: () => open2faModal(row)
+    },
+    {
+      key: 'delete',
+      label: '删除',
+      icon: DeleteOutlined,
+      danger: true,
+      visible: canDelete.value && row.loginName !== 'admin',
+      onClick: () => handleDelete(row)
+    }
+  ]
+}
 
 const selectedRoleSummaries = computed(() =>
   roleOptions.value
@@ -274,7 +310,7 @@ const userAccountColumns = computed<ColumnDef<UserAccountRecord, unknown>[]>(() 
     header: () => '2FA 状态',
     cell: (info) => {
       const enabled = info.getValue()
-      return h('span', { class: `ant-tag ant-tag-${getTotpColor(!!enabled)}` }, enabled ? '已启用' : '未启用')
+      return h(StatusTag, { status: enabled ? '已启用' : '未启用', color: getTotpColor(!!enabled) })
     },
     meta: { width: 110, align: 'center' },
   }),
@@ -282,7 +318,7 @@ const userAccountColumns = computed<ColumnDef<UserAccountRecord, unknown>[]>(() 
     header: () => '状态',
     cell: (info) => {
       const v = String(info.getValue() ?? '')
-      return h('span', { class: `ant-tag ant-tag-${getStatusColor(v)}` }, v)
+      return h(StatusTag, { status: v, color: getStatusColor(v) })
     },
     meta: { width: 100, align: 'center' },
   }),
@@ -746,20 +782,7 @@ onMounted(() => {
         :loading="loading"
       >
         <template #cell-action="{ row }">
-          <a-space :size="10">
-            <a @click.prevent="openDetailModal(row)">
-              <EyeOutlined /> {{ $t('common.detail') }}
-            </a>
-            <a v-if="canEdit" @click.prevent="openEditModal(row)">
-              <EditOutlined /> {{ $t('common.edit') }}
-            </a>
-            <a v-if="canEdit" @click.prevent="open2faModal(row)">
-              <SafetyCertificateOutlined /> 2FA
-            </a>
-            <a v-if="canDelete && row.loginName !== 'admin'" @click.prevent="handleDelete(row)">
-              <DeleteOutlined /> {{ $t('common.delete') }}
-            </a>
-          </a-space>
+          <TableActions :items="getUserActions(row)" />
         </template>
       </DataTable>
       <div style="display: flex; justify-content: flex-end; margin-top: 16px">
@@ -1151,10 +1174,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.action-danger {
-  color: #ff4d4f;
 }
 
 /* 表单分区布局 */

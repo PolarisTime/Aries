@@ -54,10 +54,6 @@ declare module 'vue' {
     ASpin: typeof import('ant-design-vue/es')['Spin']
     AStatistic: typeof import('ant-design-vue/es')['Statistic']
     ASwitch: typeof import('ant-design-vue/es')['Switch']
-    ATable: typeof import('ant-design-vue/es')['Table']
-    ATableColumn: typeof import('ant-design-vue/es')['TableColumn']
-    ATableSummaryCell: typeof import('ant-design-vue/es')['TableSummaryCell']
-    ATableSummaryRow: typeof import('ant-design-vue/es')['TableSummaryRow']
     ATabPane: typeof import('ant-design-vue/es')['TabPane']
     ATabs: typeof import('ant-design-vue/es')['Tabs']
     ATag: typeof import('ant-design-vue/es')['Tag']
@@ -70,6 +66,8 @@ declare module 'vue' {
     PermButton: typeof import('./components/PermButton.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    StatusTag: typeof import('./components/StatusTag.vue')['default']
+    TableActions: typeof import('./components/TableActions.vue')['default']
     TwoFactorConfirmModal: typeof import('./components/TwoFactorConfirmModal.vue')['default']
   }
 }

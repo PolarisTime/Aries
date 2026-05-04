@@ -26,7 +26,7 @@ defineProps<{
       <div class="column-setting-panel">
         <div class="column-setting-header">
           <span>{{ label }}</span>
-          <span class="table-action-link" @click="onReset">恢复默认</span>
+          <span class="table-action-btn" @click="onReset">恢复默认</span>
         </div>
         <div class="column-setting-list">
           <div

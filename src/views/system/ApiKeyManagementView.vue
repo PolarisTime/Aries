@@ -27,6 +27,9 @@ import { usePermissionStore } from '@/stores/permission'
 import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
 import { useDataTable } from '@/composables/use-data-table'
 import DataTable from '@/components/DataTable.vue'
+import TableActions from '@/components/TableActions.vue'
+import type { ActionItem } from '@/components/TableActions.vue'
+import StatusTag from '@/components/StatusTag.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -61,6 +64,26 @@ const showGenerateTotpModal = ref(false)
 const canView = computed(() => permissionStore.can('api-key', 'read'))
 const canCreate = computed(() => permissionStore.can('api-key', 'create'))
 const canEdit = computed(() => permissionStore.can('api-key', 'update'))
+
+function getApiKeyActions(row: ApiKeyRecord): ActionItem[] {
+  return [
+    {
+      key: 'view',
+      label: '查看',
+      icon: EyeOutlined,
+      onClick: () => viewDetail(row)
+    },
+    {
+      key: 'revoke',
+      label: '禁用',
+      icon: StopOutlined,
+      danger: true,
+      visible: canEdit.value && row.status === '有效',
+      onClick: () => handleRevoke(row)
+    }
+  ]
+}
+
 const canLoadUserOptions = computed(() => canView.value)
 const isCurrentUserTotpDisabled = computed(() => authStore.user?.totpEnabled === false)
 const showRequestError = useRequestError()
@@ -321,7 +344,7 @@ const apiKeyColumns = computed<ColumnDef<ApiKeyRecord, unknown>[]>(() => [
     header: () => '状态',
     cell: (info) => {
       const v = String(info.getValue() ?? '')
-      return h('span', { class: `ant-tag ant-tag-${getStatusColor(v)}` }, v)
+      return h(StatusTag, { status: v, color: getStatusColor(v) })
     },
     meta: { width: 110, align: 'center' },
   }),
@@ -449,19 +472,7 @@ void loadActionOptions()
         :scroll-x="1800"
       >
         <template #cell-action="{ row }">
-          <a-space :size="10">
-            <a @click.prevent="viewDetail(row)">
-              <EyeOutlined /> 查看
-            </a>
-            <a
-              v-if="canEdit && row.status === '有效'"
-              class="api-key-action-danger"
-              @click.prevent="handleRevoke(row)"
-            >
-              <StopOutlined /> 禁用
-            </a>
-            <span v-else>--</span>
-          </a-space>
+          <TableActions :items="getApiKeyActions(row)" />
         </template>
       </DataTable>
       <div style="display: flex; justify-content: flex-end; margin-top: 16px">
@@ -645,10 +656,6 @@ void loadActionOptions()
   border: 1px solid #d9d9d9;
   border-radius: 6px;
   padding: 16px;
-}
-
-.api-key-action-danger {
-  color: #ff4d4f;
 }
 
 @media (max-width: 768px) {

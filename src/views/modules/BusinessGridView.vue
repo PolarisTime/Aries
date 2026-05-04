@@ -991,6 +991,7 @@ const {
       :detail-visible="detailVisible"
       :detail-title="`${config.title}详情`"
       :detail-fields="config.detailFields"
+      :detail-column-count="config.detailColumnCount"
       :item-columns="config.itemColumns"
       :active-record="activeRecord"
       :can-print-records="canPrintRecords"

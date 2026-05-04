@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/vue-query'
 import {
   ArrowLeftOutlined,
   LockOutlined,
+  ReloadOutlined,
   SafetyCertificateOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue'
@@ -14,6 +15,7 @@ import { ENDPOINTS } from '@/constants/endpoints'
 import { getInitialSetupStatus } from '@/api/setup'
 import { useAuthStore } from '@/stores/auth'
 import { requiresForcedTotpSetup } from '@/router'
+import { fetchCaptcha } from '@/api/auth'
 import type { LoginUser } from '@/types/auth'
 import { appTitle } from '@/utils/env'
 
@@ -51,12 +53,41 @@ const formState = reactive({
   loginName: savedSession?.loginName || '',
   password: '',
   remember: true,
+  captchaId: '',
+  captchaCode: '',
 })
 const totpCode = ref('')
 const stepDeadline = ref(savedSession?.deadline || 0)
 const now = ref(Date.now())
 const checkingSetup = ref(true)
 const companyName = ref('')
+
+const captchaId = ref('')
+const captchaImage = ref('')
+const captchaRequired = ref(false)
+const captchaCode = ref('')
+const captchaLoading = ref(false)
+
+async function fetchCaptchaData() {
+  captchaLoading.value = true
+  try {
+    const res = await fetchCaptcha()
+    if (res.data) {
+      captchaId.value = res.data.captchaId
+      captchaImage.value = res.data.captchaImage
+      captchaRequired.value = res.data.required
+    }
+  } catch { /* silent */ }
+  finally {
+    captchaLoading.value = false
+  }
+}
+
+function refreshCaptcha() {
+  captchaCode.value = ''
+  fetchCaptchaData()
+}
+
 let countdownTimer: ReturnType<typeof window.setInterval> | null = null
 
 const isSubmitDisabled = computed(() => !formState.loginName || !formState.password)
@@ -120,6 +151,8 @@ const loginMutation = useMutation({
       loginName: formState.loginName,
       password: formState.password,
       remember: formState.remember,
+      captchaId: captchaRequired.value ? captchaId.value : undefined,
+      captchaCode: captchaRequired.value ? captchaCode.value : undefined,
     }),
   onSuccess: (result) => {
     if (result.requires2fa) {
@@ -193,10 +226,12 @@ async function handleLogin() {
   if (isSubmitDisabled.value || loginMutation.isPending.value) {
     return
   }
+  formState.captchaId = captchaId.value
+  formState.captchaCode = captchaCode.value
   try {
     await loginMutation.mutateAsync()
   } catch {
-    // Error feedback is handled in the mutation callbacks.
+    refreshCaptcha()
   }
 }
 
@@ -229,6 +264,7 @@ async function checkSetupStatus() {
 onMounted(async () => {
   authStore.hydrate()
   await checkSetupStatus()
+  fetchCaptchaData()
   if (loginStep.value === 'totp') {
     startStepCountdown()
   }
@@ -307,6 +343,39 @@ onBeforeUnmount(() => {
                   <LockOutlined />
                 </template>
               </a-input-password>
+            </a-form-item>
+
+            <a-form-item v-if="captchaRequired">
+              <a-row :gutter="8" align="middle">
+                <a-col :span="14">
+                  <a-input
+                    v-model:value="captchaCode"
+                    size="large"
+                    :maxlength="4"
+                    placeholder="验证码"
+                    autocomplete="off"
+                    @press-enter="handleLogin"
+                  />
+                </a-col>
+                <a-col :span="10">
+                  <a-spin :spinning="captchaLoading" size="small">
+                    <img
+                      :src="captchaImage"
+                      alt="验证码"
+                      class="captcha-image"
+                      @click="refreshCaptcha"
+                    />
+                  </a-spin>
+                  <a-button
+                    type="text"
+                    size="small"
+                    class="captcha-refresh-btn"
+                    @click="refreshCaptcha"
+                  >
+                    <ReloadOutlined />
+                  </a-button>
+                </a-col>
+              </a-row>
             </a-form-item>
 
             <a-form-item class="login-options">
@@ -389,6 +458,18 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.captcha-image {
+  height: 40px;
+  cursor: pointer;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+}
+
+.captcha-refresh-btn {
+  margin-left: 4px;
+  color: #999;
+}
+
 .login-2fa-meta {
   display: flex;
   align-items: center;

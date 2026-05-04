@@ -48,6 +48,8 @@ export interface ModuleBehaviorConfig {
   lockedLineItemsNotice?: string
   /** Whether users can manually add line items in the editor. Defaults to true. */
   allowsManualLineItems?: boolean
+  /** Whether line-item cells are always rendered read-only in the editor. */
+  readonlyLineItems?: boolean
   /** How empty line items are trimmed before save. */
   lineItemTrimStrategy?: 'purchaseOrderBlank' | 'positiveWeightOrAmount'
   /** Whether the module supports parent document import. */
@@ -140,6 +142,18 @@ const approvedStatusModules = ['purchase-orders', 'purchase-inbounds', 'sales-or
 approvedStatusModules.forEach((key) => register(key, { auditStatus: '已审核' }))
 register('sales-orders', { lockedAuditStatus: '完成销售' })
 
+const protectedEditStatuses = new Set([
+  '已审核',
+  '已完成',
+  '完成采购',
+  '完成入库',
+  '完成销售',
+  '已付款',
+  '已收款',
+  '已签署',
+  '已送达',
+])
+
 const protectedDeleteStatuses = new Set([
   '已审核',
   '已完成',
@@ -198,6 +212,7 @@ register('purchase-orders', { lineItemTrimStrategy: 'purchaseOrderBlank' })
 const positiveLineItemModules = ['invoice-receipts', 'invoice-issues']
 positiveLineItemModules.forEach((key) => register(key, { lineItemTrimStrategy: 'positiveWeightOrAmount' }))
 register('invoice-issues', { allowsManualLineItems: false })
+register('freight-bills', { allowsManualLineItems: false, readonlyLineItems: true })
 
 // ── Statement support ──
 register('purchase-inbounds', { supportsStatements: true, statementLinkType: 'supplier' })
@@ -218,6 +233,18 @@ register('materials', { supportsMaterialImport: true })
 
 register('freight-bills', {
   normalizeDraftRecord(record, items, ctx) {
+    const firstSourceItem = items.find((item) => String(item.sourceNo || '').trim())
+    const firstCustomerItem = items.find((item) => String(item.customerName || '').trim())
+    const firstProjectItem = items.find((item) => String(item.projectName || '').trim())
+    if (!record.outboundNo && firstSourceItem) {
+      record.outboundNo = firstSourceItem.sourceNo
+    }
+    if (!record.customerName && firstCustomerItem) {
+      record.customerName = firstCustomerItem.customerName
+    }
+    if (!record.projectName && firstProjectItem) {
+      record.projectName = firstProjectItem.projectName
+    }
     record.totalWeight = Number(ctx.sumLineItemsBy(items, 'weightTon').toFixed(3))
     record.totalFreight = Number((Number(record.unitPrice || 0) * Number(record.totalWeight || 0)).toFixed(2))
     if (!record.deliveryStatus) {
@@ -359,6 +386,10 @@ export function getBehaviorValue<K extends keyof ModuleBehaviorConfig>(
   flag: K,
 ): ModuleBehaviorConfig[K] | undefined {
   return registry.get(moduleKey)?.[flag]
+}
+
+export function isEditBlockedByStatus(status: unknown): boolean {
+  return protectedEditStatuses.has(String(status ?? '').trim())
 }
 
 export function isDeleteBlockedByStatus(status: unknown): boolean {

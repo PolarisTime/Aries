@@ -55,6 +55,7 @@ describe('ModuleSelectionOverlay', () => {
 
   it('updates selection from row clicks and keeps custom double-click handlers', async () => {
     const onChange = vi.fn()
+    const onClick = vi.fn()
     const onDblclick = vi.fn()
     const rows = [
       { id: '1', materialCode: 'M-001' },
@@ -75,6 +76,7 @@ describe('ModuleSelectionOverlay', () => {
           onChange,
         },
         customRow: (record: { materialCode: string }) => ({
+          onClick: () => onClick(record.materialCode),
           onDblclick: () => onDblclick(record.materialCode),
         }),
         emptyDescription: '暂无可选商品',
@@ -88,6 +90,7 @@ describe('ModuleSelectionOverlay', () => {
     const tableRows = wrapper.findAll('tbody tr.leo-data-table-row')
     await tableRows[1].trigger('click')
     expect(onChange).toHaveBeenCalledWith(['M-002'], [rows[1]])
+    expect(onClick).toHaveBeenCalledWith('M-002')
 
     await tableRows[1].trigger('dblclick')
     expect(onDblclick).toHaveBeenCalledWith('M-002')

@@ -125,17 +125,22 @@ function uniqueProjectOptions(rows: CustomerOption[], includeCustomerInLabel: bo
       return []
     }
     seen.add(projectName)
+    const customerName = normalizeText(row.customerName || row.value)
+    const projectLabel = formatProjectOptionLabel(row, projectName)
     return [{
-      label: includeCustomerInLabel
-        ? `${projectName} / ${normalizeText(row.customerName || row.value)}`
-        : projectName,
+      label: includeCustomerInLabel ? `${projectLabel} / ${customerName}` : projectLabel,
       value: projectName,
-      customerName: normalizeText(row.customerName || row.value),
+      customerName,
       projectName,
       customerCode: row.customerCode,
       projectNameAbbr: row.projectNameAbbr,
     }]
   })
+}
+
+function formatProjectOptionLabel(row: CustomerOption, projectName: string) {
+  const projectNameAbbr = normalizeText(row.projectNameAbbr)
+  return projectNameAbbr ? `${projectNameAbbr}（${projectName}）` : projectName
 }
 
 function normalizeText(value: unknown) {

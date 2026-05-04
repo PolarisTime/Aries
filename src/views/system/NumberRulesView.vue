@@ -5,6 +5,8 @@ import { EditOutlined, ReloadOutlined, SettingOutlined, UploadOutlined } from '@
 import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
 import { useDataTable } from '@/composables/use-data-table'
 import DataTable from '@/components/DataTable.vue'
+import TableActions from '@/components/TableActions.vue'
+import type { ActionItem } from '@/components/TableActions.vue'
 import {
   getPageUploadRule,
   listAllBusinessModuleRows,
@@ -77,6 +79,18 @@ const uploadRuleForm = reactive<UploadRuleFormState>({
 })
 
 const canEdit = computed(() => permissionStore.can('general-setting', 'update'))
+
+function getRuleEditAction(onClick: () => void): ActionItem[] {
+  return [
+    {
+      key: 'edit',
+      label: '编辑',
+      icon: EditOutlined,
+      disabled: !canEdit.value,
+      onClick
+    }
+  ]
+}
 
 const DATE_RULE_OPTIONS = [
   { label: '按年（yyyy）', value: 'yyyy' },
@@ -532,9 +546,7 @@ function appendNumberRuleToken(token: string) {
           :scroll-x="1320"
         >
           <template #cell-action="{ row }">
-            <a-button type="link" :disabled="!canEdit" @click="openNumberRuleEditor(row)">
-              <EditOutlined /> 编辑
-            </a-button>
+            <TableActions :items="getRuleEditAction(() => openNumberRuleEditor(row))" />
           </template>
         </DataTable>
       </section>
@@ -554,9 +566,7 @@ function appendNumberRuleToken(token: string) {
           :scroll-x="1160"
         >
           <template #cell-action="{ row }">
-            <a-button type="link" :disabled="!canEdit" @click="openUploadRuleEditor(row)">
-              <EditOutlined /> 编辑
-            </a-button>
+            <TableActions :items="getRuleEditAction(() => openUploadRuleEditor(row))" />
           </template>
         </DataTable>
       </section>

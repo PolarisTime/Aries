@@ -1,6 +1,6 @@
 // NOTE: These are fallback/default values for dropdown selects.
-// Supplier options intentionally have no fallback: purchase modules must use
-// the supplier master-data API so stale hardcoded supplier names cannot be saved.
+// Supplier and carrier options intentionally have no fallback: business modules
+// must use master-data APIs so stale hardcoded names cannot be saved.
 import type { MaterialCategoryOption } from '@/api/material-categories'
 
 function createOptionList(values: readonly string[]) {
@@ -122,7 +122,7 @@ export function getCustomerProjectOptions(form?: Record<string, unknown>) {
 }
 
 
-const carrierFallbackOptions = createOptionList(['中外运华东', '申通大件', '德邦钢材专线'] as const)
+const carrierFallbackOptions: ReturnType<typeof createOptionList> = []
 
 const _carrierOptions = carrierFallbackOptions
 
@@ -130,11 +130,18 @@ export function carrierOptions() {
   return _carrierOptions
 }
 
-import { getCarrierOptions as apiGetCarrierOptions } from '@/api/carrier-options'
+import {
+  getCarrierOptions as apiGetCarrierOptions,
+  getCarrierVehiclePlateOptions as apiGetCarrierVehiclePlateOptions,
+} from '@/api/carrier-options'
 
 export function getCarrierOptions() {
   const dynamic = apiGetCarrierOptions()
   return dynamic.length > 0 ? dynamic : _carrierOptions
+}
+
+export function getCarrierVehiclePlateOptions(form?: Record<string, unknown>) {
+  return apiGetCarrierVehiclePlateOptions(form)
 }
 
 

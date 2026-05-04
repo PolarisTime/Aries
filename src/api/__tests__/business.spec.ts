@@ -735,8 +735,23 @@ describe('business api read-only modules', () => {
       'sales-orders',
       {
         customerName: '客户甲',
+        projectName: '项目A',
         status: '完成销售',
         deliveryDate: ['2026-04-01', '2026-04-30'],
+      },
+      {
+        currentPage: 2,
+        pageSize: 10,
+      },
+    )
+
+    await listBusinessModule(
+      'sales-outbounds',
+      {
+        customerName: '客户甲',
+        projectName: '项目A',
+        status: '已审核',
+        outboundDate: ['2026-04-01', '2026-04-30'],
       },
       {
         currentPage: 2,
@@ -770,6 +785,7 @@ describe('business api read-only modules', () => {
     expect(clientMocks.httpGet).toHaveBeenNthCalledWith(2, '/sales-orders', {
       params: {
         customerName: '客户甲',
+        projectName: '项目A',
         status: '完成销售',
         startDate: '2026-04-01',
         endDate: '2026-04-30',
@@ -777,7 +793,18 @@ describe('business api read-only modules', () => {
         size: 10,
       },
     })
-    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(3, '/freight-bills', {
+    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(3, '/sales-outbounds', {
+      params: {
+        customerName: '客户甲',
+        projectName: '项目A',
+        status: '已审核',
+        startDate: '2026-04-01',
+        endDate: '2026-04-30',
+        page: 1,
+        size: 10,
+      },
+    })
+    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(4, '/freight-bills', {
       params: {
         carrierName: '物流甲',
         status: '已审核',

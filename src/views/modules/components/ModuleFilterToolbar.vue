@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import dayjs, { type Dayjs } from 'dayjs'
+import { DownOutlined, UpOutlined } from '@ant-design/icons-vue'
 import type { SelectValue } from 'ant-design-vue/es/select'
 import type {
   ModuleFilterDefinition,
@@ -78,6 +80,35 @@ function resolveFilterOptions(filter: ModuleFilterDefinition) {
 function isFilterOptionGroup(option: ModuleFilterOptionEntry): option is ModuleFilterOptionGroup {
   return 'options' in option
 }
+
+function handleSelectChange(key: string, value: unknown) {
+  emit('update-filter', key, value)
+  emit('filter-change')
+}
+
+function getFilterItemClass(filter: ModuleFilterDefinition) {
+  return [
+    'module-filter-item',
+    `module-filter-item-${filter.type === 'dateRange' ? 'date-range' : filter.type}`,
+  ]
+}
+
+function getFilterRow(filter: ModuleFilterDefinition) {
+  return Number(filter.row || 1)
+}
+
+const primaryVisibleFilters = computed(() =>
+  props.visibleFilters.filter((filter) => getFilterRow(filter) <= 1),
+)
+
+const secondaryVisibleFilters = computed(() =>
+  props.visibleFilters.filter((filter) => getFilterRow(filter) > 1),
+)
+
+const visibleFilterGroups = computed(() => [
+  primaryVisibleFilters.value,
+  secondaryVisibleFilters.value,
+].filter((group) => group.length > 0))
 </script>
 
 <template>
@@ -98,10 +129,18 @@ function isFilterOptionGroup(option: ModuleFilterOptionEntry): option is ModuleF
       </a-button>
     </div>
     <a-form :model="filters" layout="inline" @submit.prevent="emit('search')">
-      <div class="filter-inline-group">
+      <div
+        v-for="(filterGroup, groupIndex) in visibleFilterGroups"
+        :key="groupIndex"
+        :class="[
+          'filter-inline-group',
+          groupIndex === 0 ? 'filter-inline-group-primary' : 'filter-inline-group-secondary',
+        ]"
+      >
         <a-form-item
-          v-for="filter in visibleFilters"
+          v-for="filter in filterGroup"
           :key="filter.key"
+          :class="getFilterItemClass(filter)"
           :label="filter.label"
           :html-for="getFilterFieldId(filter.key)"
         >
@@ -121,8 +160,7 @@ function isFilterOptionGroup(option: ModuleFilterOptionEntry): option is ModuleF
             :value="getSelectModelValue(filters, filter.key)"
             allow-clear
             :placeholder="filter.placeholder || `请选择${filter.label}`"
-            @update:value="emit('update-filter', filter.key, $event)"
-            @change="emit('filter-change')"
+            @change="(value) => handleSelectChange(filter.key, value)"
           >
             <template
               v-for="option in resolveFilterOptions(filter)"
@@ -157,15 +195,17 @@ function isFilterOptionGroup(option: ModuleFilterOptionEntry): option is ModuleF
             @update:value="(value) => emit('update-filter', filter.key, value)"
           />
         </a-form-item>
-        <div class="table-page-search-submitButtons">
+        <div v-if="groupIndex === 0" class="table-page-search-submitButtons">
           <a-button type="primary" @click="emit('search')">查询</a-button>
-          <a-button style="margin-left: 8px" @click="emit('reset')">重置</a-button>
+          <a-button @click="emit('reset')">重置</a-button>
           <a
             v-if="hasAdvancedFilters"
-            style="margin-left: 8px"
+            class="filter-expand-link"
             @click="emit('update:expanded', !expanded)"
           >
             {{ expanded ? '收起' : '展开' }}
+            <UpOutlined v-if="expanded" />
+            <DownOutlined v-else />
           </a>
         </div>
       </div>

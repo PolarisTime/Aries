@@ -154,6 +154,7 @@ export const masterDataPageConfigs: Record<string, ModulePageConfig> = {
       { label: '状态', key: 'status', type: 'status' },
       { label: '备注', key: 'remark' },
     ],
+    detailColumnCount: 4,
     formFields: [
       { key: 'supplierCode', label: '供应商编码', type: 'input', required: true },
       { key: 'supplierName', label: '供应商名称', type: 'input', required: true },
@@ -202,6 +203,7 @@ export const masterDataPageConfigs: Record<string, ModulePageConfig> = {
       { label: '状态', key: 'status', type: 'status' },
       { label: '备注', key: 'remark' },
     ],
+    detailColumnCount: 4,
     formFields: [
       { key: 'customerCode', label: '客户编码', type: 'input', required: true },
       { key: 'customerName', label: '客户名称', type: 'input', required: true },
@@ -263,6 +265,7 @@ export const masterDataPageConfigs: Record<string, ModulePageConfig> = {
       { label: '状态', key: 'status', type: 'status' },
       { label: '备注', key: 'remark' },
     ],
+    detailColumnCount: 4,
     formFields: [
       { key: 'carrierCode', label: '物流方编码', type: 'input', required: true },
       { key: 'carrierName', label: '物流方名称', type: 'input', required: true },
@@ -325,6 +328,7 @@ export const masterDataPageConfigs: Record<string, ModulePageConfig> = {
       { label: '状态', key: 'status', type: 'status' },
       { label: '备注', key: 'remark' },
     ],
+    detailColumnCount: 4,
     formFields: [
       { key: 'warehouseCode', label: '仓库编码', type: 'input', required: true },
       { key: 'warehouseName', label: '仓库名称', type: 'input', required: true },

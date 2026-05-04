@@ -7,7 +7,7 @@ export type ModuleColumnType =
   | 'count'
 
 export type ModuleFilterType = 'input' | 'select' | 'dateRange'
-export type ModuleFormFieldType = 'input' | 'select' | 'multiSelect' | 'date' | 'textarea' | 'number'
+export type ModuleFormFieldType = 'input' | 'select' | 'autoComplete' | 'multiSelect' | 'date' | 'textarea' | 'number'
 
 export interface ModuleFilterOption {
   label: string
@@ -40,6 +40,7 @@ export interface ModuleFilterDefinition {
   type: ModuleFilterType
   placeholder?: string
   options?: ModuleFilterOptionEntry[] | ModuleFilterOptionResolver
+  row?: number
 }
 
 export interface ModuleQuickFilterDefinition {
@@ -130,9 +131,11 @@ export interface ModulePageConfig {
   hidePageHeader?: boolean
   readOnly?: boolean
   filters: ModuleFilterDefinition[]
+  defaultVisibleFilterCount?: number
   quickFilters?: ModuleQuickFilterDefinition[]
   columns: ModuleColumnDefinition[]
   detailFields: ModuleDetailField[]
+  detailColumnCount?: number
   formFields?: ModuleFormFieldDefinition[]
   parentImport?: ModuleParentImportDefinition
   itemColumns?: ModuleColumnDefinition[]

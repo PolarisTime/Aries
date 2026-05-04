@@ -1,7 +1,9 @@
 import { computed, h, type Ref } from 'vue'
+import { Checkbox } from 'ant-design-vue'
 import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
 import type { ModuleColumnDefinition, ModuleRecord } from '@/types/module-page'
 import type { StatusMeta } from '@/composables/use-module-display-support'
+import StatusTag from '@/components/StatusTag.vue'
 import { isTagListColumnKey, isFriendlyTagColumnKey, getTagListValues, getFriendlyTagColor } from './module-adapter-shared'
 
 interface GridColumnDeps {
@@ -16,6 +18,22 @@ export function useGridColumns(deps: GridColumnDeps) {
   const { isReadOnly, visibleConfigColumns, columnMetaMap, formatCellValue, getStatusMeta } = deps
 
   const tanstackColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
+    {
+      id: 'selection',
+      header: ({ table }: { table: { getIsAllRowsSelected: () => boolean; getIsSomeRowsSelected: () => boolean; toggleAllRowsSelected: (v: boolean) => void } }) =>
+        h(Checkbox, {
+          checked: table.getIsAllRowsSelected(),
+          indeterminate: table.getIsSomeRowsSelected(),
+          'onUpdate:checked': (checked: boolean) => table.toggleAllRowsSelected(checked),
+        }),
+      cell: ({ row }: { row: { getIsSelected: () => boolean; getCanSelect: () => boolean; toggleSelected: (v: boolean) => void } }) =>
+        h(Checkbox, {
+          checked: row.getIsSelected(),
+          disabled: !row.getCanSelect(),
+          'onUpdate:checked': (checked: boolean) => row.toggleSelected(checked),
+        }),
+      meta: { width: 48, align: 'center' as const, fixed: 'left' as const },
+    },
     {
       id: 'action',
       header: () => '操作',
@@ -45,7 +63,7 @@ export function useGridColumns(deps: GridColumnDeps) {
           : isStatus
           ? (info: { getValue: () => unknown }) => {
               const s = getStatusMeta(info.getValue())
-              return h('span', { class: `ant-tag ant-tag-${s.color}` }, s.text)
+              return h(StatusTag, { status: s.text, color: s.color })
             }
           : (info: { getValue: () => unknown }) => formatCellValue(colMeta, info.getValue()),
         meta: {

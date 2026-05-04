@@ -2,6 +2,7 @@
 import { computed, h } from 'vue'
 import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
 import ModuleSelectionOverlay from './ModuleSelectionOverlay.vue'
+import StatusTag from '@/components/StatusTag.vue'
 import type { ModuleRecord } from '@/types/module-page'
 
 const props = defineProps<{
@@ -39,7 +40,7 @@ const helper = createColumnHelper<ModuleRecord>()
 
 function statusCell(status: unknown) {
   const meta = props.getStatusMeta(String(status ?? ''))
-  return h('span', { class: `ant-tag ant-tag-${meta.color}` }, meta.text)
+  return h(StatusTag, { status: meta.text, color: meta.color })
 }
 
 const supplierColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [

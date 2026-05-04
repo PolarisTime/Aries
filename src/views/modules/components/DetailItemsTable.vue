@@ -3,6 +3,7 @@ import { computed, h } from 'vue'
 import { type ColumnDef } from '@tanstack/vue-table'
 import { useDataTable } from '@/composables/use-data-table'
 import DataTable from '@/components/DataTable.vue'
+import StatusTag from '@/components/StatusTag.vue'
 import type { ModuleColumnDefinition, ModuleLineItem } from '@/types/module-page'
 import type { StatusMeta } from '@/composables/use-module-display-support'
 
@@ -36,7 +37,7 @@ const detailColumns = computed<ColumnDef<ModuleLineItem, unknown>[]>(() =>
       cell: isStatus
         ? (info: { getValue: () => unknown }) => {
             const s = props.getStatusMeta(info.getValue())
-            return h('span', { class: `ant-tag ant-tag-${s.color}` }, s.text)
+            return h(StatusTag, { status: s.text, color: s.color })
           }
         : (info: { getValue: () => unknown }) => props.formatCellValue(meta, info.getValue()),
       meta: { width, align },

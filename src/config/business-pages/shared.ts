@@ -321,7 +321,7 @@ export const freightItemColumns: ModuleColumnDefinition[] = [
 export const compactFreightItemColumns = applyCompactItemLayout(
   freightItemColumns,
   compactFreightItemWidthMap,
-  ['piecesPerBundle'],
+  ['customerName', 'projectName', 'brand', 'piecesPerBundle'],
 )
 
 export const statusMap: Record<string, ModuleStatusMeta> = {
@@ -388,7 +388,7 @@ export function transformFreightItems(parentRecord: ModuleRecord): ModuleLineIte
     customerName: parentRecord.customerName || '',
     projectName: parentRecord.projectName || '',
     materialCode: item.materialCode || '',
-    materialName: item.materialName || '',
+    materialName: resolveFreightMaterialName(item),
     brand: item.brand || '',
     category: item.category || '',
     material: item.material || '',
@@ -402,4 +402,12 @@ export function transformFreightItems(parentRecord: ModuleRecord): ModuleLineIte
     weightTon: item.weightTon || 0,
     warehouseName: item.warehouseName || parentRecord.warehouseName || '',
   }))
+}
+
+function resolveFreightMaterialName(item: ModuleLineItem) {
+  const explicitName = String(item.materialName || '').trim()
+  if (explicitName) {
+    return explicitName
+  }
+  return String(item.brand || '').trim()
 }

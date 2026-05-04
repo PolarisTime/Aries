@@ -6,6 +6,9 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
 import TwoFactorConfirmModal from '@/components/TwoFactorConfirmModal.vue'
 import { useDataTable } from '@/composables/use-data-table'
 import DataTable from '@/components/DataTable.vue'
+import TableActions from '@/components/TableActions.vue'
+import type { ActionItem } from '@/components/TableActions.vue'
+import StatusTag from '@/components/StatusTag.vue'
 import {
   createDatabaseExportTask,
   getDatabaseStatus,
@@ -42,6 +45,19 @@ const canImport = computed(() => permissionStore.can('database', 'update'))
 const isCurrentUserTotpDisabled = computed(() => authStore.user?.totpEnabled === false)
 const totpModalTitle = computed(() => pendingAction.value === 'import' ? '导入数据库备份' : '提交数据库导出任务')
 const showRequestError = useRequestError()
+
+function getBackupActions(row: { id: string; status: string }): ActionItem[] {
+  return [
+    {
+      key: 'download-link',
+      label: '生成链接',
+      icon: DownloadOutlined,
+      visible: row.status === '已完成',
+      onClick: () => handleGenerateDownloadLink(row.id)
+    }
+  ]
+}
+
 const totpModalDescription = computed(() => pendingAction.value === 'import'
   ? `即将导入备份文件“${pendingImportFile.value?.name || ''}”，并使用所填数据库账号执行恢复。导入前会自动备份当前数据库。请输入当前账号的 2FA 验证码确认操作。`
   : '即将提交数据库导出后台任务。导出完成后会生成一个 7 天有效的下载链接。请输入当前账号的 2FA 验证码确认操作。')
@@ -147,7 +163,7 @@ const exportTaskColumns = computed<ColumnDef<DatabaseExportTask, unknown>[]>(() 
   taskColumnHelper.accessor('taskNo', { header: () => '任务编号', meta: { width: 220 } }),
   taskColumnHelper.accessor('status', {
     header: () => '状态',
-    cell: (info) => h('span', { class: `ant-tag ant-tag-${formatTaskStatusColor(info.getValue())}` }, info.getValue()),
+    cell: (info) => h(StatusTag, { status: info.getValue() as string, color: formatTaskStatusColor(info.getValue()) }),
     meta: { width: 110, align: 'center' },
   }),
   taskColumnHelper.accessor('fileName', {
@@ -506,13 +522,7 @@ function closeImportModal() {
         :scroll-x="1100"
       >
         <template #cell-action="{ row }">
-          <a
-            v-if="row.status === '已完成'"
-            @click="handleGenerateDownloadLink(row.id)"
-          >
-            生成链接
-          </a>
-          <span v-else>--</span>
+          <TableActions :items="getBackupActions(row)" />
         </template>
       </DataTable>
     </a-card>

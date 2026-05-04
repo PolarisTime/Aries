@@ -16,6 +16,7 @@ import { ENDPOINTS } from '@/constants/endpoints'
 import { isKnownAppIconKey, resolveAppIcon } from '@/config/app-icons'
 import { type AppIconKey } from '@/config/navigation-registry'
 import { useAuthHeartbeat } from '@/layouts/use-auth-heartbeat'
+import { useAuthRefreshTimer } from '@/composables/use-auth-refresh-timer'
 import { useGlobalSearchSupport } from '@/layouts/use-global-search-support'
 import { useLayoutMenuSupport } from '@/layouts/use-layout-menu-support'
 import { useOpenPages } from '@/layouts/use-open-pages'
@@ -41,8 +42,6 @@ const permissionStore = usePermissionStore()
 const systemMenuStore = useSystemMenuStore()
 
 // Pre-fetch master data options when entering business module pages
-const syncState = ref<'idle' | 'syncing' | 'success' | 'failed'>('idle')
-let syncTimer: number | null = null
 const BUSINESS_MODULE_PREFIXES = [
   '/materials', '/suppliers', '/customers', '/carriers', '/warehouses',
   '/purchase-orders', '/purchase-inbounds', '/sales-orders', '/sales-outbounds',
@@ -51,23 +50,15 @@ const BUSINESS_MODULE_PREFIXES = [
   '/receipts', '/payments', '/invoice-receipts', '/invoice-issues',
 ]
 
-async function refreshOptions() {
+function refreshOptions() {
   if (!authStore.token) return
-  syncState.value = 'syncing'
-  try {
-    const results = await Promise.allSettled([
-      fetchSupplierOptions(),
-      fetchCustomerOptions(),
-      fetchCarrierOptions(),
-      fetchWarehouseOptions(),
-      fetchMaterialCategories(),
-    ])
-    syncState.value = results.every(r => r.status === 'fulfilled') ? 'success' : 'failed'
-  } catch {
-    syncState.value = 'failed'
-  }
-  if (syncTimer) window.clearTimeout(syncTimer)
-  syncTimer = window.setTimeout(() => { syncState.value = 'idle' }, 2000)
+  Promise.allSettled([
+    fetchSupplierOptions(),
+    fetchCustomerOptions(),
+    fetchCarrierOptions(),
+    fetchWarehouseOptions(),
+    fetchMaterialCategories(),
+  ])
 }
 
 watch(() => route.path, (path) => {
@@ -75,10 +66,6 @@ watch(() => route.path, (path) => {
   if (BUSINESS_MODULE_PREFIXES.some(p => path.startsWith(p))) {
     refreshOptions()
   }
-})
-
-onBeforeUnmount(() => {
-  if (syncTimer) window.clearTimeout(syncTimer)
 })
 
 // Redirect to login when auth state is lost
@@ -315,6 +302,8 @@ if (!isE2eMode.value) {
   })
 }
 
+useAuthRefreshTimer()
+
 const pageLoading = ref(false)
 let pageLoadingTimer: ReturnType<typeof setTimeout> | null = null
 let removePageLoadingBeforeResolve: (() => void) | undefined
@@ -446,11 +435,6 @@ onBeforeUnmount(() => {
 
           <div class="user-wrapper">
             <span class="action action-tag">
-              <Transition name="fade">
-                <a-tag v-if="syncState === 'syncing'" color="processing">同步中</a-tag>
-                <a-tag v-else-if="syncState === 'success'" color="success">已同步</a-tag>
-                <a-tag v-else-if="syncState === 'failed'" color="error">同步失败</a-tag>
-              </Transition>
               <a-tag v-if="companyName" color="blue">{{ companyName }}</a-tag>
               <a-tooltip v-if="!backendOnline && traceId" :title="'Trace: ' + traceId">
                 <a-tag color="red">API 离线</a-tag>
