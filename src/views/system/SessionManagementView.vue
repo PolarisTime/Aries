@@ -60,7 +60,7 @@ async function loadTokens() {
     keyword: keyword.value || undefined,
   })
   tokenRows.value = data.records || []
-  totalElements.value = data.totalElements || 0
+  totalElements.value = Number(data.totalElements) || 0
 }
 
 async function loadSummary() {
