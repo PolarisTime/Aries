@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import {
+  AuditOutlined,
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
-  PaperClipOutlined
+  PaperClipOutlined,
+  UndoOutlined,
 } from '@ant-design/icons-vue'
 import type { ModuleRecord } from '@/types/module-page'
 import TableActions from '@/components/TableActions.vue'
@@ -48,6 +50,20 @@ const actions = computed<ActionItem[]>(() => [
     icon: EditOutlined,
     visible: !props.isReadOnly && props.canEdit && !isAudited.value,
     onClick: () => emit('edit', props.record)
+  },
+  {
+    key: 'audit',
+    label: '审核',
+    icon: AuditOutlined,
+    visible: !props.isReadOnly && props.canAudit && !isAudited.value,
+    onClick: () => emit('audit', props.record)
+  },
+  {
+    key: 'reverse-audit',
+    label: '反审核',
+    icon: UndoOutlined,
+    visible: !props.isReadOnly && props.canReverseAudit && isAudited.value,
+    onClick: () => emit('reverse-audit', props.record)
   },
   {
     key: 'attachment',

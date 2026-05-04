@@ -14,7 +14,7 @@ export interface ActionItem {
 }
 
 const props = withDefaults(defineProps<{
-  items: ActionItem[]
+  items?: ActionItem[]
 }>(), {
   items: () => []
 })
