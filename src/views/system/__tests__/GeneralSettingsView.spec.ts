@@ -153,9 +153,9 @@ describe('GeneralSettingsView', () => {
     const wrapper = mountPage()
     await flushPromises()
 
-    const actionLinks = wrapper.findAll('button')
-    const targetButton = actionLinks.find((button) =>
-      button.text().includes('编辑') && button.element.closest('tr')?.textContent?.includes('页面操作详细日志'),
+    const actionLinks = wrapper.findAll('.table-action-btn')
+    const targetButton = actionLinks.find((el) =>
+      el.text().includes('编辑') && el.element.closest('tr')?.textContent?.includes('页面操作详细日志'),
     )
     expect(targetButton).toBeDefined()
 

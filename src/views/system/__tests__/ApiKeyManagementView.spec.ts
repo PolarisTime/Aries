@@ -36,8 +36,8 @@ function getButtonTexts(wrapper: ReturnType<typeof mount>) {
   return wrapper.findAll('button').map((button) => getNormalizedText(button.text()))
 }
 
-function getLinkTexts(wrapper: ReturnType<typeof mount>) {
-  return wrapper.findAll('a').map((link) => getNormalizedText(link.text()))
+function getActionTexts(wrapper: ReturnType<typeof mount>) {
+  return wrapper.findAll('.table-action-btn').map((el) => getNormalizedText(el.text()))
 }
 
 function getUserFilterSelects(wrapper: ReturnType<typeof mount>) {
@@ -161,12 +161,12 @@ describe('ApiKeyManagementView', () => {
     await flushPromises()
 
     const buttonTexts = getButtonTexts(wrapper)
-    const linkTexts = getLinkTexts(wrapper)
+    const actionTexts = getActionTexts(wrapper)
     const userFilterSelects = getUserFilterSelects(wrapper)
 
     expect(buttonTexts).not.toContain('生成APIKey')
-    expect(linkTexts).not.toContain('禁用')
-    expect(linkTexts).toContain('查看')
+    expect(actionTexts).not.toContain('禁用')
+    expect(actionTexts).toContain('查看')
     expect(userFilterSelects).toHaveLength(1)
     expect(clientMocks.httpGet).toHaveBeenCalledWith('/auth/api-keys/user-options', {
       params: {
@@ -180,10 +180,10 @@ describe('ApiKeyManagementView', () => {
     await flushPromises()
 
     const buttonTexts = getButtonTexts(wrapper)
-    const linkTexts = getLinkTexts(wrapper)
+    const actionTexts = getActionTexts(wrapper)
 
     expect(buttonTexts).toContain('生成APIKey')
-    expect(linkTexts).not.toContain('禁用')
+    expect(actionTexts).not.toContain('禁用')
   })
 
   it('disables create action when current user has not enabled totp', async () => {
@@ -200,10 +200,10 @@ describe('ApiKeyManagementView', () => {
     await flushPromises()
 
     const buttonTexts = getButtonTexts(wrapper)
-    const linkTexts = getLinkTexts(wrapper)
+    const actionTexts = getActionTexts(wrapper)
 
     expect(buttonTexts).not.toContain('生成APIKey')
-    expect(linkTexts).toContain('禁用')
+    expect(actionTexts).toContain('禁用')
   })
 
   it('does not issue duplicate list requests when searching from a later page', async () => {

@@ -31,6 +31,6 @@ describe('TableRowActions', () => {
   })
 
   it('renders reverse audit action for audited list rows', () => {
-    expect(actionLabels({ canReverseAudit: true })).toContain('反审核')
+    expect(actionLabels({ canReverseAudit: true, record: { id: 'row-2', status: '已审核' } })).toContain('反审核')
   })
 })
