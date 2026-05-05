@@ -1,7 +1,7 @@
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
-import pluginVue from 'eslint-plugin-vue'
-import vueParser from 'vue-eslint-parser'
+import pluginReact from 'eslint-plugin-react'
+import pluginReactHooks from 'eslint-plugin-react-hooks'
 import eslintConfigPrettier from 'eslint-config-prettier'
 
 export default [
@@ -10,9 +10,25 @@ export default [
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  ...pluginVue.configs['flat/recommended'],
+  pluginReact.configs.flat.recommended,
   {
-    files: ['**/*.{js,ts,vue}'],
+    settings: {
+      react: {
+        version: '19.0',
+      },
+    },
+  },
+  {
+    files: ['**/*.{js,ts,tsx}'],
+    plugins: {
+      'react-hooks': pluginReactHooks,
+    },
+    rules: {
+      ...pluginReactHooks.configs.recommended.rules,
+    },
+  },
+  {
+    files: ['**/*.{js,ts,tsx}'],
     languageOptions: {
       globals: {
         window: 'readonly',
@@ -33,45 +49,16 @@ export default [
         KeyboardEvent: 'readonly',
         MouseEvent: 'readonly',
         sessionStorage: 'readonly',
+        localStorage: 'readonly',
         URL: 'readonly',
         clearTimeout: 'readonly',
         setTimeout: 'readonly',
       },
     },
-  },
-  {
-    files: ['**/*.{ts,vue}'],
-    languageOptions: {
-      parser: vueParser,
-      parserOptions: {
-        parser: '@typescript-eslint/parser',
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        extraFileExtensions: ['.vue'],
-      },
-      globals: {
-        window: 'readonly',
-        document: 'readonly',
-        console: 'readonly',
-        Blob: 'readonly',
-        ClipboardEvent: 'readonly',
-        DragEvent: 'readonly',
-        Event: 'readonly',
-        File: 'readonly',
-        FileReader: 'readonly',
-        FormData: 'readonly',
-        HTMLElement: 'readonly',
-        HTMLInputElement: 'readonly',
-        HTMLTextAreaElement: 'readonly',
-        KeyboardEvent: 'readonly',
-        MouseEvent: 'readonly',
-        URL: 'readonly',
-        setTimeout: 'readonly',
-      },
-    },
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
-      'vue/multi-word-component-names': 'off',
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
     },
   },
   {

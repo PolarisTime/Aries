@@ -1,5 +1,5 @@
 import { AxiosHeaders } from 'axios'
-import { message, notification } from 'ant-design-vue'
+import { message, notification } from 'antd'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { ERROR_CODE } from '@/constants/error-codes'
@@ -16,7 +16,6 @@ import {
 } from '@/utils/storage'
 import { authHttp } from '@/api/http'
 import { getCurrentAppRoute } from '@/utils/route-helpers'
-import { router } from '@/router'
 
 let authFailureHandled = false
 
@@ -83,7 +82,7 @@ function redirectToLogin() {
     return
   }
 
-  router.push(`/login?redirect=${encodeURIComponent(currentRoute)}`)
+  window.location.href = `/login?redirect=${encodeURIComponent(currentRoute)}`
 }
 
 export function schedulePreRefresh(delayMs?: number) {

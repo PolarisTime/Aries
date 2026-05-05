@@ -1,24 +1,13 @@
 import path from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import Components from 'unplugin-vue-components/vite'
-import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
-    plugins: [
-      vue(),
-      Components({
-        dts: 'src/components.d.ts',
-        resolvers: [
-          AntDesignVueResolver({
-            importStyle: false,
-          }),
-        ],
-      }),
-    ],
+    plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
@@ -40,10 +29,6 @@ export default defineConfig(({ mode }) => {
       preprocessorOptions: {
         less: {
           javascriptEnabled: true,
-          modifyVars: {
-            'primary-color': '#2458e6',
-            'border-radius-base': '10px',
-          },
         },
       },
     },
@@ -52,12 +37,15 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (
-              id.includes('/vue/') ||
-              id.includes('vue-router') ||
-              id.includes('pinia') ||
-              id.includes('@tanstack/vue-query')
+              id.includes('/react/') ||
+              id.includes('react-dom') ||
+              id.includes('react-router') ||
+              id.includes('@tanstack/react-query')
             ) {
-              return 'vue'
+              return 'react'
+            }
+            if (id.includes('antd') || id.includes('@ant-design')) {
+              return 'antd'
             }
           },
         },
