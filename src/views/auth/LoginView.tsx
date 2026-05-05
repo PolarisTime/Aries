@@ -1,11 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Form, Input, Button, Checkbox, Card, message } from 'antd'
-import { UserOutlined, LockOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
+import {
+  UserOutlined,
+  LockOutlined,
+  SafetyCertificateOutlined,
+} from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
 import { fetchCaptcha } from '@/api/auth'
 import { appTitle } from '@/utils/env'
-import type { LoginPayload, CaptchaData } from '@/types/auth'
+import type { LoginPayload, CaptchaData, LoginUser } from '@/types/auth'
 
 const TOTP_SESSION_KEY = 'aries-totp-session'
 
@@ -16,7 +20,10 @@ interface SavedTotpSession {
 }
 
 function saveTotpSession(token: string, deadline: number, loginName: string) {
-  sessionStorage.setItem(TOTP_SESSION_KEY, JSON.stringify({ token, deadline, loginName }))
+  sessionStorage.setItem(
+    TOTP_SESSION_KEY,
+    JSON.stringify({ token, deadline, loginName }),
+  )
 }
 
 function clearTotpSession() {
@@ -31,9 +38,38 @@ function restoreTotpSession(): SavedTotpSession | null {
     if (parsed.token && parsed.deadline && Date.now() < parsed.deadline) {
       return parsed
     }
-  } catch { /* ignore */ }
+  } catch {
+    // ignore malformed session data
+  }
   sessionStorage.removeItem(TOTP_SESSION_KEY)
   return null
+}
+
+function sanitizeRedirectPath(candidate: string) {
+  if (!candidate.startsWith('/') || /^https?:\/\//i.test(candidate)) {
+    return '/dashboard'
+  }
+  return candidate
+}
+
+function getRedirectTarget() {
+  if (typeof window === 'undefined') {
+    return '/dashboard'
+  }
+  const params = new URLSearchParams(window.location.search)
+  return sanitizeRedirectPath(params.get('redirect') || '/dashboard')
+}
+
+function requiresForcedTotpSetup(user: LoginUser | null | undefined) {
+  return Boolean(user?.forceTotpSetup && user?.totpEnabled !== true)
+}
+
+function buildPostLoginTarget(user: LoginUser | null | undefined) {
+  const redirect = getRedirectTarget()
+  if (requiresForcedTotpSetup(user)) {
+    return `/setup-2fa?redirect=${encodeURIComponent(redirect)}`
+  }
+  return redirect
 }
 
 export function LoginView() {
@@ -48,14 +84,11 @@ export function LoginView() {
   const [tempToken, setTempToken] = useState(savedSession?.token || '')
   const [totpCode, setTotpCode] = useState('')
   const [stepDeadline, setStepDeadline] = useState(savedSession?.deadline || 0)
+  const [now, setNow] = useState(Date.now())
   const [loading, setLoading] = useState(false)
   const [totpLoading, setTotpLoading] = useState(false)
   const [captcha, setCaptcha] = useState<CaptchaData | null>(null)
   const [form] = Form.useForm()
-
-  useEffect(() => {
-    loadCaptcha()
-  }, [])
 
   const loadCaptcha = useCallback(async () => {
     try {
@@ -68,60 +101,121 @@ export function LoginView() {
     }
   }, [])
 
+  useEffect(() => {
+    void loadCaptcha()
+  }, [loadCaptcha])
+
+  const reset2faStep = useCallback((showMessage = false) => {
+    clearTotpSession()
+    setLoginStep('password')
+    setTempToken('')
+    setTotpCode('')
+    setStepDeadline(0)
+    setNow(Date.now())
+    if (showMessage) {
+      message.warning('二次验证已超时，请重新输入账号密码')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (loginStep !== 'totp' || !stepDeadline) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      const nextNow = Date.now()
+      setNow(nextNow)
+      if (nextNow >= stepDeadline) {
+        window.clearInterval(timer)
+        reset2faStep(true)
+      }
+    }, 1000)
+
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [loginStep, reset2faStep, stepDeadline])
+
   const handleLogin = useCallback(async (values: LoginPayload) => {
     setLoading(true)
     try {
       const result = await signIn(values)
       if (result.requires2fa) {
+        const deadline = Date.now() + 5 * 60 * 1000
         setTempToken(result.tempToken)
         setLoginStep('totp')
-        setStepDeadline(Date.now() + 5 * 60 * 1000)
-        saveTotpSession(result.tempToken, Date.now() + 5 * 60 * 1000, values.loginName)
+        setStepDeadline(deadline)
+        setNow(Date.now())
+        saveTotpSession(result.tempToken, deadline, values.loginName)
         return
       }
+
       clearTotpSession()
-      message.success('登录成功')
-      await navigate({ to: '/dashboard' as '/' })
+      message.success(
+        requiresForcedTotpSetup(result.user)
+          ? '账号已登录，请先完成 2FA 绑定后再进入系统。'
+          : '登录成功',
+      )
+      await navigate({ to: buildPostLoginTarget(result.user) as '/' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : '登录失败'
       message.error(msg)
-      loadCaptcha()
+      void loadCaptcha()
     } finally {
       setLoading(false)
     }
-  }, [signIn, navigate, loadCaptcha])
+  }, [loadCaptcha, navigate, signIn])
 
   const handleTotpVerify = useCallback(async () => {
-    if (!totpCode || totpCode.length !== 6) {
+    if (!/^\d{6}$/.test(totpCode.trim())) {
       message.error('请输入6位验证码')
       return
     }
+
+    if (stepDeadline > 0 && Date.now() >= stepDeadline) {
+      reset2faStep(true)
+      return
+    }
+
     setTotpLoading(true)
     try {
-      await verify2fa({ tempToken, totpCode })
+      const result = await verify2fa({
+        tempToken,
+        totpCode: totpCode.trim(),
+        remember: form.getFieldValue('remember') !== false,
+      })
       clearTotpSession()
       message.success('登录成功')
-      await navigate({ to: '/dashboard' as '/' })
+      await navigate({ to: buildPostLoginTarget(result.user) as '/' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : '二次验证失败'
       message.error(msg)
     } finally {
       setTotpLoading(false)
     }
-  }, [totpCode, tempToken, verify2fa, navigate])
+  }, [form, navigate, reset2faStep, stepDeadline, tempToken, totpCode, verify2fa])
 
   const handleBackToPassword = useCallback(() => {
-    setLoginStep('password')
-    setTotpCode('')
-    clearTotpSession()
-  }, [])
+    reset2faStep(false)
+  }, [reset2faStep])
 
-  const isExpired = stepDeadline > 0 && Date.now() > stepDeadline
+  const isExpired = stepDeadline > 0 && now >= stepDeadline
+  const countdownText = useMemo(() => {
+    if (!stepDeadline || isExpired) {
+      return '00:00'
+    }
+    const remainingSeconds = Math.max(
+      Math.ceil((stepDeadline - now) / 1000),
+      0,
+    )
+    const minutes = Math.floor(remainingSeconds / 60)
+    const seconds = remainingSeconds % 60
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  }, [isExpired, now, stepDeadline])
 
   return (
     <div className="flex items-center justify-center min-h-screen p-6 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.18),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(15,23,42,0.14),transparent_24%),linear-gradient(135deg,#eef4fb_0%,#f8fafc_55%,#e8eff8_100%)]">
       <div className="grid grid-cols-[1fr_420px] gap-10 w-[min(1100px,100%)] items-center max-[960px]:grid-cols-1">
-        {/* Brand slogan */}
         <div className="max-[960px]:text-center">
           <h1 className="m-0 text-[#0f172a] text-[calc(var(--app-font-size)+30px)] font-semibold">
             {appTitle}
@@ -137,7 +231,6 @@ export function LoginView() {
           </p>
         </div>
 
-        {/* Login card */}
         <Card className="border-[#dbe3ee]">
           <div className="flex items-center justify-center flex-col min-h-[520px] max-[960px]:min-h-auto">
             <div className="mb-5 text-center">
@@ -155,7 +248,10 @@ export function LoginView() {
               <Form
                 form={form}
                 onFinish={handleLogin}
-                initialValues={{ remember: true }}
+                initialValues={{
+                  loginName: savedSession?.loginName || '',
+                  remember: true,
+                }}
                 layout="vertical"
                 className="w-full max-w-[360px]"
                 size="large"
@@ -196,7 +292,7 @@ export function LoginView() {
                     <button
                       type="button"
                       className="h-10 p-0 border border-[#d9d9d9] bg-white cursor-pointer overflow-hidden"
-                      onClick={loadCaptcha}
+                      onClick={() => void loadCaptcha()}
                     >
                       {captcha?.captchaImage && (
                         <img
@@ -226,6 +322,9 @@ export function LoginView() {
               </Form>
             ) : (
               <div className="w-full max-w-[360px]">
+                <div className="mb-3 rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-3 py-2 text-sm text-[#475569]">
+                  验证剩余时间：<span className="font-semibold tabular-nums">{countdownText}</span>
+                </div>
                 <div className="mb-4">
                   <Input
                     size="large"
@@ -233,7 +332,7 @@ export function LoginView() {
                     placeholder="6位TOTP验证码"
                     maxLength={6}
                     value={totpCode}
-                    onChange={(e) => setTotpCode(e.target.value)}
+                    onChange={(event) => setTotpCode(event.target.value)}
                     onPressEnter={handleTotpVerify}
                     autoFocus
                   />

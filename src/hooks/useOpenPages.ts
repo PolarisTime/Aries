@@ -8,32 +8,48 @@ export interface OpenPage {
   closable: boolean
 }
 
+export interface OpenPageDescriptor {
+  key: string
+  path: string
+  title: string
+}
+
 function resolveOpenPageKey(path: string, meta?: Record<string, unknown>): string {
   return String(meta?.openPageKey || meta?.menuKey || path)
 }
 
-export function useOpenPages(defaultPath = '/dashboard', defaultTitle = '未命名页面') {
+export function useOpenPages(
+  defaultPath = '/dashboard',
+  defaultTitle = '未命名页面',
+  resolvePage?: (pathname: string) => OpenPageDescriptor,
+) {
   const location = useLocation()
   const [pages, setPages] = useState<OpenPage[]>([
     { key: '/dashboard', path: '/dashboard', title: '工作台', closable: false },
   ])
 
   useEffect(() => {
-    const key = resolveOpenPageKey(location.pathname)
+    const currentPage = resolvePage
+      ? resolvePage(location.pathname)
+      : {
+          key: resolveOpenPageKey(location.pathname),
+          path: location.pathname,
+          title: defaultTitle,
+        }
     const nextPage: OpenPage = {
-      key,
-      path: location.pathname,
-      title: defaultTitle,
-      closable: key !== '/dashboard',
+      key: currentPage.key,
+      path: currentPage.path,
+      title: currentPage.title,
+      closable: currentPage.key !== '/dashboard',
     }
 
     setPages((prev) => {
-      if (prev.some((item) => item.key === key)) {
-        return prev.map((item) => (item.key === key ? nextPage : item))
+      if (prev.some((item) => item.key === currentPage.key)) {
+        return prev.map((item) => (item.key === currentPage.key ? nextPage : item))
       }
       return [...prev, nextPage]
     })
-  }, [location.pathname, defaultTitle])
+  }, [defaultTitle, location.pathname, resolvePage])
 
   const closePage = useCallback(
     (key: string, navigate: (path: string) => void) => {
@@ -42,7 +58,9 @@ export function useOpenPages(defaultPath = '/dashboard', defaultTitle = '未命�
         if (index < 0) return prev
 
         const nextPages = prev.filter((item) => item.key !== key)
-        const currentKey = resolveOpenPageKey(location.pathname)
+        const currentKey = resolvePage
+          ? resolvePage(location.pathname).key
+          : resolveOpenPageKey(location.pathname)
 
         if (currentKey === key) {
           const fallback = nextPages[Math.max(index - 1, 0)] || nextPages[0]
@@ -57,7 +75,7 @@ export function useOpenPages(defaultPath = '/dashboard', defaultTitle = '未命�
         return nextPages
       })
     },
-    [location.pathname, defaultPath],
+    [defaultPath, location.pathname, resolvePage],
   )
 
   const updatePageTitle = useCallback((key: string, title: string) => {

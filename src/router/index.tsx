@@ -70,6 +70,17 @@ const moduleRoutes = appPageDefinitions.map((def) => {
   })
 })
 
+const apiKeyDetailRoute = createRoute({
+  getParentRoute: () => authenticatedLayoutRoute,
+  path: '/api-key-management/$id',
+  component: lazy(() => import('@/views/system/ApiKeyDetailView').then((m) => ({ default: m.ApiKeyDetailView }))),
+  beforeLoad: () => {
+    if (!usePermissionStore.getState().canAccessMenuKey('/api-key-management')) {
+      throw redirect({ to: '/dashboard' as '/' })
+    }
+  },
+})
+
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
@@ -81,7 +92,10 @@ export const routeTree = rootRoute.addChildren([
   loginRoute,
   setupRoute,
   setup2faRoute,
-  authenticatedLayoutRoute.addChildren(moduleRoutes),
+  authenticatedLayoutRoute.addChildren([
+    ...moduleRoutes,
+    apiKeyDetailRoute,
+  ]),
 ])
 
 export const router = createRouter({
