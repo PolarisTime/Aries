@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useLocation } from '@tanstack/react-router'
 import { Card, Pagination } from 'antd'
 import { useBusinessQueries } from '@/hooks/useBusinessQueries'
@@ -23,6 +23,9 @@ import type { ModuleRecord } from '@/types/module-page'
 
 export function BusinessGridView() {
   const location = useLocation()
+  const routeQuerySignature = JSON.stringify(
+    (location as unknown as { search?: unknown }).search || {},
+  )
   const pageDef = useMemo(() => {
     const key = location.pathname.replace(/^\//, '')
     return getPageDefinition(key)
@@ -42,10 +45,11 @@ export function BusinessGridView() {
   const [attachOpen, setAttachOpen] = useState(false)
   const [attachRecordId] = useState('')
   const [columnVisibleKeys, setColumnVisibleKeys] = useState<string[]>([])
+  const autoOpenedRouteKeyRef = useRef('')
 
   const {
     filters, submittedFilters, searchExpanded,
-    handleSearch, handleReset, updateFilter, setSearchExpanded,
+    handleSearch, handleReset, updateFilter, setSearchExpanded, setSubmittedFilters,
   } = useModuleFilters({ setCurrentPage: (p: number) => setPage(p) })
 
   const { records, total, isLoading } = useBusinessQueries({
@@ -75,6 +79,64 @@ export function BusinessGridView() {
   useEffect(() => {
     setColumnVisibleKeys(columns.map((c) => c.id as string))
   }, [columns])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const params = new URLSearchParams(window.location.search)
+    const routeKeyword = params.get('docNo') || params.get('trackId') || ''
+
+    setPage(1)
+    setSelectedRowKeys([])
+    autoOpenedRouteKeyRef.current = ''
+
+    if (!routeKeyword) {
+      setSearchExpanded(false)
+      updateFilter('keyword', '')
+      setSubmittedFilters({})
+      return
+    }
+
+    setSearchExpanded(true)
+    updateFilter('keyword', routeKeyword)
+    setSubmittedFilters({ keyword: routeKeyword })
+  }, [location.pathname, routeQuerySignature, setSearchExpanded, setSubmittedFilters, updateFilter])
+
+  useEffect(() => {
+    if (!config || !records.length || typeof window === 'undefined') {
+      return
+    }
+
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('openDetail') !== '1') {
+      autoOpenedRouteKeyRef.current = ''
+      return
+    }
+
+    const trackId = params.get('trackId') || ''
+    const docNo = params.get('docNo') || ''
+    const routeKey = trackId ? `track:${trackId}` : docNo ? `doc:${docNo}` : ''
+    if (!routeKey || autoOpenedRouteKeyRef.current === routeKey) {
+      return
+    }
+
+    const primaryNoKey = config.primaryNoKey || 'id'
+    const matchedRecord = trackId
+      ? records.find((record) => String(record.id || '') === trackId)
+      : records.find((record) => String(record[primaryNoKey] || '') === docNo)
+
+    autoOpenedRouteKeyRef.current = routeKey
+    if (matchedRecord) {
+      void openDetail(String(matchedRecord.id))
+      return
+    }
+
+    if (trackId) {
+      void openDetail(trackId)
+    }
+  }, [config, openDetail, records, routeQuerySignature])
 
   const { table } = useDataTable({
     data: records, columns, total,

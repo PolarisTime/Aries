@@ -14,7 +14,8 @@ export function PermButton({
   children,
   ...buttonProps
 }: PermButtonProps) {
-  const can = permissionStoreOverride?.can || usePermissionStore((s) => s.can)
+  const storeCan = usePermissionStore((s) => s.can)
+  const can = permissionStoreOverride?.can || storeCan
 
   if (!can(resource, action)) {
     return null

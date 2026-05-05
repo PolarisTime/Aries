@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { Card, Table, Button, Tag, Modal, Form, Input, message, Space } from 'antd'
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -16,6 +17,7 @@ interface ApiKey {
 }
 
 export function ApiKeyManagementView() {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [createOpen, setCreateOpen] = useState(false)
   const [form] = Form.useForm()
@@ -53,10 +55,31 @@ export function ApiKeyManagementView() {
     { dataIndex: 'keyPrefix', title: 'Key 前缀' },
     { dataIndex: 'createdAt', title: '创建时间' },
     { dataIndex: 'expiresAt', title: '过期时间' },
-    { dataIndex: 'status', title: '状态', render: (v: string) => <Tag color={v === 'active' ? 'green' : 'red'}>{v}</Tag> },
-    { title: '操作', key: 'actions', render: (_: unknown, r: ApiKey) => (
-      <Button type="link" size="small" danger loading={revokeMutation.isPending} onClick={() => revokeMutation.mutate(r.id)}>吊销</Button>
-    )},
+    { dataIndex: 'status', title: '状态', render: (v: string) => <Tag color={v === 'active' || v === '有效' ? 'green' : 'red'}>{v}</Tag> },
+    {
+      title: '操作',
+      key: 'actions',
+      render: (_: unknown, r: ApiKey) => (
+        <Space size={0}>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => navigate({ to: `/api-key-management/${r.id}` as '/' })}
+          >
+            详情
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            danger
+            loading={revokeMutation.isPending}
+            onClick={() => revokeMutation.mutate(r.id)}
+          >
+            吊销
+          </Button>
+        </Space>
+      ),
+    },
   ]
 
   return (

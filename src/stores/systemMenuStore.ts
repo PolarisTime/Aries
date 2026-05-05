@@ -1,24 +1,17 @@
 import { create } from 'zustand'
-
-interface MenuNode {
-  id: number
-  code: string
-  title: string
-  icon?: string
-  parentId?: number
-  path?: string
-  sortOrder?: number
-  children?: MenuNode[]
-}
+import { listSystemMenus, type MenuNode } from '@/api/system-menus'
 
 interface SystemMenuState {
   menus: MenuNode[]
   loaded: boolean
   setMenus: (menus: MenuNode[]) => void
+  loadMenus: (force?: boolean) => Promise<MenuNode[]>
   clearMenus: () => void
 }
 
-export const useSystemMenuStore = create<SystemMenuState>((set) => ({
+let pendingLoad: Promise<MenuNode[]> | null = null
+
+export const useSystemMenuStore = create<SystemMenuState>((set, get) => ({
   menus: [],
   loaded: false,
 
@@ -26,7 +19,29 @@ export const useSystemMenuStore = create<SystemMenuState>((set) => ({
     set({ menus, loaded: true })
   },
 
+  loadMenus: async (force = false) => {
+    if (!force && get().loaded) {
+      return get().menus
+    }
+
+    if (!force && pendingLoad) {
+      return pendingLoad
+    }
+
+    pendingLoad = listSystemMenus()
+      .then((menus) => {
+        get().setMenus(menus)
+        return menus
+      })
+      .finally(() => {
+        pendingLoad = null
+      })
+
+    return pendingLoad
+  },
+
   clearMenus: () => {
+    pendingLoad = null
     set({ menus: [], loaded: false })
   },
 }))

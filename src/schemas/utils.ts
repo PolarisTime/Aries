@@ -22,7 +22,6 @@ interface ZodFieldDef {
 
 export function zodToAntdRules(schema: z.ZodType): Rule[] {
   const rules: Rule[] = []
-  let def: ZodFieldDef = {}
 
   // Unwrap optional/nullable
   let current: z.ZodType = schema
@@ -33,8 +32,7 @@ export function zodToAntdRules(schema: z.ZodType): Rule[] {
   }
 
   // Extract inner definition
-  const zd = current._def as ZodFieldDef
-  def = zd
+  const def = current._def as ZodFieldDef
 
   if (isOptional) {
     rules.push({ required: false })
