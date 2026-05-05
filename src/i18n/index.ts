@@ -1,32 +1,31 @@
-import { createI18n } from 'vue-i18n'
-import type { MessageSchema } from '@/types/i18n'
-import enUS from '@/locales/en-US'
+import i18n from 'i18next'
+import { initReactI18next } from 'react-i18next'
 import zhCN from '@/locales/zh-CN'
+import enUS from '@/locales/en-US'
 
-export const DEFAULT_LOCALE = 'zh-CN'
-export const LOCALE_STORAGE_KEY = 'leo-locale'
+const LOCALE_STORAGE_KEY = 'leo-locale'
 
-function resolveInitialLocale() {
-  if (typeof window === 'undefined') {
-    return DEFAULT_LOCALE
+function detectLocale(): string {
+  const stored = typeof window !== 'undefined' ? localStorage.getItem(LOCALE_STORAGE_KEY) : null
+  if (stored) return stored
+  if (typeof navigator !== 'undefined' && navigator.language) {
+    const lang = navigator.language
+    if (lang.startsWith('zh')) return 'zh-CN'
+    if (lang.startsWith('en')) return 'en-US'
   }
-
-  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY)
-  if (stored === 'zh-CN' || stored === 'en-US') {
-    return stored
-  }
-
-  const browserLocale = String(window.navigator.language || '').toLowerCase()
-  return browserLocale.startsWith('en') ? 'en-US' : DEFAULT_LOCALE
+  return 'zh-CN'
 }
 
-export const i18n = createI18n<[MessageSchema], 'zh-CN' | 'en-US'>({
-  legacy: false,
-  globalInjection: true,
-  locale: resolveInitialLocale(),
-  fallbackLocale: DEFAULT_LOCALE,
-  messages: {
-    'zh-CN': zhCN,
-    'en-US': enUS,
+i18n.use(initReactI18next).init({
+  resources: {
+    'zh-CN': { translation: zhCN as unknown as Record<string, unknown> },
+    'en-US': { translation: enUS as unknown as Record<string, unknown> },
+  },
+  lng: detectLocale(),
+  fallbackLng: 'zh-CN',
+  interpolation: {
+    escapeValue: false,
   },
 })
+
+export default i18n

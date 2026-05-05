@@ -26,11 +26,11 @@ import {
   TeamOutlined,
   UserOutlined,
   WalletOutlined,
-} from '@ant-design/icons-vue'
-import type { Component } from 'vue'
+} from '@ant-design/icons'
+import type { ComponentType } from 'react'
 import type { AppIconKey } from '@/config/navigation-registry'
 
-export const appIconMap: Record<AppIconKey, Component> = {
+export const appIconMap: Record<AppIconKey, ComponentType> = {
   AccountBookOutlined,
   ApartmentOutlined,
   AppstoreOutlined,
@@ -60,7 +60,7 @@ export const appIconMap: Record<AppIconKey, Component> = {
   WalletOutlined,
 }
 
-export function resolveAppIcon(iconKey: AppIconKey) {
+export function resolveAppIcon(iconKey: AppIconKey): ComponentType {
   return appIconMap[iconKey]
 }
 

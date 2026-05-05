@@ -1,0 +1,79 @@
+/* Ant Design deep overrides — cannot be done with Tailwind utilities */
+
+/* Modal centering */
+.ant-modal-root .ant-modal-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ant-modal-root .ant-modal {
+  top: auto;
+  padding-bottom: 0;
+  margin: 0;
+}
+
+/* App shell font size cascade */
+.app-shell,
+.app-shell .ant-btn,
+.app-shell .ant-input,
+.app-shell .ant-input-number,
+.app-shell .ant-select,
+.app-shell .ant-form,
+.app-shell .ant-table,
+.app-shell .ant-menu,
+.app-shell .ant-tabs,
+.app-shell .ant-card,
+.app-shell .ant-tag,
+.app-shell .ant-picker,
+.app-shell .ant-dropdown-menu,
+.app-shell .ant-modal,
+.app-shell .ant-descriptions,
+.app-shell .ant-empty,
+.app-shell .ant-pagination,
+.app-shell .ant-checkbox-wrapper,
+.app-shell .ant-radio-wrapper {
+  font-size: var(--app-font-size);
+  font-family:
+    'PingFang Intranet',
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+/* Leo shell background */
+.leo-shell {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 20%),
+    linear-gradient(180deg, #f7faff 0%, var(--theme-shell-bg) 100%);
+}
+
+/* Page loader */
+.leo-page-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  height: 2px;
+  pointer-events: none;
+}
+
+.leo-page-loader::before {
+  content: '';
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #1677ff, #69b1ff);
+  transition: width 0s;
+}
+
+.leo-page-loader.is-loading::before {
+  width: 40%;
+  transition: width 8s cubic-bezier(0.1, 0.7, 0.4, 1);
+}

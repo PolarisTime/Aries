@@ -1,6 +1,6 @@
 import axios from 'axios'
 import type { InternalAxiosRequestConfig, AxiosInstance } from 'axios'
-import { message } from 'ant-design-vue'
+import { message } from 'antd'
 import { getToken } from '@/utils/storage'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { getRequestPath, isExactAuthEndpoint } from '@/utils/route-helpers'

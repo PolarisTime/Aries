@@ -1,0 +1,84 @@
+@import 'tailwindcss';
+
+@font-face {
+  font-family: 'PingFang Intranet';
+  src: url('/fonts/PingFangSC-Regular.otf') format('opentype');
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+:root {
+  --app-font-size: 12px;
+  --theme-primary: #2458e6;
+  --theme-primary-hover: #3b82f6;
+  --theme-primary-soft: #dbeafe;
+  --theme-primary-soft-strong: #bfdbfe;
+  --theme-primary-deep: #1d4ed8;
+  --theme-shell-bg: #eef3f8;
+  --theme-sider-bg: #ffffff;
+  --theme-sider-surface: #f8fafc;
+  --theme-sider-hover: #eff6ff;
+  --theme-sider-active: #2458e6;
+  --theme-sider-text: #0f172a;
+  --theme-sider-muted: #64748b;
+  --theme-header-bg: rgba(255, 255, 255, 0.96);
+  --theme-header-text: #0f172a;
+  --theme-header-muted: #64748b;
+  --theme-card-border: #dbe3ee;
+  --app-header-height: 62px;
+  --app-tabs-height: 40px;
+  --app-tab-card-height: 34px;
+  --app-tab-card-top-gap: 6px;
+  --app-top-offset: calc(var(--app-header-height) + var(--app-tabs-height));
+  --app-content-padding: 16px;
+  --app-page-gap: 12px;
+  --app-card-body-padding: 12px;
+  --app-filter-gap-x: 36px;
+  --app-filter-margin-bottom: 8px;
+  --app-filter-label-width: 104px;
+  --app-filter-control-width: 288px;
+  --app-filter-button-width: 96px;
+  --app-table-head-padding-y: 10px;
+  --app-table-head-padding-x: 12px;
+  --app-table-cell-padding-y: 12px;
+  --app-table-th-padding-y: 10px;
+  --app-overlay-header-height: 55px;
+  --app-overlay-body-padding: 16px;
+  --app-selection-scroll-y: calc(100vh - 284px);
+  color: #333;
+  background: var(--theme-shell-bg);
+  font-family:
+    'PingFang Intranet',
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--theme-shell-bg);
+  color: #333;
+  font-size: var(--app-font-size);
+  font-family:
+    'PingFang Intranet',
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

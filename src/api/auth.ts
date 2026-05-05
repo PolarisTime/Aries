@@ -30,9 +30,9 @@ export function logout() {
   return http.post(ENDPOINTS.AUTH_LOGOUT, {})
 }
 
-export function refreshSession() {
-  return authHttp.post<ApiResponse<LoginResponseData>>(ENDPOINTS.AUTH_REFRESH, {})
-    .then((response) => response.data)
+export async function refreshSession(): Promise<LoginResponseData> {
+  const response = await authHttp.post<ApiResponse<LoginResponseData>>(ENDPOINTS.AUTH_REFRESH, {})
+  return (response.data as ApiResponse<LoginResponseData>).data
 }
 
 export function pingAuth() {
