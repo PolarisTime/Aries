@@ -199,7 +199,9 @@ function stopStepCountdown() {
 
 function startStepCountdown() {
   stopStepCountdown()
-  stepDeadline.value = Date.now() + 5 * 60 * 1000
+  if (!stepDeadline.value) {
+    stepDeadline.value = Date.now() + 5 * 60 * 1000
+  }
   now.value = Date.now()
   countdownTimer = window.setInterval(() => {
     now.value = Date.now()
