@@ -35,13 +35,17 @@ describe('operations page config', () => {
       'deliveryStatus',
     ]))
     expect(columnKeys).toEqual([
+      'status',
       'billNo',
       'carrierName',
       'vehiclePlate',
+      'customerName',
+      'projectName',
       'billTime',
       'totalWeight',
       'unitPrice',
       'totalFreight',
+      'deliveryStatus',
     ])
     expect(itemColumnKeys).not.toEqual(expect.arrayContaining([
       'customerName',
