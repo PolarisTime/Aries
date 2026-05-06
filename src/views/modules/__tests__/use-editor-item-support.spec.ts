@@ -48,4 +48,28 @@ describe('useEditorItemSupport', () => {
     expect(item.amount).toBe(11282.69)
     expect(editorForm.items).not.toBe(originalItems)
   })
+
+  it('replaces the editor items array after numeric edits so table cells refresh', () => {
+    const item = buildDefaultEditorLineItem('line-2')
+    item.quantity = 2
+    item.pieceWeightTon = 1.235
+    item.unitPrice = 4567.89
+    item.weightTon = 2.47
+    item.amount = 11282.69
+
+    const editorForm: { items: ModuleLineItem[] } = { items: [item] }
+    const support = useEditorItemSupport({
+      editorForm,
+      editorItems: computed(() => editorForm.items),
+      materialMap: ref<Record<string, ModuleRecord>>({}),
+      canManageEditorItems: ref(true),
+    })
+
+    const originalItems = editorForm.items
+    support.handleEditorItemNumberChange(item, 'quantity', 3)
+
+    expect(item.weightTon).toBe(3.705)
+    expect(item.amount).toBe(16924.03)
+    expect(editorForm.items).not.toBe(originalItems)
+  })
 })

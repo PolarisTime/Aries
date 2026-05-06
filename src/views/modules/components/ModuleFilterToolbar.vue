@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type CSSProperties } from 'vue'
 import dayjs, { type Dayjs } from 'dayjs'
 import { DownOutlined, UpOutlined } from '@ant-design/icons-vue'
 import type { SelectValue } from 'ant-design-vue/es/select'
@@ -109,6 +109,23 @@ const visibleFilterGroups = computed(() => [
   primaryVisibleFilters.value,
   secondaryVisibleFilters.value,
 ].filter((group) => group.length > 0))
+
+const actionGroupIndex = computed(() => Math.max(visibleFilterGroups.value.length - 1, 0))
+
+const filterGridStyle = computed<CSSProperties>(() => ({
+  '--module-filter-grid-columns': String(
+    visibleFilterGroups.value.reduce((max, group) => Math.max(max, group.length), 1),
+  ),
+  '--module-filter-actions-width': props.hasAdvancedFilters ? '280px' : '200px',
+}))
+
+function getFilterGroupStyle(filterGroup: ModuleFilterDefinition[], groupIndex: number): CSSProperties {
+  const style: CSSProperties = { ...filterGridStyle.value }
+  if (groupIndex === actionGroupIndex.value) {
+    style['--module-filter-actions-column-start'] = String(filterGroup.length + 1)
+  }
+  return style
+}
 </script>
 
 <template>
@@ -135,7 +152,9 @@ const visibleFilterGroups = computed(() => [
         :class="[
           'filter-inline-group',
           groupIndex === 0 ? 'filter-inline-group-primary' : 'filter-inline-group-secondary',
+          groupIndex === actionGroupIndex ? 'filter-inline-group-actions-host' : '',
         ]"
+        :style="getFilterGroupStyle(filterGroup, groupIndex)"
       >
         <a-form-item
           v-for="filter in filterGroup"
@@ -195,7 +214,7 @@ const visibleFilterGroups = computed(() => [
             @update:value="(value) => emit('update-filter', filter.key, value)"
           />
         </a-form-item>
-        <div v-if="groupIndex === 0" class="table-page-search-submitButtons">
+        <div v-if="groupIndex === actionGroupIndex" class="table-page-search-submitButtons">
           <a-button type="primary" @click="emit('search')">查询</a-button>
           <a-button @click="emit('reset')">重置</a-button>
           <a
