@@ -806,10 +806,6 @@ describe('module-adapters', () => {
           items: [{ id: 'inbound-item-1', materialCode: 'A', amount: 120 }],
         },
       ],
-      payments: [
-        { id: 'p1', paymentDate: '2026-04-10', businessType: '供应商', counterpartyName: '供应商甲', status: '已付款', amount: 50 },
-        { id: 'p2', paymentDate: '2026-04-12', businessType: '供应商', counterpartyName: '供应商甲', status: '已付款', amount: 10 },
-      ],
       today: '2026-04-25',
       defaultFullPayment: false,
       cloneLineItems,
@@ -848,17 +844,14 @@ describe('module-adapters', () => {
           items: [{ id: 'inbound-item-1', materialCode: 'A', amount: 120 }],
         },
       ],
-      payments: [
-        { id: 'p1', paymentDate: '2026-04-10', businessType: '供应商', counterpartyName: '供应商甲', status: '已付款', amount: 50 },
-      ],
       today: '2026-04-25',
       defaultFullPayment: true,
       cloneLineItems,
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       purchaseAmount: 220,
-      paymentAmount: 0,
-      closingAmount: 220,
+      paymentAmount: 220,
+      closingAmount: 0,
     })
 
     expect(buildCustomerStatementDraftData({
@@ -930,8 +923,8 @@ describe('module-adapters', () => {
       buildLineItemId: () => 'generated-item',
     })).toMatchObject({
       salesAmount: 220,
-      receiptAmount: 0,
-      closingAmount: 220,
+      receiptAmount: 220,
+      closingAmount: 0,
     })
 
     expect(buildFreightStatementDraftData({
@@ -1149,7 +1142,7 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
   it('supplier-statements: delegates to registry callback for purchaseAmount/closingAmount', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'supplier-statements',
-      record: { id: '0' },
+      record: { id: '0', paymentAmount: 120 },
       items: [
         { id: 'item-1', amount: 100, sourceNo: 'INB-001' },
         { id: 'item-2', amount: 200, sourceNo: 'INB-002' },
@@ -1157,18 +1150,21 @@ describe('normalizeDraftRecordForModule — registry callback delegation', () =>
       ...ctx,
     })
     expect(result.purchaseAmount).toBe(300)
-    expect(result.closingAmount).toBe(300)
+    expect(result.paymentAmount).toBe(120)
+    expect(result.closingAmount).toBe(180)
     expect(result.sourceInboundNos).toContain('INB-001')
   })
 
   it('customer-statements: delegates to registry for salesAmount/sourceOrderNos', () => {
     const result = normalizeDraftRecordForModule({
       moduleKey: 'customer-statements',
-      record: { id: '0' },
+      record: { id: '0', receiptAmount: 200 },
       items: [{ id: 'item-1', amount: 500, sourceNo: 'SO-X' }],
       ...ctx,
     })
     expect(result.salesAmount).toBe(500)
+    expect(result.receiptAmount).toBe(200)
+    expect(result.closingAmount).toBe(300)
     expect(result.sourceOrderNos).toBe('SO-X')
   })
 

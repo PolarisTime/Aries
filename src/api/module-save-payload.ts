@@ -38,7 +38,14 @@ function resolveScalarFields(moduleKey: string): string[] {
   return [...new Set([...fromDetailFields, ...extras])]
 }
 
+function resolveIgnoredScalarFields(moduleKey: string): string[] {
+  const config = businessPageConfigs[moduleKey]
+  const configuredComputed = config?.saveFields?.computed || []
+  return [...new Set([...COMPUTED_FIELD_KEYS, ...configuredComputed])]
+}
+
 const scalarFieldCache = new Map<string, string[]>()
+const ignoredScalarFieldCache = new Map<string, readonly string[]>()
 
 function getScalarFields(moduleKey: string): readonly string[] {
   const cached = scalarFieldCache.get(moduleKey)
@@ -47,6 +54,16 @@ function getScalarFields(moduleKey: string): readonly string[] {
   }
   const fields: readonly string[] = Object.freeze(resolveScalarFields(moduleKey))
   scalarFieldCache.set(moduleKey, fields as unknown as string[])
+  return fields
+}
+
+function getIgnoredScalarFields(moduleKey: string): readonly string[] {
+  const cached = ignoredScalarFieldCache.get(moduleKey)
+  if (cached) {
+    return cached
+  }
+  const fields: readonly string[] = Object.freeze(resolveIgnoredScalarFields(moduleKey))
+  ignoredScalarFieldCache.set(moduleKey, fields)
   return fields
 }
 
@@ -76,6 +93,18 @@ function toPersistedLineItemId(value: unknown) {
 }
 
 type LineItemFieldSpec = { key: string; numeric?: boolean }
+
+const NUMERIC_LINE_ITEM_FIELD_KEYS = new Set([
+  'quantity',
+  'piecesPerBundle',
+  'weightTon',
+  'weighWeightTon',
+  'weightAdjustmentTon',
+  'weightAdjustmentAmount',
+  'unitPrice',
+  'amount',
+  'allocatedAmount',
+])
 
 const LINE_ITEM_FIELDS: readonly LineItemFieldSpec[] = [
   { key: 'materialCode' },
@@ -111,7 +140,7 @@ function getLineItemFields(moduleKey: string): readonly LineItemFieldSpec[] {
   const config = businessPageConfigs[moduleKey]
   const moduleSaveFields = config?.saveFields
   if (moduleSaveFields?.lineItem) {
-    return moduleSaveFields.lineItem.map((key) => ({ key }))
+    return moduleSaveFields.lineItem.map((key) => ({ key, numeric: NUMERIC_LINE_ITEM_FIELD_KEYS.has(key) }))
   }
   // numeric fields only matter for the global list
   return LINE_ITEM_FIELDS
@@ -168,9 +197,10 @@ export function serializeBusinessRecordForSave(
 
   if (import.meta.env.DEV) {
     const scalarFields = new Set(getScalarFields(moduleKey))
+    const ignoredScalarFields = new Set(getIgnoredScalarFields(moduleKey))
     for (const key of Object.keys(record)) {
       if (key === 'id' || key === 'items' || key === 'attachmentIds') continue
-      if (record[key] !== undefined && !scalarFields.has(key)) {
+      if (record[key] !== undefined && !scalarFields.has(key) && !ignoredScalarFields.has(key)) {
         console.warn(
           `[save-payload] ${moduleKey}: field "${key}" not in save schema, will be silently dropped`
         )

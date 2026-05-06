@@ -307,12 +307,10 @@ export function useStatementGeneratorSupport(options: UseStatementGeneratorSuppo
   async function buildSupplierStatementDraft(sourceInbounds: ModuleRecord[]) {
     const detailedInbounds = await hydrateModuleDetails('purchase-inbounds', sourceInbounds)
     const baseDraft = options.createBaseDraft()
-    const payments = await listAllBusinessModuleRows('payments', {})
     const enabledSwitches = await loadEnabledSystemSwitches()
     return buildSupplierStatementDraftData({
       baseDraft,
       sourceInbounds: detailedInbounds,
-      payments,
       today: dayjs().format('YYYY-MM-DD'),
       defaultFullPayment: enabledSwitches.has(SUPPLIER_STATEMENT_FULL_PAYMENT_SWITCH),
       cloneLineItems,

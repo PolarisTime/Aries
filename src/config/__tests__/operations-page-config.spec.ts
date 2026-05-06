@@ -55,4 +55,41 @@ describe('operations page config', () => {
     expect(vehiclePlateField?.type).toBe('autoComplete')
     expect(typeof vehiclePlateField?.options).toBe('function')
   })
+
+  it('keeps sales order header fields grouped into the requested three-row layout', () => {
+    const config = operationsPageConfigs['sales-orders']
+
+    expect(config.detailColumnCount).toBe(4)
+    expect(config.detailFields.map((field) => ({
+      key: field.key,
+      row: field.row,
+      fullRow: field.fullRow ?? false,
+    }))).toEqual([
+      { key: 'customerName', row: 1, fullRow: false },
+      { key: 'orderNo', row: 1, fullRow: false },
+      { key: 'purchaseOrderNo', row: 1, fullRow: false },
+      { key: 'salesName', row: 1, fullRow: false },
+      { key: 'projectName', row: 2, fullRow: false },
+      { key: 'deliveryDate', row: 2, fullRow: false },
+      { key: 'receiptAmount', row: 2, fullRow: false },
+      { key: 'closingAmount', row: 2, fullRow: false },
+      { key: 'remark', row: 3, fullRow: true },
+    ])
+    expect(config.formFields?.map((field) => ({
+      key: field.key,
+      row: field.row,
+      fullRow: field.fullRow ?? false,
+    }))).toEqual([
+      { key: 'customerName', row: 1, fullRow: false },
+      { key: 'orderNo', row: 1, fullRow: false },
+      { key: 'purchaseOrderNo', row: 1, fullRow: false },
+      { key: 'salesName', row: 1, fullRow: false },
+      { key: 'projectName', row: 2, fullRow: false },
+      { key: 'deliveryDate', row: 2, fullRow: false },
+      { key: 'receiptAmount', row: 2, fullRow: false },
+      { key: 'closingAmount', row: 2, fullRow: false },
+      { key: 'remark', row: 3, fullRow: true },
+    ])
+    expect(config.saveFields?.scalar).toContain('status')
+  })
 })

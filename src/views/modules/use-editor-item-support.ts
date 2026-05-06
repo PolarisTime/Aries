@@ -154,8 +154,19 @@ export function useEditorItemSupport(options: UseEditorItemSupportOptions) {
     return undefined
   }
 
+  function normalizeEditorItemSelectValue(key: string, value: unknown) {
+    const normalizedValue = normalizeSelectValue(value)
+    if (normalizedValue === undefined) {
+      return ''
+    }
+    if (key === 'sourceStatementId' || key.endsWith('Id')) {
+      return normalizedValue
+    }
+    return String(normalizedValue)
+  }
+
   function handleEditorItemValueChange(item: ModuleLineItem, key: string, value: unknown) {
-    handleEditorItemTextChange(item, key, String(normalizeSelectValue(value) || ''))
+    item[key] = normalizeEditorItemSelectValue(key, value)
     recalculateEditorLineItem(item, key)
     refreshEditorItems()
   }

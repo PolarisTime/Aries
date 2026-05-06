@@ -62,6 +62,8 @@ export interface ModuleDetailField {
   label: string
   key: string
   type?: ModuleColumnType
+  row?: number
+  fullRow?: boolean
 }
 
 export interface ModuleStatusMeta {
@@ -94,6 +96,8 @@ export interface ModuleFormFieldDefinition {
   defaultValue?: string | number | boolean
   min?: number
   precision?: number
+  row?: number
+  fullRow?: boolean
 }
 
 export interface ModuleLineItem extends Record<string, unknown> {

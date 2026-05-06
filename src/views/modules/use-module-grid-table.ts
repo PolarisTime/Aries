@@ -51,6 +51,9 @@ export function useModuleGridTable(options: UseModuleGridTableOptions) {
     isReadOnly: options.isReadOnly,
     visibleConfigColumns: options.visibleConfigColumns,
     columnMetaMap: options.columnMetaMap,
+    showMaterialSelectorUnitPrice: computed(() =>
+      Boolean(options.config.value.itemColumns?.some((column) => column.dataIndex === 'unitPrice')),
+    ),
     formatCellValue: options.formatCellValue,
     getStatusMeta: options.getStatusMeta,
   })

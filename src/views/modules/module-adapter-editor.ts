@@ -142,6 +142,12 @@ function getLineItemValidationMessage(
         return `请填写第${index + 1}行${column.title}`
       }
     }
+    if (
+      (moduleKey === 'receipts' || moduleKey === 'payments')
+      && Number(item.allocatedAmount || 0) <= 0
+    ) {
+      return `第${index + 1}行核销金额必须大于0`
+    }
   }
 
   return null
@@ -235,6 +241,13 @@ export function isEditorItemColumnEditableForModule(
   }
 
   if (
+    (moduleKey === 'receipts' || moduleKey === 'payments')
+    && ['projectName', 'statementNo', 'statementBalanceAmount'].includes(columnKey)
+  ) {
+    return false
+  }
+
+  if (
     derivedReadonlyItemColumnKeySet.has(columnKey)
     && !(moduleKey === 'purchase-inbounds' && columnKey === 'weightTon')
   ) {
@@ -317,6 +330,11 @@ function isEmptyPurchaseOrderLineItem(item: ModuleLineItem) {
     && isZeroLike(item.amount)
 }
 
+function isEmptyFinanceAllocationLineItem(item: ModuleLineItem) {
+  return isBlankLike(item.sourceStatementId)
+    && isZeroLike(item.allocatedAmount)
+}
+
 export function trimEditorItemsForModule(moduleKey: string, items: ModuleLineItem[]) {
   const strategy = getBehaviorValue(moduleKey, 'lineItemTrimStrategy')
   if (strategy === 'purchaseOrderBlank') {
@@ -325,6 +343,10 @@ export function trimEditorItemsForModule(moduleKey: string, items: ModuleLineIte
 
   if (strategy === 'positiveWeightOrAmount') {
     return items.filter((item) => Number(item.weightTon || 0) > 0 || Number(item.amount || 0) > 0)
+  }
+
+  if (strategy === 'financeAllocationBlank') {
+    return items.filter((item) => !isEmptyFinanceAllocationLineItem(item))
   }
 
   return items
@@ -498,7 +520,10 @@ export function getEditorValidationMessage(options: {
   }
 
   if (hasItemColumns && itemCount === 0) {
-    return '请至少填写一条明细'
+    const allowsEmptyLineItems = Boolean(getBehaviorValue(options.moduleKey || '', 'allowsEmptyLineItems'))
+    if (!allowsEmptyLineItems) {
+      return '请至少填写一条明细'
+    }
   }
 
   if (hasItemColumns) {
@@ -531,6 +556,7 @@ export function isNumberEditorColumn(columnKey: string) {
     'weightAdjustmentAmount',
     'unitPrice',
     'amount',
+    'allocatedAmount',
   ].includes(columnKey)
 }
 
@@ -539,6 +565,9 @@ export function getEditorItemPrecision(columnKey: string) {
     return 3
   }
   if (['unitPrice', 'amount', 'weightAdjustmentAmount'].includes(columnKey)) {
+    return 2
+  }
+  if (columnKey === 'allocatedAmount') {
     return 2
   }
   return 0

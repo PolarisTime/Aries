@@ -51,7 +51,11 @@ export interface ModuleBehaviorConfig {
   /** Whether line-item cells are always rendered read-only in the editor. */
   readonlyLineItems?: boolean
   /** How empty line items are trimmed before save. */
-  lineItemTrimStrategy?: 'purchaseOrderBlank' | 'positiveWeightOrAmount'
+  lineItemTrimStrategy?: 'purchaseOrderBlank' | 'positiveWeightOrAmount' | 'financeAllocationBlank'
+  /** Whether the editor may save an empty line-item list for this module. */
+  allowsEmptyLineItems?: boolean
+  /** Field used by editor/detail summaries for line-item amount totals. */
+  lineItemAmountSummaryKey?: string
   /** Whether the module supports parent document import. */
   supportsParentImport?: boolean
   /** Whether the module supports statement generation. */
@@ -113,11 +117,24 @@ function collectUniqueSourceNos(items: ModuleLineItem[]): string {
   ).join(', ')
 }
 
+function calculateOpenAmount(total: unknown, settled: unknown) {
+  const totalAmount = Number(total || 0)
+  const settledAmount = Number(settled || 0)
+  return Number(Math.max(0, totalAmount - settledAmount).toFixed(2))
+}
+
+function isFullySettled(total: unknown, settled: unknown, openAmount: unknown) {
+  const normalizedTotal = Number(Number(total || 0).toFixed(2))
+  const normalizedSettled = Number(Number(settled || 0).toFixed(2))
+  const normalizedOpenAmount = Number(Number(openAmount || 0).toFixed(2))
+  return normalizedTotal > 0 && normalizedSettled === normalizedTotal && normalizedOpenAmount === 0
+}
+
 // ── Line-item capable modules ──
 const lineItemModules = [
   'purchase-orders', 'purchase-inbounds', 'sales-orders', 'sales-outbounds',
   'freight-bills', 'freight-statements', 'purchase-contracts', 'sales-contracts',
-  'invoice-receipts', 'invoice-issues',
+  'invoice-receipts', 'invoice-issues', 'receipts', 'payments',
 ]
 lineItemModules.forEach((key) => register(key, { supportsLineItems: true }))
 
@@ -211,6 +228,11 @@ operatorNameModules.forEach((key) => register(key, { defaultOperatorField: 'oper
 register('purchase-orders', { lineItemTrimStrategy: 'purchaseOrderBlank' })
 const positiveLineItemModules = ['invoice-receipts', 'invoice-issues']
 positiveLineItemModules.forEach((key) => register(key, { lineItemTrimStrategy: 'positiveWeightOrAmount' }))
+;['receipts', 'payments'].forEach((key) => register(key, {
+  lineItemTrimStrategy: 'financeAllocationBlank',
+  allowsEmptyLineItems: true,
+  lineItemAmountSummaryKey: 'allocatedAmount',
+}))
 register('invoice-issues', { allowsManualLineItems: false })
 register('freight-bills', { allowsManualLineItems: false, readonlyLineItems: true })
 
@@ -220,8 +242,21 @@ register('sales-orders', { supportsStatements: true, statementLinkType: 'custome
 register('freight-bills', { supportsStatements: true, statementLinkType: 'freight' })
 
 // ── Invoice sync ──
-register('invoice-receipts', { supportsInvoiceSync: true })
-register('invoice-issues', { supportsInvoiceSync: true })
+register('invoice-receipts', {
+  supportsInvoiceSync: true,
+  allowsManualLineItems: false,
+  readonlyLineItems: true,
+  syncEditorForm(editorForm) {
+    if (!editorForm.invoiceTitle && editorForm.supplierName) {
+      editorForm.invoiceTitle = editorForm.supplierName
+    }
+  },
+})
+register('invoice-issues', {
+  supportsInvoiceSync: true,
+  allowsManualLineItems: false,
+  readonlyLineItems: true,
+})
 
 // ── Freight pickup ──
 register('sales-orders', { supportsFreightPickup: true })
@@ -270,23 +305,41 @@ register('freight-statements', {
 
 register('supplier-statements', {
   normalizeDraftRecord(record, items, ctx) {
+    const wasFullyPaid = isFullySettled(record.purchaseAmount, record.paymentAmount, record.closingAmount)
     if (items.length) {
       record.purchaseAmount = Number(ctx.sumLineItemsBy(items, 'amount').toFixed(2))
       record.sourceInboundNos = collectUniqueSourceNos(items)
     }
-    record.paymentAmount = Number(record.paymentAmount || 0)
-    record.closingAmount = Number(Number(record.purchaseAmount || 0).toFixed(2))
+    record.paymentAmount = wasFullyPaid
+      ? Number(Number(record.purchaseAmount || 0).toFixed(2))
+      : Number(record.paymentAmount || 0)
+    record.closingAmount = calculateOpenAmount(record.purchaseAmount, record.paymentAmount)
   },
 })
 
 register('customer-statements', {
   normalizeDraftRecord(record, items, ctx) {
+    const wasFullyReceived = isFullySettled(record.salesAmount, record.receiptAmount, record.closingAmount)
     if (items.length) {
       record.salesAmount = Number(ctx.sumLineItemsBy(items, 'amount').toFixed(2))
       record.sourceOrderNos = collectUniqueSourceNos(items)
     }
-    record.receiptAmount = Number(record.receiptAmount || 0)
-    record.closingAmount = Number(Number(record.salesAmount || 0).toFixed(2))
+    record.receiptAmount = wasFullyReceived
+      ? Number(Number(record.salesAmount || 0).toFixed(2))
+      : Number(record.receiptAmount || 0)
+    record.closingAmount = calculateOpenAmount(record.salesAmount, record.receiptAmount)
+  },
+})
+
+register('receipts', {
+  normalizeDraftRecord(record, items) {
+    record.sourceStatementId = items.length === 1 ? items[0].sourceStatementId : undefined
+  },
+})
+
+register('payments', {
+  normalizeDraftRecord(record, items) {
+    record.sourceStatementId = items.length === 1 ? items[0].sourceStatementId : undefined
   },
 })
 
@@ -342,7 +395,7 @@ const lineItemPayloadModules = [
   'purchase-orders', 'purchase-inbounds', 'sales-orders', 'sales-outbounds',
   'freight-bills', 'purchase-contracts', 'sales-contracts',
   'supplier-statements', 'customer-statements', 'freight-statements',
-  'invoice-receipts', 'invoice-issues',
+  'invoice-receipts', 'invoice-issues', 'receipts', 'payments',
 ]
 lineItemPayloadModules.forEach((key) => register(key, { savePayloadLineItems: true }))
 

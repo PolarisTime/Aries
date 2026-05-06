@@ -104,10 +104,10 @@ describe('GeneralSettingsView', () => {
       {
         id: '5',
         settingCode: 'SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER',
-        settingName: '客户对账单默认按销售订单金额收款为0',
-        billName: '客户对账单生成',
+        settingName: '销售订单默认未收款',
+        billName: '销售订单收款情况',
         status: '正常',
-        remark: '启用后默认收款金额为0，期末余额等于销售订单总金额',
+        remark: '启用后，由销售订单生成客户对账单时默认按未收款处理；关闭后默认按已收款处理。',
         ruleType: 'NO_RULE',
       },
       {
@@ -143,7 +143,7 @@ describe('GeneralSettingsView', () => {
     expect(text).toContain('默认税率')
     expect(text).toContain('系统开关')
     expect(text).toContain('销售出库重量视图开关')
-    expect(text).toContain('客户对账单默认按销售订单金额收款为0')
+    expect(text).toContain('销售订单默认未收款')
     expect(text).toContain('页面操作详细日志')
     expect(text).not.toContain('销售订单单号规则')
     expect(text).not.toContain('{yyyyMMddHHmmss}_{random8}')

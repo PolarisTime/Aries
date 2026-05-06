@@ -34,8 +34,9 @@
   --app-card-body-padding: 12px;
   --app-filter-gap-x: 36px;
   --app-filter-margin-bottom: 8px;
-  --app-filter-label-width: 104px;
+  --app-filter-label-width: 64px;
   --app-filter-control-width: 280px;
+  --app-filter-actions-width: 200px;
   --app-filter-button-width: 96px;
   --app-table-head-padding-y: 10px;
   --app-table-head-padding-x: 12px;
@@ -703,41 +704,42 @@ a {
 }
 
 .filter-inline-group {
-  display: grid;
-  grid-template-columns:
-    repeat(var(--module-filter-grid-columns, 1), minmax(0, 1fr))
-    var(--module-filter-actions-width, 200px);
-  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   column-gap: var(--app-filter-gap-x);
-  row-gap: var(--app-filter-margin-bottom);
+  row-gap: 32px;
 }
 
 .filter-inline-group .ant-form-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  align-content: start;
-  width: 100%;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0 6px;
+  width: auto;
   min-width: 0;
   margin-bottom: 0;
 }
 
 .filter-inline-group .ant-form-item-label {
-  width: 100%;
-  min-width: 0;
-  padding: 0 0 6px;
-  text-align: left;
+  flex: 0 0 var(--app-filter-label-width);
+  width: var(--app-filter-label-width);
+  min-width: var(--app-filter-label-width);
+  padding: 0 4px 0 0;
+  text-align: right;
   white-space: nowrap;
 }
 
 .filter-inline-group .ant-form-item-label > label {
   height: auto;
   line-height: 1.25;
+  white-space: nowrap;
 }
 
 .filter-inline-group .ant-form-item-control {
-  width: 100%;
-  min-width: 0;
+  flex: 0 0 var(--app-filter-control-width);
+  width: var(--app-filter-control-width);
+  min-width: var(--app-filter-control-width);
 }
 
 .filter-inline-group .ant-form-item-control-input,
@@ -760,8 +762,7 @@ a {
 
 .filter-inline-group-actions-host {
   .table-page-search-submitButtons {
-    grid-column: var(--module-filter-actions-column-start, -2) / -1;
-    justify-content: flex-start;
+    flex-shrink: 0;
   }
 }
 

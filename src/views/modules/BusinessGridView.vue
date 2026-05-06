@@ -77,6 +77,7 @@ import { useEditorItemSupport } from './use-editor-item-support'
 import { useEditorFormSupport } from './use-editor-form-support'
 import { useBusinessQueries } from './use-business-queries'
 import { useInvoiceSync } from './use-invoice-sync'
+import { useFinanceAllocationSync } from './use-finance-allocation-sync'
 import { useMaterialImport } from './use-material-import'
 import { useFinanceStatementLinkSupport } from './use-finance-statement-link-support'
 import { useFreightPickupList } from './use-freight-pickup-list'
@@ -163,10 +164,13 @@ const {
   editorItemWeightTotal,
   editorTitle,
   formFields,
+  itemAmountSummaryKey,
+  itemWeightSummaryKey,
   isMaterialModule,
   isReadOnly,
   parentImportConfig,
   shouldShowItemAmountSummary,
+  shouldShowItemWeightSummary,
   statusMap,
 } = useModuleViewState({
   moduleKey: computed(() => props.moduleKey),
@@ -480,6 +484,17 @@ useInvoiceSync({
   paymentBusinessType,
   sourceStatementOptions,
   sourceStatementOptionsReady,
+})
+
+useFinanceAllocationSync({
+  moduleKey: computed(() => props.moduleKey),
+  editorVisible,
+  editorForm,
+  editorItems,
+  customerStatementRows,
+  supplierStatementRows,
+  freightStatementRows,
+  paymentBusinessType,
 })
 
 const {
@@ -941,6 +956,7 @@ const {
   editorItems,
   editorItemWeightTotal,
   editorItemAmountTotal,
+  shouldShowItemWeightSummary,
   shouldShowItemAmountSummary,
   lockedLineItemsNotice,
   editorDetailTableColumns,
@@ -996,7 +1012,10 @@ const {
       :active-record="activeRecord"
       :can-print-records="canPrintRecords"
       :detail-print-loading="detailPrintLoading"
+      :should-show-item-weight-summary="shouldShowItemWeightSummary"
       :should-show-item-amount-summary="shouldShowItemAmountSummary"
+      :item-weight-summary-key="itemWeightSummaryKey"
+      :item-amount-summary-key="itemAmountSummaryKey"
       :detail-table-columns="detailTableColumns"
       :detail-table-scroll="detailTableScroll"
       :can-edit-item-columns="canEditItemColumns"
