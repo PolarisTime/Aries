@@ -283,7 +283,7 @@ describe('module-adapters', () => {
     ])
   })
 
-  it('uses purchase order total weight to derive sales order import piece weight', () => {
+  it('uses purchase order remaining weight to derive sales order import piece weight when it is exactly representable', () => {
     const parentImportConfig = operationsPageConfigs['sales-orders'].parentImport!
     const nextState = buildParentImportState({
       parentImportConfig,
@@ -319,6 +319,26 @@ describe('module-adapters', () => {
             weightTon: 14.258,
             unitPrice: 3000,
           },
+          {
+            id: 'src-po-4',
+            materialCode: 'D',
+            quantity: 5,
+            salesRemainingQuantity: 2,
+            salesRemainingWeightTon: 4.496,
+            pieceWeightTon: 2.249,
+            weightTon: 11.243,
+            unitPrice: 3000,
+          },
+          {
+            id: 'src-po-5',
+            materialCode: 'E',
+            quantity: 3,
+            salesRemainingQuantity: 2,
+            salesRemainingWeightTon: 0.667,
+            pieceWeightTon: 0.333,
+            weightTon: 1,
+            unitPrice: 3000,
+          },
         ],
       },
       currentParentNos: [],
@@ -347,9 +367,25 @@ describe('module-adapters', () => {
       expect.objectContaining({
         sourcePurchaseOrderItemId: 'src-po-3',
         quantity: 1,
-        pieceWeightTon: 2.037,
+        pieceWeightTon: 2.036,
         weightTon: 2.036,
         amount: 6108,
+        _parentRelationNo: 'PO-001',
+      }),
+      expect.objectContaining({
+        sourcePurchaseOrderItemId: 'src-po-4',
+        quantity: 2,
+        pieceWeightTon: 2.248,
+        weightTon: 4.496,
+        amount: 13488,
+        _parentRelationNo: 'PO-001',
+      }),
+      expect.objectContaining({
+        sourcePurchaseOrderItemId: 'src-po-5',
+        quantity: 2,
+        pieceWeightTon: 0.333,
+        weightTon: 0.667,
+        amount: 2001,
         _parentRelationNo: 'PO-001',
       }),
     ])
