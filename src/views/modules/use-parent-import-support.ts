@@ -1,4 +1,4 @@
-import { computed, ref, watch, type Ref } from 'vue'
+import { computed, hasInjectionContext, ref, watch, type Ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { useQueryClient } from '@tanstack/vue-query'
 import type {
@@ -212,13 +212,13 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
     parentSelectorVisible.value = false
   }
 
-  const queryClient = useQueryClient()
+  const queryClient = hasInjectionContext() ? useQueryClient() : null
 
   async function openParentSelector() {
     parentSelectorKeyword.value = ''
     parentSelectorVisible.value = true
     const parentModuleKey = options.parentImportConfig.value?.parentModuleKey
-    if (parentModuleKey) {
+    if (parentModuleKey && queryClient) {
       await queryClient.refetchQueries({
         queryKey: ['business-parent-search'],
         exact: false,
