@@ -14,6 +14,27 @@ function getStorage(mode: AuthPersistenceMode) {
   return mode === 'session' ? sessionStorage : localStorage
 }
 
+function readTokenExpiresAtValue() {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const raw = localStorage.getItem(STORAGE_KEYS.tokenExpiresAt)
+    || sessionStorage.getItem(STORAGE_KEYS.tokenExpiresAt)
+
+  if (!raw) {
+    return null
+  }
+
+  const expiresAt = Number(raw)
+  if (!Number.isFinite(expiresAt) || expiresAt <= 0) {
+    clearStorageItem(STORAGE_KEYS.tokenExpiresAt)
+    return null
+  }
+
+  return expiresAt
+}
+
 function clearLegacyAuthStorage() {
   if (typeof window === 'undefined') {
     return
@@ -71,10 +92,27 @@ function resolvePersistenceMode(preferred?: AuthPersistenceMode): AuthPersistenc
   return 'local'
 }
 
+export function clearExpiredAuthSession() {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  const expiresAt = readTokenExpiresAtValue()
+  if (expiresAt === null || expiresAt > Date.now()) {
+    return false
+  }
+
+  clearToken()
+  clearStoredUser()
+  return true
+}
+
 export function getToken() {
   if (typeof window === 'undefined') {
     return accessToken
   }
+
+  clearExpiredAuthSession()
 
   if (!accessToken) {
     const mode = resolvePersistenceMode()
@@ -105,6 +143,8 @@ export function getStoredUser() {
     return null
   }
 
+  clearExpiredAuthSession()
+
   const mode = resolvePersistenceMode()
   const raw = getStorage(mode).getItem(STORAGE_KEYS.user)
   if (!raw) {
@@ -114,7 +154,7 @@ export function getStoredUser() {
   try {
     return JSON.parse(raw) as LoginUser
   } catch {
-    localStorage.removeItem(STORAGE_KEYS.user)
+    clearStorageItem(STORAGE_KEYS.user)
     return null
   }
 }
@@ -191,10 +231,7 @@ export function clearListColumnSettings(pageKey: string) {
 }
 
 export function getTokenExpiresAt(): number | null {
-  if (typeof window === 'undefined') return null
-  const raw = localStorage.getItem(STORAGE_KEYS.tokenExpiresAt)
-    || sessionStorage.getItem(STORAGE_KEYS.tokenExpiresAt)
-  return raw ? Number(raw) : null
+  return readTokenExpiresAtValue()
 }
 
 export function clearTokenExpiresAt() {

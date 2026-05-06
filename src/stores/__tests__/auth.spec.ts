@@ -134,4 +134,66 @@ describe('auth store persistence', () => {
     })
     expect(authApiMocks.refreshSession).not.toHaveBeenCalled()
   })
+
+  it('clears expired auth session when reading persisted auth data', async () => {
+    localStorage.setItem(STORAGE_KEYS.token, 'expired-token')
+    localStorage.setItem(
+      STORAGE_KEYS.user,
+      JSON.stringify({
+        id: 10,
+        loginName: 'expired-admin',
+        userName: 'Expired Admin',
+      }),
+    )
+    localStorage.setItem(STORAGE_KEYS.authPersistence, 'local')
+    localStorage.setItem(STORAGE_KEYS.tokenExpiresAt, String(Date.now() - 1_000))
+
+    const { getToken, getStoredUser } = await import('@/utils/storage')
+
+    expect(getToken()).toBe('')
+    expect(getStoredUser()).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEYS.token)).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEYS.user)).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEYS.tokenExpiresAt)).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEYS.authPersistence)).toBeNull()
+  })
+
+  it('refreshes instead of trusting an expired persisted session', async () => {
+    localStorage.setItem(STORAGE_KEYS.token, 'expired-token')
+    localStorage.setItem(
+      STORAGE_KEYS.user,
+      JSON.stringify({
+        id: 11,
+        loginName: 'expired-admin',
+        userName: 'Expired Admin',
+      }),
+    )
+    localStorage.setItem(STORAGE_KEYS.authPersistence, 'local')
+    localStorage.setItem(STORAGE_KEYS.tokenExpiresAt, String(Date.now() - 1_000))
+
+    authApiMocks.refreshSession.mockResolvedValue({
+      code: 0,
+      data: {
+        accessToken: 'refreshed-token',
+        tokenType: 'Bearer',
+        expiresIn: 1800,
+        user: {
+          id: 12,
+          loginName: 'refreshed-admin',
+          userName: 'Refreshed Admin',
+        },
+      },
+    })
+
+    const store = useAuthStore()
+    const restored = await store.restoreSession()
+
+    expect(restored).toBe(true)
+    expect(authApiMocks.refreshSession).toHaveBeenCalledTimes(1)
+    expect(store.token).toBe('refreshed-token')
+    expect(store.user).toMatchObject({
+      loginName: 'refreshed-admin',
+    })
+    expect(localStorage.getItem(STORAGE_KEYS.token)).toBe('refreshed-token')
+  })
 })
