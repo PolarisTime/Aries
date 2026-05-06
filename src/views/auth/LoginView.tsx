@@ -1,14 +1,34 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Form, Input, Button, Checkbox, Card, message } from 'antd'
 import {
-  UserOutlined,
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  Col,
+  Form,
+  Input,
+  Row,
+  Space,
+  Statistic,
+  Tag,
+  Typography,
+} from 'antd'
+import {
+  ArrowLeftOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
   LockOutlined,
+  QrcodeOutlined,
   SafetyCertificateOutlined,
+  UserOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
 import { fetchCaptcha } from '@/api/auth'
 import { appTitle } from '@/utils/env'
+import { message } from '@/utils/antd-app'
+import { toDataImageUrl } from '@/utils/data-url'
+import { AuthPageShell } from './AuthPageShell'
 import type { LoginPayload, CaptchaData, LoginUser } from '@/types/auth'
 
 const TOTP_SESSION_KEY = 'aries-totp-session'
@@ -18,6 +38,12 @@ interface SavedTotpSession {
   deadline: number
   loginName: string
 }
+
+const loginHeroStats = [
+  { label: 'Access', value: '24/7' },
+  { label: 'Security', value: '2-Step' },
+  { label: 'Workspace', value: 'ERP' },
+]
 
 function saveTotpSession(token: string, deadline: number, loginName: string) {
   sessionStorage.setItem(
@@ -136,35 +162,41 @@ export function LoginView() {
     }
   }, [loginStep, reset2faStep, stepDeadline])
 
-  const handleLogin = useCallback(async (values: LoginPayload) => {
-    setLoading(true)
-    try {
-      const result = await signIn(values)
-      if (result.requires2fa) {
-        const deadline = Date.now() + 5 * 60 * 1000
-        setTempToken(result.tempToken)
-        setLoginStep('totp')
-        setStepDeadline(deadline)
-        setNow(Date.now())
-        saveTotpSession(result.tempToken, deadline, values.loginName)
-        return
-      }
+  const handleLogin = useCallback(
+    async (values: LoginPayload) => {
+      setLoading(true)
+      try {
+        const result = await signIn({
+          ...values,
+          captchaId: captcha?.captchaId,
+        })
+        if (result.requires2fa) {
+          const deadline = Date.now() + 5 * 60 * 1000
+          setTempToken(result.tempToken)
+          setLoginStep('totp')
+          setStepDeadline(deadline)
+          setNow(Date.now())
+          saveTotpSession(result.tempToken, deadline, values.loginName)
+          return
+        }
 
-      clearTotpSession()
-      message.success(
-        requiresForcedTotpSetup(result.user)
-          ? '账号已登录，请先完成 2FA 绑定后再进入系统。'
-          : '登录成功',
-      )
-      await navigate({ to: buildPostLoginTarget(result.user) as '/' })
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : '登录失败'
-      message.error(msg)
-      void loadCaptcha()
-    } finally {
-      setLoading(false)
-    }
-  }, [loadCaptcha, navigate, signIn])
+        clearTotpSession()
+        message.success(
+          requiresForcedTotpSetup(result.user)
+            ? '账号已登录，请先完成 2FA 绑定后再进入系统。'
+            : '登录成功',
+        )
+        await navigate({ to: buildPostLoginTarget(result.user) as '/' })
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : '登录失败'
+        message.error(msg)
+        void loadCaptcha()
+      } finally {
+        setLoading(false)
+      }
+    },
+    [captcha?.captchaId, loadCaptcha, navigate, signIn],
+  )
 
   const handleTotpVerify = useCallback(async () => {
     if (!/^\d{6}$/.test(totpCode.trim())) {
@@ -193,176 +225,261 @@ export function LoginView() {
     } finally {
       setTotpLoading(false)
     }
-  }, [form, navigate, reset2faStep, stepDeadline, tempToken, totpCode, verify2fa])
+  }, [
+    form,
+    navigate,
+    reset2faStep,
+    stepDeadline,
+    tempToken,
+    totpCode,
+    verify2fa,
+  ])
 
   const handleBackToPassword = useCallback(() => {
     reset2faStep(false)
   }, [reset2faStep])
 
   const isExpired = stepDeadline > 0 && now >= stepDeadline
+  const activeLoginName =
+    String(
+      form.getFieldValue('loginName') || savedSession?.loginName || '',
+    ).trim() || '当前账户'
   const countdownText = useMemo(() => {
     if (!stepDeadline || isExpired) {
       return '00:00'
     }
-    const remainingSeconds = Math.max(
-      Math.ceil((stepDeadline - now) / 1000),
-      0,
-    )
+    const remainingSeconds = Math.max(Math.ceil((stepDeadline - now) / 1000), 0)
     const minutes = Math.floor(remainingSeconds / 60)
     const seconds = remainingSeconds % 60
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
   }, [isExpired, now, stepDeadline])
+  const captchaImageSrc = useMemo(
+    () => toDataImageUrl(captcha?.captchaImage),
+    [captcha?.captchaImage],
+  )
+  const shouldShowCaptcha = Boolean(
+    captcha && (captcha.required || captchaImageSrc || captcha.captchaId),
+  )
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-6 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.18),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(15,23,42,0.14),transparent_24%),linear-gradient(135deg,#eef4fb_0%,#f8fafc_55%,#e8eff8_100%)]">
-      <div className="grid grid-cols-[1fr_420px] gap-10 w-[min(1100px,100%)] items-center max-[960px]:grid-cols-1">
-        <div className="max-[960px]:text-center">
-          <h1 className="m-0 text-[#0f172a] text-[calc(var(--app-font-size)+30px)] font-semibold">
-            {appTitle}
-          </h1>
-          <p className="mt-2.5 text-[calc(var(--app-font-size)+6px)] text-[#475569] font-normal">
-            本地自托管 ERP 工作区
-          </p>
-          <p className="max-w-[520px] mt-4 text-[calc(var(--app-font-size)+2px)] text-[#64748b] leading-relaxed">
-            钢材贸易业务中台 — 采购、销售、库存、财务一站式管理
-          </p>
-          <p className="mt-6 text-[calc(var(--app-font-size)+1px)] text-[#94a3b8] tracking-widest">
-            LEO ERP v2.0
-          </p>
-        </div>
+    <AuthPageShell
+      eyebrow="Ant Design Workspace"
+      title={appTitle}
+      subtitle="本地自托管 ERP 工作区"
+      description="统一采购、销售、库存、财务的一体化业务入口，整体界面切换到 Ant Design 组件体系，保持交互一致并减少自定义样式依赖。"
+      leftAside={
+        <Row gutter={[16, 16]}>
+          {loginHeroStats.map((item) => (
+            <Col xs={24} sm={8} key={item.label}>
+              <Card size="small">
+                <Statistic title={item.label} value={item.value} />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      }
+    >
+      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size={4}>
+          <Tag color="blue" variant="filled" style={{ width: 'fit-content' }}>
+            {loginStep === 'password' ? 'Secure Login' : 'Two-Factor Check'}
+          </Tag>
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            {loginStep === 'password' ? '账号登录' : '二次验证'}
+          </Typography.Title>
+          <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+            {loginStep === 'password'
+              ? '输入账号密码后进入系统；如账户启用了二次验证，将自动进入下一步校验。'
+              : `请输入 ${activeLoginName} 的 Authenticator 动态验证码完成登录。`}
+          </Typography.Paragraph>
+        </Space>
 
-        <Card className="border-[#dbe3ee]">
-          <div className="flex items-center justify-center flex-col min-h-[520px] max-[960px]:min-h-auto">
-            <div className="mb-5 text-center">
-              <h2 className="m-0 text-[#262626] text-[calc(var(--app-font-size)+12px)] font-medium">
-                {loginStep === 'password' ? '账号登录' : '二次验证'}
-              </h2>
-              <p className="mt-2 text-[#999]">
-                {loginStep === 'password'
-                  ? '请使用您的账号密码登录系统'
-                  : '请输入您的TOTP验证码'}
-              </p>
-            </div>
+        {loginStep === 'password' ? (
+          <>
+            <Row gutter={[12, 12]}>
+              <Col xs={24} sm={12}>
+                <Card size="small">
+                  <Space>
+                    <UserOutlined />
+                    <Typography.Text>账号密码验证</Typography.Text>
+                  </Space>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Card size="small">
+                  <Space>
+                    <QrcodeOutlined />
+                    <Typography.Text>按需触发 2FA</Typography.Text>
+                  </Space>
+                </Card>
+              </Col>
+            </Row>
 
-            {loginStep === 'password' ? (
-              <Form
-                form={form}
-                onFinish={handleLogin}
-                initialValues={{
-                  loginName: savedSession?.loginName || '',
-                  remember: true,
-                }}
-                layout="vertical"
-                className="w-full max-w-[360px]"
-                size="large"
+            <Form
+              form={form}
+              onFinish={handleLogin}
+              initialValues={{
+                loginName: savedSession?.loginName || '',
+                remember: true,
+              }}
+              layout="vertical"
+              size="large"
+            >
+              <Form.Item
+                name="loginName"
+                label="登录名"
+                rules={[{ required: true, message: '请输入用户名' }]}
+                style={{ marginBottom: 16 }}
               >
-                <Form.Item
-                  name="loginName"
-                  rules={[{ required: true, message: '请输入用户名' }]}
-                >
-                  <Input
-                    prefix={<UserOutlined className="text-gray-400" />}
-                    placeholder="用户名"
-                    autoComplete="username"
-                  />
-                </Form.Item>
+                <Input
+                  prefix={<UserOutlined />}
+                  placeholder="请输入用户名"
+                  autoComplete="username"
+                />
+              </Form.Item>
 
-                <Form.Item
-                  name="password"
-                  rules={[{ required: true, message: '请输入密码' }]}
-                >
-                  <Input.Password
-                    prefix={<LockOutlined className="text-gray-400" />}
-                    placeholder="密码"
-                    autoComplete="current-password"
-                  />
-                </Form.Item>
+              <Form.Item
+                name="password"
+                label="登录密码"
+                rules={[{ required: true, message: '请输入密码' }]}
+                style={{ marginBottom: 16 }}
+              >
+                <Input.Password
+                  prefix={<LockOutlined />}
+                  placeholder="请输入密码"
+                  autoComplete="current-password"
+                />
+              </Form.Item>
 
-                {captcha?.required && (
-                  <div className="grid grid-cols-[1fr_132px] gap-3">
+              {shouldShowCaptcha && (
+                <Row gutter={12} align="bottom">
+                  <Col flex="auto">
                     <Form.Item
                       name="captchaCode"
+                      label="图形验证码"
                       rules={[{ required: true, message: '请输入验证码' }]}
+                      style={{ marginBottom: 16 }}
                     >
                       <Input
-                        prefix={<SafetyCertificateOutlined className="text-gray-400" />}
-                        placeholder="验证码"
+                        prefix={<SafetyCertificateOutlined />}
+                        placeholder="请输入验证码"
                       />
                     </Form.Item>
-                    <button
-                      type="button"
-                      className="h-10 p-0 border border-[#d9d9d9] bg-white cursor-pointer overflow-hidden"
+                  </Col>
+                  <Col>
+                    <Button
+                      style={{ height: 52, width: 140 }}
                       onClick={() => void loadCaptcha()}
                     >
-                      {captcha?.captchaImage && (
+                      {captchaImageSrc ? (
                         <img
-                          src={captcha.captchaImage}
+                          src={captchaImageSrc}
                           alt="验证码"
-                          className="block w-full h-full object-cover"
+                          style={{ display: 'block', width: '100%', height: 36, objectFit: 'contain' }}
                         />
+                      ) : (
+                        '刷新验证码'
                       )}
-                    </button>
-                    <Form.Item name="captchaId" hidden>
-                      <Input />
-                    </Form.Item>
-                  </div>
-                )}
+                    </Button>
+                  </Col>
+                </Row>
+              )}
 
-                <div className="mb-4">
-                  <Form.Item name="remember" valuePropName="checked" noStyle>
-                    <Checkbox>记住登录状态</Checkbox>
-                  </Form.Item>
-                </div>
+              <Form.Item
+                name="remember"
+                valuePropName="checked"
+                style={{ marginBottom: 16 }}
+              >
+                <Checkbox>记住登录状态</Checkbox>
+              </Form.Item>
 
-                <Form.Item>
-                  <Button type="primary" htmlType="submit" loading={loading} block>
-                    登 录
-                  </Button>
-                </Form.Item>
-              </Form>
-            ) : (
-              <div className="w-full max-w-[360px]">
-                <div className="mb-3 rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-3 py-2 text-sm text-[#475569]">
-                  验证剩余时间：<span className="font-semibold tabular-nums">{countdownText}</span>
-                </div>
-                <div className="mb-4">
-                  <Input
-                    size="large"
-                    prefix={<SafetyCertificateOutlined className="text-gray-400" />}
-                    placeholder="6位TOTP验证码"
-                    maxLength={6}
-                    value={totpCode}
-                    onChange={(event) => setTotpCode(event.target.value)}
-                    onPressEnter={handleTotpVerify}
-                    autoFocus
-                  />
-                </div>
-                {isExpired && (
-                  <p className="text-red-500 mb-4">验证会话已过期，请重新登录</p>
-                )}
+              <Form.Item style={{ marginBottom: 0 }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                  size="large"
+                  icon={<CheckCircleOutlined />}
+                  style={{ height: 46, fontWeight: 600 }}
+                >
+                  登录系统
+                </Button>
+              </Form.Item>
+            </Form>
+          </>
+        ) : (
+          <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
+            <Card size="small">
+              <Space
+                align="center"
+                style={{ width: '100%', justifyContent: 'space-between' }}
+              >
+                <Statistic title="验证剩余时间" value={countdownText} />
+                <ClockCircleOutlined style={{ fontSize: 20, color: '#1677ff' }} />
+              </Space>
+            </Card>
+
+            <Alert
+              type={isExpired ? 'error' : 'info'}
+              showIcon
+              message={
+                isExpired
+                  ? '验证会话已过期，请返回密码登录重新发起认证。'
+                  : '请打开 Authenticator 并输入当前 6 位动态码。'
+              }
+            />
+
+            <Space orientation="vertical" size="small" style={{ width: '100%' }}>
+              <Typography.Text strong>TOTP 验证码</Typography.Text>
+              <Input
+                size="large"
+                prefix={<SafetyCertificateOutlined />}
+                placeholder="请输入 6 位验证码"
+                maxLength={6}
+                value={totpCode}
+                onChange={(event) => setTotpCode(event.target.value)}
+                onPressEnter={handleTotpVerify}
+                autoFocus
+                inputMode="numeric"
+                autoComplete="one-time-code"
+              />
+            </Space>
+
+            <Row gutter={[12, 12]}>
+              <Col xs={24} sm={12}>
                 <Button
                   type="primary"
                   loading={totpLoading}
                   onClick={handleTotpVerify}
                   disabled={isExpired}
-                  block
                   size="large"
+                  icon={<CheckCircleOutlined />}
+                  block
+                  style={{ height: 46, fontWeight: 600 }}
                 >
                   验证并登录
                 </Button>
+              </Col>
+              <Col xs={24} sm={12}>
                 <Button
-                  type="link"
                   onClick={handleBackToPassword}
+                  size="large"
+                  icon={<ArrowLeftOutlined />}
                   block
-                  className="mt-2"
+                  style={{ height: 46, fontWeight: 600 }}
                 >
                   返回密码登录
                 </Button>
-              </div>
-            )}
-          </div>
-        </Card>
-      </div>
-    </div>
+              </Col>
+            </Row>
+          </Space>
+        )}
+
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+          首次登录如被要求绑定 2FA，系统会在验证通过后自动跳转到安全设置页面。
+        </Typography.Paragraph>
+      </Space>
+    </AuthPageShell>
   )
 }

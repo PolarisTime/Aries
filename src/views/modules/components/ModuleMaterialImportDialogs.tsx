@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Modal, Upload, Button, Table, message, Alert } from 'antd'
+import { Modal, Upload, Button, Table, Alert, Flex, Typography } from 'antd'
 import { DownloadOutlined, InboxOutlined } from '@ant-design/icons'
 import type { UploadFile } from 'antd/es/upload'
 import { http } from '@/api/client'
 import type { ApiResponse } from '@/types/api'
+import { message } from '@/utils/antd-app'
 
 interface ImportResult {
   totalRows: number
@@ -35,9 +36,9 @@ export function ModuleMaterialImportDialogs({ open, onClose }: { open: boolean; 
   }
 
   return (
-    <Modal title="导入物料" open={open} onCancel={onClose} footer={null} width={640} destroyOnClose>
+    <Modal title="导入物料" open={open} onCancel={onClose} footer={null} width={640} destroyOnHidden>
       {!result ? (
-        <div className="flex flex-col gap-4">
+        <Flex vertical gap={16}>
           <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate}>下载导入模板 (XLSX)</Button>
           <Upload.Dragger
             beforeUpload={(f) => { handleImport(f); return false }}
@@ -46,13 +47,15 @@ export function ModuleMaterialImportDialogs({ open, onClose }: { open: boolean; 
             accept=".xlsx,.xls,.csv"
             maxCount={1}
           >
-            <p className="text-3xl text-[var(--theme-primary)]"><InboxOutlined /></p>
-            <p>点击或拖拽 XLSX/CSV 文件到此处</p>
+            <InboxOutlined style={{ fontSize: 32, color: 'var(--theme-primary)' }} />
+            <Typography.Paragraph style={{ marginTop: 12, marginBottom: 0 }}>
+              点击或拖拽 XLSX/CSV 文件到此处
+            </Typography.Paragraph>
           </Upload.Dragger>
           {uploading && <Alert message="导入中..." type="info" />}
-        </div>
+        </Flex>
       ) : (
-        <div className="flex flex-col gap-3">
+        <Flex vertical gap={12}>
           <Alert
             type={result.failCount > 0 ? 'warning' : 'success'}
             message={`导入完成: 总计 ${result.totalRows} 行，成功 ${result.successCount} 行，失败 ${result.failCount} 行`}
@@ -70,7 +73,7 @@ export function ModuleMaterialImportDialogs({ open, onClose }: { open: boolean; 
             />
           )}
           <Button onClick={() => { setResult(null); setFileList([]) }}>继续导入</Button>
-        </div>
+        </Flex>
       )}
     </Modal>
   )

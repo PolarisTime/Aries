@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Modal, Upload, Button, List, message } from 'antd'
+import { Modal, Upload, Button, Card, Empty, Flex, Space, Spin, Typography } from 'antd'
 import { UploadOutlined, DownloadOutlined, DeleteOutlined, PaperClipOutlined } from '@ant-design/icons'
 import { http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
+import { message } from '@/utils/antd-app'
 
 interface AttachmentItem {
   id: string
@@ -80,25 +81,35 @@ export function ModuleAttachmentModal({ open, moduleKey, recordId, onClose }: Pr
           <Button icon={<UploadOutlined />} loading={uploading}>上传附件</Button>
         </Upload>
       </div>
-      <List
-        loading={loading}
-        dataSource={attachments}
-        locale={{ emptyText: '暂无附件' }}
-        renderItem={(item) => (
-          <List.Item
-            actions={[
-              <Button key="download" type="link" size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(item.id)} />,
-              <Button key="delete" type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(item.id)} />,
-            ]}
-          >
-            <List.Item.Meta
-              avatar={<PaperClipOutlined />}
-              title={item.fileName}
-              description={`${(item.fileSize / 1024).toFixed(1)} KB · ${item.createdAt}`}
-            />
-          </List.Item>
+      <Spin spinning={loading}>
+        {attachments.length > 0 ? (
+          <Flex vertical gap={12}>
+            {attachments.map((item) => (
+              <Card key={item.id} size="small">
+                <Flex align="center" justify="space-between" gap={16}>
+                  <Space align="start" size={12} style={{ minWidth: 0, flex: 1 }}>
+                    <PaperClipOutlined />
+                    <Space orientation="vertical" size={0} style={{ minWidth: 0 }}>
+                      <Typography.Text strong ellipsis>
+                        {item.fileName}
+                      </Typography.Text>
+                      <Typography.Text type="secondary">
+                        {(item.fileSize / 1024).toFixed(1)} KB · {item.createdAt}
+                      </Typography.Text>
+                    </Space>
+                  </Space>
+                  <Space size={0}>
+                    <Button key="download" type="link" size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(item.id)} />
+                    <Button key="delete" type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(item.id)} />
+                  </Space>
+                </Flex>
+              </Card>
+            ))}
+          </Flex>
+        ) : (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无附件" />
         )}
-      />
+      </Spin>
     </Modal>
   )
 }

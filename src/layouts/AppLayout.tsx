@@ -13,7 +13,11 @@ import {
   Form,
   Input,
   Divider,
-  message,
+  Descriptions,
+  Flex,
+  Image,
+  Typography,
+  Avatar,
 } from 'antd'
 import {
   MenuFoldOutlined,
@@ -37,17 +41,19 @@ import {
   menuGroupDefinitions,
   menuGroupOrder,
 } from '@/config/navigation-registry'
+import { appPageDefinitions, getPageDefinition } from '@/config/page-registry'
 import {
-  appPageDefinitions,
-  getPageDefinition,
-} from '@/config/page-registry'
-import { buildVisibleLayoutMenuEntries, type LayoutMenuEntry } from '@/layouts/layout-menu'
+  buildVisibleLayoutMenuEntries,
+  type LayoutMenuEntry,
+} from '@/layouts/layout-menu'
 import { resolveRoutePageContext } from '@/layouts/route-page-context'
 import { usePersonalSettings } from '@/layouts/usePersonalSettings'
 import { useGlobalSearchSupport } from '@/layouts/useGlobalSearchSupport'
 import type { GlobalSearchResult } from '@/layouts/global-search'
 import { setStoredUser } from '@/utils/storage'
 import { toDataImageUrl } from '@/utils/data-url'
+import { isApiKeyToken } from '@/utils/auth-token'
+import { message, modal } from '@/utils/antd-app'
 import type { ApiResponse } from '@/types/api'
 import type { MenuProps } from 'antd'
 import dayjs from 'dayjs'
@@ -132,7 +138,8 @@ export function AppLayout() {
     return buildVisibleLayoutMenuEntries({
       appPageDefinitions,
       defaultIcon: 'AppstoreOutlined',
-      getMenuEntriesByGroup: (groupKey) => menuEntriesByGroup.get(groupKey) || [],
+      getMenuEntriesByGroup: (groupKey) =>
+        menuEntriesByGroup.get(groupKey) || [],
       getPageDefinition,
       isKnownIconKey: isKnownAppIconKey,
       menuGroupDefinitions,
@@ -148,17 +155,20 @@ export function AppLayout() {
     [visibleMenuEntries],
   )
 
-  const handleJumpToSearchResult = useCallback((result: GlobalSearchResult) => {
-    setSearchOpen(false)
-    const query = new URLSearchParams({
-      docNo: result.primaryNo,
-      openDetail: '1',
-    })
-    if (result.trackId) {
-      query.set('trackId', result.trackId)
-    }
-    navigate({ to: `/${result.moduleKey}?${query.toString()}` as '/' })
-  }, [navigate])
+  const handleJumpToSearchResult = useCallback(
+    (result: GlobalSearchResult) => {
+      setSearchOpen(false)
+      const query = new URLSearchParams({
+        docNo: result.primaryNo,
+        openDetail: '1',
+      })
+      if (result.trackId) {
+        query.set('trackId', result.trackId)
+      }
+      navigate({ to: `/${result.moduleKey}?${query.toString()}` as '/' })
+    },
+    [navigate],
+  )
 
   const {
     keyword: globalSearchKeyword,
@@ -191,14 +201,22 @@ export function AppLayout() {
       return
     }
 
+    if (isApiKeyToken(token)) {
+      clearMenus()
+      return
+    }
+
     void loadMenus().catch(() => {
       // local registry fallback is handled by buildVisibleLayoutMenuEntries
     })
-  }, [clearMenus, loadMenus, user])
+  }, [clearMenus, loadMenus, token, user])
 
   useEffect(() => {
     if (!token) return
-    http.get<{ data: { companyName?: string } }>(ENDPOINTS.COMPANY_SETTINGS_CURRENT)
+    http
+      .get<{ data: { companyName?: string } }>(
+        ENDPOINTS.COMPANY_SETTINGS_CURRENT,
+      )
       .then((res) => setCompanyName(res.data?.companyName || ''))
       .catch(() => {})
   }, [token])
@@ -213,7 +231,7 @@ export function AppLayout() {
       })
       clearTimeout(timeout)
       if (res.ok) {
-        const body = await res.json() as { status?: string }
+        const body = (await res.json()) as { status?: string }
         setBackendOnline(body.status === 'UP')
         healthRetriesRef.current = 0
       } else {
@@ -224,7 +242,10 @@ export function AppLayout() {
       healthRetriesRef.current++
       const maxRetries = 5
       if (healthRetriesRef.current <= maxRetries) {
-        const delay = Math.min(1000 * Math.pow(2, healthRetriesRef.current), 30000)
+        const delay = Math.min(
+          1000 * Math.pow(2, healthRetriesRef.current),
+          30000,
+        )
         window.setTimeout(checkBackendHealth, delay)
       }
     }
@@ -332,7 +353,7 @@ export function AppLayout() {
   }
 
   const handleSignOut = async () => {
-    Modal.confirm({
+    modal.confirm({
       title: '确认退出',
       content: '确定要退出登录吗？',
       onOk: async () => {
@@ -368,29 +389,61 @@ export function AppLayout() {
           bottom: 0,
           zIndex: 100,
           height: '100vh',
-          background: 'linear-gradient(180deg, #ffffff 0%, var(--theme-sider-surface) 100%)',
+          background:
+            'linear-gradient(180deg, #ffffff 0%, var(--theme-sider-surface) 100%)',
           borderRight: '1px solid rgba(148,163,184,0.2)',
           boxShadow: '12px 0 28px rgba(15,23,42,0.06)',
         }}
       >
-        <div
-          className="flex items-center gap-3 h-[68px] px-4 overflow-hidden"
-          style={{ color: 'var(--theme-sider-text)' }}
+        <Flex
+          align="center"
+          gap={12}
+          style={{
+            height: 68,
+            paddingInline: 16,
+            overflow: 'hidden',
+            color: 'var(--theme-sider-text)',
+          }}
         >
-          <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--theme-primary)] to-blue-400 text-white font-bold text-lg tracking-wider shadow-[0_10px_20px_rgba(37,99,235,0.3)]">
+          <Avatar
+            shape="square"
+            size={40}
+            style={{
+              background:
+                'linear-gradient(135deg, var(--theme-primary), #60a5fa)',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 18,
+              letterSpacing: 1,
+              boxShadow: '0 10px 20px rgba(37,99,235,0.3)',
+            }}
+          >
             {collapsed ? 'L' : 'LEO'}
-          </div>
+          </Avatar>
           {!collapsed && (
-            <div className="flex flex-col min-w-0">
-              <strong className="text-[var(--theme-sider-text)] text-[calc(var(--app-font-size)+4px)] font-semibold">
+            <Flex vertical style={{ minWidth: 0 }}>
+              <Typography.Text
+                strong
+                ellipsis
+                style={{
+                  color: 'var(--theme-sider-text)',
+                  fontSize: 'calc(var(--app-font-size) + 4px)',
+                }}
+              >
                 {appTitle}
-              </strong>
-              <span className="mt-0.5 text-[var(--theme-sider-muted)] text-[calc(var(--app-font-size)-1px)]">
+              </Typography.Text>
+              <Typography.Text
+                ellipsis
+                style={{
+                  color: 'var(--theme-sider-muted)',
+                  fontSize: 'calc(var(--app-font-size) - 1px)',
+                }}
+              >
                 钢材贸易业务中台
-              </span>
-            </div>
+              </Typography.Text>
+            </Flex>
           )}
-        </div>
+        </Flex>
 
         <Menu
           mode="inline"
@@ -408,7 +461,9 @@ export function AppLayout() {
         />
       </Sider>
 
-      <Layout style={{ marginLeft: siderWidth, transition: 'margin-left 0.2s' }}>
+      <Layout
+        style={{ marginLeft: siderWidth, transition: 'margin-left 0.2s' }}
+      >
         <Header
           className="leo-header"
           style={{
@@ -426,7 +481,14 @@ export function AppLayout() {
             borderBottom: '1px solid rgba(219,227,238,0.9)',
           }}
         >
-          <div className="flex items-center h-[var(--app-header-height)] px-[18px] gap-4">
+          <Flex
+            align="center"
+            gap={16}
+            style={{
+              height: 'var(--app-header-height)',
+              paddingInline: 18,
+            }}
+          >
             <Button
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -434,13 +496,30 @@ export function AppLayout() {
               className="app-trigger"
             />
 
-            <div className="flex flex-col justify-center">
-              <span className="text-[var(--theme-header-text)] text-[calc(var(--app-font-size)+4px)] font-semibold leading-tight">
+            <Flex vertical justify="center" style={{ minWidth: 0 }}>
+              <Typography.Text
+                strong
+                ellipsis
+                style={{
+                  color: 'var(--theme-header-text)',
+                  fontSize: 'calc(var(--app-font-size) + 4px)',
+                  lineHeight: 1.2,
+                }}
+              >
                 {routePageContext.title}
-              </span>
-            </div>
+              </Typography.Text>
+            </Flex>
 
-            <div className="flex-1 flex items-center gap-2 max-w-[520px] min-w-[280px] mx-6">
+            <Flex
+              align="center"
+              gap={8}
+              style={{
+                flex: '1 1 520px',
+                maxWidth: 520,
+                minWidth: 280,
+                marginInline: 24,
+              }}
+            >
               <AutoComplete
                 className="w-full"
                 value={globalSearchKeyword}
@@ -452,43 +531,66 @@ export function AppLayout() {
                 }}
                 onChange={(value) => setGlobalSearchKeyword(String(value))}
                 onSelect={(value) => handleGlobalSearchSelect(String(value))}
-                onDropdownVisibleChange={setSearchOpen}
+                onOpenChange={setSearchOpen}
               >
                 <Input
                   placeholder="搜索单号、合同号、对账单号"
-                  prefix={<SearchOutlined className="text-gray-400" />}
+                  prefix={
+                    <SearchOutlined style={{ color: 'rgba(0, 0, 0, 0.45)' }} />
+                  }
                   onFocus={() => setSearchOpen(true)}
                   onBlur={handleGlobalSearchBlur}
                   onPressEnter={(event) =>
-                    void handleGlobalSearchSubmit(event.currentTarget.value)}
+                    void handleGlobalSearchSubmit(event.currentTarget.value)
+                  }
                 />
               </AutoComplete>
               <Button
                 type="primary"
                 loading={globalSearchLoading}
-                onClick={() => void handleGlobalSearchSubmit(globalSearchKeyword)}
+                onClick={() =>
+                  void handleGlobalSearchSubmit(globalSearchKeyword)
+                }
               >
                 搜索
               </Button>
-            </div>
+            </Flex>
 
-            <div className="flex items-center ml-auto gap-1">
-              <Tag color={backendOnline ? 'green' : 'red'} className="text-[10px]">
+            <Flex align="center" gap={8} style={{ marginLeft: 'auto' }}>
+              <Tag
+                color={backendOnline ? 'green' : 'red'}
+                style={{ fontSize: 10 }}
+              >
                 {backendOnline ? '在线' : '离线'}
               </Tag>
 
-              <span className="text-[var(--theme-header-text)] text-sm tabular-nums mx-2">
+              <Typography.Text
+                style={{
+                  color: 'var(--theme-header-text)',
+                  fontSize: 14,
+                  fontVariantNumeric: 'tabular-nums',
+                  marginInline: 8,
+                }}
+              >
                 {clock.format('HH:mm:ss')}
-              </span>
+              </Typography.Text>
 
               {companyName && (
-                <Tag className="text-[var(--theme-header-muted)]">{companyName}</Tag>
+                <Tag style={{ color: 'var(--theme-header-muted)' }}>
+                  {companyName}
+                </Tag>
               )}
 
               {user && (
-                <span className="action user-name text-[var(--theme-header-text)] font-medium mx-1">
+                <Typography.Text
+                  strong
+                  style={{
+                    color: 'var(--theme-header-text)',
+                    marginInline: 4,
+                  }}
+                >
                   {user.userName || user.loginName}
-                </span>
+                </Typography.Text>
               )}
 
               <Dropdown
@@ -514,8 +616,8 @@ export function AppLayout() {
               >
                 <Button type="text" icon={<SettingOutlined />} />
               </Dropdown>
-            </div>
-          </div>
+            </Flex>
+          </Flex>
         </Header>
 
         <div
@@ -545,7 +647,10 @@ export function AppLayout() {
           />
         </div>
 
-        <Content className="leo-content" style={{ paddingTop: 'var(--app-top-offset)' }}>
+        <Content
+          className="leo-content"
+          style={{ paddingTop: 'var(--app-top-offset)' }}
+        >
           <div
             className="leo-content-inner"
             style={{
@@ -586,7 +691,10 @@ function PersonalSettingsModal({
   const [pwForm] = Form.useForm()
   const [pwSaving, setPwSaving] = useState(false)
   const [totpLoading, setTotpLoading] = useState(false)
-  const [totpSetup, setTotpSetup] = useState<{ qrCodeBase64: string; secret: string } | null>(null)
+  const [totpSetup, setTotpSetup] = useState<{
+    qrCodeBase64: string
+    secret: string
+  } | null>(null)
   const [totpCode, setTotpCode] = useState('')
   const [totpEnabling, setTotpEnabling] = useState(false)
   const user = useAuthStore((s) => s.user)
@@ -598,8 +706,13 @@ function PersonalSettingsModal({
     setTab('display')
     setTotpSetup(null)
     setTotpCode('')
-    pwForm.resetFields()
-  }, [open, pwForm])
+  }, [open])
+
+  useEffect(() => {
+    if (open && tab === 'security') {
+      pwForm.resetFields()
+    }
+  }, [open, pwForm, tab])
 
   const updateCurrentUserSecurity = useCallback((enabled: boolean) => {
     useAuthStore.setState((state) => {
@@ -616,7 +729,10 @@ function PersonalSettingsModal({
     })
   }, [])
 
-  const handleChangePassword = async (values: { oldPassword: string; newPassword: string }) => {
+  const handleChangePassword = async (values: {
+    oldPassword: string
+    newPassword: string
+  }) => {
     setPwSaving(true)
     try {
       await http.post(ENDPOINTS.ACCOUNT_PASSWORD, values)
@@ -632,10 +748,9 @@ function PersonalSettingsModal({
   const handleSetupTotp = async () => {
     setTotpLoading(true)
     try {
-      const res = await http.post<ApiResponse<{ qrCodeBase64: string; secret: string }>>(
-        ENDPOINTS.ACCOUNT_2FA_SETUP,
-        {},
-      )
+      const res = await http.post<
+        ApiResponse<{ qrCodeBase64: string; secret: string }>
+      >(ENDPOINTS.ACCOUNT_2FA_SETUP, {})
       setTotpSetup(res.data)
     } catch (err) {
       message.error(err instanceof Error ? err.message : '获取失败')
@@ -652,7 +767,9 @@ function PersonalSettingsModal({
 
     setTotpEnabling(true)
     try {
-      await http.post(ENDPOINTS.ACCOUNT_2FA_ENABLE, { totpCode: totpCode.trim() })
+      await http.post(ENDPOINTS.ACCOUNT_2FA_ENABLE, {
+        totpCode: totpCode.trim(),
+      })
       updateCurrentUserSecurity(true)
       message.success('二次验证已启用')
       setTotpSetup(null)
@@ -664,14 +781,21 @@ function PersonalSettingsModal({
     }
   }
 
-  const footer = tab === 'display'
-    ? [
-        <Button key="cancel" onClick={onClose}>取消</Button>,
-        <Button key="save" type="primary" onClick={onSave}>保存</Button>,
-      ]
-    : [
-        <Button key="close" onClick={onClose}>关闭</Button>,
-      ]
+  const footer =
+    tab === 'display'
+      ? [
+          <Button key="cancel" onClick={onClose}>
+            取消
+          </Button>,
+          <Button key="save" type="primary" onClick={onSave}>
+            保存
+          </Button>,
+        ]
+      : [
+          <Button key="close" onClick={onClose}>
+            关闭
+          </Button>,
+        ]
 
   return (
     <Modal
@@ -691,68 +815,106 @@ function PersonalSettingsModal({
       />
 
       {tab === 'display' ? (
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-[#595959]">字号</span>
-            <Select
-              value={fontSize}
-              onChange={onFontSizeChange}
-              options={[11, 12, 13, 14, 16, 18].map((value) => ({
-                value,
-                label: `${value}px`,
-                title: `${value}px`,
-              }))}
-              style={{ width: 100 }}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-[#595959]">字体预览</span>
-            <span style={{ fontSize }}>Leo ERP 钢材贸易业务中台</span>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-[#595959]">登录账号</span>
-            <span className="font-medium">{user?.loginName || '--'}</span>
-          </div>
-          <div className="flex items-start justify-between gap-4">
-            <span className="text-[#595959]">二次验证</span>
-            {user?.totpEnabled ? (
-              <Tag color="green">已启用</Tag>
-            ) : totpSetup ? (
-              <div className="flex flex-col items-end gap-2">
-                <img
-                  src={toDataImageUrl(totpSetup.qrCodeBase64)}
-                  alt="TOTP QR"
-                  className="w-32 h-32 rounded border border-gray-100 bg-white p-2"
+        <Descriptions
+          bordered
+          column={1}
+          size="small"
+          items={[
+            {
+              key: 'font-size',
+              label: '字号',
+              children: (
+                <Select
+                  value={fontSize}
+                  onChange={onFontSizeChange}
+                  options={[11, 12, 13, 14, 16, 18].map((value) => ({
+                    value,
+                    label: `${value}px`,
+                    title: `${value}px`,
+                  }))}
+                  style={{ width: 100 }}
                 />
-                <code className="text-xs">{totpSetup.secret}</code>
-                <div className="flex gap-2">
-                  <Input
-                    size="small"
-                    placeholder="6位验证码"
-                    maxLength={6}
-                    value={totpCode}
-                    onChange={(event) => setTotpCode(event.target.value)}
-                    style={{ width: 100 }}
-                  />
+              ),
+            },
+            {
+              key: 'preview',
+              label: '字体预览',
+              children: (
+                <Typography.Text style={{ fontSize }}>
+                  Leo ERP 钢材贸易业务中台
+                </Typography.Text>
+              ),
+            },
+          ]}
+        />
+      ) : (
+        <Flex vertical gap={16}>
+          <Descriptions
+            bordered
+            column={1}
+            size="small"
+            items={[
+              {
+                key: 'login-name',
+                label: '登录账号',
+                children: (
+                  <Typography.Text strong>
+                    {user?.loginName || '--'}
+                  </Typography.Text>
+                ),
+              },
+              {
+                key: 'totp',
+                label: '二次验证',
+                children: user?.totpEnabled ? (
+                  <Tag color="green">已启用</Tag>
+                ) : totpSetup ? (
+                  <Flex vertical gap={12}>
+                    <Image
+                      src={toDataImageUrl(totpSetup.qrCodeBase64)}
+                      alt="TOTP QR"
+                      width={128}
+                      height={128}
+                      preview={false}
+                      style={{
+                        border: '1px solid #f0f0f0',
+                        borderRadius: 8,
+                        background: '#fff',
+                        padding: 8,
+                      }}
+                    />
+                    <Typography.Text code>{totpSetup.secret}</Typography.Text>
+                    <Flex align="center" gap={8}>
+                      <Input
+                        size="small"
+                        placeholder="6位验证码"
+                        maxLength={6}
+                        value={totpCode}
+                        onChange={(event) => setTotpCode(event.target.value)}
+                        style={{ width: 100 }}
+                      />
+                      <Button
+                        size="small"
+                        type="primary"
+                        loading={totpEnabling}
+                        onClick={handleEnableTotp}
+                      >
+                        验证启用
+                      </Button>
+                    </Flex>
+                  </Flex>
+                ) : (
                   <Button
                     size="small"
-                    type="primary"
-                    loading={totpEnabling}
-                    onClick={handleEnableTotp}
+                    loading={totpLoading}
+                    onClick={handleSetupTotp}
                   >
-                    验证启用
+                    设置二次验证
                   </Button>
-                </div>
-              </div>
-            ) : (
-              <Button size="small" loading={totpLoading} onClick={handleSetupTotp}>
-                设置二次验证
-              </Button>
-            )}
-          </div>
+                ),
+              },
+            ]}
+          />
           <Divider />
           <Form form={pwForm} onFinish={handleChangePassword} layout="vertical">
             <Form.Item
@@ -773,7 +935,7 @@ function PersonalSettingsModal({
               修改密码
             </Button>
           </Form>
-        </div>
+        </Flex>
       )}
     </Modal>
   )

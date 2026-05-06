@@ -1,5 +1,6 @@
-import { Drawer, Descriptions, Spin, Empty } from 'antd'
+import { Descriptions, Spin, Empty, Flex } from 'antd'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import { WorkspaceOverlay } from './WorkspaceOverlay'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
 interface Props {
@@ -14,9 +15,11 @@ export function ModuleRecordDetailOverlay({ open, config, record, loading, onClo
   const { formatCellValue } = useModuleDisplaySupport()
 
   return (
-    <Drawer title="记录详情" open={open} onClose={onClose} width={640} destroyOnClose>
+    <WorkspaceOverlay open={open} title="记录详情" onClose={onClose} width={640}>
       {loading ? (
-        <div className="flex items-center justify-center py-16"><Spin /></div>
+        <Flex justify="center" align="center" style={{ paddingBlock: 64 }}>
+          <Spin />
+        </Flex>
       ) : !record ? (
         <Empty description="暂无数据" />
       ) : (
@@ -32,6 +35,6 @@ export function ModuleRecordDetailOverlay({ open, config, record, loading, onClo
           })}
         </Descriptions>
       )}
-    </Drawer>
+    </WorkspaceOverlay>
   )
 }

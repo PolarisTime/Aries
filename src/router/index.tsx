@@ -61,9 +61,13 @@ const moduleRoutes = appPageDefinitions.map((def) => {
     path,
     component: lazy(viewLoaders[def.view]),
     beforeLoad: () => {
-      const resourceKey = def.resourceKey || def.menuKey
       if (def.view === 'dashboard') return
-      if (!usePermissionStore.getState().canAccessMenuKey(resourceKey)) {
+      const accessMenuKeys =
+        Array.isArray(def.accessMenuKeys) && def.accessMenuKeys.length > 0
+          ? def.accessMenuKeys
+          : [def.resourceKey || def.menuKey]
+
+      if (!accessMenuKeys.some((menuKey) => usePermissionStore.getState().canAccessMenuKey(menuKey))) {
         throw redirect({ to: '/dashboard' as '/' })
       }
     },

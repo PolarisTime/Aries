@@ -27,7 +27,7 @@ export function ModuleFreightPickupListOverlay({ open, moduleKey, onClose }: Pro
   ]
 
   return (
-    <Drawer title="提货清单" open={open} onClose={onClose} width={800} destroyOnClose>
+    <Drawer title="提货清单" open={open} onClose={onClose} size={800} destroyOnHidden>
       <Table
         rowKey="id"
         columns={columns}

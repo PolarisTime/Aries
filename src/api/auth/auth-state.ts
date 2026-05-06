@@ -1,10 +1,10 @@
 import { AxiosHeaders } from 'axios'
-import { message, notification } from 'antd'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { ERROR_CODE } from '@/constants/error-codes'
 import type { ApiResponse } from '@/types/api'
 import type { LoginResponseData } from '@/types/auth'
+import { message, notification } from '@/utils/antd-app'
 import {
   clearStoredUser,
   clearToken,
@@ -16,6 +16,7 @@ import {
 } from '@/utils/storage'
 import { authHttp } from '@/api/http'
 import { getCurrentAppRoute } from '@/utils/route-helpers'
+import { isApiKeyToken } from '@/utils/auth-token'
 
 let authFailureHandled = false
 
@@ -189,9 +190,22 @@ export function retryWithToken(request: { headers?: Record<string, unknown> | { 
   }
   const h = request.headers
   if (typeof (h as { set?: SetHeaderFn }).set === 'function') {
-    (h as { set: SetHeaderFn }).set('Authorization', `Bearer ${latestToken}`)
+    if (isApiKeyToken(latestToken)) {
+      ;(h as AxiosHeaders).delete?.('Authorization')
+      ;(h as { set: SetHeaderFn }).set('X-API-Key', latestToken)
+    } else {
+      ;(h as AxiosHeaders).delete?.('X-API-Key')
+      ;(h as { set: SetHeaderFn }).set('Authorization', `Bearer ${latestToken}`)
+    }
   } else {
-    const merged = { ...(h as Record<string, string | undefined>), Authorization: `Bearer ${latestToken}` }
+    const merged = { ...(h as Record<string, string | undefined>) }
+    if (isApiKeyToken(latestToken)) {
+      delete merged.Authorization
+      merged['X-API-Key'] = latestToken
+    } else {
+      delete merged['X-API-Key']
+      merged.Authorization = `Bearer ${latestToken}`
+    }
     request.headers = new AxiosHeaders(merged as Record<string, string>)
   }
 }

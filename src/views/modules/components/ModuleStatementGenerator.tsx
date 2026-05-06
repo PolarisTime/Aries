@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Modal, Form, DatePicker, Select, message } from 'antd'
+import { Modal, Form, DatePicker, Select } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { searchBusinessModule } from '@/api/business'
 import type { ModuleRecord } from '@/types/module-page'
+import { message } from '@/utils/antd-app'
 
 interface Props {
   open: boolean

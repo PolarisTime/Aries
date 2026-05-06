@@ -6,16 +6,14 @@ import { ConfigProvider, App as AntdApp } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
-import { setupAuthInterceptors } from '@/api/auth/auth-interceptor'
-import { http } from '@/api/client'
 import { useAuthStore } from '@/stores/authStore'
 import { router } from '@/router'
+import { AntdAppBridge } from '@/utils/antd-app'
 import '@/i18n'
 import '@/styles/variables.css'
 import '@/styles/global.css'
 
 dayjs.locale('zh-cn')
-setupAuthInterceptors(http.instance)
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,11 +39,13 @@ function App() {
               colorPrimary: '#2458e6',
               borderRadius: 10,
               fontSize: 12,
-              fontFamily: '"PingFang Intranet", "PingFang SC", "Microsoft YaHei", sans-serif',
+              fontFamily:
+                '"PingFang Intranet", "PingFang SC", "Microsoft YaHei", sans-serif',
             },
           }}
         >
           <AntdApp>
+            <AntdAppBridge />
             <RouterProvider router={router} />
           </AntdApp>
         </ConfigProvider>

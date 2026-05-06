@@ -1,0 +1,96 @@
+.workspace-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.workspace-overlay-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  animation: workspace-mask-fade-in 0.3s ease;
+}
+
+.workspace-overlay-panel {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+  animation: workspace-panel-slide-in 0.3s ease;
+}
+
+.workspace-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.workspace-overlay-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.workspace-overlay-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  color: rgba(0, 0, 0, 0.45);
+  transition: all 0.2s;
+}
+
+.workspace-overlay-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.workspace-overlay-body {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+}
+
+.workspace-overlay-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+@keyframes workspace-mask-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes workspace-panel-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

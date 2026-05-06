@@ -49,10 +49,7 @@
   color: #333;
   background: var(--theme-shell-bg);
   font-family:
-    'PingFang Intranet',
-    'PingFang SC',
-    'Microsoft YaHei',
-    sans-serif;
+    'PingFang Intranet', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
 * {
@@ -72,10 +69,7 @@ body {
   color: #333;
   font-size: var(--app-font-size);
   font-family:
-    'PingFang Intranet',
-    'PingFang SC',
-    'Microsoft YaHei',
-    sans-serif;
+    'PingFang Intranet', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
 a {

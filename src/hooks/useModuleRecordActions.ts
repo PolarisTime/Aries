@@ -1,9 +1,9 @@
 import { useCallback } from 'react'
-import { message } from 'antd'
 import { deleteBusinessModule } from '@/api/business'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
 import type { ActionItem } from '@/components/TableActions'
+import { message } from '@/utils/antd-app'
 
 interface Props {
   moduleKey: string

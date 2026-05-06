@@ -29,7 +29,7 @@ export function TableActions({ items, maxVisible }: Props) {
     <div className="table-action-group">
       {displayItems.map((item, index) => (
         <span key={item.key}>
-          {index > 0 && <Divider type="vertical" />}
+          {index > 0 && <Divider vertical />}
           {item.confirm ? (
             <Popconfirm title={item.confirm} onConfirm={item.onClick} okText="确定" cancelText="取消">
               <Button
