@@ -20,6 +20,24 @@ import {
   transformFreightItems,
 } from './shared'
 
+function roundWeightTon(value: number): number {
+  return Number(value.toFixed(3))
+}
+
+function resolveImportPieceWeightTon(
+  remainingWeightTon: number,
+  remainingQuantity: number,
+  fallbackPieceWeightTon: number,
+): number {
+  if (!Number.isFinite(remainingWeightTon) || remainingWeightTon <= 0 || remainingQuantity <= 0) {
+    return fallbackPieceWeightTon
+  }
+  const candidatePieceWeightTon = roundWeightTon(remainingWeightTon / remainingQuantity)
+  return roundWeightTon(candidatePieceWeightTon * remainingQuantity) === roundWeightTon(remainingWeightTon)
+    ? candidatePieceWeightTon
+    : fallbackPieceWeightTon
+}
+
 export const operationsPageConfigs: Record<string, ModulePageConfig> = {
   'purchase-orders': {
     key: 'purchase-orders',
@@ -196,20 +214,23 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
               const rawTotalQuantity = Number(item.quantity || 0)
               const rawTotalWeightTon = Number(item.weightTon || 0)
               const rawRemainingWeightTon = Number(item.salesRemainingWeightTon ?? 0)
-              const rawPieceWeightTon = rawTotalQuantity > 0 && rawTotalWeightTon > 0
+              const rawSourcePieceWeightTon = rawTotalQuantity > 0 && rawTotalWeightTon > 0
                 ? Number((rawTotalWeightTon / rawTotalQuantity).toFixed(3))
                 : Number(item.pieceWeightTon || 0)
               const rawUnitPrice = Number(item.unitPrice || 0)
               const remainingQuantity = Number.isFinite(rawRemainingQuantity) ? rawRemainingQuantity : 0
+              const rawPieceWeightTon = rawRemainingWeightTon > 0
+                ? resolveImportPieceWeightTon(rawRemainingWeightTon, remainingQuantity, rawSourcePieceWeightTon)
+                : rawSourcePieceWeightTon
               const pieceWeightTon = Number.isFinite(rawPieceWeightTon) ? rawPieceWeightTon : 0
               const unitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0
               const remainingWeightTon = rawRemainingWeightTon > 0
-                ? Number(rawRemainingWeightTon.toFixed(3))
+                ? roundWeightTon(rawRemainingWeightTon)
                 : rawTotalQuantity > 0
                 && rawTotalWeightTon > 0
                 && remainingQuantity === rawTotalQuantity
-                ? Number(rawTotalWeightTon.toFixed(3))
-                : Number((remainingQuantity * pieceWeightTon).toFixed(3))
+                ? roundWeightTon(rawTotalWeightTon)
+                : roundWeightTon(remainingQuantity * pieceWeightTon)
               return {
                 ...item,
                 sourcePurchaseOrderItemId: item.id,
