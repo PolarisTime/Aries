@@ -133,7 +133,7 @@ export function useAttachmentSupport(options: UseAttachmentSupportOptions) {
   async function fetchAttachmentBlob(url: string): Promise<Blob> {
     return http.instance.get(withAttachmentModuleKey(url), {
       responseType: 'blob',
-    }).then((res) => res.data)
+    })
   }
 
   function openBlobPreview(blob: Blob) {

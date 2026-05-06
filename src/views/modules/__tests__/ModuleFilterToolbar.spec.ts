@@ -82,10 +82,10 @@ describe('ModuleFilterToolbar', () => {
     const filterRows = wrapper.findAll('.filter-inline-group')
     expect(filterRows).toHaveLength(2)
     expect(filterRows[0].text()).toContain('创建日期')
-    expect(filterRows[0].findAll('button')).toHaveLength(2)
+    expect(filterRows[0].findAll('button')).toHaveLength(0)
     expect(filterRows[1].text()).toContain('客户')
     expect(filterRows[1].text()).toContain('项目名称')
-    expect(filterRows[1].findAll('button')).toHaveLength(0)
+    expect(filterRows[1].findAll('button')).toHaveLength(2)
 
     const quickFilterButton = wrapper.findAll('button').find((button) => button.text() === '待审核')
     expect(quickFilterButton).toBeDefined()

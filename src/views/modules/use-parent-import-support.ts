@@ -1,5 +1,6 @@
 import { computed, ref, watch, type Ref } from 'vue'
 import { message } from 'ant-design-vue'
+import { useQueryClient } from '@tanstack/vue-query'
 import type {
   ModuleLineItem,
   ModuleParentImportDefinition,
@@ -211,9 +212,18 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
     parentSelectorVisible.value = false
   }
 
-  function openParentSelector() {
+  const queryClient = useQueryClient()
+
+  async function openParentSelector() {
     parentSelectorKeyword.value = ''
     parentSelectorVisible.value = true
+    const parentModuleKey = options.parentImportConfig.value?.parentModuleKey
+    if (parentModuleKey) {
+      await queryClient.refetchQueries({
+        queryKey: ['business-parent-search'],
+        exact: false,
+      })
+    }
     void hydrateParentAvailabilityDetails()
   }
 

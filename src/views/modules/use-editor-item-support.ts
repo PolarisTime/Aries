@@ -23,6 +23,10 @@ export function useEditorItemSupport(options: UseEditorItemSupportOptions) {
     options.editorForm.items = nextItems
   }
 
+  function refreshEditorItems() {
+    updateEditorItems([...options.editorItems.value])
+  }
+
   function resetEditorItemDragState() {
     draggedEditorItemId.value = undefined
     dragOverEditorItemId.value = undefined
@@ -122,11 +126,13 @@ export function useEditorItemSupport(options: UseEditorItemSupportOptions) {
     if (value === undefined || value === null || value === '') {
       item[key] = undefined
       recalculateEditorLineItem(item, key)
+      refreshEditorItems()
       return
     }
     const numericValue = typeof value === 'number' ? value : Number(value)
     item[key] = Number.isFinite(numericValue) ? numericValue : undefined
     recalculateEditorLineItem(item, key)
+    refreshEditorItems()
   }
 
   function handleEditorItemTextChange(item: ModuleLineItem, key: string, value: string) {
@@ -151,13 +157,14 @@ export function useEditorItemSupport(options: UseEditorItemSupportOptions) {
   function handleEditorItemValueChange(item: ModuleLineItem, key: string, value: unknown) {
     handleEditorItemTextChange(item, key, String(normalizeSelectValue(value) || ''))
     recalculateEditorLineItem(item, key)
+    refreshEditorItems()
   }
 
   function handleEditorItemMaterialChange(item: ModuleLineItem, materialCode: string) {
     const normalizedMaterialCode = String(materialCode ?? '').trim()
     item.materialCode = normalizedMaterialCode
     applyMaterialToEditorLineItem(item, options.materialMap.value[normalizedMaterialCode])
-    updateEditorItems([...options.editorItems.value])
+    refreshEditorItems()
   }
 
   function handleEditorItemMaterialSelect(item: ModuleLineItem, value: unknown) {
@@ -167,6 +174,7 @@ export function useEditorItemSupport(options: UseEditorItemSupportOptions) {
 
   function handleEditorItemInputChange(item: ModuleLineItem, key: string, event: Event) {
     handleEditorItemTextChange(item, key, (event.target as HTMLInputElement)?.value || '')
+    refreshEditorItems()
   }
 
   function filterMaterialOption(input: string, option: { label?: unknown } | undefined) {

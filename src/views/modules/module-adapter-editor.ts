@@ -386,11 +386,11 @@ export function recalculateEditorLineItem(item: ModuleLineItem, changedKey?: str
     item.pieceWeightTon = calculateAveragePieceWeightTon(item.quantity, item.weighWeightTon)
     item.weightTon = calculateWeightByPieceWeightTon(item.quantity, item.pieceWeightTon)
   }
-  else if (changedKey === 'quantity' || changedKey === 'pieceWeightTon' || changedKey === 'settlementMode') {
+  else if (changedKey === 'quantity' || changedKey === 'pieceWeightTon' || changedKey === 'piecesPerBundle' || changedKey === 'settlementMode') {
     item.weightTon = calculateWeightByPieceWeightTon(item.quantity, item.pieceWeightTon)
   }
 
-  if (!isWeighSettlement && (changedKey === 'quantity' || changedKey === 'pieceWeightTon')) {
+  if (!isWeighSettlement && (changedKey === 'quantity' || changedKey === 'pieceWeightTon' || changedKey === 'piecesPerBundle')) {
     item.weightTon = resolveSourceInboundResidualWeightTon(item, Number(item.weightTon || 0))
   }
 
@@ -414,6 +414,7 @@ export function recalculateEditorLineItem(item: ModuleLineItem, changedKey?: str
   if (
     changedKey === 'quantity'
     || changedKey === 'pieceWeightTon'
+    || changedKey === 'piecesPerBundle'
     || changedKey === 'weighWeightTon'
     || changedKey === 'settlementMode'
     || changedKey === 'weightTon'
@@ -425,6 +426,7 @@ export function recalculateEditorLineItem(item: ModuleLineItem, changedKey?: str
   if (
     changedKey === 'quantity'
     || changedKey === 'pieceWeightTon'
+    || changedKey === 'piecesPerBundle'
     || changedKey === 'weighWeightTon'
     || changedKey === 'settlementMode'
     || changedKey === 'weightTon'

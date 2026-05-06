@@ -35,7 +35,7 @@
   --app-filter-gap-x: 36px;
   --app-filter-margin-bottom: 8px;
   --app-filter-label-width: 104px;
-  --app-filter-control-width: 288px;
+  --app-filter-control-width: 280px;
   --app-filter-button-width: 96px;
   --app-table-head-padding-y: 10px;
   --app-table-head-padding-x: 12px;
@@ -703,47 +703,75 @@ a {
 }
 
 .filter-inline-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 var(--app-filter-gap-x);
+  display: grid;
+  grid-template-columns:
+    repeat(var(--module-filter-grid-columns, 1), minmax(0, 1fr))
+    var(--module-filter-actions-width, 200px);
+  align-items: end;
+  column-gap: var(--app-filter-gap-x);
+  row-gap: var(--app-filter-margin-bottom);
 }
 
 .filter-inline-group .ant-form-item {
-  margin-bottom: var(--app-filter-margin-bottom);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: start;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 0;
 }
 
 .filter-inline-group .ant-form-item-label {
-  flex: 0 0 var(--app-filter-label-width);
-  width: var(--app-filter-label-width);
-  padding-right: 6px;
-  text-align: right;
+  width: 100%;
+  min-width: 0;
+  padding: 0 0 6px;
+  text-align: left;
   white-space: nowrap;
 }
 
+.filter-inline-group .ant-form-item-label > label {
+  height: auto;
+  line-height: 1.25;
+}
+
 .filter-inline-group .ant-form-item-control {
-  flex: 0 0 var(--app-filter-control-width);
-  width: var(--app-filter-control-width);
-  min-width: var(--app-filter-control-width);
+  width: 100%;
+  min-width: 0;
+}
+
+.filter-inline-group .ant-form-item-control-input,
+.filter-inline-group .ant-form-item-control-input-content {
+  width: 100%;
+  min-width: 0;
 }
 
 .module-filter-item .ant-input-affix-wrapper,
 .module-filter-item .ant-input,
 .module-filter-item .ant-select,
 .module-filter-item .ant-picker {
-  width: var(--app-filter-control-width);
+  width: 100%;
 }
 
 .module-filter-item .ant-select-selector,
 .module-filter-item .ant-picker {
-  min-width: var(--app-filter-control-width);
+  min-width: 0;
+}
+
+.filter-inline-group-actions-host {
+  .table-page-search-submitButtons {
+    grid-column: var(--module-filter-actions-column-start, -2) / -1;
+    justify-content: flex-start;
+  }
 }
 
 .filter-inline-group .table-page-search-submitButtons {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
-  margin-bottom: var(--app-filter-margin-bottom);
+  min-width: 0;
+  margin-bottom: 0;
   white-space: nowrap;
 }
 
@@ -2144,9 +2172,8 @@ a {
   }
 
   .table-page-search-wrapper .ant-form-item-label {
-    flex-basis: 72px;
-    width: 72px;
-    min-width: 72px;
+    width: 100%;
+    min-width: 0;
   }
 
   .parent-import-toolbar,
