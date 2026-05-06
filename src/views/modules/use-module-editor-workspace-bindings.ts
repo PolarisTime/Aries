@@ -64,6 +64,7 @@ interface UseModuleEditorWorkspaceBindingsOptions {
   editorItems: Ref<ModuleLineItem[]>
   editorItemWeightTotal: Ref<number>
   editorItemAmountTotal: Ref<number>
+  shouldShowItemWeightSummary: Ref<boolean>
   shouldShowItemAmountSummary: Ref<boolean>
   lockedLineItemsNotice: Ref<string>
   editorDetailTableColumns: Ref<TableColumn[]>
@@ -142,6 +143,7 @@ export function useModuleEditorWorkspaceBindings(options: UseModuleEditorWorkspa
     editorItems: options.editorItems.value,
     editorItemWeightTotal: options.editorItemWeightTotal.value,
     editorItemAmountTotal: options.editorItemAmountTotal.value,
+    shouldShowItemWeightSummary: options.shouldShowItemWeightSummary.value,
     shouldShowItemAmountSummary: options.shouldShowItemAmountSummary.value,
     lockedLineItemsNotice: options.lockedLineItemsNotice.value,
     editorDetailTableColumns: options.editorDetailTableColumns.value,

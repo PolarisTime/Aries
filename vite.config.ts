@@ -50,6 +50,12 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         output: {
+          // 入口文件添加 content hash
+          entryFileNames: 'assets/[name]-[hash].js',
+          // 代码分割文件添加 content hash
+          chunkFileNames: 'assets/[name]-[hash].js',
+          // 静态资源添加 content hash
+          assetFileNames: 'assets/[name]-[hash][extname]',
           manualChunks(id) {
             if (
               id.includes('/vue/') ||

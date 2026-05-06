@@ -9,6 +9,7 @@ import type {
 } from '@/types/module-page'
 import { useModuleDisplaySupport, type StatusMeta } from '@/composables/use-module-display-support'
 import { useDataTable } from '@/composables/use-data-table'
+import { groupFieldsByRow } from '@/views/modules/module-field-layout'
 import DataTable from '@/components/DataTable.vue'
 import ColumnSettingsPopover from './ColumnSettingsPopover.vue'
 
@@ -44,7 +45,10 @@ const props = defineProps<{
   activeRecord: ModuleRecord | null
   canPrintRecords: boolean
   detailPrintLoading: boolean
+  shouldShowItemWeightSummary: boolean
   shouldShowItemAmountSummary: boolean
+  itemWeightSummaryKey: string
+  itemAmountSummaryKey: string
   detailTableColumns: TableColumn[]
   detailTableScroll: TableScroll
   canEditItemColumns: boolean
@@ -66,6 +70,12 @@ const detailColumnLgSpan = computed(() => {
   return 24 / columnCount
 })
 
+const detailFieldRows = computed(() => groupFieldsByRow(props.detailFields))
+
+function getDetailFieldLgSpan(field: ModuleDetailField) {
+  return field.fullRow ? 24 : detailColumnLgSpan.value
+}
+
 function toColumnDef(col: Record<string, unknown>): ColumnDef<ModuleLineItem, unknown> {
   const key = String(col.dataIndex || col.key || '')
   const meta = getItemColumnMeta(props.itemColumns, col as TableColumnLike)
@@ -82,7 +92,12 @@ function toColumnDef(col: Record<string, unknown>): ColumnDef<ModuleLineItem, un
           const s = display.getStatusMeta(info.getValue())
           return h('span', { class: `ant-tag ant-tag-${s.color}` }, s.text)
         }
-      : (info) => display.formatCellValue(meta, info.getValue()),
+      : (info) => {
+          if (key === 'sourceStatementId' && String(info.row.original.statementNo || '').trim()) {
+            return String(info.row.original.statementNo || '')
+          }
+          return display.formatCellValue(meta, info.getValue())
+        },
     meta: { width, align },
   }
 }
@@ -103,6 +118,11 @@ defineEmits<{
   close: []
   print: [preview: boolean]
 }>()
+
+function sumItemValues(key: string) {
+  return ((props.activeRecord?.items || []) as ModuleLineItem[])
+    .reduce((sum, item) => sum + Number(item[key] || 0), 0)
+}
 </script>
 
 <template>
@@ -114,13 +134,18 @@ defineEmits<{
       </header>
 
       <div class="workspace-overlay-body bill-detail-body">
-        <a-row class="bill-detail-row" :gutter="16">
+        <a-row
+          v-for="(fieldRow, rowIndex) in detailFieldRows"
+          :key="`detail-row-${rowIndex + 1}`"
+          class="bill-detail-row"
+          :gutter="16"
+        >
           <a-col
-            v-for="field in detailFields"
+            v-for="field in fieldRow"
             :key="field.key"
             :xs="24"
             :sm="12"
-            :lg="detailColumnLgSpan"
+            :lg="getDetailFieldLgSpan(field)"
             class="bill-detail-col"
           >
             <div class="bill-detail-item">
@@ -168,25 +193,25 @@ defineEmits<{
               </a-button>
               <div class="editor-items-summary editor-items-summary-inline">
                 <span>明细数 {{ activeRecord?.items?.length || 0 }}</span>
-                <span>
+                <span v-if="shouldShowItemWeightSummary">
                   总重量（吨）
-                  {{ display.formatWeight((activeRecord?.items || []).reduce((sum, item) => sum + Number(item.weightTon || 0), 0)) }}
+                  {{ display.formatWeight(sumItemValues(itemWeightSummaryKey)) }}
                 </span>
                 <span v-if="shouldShowItemAmountSummary">
                   金额
-                  {{ display.formatAmount((activeRecord?.items || []).reduce((sum, item) => sum + Number(item.amount || 0), 0)) }}
+                  {{ display.formatAmount(sumItemValues(itemAmountSummaryKey)) }}
                 </span>
               </div>
             </div>
             <div class="editor-items-summary editor-items-summary-mobile">
               <span>明细数 {{ activeRecord?.items?.length || 0 }}</span>
-              <span>
+              <span v-if="shouldShowItemWeightSummary">
                 总重量（吨）
-                {{ display.formatWeight((activeRecord?.items || []).reduce((sum, item) => sum + Number(item.weightTon || 0), 0)) }}
+                {{ display.formatWeight(sumItemValues(itemWeightSummaryKey)) }}
               </span>
               <span v-if="shouldShowItemAmountSummary">
                 金额
-                {{ display.formatAmount((activeRecord?.items || []).reduce((sum, item) => sum + Number(item.amount || 0), 0)) }}
+                {{ display.formatAmount(sumItemValues(itemAmountSummaryKey)) }}
               </span>
             </div>
           </div>

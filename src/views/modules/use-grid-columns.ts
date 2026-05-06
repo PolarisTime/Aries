@@ -10,12 +10,13 @@ interface GridColumnDeps {
   isReadOnly: Ref<boolean>
   visibleConfigColumns: Ref<ModuleColumnDefinition[]>
   columnMetaMap: Ref<Record<string, ModuleColumnDefinition>>
+  showMaterialSelectorUnitPrice: Ref<boolean>
   formatCellValue: (column: ModuleColumnDefinition | undefined, value: unknown) => string
   getStatusMeta: (value: unknown) => StatusMeta
 }
 
 export function useGridColumns(deps: GridColumnDeps) {
-  const { isReadOnly, visibleConfigColumns, columnMetaMap, formatCellValue, getStatusMeta } = deps
+  const { isReadOnly, visibleConfigColumns, columnMetaMap, showMaterialSelectorUnitPrice, formatCellValue, getStatusMeta } = deps
 
   const tanstackColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
     {
@@ -75,19 +76,26 @@ export function useGridColumns(deps: GridColumnDeps) {
   ])
 
   const materialColumnHelper = createColumnHelper<ModuleRecord>()
-  const materialSelectorColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
-    materialColumnHelper.accessor('materialCode', { header: () => '商品编码', meta: { width: 160 } }),
-    materialColumnHelper.accessor('brand', { header: () => '品牌', meta: { width: 120 } }),
-    materialColumnHelper.accessor('material', { header: () => '材质', meta: { width: 120 } }),
-    materialColumnHelper.accessor('spec', { header: () => '规格', meta: { width: 120 } }),
-    materialColumnHelper.accessor('length', { header: () => '长度', meta: { width: 100 } }),
-    materialColumnHelper.accessor('unit', { header: () => '单位', meta: { width: 90 } }),
-    materialColumnHelper.accessor('unitPrice', {
-      header: () => '单价',
-      cell: (info) => formatCellValue(undefined, info.getValue()),
-      meta: { width: 110, align: 'right' },
-    }),
-  ])
+  const materialSelectorColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => {
+    const columns: ColumnDef<ModuleRecord, unknown>[] = [
+      materialColumnHelper.accessor('materialCode', { header: () => '商品编码', meta: { width: 160 } }),
+      materialColumnHelper.accessor('brand', { header: () => '品牌', meta: { width: 120 } }),
+      materialColumnHelper.accessor('material', { header: () => '材质', meta: { width: 120 } }),
+      materialColumnHelper.accessor('spec', { header: () => '规格', meta: { width: 120 } }),
+      materialColumnHelper.accessor('length', { header: () => '长度', meta: { width: 100 } }),
+      materialColumnHelper.accessor('unit', { header: () => '单位', meta: { width: 90 } }),
+    ]
+
+    if (showMaterialSelectorUnitPrice.value) {
+      columns.push(materialColumnHelper.accessor('unitPrice', {
+        header: () => '单价',
+        cell: (info) => formatCellValue(undefined, info.getValue()),
+        meta: { width: 110, align: 'right' },
+      }))
+    }
+
+    return columns
+  })
 
   const freightSummaryColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
     materialColumnHelper.accessor('carrierName', { header: () => '物流商' }),

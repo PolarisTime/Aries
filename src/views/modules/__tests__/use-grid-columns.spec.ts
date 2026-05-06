@@ -23,6 +23,7 @@ describe('useGridColumns', () => {
         totalWeight: { title: '总重量（吨）', dataIndex: 'totalWeight' },
         totalAmount: { title: '总金额', dataIndex: 'totalAmount' },
       })),
+      showMaterialSelectorUnitPrice: ref(true),
       formatCellValue: (_column, value) => String(value ?? ''),
       getStatusMeta: (value) => ({ text: String(value ?? ''), color: 'default' }),
     })
@@ -31,5 +32,19 @@ describe('useGridColumns', () => {
 
     expect(columns.find((column) => column.id === 'totalWeight')?.meta?.align).toBe('center')
     expect(columns.find((column) => column.id === 'totalAmount')?.meta?.align).toBe('center')
+  })
+
+  it('hides material selector unit price when the current module is in weight-only mode', () => {
+    const { materialSelectorColumns } = useGridColumns({
+      isReadOnly: ref(false),
+      visibleConfigColumns: computed(() => []),
+      columnMetaMap: computed(() => ({})),
+      showMaterialSelectorUnitPrice: ref(false),
+      formatCellValue: (_column, value) => String(value ?? ''),
+      getStatusMeta: (value) => ({ text: String(value ?? ''), color: 'default' }),
+    })
+
+    const columnIds = (materialSelectorColumns.value as TestColumnDef[]).map((column) => String(column.id ?? ''))
+    expect(columnIds).not.toContain('unitPrice')
   })
 })

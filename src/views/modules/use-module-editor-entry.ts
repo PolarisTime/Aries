@@ -136,6 +136,7 @@ export function useModuleEditorEntry(options: UseModuleEditorEntryOptions) {
     options.editorForm[key] = value
     syncSalesOrderCustomerProjectFields(key, value)
     syncFreightBillVehiclePlateField(key)
+    options.syncSystemEditorState()
   }
 
   return {

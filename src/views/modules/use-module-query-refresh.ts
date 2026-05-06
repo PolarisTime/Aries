@@ -12,6 +12,10 @@ export function useModuleQueryRefresh(moduleKey: Ref<string>) {
       queryClient.invalidateQueries({
         queryKey: ['business-grid-all', moduleKey.value],
       }),
+      queryClient.invalidateQueries({
+        queryKey: ['business-parent-search'],
+        exact: false,
+      }),
     ])
   }
 

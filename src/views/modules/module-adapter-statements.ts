@@ -89,7 +89,6 @@ export function getFreightStatementSelectionError(sourceBills: ModuleRecord[]) {
 export function buildSupplierStatementDraftData(options: {
   baseDraft: ModuleRecord
   sourceInbounds: ModuleRecord[]
-  payments: ModuleRecord[]
   today: string
   defaultFullPayment: boolean
   cloneLineItems: (value: unknown) => ModuleLineItem[]
@@ -98,14 +97,11 @@ export function buildSupplierStatementDraftData(options: {
   const {
     baseDraft,
     sourceInbounds,
-    payments,
     today,
     defaultFullPayment,
     cloneLineItems,
     buildLineItemId,
   } = options
-  void payments
-  void defaultFullPayment
   const sortedInbounds = JSON.parse(JSON.stringify(sourceInbounds)) as ModuleRecord[]
   sortedInbounds.sort((left, right) =>
     new Date(String(left.inboundDate || '')).getTime() - new Date(String(right.inboundDate || '')).getTime(),
@@ -129,7 +125,8 @@ export function buildSupplierStatementDraftData(options: {
     return sum + cloneLineItems(record.items).reduce((itemSum, item) => itemSum + Number(item.amount || 0), 0)
   }, 0).toFixed(2))
 
-  const paymentAmount = 0
+  const paymentAmount = defaultFullPayment ? purchaseAmount : 0
+  const closingAmount = Number(Math.max(0, purchaseAmount - paymentAmount).toFixed(2))
 
   return {
     ...baseDraft,
@@ -138,7 +135,7 @@ export function buildSupplierStatementDraftData(options: {
     endDate,
     purchaseAmount,
     paymentAmount,
-    closingAmount: purchaseAmount,
+    closingAmount,
     sourceInboundNos,
     remark: `由采购入库单 ${sourceInboundNos} 生成`,
     items: statementItems,
@@ -161,7 +158,6 @@ export function buildCustomerStatementDraftData(options: {
     cloneLineItems,
     buildLineItemId,
   } = options
-  void defaultReceiptAmountZero
   const sortedOrders = JSON.parse(JSON.stringify(sourceOrders)) as ModuleRecord[]
   sortedOrders.sort((left, right) =>
     new Date(String(left.deliveryDate || left.orderDate || '')).getTime()
@@ -183,7 +179,8 @@ export function buildCustomerStatementDraftData(options: {
     }
     return sum + cloneLineItems(order.items).reduce((itemSum, item) => itemSum + Number(item.amount || 0), 0)
   }, 0).toFixed(2))
-  const receiptAmount = 0
+  const receiptAmount = defaultReceiptAmountZero ? 0 : salesAmount
+  const closingAmount = Number(Math.max(0, salesAmount - receiptAmount).toFixed(2))
 
   return {
     ...baseDraft,
@@ -193,7 +190,7 @@ export function buildCustomerStatementDraftData(options: {
     endDate: String(sortedOrders[sortedOrders.length - 1]?.deliveryDate || sortedOrders[sortedOrders.length - 1]?.orderDate || today),
     salesAmount,
     receiptAmount,
-    closingAmount: salesAmount,
+    closingAmount,
     sourceOrderNos,
     remark: `由销售订单 ${sourceOrderNos} 生成`,
     items: statementItems,

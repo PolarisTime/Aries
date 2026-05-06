@@ -48,6 +48,8 @@ describe('module-behavior-registry', () => {
       expect(hasBehavior('freight-statements', 'includeAttachmentIds')).toBe(true)
       expect(hasBehavior('receipts', 'supportsStatementLinking')).toBe(true)
       expect(hasBehavior('payments', 'supportsStatementLinking')).toBe(true)
+      expect(hasBehavior('receipts', 'allowsEmptyLineItems')).toBe(true)
+      expect(hasBehavior('payments', 'allowsEmptyLineItems')).toBe(true)
       expect(hasBehavior('role-settings', 'showRoleLink')).toBe(true)
       expect(hasBehavior('general-settings', 'hasUploadRuleExpandedRow')).toBe(true)
       expect(hasBehavior('permission-management', 'alertActionLink')).toBe(true)
@@ -79,6 +81,11 @@ describe('module-behavior-registry', () => {
     it('returns alertActionLink with correct shape', () => {
       const link = getBehaviorValue('permission-management', 'alertActionLink')
       expect(link).toEqual({ text: '前往角色权限配置 →', to: '/role-action-editor' })
+    })
+
+    it('returns custom line-item amount summary key for finance allocations', () => {
+      expect(getBehaviorValue('receipts', 'lineItemAmountSummaryKey')).toBe('allocatedAmount')
+      expect(getBehaviorValue('payments', 'lineItemAmountSummaryKey')).toBe('allocatedAmount')
     })
   })
 
@@ -125,27 +132,50 @@ describe('module-behavior-registry', () => {
       expect(record.deliveryStatus).toBe('未送达')
     })
 
-    it('supplier-statements: computes purchaseAmount and closingAmount', () => {
+    it('supplier-statements: computes purchaseAmount and keeps paymentAmount in closingAmount', () => {
       const config = getModuleBehavior('supplier-statements')
-      const record: ModuleRecord = { id: '1' }
+      const record: ModuleRecord = { id: '1', paymentAmount: 120 }
       const items: ModuleLineItem[] = [
         { id: 'item-1', amount: 100, sourceNo: 'INB-001' },
         { id: 'item-2', amount: 200, sourceNo: 'INB-002' },
       ]
       config.normalizeDraftRecord!(record, items, createCtx())
       expect(record.purchaseAmount).toBe(300)
-      expect(record.closingAmount).toBe(300)
-      expect(record.paymentAmount).toBe(0)
+      expect(record.closingAmount).toBe(180)
+      expect(record.paymentAmount).toBe(120)
     })
 
-    it('customer-statements: computes salesAmount and closingAmount', () => {
+    it('customer-statements: computes salesAmount and keeps receiptAmount in closingAmount', () => {
       const config = getModuleBehavior('customer-statements')
-      const record: ModuleRecord = { id: '1' }
+      const record: ModuleRecord = { id: '1', receiptAmount: 200 }
       const items: ModuleLineItem[] = [{ id: 'item-1', amount: 500, sourceNo: 'ORD-001' }]
       config.normalizeDraftRecord!(record, items, createCtx())
       expect(record.salesAmount).toBe(500)
-      expect(record.closingAmount).toBe(500)
-      expect(record.receiptAmount).toBe(0)
+      expect(record.closingAmount).toBe(300)
+      expect(record.receiptAmount).toBe(200)
+    })
+
+    it('supplier-statements: keeps full-payment state aligned with recomputed amount', () => {
+      const config = getModuleBehavior('supplier-statements')
+      const record: ModuleRecord = { id: '1', purchaseAmount: 300, paymentAmount: 300, closingAmount: 0 }
+      const items: ModuleLineItem[] = [
+        { id: 'item-1', amount: 100, sourceNo: 'INB-001' },
+        { id: 'item-2', amount: 260, sourceNo: 'INB-002' },
+      ]
+      config.normalizeDraftRecord!(record, items, createCtx())
+      expect(record.purchaseAmount).toBe(360)
+      expect(record.paymentAmount).toBe(360)
+      expect(record.closingAmount).toBe(0)
+    })
+
+    it('customer-statements: keeps full-receipt state aligned with recomputed amount', () => {
+      const config = getModuleBehavior('customer-statements')
+      const record: ModuleRecord = { id: '1', salesAmount: 500, receiptAmount: 500, closingAmount: 0 }
+      const items: ModuleLineItem[] = [{ id: 'item-1', amount: 620, sourceNo: 'ORD-001' }]
+      config.normalizeDraftRecord!(record, items, createCtx())
+      expect(record.salesAmount).toBe(620)
+      expect(record.receiptAmount).toBe(620)
+      expect(record.closingAmount).toBe(0)
     })
 
     it('invoice-receipts: computes amount and sourcePurchaseOrderNos', () => {
@@ -167,6 +197,15 @@ describe('module-behavior-registry', () => {
       config.normalizeDraftRecord!(record, items, createCtx())
       expect(record.amount).toBe(200)
       expect(record.sourceSalesOrderNos).toBe('SO-001')
+    })
+
+    it('receipts/payments: derive legacy sourceStatementId from allocation items', () => {
+      const receiptRecord: ModuleRecord = { id: '1', sourceStatementId: 99 }
+      const paymentRecord: ModuleRecord = { id: '2', sourceStatementId: 88 }
+      getModuleBehavior('receipts').normalizeDraftRecord!(receiptRecord, [{ id: 'a', sourceStatementId: 12 }], createCtx())
+      getModuleBehavior('payments').normalizeDraftRecord!(paymentRecord, [], createCtx())
+      expect(receiptRecord.sourceStatementId).toBe(12)
+      expect(paymentRecord.sourceStatementId).toBeUndefined()
     })
 
     it('role-settings: normalizes permissionCodes', () => {
@@ -207,7 +246,8 @@ describe('module-behavior-registry', () => {
     it('lineItem payload modules have savePayloadLineItems', () => {
       const modules = ['purchase-orders', 'purchase-inbounds', 'sales-orders', 'sales-outbounds',
         'freight-bills', 'freight-statements', 'purchase-contracts', 'sales-contracts',
-        'supplier-statements', 'customer-statements', 'invoice-receipts', 'invoice-issues']
+        'supplier-statements', 'customer-statements', 'invoice-receipts', 'invoice-issues',
+        'receipts', 'payments']
       modules.forEach((key) => {
         expect(hasBehavior(key, 'savePayloadLineItems')).toBe(true)
       })

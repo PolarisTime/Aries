@@ -27,6 +27,7 @@ const props = withDefaults(defineProps<{
   pagination?: { pageSize: number; showSizeChanger: boolean; position: string[] } | false
   scroll?: Record<string, unknown>
   emptyDescription: string
+  hideCancel?: boolean
   cancelText?: string
   confirmText?: string
   confirmVisible?: boolean
@@ -34,6 +35,7 @@ const props = withDefaults(defineProps<{
   rowKey?: string
   customRow?: ((record: AnyRow) => Record<string, unknown>) | undefined
 }>(), {
+  hideCancel: false,
   hint: '',
   loading: false,
   rowSelection: undefined,
@@ -236,7 +238,8 @@ const { table } = useDataTable({
       <header class="workspace-overlay-header">
         <span class="workspace-overlay-title">{{ title }}</span>
         <div class="workspace-overlay-header-actions">
-          <a-button class="overlay-action-button" @click="$emit('cancel')">{{ cancelText }}</a-button>
+          <slot name="header-actions"></slot>
+          <a-button v-if="!hideCancel" class="overlay-action-button" @click="$emit('cancel')">{{ cancelText }}</a-button>
           <a-button
             v-if="confirmVisible"
             type="primary"
@@ -254,6 +257,7 @@ const { table } = useDataTable({
           <div class="module-table-head-meta statement-generator-meta">
             <slot name="meta">
               <span class="module-table-head-title">{{ panelTitle }}</span>
+              <slot name="title-suffix"></slot>
               <span v-if="hint" class="parent-selector-hint">{{ hint }}</span>
             </slot>
           </div>
@@ -275,7 +279,7 @@ const { table } = useDataTable({
         </div>
       </div>
 
-      <footer v-if="!confirmVisible" class="workspace-overlay-footer">
+      <footer v-if="!confirmVisible && !hideCancel" class="workspace-overlay-footer">
         <a-button class="overlay-action-button" @click="$emit('cancel')">{{ cancelText }}</a-button>
       </footer>
     </section>

@@ -1,7 +1,7 @@
 import { computed, type Ref } from 'vue'
 import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
 import { canModuleEditLineItems } from './module-adapter-editor'
-import { hasBehavior } from './module-behavior-registry'
+import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 
 interface UseModuleViewStateOptions {
   moduleKey: Ref<string>
@@ -29,8 +29,15 @@ export function useModuleViewState(options: UseModuleViewStateOptions) {
     canModuleEditLineItems(options.moduleKey.value, Boolean(options.config.value.itemColumns?.length)),
   )
   const canEditFormFields = computed(() => Boolean(formFields.value.length))
+  const itemAmountSummaryKey = computed(() =>
+    String(getBehaviorValue(options.moduleKey.value, 'lineItemAmountSummaryKey') || 'amount'),
+  )
+  const itemWeightSummaryKey = computed(() => 'weightTon')
+  const shouldShowItemWeightSummary = computed(() =>
+    Boolean(options.config.value.itemColumns?.some((column) => column.dataIndex === itemWeightSummaryKey.value)),
+  )
   const shouldShowItemAmountSummary = computed(() =>
-    Boolean(options.config.value.itemColumns?.some((column) => column.dataIndex === 'amount')),
+    Boolean(options.config.value.itemColumns?.some((column) => column.dataIndex === itemAmountSummaryKey.value)),
   )
   const statusMap = computed(() => options.config.value.statusMap || {})
   const editorTitle = computed(() => {
@@ -42,8 +49,12 @@ export function useModuleViewState(options: UseModuleViewStateOptions) {
   const editorItems = computed<ModuleLineItem[]>(() =>
     Array.isArray(options.editorForm.items) ? (options.editorForm.items as ModuleLineItem[]) : [],
   )
-  const editorItemWeightTotal = computed(() => options.sumLineItemsBy(editorItems.value, 'weightTon'))
-  const editorItemAmountTotal = computed(() => options.sumLineItemsBy(editorItems.value, 'amount'))
+  const editorItemWeightTotal = computed(() =>
+    shouldShowItemWeightSummary.value ? options.sumLineItemsBy(editorItems.value, itemWeightSummaryKey.value) : 0,
+  )
+  const editorItemAmountTotal = computed(() =>
+    shouldShowItemAmountSummary.value ? options.sumLineItemsBy(editorItems.value, itemAmountSummaryKey.value) : 0,
+  )
 
   return {
     canEditFormFields,
@@ -56,10 +67,13 @@ export function useModuleViewState(options: UseModuleViewStateOptions) {
     editorItemWeightTotal,
     editorTitle,
     formFields,
+    itemAmountSummaryKey,
+    itemWeightSummaryKey,
     isMaterialModule,
     isReadOnly,
     parentImportConfig,
     shouldShowItemAmountSummary,
+    shouldShowItemWeightSummary,
     statusMap,
   }
 }

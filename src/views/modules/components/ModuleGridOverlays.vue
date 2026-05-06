@@ -40,7 +40,10 @@ defineProps<{
   activeRecord: ModuleRecord | null
   canPrintRecords: boolean
   detailPrintLoading: boolean
+  shouldShowItemWeightSummary: boolean
   shouldShowItemAmountSummary: boolean
+  itemWeightSummaryKey: string
+  itemAmountSummaryKey: string
   detailTableColumns: TableColumn[]
   detailTableScroll: TableScroll
   canEditItemColumns: boolean
@@ -167,7 +170,10 @@ function sumRecordsBy(rows: ModuleRecord[], key: string) {
     :active-record="activeRecord"
     :can-print-records="canPrintRecords"
     :detail-print-loading="detailPrintLoading"
+    :should-show-item-weight-summary="shouldShowItemWeightSummary"
     :should-show-item-amount-summary="shouldShowItemAmountSummary"
+    :item-weight-summary-key="itemWeightSummaryKey"
+    :item-amount-summary-key="itemAmountSummaryKey"
     :detail-table-columns="detailTableColumns"
     :detail-table-scroll="detailTableScroll"
     :can-edit-item-columns="canEditItemColumns"

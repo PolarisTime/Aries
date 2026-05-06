@@ -19,6 +19,9 @@ function buildFreightPickupListRows(records: ModuleRecord[]) {
   return records.flatMap((record, recordIndex) =>
     (record.items || []).map((item, itemIndex) => ({
       id: `${record.id || recordIndex}-${item.id || itemIndex + 1}`,
+      warehouseName: item.warehouseName || '',
+      customerName: item.customerName || record.customerName || '',
+      projectName: item.projectName || record.projectName || '',
       brand: item.brand || '',
       material: item.material || '',
       spec: item.spec || '',
@@ -27,8 +30,6 @@ function buildFreightPickupListRows(records: ModuleRecord[]) {
       quantityUnit: item.quantityUnit || '件',
       totalWeight: Number(item.weightTon || 0),
       weightUnit: '吨',
-      warehouseName: item.warehouseName || '',
-      customerName: item.customerName || record.customerName || '',
     })),
   )
 }
@@ -150,7 +151,6 @@ export function useFreightPickupList(options: UseFreightPickupListOptions) {
           saveBusinessModule(moduleKey.value, {
             ...cloneRecord(record),
             deliveryStatus: '已送达',
-            status: String(record.status || '') === '未审核' ? '已审核' : record.status,
           }),
         ),
       )

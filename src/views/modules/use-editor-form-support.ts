@@ -16,6 +16,7 @@ import {
   normalizeDraftRecordForModule,
   trimEditorItemsForModule,
 } from './module-adapter-editor'
+import { getBehaviorValue } from './module-behavior-registry'
 import { cloneRecord, cloneLineItems, resetReactiveObject } from '@/utils/clone-utils'
 
 interface EditorAuditTarget {
@@ -81,8 +82,11 @@ export function useEditorFormSupport(options: UseEditorFormSupportOptions) {
   }
 
   function buildDefaultEditorDraft() {
+    const allowsEmptyLineItems = Boolean(getBehaviorValue(options.moduleKey.value, 'allowsEmptyLineItems'))
     const draft: Record<string, unknown> = {
-      items: options.config.value.itemColumns?.length ? [buildDefaultEditorLineItem()] : [],
+      items: options.config.value.itemColumns?.length
+        ? (allowsEmptyLineItems ? [] : [buildDefaultEditorLineItem()])
+        : [],
     }
 
     options.formFields.value.forEach((field) => {

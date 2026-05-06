@@ -80,6 +80,7 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     editorItems,
     editorItemWeightTotal: 1.25,
     editorItemAmountTotal: 128,
+    shouldShowItemWeightSummary: true,
     shouldShowItemAmountSummary: false,
     lockedLineItemsNotice: '',
     editorDetailTableColumns: [
@@ -131,6 +132,27 @@ describe('ModuleEditorWorkspace', () => {
 
     wrapper.findComponent(EditorFooterActions).vm.$emit('cancel')
     expect(wrapper.emitted('cancel')).toHaveLength(1)
+  })
+
+  it('groups form fields by row and expands full-row fields', () => {
+    const wrapper = mountWorkspace({
+      visibleFormFields: [
+        { key: 'customerName', label: '客户', type: 'input', row: 1 },
+        { key: 'orderNo', label: '订单编号', type: 'input', row: 1 },
+        { key: 'remark', label: '备注', type: 'input', row: 2, fullRow: true },
+      ],
+    })
+
+    const formRows = wrapper.findAll('.editor-form-row')
+    const cols = wrapper.findAll('.editor-form-row > .ant-col')
+
+    expect(formRows).toHaveLength(2)
+    expect(cols).toHaveLength(3)
+    expect(cols.map((col) => col.classes().find((name) => name.startsWith('ant-col-lg-')))).toEqual([
+      'ant-col-lg-6',
+      'ant-col-lg-6',
+      'ant-col-lg-24',
+    ])
   })
 
   it('renders item actions when line items are enabled', async () => {

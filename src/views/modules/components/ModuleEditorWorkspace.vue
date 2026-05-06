@@ -20,6 +20,7 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import type { StatusMeta } from '@/composables/use-module-display-support'
+import { groupFieldsByRow } from '@/views/modules/module-field-layout'
 import ColumnSettingsPopover from './ColumnSettingsPopover.vue'
 import EditorFooterActions from './EditorFooterActions.vue'
 import EditorItemsSummary from './EditorItemsSummary.vue'
@@ -98,6 +99,7 @@ const props = defineProps<{
   editorItems: ModuleLineItem[]
   editorItemWeightTotal: number
   editorItemAmountTotal: number
+  shouldShowItemWeightSummary: boolean
   shouldShowItemAmountSummary: boolean
   lockedLineItemsNotice: string
   editorDetailTableColumns: TableColumn[]
@@ -195,6 +197,12 @@ function normalizeOptionValue(value: unknown) {
   return String(value ?? '').trim()
 }
 
+function getStatementOptions(record: ModuleLineItem) {
+  return Array.isArray(record._statementOptions)
+    ? (record._statementOptions as Array<{ value: unknown; label: string }>)
+    : []
+}
+
 const editorTanstackColumns = computed<ColumnDef<ModuleLineItem, unknown>[]>(() =>
   props.editorDetailTableColumns.map((col: TableColumn) => {
     const key = String(col.key || col.dataIndex || '')
@@ -235,6 +243,9 @@ const editorTanstackColumns = computed<ColumnDef<ModuleLineItem, unknown>[]>(() 
       cell: (info: { getValue: () => unknown; row: { original: ModuleLineItem } }) => {
         const record = info.row.original
         if (!editable(record)) {
+          if (key === 'sourceStatementId' && String(record.statementNo || '').trim()) {
+            return String(record.statementNo || '')
+          }
           if (isStatus) {
             const s = props.getStatusMeta(info.getValue())
             return h('span', { class: `ant-tag ant-tag-${s.color}` }, s.text)
@@ -279,6 +290,20 @@ const editorTanstackColumns = computed<ColumnDef<ModuleLineItem, unknown>[]>(() 
           value: String(w.warehouseName),
           label: String(w.warehouseName || ''),
         }, () => String(w.warehouseName || ''))))
+        if (key === 'sourceStatementId') return h(ASelect, {
+          value: record.sourceStatementId,
+          showSearch: true,
+          allowClear: true,
+          class: 'editor-item-field',
+          placeholder: '选择对账单',
+          disabled: getStatementOptions(record).length === 0,
+          filterOption: props.filterMaterialOption,
+          onChange: (val: unknown) => emit('editor-item-value-change', record, 'sourceStatementId', val),
+        }, () => getStatementOptions(record).map((option) => h(SelectOption, {
+          key: String(option.value),
+          value: option.value,
+          label: option.label,
+        }, () => option.label)))
         if (isSettlement) return h(ASelect, {
           value: record.settlementMode,
           class: 'editor-item-field',
@@ -310,6 +335,12 @@ const editorRowSelection = computed(() => {
   for (const id of (props.selectedItemIds || [])) result[id] = true
   return result
 })
+
+const formFieldRows = computed(() => groupFieldsByRow(props.visibleFormFields))
+
+function getFormFieldLgSpan(field: ModuleFormFieldDefinition) {
+  return field.fullRow || field.type === 'textarea' ? 24 : 6
+}
 
 const { table: editorTable } = useDataTable({
   data: computed(() => props.editorItems),
@@ -373,13 +404,18 @@ const { table: editorTable } = useDataTable({
             :permission-summary="String(editorForm.permissionSummary || '--')"
             :show-role-link="hasBehavior(moduleKey, 'showRoleLink')"
           />
-          <a-row :gutter="16">
+          <a-row
+            v-for="(fieldRow, rowIndex) in formFieldRows"
+            :key="`editor-form-row-${rowIndex + 1}`"
+            class="editor-form-row"
+            :gutter="16"
+          >
             <a-col
-              v-for="field in visibleFormFields"
+              v-for="field in fieldRow"
               :key="field.key"
               :xs="24"
               :sm="12"
-              :lg="field.type === 'textarea' ? 24 : 6"
+              :lg="getFormFieldLgSpan(field)"
             >
               <FormFieldRenderer
                 :field="field"
@@ -396,8 +432,13 @@ const { table: editorTable } = useDataTable({
                 @role-tree-check="(checkedKeys) => emit('role-tree-check', checkedKeys)"
               />
             </a-col>
+          </a-row>
+          <a-row
+            v-if="parentImportConfig && canManageEditorItems && !itemColumns?.length"
+            class="editor-form-row"
+            :gutter="16"
+          >
             <a-col
-              v-if="parentImportConfig && canManageEditorItems && !itemColumns?.length"
               :xs="24"
               :sm="12"
               :lg="6"
@@ -469,6 +510,7 @@ const { table: editorTable } = useDataTable({
                 :item-count="editorItems.length"
                 :weight="formatWeight(editorItemWeightTotal)"
                 :amount="formatAmount(editorItemAmountTotal)"
+                :show-weight="shouldShowItemWeightSummary"
                 :show-amount="shouldShowItemAmountSummary"
               />
             </div>
@@ -477,6 +519,7 @@ const { table: editorTable } = useDataTable({
               :item-count="editorItems.length"
               :weight="formatWeight(editorItemWeightTotal)"
               :amount="formatAmount(editorItemAmountTotal)"
+              :show-weight="shouldShowItemWeightSummary"
               :show-amount="shouldShowItemAmountSummary"
             />
           </div>

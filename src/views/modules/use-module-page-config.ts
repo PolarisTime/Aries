@@ -6,12 +6,9 @@ import {
   listDisplaySwitches,
 } from '@/api/system-settings'
 import { businessPageConfigs } from '@/config/business-pages'
-import {
-  buildWeightOverview,
-  compactWeightOnlyPurchaseItemColumns,
-} from '@/config/business-pages/shared'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type { ModulePageConfig } from '@/types/module-page'
 import { getBehaviorValue } from './module-behavior-registry'
+import { applyWeightOnlyViewConfig } from './module-display-switch-config'
 
 const WEIGHT_ONLY_VIEW_SETTING_CODES: Record<string, string> = {
   'purchase-inbounds': DISPLAY_SWITCH_CODES.weightOnlyPurchaseInbounds,
@@ -19,16 +16,6 @@ const WEIGHT_ONLY_VIEW_SETTING_CODES: Record<string, string> = {
 }
 
 const INVOICE_ASSIST_MODULE_KEYS = new Set(['invoice-receipts', 'invoice-issues'])
-
-function buildWeightOnlyViewConfig(baseConfig: ModulePageConfig) {
-  return {
-    ...baseConfig,
-    columns: baseConfig.columns.filter((column) => column.dataIndex !== 'totalAmount'),
-    detailFields: baseConfig.detailFields.filter((field) => field.key !== 'totalAmount'),
-    itemColumns: compactWeightOnlyPurchaseItemColumns,
-    buildOverview: (rows: ModuleRecord[]) => buildWeightOverview(rows),
-  }
-}
 
 export function useModulePageConfig(moduleKey: Ref<string>) {
   const displaySwitchesQuery = useQuery({
@@ -56,7 +43,7 @@ export function useModulePageConfig(moduleKey: Ref<string>) {
       && isDisplaySwitchEnabled(displaySwitchesQuery.data.value, switchCode),
     )
 
-    return isWeightOnlyViewEnabled ? buildWeightOnlyViewConfig(found) : found
+    return isWeightOnlyViewEnabled ? applyWeightOnlyViewConfig(moduleKey.value, found) : found
   })
 
   const readOnlyAlertActionLink = computed(() =>
