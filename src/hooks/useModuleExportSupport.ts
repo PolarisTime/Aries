@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
-import { message } from 'antd'
 import { listAllBusinessModuleRows } from '@/api/business'
+import { message } from '@/utils/antd-app'
 import { exportRecordsToExcel } from '@/utils/export-excel'
 
 export function useModuleExportSupport(moduleKey: string) {

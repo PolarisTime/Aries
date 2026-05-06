@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react'
-import { message } from 'antd'
 import { http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
+import { message } from '@/utils/antd-app'
 
 export function useAccountSecurity() {
   const [passwordSaving, setPasswordSaving] = useState(false)

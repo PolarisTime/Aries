@@ -5,7 +5,7 @@ import {
   Descriptions,
   Empty,
   Button,
-  Space,
+  Flex,
   Spin,
   Tag,
   Typography,
@@ -94,7 +94,7 @@ export function ApiKeyDetailView() {
   return (
     <div className="page-stack">
       <Card>
-        <Space size="middle">
+        <Flex align="center" gap={12}>
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
@@ -102,8 +102,10 @@ export function ApiKeyDetailView() {
           >
             返回
           </Button>
-          <span className="text-[calc(var(--app-font-size)+4px)] font-medium">API Key 详情</span>
-        </Space>
+          <Typography.Title level={5} style={{ margin: 0 }}>
+            API Key 详情
+          </Typography.Title>
+        </Flex>
       </Card>
 
       <Spin spinning={loading}>

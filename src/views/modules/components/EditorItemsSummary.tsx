@@ -1,3 +1,5 @@
+import { Col, Row, Statistic } from 'antd'
+
 interface Props {
   items: Record<string, unknown>[]
   weightKey?: string
@@ -11,11 +13,25 @@ export function EditorItemsSummary({ items, weightKey = 'weightTon', amountKey =
   const totalCount = items.reduce((sum, item) => sum + (Number(item[countKey]) || 0), 0)
 
   return (
-    <div className="flex items-center justify-end gap-6 py-2 px-3 bg-gray-50 border-t border-gray-100 text-sm">
-      <span>共 <strong>{items.length}</strong> 行</span>
-      {totalCount > 0 && <span>数量: <strong>{totalCount.toLocaleString()}</strong></span>}
-      {totalWeight > 0 && <span>重量: <strong>{totalWeight.toLocaleString('zh-CN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</strong> 吨</span>}
-      {totalAmount > 0 && <span>金额: <strong>{totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>}
-    </div>
+    <Row gutter={[16, 16]}>
+      <Col xs={12} md={6}>
+        <Statistic title="行数" value={items.length} />
+      </Col>
+      {totalCount > 0 && (
+        <Col xs={12} md={6}>
+          <Statistic title="数量" value={totalCount} />
+        </Col>
+      )}
+      {totalWeight > 0 && (
+        <Col xs={12} md={6}>
+          <Statistic title="重量(吨)" value={totalWeight} precision={3} />
+        </Col>
+      )}
+      {totalAmount > 0 && (
+        <Col xs={12} md={6}>
+          <Statistic title="金额" value={totalAmount} precision={2} />
+        </Col>
+      )}
+    </Row>
   )
 }

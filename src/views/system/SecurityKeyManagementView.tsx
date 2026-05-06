@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Card, Button, Descriptions, message, Space } from 'antd'
+import { Card, Button, Descriptions, Space } from 'antd'
 import { RedoOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
 import type { ApiResponse } from '@/types/api'
+import { message } from '@/utils/antd-app'
 
 interface SecurityKeys {
   jwtLastRotatedAt: string

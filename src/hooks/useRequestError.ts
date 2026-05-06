@@ -1,4 +1,4 @@
-import { message } from 'antd'
+import { message } from '@/utils/antd-app'
 
 const HANDLED_FLAG = '__leoRequestErrorHandled'
 

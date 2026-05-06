@@ -28,7 +28,7 @@ export function ModuleParentSelectorOverlay({ open, parentModuleKey, title = '�
   ]
 
   return (
-    <Drawer title={title} open={open} onClose={onClose} width={680} destroyOnClose>
+    <Drawer title={title} open={open} onClose={onClose} size={680} destroyOnHidden>
       <div className="mb-3">
         <Input.Search
           placeholder="搜索单据号..."

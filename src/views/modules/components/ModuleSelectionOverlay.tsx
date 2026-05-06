@@ -28,7 +28,7 @@ export function ModuleSelectionOverlay({ open, moduleKey, title = '选择记录'
   ]
 
   return (
-    <Drawer title={title} open={open} onClose={onClose} width={640} destroyOnClose>
+    <Drawer title={title} open={open} onClose={onClose} size={640} destroyOnHidden>
       <div className="mb-3">
         <Input.Search
           placeholder="搜索..."

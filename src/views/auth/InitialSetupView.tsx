@@ -1,14 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
+  Alert,
   Card,
+  Flex,
   Steps,
   Form,
+  Image,
   Input,
   InputNumber,
   Button,
-  message,
+  Result,
   Spin,
+  Space,
+  Typography,
 } from 'antd'
 import {
   UserOutlined,
@@ -23,6 +28,7 @@ import {
   submitInitialCompany,
 } from '@/api/setup'
 import { appTitle } from '@/utils/env'
+import { message } from '@/utils/antd-app'
 import type {
   InitialSetupStatus,
   InitialSetupTotpResult,
@@ -157,33 +163,49 @@ export function InitialSetupView() {
 
   if (checking) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <Flex align="center" justify="center" style={{ minHeight: '100vh' }}>
         <Spin size="large" tip="正在检查初始化状态..." />
-      </div>
+      </Flex>
     )
   }
 
   if (status && !status.setupRequired) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card>
-          <p className="text-green-600 text-lg">系统已完成初始化</p>
-        </Card>
-      </div>
+      <Flex
+        align="center"
+        justify="center"
+        style={{ minHeight: '100vh', padding: 24 }}
+      >
+        <Result status="success" title="系统已完成初始化" />
+      </Flex>
     )
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-6 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.18),transparent_26%),linear-gradient(135deg,#eef4fb_0%,#f8fafc_55%,#e8eff8_100%)]">
-      <Card className="w-[min(100%,720px)]">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-semibold text-[#0f172a]">{appTitle}</h1>
-          <p className="text-[#64748b] mt-1">系统初始化向导</p>
-        </div>
+    <Flex
+      align="center"
+      justify="center"
+      style={{
+        minHeight: '100vh',
+        padding: 24,
+        background:
+          'radial-gradient(circle at top left, rgba(37,99,235,0.18), transparent 26%), linear-gradient(135deg, #eef4fb 0%, #f8fafc 55%, #e8eff8 100%)',
+      }}
+    >
+      <Card style={{ width: 'min(100%, 720px)' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+          <Space orientation="vertical" size={4} style={{ width: '100%', textAlign: 'center' }}>
+            <Typography.Title level={2} style={{ margin: 0 }}>
+              {appTitle}
+            </Typography.Title>
+            <Typography.Text type="secondary">
+              系统初始化向导
+            </Typography.Text>
+          </Space>
         <Steps
           current={currentStep === 'admin' ? 0 : 1}
           items={[{ title: '管理员配置' }, { title: '公司主体配置' }]}
-          className="mb-6"
+          style={{ marginBottom: 8 }}
         />
         <Form
           form={form}
@@ -227,14 +249,22 @@ export function InitialSetupView() {
                 </Button>
               </div>
               {totpSetup && (
-                <div className="text-center mb-4">
-                  <img
+                <Space
+                  orientation="vertical"
+                  size="small"
+                  align="center"
+                  style={{ width: '100%', marginBottom: 16 }}
+                >
+                  <Image
+                    preview={false}
                     src={toDataImageUrl(totpSetup.qrCodeBase64)}
                     alt="TOTP QR Code"
-                    className="mx-auto h-[160px] w-[160px] rounded-xl border border-gray-100 bg-white p-3 shadow-sm"
+                    width={160}
                   />
-                  <p className="text-xs text-gray-500 mt-2">密钥: {totpSetup.secret}</p>
-                </div>
+                  <Typography.Text copyable={{ text: totpSetup.secret }}>
+                    密钥: {totpSetup.secret}
+                  </Typography.Text>
+                </Space>
               )}
               <Form.Item
                 name="totpCode"
@@ -256,7 +286,7 @@ export function InitialSetupView() {
           ) : (
             <>
               {adminCompleted && (
-                <p className="text-green-600 mb-4">管理员账户已创建成功</p>
+                <Alert type="success" message="管理员账户已创建成功" style={{ marginBottom: 16 }} />
               )}
               <Form.Item
                 name="companyName"
@@ -292,7 +322,7 @@ export function InitialSetupView() {
               <Form.Item name="remark" label="备注">
                 <Input.TextArea rows={2} />
               </Form.Item>
-              <div className="flex gap-2">
+              <Space>
                 <Button onClick={() => setCurrentStep('admin')}>上一步</Button>
                 <Button
                   type="primary"
@@ -302,11 +332,12 @@ export function InitialSetupView() {
                 >
                   完成初始化
                 </Button>
-              </div>
+              </Space>
             </>
           )}
         </Form>
+        </Space>
       </Card>
-    </div>
+    </Flex>
   )
 }

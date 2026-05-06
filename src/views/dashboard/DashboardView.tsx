@@ -1,4 +1,4 @@
-import { Card, Statistic, Row, Col } from 'antd'
+import { Card, Statistic, Row, Col, Flex, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
@@ -23,50 +23,38 @@ export function DashboardView() {
     },
     staleTime: 30000,
   })
+  const summaryCards = [
+    { key: 'customers', title: '客户数量', value: summary?.totalCustomers ?? '--' },
+    { key: 'suppliers', title: '供应商数量', value: summary?.totalSuppliers ?? '--' },
+    { key: 'materials', title: '商品种类', value: summary?.totalMaterials ?? '--' },
+    { key: 'orders', title: '待处理订单', value: summary?.pendingOrders ?? '--' },
+    { key: 'inbounds', title: '今日入库', value: summary?.todayInbounds ?? '--' },
+    { key: 'outbounds', title: '今日出库', value: summary?.todayOutbounds ?? '--' },
+  ]
 
   return (
-    <div className="page-stack flex flex-col gap-[var(--app-page-gap)]">
+    <Flex vertical gap={24} className="page-stack">
       <div>
-        <h1 className="dashboard-title text-[#262626] text-[calc(var(--app-font-size)+6px)] font-medium">
+        <Typography.Title level={3} style={{ marginBottom: 8 }}>
           {appTitle}
-        </h1>
-        <p className="dashboard-subtitle mt-1.5 text-[#666]">
+        </Typography.Title>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
           欢迎使用钢材贸易业务中台
-        </p>
+        </Typography.Paragraph>
       </div>
 
       <Row gutter={[12, 12]}>
-        <Col xs={24} sm={12} lg={8}>
-          <Card className="dashboard-card border-[var(--theme-card-border)]">
-            <Statistic title="客户数量" value={summary?.totalCustomers || '--'} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card className="dashboard-card border-[var(--theme-card-border)]">
-            <Statistic title="供应商数量" value={summary?.totalSuppliers || '--'} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card className="dashboard-card border-[var(--theme-card-border)]">
-            <Statistic title="商品种类" value={summary?.totalMaterials || '--'} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card className="dashboard-card border-[var(--theme-card-border)]">
-            <Statistic title="待处理订单" value={summary?.pendingOrders || '--'} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card className="dashboard-card border-[var(--theme-card-border)]">
-            <Statistic title="今日入库" value={summary?.todayInbounds || '--'} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card className="dashboard-card border-[var(--theme-card-border)]">
-            <Statistic title="今日出库" value={summary?.todayOutbounds || '--'} />
-          </Card>
-        </Col>
+        {summaryCards.map((item) => (
+          <Col key={item.key} xs={24} sm={12} lg={8}>
+            <Card
+              className="dashboard-card"
+              style={{ borderColor: 'var(--theme-card-border)' }}
+            >
+              <Statistic title={item.title} value={item.value} />
+            </Card>
+          </Col>
+        ))}
       </Row>
-    </div>
+    </Flex>
   )
 }

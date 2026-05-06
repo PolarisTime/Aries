@@ -1,7 +1,5 @@
 import { assertApiSuccess, http } from '@/api/client'
-import { authHttp } from '@/api/http'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { ERROR_CODE } from '@/constants/error-codes'
 
 export interface ApiKeyRecord {
   id: string; userId: string; loginName: string; userName: string; keyName: string
@@ -69,10 +67,12 @@ export async function revokeApiKey(id: string | number) {
   )
 }
 export async function getApiKeyDetail(id: string | number) {
-  const res = await authHttp.get<ApiKeyResponse<ApiKeyRecord>>(buildApiKeyUrl(id))
-  const payload = res.data
-  if (payload.code !== ERROR_CODE.SUCCESS || !payload.data) {
-    throw new Error(payload.message || '加载 API Key 详情失败')
+  const response = assertApiSuccess(
+    await http.get<ApiKeyResponse<ApiKeyRecord>>(buildApiKeyUrl(id)),
+    '加载 API Key 详情失败',
+  )
+  if (!response.data) {
+    throw new Error('加载 API Key 详情失败')
   }
-  return payload.data
+  return response.data
 }
