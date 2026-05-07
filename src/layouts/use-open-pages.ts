@@ -22,6 +22,7 @@ interface UseOpenPagesOptions {
   router: RouterLike
   defaultPath?: string
   defaultTitle?: string
+  homeTitle?: string
 }
 
 export function resolveOpenPageKey(route: RouteLike) {
@@ -36,20 +37,32 @@ export function syncOpenPagesWithRoute(
   pages: OpenPage[],
   route: RouteLike,
   defaultTitle = '未命名页面',
+  defaultPath = '/dashboard',
+  homeTitle = '工作台',
 ) {
   const key = resolveOpenPageKey(route)
+  const homePage: OpenPage = {
+    key: defaultPath,
+    path: defaultPath,
+    title: homeTitle,
+    closable: false,
+  }
+  const normalizedPages = [
+    homePage,
+    ...pages.filter((item) => item.key !== defaultPath),
+  ]
   const nextPage: OpenPage = {
     key,
     path: route.fullPath,
-    title: String(route.meta.title || defaultTitle),
-    closable: key !== '/dashboard',
+    title: String(route.meta.title || (key === defaultPath ? homeTitle : defaultTitle)),
+    closable: key !== defaultPath,
   }
 
-  if (!pages.some((item) => item.key === key)) {
-    return [...pages, nextPage]
+  if (!normalizedPages.some((item) => item.key === key)) {
+    return [...normalizedPages, nextPage]
   }
 
-  return pages.map((item) => (item.key === key ? nextPage : item))
+  return normalizedPages.map((item) => (item.key === key ? nextPage : item))
 }
 
 export function closeOpenPageState(
@@ -60,6 +73,12 @@ export function closeOpenPageState(
 ) {
   const index = pages.findIndex((item) => item.key === key)
   if (index < 0) {
+    return {
+      nextPages: pages,
+      fallbackPath: null,
+    }
+  }
+  if (key === defaultPath || pages[index]?.closable === false) {
     return {
       nextPages: pages,
       fallbackPath: null,
@@ -101,6 +120,8 @@ export function useOpenPages(options: UseOpenPagesOptions) {
         openPages.value,
         options.route,
         options.defaultTitle,
+        options.defaultPath,
+        options.homeTitle,
       )
     },
     { immediate: true },

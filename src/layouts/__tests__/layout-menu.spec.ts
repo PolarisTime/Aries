@@ -49,7 +49,7 @@ const menuEntriesByGroup = new Map<MenuGroupKey, AppPageDefinition[]>([
 const systemMenuGroups = {
   system: {
     key: 'system' as const,
-    title: '系统设置',
+    title: '设置',
     icon: 'PrinterOutlined' as const,
   },
 }
@@ -69,26 +69,26 @@ function buildMenus(systemMenuTree: MenuNode[], allowedMenuCodes: string[]) {
         'AppstoreOutlined',
       ].includes(String(iconKey)),
     menuGroupDefinitions: {
-      master: { key: 'master', title: '主数据管理', icon: 'AppstoreOutlined' },
+      master: { key: 'master', title: '基础数据', icon: 'AppstoreOutlined' },
       purchase: {
         key: 'purchase',
-        title: '采购管理',
+        title: '采购',
         icon: 'ShoppingCartOutlined',
       },
-      sales: { key: 'sales', title: '销售管理', icon: 'ShopOutlined' },
-      freight: { key: 'freight', title: '物流管理', icon: 'CarOutlined' },
+      sales: { key: 'sales', title: '销售', icon: 'ShopOutlined' },
+      freight: { key: 'freight', title: '物流', icon: 'CarOutlined' },
       contracts: {
         key: 'contracts',
-        title: '合同管理',
+        title: '合同',
         icon: 'FileTextOutlined',
       },
-      reports: { key: 'reports', title: '报表中心', icon: 'TableOutlined' },
+      reports: { key: 'reports', title: '报表', icon: 'TableOutlined' },
       statements: {
         key: 'statements',
-        title: '对账管理',
+        title: '对账',
         icon: 'FileTextOutlined',
       },
-      finance: { key: 'finance', title: '财务管理', icon: 'WalletOutlined' },
+      finance: { key: 'finance', title: '财务', icon: 'WalletOutlined' },
       system: systemMenuGroups.system,
     },
     menuGroupOrder: [
@@ -155,7 +155,7 @@ describe('buildVisibleLayoutMenuEntries', () => {
         },
         {
           menuCode: 'system',
-          menuName: '系统设置',
+          menuName: '设置',
           parentCode: null,
           routePath: null,
           icon: 'PrinterOutlined',
@@ -196,7 +196,7 @@ describe('buildVisibleLayoutMenuEntries', () => {
         },
         {
           menuCode: 'system',
-          menuName: '系统设置',
+          menuName: '设置',
           parentCode: null,
           routePath: null,
           icon: 'PrinterOutlined',

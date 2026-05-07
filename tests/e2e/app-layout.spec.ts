@@ -100,9 +100,9 @@ test.describe('app layout flows', () => {
 
     const appMenu = page.getByRole('menu')
     await expect(appMenu.getByText('工作台', { exact: true })).toBeVisible()
-    await appMenu.getByText('主数据管理', { exact: true }).click()
+    await appMenu.getByText('基础数据', { exact: true }).click()
     await expect(appMenu.getByText('商品资料', { exact: true })).toBeVisible()
-    await expect(appMenu.getByText('采购管理', { exact: true })).not.toBeVisible()
+    await expect(appMenu.getByText('采购', { exact: true })).not.toBeVisible()
 
     await page.goto('/purchase-orders')
 

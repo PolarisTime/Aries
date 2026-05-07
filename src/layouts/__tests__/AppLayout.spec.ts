@@ -143,7 +143,7 @@ describe('AppLayout', () => {
       },
       {
         menuCode: 'system',
-        menuName: '系统设置',
+        menuName: '设置',
         parentCode: null,
         routePath: null,
         icon: 'PrinterOutlined',
@@ -192,7 +192,15 @@ describe('AppLayout', () => {
     await flushPromises()
   })
 
+  function setSiderLayoutForTest() {
+    localStorage.setItem(
+      'aries-personal-settings',
+      JSON.stringify({ fontSize: 12, layoutMode: 'sider' }),
+    )
+  }
+
   it('only renders system menu entries that the current user can access', async () => {
+    setSiderLayoutForTest()
     const wrapper = mountWithUser(['dashboard', 'print-templates'])
     await flushPromises()
 
@@ -205,6 +213,7 @@ describe('AppLayout', () => {
   })
 
   it('shows role action editor entry when either merged menu is granted', async () => {
+    setSiderLayoutForTest()
     menuMocks.listSystemMenus.mockResolvedValue([
       {
         menuCode: 'dashboard',
@@ -219,7 +228,7 @@ describe('AppLayout', () => {
       },
       {
         menuCode: 'system',
-        menuName: '系统设置',
+        menuName: '设置',
         parentCode: null,
         routePath: null,
         icon: 'PrinterOutlined',
@@ -320,5 +329,22 @@ describe('AppLayout', () => {
     expect(pageText).toContain('账户安全')
     expect(pageText).toContain('修改密码')
     expect(pageText).toContain('两步验证（2FA）')
+  })
+
+  it('renders top navigation layout when stored in personal settings', async () => {
+    localStorage.setItem(
+      'aries-personal-settings',
+      JSON.stringify({ fontSize: 12, layoutMode: 'top' }),
+    )
+
+    const wrapper = mountWithUser(['dashboard', 'print-templates'])
+    await flushPromises()
+
+    expect(wrapper.find('.leo-top-menu').exists()).toBe(true)
+    expect(wrapper.find('.app-sider').exists()).toBe(false)
+    expect(wrapper.find('.app-shell-top-nav').exists()).toBe(true)
+    expect(wrapper.find('.leo-brand-top').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('API 离线')
+    expect(wrapper.text()).not.toContain('API 正常')
   })
 })

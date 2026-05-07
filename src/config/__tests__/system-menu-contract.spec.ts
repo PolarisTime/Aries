@@ -17,7 +17,7 @@ describe('system menu contract validation', () => {
       },
       {
         menuCode: 'system',
-        menuName: '系统设置',
+        menuName: '设置',
         parentCode: null,
         routePath: null,
         icon: 'PrinterOutlined',

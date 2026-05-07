@@ -155,4 +155,62 @@ describe('useOpenPages', () => {
       },
     ])
   })
+
+  it('keeps dashboard as the first fixed tab even when entering from another page', async () => {
+    const route = reactive<RouteStub>({
+      path: '/print-templates',
+      fullPath: '/print-templates',
+      meta: {
+        title: '打印模板',
+        menuKey: '/print-templates',
+        menuParent: 'system',
+      },
+    })
+    const router = {
+      push: vi.fn(),
+    }
+
+    const support = useOpenPages({
+      route,
+      router,
+      defaultPath: '/dashboard',
+      defaultTitle: '未命名页面',
+      homeTitle: '工作台',
+    })
+
+    await nextTick()
+
+    expect(support.openPages.value).toEqual([
+      {
+        key: '/dashboard',
+        path: '/dashboard',
+        title: '工作台',
+        closable: false,
+      },
+      {
+        key: '/print-templates',
+        path: '/print-templates',
+        title: '打印模板',
+        closable: true,
+      },
+    ])
+
+    support.closeTab('/dashboard')
+
+    expect(support.openPages.value).toEqual([
+      {
+        key: '/dashboard',
+        path: '/dashboard',
+        title: '工作台',
+        closable: false,
+      },
+      {
+        key: '/print-templates',
+        path: '/print-templates',
+        title: '打印模板',
+        closable: true,
+      },
+    ])
+    expect(router.push).not.toHaveBeenCalled()
+  })
 })

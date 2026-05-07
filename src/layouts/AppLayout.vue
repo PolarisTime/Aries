@@ -20,7 +20,7 @@ import { useAuthRefreshTimer } from '@/composables/use-auth-refresh-timer'
 import { useGlobalSearchSupport } from '@/layouts/use-global-search-support'
 import { useLayoutMenuSupport } from '@/layouts/use-layout-menu-support'
 import { useOpenPages } from '@/layouts/use-open-pages'
-import { usePersonalSettings } from '@/layouts/use-personal-settings'
+import { usePersonalSettings, type LayoutMode } from '@/layouts/use-personal-settings'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissionStore } from '@/stores/permission'
 import { useSystemMenuStore } from '@/stores/system-menu'
@@ -132,6 +132,22 @@ const isE2eMode = computed(() =>
 )
 
 const fontSizeOptions = [11, 12, 13, 14, 16, 18]
+const layoutModeOptions: Array<{
+  value: LayoutMode
+  label: string
+  description: string
+}> = [
+  {
+    value: 'sider',
+    label: '左侧导航',
+    description: '保留当前侧边菜单，适合表格和高频业务录入。',
+  },
+  {
+    value: 'top',
+    label: '顶部导航',
+    description: '采用顶部菜单栏，整体风格接近 Ant Design Pro 的 top layout。',
+  },
+]
 const personalSettingsTab = ref('display')
 
 const {
@@ -216,6 +232,19 @@ const menuItems = computed<NonNullable<MenuProps['items']>>(() =>
   })),
 )
 
+const topMenuItems = computed<NonNullable<MenuProps['items']>>(() =>
+  menuEntriesForRender.value.map((entry) => ({
+    key: entry.path || entry.menuCode,
+    label: entry.title,
+    children: entry.children.length
+      ? entry.children.map((child) => ({
+          key: child.path || child.menuCode,
+          label: child.title,
+        }))
+      : undefined,
+  })),
+)
+
 function goTo(path: string) {
   void router.push(path)
 }
@@ -246,16 +275,34 @@ const { activeTabKey, openKeys, openPages, closeTab, handleTabChange, handleTabE
     router,
     defaultPath: '/dashboard',
     defaultTitle: '未命名页面',
+    homeTitle: '工作台',
   })
 
 const {
   visible: personalSettingVisible,
   fontSize: personalFontSize,
+  layoutMode: personalLayoutMode,
   open: openPersonalSettings,
   close: closePersonalSettings,
   reset: resetPersonalSettings,
   save: savePersonalSettings,
 } = usePersonalSettings()
+
+const isTopNavigationLayout = computed(() => personalLayoutMode.value === 'top')
+const layoutHeaderClasses = computed(() => [
+  'leo-header',
+  'app-fixed-header',
+  isTopNavigationLayout.value
+    ? 'app-top-header'
+    : collapsed.value
+      ? 'app-side-closed'
+      : 'app-side-opened',
+])
+const mainLayoutStyle = computed(() =>
+  isTopNavigationLayout.value
+    ? undefined
+    : { paddingLeft: `${collapsed.value ? 60 : 180}px` },
+)
 
 function handleOpenPersonalSettings() {
   personalSettingsTab.value = 'display'
@@ -360,8 +407,12 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="leo-page-loader" :class="{ 'is-loading': pageLoading }" />
-  <a-layout class="app-shell leo-shell">
+  <a-layout
+    class="app-shell leo-shell"
+    :class="{ 'app-shell-top-nav': isTopNavigationLayout }"
+  >
     <a-layout-sider
+      v-if="!isTopNavigationLayout"
       collapsible
       :collapsed="collapsed"
       :trigger="null"
@@ -392,16 +443,71 @@ onBeforeUnmount(() => {
 
     <a-layout
       class="leo-main"
-      :style="{ paddingLeft: `${collapsed ? 60 : 180}px` }"
+      :class="{ 'leo-main-top-nav': isTopNavigationLayout }"
+      :style="mainLayoutStyle"
     >
-      <a-layout-header
-        :class="[
-          'leo-header',
-          'app-fixed-header',
-          collapsed ? 'app-side-closed' : 'app-side-opened',
-        ]"
-      >
-        <div class="app-header-bar">
+      <a-layout-header :class="layoutHeaderClasses">
+        <div
+          v-if="isTopNavigationLayout"
+          class="app-header-bar app-header-bar-top"
+        >
+          <div class="app-top-nav-left">
+            <a-menu
+              :key="menuRenderKey"
+              :selected-keys="selectedKeys"
+              :items="topMenuItems"
+              mode="horizontal"
+              theme="light"
+              class="leo-top-menu"
+              @click="handleMenuClick"
+            />
+          </div>
+
+          <div class="app-top-nav-right">
+            <div class="header-global-search header-global-search-top">
+              <div class="header-global-search-group">
+                <a-auto-complete
+                  v-model:value="globalSearchKeyword"
+                  :options="globalSearchOptions"
+                  class="header-global-search-box"
+                  placeholder="搜索单号、合同号、对账单号"
+                  @search="handleGlobalSearch"
+                  @select="handleGlobalSearchSelect"
+                  @press-enter="handleGlobalSearchSubmit(globalSearchKeyword)"
+                  @blur="handleGlobalSearchBlur"
+                />
+                <a-button
+                  type="primary"
+                  class="header-global-search-button"
+                  :loading="globalSearchLoading"
+                  @click="handleGlobalSearchSubmit(globalSearchKeyword)"
+                >
+                  <SearchOutlined />
+                </a-button>
+              </div>
+            </div>
+
+            <div class="user-wrapper user-wrapper-top">
+              <span class="action">
+                {{ clock.format('HH:mm:ss') }}
+              </span>
+              <span class="action user-name">
+                {{ user?.userName || user?.loginName || '未登录' }}
+              </span>
+              <span class="action">
+                <a class="settings-link" @click.prevent="handleOpenPersonalSettings">
+                  <SettingOutlined />
+                  个人设置
+                </a>
+              </span>
+              <span class="action">
+                <a class="logout-link" @click.prevent="handleLogout">退出登录</a>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="app-header-bar">
           <span class="app-trigger" @click="collapsed = !collapsed">
             <MenuUnfoldOutlined v-if="collapsed" />
             <MenuFoldOutlined v-else />
@@ -464,6 +570,7 @@ onBeforeUnmount(() => {
 
       <a-tabs
         class="tab-layout-tabs"
+        :class="{ 'tab-layout-tabs-top-nav': isTopNavigationLayout }"
         :active-key="activeTabKey"
         type="editable-card"
         hide-add
@@ -513,6 +620,26 @@ onBeforeUnmount(() => {
                   {{ size }}px
                 </a-select-option>
               </a-select>
+            </div>
+            <div class="personal-setting-row personal-setting-layout-row">
+              <span class="personal-setting-label">导航布局</span>
+              <a-radio-group
+                v-model:value="personalLayoutMode"
+                class="personal-layout-mode-group"
+                option-type="button"
+                button-style="solid"
+              >
+                <a-radio-button
+                  v-for="item in layoutModeOptions"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </a-radio-button>
+              </a-radio-group>
+            </div>
+            <div class="personal-layout-mode-desc">
+              {{ layoutModeOptions.find((item) => item.value === personalLayoutMode)?.description }}
             </div>
             <div class="personal-setting-actions">
               <a-button @click="handleResetPersonalSettings">恢复默认</a-button>

@@ -146,6 +146,11 @@ function handleTemplateTextareaRefUpdate(value: unknown) {
 </template>
 
 <style scoped>
+.print-template-page {
+  --print-template-sticky-top: 0px;
+  --print-template-workspace-height: calc(var(--app-shell-height) - var(--app-top-offset) - (var(--app-content-padding) * 2));
+}
+
 .print-template-layout {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr) 340px;
@@ -156,9 +161,11 @@ function handleTemplateTextareaRefUpdate(value: unknown) {
 }
 
 .print-template-main {
+  position: sticky;
+  top: var(--print-template-sticky-top);
+  align-self: start;
   min-width: 0;
   width: 100%;
-  position: relative;
   z-index: 1;
   overflow-x: hidden;
   overflow-y: visible;
@@ -166,17 +173,25 @@ function handleTemplateTextareaRefUpdate(value: unknown) {
 }
 
 .print-template-workspace {
+  height: var(--print-template-workspace-height);
+  overflow: hidden;
+}
+
+:deep(.print-template-workspace > .ant-card-body) {
+  height: 100%;
   overflow: hidden;
 }
 
 .editor-workspace-anchor {
-  scroll-margin-top: 102px;
+  scroll-margin-top: var(--print-template-sticky-top);
 }
 
 .workspace-grid {
   display: grid;
+  align-items: stretch;
   grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
   gap: 16px;
+  height: 100%;
   min-width: 0;
 }
 
@@ -186,9 +201,9 @@ function handleTemplateTextareaRefUpdate(value: unknown) {
 
 :deep(.print-template-library) {
   position: sticky;
-  top: 102px;
+  top: var(--print-template-sticky-top);
   z-index: 2;
-  max-height: calc(100vh - 118px);
+  max-height: var(--print-template-workspace-height);
   overflow: hidden;
 }
 
@@ -207,8 +222,22 @@ function handleTemplateTextareaRefUpdate(value: unknown) {
     grid-template-columns: 1fr;
   }
 
+  .print-template-main {
+    position: static;
+    top: auto;
+  }
+
+  .print-template-workspace {
+    height: auto;
+  }
+
+  :deep(.print-template-workspace > .ant-card-body) {
+    overflow: visible;
+  }
+
   .workspace-grid {
     grid-template-columns: 1fr;
+    height: auto;
   }
 
   :deep(.print-template-library) {
