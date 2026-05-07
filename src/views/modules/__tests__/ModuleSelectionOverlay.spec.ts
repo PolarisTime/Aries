@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import Antd from 'ant-design-vue'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import ModuleSelectionOverlay from '@/views/modules/components/ModuleSelectionOverlay.vue'
 
 function mountOverlay(scroll?: Record<string, unknown>) {
@@ -38,6 +38,10 @@ function mountOverlay(scroll?: Record<string, unknown>) {
 }
 
 describe('ModuleSelectionOverlay', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('passes horizontal and default vertical scroll to the data table', () => {
     const wrapper = mountOverlay({ x: 900 })
     const table = wrapper.findComponent({ name: 'DataTable' })
@@ -54,6 +58,7 @@ describe('ModuleSelectionOverlay', () => {
   })
 
   it('updates selection from row clicks and keeps custom double-click handlers', async () => {
+    vi.useFakeTimers()
     const onChange = vi.fn()
     const onClick = vi.fn()
     const onDblclick = vi.fn()
@@ -89,6 +94,7 @@ describe('ModuleSelectionOverlay', () => {
 
     const tableRows = wrapper.findAll('tbody tr.leo-data-table-row')
     await tableRows[1].trigger('click')
+    await vi.advanceTimersByTimeAsync(220)
     expect(onChange).toHaveBeenCalledWith(['M-002'], [rows[1]])
     expect(onClick).toHaveBeenCalledWith('M-002')
 

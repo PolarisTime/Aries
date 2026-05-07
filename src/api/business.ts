@@ -60,6 +60,15 @@ export interface PurchaseOrderImportCandidateQuery {
   pageSize: number
 }
 
+export interface GlobalBusinessSearchRecord {
+  moduleKey: string
+  title: string
+  trackId: string
+  primaryNo: string
+  summary: string
+  matchedByTrackId: boolean
+}
+
 export async function generateBusinessPrimaryNo(moduleKey: string) {
   const response = assertApiSuccess(
     await http.post<ApiResponse<NumberRuleGenerateRecord>>('/general-settings/number-rules/next', null, {
@@ -436,6 +445,36 @@ export async function searchBusinessModule(
     return []
   }
   return normalizeRows(response.data)
+}
+
+export async function searchGlobalBusiness(
+  keyword = '',
+  limit = 20,
+  moduleKeys: string[] = [],
+  signal?: AbortSignal,
+): Promise<GlobalBusinessSearchRecord[]> {
+  const response = await http.get<ApiResponse<GlobalBusinessSearchRecord[]>>(
+    '/global-search',
+    {
+      params: {
+        keyword: keyword.trim(),
+        limit: Math.min(limit, 50),
+        moduleKeys,
+      },
+      signal,
+    },
+  )
+  if (!isSuccessCode(response.code) || !Array.isArray(response.data)) {
+    return []
+  }
+  return response.data.map((item) => ({
+    moduleKey: String(item.moduleKey || ''),
+    title: String(item.title || ''),
+    trackId: String(item.trackId || ''),
+    primaryNo: String(item.primaryNo || ''),
+    summary: String(item.summary || ''),
+    matchedByTrackId: Boolean(item.matchedByTrackId),
+  }))
 }
 
 export async function listPurchaseOrderImportCandidates(

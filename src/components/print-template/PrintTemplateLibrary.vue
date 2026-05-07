@@ -14,7 +14,7 @@ interface Props {
   canMaintainContent: boolean
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 const emit = defineEmits<{
   select: [record: PrintTemplateRecord]

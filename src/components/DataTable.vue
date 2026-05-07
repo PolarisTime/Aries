@@ -1,6 +1,6 @@
 <script setup lang="ts" generic="TData">
 import './data-table.css'
-import { computed, useSlots } from 'vue'
+import { computed, onBeforeUnmount, useSlots } from 'vue'
 import { FlexRender, type Table, type Row, type ColumnDef, type Cell } from '@tanstack/vue-table'
 
 const props = withDefaults(defineProps<{
@@ -25,6 +25,15 @@ const props = withDefaults(defineProps<{
 })
 
 const slots = useSlots()
+const ROW_DOUBLE_CLICK_DELAY_MS = 220
+
+type PendingRowClick = {
+  rowId: string
+  callback: () => void
+  timerId: ReturnType<typeof setTimeout>
+}
+
+let pendingRowClick: PendingRowClick | null = null
 
 function getCellSlot(columnId: string): ((props: { row: TData; cell: Cell<TData, unknown> }) => unknown) | undefined {
   const slot = slots[`cell-${columnId}`]
@@ -87,14 +96,72 @@ function getRowClasses(row: Row<TData>) {
 function getRowAttrs(row: Row<TData>) {
   const customProps = props.rowProps?.(row.original) || {}
   const customOnClick = customProps.onClick
+  const customOnDblclick = customProps.onDblclick
   return {
     ...customProps,
     class: [getRowClasses(row), customProps.class],
     onClick: (e: MouseEvent) => {
+      if (customOnDblclick) {
+        handleRowClickWithDoubleClick(row, customOnClick, e)
+        return
+      }
       if (callRowClickHandler(customOnClick, e)) return
       if (isInteractiveClickTarget(e.target)) return
       onRowClick(row)
     },
+    onDblclick: (e: MouseEvent) => {
+      if (isInteractiveClickTarget(e.target)) return
+      clearPendingRowClick()
+      callRowClickHandler(customOnDblclick, e)
+    },
+  }
+}
+
+function clearPendingRowClick(execute = false) {
+  if (!pendingRowClick) {
+    return
+  }
+  clearTimeout(pendingRowClick.timerId)
+  const callback = pendingRowClick.callback
+  pendingRowClick = null
+  if (execute) {
+    callback()
+  }
+}
+
+function buildRowClickCallback(row: Row<TData>, customOnClick: unknown, event: MouseEvent) {
+  return () => {
+    if (callRowClickHandler(customOnClick, event)) return
+    if (isInteractiveClickTarget(event.target)) return
+    onRowClick(row)
+  }
+}
+
+function handleRowClickWithDoubleClick(row: Row<TData>, customOnClick: unknown, event: MouseEvent) {
+  if (isInteractiveClickTarget(event.target)) {
+    return
+  }
+
+  const rowId = String(row.id || '')
+  if (pendingRowClick && pendingRowClick.rowId !== rowId) {
+    clearPendingRowClick(true)
+  } else {
+    clearPendingRowClick()
+  }
+
+  if (event.detail > 1) {
+    return
+  }
+
+  const callback = buildRowClickCallback(row, customOnClick, event)
+  pendingRowClick = {
+    rowId,
+    callback,
+    timerId: setTimeout(() => {
+      const nextCallback = pendingRowClick?.callback
+      pendingRowClick = null
+      nextCallback?.()
+    }, ROW_DOUBLE_CLICK_DELAY_MS),
   }
 }
 
@@ -134,6 +201,10 @@ function onRowClick(row: Row<TData>) {
     row.toggleSelected()
   }
 }
+
+onBeforeUnmount(() => {
+  clearPendingRowClick()
+})
 
 type ColumnMetaLike = { align?: 'left' | 'center' | 'right'; ellipsis?: boolean; fixed?: 'left' | 'right'; width?: number }
 

@@ -23,6 +23,7 @@ const props = defineProps<{
   canDelete: boolean
   canAttach: boolean
   isReadOnly: boolean
+  visibleActionKeys?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -38,40 +39,48 @@ const isAudited = computed(() =>
   props.record.status === '已审核' || props.record.status === '已核准'
 )
 
+const visibleActionKeySet = computed(() =>
+  props.visibleActionKeys ? new Set(props.visibleActionKeys) : null,
+)
+
+function isActionEnabled(actionKey: string) {
+  return !visibleActionKeySet.value || visibleActionKeySet.value.has(actionKey)
+}
+
 const actions = computed<ActionItem[]>(() => [
   {
     key: 'view',
     label: '查看',
     icon: EyeOutlined,
-    visible: props.canView,
+    visible: isActionEnabled('view') && props.canView,
     onClick: () => emit('view', props.record)
   },
   {
     key: 'edit',
     label: '编辑',
     icon: EditOutlined,
-    visible: !props.isReadOnly && props.canEdit && !isAudited.value,
+    visible: isActionEnabled('edit') && !props.isReadOnly && props.canEdit && !isAudited.value,
     onClick: () => emit('edit', props.record)
   },
   {
     key: 'audit',
     label: props.auditLabel || '审核',
     icon: AuditOutlined,
-    visible: !props.isReadOnly && props.canAudit,
+    visible: isActionEnabled('audit') && !props.isReadOnly && props.canAudit,
     onClick: () => emit('audit', props.record)
   },
   {
     key: 'reverse-audit',
     label: props.reverseAuditLabel || '反审核',
     icon: UndoOutlined,
-    visible: !props.isReadOnly && props.canReverseAudit,
+    visible: isActionEnabled('reverse-audit') && !props.isReadOnly && props.canReverseAudit,
     onClick: () => emit('reverse-audit', props.record)
   },
   {
     key: 'attachment',
     label: '附件',
     icon: PaperClipOutlined,
-    visible: !props.isReadOnly && props.canAttach,
+    visible: isActionEnabled('attachment') && !props.isReadOnly && props.canAttach,
     onClick: () => emit('attachment', props.record)
   },
   {
@@ -80,7 +89,7 @@ const actions = computed<ActionItem[]>(() => [
     icon: DeleteOutlined,
     danger: true,
     confirm: '确定删除吗?',
-    visible: !props.isReadOnly && props.canDelete && !isAudited.value,
+    visible: isActionEnabled('delete') && !props.isReadOnly && props.canDelete && !isAudited.value,
     onClick: () => emit('delete', props.record)
   }
 ])

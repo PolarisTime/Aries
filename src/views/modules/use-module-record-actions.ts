@@ -7,7 +7,7 @@ import {
 } from '@/api/business'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { cloneLineItems, cloneRecord } from '@/utils/clone-utils'
-import { isDeleteBlockedByStatus } from './module-behavior-registry'
+import { isDeleteBlockedByStatus, isEditBlockedByStatus } from './module-behavior-registry'
 
 export type StatusChangeTarget = {
   key: string
@@ -22,6 +22,7 @@ interface UseModuleRecordActionsOptions {
   activeRecord: Ref<ModuleRecord | null>
   attachmentRecord: Ref<ModuleRecord | null>
   isReadOnly: Ref<boolean>
+  canEditRecords: Ref<boolean>
   canDeleteRecords: Ref<boolean>
   canAuditRecords: Ref<boolean>
   canUseBulkDeleteActions: Ref<boolean>
@@ -139,6 +140,13 @@ export function useModuleRecordActions(options: UseModuleRecordActionsOptions) {
       && !options.isReadOnly.value
       && options.canDeleteRecords.value
       && !isDeleteBlockedByStatus(record.status)
+  }
+
+  function canEditRecord(record: ModuleRecord) {
+    return canUseRecordActions(record)
+      && !options.isReadOnly.value
+      && options.canEditRecords.value
+      && !isEditBlockedByStatus(record.status)
   }
 
   function getSelectedRecords() {
@@ -384,6 +392,7 @@ export function useModuleRecordActions(options: UseModuleRecordActionsOptions) {
   return {
     canAuditRecord,
     canDeleteRecord,
+    canEditRecord,
     canReverseAuditRecord,
     getSelectedRecords,
     handleAuditRecord,

@@ -5,6 +5,12 @@ import PrintTemplateEditor from '@/components/print-template/PrintTemplateEditor
 import PrintTemplatePreview from '@/components/print-template/PrintTemplatePreview.vue'
 import PrintTemplateSidebar from '@/components/print-template/PrintTemplateSidebar.vue'
 
+interface AntTextAreaRef {
+  resizableTextArea?: {
+    textArea?: HTMLTextAreaElement
+  }
+}
+
 const {
   // 状态
   selectedBillType,
@@ -40,7 +46,6 @@ const {
   // 方法
   handleCreate,
   handleSelectTemplate,
-  handleEdit,
   handleCopyTemplate,
   handleSave,
   handleDelete,
@@ -53,6 +58,12 @@ const {
   printTemplateTargetOptions,
   printTemplateTargetMap,
 } = usePrintTemplate()
+
+void editorWorkspaceRef
+
+function handleTemplateTextareaRefUpdate(value: unknown) {
+  templateTextareaRef.value = (value as AntTextAreaRef | null) || null
+}
 </script>
 
 <template>
@@ -96,7 +107,7 @@ const {
           >
             <div class="workspace-grid">
               <PrintTemplateEditor
-                :editor-form="editorForm"
+                v-model:editor-form="editorForm"
                 :bill-type-options="printTemplateTargetOptions"
                 :bill-type-map="printTemplateTargetMap"
                 :template-kind="templateKind"
@@ -105,14 +116,12 @@ const {
                 :can-save="canSaveCurrentTemplate"
                 :can-maintain-content="canMaintainTemplateContent"
                 :saving="saving"
-                :starter-template="starterTemplate"
                 :can-create="canCreate"
-                :template-textarea-ref="templateTextareaRef"
                 @save="handleSave"
                 @copy="handleCopyTemplate"
                 @reset="resetEditor"
                 @use-starter="editorForm.templateHtml = starterTemplate"
-                @update:template-textarea-ref="templateTextareaRef = $event"
+                @update:template-textarea-ref="handleTemplateTextareaRefUpdate"
               />
 
               <PrintTemplatePreview

@@ -63,4 +63,24 @@ describe('system settings api', () => {
     expect(getClientSettingNumber(settings, CLIENT_SETTING_CODES.defaultListPageSize, 20)).toBe(50)
     expect(getClientSettingNumber(settings, 'UNKNOWN', 20)).toBe(20)
   })
+
+  it('loads statement generator rules from dedicated endpoint', async () => {
+    clientMocks.httpGet.mockResolvedValue({
+      code: 0,
+      data: {
+        customerStatementReceiptAmountZero: true,
+        supplierStatementFullPayment: false,
+      },
+    })
+
+    const { getStatementGeneratorRules } = await import('@/api/system-settings')
+
+    const rules = await getStatementGeneratorRules()
+
+    expect(clientMocks.httpGet).toHaveBeenCalledWith('/general-settings/statement-generator-rules')
+    expect(rules).toEqual({
+      customerStatementReceiptAmountZero: true,
+      supplierStatementFullPayment: false,
+    })
+  })
 })

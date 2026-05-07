@@ -48,6 +48,7 @@ export function useModuleGridTable(options: UseModuleGridTableOptions) {
     materialSelectorColumns,
     freightSummaryColumns,
   } = useGridColumns({
+    moduleKey: options.moduleKey,
     isReadOnly: options.isReadOnly,
     visibleConfigColumns: options.visibleConfigColumns,
     columnMetaMap: options.columnMetaMap,

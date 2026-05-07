@@ -11,6 +11,7 @@ vi.mock('@/api/client', () => ({
     post: clientMocks.httpPost,
     put: clientMocks.httpPut,
   },
+  isSuccessCode: (code?: number) => code == null || code === 0,
   assertApiSuccess: <T extends { code?: number; message?: string }>(response: T) => {
     if (response.code != null && response.code !== 0) {
       throw new Error(response.message || '请求失败')
@@ -141,6 +142,43 @@ describe('business api read-only modules', () => {
         keyword: 'PO-00',
         page: 1,
         size: 20,
+      },
+    })
+  })
+
+  it('loads aggregated global search results from the backend', async () => {
+    clientMocks.httpGet.mockResolvedValue({
+      code: 0,
+      data: [
+        {
+          moduleKey: 'purchase-orders',
+          title: '采购订单',
+          trackId: '1914876201459236001',
+          primaryNo: 'CG20260001',
+          summary: '供应商甲 / 已审核',
+          matchedByTrackId: false,
+        },
+      ],
+    })
+
+    const { searchGlobalBusiness } = await import('@/api/business')
+
+    await expect(searchGlobalBusiness('CG20260001', 20, ['purchase-orders'])).resolves.toEqual([
+      {
+        moduleKey: 'purchase-orders',
+        title: '采购订单',
+        trackId: '1914876201459236001',
+        primaryNo: 'CG20260001',
+        summary: '供应商甲 / 已审核',
+        matchedByTrackId: false,
+      },
+    ])
+
+    expect(clientMocks.httpGet).toHaveBeenCalledWith('/global-search', {
+      params: {
+        keyword: 'CG20260001',
+        limit: 20,
+        moduleKeys: ['purchase-orders'],
       },
     })
   })
