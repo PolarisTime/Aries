@@ -10,8 +10,9 @@ type TableColumn = Record<string, unknown>
 interface UseModuleGridRowRenderersOptions {
   isReadOnly: Ref<boolean>
   canViewRecords: Ref<boolean>
-  canEditRecords: Ref<boolean>
+  canEditRecord: (record: ModuleRecord) => boolean
   canManageAttachments: Ref<boolean>
+  visibleActionKeys?: Ref<string[] | undefined>
   canAuditRecord: (record: ModuleRecord) => boolean
   canReverseAuditRecord: (record: ModuleRecord) => boolean
   auditActionLabel: Ref<string>
@@ -44,7 +45,7 @@ export function useModuleGridRowRenderers(options: UseModuleGridRowRenderersOpti
     return h(TableRowActions, {
       record,
       canView: options.canViewRecords.value,
-      canEdit: !options.isReadOnly.value && options.canEditRecords.value,
+      canEdit: options.canEditRecord(record),
       canAudit: options.canAuditRecord(record),
       canReverseAudit: options.canReverseAuditRecord(record),
       auditLabel: options.auditActionLabel.value,
@@ -52,6 +53,7 @@ export function useModuleGridRowRenderers(options: UseModuleGridRowRenderersOpti
       canDelete: options.canDeleteRecord(record),
       canAttach: !options.isReadOnly.value && options.canManageAttachments.value,
       isReadOnly: options.isReadOnly.value,
+      visibleActionKeys: options.visibleActionKeys?.value,
       onView: (row: ModuleRecord) => {
         void options.handleView(row)
       },

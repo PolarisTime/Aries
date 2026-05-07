@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import type { PrintTemplateRecord } from '@/types/print-template'
 
+interface EditorFormModel {
+  id?: string
+  billType: string
+  templateName: string
+  templateHtml: string
+  isDefault: boolean
+}
+
 interface Props {
-  editorForm: {
-    id?: string
-    billType: string
-    templateName: string
-    templateHtml: string
-    isDefault: boolean
-  }
   billTypeOptions: Array<{ value: string; label: string }>
   billTypeMap: Record<string, string>
   templateKind: string
@@ -17,12 +18,11 @@ interface Props {
   canSave: boolean
   canMaintainContent: boolean
   saving: boolean
-  starterTemplate: string
   canCreate: boolean
-  templateTextareaRef?: { resizableTextArea?: { textArea?: HTMLTextAreaElement } } | null
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
+const editorForm = defineModel<EditorFormModel>('editorForm', { required: true })
 
 const emit = defineEmits<{
   save: []

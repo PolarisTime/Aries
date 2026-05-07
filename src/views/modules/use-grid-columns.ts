@@ -4,9 +4,11 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/vue-table'
 import type { ModuleColumnDefinition, ModuleRecord } from '@/types/module-page'
 import type { StatusMeta } from '@/composables/use-module-display-support'
 import StatusTag from '@/components/StatusTag.vue'
+import { getBehaviorValue } from './module-behavior-registry'
 import { isTagListColumnKey, isFriendlyTagColumnKey, getTagListValues, getFriendlyTagColor } from './module-adapter-shared'
 
 interface GridColumnDeps {
+  moduleKey: Ref<string>
   isReadOnly: Ref<boolean>
   visibleConfigColumns: Ref<ModuleColumnDefinition[]>
   columnMetaMap: Ref<Record<string, ModuleColumnDefinition>>
@@ -16,7 +18,20 @@ interface GridColumnDeps {
 }
 
 export function useGridColumns(deps: GridColumnDeps) {
-  const { isReadOnly, visibleConfigColumns, columnMetaMap, showMaterialSelectorUnitPrice, formatCellValue, getStatusMeta } = deps
+  const { moduleKey, visibleConfigColumns, columnMetaMap, showMaterialSelectorUnitPrice, formatCellValue, getStatusMeta } = deps
+
+  const actionColumnTitle = computed(() => {
+    const configuredTitle = getBehaviorValue(moduleKey.value, 'listActionColumnTitle')
+    return typeof configuredTitle === 'string' && configuredTitle.trim() ? configuredTitle.trim() : '附件'
+  })
+
+  const actionColumnWidth = computed(() => {
+    const configuredWidth = Number(getBehaviorValue(moduleKey.value, 'listActionColumnWidth'))
+    if (Number.isFinite(configuredWidth) && configuredWidth > 0) {
+      return configuredWidth
+    }
+    return 84
+  })
 
   const tanstackColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
     {
@@ -37,8 +52,8 @@ export function useGridColumns(deps: GridColumnDeps) {
     },
     {
       id: 'action',
-      header: () => '操作',
-      meta: { width: isReadOnly.value ? 84 : 232, align: 'center' as const, fixed: 'left' as const },
+      header: () => actionColumnTitle.value,
+      meta: { width: actionColumnWidth.value, align: 'center' as const, fixed: 'left' as const },
     },
     ...visibleConfigColumns.value.map((column) => {
       const colMeta = columnMetaMap.value[column.dataIndex]

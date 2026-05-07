@@ -53,6 +53,7 @@ describe('useModuleGridPanelBindings', () => {
       mainTable: {} as Table<ModuleRecord>,
       tableLoading: ref(false),
       getRowClassName: vi.fn(() => ''),
+      rowProps: vi.fn(() => ({ onDblclick: vi.fn() })),
       hasExpandableRows: ref(false),
       rowActionsRenderer: vi.fn(() => null),
       expandedRowRenderer: vi.fn(() => null),
@@ -113,6 +114,7 @@ describe('useModuleGridPanelBindings', () => {
       mainTable: {} as Table<ModuleRecord>,
       tableLoading: ref(false),
       getRowClassName: vi.fn(() => ''),
+      rowProps: vi.fn(() => ({ onDblclick: vi.fn() })),
       hasExpandableRows: ref(false),
       rowActionsRenderer: vi.fn(() => null),
       expandedRowRenderer: vi.fn(() => null),
@@ -135,5 +137,61 @@ describe('useModuleGridPanelBindings', () => {
 
     expect(setFilterValue).toHaveBeenCalledWith('status', '已审核')
     expect('update-filter' in gridPanelEvents).toBe(false)
+  })
+
+  it('passes row props through to the grid panel', () => {
+    const rowProps = vi.fn((record: ModuleRecord) => ({ title: String(record.id || '') }))
+    const pagination = reactive({ currentPage: 1, pageSize: 20 })
+
+    const { gridPanelProps } = useModuleGridPanelBindings({
+      moduleKey: ref('sales-outbounds'),
+      config: ref(createConfig()),
+      isReadOnly: ref(false),
+      readOnlyAlertActionLink: ref(null),
+      filters: reactive({}),
+      visibleFilters: ref([]),
+      quickFilters: ref([]),
+      activeQuickFilterKey: ref(''),
+      hasAdvancedFilters: ref(false),
+      searchExpanded: ref(false),
+      tableErrorMessage: ref(''),
+      masterTableSummary: ref(''),
+      visibleToolbarActions: ref([]),
+      exportMenuItems: ref([]),
+      exportLoading: ref(false),
+      isMaterialModule: ref(false),
+      canExportRecords: ref(false),
+      canImportMaterials: ref(false),
+      columnSettingItems: ref([]),
+      getColumnSettingItemClass: vi.fn(() => ''),
+      handleColumnSettingDragStart: vi.fn(),
+      handleColumnSettingDragOver: vi.fn(),
+      handleColumnSettingDrop: vi.fn(),
+      resetListColumnSettingDragState: vi.fn(),
+      handleColumnVisibleChange: vi.fn(),
+      resetColumnSettings: vi.fn(),
+      mainTable: {} as Table<ModuleRecord>,
+      tableLoading: ref(false),
+      getRowClassName: vi.fn(() => ''),
+      rowProps,
+      hasExpandableRows: ref(false),
+      rowActionsRenderer: vi.fn(() => null),
+      expandedRowRenderer: vi.fn(() => null),
+      pagination,
+      paginationTotal: ref(0),
+      navigateTo: vi.fn(),
+      applyQuickFilter: vi.fn(),
+      setFilterValue: vi.fn(),
+      handleFilterValueChange: vi.fn(),
+      handleSearch: vi.fn(),
+      handleReset: vi.fn(),
+      clearTableError: vi.fn(),
+      handleAction: vi.fn(),
+      handleExportMenuClick: vi.fn(),
+      handleMaterialTemplateDownload: vi.fn(),
+      handleMaterialImportClick: vi.fn(),
+    })
+
+    expect(gridPanelProps.value.rowProps).toBe(rowProps)
   })
 })

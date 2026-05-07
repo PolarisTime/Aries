@@ -46,6 +46,7 @@ interface UseModuleGridPanelBindingsOptions {
   mainTable: Table<ModuleRecord>
   tableLoading: Ref<boolean>
   getRowClassName: (record: ModuleRecord) => string
+  rowProps?: (record: ModuleRecord) => Record<string, unknown>
   hasExpandableRows: Ref<boolean>
   rowActionsRenderer: (record: ModuleRecord) => VNodeChild
   expandedRowRenderer: (record: ModuleRecord) => VNodeChild
@@ -96,6 +97,7 @@ export function useModuleGridPanelBindings(options: UseModuleGridPanelBindingsOp
     mainTable: options.mainTable,
     tableLoading: options.tableLoading.value,
     getRowClassName: options.getRowClassName,
+    rowProps: options.rowProps,
     hasExpandableRows: options.hasExpandableRows.value,
     rowActionsRenderer: options.rowActionsRenderer,
     expandedRowRenderer: options.expandedRowRenderer,

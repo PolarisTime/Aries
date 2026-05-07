@@ -60,6 +60,7 @@ const props = defineProps<{
   mainTable: Table<ModuleRecord>
   tableLoading: boolean
   getRowClassName: (record: ModuleRecord) => string
+  rowProps?: (record: ModuleRecord) => Record<string, unknown>
   hasExpandableRows: boolean
   rowActionsRenderer: (record: ModuleRecord) => VNodeChild
   expandedRowRenderer: (record: ModuleRecord) => VNodeChild
@@ -173,6 +174,7 @@ const paginationPageSizeOptions = computed(() => {
         size="middle"
         :loading="tableLoading"
         :row-class="getRowClassName"
+        :row-props="rowProps"
         empty-text="当前筛选条件下暂无数据"
       >
         <template #cell-action="{ row }">

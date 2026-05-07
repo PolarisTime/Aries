@@ -91,6 +91,14 @@ export interface ModuleBehaviorConfig {
   hasUploadRuleExpandedRow?: boolean
   /** Optional link rendered in the info alert bar for this module. */
   alertActionLink?: { text: string; to: string }
+  /** Title used by the list row action column for this module. */
+  listActionColumnTitle?: string
+  /** Width used by the list row action column for this module. */
+  listActionColumnWidth?: number
+  /** Allowed row action keys for the list action column. */
+  listRowActionKeys?: string[]
+  /** Whether double-clicking a list row should open the document detail. */
+  openDetailOnRowDoubleClick?: boolean
 }
 
 const registry = new Map<string, ModuleBehaviorConfig>()
@@ -241,7 +249,13 @@ positiveLineItemModules.forEach((key) => register(key, { lineItemTrimStrategy: '
 register('invoice-issues', { allowsManualLineItems: false })
 register('freight-bills', { allowsManualLineItems: false, readonlyLineItems: true })
 register('purchase-inbounds', { allowsManualLineItems: false })
-register('sales-outbounds', { allowsManualLineItems: false })
+register('sales-outbounds', {
+  allowsManualLineItems: false,
+  listActionColumnTitle: '附件',
+  listActionColumnWidth: 84,
+  listRowActionKeys: ['attachment'],
+  openDetailOnRowDoubleClick: true,
+})
 
 // ── Statement support ──
 register('purchase-inbounds', { supportsStatements: true, statementLinkType: 'supplier' })

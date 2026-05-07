@@ -23,6 +23,7 @@ const routerMocks = vi.hoisted(() => ({
 const businessMocks = vi.hoisted(() => ({
   getBusinessModuleDetail: vi.fn(),
   listBusinessModule: vi.fn(),
+  searchGlobalBusiness: vi.fn(),
 }))
 
 const menuMocks = vi.hoisted(() => ({
@@ -54,6 +55,7 @@ vi.mock('@/router', () => ({
 vi.mock('@/api/business', () => ({
   getBusinessModuleDetail: businessMocks.getBusinessModuleDetail,
   listBusinessModule: businessMocks.listBusinessModule,
+  searchGlobalBusiness: businessMocks.searchGlobalBusiness,
 }))
 
 vi.mock('@/api/system-menus', () => ({
@@ -120,10 +122,12 @@ function mountWithUser(
 
 describe('AppLayout', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     localStorage.clear()
     routerMocks.push.mockReset()
     routerMocks.replace.mockReset()
     businessMocks.listBusinessModule.mockReset()
+    businessMocks.searchGlobalBusiness.mockReset()
     menuMocks.listSystemMenus.mockReset()
     menuMocks.listSystemMenus.mockResolvedValue([
       {
@@ -245,35 +249,24 @@ describe('AppLayout', () => {
   })
 
   it('filters inaccessible modules in global search and routes to the selected result', async () => {
-    businessMocks.listBusinessModule.mockImplementation(
-      async (moduleKey: string) => {
-        if (moduleKey === 'purchase-orders') {
-          return {
-            data: {
-              rows: [
-                {
-                  id: 'purchase-order-1',
-                  orderNo: 'CG20260001',
-                  status: '已审核',
-                },
-              ],
-            },
-          }
-        }
-
-        return {
-          data: {
-            rows: [
-              {
-                id: 'sales-order-1',
-                orderNo: 'XS20260001',
-                status: '已审核',
-              },
-            ],
-          },
-        }
+    businessMocks.searchGlobalBusiness.mockResolvedValue([
+      {
+        moduleKey: 'purchase-orders',
+        title: '采购订单',
+        trackId: 'purchase-order-1',
+        primaryNo: 'CG20260001',
+        summary: '已审核',
+        matchedByTrackId: false,
       },
-    )
+      {
+        moduleKey: 'sales-orders',
+        title: '销售订单',
+        trackId: 'sales-order-1',
+        primaryNo: 'XS20260001',
+        summary: '已审核',
+        matchedByTrackId: false,
+      },
+    ])
 
     const wrapper = mountWithUser(['dashboard', 'purchase-orders'])
     await flushPromises()
@@ -282,13 +275,15 @@ describe('AppLayout', () => {
     expect(autoComplete.exists()).toBe(true)
 
     autoComplete.vm.$emit('search', 'CG20260001')
+    await new Promise((resolve) => setTimeout(resolve, 250))
     await flushPromises()
 
-    expect(businessMocks.listBusinessModule).toHaveBeenCalledTimes(1)
-    expect(businessMocks.listBusinessModule).toHaveBeenCalledWith(
-      'purchase-orders',
-      { keyword: 'CG20260001' },
-      { currentPage: 1, pageSize: 6 },
+    expect(businessMocks.searchGlobalBusiness).toHaveBeenCalledTimes(1)
+    expect(businessMocks.searchGlobalBusiness).toHaveBeenCalledWith(
+      'CG20260001',
+      20,
+      expect.arrayContaining(['purchase-orders']),
+      expect.any(AbortSignal),
     )
 
     autoComplete.vm.$emit('select', 'purchase-orders::CG20260001')

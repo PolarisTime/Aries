@@ -42,4 +42,11 @@ describe('TableRowActions', () => {
       record: { id: 'row-3', status: '已确认' },
     })).toContain('反确认')
   })
+
+  it('supports module-specific row action filtering', () => {
+    expect(actionLabels({
+      canAttach: true,
+      visibleActionKeys: ['attachment'],
+    })).toEqual(['附件'])
+  })
 })

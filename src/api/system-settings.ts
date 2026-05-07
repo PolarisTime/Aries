@@ -12,9 +12,12 @@ export const DISPLAY_SWITCH_CODES = {
 export type DisplaySwitchCode = typeof DISPLAY_SWITCH_CODES[keyof typeof DISPLAY_SWITCH_CODES]
 export const CLIENT_SETTING_CODES = {
   defaultListPageSize: 'UI_DEFAULT_LIST_PAGE_SIZE',
-  customerStatementReceiptZeroFromSalesOrder: 'SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER',
-  supplierStatementFullPaymentFromPurchase: 'SYS_SUPPLIER_STATEMENT_FULL_PAYMENT_FROM_PURCHASE',
 } as const
+
+export interface StatementGeneratorRules {
+  customerStatementReceiptAmountZero: boolean
+  supplierStatementFullPayment: boolean
+}
 
 interface DisplaySwitchResponse {
   id?: string | number
@@ -47,6 +50,17 @@ export async function listClientSettings(): Promise<ModuleRecord[]> {
     '加载客户端设置失败',
   )
   return (response.data || []).map(normalizeSwitch)
+}
+
+export async function getStatementGeneratorRules(): Promise<StatementGeneratorRules> {
+  const response = assertApiSuccess(
+    await http.get<ApiResponse<Partial<StatementGeneratorRules>>>('/general-settings/statement-generator-rules'),
+    '加载对账单生成规则失败',
+  )
+  return {
+    customerStatementReceiptAmountZero: Boolean(response.data?.customerStatementReceiptAmountZero),
+    supplierStatementFullPayment: Boolean(response.data?.supplierStatementFullPayment),
+  }
 }
 
 export function isDisplaySwitchEnabled(

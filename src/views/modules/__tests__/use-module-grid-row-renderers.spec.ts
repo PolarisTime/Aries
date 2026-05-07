@@ -8,8 +8,9 @@ describe('useModuleGridRowRenderers', () => {
     const { rowActionsRenderer } = useModuleGridRowRenderers({
       isReadOnly: ref(false),
       canViewRecords: ref(true),
-      canEditRecords: ref(true),
+      canEditRecord: () => false,
       canManageAttachments: ref(true),
+      visibleActionKeys: ref(['attachment']),
       canAuditRecord: () => true,
       canReverseAuditRecord: () => false,
       auditActionLabel: ref('确认'),
@@ -38,7 +39,9 @@ describe('useModuleGridRowRenderers', () => {
     expect(vnode.type).toBe(TableRowActions)
     expect(vnode.props.canAudit).toBe(true)
     expect(vnode.props.canReverseAudit).toBe(false)
+    expect(vnode.props.canEdit).toBe(false)
     expect(vnode.props.auditLabel).toBe('确认')
     expect(vnode.props.reverseAuditLabel).toBe('反确认')
+    expect(vnode.props.visibleActionKeys).toEqual(['attachment'])
   })
 })

@@ -8,7 +8,7 @@ import {
   listFreightStatementCandidates,
   listSupplierStatementCandidates,
 } from '@/api/business'
-import { CLIENT_SETTING_CODES, listClientSettings } from '@/api/system-settings'
+import { getStatementGeneratorRules } from '@/api/system-settings'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   buildCustomerStatementDraftData,
@@ -30,9 +30,6 @@ export interface FreightSummaryRow {
   paidAmount: number
   unpaidAmount: number
 }
-
-const CUSTOMER_STATEMENT_RECEIPT_ZERO_SWITCH = CLIENT_SETTING_CODES.customerStatementReceiptZeroFromSalesOrder
-const SUPPLIER_STATEMENT_FULL_PAYMENT_SWITCH = CLIENT_SETTING_CODES.supplierStatementFullPaymentFromPurchase
 
 interface UseStatementGeneratorSupportOptions {
   canViewRecords: Ref<boolean>
@@ -71,14 +68,8 @@ function isModuleRecord(record: ModuleRecord | undefined): record is ModuleRecor
   return Boolean(record)
 }
 
-async function loadEnabledSystemSwitches() {
-  const settings = await listClientSettings()
-  return new Set(
-    settings
-      .filter((row) => String(row.status || '') === '正常')
-      .map((row) => String(row.settingCode || '').trim())
-      .filter(Boolean),
-  )
+async function loadStatementGeneratorRules() {
+  return getStatementGeneratorRules()
 }
 
 async function hydrateModuleDetails(moduleKey: string, rows: ModuleRecord[]) {
@@ -482,12 +473,12 @@ export function useStatementGeneratorSupport(options: UseStatementGeneratorSuppo
   async function buildSupplierStatementDraft(sourceInbounds: ModuleRecord[]) {
     const detailedInbounds = await hydrateModuleDetails('purchase-inbounds', sourceInbounds)
     const baseDraft = options.createBaseDraft()
-    const enabledSwitches = await loadEnabledSystemSwitches()
+    const statementGeneratorRules = await loadStatementGeneratorRules()
     return buildSupplierStatementDraftData({
       baseDraft,
       sourceInbounds: detailedInbounds,
       today: dayjs().format('YYYY-MM-DD'),
-      defaultFullPayment: enabledSwitches.has(SUPPLIER_STATEMENT_FULL_PAYMENT_SWITCH),
+      defaultFullPayment: statementGeneratorRules.supplierStatementFullPayment,
       cloneLineItems,
       buildLineItemId: buildModuleLineItemId,
     })
@@ -495,12 +486,12 @@ export function useStatementGeneratorSupport(options: UseStatementGeneratorSuppo
 
   async function buildCustomerStatementDraft(sourceOrders: ModuleRecord[]) {
     const detailedOrders = await hydrateModuleDetails('sales-orders', sourceOrders)
-    const enabledSwitches = await loadEnabledSystemSwitches()
+    const statementGeneratorRules = await loadStatementGeneratorRules()
     return buildCustomerStatementDraftData({
       baseDraft: options.createBaseDraft(),
       sourceOrders: detailedOrders,
       today: dayjs().format('YYYY-MM-DD'),
-      defaultReceiptAmountZero: enabledSwitches.has(CUSTOMER_STATEMENT_RECEIPT_ZERO_SWITCH),
+      defaultReceiptAmountZero: statementGeneratorRules.customerStatementReceiptAmountZero,
       cloneLineItems,
       buildLineItemId: buildModuleLineItemId,
     })

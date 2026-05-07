@@ -8,12 +8,14 @@ type TestColumnDef = ColumnDef<ModuleRecord, unknown> & {
   id?: string
   meta?: {
     align?: string
+    width?: number
   }
 }
 
 describe('useGridColumns', () => {
   it('centers main list columns even when numeric config prefers right alignment', () => {
     const { tanstackColumns } = useGridColumns({
+      moduleKey: ref('sales-orders'),
       isReadOnly: ref(false),
       visibleConfigColumns: computed(() => [
         { title: '总重量（吨）', dataIndex: 'totalWeight', width: 116, align: 'right', type: 'weight' as const },
@@ -36,6 +38,7 @@ describe('useGridColumns', () => {
 
   it('hides material selector unit price when the current module is in weight-only mode', () => {
     const { materialSelectorColumns } = useGridColumns({
+      moduleKey: ref('sales-orders'),
       isReadOnly: ref(false),
       visibleConfigColumns: computed(() => []),
       columnMetaMap: computed(() => ({})),
@@ -46,5 +49,39 @@ describe('useGridColumns', () => {
 
     const columnIds = (materialSelectorColumns.value as TestColumnDef[]).map((column) => String(column.id ?? ''))
     expect(columnIds).not.toContain('unitPrice')
+  })
+
+  it('uses module-specific action column title and width', () => {
+    const { tanstackColumns } = useGridColumns({
+      moduleKey: ref('sales-outbounds'),
+      isReadOnly: ref(false),
+      visibleConfigColumns: computed(() => []),
+      columnMetaMap: computed(() => ({})),
+      showMaterialSelectorUnitPrice: ref(true),
+      formatCellValue: (_column, value) => String(value ?? ''),
+      getStatusMeta: (value) => ({ text: String(value ?? ''), color: 'default' }),
+    })
+
+    const actionColumn = (tanstackColumns.value as TestColumnDef[]).find((column) => column.id === 'action')
+
+    expect((actionColumn?.header as (() => string))()).toBe('附件')
+    expect(actionColumn?.meta?.width).toBe(84)
+  })
+
+  it('defaults generic modules to attachment-only action column styling', () => {
+    const { tanstackColumns } = useGridColumns({
+      moduleKey: ref('sales-orders'),
+      isReadOnly: ref(false),
+      visibleConfigColumns: computed(() => []),
+      columnMetaMap: computed(() => ({})),
+      showMaterialSelectorUnitPrice: ref(true),
+      formatCellValue: (_column, value) => String(value ?? ''),
+      getStatusMeta: (value) => ({ text: String(value ?? ''), color: 'default' }),
+    })
+
+    const actionColumn = (tanstackColumns.value as TestColumnDef[]).find((column) => column.id === 'action')
+
+    expect((actionColumn?.header as (() => string))()).toBe('附件')
+    expect(actionColumn?.meta?.width).toBe(84)
   })
 })

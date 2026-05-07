@@ -82,9 +82,11 @@ import { useMaterialImport } from './use-material-import'
 import { useFinanceStatementLinkSupport } from './use-finance-statement-link-support'
 import { useFreightPickupList } from './use-freight-pickup-list'
 import { useMaterialSelector } from './use-material-selector'
+import { getBehaviorValue } from './module-behavior-registry'
 import { useParentImportSupport } from './use-parent-import-support'
 import { cloneLineItems } from '@/utils/clone-utils'
 import { resolveStatusChangeActionLabel } from './module-adapter-actions'
+import type { ModuleRecord } from '@/types/module-page'
 
 const props = defineProps<{
   moduleKey: string
@@ -842,6 +844,7 @@ const {
 
 const {
   canDeleteRecord,
+  canEditRecord,
   canAuditRecord,
   handleAuditRecord,
   handleDelete,
@@ -859,6 +862,7 @@ const {
   activeRecord,
   attachmentRecord,
   isReadOnly,
+  canEditRecords,
   canDeleteRecords,
   canAuditRecords,
   canUseBulkDeleteActions,
@@ -882,14 +886,41 @@ const listReverseAuditActionLabel = computed(() =>
   resolveStatusChangeActionLabel(listReverseAuditTarget.value?.value, true),
 )
 
+const listRowActionKeys = computed(() => {
+  const actionKeys = getBehaviorValue(props.moduleKey, 'listRowActionKeys')
+  return Array.isArray(actionKeys) ? actionKeys : ['attachment']
+})
+
+function getGridRowProps(record: ModuleRecord) {
+  if (uploadRuleGridRowRenderers.isCustomGridRow?.(record)) {
+    return {}
+  }
+  if (getBehaviorValue(props.moduleKey, 'openDetailOnRowDoubleClick') === false) {
+    return {}
+  }
+  return {
+    onDblclick: () => {
+      if (canEditRecord(record)) {
+        void handleEdit(record)
+        return
+      }
+      if (!canViewRecords.value) {
+        return
+      }
+      void handleView(record)
+    },
+  }
+}
+
 const {
   expandedRowRenderer,
   rowActionsRenderer,
 } = useModuleGridRowRenderers({
   isReadOnly,
   canViewRecords,
-  canEditRecords,
+  canEditRecord,
   canManageAttachments,
+  visibleActionKeys: listRowActionKeys,
   canAuditRecord,
   canReverseAuditRecord,
   auditActionLabel: listAuditActionLabel,
@@ -995,6 +1026,7 @@ const {
   mainTable,
   tableLoading: listQuery.isFetching,
   getRowClassName,
+  rowProps: getGridRowProps,
   hasExpandableRows: computed(() => Boolean(expandable.value)),
   rowActionsRenderer,
   expandedRowRenderer,
