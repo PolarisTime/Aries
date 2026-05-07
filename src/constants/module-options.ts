@@ -2,6 +2,9 @@
 // Supplier and carrier options intentionally have no fallback: business modules
 // must use master-data APIs so stale hardcoded names cannot be saved.
 import type { MaterialCategoryOption } from '@/api/material-categories'
+import { getMaterialCategoryOptions as apiGetMaterialCategoryOptions } from '@/api/material-categories'
+import { getMaterialGradeOptions as apiGetMaterialGradeOptions } from '@/api/material-grades'
+import { getWarehouseOptions as apiGetWarehouseOptions } from '@/api/warehouse-options'
 
 function createOptionList(values: readonly string[]) {
   return values.map((value) => ({ label: value, value }))
@@ -14,38 +17,21 @@ const materialCategoryFallbackOptions: MaterialCategoryOption[] = materialCatego
   purchaseWeighRequired: value === '盘螺' || value === '线材',
 }))
 
-let _categoryOptions: MaterialCategoryOption[] = materialCategoryFallbackOptions
-let categoryOptionsLoading = false
-
-function ensureMaterialCategoriesLoaded() {
-  if (categoryOptionsLoading) {
-    return
-  }
-  categoryOptionsLoading = true
-  fetchMaterialCategories().then((data) => {
-    if (data.length > 0) {
-      _categoryOptions = data
-    }
-  })
-}
-
 export function materialCategoryOptions() {
-  ensureMaterialCategoriesLoaded()
-  return _categoryOptions
+  const dynamic = apiGetMaterialCategoryOptions()
+  return dynamic.length > 0 ? dynamic : materialCategoryFallbackOptions
 }
 
 export function getMaterialCategoryOptions() {
-  ensureMaterialCategoriesLoaded()
-  return _categoryOptions
+  return materialCategoryOptions()
 }
 
 export function isPurchaseWeighRequiredCategory(category: unknown) {
-  ensureMaterialCategoriesLoaded()
   const normalized = String(category || '').trim()
   if (!normalized) {
     return false
   }
-  return _categoryOptions.some((option) =>
+  return materialCategoryOptions().some((option) =>
     String(option.value || '').trim() === normalized
     && Boolean(option.purchaseWeighRequired),
   )
@@ -53,33 +39,14 @@ export function isPurchaseWeighRequiredCategory(category: unknown) {
 
 export { materialCategoryFallbackOptions }
 
-import { fetchMaterialCategories } from '@/api/material-categories'
-
 const materialGradeFallbackOptions = createOptionList(['HRB400', 'HRB500'] as const)
 
-let _gradeOptions = materialGradeFallbackOptions
-let gradeOptionsLoading = false
-
-function ensureMaterialGradesLoaded() {
-  if (gradeOptionsLoading) {
-    return
-  }
-  gradeOptionsLoading = true
-  fetchMaterialGrades().then((data) => {
-    if (data.length > 0) {
-      _gradeOptions = data
-    }
-  })
-}
-
 export function materialGradeOptions() {
-  ensureMaterialGradesLoaded()
-  return _gradeOptions
+  const dynamic = apiGetMaterialGradeOptions()
+  return dynamic.length > 0 ? dynamic : materialGradeFallbackOptions
 }
 
 export { materialGradeFallbackOptions }
-
-import { fetchMaterialGrades } from '@/api/material-grades'
 
 const supplierFallbackOptions: ReturnType<typeof createOptionList> = []
 
@@ -147,17 +114,13 @@ export function getCarrierVehiclePlateOptions(form?: Record<string, unknown>) {
 
 const warehouseFallbackOptions = createOptionList(['一号库', '二号库'] as const)
 
-const _warehouseOptions = warehouseFallbackOptions
-
 export function warehouseOptions() {
-  return _warehouseOptions
+  const dynamic = apiGetWarehouseOptions()
+  return dynamic.length > 0 ? dynamic : warehouseFallbackOptions
 }
 
-import { getWarehouseOptions as apiGetWarehouseOptions } from '@/api/warehouse-options'
-
 export function getWarehouseOptions() {
-  const dynamic = apiGetWarehouseOptions()
-  return dynamic.length > 0 ? dynamic : _warehouseOptions
+  return warehouseOptions()
 }
 
 

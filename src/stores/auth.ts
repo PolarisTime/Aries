@@ -6,6 +6,7 @@ import { reloadCustomerOptions } from '@/api/customer-options'
 import { reloadCarrierOptions } from '@/api/carrier-options'
 import { reloadWarehouseOptions } from '@/api/warehouse-options'
 import { reloadMaterialCategories } from '@/api/material-categories'
+import { reloadMaterialGrades } from '@/api/material-grades'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { ERROR_CODE } from '@/constants/error-codes'
 import type { LoginPayload, LoginResponseData, LoginUser, Login2faPayload } from '@/types/auth'
@@ -45,6 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
     reloadCarrierOptions()
     reloadWarehouseOptions()
     reloadMaterialCategories()
+    reloadMaterialGrades()
   }
 
   async function signIn(payload: LoginPayload) {

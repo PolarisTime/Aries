@@ -51,3 +51,10 @@ export async function createRole(payload: Record<string, unknown>) {
     '创建角色失败',
   )
 }
+
+export async function deleteRole(id: string | number) {
+  return assertApiSuccess(
+    await http.delete<RoleResponse<null>>(`${ENDPOINTS.ROLE_SETTINGS}/${id}`),
+    '删除角色失败',
+  )
+}

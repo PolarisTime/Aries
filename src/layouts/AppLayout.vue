@@ -31,6 +31,7 @@ import { fetchCustomerOptions } from '@/api/customer-options'
 import { fetchCarrierOptions } from '@/api/carrier-options'
 import { fetchWarehouseOptions } from '@/api/warehouse-options'
 import { fetchMaterialCategories } from '@/api/material-categories'
+import { fetchMaterialGrades } from '@/api/material-grades'
 
 const router = useRouter()
 
@@ -58,6 +59,7 @@ function refreshOptions() {
     fetchCarrierOptions(),
     fetchWarehouseOptions(),
     fetchMaterialCategories(),
+    fetchMaterialGrades(),
   ])
 }
 
