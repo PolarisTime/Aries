@@ -1128,7 +1128,7 @@ const {
 </script>
 
 <template>
-  <div class="page-stack">
+  <div class="page-stack module-page-stack">
     <ModuleGridPanel v-bind="gridPanelProps" v-on="gridPanelEvents" />
 
     <ModuleEditorWorkspace

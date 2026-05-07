@@ -133,6 +133,14 @@ function handleTextareaRef(el: unknown) {
 </template>
 
 <style scoped>
+.workspace-panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
 .workspace-panel-head {
   display: flex;
   align-items: center;
@@ -191,8 +199,16 @@ function handleTextareaRef(el: unknown) {
   margin-top: 16px;
 }
 
+:deep(.template-editor-textarea) {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 :deep(.template-editor-textarea textarea) {
-  min-height: 660px;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100% !important;
   border-radius: 14px;
   font-family:
     'JetBrains Mono', 'Fira Code', 'SFMono-Regular', Consolas, monospace;
@@ -200,5 +216,6 @@ function handleTextareaRef(el: unknown) {
   line-height: 1.7;
   background: #0f172a;
   color: #dbeafe;
+  resize: none;
 }
 </style>

@@ -112,10 +112,10 @@ const emit = defineEmits<{
 
 .print-template-sidebar-stack {
   position: sticky;
-  top: 102px;
+  top: var(--print-template-sticky-top, 102px);
   display: grid;
   gap: 16px;
-  max-height: calc(100vh - 118px);
+  max-height: var(--print-template-workspace-height, calc(100dvh - 118px));
 }
 
 .print-template-sidebar-card {

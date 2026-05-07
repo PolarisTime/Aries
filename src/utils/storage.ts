@@ -4,6 +4,7 @@ import type { ListColumnSettings } from '@/types/module-page'
 
 export interface PersonalSettings {
   fontSize?: number
+  layoutMode?: 'sider' | 'top'
 }
 
 export type AuthPersistenceMode = 'local' | 'session'

@@ -56,6 +56,14 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
+.workspace-panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
 .workspace-panel-head {
   display: flex;
   align-items: center;
@@ -82,8 +90,11 @@ const emit = defineEmits<{
 
 .preview-shell {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  flex: 1 1 auto;
   gap: 12px;
   margin-top: 16px;
+  min-height: 0;
 }
 
 .preview-frame,
@@ -96,13 +107,17 @@ const emit = defineEmits<{
 }
 
 .preview-frame {
-  min-height: 660px;
+  min-height: 0;
+  height: 100%;
+  background: #fff;
 }
 
 .preview-code,
 .preview-data {
+  flex: 1 1 auto;
   margin: 16px 0 0;
   padding: 14px 16px;
+  min-height: 0;
   overflow: auto;
   color: #0f172a;
   font-family:
@@ -114,7 +129,6 @@ const emit = defineEmits<{
 }
 
 .preview-data {
-  min-height: 660px;
   margin-top: 16px;
 }
 </style>
