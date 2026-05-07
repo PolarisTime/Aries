@@ -131,6 +131,8 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       parentFieldKey: 'purchaseOrderNo',
       parentDisplayFieldKey: 'orderNo',
       buttonText: '导入采购订单明细',
+      candidateQueryType: 'purchase-order-import',
+      candidateUsage: 'purchase-inbound',
       mapParentToDraft: (parentRecord) => ({
         supplierName: parentRecord.supplierName || '',
       }),
@@ -162,7 +164,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     defaultVisibleFilterCount: 5,
     filters: [
       { key: 'keyword', label: '订单编号', type: 'input', placeholder: '输入销售订单号' },
-      { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已审核', '完成销售') },
+      { key: 'status', label: '状态', type: 'select', options: buildValueOptions('草稿', '已审核', '待完善', '完成销售') },
       { key: 'deliveryDate', label: '送货日期', type: 'dateRange' },
       { key: 'customerName', label: '客户', type: 'select', options: getCustomerOptions, row: 2 },
       { key: 'projectName', label: '项目名称', type: 'select', options: getCustomerProjectOptions, row: 2 },
@@ -211,6 +213,8 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
       parentFieldKey: 'purchaseOrderNo',
       parentDisplayFieldKey: 'orderNo',
       buttonText: '导入采购订单明细',
+      candidateQueryType: 'purchase-order-import',
+      candidateUsage: 'sales-order',
       remainingQuantityKey: 'salesRemainingQuantity',
       transformItems: (parentRecord) => cloneLineItems(
         Array.isArray(parentRecord.items)
@@ -262,7 +266,7 @@ export const operationsPageConfigs: Record<string, ModulePageConfig> = {
     key: 'sales-outbounds',
     title: '销售出库',
     kicker: 'Sales',
-    description: '销售出库页承担发货和库存扣减，单据审核后会驱动关联销售订单进入完成销售，物流单和客户对账继续沿此单据下游流转。',
+    description: '销售出库页承担发货和库存扣减，单据审核后会驱动关联销售订单进入待完善，补齐单价、送货日期和备注后再完成销售，物流单和客户对账继续沿此单据下游流转。',
     primaryNoKey: 'outboundNo',
     actions: actionSet,
     defaultVisibleFilterCount: 5,

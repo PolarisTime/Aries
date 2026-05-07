@@ -22,6 +22,15 @@ function flushPromises() {
   return new Promise((resolve) => setTimeout(resolve, 0))
 }
 
+function buildParentSelectorState() {
+  return {
+    parentSelectorKeyword: ref(''),
+    parentSelectorCurrentPage: ref(1),
+    parentSelectorPageSize: ref(20),
+    parentSelectorDefaultPageSize: ref(20),
+  }
+}
+
 describe('use-parent-import-support', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -61,6 +70,7 @@ describe('use-parent-import-support', () => {
         { id: 'po-1', orderNo: 'PO-001', supplierName: '供应商甲' } satisfies ModuleRecord,
       ]),
       moduleRows: ref([]),
+      ...buildParentSelectorState(),
       cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
       fetchParentDetail,
     })
@@ -129,6 +139,7 @@ describe('use-parent-import-support', () => {
         { id: 'po-3', orderNo: 'PO-003' },
       ]),
       moduleRows: ref([]),
+      ...buildParentSelectorState(),
       cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
       fetchParentDetail,
     })
@@ -160,6 +171,7 @@ describe('use-parent-import-support', () => {
       }),
       parentRows,
       moduleRows: ref([]),
+      ...buildParentSelectorState(),
       cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
       fetchParentDetail: vi.fn(async () => ({
         id: 'po-2',
@@ -205,10 +217,58 @@ describe('use-parent-import-support', () => {
         },
       ]),
       moduleRows: ref([]),
+      ...buildParentSelectorState(),
       cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
     })
 
     expect(support.parentSelectorRows.value.map((record) => record.orderNo)).toEqual(['PO-002'])
     expect(support.getParentImportableQuantity(support.parentSelectorRows.value[0])).toBe(3)
+  })
+
+  it('uses remote importable quantity and skips detail hydration for purchase order candidate pages', async () => {
+    const fetchParentDetail = vi.fn()
+    const support = useParentImportSupport({
+      editorForm: { purchaseOrderNo: 'PO-003', items: [] },
+      editorItems: ref<ModuleLineItem[]>([
+        {
+          id: 'current-item',
+          sourcePurchaseOrderItemId: 'po-item-3',
+          quantity: 2,
+          _parentRelationNo: 'PO-003',
+        },
+      ]),
+      editorSourceRecordId: ref(''),
+      editorVisible: ref(true),
+      parentImportConfig: ref<ModuleParentImportDefinition | undefined>({
+        parentModuleKey: 'purchase-orders',
+        label: '上级采购订单',
+        parentFieldKey: 'purchaseOrderNo',
+        parentDisplayFieldKey: 'orderNo',
+        candidateQueryType: 'purchase-order-import',
+        candidateUsage: 'sales-order',
+        remainingQuantityKey: 'salesRemainingQuantity',
+        transformItems: (parentRecord) =>
+          (Array.isArray(parentRecord.items) ? parentRecord.items : []) as ModuleLineItem[],
+      }),
+      parentRows: ref([
+        { id: 'po-1', orderNo: 'PO-001', importableQuantity: 0 },
+        { id: 'po-2', orderNo: 'PO-002', importableQuantity: 5 },
+        { id: 'po-3', orderNo: 'PO-003', importableQuantity: 0 },
+      ]),
+      moduleRows: ref([]),
+      ...buildParentSelectorState(),
+      cloneLineItems: (value) => JSON.parse(JSON.stringify(value ?? [])) as ModuleLineItem[],
+      fetchParentDetail,
+    })
+
+    await support.openParentSelector()
+    await flushPromises()
+
+    expect(fetchParentDetail).not.toHaveBeenCalled()
+    expect(support.parentSelectorRows.value.map((record) => record.orderNo)).toEqual(['PO-001', 'PO-002', 'PO-003'])
+    expect(support.getParentImportableQuantity(support.parentSelectorRows.value[1])).toBe(5)
+    expect(support.getParentImportableQuantity(support.parentSelectorRows.value[2])).toBe(2)
+    expect(support.parentSelectorRowSelection.value.getCheckboxProps?.(support.parentSelectorRows.value[0])).toEqual({ disabled: true })
+    expect(support.parentSelectorRowSelection.value.getCheckboxProps?.(support.parentSelectorRows.value[1])).toEqual({ disabled: false })
   })
 })

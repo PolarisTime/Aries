@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineComponent, type PropType, type VNodeChild } from 'vue'
+import { computed, defineComponent, type PropType, type VNodeChild } from 'vue'
 import type { Table } from '@tanstack/vue-table'
 import type { MenuProps } from 'ant-design-vue'
 import DataTable from '@/components/DataTable.vue'
@@ -29,7 +29,7 @@ const RenderNode = defineComponent({
   },
 })
 
-defineProps<{
+const props = defineProps<{
   moduleKey: string
   isReadOnly: boolean
   readOnlyDescription?: string
@@ -83,6 +83,18 @@ const emit = defineEmits<{
   materialImportClick: []
   paginationChange: [page: number, size: number]
 }>()
+
+const paginationPageSizeOptions = computed(() => {
+  const baseOptions = [10, 20, 50, 100]
+  const currentPageSize = Number(props.paginationPageSize || 20)
+  const merged = new Set(baseOptions)
+  if (Number.isFinite(currentPageSize) && currentPageSize > 0) {
+    merged.add(currentPageSize)
+  }
+  return [...merged]
+    .sort((left, right) => left - right)
+    .map(String)
+})
 </script>
 
 <template>
@@ -178,7 +190,7 @@ const emit = defineEmits<{
           :page-size="paginationPageSize"
           :total="paginationTotal"
           show-size-changer
-          :page-size-options="['10', '20', '50', '100']"
+          :page-size-options="paginationPageSizeOptions"
           :show-total="(total: number) => `共 ${total} 条`"
           @change="(page: number, size: number) => emit('paginationChange', page, size)"
         />

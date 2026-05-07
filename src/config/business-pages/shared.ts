@@ -325,7 +325,9 @@ export const compactFreightItemColumns = applyCompactItemLayout(
 )
 
 export const statusMap: Record<string, ModuleStatusMeta> = {
+  已删除: { text: '已删除', color: 'error' },
   草稿: { text: '草稿', color: 'default' },
+  待完善: { text: '待完善', color: 'processing' },
   完成采购: { text: '完成采购', color: 'success' },
   完成入库: { text: '完成入库', color: 'success' },
   完成销售: { text: '完成销售', color: 'success' },

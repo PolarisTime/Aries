@@ -30,7 +30,7 @@
  * 25. Replace module-specific adapters with ModuleBehaviorRegistry calls.
  *     - Done for editor adapter; remaining: statements, finance-links, parent-import.
  */
-import { computed, reactive, ref, type Ref } from 'vue'
+import { computed, reactive, ref, watch, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { isSuccessCode } from '@/api/client'
 import { showRequestError } from '@/composables/use-request-error'
@@ -84,6 +84,7 @@ import { useFreightPickupList } from './use-freight-pickup-list'
 import { useMaterialSelector } from './use-material-selector'
 import { useParentImportSupport } from './use-parent-import-support'
 import { cloneLineItems } from '@/utils/clone-utils'
+import { resolveStatusChangeActionLabel } from './module-adapter-actions'
 
 const props = defineProps<{
   moduleKey: string
@@ -103,13 +104,36 @@ const editorSaving = ref(false)
 const editorForm = reactive<Record<string, unknown>>({})
 const editorSourceRecordId = ref('')
 const materialSelectorKeyword = ref('')
+const materialSelectorCurrentPage = ref(1)
+const materialSelectorPageSize = ref(20)
+const parentSelectorKeyword = ref('')
+const parentSelectorCurrentPage = ref(1)
+const parentSelectorPageSize = ref(20)
 
 const {
+  clientSettingsReady,
   config,
+  defaultPageSize,
   readOnlyAlertActionLink,
   showSnowflakeId,
   supportsInvoiceAssist,
 } = useModulePageConfig(computed(() => props.moduleKey))
+
+const hasAppliedConfiguredPageSize = ref(false)
+
+watch(
+  [clientSettingsReady, defaultPageSize],
+  ([ready, value]) => {
+    if (!ready || hasAppliedConfiguredPageSize.value) {
+      return
+    }
+    pagination.pageSize = value
+    materialSelectorPageSize.value = value
+    parentSelectorPageSize.value = value
+    hasAppliedConfiguredPageSize.value = true
+  },
+  { immediate: true },
+)
 const {
   activeQuickFilterKey,
   applyKeywordFilter,
@@ -219,18 +243,26 @@ const {
   closeFreightStatementGenerator,
   closeSupplierStatementGenerator,
   customerStatementCandidateRows,
+  customerStatementCurrentPage,
   customerStatementGeneratorLoading,
   customerStatementGeneratorVisible,
+  customerStatementKeyword,
+  customerStatementPageSize,
   customerStatementRowSelection,
   customerStatementSelectedCustomerName,
   customerStatementSelectedOrders,
   customerStatementSelectedProjectName,
+  customerStatementTotal,
   freightStatementCandidateRows,
+  freightStatementCurrentPage,
   freightStatementGeneratorLoading,
   freightStatementGeneratorVisible,
+  freightStatementKeyword,
+  freightStatementPageSize,
   freightStatementRowSelection,
   freightStatementSelectedBills,
   freightStatementSelectedCarrierName,
+  freightStatementTotal,
   freightSummaryLoading,
   freightSummaryRows,
   freightSummaryVisible,
@@ -243,15 +275,29 @@ const {
   openSupplierStatementGenerator,
   resetStatementSupportState,
   supplierStatementCandidateRows,
+  supplierStatementCurrentPage,
   supplierStatementGeneratorLoading,
   supplierStatementGeneratorVisible,
+  supplierStatementKeyword,
+  supplierStatementPageSize,
   supplierStatementRowSelection,
   supplierStatementSelectedInbounds,
   supplierStatementSelectedSupplierName,
+  supplierStatementTotal,
+  updateCustomerStatementCurrentPage,
+  updateCustomerStatementKeyword,
+  updateCustomerStatementPageSize,
+  updateFreightStatementCurrentPage,
+  updateFreightStatementKeyword,
+  updateFreightStatementPageSize,
+  updateSupplierStatementCurrentPage,
+  updateSupplierStatementKeyword,
+  updateSupplierStatementPageSize,
 } = useStatementGeneratorSupport({
   canViewRecords,
   moduleKey: computed(() => props.moduleKey),
   submittedFilters,
+  defaultPageSize,
   createBaseDraft: createEditorBaseDraft,
   openEditorWithDraft: (draft) => {
     openCreateEditorWithDraft(draft)
@@ -286,9 +332,11 @@ const {
   freightStatementRowsQuery,
   listResult,
   parentRows,
+  parentRowTotal,
   moduleRows,
   materialRows,
-  filteredMaterialSelectorRows,
+  materialSelectorRows,
+  materialRowTotal,
   warehouseRows,
   departmentRows,
   customerStatementRows,
@@ -310,6 +358,11 @@ const {
   parentImportConfig,
   canViewModuleRecords: (moduleKey) => canViewModuleRecords(moduleKey),
   materialSelectorKeyword,
+  materialSelectorCurrentPage,
+  materialSelectorPageSize,
+  parentSelectorKeyword,
+  parentSelectorCurrentPage,
+  parentSelectorPageSize,
 })
 
 const {
@@ -552,7 +605,6 @@ const {
   openParentSelector,
   parentAvailabilityLoading,
   parentImportableQuantityVisible,
-  parentSelectorKeyword,
   parentSelectorRowSelection,
   parentSelectorRows,
   parentSelectorVisible,
@@ -567,7 +619,40 @@ const {
   moduleRows,
   cloneLineItems,
   fetchParentDetail: fetchParentImportDetail,
+  parentSelectorKeyword,
+  parentSelectorCurrentPage,
+  parentSelectorPageSize,
+  parentSelectorDefaultPageSize: defaultPageSize,
 })
+
+function handleParentSelectorKeywordChange(value: string) {
+  parentSelectorKeyword.value = value
+  parentSelectorCurrentPage.value = 1
+}
+
+function handleParentSelectorPageChange(value: number) {
+  parentSelectorCurrentPage.value = value
+}
+
+function handleParentSelectorPageSizeChange(value: number) {
+  parentSelectorPageSize.value = value
+  parentSelectorCurrentPage.value = 1
+}
+
+function handleMaterialSelectorPageChange(value: number) {
+  if (materialSelectorCurrentPage.value === value) {
+    return
+  }
+  materialSelectorCurrentPage.value = value
+}
+
+function handleMaterialSelectorPageSizeChange(value: number) {
+  if (materialSelectorPageSize.value === value) {
+    return
+  }
+  materialSelectorPageSize.value = value
+  materialSelectorCurrentPage.value = 1
+}
 
 const {
   activeRecord,
@@ -623,10 +708,12 @@ const {
   openMaterialSelector,
   closeMaterialSelector,
   confirmMaterialSelector,
+  updateMaterialSelectorKeyword,
   getMaterialSelectorRowProps,
 } = useMaterialSelector({
   editorItems,
   materialSelectorKeyword,
+  materialSelectorCurrentPage,
   handleEditorItemMaterialSelect,
 })
 
@@ -755,9 +842,11 @@ const {
 
 const {
   canDeleteRecord,
+  canAuditRecord,
   handleAuditRecord,
   handleDelete,
   handlePrintSelectedRecords,
+  canReverseAuditRecord,
   handleReverseAuditRecord,
   handleSelectedAuditRecords,
   handleSelectedDeleteRecords,
@@ -786,6 +875,13 @@ const {
   showRequestError,
 })
 
+const listAuditActionLabel = computed(() =>
+  resolveStatusChangeActionLabel(listAuditTarget.value?.value),
+)
+const listReverseAuditActionLabel = computed(() =>
+  resolveStatusChangeActionLabel(listReverseAuditTarget.value?.value, true),
+)
+
 const {
   expandedRowRenderer,
   rowActionsRenderer,
@@ -794,6 +890,10 @@ const {
   canViewRecords,
   canEditRecords,
   canManageAttachments,
+  canAuditRecord,
+  canReverseAuditRecord,
+  auditActionLabel: listAuditActionLabel,
+  reverseAuditActionLabel: listReverseAuditActionLabel,
   canDeleteRecord,
   ...uploadRuleGridRowRenderers,
   itemColumns: computed(() => config.value.itemColumns),
@@ -835,6 +935,8 @@ const {
   formFields,
   isMaterialModule,
   selectedRowCount,
+  auditActionLabel: listAuditActionLabel,
+  reverseAuditActionLabel: listReverseAuditActionLabel,
   canUseBulkAuditActions,
   canUseBulkDeleteActions,
   canUseBulkPrintActions,
@@ -1041,23 +1143,34 @@ const {
       :handle-download-attachment="handleDownloadAttachment"
       :handle-remove-attachment="handleRemoveAttachment"
       :material-selector-visible="materialSelectorVisible"
-      :filtered-material-selector-rows="filteredMaterialSelectorRows"
+      :material-selector-rows="materialSelectorRows"
       :material-selector-columns="materialSelectorColumns"
       :material-selector-loading="materialListQuery.isFetching.value"
       :material-selector-row-selection="materialSelectorRowSelection"
       :material-selector-keyword="materialSelectorKeyword"
+      :material-selector-current-page="materialSelectorCurrentPage"
+      :material-selector-page-size="materialSelectorPageSize"
+      :material-selector-total="materialRowTotal"
       :get-material-selector-row-props="getMaterialSelectorRowProps"
       :material-selector-selected-code="materialSelectorSelectedCode"
       :has-active-material-selector-item="Boolean(activeMaterialSelectorItem)"
       :supplier-statement-generator-visible="supplierStatementGeneratorVisible"
       :supplier-statement-candidate-rows="supplierStatementCandidateRows"
       :supplier-statement-generator-loading="supplierStatementGeneratorLoading"
+      :supplier-statement-keyword="supplierStatementKeyword"
+      :supplier-statement-current-page="supplierStatementCurrentPage"
+      :supplier-statement-page-size="supplierStatementPageSize"
+      :supplier-statement-total="supplierStatementTotal"
       :supplier-statement-row-selection="supplierStatementRowSelection"
       :supplier-statement-selected-inbounds="supplierStatementSelectedInbounds"
       :supplier-statement-selected-supplier-name="supplierStatementSelectedSupplierName"
       :customer-statement-generator-visible="customerStatementGeneratorVisible"
       :customer-statement-candidate-rows="customerStatementCandidateRows"
       :customer-statement-generator-loading="customerStatementGeneratorLoading"
+      :customer-statement-keyword="customerStatementKeyword"
+      :customer-statement-current-page="customerStatementCurrentPage"
+      :customer-statement-page-size="customerStatementPageSize"
+      :customer-statement-total="customerStatementTotal"
       :customer-statement-row-selection="customerStatementRowSelection"
       :customer-statement-selected-orders="customerStatementSelectedOrders"
       :customer-statement-selected-customer-name="customerStatementSelectedCustomerName"
@@ -1065,6 +1178,10 @@ const {
       :freight-statement-generator-visible="freightStatementGeneratorVisible"
       :freight-statement-candidate-rows="freightStatementCandidateRows"
       :freight-statement-generator-loading="freightStatementGeneratorLoading"
+      :freight-statement-keyword="freightStatementKeyword"
+      :freight-statement-current-page="freightStatementCurrentPage"
+      :freight-statement-page-size="freightStatementPageSize"
+      :freight-statement-total="freightStatementTotal"
       :freight-statement-row-selection="freightStatementRowSelection"
       :freight-statement-selected-bills="freightStatementSelectedBills"
       :freight-statement-selected-carrier-name="freightStatementSelectedCarrierName"
@@ -1086,6 +1203,9 @@ const {
       :parent-selector-row-selection="parentSelectorRowSelection"
       :get-parent-selector-row-props="getParentSelectorRowProps"
       :parent-selector-keyword="parentSelectorKeyword"
+      :parent-selector-current-page="parentSelectorCurrentPage"
+      :parent-selector-page-size="parentSelectorPageSize"
+      :parent-selector-total="parentRowTotal"
       :can-save-current-editor="canSaveCurrentEditor"
       :parent-importable-quantity-visible="parentImportableQuantityVisible"
       :get-parent-importable-quantity="getParentImportableQuantity"
@@ -1107,18 +1227,31 @@ const {
       @update-attachment-draft-name="attachmentDraftName = $event"
       @close-material-selector="closeMaterialSelector"
       @confirm-material-selector="confirmMaterialSelector"
-      @update-material-selector-keyword="materialSelectorKeyword = $event"
+      @update-material-selector-keyword="updateMaterialSelectorKeyword"
+      @update-material-selector-current-page="handleMaterialSelectorPageChange"
+      @update-material-selector-page-size="handleMaterialSelectorPageSizeChange"
       @close-supplier-statement-generator="closeSupplierStatementGenerator"
       @generate-supplier-statement="handleGenerateSupplierStatement"
+      @update-supplier-statement-keyword="updateSupplierStatementKeyword"
+      @update-supplier-statement-current-page="updateSupplierStatementCurrentPage"
+      @update-supplier-statement-page-size="updateSupplierStatementPageSize"
       @close-customer-statement-generator="closeCustomerStatementGenerator"
       @generate-customer-statement="handleGenerateCustomerStatement"
+      @update-customer-statement-keyword="updateCustomerStatementKeyword"
+      @update-customer-statement-current-page="updateCustomerStatementCurrentPage"
+      @update-customer-statement-page-size="updateCustomerStatementPageSize"
       @close-freight-statement-generator="closeFreightStatementGenerator"
       @generate-freight-statement="handleGenerateFreightStatement"
+      @update-freight-statement-keyword="updateFreightStatementKeyword"
+      @update-freight-statement-current-page="updateFreightStatementCurrentPage"
+      @update-freight-statement-page-size="updateFreightStatementPageSize"
       @close-freight-summary="freightSummaryVisible = false"
       @close-freight-pickup-list="closeFreightPickupList"
       @close-parent-selector="closeParentSelector"
       @confirm-parent-import="handleImportParentItems()"
-      @update-parent-selector-keyword="parentSelectorKeyword = $event"
+      @update-parent-selector-keyword="handleParentSelectorKeywordChange"
+      @update-parent-selector-current-page="handleParentSelectorPageChange"
+      @update-parent-selector-page-size="handleParentSelectorPageSizeChange"
       @cancel-material-import="closeMaterialImportModal"
       @submit-material-import="handleMaterialImportSubmit"
       @close-material-import-result="closeMaterialImportResultModal"

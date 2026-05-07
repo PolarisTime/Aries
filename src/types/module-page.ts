@@ -122,6 +122,8 @@ export interface ModuleParentImportDefinition {
   buttonText?: string
   enforceUniqueRelation?: boolean
   remainingQuantityKey?: string
+  candidateQueryType?: 'purchase-order-import'
+  candidateUsage?: 'purchase-inbound' | 'sales-order'
   mapParentToDraft?: (parentRecord: ModuleRecord) => Partial<ModuleRecord>
   transformItems?: (parentRecord: ModuleRecord) => ModuleLineItem[]
 }

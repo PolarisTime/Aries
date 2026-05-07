@@ -10,6 +10,11 @@ export const DISPLAY_SWITCH_CODES = {
 } as const
 
 export type DisplaySwitchCode = typeof DISPLAY_SWITCH_CODES[keyof typeof DISPLAY_SWITCH_CODES]
+export const CLIENT_SETTING_CODES = {
+  defaultListPageSize: 'UI_DEFAULT_LIST_PAGE_SIZE',
+  customerStatementReceiptZeroFromSalesOrder: 'SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER',
+  supplierStatementFullPaymentFromPurchase: 'SYS_SUPPLIER_STATEMENT_FULL_PAYMENT_FROM_PURCHASE',
+} as const
 
 interface DisplaySwitchResponse {
   id?: string | number
@@ -36,6 +41,14 @@ export async function listDisplaySwitches(): Promise<ModuleRecord[]> {
   return (response.data || []).map(normalizeSwitch)
 }
 
+export async function listClientSettings(): Promise<ModuleRecord[]> {
+  const response = assertApiSuccess(
+    await http.get<ApiResponse<DisplaySwitchResponse[]>>('/general-settings/client-settings'),
+    '加载客户端设置失败',
+  )
+  return (response.data || []).map(normalizeSwitch)
+}
+
 export function isDisplaySwitchEnabled(
   rows: ModuleRecord[] | undefined,
   settingCode: DisplaySwitchCode | string,
@@ -43,4 +56,16 @@ export function isDisplaySwitchEnabled(
   return Boolean((rows || []).some((row) =>
     String(row.settingCode || '') === settingCode && String(row.status || '') === '正常',
   ))
+}
+
+export function getClientSettingNumber(
+  rows: ModuleRecord[] | undefined,
+  settingCode: string,
+  fallbackValue: number,
+) {
+  const target = (rows || []).find((row) =>
+    String(row.settingCode || '') === settingCode && String(row.status || '') === '正常',
+  )
+  const numericValue = Number(target?.sampleNo)
+  return Number.isFinite(numericValue) ? numericValue : fallbackValue
 }

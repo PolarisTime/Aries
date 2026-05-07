@@ -21,6 +21,10 @@ interface UseParentImportSupportOptions {
   parentImportConfig: Ref<ModuleParentImportDefinition | undefined>
   parentRows: Ref<ModuleRecord[]>
   moduleRows: Ref<ModuleRecord[]>
+  parentSelectorKeyword: Ref<string>
+  parentSelectorCurrentPage: Ref<number>
+  parentSelectorPageSize: Ref<number>
+  parentSelectorDefaultPageSize: Ref<number>
   cloneLineItems: (value: unknown) => ModuleLineItem[]
   fetchParentDetail?: (record: ModuleRecord) => Promise<ModuleRecord>
 }
@@ -28,14 +32,19 @@ interface UseParentImportSupportOptions {
 export function useParentImportSupport(options: UseParentImportSupportOptions) {
   const selectedParentId = ref<string>()
   const parentSelectorVisible = ref(false)
-  const parentSelectorKeyword = ref('')
+  const selectedParentRecordSnapshot = ref<ModuleRecord | null>(null)
   const parentDetailMap = ref<Record<string, ModuleRecord>>({})
   const parentAvailabilityLoading = ref(false)
   let parentAvailabilityHydrateToken = 0
 
+  function usesRemoteParentCandidates() {
+    return options.parentImportConfig.value?.candidateQueryType === 'purchase-order-import'
+  }
+
   const selectedParentRecord = computed(() =>
     availableParentRows.value.find((record) => record.id === selectedParentId.value)
       || options.parentRows.value.find((record) => record.id === selectedParentId.value)
+      || selectedParentRecordSnapshot.value
       || null,
   )
 
@@ -59,6 +68,13 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
     return parentDetailMap.value[String(record.id)] || record
   }
 
+  function getCurrentAllocatedQuantity(parentNo: string) {
+    return [...buildCurrentAllocatedQuantityMap(parentNo).values()].reduce(
+      (sum, value) => sum + toSafeNumber(value),
+      0,
+    )
+  }
+
   function buildCurrentAllocatedQuantityMap(parentNo: string) {
     const currentAllocatedQuantityMap = new Map<string, number>()
     options.editorItems.value
@@ -80,6 +96,11 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
     if (!shouldFilterByImportableQuantity()) {
       return undefined
     }
+    const currentAllocatedQuantity = getCurrentAllocatedQuantity(getParentRelationNo(record))
+    const remoteImportableQuantity = record.importableQuantity
+    if (usesRemoteParentCandidates() && Number.isFinite(Number(remoteImportableQuantity))) {
+      return toSafeNumber(remoteImportableQuantity) + currentAllocatedQuantity
+    }
     const quantityKey = options.parentImportConfig.value?.remainingQuantityKey || 'remainingQuantity'
     const parentRecord = resolveParentRecordWithDetail(record)
     if (!Array.isArray(parentRecord.items)) {
@@ -97,7 +118,12 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
   }
 
   async function hydrateParentAvailabilityDetails() {
-    if (!shouldFilterByImportableQuantity() || !options.fetchParentDetail || !options.parentRows.value.length) {
+    if (
+      usesRemoteParentCandidates()
+      || !shouldFilterByImportableQuantity()
+      || !options.fetchParentDetail
+      || !options.parentRows.value.length
+    ) {
       return
     }
     const token = ++parentAvailabilityHydrateToken
@@ -177,20 +203,22 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
   })
 
   const availableParentRows = computed(() => {
-    const rows = options.parentRows.value
-    if (!options.parentImportConfig.value?.enforceUniqueRelation) {
-      return shouldFilterByImportableQuantity()
-        ? rows.filter((record) => toSafeNumber(getParentImportableQuantity(record)) > 0)
-        : rows
+    let rows = options.parentRows.value
+    if (options.parentImportConfig.value?.enforceUniqueRelation) {
+      rows = rows.filter((record) => !occupiedParentMap.value[getParentRelationNo(record)])
     }
-
+    if (!usesRemoteParentCandidates() && shouldFilterByImportableQuantity()) {
+      rows = rows.filter((record) => toSafeNumber(getParentImportableQuantity(record)) > 0)
+    }
     return rows
-      .filter((record) => !occupiedParentMap.value[getParentRelationNo(record)])
-      .filter((record) => !shouldFilterByImportableQuantity() || toSafeNumber(getParentImportableQuantity(record)) > 0)
   })
 
   const parentSelectorRows = computed(() => {
-    const keyword = parentSelectorKeyword.value.trim().toLowerCase()
+    if (usesRemoteParentCandidates()) {
+      return availableParentRows.value
+    }
+
+    const keyword = options.parentSelectorKeyword.value.trim().toLowerCase()
     if (!keyword) {
       return availableParentRows.value
     }
@@ -203,10 +231,18 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
   const parentSelectorRowSelection = computed(() => ({
     type: 'radio',
     selectedRowKeys: selectedParentId.value ? [selectedParentId.value] : [],
-    onChange: (keys: Array<string | number>) => {
+    getCheckboxProps: (record: ModuleRecord) => ({
+      disabled: isParentSelectorRowDisabled(record),
+    }),
+    onChange: (keys: Array<string | number>, rows: ModuleRecord[]) => {
       selectedParentId.value = keys[0] ? String(keys[0]) : undefined
+      selectedParentRecordSnapshot.value = rows[0] || null
     },
   }))
+
+  function isParentSelectorRowDisabled(record: ModuleRecord) {
+    return shouldFilterByImportableQuantity() && toSafeNumber(getParentImportableQuantity(record)) <= 0
+  }
 
   function closeParentSelector() {
     parentSelectorVisible.value = false
@@ -215,7 +251,8 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
   const queryClient = hasInjectionContext() ? useQueryClient() : null
 
   async function openParentSelector() {
-    parentSelectorKeyword.value = ''
+    options.parentSelectorKeyword.value = ''
+    options.parentSelectorCurrentPage.value = 1
     parentSelectorVisible.value = true
     const parentModuleKey = options.parentImportConfig.value?.parentModuleKey
     if (parentModuleKey && queryClient) {
@@ -250,6 +287,7 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
 
     if (matchedParent) {
       selectedParentId.value = matchedParent.id
+      selectedParentRecordSnapshot.value = matchedParent
     }
   }
 
@@ -283,6 +321,10 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
       message.warning(`${options.parentImportConfig.value.label}已被其他单据占用，请重新选择`)
       return
     }
+    if (isParentSelectorRowDisabled(parentRecord)) {
+      message.warning(`${options.parentImportConfig.value.label}没有可导入的剩余数量`)
+      return
+    }
 
     const currentParentNos = parseParentRelationNos(options.editorForm[options.parentImportConfig.value.parentFieldKey])
     const importState = buildParentImportState({
@@ -314,7 +356,11 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
   function getParentSelectorRowProps(record: ModuleRecord) {
     return {
       onDblclick: async () => {
+        if (isParentSelectorRowDisabled(record)) {
+          return
+        }
         selectedParentId.value = String(record.id)
+        selectedParentRecordSnapshot.value = record
         await handleImportParentItems(record)
       },
     }
@@ -322,8 +368,11 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
 
   function resetParentImportState() {
     selectedParentId.value = undefined
+    selectedParentRecordSnapshot.value = null
     parentSelectorVisible.value = false
-    parentSelectorKeyword.value = ''
+    options.parentSelectorKeyword.value = ''
+    options.parentSelectorCurrentPage.value = 1
+    options.parentSelectorPageSize.value = options.parentSelectorDefaultPageSize.value
   }
 
   watch(
@@ -354,7 +403,6 @@ export function useParentImportSupport(options: UseParentImportSupportOptions) {
     openParentSelector,
     parentAvailabilityLoading,
     parentImportableQuantityVisible,
-    parentSelectorKeyword,
     parentSelectorRowSelection,
     parentSelectorRows,
     parentSelectorVisible,

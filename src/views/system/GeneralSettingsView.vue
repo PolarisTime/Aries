@@ -19,10 +19,12 @@ defineProps<{
 
 const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
 const MAX_CONCURRENT_SESSIONS_CODE = 'SYS_MAX_CONCURRENT_SESSIONS'
+const DEFAULT_LIST_PAGE_SIZE_CODE = 'UI_DEFAULT_LIST_PAGE_SIZE'
 
 const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_DEFAULT_TAX_RATE: '用于发票默认税率与税额自动计算，修改后新开票草稿会使用该值。',
   SYS_MAX_CONCURRENT_SESSIONS: '限制同一用户同时保持的有效会话数量，超出后最早的会话将被自动清理。设为 0 或留空表示不限制。',
+  UI_DEFAULT_LIST_PAGE_SIZE: '用于业务列表与远程候选弹窗的默认分页条数，范围 1 到 200。',
   UI_WEIGHT_ONLY_PURCHASE_INBOUNDS: '启用后，采购入库页面切换到重量视图，隐藏金额和单价字段。',
   UI_WEIGHT_ONLY_SALES_OUTBOUNDS: '启用后，销售出库页面切换到重量视图，隐藏金额和单价字段。',
   SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER: '启用后，由销售订单生成客户对账单时默认按未收款处理；关闭后默认按已收款处理。',
@@ -33,6 +35,7 @@ const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_FORCE_USER_TOTP_ON_FIRST_LOGIN: '启用后，管理员新增的账号首次使用密码登录时，会先进入专用安全引导页；在完成 2FA 绑定前不能进入业务页面，但仍允许先用初始密码修改为个人密码。',
   SYS_BATCH_NO_AUTO_GENERATE: '启用后，批号管理商品在明细未填写批号时，系统按”单号规则”中的批号生成规则自动补齐；关闭后仍按当前手工录入与必填校验处理。',
   UI_HIDE_AUDITED_LIST_RECORDS: '启用后，业务列表分页查询默认不显示下方勾选状态的单据；关闭后按原筛选条件显示。',
+  SYS_ADMIN_VIEW_DELETED_RECORDS: '启用后，管理员在业务单据列表与详情中可查看已删除记录，仅用于排查与审计；关闭后已删除单据对所有人隐藏。',
   UI_SHOW_SNOWFLAKE_ID: '启用后，业务列表显示系统雪花 ID 列，便于排查数据问题；关闭后隐藏该列。',
   SYS_LOGIN_CAPTCHA: '启用后，登录时需输入图形验证码，增加暴力破解防护；关闭后仅需账号密码即可登录。',
 }
@@ -128,8 +131,12 @@ function isMaxConcurrentSetting(record: ModuleRecord | SettingFormState) {
   return String(record.settingCode || '').trim() === MAX_CONCURRENT_SESSIONS_CODE
 }
 
+function isDefaultListPageSizeSetting(record: ModuleRecord | SettingFormState) {
+  return String(record.settingCode || '').trim() === DEFAULT_LIST_PAGE_SIZE_CODE
+}
+
 function isNumericSetting(record: ModuleRecord | SettingFormState) {
-  return isDefaultTaxRateSetting(record) || isMaxConcurrentSetting(record)
+  return isDefaultTaxRateSetting(record) || isMaxConcurrentSetting(record) || isDefaultListPageSizeSetting(record)
 }
 
 function isToggleSetting(record: ModuleRecord | SettingFormState) {
@@ -244,6 +251,10 @@ function formatSettingValue(record: ModuleRecord) {
     const val = parseInt(String(record.sampleNo || ''), 10)
     return Number.isFinite(val) ? String(val) : '3'
   }
+  if (isDefaultListPageSizeSetting(record)) {
+    const val = parseInt(String(record.sampleNo || ''), 10)
+    return Number.isFinite(val) ? String(val) : '20'
+  }
   return String(record.sampleNo || '--')
 }
 
@@ -296,7 +307,7 @@ function resetEditorState() {
   settingForm.billName = ''
   settingForm.enabled = true
   settingForm.selectedActions = []
-  settingForm.numericValue = 0.13
+  settingForm.numericValue = 20
   settingForm.remark = ''
 }
 
@@ -324,7 +335,9 @@ function openSettingEditor(record: ModuleRecord) {
       : []
   settingForm.numericValue = isMaxConcurrentSetting(record)
     ? parseInt(String(record.sampleNo || '3'), 10)
-    : Number(record.sampleNo || 0.13)
+    : isDefaultListPageSizeSetting(record)
+      ? parseInt(String(record.sampleNo || '20'), 10)
+      : Number(record.sampleNo || 0.13)
   settingForm.remark = String(record.remark || '')
   editorVisible.value = true
 }
@@ -357,6 +370,10 @@ async function handleSave() {
       message.warning('最大同时在线会话数不能小于 0')
       return
     }
+    if (isDefaultListPageSizeSetting(settingForm) && (settingForm.numericValue < 1 || settingForm.numericValue > 200)) {
+      message.warning('列表分页默认条数必须在 1 到 200 之间')
+      return
+    }
     await saveBusinessModule('general-settings', {
       id: settingForm.id,
       settingCode: String(source.settingCode || ''),
@@ -370,6 +387,8 @@ async function handleSave() {
         ? Number(settingForm.numericValue || 0).toFixed(4)
         : isMaxConcurrentSetting(settingForm)
           ? String(Math.max(0, Math.round(settingForm.numericValue || 3)))
+          : isDefaultListPageSizeSetting(settingForm)
+            ? String(Math.min(200, Math.max(1, Math.round(settingForm.numericValue || 20))))
           : isHideAuditedSwitch(settingForm.settingCode)
             ? (settingForm.enabled ? settingForm.selectedActions.join(',') : 'OFF')
             : isDetailedOperationSwitch(settingForm.settingCode)
@@ -378,7 +397,15 @@ async function handleSave() {
       status: isNumericSetting(settingForm) ? '正常' : settingForm.enabled ? '正常' : '禁用',
       remark: settingForm.remark.trim(),
     })
-    message.success(isDefaultTaxRateSetting(settingForm) ? '默认税率已更新' : isMaxConcurrentSetting(settingForm) ? '最大同时在线会话数已更新' : '系统开关已更新')
+    message.success(
+      isDefaultTaxRateSetting(settingForm)
+        ? '默认税率已更新'
+        : isMaxConcurrentSetting(settingForm)
+          ? '最大同时在线会话数已更新'
+          : isDefaultListPageSizeSetting(settingForm)
+            ? '列表分页默认条数已更新'
+            : '系统开关已更新',
+    )
     await loadSettings()
     editorVisible.value = false
   } catch (error) {
@@ -485,7 +512,7 @@ onMounted(() => {
 
     <a-modal
       :open="editorVisible"
-      :title="isDefaultTaxRateSetting(settingForm) ? '编辑默认税率' : isMaxConcurrentSetting(settingForm) ? '编辑最大同时在线会话数' : '编辑系统开关'"
+      :title="isDefaultTaxRateSetting(settingForm) ? '编辑默认税率' : isMaxConcurrentSetting(settingForm) ? '编辑最大同时在线会话数' : isDefaultListPageSizeSetting(settingForm) ? '编辑列表分页默认条数' : '编辑系统开关'"
       :confirm-loading="saving"
       :width="640"
       ok-text="保存"
@@ -525,6 +552,19 @@ onMounted(() => {
             {{ getSystemSwitchHelpText(settingForm.settingCode) }}
           </div>
         </a-form-item>
+        <a-form-item v-else-if="isDefaultListPageSizeSetting(settingForm)" label="默认分页条数">
+          <a-input-number
+            v-model:value="settingForm.numericValue"
+            :min="1"
+            :max="200"
+            :step="1"
+            :precision="0"
+            style="width: 100%"
+          />
+          <div class="field-help-text">
+            {{ getSystemSwitchHelpText(settingForm.settingCode) }}
+          </div>
+        </a-form-item>
         <template v-else>
           <a-form-item label="启用状态">
             <a-switch
@@ -554,7 +594,7 @@ onMounted(() => {
           <a-textarea
             v-model:value="settingForm.remark"
             :rows="3"
-            :placeholder="isDefaultTaxRateSetting(settingForm) ? '补充税率适用说明' : '补充该系统开关的说明'"
+            :placeholder="isDefaultTaxRateSetting(settingForm) ? '补充税率适用说明' : isMaxConcurrentSetting(settingForm) ? '补充会话控制说明' : isDefaultListPageSizeSetting(settingForm) ? '补充分页参数说明' : '补充该系统开关的说明'"
           />
         </a-form-item>
       </a-form>
