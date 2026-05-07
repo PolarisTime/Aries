@@ -3,11 +3,11 @@ import {
   buildValueOptions,
   customerOptions,
   getCarrierOptions,
+  getMaterialCategoryOptions,
   getCustomerProjectOptions,
   getSupplierOptions,
-  materialCategoryOptions,
   statementStatusOptions,
-  warehouseOptions,
+  getWarehouseOptions,
 } from '@/constants/module-options'
 import {
   buildFinanceOverview,
@@ -34,8 +34,8 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
     actions: [{ label: '导出', type: 'primary' }],
     filters: [
       { key: 'keyword', label: '关键字', type: 'input', placeholder: '商品编码 / 品牌 / 规格' },
-      { key: 'warehouseName', label: '仓库', type: 'select', options: warehouseOptions() },
-      { key: 'category', label: '类别', type: 'select', options: materialCategoryOptions },
+      { key: 'warehouseName', label: '仓库', type: 'select', options: getWarehouseOptions },
+      { key: 'category', label: '类别', type: 'select', options: getMaterialCategoryOptions },
     ],
     columns: [
       { title: '商品编码', dataIndex: 'materialCode', width: 150 },
@@ -91,6 +91,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
       { title: '业务类型', dataIndex: 'businessType', width: 120 },
       { title: '来源单号', dataIndex: 'sourceNo', width: 160 },
       { title: '商品编码', dataIndex: 'materialCode', width: 140 },
+      { title: '品牌', dataIndex: 'brand', width: 110 },
       { title: '规格', dataIndex: 'spec', width: 100 },
       { title: '仓库', dataIndex: 'warehouseName', width: 110 },
       { title: '批号', dataIndex: 'batchNo', width: 140 },
@@ -105,6 +106,7 @@ export const financeAndReportPageConfigs: Record<string, ModulePageConfig> = {
       { label: '业务类型', key: 'businessType' },
       { label: '来源单号', key: 'sourceNo' },
       { label: '商品编码', key: 'materialCode' },
+      { label: '品牌', key: 'brand' },
       { label: '规格', key: 'spec' },
       { label: '仓库', key: 'warehouseName' },
       { label: '批号', key: 'batchNo' },

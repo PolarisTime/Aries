@@ -8,6 +8,7 @@ import { useRoute } from 'vue-router'
 import {
   PlusOutlined,
   EditOutlined,
+  DeleteOutlined,
   SafetyCertificateOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
@@ -16,6 +17,7 @@ import {
 } from '@ant-design/icons-vue'
 import {
   createRole,
+  deleteRole,
   getRoleActions,
   listSystemMenus as listRolePermissionOptions,
   listRoleSettingsPage,
@@ -86,6 +88,9 @@ const canCreateRole = computed(() =>
 )
 const canEditRole = computed(() =>
   permissionStore.can('role', 'update'),
+)
+const canDeleteRole = computed(() =>
+  permissionStore.can('role', 'delete'),
 )
 const canEditPermissions = computed(() =>
   permissionStore.can('role', 'manage_permissions'),
@@ -514,6 +519,35 @@ async function saveRole() {
   }
 }
 
+function confirmDeleteRole(role: RoleRecord) {
+  if (!canDeleteRole.value) {
+    message.warning('暂无删除角色权限')
+    return
+  }
+
+  const userCount = Number(role.userCount || 0)
+  const userHint = userCount > 0
+    ? `当前角色已绑定 ${userCount} 个用户，删除后这些用户将失去该角色。`
+    : '删除后将无法恢复。'
+
+  Modal.confirm({
+    title: '删除角色',
+    content: `确定删除角色「${role.roleName}」吗？${userHint}`,
+    okText: '确认删除',
+    okButtonProps: { danger: true },
+    cancelText: '取消',
+    async onOk() {
+      try {
+        await deleteRole(role.id)
+        message.success('角色删除成功')
+        await loadRoles()
+      } catch (error) {
+        showRequestError(error, '删除角色失败')
+      }
+    },
+  })
+}
+
 const selectedRoleInfo = computed(() =>
   roles.value.find((r) => r.id === selectedRoleId.value),
 )
@@ -662,12 +696,20 @@ const { table: matrixTable } = useDataTable({
               <span>{{ role.roleType }}</span>
               <span>{{ role.userCount }} 用户</span>
             </div>
-            <div v-if="canEditRole" class="role-item-actions">
+            <div v-if="canEditRole || canDeleteRole" class="role-item-actions">
               <span
+                v-if="canEditRole"
                 class="role-edit-link"
                 @click.stop="openRoleForm('edit', role)"
               >
                 <EditOutlined /> 编辑
+              </span>
+              <span
+                v-if="canDeleteRole"
+                class="role-delete-link"
+                @click.stop="confirmDeleteRole(role)"
+              >
+                <DeleteOutlined /> 删除
               </span>
             </div>
           </div>
@@ -978,6 +1020,9 @@ const { table: matrixTable } = useDataTable({
 
 .role-item-actions {
   margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .role-edit-link {
@@ -993,6 +1038,21 @@ const { table: matrixTable } = useDataTable({
 
 .role-edit-link:hover {
   color: #40a9ff;
+}
+
+.role-delete-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #ff4d4f;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 0;
+}
+
+.role-delete-link:hover {
+  color: #ff7875;
 }
 
 /* 列表视图 */
