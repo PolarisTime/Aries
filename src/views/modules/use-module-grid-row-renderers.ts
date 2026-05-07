@@ -12,6 +12,10 @@ interface UseModuleGridRowRenderersOptions {
   canViewRecords: Ref<boolean>
   canEditRecords: Ref<boolean>
   canManageAttachments: Ref<boolean>
+  canAuditRecord: (record: ModuleRecord) => boolean
+  canReverseAuditRecord: (record: ModuleRecord) => boolean
+  auditActionLabel: Ref<string>
+  reverseAuditActionLabel: Ref<string>
   canDeleteRecord: (record: ModuleRecord) => boolean
   isCustomGridRow?: (record: ModuleRecord | null | undefined) => boolean
   customRowActionsRenderer?: (record: ModuleRecord) => VNodeChild
@@ -41,8 +45,10 @@ export function useModuleGridRowRenderers(options: UseModuleGridRowRenderersOpti
       record,
       canView: options.canViewRecords.value,
       canEdit: !options.isReadOnly.value && options.canEditRecords.value,
-      canAudit: false,
-      canReverseAudit: false,
+      canAudit: options.canAuditRecord(record),
+      canReverseAudit: options.canReverseAuditRecord(record),
+      auditLabel: options.auditActionLabel.value,
+      reverseAuditLabel: options.reverseAuditActionLabel.value,
       canDelete: options.canDeleteRecord(record),
       canAttach: !options.isReadOnly.value && options.canManageAttachments.value,
       isReadOnly: options.isReadOnly.value,

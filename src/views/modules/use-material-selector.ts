@@ -4,11 +4,17 @@ import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 interface UseMaterialSelectorOptions {
   editorItems: Ref<ModuleLineItem[]>
   materialSelectorKeyword?: Ref<string>
+  materialSelectorCurrentPage?: Ref<number>
   handleEditorItemMaterialSelect: (item: ModuleLineItem, materialCode: string) => void
 }
 
 export function useMaterialSelector(options: UseMaterialSelectorOptions) {
-  const { editorItems, materialSelectorKeyword: existingKeyword, handleEditorItemMaterialSelect } = options
+  const {
+    editorItems,
+    materialSelectorKeyword: existingKeyword,
+    materialSelectorCurrentPage,
+    handleEditorItemMaterialSelect,
+  } = options
 
   const materialSelectorVisible = ref(false)
   const materialSelectorKeyword = existingKeyword || ref('')
@@ -35,12 +41,18 @@ export function useMaterialSelector(options: UseMaterialSelectorOptions) {
     materialSelectorItemId.value = String(item.id || '')
     materialSelectorSelectedCode.value = normalizeMaterialCode(item.materialCode)
     materialSelectorKeyword.value = ''
+    if (materialSelectorCurrentPage) {
+      materialSelectorCurrentPage.value = 1
+    }
     materialSelectorVisible.value = true
   }
 
   function closeMaterialSelector() {
     materialSelectorVisible.value = false
     materialSelectorKeyword.value = ''
+    if (materialSelectorCurrentPage) {
+      materialSelectorCurrentPage.value = 1
+    }
     materialSelectorItemId.value = ''
     materialSelectorSelectedCode.value = ''
   }
@@ -57,6 +69,13 @@ export function useMaterialSelector(options: UseMaterialSelectorOptions) {
 
   function confirmMaterialSelector() {
     applyMaterialSelectorChoice(materialSelectorSelectedCode.value)
+  }
+
+  function updateMaterialSelectorKeyword(value: string) {
+    materialSelectorKeyword.value = value
+    if (materialSelectorCurrentPage) {
+      materialSelectorCurrentPage.value = 1
+    }
   }
 
   function getMaterialSelectorRowProps(record: ModuleRecord) {
@@ -82,6 +101,7 @@ export function useMaterialSelector(options: UseMaterialSelectorOptions) {
     openMaterialSelector,
     closeMaterialSelector,
     confirmMaterialSelector,
+    updateMaterialSelectorKeyword,
     getMaterialSelectorRowProps,
   }
 }

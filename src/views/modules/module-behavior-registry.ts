@@ -158,6 +158,10 @@ Object.entries(draftStatusModules).forEach(([key, status]) => register(key, { de
 const approvedStatusModules = ['purchase-orders', 'purchase-inbounds', 'sales-orders', 'sales-outbounds', 'freight-bills']
 approvedStatusModules.forEach((key) => register(key, { auditStatus: '已审核' }))
 register('sales-orders', { lockedAuditStatus: '完成销售' })
+;['supplier-statements', 'customer-statements'].forEach((key) => register(key, {
+  defaultStatus: '待确认',
+  auditStatus: '已确认',
+}))
 
 const protectedEditStatuses = new Set([
   '已审核',
@@ -176,6 +180,7 @@ const protectedDeleteStatuses = new Set([
   '已完成',
   '完成采购',
   '完成入库',
+  '待完善',
   '完成销售',
   '已付款',
   '已收款',
@@ -212,7 +217,7 @@ register('sales-orders', {
   lineItemLockSourceField: 'salesOrderNo',
   lineItemLockTargetField: 'orderNo',
   lineItemLockStatuses: ['已审核'],
-  lockedLineItemsNotice: '当前销售订单已存在已审核的销售出库，数量和商品信息已锁定，仅允许调整单价、金额、送货日期和备注。',
+  lockedLineItemsNotice: '当前销售订单已存在已审核的销售出库，数量和商品信息已锁定，仅允许调整单价、送货日期和备注，金额会随单价自动重算。',
 })
 
 // ── Readonly editor fields ──
@@ -235,6 +240,8 @@ positiveLineItemModules.forEach((key) => register(key, { lineItemTrimStrategy: '
 }))
 register('invoice-issues', { allowsManualLineItems: false })
 register('freight-bills', { allowsManualLineItems: false, readonlyLineItems: true })
+register('purchase-inbounds', { allowsManualLineItems: false })
+register('sales-outbounds', { allowsManualLineItems: false })
 
 // ── Statement support ──
 register('purchase-inbounds', { supportsStatements: true, statementLinkType: 'supplier' })
@@ -332,7 +339,8 @@ register('customer-statements', {
 })
 
 register('receipts', {
-  normalizeDraftRecord(record, items) {
+  normalizeDraftRecord(record, items, ctx) {
+    record.amount = Number(ctx.sumLineItemsBy(items, 'allocatedAmount').toFixed(2))
     record.sourceStatementId = items.length === 1 ? items[0].sourceStatementId : undefined
   },
 })

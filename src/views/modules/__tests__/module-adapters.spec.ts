@@ -1004,11 +1004,11 @@ describe('module-adapters', () => {
     expect(isModuleLineItemsLocked('sales-orders', ['已审核'])).toBe(true)
     expect(isModuleLineItemsLocked('purchase-orders', ['已审核'])).toBe(false)
 
-    expect(buildEditorAuditTarget('sales-orders', ['草稿', '已审核', '完成销售'], false)).toEqual({
+    expect(buildEditorAuditTarget('sales-orders', ['草稿', '已审核', '待完善', '完成销售'], false)).toEqual({
       key: 'status',
       value: '已审核',
     })
-    expect(buildEditorAuditTarget('sales-orders', ['草稿', '已审核', '完成销售'], true)).toEqual({
+    expect(buildEditorAuditTarget('sales-orders', ['草稿', '已审核', '待完善', '完成销售'], true)).toEqual({
       key: 'status',
       value: '完成销售',
     })

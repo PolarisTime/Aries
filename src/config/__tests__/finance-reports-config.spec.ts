@@ -17,4 +17,14 @@ describe('finance reports page config', () => {
     expect(config.columns.map((column) => column.dataIndex)).toContain('brand')
     expect(config.detailFields.map((field) => field.key)).toContain('brand')
   })
+
+  it('hides amount and status from receipt detail view while keeping a compact statement column', () => {
+    const config = financeAndReportPageConfigs.receipts
+
+    expect(config.detailFields.map((field) => field.key)).not.toContain('amount')
+    expect(config.detailFields.map((field) => field.key)).not.toContain('status')
+    expect(config.formFields?.map((field) => field.key)).not.toContain('amount')
+    expect(config.formFields?.map((field) => field.key)).not.toContain('status')
+    expect(config.itemColumns?.find((column) => column.dataIndex === 'sourceStatementId')?.width).toBe(180)
+  })
 })

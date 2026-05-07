@@ -4,6 +4,7 @@ import {
   resolveModuleActionPermissionCodes,
   buildEditorAuditTarget,
   buildReverseAuditTarget,
+  resolveStatusChangeActionLabel,
 } from '../module-adapter-actions'
 
 describe('resolveModuleActionKind', () => {
@@ -85,6 +86,10 @@ describe('resolveModuleActionPermissionCodes', () => {
     expect(resolveModuleActionPermissionCodes('审核')).toEqual(['audit'])
     expect(resolveModuleActionPermissionCodes('反审核')).toEqual(['audit'])
   })
+  it('audit for confirm labels', () => {
+    expect(resolveModuleActionPermissionCodes('确认')).toEqual(['audit'])
+    expect(resolveModuleActionPermissionCodes('反确认')).toEqual(['audit'])
+  })
   it('update for labels containing 编辑 or 附件', () => {
     expect(resolveModuleActionPermissionCodes('编辑')).toEqual(['update'])
     expect(resolveModuleActionPermissionCodes('附件')).toEqual(['update'])
@@ -108,7 +113,7 @@ describe('resolveModuleActionPermissionCodes', () => {
 
 describe('buildEditorAuditTarget', () => {
   it('returns lockedAuditStatus when lineItems are locked', () => {
-    const result = buildEditorAuditTarget('sales-orders', ['草稿', '已审核', '完成销售'], true)
+    const result = buildEditorAuditTarget('sales-orders', ['草稿', '已审核', '待完善', '完成销售'], true)
     expect(result).toEqual({ key: 'status', value: '完成销售' })
   })
 
@@ -131,6 +136,11 @@ describe('buildEditorAuditTarget', () => {
     const result = buildEditorAuditTarget('materials', ['草稿', '待审批'], false)
     expect(result).toBeNull()
   })
+
+  it('supports confirmed audit target for customer statements', () => {
+    const result = buildEditorAuditTarget('customer-statements', ['待确认', '已确认'], false)
+    expect(result).toEqual({ key: 'status', value: '已确认' })
+  })
 })
 
 describe('buildReverseAuditTarget', () => {
@@ -152,5 +162,17 @@ describe('buildReverseAuditTarget', () => {
   it('returns null when no reverse status is available', () => {
     const result = buildReverseAuditTarget('custom-module', ['正常', '已审核'])
     expect(result).toBeNull()
+  })
+})
+
+describe('resolveStatusChangeActionLabel', () => {
+  it('uses confirm labels for statement confirmation statuses', () => {
+    expect(resolveStatusChangeActionLabel('已确认')).toBe('确认')
+    expect(resolveStatusChangeActionLabel('待确认', true)).toBe('反确认')
+  })
+
+  it('falls back to audit labels for regular workflow statuses', () => {
+    expect(resolveStatusChangeActionLabel('已审核')).toBe('审核')
+    expect(resolveStatusChangeActionLabel('草稿', true)).toBe('反审核')
   })
 })

@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import {
   listAllBusinessModuleRows,
   listBusinessModule,
+  listPurchaseOrderImportCandidates,
   searchBusinessModule,
 } from '@/api/business'
 import { normalizeTableResponse } from '@/utils/list'
@@ -20,9 +21,32 @@ interface UseBusinessQueriesOptions {
   editorVisible: Ref<boolean>
   editorForm: Record<string, unknown>
   supportsInvoiceAssist: Ref<boolean>
-  parentImportConfig: Ref<{ parentModuleKey?: string; enforceUniqueRelation?: boolean } | undefined>
+  parentImportConfig: Ref<{
+    parentModuleKey?: string
+    enforceUniqueRelation?: boolean
+    candidateQueryType?: 'purchase-order-import'
+    candidateUsage?: 'purchase-inbound' | 'sales-order'
+  } | undefined>
   canViewModuleRecords: (moduleKey: string | null | undefined) => boolean
   materialSelectorKeyword: Ref<string>
+  materialSelectorCurrentPage: Ref<number>
+  materialSelectorPageSize: Ref<number>
+  parentSelectorKeyword: Ref<string>
+  parentSelectorCurrentPage: Ref<number>
+  parentSelectorPageSize: Ref<number>
+}
+
+interface ParentQueryPageResult {
+  rows: ModuleRecord[]
+  total: number
+}
+
+function isParentQueryPageResult(value: unknown): value is ParentQueryPageResult {
+  return Boolean(
+    value
+    && typeof value === 'object'
+    && Array.isArray((value as ParentQueryPageResult).rows),
+  )
 }
 
 export function findRowsByRelation(
@@ -53,6 +77,11 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     parentImportConfig,
     canViewModuleRecords,
     materialSelectorKeyword,
+    materialSelectorCurrentPage,
+    materialSelectorPageSize,
+    parentSelectorKeyword,
+    parentSelectorCurrentPage,
+    parentSelectorPageSize,
   } = options
 
   const listQuery = useQuery({
@@ -77,9 +106,28 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
       'business-parent-search',
       moduleKey.value,
       parentImportConfig.value?.parentModuleKey || '',
+      parentImportConfig.value?.candidateQueryType || '',
+      parentImportConfig.value?.candidateUsage || '',
+      parentSelectorKeyword.value.trim(),
+      parentSelectorCurrentPage.value,
+      parentSelectorPageSize.value,
     ]),
-    queryFn: () =>
-      searchBusinessModule(String(parentImportConfig.value?.parentModuleKey || ''), '', 200),
+    queryFn: async () => {
+      const parentModuleKey = String(parentImportConfig.value?.parentModuleKey || '')
+      const keyword = parentSelectorKeyword.value.trim()
+      if (parentImportConfig.value?.candidateQueryType === 'purchase-order-import' && parentImportConfig.value?.candidateUsage) {
+        return listPurchaseOrderImportCandidates(
+          parentImportConfig.value.candidateUsage,
+          keyword,
+          {
+            currentPage: parentSelectorCurrentPage.value,
+            pageSize: parentSelectorPageSize.value,
+          },
+        )
+      }
+
+      return searchBusinessModule(parentModuleKey, keyword, 200)
+    },
     enabled: computed(() =>
       editorVisible.value
       && Boolean(parentImportConfig.value?.parentModuleKey)
@@ -103,8 +151,33 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
   })
 
   const materialListQuery = useQuery({
-    queryKey: ['business-grid-all', 'materials'],
-    queryFn: () => listAllBusinessModuleRows('materials', {}),
+    queryKey: computed(() => [
+      'business-grid',
+      'materials',
+      'selector',
+      materialSelectorKeyword.value.trim(),
+      materialSelectorCurrentPage.value,
+      materialSelectorPageSize.value,
+    ]),
+    queryFn: () =>
+      listBusinessModule(
+        'materials',
+        { keyword: materialSelectorKeyword.value.trim() },
+        {
+          currentPage: materialSelectorCurrentPage.value,
+          pageSize: materialSelectorPageSize.value,
+        },
+      ),
+    enabled: computed(() =>
+      editorVisible.value
+      && canViewModuleRecords('materials'),
+    ),
+    placeholderData: keepPreviousData,
+  })
+
+  const materialOptionRowsQuery = useQuery({
+    queryKey: ['business-grid-search', 'materials', 'editor-options'],
+    queryFn: () => searchBusinessModule('materials', '', 200),
     enabled: computed(() =>
       editorVisible.value
       && canViewModuleRecords('materials'),
@@ -200,26 +273,19 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
   })
 
   const listResult = computed(() => normalizeTableResponse(listQuery.data.value))
-  const parentRows = computed(() => parentListQuery.data.value || [])
-  const moduleRows = computed(() => moduleRowsQuery.data.value || [])
-  const materialRows = computed(() => materialListQuery.data.value || [])
-  const filteredMaterialSelectorRows = computed(() => {
-    const keyword = materialSelectorKeyword.value.trim().toLowerCase()
-    if (!keyword) {
-      return materialRows.value
-    }
-    return materialRows.value.filter((record) =>
-      [
-        record.materialCode,
-        record.brand,
-        record.material,
-        record.category,
-        record.spec,
-        record.length,
-        record.unit,
-      ].some((value) => String(value || '').toLowerCase().includes(keyword)),
-    )
+  const parentRows = computed(() => {
+    const result = parentListQuery.data.value
+    return isParentQueryPageResult(result) ? result.rows : (result || [])
   })
+  const parentRowTotal = computed(() => {
+    const result = parentListQuery.data.value
+    return isParentQueryPageResult(result) ? result.total : parentRows.value.length
+  })
+  const moduleRows = computed(() => moduleRowsQuery.data.value || [])
+  const materialListResult = computed(() => normalizeTableResponse(materialListQuery.data.value))
+  const materialRows = computed(() => materialOptionRowsQuery.data.value || [])
+  const materialSelectorRows = computed(() => materialListResult.value.rows)
+  const materialRowTotal = computed(() => materialListResult.value.total)
   const warehouseRows = computed(() => warehouseListQuery.data.value || [])
   const departmentRows = computed(() => departmentListQuery.data.value || [])
   const companySettingRows = computed(() => companySettingRowsQuery.data.value || [])
@@ -242,7 +308,9 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     return findRowsByRelation(lineItemLockSourceRows.value, sourceField, targetValue)
   })
   const materialMap = computed<Record<string, ModuleRecord>>(() =>
-    Object.fromEntries(materialRows.value.map((record) => [String(record.materialCode ?? '').trim(), record])),
+    Object.fromEntries(
+      [...materialRows.value, ...materialSelectorRows.value].map((record) => [String(record.materialCode ?? '').trim(), record]),
+    ),
   )
   const currentCompanySetting = computed(() =>
     companySettingRows.value.find((record) => String(record.status || '') === '正常')
@@ -268,9 +336,11 @@ export function useBusinessQueries(options: UseBusinessQueriesOptions) {
     lineItemLockSourceRowsQuery,
     listResult,
     parentRows,
+    parentRowTotal,
     moduleRows,
     materialRows,
-    filteredMaterialSelectorRows,
+    materialSelectorRows,
+    materialRowTotal,
     warehouseRows,
     departmentRows,
     companySettingRows,

@@ -28,6 +28,13 @@ describe('module-behavior-registry', () => {
       expect(config.includeAttachmentIds).toBe(true)
       expect(config.normalizeDraftRecord).toBeDefined()
     })
+
+    it('configures confirm workflow for statement modules', () => {
+      expect(getModuleBehavior('customer-statements').defaultStatus).toBe('待确认')
+      expect(getModuleBehavior('customer-statements').auditStatus).toBe('已确认')
+      expect(getModuleBehavior('supplier-statements').defaultStatus).toBe('待确认')
+      expect(getModuleBehavior('supplier-statements').auditStatus).toBe('已确认')
+    })
   })
 
   describe('hasBehavior', () => {
@@ -92,6 +99,7 @@ describe('module-behavior-registry', () => {
   describe('isDeleteBlockedByStatus', () => {
     it('blocks audited and completed document statuses', () => {
       expect(isDeleteBlockedByStatus('已审核')).toBe(true)
+      expect(isDeleteBlockedByStatus('待完善')).toBe(true)
       expect(isDeleteBlockedByStatus('完成销售')).toBe(true)
       expect(isDeleteBlockedByStatus('已收款')).toBe(true)
     })
@@ -111,6 +119,7 @@ describe('module-behavior-registry', () => {
       sumLineItemsBy: (items, key) => {
         if (key === 'weightTon') return items.reduce((sum, i) => sum + (Number(i.weightTon) || 0), 0)
         if (key === 'amount') return items.reduce((sum, i) => sum + (Number(i.amount) || 0), 0)
+        if (key === 'allocatedAmount') return items.reduce((sum, i) => sum + (Number(i.allocatedAmount) || 0), 0)
         return 0
       },
       ...overrides,
@@ -199,13 +208,26 @@ describe('module-behavior-registry', () => {
       expect(record.sourceSalesOrderNos).toBe('SO-001')
     })
 
-    it('receipts/payments: derive legacy sourceStatementId from allocation items', () => {
+    it('receipts: computes amount from allocations and derives legacy sourceStatementId', () => {
       const receiptRecord: ModuleRecord = { id: '1', sourceStatementId: 99 }
+      getModuleBehavior('receipts').normalizeDraftRecord!(receiptRecord, [
+        { id: 'a', sourceStatementId: 12, allocatedAmount: 150.2 },
+        { id: 'b', sourceStatementId: 13, allocatedAmount: 49.85 },
+      ], createCtx())
+      expect(receiptRecord.amount).toBe(200.05)
+      expect(receiptRecord.sourceStatementId).toBeUndefined()
+    })
+
+    it('payments: derive legacy sourceStatementId from allocation items', () => {
       const paymentRecord: ModuleRecord = { id: '2', sourceStatementId: 88 }
-      getModuleBehavior('receipts').normalizeDraftRecord!(receiptRecord, [{ id: 'a', sourceStatementId: 12 }], createCtx())
       getModuleBehavior('payments').normalizeDraftRecord!(paymentRecord, [], createCtx())
-      expect(receiptRecord.sourceStatementId).toBe(12)
       expect(paymentRecord.sourceStatementId).toBeUndefined()
+    })
+
+    it('receipts: keeps single sourceStatementId when only one allocation exists', () => {
+      const receiptRecord: ModuleRecord = { id: '1', sourceStatementId: 99 }
+      getModuleBehavior('receipts').normalizeDraftRecord!(receiptRecord, [{ id: 'a', sourceStatementId: 12 }], createCtx())
+      expect(receiptRecord.sourceStatementId).toBe(12)
     })
 
     it('role-settings: normalizes permissionCodes', () => {

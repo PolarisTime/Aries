@@ -40,6 +40,7 @@ interface UseModuleRecordActionsOptions {
 }
 
 const TERMINAL_AUDIT_STATUSES = new Set([
+  '待完善',
   '已完成',
   '完成采购',
   '完成入库',

@@ -40,4 +40,27 @@ describe('system settings api', () => {
     expect(isDisplaySwitchEnabled(switches, 'UI_SHOW_SNOWFLAKE_ID')).toBe(true)
     expect(isDisplaySwitchEnabled(switches, 'UI_HIDE_AUDITED_LIST_RECORDS')).toBe(false)
   })
+
+  it('loads public client settings and resolves numeric page size', async () => {
+    clientMocks.httpGet.mockResolvedValue({
+      code: 0,
+      data: [
+        {
+          id: '1914876201459236002',
+          settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE',
+          sampleNo: '50',
+          status: '正常',
+        },
+      ],
+    })
+
+    const { CLIENT_SETTING_CODES, getClientSettingNumber, listClientSettings } = await import('@/api/system-settings')
+
+    const settings = await listClientSettings()
+
+    expect(clientMocks.httpGet).toHaveBeenCalledWith('/general-settings/client-settings')
+    expect(settings[0].id).toBe('1914876201459236002')
+    expect(getClientSettingNumber(settings, CLIENT_SETTING_CODES.defaultListPageSize, 20)).toBe(50)
+    expect(getClientSettingNumber(settings, 'UNKNOWN', 20)).toBe(20)
+  })
 })

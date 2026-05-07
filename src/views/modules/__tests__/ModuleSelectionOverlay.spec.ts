@@ -95,4 +95,43 @@ describe('ModuleSelectionOverlay', () => {
     await tableRows[1].trigger('dblclick')
     expect(onDblclick).toHaveBeenCalledWith('M-002')
   })
+
+  it('emits remote pagination updates when pagination is enabled', async () => {
+    const wrapper = mount(ModuleSelectionOverlay, {
+      props: {
+        visible: true,
+        title: '选择单据',
+        panelTitle: '单据列表',
+        rows: [{ id: '1', materialCode: 'M-001' }],
+        columns: [
+          { id: 'materialCode', accessorKey: 'materialCode', header: () => '商品编码' },
+        ],
+        emptyDescription: '暂无数据',
+        paginationState: {
+          current: 2,
+          pageSize: 20,
+          total: 35,
+          showSizeChanger: true,
+        },
+      },
+      global: {
+        plugins: [Antd],
+        stubs: {
+          DataTable: {
+            name: 'DataTable',
+            props: ['table', 'size', 'loading', 'scrollX', 'scrollY', 'emptyText', 'rowProps'],
+            template: '<div class="data-table-stub" />',
+          },
+        },
+      },
+    })
+
+    const pagination = wrapper.findComponent({ name: 'APagination' })
+    pagination.vm.$emit('change', 3, 20)
+    pagination.vm.$emit('showSizeChange', 1, 50)
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('update:paginationCurrent')).toEqual([[3], [1]])
+    expect(wrapper.emitted('update:paginationPageSize')).toEqual([[50]])
+  })
 })

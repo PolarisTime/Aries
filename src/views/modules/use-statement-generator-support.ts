@@ -1,20 +1,25 @@
 import { computed, ref, type Ref } from 'vue'
 import dayjs from 'dayjs'
 import { message } from 'ant-design-vue'
-import { getBusinessModuleDetail, listAllBusinessModuleRows } from '@/api/business'
+import {
+  getBusinessModuleDetail,
+  listAllBusinessModuleRows,
+  listCustomerStatementCandidates,
+  listFreightStatementCandidates,
+  listSupplierStatementCandidates,
+} from '@/api/business'
+import { CLIENT_SETTING_CODES, listClientSettings } from '@/api/system-settings'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   buildCustomerStatementDraftData,
   buildFreightStatementDraftData,
   buildSupplierStatementDraftData,
-  getAvailableCustomerStatementOrders,
-  getAvailableFreightStatementBills,
-  getAvailableSupplierStatementInbounds,
   getCustomerStatementSelectionError,
   getFreightStatementSelectionError,
   getSupplierStatementSelectionError,
 } from './module-adapter-statements'
 import { buildModuleLineItemId } from './module-adapter-editor'
+import { cloneLineItems } from '@/utils/clone-utils'
 
 export interface FreightSummaryRow {
   id: string
@@ -26,24 +31,50 @@ export interface FreightSummaryRow {
   unpaidAmount: number
 }
 
-const CUSTOMER_STATEMENT_RECEIPT_ZERO_SWITCH = 'SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER'
-const SUPPLIER_STATEMENT_FULL_PAYMENT_SWITCH = 'SYS_SUPPLIER_STATEMENT_FULL_PAYMENT_FROM_PURCHASE'
+const CUSTOMER_STATEMENT_RECEIPT_ZERO_SWITCH = CLIENT_SETTING_CODES.customerStatementReceiptZeroFromSalesOrder
+const SUPPLIER_STATEMENT_FULL_PAYMENT_SWITCH = CLIENT_SETTING_CODES.supplierStatementFullPaymentFromPurchase
 
 interface UseStatementGeneratorSupportOptions {
   canViewRecords: Ref<boolean>
   moduleKey: Ref<string>
   submittedFilters: Ref<Record<string, unknown>>
+  defaultPageSize: Ref<number>
   createBaseDraft: () => ModuleRecord
   openEditorWithDraft: (draft: ModuleRecord) => void
   showRequestError: (error: unknown, fallbackMessage: string) => void
 }
 
-import { cloneLineItems } from '@/utils/clone-utils'
+interface CandidateGeneratorState {
+  visible: Ref<boolean>
+  loading: Ref<boolean>
+  rows: Ref<ModuleRecord[]>
+  keyword: Ref<string>
+  currentPage: Ref<number>
+  pageSize: Ref<number>
+  total: Ref<number>
+  selectedKeys: Ref<string[]>
+  selectedRowMap: Ref<Record<string, ModuleRecord>>
+}
+
+interface CandidateLoaderOptions {
+  keyword: string
+  currentPage: number
+  pageSize: number
+}
+
+interface CandidatePageResult {
+  rows: ModuleRecord[]
+  total: number
+}
+
+function isModuleRecord(record: ModuleRecord | undefined): record is ModuleRecord {
+  return Boolean(record)
+}
 
 async function loadEnabledSystemSwitches() {
-  const generalSettings = await listAllBusinessModuleRows('general-settings', {})
+  const settings = await listClientSettings()
   return new Set(
-    generalSettings
+    settings
       .filter((row) => String(row.status || '') === '正常')
       .map((row) => String(row.settingCode || '').trim())
       .filter(Boolean),
@@ -63,38 +94,122 @@ async function hydrateModuleDetails(moduleKey: string, rows: ModuleRecord[]) {
   }))
 }
 
+function createCandidateGeneratorState(defaultPageSize: number): CandidateGeneratorState {
+  return {
+    visible: ref(false),
+    loading: ref(false),
+    rows: ref<ModuleRecord[]>([]),
+    keyword: ref(''),
+    currentPage: ref(1),
+    pageSize: ref(defaultPageSize),
+    total: ref(0),
+    selectedKeys: ref<string[]>([]),
+    selectedRowMap: ref<Record<string, ModuleRecord>>({}),
+  }
+}
+
+function resetCandidateGeneratorState(state: CandidateGeneratorState, defaultPageSize: number) {
+  state.loading.value = false
+  state.rows.value = []
+  state.keyword.value = ''
+  state.currentPage.value = 1
+  state.pageSize.value = defaultPageSize
+  state.total.value = 0
+  state.selectedKeys.value = []
+  state.selectedRowMap.value = {}
+}
+
+function syncPagedSelection(
+  state: CandidateGeneratorState,
+  keys: Array<string | number>,
+  rows: ModuleRecord[],
+) {
+  const visibleRowMap = Object.fromEntries(
+    rows.map((record) => [String(record.id || ''), record]),
+  )
+  const visibleRowKeySet = new Set(Object.keys(visibleRowMap))
+  const nextVisibleKeys = keys
+    .map((key) => String(key))
+    .filter((key) => visibleRowKeySet.has(key))
+
+  const preservedKeys = state.selectedKeys.value.filter((key) => !visibleRowKeySet.has(key))
+  state.selectedKeys.value = [...preservedKeys, ...nextVisibleKeys]
+
+  const nextSelectedRowMap = { ...state.selectedRowMap.value }
+  for (const visibleKey of visibleRowKeySet) {
+    delete nextSelectedRowMap[visibleKey]
+  }
+  for (const key of nextVisibleKeys) {
+    const record = visibleRowMap[key]
+    if (record) {
+      nextSelectedRowMap[key] = record
+    }
+  }
+  state.selectedRowMap.value = nextSelectedRowMap
+}
+
+async function updateCandidateGeneratorKeyword(
+  state: CandidateGeneratorState,
+  value: string,
+  reload: () => Promise<void>,
+) {
+  if (state.keyword.value === value) {
+    return
+  }
+  state.keyword.value = value
+  state.currentPage.value = 1
+  await reload()
+}
+
+async function updateCandidateGeneratorCurrentPage(
+  state: CandidateGeneratorState,
+  value: number,
+  reload: () => Promise<void>,
+) {
+  if (state.currentPage.value === value) {
+    return
+  }
+  state.currentPage.value = value
+  await reload()
+}
+
+async function updateCandidateGeneratorPageSize(
+  state: CandidateGeneratorState,
+  value: number,
+  reload: () => Promise<void>,
+) {
+  if (state.pageSize.value === value) {
+    return
+  }
+  state.pageSize.value = value
+  state.currentPage.value = 1
+  await reload()
+}
+
 export function useStatementGeneratorSupport(options: UseStatementGeneratorSupportOptions) {
-  const supplierStatementGeneratorVisible = ref(false)
-  const supplierStatementGeneratorLoading = ref(false)
-  const supplierStatementCandidateRows = ref<ModuleRecord[]>([])
-  const supplierStatementSelectedInboundKeys = ref<string[]>([])
-
-  const customerStatementGeneratorVisible = ref(false)
-  const customerStatementGeneratorLoading = ref(false)
-  const customerStatementCandidateRows = ref<ModuleRecord[]>([])
-  const customerStatementSelectedOrderKeys = ref<string[]>([])
-
-  const freightStatementGeneratorVisible = ref(false)
-  const freightStatementGeneratorLoading = ref(false)
-  const freightStatementCandidateRows = ref<ModuleRecord[]>([])
-  const freightStatementSelectedBillKeys = ref<string[]>([])
+  const supplierState = createCandidateGeneratorState(options.defaultPageSize.value)
+  const customerState = createCandidateGeneratorState(options.defaultPageSize.value)
+  const freightState = createCandidateGeneratorState(options.defaultPageSize.value)
+  const supplierRequestToken = ref(0)
+  const customerRequestToken = ref(0)
+  const freightRequestToken = ref(0)
 
   const freightSummaryVisible = ref(false)
   const freightSummaryLoading = ref(false)
   const freightSummaryRows = ref<FreightSummaryRow[]>([])
 
   const supplierStatementSelectedInbounds = computed(() =>
-    supplierStatementCandidateRows.value.filter((record) =>
-      supplierStatementSelectedInboundKeys.value.includes(String(record.id)),
-    ),
+    supplierState.selectedKeys.value
+      .map((key) => supplierState.selectedRowMap.value[key])
+      .filter(isModuleRecord),
   )
   const supplierStatementSelectedSupplierName = computed(() =>
     String(supplierStatementSelectedInbounds.value[0]?.supplierName || ''),
   )
   const supplierStatementRowSelection = computed(() => ({
-    selectedRowKeys: supplierStatementSelectedInboundKeys.value,
-    onChange: (keys: Array<string | number>) => {
-      supplierStatementSelectedInboundKeys.value = keys.map((key) => String(key))
+    selectedRowKeys: supplierState.selectedKeys.value,
+    onChange: (keys: Array<string | number>, rows: ModuleRecord[]) => {
+      syncPagedSelection(supplierState, keys, rows)
     },
     getCheckboxProps: (record: ModuleRecord) => ({
       disabled: Boolean(
@@ -105,9 +220,9 @@ export function useStatementGeneratorSupport(options: UseStatementGeneratorSuppo
   }))
 
   const customerStatementSelectedOrders = computed(() =>
-    customerStatementCandidateRows.value.filter((record) =>
-      customerStatementSelectedOrderKeys.value.includes(String(record.id)),
-    ),
+    customerState.selectedKeys.value
+      .map((key) => customerState.selectedRowMap.value[key])
+      .filter(isModuleRecord),
   )
   const customerStatementSelectedCustomerName = computed(() =>
     String(customerStatementSelectedOrders.value[0]?.customerName || ''),
@@ -116,9 +231,9 @@ export function useStatementGeneratorSupport(options: UseStatementGeneratorSuppo
     String(customerStatementSelectedOrders.value[0]?.projectName || ''),
   )
   const customerStatementRowSelection = computed(() => ({
-    selectedRowKeys: customerStatementSelectedOrderKeys.value,
-    onChange: (keys: Array<string | number>) => {
-      customerStatementSelectedOrderKeys.value = keys.map((key) => String(key))
+    selectedRowKeys: customerState.selectedKeys.value,
+    onChange: (keys: Array<string | number>, rows: ModuleRecord[]) => {
+      syncPagedSelection(customerState, keys, rows)
     },
     getCheckboxProps: (record: ModuleRecord) => ({
       disabled: Boolean(
@@ -134,17 +249,17 @@ export function useStatementGeneratorSupport(options: UseStatementGeneratorSuppo
   }))
 
   const freightStatementSelectedBills = computed(() =>
-    freightStatementCandidateRows.value.filter((record) =>
-      freightStatementSelectedBillKeys.value.includes(String(record.id)),
-    ),
+    freightState.selectedKeys.value
+      .map((key) => freightState.selectedRowMap.value[key])
+      .filter(isModuleRecord),
   )
   const freightStatementSelectedCarrierName = computed(() =>
     String(freightStatementSelectedBills.value[0]?.carrierName || ''),
   )
   const freightStatementRowSelection = computed(() => ({
-    selectedRowKeys: freightStatementSelectedBillKeys.value,
-    onChange: (keys: Array<string | number>) => {
-      freightStatementSelectedBillKeys.value = keys.map((key) => String(key))
+    selectedRowKeys: freightState.selectedKeys.value,
+    onChange: (keys: Array<string | number>, rows: ModuleRecord[]) => {
+      syncPagedSelection(freightState, keys, rows)
     },
     getCheckboxProps: (record: ModuleRecord) => ({
       disabled: Boolean(
@@ -155,24 +270,18 @@ export function useStatementGeneratorSupport(options: UseStatementGeneratorSuppo
   }))
 
   function closeSupplierStatementGenerator() {
-    supplierStatementGeneratorVisible.value = false
-    supplierStatementGeneratorLoading.value = false
-    supplierStatementCandidateRows.value = []
-    supplierStatementSelectedInboundKeys.value = []
+    supplierState.visible.value = false
+    resetCandidateGeneratorState(supplierState, options.defaultPageSize.value)
   }
 
   function closeCustomerStatementGenerator() {
-    customerStatementGeneratorVisible.value = false
-    customerStatementGeneratorLoading.value = false
-    customerStatementCandidateRows.value = []
-    customerStatementSelectedOrderKeys.value = []
+    customerState.visible.value = false
+    resetCandidateGeneratorState(customerState, options.defaultPageSize.value)
   }
 
   function closeFreightStatementGenerator() {
-    freightStatementGeneratorVisible.value = false
-    freightStatementGeneratorLoading.value = false
-    freightStatementCandidateRows.value = []
-    freightStatementSelectedBillKeys.value = []
+    freightState.visible.value = false
+    resetCandidateGeneratorState(freightState, options.defaultPageSize.value)
   }
 
   function resetStatementSupportState() {
@@ -235,73 +344,139 @@ export function useStatementGeneratorSupport(options: UseStatementGeneratorSuppo
     }
   }
 
-  async function openSupplierStatementGenerator() {
-    supplierStatementGeneratorLoading.value = true
-    supplierStatementSelectedInboundKeys.value = []
-    supplierStatementGeneratorVisible.value = true
+  async function loadCandidatePage(
+    state: CandidateGeneratorState,
+    requestToken: Ref<number>,
+    loader: (options: CandidateLoaderOptions) => Promise<CandidatePageResult>,
+    emptyMessage: string,
+    fallbackMessage: string,
+    onError: () => void,
+  ) {
+    if (!state.visible.value) {
+      return
+    }
+
+    const nextToken = requestToken.value + 1
+    requestToken.value = nextToken
+    state.loading.value = true
 
     try {
-      const [inbounds, statements] = await Promise.all([
-        listAllBusinessModuleRows('purchase-inbounds', {}),
-        listAllBusinessModuleRows('supplier-statements', {}),
-      ])
-      supplierStatementCandidateRows.value = getAvailableSupplierStatementInbounds(inbounds, statements)
+      const result = await loader({
+        keyword: state.keyword.value.trim(),
+        currentPage: state.currentPage.value,
+        pageSize: state.pageSize.value,
+      })
+      if (requestToken.value !== nextToken) {
+        return
+      }
 
-      if (!supplierStatementCandidateRows.value.length) {
-        message.warning('没有可生成对账单的采购入库单')
+      state.rows.value = result.rows
+      state.total.value = result.total
+
+      if (!result.rows.length && !state.selectedKeys.value.length && state.currentPage.value === 1) {
+        message.warning(emptyMessage)
       }
     } catch (error) {
-      options.showRequestError(error, '采购入库单加载失败')
-      closeSupplierStatementGenerator()
+      if (requestToken.value !== nextToken) {
+        return
+      }
+      options.showRequestError(error, fallbackMessage)
+      onError()
     } finally {
-      supplierStatementGeneratorLoading.value = false
+      if (requestToken.value === nextToken) {
+        state.loading.value = false
+      }
     }
+  }
+
+  async function reloadSupplierStatementCandidates() {
+    await loadCandidatePage(
+      supplierState,
+      supplierRequestToken,
+      ({ keyword, currentPage, pageSize }) =>
+        listSupplierStatementCandidates(keyword, { currentPage, pageSize }),
+      '没有可生成对账单的采购入库单',
+      '采购入库单加载失败',
+      closeSupplierStatementGenerator,
+    )
+  }
+
+  async function reloadCustomerStatementCandidates() {
+    await loadCandidatePage(
+      customerState,
+      customerRequestToken,
+      ({ keyword, currentPage, pageSize }) =>
+        listCustomerStatementCandidates(keyword, { currentPage, pageSize }),
+      '没有可生成对账单的销售订单',
+      '销售订单加载失败',
+      closeCustomerStatementGenerator,
+    )
+  }
+
+  async function reloadFreightStatementCandidates() {
+    await loadCandidatePage(
+      freightState,
+      freightRequestToken,
+      ({ keyword, currentPage, pageSize }) =>
+        listFreightStatementCandidates(keyword, { currentPage, pageSize }),
+      '没有可生成对账单的物流单',
+      '物流单加载失败',
+      closeFreightStatementGenerator,
+    )
+  }
+
+  async function openSupplierStatementGenerator() {
+    resetCandidateGeneratorState(supplierState, options.defaultPageSize.value)
+    supplierState.visible.value = true
+    await reloadSupplierStatementCandidates()
   }
 
   async function openCustomerStatementGenerator() {
-    customerStatementGeneratorLoading.value = true
-    customerStatementSelectedOrderKeys.value = []
-    customerStatementGeneratorVisible.value = true
-
-    try {
-      const [orders, statements] = await Promise.all([
-        listAllBusinessModuleRows('sales-orders', {}),
-        listAllBusinessModuleRows('customer-statements', {}),
-      ])
-      customerStatementCandidateRows.value = getAvailableCustomerStatementOrders(orders, statements)
-
-      if (!customerStatementCandidateRows.value.length) {
-        message.warning('没有可生成对账单的销售订单')
-      }
-    } catch (error) {
-      options.showRequestError(error, '销售订单加载失败')
-      closeCustomerStatementGenerator()
-    } finally {
-      customerStatementGeneratorLoading.value = false
-    }
+    resetCandidateGeneratorState(customerState, options.defaultPageSize.value)
+    customerState.visible.value = true
+    await reloadCustomerStatementCandidates()
   }
 
   async function openFreightStatementGenerator() {
-    freightStatementGeneratorLoading.value = true
-    freightStatementSelectedBillKeys.value = []
-    freightStatementGeneratorVisible.value = true
+    resetCandidateGeneratorState(freightState, options.defaultPageSize.value)
+    freightState.visible.value = true
+    await reloadFreightStatementCandidates()
+  }
 
-    try {
-      const [bills, statements] = await Promise.all([
-        listAllBusinessModuleRows('freight-bills', {}),
-        listAllBusinessModuleRows('freight-statements', {}),
-      ])
-      freightStatementCandidateRows.value = getAvailableFreightStatementBills(bills, statements)
+  async function updateSupplierStatementKeyword(value: string) {
+    await updateCandidateGeneratorKeyword(supplierState, value, reloadSupplierStatementCandidates)
+  }
 
-      if (!freightStatementCandidateRows.value.length) {
-        message.warning('没有可生成对账单的物流单')
-      }
-    } catch (error) {
-      options.showRequestError(error, '物流单加载失败')
-      closeFreightStatementGenerator()
-    } finally {
-      freightStatementGeneratorLoading.value = false
-    }
+  async function updateSupplierStatementCurrentPage(value: number) {
+    await updateCandidateGeneratorCurrentPage(supplierState, value, reloadSupplierStatementCandidates)
+  }
+
+  async function updateSupplierStatementPageSize(value: number) {
+    await updateCandidateGeneratorPageSize(supplierState, value, reloadSupplierStatementCandidates)
+  }
+
+  async function updateCustomerStatementKeyword(value: string) {
+    await updateCandidateGeneratorKeyword(customerState, value, reloadCustomerStatementCandidates)
+  }
+
+  async function updateCustomerStatementCurrentPage(value: number) {
+    await updateCandidateGeneratorCurrentPage(customerState, value, reloadCustomerStatementCandidates)
+  }
+
+  async function updateCustomerStatementPageSize(value: number) {
+    await updateCandidateGeneratorPageSize(customerState, value, reloadCustomerStatementCandidates)
+  }
+
+  async function updateFreightStatementKeyword(value: string) {
+    await updateCandidateGeneratorKeyword(freightState, value, reloadFreightStatementCandidates)
+  }
+
+  async function updateFreightStatementCurrentPage(value: number) {
+    await updateCandidateGeneratorCurrentPage(freightState, value, reloadFreightStatementCandidates)
+  }
+
+  async function updateFreightStatementPageSize(value: number) {
+    await updateCandidateGeneratorPageSize(freightState, value, reloadFreightStatementCandidates)
   }
 
   async function buildSupplierStatementDraft(sourceInbounds: ModuleRecord[]) {
@@ -391,19 +566,27 @@ export function useStatementGeneratorSupport(options: UseStatementGeneratorSuppo
     closeCustomerStatementGenerator,
     closeFreightStatementGenerator,
     closeSupplierStatementGenerator,
-    customerStatementCandidateRows,
-    customerStatementGeneratorLoading,
-    customerStatementGeneratorVisible,
+    customerStatementCandidateRows: customerState.rows,
+    customerStatementCurrentPage: customerState.currentPage,
+    customerStatementGeneratorLoading: customerState.loading,
+    customerStatementGeneratorVisible: customerState.visible,
+    customerStatementKeyword: customerState.keyword,
+    customerStatementPageSize: customerState.pageSize,
     customerStatementRowSelection,
     customerStatementSelectedCustomerName,
     customerStatementSelectedOrders,
     customerStatementSelectedProjectName,
-    freightStatementCandidateRows,
-    freightStatementGeneratorLoading,
-    freightStatementGeneratorVisible,
+    customerStatementTotal: customerState.total,
+    freightStatementCandidateRows: freightState.rows,
+    freightStatementCurrentPage: freightState.currentPage,
+    freightStatementGeneratorLoading: freightState.loading,
+    freightStatementGeneratorVisible: freightState.visible,
+    freightStatementKeyword: freightState.keyword,
+    freightStatementPageSize: freightState.pageSize,
     freightStatementRowSelection,
     freightStatementSelectedBills,
     freightStatementSelectedCarrierName,
+    freightStatementTotal: freightState.total,
     freightSummaryLoading,
     freightSummaryRows,
     freightSummaryVisible,
@@ -415,11 +598,24 @@ export function useStatementGeneratorSupport(options: UseStatementGeneratorSuppo
     openFreightSummary,
     openSupplierStatementGenerator,
     resetStatementSupportState,
-    supplierStatementCandidateRows,
-    supplierStatementGeneratorLoading,
-    supplierStatementGeneratorVisible,
+    supplierStatementCandidateRows: supplierState.rows,
+    supplierStatementCurrentPage: supplierState.currentPage,
+    supplierStatementGeneratorLoading: supplierState.loading,
+    supplierStatementGeneratorVisible: supplierState.visible,
+    supplierStatementKeyword: supplierState.keyword,
+    supplierStatementPageSize: supplierState.pageSize,
     supplierStatementRowSelection,
     supplierStatementSelectedInbounds,
     supplierStatementSelectedSupplierName,
+    supplierStatementTotal: supplierState.total,
+    updateCustomerStatementCurrentPage,
+    updateCustomerStatementKeyword,
+    updateCustomerStatementPageSize,
+    updateFreightStatementCurrentPage,
+    updateFreightStatementKeyword,
+    updateFreightStatementPageSize,
+    updateSupplierStatementCurrentPage,
+    updateSupplierStatementKeyword,
+    updateSupplierStatementPageSize,
   }
 }

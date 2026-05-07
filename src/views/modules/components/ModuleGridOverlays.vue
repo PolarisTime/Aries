@@ -24,6 +24,7 @@ type TableScroll = Record<string, unknown>
 type RowSelection = {
   selectedRowKeys: (string | number)[]
   onChange: (keys: (string | number)[], rows: ModuleRecord[]) => void
+  getCheckboxProps?: (record: ModuleRecord) => { disabled?: boolean }
 }
 type MaterialRowSelection = {
   selectedRowKeys: (string | number)[]
@@ -69,23 +70,34 @@ defineProps<{
   handleDownloadAttachment: (record: AttachmentItem) => unknown
   handleRemoveAttachment: (id: string) => unknown
   materialSelectorVisible: boolean
-  filteredMaterialSelectorRows: ModuleRecord[]
+  materialSelectorRows: ModuleRecord[]
   materialSelectorColumns: ColumnDef<ModuleRecord, unknown>[]
   materialSelectorLoading: boolean
   materialSelectorRowSelection: MaterialRowSelection
   materialSelectorKeyword: string
+  materialSelectorCurrentPage: number
+  materialSelectorPageSize: number
+  materialSelectorTotal: number
   getMaterialSelectorRowProps: (record: ModuleRecord) => Record<string, unknown>
   materialSelectorSelectedCode: string
   hasActiveMaterialSelectorItem: boolean
   supplierStatementGeneratorVisible: boolean
   supplierStatementCandidateRows: ModuleRecord[]
   supplierStatementGeneratorLoading: boolean
+  supplierStatementKeyword: string
+  supplierStatementCurrentPage: number
+  supplierStatementPageSize: number
+  supplierStatementTotal: number
   supplierStatementRowSelection: RowSelection
   supplierStatementSelectedInbounds: ModuleRecord[]
   supplierStatementSelectedSupplierName: string
   customerStatementGeneratorVisible: boolean
   customerStatementCandidateRows: ModuleRecord[]
   customerStatementGeneratorLoading: boolean
+  customerStatementKeyword: string
+  customerStatementCurrentPage: number
+  customerStatementPageSize: number
+  customerStatementTotal: number
   customerStatementRowSelection: RowSelection
   customerStatementSelectedOrders: ModuleRecord[]
   customerStatementSelectedCustomerName: string
@@ -93,6 +105,10 @@ defineProps<{
   freightStatementGeneratorVisible: boolean
   freightStatementCandidateRows: ModuleRecord[]
   freightStatementGeneratorLoading: boolean
+  freightStatementKeyword: string
+  freightStatementCurrentPage: number
+  freightStatementPageSize: number
+  freightStatementTotal: number
   freightStatementRowSelection: RowSelection
   freightStatementSelectedBills: ModuleRecord[]
   freightStatementSelectedCarrierName: string
@@ -114,6 +130,9 @@ defineProps<{
   parentSelectorRowSelection: RowSelection
   getParentSelectorRowProps: (record: ModuleRecord) => Record<string, unknown>
   parentSelectorKeyword: string
+  parentSelectorCurrentPage: number
+  parentSelectorPageSize: number
+  parentSelectorTotal: number
   canSaveCurrentEditor: boolean
   parentImportableQuantityVisible: boolean
   getParentImportableQuantity: (record: ModuleRecord) => number | undefined
@@ -139,17 +158,30 @@ const emit = defineEmits<{
   closeMaterialSelector: []
   confirmMaterialSelector: []
   updateMaterialSelectorKeyword: [value: string]
+  updateMaterialSelectorCurrentPage: [value: number]
+  updateMaterialSelectorPageSize: [value: number]
   closeSupplierStatementGenerator: []
   generateSupplierStatement: []
+  updateSupplierStatementKeyword: [value: string]
+  updateSupplierStatementCurrentPage: [value: number]
+  updateSupplierStatementPageSize: [value: number]
   closeCustomerStatementGenerator: []
   generateCustomerStatement: []
+  updateCustomerStatementKeyword: [value: string]
+  updateCustomerStatementCurrentPage: [value: number]
+  updateCustomerStatementPageSize: [value: number]
   closeFreightStatementGenerator: []
   generateFreightStatement: []
+  updateFreightStatementKeyword: [value: string]
+  updateFreightStatementCurrentPage: [value: number]
+  updateFreightStatementPageSize: [value: number]
   closeFreightSummary: []
   closeFreightPickupList: []
   closeParentSelector: []
   confirmParentImport: []
   updateParentSelectorKeyword: [value: string]
+  updateParentSelectorCurrentPage: [value: number]
+  updateParentSelectorPageSize: [value: number]
   cancelMaterialImport: []
   submitMaterialImport: []
   closeMaterialImportResult: []
@@ -211,11 +243,17 @@ function sumRecordsBy(rows: ModuleRecord[], key: string) {
     :visible="materialSelectorVisible"
     title="选择商品"
     panel-title="商品列表"
-    hint="可按商品编码、品牌、材质、规格搜索，双击行可直接确认。"
-    :rows="filteredMaterialSelectorRows"
+    hint="可按商品编码、品牌、材质、类别、规格、长度搜索，双击行可直接确认。"
+    :rows="materialSelectorRows"
     :columns="materialSelectorColumns"
     :loading="materialSelectorLoading"
     :row-selection="materialSelectorRowSelection"
+    :pagination-state="{
+      current: materialSelectorCurrentPage,
+      pageSize: materialSelectorPageSize,
+      total: materialSelectorTotal,
+      showSizeChanger: true,
+    }"
     :scroll="{ x: 900 }"
     :custom-row="getMaterialSelectorRowProps"
     empty-description="暂无可选商品"
@@ -224,6 +262,8 @@ function sumRecordsBy(rows: ModuleRecord[], key: string) {
     row-key="materialCode"
     @cancel="emit('closeMaterialSelector')"
     @confirm="emit('confirmMaterialSelector')"
+    @update:pagination-current="emit('updateMaterialSelectorCurrentPage', $event)"
+    @update:pagination-page-size="emit('updateMaterialSelectorPageSize', $event)"
   >
     <template #meta>
       <div class="module-table-head-meta statement-generator-meta">
@@ -232,7 +272,7 @@ function sumRecordsBy(rows: ModuleRecord[], key: string) {
           :value="materialSelectorKeyword"
           allow-clear
           class="parent-selector-search"
-          placeholder="输入商品编码、品牌、材质、规格搜索"
+          placeholder="输入商品编码、品牌、材质、类别、规格、长度搜索"
           @update:value="emit('updateMaterialSelectorKeyword', $event)"
         />
         <span class="parent-selector-hint">双击行可直接确认</span>
@@ -248,6 +288,10 @@ function sumRecordsBy(rows: ModuleRecord[], key: string) {
     :supplier-visible="supplierStatementGeneratorVisible"
     :supplier-rows="supplierStatementCandidateRows"
     :supplier-loading="supplierStatementGeneratorLoading"
+    :supplier-keyword="supplierStatementKeyword"
+    :supplier-current-page="supplierStatementCurrentPage"
+    :supplier-page-size="supplierStatementPageSize"
+    :supplier-total="supplierStatementTotal"
     :supplier-row-selection="supplierStatementRowSelection"
     :supplier-summary="{
       count: supplierStatementSelectedInbounds.length,
@@ -257,6 +301,10 @@ function sumRecordsBy(rows: ModuleRecord[], key: string) {
     :customer-visible="customerStatementGeneratorVisible"
     :customer-rows="customerStatementCandidateRows"
     :customer-loading="customerStatementGeneratorLoading"
+    :customer-keyword="customerStatementKeyword"
+    :customer-current-page="customerStatementCurrentPage"
+    :customer-page-size="customerStatementPageSize"
+    :customer-total="customerStatementTotal"
     :customer-row-selection="customerStatementRowSelection"
     :customer-summary="{
       count: customerStatementSelectedOrders.length,
@@ -267,6 +315,10 @@ function sumRecordsBy(rows: ModuleRecord[], key: string) {
     :freight-visible="freightStatementGeneratorVisible"
     :freight-rows="freightStatementCandidateRows"
     :freight-loading="freightStatementGeneratorLoading"
+    :freight-keyword="freightStatementKeyword"
+    :freight-current-page="freightStatementCurrentPage"
+    :freight-page-size="freightStatementPageSize"
+    :freight-total="freightStatementTotal"
     :freight-row-selection="freightStatementRowSelection"
     :freight-summary="{
       count: freightStatementSelectedBills.length,
@@ -280,10 +332,19 @@ function sumRecordsBy(rows: ModuleRecord[], key: string) {
     :get-status-meta="getStatusMeta"
     @close-supplier="emit('closeSupplierStatementGenerator')"
     @generate-supplier="emit('generateSupplierStatement')"
+    @update-supplier-keyword="emit('updateSupplierStatementKeyword', $event)"
+    @update-supplier-current-page="emit('updateSupplierStatementCurrentPage', $event)"
+    @update-supplier-page-size="emit('updateSupplierStatementPageSize', $event)"
     @close-customer="emit('closeCustomerStatementGenerator')"
     @generate-customer="emit('generateCustomerStatement')"
+    @update-customer-keyword="emit('updateCustomerStatementKeyword', $event)"
+    @update-customer-current-page="emit('updateCustomerStatementCurrentPage', $event)"
+    @update-customer-page-size="emit('updateCustomerStatementPageSize', $event)"
     @close-freight="emit('closeFreightStatementGenerator')"
     @generate-freight="emit('generateFreightStatement')"
+    @update-freight-keyword="emit('updateFreightStatementKeyword', $event)"
+    @update-freight-current-page="emit('updateFreightStatementCurrentPage', $event)"
+    @update-freight-page-size="emit('updateFreightStatementPageSize', $event)"
   />
 
   <ModuleSelectionOverlay
@@ -320,6 +381,10 @@ function sumRecordsBy(rows: ModuleRecord[], key: string) {
     :row-selection="parentSelectorRowSelection"
     :custom-row="getParentSelectorRowProps"
     :keyword="parentSelectorKeyword"
+    :pagination-enabled="Boolean(parentImportConfig?.candidateQueryType)"
+    :current-page="parentSelectorCurrentPage"
+    :page-size="parentSelectorPageSize"
+    :total="parentSelectorTotal"
     :can-confirm="canSaveCurrentEditor"
     :show-parent-importable-quantity="parentImportableQuantityVisible"
     :get-parent-importable-quantity="getParentImportableQuantity"
@@ -329,6 +394,8 @@ function sumRecordsBy(rows: ModuleRecord[], key: string) {
     @cancel="emit('closeParentSelector')"
     @confirm="emit('confirmParentImport')"
     @update:keyword="emit('updateParentSelectorKeyword', $event)"
+    @update:current-page="emit('updateParentSelectorCurrentPage', $event)"
+    @update:page-size="emit('updateParentSelectorPageSize', $event)"
   />
 
   <ModuleMaterialImportDialogs

@@ -6,7 +6,7 @@ import {
   type QueryValue,
 } from '@/api/module-contracts'
 import { serializeBusinessRecordForSave } from '@/api/module-save-payload'
-import type { TableResponse } from '@/types/api'
+import type { PagedResult, TableResponse } from '@/types/api'
 import type {
   ModuleFilterDefinition,
   ModuleLineItem,
@@ -53,6 +53,11 @@ export interface AttachmentRecord {
   previewType?: string
   previewUrl?: string
   downloadUrl?: string
+}
+
+export interface PurchaseOrderImportCandidateQuery {
+  currentPage: number
+  pageSize: number
 }
 
 export async function generateBusinessPrimaryNo(moduleKey: string) {
@@ -431,6 +436,59 @@ export async function searchBusinessModule(
     return []
   }
   return normalizeRows(response.data)
+}
+
+export async function listPurchaseOrderImportCandidates(
+  usage: 'purchase-inbound' | 'sales-order',
+  keyword: string,
+  options: PurchaseOrderImportCandidateQuery,
+): Promise<PagedResult<ModuleRecord>> {
+  return listPagedModuleCandidates('/purchase-orders/import-candidates', keyword, options, { usage })
+}
+
+async function listPagedModuleCandidates(
+  path: string,
+  keyword: string,
+  options: PurchaseOrderImportCandidateQuery,
+  extraParams?: Record<string, QueryValue>,
+): Promise<PagedResult<ModuleRecord>> {
+  const response = await http.get<ApiResponse<LeoPageData<Record<string, unknown>>>>(
+    path,
+    {
+      params: {
+        ...extraParams,
+        keyword: keyword.trim(),
+        page: Math.max(options.currentPage - 1, 0),
+        size: options.pageSize,
+      },
+    },
+  )
+
+  return {
+    rows: normalizeRows(response.data?.records),
+    total: Number(response.data?.totalElements ?? 0),
+  }
+}
+
+export async function listSupplierStatementCandidates(
+  keyword: string,
+  options: PurchaseOrderImportCandidateQuery,
+): Promise<PagedResult<ModuleRecord>> {
+  return listPagedModuleCandidates('/supplier-statements/candidates', keyword, options)
+}
+
+export async function listCustomerStatementCandidates(
+  keyword: string,
+  options: PurchaseOrderImportCandidateQuery,
+): Promise<PagedResult<ModuleRecord>> {
+  return listPagedModuleCandidates('/customer-statements/candidates', keyword, options)
+}
+
+export async function listFreightStatementCandidates(
+  keyword: string,
+  options: PurchaseOrderImportCandidateQuery,
+): Promise<PagedResult<ModuleRecord>> {
+  return listPagedModuleCandidates('/freight-statements/candidates', keyword, options)
 }
 
 export async function listAllBusinessModuleRows(

@@ -12,8 +12,6 @@ import {
 } from './module-adapter-actions'
 
 export const BULK_DELETE_LABEL = '删除'
-export const BULK_AUDIT_LABEL = '审核'
-export const BULK_REVERSE_AUDIT_LABEL = '反审核'
 export const BULK_PRINT_PREVIEW_LABEL = '打印预览'
 export const BULK_DIRECT_PRINT_LABEL = '直接打印'
 
@@ -23,6 +21,8 @@ interface UseModuleToolbarActionsOptions {
   formFields: Ref<ModuleFormFieldDefinition[]>
   isMaterialModule: Ref<boolean>
   selectedRowCount: Ref<number>
+  auditActionLabel: Ref<string>
+  reverseAuditActionLabel: Ref<string>
   canUseBulkAuditActions: Ref<boolean>
   canUseBulkDeleteActions: Ref<boolean>
   canUseBulkPrintActions: Ref<boolean>
@@ -51,6 +51,9 @@ function isCreateToolbarAction(action: ModuleActionDefinition) {
 }
 
 export function useModuleToolbarActions(options: UseModuleToolbarActionsOptions) {
+  const bulkAuditLabel = computed(() => options.auditActionLabel.value || '审核')
+  const bulkReverseAuditLabel = computed(() => options.reverseAuditActionLabel.value || '反审核')
+
   function canUseAction(actionLabel: string) {
     return options.hasAnyModuleAction(resolveModuleActionPermissionCodes(actionLabel))
   }
@@ -71,8 +74,8 @@ export function useModuleToolbarActions(options: UseModuleToolbarActionsOptions)
     const actions: ModuleActionDefinition[] = []
     if (options.canUseBulkAuditActions.value) {
       actions.push(
-        { label: BULK_AUDIT_LABEL, type: 'default', disabled },
-        { label: BULK_REVERSE_AUDIT_LABEL, type: 'default', disabled },
+        { label: bulkAuditLabel.value, type: 'default', disabled },
+        { label: bulkReverseAuditLabel.value, type: 'default', disabled },
       )
     }
     if (options.canUseBulkPrintActions.value) {
@@ -108,11 +111,11 @@ export function useModuleToolbarActions(options: UseModuleToolbarActionsOptions)
       return
     }
 
-    if (actionLabel === BULK_AUDIT_LABEL) {
+    if (actionLabel === bulkAuditLabel.value) {
       await options.handlers.handleSelectedAuditRecords()
       return
     }
-    if (actionLabel === BULK_REVERSE_AUDIT_LABEL) {
+    if (actionLabel === bulkReverseAuditLabel.value) {
       await options.handlers.handleSelectedReverseAuditRecords()
       return
     }

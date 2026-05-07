@@ -5,21 +5,40 @@ import ModuleSelectionOverlay from './ModuleSelectionOverlay.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import type { ModuleRecord } from '@/types/module-page'
 
+type PaginationState = {
+  current: number
+  pageSize: number
+  total: number
+  showSizeChanger?: boolean
+}
+
 const props = defineProps<{
   supplierVisible: boolean
   supplierRows: ModuleRecord[]
   supplierLoading: boolean
   supplierRowSelection: { selectedRowKeys: (string | number)[]; onChange: (keys: (string | number)[], rows: ModuleRecord[]) => void }
+  supplierKeyword: string
+  supplierCurrentPage: number
+  supplierPageSize: number
+  supplierTotal: number
   supplierSummary: { count: number; supplierName?: string; amount: number }
   customerVisible: boolean
   customerRows: ModuleRecord[]
   customerLoading: boolean
   customerRowSelection: { selectedRowKeys: (string | number)[]; onChange: (keys: (string | number)[], rows: ModuleRecord[]) => void }
+  customerKeyword: string
+  customerCurrentPage: number
+  customerPageSize: number
+  customerTotal: number
   customerSummary: { count: number; customerName?: string; projectName?: string; amount: number }
   freightVisible: boolean
   freightRows: ModuleRecord[]
   freightLoading: boolean
   freightRowSelection: { selectedRowKeys: (string | number)[]; onChange: (keys: (string | number)[], rows: ModuleRecord[]) => void }
+  freightKeyword: string
+  freightCurrentPage: number
+  freightPageSize: number
+  freightTotal: number
   freightSummary: { count: number; carrierName?: string; weight: number; freight: number }
   formatWeight: (value: unknown) => string
   formatAmount: (value: unknown) => string
@@ -30,10 +49,19 @@ const props = defineProps<{
 const emit = defineEmits<{
   closeSupplier: []
   generateSupplier: []
+  updateSupplierKeyword: [value: string]
+  updateSupplierCurrentPage: [value: number]
+  updateSupplierPageSize: [value: number]
   closeCustomer: []
   generateCustomer: []
+  updateCustomerKeyword: [value: string]
+  updateCustomerCurrentPage: [value: number]
+  updateCustomerPageSize: [value: number]
   closeFreight: []
   generateFreight: []
+  updateFreightKeyword: [value: string]
+  updateFreightCurrentPage: [value: number]
+  updateFreightPageSize: [value: number]
 }>()
 
 const helper = createColumnHelper<ModuleRecord>()
@@ -123,6 +151,15 @@ const freightColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
     meta: { width: 110, align: 'center' },
   }),
 ])
+
+function buildPaginationState(current: number, pageSize: number, total: number): PaginationState {
+  return {
+    current,
+    pageSize,
+    total,
+    showSizeChanger: true,
+  }
+}
 </script>
 
 <template>
@@ -135,11 +172,28 @@ const freightColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
     :columns="supplierColumns"
     :loading="supplierLoading"
     :row-selection="supplierRowSelection"
+    :pagination-state="buildPaginationState(supplierCurrentPage, supplierPageSize, supplierTotal)"
     empty-description="当前没有可生成对账单的采购入库单"
     confirm-text="生成草稿"
     @cancel="emit('closeSupplier')"
     @confirm="emit('generateSupplier')"
+    @update:pagination-current="emit('updateSupplierCurrentPage', $event)"
+    @update:pagination-page-size="emit('updateSupplierPageSize', $event)"
   >
+    <template #meta>
+      <div class="module-table-head-meta statement-generator-meta">
+        <span class="module-table-head-title">采购入库单选择</span>
+        <a-input
+          :value="supplierKeyword"
+          allow-clear
+          class="parent-selector-search"
+          placeholder="输入入库单号、采购单号、供应商、仓库搜索"
+          @update:value="emit('updateSupplierKeyword', $event)"
+        />
+        <span class="parent-selector-hint">仅支持同一供应商合并</span>
+      </div>
+    </template>
+
     <template #summary>
       <span>已选 {{ supplierSummary.count }} 张</span>
       <span v-if="supplierSummary.supplierName">供应商 {{ supplierSummary.supplierName }}</span>
@@ -156,11 +210,28 @@ const freightColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
     :columns="customerColumns"
     :loading="customerLoading"
     :row-selection="customerRowSelection"
+    :pagination-state="buildPaginationState(customerCurrentPage, customerPageSize, customerTotal)"
     empty-description="当前没有可生成对账单的销售订单"
     confirm-text="生成草稿"
     @cancel="emit('closeCustomer')"
     @confirm="emit('generateCustomer')"
+    @update:pagination-current="emit('updateCustomerCurrentPage', $event)"
+    @update:pagination-page-size="emit('updateCustomerPageSize', $event)"
   >
+    <template #meta>
+      <div class="module-table-head-meta statement-generator-meta">
+        <span class="module-table-head-title">销售订单选择</span>
+        <a-input
+          :value="customerKeyword"
+          allow-clear
+          class="parent-selector-search"
+          placeholder="输入订单号、客户、项目、销售员搜索"
+          @update:value="emit('updateCustomerKeyword', $event)"
+        />
+        <span class="parent-selector-hint">仅支持同一客户同一项目合并</span>
+      </div>
+    </template>
+
     <template #summary>
       <span>已选 {{ customerSummary.count }} 张</span>
       <span v-if="customerSummary.customerName">客户 {{ customerSummary.customerName }}</span>
@@ -178,11 +249,28 @@ const freightColumns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => [
     :columns="freightColumns"
     :loading="freightLoading"
     :row-selection="freightRowSelection"
+    :pagination-state="buildPaginationState(freightCurrentPage, freightPageSize, freightTotal)"
     empty-description="当前没有可生成对账单的物流单"
     confirm-text="生成草稿"
     @cancel="emit('closeFreight')"
     @confirm="emit('generateFreight')"
+    @update:pagination-current="emit('updateFreightCurrentPage', $event)"
+    @update:pagination-page-size="emit('updateFreightPageSize', $event)"
   >
+    <template #meta>
+      <div class="module-table-head-meta statement-generator-meta">
+        <span class="module-table-head-title">物流单选择</span>
+        <a-input
+          :value="freightKeyword"
+          allow-clear
+          class="parent-selector-search"
+          placeholder="输入物流单号、物流商、客户、项目搜索"
+          @update:value="emit('updateFreightKeyword', $event)"
+        />
+        <span class="parent-selector-hint">仅支持同一物流商合并</span>
+      </div>
+    </template>
+
     <template #summary>
       <span>已选 {{ freightSummary.count }} 张</span>
       <span v-if="freightSummary.carrierName">物流商 {{ freightSummary.carrierName }}</span>

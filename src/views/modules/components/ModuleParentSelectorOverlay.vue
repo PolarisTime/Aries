@@ -11,9 +11,17 @@ const props = defineProps<{
   title: string
   rows: ModuleRecord[]
   loading: boolean
-  rowSelection: { selectedRowKeys: (string | number)[]; onChange: (keys: (string | number)[], rows: ModuleRecord[]) => void }
+  rowSelection: {
+    selectedRowKeys: (string | number)[]
+    onChange: (keys: (string | number)[], rows: ModuleRecord[]) => void
+    getCheckboxProps?: (record: ModuleRecord) => { disabled?: boolean }
+  }
   customRow: TableRowHandler
   keyword: string
+  paginationEnabled: boolean
+  currentPage: number
+  pageSize: number
+  total: number
   canConfirm: boolean
   showParentImportableQuantity?: boolean
   getParentImportableQuantity?: (record: ModuleRecord) => number | undefined
@@ -26,6 +34,8 @@ defineEmits<{
   cancel: []
   confirm: []
   'update:keyword': [value: string]
+  'update:current-page': [value: number]
+  'update:page-size': [value: number]
 }>()
 
 const columnHelper = createColumnHelper<ModuleRecord>()
@@ -81,11 +91,14 @@ const columns = computed<ColumnDef<ModuleRecord, unknown>[]>(() => {
     :loading="loading"
     :row-selection="rowSelection"
     :custom-row="customRow"
+    :pagination-state="paginationEnabled ? { current: currentPage, pageSize, total, showSizeChanger: true } : undefined"
     empty-description="暂无可选上级单据"
     confirm-text="导入明细"
     :confirm-visible="canConfirm"
     @cancel="$emit('cancel')"
     @confirm="$emit('confirm')"
+    @update:pagination-current="$emit('update:current-page', $event)"
+    @update:pagination-page-size="$emit('update:page-size', $event)"
   >
     <template #meta>
       <span class="module-table-head-title">上级单据选择</span>

@@ -69,6 +69,14 @@ export function resolveModuleActionPermissionCodes(actionLabel: string): Permiss
     return ['export']
   }
 
+  if (actionLabel === '确认' || actionLabel === '反确认') {
+    return ['audit']
+  }
+
+  if (actionLabel === '核准' || actionLabel === '反核准') {
+    return ['audit']
+  }
+
   if (actionLabel.includes('导出')) {
     return ['export']
   }
@@ -102,6 +110,17 @@ export function resolveModuleActionPermissionCodes(actionLabel: string): Permiss
   }
 
   return ['read']
+}
+
+export function resolveStatusChangeActionLabel(targetValue: unknown, reverse = false) {
+  const normalizedTarget = String(targetValue ?? '').trim()
+  if (normalizedTarget === '已确认' || normalizedTarget === '待确认') {
+    return reverse ? '反确认' : '确认'
+  }
+  if (normalizedTarget === '已核准' || normalizedTarget === '未核准') {
+    return reverse ? '反核准' : '核准'
+  }
+  return reverse ? '反审核' : '审核'
 }
 
 export function buildEditorAuditTarget(

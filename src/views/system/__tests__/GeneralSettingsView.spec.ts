@@ -94,6 +94,20 @@ describe('GeneralSettingsView', () => {
       },
       {
         id: '4',
+        settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE',
+        settingName: '列表分页默认条数',
+        billName: '业务列表',
+        prefix: 'UI',
+        dateRule: 'yyyy',
+        serialLength: 1,
+        resetRule: 'YEARLY',
+        sampleNo: '50',
+        status: '正常',
+        remark: '用于业务列表与远程候选弹窗的默认分页条数，范围 1 到 200。',
+        ruleType: 'NO_RULE',
+      },
+      {
+        id: '5',
         settingCode: 'UI_WEIGHT_ONLY_SALES_OUTBOUNDS',
         settingName: '销售出库重量视图开关',
         billName: '销售出库视图',
@@ -102,7 +116,7 @@ describe('GeneralSettingsView', () => {
         ruleType: 'NO_RULE',
       },
       {
-        id: '5',
+        id: '6',
         settingCode: 'SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER',
         settingName: '销售订单默认未收款',
         billName: '销售订单收款情况',
@@ -111,7 +125,7 @@ describe('GeneralSettingsView', () => {
         ruleType: 'NO_RULE',
       },
       {
-        id: '6',
+        id: '7',
         settingCode: 'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS',
         settingName: '页面操作详细日志',
         billName: '操作日志',
@@ -122,6 +136,15 @@ describe('GeneralSettingsView', () => {
         sampleNo: 'QUERY,DETAIL,EXPORT',
         status: '禁用',
         remark: '按勾选项记录页面操作',
+        ruleType: 'NO_RULE',
+      },
+      {
+        id: '8',
+        settingCode: 'SYS_ADMIN_VIEW_DELETED_RECORDS',
+        settingName: '管理员可查看已删除单据',
+        billName: '业务列表',
+        status: '正常',
+        remark: '启用后，管理员在业务单据列表与详情中可查看已删除记录，仅用于排查与审计；关闭后已删除单据对所有人隐藏。',
         ruleType: 'NO_RULE',
       },
     ])
@@ -141,10 +164,12 @@ describe('GeneralSettingsView', () => {
 
     expect(text).toContain('基础参数')
     expect(text).toContain('默认税率')
+    expect(text).toContain('列表分页默认条数')
     expect(text).toContain('系统开关')
     expect(text).toContain('销售出库重量视图开关')
     expect(text).toContain('销售订单默认未收款')
     expect(text).toContain('页面操作详细日志')
+    expect(text).toContain('管理员可查看已删除单据')
     expect(text).not.toContain('销售订单单号规则')
     expect(text).not.toContain('{yyyyMMddHHmmss}_{random8}')
   })
@@ -182,9 +207,40 @@ describe('GeneralSettingsView', () => {
     await flushPromises()
 
     expect(businessMocks.saveBusinessModule).toHaveBeenCalledWith('general-settings', expect.objectContaining({
-      id: '6',
+      id: '7',
       settingCode: 'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS',
       sampleNo: 'QUERY,DETAIL,PRINT',
+      status: '正常',
+    }))
+  })
+
+  it('saves default list page size as a bounded integer sampleNo', async () => {
+    const wrapper = mountPage()
+    await flushPromises()
+
+    const actionLinks = wrapper.findAll('.table-action-btn')
+    const targetButton = actionLinks.find((el) =>
+      el.text().includes('编辑') && el.element.closest('tr')?.textContent?.includes('列表分页默认条数'),
+    )
+    expect(targetButton).toBeDefined()
+
+    await targetButton!.trigger('click')
+    await flushPromises()
+
+    const inputNumber = wrapper.findComponent({ name: 'AInputNumber' })
+    expect(inputNumber).toBeDefined()
+    inputNumber.vm.$emit('update:value', 80)
+    await flushPromises()
+
+    const modal = wrapper.findAllComponents({ name: 'AModal' }).at(0)
+    const onOk = modal!.props('onOk') as (() => void | Promise<void>) | undefined
+    await onOk?.()
+    await flushPromises()
+
+    expect(businessMocks.saveBusinessModule).toHaveBeenCalledWith('general-settings', expect.objectContaining({
+      id: '4',
+      settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE',
+      sampleNo: '80',
       status: '正常',
     }))
   })

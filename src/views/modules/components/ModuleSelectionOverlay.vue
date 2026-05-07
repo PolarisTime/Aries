@@ -13,6 +13,12 @@ type RowSelectionConfig = {
   onChange: (keys: (string | number)[], rows: AnyRow[]) => void
   getCheckboxProps?: (record: AnyRow) => { disabled?: boolean }
 }
+type PaginationState = {
+  current: number
+  pageSize: number
+  total: number
+  showSizeChanger?: boolean
+}
 
 const props = withDefaults(defineProps<{
   visible: boolean
@@ -25,6 +31,7 @@ const props = withDefaults(defineProps<{
   loading?: boolean
   rowSelection?: RowSelectionConfig
   pagination?: { pageSize: number; showSizeChanger: boolean; position: string[] } | false
+  paginationState?: PaginationState
   scroll?: Record<string, unknown>
   emptyDescription: string
   hideCancel?: boolean
@@ -49,9 +56,11 @@ const props = withDefaults(defineProps<{
   customRow: undefined,
 })
 
-defineEmits<{
+const emit = defineEmits<{
   cancel: []
   confirm: []
+  'update:paginationCurrent': [value: number]
+  'update:paginationPageSize': [value: number]
 }>()
 
 const rowKeyFn = (row: AnyRow) => {
@@ -215,8 +224,33 @@ function toScrollSize(value: unknown): string | number | undefined {
   return typeof value === 'number' || typeof value === 'string' ? value : undefined
 }
 
+function handlePaginationChange(page: number, pageSize: number) {
+  if (pageSize !== props.paginationState?.pageSize) {
+    emit('update:paginationPageSize', pageSize)
+  }
+  if (page !== props.paginationState?.current) {
+    emit('update:paginationCurrent', page)
+  }
+}
+
+function handlePaginationSizeChange(page: number, pageSize: number) {
+  emit('update:paginationPageSize', pageSize)
+  emit('update:paginationCurrent', page)
+}
+
 const tableScrollX = computed(() => toScrollSize(props.scroll?.x))
 const tableScrollY = computed(() => toScrollSize(props.scroll?.y) ?? 'var(--app-selection-scroll-y)')
+const paginationPageSizeOptions = computed(() => {
+  const baseOptions = [10, 20, 50, 100]
+  const currentPageSize = Number(props.paginationState?.pageSize || 20)
+  const merged = new Set(baseOptions)
+  if (Number.isFinite(currentPageSize) && currentPageSize > 0) {
+    merged.add(currentPageSize)
+  }
+  return [...merged]
+    .sort((left, right) => left - right)
+    .map(String)
+})
 
 const { table } = useDataTable({
   data: computed(() => props.rows),
@@ -277,6 +311,20 @@ const { table } = useDataTable({
             :row-props="getRowProps"
           />
         </div>
+
+        <div v-if="paginationState && paginationState.total > 0" class="module-selection-pagination">
+          <a-pagination
+            size="small"
+            :current="paginationState.current"
+            :page-size="paginationState.pageSize"
+            :total="paginationState.total"
+            :show-size-changer="paginationState.showSizeChanger ?? false"
+            :page-size-options="paginationPageSizeOptions"
+            :show-total="(total) => `共 ${total} 条`"
+            @change="handlePaginationChange"
+            @show-size-change="handlePaginationSizeChange"
+          />
+        </div>
       </div>
 
       <footer v-if="!confirmVisible && !hideCancel" class="workspace-overlay-footer">
@@ -285,3 +333,11 @@ const { table } = useDataTable({
     </section>
   </div>
 </template>
+
+<style scoped>
+.module-selection-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+</style>

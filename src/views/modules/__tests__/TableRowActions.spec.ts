@@ -33,4 +33,13 @@ describe('TableRowActions', () => {
   it('renders reverse audit action for audited list rows', () => {
     expect(actionLabels({ canReverseAudit: true, record: { id: 'row-2', status: '已审核' } })).toContain('反审核')
   })
+
+  it('renders confirm labels for statement rows', () => {
+    expect(actionLabels({ canAudit: true, auditLabel: '确认' })).toContain('确认')
+    expect(actionLabels({
+      canReverseAudit: true,
+      reverseAuditLabel: '反确认',
+      record: { id: 'row-3', status: '已确认' },
+    })).toContain('反确认')
+  })
 })

@@ -62,8 +62,12 @@ describe('operations page config', () => {
 
   it('keeps sales order header fields grouped into the requested three-row layout', () => {
     const config = operationsPageConfigs['sales-orders']
+    const statusFilter = config.filters.find((filter) => filter.key === 'status')
 
     expect(config.detailColumnCount).toBe(4)
+    expect(statusFilter && 'options' in statusFilter && typeof statusFilter.options !== 'function'
+      ? statusFilter.options.map((option) => option.value)
+      : []).toEqual(['草稿', '已审核', '待完善', '完成销售'])
     expect(config.detailFields.map((field) => ({
       key: field.key,
       row: field.row,

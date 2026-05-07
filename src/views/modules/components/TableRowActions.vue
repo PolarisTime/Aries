@@ -18,6 +18,8 @@ const props = defineProps<{
   canEdit: boolean
   canAudit: boolean
   canReverseAudit: boolean
+  auditLabel?: string
+  reverseAuditLabel?: string
   canDelete: boolean
   canAttach: boolean
   isReadOnly: boolean
@@ -53,16 +55,16 @@ const actions = computed<ActionItem[]>(() => [
   },
   {
     key: 'audit',
-    label: '审核',
+    label: props.auditLabel || '审核',
     icon: AuditOutlined,
-    visible: !props.isReadOnly && props.canAudit && !isAudited.value,
+    visible: !props.isReadOnly && props.canAudit,
     onClick: () => emit('audit', props.record)
   },
   {
     key: 'reverse-audit',
-    label: '反审核',
+    label: props.reverseAuditLabel || '反审核',
     icon: UndoOutlined,
-    visible: !props.isReadOnly && props.canReverseAudit && isAudited.value,
+    visible: !props.isReadOnly && props.canReverseAudit,
     onClick: () => emit('reverse-audit', props.record)
   },
   {

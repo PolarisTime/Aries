@@ -93,6 +93,204 @@ describe('business api read-only modules', () => {
     })
   })
 
+  it('loads purchase order import candidates with server-side pagination', async () => {
+    clientMocks.httpGet.mockResolvedValue({
+      code: 0,
+      data: {
+        records: [
+          {
+            id: '1',
+            orderNo: 'PO-001',
+            supplierName: '供应商甲',
+            status: '已审核',
+            importableQuantity: 5,
+          },
+        ],
+        page: 1,
+        size: 20,
+        totalElements: 21,
+        totalPages: 2,
+        first: false,
+        last: false,
+      },
+    })
+
+    const { listPurchaseOrderImportCandidates } = await import('@/api/business')
+
+    await expect(
+      listPurchaseOrderImportCandidates('purchase-inbound', 'PO-00', {
+        currentPage: 2,
+        pageSize: 20,
+      }),
+    ).resolves.toEqual({
+      rows: [
+        {
+          id: '1',
+          orderNo: 'PO-001',
+          supplierName: '供应商甲',
+          status: '已审核',
+          importableQuantity: 5,
+        },
+      ],
+      total: 21,
+    })
+
+    expect(clientMocks.httpGet).toHaveBeenCalledWith('/purchase-orders/import-candidates', {
+      params: {
+        usage: 'purchase-inbound',
+        keyword: 'PO-00',
+        page: 1,
+        size: 20,
+      },
+    })
+  })
+
+  it('loads supplier statement candidates with server-side pagination', async () => {
+    clientMocks.httpGet.mockResolvedValue({
+      code: 0,
+      data: {
+        records: [
+          {
+            id: '1',
+            inboundNo: 'PI-001',
+            supplierName: '供应商甲',
+            totalAmount: 123.45,
+            status: '已审核',
+          },
+        ],
+        page: 0,
+        size: 50,
+        totalElements: 1,
+        totalPages: 1,
+        first: true,
+        last: true,
+      },
+    })
+
+    const { listSupplierStatementCandidates } = await import('@/api/business')
+
+    await expect(
+      listSupplierStatementCandidates('PI-0', {
+        currentPage: 1,
+        pageSize: 50,
+      }),
+    ).resolves.toEqual({
+      rows: [
+        {
+          id: '1',
+          inboundNo: 'PI-001',
+          supplierName: '供应商甲',
+          totalAmount: 123.45,
+          status: '已审核',
+        },
+      ],
+      total: 1,
+    })
+
+    expect(clientMocks.httpGet).toHaveBeenCalledWith('/supplier-statements/candidates', {
+      params: {
+        keyword: 'PI-0',
+        page: 0,
+        size: 50,
+      },
+    })
+  })
+
+  it('loads customer and freight statement candidates with server-side pagination', async () => {
+    const { listCustomerStatementCandidates, listFreightStatementCandidates } = await import('@/api/business')
+
+    clientMocks.httpGet.mockResolvedValueOnce({
+      code: 0,
+      data: {
+        records: [
+          {
+            id: '2',
+            orderNo: 'SO-001',
+            customerName: '客户甲',
+            projectName: '项目A',
+            status: '完成销售',
+          },
+        ],
+        page: 1,
+        size: 20,
+        totalElements: 25,
+        totalPages: 2,
+        first: false,
+        last: false,
+      },
+    })
+    clientMocks.httpGet.mockResolvedValueOnce({
+      code: 0,
+      data: {
+        records: [
+          {
+            id: '3',
+            billNo: 'WL-001',
+            carrierName: '物流甲',
+            totalFreight: 88.8,
+            status: '已审核',
+          },
+        ],
+        page: 0,
+        size: 20,
+        totalElements: 1,
+        totalPages: 1,
+        first: true,
+        last: true,
+      },
+    })
+
+    await expect(
+      listCustomerStatementCandidates('SO', {
+        currentPage: 2,
+        pageSize: 20,
+      }),
+    ).resolves.toEqual({
+      rows: [
+        {
+          id: '2',
+          orderNo: 'SO-001',
+          customerName: '客户甲',
+          projectName: '项目A',
+          status: '完成销售',
+        },
+      ],
+      total: 25,
+    })
+    await expect(
+      listFreightStatementCandidates('WL', {
+        currentPage: 1,
+        pageSize: 20,
+      }),
+    ).resolves.toEqual({
+      rows: [
+        {
+          id: '3',
+          billNo: 'WL-001',
+          carrierName: '物流甲',
+          totalFreight: 88.8,
+          status: '已审核',
+        },
+      ],
+      total: 1,
+    })
+
+    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(1, '/customer-statements/candidates', {
+      params: {
+        keyword: 'SO',
+        page: 1,
+        size: 20,
+      },
+    })
+    expect(clientMocks.httpGet).toHaveBeenNthCalledWith(2, '/freight-statements/candidates', {
+      params: {
+        keyword: 'WL',
+        page: 0,
+        size: 20,
+      },
+    })
+  })
+
   it('saves invoice modules with source order summaries and line item payloads', async () => {
     clientMocks.httpPost.mockResolvedValue({
       code: 0,
