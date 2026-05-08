@@ -8,13 +8,30 @@ import type { ModuleRecord } from '@/types/module-page'
 interface Props {
   open: boolean
   parentModuleKey: string
+  parentDisplayFieldKey?: string
   title?: string
   onSelect: (record: ModuleRecord) => void
   onClose: () => void
 }
 
-export function ModuleParentSelectorOverlay({ open, parentModuleKey, title = '选择父单据', onSelect, onClose }: Props) {
+const parentDisplayFieldFallbackMap: Record<string, string> = {
+  'purchase-orders': 'orderNo',
+  'purchase-inbounds': 'inboundNo',
+  'sales-orders': 'orderNo',
+  'sales-outbounds': 'outboundNo',
+  'freight-bills': 'billNo',
+}
+
+export function ModuleParentSelectorOverlay({
+  open,
+  parentModuleKey,
+  parentDisplayFieldKey,
+  title = '选择父单据',
+  onSelect,
+  onClose,
+}: Props) {
   const [keyword, setKeyword] = useState('')
+  const displayFieldKey = parentDisplayFieldKey || parentDisplayFieldFallbackMap[parentModuleKey] || 'id'
 
   const { data: records, isLoading } = useQuery({
     queryKey: ['parent-selector', parentModuleKey, keyword],
@@ -23,7 +40,7 @@ export function ModuleParentSelectorOverlay({ open, parentModuleKey, title = '�
   })
 
   const columns = [
-    { dataIndex: 'id', title: '单据号', width: 160 },
+    { dataIndex: displayFieldKey, title: '单据号', width: 160 },
     { dataIndex: 'status', title: '状态', width: 100 },
   ]
 

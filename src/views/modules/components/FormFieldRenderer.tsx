@@ -6,6 +6,12 @@ interface Props {
 }
 
 export function FormFieldRenderer({ field }: Props) {
+  const form = Form.useFormInstance()
+  const formValues = Form.useWatch([], form) || {}
+  const resolvedOptions = typeof field.options === 'function'
+    ? field.options(formValues)
+    : field.options || []
+
   const commonProps = {
     placeholder: field.placeholder || `请输入${field.label}`,
     allowClear: field.allowClear !== false,
@@ -40,7 +46,7 @@ export function FormFieldRenderer({ field }: Props) {
         >
           <Select
             {...commonProps}
-            options={Array.isArray(field.options) ? field.options.map((opt) => ({
+            options={Array.isArray(resolvedOptions) ? resolvedOptions.map((opt) => ({
               label: String(opt.label),
               value: opt.value as string | number,
             })) : []}
@@ -86,7 +92,7 @@ export function FormFieldRenderer({ field }: Props) {
             filterOption={(input, option) =>
               String(option?.label || '').toLowerCase().includes(input.toLowerCase())
             }
-            options={Array.isArray(field.options) ? field.options.map((opt) => ({
+            options={Array.isArray(resolvedOptions) ? resolvedOptions.map((opt) => ({
               label: String(opt.label),
               value: opt.value as string | number,
             })) : []}
