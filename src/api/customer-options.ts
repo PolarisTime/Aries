@@ -80,10 +80,7 @@ export function resolveSingleCustomerProjectName(customerName: unknown): string 
 }
 
 function ensureCustomerOptionsLoaded() {
-  if (cachedCustomers === null && !loadingCustomers) {
-    if (fetchFailed) {
-      fetchFailed = false
-    }
+  if (cachedCustomers === null && !loadingCustomers && !fetchFailed) {
     fetchCustomerOptions()
   }
 }

@@ -21,11 +21,12 @@ function resolveOpenPageKey(path: string, meta?: Record<string, unknown>): strin
 export function useOpenPages(
   defaultPath = '/dashboard',
   defaultTitle = '未命名页面',
+  homeTitle = '工作台',
   resolvePage?: (pathname: string) => OpenPageDescriptor,
 ) {
   const location = useLocation()
   const [pages, setPages] = useState<OpenPage[]>([
-    { key: '/dashboard', path: '/dashboard', title: '工作台', closable: false },
+    { key: defaultPath, path: defaultPath, title: homeTitle, closable: false },
   ])
 
   useEffect(() => {
@@ -40,22 +41,28 @@ export function useOpenPages(
       key: currentPage.key,
       path: currentPage.path,
       title: currentPage.title,
-      closable: currentPage.key !== '/dashboard',
+      closable: currentPage.key !== defaultPath,
     }
 
     setPages((prev) => {
-      if (prev.some((item) => item.key === currentPage.key)) {
-        return prev.map((item) => (item.key === currentPage.key ? nextPage : item))
+      const normalizedPages = [
+        { key: defaultPath, path: defaultPath, title: homeTitle, closable: false },
+        ...prev.filter((item) => item.key !== defaultPath),
+      ]
+
+      if (normalizedPages.some((item) => item.key === currentPage.key)) {
+        return normalizedPages.map((item) => (item.key === currentPage.key ? nextPage : item))
       }
-      return [...prev, nextPage]
+      return [...normalizedPages, nextPage]
     })
-  }, [defaultTitle, location.pathname, resolvePage])
+  }, [defaultPath, defaultTitle, homeTitle, location.pathname, resolvePage])
 
   const closePage = useCallback(
     (key: string, navigate: (path: string) => void) => {
       setPages((prev) => {
         const index = prev.findIndex((item) => item.key === key)
         if (index < 0) return prev
+        if (key === defaultPath || prev[index]?.closable === false) return prev
 
         const nextPages = prev.filter((item) => item.key !== key)
         const currentKey = resolvePage

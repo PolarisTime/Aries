@@ -26,22 +26,30 @@ import { ModuleStatementGenerator } from '@/views/modules/components/ModuleState
 import { ModuleParentSelectorOverlay } from '@/views/modules/components/ModuleParentSelectorOverlay'
 import { ModuleMaterialImportDialogs } from '@/views/modules/components/ModuleMaterialImportDialogs'
 import { ModuleFreightPickupListOverlay } from '@/views/modules/components/ModuleFreightPickupListOverlay'
-import { getPageDefinition } from '@/config/page-registry'
+import { getPageDefinition, type AppPageDefinition } from '@/config/page-registry'
 import { deleteBusinessModule, saveBusinessModule } from '@/api/business'
 import type { ModuleRecord } from '@/types/module-page'
 import type { TableColumnsType, TableProps } from 'antd'
 
 export function BusinessGridView() {
   const location = useLocation()
+  const pageDef = useMemo(() => {
+    return getPageDefinition(location.pathname)
+  }, [location.pathname])
+
+  if (!pageDef?.moduleKey) {
+    return <Empty description="页面配置未找到" style={{ marginTop: 96 }} />
+  }
+
+  return <BusinessGridPage pageDef={pageDef} />
+}
+
+function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
+  const location = useLocation()
   const routeQuerySignature = JSON.stringify(
     (location as unknown as { search?: unknown }).search || {},
   )
-  const pageDef = useMemo(() => {
-    const key = location.pathname.replace(/^\//, '')
-    return getPageDefinition(key)
-  }, [location.pathname])
-
-  const moduleKey = pageDef?.moduleKey || ''
+  const moduleKey = pageDef.moduleKey as string
   const { config } = useModulePageConfig({ moduleKey })
 
   const { canViewRecords, canCreateRecord, canUpdateRecord, canDeleteRecord, canExportData, canAuditRecord } =

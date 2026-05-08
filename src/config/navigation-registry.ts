@@ -59,23 +59,23 @@ export const menuGroupOrder: MenuGroupKey[] = [
 ]
 
 export const menuGroupDefinitions: Record<MenuGroupKey, MenuGroupDefinition> = {
-  master: { key: 'master', title: '主数据管理', icon: 'AppstoreOutlined' },
+  master: { key: 'master', title: '基础数据', icon: 'AppstoreOutlined' },
   purchase: {
     key: 'purchase',
-    title: '采购管理',
+    title: '采购',
     icon: 'ShoppingCartOutlined',
   },
-  sales: { key: 'sales', title: '销售管理', icon: 'ShopOutlined' },
-  freight: { key: 'freight', title: '物流管理', icon: 'CarOutlined' },
-  contracts: { key: 'contracts', title: '合同管理', icon: 'FileTextOutlined' },
-  reports: { key: 'reports', title: '报表中心', icon: 'TableOutlined' },
+  sales: { key: 'sales', title: '销售', icon: 'ShopOutlined' },
+  freight: { key: 'freight', title: '物流', icon: 'CarOutlined' },
+  contracts: { key: 'contracts', title: '合同', icon: 'FileTextOutlined' },
+  reports: { key: 'reports', title: '报表', icon: 'TableOutlined' },
   statements: {
     key: 'statements',
-    title: '对账管理',
+    title: '对账',
     icon: 'FileTextOutlined',
   },
-  finance: { key: 'finance', title: '财务管理', icon: 'WalletOutlined' },
-  system: { key: 'system', title: '系统设置', icon: 'PrinterOutlined' },
+  finance: { key: 'finance', title: '财务', icon: 'WalletOutlined' },
+  system: { key: 'system', title: '设置', icon: 'PrinterOutlined' },
 }
 
 export function buildMenuEntriesByGroup(
