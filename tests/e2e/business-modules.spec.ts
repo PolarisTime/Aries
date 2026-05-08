@@ -18,7 +18,20 @@ test.describe('business module coverage with API key', () => {
       await page.goto(route.path)
 
       await expect(page).toHaveURL(new RegExp(`${escapeRegex(route.path)}(?:\\?|$)`))
-      await expect(page.locator('.leo-header')).toContainText(route.title)
+      const pageHeading = page.getByRole('heading', {
+        level: 3,
+        name: route.title,
+      })
+      if ((await pageHeading.count()) > 0) {
+        await expect(pageHeading).toBeVisible()
+      } else {
+        await expect(
+          page.getByRole('tab', {
+            selected: true,
+            name: route.title,
+          }),
+        ).toBeVisible()
+      }
       await expect(page.getByPlaceholder('搜索关键词...')).toBeVisible()
 
       if (collection.ok && collection.records.length > 0) {
@@ -33,9 +46,9 @@ test.describe('business module coverage with API key', () => {
 
         if (route.supportsDetail) {
           await page.locator('table').getByRole('button', { name: '详情' }).first().click()
-          const drawer = page.locator('.ant-drawer:visible').last()
-          await expect(drawer).toBeVisible()
-          await expect(drawer.locator('.ant-drawer-title')).toContainText('记录详情')
+          const overlay = page.locator('.workspace-overlay-panel').last()
+          await expect(overlay).toBeVisible()
+          await expect(overlay.locator('.workspace-overlay-title')).toContainText('记录详情')
         }
       }
 

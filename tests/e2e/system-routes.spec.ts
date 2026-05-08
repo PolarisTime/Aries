@@ -1,4 +1,4 @@
-import { fetchFirstApiKeyRecord, primeApiKeySession } from './support/api-key'
+import { fetchFirstApiKeyRecord, isRealBackendMode, primeApiKeySession } from './support/api-key'
 import { systemRoutes } from './support/route-manifest'
 import { expect, test } from './support/test'
 
@@ -23,6 +23,7 @@ test.describe('system route coverage with API key', () => {
   }
 
   test('loads API Key detail route for a live record', async ({ page, assertNoFatalUiErrors }) => {
+    test.skip(!isRealBackendMode(), 'mock 模式不提供真实 API Key 详情记录')
     const firstApiKey = await fetchFirstApiKeyRecord(page.request)
     expect(firstApiKey, 'auth/api-keys 没有可用于详情页测试的记录').toBeTruthy()
 

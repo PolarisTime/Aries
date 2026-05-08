@@ -43,15 +43,15 @@ export const businessRoutes: BusinessRouteManifest[] = [
 ]
 
 export const systemRoutes: SystemRouteManifest[] = [
-  { path: '/general-settings', title: '通用设置', marker: '仅显示重量视图' },
+  { path: '/general-settings', title: '通用设置', marker: '系统开关' },
   { path: '/company-settings', title: '公司信息', marker: '公司名称' },
   { path: '/number-rules', title: '单号规则', marker: '模块' },
-  { path: '/user-accounts', title: '用户账户', marker: '新建用户' },
-  { path: '/role-action-editor', title: '角色权限配置', marker: '新建角色' },
-  { path: '/role-settings', title: '角色权限配置', marker: '新建角色' },
-  { path: '/database-management', title: '数据库管理', marker: '导入' },
+  { path: '/user-accounts', title: '用户', marker: '账户管理' },
+  { path: '/role-action-editor', title: '角色列表', marker: '请选择角色' },
+  { path: '/role-settings', title: '角色列表', marker: '请选择角色' },
+  { path: '/database-management', title: '数据库状态', marker: '数据库备份管理' },
   { path: '/session-management', title: '会话管理', marker: '登录名' },
-  { path: '/api-key-management', title: 'API Key 管理', marker: '创建 Key' },
+  { path: '/api-key-management', title: 'API Key 管理', marker: '生成 API Key' },
   { path: '/security-keys', title: '安全密钥管理', marker: 'JWT 密钥最后轮换' },
   { path: '/print-templates', title: '打印模板', marker: '新建模板' },
 ]

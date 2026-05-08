@@ -7,7 +7,7 @@ test.describe('global search coverage with API key', () => {
 
     await primeApiKeySession(page)
     await page.goto('/dashboard')
-    await expect(page.getByText('欢迎使用钢材贸易业务中台')).toBeVisible()
+    await expect(page.getByText('业务流程总览')).toBeVisible()
 
     if (!collection.ok || collection.records.length === 0) {
       await expect(page.getByRole('combobox', { name: '搜索单号、合同号、对账单号' })).toBeVisible()
@@ -32,9 +32,9 @@ test.describe('global search coverage with API key', () => {
     await targetOption.click()
 
     await expect(page).toHaveURL(/\/purchase-orders\?/)
-    const drawer = page.locator('.ant-drawer:visible').last()
-    await expect(drawer).toBeVisible()
-    await expect(drawer.locator('.ant-drawer-title')).toContainText('记录详情')
+    const overlay = page.locator('.workspace-overlay-panel').last()
+    await expect(overlay).toBeVisible()
+    await expect(overlay.locator('.workspace-overlay-title')).toContainText('记录详情')
     await assertNoFatalUiErrors()
   })
 })

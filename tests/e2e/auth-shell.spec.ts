@@ -15,11 +15,11 @@ test.describe('API key auth and shell', () => {
     await page.goto('/dashboard')
 
     await expect(page).toHaveURL(/\/dashboard$/)
-    await expect(page.getByText('欢迎使用钢材贸易业务中台')).toBeVisible()
-    await expect(page.locator('.leo-sider')).toContainText('工作台')
-    await expect(page.locator('.leo-sider')).toContainText('主数据管理')
-    await expect(page.locator('.leo-sider')).toContainText('采购管理')
-    await expect(page.locator('.leo-sider')).toContainText('系统设置')
+    await expect(page.getByText('业务流程总览')).toBeVisible()
+    await expect(page.getByText('服务器时间')).toBeVisible()
+    await expect(page.locator('.leo-top-menu')).toContainText('基础数据')
+    await expect(page.locator('.leo-top-menu')).toContainText('采购')
+    await expect(page.locator('.leo-top-menu')).toContainText('设置')
     await assertNoFatalUiErrors()
   })
 
@@ -27,14 +27,13 @@ test.describe('API key auth and shell', () => {
     await primeApiKeySession(page)
     await page.goto('/materials')
 
-    await openHeaderMenu(page)
-    await page.getByText('个人设置', { exact: true }).click()
+    await page.getByRole('button', { name: '个人设置' }).click()
 
     const dialog = page.getByRole('dialog', { name: '个人设置' })
     await expect(dialog).toBeVisible()
     await dialog.locator('.ant-select').first().click()
     await page.locator('.ant-select-dropdown:visible .ant-select-item-option[title="16px"]').click()
-    await page.locator('.ant-modal-footer .ant-btn-primary').click()
+    await page.getByRole('button', { name: '保存显示设置' }).click()
 
     await expect(dialog).not.toBeVisible()
     await expect
@@ -46,12 +45,11 @@ test.describe('API key auth and shell', () => {
       )
       .toEqual({
         fontSize: '16px',
-        settings: JSON.stringify({ fontSize: 16 }),
+        settings: JSON.stringify({ fontSize: 16, layoutMode: 'top' }),
       })
 
-    await openHeaderMenu(page)
-    await page.getByText('退出登录', { exact: true }).click()
-    await page.locator('.ant-modal-confirm .ant-btn-primary').click()
+    await page.getByRole('button', { name: '退出登录' }).click()
+    await page.getByRole('button', { name: '确认退出' }).click()
 
     await expect(page).toHaveURL(/\/login$/)
     await expect(page.getByRole('heading', { name: '账号登录' })).toBeVisible()

@@ -33,10 +33,7 @@ export async function fetchCarrierOptions(): Promise<CarrierOption[]> {
 }
 
 export function getCarrierOptions(): CarrierOption[] {
-  if (cachedCarriers === null && !loadingCarriers) {
-    if (fetchFailed) {
-      fetchFailed = false
-    }
+  if (cachedCarriers === null && !loadingCarriers && !fetchFailed) {
     fetchCarrierOptions()
   }
   return cachedCarriers || []

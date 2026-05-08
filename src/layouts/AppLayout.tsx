@@ -1,30 +1,32 @@
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useLocation, useNavigate, Outlet } from '@tanstack/react-router'
 import {
-  Layout,
-  Button,
-  Menu,
-  Tabs,
-  Dropdown,
-  Modal,
-  Select,
+  Alert,
   AutoComplete,
-  Tag,
-  Form,
-  Input,
-  Divider,
+  Button,
   Descriptions,
+  Divider,
+  Dropdown,
   Flex,
+  Form,
   Image,
+  Input,
+  Layout,
+  Menu,
+  Modal,
+  Radio,
+  Select,
+  Tabs,
+  Tag,
   Typography,
-  Avatar,
 } from 'antd'
 import {
+  LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   SearchOutlined,
   SettingOutlined,
-  LogoutOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
@@ -47,7 +49,10 @@ import {
   type LayoutMenuEntry,
 } from '@/layouts/layout-menu'
 import { resolveRoutePageContext } from '@/layouts/route-page-context'
-import { usePersonalSettings } from '@/layouts/usePersonalSettings'
+import {
+  usePersonalSettings,
+  type LayoutMode,
+} from '@/layouts/usePersonalSettings'
 import { useGlobalSearchSupport } from '@/layouts/useGlobalSearchSupport'
 import type { GlobalSearchResult } from '@/layouts/global-search'
 import { setStoredUser } from '@/utils/storage'
@@ -60,6 +65,23 @@ import dayjs from 'dayjs'
 
 const { Header, Sider, Content } = Layout
 const menuEntriesByGroup = buildMenuEntriesByGroup(appPageDefinitions)
+const fontSizeOptions = [11, 12, 13, 14, 16, 18]
+const layoutModeOptions: Array<{
+  value: LayoutMode
+  label: string
+  description: string
+}> = [
+  {
+    value: 'sider',
+    label: '左侧导航',
+    description: '保留侧边菜单，更适合高频表格录入和多模块切换。',
+  },
+  {
+    value: 'top',
+    label: '顶部导航',
+    description: '采用顶部菜单栏，整体风格与当前 Vue 版保持一致。',
+  },
+]
 
 function canAccessEntry(
   entry: (typeof appPageDefinitions)[number],
@@ -85,25 +107,69 @@ function buildMenuPathMap(entries: LayoutMenuEntry[]) {
   return pathMap
 }
 
+function findMenuParentKeys(
+  entries: LayoutMenuEntry[],
+  targetKey: string,
+  parents: string[] = [],
+): string[] | null {
+  for (const entry of entries) {
+    const currentKeys = [entry.menuCode, entry.path].filter(
+      (value): value is string => Boolean(value),
+    )
+    if (currentKeys.includes(targetKey)) {
+      return parents
+    }
+    if (entry.children.length > 0) {
+      const matched = findMenuParentKeys(entry.children, targetKey, [
+        ...parents,
+        entry.menuCode,
+      ])
+      if (matched) {
+        return matched
+      }
+    }
+  }
+  return null
+}
+
+function buildPageTabLabel(
+  page: { key: string; title: string; closable: boolean },
+  onClose: (key: string) => void,
+) {
+  return (
+    <span
+      onDoubleClick={() => {
+        if (page.closable) {
+          onClose(page.key)
+        }
+      }}
+    >
+      {page.title}
+    </span>
+  )
+}
+
 export function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const token = useAuthStore((s) => s.token)
-  const user = useAuthStore((s) => s.user)
-  const signOut = useAuthStore((s) => s.signOut)
-  const canAccessMenuKey = usePermissionStore((s) => s.canAccessMenuKey)
-  const menus = useSystemMenuStore((s) => s.menus)
-  const loadMenus = useSystemMenuStore((s) => s.loadMenus)
-  const clearMenus = useSystemMenuStore((s) => s.clearMenus)
+  const token = useAuthStore((state) => state.token)
+  const user = useAuthStore((state) => state.user)
+  const signOut = useAuthStore((state) => state.signOut)
+  const canAccessMenuKey = usePermissionStore((state) => state.canAccessMenuKey)
+  const menus = useSystemMenuStore((state) => state.menus)
+  const loadMenus = useSystemMenuStore((state) => state.loadMenus)
+  const clearMenus = useSystemMenuStore((state) => state.clearMenus)
 
   const [collapsed, setCollapsed] = useState(false)
   const [clock, setClock] = useState(dayjs())
   const [companyName, setCompanyName] = useState('')
   const [backendOnline, setBackendOnline] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [siderOpenKeys, setSiderOpenKeys] = useState<string[]>([])
 
   const healthTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const healthRetriesRef = useRef(0)
+
   const routePageContext = useMemo(
     () => resolveRoutePageContext(location.pathname),
     [location.pathname],
@@ -113,11 +179,17 @@ export function AppLayout() {
     visible: personalSettingsOpen,
     fontSize,
     setFontSize,
+    layoutMode,
+    setLayoutMode,
     open: openPersonalSettings,
     close: closePersonalSettings,
     reset: resetPersonalSettings,
     save: savePersonalSettings,
+    load: loadPersonalSettings,
   } = usePersonalSettings()
+
+  const isTopNavigationLayout = layoutMode === 'top'
+  const siderWidth = collapsed ? 60 : 180
 
   const resolveOpenPage = useCallback((pathname: string) => {
     const context = resolveRoutePageContext(pathname)
@@ -131,6 +203,7 @@ export function AppLayout() {
   const { pages, closePage } = useOpenPages(
     '/dashboard',
     '未命名页面',
+    '工作台',
     resolveOpenPage,
   )
 
@@ -154,6 +227,26 @@ export function AppLayout() {
     () => buildMenuPathMap(visibleMenuEntries),
     [visibleMenuEntries],
   )
+
+  const selectedKeys = useMemo(
+    () => [routePageContext.activeMenuKey],
+    [routePageContext.activeMenuKey],
+  )
+
+  const resolvedSiderOpenKeys = useMemo(
+    () =>
+      findMenuParentKeys(visibleMenuEntries, routePageContext.activeMenuKey) ||
+      [],
+    [routePageContext.activeMenuKey, visibleMenuEntries],
+  )
+
+  useEffect(() => {
+    if (collapsed) {
+      setSiderOpenKeys([])
+      return
+    }
+    setSiderOpenKeys(resolvedSiderOpenKeys)
+  }, [collapsed, resolvedSiderOpenKeys])
 
   const handleJumpToSearchResult = useCallback(
     (result: GlobalSearchResult) => {
@@ -212,7 +305,9 @@ export function AppLayout() {
   }, [clearMenus, loadMenus, token, user])
 
   useEffect(() => {
-    if (!token) return
+    if (!token) {
+      return
+    }
     http
       .get<{ data: { companyName?: string } }>(
         ENDPOINTS.COMPANY_SETTINGS_CURRENT,
@@ -225,13 +320,14 @@ export function AppLayout() {
     try {
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 5000)
-      const res = await fetch(`${apiBaseUrl}${ENDPOINTS.HEALTH}`, {
+      const response = await fetch(`${apiBaseUrl}${ENDPOINTS.HEALTH}`, {
         signal: controller.signal,
         headers: { Accept: 'application/json' },
       })
       clearTimeout(timeout)
-      if (res.ok) {
-        const body = (await res.json()) as { status?: string }
+
+      if (response.ok) {
+        const body = (await response.json()) as { status?: string }
         setBackendOnline(body.status === 'UP')
         healthRetriesRef.current = 0
       } else {
@@ -239,7 +335,7 @@ export function AppLayout() {
       }
     } catch {
       setBackendOnline(false)
-      healthRetriesRef.current++
+      healthRetriesRef.current += 1
       const maxRetries = 5
       if (healthRetriesRef.current <= maxRetries) {
         const delay = Math.min(
@@ -252,7 +348,9 @@ export function AppLayout() {
   }, [])
 
   useEffect(() => {
-    if (!token) return
+    if (!token) {
+      return
+    }
     void checkBackendHealth()
     healthTimerRef.current = setInterval(() => {
       if (healthRetriesRef.current === 0) {
@@ -290,38 +388,54 @@ export function AppLayout() {
     })
   }, [location.pathname, navigate, user])
 
-  const selectedKeys = [routePageContext.activeMenuKey]
-  const activeTabKey = routePageContext.openPageKey
+  const sideMenuItems = useMemo<NonNullable<MenuProps['items']>>(
+    () =>
+      visibleMenuEntries.map((entry) => {
+        const Icon = isKnownAppIconKey(entry.icon)
+          ? resolveAppIcon(entry.icon)
+          : null
 
-  const menuItems = visibleMenuEntries.map((entry) => {
-    const Icon = isKnownAppIconKey(entry.icon)
-      ? resolveAppIcon(entry.icon)
-      : null
-
-    if (entry.children.length > 0) {
-      return {
-        key: entry.menuCode,
-        icon: Icon ? <Icon /> : undefined,
-        label: entry.title,
-        children: entry.children.map((child) => {
-          const ChildIcon = isKnownAppIconKey(child.icon)
-            ? resolveAppIcon(child.icon)
-            : null
+        if (entry.children.length > 0) {
           return {
-            key: child.path || child.menuCode,
-            icon: ChildIcon ? <ChildIcon /> : undefined,
-            label: child.title,
+            key: entry.menuCode,
+            icon: Icon ? <Icon /> : undefined,
+            label: entry.title,
+            children: entry.children.map((child) => {
+              const ChildIcon = isKnownAppIconKey(child.icon)
+                ? resolveAppIcon(child.icon)
+                : null
+              return {
+                key: child.path || child.menuCode,
+                icon: ChildIcon ? <ChildIcon /> : undefined,
+                label: child.title,
+              }
+            }),
           }
-        }),
-      }
-    }
+        }
 
-    return {
-      key: entry.path || entry.menuCode,
-      icon: Icon ? <Icon /> : undefined,
-      label: entry.title,
-    }
-  })
+        return {
+          key: entry.path || entry.menuCode,
+          icon: Icon ? <Icon /> : undefined,
+          label: entry.title,
+        }
+      }),
+    [visibleMenuEntries],
+  )
+
+  const topMenuItems = useMemo<NonNullable<MenuProps['items']>>(
+    () =>
+      visibleMenuEntries.map((entry) => ({
+        key: entry.path || entry.menuCode,
+        label: entry.title,
+        children: entry.children.length
+          ? entry.children.map((child) => ({
+              key: child.path || child.menuCode,
+              label: child.title,
+            }))
+          : undefined,
+      })),
+    [visibleMenuEntries],
+  )
 
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
     const targetPath = menuPathByKey[String(key)]
@@ -330,11 +444,18 @@ export function AppLayout() {
     }
   }
 
-  const tabItems = pages.map((page) => ({
-    key: page.key,
-    label: page.title,
-    closable: page.closable,
-  }))
+  const activeTabKey = routePageContext.openPageKey
+  const tabItems = useMemo(
+    () =>
+      pages.map((page) => ({
+        key: page.key,
+        label: buildPageTabLabel(page, (key) =>
+          closePage(key, (path: string) => navigate({ to: path as '/' })),
+        ),
+        closable: page.closable,
+      })),
+    [closePage, navigate, pages],
+  )
 
   const handleTabChange = (key: string) => {
     const page = pages.find((item) => item.key === key)
@@ -344,7 +465,7 @@ export function AppLayout() {
   }
 
   const handleTabEdit = (
-    event: React.MouseEvent | React.KeyboardEvent | string,
+    event: ReactMouseEvent | ReactKeyboardEvent | string,
     action: 'add' | 'remove',
   ) => {
     if (action === 'remove' && typeof event === 'string') {
@@ -356,6 +477,8 @@ export function AppLayout() {
     modal.confirm({
       title: '确认退出',
       content: '确定要退出登录吗？',
+      okText: '确认退出',
+      cancelText: '取消',
       onOk: async () => {
         await signOut()
         navigate({ to: '/login' })
@@ -364,276 +487,263 @@ export function AppLayout() {
   }
 
   const handleOpenPersonalSettings = useCallback(() => {
-    resetPersonalSettings()
+    loadPersonalSettings()
     openPersonalSettings()
-  }, [openPersonalSettings, resetPersonalSettings])
+  }, [loadPersonalSettings, openPersonalSettings])
 
-  const siderWidth = collapsed ? 60 : 220
+  const handleSavePersonalSettings = useCallback(() => {
+    savePersonalSettings()
+    message.success('显示设置已保存')
+  }, [savePersonalSettings])
+
+  const rootClassName = [
+    'app-shell',
+    'leo-shell',
+    isTopNavigationLayout ? 'app-shell-top-nav' : 'app-shell-side-nav',
+  ].join(' ')
+
+  const headerClassName = [
+    'leo-header',
+    'app-fixed-header',
+    isTopNavigationLayout
+      ? 'app-top-header'
+      : collapsed
+        ? 'app-side-closed'
+        : 'app-side-opened',
+  ].join(' ')
+
+  const mainStyle = isTopNavigationLayout
+    ? undefined
+    : { paddingLeft: `${siderWidth}px` }
+  const fixedWidthStyle = isTopNavigationLayout
+    ? { width: '100%' }
+    : { width: `calc(100% - ${siderWidth}px)` }
 
   return (
-    <Layout className="app-shell leo-shell" style={{ minHeight: '100vh' }}>
+    <Layout className={rootClassName}>
       <div className="leo-page-loader" />
 
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-        trigger={null}
-        width={220}
-        collapsedWidth={60}
-        className="leo-sider"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          bottom: 0,
-          zIndex: 100,
-          height: '100vh',
-          background:
-            'linear-gradient(180deg, #ffffff 0%, var(--theme-sider-surface) 100%)',
-          borderRight: '1px solid rgba(148,163,184,0.2)',
-          boxShadow: '12px 0 28px rgba(15,23,42,0.06)',
-        }}
-      >
-        <Flex
-          align="center"
-          gap={12}
-          style={{
-            height: 68,
-            paddingInline: 16,
-            overflow: 'hidden',
-            color: 'var(--theme-sider-text)',
-          }}
+      {!isTopNavigationLayout ? (
+        <Sider
+          collapsible
+          collapsed={collapsed}
+          onCollapse={setCollapsed}
+          trigger={null}
+          width={180}
+          collapsedWidth={60}
+          className="leo-sider"
         >
-          <Avatar
-            shape="square"
-            size={40}
-            style={{
-              background:
-                'linear-gradient(135deg, var(--theme-primary), #60a5fa)',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: 18,
-              letterSpacing: 1,
-              boxShadow: '0 10px 20px rgba(37,99,235,0.3)',
-            }}
-          >
-            {collapsed ? 'L' : 'LEO'}
-          </Avatar>
-          {!collapsed && (
-            <Flex vertical style={{ minWidth: 0 }}>
-              <Typography.Text
-                strong
-                ellipsis
-                style={{
-                  color: 'var(--theme-sider-text)',
-                  fontSize: 'calc(var(--app-font-size) + 4px)',
-                }}
-              >
-                {appTitle}
-              </Typography.Text>
-              <Typography.Text
-                ellipsis
-                style={{
-                  color: 'var(--theme-sider-muted)',
-                  fontSize: 'calc(var(--app-font-size) - 1px)',
-                }}
-              >
-                钢材贸易业务中台
-              </Typography.Text>
-            </Flex>
-          )}
-        </Flex>
+          <div className="leo-brand">
+            <div className="leo-brand-mark">{collapsed ? 'L' : 'LEO'}</div>
+            {!collapsed ? (
+              <div className="leo-brand-copy">
+                <strong>{appTitle}</strong>
+                <span>钢贸业务中台</span>
+              </div>
+            ) : null}
+          </div>
 
-        <Menu
-          mode="inline"
-          selectedKeys={selectedKeys}
-          items={menuItems}
-          onClick={handleMenuClick}
-          className="leo-menu"
-          style={{
-            height: 'calc(100vh - 68px)',
-            overflowY: 'auto',
-            borderInlineEnd: 'none',
-            borderTop: 'none',
-            background: 'transparent',
-          }}
-        />
-      </Sider>
+          <Menu
+            mode="inline"
+            selectedKeys={selectedKeys}
+            openKeys={collapsed ? [] : siderOpenKeys}
+            onOpenChange={setSiderOpenKeys}
+            items={sideMenuItems}
+            onClick={handleMenuClick}
+            className="leo-menu"
+          />
+        </Sider>
+      ) : null}
 
       <Layout
-        style={{ marginLeft: siderWidth, transition: 'margin-left 0.2s' }}
+        className={`leo-main${isTopNavigationLayout ? ' leo-main-top-nav' : ''}`}
+        style={mainStyle}
       >
-        <Header
-          className="leo-header"
-          style={{
-            position: 'fixed',
-            top: 0,
-            right: 0,
-            zIndex: 90,
-            width: `calc(100% - ${siderWidth}px)`,
-            transition: 'width 0.2s',
-            backdropFilter: 'blur(14px)',
-            height: 'var(--app-header-height)',
-            padding: 0,
-            lineHeight: 'var(--app-header-height)',
-            background: 'var(--theme-header-bg)',
-            borderBottom: '1px solid rgba(219,227,238,0.9)',
-          }}
-        >
-          <Flex
-            align="center"
-            gap={16}
-            style={{
-              height: 'var(--app-header-height)',
-              paddingInline: 18,
-            }}
-          >
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed((value) => !value)}
-              className="app-trigger"
-            />
-
-            <Flex vertical justify="center" style={{ minWidth: 0 }}>
-              <Typography.Text
-                strong
-                ellipsis
-                style={{
-                  color: 'var(--theme-header-text)',
-                  fontSize: 'calc(var(--app-font-size) + 4px)',
-                  lineHeight: 1.2,
-                }}
-              >
-                {routePageContext.title}
-              </Typography.Text>
-            </Flex>
-
-            <Flex
-              align="center"
-              gap={8}
-              style={{
-                flex: '1 1 520px',
-                maxWidth: 520,
-                minWidth: 280,
-                marginInline: 24,
-              }}
-            >
-              <AutoComplete
-                className="w-full"
-                value={globalSearchKeyword}
-                options={globalSearchOptions}
-                open={searchOpen && globalSearchOptions.length > 0}
-                onSearch={(value) => {
-                  setSearchOpen(true)
-                  void handleGlobalSearch(value)
-                }}
-                onChange={(value) => setGlobalSearchKeyword(String(value))}
-                onSelect={(value) => handleGlobalSearchSelect(String(value))}
-                onOpenChange={setSearchOpen}
-              >
-                <Input
-                  placeholder="搜索单号、合同号、对账单号"
-                  prefix={
-                    <SearchOutlined style={{ color: 'rgba(0, 0, 0, 0.45)' }} />
-                  }
-                  onFocus={() => setSearchOpen(true)}
-                  onBlur={handleGlobalSearchBlur}
-                  onPressEnter={(event) =>
-                    void handleGlobalSearchSubmit(event.currentTarget.value)
-                  }
+        <Header className={headerClassName} style={fixedWidthStyle}>
+          {isTopNavigationLayout ? (
+            <div className="app-header-bar app-header-bar-top">
+              <div className="app-top-nav-left">
+                <Menu
+                  selectedKeys={selectedKeys}
+                  items={topMenuItems}
+                  mode="horizontal"
+                  className="leo-top-menu"
+                  onClick={handleMenuClick}
                 />
-              </AutoComplete>
-              <Button
-                type="primary"
-                loading={globalSearchLoading}
-                onClick={() =>
-                  void handleGlobalSearchSubmit(globalSearchKeyword)
-                }
-              >
-                搜索
-              </Button>
-            </Flex>
+              </div>
 
-            <Flex align="center" gap={8} style={{ marginLeft: 'auto' }}>
-              <Tag
-                color={backendOnline ? 'green' : 'red'}
-                style={{ fontSize: 10 }}
-              >
-                {backendOnline ? '在线' : '离线'}
-              </Tag>
+              <div className="app-top-nav-right">
+                <div className="header-global-search header-global-search-top">
+                  <div className="header-global-search-group">
+                    <AutoComplete
+                      className="header-global-search-box"
+                      value={globalSearchKeyword}
+                      options={globalSearchOptions}
+                      open={searchOpen && globalSearchOptions.length > 0}
+                      onSearch={(value) => {
+                        setSearchOpen(true)
+                        void handleGlobalSearch(value)
+                      }}
+                      onChange={(value) => setGlobalSearchKeyword(String(value))}
+                      onSelect={(value) =>
+                        handleGlobalSearchSelect(String(value))
+                      }
+                      onOpenChange={setSearchOpen}
+                    >
+                      <Input
+                        aria-label="搜索单号、合同号、对账单号"
+                        className="header-global-search-input"
+                        placeholder="搜索单号、合同号、对账单号"
+                        onFocus={() => setSearchOpen(true)}
+                        onBlur={handleGlobalSearchBlur}
+                        onPressEnter={(event) =>
+                          void handleGlobalSearchSubmit(
+                            event.currentTarget.value,
+                          )
+                        }
+                      />
+                    </AutoComplete>
+                    <Button
+                      type="primary"
+                      className="header-global-search-button"
+                      loading={globalSearchLoading}
+                      icon={<SearchOutlined />}
+                      onClick={() =>
+                        void handleGlobalSearchSubmit(globalSearchKeyword)
+                      }
+                    />
+                  </div>
+                </div>
 
-              <Typography.Text
-                style={{
-                  color: 'var(--theme-header-text)',
-                  fontSize: 14,
-                  fontVariantNumeric: 'tabular-nums',
-                  marginInline: 8,
-                }}
-              >
-                {clock.format('HH:mm:ss')}
-              </Typography.Text>
+                <div className="user-wrapper user-wrapper-top">
+                  <span className="action">{clock.format('HH:mm:ss')}</span>
+                  <span className="action user-name">
+                    {user?.userName || user?.loginName || '未登录'}
+                  </span>
+                  <span className="action">
+                    <Button
+                      type="text"
+                      className="settings-link app-user-settings-trigger"
+                      icon={<SettingOutlined />}
+                      onClick={handleOpenPersonalSettings}
+                    >
+                      个人设置
+                    </Button>
+                  </span>
+                  <span className="action">
+                    <Button
+                      type="text"
+                      className="logout-link"
+                      onClick={handleSignOut}
+                    >
+                      退出登录
+                    </Button>
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="app-header-bar">
+              <span className="app-trigger" onClick={() => setCollapsed((value) => !value)}>
+                {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              </span>
 
-              {companyName && (
-                <Tag style={{ color: 'var(--theme-header-muted)' }}>
-                  {companyName}
-                </Tag>
-              )}
+              <div className="header-page-meta">
+                <div className="header-page-title">{routePageContext.title}</div>
+                <div className="header-page-desc">
+                  业务中心 / {routePageContext.title}
+                </div>
+              </div>
 
-              {user && (
-                <Typography.Text
-                  strong
-                  style={{
-                    color: 'var(--theme-header-text)',
-                    marginInline: 4,
-                  }}
-                >
-                  {user.userName || user.loginName}
-                </Typography.Text>
-              )}
+              <div className="header-global-search">
+                <div className="header-global-search-group">
+                  <AutoComplete
+                    className="header-global-search-box"
+                    value={globalSearchKeyword}
+                    options={globalSearchOptions}
+                    open={searchOpen && globalSearchOptions.length > 0}
+                    onSearch={(value) => {
+                      setSearchOpen(true)
+                      void handleGlobalSearch(value)
+                    }}
+                    onChange={(value) => setGlobalSearchKeyword(String(value))}
+                    onSelect={(value) =>
+                      handleGlobalSearchSelect(String(value))
+                    }
+                    onOpenChange={setSearchOpen}
+                  >
+                    <Input
+                      aria-label="搜索单号、合同号、对账单号"
+                      className="header-global-search-input"
+                      placeholder="搜索单号、合同号、对账单号"
+                      onFocus={() => setSearchOpen(true)}
+                      onBlur={handleGlobalSearchBlur}
+                      onPressEnter={(event) =>
+                        void handleGlobalSearchSubmit(
+                          event.currentTarget.value,
+                        )
+                      }
+                    />
+                  </AutoComplete>
+                  <Button
+                    type="primary"
+                    className="header-global-search-button"
+                    loading={globalSearchLoading}
+                    icon={<SearchOutlined />}
+                    onClick={() =>
+                      void handleGlobalSearchSubmit(globalSearchKeyword)
+                    }
+                  />
+                </div>
+              </div>
 
-              <Dropdown
-                menu={{
-                  items: [
-                    {
-                      key: 'settings',
-                      icon: <SettingOutlined />,
-                      label: '个人设置',
-                      onClick: handleOpenPersonalSettings,
-                    },
-                    { type: 'divider' as const },
-                    {
-                      key: 'logout',
-                      icon: <LogoutOutlined />,
-                      label: '退出登录',
-                      danger: true,
-                      onClick: handleSignOut,
-                    },
-                  ],
-                }}
-                trigger={['click']}
-              >
-                <Button type="text" icon={<SettingOutlined />} />
-              </Dropdown>
-            </Flex>
-          </Flex>
+              <div className="user-wrapper">
+                <span className="action action-tag">
+                  {companyName ? <Tag color="blue">{companyName}</Tag> : null}
+                  <Tag color={backendOnline ? 'green' : 'red'}>
+                    {backendOnline ? 'API 正常' : 'API 离线'}
+                  </Tag>
+                  <Tag color="default">{clock.format('HH:mm:ss')}</Tag>
+                </span>
+                <span className="action user-name">
+                  {user?.userName || user?.loginName || '未登录'}
+                </span>
+                <span className="action">
+                  <Dropdown
+                    menu={{
+                      items: [
+                        {
+                          key: 'settings',
+                          icon: <SettingOutlined />,
+                          label: '个人设置',
+                          onClick: handleOpenPersonalSettings,
+                        },
+                        {
+                          key: 'logout',
+                          icon: <LogoutOutlined />,
+                          label: '退出登录',
+                          danger: true,
+                          onClick: handleSignOut,
+                        },
+                      ],
+                    }}
+                    trigger={['click']}
+                  >
+                    <Button
+                      type="text"
+                      className="app-user-settings-trigger"
+                      icon={<SettingOutlined />}
+                    />
+                  </Dropdown>
+                </span>
+              </div>
+            </div>
+          )}
         </Header>
 
         <div
-          className="tab-layout-tabs"
-          style={{
-            position: 'fixed',
-            top: 'var(--app-header-height)',
-            right: 0,
-            zIndex: 80,
-            width: `calc(100% - ${siderWidth}px)`,
-            transition: 'width 0.2s',
-            padding: '0 12px',
-            background: 'rgba(255,255,255,0.94)',
-            borderBottom: '1px solid var(--theme-card-border)',
-            backdropFilter: 'blur(14px)',
-          }}
+          className={`tab-layout-tabs${isTopNavigationLayout ? ' tab-layout-tabs-top-nav' : ''}`}
+          style={fixedWidthStyle}
         >
           <Tabs
             type="editable-card"
@@ -643,21 +753,11 @@ export function AppLayout() {
             onChange={handleTabChange}
             onEdit={handleTabEdit}
             size="small"
-            style={{ marginBottom: 0 }}
           />
         </div>
 
-        <Content
-          className="leo-content"
-          style={{ paddingTop: 'var(--app-top-offset)' }}
-        >
-          <div
-            className="leo-content-inner"
-            style={{
-              minHeight: 'calc(100vh - var(--app-top-offset))',
-              padding: 'var(--app-content-padding)',
-            }}
-          >
+        <Content className="leo-content">
+          <div className="leo-content-inner">
             <Outlet />
           </div>
         </Content>
@@ -666,9 +766,12 @@ export function AppLayout() {
       <PersonalSettingsModal
         open={personalSettingsOpen}
         onClose={closePersonalSettings}
-        onSave={savePersonalSettings}
+        onSaveDisplay={handleSavePersonalSettings}
+        onResetDisplay={resetPersonalSettings}
         fontSize={fontSize}
         onFontSizeChange={setFontSize}
+        layoutMode={layoutMode}
+        onLayoutModeChange={setLayoutMode}
       />
     </Layout>
   )
@@ -677,15 +780,21 @@ export function AppLayout() {
 function PersonalSettingsModal({
   open,
   onClose,
-  onSave,
+  onSaveDisplay,
+  onResetDisplay,
   fontSize,
   onFontSizeChange,
+  layoutMode,
+  onLayoutModeChange,
 }: {
   open: boolean
   onClose: () => void
-  onSave: () => void
+  onSaveDisplay: () => void
+  onResetDisplay: () => void
   fontSize: number
   onFontSizeChange: (value: number) => void
+  layoutMode: LayoutMode
+  onLayoutModeChange: (value: LayoutMode) => void
 }) {
   const [tab, setTab] = useState('display')
   const [pwForm] = Form.useForm()
@@ -697,7 +806,7 @@ function PersonalSettingsModal({
   } | null>(null)
   const [totpCode, setTotpCode] = useState('')
   const [totpEnabling, setTotpEnabling] = useState(false)
-  const user = useAuthStore((s) => s.user)
+  const user = useAuthStore((state) => state.user)
 
   useEffect(() => {
     if (!open) {
@@ -709,9 +818,10 @@ function PersonalSettingsModal({
   }, [open])
 
   useEffect(() => {
-    if (open && tab === 'security') {
-      pwForm.resetFields()
+    if (!open || tab !== 'security') {
+      return
     }
+    pwForm.resetFields()
   }, [open, pwForm, tab])
 
   const updateCurrentUserSecurity = useCallback((enabled: boolean) => {
@@ -738,8 +848,8 @@ function PersonalSettingsModal({
       await http.post(ENDPOINTS.ACCOUNT_PASSWORD, values)
       message.success('密码修改成功')
       pwForm.resetFields()
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '修改失败')
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '修改失败')
     } finally {
       setPwSaving(false)
     }
@@ -748,12 +858,12 @@ function PersonalSettingsModal({
   const handleSetupTotp = async () => {
     setTotpLoading(true)
     try {
-      const res = await http.post<
+      const response = await http.post<
         ApiResponse<{ qrCodeBase64: string; secret: string }>
       >(ENDPOINTS.ACCOUNT_2FA_SETUP, {})
-      setTotpSetup(res.data)
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '获取失败')
+      setTotpSetup(response.data)
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '获取失败')
     } finally {
       setTotpLoading(false)
     }
@@ -761,7 +871,7 @@ function PersonalSettingsModal({
 
   const handleEnableTotp = async () => {
     if (!/^\d{6}$/.test(totpCode.trim())) {
-      message.error('请输入6位验证码')
+      message.error('请输入 6 位验证码')
       return
     }
 
@@ -774,148 +884,156 @@ function PersonalSettingsModal({
       message.success('二次验证已启用')
       setTotpSetup(null)
       setTotpCode('')
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '启用失败')
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '启用失败')
     } finally {
       setTotpEnabling(false)
     }
   }
-
-  const footer =
-    tab === 'display'
-      ? [
-          <Button key="cancel" onClick={onClose}>
-            取消
-          </Button>,
-          <Button key="save" type="primary" onClick={onSave}>
-            保存
-          </Button>,
-        ]
-      : [
-          <Button key="close" onClick={onClose}>
-            关闭
-          </Button>,
-        ]
 
   return (
     <Modal
       title="个人设置"
       open={open}
       onCancel={onClose}
-      footer={footer}
-      width={520}
+      footer={null}
+      width={720}
+      mask={{ closable: false }}
     >
       <Tabs
         activeKey={tab}
         onChange={setTab}
         items={[
-          { key: 'display', label: '显示设置' },
+          { key: 'display', label: '显示偏好' },
           { key: 'security', label: '账户安全' },
         ]}
       />
 
       {tab === 'display' ? (
-        <Descriptions
-          bordered
-          column={1}
-          size="small"
-          items={[
+        <div className="personal-setting-panel">
+          <div className="personal-setting-row">
+            <span className="personal-setting-label">系统字体</span>
+            <span className="personal-setting-value">苹方</span>
+          </div>
+          <div className="personal-setting-row">
+            <span className="personal-setting-label">字体大小</span>
+            <Select
+              value={fontSize}
+              style={{ width: 160 }}
+              onChange={onFontSizeChange}
+              options={fontSizeOptions.map((value) => ({
+                value,
+                label: `${value}px`,
+                title: `${value}px`,
+              }))}
+            />
+          </div>
+          <div className="personal-setting-row personal-setting-layout-row">
+            <span className="personal-setting-label">导航布局</span>
+            <Radio.Group
+              className="personal-layout-mode-group"
+              optionType="button"
+              buttonStyle="solid"
+              value={layoutMode}
+              onChange={(event) =>
+                onLayoutModeChange(event.target.value as LayoutMode)
+              }
+            >
+              {layoutModeOptions.map((item) => (
+                <Radio.Button key={item.value} value={item.value}>
+                  {item.label}
+                </Radio.Button>
+              ))}
+            </Radio.Group>
+          </div>
+          <div className="personal-layout-mode-desc">
             {
-              key: 'font-size',
-              label: '字号',
-              children: (
-                <Select
-                  value={fontSize}
-                  onChange={onFontSizeChange}
-                  options={[11, 12, 13, 14, 16, 18].map((value) => ({
-                    value,
-                    label: `${value}px`,
-                    title: `${value}px`,
-                  }))}
-                  style={{ width: 100 }}
-                />
-              ),
-            },
-            {
-              key: 'preview',
-              label: '字体预览',
-              children: (
-                <Typography.Text style={{ fontSize }}>
-                  Leo ERP 钢材贸易业务中台
-                </Typography.Text>
-              ),
-            },
-          ]}
-        />
+              layoutModeOptions.find((item) => item.value === layoutMode)
+                ?.description
+            }
+          </div>
+          <div className="personal-setting-actions">
+            <Button onClick={onResetDisplay}>恢复默认</Button>
+            <Button type="primary" onClick={onSaveDisplay}>
+              保存显示设置
+            </Button>
+          </div>
+        </div>
       ) : (
         <Flex vertical gap={16}>
-          <Descriptions
-            bordered
-            column={1}
-            size="small"
-            items={[
-              {
-                key: 'login-name',
-                label: '登录账号',
-                children: (
-                  <Typography.Text strong>
-                    {user?.loginName || '--'}
-                  </Typography.Text>
-                ),
-              },
-              {
-                key: 'totp',
-                label: '二次验证',
-                children: user?.totpEnabled ? (
-                  <Tag color="green">已启用</Tag>
-                ) : totpSetup ? (
-                  <Flex vertical gap={12}>
-                    <Image
-                      src={toDataImageUrl(totpSetup.qrCodeBase64)}
-                      alt="TOTP QR"
-                      width={128}
-                      height={128}
-                      preview={false}
-                      style={{
-                        border: '1px solid #f0f0f0',
-                        borderRadius: 8,
-                        background: '#fff',
-                        padding: 8,
-                      }}
-                    />
-                    <Typography.Text code>{totpSetup.secret}</Typography.Text>
-                    <Flex align="center" gap={8}>
-                      <Input
-                        size="small"
-                        placeholder="6位验证码"
-                        maxLength={6}
-                        value={totpCode}
-                        onChange={(event) => setTotpCode(event.target.value)}
-                        style={{ width: 100 }}
-                      />
-                      <Button
-                        size="small"
-                        type="primary"
-                        loading={totpEnabling}
-                        onClick={handleEnableTotp}
-                      >
-                        验证启用
-                      </Button>
-                    </Flex>
-                  </Flex>
-                ) : (
-                  <Button
-                    size="small"
-                    loading={totpLoading}
-                    onClick={handleSetupTotp}
-                  >
-                    设置二次验证
-                  </Button>
-                ),
-              },
-            ]}
+          <Alert
+            showIcon
+            type="info"
+            message={`当前账号：${user?.userName || user?.loginName || '--'}（${user?.loginName || '--'}）`}
+            description={
+              user?.totpEnabled
+                ? '已启用 2FA，高风险操作会要求二次验证。'
+                : '未启用 2FA，建议立即绑定认证器。'
+            }
           />
+
+          <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label="登录账号">
+              <Typography.Text strong>
+                {user?.loginName || '--'}
+              </Typography.Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="当前状态">
+              {user?.totpEnabled ? (
+                <Tag color="green">已启用</Tag>
+              ) : (
+                <Tag>未启用</Tag>
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="两步验证">
+              {user?.totpEnabled ? (
+                <Typography.Text type="secondary">
+                  当前账号已启用两步验证。
+                </Typography.Text>
+              ) : totpSetup ? (
+                <Flex vertical gap={12}>
+                  <Image
+                    src={toDataImageUrl(totpSetup.qrCodeBase64)}
+                    alt="TOTP QR"
+                    width={128}
+                    height={128}
+                    preview={false}
+                    className="two-factor-qr-image"
+                  />
+                  <Typography.Text code>{totpSetup.secret}</Typography.Text>
+                  <Flex align="center" gap={8} wrap="wrap">
+                    <Input
+                      size="small"
+                      placeholder="输入 6 位验证码"
+                      maxLength={6}
+                      value={totpCode}
+                      onChange={(event) => setTotpCode(event.target.value)}
+                      style={{ width: 132 }}
+                    />
+                    <Button
+                      size="small"
+                      type="primary"
+                      loading={totpEnabling}
+                      onClick={handleEnableTotp}
+                    >
+                      验证启用
+                    </Button>
+                  </Flex>
+                </Flex>
+              ) : (
+                <Button
+                  size="small"
+                  loading={totpLoading}
+                  onClick={handleSetupTotp}
+                >
+                  生成绑定二维码
+                </Button>
+              )}
+            </Descriptions.Item>
+          </Descriptions>
+
           <Divider />
+
           <Form form={pwForm} onFinish={handleChangePassword} layout="vertical">
             <Form.Item
               name="oldPassword"
@@ -927,13 +1045,22 @@ function PersonalSettingsModal({
             <Form.Item
               name="newPassword"
               label="新密码"
-              rules={[{ required: true, min: 6, message: '至少6位' }]}
+              rules={[{ required: true, min: 6, message: '至少 6 位' }]}
             >
               <Input.Password />
             </Form.Item>
-            <Button type="primary" htmlType="submit" loading={pwSaving} block>
-              修改密码
-            </Button>
+            <Flex justify="space-between" align="center" gap={12} wrap="wrap">
+              <Typography.Text type="secondary">
+                修改密码后，下次登录将使用新密码。
+              </Typography.Text>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={pwSaving}
+              >
+                更新密码
+              </Button>
+            </Flex>
           </Form>
         </Flex>
       )}

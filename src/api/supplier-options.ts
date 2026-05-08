@@ -33,10 +33,7 @@ export async function fetchSupplierOptions(): Promise<SupplierOption[]> {
 }
 
 export function getSupplierOptions(): SupplierOption[] {
-  if (cachedSuppliers === null && !loadingSuppliers) {
-    if (fetchFailed) {
-      fetchFailed = false
-    }
+  if (cachedSuppliers === null && !loadingSuppliers && !fetchFailed) {
     fetchSupplierOptions()
   }
   return cachedSuppliers || []

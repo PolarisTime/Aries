@@ -4,10 +4,13 @@ const STORAGE_KEYS = {
   token: 'aries-token',
   user: 'aries-user',
   authPersistence: 'aries-auth-persistence',
+  personalSettings: 'aries-personal-settings',
 } as const
 
 const API_BASE_URL = process.env.E2E_API_BASE_URL || 'http://127.0.0.1:11211/api'
 const API_KEY = String(process.env.E2E_API_KEY || '').trim()
+const E2E_BACKEND_MODE = process.env.E2E_BACKEND_MODE === 'real' ? 'real' : 'mock'
+const IS_REAL_BACKEND = E2E_BACKEND_MODE === 'real'
 
 const FALLBACK_PERMISSION_RESOURCES = [
   'dashboard',
@@ -46,7 +49,49 @@ const FALLBACK_PERMISSION_RESOURCES = [
   'api-key',
   'security-key',
   'print-template',
-]
+] as const
+
+const FALLBACK_MENU_CODES_BY_RESOURCE: Record<
+  (typeof FALLBACK_PERMISSION_RESOURCES)[number],
+  string[]
+> = {
+  dashboard: ['/dashboard'],
+  material: ['/materials', '/material-categories'],
+  supplier: ['/suppliers'],
+  customer: ['/customers'],
+  carrier: ['/carriers'],
+  warehouse: ['/warehouses'],
+  'purchase-order': ['/purchase-orders'],
+  'purchase-inbound': ['/purchase-inbounds'],
+  'sales-order': ['/sales-orders'],
+  'sales-outbound': ['/sales-outbounds'],
+  'freight-bill': ['/freight-bills'],
+  'purchase-contract': ['/purchase-contracts'],
+  'sales-contract': ['/sales-contracts'],
+  'inventory-report': ['/inventory-report'],
+  'io-report': ['/io-report'],
+  'pending-invoice-receipt-report': ['/pending-invoice-receipt-report'],
+  'supplier-statement': ['/supplier-statements'],
+  'customer-statement': ['/customer-statements'],
+  'freight-statement': ['/freight-statements'],
+  receipt: ['/receipts'],
+  payment: ['/payments'],
+  'invoice-receipt': ['/invoice-receipts'],
+  'invoice-issue': ['/invoice-issues'],
+  'receivable-payable': ['/receivables-payables'],
+  'general-setting': ['/general-settings', '/number-rules'],
+  'company-setting': ['/company-settings'],
+  'operation-log': ['/operation-logs'],
+  department: ['/departments'],
+  'user-account': ['/user-accounts'],
+  permission: ['/permission-management'],
+  role: ['/role-action-editor', '/role-settings'],
+  database: ['/database-management'],
+  session: ['/session-management'],
+  'api-key': ['/api-key-management'],
+  'security-key': ['/security-keys'],
+  'print-template': ['/print-templates'],
+}
 
 interface DashboardSummaryPayload {
   code: number
@@ -103,12 +148,6 @@ function requireApiKey() {
   return API_KEY
 }
 
-export function buildApiKeyHeaders(token = requireApiKey()) {
-  return {
-    'X-API-Key': token,
-  }
-}
-
 function buildFallbackPermissions() {
   return FALLBACK_PERMISSION_RESOURCES.map((resource) => ({
     resource,
@@ -116,7 +155,45 @@ function buildFallbackPermissions() {
   }))
 }
 
+function buildMockApiKeySession(): ApiKeySession {
+  const permissions = buildFallbackPermissions().flatMap((entry) => {
+    return [
+      entry,
+      ...FALLBACK_MENU_CODES_BY_RESOURCE[entry.resource].map((menuCode) => ({
+        resource: menuCode,
+        actions: entry.actions,
+      })),
+    ]
+  })
+
+  return {
+    accessToken: 'leo_mock_api_key_token',
+    user: {
+      id: 'api-key:mock-user',
+      loginName: 'mock-api-key-user',
+      userName: 'Mock API Key User',
+      roleName: 'API Key',
+      totpEnabled: true,
+      permissions,
+    },
+  }
+}
+
+export function buildApiKeyHeaders(token?: string) {
+  if (!IS_REAL_BACKEND) {
+    return {}
+  }
+
+  return {
+    'X-API-Key': token || requireApiKey(),
+  }
+}
+
 async function loadPermissionCatalog(request: APIRequestContext) {
+  if (!IS_REAL_BACKEND) {
+    return buildFallbackPermissions()
+  }
+
   const response = await request.get(`${API_BASE_URL}/permission-management/catalog`, {
     headers: buildApiKeyHeaders(),
   })
@@ -140,6 +217,10 @@ async function loadPermissionCatalog(request: APIRequestContext) {
 }
 
 async function createApiKeySession(request: APIRequestContext): Promise<ApiKeySession> {
+  if (!IS_REAL_BACKEND) {
+    return buildMockApiKeySession()
+  }
+
   const [dashboardResponse, permissions] = await Promise.all([
     request.get(`${API_BASE_URL}/dashboard/summary`, {
       headers: buildApiKeyHeaders(),
@@ -164,6 +245,18 @@ async function createApiKeySession(request: APIRequestContext): Promise<ApiKeySe
       permissions,
     },
   }
+}
+
+export async function clearBrowserSession(page: Page) {
+  await page.addInitScript(({ storageKeys }) => {
+    localStorage.removeItem(storageKeys.token)
+    localStorage.removeItem(storageKeys.user)
+    localStorage.removeItem(storageKeys.authPersistence)
+    localStorage.removeItem(storageKeys.personalSettings)
+    sessionStorage.removeItem(storageKeys.token)
+    sessionStorage.removeItem(storageKeys.user)
+    sessionStorage.removeItem(storageKeys.authPersistence)
+  }, { storageKeys: STORAGE_KEYS })
 }
 
 export async function getApiKeySession(request: APIRequestContext) {
@@ -197,6 +290,14 @@ export async function fetchCollection(
   apiPath: string,
   query?: Record<string, string | number | undefined>,
 ) {
+  if (!IS_REAL_BACKEND) {
+    return {
+      ok: false,
+      status: 0,
+      records: [] as Array<Record<string, unknown>>,
+    }
+  }
+
   const params = new URLSearchParams()
   params.set('page', '0')
   params.set('size', '20')
@@ -245,8 +346,15 @@ export async function fetchCollection(
 }
 
 export async function fetchFirstApiKeyRecord(request: APIRequestContext) {
+  if (!IS_REAL_BACKEND) {
+    return null
+  }
   const result = await fetchCollection(request, 'auth/api-keys')
   return result.records[0] || null
+}
+
+export function isRealBackendMode() {
+  return IS_REAL_BACKEND
 }
 
 export function pickSearchTerm(
@@ -285,7 +393,6 @@ export function pickSearchTerm(
     'code',
   ],
 ) {
-
   for (const key of preferredKeys) {
     const value = String(record[key] || '').trim()
     if (value && value.length >= 2) {
@@ -297,5 +404,5 @@ export function pickSearchTerm(
 }
 
 export async function openHeaderMenu(page: Page) {
-  await page.locator('.leo-header .ant-btn').last().click()
+  await page.locator('.leo-header .app-user-settings-trigger').last().click()
 }

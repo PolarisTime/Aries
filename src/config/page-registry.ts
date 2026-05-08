@@ -398,9 +398,11 @@ export const dashboardPageDefinition = appPageDefinitions.find(
   (entry) => entry.key === 'dashboard',
 )!
 
-const appPageDefinitionMap = new Map(
-  appPageDefinitions.map((entry) => [entry.key, entry] as const),
-)
+const appPageDefinitionMap = new Map<string, AppPageDefinition>()
+for (const entry of appPageDefinitions) {
+  appPageDefinitionMap.set(entry.key, entry)
+  appPageDefinitionMap.set(entry.menuKey, entry)
+}
 const searchableModuleKeys = appPageDefinitions
   .filter((entry) => entry.searchable && entry.moduleKey)
   .map((entry) => entry.moduleKey as string)

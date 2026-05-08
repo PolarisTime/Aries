@@ -1,10 +1,15 @@
 import { test as base, expect } from '@playwright/test'
+import { clearBrowserSession } from './api-key'
 
 interface FatalErrorFixture {
   assertNoFatalUiErrors: () => Promise<void>
 }
 
 export const test = base.extend<FatalErrorFixture>({
+  page: async ({ page }, use) => {
+    await clearBrowserSession(page)
+    await use(page)
+  },
   assertNoFatalUiErrors: async ({ page }, use) => {
     const fatalErrors: string[] = []
 

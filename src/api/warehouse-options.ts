@@ -24,9 +24,7 @@ export async function fetchWarehouseOptions(): Promise<WarehouseOption[]> {
 }
 
 export function getWarehouseOptions(): WarehouseOption[] {
-  if (fetchFailed || (cachedWarehouses && cachedWarehouses.length === 0)) {
-    cachedWarehouses = null
-    fetchFailed = false
+  if (cachedWarehouses === null && !fetchFailed) {
     fetchWarehouseOptions()
   }
   return cachedWarehouses || []
