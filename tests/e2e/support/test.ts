@@ -6,11 +6,11 @@ interface FatalErrorFixture {
 }
 
 export const test = base.extend<FatalErrorFixture>({
-  page: async ({ page }, use) => {
+  page: async ({ page }, applyFixture) => {
     await clearBrowserSession(page)
-    await use(page)
+    await applyFixture(page)
   },
-  assertNoFatalUiErrors: async ({ page }, use) => {
+  assertNoFatalUiErrors: async ({ page }, applyFixture) => {
     const fatalErrors: string[] = []
 
     page.on('pageerror', (error) => {
@@ -30,7 +30,7 @@ export const test = base.extend<FatalErrorFixture>({
       }
     })
 
-    await use(async () => {
+    await applyFixture(async () => {
       expect(fatalErrors, fatalErrors.join('\n')).toEqual([])
     })
   },

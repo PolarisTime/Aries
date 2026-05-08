@@ -535,7 +535,8 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
       for (const [projectName, projectRecords] of recordsByProject) {
         const firstRecord = projectRecords[0]
         const items = projectRecords.flatMap((record) =>
-          (Array.isArray(record.items) ? record.items : []).map((item) => ({
+          (Array.isArray(record.items) ? record.items : []).map((item, index) => ({
+            id: `draft-customer-${record.id}-${index}`,
             sourceNo: String(record.orderNo || ''),
             materialCode: String(item.materialCode || ''),
             brand: String(item.brand || ''),
@@ -556,6 +557,7 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
         )
         const salesAmount = items.reduce((sum, item) => sum + Number(item.amount || 0), 0)
         await saveBusinessModule('customer-statements', {
+          id: '',
           statementNo: await generateBusinessPrimaryNo('customer-statements'),
           sourceOrderNos: projectRecords.map((record) => String(record.orderNo || '')).filter(Boolean).join(', '),
           customerName: String(firstRecord.customerName || ''),
@@ -573,7 +575,8 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
     } else if (type === 'supplier') {
       const firstRecord = sourceRecords[0]
       const items = sourceRecords.flatMap((record) =>
-        (Array.isArray(record.items) ? record.items : []).map((item) => ({
+        (Array.isArray(record.items) ? record.items : []).map((item, index) => ({
+          id: `draft-supplier-${record.id}-${index}`,
           sourceNo: String(record.inboundNo || ''),
           materialCode: String(item.materialCode || ''),
           brand: String(item.brand || ''),
@@ -597,6 +600,7 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
       )
       const purchaseAmount = items.reduce((sum, item) => sum + Number(item.amount || 0), 0)
       await saveBusinessModule('supplier-statements', {
+        id: '',
         statementNo: await generateBusinessPrimaryNo('supplier-statements'),
         sourceInboundNos: sourceRecords.map((record) => String(record.inboundNo || '')).filter(Boolean).join(', '),
         supplierName: String(firstRecord.supplierName || ''),
@@ -612,7 +616,8 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
     } else {
       const firstRecord = sourceRecords[0]
       const items = sourceRecords.flatMap((record) =>
-        (Array.isArray(record.items) ? record.items : []).map((item) => ({
+        (Array.isArray(record.items) ? record.items : []).map((item, index) => ({
+          id: `draft-freight-${record.id}-${index}`,
           sourceNo: String(record.billNo || item.sourceNo || ''),
           customerName: String(item.customerName || record.customerName || ''),
           projectName: String(item.projectName || record.projectName || ''),
@@ -633,6 +638,7 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
         })),
       )
       await saveBusinessModule('freight-statements', {
+        id: '',
         statementNo: await generateBusinessPrimaryNo('freight-statements'),
         sourceBillNos: sourceRecords.map((record) => String(record.billNo || '')).filter(Boolean).join(', '),
         carrierName: String(firstRecord.carrierName || ''),

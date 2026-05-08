@@ -156,7 +156,11 @@ export function UserAccountManagementView() {
     }
   }, [normalizeDataScopeLabel])
 
-  const selectedRoleNames = Form.useWatch('roleNames', form) || []
+  const watchedRoleNames = Form.useWatch('roleNames', form)
+  const selectedRoleNames = useMemo(
+    () => (Array.isArray(watchedRoleNames) ? watchedRoleNames : []),
+    [watchedRoleNames],
+  )
 
   const selectedRoleDataScope = useMemo(() => {
     const selectedRoles = roleOptions.filter((r) => selectedRoleNames.includes(r.roleName))
