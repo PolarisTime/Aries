@@ -1,4 +1,4 @@
-import { openHeaderMenu, primeApiKeySession } from './support/api-key'
+import { primeApiKeySession } from './support/api-key'
 import { expect, test } from './support/test'
 
 test.describe('API key auth and shell', () => {
