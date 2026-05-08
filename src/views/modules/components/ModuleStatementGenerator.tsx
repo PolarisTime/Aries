@@ -10,7 +10,7 @@ interface Props {
   statementType: 'customer' | 'supplier' | 'freight'
   counterpartyModuleKey: string
   onClose: () => void
-  onGenerate: (counterpartyId: string, startDate: string, endDate: string) => Promise<void>
+  onGenerate: (counterpartyName: string, startDate: string, endDate: string) => Promise<void>
 }
 
 export function ModuleStatementGenerator({
@@ -57,7 +57,7 @@ export function ModuleStatementGenerator({
             onSearch={(v) => form.setFieldValue('counterpartyName', v)}
             options={(counterparties || []).map((r: ModuleRecord) => ({
               label: String(r.customerName || r.supplierName || r.carrierName || r.id),
-              value: String(r.id),
+              value: String(r.customerName || r.supplierName || r.carrierName || ''),
             }))}
           />
         </Form.Item>

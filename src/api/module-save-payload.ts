@@ -9,8 +9,6 @@ const COMPUTED_FIELD_KEYS = new Set([
   'totalWeight',
   'totalAmount',
   'totalFreight',
-  'purchaseAmount',
-  'salesAmount',
   'taxAmount',
   'amount',
   'permissionSummary',
