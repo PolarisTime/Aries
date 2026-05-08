@@ -23,7 +23,6 @@ import { ModuleTableToolbar } from '@/views/modules/components/ModuleTableToolba
 import { ColumnSettingsPopover } from '@/views/modules/components/ColumnSettingsPopover'
 import { ModuleAttachmentModal } from '@/views/modules/components/ModuleAttachmentModal'
 import { ModuleStatementGenerator } from '@/views/modules/components/ModuleStatementGenerator'
-import { ModuleParentSelectorOverlay } from '@/views/modules/components/ModuleParentSelectorOverlay'
 import { ModuleMaterialImportDialogs } from '@/views/modules/components/ModuleMaterialImportDialogs'
 import { ModuleFreightPickupListOverlay } from '@/views/modules/components/ModuleFreightPickupListOverlay'
 import { getPageDefinition, type AppPageDefinition } from '@/config/page-registry'
@@ -62,7 +61,7 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
   const [editorOpen, setEditorOpen] = useState(false)
   const [editRecord, setEditRecord] = useState<ModuleRecord | null>(null)
   const [attachOpen, setAttachOpen] = useState(false)
-  const [attachRecordId] = useState('')
+  const [attachRecordId, setAttachRecordId] = useState('')
   const [columnVisibleKeys, setColumnVisibleKeys] = useState<string[]>([])
   const autoOpenedRouteKeyRef = useRef('')
 
@@ -70,9 +69,6 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
   const [supplierStatementOpen, setSupplierStatementOpen] = useState(false)
   const [customerStatementOpen, setCustomerStatementOpen] = useState(false)
   const [freightStatementOpen, setFreightStatementOpen] = useState(false)
-
-  // Parent import state
-  const [parentSelectorOpen, setParentSelectorOpen] = useState(false)
 
   // Material import state
   const [materialImportOpen, setMaterialImportOpen] = useState(false)
@@ -103,9 +99,17 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
     setEditorOpen(true)
   }, [])
 
+  const handleOpenAttachment = useCallback((record: ModuleRecord) => {
+    setAttachRecordId(String(record.id || ''))
+    setAttachOpen(true)
+  }, [])
+
   const { buildActions } = useModuleRecordActions({
     moduleKey, resourceKey: pageDef?.resourceKey,
-    onEdit: handleEdit, onDetail: (r) => openDetail(String(r.id)), onRefresh: refreshModuleQueries,
+    onEdit: handleEdit,
+    onDetail: (r) => openDetail(String(r.id)),
+    onAttach: handleOpenAttachment,
+    onRefresh: refreshModuleQueries,
   })
 
   // Editor capabilities
@@ -417,7 +421,10 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
       {/* Attachment modal */}
       <ModuleAttachmentModal
         open={attachOpen} moduleKey={moduleKey} recordId={attachRecordId}
-        onClose={() => setAttachOpen(false)}
+        onClose={() => {
+          setAttachOpen(false)
+          setAttachRecordId('')
+        }}
       />
 
       {/* Statement generators */}
@@ -442,21 +449,6 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
         onClose={() => setFreightStatementOpen(false)}
         onGenerate={(id, start, end) => handleStatementGenerate('freight', id, start, end)}
       />
-
-      {/* Parent selector */}
-      {config.parentImport && (
-        <ModuleParentSelectorOverlay
-          open={parentSelectorOpen}
-          parentModuleKey={config.parentImport.parentModuleKey}
-          title={`选择${config.parentImport.label || '上级单据'}`}
-          onSelect={() => {
-            // Handle parent import
-            setParentSelectorOpen(false)
-            message.info('上级单据导入功能已触发')
-          }}
-          onClose={() => setParentSelectorOpen(false)}
-        />
-      )}
 
       {/* Material import */}
       <ModuleMaterialImportDialogs

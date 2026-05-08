@@ -1,17 +1,13 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Modal, Upload, Button, Card, Empty, Flex, Space, Spin, Typography } from 'antd'
 import { UploadOutlined, DownloadOutlined, DeleteOutlined, PaperClipOutlined } from '@ant-design/icons'
-import { http } from '@/api/client'
-import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
+import {
+  getAttachmentBindings,
+  updateAttachmentBindings,
+  uploadAttachment,
+  type AttachmentRecord,
+} from '@/api/business'
 import { message } from '@/utils/antd-app'
-
-interface AttachmentItem {
-  id: string
-  fileName: string
-  fileSize: number
-  createdAt: string
-}
 
 interface Props {
   open: boolean
@@ -21,31 +17,33 @@ interface Props {
 }
 
 export function ModuleAttachmentModal({ open, moduleKey, recordId, onClose }: Props) {
-  const [attachments, setAttachments] = useState<AttachmentItem[]>([])
+  const [attachments, setAttachments] = useState<AttachmentRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
 
-  const fetchAttachments = async () => {
+  const fetchAttachments = useCallback(async () => {
     if (!recordId) return
     setLoading(true)
     try {
-      const res = await http.get<ApiResponse<AttachmentItem[]>>(
-        `${ENDPOINTS.ATTACHMENTS_BINDINGS}?moduleKey=${encodeURIComponent(moduleKey)}&recordId=${encodeURIComponent(recordId)}`,
-      )
-      setAttachments(res.data || [])
+      const res = await getAttachmentBindings(moduleKey, recordId)
+      setAttachments(res.data?.attachments || [])
     } catch { /* ignore */ }
     finally { setLoading(false) }
-  }
+  }, [moduleKey, recordId])
 
   const handleUpload = async (file: File) => {
     setUploading(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('moduleKey', moduleKey)
-      formData.append('recordId', recordId)
-      await http.post(ENDPOINTS.ATTACHMENTS_UPLOAD, formData)
-      message.success('上传成功')
+      const uploadRes = await uploadAttachment(file, moduleKey)
+      const attachmentId = String(uploadRes.data?.id || '').trim()
+      if (!attachmentId) {
+        throw new Error('上传成功但未返回附件标识')
+      }
+      await updateAttachmentBindings(moduleKey, recordId, [
+        ...attachments.map((item) => item.id),
+        attachmentId,
+      ])
+      message.success('上传并绑定成功')
       await fetchAttachments()
     } catch (err) {
       message.error(err instanceof Error ? err.message : '上传失败')
@@ -53,15 +51,23 @@ export function ModuleAttachmentModal({ open, moduleKey, recordId, onClose }: Pr
     return false
   }
 
-  const handleDownload = (id: string) => {
-    window.open(`/api/attachments/${id}/download`, '_blank')
+  const handleDownload = (attachment: AttachmentRecord) => {
+    if (!attachment.downloadUrl) {
+      message.warning('当前附件暂无下载地址')
+      return
+    }
+    window.open(attachment.downloadUrl, '_blank', 'noopener,noreferrer')
   }
 
   const handleDelete = async (id: string) => {
     try {
-      await http.delete(`/attachments/bindings/${id}`)
-      message.success('删除成功')
-      setAttachments((prev) => prev.filter((a) => a.id !== id))
+      await updateAttachmentBindings(
+        moduleKey,
+        recordId,
+        attachments.filter((item) => String(item.id) !== id).map((item) => item.id),
+      )
+      message.success('解除绑定成功')
+      await fetchAttachments()
     } catch (err) {
       message.error(err instanceof Error ? err.message : '删除失败')
     }
@@ -74,10 +80,10 @@ export function ModuleAttachmentModal({ open, moduleKey, recordId, onClose }: Pr
       onCancel={onClose}
       footer={null}
       width={560}
-      afterOpenChange={(visible) => { if (visible) fetchAttachments() }}
+      afterOpenChange={(visible) => { if (visible) void fetchAttachments() }}
     >
       <div className="mb-3">
-        <Upload beforeUpload={(f) => { handleUpload(f); return false }} showUploadList={false}>
+        <Upload beforeUpload={(f) => { void handleUpload(f); return false }} showUploadList={false}>
           <Button icon={<UploadOutlined />} loading={uploading}>上传附件</Button>
         </Upload>
       </div>
@@ -91,15 +97,15 @@ export function ModuleAttachmentModal({ open, moduleKey, recordId, onClose }: Pr
                     <PaperClipOutlined />
                     <Space orientation="vertical" size={0} style={{ minWidth: 0 }}>
                       <Typography.Text strong ellipsis>
-                        {item.fileName}
+                        {item.originalFileName || item.fileName || item.name}
                       </Typography.Text>
                       <Typography.Text type="secondary">
-                        {(item.fileSize / 1024).toFixed(1)} KB · {item.createdAt}
+                        {((item.fileSize || 0) / 1024).toFixed(1)} KB · {String(item.uploadTime || '')}
                       </Typography.Text>
                     </Space>
                   </Space>
                   <Space size={0}>
-                    <Button key="download" type="link" size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(item.id)} />
+                    <Button key="download" type="link" size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(item)} />
                     <Button key="delete" type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(item.id)} />
                   </Space>
                 </Flex>

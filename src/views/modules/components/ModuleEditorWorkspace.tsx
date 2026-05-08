@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import dayjs from 'dayjs'
 import {
   Form, Button, Col, Row, Space, Table, Typography, Input, InputNumber, Select, Checkbox,
 } from 'antd'
-import { PlusOutlined, DeleteOutlined, MenuOutlined } from '@ant-design/icons'
+import { PlusOutlined, DeleteOutlined, MenuOutlined, ImportOutlined } from '@ant-design/icons'
 import { message } from '@/utils/antd-app'
 import { FormFieldRenderer } from './FormFieldRenderer'
 import { EditorItemsSummary } from './EditorItemsSummary'
 import { EditorFooterActions } from './EditorFooterActions'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
-import { saveBusinessModule } from '@/api/business'
+import { getBusinessModuleDetail, saveBusinessModule } from '@/api/business'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
@@ -22,9 +23,14 @@ import {
   getEditorItemPrecision,
   getEditorItemMin,
   isEditorItemColumnEditableForModule,
+  getEditorValidationMessage,
   type EditorItemDragPosition,
 } from '@/views/modules/module-adapter-editor'
 import { applyModuleDefaultEditorDraft } from '@/views/modules/module-adapter-editor'
+import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
+import { buildParentImportState } from '@/views/modules/module-adapter-parent-import'
+import { cloneLineItems } from '@/utils/clone-utils'
+import { getModuleRecordPrimaryNo, parseParentRelationNos } from '@/views/modules/module-adapter-shared'
 import type { ModulePageConfig, ModuleRecord, ModuleFormFieldDefinition, ModuleLineItem } from '@/types/module-page'
 import type { TableColumnsType } from 'antd'
 
@@ -37,9 +43,39 @@ interface Props {
   onSaved: () => void
 }
 
+function normalizeRecordForEditor(
+  config: ModulePageConfig,
+  record: ModuleRecord,
+): ModuleRecord {
+  if (!config.formFields?.length) {
+    return record
+  }
+
+  const normalized: ModuleRecord = {
+    ...record,
+  }
+
+  for (const field of config.formFields) {
+    if (field.type !== 'date') {
+      continue
+    }
+    const rawValue = normalized[field.key]
+    if (rawValue == null || rawValue === '' || dayjs.isDayjs(rawValue)) {
+      continue
+    }
+
+    const parsed = dayjs(String(rawValue))
+    normalized[field.key] = parsed.isValid() ? parsed : undefined
+  }
+
+  return normalized
+}
+
 export function ModuleEditorWorkspace({ open, config, record, moduleKey, onClose, onSaved }: Props) {
   const [form] = Form.useForm()
   const [saving, setSaving] = useState(false)
+  const [parentSelectorOpen, setParentSelectorOpen] = useState(false)
+  const [parentImporting, setParentImporting] = useState(false)
   const [items, setItems] = useState<ModuleLineItem[]>([])
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([])
   const [dragSourceId, setDragSourceId] = useState<string | null>(null)
@@ -54,22 +90,7 @@ export function ModuleEditorWorkspace({ open, config, record, moduleKey, onClose
   const canAudit = canSave
   const canManageItems = Boolean(config.itemColumns?.length)
   const canAddManualItems = canManageItems && moduleKey !== 'invoice-issues' && moduleKey !== 'freight-bills'
-
-  useEffect(() => {
-    if (open) {
-      if (record) {
-        form.setFieldsValue(record)
-        setItems((record.items as ModuleLineItem[]) || [])
-      } else {
-        form.resetFields()
-        const defaultDraft: Record<string, unknown> = {}
-        applyModuleDefaultEditorDraft(moduleKey, defaultDraft, getCurrentOperatorName())
-        form.setFieldsValue(defaultDraft)
-        setItems([])
-      }
-      setSelectedItemIds([])
-    }
-  }, [open, record, form, moduleKey])
+  const canImportParentItems = Boolean(config.parentImport && canManageItems)
 
   const getCurrentOperatorName = useCallback(() => {
     try {
@@ -82,12 +103,45 @@ export function ModuleEditorWorkspace({ open, config, record, moduleKey, onClose
     return '当前用户'
   }, [])
 
+  useEffect(() => {
+    if (open) {
+      if (record) {
+        form.setFieldsValue(normalizeRecordForEditor(config, record))
+        setItems((record.items as ModuleLineItem[]) || [])
+      } else {
+        form.resetFields()
+        const defaultDraft: Record<string, unknown> = {}
+        applyModuleDefaultEditorDraft(moduleKey, defaultDraft, getCurrentOperatorName())
+        form.setFieldsValue(defaultDraft)
+        setItems([])
+      }
+      setSelectedItemIds([])
+      setParentSelectorOpen(false)
+    }
+  }, [open, record, form, moduleKey, config, getCurrentOperatorName])
+
   const handleSave = useCallback(async (audit = false) => {
     try {
       const values = await form.validateFields()
-      setSaving(true)
-
       const trimmedItems = trimEditorItemsForModule(moduleKey, items)
+      const validationMessage = getEditorValidationMessage({
+        moduleKey,
+        fields: config.formFields || [],
+        editorForm: values,
+        hasItemColumns: Boolean(config.itemColumns?.length),
+        itemColumns: config.itemColumns,
+        items: trimmedItems,
+        itemCount: trimmedItems.length,
+        parentImportConfig: config.parentImport,
+        occupiedParentMap: {},
+        getPrimaryNo: (candidate) => getModuleRecordPrimaryNo(candidate, config.primaryNoKey),
+      })
+      if (validationMessage) {
+        message.warning(validationMessage)
+        return
+      }
+
+      setSaving(true)
       const draftRecord: ModuleRecord = {
         ...values,
         id: record?.id || '',
@@ -125,6 +179,46 @@ export function ModuleEditorWorkspace({ open, config, record, moduleKey, onClose
       setSaving(false)
     }
   }, [form, items, moduleKey, record, config, isEdit, refreshModuleQueries, onSaved, onClose, getCurrentOperatorName])
+
+  const handleImportParentRecord = useCallback(async (selectedRecord: ModuleRecord) => {
+    const parentImportConfig = config.parentImport
+    if (!parentImportConfig) {
+      return
+    }
+
+    setParentImporting(true)
+    try {
+      const parentDetail = await getBusinessModuleDetail(parentImportConfig.parentModuleKey, String(selectedRecord.id))
+      const parentRecord = parentDetail.data
+      const currentValues = form.getFieldsValue(true) as ModuleRecord
+      const currentParentNos = parseParentRelationNos(currentValues[parentImportConfig.parentFieldKey])
+      const importState = buildParentImportState({
+        parentImportConfig,
+        parentRecord,
+        currentParentNos,
+        currentItems: items,
+        cloneLineItems,
+      })
+
+      const nextValues: ModuleRecord = {
+        ...currentValues,
+        [parentImportConfig.parentFieldKey]: importState.parentNosText,
+      }
+      if (importState.shouldApplyMappedValues) {
+        Object.assign(nextValues, importState.mappedValues)
+      }
+
+      form.setFieldsValue(normalizeRecordForEditor(config, nextValues))
+      setItems(importState.nextItems)
+      setSelectedItemIds([])
+      setParentSelectorOpen(false)
+      message.success(`已导入 ${importState.parentNo} 的 ${importState.importedItemCount} 条明细`)
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '导入上级单据失败')
+    } finally {
+      setParentImporting(false)
+    }
+  }, [config, form, items])
 
   const addItem = useCallback(() => {
     const newItem = buildDefaultEditorLineItem()
@@ -227,12 +321,11 @@ export function ModuleEditorWorkspace({ open, config, record, moduleKey, onClose
     [moduleKey, canManageItems],
   )
 
-  const settlementModeOptions = ['理算', '过磅']
-
   const itemColumns = useMemo<TableColumnsType<ModuleLineItem>>(() => {
     if (!config.itemColumns?.length) return []
 
     const cols: TableColumnsType<ModuleLineItem> = []
+    const settlementModeOptions = ['理算', '过磅']
 
     // Selection column
     if (canManageItems) {
@@ -411,7 +504,6 @@ export function ModuleEditorWorkspace({ open, config, record, moduleKey, onClose
     selectedItemIds,
     items,
     warehouses,
-    settlementModeOptions,
     isItemColumnEditable,
     formatCellValue,
     handleSelectAll,
@@ -474,6 +566,16 @@ export function ModuleEditorWorkspace({ open, config, record, moduleKey, onClose
                   新增明细
                 </Button>
               )}
+              {canImportParentItems && (
+                <Button
+                  size="small"
+                  icon={<ImportOutlined />}
+                  loading={parentImporting}
+                  onClick={() => setParentSelectorOpen(true)}
+                >
+                  {config.parentImport?.buttonText || `导入${config.parentImport?.label || '上级单据'}明细`}
+                </Button>
+              )}
               {selectedItemIds.length > 0 && (
                 <Button danger size="small" icon={<DeleteOutlined />} onClick={removeSelectedItems}>
                   删除选中 ({selectedItemIds.length})
@@ -511,6 +613,17 @@ export function ModuleEditorWorkspace({ open, config, record, moduleKey, onClose
 
           <EditorItemsSummary items={items} />
         </div>
+      )}
+
+      {config.parentImport && (
+        <ModuleParentSelectorOverlay
+          open={parentSelectorOpen}
+          parentModuleKey={config.parentImport.parentModuleKey}
+          parentDisplayFieldKey={config.parentImport.parentDisplayFieldKey}
+          title={`选择${config.parentImport.label || '上级单据'}`}
+          onSelect={(parentRecord) => { void handleImportParentRecord(parentRecord) }}
+          onClose={() => setParentSelectorOpen(false)}
+        />
       )}
     </WorkspaceOverlay>
   )

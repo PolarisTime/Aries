@@ -10,10 +10,11 @@ interface Props {
   resourceKey?: string
   onEdit: (record: ModuleRecord) => void
   onDetail: (record: ModuleRecord) => void
+  onAttach: (record: ModuleRecord) => void
   onRefresh: () => Promise<void>
 }
 
-export function useModuleRecordActions({ moduleKey, resourceKey, onEdit, onDetail, onRefresh }: Props) {
+export function useModuleRecordActions({ moduleKey, resourceKey, onEdit, onDetail, onAttach, onRefresh }: Props) {
   const can = usePermissionStore((s) => s.can)
   const resource = resourceKey || moduleKey
 
@@ -25,6 +26,9 @@ export function useModuleRecordActions({ moduleKey, resourceKey, onEdit, onDetai
       }
       if (can(resource, 'update')) {
         items.push({ key: 'edit', label: '编辑', onClick: () => onEdit(record) })
+      }
+      if (can(resource, 'read') || can(resource, 'update')) {
+        items.push({ key: 'attach', label: '附件', onClick: () => onAttach(record) })
       }
       if (can(resource, 'delete')) {
         items.push({
@@ -43,7 +47,7 @@ export function useModuleRecordActions({ moduleKey, resourceKey, onEdit, onDetai
       }
       return items
     },
-    [can, resource, moduleKey, onEdit, onDetail, onRefresh],
+    [can, resource, moduleKey, onEdit, onDetail, onAttach, onRefresh],
   )
 
   return { buildActions }
