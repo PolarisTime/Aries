@@ -17,6 +17,7 @@ export function useModulePermissions({ moduleKey, resourceKey }: Props) {
     canDeleteRecord: can(resolvedResource, 'delete'),
     canExportData: can(resolvedResource, 'export'),
     canAuditRecord: can(resolvedResource, 'audit'),
+    canPrintRecord: can(resolvedResource, 'print'),
     can,
     resolvedResource,
   }

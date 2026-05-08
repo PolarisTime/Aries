@@ -26,7 +26,12 @@ import { ModuleStatementGenerator } from '@/views/modules/components/ModuleState
 import { ModuleMaterialImportDialogs } from '@/views/modules/components/ModuleMaterialImportDialogs'
 import { ModuleFreightPickupListOverlay } from '@/views/modules/components/ModuleFreightPickupListOverlay'
 import { getPageDefinition, type AppPageDefinition } from '@/config/page-registry'
-import { deleteBusinessModule, saveBusinessModule } from '@/api/business'
+import { deleteBusinessModule, generateBusinessPrimaryNo, getBusinessModuleDetail, listAllBusinessModuleRows, saveBusinessModule } from '@/api/business'
+import { listAllStatementCandidates } from '@/api/statements'
+import { getDefaultPrintTemplate } from '@/api/print-template'
+import { renderPrintTemplate } from '@/utils/print-template-engine'
+import { buildModulePrintHtml } from '@/utils/module-print'
+import { execPrintCode, isCLodopCode, printHtml } from '@/utils/clodop'
 import type { ModuleRecord } from '@/types/module-page'
 import type { TableColumnsType, TableProps } from 'antd'
 
@@ -51,7 +56,7 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
   const moduleKey = pageDef.moduleKey as string
   const { config } = useModulePageConfig({ moduleKey })
 
-  const { canViewRecords, canCreateRecord, canUpdateRecord, canDeleteRecord, canExportData, canAuditRecord } =
+  const { canViewRecords, canCreateRecord, canUpdateRecord, canDeleteRecord, canExportData, canAuditRecord, canPrintRecord } =
     useModulePermissions({ moduleKey, resourceKey: pageDef?.resourceKey })
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -94,6 +99,12 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
 
   const { getRowClassName } = useModuleRecordHelpers({ moduleKey, config })
 
+  const refreshAndClearSelection = useCallback(async () => {
+    setSelectedRowKeys([])
+    setSelectedRowMap({})
+    await refreshModuleQueries()
+  }, [refreshModuleQueries])
+
   const handleEdit = useCallback((record: ModuleRecord) => {
     setEditRecord(record)
     setEditorOpen(true)
@@ -118,6 +129,8 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
     canUseBulkAuditActions,
     canUseBulkDeleteActions,
     canUseBulkPrintActions,
+    listAuditTarget,
+    listReverseAuditTarget,
   } = useModuleEditorCapabilities({
     moduleKey,
     formFields,
@@ -125,7 +138,7 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
     canEditLineItems: canUpdateRecord,
     canSaveCurrentEditor: canCreateRecord || canUpdateRecord,
     canAuditRecords: canAuditRecord,
-    canPrintRecords: false,
+    canPrintRecords: canPrintRecord,
     canDeleteRecords: canDeleteRecord,
     isReadOnly: Boolean(config.readOnly),
     resolveModuleStatusOptions: (statusField) => {
@@ -156,7 +169,84 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
     handlers: {
       exportMaterialRows: async () => { await handleExport() },
       exportRows: async () => { await handleExport() },
-      handlePrintSelectedRecords: async () => { message.info('打印功能开发中') },
+      handlePrintSelectedRecords: async (preview) => {
+        if (!selectedRowKeys.length) {
+          message.warning('请先选择记录')
+          return
+        }
+        try {
+          const templateResponse = await getDefaultPrintTemplate(moduleKey)
+          const template = templateResponse.data
+          const selectedDetails = await Promise.all(
+            selectedRowKeys.map((id) => getBusinessModuleDetail(moduleKey, id)),
+          )
+          const selectedRecords = selectedDetails.map((detail) => detail.data)
+
+          if (!selectedRecords.length) {
+            message.warning('未找到可打印的选中记录')
+            return
+          }
+
+          if (template?.templateHtml?.trim()) {
+            const renderedTemplates = selectedRecords
+              .map((record) =>
+                renderPrintTemplate(
+                  template.templateHtml,
+                  record,
+                  Array.isArray(record.items) ? record.items as Array<Record<string, unknown>> : [],
+                ),
+              )
+            const renderedHtml = isCLodopCode(template.templateHtml)
+              ? renderedTemplates.join('\nLODOP.NEWPAGEA();\n')
+              : renderedTemplates.join('<div class="print-page"></div>')
+
+            const success = isCLodopCode(template.templateHtml)
+              ? execPrintCode(renderedHtml, {
+                  preview,
+                  title: template.templateName || config.title,
+                })
+              : printHtml(renderedHtml, {
+                  preview,
+                  title: template.templateName || config.title,
+                })
+            if (!success) {
+              throw new Error('打印服务不可用，请检查 CLodop 或打印模板配置')
+            }
+            return
+          }
+
+          const renderedHtml = selectedRecords
+            .map((record) => {
+              const fields = (config.detailFields || []).map((field) => ({
+                label: field.label,
+                value: formatCellValue(record[field.key], field.type),
+              }))
+              const itemColumns = config.itemColumns || []
+              const rows = Array.isArray(record.items)
+                ? record.items.map((item) =>
+                    itemColumns.map((column) => formatCellValue(item[column.dataIndex], column.type)),
+                  )
+                : []
+              return buildModulePrintHtml({
+                title: config.title,
+                subtitle: String(record[config.primaryNoKey || 'id'] || ''),
+                fields,
+                columns: itemColumns.map((column) => ({
+                  title: column.title,
+                  align: column.align || 'left',
+                })),
+                rows,
+              })
+            })
+            .join('<div class="print-page"></div>')
+          const success = printHtml(renderedHtml, { preview, title: config.title })
+          if (!success) {
+            throw new Error('打印服务不可用，请检查 CLodop 环境')
+          }
+        } catch (err) {
+          message.error(err instanceof Error ? err.message : '打印失败')
+        }
+      },
       handleSelectedAuditRecords: async () => {
         if (!selectedRowKeys.length) { message.warning('请先选择记录'); return }
         Modal.confirm({
@@ -164,15 +254,22 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
           content: `确定审核选中的 ${selectedRowKeys.length} 条记录吗？`,
           onOk: async () => {
             try {
+              if (!listAuditTarget) {
+                message.warning('当前模块未配置批量审核状态')
+                return
+              }
               for (const id of selectedRowKeys) {
                 const record = selectedRowMap[id]
                 if (record) {
-                  await saveBusinessModule(moduleKey, { ...record, status: '已审核' })
+                  const detail = await getBusinessModuleDetail(moduleKey, id)
+                  await saveBusinessModule(moduleKey, {
+                    ...detail.data,
+                    [listAuditTarget.key]: listAuditTarget.value,
+                  })
                 }
               }
               message.success('审核成功')
-              setSelectedRowKeys([])
-              await refreshModuleQueries()
+              await refreshAndClearSelection()
             } catch (err) {
               message.error(err instanceof Error ? err.message : '审核失败')
             }
@@ -191,8 +288,7 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
                 await deleteBusinessModule(moduleKey, id)
               }
               message.success('删除成功')
-              setSelectedRowKeys([])
-              await refreshModuleQueries()
+              await refreshAndClearSelection()
             } catch (err) {
               message.error(err instanceof Error ? err.message : '删除失败')
             }
@@ -206,28 +302,87 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
           content: `确定反审核选中的 ${selectedRowKeys.length} 条记录吗？`,
           onOk: async () => {
             try {
+              if (!listReverseAuditTarget) {
+                message.warning('当前模块未配置批量反审核状态')
+                return
+              }
               for (const id of selectedRowKeys) {
                 const record = selectedRowMap[id]
                 if (record) {
-                  await saveBusinessModule(moduleKey, { ...record, status: '草稿' })
+                  const detail = await getBusinessModuleDetail(moduleKey, id)
+                  await saveBusinessModule(moduleKey, {
+                    ...detail.data,
+                    [listReverseAuditTarget.key]: listReverseAuditTarget.value,
+                  })
                 }
               }
               message.success('反审核成功')
-              setSelectedRowKeys([])
-              await refreshModuleQueries()
+              await refreshAndClearSelection()
             } catch (err) {
               message.error(err instanceof Error ? err.message : '反审核失败')
             }
           },
         })
       },
-      markSelectedFreightDelivered: async () => { message.info('标记送达功能开发中') },
+      markSelectedFreightDelivered: async () => {
+        if (!selectedRowKeys.length) {
+          message.warning('请先选择物流单')
+          return
+        }
+        Modal.confirm({
+          title: '批量标记送达',
+          content: `确定将选中的 ${selectedRowKeys.length} 条物流单标记为已送达吗？`,
+          onOk: async () => {
+            try {
+              for (const id of selectedRowKeys) {
+                const record = selectedRowMap[id]
+                if (!record) continue
+                const detail = await getBusinessModuleDetail('freight-bills', String(record.id))
+                await saveBusinessModule('freight-bills', {
+                  ...detail.data,
+                  deliveryStatus: '已送达',
+                })
+              }
+              message.success('标记送达成功')
+              await refreshAndClearSelection()
+            } catch (err) {
+              message.error(err instanceof Error ? err.message : '标记送达失败')
+            }
+          },
+        })
+      },
       navigateToRoleActionEditor: () => { window.location.href = '/role-action-editor' },
       openCreateEditor: async () => { setEditRecord(null); setEditorOpen(true) },
       openCustomerStatementGenerator: async () => { setCustomerStatementOpen(true) },
       openFreightPickupList: async () => { setFreightPickupOpen(true) },
       openFreightStatementGenerator: async () => { setFreightStatementOpen(true) },
-      openFreightSummary: async () => { message.info('运费汇总功能开发中') },
+      openFreightSummary: async () => {
+        const rows = await listAllBusinessModuleRows('freight-statements', submittedFilters)
+        if (!rows.length) {
+          message.info('当前列表暂无物流对账单数据')
+          return
+        }
+        const totalWeight = rows.reduce((sum, record) => sum + Number(record.totalWeight || 0), 0)
+        const totalFreight = rows.reduce((sum, record) => sum + Number(record.totalFreight || 0), 0)
+        const paidAmount = rows.reduce((sum, record) => sum + Number(record.paidAmount || 0), 0)
+        const unpaidAmount = rows.reduce(
+          (sum, record) => sum + Number(record.unpaidAmount || (Number(record.totalFreight || 0) - Number(record.paidAmount || 0))),
+          0,
+        )
+        Modal.info({
+          title: '运费对账汇总',
+          width: 720,
+          content: (
+            <Flex vertical gap={12} style={{ marginTop: 12 }}>
+              <Typography.Text>当前列表单据数：{rows.length}</Typography.Text>
+              <Typography.Text>总重量（吨）：{formatCellValue(totalWeight, 'weight')}</Typography.Text>
+              <Typography.Text>总运费：{formatCellValue(totalFreight, 'amount')}</Typography.Text>
+              <Typography.Text>已付金额：{formatCellValue(paidAmount, 'amount')}</Typography.Text>
+              <Typography.Text>未付金额：{formatCellValue(unpaidAmount, 'amount')}</Typography.Text>
+            </Flex>
+          ),
+        })
+      },
       openSupplierStatementGenerator: async () => { setSupplierStatementOpen(true) },
     },
   })
@@ -326,8 +481,175 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
     startDate: string,
     endDate: string,
   ) => {
-    message.info(`${type} 对账单生成功能开发中: ${counterpartyId}, ${startDate} - ${endDate}`)
-  }, [])
+    const statementModuleKey = type === 'supplier'
+      ? 'supplier-statements'
+      : type === 'customer'
+        ? 'customer-statements'
+        : 'freight-statements'
+    const sourceModuleKey = type === 'supplier'
+      ? 'purchase-inbounds'
+      : type === 'customer'
+        ? 'sales-orders'
+        : 'freight-bills'
+    const candidateRows = await listAllStatementCandidates(statementModuleKey, '')
+    const filteredCandidates = candidateRows.filter((candidate) => {
+      const dateField = type === 'supplier'
+        ? candidate.inboundDate
+        : type === 'customer'
+          ? candidate.deliveryDate
+          : candidate.billTime
+      const currentDate = String(dateField || '')
+      if (!currentDate || currentDate < startDate || currentDate > endDate) {
+        return false
+      }
+
+      if (type === 'supplier') {
+        return String(candidate.supplierName || '') === counterpartyId
+      }
+      if (type === 'customer') {
+        return String(candidate.customerName || '') === counterpartyId
+      }
+      return String(candidate.carrierName || '') === counterpartyId
+    })
+
+    if (!filteredCandidates.length) {
+      throw new Error('当前筛选条件下没有可生成的候选单据')
+    }
+
+    const detailedRecords = await Promise.all(
+      filteredCandidates.map((candidate) =>
+        getBusinessModuleDetail(sourceModuleKey, String(candidate.id)),
+      ),
+    )
+    const sourceRecords = detailedRecords.map((detail) => detail.data)
+
+    if (type === 'customer') {
+      const recordsByProject = new Map<string, ModuleRecord[]>()
+      for (const record of sourceRecords) {
+        const projectName = String(record.projectName || '')
+        const current = recordsByProject.get(projectName) || []
+        current.push(record)
+        recordsByProject.set(projectName, current)
+      }
+
+      for (const [projectName, projectRecords] of recordsByProject) {
+        const firstRecord = projectRecords[0]
+        const items = projectRecords.flatMap((record) =>
+          (Array.isArray(record.items) ? record.items : []).map((item) => ({
+            sourceNo: String(record.orderNo || ''),
+            materialCode: String(item.materialCode || ''),
+            brand: String(item.brand || ''),
+            category: String(item.category || ''),
+            material: String(item.material || ''),
+            spec: String(item.spec || ''),
+            length: String(item.length || ''),
+            unit: String(item.unit || ''),
+            batchNo: String(item.batchNo || ''),
+            quantity: Number(item.quantity || 0),
+            quantityUnit: String(item.quantityUnit || ''),
+            pieceWeightTon: Number(item.pieceWeightTon || 0),
+            piecesPerBundle: Number(item.piecesPerBundle || 0),
+            weightTon: Number(item.weightTon || 0),
+            unitPrice: Number(item.unitPrice || 0),
+            amount: Number(item.amount || 0),
+          })),
+        )
+        const salesAmount = items.reduce((sum, item) => sum + Number(item.amount || 0), 0)
+        await saveBusinessModule('customer-statements', {
+          statementNo: await generateBusinessPrimaryNo('customer-statements'),
+          sourceOrderNos: projectRecords.map((record) => String(record.orderNo || '')).filter(Boolean).join(', '),
+          customerName: String(firstRecord.customerName || ''),
+          projectName,
+          startDate,
+          endDate,
+          salesAmount,
+          receiptAmount: 0,
+          closingAmount: salesAmount,
+          status: '待确认',
+          remark: '',
+          items,
+        })
+      }
+    } else if (type === 'supplier') {
+      const firstRecord = sourceRecords[0]
+      const items = sourceRecords.flatMap((record) =>
+        (Array.isArray(record.items) ? record.items : []).map((item) => ({
+          sourceNo: String(record.inboundNo || ''),
+          materialCode: String(item.materialCode || ''),
+          brand: String(item.brand || ''),
+          category: String(item.category || ''),
+          material: String(item.material || ''),
+          spec: String(item.spec || ''),
+          length: String(item.length || ''),
+          unit: String(item.unit || ''),
+          batchNo: String(item.batchNo || ''),
+          quantity: Number(item.quantity || 0),
+          quantityUnit: String(item.quantityUnit || ''),
+          pieceWeightTon: Number(item.pieceWeightTon || 0),
+          piecesPerBundle: Number(item.piecesPerBundle || 0),
+          weightTon: Number(item.weightTon || 0),
+          weighWeightTon: item.weighWeightTon,
+          weightAdjustmentTon: item.weightAdjustmentTon,
+          weightAdjustmentAmount: item.weightAdjustmentAmount,
+          unitPrice: Number(item.unitPrice || 0),
+          amount: Number(item.amount || 0),
+        })),
+      )
+      const purchaseAmount = items.reduce((sum, item) => sum + Number(item.amount || 0), 0)
+      await saveBusinessModule('supplier-statements', {
+        statementNo: await generateBusinessPrimaryNo('supplier-statements'),
+        sourceInboundNos: sourceRecords.map((record) => String(record.inboundNo || '')).filter(Boolean).join(', '),
+        supplierName: String(firstRecord.supplierName || ''),
+        startDate,
+        endDate,
+        purchaseAmount,
+        paymentAmount: 0,
+        closingAmount: purchaseAmount,
+        status: '待确认',
+        remark: '',
+        items,
+      })
+    } else {
+      const firstRecord = sourceRecords[0]
+      const items = sourceRecords.flatMap((record) =>
+        (Array.isArray(record.items) ? record.items : []).map((item) => ({
+          sourceNo: String(record.billNo || item.sourceNo || ''),
+          customerName: String(item.customerName || record.customerName || ''),
+          projectName: String(item.projectName || record.projectName || ''),
+          materialCode: String(item.materialCode || ''),
+          materialName: String(item.materialName || item.brand || ''),
+          brand: String(item.brand || ''),
+          category: String(item.category || ''),
+          material: String(item.material || ''),
+          spec: String(item.spec || ''),
+          length: String(item.length || ''),
+          quantity: Number(item.quantity || 0),
+          quantityUnit: String(item.quantityUnit || ''),
+          pieceWeightTon: Number(item.pieceWeightTon || 0),
+          piecesPerBundle: Number(item.piecesPerBundle || 0),
+          batchNo: String(item.batchNo || ''),
+          weightTon: Number(item.weightTon || 0),
+          warehouseName: String(item.warehouseName || ''),
+        })),
+      )
+      await saveBusinessModule('freight-statements', {
+        statementNo: await generateBusinessPrimaryNo('freight-statements'),
+        sourceBillNos: sourceRecords.map((record) => String(record.billNo || '')).filter(Boolean).join(', '),
+        carrierName: String(firstRecord.carrierName || ''),
+        startDate,
+        endDate,
+        totalWeight: items.reduce((sum, item) => sum + Number(item.weightTon || 0), 0),
+        totalFreight: sourceRecords.reduce((sum, record) => sum + Number(record.totalFreight || 0), 0),
+        paidAmount: 0,
+        unpaidAmount: sourceRecords.reduce((sum, record) => sum + Number(record.totalFreight || 0), 0),
+        status: '待审核',
+        signStatus: '未签署',
+        remark: '',
+        items,
+      })
+    }
+    await refreshModuleQueries()
+  }, [refreshModuleQueries])
 
   if (!config) {
     return <Empty description={`模块配置未找到: ${moduleKey}`} style={{ marginTop: 96 }} />
@@ -407,6 +729,8 @@ function BusinessGridPage({ pageDef }: { pageDef: AppPageDefinition }) {
         <ModuleEditorWorkspace
           open={editorOpen} config={config} record={editRecord}
           moduleKey={moduleKey}
+          canSave={editRecord ? canUpdateRecord : canCreateRecord}
+          canAudit={canAuditRecord}
           onClose={() => { setEditorOpen(false); setEditRecord(null) }}
           onSaved={() => { setSelectedRowKeys([]); setSelectedRowMap({}) }}
         />

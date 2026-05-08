@@ -39,6 +39,8 @@ interface Props {
   config: ModulePageConfig
   record: ModuleRecord | null
   moduleKey: string
+  canSave: boolean
+  canAudit: boolean
   onClose: () => void
   onSaved: () => void
 }
@@ -71,7 +73,16 @@ function normalizeRecordForEditor(
   return normalized
 }
 
-export function ModuleEditorWorkspace({ open, config, record, moduleKey, onClose, onSaved }: Props) {
+export function ModuleEditorWorkspace({
+  open,
+  config,
+  record,
+  moduleKey,
+  canSave,
+  canAudit,
+  onClose,
+  onSaved,
+}: Props) {
   const [form] = Form.useForm()
   const [saving, setSaving] = useState(false)
   const [parentSelectorOpen, setParentSelectorOpen] = useState(false)
@@ -86,8 +97,6 @@ export function ModuleEditorWorkspace({ open, config, record, moduleKey, onClose
   const { warehouses } = useMasterOptions()
 
   const isEdit = !!record
-  const canSave = isEdit ? true : true // TODO: permission check
-  const canAudit = canSave
   const canManageItems = Boolean(config.itemColumns?.length)
   const canAddManualItems = canManageItems && moduleKey !== 'invoice-issues' && moduleKey !== 'freight-bills'
   const canImportParentItems = Boolean(config.parentImport && canManageItems)
