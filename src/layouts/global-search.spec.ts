@@ -6,8 +6,8 @@ import {
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
 const testPageConfigs: Record<string, ModulePageConfig> = {
-  'purchase-orders': {
-    key: 'purchase-orders',
+  'purchase-order': {
+    key: 'purchase-order',
     title: '采购订单',
     kicker: '',
     description: '',
@@ -18,8 +18,8 @@ const testPageConfigs: Record<string, ModulePageConfig> = {
     data: [],
     buildOverview: () => [],
   },
-  'sales-orders': {
-    key: 'sales-orders',
+  'sales-order': {
+    key: 'sales-order',
     title: '销售订单',
     kicker: '',
     description: '',
@@ -55,9 +55,9 @@ describe('searchAccessibleModules', () => {
 
     const results = await searchAccessibleModules({
       keyword: '1001',
-      moduleKeys: ['purchase-orders', 'sales-orders'],
+      moduleKeys: ['purchase-order', 'sales-order'],
       pageConfigs: testPageConfigs,
-      canAccessModule: (moduleKey) => moduleKey !== 'sales-orders',
+      canAccessModule: (moduleKey) => moduleKey !== 'sales-order',
       searchModule: async () => ({
         data: { rows: [purchaseRecord] },
       }),
@@ -67,7 +67,7 @@ describe('searchAccessibleModules', () => {
 
     expect(results).toHaveLength(1)
     expect(results[0]).toMatchObject({
-      moduleKey: 'purchase-orders',
+      moduleKey: 'purchase-order',
       primaryNo: 'PO-001',
       trackId: '1001',
       matchedByTrackId: true,

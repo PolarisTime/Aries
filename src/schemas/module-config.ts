@@ -15,7 +15,9 @@ const moduleFormFieldDefinitionSchema = z.object({
   type: z.string(),
   required: z.boolean().optional(),
   placeholder: z.string().optional(),
-  options: z.array(z.object({ label: z.string(), value: z.unknown() })).optional(),
+  options: z
+    .array(z.object({ label: z.string(), value: z.unknown() }))
+    .optional(),
 })
 
 export const modulePageConfigSchema = z.object({
@@ -29,6 +31,10 @@ export const modulePageConfigSchema = z.object({
   readOnly: z.boolean().optional(),
 })
 
-export type ModuleColumnDefinition = z.infer<typeof moduleColumnDefinitionSchema>
-export type ModuleFormFieldDefinition = z.infer<typeof moduleFormFieldDefinitionSchema>
+export type ModuleColumnDefinition = z.infer<
+  typeof moduleColumnDefinitionSchema
+>
+export type ModuleFormFieldDefinition = z.infer<
+  typeof moduleFormFieldDefinitionSchema
+>
 export type ModulePageConfig = z.infer<typeof modulePageConfigSchema>

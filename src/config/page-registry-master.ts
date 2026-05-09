@@ -1,0 +1,58 @@
+import type { AppPageDefinition } from '@/config/page-registry-types'
+
+export const masterPageDefinitions: AppPageDefinition[] = [
+  {
+    key: 'material',
+    title: '商品资料',
+    menuKey: '/material',
+    view: 'business-grid',
+    icon: 'DatabaseOutlined',
+    menuParent: 'master',
+    moduleKey: 'material',
+  },
+  {
+    key: 'material-categories',
+    title: '商品类别',
+    menuKey: '/material-categories',
+    view: 'business-grid',
+    icon: 'TagsOutlined',
+    menuParent: 'master',
+    moduleKey: 'material-categories',
+  },
+  {
+    key: 'supplier',
+    title: '供应商资料',
+    menuKey: '/supplier',
+    view: 'business-grid',
+    icon: 'TeamOutlined',
+    menuParent: 'master',
+    moduleKey: 'supplier',
+  },
+  {
+    key: 'customer',
+    title: '客户资料',
+    menuKey: '/customer',
+    view: 'business-grid',
+    icon: 'UserOutlined',
+    menuParent: 'master',
+    moduleKey: 'customer',
+  },
+  {
+    key: 'carrier',
+    title: '物流方资料',
+    menuKey: '/carrier',
+    view: 'business-grid',
+    icon: 'CarOutlined',
+    menuParent: 'master',
+    moduleKey: 'carrier',
+  },
+  {
+    key: 'warehouse',
+    title: '仓库资料',
+    menuKey: '/warehouse',
+    view: 'business-grid',
+    icon: 'BankOutlined',
+    menuParent: 'master',
+    moduleKey: 'warehouse',
+  },
+]

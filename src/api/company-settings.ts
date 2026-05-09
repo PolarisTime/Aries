@@ -29,7 +29,9 @@ interface CompanyResponse<T> {
   data: T
 }
 
-function normalizeProfile(record: Record<string, unknown> | null | undefined): CompanySettingProfile | null {
+function normalizeProfile(
+  record: Record<string, unknown> | null | undefined,
+): CompanySettingProfile | null {
   if (!record) return null
   return {
     id: String(record.id || ''),
@@ -40,17 +42,17 @@ function normalizeProfile(record: Record<string, unknown> | null | undefined): C
     taxRate: Number(record.taxRate || 0),
     settlementAccounts: Array.isArray(record.settlementAccounts)
       ? record.settlementAccounts.map((item) => {
-        const row = item as Record<string, unknown>
-        return {
-          id: row.id == null ? '' : String(row.id),
-          accountName: String(row.accountName || ''),
-          bankName: String(row.bankName || ''),
-          bankAccount: String(row.bankAccount || ''),
-          usageType: String(row.usageType || '通用'),
-          status: String(row.status || '正常'),
-          remark: String(row.remark || ''),
-        }
-      })
+          const row = item as Record<string, unknown>
+          return {
+            id: row.id == null ? '' : String(row.id),
+            accountName: String(row.accountName || ''),
+            bankName: String(row.bankName || ''),
+            bankAccount: String(row.bankAccount || ''),
+            usageType: String(row.usageType || '通用'),
+            status: String(row.status || '正常'),
+            remark: String(row.remark || ''),
+          }
+        })
       : [],
     status: String(record.status || '正常'),
     remark: String(record.remark || ''),
@@ -59,15 +61,22 @@ function normalizeProfile(record: Record<string, unknown> | null | undefined): C
 
 export async function getCompanySettingProfile() {
   const response = assertApiSuccess(
-    await http.get<CompanyResponse<Record<string, unknown> | null>>(ENDPOINTS.COMPANY_SETTINGS_CURRENT),
+    await http.get<CompanyResponse<Record<string, unknown> | null>>(
+      ENDPOINTS.COMPANY_SETTINGS_CURRENT,
+    ),
     '加载公司信息失败',
   )
   return normalizeProfile(response.data)
 }
 
-export async function saveCompanySettingProfile(payload: Omit<CompanySettingProfile, 'id'>) {
+export async function saveCompanySettingProfile(
+  payload: Omit<CompanySettingProfile, 'id'>,
+) {
   const response = assertApiSuccess(
-    await http.put<CompanyResponse<Record<string, unknown>>>(ENDPOINTS.COMPANY_SETTINGS_CURRENT, payload),
+    await http.put<CompanyResponse<Record<string, unknown>>>(
+      ENDPOINTS.COMPANY_SETTINGS_CURRENT,
+      payload,
+    ),
     '保存公司信息失败',
   )
   return normalizeProfile(response.data)

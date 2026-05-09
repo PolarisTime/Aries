@@ -46,15 +46,25 @@ export function getInvoiceIssueItemMaxAmount(item: ModuleLineItem) {
   if (explicitMax !== undefined && explicitMax !== null && explicitMax !== '') {
     return roundNumber(explicitMax, 2)
   }
-  return calculateLineAmount(getInvoiceIssueItemMaxWeightTon(item), toSafeNumber(item.unitPrice))
+  return calculateLineAmount(
+    getInvoiceIssueItemMaxWeightTon(item),
+    toSafeNumber(item.unitPrice),
+  )
 }
 
-function buildWeightOnlyPartialAllocation(maxWeightTon: number, unitPrice: number, remainingAmount: number) {
+function buildWeightOnlyPartialAllocation(
+  maxWeightTon: number,
+  unitPrice: number,
+  remainingAmount: number,
+) {
   if (maxWeightTon <= 0 || unitPrice <= 0 || remainingAmount <= 0) {
     return { quantity: 0, amount: 0, weightTon: 0 }
   }
 
-  let weightTon = Math.min(roundNumber(remainingAmount / unitPrice, 3), maxWeightTon)
+  let weightTon = Math.min(
+    roundNumber(remainingAmount / unitPrice, 3),
+    maxWeightTon,
+  )
   let amount = calculateLineAmount(weightTon, unitPrice)
 
   while (weightTon > 0 && amount > remainingAmount) {
@@ -72,14 +82,25 @@ function buildQuantityBasedPartialAllocation(
   unitPrice: number,
   remainingAmount: number,
 ) {
-  if (maxQuantity <= 0 || maxWeightTon <= 0 || pieceWeightTon <= 0 || unitPrice <= 0 || remainingAmount <= 0) {
+  if (
+    maxQuantity <= 0 ||
+    maxWeightTon <= 0 ||
+    pieceWeightTon <= 0 ||
+    unitPrice <= 0 ||
+    remainingAmount <= 0
+  ) {
     return { quantity: 0, amount: 0, weightTon: 0 }
   }
 
-  const maxQuantityByWeight = Math.min(maxQuantity, Math.floor(maxWeightTon / pieceWeightTon))
+  const maxQuantityByWeight = Math.min(
+    maxQuantity,
+    Math.floor(maxWeightTon / pieceWeightTon),
+  )
   let quantity = Math.min(
     maxQuantityByWeight,
-    Math.floor(remainingAmount / calculateLineAmount(pieceWeightTon, unitPrice)),
+    Math.floor(
+      remainingAmount / calculateLineAmount(pieceWeightTon, unitPrice),
+    ),
   )
 
   while (quantity > 0) {
@@ -94,7 +115,10 @@ function buildQuantityBasedPartialAllocation(
   return { quantity: 0, amount: 0, weightTon: 0 }
 }
 
-export function buildInvoiceIssueAllocation(items: ModuleLineItem[], targetAmount: number) {
+export function buildInvoiceIssueAllocation(
+  items: ModuleLineItem[],
+  targetAmount: number,
+) {
   const totalAvailableAmount = roundNumber(
     items.reduce((sum, item) => sum + getInvoiceIssueItemMaxAmount(item), 0),
     2,
@@ -108,13 +132,19 @@ export function buildInvoiceIssueAllocation(items: ModuleLineItem[], targetAmoun
       amount: getInvoiceIssueItemMaxAmount(item),
     }))
     return {
-      appliedAmount: roundNumber(patches.reduce((sum, item) => sum + item.amount, 0), 2),
+      appliedAmount: roundNumber(
+        patches.reduce((sum, item) => sum + item.amount, 0),
+        2,
+      ),
       normalizedTargetAmount: 0,
       patches,
     } satisfies InvoiceIssueAllocationResult
   }
 
-  let remainingAmount = Math.min(roundNumber(targetAmount, 2), totalAvailableAmount)
+  let remainingAmount = Math.min(
+    roundNumber(targetAmount, 2),
+    totalAvailableAmount,
+  )
   const patches = items.map((item) => {
     const maxQuantity = getInvoiceIssueItemMaxQuantity(item)
     const maxAmount = getInvoiceIssueItemMaxAmount(item)
@@ -122,7 +152,12 @@ export function buildInvoiceIssueAllocation(items: ModuleLineItem[], targetAmoun
     const pieceWeightTon = roundNumber(item.pieceWeightTon, 3)
     const unitPrice = toSafeNumber(item.unitPrice)
 
-    if (remainingAmount <= 0 || maxAmount <= 0 || maxWeightTon <= 0 || unitPrice <= 0) {
+    if (
+      remainingAmount <= 0 ||
+      maxAmount <= 0 ||
+      maxWeightTon <= 0 ||
+      unitPrice <= 0
+    ) {
       return {
         id: String(item.id || ''),
         quantity: 0,
@@ -141,9 +176,20 @@ export function buildInvoiceIssueAllocation(items: ModuleLineItem[], targetAmoun
       }
     }
 
-    const partialAllocation = pieceWeightTon > 0 && maxQuantity > 0
-      ? buildQuantityBasedPartialAllocation(maxQuantity, maxWeightTon, pieceWeightTon, unitPrice, remainingAmount)
-      : buildWeightOnlyPartialAllocation(maxWeightTon, unitPrice, remainingAmount)
+    const partialAllocation =
+      pieceWeightTon > 0 && maxQuantity > 0
+        ? buildQuantityBasedPartialAllocation(
+            maxQuantity,
+            maxWeightTon,
+            pieceWeightTon,
+            unitPrice,
+            remainingAmount,
+          )
+        : buildWeightOnlyPartialAllocation(
+            maxWeightTon,
+            unitPrice,
+            remainingAmount,
+          )
     remainingAmount = roundNumber(remainingAmount - partialAllocation.amount, 2)
     return {
       id: String(item.id || ''),
@@ -153,7 +199,10 @@ export function buildInvoiceIssueAllocation(items: ModuleLineItem[], targetAmoun
     }
   })
 
-  const appliedAmount = roundNumber(patches.reduce((sum, item) => sum + item.amount, 0), 2)
+  const appliedAmount = roundNumber(
+    patches.reduce((sum, item) => sum + item.amount, 0),
+    2,
+  )
   return {
     appliedAmount,
     normalizedTargetAmount: appliedAmount,

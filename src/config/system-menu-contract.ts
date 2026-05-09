@@ -40,9 +40,13 @@ export function validateSystemMenuTree(nodes: MenuNode[]) {
       }
     }
 
-    ;(menu.children || []).forEach((child) => visit(child))
+    for (const child of menu.children || []) {
+      visit(child)
+    }
   }
 
-  nodes.forEach((menu) => visit(menu))
+  for (const menu of nodes) {
+    visit(menu)
+  }
   return issues
 }

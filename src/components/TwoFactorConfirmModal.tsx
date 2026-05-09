@@ -1,5 +1,5 @@
-import { Modal, Input, Flex, Typography } from 'antd'
 import { SafetyCertificateOutlined } from '@ant-design/icons'
+import { Flex, Input, Modal, Typography } from 'antd'
 import { useState } from 'react'
 import { message } from '@/utils/antd-app'
 
@@ -55,7 +55,11 @@ export function TwoFactorConfirmModal({
           请输入身份验证器当前显示的 6 位动态验证码。
         </Typography.Text>
         <Input
-          prefix={<SafetyCertificateOutlined style={{ color: 'rgba(0, 0, 0, 0.45)' }} />}
+          prefix={
+            <SafetyCertificateOutlined
+              style={{ color: 'rgba(0, 0, 0, 0.45)' }}
+            />
+          }
           placeholder="请输入6位TOTP验证码"
           maxLength={6}
           value={code}

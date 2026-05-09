@@ -1,13 +1,13 @@
-import { http, authHttp } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
 import type {
   CaptchaData,
   Login2faPayload,
   LoginPayload,
-  LoginResult,
   LoginResponseData,
+  LoginResult,
 } from '@/types/auth'
+import { authHttp, http } from './client'
 
 export function login(payload: LoginPayload) {
   return http.post<ApiResponse<LoginResult>>(ENDPOINTS.AUTH_LOGIN, {
@@ -23,7 +23,10 @@ export function fetchCaptcha() {
 }
 
 export function login2fa(payload: Login2faPayload) {
-  return http.post<ApiResponse<LoginResponseData>>(ENDPOINTS.AUTH_LOGIN_2FA, payload)
+  return http.post<ApiResponse<LoginResponseData>>(
+    ENDPOINTS.AUTH_LOGIN_2FA,
+    payload,
+  )
 }
 
 export function logout() {
@@ -31,7 +34,10 @@ export function logout() {
 }
 
 export async function refreshSession(): Promise<LoginResponseData> {
-  const response = await authHttp.post<ApiResponse<LoginResponseData>>(ENDPOINTS.AUTH_REFRESH, {})
+  const response = await authHttp.post<ApiResponse<LoginResponseData>>(
+    ENDPOINTS.AUTH_REFRESH,
+    {},
+  )
   return (response.data as ApiResponse<LoginResponseData>).data
 }
 

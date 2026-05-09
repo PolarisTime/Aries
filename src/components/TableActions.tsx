@@ -1,5 +1,6 @@
-import { Button, Popconfirm, Divider } from 'antd'
+import { Button, Divider, Popconfirm } from 'antd'
 import type { ReactNode } from 'react'
+import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
 
 export interface ActionItem {
   key: string
@@ -31,12 +32,17 @@ export function TableActions({ items, maxVisible }: Props) {
         <span key={item.key}>
           {index > 0 && <Divider vertical />}
           {item.confirm ? (
-            <Popconfirm title={item.confirm} onConfirm={item.onClick} okText="确定" cancelText="取消">
+            <Popconfirm
+              title={item.confirm}
+              onConfirm={item.onClick}
+              okText="确定"
+              cancelText="取消"
+            >
               <Button
                 type="link"
                 danger={item.danger}
                 disabled={item.disabled}
-                icon={item.icon}
+                icon={item.icon ?? resolveModuleActionIcon(item.label)}
                 className="table-action-btn"
                 size="small"
               >
@@ -48,7 +54,7 @@ export function TableActions({ items, maxVisible }: Props) {
               type="link"
               danger={item.danger}
               disabled={item.disabled}
-              icon={item.icon}
+              icon={item.icon ?? resolveModuleActionIcon(item.label)}
               onClick={item.onClick}
               className={`table-action-btn ${item.danger ? 'table-action-danger' : ''} ${item.disabled ? 'table-action-disabled' : ''}`}
               size="small"

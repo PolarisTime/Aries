@@ -1,0 +1,194 @@
+import type { QueryValue } from '@/api/module-contracts'
+import {
+  getModuleConfig,
+  type ModuleEndpointConfig,
+} from '@/api/module-contracts'
+import { businessPageConfigs } from '@/config/business-pages'
+import type { ModuleFilterDefinition, ModuleRecord } from '@/types/module-page'
+import type { ListQueryOptions } from '@/utils/list'
+import { FULL_SCAN_PAGE_SIZE } from './business-listing-constants'
+
+export function hasValue(value: unknown) {
+  if (value == null) {
+    return false
+  }
+  if (typeof value === 'string') {
+    return value.trim().length > 0
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0 && value.every(Boolean)
+  }
+  return true
+}
+
+export function isServerFilterKey(
+  endpointConfig: ModuleEndpointConfig,
+  key: string,
+) {
+  return Boolean(
+    endpointConfig.nativeFilterKeys?.includes(key) ||
+      endpointConfig.dateRangeMapping?.[key],
+  )
+}
+
+export function shouldClientFilter(
+  moduleKey: string,
+  search: Record<string, unknown>,
+) {
+  const endpointConfig = getModuleConfig(moduleKey)
+  const keys = Object.keys(search).filter((key) => hasValue(search[key]))
+  return keys.some((key) => !isServerFilterKey(endpointConfig, key))
+}
+
+export function buildFilterParams(
+  moduleKey: string,
+  search: Record<string, unknown>,
+) {
+  const endpointConfig = getModuleConfig(moduleKey)
+  const params: Record<string, QueryValue> = {}
+
+  Object.entries(search).forEach(([key, value]) => {
+    if (!hasValue(value)) {
+      return
+    }
+
+    const dateRangeMapping = endpointConfig.dateRangeMapping?.[key]
+    if (dateRangeMapping && Array.isArray(value) && value.length === 2) {
+      params[dateRangeMapping.startKey] = String(value[0] || '')
+      params[dateRangeMapping.endKey] = String(value[1] || '')
+      return
+    }
+
+    if (isServerFilterKey(endpointConfig, key)) {
+      params[key] = Array.isArray(value) ? value.map(String) : String(value)
+    }
+  })
+
+  return params
+}
+
+export function getUnsupportedFilterKeys(
+  moduleKey: string,
+  search: Record<string, unknown>,
+) {
+  const endpointConfig = getModuleConfig(moduleKey)
+  return Object.keys(search).filter(
+    (key) => hasValue(search[key]) && !isServerFilterKey(endpointConfig, key),
+  )
+}
+
+export function buildQueryParams(
+  moduleKey: string,
+  search: Record<string, unknown>,
+  options: ListQueryOptions,
+  useClientFilter: boolean,
+) {
+  const endpointConfig = getModuleConfig(moduleKey)
+  const params: Record<string, QueryValue> = {
+    ...buildFilterParams(moduleKey, search),
+    page: useClientFilter ? 0 : Math.max(options.currentPage - 1, 0),
+    size: useClientFilter ? FULL_SCAN_PAGE_SIZE : options.pageSize,
+  }
+
+  if (options.sortBy) {
+    params[endpointConfig.sortByParam || 'sortBy'] = options.sortBy
+  }
+
+  if (options.sortDirection) {
+    params[endpointConfig.sortDirectionParam || 'direction'] =
+      options.sortDirection
+  }
+
+  return params
+}
+
+function applyFilterDefinition(
+  record: ModuleRecord,
+  filter: ModuleFilterDefinition,
+  rawValue: unknown,
+) {
+  if (!hasValue(rawValue)) {
+    return true
+  }
+
+  if (filter.type === 'input') {
+    const keyword = String(rawValue || '')
+      .trim()
+      .toLowerCase()
+    if (!keyword) {
+      return true
+    }
+
+    const recordSearchKeys = filter.clientSearchKeys || []
+    const lineItemSearchKeys = filter.clientSearchLineItemKeys || []
+    if (recordSearchKeys.length || lineItemSearchKeys.length) {
+      const matchedRecordField = recordSearchKeys.some((key) =>
+        String(record[key] ?? '')
+          .toLowerCase()
+          .includes(keyword),
+      )
+      if (matchedRecordField) {
+        return true
+      }
+
+      if (!lineItemSearchKeys.length || !Array.isArray(record.items)) {
+        return false
+      }
+
+      return record.items.some((item) =>
+        lineItemSearchKeys.some((key) =>
+          String(item[key] ?? '')
+            .toLowerCase()
+            .includes(keyword),
+        ),
+      )
+    }
+
+    return Object.values(record).some((value) =>
+      String(value ?? '')
+        .toLowerCase()
+        .includes(keyword),
+    )
+  }
+
+  if (filter.type === 'select') {
+    return String(record[filter.key] ?? '') === String(rawValue ?? '')
+  }
+
+  if (
+    filter.type === 'dateRange' &&
+    Array.isArray(rawValue) &&
+    rawValue.length === 2
+  ) {
+    const [start, end] = rawValue
+    const current = String(record[filter.key] ?? '')
+    if (!current || !start || !end) {
+      return true
+    }
+    return current >= String(start) && current <= String(end)
+  }
+
+  return true
+}
+
+export function applyClientFilters(
+  moduleKey: string,
+  rows: ModuleRecord[],
+  search: Record<string, unknown>,
+) {
+  const pageConfig = businessPageConfigs[moduleKey]
+  if (!pageConfig) {
+    return rows
+  }
+
+  return rows.filter((record) =>
+    pageConfig.filters.every((filter) =>
+      applyFilterDefinition(record, filter, search[filter.key]),
+    ),
+  )
+}
+
+export function paginateRows(rows: ModuleRecord[], options: ListQueryOptions) {
+  const start = Math.max(options.currentPage - 1, 0) * options.pageSize
+  return rows.slice(start, start + options.pageSize)
+}

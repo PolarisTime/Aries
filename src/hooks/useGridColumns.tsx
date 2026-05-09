@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
-import { Checkbox } from 'antd'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { StatusTag } from '@/components/StatusTag'
 import { TableActions, type ActionItem } from '@/components/TableActions'
@@ -18,16 +17,12 @@ declare module '@tanstack/react-table' {
 
 interface Props {
   config: ModulePageConfig
-  selectedRowKeys: string[]
-  onSelectionChange: (keys: string[]) => void
   rowActions: (record: ModuleRecord) => ActionItem[]
   canUpdate: boolean
 }
 
 export function useGridColumns({
   config,
-  selectedRowKeys,
-  onSelectionChange,
   rowActions,
   canUpdate,
 }: Props) {
@@ -35,32 +30,6 @@ export function useGridColumns({
 
   const columns = useMemo((): ColumnDef<ModuleRecord>[] => {
     const cols: ColumnDef<ModuleRecord>[] = []
-
-    if (canUpdate) {
-      cols.push({
-        id: 'selection',
-        header: () => (
-          <Checkbox
-            checked={selectedRowKeys.length > 0}
-            onChange={() => onSelectionChange([])}
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={selectedRowKeys.includes(String(row.original.id))}
-            onChange={(e) => {
-              const id = String(row.original.id)
-              if (e.target.checked) {
-                onSelectionChange([...selectedRowKeys, id])
-              } else {
-                onSelectionChange(selectedRowKeys.filter((k) => k !== id))
-              }
-            }}
-          />
-        ),
-        meta: { width: '48px', align: 'center' },
-      })
-    }
 
     for (const colDef of config.columns) {
       cols.push({
@@ -92,7 +61,7 @@ export function useGridColumns({
     }
 
     return cols
-  }, [config, selectedRowKeys, onSelectionChange, rowActions, canUpdate, formatCellValue])
+  }, [config, rowActions, canUpdate, formatCellValue])
 
   return { columns }
 }

@@ -1,17 +1,20 @@
 # Aries Web
 
-Aries 是 Leo ERP 的前端工作台，基于 Vue 3、Vite、TypeScript 和 Ant Design Vue。
+Aries 是 Leo ERP 的 React 前端工作台，基于 `Vite 8 + React 19 + TypeScript + Ant Design 6`。
 
 ## 技术栈
 
-- Vue 3
+- React 19
 - TypeScript
 - Vite 8
-- Pinia
-- Vue Router
+- TanStack Router
 - TanStack Query
-- Ant Design Vue
-- AG Grid
+- Ant Design 6
+- Zustand
+- Day.js
+- Biome
+- Vitest
+- Playwright
 
 ## 本地开发
 
@@ -35,9 +38,18 @@ pnpm dev --host 0.0.0.0
 
 默认通过 `.env.local` 中的 `VITE_PROXY_TARGET` 代理 Leo 后端。
 
+如果需要同时启动前后端，优先在工作区根目录执行：
+
+```bash
+bash scripts/start-local.sh
+```
+
 ## 常用命令
 
 ```bash
+pnpm lint
+pnpm lint:fix
+pnpm format
 pnpm typecheck
 pnpm test:unit
 pnpm build-only
@@ -60,6 +72,13 @@ E2E_LOGIN_NAME=your_user E2E_LOGIN_PASSWORD=your_password pnpm test:e2e
 - `VITE_API_BASE_URL`
 - `VITE_PROXY_TARGET`
 
+## 工程约定
+
+- 使用 `Biome` 统一处理 lint 和 format，不再单独使用 ESLint / Prettier。
+- 使用 `TanStack Query` 管理服务端状态与缓存。
+- 不引入 `ant-design-pro` 脚手架，不切换到 `Umi`。
+- 如需 Pro 风格组件，只局部引入 `@ant-design/pro-components`。
+
 ## 提交前检查
 
 1. 确认 `.env.local` 未被跟踪。
@@ -67,6 +86,7 @@ E2E_LOGIN_NAME=your_user E2E_LOGIN_PASSWORD=your_password pnpm test:e2e
 3. 运行以下检查：
 
 ```bash
+pnpm lint
 pnpm typecheck
 pnpm test:unit
 pnpm build-only

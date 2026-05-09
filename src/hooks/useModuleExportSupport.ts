@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { listAllBusinessModuleRows } from '@/api/business'
 import { message } from '@/utils/antd-app'
 import { exportRecordsToExcel } from '@/utils/export-excel'
@@ -14,7 +14,9 @@ export function useModuleExportSupport(moduleKey: string) {
       message.success('导出成功')
     } catch (err) {
       message.error(err instanceof Error ? err.message : '导出失败')
-    } finally { setExporting(false) }
+    } finally {
+      setExporting(false)
+    }
   }, [moduleKey])
 
   return { exporting, handleExport }

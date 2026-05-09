@@ -22,8 +22,14 @@ interface AccessibleGlobalSearchOptions {
   moduleKeys: string[]
   pageConfigs: Record<string, ModulePageConfig>
   canAccessModule: (moduleKey: string) => boolean
-  searchModule: (moduleKey: string, keyword: string) => Promise<ModuleSearchResponse>
-  lookupRecordById?: (moduleKey: string, id: string) => Promise<ModuleRecord | null>
+  searchModule: (
+    moduleKey: string,
+    keyword: string,
+  ) => Promise<ModuleSearchResponse>
+  lookupRecordById?: (
+    moduleKey: string,
+    id: string,
+  ) => Promise<ModuleRecord | null>
   buildSummary: (record: ModuleRecord) => string
 }
 
@@ -56,7 +62,8 @@ function buildGlobalSearchResult(
   const primaryNo = String(record[config.primaryNoKey || 'id'] || record.id)
   const summary = buildSummary(record)
   const matchedByTrackId = Boolean(trackId && trackId === keyword)
-  const idText = matchedByTrackId && trackId !== primaryNo ? ` | ID ${trackId}` : ''
+  const idText =
+    matchedByTrackId && trackId !== primaryNo ? ` | ID ${trackId}` : ''
 
   return {
     value: `${moduleKey}::${primaryNo || trackId}`,
@@ -70,13 +77,17 @@ function buildGlobalSearchResult(
   } satisfies GlobalSearchResult
 }
 
-export async function searchAccessibleModules(options: AccessibleGlobalSearchOptions) {
+export async function searchAccessibleModules(
+  options: AccessibleGlobalSearchOptions,
+) {
   const normalizedKeyword = options.keyword.trim()
   if (!normalizedKeyword) {
     return []
   }
 
-  const accessibleModuleKeys = options.moduleKeys.filter((moduleKey) => options.canAccessModule(moduleKey))
+  const accessibleModuleKeys = options.moduleKeys.filter((moduleKey) =>
+    options.canAccessModule(moduleKey),
+  )
   const responseList = await Promise.all(
     accessibleModuleKeys.map(async (moduleKey) => {
       try {
@@ -87,7 +98,10 @@ export async function searchAccessibleModules(options: AccessibleGlobalSearchOpt
 
         const rows: ModuleRecord[] = []
         try {
-          const response = await options.searchModule(moduleKey, normalizedKeyword)
+          const response = await options.searchModule(
+            moduleKey,
+            normalizedKeyword,
+          )
           rows.push(...(response.data?.rows || []))
         } catch {
           // A failed keyword search should not block direct trackId lookup below.
@@ -95,7 +109,10 @@ export async function searchAccessibleModules(options: AccessibleGlobalSearchOpt
 
         if (options.lookupRecordById && isLikelyTrackId(normalizedKeyword)) {
           try {
-            const record = await options.lookupRecordById(moduleKey, normalizedKeyword)
+            const record = await options.lookupRecordById(
+              moduleKey,
+              normalizedKeyword,
+            )
             if (record) {
               rows.push(record)
             }
@@ -107,7 +124,9 @@ export async function searchAccessibleModules(options: AccessibleGlobalSearchOpt
         const seenKeys = new Set<string>()
         return rows
           .filter((record) => {
-            const key = String(record.id || record[config.primaryNoKey || 'id'] || '')
+            const key = String(
+              record.id || record[config.primaryNoKey || 'id'] || '',
+            )
             if (!key || seenKeys.has(key)) {
               return false
             }

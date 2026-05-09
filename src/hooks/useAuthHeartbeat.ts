@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { pingAuth } from '@/api/auth'
 import { useAuthStore } from '@/stores/authStore'
+import { logger } from '@/utils/logger'
 
 const HEARTBEAT_INTERVAL = 5 * 60 * 1000
 
@@ -12,8 +13,8 @@ export function useAuthHeartbeat() {
     if (!token) return
 
     timerRef.current = setInterval(() => {
-      pingAuth().catch(() => {
-        // silent fail
+      pingAuth().catch((err) => {
+        logger.warn('Auth heartbeat failed', err)
       })
     }, HEARTBEAT_INTERVAL)
 

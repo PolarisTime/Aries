@@ -50,7 +50,8 @@ const enUS: MessageSchema = {
   },
   dashboard: {
     title: 'Dashboard',
-    subtitle: '{appTitle} now shows the current account and system linkage through a live API summary.',
+    subtitle:
+      '{appTitle} now shows the current account and system linkage through a live API summary.',
     cards: {
       currentUser: 'Current User',
       modules: 'Available Modules',
@@ -60,7 +61,8 @@ const enUS: MessageSchema = {
     notes: {
       currentUser: 'Shows the signed-in account and role.',
       modules: 'Counts accessible modules from current permissions.',
-      sessions: 'Real-time active refresh-token sessions for the current account.',
+      sessions:
+        'Real-time active refresh-token sessions for the current account.',
       lastLogin: 'Latest successful login time.',
     },
     sections: {
@@ -70,7 +72,8 @@ const enUS: MessageSchema = {
     },
     alerts: {
       title: 'Current Focus',
-      description: 'The dashboard now uses a real summary API, and more business snapshots will be added here next.',
+      description:
+        'The dashboard now uses a real summary API, and more business snapshots will be added here next.',
       loadFailed: 'Failed to load dashboard summary. Please try again later.',
     },
     fields: {

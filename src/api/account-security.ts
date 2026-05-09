@@ -26,17 +26,25 @@ function buildTotpHeaders(totpCode: string) {
 }
 
 export async function changeOwnPassword(payload: ChangeOwnPasswordPayload) {
-  const response = await http.post<ApiResponse<null>>(ENDPOINTS.ACCOUNT_PASSWORD, payload)
+  const response = await http.post<ApiResponse<null>>(
+    ENDPOINTS.ACCOUNT_PASSWORD,
+    payload,
+  )
   return assertApiSuccess(response, '修改密码失败')
 }
 
 export async function setupOwn2fa() {
-  const response = await http.post<ApiResponse<TotpSetupResponse>>(ENDPOINTS.ACCOUNT_2FA_SETUP)
+  const response = await http.post<ApiResponse<TotpSetupResponse>>(
+    ENDPOINTS.ACCOUNT_2FA_SETUP,
+  )
   return assertApiSuccess(response, '生成 2FA 二维码失败')
 }
 
 export async function enableOwn2fa(totpCode: string) {
-  const response = await http.post<ApiResponse<CurrentUserSecurityState>>(ENDPOINTS.ACCOUNT_2FA_ENABLE, { totpCode })
+  const response = await http.post<ApiResponse<CurrentUserSecurityState>>(
+    ENDPOINTS.ACCOUNT_2FA_ENABLE,
+    { totpCode },
+  )
   return assertApiSuccess(response, '启用 2FA 失败')
 }
 
@@ -50,6 +58,8 @@ export async function disableOwn2fa(totpCode: string) {
 }
 
 export async function fetchAccountSecurityStatus() {
-  const response = await http.get<ApiResponse<CurrentUserSecurityState>>(ENDPOINTS.ACCOUNT_SECURITY_STATUS)
+  const response = await http.get<ApiResponse<CurrentUserSecurityState>>(
+    ENDPOINTS.ACCOUNT_SECURITY_STATUS,
+  )
   return assertApiSuccess(response, '加载安全状态失败')
 }

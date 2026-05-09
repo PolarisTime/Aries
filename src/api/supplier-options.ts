@@ -1,8 +1,9 @@
-import { http } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
+import { http } from './client'
 
 export interface SupplierOption {
+  id?: string
   value: string
   label: string
 }
@@ -16,8 +17,10 @@ export async function fetchSupplierOptions(): Promise<SupplierOption[]> {
   if (loadingSuppliers) return loadingSuppliers
 
   loadingSuppliers = (async () => {
-    const response = await http.get<ApiResponse<SupplierOption[]>>(ENDPOINTS.SUPPLIERS_OPTIONS)
-    cachedSuppliers = response.data || []
+    const response = await http.get<ApiResponse<SupplierOption[]>>(
+      ENDPOINTS.SUPPLIERS_OPTIONS,
+    )
+    cachedSuppliers = normalizeSupplierOptions(response.data || [])
     fetchFailed = false
     return cachedSuppliers
   })()
@@ -44,4 +47,13 @@ export function reloadSupplierOptions() {
   fetchFailed = false
   loadingSuppliers = null
   return fetchSupplierOptions()
+}
+
+function normalizeSupplierOptions(options: SupplierOption[]): SupplierOption[] {
+  return options.map((option) => ({
+    ...option,
+    id: option.id == null ? undefined : String(option.id),
+    label: String(option.label || ''),
+    value: String(option.value || ''),
+  }))
 }

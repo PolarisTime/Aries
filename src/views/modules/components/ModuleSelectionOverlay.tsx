@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { Drawer, Input, Table } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
+import { Input, Table } from 'antd'
+import { useEffect, useState } from 'react'
 import { searchBusinessModule } from '@/api/business'
 import type { ModuleRecord } from '@/types/module-page'
+import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
   open: boolean
@@ -13,12 +14,25 @@ interface Props {
   onClose: () => void
 }
 
-export function ModuleSelectionOverlay({ open, moduleKey, title = '选择记录', onSelect, onClose }: Props) {
+export function ModuleSelectionOverlay({
+  open,
+  moduleKey,
+  title = '选择记录',
+  onSelect,
+  onClose,
+}: Props) {
   const [keyword, setKeyword] = useState('')
+
+  useEffect(() => {
+    if (!open) {
+      setKeyword('')
+    }
+  }, [open])
 
   const { data: records, isLoading } = useQuery({
     queryKey: ['module-selection', moduleKey, keyword],
-    queryFn: () => searchBusinessModule(moduleKey, keyword, 100),
+    queryFn: ({ signal }) =>
+      searchBusinessModule(moduleKey, keyword, 100, { signal }),
     enabled: open && !!moduleKey,
   })
 
@@ -28,8 +42,16 @@ export function ModuleSelectionOverlay({ open, moduleKey, title = '选择记录'
   ]
 
   return (
-    <Drawer title={title} open={open} onClose={onClose} size={640} destroyOnHidden>
-      <div className="mb-3">
+    <WorkspaceOverlay
+      title={title}
+      open={open}
+      onClose={onClose}
+      variant="workspace"
+      width="min(92vw, 960px)"
+      height="min(82vh, 760px)"
+      zIndex={1100}
+    >
+      <div style={{ marginBottom: 16 }}>
         <Input.Search
           placeholder="搜索..."
           value={keyword}
@@ -43,13 +65,15 @@ export function ModuleSelectionOverlay({ open, moduleKey, title = '选择记录'
         columns={columns}
         dataSource={records}
         loading={isLoading}
-        size="small"
         onRow={(record) => ({
-          onClick: () => { onSelect(record); onClose() },
+          onClick: () => {
+            onSelect(record)
+            onClose()
+          },
           style: { cursor: 'pointer' },
         })}
-        pagination={{ pageSize: 20, size: 'small' }}
+        pagination={{ pageSize: 20 }}
       />
-    </Drawer>
+    </WorkspaceOverlay>
   )
 }

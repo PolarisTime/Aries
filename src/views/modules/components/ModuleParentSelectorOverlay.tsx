@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { Drawer, Input, Table } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
+import { Input, Table } from 'antd'
+import { useEffect, useState } from 'react'
 import { searchBusinessModule } from '@/api/business'
 import type { ModuleRecord } from '@/types/module-page'
+import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
   open: boolean
@@ -15,11 +16,11 @@ interface Props {
 }
 
 const parentDisplayFieldFallbackMap: Record<string, string> = {
-  'purchase-orders': 'orderNo',
-  'purchase-inbounds': 'inboundNo',
-  'sales-orders': 'orderNo',
-  'sales-outbounds': 'outboundNo',
-  'freight-bills': 'billNo',
+  'purchase-order': 'orderNo',
+  'purchase-inbound': 'inboundNo',
+  'sales-order': 'orderNo',
+  'sales-outbound': 'outboundNo',
+  'freight-bill': 'billNo',
 }
 
 export function ModuleParentSelectorOverlay({
@@ -31,11 +32,21 @@ export function ModuleParentSelectorOverlay({
   onClose,
 }: Props) {
   const [keyword, setKeyword] = useState('')
-  const displayFieldKey = parentDisplayFieldKey || parentDisplayFieldFallbackMap[parentModuleKey] || 'id'
+  const displayFieldKey =
+    parentDisplayFieldKey ||
+    parentDisplayFieldFallbackMap[parentModuleKey] ||
+    'id'
+
+  useEffect(() => {
+    if (!open) {
+      setKeyword('')
+    }
+  }, [open])
 
   const { data: records, isLoading } = useQuery({
     queryKey: ['parent-selector', parentModuleKey, keyword],
-    queryFn: () => searchBusinessModule(parentModuleKey, keyword, 50),
+    queryFn: ({ signal }) =>
+      searchBusinessModule(parentModuleKey, keyword, 50, { signal }),
     enabled: open && !!parentModuleKey,
   })
 
@@ -45,8 +56,16 @@ export function ModuleParentSelectorOverlay({
   ]
 
   return (
-    <Drawer title={title} open={open} onClose={onClose} size={680} destroyOnHidden>
-      <div className="mb-3">
+    <WorkspaceOverlay
+      title={title}
+      open={open}
+      onClose={onClose}
+      variant="workspace"
+      width="min(92vw, 980px)"
+      height="min(82vh, 760px)"
+      zIndex={1100}
+    >
+      <div style={{ marginBottom: 16 }}>
         <Input.Search
           placeholder="搜索单据号..."
           value={keyword}
@@ -60,13 +79,15 @@ export function ModuleParentSelectorOverlay({
         columns={columns}
         dataSource={records}
         loading={isLoading}
-        size="small"
         onRow={(record) => ({
-          onClick: () => { onSelect(record); onClose() },
+          onClick: () => {
+            onSelect(record)
+            onClose()
+          },
           style: { cursor: 'pointer' },
         })}
-        pagination={{ pageSize: 15, size: 'small' }}
+        pagination={{ pageSize: 15 }}
       />
-    </Drawer>
+    </WorkspaceOverlay>
   )
 }

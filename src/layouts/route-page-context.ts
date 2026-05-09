@@ -1,5 +1,5 @@
-import { appTitle } from '@/utils/env'
 import { appPageDefinitions } from '@/config/page-registry'
+import { appTitle } from '@/utils/env'
 
 export interface RoutePageContext {
   activeMenuKey: string
@@ -8,10 +8,9 @@ export interface RoutePageContext {
 }
 
 const pageDefinitionByPath = new Map(
-  appPageDefinitions.map((definition) => [
-    normalizePath(definition.menuKey),
-    definition,
-  ] as const),
+  appPageDefinitions.map(
+    (definition) => [normalizePath(definition.menuKey), definition] as const,
+  ),
 )
 
 function normalizePath(pathname: string) {
@@ -25,16 +24,17 @@ export function resolveRoutePageContext(pathname: string): RoutePageContext {
   if (matchedDefinition) {
     return {
       title: matchedDefinition.title,
-      activeMenuKey: matchedDefinition.activeMenuKey || matchedDefinition.menuKey,
+      activeMenuKey:
+        matchedDefinition.activeMenuKey || matchedDefinition.menuKey,
       openPageKey: matchedDefinition.openPageKey || matchedDefinition.menuKey,
     }
   }
 
-  if (normalizedPath.startsWith('/api-key-management/')) {
+  if (normalizedPath.startsWith('/api-key/')) {
     return {
       title: 'API Key 详情',
-      activeMenuKey: '/api-key-management',
-      openPageKey: '/api-key-management',
+      activeMenuKey: '/api-key',
+      openPageKey: '/api-key',
     }
   }
 

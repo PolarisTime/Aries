@@ -8,11 +8,12 @@ function createOptionList(values: readonly string[]) {
 }
 
 const materialCategoryValues = ['螺纹钢', '盘螺', '线材'] as const
-const materialCategoryFallbackOptions: MaterialCategoryOption[] = materialCategoryValues.map((value) => ({
-  label: value,
-  value,
-  purchaseWeighRequired: value === '盘螺' || value === '线材',
-}))
+const materialCategoryFallbackOptions: MaterialCategoryOption[] =
+  materialCategoryValues.map((value) => ({
+    label: value,
+    value,
+    purchaseWeighRequired: value === '盘螺' || value === '线材',
+  }))
 
 let _categoryOptions: MaterialCategoryOption[] = materialCategoryFallbackOptions
 let categoryOptionsLoading = false
@@ -45,9 +46,10 @@ export function isPurchaseWeighRequiredCategory(category: unknown) {
   if (!normalized) {
     return false
   }
-  return _categoryOptions.some((option) =>
-    String(option.value || '').trim() === normalized
-    && Boolean(option.purchaseWeighRequired),
+  return _categoryOptions.some(
+    (option) =>
+      String(option.value || '').trim() === normalized &&
+      Boolean(option.purchaseWeighRequired),
   )
 }
 
@@ -55,7 +57,10 @@ export { materialCategoryFallbackOptions }
 
 import { fetchMaterialCategories } from '@/api/material-categories'
 
-const materialGradeFallbackOptions = createOptionList(['HRB400', 'HRB500'] as const)
+const materialGradeFallbackOptions = createOptionList([
+  'HRB400',
+  'HRB500',
+] as const)
 
 let _gradeOptions = materialGradeFallbackOptions
 let gradeOptionsLoading = false
@@ -98,7 +103,6 @@ export function getSupplierOptions() {
 
 export { supplierFallbackOptions }
 
-
 const customerFallbackOptions: ReturnType<typeof createOptionList> = []
 
 const _customerOptions = customerFallbackOptions
@@ -120,7 +124,6 @@ export function getCustomerOptions() {
 export function getCustomerProjectOptions(form?: Record<string, unknown>) {
   return apiGetCustomerProjectOptions(form)
 }
-
 
 const carrierFallbackOptions: ReturnType<typeof createOptionList> = []
 
@@ -144,7 +147,6 @@ export function getCarrierVehiclePlateOptions(form?: Record<string, unknown>) {
   return apiGetCarrierVehiclePlateOptions(form)
 }
 
-
 const warehouseFallbackOptions = createOptionList(['一号库', '二号库'] as const)
 
 const _warehouseOptions = warehouseFallbackOptions
@@ -160,21 +162,42 @@ export function getWarehouseOptions() {
   return dynamic.length > 0 ? dynamic : _warehouseOptions
 }
 
-
 export const enabledStatusValues = ['正常', '禁用'] as const
 export const enabledStatusOptions = createOptionList(enabledStatusValues)
 
 export const statementStatusValues = ['待确认', '已确认'] as const
 export const statementStatusOptions = createOptionList(statementStatusValues)
 
-export const userAccountDataScopeValues = ['全部数据', '全部', '本部门', '本人'] as const
-export const userAccountDataScopeOptions = createOptionList(userAccountDataScopeValues)
+export const userAccountDataScopeValues = [
+  '全部数据',
+  '全部',
+  '本部门',
+  '本人',
+] as const
+export const userAccountDataScopeOptions = createOptionList(
+  userAccountDataScopeValues,
+)
 
-export const flexibleUserAccountDataScopeValues = ['全部数据', '全部', '本部门', '本人'] as const
-export const roleDataScopeValues = ['全部数据', '全部', '本部门', '本人'] as const
+export const flexibleUserAccountDataScopeValues = [
+  '全部数据',
+  '全部',
+  '本部门',
+  '本人',
+] as const
+export const roleDataScopeValues = [
+  '全部数据',
+  '全部',
+  '本部门',
+  '本人',
+] as const
 export const roleDataScopeOptions = createOptionList(roleDataScopeValues)
 
-export const roleTypeValues = ['平台角色', '系统角色', '业务角色', '财务角色'] as const
+export const roleTypeValues = [
+  '平台角色',
+  '系统角色',
+  '业务角色',
+  '财务角色',
+] as const
 export const roleTypeOptions = createOptionList(roleTypeValues)
 
 export function buildValueOptions(...values: string[]) {

@@ -17,5 +17,9 @@ export const pagedResultSchema = <T extends z.ZodType>(itemSchema: T) =>
 export const tableResponseSchema = <T extends z.ZodType>(itemSchema: T) =>
   apiResponseSchema(pagedResultSchema(itemSchema))
 
-export type ApiResponse<T> = z.infer<ReturnType<typeof apiResponseSchema<z.ZodType<T>>>>
-export type PagedResult<T> = z.infer<ReturnType<typeof pagedResultSchema<z.ZodType<T>>>>
+export type ApiResponse<T> = z.infer<
+  ReturnType<typeof apiResponseSchema<z.ZodType<T>>>
+>
+export type PagedResult<T> = z.infer<
+  ReturnType<typeof pagedResultSchema<z.ZodType<T>>>
+>

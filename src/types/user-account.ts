@@ -3,7 +3,7 @@ export interface UserAccountRecord {
   loginName: string
   userName: string
   mobile: string | null
-  departmentId: string | number | null
+  departmentId: string | null
   departmentName: string | null
   roleNames: string[]
   dataScope: string | null
@@ -19,7 +19,7 @@ export interface UserAccountFormPayload {
   password?: string
   userName: string
   mobile: string
-  departmentId?: string | number | null
+  departmentId?: string | null
   roleNames: string[]
   dataScope: string
   permissionSummary: string
@@ -48,7 +48,7 @@ export interface RoleOptionRecord {
 }
 
 export interface DepartmentOptionRecord {
-  id: string | number
+  id: string
   departmentCode: string
   departmentName: string
 }

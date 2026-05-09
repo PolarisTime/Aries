@@ -2,8 +2,8 @@ import {
   AccountBookOutlined,
   ApartmentOutlined,
   AppstoreOutlined,
-  BarChartOutlined,
   BankOutlined,
+  BarChartOutlined,
   CalculatorOutlined,
   CarOutlined,
   CreditCardOutlined,
@@ -67,7 +67,5 @@ export function resolveAppIcon(iconKey: AppIconKey): ComponentType {
 export function isKnownAppIconKey(
   iconKey: string | null | undefined,
 ): iconKey is AppIconKey {
-  return Boolean(
-    iconKey && Object.prototype.hasOwnProperty.call(appIconMap, iconKey),
-  )
+  return Boolean(iconKey && Object.hasOwn(appIconMap, iconKey))
 }

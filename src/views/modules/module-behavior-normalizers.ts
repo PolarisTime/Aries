@@ -1,0 +1,103 @@
+import { registerModuleBehavior } from '@/views/modules/module-behavior-registry-core'
+import {
+  collectUniqueSourceNos,
+} from '@/views/modules/module-behavior-registry-utils'
+
+registerModuleBehavior('freight-bill', {
+  normalizeDraftRecord(record, items, ctx) {
+    const firstSourceItem = items.find((item) =>
+      String(item.sourceNo || '').trim(),
+    )
+    const firstCustomerItem = items.find((item) =>
+      String(item.customerName || '').trim(),
+    )
+    const firstProjectItem = items.find((item) =>
+      String(item.projectName || '').trim(),
+    )
+    if (!record.outboundNo && firstSourceItem) {
+      record.outboundNo = firstSourceItem.sourceNo
+    }
+    if (!record.customerName && firstCustomerItem) {
+      record.customerName = firstCustomerItem.customerName
+    }
+    if (!record.projectName && firstProjectItem) {
+      record.projectName = firstProjectItem.projectName
+    }
+    record.totalWeight = Number(
+      ctx.sumLineItemsBy(items, 'weightTon').toFixed(3),
+    )
+    record.totalFreight = Number(
+      (Number(record.unitPrice || 0) * Number(record.totalWeight || 0)).toFixed(
+        2,
+      ),
+    )
+    if (!record.deliveryStatus) {
+      record.deliveryStatus = '未送达'
+    }
+  },
+})
+
+registerModuleBehavior('freight-statement', {
+  normalizeDraftRecord(record, items, ctx) {
+    if (items.length) {
+      record.totalWeight = Number(
+        ctx.sumLineItemsBy(items, 'weightTon').toFixed(3),
+      )
+    }
+    record.unpaidAmount = Number(
+      (
+        Number(record.totalFreight || 0) - Number(record.paidAmount || 0)
+      ).toFixed(2),
+    )
+    if (Array.isArray(record.attachments)) {
+      record.attachment = record.attachments
+        .map((item) => String((item as Record<string, unknown>).name || ''))
+        .filter(Boolean)
+        .join(', ')
+    }
+  },
+})
+
+registerModuleBehavior('supplier-statement', {
+  normalizeDraftRecord(record, items, ctx) {
+    if (items.length) {
+      record.purchaseAmount = Number(
+        ctx.sumLineItemsBy(items, 'amount').toFixed(2),
+      )
+      record.sourceInboundNos = collectUniqueSourceNos(items)
+    }
+    record.paymentAmount = Number(record.paymentAmount || 0)
+    record.closingAmount = Number(Number(record.purchaseAmount || 0).toFixed(2))
+  },
+})
+
+registerModuleBehavior('customer-statement', {
+  normalizeDraftRecord(record, items, ctx) {
+    if (items.length) {
+      record.salesAmount = Number(
+        ctx.sumLineItemsBy(items, 'amount').toFixed(2),
+      )
+      record.sourceOrderNos = collectUniqueSourceNos(items)
+    }
+    record.receiptAmount = Number(record.receiptAmount || 0)
+    record.closingAmount = Number(Number(record.salesAmount || 0).toFixed(2))
+  },
+})
+
+registerModuleBehavior('invoice-receipt', {
+  normalizeDraftRecord(record, items, ctx) {
+    if (items.length) {
+      record.amount = Number(ctx.sumLineItemsBy(items, 'amount').toFixed(2))
+      record.sourcePurchaseOrderNos = collectUniqueSourceNos(items)
+    }
+  },
+})
+
+registerModuleBehavior('invoice-issue', {
+  normalizeDraftRecord(record, items, ctx) {
+    if (items.length) {
+      record.amount = Number(ctx.sumLineItemsBy(items, 'amount').toFixed(2))
+      record.sourceSalesOrderNos = collectUniqueSourceNos(items)
+    }
+  },
+})

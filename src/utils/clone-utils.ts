@@ -1,7 +1,7 @@
 import type { ModuleLineItem } from '@/types/module-page'
 
 export function cloneRecord<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T
+  return structuredClone(value)
 }
 
 export function cloneLineItems(value: unknown): ModuleLineItem[] {
@@ -11,7 +11,10 @@ export function cloneLineItems(value: unknown): ModuleLineItem[] {
   return cloneRecord(value) as ModuleLineItem[]
 }
 
-export function resetReactiveObject(target: Record<string, unknown>, next: Record<string, unknown>) {
+export function resetReactiveObject(
+  target: Record<string, unknown>,
+  next: Record<string, unknown>,
+) {
   Object.keys(target).forEach((key) => {
     delete target[key]
   })

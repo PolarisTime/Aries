@@ -24,7 +24,7 @@ interface BuildLayoutMenuOptions {
   menuGroupOrder: MenuGroupKey[]
   systemMenuTree: MenuNode[]
   userCanAccessEntry: (entry: AppPageDefinition) => boolean
-  userCanAccessMenuCode: (menuCode: string) => boolean
+  userCanAccessMenuCode: (resourceCode: string | null, menuCode: string) => boolean
 }
 
 function resolveEntryPath(entry: AppPageDefinition) {
@@ -43,9 +43,9 @@ function buildStaticFallbackMenuTree(
 ): LayoutMenuEntry[] {
   const topLevelMenuEntries = options.appPageDefinitions.filter(
     (entry) =>
-      !entry.menuParent
-      && !entry.hiddenInMenu
-      && options.userCanAccessEntry(entry),
+      !entry.menuParent &&
+      !entry.hiddenInMenu &&
+      options.userCanAccessEntry(entry),
   )
   const menuGroups = options.menuGroupOrder
     .map((groupKey) => ({
@@ -91,7 +91,7 @@ function buildLayoutMenuEntry(
 
   const canAccessCurrent = matchedPage
     ? !matchedPage.hiddenInMenu && options.userCanAccessEntry(matchedPage)
-    : options.userCanAccessMenuCode(node.menuCode)
+    : options.userCanAccessMenuCode(node.resourceCode, node.menuCode)
 
   if (!canAccessCurrent && children.length === 0) {
     return null
@@ -125,10 +125,10 @@ function appendAliasEntries(
 
   const aliasEntries = options.appPageDefinitions.filter(
     (entry) =>
-      Array.isArray(entry.accessMenuKeys) &&
-      entry.accessMenuKeys.length > 0 &&
       !entry.hiddenInMenu &&
-      options.userCanAccessEntry(entry),
+      options.userCanAccessEntry(entry) &&
+      ((Array.isArray(entry.accessMenuKeys) && entry.accessMenuKeys.length > 0) ||
+       (Array.isArray(entry.accessResources) && entry.accessResources.length > 0)),
   )
 
   aliasEntries.forEach((entry) => {

@@ -1,6 +1,7 @@
-import { Drawer, Table, Tag } from 'antd'
 import { useQuery } from '@tanstack/react-query'
+import { Table, Tag } from 'antd'
 import { listAllBusinessModuleRows } from '@/api/business'
+import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
   open: boolean
@@ -8,10 +9,14 @@ interface Props {
   onClose: () => void
 }
 
-export function ModuleFreightPickupListOverlay({ open, moduleKey, onClose }: Props) {
+export function ModuleFreightPickupListOverlay({
+  open,
+  moduleKey,
+  onClose,
+}: Props) {
   const { data: records, isLoading } = useQuery({
     queryKey: ['freight-pickup', moduleKey],
-    queryFn: () => listAllBusinessModuleRows('freight-bills', {}),
+    queryFn: () => listAllBusinessModuleRows('freight-bill', {}),
     enabled: open,
   })
 
@@ -21,13 +26,24 @@ export function ModuleFreightPickupListOverlay({ open, moduleKey, onClose }: Pro
     { dataIndex: 'vehiclePlate', title: '车牌号' },
     { dataIndex: 'totalWeight', title: '总重量(吨)' },
     {
-      dataIndex: 'status', title: '状态',
-      render: (v: string) => <Tag color={v === 'delivered' ? 'green' : 'processing'}>{v}</Tag>,
+      dataIndex: 'status',
+      title: '状态',
+      render: (v: string) => (
+        <Tag color={v === 'delivered' ? 'green' : 'processing'}>{v}</Tag>
+      ),
     },
   ]
 
   return (
-    <Drawer title="提货清单" open={open} onClose={onClose} size={800} destroyOnHidden>
+    <WorkspaceOverlay
+      title="提货清单"
+      open={open}
+      onClose={onClose}
+      variant="workspace"
+      width="min(94vw, 1120px)"
+      height="min(84vh, 780px)"
+      zIndex={1050}
+    >
       <Table
         rowKey="id"
         columns={columns}
@@ -36,6 +52,6 @@ export function ModuleFreightPickupListOverlay({ open, moduleKey, onClose }: Pro
         size="small"
         pagination={{ pageSize: 20 }}
       />
-    </Drawer>
+    </WorkspaceOverlay>
   )
 }

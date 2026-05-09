@@ -1,0 +1,128 @@
+import {
+  enabledStatusOptions,
+  userAccountDataScopeOptions,
+} from '@/constants/module-options'
+import type { ModulePageConfig } from '@/types/module-page'
+import { buildMasterOverview, statusMap } from './shared'
+
+export const permissionManagementPageConfig: ModulePageConfig = {
+  key: 'permission',
+  title: '权限管理',
+  kicker: 'System',
+  description:
+    '权限管理页面展示系统菜单和操作权限定义，权限分配请通过「角色权限配置」页面操作。',
+  readOnly: true,
+  actions: [{ label: '导出', type: 'primary' }],
+  filters: [
+    {
+      key: 'keyword',
+      label: '关键字',
+      type: 'input',
+      placeholder: '权限编码 / 名称 / 模块',
+    },
+    {
+      key: 'status',
+      label: '状态',
+      type: 'select',
+      options: enabledStatusOptions,
+    },
+  ],
+  columns: [
+    { title: '权限编码', dataIndex: 'permissionCode', width: 150 },
+    { title: '权限名称', dataIndex: 'permissionName', width: 180 },
+    { title: '模块', dataIndex: 'moduleName', width: 140 },
+    { title: '权限类型', dataIndex: 'permissionType', width: 110 },
+    { title: '动作', dataIndex: 'actionName', width: 120 },
+    { title: '数据范围', dataIndex: 'scopeName', width: 120 },
+    { title: '资源标识', dataIndex: 'resourceKey', width: 180 },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      width: 100,
+      type: 'status',
+      align: 'center',
+    },
+    { title: '备注', dataIndex: 'remark', width: 220 },
+  ],
+  detailFields: [
+    { label: '权限编码', key: 'permissionCode' },
+    { label: '权限名称', key: 'permissionName' },
+    { label: '模块', key: 'moduleName' },
+    { label: '权限类型', key: 'permissionType' },
+    { label: '动作', key: 'actionName' },
+    { label: '数据范围', key: 'scopeName' },
+    { label: '资源标识', key: 'resourceKey' },
+    { label: '状态', key: 'status', type: 'status' },
+    { label: '备注', key: 'remark' },
+  ],
+  formFields: [
+    {
+      key: 'permissionCode',
+      label: '权限编码',
+      type: 'input',
+      required: true,
+      row: 1,
+    },
+    {
+      key: 'permissionName',
+      label: '权限名称',
+      type: 'input',
+      required: true,
+      row: 1,
+    },
+    { key: 'moduleName', label: '模块', type: 'input', required: true, row: 1 },
+    {
+      key: 'permissionType',
+      label: '权限类型',
+      type: 'select',
+      required: true,
+      row: 1,
+      options: [
+        { label: '菜单权限', value: '菜单权限' },
+        { label: '按钮权限', value: '按钮权限' },
+        { label: '数据权限', value: '数据权限' },
+      ],
+    },
+    {
+      key: 'actionName',
+      label: '动作',
+      type: 'select',
+      required: true,
+      row: 2,
+      options: [
+        { label: '查看', value: '查看' },
+        { label: '新增', value: '新增' },
+        { label: '编辑', value: '编辑' },
+        { label: '删除', value: '删除' },
+        { label: '审核', value: '审核' },
+        { label: '导出', value: '导出' },
+        { label: '打印', value: '打印' },
+      ],
+    },
+    {
+      key: 'scopeName',
+      label: '数据范围',
+      type: 'select',
+      required: true,
+      row: 2,
+      options: [
+        ...userAccountDataScopeOptions,
+        { label: '自定义范围', value: '自定义范围' },
+      ],
+    },
+    { key: 'resourceKey', label: '资源标识', type: 'input', required: true, row: 2 },
+    {
+      key: 'status',
+      label: '状态',
+      type: 'select',
+      defaultValue: '正常',
+      options: enabledStatusOptions,
+      row: 2,
+    },
+    { key: 'remark', label: '备注', type: 'textarea', row: 3, fullRow: true },
+  ],
+  data: [],
+  buildOverview: (rows) => buildMasterOverview(rows),
+  statusMap,
+  rowHighlightStatuses: ['禁用'],
+}

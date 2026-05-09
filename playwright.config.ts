@@ -4,12 +4,16 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, devices } from '@playwright/test'
 
 const configDir = path.dirname(fileURLToPath(import.meta.url))
-const localChromiumLauncher = path.resolve(configDir, 'scripts/local-chromium.sh')
+const localChromiumLauncher = path.resolve(
+  configDir,
+  'scripts/local-chromium.sh',
+)
 const localChromiumBinary = path.resolve(
   configDir,
   '../.local-browser/chromium/usr/lib64/chromium-browser/chromium-browser',
 )
-const hasLocalChromium = fs.existsSync(localChromiumLauncher) && fs.existsSync(localChromiumBinary)
+const hasLocalChromium =
+  fs.existsSync(localChromiumLauncher) && fs.existsSync(localChromiumBinary)
 const e2eBackendMode = process.env.E2E_BACKEND_MODE === 'mock' ? 'mock' : 'real'
 const isRealBackendMode = e2eBackendMode === 'real'
 

@@ -1,15 +1,15 @@
 import { create } from 'zustand'
 import {
   normalizeAction,
-  resolveMenuResource,
   resolveResourceKey,
 } from '@/constants/resource-permissions'
 import type { LoginUser, ResourcePermission } from '@/types/auth'
 
-const READ_ACTION = 'read'
-
 function normalizePermissionKey(value: string | null | undefined) {
-  return String(value || '').replace(/^\/+/, '').trim().toLowerCase()
+  return String(value || '')
+    .replace(/^\/+/, '')
+    .trim()
+    .toLowerCase()
 }
 
 function buildPermissionMap(items: ResourcePermission[] | null | undefined) {
@@ -22,16 +22,20 @@ function buildPermissionMap(items: ResourcePermission[] | null | undefined) {
     }
 
     const nextActions = permissionMap[normalizedResource] || new Set<string>()
-    actions
+    const normalizedActions = actions
       .map((action) => normalizeAction(action))
-      .filter(Boolean)
-      .forEach((action) => nextActions.add(action))
+      .filter((action): action is string => Boolean(action))
+    for (const action of normalizedActions) {
+      nextActions.add(action)
+    }
     permissionMap[normalizedResource] = nextActions
   }
 
   for (const item of items || []) {
     const rawResource = normalizePermissionKey(item.resource)
-    const resolvedResource = normalizePermissionKey(resolveResourceKey(item.resource))
+    const resolvedResource = normalizePermissionKey(
+      resolveResourceKey(item.resource),
+    )
     const actions = Array.isArray(item.actions) ? item.actions.map(String) : []
 
     register(rawResource, actions)
@@ -43,19 +47,17 @@ function buildPermissionMap(items: ResourcePermission[] | null | undefined) {
   return permissionMap
 }
 
-function hasReadPermission(actions: Set<string> | undefined) {
-  return Boolean(actions?.has(READ_ACTION) || actions?.has('*'))
-}
-
 interface PermissionState {
   permissionMap: Record<string, Set<string>>
   dataScopes: Record<string, string>
-  setPermissions: (items: ResourcePermission[], dataScopes?: Record<string, string>) => void
+  setPermissions: (
+    items: ResourcePermission[],
+    dataScopes?: Record<string, string>,
+  ) => void
   syncFromUser: (user: LoginUser | null | undefined) => void
   can: (resource: string, action: string) => boolean
   canAny: (resource: string, actions: string[]) => boolean
   canAll: (resource: string, actions: string[]) => boolean
-  canAccessMenuKey: (menuCode: string) => boolean
   clearPermissions: () => void
 }
 
@@ -106,19 +108,18 @@ export const usePermissionStore = create<PermissionState>((set, get) => ({
     return actions.every((action) => get().can(resource, action))
   },
 
-  canAccessMenuKey: (menuCode) => {
-    const candidates = [
-      normalizePermissionKey(menuCode),
-      normalizePermissionKey(resolveMenuResource(menuCode)),
-      normalizePermissionKey(resolveResourceKey(menuCode)),
-    ].filter(Boolean)
-
-    return candidates.some((candidate) =>
-      hasReadPermission(get().permissionMap[candidate]),
-    )
-  },
-
   clearPermissions: () => {
     set({ permissionMap: {}, dataScopes: {} })
   },
 }))
+
+/** Check accessResources entries — each is "resource" (checks read) or "resource:action". */
+export function checkAccessResources(
+  resources: string[],
+  can: (resource: string, action: string) => boolean,
+) {
+  return resources.some((entry) => {
+    const [resource, action = 'read'] = entry.split(':')
+    return can(resource, action)
+  })
+}

@@ -24,7 +24,9 @@ export const test = base.extend<FatalErrorFixture>({
 
       const text = message.text()
       if (
-        /Maximum update depth exceeded|The above error occurred|TypeError:|ReferenceError:|Minified React error|Cannot read properties of undefined/.test(text)
+        /Maximum update depth exceeded|The above error occurred|TypeError:|ReferenceError:|Minified React error|Cannot read properties of undefined/.test(
+          text,
+        )
       ) {
         fatalErrors.push(`console: ${text}`)
       }

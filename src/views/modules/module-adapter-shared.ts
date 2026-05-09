@@ -47,11 +47,7 @@ export function normalizeStringArray(value: unknown) {
   }
 
   return Array.from(
-    new Set(
-      value
-        .map((item) => String(item || '').trim())
-        .filter(Boolean),
-    ),
+    new Set(value.map((item) => String(item || '').trim()).filter(Boolean)),
   )
 }
 
@@ -66,7 +62,10 @@ export function parseParentRelationNos(value: unknown) {
   )
 }
 
-export function getModuleRecordPrimaryNo(record: ModuleRecord, configuredKey?: string) {
+export function getModuleRecordPrimaryNo(
+  record: ModuleRecord,
+  configuredKey?: string,
+) {
   if (configuredKey && record[configuredKey]) {
     return String(record[configuredKey])
   }
@@ -75,22 +74,26 @@ export function getModuleRecordPrimaryNo(record: ModuleRecord, configuredKey?: s
   return fallbackKey ? String(record[fallbackKey]) : String(record.id)
 }
 
-export function generatePrimaryNo(moduleKey: string, year: string, serial: string) {
+export function generatePrimaryNo(
+  moduleKey: string,
+  year: string,
+  serial: string,
+) {
   const prefixMap: Record<string, string> = {
-    'purchase-orders': 'CG',
-    'purchase-inbounds': 'RK',
-    'sales-orders': 'XS',
-    'sales-outbounds': 'CK',
-    'freight-bills': 'W',
-    'purchase-contracts': 'CGHT',
-    'sales-contracts': 'XSHT',
-    'supplier-statements': 'GYDZ',
-    'customer-statements': 'KHDZ',
-    'freight-statements': 'WDZ',
+    'purchase-order': 'CG',
+    'purchase-inbound': 'RK',
+    'sales-order': 'XS',
+    'sales-outbound': 'CK',
+    'freight-bill': 'W',
+    'purchase-contract': 'CGHT',
+    'sales-contract': 'XSHT',
+    'supplier-statement': 'GYDZ',
+    'customer-statement': 'KHDZ',
+    'freight-statement': 'WDZ',
     receipts: 'SK',
     payments: 'FK',
-    'invoice-receipts': 'SP',
-    'invoice-issues': 'KP',
+    'invoice-receipt': 'SP',
+    'invoice-issue': 'KP',
   }
 
   return `${year}${prefixMap[moduleKey] || 'NO'}${serial}`

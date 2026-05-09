@@ -22,7 +22,10 @@ function normalizeRecord(record: Record<string, unknown>) {
 }
 
 export async function listStatementCandidates(
-  statementModuleKey: 'supplier-statements' | 'customer-statements' | 'freight-statements',
+  statementModuleKey:
+    | 'supplier-statement'
+    | 'customer-statement'
+    | 'freight-statement',
   keyword = '',
   page = 0,
   size = 200,
@@ -51,7 +54,10 @@ export async function listStatementCandidates(
 }
 
 export async function listAllStatementCandidates(
-  statementModuleKey: 'supplier-statements' | 'customer-statements' | 'freight-statements',
+  statementModuleKey:
+    | 'supplier-statement'
+    | 'customer-statement'
+    | 'freight-statement',
   keyword = '',
   pageSize = 200,
 ) {
@@ -60,7 +66,12 @@ export async function listAllStatementCandidates(
   let total = 0
 
   while (true) {
-    const current = await listStatementCandidates(statementModuleKey, keyword, page, pageSize)
+    const current = await listStatementCandidates(
+      statementModuleKey,
+      keyword,
+      page,
+      pageSize,
+    )
     if (page === 0) {
       total = current.total
     }

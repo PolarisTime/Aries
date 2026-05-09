@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   getPersonalSettings,
-  setPersonalSettings,
   type PersonalSettings,
+  setPersonalSettings,
 } from '@/utils/storage'
 
 export type LayoutMode = NonNullable<PersonalSettings['layoutMode']>
@@ -13,47 +13,102 @@ interface UsePersonalSettingsOptions {
   fontSizeCssVar?: string
 }
 
+export function getPersonalControlHeights(fontSize: number) {
+  return {
+    controlHeight: Math.max(32, fontSize + 20),
+    controlHeightSM: Math.max(24, fontSize + 12),
+    controlHeightLG: Math.max(40, fontSize + 28),
+  }
+}
+
+function normalizePersonalSettings(
+  settings: PersonalSettings | null | undefined,
+  defaultFontSize: number,
+  defaultLayoutMode: LayoutMode,
+) {
+  return {
+    fontSize: settings?.fontSize || defaultFontSize,
+    layoutMode:
+      settings?.layoutMode === 'top' || settings?.layoutMode === 'sider'
+        ? settings.layoutMode
+        : defaultLayoutMode,
+  }
+}
+
 function applyPersonalFontSize(fontSize: number, cssVarName: string) {
   if (typeof document === 'undefined') {
     return
   }
+  const { controlHeight, controlHeightSM, controlHeightLG } =
+    getPersonalControlHeights(fontSize)
   document.documentElement.style.setProperty(cssVarName, `${fontSize}px`)
+  document.documentElement.style.setProperty(
+    '--app-control-height',
+    `${controlHeight}px`,
+  )
+  document.documentElement.style.setProperty(
+    '--app-control-height-sm',
+    `${controlHeightSM}px`,
+  )
+  document.documentElement.style.setProperty(
+    '--app-control-height-lg',
+    `${controlHeightLG}px`,
+  )
 }
 
 export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   const defaultFontSize = options.defaultFontSize ?? 12
   const defaultLayoutMode = options.defaultLayoutMode ?? 'top'
   const fontSizeCssVar = options.fontSizeCssVar ?? '--app-font-size'
+  const initialSettings = normalizePersonalSettings(
+    getPersonalSettings(),
+    defaultFontSize,
+    defaultLayoutMode,
+  )
   const [visible, setVisible] = useState(false)
-  const [fontSize, setFontSize] = useState(defaultFontSize)
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>(defaultLayoutMode)
+  const [fontSize, setFontSize] = useState(initialSettings.fontSize)
+  const [appliedFontSize, setAppliedFontSize] = useState(
+    initialSettings.fontSize,
+  )
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(
+    initialSettings.layoutMode,
+  )
+  const [appliedLayoutMode, setAppliedLayoutMode] = useState<LayoutMode>(
+    initialSettings.layoutMode,
+  )
 
-  const applySettings = useCallback((settings: PersonalSettings | null | undefined) => {
-    const nextFontSize = settings?.fontSize || defaultFontSize
-    const nextLayoutMode =
-      settings?.layoutMode === 'top' || settings?.layoutMode === 'sider'
-        ? settings.layoutMode
-        : defaultLayoutMode
-    setFontSize(nextFontSize)
-    setLayoutMode(nextLayoutMode)
-    applyPersonalFontSize(nextFontSize, fontSizeCssVar)
-  }, [defaultFontSize, defaultLayoutMode, fontSizeCssVar])
+  const applySettings = useCallback(
+    (settings: PersonalSettings | null | undefined) => {
+      const normalized = normalizePersonalSettings(
+        settings,
+        defaultFontSize,
+        defaultLayoutMode,
+      )
+      setFontSize(normalized.fontSize)
+      setAppliedFontSize(normalized.fontSize)
+      setLayoutMode(normalized.layoutMode)
+      setAppliedLayoutMode(normalized.layoutMode)
+    },
+    [defaultFontSize, defaultLayoutMode],
+  )
 
   const load = useCallback(() => {
     applySettings(getPersonalSettings())
   }, [applySettings])
 
   useEffect(() => {
-    load()
-  }, [load])
+    applyPersonalFontSize(appliedFontSize, fontSizeCssVar)
+  }, [appliedFontSize, fontSizeCssVar])
 
   const open = useCallback(() => {
     setVisible(true)
   }, [])
 
   const close = useCallback(() => {
+    setFontSize(appliedFontSize)
+    setLayoutMode(appliedLayoutMode)
     setVisible(false)
-  }, [])
+  }, [appliedFontSize, appliedLayoutMode])
 
   const reset = useCallback(() => {
     setFontSize(defaultFontSize)
@@ -61,16 +116,19 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   }, [defaultFontSize, defaultLayoutMode])
 
   const save = useCallback(() => {
-    applyPersonalFontSize(fontSize, fontSizeCssVar)
+    setAppliedFontSize(fontSize)
+    setAppliedLayoutMode(layoutMode)
     setPersonalSettings({ fontSize, layoutMode })
     setVisible(false)
-  }, [fontSize, fontSizeCssVar, layoutMode])
+  }, [fontSize, layoutMode])
 
   return {
     visible,
     fontSize,
+    appliedFontSize,
     setFontSize,
     layoutMode,
+    appliedLayoutMode,
     setLayoutMode,
     open,
     close,

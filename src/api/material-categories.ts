@@ -1,6 +1,6 @@
-import { http } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
+import { http } from './client'
 
 export interface MaterialCategoryOption {
   value: string
@@ -10,10 +10,14 @@ export interface MaterialCategoryOption {
 
 let cachedCategories: MaterialCategoryOption[] | null = null
 
-export async function fetchMaterialCategories(): Promise<MaterialCategoryOption[]> {
+export async function fetchMaterialCategories(): Promise<
+  MaterialCategoryOption[]
+> {
   if (cachedCategories) return cachedCategories
   try {
-    const response = await http.get<ApiResponse<MaterialCategoryOption[]>>(ENDPOINTS.MATERIAL_CATEGORIES)
+    const response = await http.get<ApiResponse<MaterialCategoryOption[]>>(
+      ENDPOINTS.MATERIAL_CATEGORIES,
+    )
     cachedCategories = response.data || []
     return cachedCategories
   } catch {

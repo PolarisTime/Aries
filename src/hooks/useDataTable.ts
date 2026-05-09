@@ -1,22 +1,22 @@
-import { useState, useMemo, useCallback } from 'react'
 import {
-  useReactTable,
+  type ColumnDef,
+  type ColumnOrderState,
+  type ExpandedState,
   getCoreRowModel,
+  getExpandedRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  getExpandedRowModel,
-  type Table,
-  type Row,
-  type ColumnDef,
-  type PaginationState,
-  type SortingState,
-  type RowSelectionState,
-  type ExpandedState,
-  type VisibilityState,
-  type ColumnOrderState,
   type OnChangeFn,
+  type PaginationState,
+  type Row,
+  type RowSelectionState,
+  type SortingState,
+  type Table,
   type Updater,
+  useReactTable,
+  type VisibilityState,
 } from '@tanstack/react-table'
+import { useCallback, useMemo, useState } from 'react'
 
 interface UseDataTableOptions<TData> {
   data: TData[]
@@ -41,6 +41,7 @@ interface UseDataTableOptions<TData> {
   onColumnVisibilityChange?: OnChangeFn<VisibilityState>
   columnOrder?: ColumnOrderState
   onColumnOrderChange?: OnChangeFn<ColumnOrderState>
+  sorting?: SortingState
 }
 
 export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
@@ -66,6 +67,7 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
     onColumnVisibilityChange,
     columnOrder,
     onColumnOrderChange,
+    sorting: controlledSorting,
   } = options
 
   const [pagination, setPagination] = useState<PaginationState>({
@@ -74,6 +76,7 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
   })
 
   const [sorting, setSorting] = useState<SortingState>([])
+  const resolvedSorting = controlledSorting ?? sorting
 
   const handlePaginationChange: OnChangeFn<PaginationState> = useCallback(
     (updater: Updater<PaginationState>) => {
@@ -86,11 +89,14 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
 
   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
     (updater: Updater<SortingState>) => {
-      const next = typeof updater === 'function' ? updater(sorting) : updater
-      setSorting(next)
+      const next =
+        typeof updater === 'function' ? updater(resolvedSorting) : updater
+      if (controlledSorting === undefined) {
+        setSorting(next)
+      }
       onSortingChange?.(next)
     },
-    [sorting, onSortingChange],
+    [controlledSorting, onSortingChange, resolvedSorting],
   )
 
   const table = useReactTable<TData>({
@@ -102,10 +108,12 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
     enableSorting,
     enableRowSelection,
     enableExpanding,
-    getRowCanExpand: getRowCanExpand as unknown as ((row: Row<TData>) => boolean) | undefined,
+    getRowCanExpand: getRowCanExpand as unknown as
+      | ((row: Row<TData>) => boolean)
+      | undefined,
     state: {
       pagination,
-      sorting,
+      sorting: resolvedSorting,
       ...(rowSelection !== undefined && { rowSelection }),
       ...(expanded !== undefined && { expanded }),
       ...(columnVisibility !== undefined && { columnVisibility }),
@@ -118,18 +126,26 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
     onColumnVisibilityChange,
     onColumnOrderChange,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: manualPagination ? undefined : getPaginationRowModel(),
+    getPaginationRowModel: manualPagination
+      ? undefined
+      : getPaginationRowModel(),
     getSortedRowModel: manualSorting ? undefined : getSortedRowModel(),
     getExpandedRowModel: enableExpanding ? getExpandedRowModel() : undefined,
   })
 
-  const currentPage = useMemo(() => pagination.pageIndex + 1, [pagination.pageIndex])
+  const currentPage = useMemo(
+    () => pagination.pageIndex + 1,
+    [pagination.pageIndex],
+  )
   const pageSize = pagination.pageSize
 
   const setCurrentPage = useCallback(
     (page: number) => {
       const index = Math.max(0, page - 1)
-      handlePaginationChange({ pageIndex: index, pageSize: pagination.pageSize })
+      handlePaginationChange({
+        pageIndex: index,
+        pageSize: pagination.pageSize,
+      })
     },
     [pagination.pageSize, handlePaginationChange],
   )
@@ -142,8 +158,16 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
     setCurrentPage,
     pagination,
     sorting,
+    resolvedSorting,
   } as const
 }
 
-export type { UseDataTableOptions }
-export type { Table, ColumnDef, PaginationState, SortingState, RowSelectionState, ExpandedState }
+export type {
+  ColumnDef,
+  ExpandedState,
+  PaginationState,
+  RowSelectionState,
+  SortingState,
+  Table,
+  UseDataTableOptions,
+}

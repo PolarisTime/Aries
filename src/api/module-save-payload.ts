@@ -1,6 +1,11 @@
+import dayjs from 'dayjs'
 import { businessPageConfigs } from '@/config/business-pages'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
-import { hasBehavior, getBehaviorValue } from '@/views/modules/module-behavior-registry'
+import { logger } from '@/utils/logger'
+import {
+  getBehaviorValue,
+  hasBehavior,
+} from '@/views/modules/module-behavior-registry'
 
 type PayloadBuilder = (record: ModuleRecord) => Record<string, unknown>
 
@@ -36,15 +41,17 @@ function resolveScalarFields(moduleKey: string): string[] {
   return [...new Set([...fromDetailFields, ...extras])]
 }
 
-const scalarFieldCache = new Map<string, string[]>()
+const scalarFieldCache = new Map<string, readonly string[]>()
 
 function getScalarFields(moduleKey: string): readonly string[] {
   const cached = scalarFieldCache.get(moduleKey)
   if (cached) {
     return cached
   }
-  const fields: readonly string[] = Object.freeze(resolveScalarFields(moduleKey))
-  scalarFieldCache.set(moduleKey, fields as unknown as string[])
+  const fields: readonly string[] = Object.freeze(
+    resolveScalarFields(moduleKey),
+  )
+  scalarFieldCache.set(moduleKey, fields)
   return fields
 }
 
@@ -56,7 +63,10 @@ function pickDefinedFields(record: ModuleRecord, fields: readonly string[]) {
   const next: Record<string, unknown> = {}
   fields.forEach((field) => {
     if (record[field] !== undefined) {
-      next[field] = record[field]
+      const value = record[field]
+      next[field] = dayjs.isDayjs(value)
+        ? value.format('YYYY-MM-DD HH:mm:ss')
+        : value
     }
   })
   return next
@@ -117,7 +127,9 @@ function getLineItemFields(moduleKey: string): readonly LineItemFieldSpec[] {
 
 const lineItemFieldCache = new Map<string, readonly LineItemFieldSpec[]>()
 
-function getCachedLineItemFields(moduleKey: string): readonly LineItemFieldSpec[] {
+function getCachedLineItemFields(
+  moduleKey: string,
+): readonly LineItemFieldSpec[] {
   const cached = lineItemFieldCache.get(moduleKey)
   if (cached) return cached
   const fields = Object.freeze(getLineItemFields(moduleKey))
@@ -132,7 +144,7 @@ function serializeLineItem(item: ModuleLineItem, moduleKey: string) {
     result.id = persistedId
   }
   for (const field of getCachedLineItemFields(moduleKey)) {
-    if (field.key === 'settlementMode' && moduleKey !== 'purchase-inbounds') {
+    if (field.key === 'settlementMode' && moduleKey !== 'purchase-inbound') {
       continue
     }
     const value = item[field.key]
@@ -151,7 +163,8 @@ function getPayloadBuilder(moduleKey: string): PayloadBuilder {
     return cached
   }
   const fields = getScalarFields(moduleKey)
-  const builder: PayloadBuilder = (record: ModuleRecord) => pickDefinedFields(record, fields)
+  const builder: PayloadBuilder = (record: ModuleRecord) =>
+    pickDefinedFields(record, fields)
   scalarPayloadBuilders.set(moduleKey, builder)
   return builder
 }
@@ -169,8 +182,8 @@ export function serializeBusinessRecordForSave(
     for (const key of Object.keys(record)) {
       if (key === 'id' || key === 'items' || key === 'attachmentIds') continue
       if (record[key] !== undefined && !scalarFields.has(key)) {
-        console.warn(
-          `[save-payload] ${moduleKey}: field "${key}" not in save schema, will be silently dropped`
+        logger.warn(
+          `[save-payload] ${moduleKey}: field "${key}" not in save schema, will be silently dropped`,
         )
       }
     }
@@ -184,7 +197,9 @@ export function serializeBusinessRecordForSave(
   }
 
   if (hasBehavior(moduleKey, 'savePayloadLineItems')) {
-    payload.items = toArray(record.items).map((item) => serializeLineItem(item, moduleKey))
+    payload.items = toArray(record.items).map((item) =>
+      serializeLineItem(item, moduleKey),
+    )
   }
 
   return payload

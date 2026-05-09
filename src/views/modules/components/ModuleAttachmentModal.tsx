@@ -1,11 +1,26 @@
-import { useCallback, useState } from 'react'
-import { Modal, Upload, Button, Card, Empty, Flex, Space, Spin, Typography } from 'antd'
-import { UploadOutlined, DownloadOutlined, DeleteOutlined, PaperClipOutlined } from '@ant-design/icons'
 import {
+  DeleteOutlined,
+  DownloadOutlined,
+  PaperClipOutlined,
+  UploadOutlined,
+} from '@ant-design/icons'
+import {
+  Button,
+  Card,
+  Empty,
+  Flex,
+  Modal,
+  Space,
+  Spin,
+  Typography,
+  Upload,
+} from 'antd'
+import { useCallback, useState } from 'react'
+import {
+  type AttachmentRecord,
   getAttachmentBindings,
   updateAttachmentBindings,
   uploadAttachment,
-  type AttachmentRecord,
 } from '@/api/business'
 import { message } from '@/utils/antd-app'
 
@@ -16,7 +31,12 @@ interface Props {
   onClose: () => void
 }
 
-export function ModuleAttachmentModal({ open, moduleKey, recordId, onClose }: Props) {
+export function ModuleAttachmentModal({
+  open,
+  moduleKey,
+  recordId,
+  onClose,
+}: Props) {
   const [attachments, setAttachments] = useState<AttachmentRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -27,8 +47,11 @@ export function ModuleAttachmentModal({ open, moduleKey, recordId, onClose }: Pr
     try {
       const res = await getAttachmentBindings(moduleKey, recordId)
       setAttachments(res.data?.attachments || [])
-    } catch { /* ignore */ }
-    finally { setLoading(false) }
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false)
+    }
   }, [moduleKey, recordId])
 
   const handleUpload = async (file: File) => {
@@ -47,7 +70,9 @@ export function ModuleAttachmentModal({ open, moduleKey, recordId, onClose }: Pr
       await fetchAttachments()
     } catch (err) {
       message.error(err instanceof Error ? err.message : '上传失败')
-    } finally { setUploading(false) }
+    } finally {
+      setUploading(false)
+    }
     return false
   }
 
@@ -64,7 +89,9 @@ export function ModuleAttachmentModal({ open, moduleKey, recordId, onClose }: Pr
       await updateAttachmentBindings(
         moduleKey,
         recordId,
-        attachments.filter((item) => String(item.id) !== id).map((item) => item.id),
+        attachments
+          .filter((item) => String(item.id) !== id)
+          .map((item) => item.id),
       )
       message.success('解除绑定成功')
       await fetchAttachments()
@@ -80,11 +107,21 @@ export function ModuleAttachmentModal({ open, moduleKey, recordId, onClose }: Pr
       onCancel={onClose}
       footer={null}
       width={560}
-      afterOpenChange={(visible) => { if (visible) void fetchAttachments() }}
+      afterOpenChange={(visible) => {
+        if (visible) void fetchAttachments()
+      }}
     >
       <div className="mb-3">
-        <Upload beforeUpload={(f) => { void handleUpload(f); return false }} showUploadList={false}>
-          <Button icon={<UploadOutlined />} loading={uploading}>上传附件</Button>
+        <Upload
+          beforeUpload={(f) => {
+            void handleUpload(f)
+            return false
+          }}
+          showUploadList={false}
+        >
+          <Button icon={<UploadOutlined />} loading={uploading}>
+            上传附件
+          </Button>
         </Upload>
       </div>
       <Spin spinning={loading}>
@@ -93,20 +130,40 @@ export function ModuleAttachmentModal({ open, moduleKey, recordId, onClose }: Pr
             {attachments.map((item) => (
               <Card key={item.id} size="small">
                 <Flex align="center" justify="space-between" gap={16}>
-                  <Space align="start" size={12} style={{ minWidth: 0, flex: 1 }}>
+                  <Space
+                    align="start"
+                    size={12}
+                    style={{ minWidth: 0, flex: 1 }}
+                  >
                     <PaperClipOutlined />
-                    <Space orientation="vertical" size={0} style={{ minWidth: 0 }}>
+                    <Space
+                      orientation="vertical"
+                      size={0}
+                      style={{ minWidth: 0 }}
+                    >
                       <Typography.Text strong ellipsis>
                         {item.originalFileName || item.fileName || item.name}
                       </Typography.Text>
                       <Typography.Text type="secondary">
-                        {((item.fileSize || 0) / 1024).toFixed(1)} KB · {String(item.uploadTime || '')}
+                        {((item.fileSize || 0) / 1024).toFixed(1)} KB ·{' '}
+                        {String(item.uploadTime || '')}
                       </Typography.Text>
                     </Space>
                   </Space>
                   <Space size={0}>
-                    <Button key="download" type="link" size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(item)} />
-                    <Button key="delete" type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(item.id)} />
+                    <Button
+                      key="download"
+                      type="link"
+                      icon={<DownloadOutlined />}
+                      onClick={() => handleDownload(item)}
+                    />
+                    <Button
+                      key="delete"
+                      type="link"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => handleDelete(item.id)}
+                    />
                   </Space>
                 </Flex>
               </Card>
