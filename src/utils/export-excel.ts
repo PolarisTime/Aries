@@ -10,12 +10,17 @@ export function exportRecordsToXlsx(
   title: string,
   columns: ModuleColumnDefinition[],
   rows: ModuleRecord[],
-  valueFormatter?: (column: ModuleColumnDefinition, value: unknown, record: ModuleRecord) => string,
+  valueFormatter?: (
+    column: ModuleColumnDefinition,
+    value: unknown,
+    record: ModuleRecord,
+  ) => string,
 ) {
   const headers = columns.map((c) => c.title)
   const data = rows.map((record) =>
     columns.map((col) => {
-      if (valueFormatter) return valueFormatter(col, record[col.dataIndex], record)
+      if (valueFormatter)
+        return valueFormatter(col, record[col.dataIndex], record)
       return formatCell(record[col.dataIndex])
     }),
   )
@@ -27,10 +32,7 @@ export function exportRecordsToXlsx(
 }
 
 /** Legacy wrapper for backward compatibility */
-export function exportRecordsToExcel(
-  moduleKey: string,
-  rows: ModuleRecord[],
-) {
+export function exportRecordsToExcel(moduleKey: string, rows: ModuleRecord[]) {
   const filename = moduleKey || 'export'
   const headers = rows.length > 0 ? Object.keys(rows[0]) : []
   const data = rows.map((row) => headers.map((h) => formatCell(row[h])))

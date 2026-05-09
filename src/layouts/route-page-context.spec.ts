@@ -3,17 +3,17 @@ import { resolveRoutePageContext } from '@/layouts/route-page-context'
 
 describe('resolveRoutePageContext', () => {
   it('resolves normal page definitions', () => {
-    expect(resolveRoutePageContext('/materials')).toEqual({
-      activeMenuKey: '/materials',
-      openPageKey: '/materials',
+    expect(resolveRoutePageContext('/material')).toEqual({
+      activeMenuKey: '/material',
+      openPageKey: '/material',
       title: '商品资料',
     })
   })
 
   it('reuses api key list tab for detail pages', () => {
-    expect(resolveRoutePageContext('/api-key-management/123')).toEqual({
-      activeMenuKey: '/api-key-management',
-      openPageKey: '/api-key-management',
+    expect(resolveRoutePageContext('/api-key/123')).toEqual({
+      activeMenuKey: '/api-key',
+      openPageKey: '/api-key',
       title: 'API Key 详情',
     })
   })

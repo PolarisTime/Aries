@@ -1,7 +1,12 @@
+import {
+  DownloadOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons'
 import { Button, Flex, Space, Typography } from 'antd'
-import { PlusOutlined, ReloadOutlined, DownloadOutlined } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 import type { ModuleActionDefinition } from '@/types/module-page'
+import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
 
 interface Props {
   canCreate: boolean
@@ -14,12 +19,18 @@ interface Props {
   onRefresh: () => void
   extra?: ReactNode
   toolbarActions?: ModuleActionDefinition[]
-  onAction?: (label: string) => void
+  onAction?: (action: ModuleActionDefinition) => void
 }
 
 export function ModuleTableToolbar({
-  canCreate, canExport, total, loading,
-  exporting, onCreate, onExport, onRefresh,
+  canCreate,
+  canExport,
+  total,
+  loading,
+  exporting,
+  onCreate,
+  onExport,
+  onRefresh,
   extra,
   toolbarActions = [],
   onAction,
@@ -34,7 +45,9 @@ export function ModuleTableToolbar({
     >
       <Space wrap>
         {canCreate && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>新建</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
+            新建
+          </Button>
         )}
         {toolbarActions.map((action) => {
           if (action.label === '新增' || action.label.includes('新增')) {
@@ -47,21 +60,37 @@ export function ModuleTableToolbar({
               danger={action.danger}
               disabled={action.disabled}
               loading={action.loading}
-              icon={action.label === '导出' ? <DownloadOutlined /> : undefined}
-              onClick={() => onAction?.(action.label)}
+              icon={
+                action.label === '导出' ? (
+                  <DownloadOutlined />
+                ) : (
+                  resolveModuleActionIcon(action.label)
+                )
+              }
+              onClick={() => onAction?.(action)}
             >
               {action.label}
             </Button>
           )
         })}
         {canExport && !toolbarActions.some((a) => a.label === '导出') && (
-          <Button icon={<DownloadOutlined />} onClick={onExport} loading={exporting}>导出</Button>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={onExport}
+            loading={exporting}
+          >
+            导出
+          </Button>
         )}
         {extra}
       </Space>
       <Space size="middle">
         <Typography.Text type="secondary">共 {total} 条</Typography.Text>
-        <Button icon={<ReloadOutlined />} onClick={onRefresh} loading={loading} size="small" />
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={onRefresh}
+          loading={loading}
+        />
       </Space>
     </Flex>
   )

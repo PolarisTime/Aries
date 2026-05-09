@@ -1,20 +1,24 @@
+import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
-import type { InternalAxiosRequestConfig, AxiosInstance } from 'axios'
-import { getToken } from '@/utils/storage'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { getRequestPath, isExactAuthEndpoint } from '@/utils/route-helpers'
-import { isApiKeyToken } from '@/utils/auth-token'
 import { message } from '@/utils/antd-app'
-import { normalizeErrorMessage } from './error-messages'
-import { shouldTriggerRefresh, shouldClearAuthState } from './auth-guard'
+import { isApiKeyToken } from '@/utils/auth-token'
+import { getRequestPath, isExactAuthEndpoint } from '@/utils/route-helpers'
+import { getToken } from '@/utils/storage'
+import {
+  isCanceledRequestError,
+  markHandledRequestError,
+} from '@/api/request-errors'
+import { shouldClearAuthState, shouldTriggerRefresh } from './auth-guard'
 import {
   getRefreshPromise,
   handleAuthFailure,
   refreshAccessToken,
   resetAuthFailureHandling,
-  setRefreshPromise,
   retryWithToken,
+  setRefreshPromise,
 } from './auth-state'
+import { normalizeErrorMessage } from './error-messages'
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean
@@ -24,7 +28,6 @@ type GuardedAxiosInstance = AxiosInstance & {
   __leoAuthInterceptorsSetup?: boolean
 }
 
-const HANDLED_REQUEST_ERROR_FLAG = '__leoRequestErrorHandled'
 const PUBLIC_ENDPOINTS = [
   ENDPOINTS.SETUP_STATUS,
   ENDPOINTS.SETUP_INITIALIZE,
@@ -33,12 +36,6 @@ const PUBLIC_ENDPOINTS = [
   ENDPOINTS.SETUP_COMPANY,
   ENDPOINTS.HEALTH,
 ]
-
-function markHandledRequestError(error: unknown) {
-  if (error && typeof error === 'object') {
-    ;(error as Record<string, unknown>)[HANDLED_REQUEST_ERROR_FLAG] = true
-  }
-}
 
 function isPublicEndpoint(url: string) {
   const path = getRequestPath(url)
@@ -70,8 +67,9 @@ export function setupAuthInterceptors(http: AxiosInstance) {
         config.headers.delete?.('Authorization')
         config.headers.set?.('X-API-Key', token)
         if (!config.headers.set) {
-          ;(config.headers as Record<string, string | undefined>).Authorization =
-            undefined
+          ;(
+            config.headers as Record<string, string | undefined>
+          ).Authorization = undefined
           ;(config.headers as Record<string, string | undefined>)['X-API-Key'] =
             token
         }
@@ -81,8 +79,9 @@ export function setupAuthInterceptors(http: AxiosInstance) {
         if (!config.headers.set) {
           ;(config.headers as Record<string, string | undefined>)['X-API-Key'] =
             undefined
-          ;(config.headers as Record<string, string | undefined>).Authorization =
-            `Bearer ${token}`
+          ;(
+            config.headers as Record<string, string | undefined>
+          ).Authorization = `Bearer ${token}`
         }
       }
     }
@@ -93,6 +92,11 @@ export function setupAuthInterceptors(http: AxiosInstance) {
   http.interceptors.response.use(
     (response) => response.data,
     async (error) => {
+      if (isCanceledRequestError(error)) {
+        markHandledRequestError(error)
+        return Promise.reject(error)
+      }
+
       const status = error.response?.status
       const originalRequest = error.config as RetryableRequestConfig | undefined
       const url = String(originalRequest?.url || '')
@@ -165,6 +169,7 @@ export function setupAuthInterceptors(http: AxiosInstance) {
         markHandledRequestError(error)
         handleAuthFailure(description)
       } else {
+        markHandledRequestError(error)
         message.error(description)
       }
 

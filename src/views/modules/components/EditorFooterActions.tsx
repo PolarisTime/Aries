@@ -1,5 +1,5 @@
+import { AuditOutlined, CloseOutlined, SaveOutlined } from '@ant-design/icons'
 import { Button, Space } from 'antd'
-import { SaveOutlined, AuditOutlined, CloseOutlined } from '@ant-design/icons'
 
 interface Props {
   canSave: boolean
@@ -9,15 +9,22 @@ interface Props {
   onSave: (audit: boolean) => void
 }
 
-export function EditorFooterActions({ canSave, canAudit, saving, onCancel, onSave }: Props) {
+export function EditorFooterActions({
+  canSave,
+  canAudit,
+  saving,
+  onCancel,
+  onSave,
+}: Props) {
   return (
     <Space>
-      <Button icon={<CloseOutlined />} onClick={onCancel}>
+      <Button className="overlay-action-button" icon={<CloseOutlined />} onClick={onCancel}>
         取消
       </Button>
       {canSave && (
         <Button
           type="primary"
+          className="overlay-action-button"
           icon={<SaveOutlined />}
           loading={saving}
           onClick={() => onSave(false)}
@@ -27,6 +34,8 @@ export function EditorFooterActions({ canSave, canAudit, saving, onCancel, onSav
       )}
       {canAudit && (
         <Button
+          type="primary"
+          className="overlay-action-button"
           icon={<AuditOutlined />}
           loading={saving}
           onClick={() => onSave(true)}

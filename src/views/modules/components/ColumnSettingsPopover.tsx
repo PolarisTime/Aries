@@ -1,5 +1,5 @@
-import { Popover, Checkbox, Button, Divider, Space, Typography } from 'antd'
 import { SettingOutlined } from '@ant-design/icons'
+import { Button, Checkbox, Divider, Popover, Space, Typography } from 'antd'
 import type { ModuleColumnDefinition } from '@/types/module-page'
 
 interface Props {
@@ -8,7 +8,11 @@ interface Props {
   onToggle: (key: string) => void
 }
 
-export function ColumnSettingsPopover({ columns, visibleKeys, onToggle }: Props) {
+export function ColumnSettingsPopover({
+  columns,
+  visibleKeys,
+  onToggle,
+}: Props) {
   const content = (
     <Space orientation="vertical" size="small" style={{ minWidth: 240 }}>
       <Typography.Text strong>列显示设置</Typography.Text>
@@ -27,7 +31,7 @@ export function ColumnSettingsPopover({ columns, visibleKeys, onToggle }: Props)
 
   return (
     <Popover content={content} trigger="click" placement="bottomRight">
-      <Button icon={<SettingOutlined />} size="small">列设置</Button>
+      <Button icon={<SettingOutlined />}>列设置</Button>
     </Popover>
   )
 }

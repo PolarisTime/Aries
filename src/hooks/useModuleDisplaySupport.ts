@@ -5,11 +5,21 @@ export function useModuleDisplaySupport() {
     if (value === null || value === undefined) return '--'
     if (columnType === 'amount' || columnType === 'number') {
       const num = Number(value)
-      return Number.isNaN(num) ? String(value) : num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      return Number.isNaN(num)
+        ? String(value)
+        : num.toLocaleString('zh-CN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
     }
     if (columnType === 'weight') {
       const num = Number(value)
-      return Number.isNaN(num) ? String(value) : num.toLocaleString('zh-CN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+      return Number.isNaN(num)
+        ? String(value)
+        : num.toLocaleString('zh-CN', {
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3,
+          })
     }
     if (columnType === 'count' || columnType === 'integer') {
       const num = Number(value)
@@ -17,7 +27,11 @@ export function useModuleDisplaySupport() {
     }
     if (columnType === 'date' || columnType === 'datetime') {
       const d = dayjs(value as string | number)
-      return d.isValid() ? d.format(columnType === 'datetime' ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD') : String(value)
+      return d.isValid()
+        ? d.format(
+            columnType === 'datetime' ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD',
+          )
+        : String(value)
     }
     if (columnType === 'boolean') {
       return value ? '是' : '否'

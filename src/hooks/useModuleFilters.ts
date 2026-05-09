@@ -1,9 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
 export interface ModuleFilterState {
   filters: Record<string, unknown>
   submittedFilters: Record<string, unknown>
-  searchExpanded: boolean
 }
 
 interface Props {
@@ -12,8 +11,9 @@ interface Props {
 
 export function useModuleFilters({ setCurrentPage }: Props) {
   const [filters, setFilters] = useState<Record<string, unknown>>({})
-  const [submittedFilters, setSubmittedFilters] = useState<Record<string, unknown>>({})
-  const [searchExpanded, setSearchExpanded] = useState(false)
+  const [submittedFilters, setSubmittedFilters] = useState<
+    Record<string, unknown>
+  >({})
 
   const handleSearch = useCallback(() => {
     setCurrentPage(1)
@@ -33,10 +33,8 @@ export function useModuleFilters({ setCurrentPage }: Props) {
   return {
     filters,
     submittedFilters,
-    searchExpanded,
     setFilters,
     setSubmittedFilters,
-    setSearchExpanded,
     handleSearch,
     handleReset,
     updateFilter,

@@ -3,6 +3,8 @@ import type { PagedResult, TableResponse } from '@/types/api'
 export interface ListQueryOptions {
   currentPage: number
   pageSize: number
+  sortBy?: string
+  sortDirection?: 'asc' | 'desc'
 }
 
 export function compactSearch<T extends object>(search: T) {
@@ -21,10 +23,7 @@ export function compactSearch<T extends object>(search: T) {
   )
 }
 
-export function buildListParams(
-  search: object,
-  options: ListQueryOptions,
-) {
+export function buildListParams(search: object, options: ListQueryOptions) {
   return {
     search: JSON.stringify(compactSearch(search)),
     currentPage: options.currentPage,
@@ -39,7 +38,9 @@ export function normalizeTableResponse<T>(
   if (typeof window !== 'undefined') {
     if (code !== 0) {
       const msg = String(response?.message || '数据加载异常')
-      window.dispatchEvent(new CustomEvent('leo:table-error', { detail: { code, message: msg } }))
+      window.dispatchEvent(
+        new CustomEvent('leo:table-error', { detail: { code, message: msg } }),
+      )
     } else {
       window.dispatchEvent(new CustomEvent('leo:table-error-cleared'))
     }

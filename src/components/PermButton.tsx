@@ -4,7 +4,9 @@ import { usePermissionStore } from '@/stores/permissionStore'
 interface PermButtonProps extends ButtonProps {
   resource: string
   action: string
-  permissionStoreOverride?: { can: (resource: string, action: string) => boolean }
+  permissionStoreOverride?: {
+    can: (resource: string, action: string) => boolean
+  }
 }
 
 export function PermButton({

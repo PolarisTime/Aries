@@ -1,7 +1,11 @@
-import { useCallback } from 'react'
 import dayjs from 'dayjs'
+import { useCallback } from 'react'
 import { generateBusinessPrimaryNo } from '@/api/business'
-import type { ModuleLineItem, ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleLineItem,
+  ModulePageConfig,
+  ModuleRecord,
+} from '@/types/module-page'
 import { getStoredUser } from '@/utils/storage'
 import {
   generatePrimaryNo as buildModulePrimaryNo,
@@ -34,14 +38,17 @@ export function useModuleRecordHelpers({ moduleKey, config }: Props) {
   }, [moduleKey, generatePrimaryNo])
 
   const getPrimaryNo = useCallback(
-    (record: ModuleRecord) => getModuleRecordPrimaryNo(record, config.primaryNoKey),
+    (record: ModuleRecord) =>
+      getModuleRecordPrimaryNo(record, config.primaryNoKey),
     [config.primaryNoKey],
   )
 
   const getRowClassName = useCallback(
     (record: ModuleRecord) => {
       const status = String(record.status || '')
-      return config.rowHighlightStatuses?.includes(status) ? 'table-row-emphasis' : ''
+      return config.rowHighlightStatuses?.includes(status)
+        ? 'table-row-emphasis'
+        : ''
     },
     [config.rowHighlightStatuses],
   )

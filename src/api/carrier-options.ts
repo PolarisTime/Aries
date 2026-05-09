@@ -1,7 +1,8 @@
-import { http } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
+import { http } from './client'
 export interface CarrierOption {
+  id?: string
   value: string
   label: string
   vehiclePlates?: string[]
@@ -16,7 +17,9 @@ export async function fetchCarrierOptions(): Promise<CarrierOption[]> {
   if (loadingCarriers) return loadingCarriers
 
   loadingCarriers = (async () => {
-    const response = await http.get<ApiResponse<CarrierOption[]>>(ENDPOINTS.CARRIERS_OPTIONS)
+    const response = await http.get<ApiResponse<CarrierOption[]>>(
+      ENDPOINTS.CARRIERS_OPTIONS,
+    )
     cachedCarriers = normalizeCarrierOptions(response.data || [])
     fetchFailed = false
     return cachedCarriers
@@ -39,15 +42,22 @@ export function getCarrierOptions(): CarrierOption[] {
   return cachedCarriers || []
 }
 
-export function findCarrierOption(carrierName: unknown): CarrierOption | undefined {
+export function findCarrierOption(
+  carrierName: unknown,
+): CarrierOption | undefined {
   const normalizedCarrierName = String(carrierName || '').trim()
   if (!normalizedCarrierName) return undefined
-  return getCarrierOptions().find((option) => String(option.value).trim() === normalizedCarrierName)
+  return getCarrierOptions().find(
+    (option) => String(option.value).trim() === normalizedCarrierName,
+  )
 }
 
 export function getCarrierVehiclePlateOptions(form?: Record<string, unknown>) {
   const carrier = findCarrierOption(form?.carrierName)
-  return (carrier?.vehiclePlates || []).map((plate) => ({ label: plate, value: plate }))
+  return (carrier?.vehiclePlates || []).map((plate) => ({
+    label: plate,
+    value: plate,
+  }))
 }
 
 export function reloadCarrierOptions() {
@@ -60,10 +70,13 @@ export function reloadCarrierOptions() {
 function normalizeCarrierOptions(options: CarrierOption[]): CarrierOption[] {
   return options.map((option) => ({
     ...option,
+    id: option.id == null ? undefined : String(option.id),
     label: String(option.label || ''),
     value: String(option.value || ''),
     vehiclePlates: Array.isArray(option.vehiclePlates)
-      ? option.vehiclePlates.map((plate) => String(plate || '').trim()).filter(Boolean)
+      ? option.vehiclePlates
+          .map((plate) => String(plate || '').trim())
+          .filter(Boolean)
       : [],
   }))
 }

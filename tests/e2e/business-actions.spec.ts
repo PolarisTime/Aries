@@ -1,4 +1,8 @@
-import { fetchCollection, pickSearchTerm, primeApiKeySession } from './support/api-key'
+import {
+  fetchCollection,
+  pickSearchTerm,
+  primeApiKeySession,
+} from './support/api-key'
 import { expect, test } from './support/test'
 
 interface BusinessActionRoute {
@@ -9,18 +13,66 @@ interface BusinessActionRoute {
 }
 
 const businessActionRoutes: BusinessActionRoute[] = [
-  { path: '/materials', title: '商品资料', apiPath: 'materials', searchKeys: ['materialCode', 'materialName'] },
-  { path: '/suppliers', title: '供应商资料', apiPath: 'suppliers', searchKeys: ['supplierCode', 'supplierName'] },
-  { path: '/customers', title: '客户资料', apiPath: 'customers', searchKeys: ['customerCode', 'customerName'] },
-  { path: '/purchase-orders', title: '采购订单', apiPath: 'purchase-orders', searchKeys: ['orderNo'] },
-  { path: '/purchase-inbounds', title: '采购入库', apiPath: 'purchase-inbounds', searchKeys: ['inboundNo'] },
-  { path: '/sales-orders', title: '销售订单', apiPath: 'sales-orders', searchKeys: ['orderNo'] },
-  { path: '/sales-outbounds', title: '销售出库', apiPath: 'sales-outbounds', searchKeys: ['outboundNo'] },
-  { path: '/receipts', title: '收款单', apiPath: 'receipts', searchKeys: ['receiptNo'] },
-  { path: '/payments', title: '付款单', apiPath: 'payments', searchKeys: ['paymentNo'] },
+  {
+    path: '/material',
+    title: '商品资料',
+    apiPath: 'material',
+    searchKeys: ['materialCode', 'materialName'],
+  },
+  {
+    path: '/supplier',
+    title: '供应商资料',
+    apiPath: 'supplier',
+    searchKeys: ['supplierCode', 'supplierName'],
+  },
+  {
+    path: '/customer',
+    title: '客户资料',
+    apiPath: 'customer',
+    searchKeys: ['customerCode', 'customerName'],
+  },
+  {
+    path: '/purchase-order',
+    title: '采购订单',
+    apiPath: 'purchase-order',
+    searchKeys: ['orderNo'],
+  },
+  {
+    path: '/purchase-inbound',
+    title: '采购入库',
+    apiPath: 'purchase-inbound',
+    searchKeys: ['inboundNo'],
+  },
+  {
+    path: '/sales-order',
+    title: '销售订单',
+    apiPath: 'sales-order',
+    searchKeys: ['orderNo'],
+  },
+  {
+    path: '/sales-outbound',
+    title: '销售出库',
+    apiPath: 'sales-outbound',
+    searchKeys: ['outboundNo'],
+  },
+  {
+    path: '/receipt',
+    title: '收款单',
+    apiPath: 'receipt',
+    searchKeys: ['receiptNo'],
+  },
+  {
+    path: '/payment',
+    title: '付款单',
+    apiPath: 'payment',
+    searchKeys: ['paymentNo'],
+  },
 ]
 
-async function expectBusinessPageLoaded(page: Parameters<typeof test>[0]['page'], title: string) {
+async function expectBusinessPageLoaded(
+  page: Parameters<typeof test>[0]['page'],
+  title: string,
+) {
   const pageHeading = page.getByRole('heading', {
     level: 3,
     name: title,
@@ -44,14 +96,19 @@ async function closeWorkspaceOverlay(page: Parameters<typeof test>[0]['page']) {
   await expect(page.locator('.workspace-overlay-panel')).toHaveCount(0)
 }
 
-async function openEditor(page: Parameters<typeof test>[0]['page'], title: string) {
+async function openEditor(
+  page: Parameters<typeof test>[0]['page'],
+  title: string,
+) {
   const createButton = page.getByRole('button', { name: '新建' })
   await expect(createButton).toBeVisible()
   await createButton.click()
 
   const overlay = page.locator('.workspace-overlay-panel').last()
   await expect(overlay).toBeVisible()
-  await expect(overlay.locator('.workspace-overlay-title')).toContainText(`新建 — ${title}`)
+  await expect(overlay.locator('.workspace-overlay-title')).toContainText(
+    `新建 — ${title}`,
+  )
   return overlay
 }
 
@@ -63,13 +120,16 @@ function resetButton(page: Parameters<typeof test>[0]['page']) {
   return page.getByRole('button', { name: /重\s*置/ })
 }
 
-test.describe('business editor action smoke with API key', () => {
+test.describe('business editor action smoke', () => {
   test.beforeEach(async ({ page }) => {
     await primeApiKeySession(page)
   })
 
   for (const route of businessActionRoutes) {
-    test(`covers create/edit/query-reset for ${route.title}`, async ({ page, assertNoFatalUiErrors }) => {
+    test(`covers create/edit/query-reset for ${route.title}`, async ({
+      page,
+      assertNoFatalUiErrors,
+    }) => {
       const collection = await fetchCollection(page.request, route.apiPath)
 
       await page.goto(route.path)
@@ -81,7 +141,9 @@ test.describe('business editor action smoke with API key', () => {
 
       const createOverlay = page.locator('.workspace-overlay-panel').last()
       await expect(createOverlay).toBeVisible()
-      await expect(createOverlay.locator('.workspace-overlay-title')).toContainText(`新建 — ${route.title}`)
+      await expect(
+        createOverlay.locator('.workspace-overlay-title'),
+      ).toContainText(`新建 — ${route.title}`)
       await closeWorkspaceOverlay(page)
 
       const keywordInput = page.getByPlaceholder('搜索关键词...')
@@ -95,13 +157,18 @@ test.describe('business editor action smoke with API key', () => {
           await expect(page.locator('table')).toContainText(searchTerm)
         }
 
-        const editButton = page.locator('table').getByRole('button', { name: '编辑' }).first()
+        const editButton = page
+          .locator('table')
+          .getByRole('button', { name: '编辑' })
+          .first()
         await expect(editButton).toBeVisible()
         await editButton.click()
 
         const editOverlay = page.locator('.workspace-overlay-panel').last()
         await expect(editOverlay).toBeVisible()
-        await expect(editOverlay.locator('.workspace-overlay-title')).toContainText(`编辑 — ${route.title}`)
+        await expect(
+          editOverlay.locator('.workspace-overlay-title'),
+        ).toContainText(`编辑 — ${route.title}`)
         await closeWorkspaceOverlay(page)
       }
 
@@ -115,12 +182,17 @@ test.describe('business editor action smoke with API key', () => {
     })
   }
 
-  test('supports parent import in purchase inbound editor', async ({ page, assertNoFatalUiErrors }) => {
-    await page.goto('/purchase-inbounds')
+  test('supports parent import in purchase inbound editor', async ({
+    page,
+    assertNoFatalUiErrors,
+  }) => {
+    await page.goto('/purchase-inbound')
     await expectBusinessPageLoaded(page, '采购入库')
 
     const overlay = await openEditor(page, '采购入库')
-    const importButton = overlay.getByRole('button', { name: '导入采购订单明细' })
+    const importButton = overlay.getByRole('button', {
+      name: '导入采购订单明细',
+    })
     await expect(importButton).toBeVisible()
     await importButton.click()
 
@@ -136,20 +208,31 @@ test.describe('business editor action smoke with API key', () => {
 
     await expect(page.locator('.ant-drawer')).toHaveCount(0)
     await expect(overlay.getByLabel('关联订单')).toHaveValue(parentNo)
-    await expect(overlay.locator('tbody tr:not(.ant-table-measure-row)').first()).toBeVisible()
+    await expect(
+      overlay.locator('tbody tr:not(.ant-table-measure-row)').first(),
+    ).toBeVisible()
 
     await closeWorkspaceOverlay(page)
     await assertNoFatalUiErrors()
   })
 
-  test('opens attachment modal from sales order list action', async ({ page, assertNoFatalUiErrors }) => {
-    const collection = await fetchCollection(page.request, 'sales-orders')
-    test.skip(!collection.ok || collection.records.length === 0, '真实环境无销售订单数据可用于附件 smoke')
+  test('opens attachment modal from sales order list action', async ({
+    page,
+    assertNoFatalUiErrors,
+  }) => {
+    const collection = await fetchCollection(page.request, 'sales-order')
+    test.skip(
+      !collection.ok || collection.records.length === 0,
+      '真实环境无销售订单数据可用于附件 smoke',
+    )
 
-    await page.goto('/sales-orders')
+    await page.goto('/sales-order')
     await expectBusinessPageLoaded(page, '销售订单')
 
-    const attachButton = page.locator('table').getByRole('button', { name: '附件' }).first()
+    const attachButton = page
+      .locator('table')
+      .getByRole('button', { name: '附件' })
+      .first()
     await expect(attachButton).toBeVisible()
     await attachButton.click()
 

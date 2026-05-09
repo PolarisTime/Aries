@@ -1,12 +1,15 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
-import zhCN from '@/locales/zh-CN'
 import enUS from '@/locales/en-US'
+import zhCN from '@/locales/zh-CN'
 
 const LOCALE_STORAGE_KEY = 'leo-locale'
 
 function detectLocale(): string {
-  const stored = typeof window !== 'undefined' ? localStorage.getItem(LOCALE_STORAGE_KEY) : null
+  const stored =
+    typeof window !== 'undefined'
+      ? localStorage.getItem(LOCALE_STORAGE_KEY)
+      : null
   if (stored) return stored
   if (typeof navigator !== 'undefined' && navigator.language) {
     const lang = navigator.language
@@ -18,8 +21,8 @@ function detectLocale(): string {
 
 i18n.use(initReactI18next).init({
   resources: {
-    'zh-CN': { translation: zhCN as unknown as Record<string, unknown> },
-    'en-US': { translation: enUS as unknown as Record<string, unknown> },
+    'zh-CN': { translation: zhCN },
+    'en-US': { translation: enUS },
   },
   lng: detectLocale(),
   fallbackLng: 'zh-CN',

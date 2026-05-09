@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { Modal, Upload, Button, Table, Alert, Flex, Typography } from 'antd'
 import { DownloadOutlined, InboxOutlined } from '@ant-design/icons'
+import { Alert, Button, Flex, Modal, Table, Typography, Upload } from 'antd'
 import type { UploadFile } from 'antd/es/upload'
+import { useState } from 'react'
 import { http } from '@/api/client'
 import type { ApiResponse } from '@/types/api'
 import { message } from '@/utils/antd-app'
+import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
 
 interface ImportResult {
   totalRows: number
@@ -13,7 +14,13 @@ interface ImportResult {
   errors: { row: number; message: string }[]
 }
 
-export function ModuleMaterialImportDialogs({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ModuleMaterialImportDialogs({
+  open,
+  onClose,
+}: {
+  open: boolean
+  onClose: () => void
+}) {
   const [result, setResult] = useState<ImportResult | null>(null)
   const [uploading, setUploading] = useState(false)
   const [fileList, setFileList] = useState<UploadFile[]>([])
@@ -23,42 +30,63 @@ export function ModuleMaterialImportDialogs({ open, onClose }: { open: boolean; 
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await http.post<ApiResponse<ImportResult>>('/materials/import', formData)
-      setResult(res.data || { totalRows: 0, successCount: 0, failCount: 0, errors: [] })
+      const res = await http.post<ApiResponse<ImportResult>>(
+        '/material/import',
+        formData,
+      )
+      setResult(
+        res.data || { totalRows: 0, successCount: 0, failCount: 0, errors: [] },
+      )
     } catch (err) {
       message.error(err instanceof Error ? err.message : '导入失败')
-    } finally { setUploading(false) }
+    } finally {
+      setUploading(false)
+    }
     return false
   }
 
   const handleDownloadTemplate = () => {
-    window.open('/materials/template', '_blank')
+    window.open('/material/template', '_blank')
   }
 
   return (
-    <Modal title="导入物料" open={open} onCancel={onClose} footer={null} width={640} destroyOnHidden>
+    <Modal
+      title="导入物料"
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      width={640}
+      destroyOnHidden
+    >
       {!result ? (
         <Flex vertical gap={16}>
-          <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate}>下载导入模板 (XLSX)</Button>
+          <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate}>
+            下载导入模板 (XLSX)
+          </Button>
           <Upload.Dragger
-            beforeUpload={(f) => { handleImport(f); return false }}
+            beforeUpload={(f) => {
+              handleImport(f)
+              return false
+            }}
             fileList={fileList}
             onChange={({ fileList: fl }) => setFileList(fl)}
             accept=".xlsx,.xls,.csv"
             maxCount={1}
           >
-            <InboxOutlined style={{ fontSize: 32, color: 'var(--theme-primary)' }} />
+            <InboxOutlined
+              style={{ fontSize: 32, color: 'var(--theme-primary)' }}
+            />
             <Typography.Paragraph style={{ marginTop: 12, marginBottom: 0 }}>
               点击或拖拽 XLSX/CSV 文件到此处
             </Typography.Paragraph>
           </Upload.Dragger>
-          {uploading && <Alert message="导入中..." type="info" />}
+          {uploading && <Alert title="导入中..." type="info" />}
         </Flex>
       ) : (
         <Flex vertical gap={12}>
           <Alert
             type={result.failCount > 0 ? 'warning' : 'success'}
-            message={`导入完成: 总计 ${result.totalRows} 行，成功 ${result.successCount} 行，失败 ${result.failCount} 行`}
+            title={`导入完成: 总计 ${result.totalRows} 行，成功 ${result.successCount} 行，失败 ${result.failCount} 行`}
           />
           {result.errors.length > 0 && (
             <Table
@@ -72,7 +100,15 @@ export function ModuleMaterialImportDialogs({ open, onClose }: { open: boolean; 
               pagination={{ pageSize: 10 }}
             />
           )}
-          <Button onClick={() => { setResult(null); setFileList([]) }}>继续导入</Button>
+          <Button
+            icon={resolveModuleActionIcon('继续导入')}
+            onClick={() => {
+              setResult(null)
+              setFileList([])
+            }}
+          >
+            继续导入
+          </Button>
         </Flex>
       )}
     </Modal>

@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { Card, Button, Descriptions, Space } from 'antd'
 import { RedoOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Button, Card, Descriptions, Space } from 'antd'
+import { useState } from 'react'
 import { http } from '@/api/client'
-import { ENDPOINTS } from '@/constants/endpoints'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
+import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
 import { message } from '@/utils/antd-app'
 
@@ -19,9 +19,11 @@ export function SecurityKeyManagementView() {
   const [rotateType, setRotateType] = useState<'jwt' | 'totp'>('jwt')
 
   const { data: keys, isLoading } = useQuery({
-    queryKey: ['security-keys'],
+    queryKey: ['security-key'],
     queryFn: async () => {
-      const res = await http.get<ApiResponse<SecurityKeys>>(`${ENDPOINTS.SECURITY_KEYS}/overview`)
+      const res = await http.get<ApiResponse<SecurityKeys>>(
+        `${ENDPOINTS.SECURITY_KEYS}/overview`,
+      )
       return res.data
     },
   })
@@ -33,9 +35,11 @@ export function SecurityKeyManagementView() {
 
   const handleRotateConfirm = async (code: string) => {
     try {
-      await http.post(`${ENDPOINTS.SECURITY_KEYS}/${rotateType}/rotate`, { totpCode: code })
+      await http.post(`${ENDPOINTS.SECURITY_KEYS}/${rotateType}/rotate`, {
+        totpCode: code,
+      })
       message.success(`${rotateType.toUpperCase()} 密钥已轮换`)
-      queryClient.invalidateQueries({ queryKey: ['security-keys'] })
+      queryClient.invalidateQueries({ queryKey: ['security-key'] })
     } catch (err) {
       message.error(err instanceof Error ? err.message : '轮换失败')
       throw err
@@ -54,8 +58,12 @@ export function SecurityKeyManagementView() {
           </Descriptions.Item>
         </Descriptions>
         <Space className="mt-4">
-          <Button icon={<RedoOutlined />} onClick={() => handleRotate('jwt')}>轮换 JWT 密钥</Button>
-          <Button icon={<RedoOutlined />} onClick={() => handleRotate('totp')}>轮换 TOTP 密钥</Button>
+          <Button icon={<RedoOutlined />} onClick={() => handleRotate('jwt')}>
+            轮换 JWT 密钥
+          </Button>
+          <Button icon={<RedoOutlined />} onClick={() => handleRotate('totp')}>
+            轮换 TOTP 密钥
+          </Button>
         </Space>
       </Card>
       <TwoFactorConfirmModal

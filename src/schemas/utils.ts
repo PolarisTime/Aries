@@ -1,5 +1,5 @@
-import { z } from 'zod'
 import type { Rule } from 'antd/es/form'
+import { z } from 'zod'
 
 /**
  * Convert Zod schemas to Ant Design form validation rules.
@@ -41,26 +41,44 @@ export function zodToAntdRules(schema: z.ZodType): Rule[] {
   }
 
   // Type-specific rules
-  const typeName = def.type || (current instanceof z.ZodString ? 'ZodString' : current instanceof z.ZodNumber ? 'ZodNumber' : '')
+  const typeName =
+    def.type ||
+    (current instanceof z.ZodString
+      ? 'ZodString'
+      : current instanceof z.ZodNumber
+        ? 'ZodNumber'
+        : '')
 
   if (typeName === 'ZodString') {
     rules.push({ type: 'string', message: '请输入有效的字符串' })
     if (current instanceof z.ZodString) {
       const stringDef = current._def as ZodFieldDef
       if (stringDef.minLength !== null && stringDef.minLength !== undefined) {
-        rules.push({ min: stringDef.minLength, message: `最少 ${stringDef.minLength} 个字符` })
+        rules.push({
+          min: stringDef.minLength,
+          message: `最少 ${stringDef.minLength} 个字符`,
+        })
       }
       if (stringDef.maxLength !== null && stringDef.maxLength !== undefined) {
-        rules.push({ max: stringDef.maxLength, message: `最多 ${stringDef.maxLength} 个字符` })
+        rules.push({
+          max: stringDef.maxLength,
+          message: `最多 ${stringDef.maxLength} 个字符`,
+        })
       }
       // Check for email/url patterns in checks
       const checks = stringDef.checks || []
       for (const check of checks) {
         if (check.kind === 'email') {
-          rules.push({ type: 'email', message: check.message || '请输入有效的邮箱地址' })
+          rules.push({
+            type: 'email',
+            message: check.message || '请输入有效的邮箱地址',
+          })
         }
         if (check.kind === 'url') {
-          rules.push({ type: 'url', message: check.message || '请输入有效的链接' })
+          rules.push({
+            type: 'url',
+            message: check.message || '请输入有效的链接',
+          })
         }
       }
     }
@@ -73,10 +91,16 @@ export function zodToAntdRules(schema: z.ZodType): Rule[] {
       const checks = numberDef.checks || []
       for (const check of checks) {
         if (check.kind === 'min') {
-          rules.push({ min: check.value as number, message: check.message || `最小值为 ${check.value}` })
+          rules.push({
+            min: check.value as number,
+            message: check.message || `最小值为 ${check.value}`,
+          })
         }
         if (check.kind === 'max') {
-          rules.push({ max: check.value as number, message: check.message || `最大值为 ${check.value}` })
+          rules.push({
+            max: check.value as number,
+            message: check.message || `最大值为 ${check.value}`,
+          })
         }
       }
     }

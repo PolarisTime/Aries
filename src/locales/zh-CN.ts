@@ -50,7 +50,8 @@ const zhCN: MessageSchema = {
   },
   dashboard: {
     title: '系统首页',
-    subtitle: '{appTitle} 业务前端，当前界面基于实时接口汇总展示当前账号和系统接入状态。',
+    subtitle:
+      '{appTitle} 业务前端，当前界面基于实时接口汇总展示当前账号和系统接入状态。',
     cards: {
       currentUser: '当前账号',
       modules: '可用模块',
@@ -70,7 +71,8 @@ const zhCN: MessageSchema = {
     },
     alerts: {
       title: '当前重点',
-      description: 'Dashboard 已切到真实 API 汇总，后续逐步把更多业务摘要接入同一入口。',
+      description:
+        'Dashboard 已切到真实 API 汇总，后续逐步把更多业务摘要接入同一入口。',
       loadFailed: '工作台摘要加载失败，请稍后重试。',
     },
     fields: {

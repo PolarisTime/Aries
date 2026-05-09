@@ -7,7 +7,14 @@ export type ModuleColumnType =
   | 'count'
 
 export type ModuleFilterType = 'input' | 'select' | 'dateRange'
-export type ModuleFormFieldType = 'input' | 'select' | 'autoComplete' | 'multiSelect' | 'date' | 'textarea' | 'number'
+export type ModuleFormFieldType =
+  | 'input'
+  | 'select'
+  | 'autoComplete'
+  | 'multiSelect'
+  | 'date'
+  | 'textarea'
+  | 'number'
 
 export interface ModuleFilterOption {
   label: string
@@ -19,8 +26,12 @@ export interface ModuleFilterOptionGroup {
   options: ModuleFilterOption[]
 }
 
-export type ModuleFilterOptionEntry = ModuleFilterOption | ModuleFilterOptionGroup
-export type ModuleFilterOptionResolver = (filters: Record<string, unknown>) => ModuleFilterOptionEntry[]
+export type ModuleFilterOptionEntry =
+  | ModuleFilterOption
+  | ModuleFilterOptionGroup
+export type ModuleFilterOptionResolver = (
+  filters: Record<string, unknown>,
+) => ModuleFilterOptionEntry[]
 
 export interface ModuleFormFieldOption {
   label: string
@@ -32,13 +43,17 @@ export interface ModuleFormFieldOption {
   purchaseWeighRequired?: boolean
 }
 
-export type ModuleFormFieldOptionResolver = (form?: Record<string, unknown>) => ModuleFormFieldOption[]
+export type ModuleFormFieldOptionResolver = (
+  form?: Record<string, unknown>,
+) => ModuleFormFieldOption[]
 
 export interface ModuleFilterDefinition {
   key: string
   label: string
   type: ModuleFilterType
   placeholder?: string
+  clientSearchKeys?: string[]
+  clientSearchLineItemKeys?: string[]
   options?: ModuleFilterOptionEntry[] | ModuleFilterOptionResolver
   row?: number
 }
@@ -62,6 +77,8 @@ export interface ModuleDetailField {
   label: string
   key: string
   type?: ModuleColumnType
+  row?: number
+  fullRow?: boolean
 }
 
 export interface ModuleStatusMeta {
@@ -75,6 +92,7 @@ export interface ModuleOverviewItem {
 }
 
 export interface ModuleActionDefinition {
+  key?: string
   label: string
   type?: 'primary' | 'default' | 'dashed'
   danger?: boolean
@@ -94,6 +112,10 @@ export interface ModuleFormFieldDefinition {
   defaultValue?: string | number | boolean
   min?: number
   precision?: number
+  readonlyWhenLocked?: boolean
+  row?: number
+  colSpan?: number
+  fullRow?: boolean
 }
 
 export interface ModuleLineItem extends Record<string, unknown> {
@@ -108,6 +130,10 @@ export interface ModuleRecord extends Record<string, unknown> {
 export interface ListColumnSettings {
   orderedKeys: string[]
   hiddenKeys: string[]
+}
+
+export interface UserColumnSettingsPayload {
+  pages: Record<string, ListColumnSettings>
 }
 
 export interface ModuleParentImportDefinition {
@@ -131,7 +157,6 @@ export interface ModulePageConfig {
   hidePageHeader?: boolean
   readOnly?: boolean
   filters: ModuleFilterDefinition[]
-  defaultVisibleFilterCount?: number
   quickFilters?: ModuleQuickFilterDefinition[]
   columns: ModuleColumnDefinition[]
   detailFields: ModuleDetailField[]

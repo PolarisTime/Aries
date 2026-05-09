@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react'
 import { useLocation } from '@tanstack/react-router'
+import { useCallback, useEffect, useState } from 'react'
 
 export interface OpenPage {
   key: string
@@ -14,7 +14,10 @@ export interface OpenPageDescriptor {
   title: string
 }
 
-function resolveOpenPageKey(path: string, meta?: Record<string, unknown>): string {
+function resolveOpenPageKey(
+  path: string,
+  meta?: Record<string, unknown>,
+): string {
   return String(meta?.openPageKey || meta?.menuKey || path)
 }
 
@@ -46,12 +49,19 @@ export function useOpenPages(
 
     setPages((prev) => {
       const normalizedPages = [
-        { key: defaultPath, path: defaultPath, title: homeTitle, closable: false },
+        {
+          key: defaultPath,
+          path: defaultPath,
+          title: homeTitle,
+          closable: false,
+        },
         ...prev.filter((item) => item.key !== defaultPath),
       ]
 
       if (normalizedPages.some((item) => item.key === currentPage.key)) {
-        return normalizedPages.map((item) => (item.key === currentPage.key ? nextPage : item))
+        return normalizedPages.map((item) =>
+          item.key === currentPage.key ? nextPage : item,
+        )
       }
       return [...normalizedPages, nextPage]
     })

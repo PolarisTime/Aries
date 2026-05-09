@@ -1,5 +1,8 @@
 import { useMemo } from 'react'
-import type { ModuleFormFieldDefinition, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleFormFieldDefinition,
+  ModuleRecord,
+} from '@/types/module-page'
 import {
   buildEditorAuditTarget,
   buildReverseAuditTarget,
@@ -14,19 +17,23 @@ interface Props {
   moduleKey: string
   formFields: ModuleFormFieldDefinition[]
   lineItemLockRelatedRows: ModuleRecord[]
+  lineItemsLockedOverride?: boolean
   canEditLineItems: boolean
   canSaveCurrentEditor: boolean
   canAuditRecords: boolean
   canPrintRecords: boolean
   canDeleteRecords: boolean
   isReadOnly: boolean
-  resolveModuleStatusOptions: (statusField: ModuleFormFieldDefinition | undefined) => string[]
+  resolveModuleStatusOptions: (
+    statusField: ModuleFormFieldDefinition | undefined,
+  ) => string[]
 }
 
 export function useModuleEditorCapabilities({
   moduleKey,
   formFields,
   lineItemLockRelatedRows,
+  lineItemsLockedOverride,
   canEditLineItems,
   canSaveCurrentEditor,
   canAuditRecords,
@@ -37,11 +44,15 @@ export function useModuleEditorCapabilities({
 }: Props) {
   const lineItemsLocked = useMemo(
     () =>
-      isModuleLineItemsLocked(
-        moduleKey,
-        lineItemLockRelatedRows.map((record) => String(record.status || '')),
-      ),
-    [moduleKey, lineItemLockRelatedRows],
+      typeof lineItemsLockedOverride === 'boolean'
+        ? lineItemsLockedOverride
+        : isModuleLineItemsLocked(
+            moduleKey,
+            lineItemLockRelatedRows.map((record) =>
+              String(record.status || ''),
+            ),
+          ),
+    [lineItemsLockedOverride, moduleKey, lineItemLockRelatedRows],
   )
 
   const editorAuditTarget = useMemo(() => {
@@ -66,24 +77,25 @@ export function useModuleEditorCapabilities({
     [moduleKey, listStatusOptions],
   )
   const listReverseAuditTarget = useMemo(
-    () => buildReverseAuditTarget(moduleKey, listStatusOptions, listStatusField?.defaultValue),
+    () =>
+      buildReverseAuditTarget(
+        moduleKey,
+        listStatusOptions,
+        listStatusField?.defaultValue,
+      ),
     [moduleKey, listStatusOptions, listStatusField],
   )
 
-  const canUseBulkAuditActions = useMemo(
-    () => Boolean(!isReadOnly && canAuditRecords && listAuditTarget && listReverseAuditTarget),
-    [isReadOnly, canAuditRecords, listAuditTarget, listReverseAuditTarget],
-  )
-  const canUseBulkPrintActions = useMemo(() => canPrintRecords, [canPrintRecords])
-  const canUseBulkDeleteActions = useMemo(
-    () => !isReadOnly && canDeleteRecords,
-    [isReadOnly, canDeleteRecords],
-  )
-  const canAuditEditor = useMemo(() => Boolean(editorAuditTarget), [editorAuditTarget])
-  const canSaveAndAuditCurrentEditor = useMemo(
-    () => canSaveCurrentEditor && canAuditRecords && canAuditEditor,
-    [canSaveCurrentEditor, canAuditRecords, canAuditEditor],
-  )
+  const canUseBulkAuditActions =
+    !isReadOnly &&
+    canAuditRecords &&
+    Boolean(listAuditTarget && listReverseAuditTarget)
+  const canUseBulkPrintActions = canPrintRecords
+  const canUseBulkDeleteActions = !isReadOnly && canDeleteRecords
+  const canAuditEditor = Boolean(editorAuditTarget)
+  const canSaveAndAuditCurrentEditor =
+    canSaveCurrentEditor && canAuditRecords && canAuditEditor
+
   const canManageEditorItems = useMemo(
     () =>
       canManageEditorLineItems(
@@ -96,7 +108,8 @@ export function useModuleEditorCapabilities({
   )
   const canAddManualEditorItems = useMemo(
     () =>
-      canManageEditorItems && getBehaviorValue(moduleKey, 'allowsManualLineItems') !== false,
+      canManageEditorItems &&
+      getBehaviorValue(moduleKey, 'allowsManualLineItems') !== false,
     [canManageEditorItems, moduleKey],
   )
   const lockedLineItemsNotice = useMemo(

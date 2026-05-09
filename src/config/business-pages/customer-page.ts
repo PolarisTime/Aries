@@ -1,0 +1,91 @@
+import { enabledStatusOptions } from '@/constants/module-options'
+import type { ModulePageConfig } from '@/types/module-page'
+import { actionSet, buildMasterOverview, statusMap } from './shared'
+
+export const customersPageConfig: ModulePageConfig = {
+  key: 'customer',
+  title: '客户资料',
+  kicker: 'Master Data',
+  description:
+    '客户主数据统一维护客户档案、项目偏好、结算方式和合作状态，供销售与对账页面复用。',
+  primaryNoKey: 'customerCode',
+  actions: actionSet,
+  filters: [
+    {
+      key: 'keyword',
+      label: '关键字',
+      type: 'input',
+      placeholder: '客户编码 / 名称 / 项目',
+    },
+    {
+      key: 'status',
+      label: '状态',
+      type: 'select',
+      options: enabledStatusOptions,
+    },
+  ],
+  columns: [
+    { title: '客户编码', dataIndex: 'customerCode', width: 140 },
+    { title: '客户名称', dataIndex: 'customerName', width: 180 },
+    { title: '项目名称', dataIndex: 'projectName', width: 150 },
+    { title: '联系人', dataIndex: 'contactName', width: 110 },
+    { title: '联系电话', dataIndex: 'contactPhone', width: 140 },
+    { title: '所在城市', dataIndex: 'city', width: 120 },
+    { title: '结算方式', dataIndex: 'settlementMode', width: 110 },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      width: 100,
+      type: 'status',
+      align: 'center',
+    },
+  ],
+  detailFields: [
+    { label: '客户编码', key: 'customerCode' },
+    { label: '客户名称', key: 'customerName' },
+    { label: '项目名称', key: 'projectName' },
+    { label: '项目缩写', key: 'projectNameAbbr' },
+    { label: '项目地址', key: 'projectAddress' },
+    { label: '联系人', key: 'contactName' },
+    { label: '联系电话', key: 'contactPhone' },
+    { label: '所在城市', key: 'city' },
+    { label: '结算方式', key: 'settlementMode' },
+    { label: '状态', key: 'status', type: 'status' },
+    { label: '备注', key: 'remark' },
+  ],
+  detailColumnCount: 4,
+  formFields: [
+    { key: 'customerCode', label: '客户编码', type: 'input', required: true, row: 1 },
+    { key: 'customerName', label: '客户名称', type: 'input', required: true, row: 1 },
+    { key: 'projectName', label: '项目名称', type: 'input', required: true, row: 1 },
+    { key: 'projectNameAbbr', label: '项目缩写', type: 'input', row: 1 },
+    { key: 'projectAddress', label: '项目地址', type: 'input', row: 2, fullRow: true },
+    { key: 'contactName', label: '联系人', type: 'input', row: 3 },
+    { key: 'contactPhone', label: '联系电话', type: 'input', row: 3 },
+    { key: 'city', label: '所在城市', type: 'input', row: 3 },
+    {
+      key: 'settlementMode',
+      label: '结算方式',
+      type: 'select',
+      options: [
+        { label: '现结', value: '现结' },
+        { label: '月结', value: '月结' },
+        { label: '授信', value: '授信' },
+      ],
+      row: 3,
+    },
+    {
+      key: 'status',
+      label: '状态',
+      type: 'select',
+      defaultValue: '正常',
+      options: enabledStatusOptions,
+      row: 4,
+    },
+    { key: 'remark', label: '备注', type: 'textarea', row: 5, fullRow: true },
+  ],
+  data: [],
+  buildOverview: (rows) => buildMasterOverview(rows),
+  statusMap,
+  rowHighlightStatuses: ['禁用'],
+}

@@ -1,29 +1,30 @@
-import { useEffect, useMemo, useState } from 'react'
+import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import {
+  Button,
   Card,
   Descriptions,
   Empty,
-  Button,
   Flex,
   Spin,
   Tag,
   Typography,
 } from 'antd'
-import { ArrowLeftOutlined } from '@ant-design/icons'
+import { useEffect, useMemo, useState } from 'react'
 import {
-  getApiKeyDetail,
-  listApiKeyActionOptions,
-  listApiKeyResourceOptions,
   type ApiKeyActionOption,
   type ApiKeyRecord,
   type ApiKeyResourceOption,
+  getApiKeyDetail,
+  listApiKeyActionOptions,
+  listApiKeyResourceOptions,
 } from '@/api/api-keys'
 
 function getStatusColor(status: string) {
   if (status === '有效' || status === 'active') return 'green'
   if (status === '已过期' || status === 'expired') return 'orange'
-  if (status === '已禁用' || status === 'revoked' || status === 'inactive') return 'red'
+  if (status === '已禁用' || status === 'revoked' || status === 'inactive')
+    return 'red'
   return 'default'
 }
 
@@ -32,7 +33,9 @@ export function ApiKeyDetailView() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [record, setRecord] = useState<ApiKeyRecord | null>(null)
-  const [resourceOptions, setResourceOptions] = useState<ApiKeyResourceOption[]>([])
+  const [resourceOptions, setResourceOptions] = useState<
+    ApiKeyResourceOption[]
+  >([])
   const [actionOptions, setActionOptions] = useState<ApiKeyActionOption[]>([])
 
   const id = useMemo(() => {
@@ -79,16 +82,24 @@ export function ApiKeyDetailView() {
     if (!record?.allowedResources?.length) {
       return '未限制'
     }
-    const titleMap = new Map(resourceOptions.map((item) => [item.code, item.title]))
-    return record.allowedResources.map((item) => titleMap.get(item) || item).join('、')
+    const titleMap = new Map(
+      resourceOptions.map((item) => [item.code, item.title]),
+    )
+    return record.allowedResources
+      .map((item) => titleMap.get(item) || item)
+      .join('、')
   }, [record?.allowedResources, resourceOptions])
 
   const allowedActionText = useMemo(() => {
     if (!record?.allowedActions?.length) {
       return '未设置'
     }
-    const titleMap = new Map(actionOptions.map((item) => [item.code, item.title]))
-    return record.allowedActions.map((item) => titleMap.get(item) || item).join('、')
+    const titleMap = new Map(
+      actionOptions.map((item) => [item.code, item.title]),
+    )
+    return record.allowedActions
+      .map((item) => titleMap.get(item) || item)
+      .join('、')
   }, [actionOptions, record?.allowedActions])
 
   return (
@@ -98,7 +109,7 @@ export function ApiKeyDetailView() {
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate({ to: '/api-key-management' as '/' })}
+            onClick={() => navigate({ to: '/api-key' as '/' })}
           >
             返回
           </Button>
@@ -112,14 +123,24 @@ export function ApiKeyDetailView() {
         {record ? (
           <Card>
             <Descriptions bordered column={2} size="small">
-              <Descriptions.Item label="密钥名称">{record.keyName}</Descriptions.Item>
-              <Descriptions.Item label="使用范围">{record.usageScope}</Descriptions.Item>
-              <Descriptions.Item label="允许资源">{allowedResourceText}</Descriptions.Item>
-              <Descriptions.Item label="允许动作">{allowedActionText}</Descriptions.Item>
+              <Descriptions.Item label="密钥名称">
+                {record.keyName}
+              </Descriptions.Item>
+              <Descriptions.Item label="使用范围">
+                {record.usageScope}
+              </Descriptions.Item>
+              <Descriptions.Item label="允许资源">
+                {allowedResourceText}
+              </Descriptions.Item>
+              <Descriptions.Item label="允许动作">
+                {allowedActionText}
+              </Descriptions.Item>
               <Descriptions.Item label="所属用户">
                 {record.userName || record.loginName}（{record.loginName}）
               </Descriptions.Item>
-              <Descriptions.Item label="用户 ID">{record.userId}</Descriptions.Item>
+              <Descriptions.Item label="用户 ID">
+                {record.userId}
+              </Descriptions.Item>
               <Descriptions.Item label="密钥前缀">
                 <Typography.Paragraph copyable code style={{ marginBottom: 0 }}>
                   {record.keyPrefix}
@@ -128,9 +149,15 @@ export function ApiKeyDetailView() {
               <Descriptions.Item label="状态">
                 <Tag color={getStatusColor(record.status)}>{record.status}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="创建时间">{record.createdAt}</Descriptions.Item>
-              <Descriptions.Item label="过期时间">{record.expiresAt || '永不过期'}</Descriptions.Item>
-              <Descriptions.Item label="最后使用">{record.lastUsedAt || '--'}</Descriptions.Item>
+              <Descriptions.Item label="创建时间">
+                {record.createdAt}
+              </Descriptions.Item>
+              <Descriptions.Item label="过期时间">
+                {record.expiresAt || '永不过期'}
+              </Descriptions.Item>
+              <Descriptions.Item label="最后使用">
+                {record.lastUsedAt || '--'}
+              </Descriptions.Item>
             </Descriptions>
           </Card>
         ) : (

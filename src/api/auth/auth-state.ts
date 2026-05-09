@@ -1,10 +1,13 @@
 import { AxiosHeaders } from 'axios'
+import { authHttp } from '@/api/http'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { ERROR_CODE } from '@/constants/error-codes'
 import type { ApiResponse } from '@/types/api'
 import type { LoginResponseData } from '@/types/auth'
 import { message, notification } from '@/utils/antd-app'
+import { isApiKeyToken } from '@/utils/auth-token'
+import { getCurrentAppRoute } from '@/utils/route-helpers'
 import {
   clearStoredUser,
   clearToken,
@@ -14,9 +17,6 @@ import {
   getTokenExpiresAt,
   setAuthSession,
 } from '@/utils/storage'
-import { authHttp } from '@/api/http'
-import { getCurrentAppRoute } from '@/utils/route-helpers'
-import { isApiKeyToken } from '@/utils/auth-token'
 
 let authFailureHandled = false
 
@@ -44,7 +44,12 @@ export function clearAuthState() {
 export function applyTokenResponse(data: LoginResponseData) {
   authFailureHandled = false
   if (data.user) {
-    setAuthSession(data.user, data.accessToken, data.expiresIn, getAuthPersistenceMode())
+    setAuthSession(
+      data.user,
+      data.accessToken,
+      data.expiresIn,
+      getAuthPersistenceMode(),
+    )
   }
   if (data.refreshExpiresIn) {
     const expiresAt = Date.now() + data.refreshExpiresIn * 1000
@@ -95,10 +100,13 @@ export function schedulePreRefresh(delayMs?: number) {
     executePreRefresh()
     return
   }
-  preRefreshTimer = setTimeout(() => {
-    preRefreshTimer = null
-    executePreRefresh()
-  }, Math.min(delay, 2_147_483_647))
+  preRefreshTimer = setTimeout(
+    () => {
+      preRefreshTimer = null
+      executePreRefresh()
+    },
+    Math.min(delay, 2_147_483_647),
+  )
 }
 
 export function cancelPreRefresh() {
@@ -112,7 +120,10 @@ function computePreRefreshDelay(): number {
   const expiresAt = getTokenExpiresAt()
   if (!expiresAt) return PRE_REFRESH_ADVANCE_MS
   const remaining = expiresAt - Date.now()
-  const advance = Math.min(PRE_REFRESH_ADVANCE_MS, Math.max(60_000, remaining * 0.2))
+  const advance = Math.min(
+    PRE_REFRESH_ADVANCE_MS,
+    Math.max(60_000, remaining * 0.2),
+  )
   return remaining - advance
 }
 
@@ -159,7 +170,10 @@ export function checkRefreshTokenExpiry() {
 let refreshPromise: Promise<void> | null = null
 
 export async function refreshAccessToken() {
-  const response = await authHttp.post<ApiResponse<LoginResponseData>>(ENDPOINTS.AUTH_REFRESH, {})
+  const response = await authHttp.post<ApiResponse<LoginResponseData>>(
+    ENDPOINTS.AUTH_REFRESH,
+    {},
+  )
   const payload = response.data
 
   if (payload.code !== ERROR_CODE.SUCCESS) {
@@ -183,7 +197,9 @@ export function setRefreshPromise(promise: Promise<void> | null) {
 
 type SetHeaderFn = (name: string, value: string) => void
 
-export function retryWithToken(request: { headers?: Record<string, unknown> | { set?: SetHeaderFn } }) {
+export function retryWithToken(request: {
+  headers?: Record<string, unknown> | { set?: SetHeaderFn }
+}) {
   const latestToken = getToken()
   if (!latestToken || !request.headers) {
     return

@@ -27,7 +27,9 @@ interface DashboardSummaryResponse<T> {
 
 export async function getDashboardSummary() {
   const response = assertApiSuccess(
-    await http.get<DashboardSummaryResponse<DashboardSummary>>(ENDPOINTS.DASHBOARD_SUMMARY),
+    await http.get<DashboardSummaryResponse<DashboardSummary>>(
+      ENDPOINTS.DASHBOARD_SUMMARY,
+    ),
     '加载工作台摘要失败',
   )
   return response.data
