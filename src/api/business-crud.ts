@@ -17,7 +17,30 @@ export async function generateBusinessPrimaryNo(moduleKey: string) {
     ),
     '生成单号失败',
   )
-  return String(response.data?.generatedNo || '')
+  const generatedNo = String(response.data?.generatedNo || '').trim()
+  if (!generatedNo) {
+    throw new Error(`模块 ${moduleKey} 未配置可用编号规则`)
+  }
+  return generatedNo
+}
+
+export async function allocateBusinessPrimaryNo(moduleKey: string) {
+  const response = assertApiSuccess(
+    await http.post<ApiResponse<NumberRuleGenerateRecord>>(
+      '/general-setting/number-rules/next',
+      null,
+      {
+        params: { moduleKey },
+      },
+    ),
+    '预分配单据号失败',
+  )
+  const generatedNo = String(response.data?.generatedNo || '').trim()
+  const generatedId = String(response.data?.generatedId || '').trim()
+  if (!generatedNo) {
+    throw new Error(`模块 ${moduleKey} 未配置可用编号规则`)
+  }
+  return { generatedNo, generatedId }
 }
 
 export async function getBusinessModuleDetail(moduleKey: string, id: string) {
@@ -48,7 +71,11 @@ export async function saveBusinessModule(
     throw new Error('当前模块不支持保存')
   }
 
-  const payload = serializeBusinessRecordForSave(moduleKey, record)
+  const payload = await serializeBusinessRecordForSave(moduleKey, record)
+  const preallocatedId =
+    typeof record._preallocatedId === 'string'
+      ? record._preallocatedId.trim()
+      : ''
   const hasId = Boolean(record.id)
   const response = assertApiSuccess(
     hasId
@@ -59,6 +86,13 @@ export async function saveBusinessModule(
       : await http.post<ApiResponse<Record<string, unknown>>>(
           endpointConfig.path,
           payload,
+          preallocatedId
+            ? {
+                headers: {
+                  'X-Preallocated-Id': preallocatedId,
+                },
+              }
+            : undefined,
         ),
   )
 

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type CarrierOption, fetchCarrierOptions } from '@/api/carrier-options'
 import {
@@ -12,6 +13,15 @@ import {
 } from '@/api/supplier-options'
 import { fetchWarehouseOptions } from '@/api/warehouse-options'
 import { useAuthStore } from '@/stores/authStore'
+import {
+  getCarrierOptions,
+  getCarrierVehiclePlateOptions,
+  getCustomerOptions,
+  getCustomerProjectOptions,
+  getSupplierOptions,
+  getWarehouseOptions,
+  materialCategoryOptions,
+} from '@/constants/module-options'
 
 interface MasterOptions {
   suppliers: SupplierOption[]
@@ -22,48 +32,134 @@ interface MasterOptions {
   materials: Array<Record<string, unknown>>
 }
 
-export function useMasterOptions() {
+export interface MasterOptionRequirements {
+  suppliers?: boolean
+  customers?: boolean
+  carriers?: boolean
+  warehouses?: boolean
+  materialCategories?: boolean
+  materials?: boolean
+}
+
+type OptionDefinition = {
+  options?: unknown
+}
+
+function emptyRequirements(): MasterOptionRequirements {
+  return {
+    suppliers: false,
+    customers: false,
+    carriers: false,
+    warehouses: false,
+    materialCategories: false,
+    materials: false,
+  }
+}
+
+export function resolveMasterOptionRequirements(
+  definitions: OptionDefinition[] | undefined,
+) {
+  const requirements = emptyRequirements()
+
+  for (const definition of definitions || []) {
+    const options = definition.options
+    if (typeof options !== 'function') {
+      continue
+    }
+
+    if (options === getSupplierOptions) {
+      requirements.suppliers = true
+      continue
+    }
+
+    if (options === getCustomerOptions || options === getCustomerProjectOptions) {
+      requirements.customers = true
+      continue
+    }
+
+    if (options === getCarrierOptions || options === getCarrierVehiclePlateOptions) {
+      requirements.carriers = true
+      continue
+    }
+
+    if (options === getWarehouseOptions) {
+      requirements.warehouses = true
+      continue
+    }
+
+    if (options === materialCategoryOptions) {
+      requirements.materialCategories = true
+    }
+  }
+
+  return requirements
+}
+
+export function useMasterOptions(
+  requirements: MasterOptionRequirements = {},
+  enabled = true,
+) {
   const token = useAuthStore((s) => s.token)
+  const normalizedRequirements = useMemo(
+    () => ({
+      suppliers: Boolean(requirements.suppliers),
+      customers: Boolean(requirements.customers),
+      carriers: Boolean(requirements.carriers),
+      warehouses: Boolean(requirements.warehouses),
+      materialCategories: Boolean(requirements.materialCategories),
+      materials: Boolean(requirements.materials),
+    }),
+    [
+      requirements.carriers,
+      requirements.customers,
+      requirements.materialCategories,
+      requirements.materials,
+      requirements.suppliers,
+      requirements.warehouses,
+    ],
+  )
+
+  const queryEnabled = enabled && !!token
 
   const suppliers = useQuery({
     queryKey: ['master-options', 'supplier'],
     queryFn: fetchSupplierOptions,
-    enabled: !!token,
+    enabled: queryEnabled && normalizedRequirements.suppliers,
     staleTime: 300_000,
   })
 
   const customers = useQuery({
     queryKey: ['master-options', 'customer'],
     queryFn: fetchCustomerOptions,
-    enabled: !!token,
+    enabled: queryEnabled && normalizedRequirements.customers,
     staleTime: 300_000,
   })
 
   const carriers = useQuery({
     queryKey: ['master-options', 'carrier'],
     queryFn: fetchCarrierOptions,
-    enabled: !!token,
+    enabled: queryEnabled && normalizedRequirements.carriers,
     staleTime: 300_000,
   })
 
   const warehouses = useQuery({
     queryKey: ['master-options', 'warehouse'],
     queryFn: fetchWarehouseOptions,
-    enabled: !!token,
+    enabled: queryEnabled && normalizedRequirements.warehouses,
     staleTime: 300_000,
   })
 
   const materialCategories = useQuery({
     queryKey: ['master-options', 'material-categories'],
     queryFn: fetchMaterialCategories,
-    enabled: !!token,
+    enabled: queryEnabled && normalizedRequirements.materialCategories,
     staleTime: 300_000,
   })
 
   const materials = useQuery({
     queryKey: ['master-options', 'material'],
     queryFn: () => fetchMaterialSearch('', 500),
-    enabled: !!token,
+    enabled: queryEnabled && normalizedRequirements.materials,
     staleTime: 300_000,
   })
 

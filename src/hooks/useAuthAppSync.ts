@@ -11,6 +11,37 @@ import { useSystemMenuStore } from '@/stores/systemMenuStore'
 import { isApiKeyToken } from '@/utils/auth-token'
 import { logger } from '@/utils/logger'
 
+type IdleCallbackHandle = number
+type IdleDeadlineLike = {
+  didTimeout: boolean
+  timeRemaining: () => number
+}
+
+function runWhenIdle(task: () => void, timeout = 1500) {
+  if (typeof window === 'undefined') {
+    task()
+    return () => {}
+  }
+
+  type IdleWindow = Window &
+    typeof globalThis & {
+      requestIdleCallback?: (
+        callback: (deadline: IdleDeadlineLike) => void,
+        options?: { timeout?: number },
+      ) => IdleCallbackHandle
+      cancelIdleCallback?: (handle: IdleCallbackHandle) => void
+    }
+
+  const idleWindow = window as IdleWindow
+  if (typeof idleWindow.requestIdleCallback === 'function') {
+    const handle = idleWindow.requestIdleCallback(() => task(), { timeout })
+    return () => idleWindow.cancelIdleCallback?.(handle)
+  }
+
+  const handle = window.setTimeout(task, 300)
+  return () => window.clearTimeout(handle)
+}
+
 function refreshMasterDataCaches() {
   reloadSupplierOptions()
   reloadCustomerOptions()
@@ -22,6 +53,7 @@ function refreshMasterDataCaches() {
 export function useAuthAppSync() {
   const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
+  const authReady = useAuthStore((state) => state.authReady)
   const syncFromUser = usePermissionStore((state) => state.syncFromUser)
   const clearPermissions = usePermissionStore((state) => state.clearPermissions)
   const loadMenus = useSystemMenuStore((state) => state.loadMenus)
@@ -30,32 +62,42 @@ export function useAuthAppSync() {
   useEffect(() => {
     if (user) {
       syncFromUser(user)
-      if (usePermissionStore.getState().can('permission', 'read')) {
-        void loadPermissionCatalog()
+      if (
+        authReady &&
+        usePermissionStore.getState().can('permission', 'read')
+      ) {
+        return runWhenIdle(() => {
+          void loadPermissionCatalog()
+        })
       }
       return
     }
     clearPermissions()
-  }, [clearPermissions, syncFromUser, user])
+  }, [authReady, clearPermissions, syncFromUser, user])
 
   useEffect(() => {
-    if (!token || !user || isApiKeyToken(token)) {
+    if (!authReady || !token || !user || isApiKeyToken(token)) {
       clearMenus()
       return
     }
 
-    void loadMenus().catch((err) => {
-      logger.warn(
-        'Failed to load dynamic menus, falling back to local registry',
-        err,
-      )
+    return runWhenIdle(() => {
+      void loadMenus().catch((err) => {
+        logger.warn(
+          'Failed to load dynamic menus, falling back to local registry',
+          err,
+        )
+      })
     })
-  }, [clearMenus, loadMenus, token, user])
+  }, [authReady, clearMenus, loadMenus, token, user])
 
   useEffect(() => {
-    if (!token || !user) {
+    if (!authReady || !token || !user) {
       return
     }
-    refreshMasterDataCaches()
-  }, [token, user])
+
+    return runWhenIdle(() => {
+      refreshMasterDataCaches()
+    }, 2500)
+  }, [authReady, token, user])
 }

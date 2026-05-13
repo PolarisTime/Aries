@@ -18,6 +18,7 @@ interface Props {
   formFields: ModuleFormFieldDefinition[]
   lineItemLockRelatedRows: ModuleRecord[]
   lineItemsLockedOverride?: boolean
+  currentStatus?: string
   canEditLineItems: boolean
   canSaveCurrentEditor: boolean
   canAuditRecords: boolean
@@ -34,6 +35,7 @@ export function useModuleEditorCapabilities({
   formFields,
   lineItemLockRelatedRows,
   lineItemsLockedOverride,
+  currentStatus,
   canEditLineItems,
   canSaveCurrentEditor,
   canAuditRecords,
@@ -61,8 +63,9 @@ export function useModuleEditorCapabilities({
       moduleKey,
       resolveModuleStatusOptions(statusField),
       lineItemsLocked,
+      currentStatus,
     )
-  }, [moduleKey, formFields, lineItemsLocked, resolveModuleStatusOptions])
+  }, [moduleKey, formFields, lineItemsLocked, currentStatus, resolveModuleStatusOptions])
 
   const listStatusField = useMemo(
     () => formFields.find((field) => field.key === 'status'),

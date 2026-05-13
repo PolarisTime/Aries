@@ -1,6 +1,11 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 import { listBusinessModule } from '@/api/business'
+import { useBusinessListCache } from '@/hooks/useBusinessListCache'
+import type { TableResponse } from '@/types/api'
 import type { ModuleRecord } from '@/types/module-page'
+
+const EMPTY_RECORDS: ModuleRecord[] = []
 
 interface Props {
   moduleKey: string
@@ -21,7 +26,31 @@ export function useBusinessQueries({
   sortBy,
   sortDirection,
 }: Props) {
-  const listQuery = useQuery({
+  const previousModuleKeyRef = useRef(moduleKey)
+  const supportsSessionCache =
+    moduleKey === 'purchase-order' ||
+    moduleKey === 'sales-order' ||
+    moduleKey === 'purchase-inbound' ||
+    moduleKey === 'sales-outbound'
+  const canReusePreviousData = previousModuleKeyRef.current === moduleKey
+
+  const { cached, save } = useBusinessListCache({
+    moduleKey,
+    filters,
+    page,
+    pageSize,
+    sortBy,
+    sortDirection,
+  })
+  const placeholderData =
+    cached ||
+    (canReusePreviousData
+      ? (keepPreviousData as (
+          previousData: TableResponse<ModuleRecord> | undefined,
+        ) => TableResponse<ModuleRecord> | undefined)
+      : undefined)
+
+  const listQuery = useQuery<TableResponse<ModuleRecord>>({
     queryKey: [
       'business-grid',
       moduleKey,
@@ -44,10 +73,23 @@ export function useBusinessQueries({
         { signal },
       ),
     enabled: enabled && !!moduleKey,
-    placeholderData: keepPreviousData,
+    placeholderData,
+    staleTime: supportsSessionCache ? 30_000 : 0,
+    gcTime: supportsSessionCache ? 5 * 60_000 : 60_000,
   })
 
-  const records: ModuleRecord[] = listQuery.data?.data?.rows || []
+  useEffect(() => {
+    previousModuleKeyRef.current = moduleKey
+  }, [moduleKey])
+
+  useEffect(() => {
+    if (!supportsSessionCache || !listQuery.data) {
+      return
+    }
+    save(listQuery.data as TableResponse<ModuleRecord>)
+  }, [listQuery.data, save, supportsSessionCache])
+
+  const records: ModuleRecord[] = listQuery.data?.data?.rows || EMPTY_RECORDS
   const total = listQuery.data?.data?.total || 0
   const responseCode = Number(listQuery.data?.code ?? 0)
   const warningMessage =

@@ -1,12 +1,12 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { listAllBusinessModuleRows } from '@/api/business'
 import {
   DISPLAY_SWITCH_CODES,
   isDisplaySwitchEnabled,
-  listDisplaySwitches,
+  listClientSettings,
 } from '@/api/system-settings'
-import { businessPageConfigs } from '@/config/business-pages'
+import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { buildWeightOverview } from '@/config/business-pages/shared'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import {
@@ -41,13 +41,14 @@ function buildWeightOnlyViewConfig(
 
 interface Props {
   moduleKey: string
+  initialConfig?: ModulePageConfig
 }
 
-function useStatementLinkCatalog() {
+function useStatementLinkCatalog(enabled: boolean) {
   const customerStatementsQuery = useQuery({
     queryKey: ['statement-link-options', 'customer-statement'],
     queryFn: () => listAllBusinessModuleRows('customer-statement', {}),
-    enabled: true,
+    enabled,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   })
@@ -55,7 +56,7 @@ function useStatementLinkCatalog() {
   const supplierStatementsQuery = useQuery({
     queryKey: ['statement-link-options', 'supplier-statement'],
     queryFn: () => listAllBusinessModuleRows('supplier-statement', {}),
-    enabled: true,
+    enabled,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   })
@@ -63,7 +64,7 @@ function useStatementLinkCatalog() {
   const freightStatementsQuery = useQuery({
     queryKey: ['statement-link-options', 'freight-statement'],
     queryFn: () => listAllBusinessModuleRows('freight-statement', {}),
-    enabled: true,
+    enabled,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   })
@@ -110,29 +111,46 @@ function decorateStatementLinkConfig(
   }
 }
 
-export function useModulePageConfig({ moduleKey }: Props) {
+export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
+  const previousModuleKeyRef = useRef(moduleKey)
+  const switchCode = WEIGHT_ONLY_VIEW_SETTING_CODES[moduleKey]
+  const needsStatementLinkCatalog =
+    moduleKey === 'receipt' || moduleKey === 'payment'
+  const canReusePreviousConfig = previousModuleKeyRef.current === moduleKey
+
+  const moduleConfigQuery = useQuery({
+    queryKey: ['business-page-config', moduleKey],
+    queryFn: () => loadBusinessPageConfig(moduleKey),
+    placeholderData: initialConfig
+      ? () => initialConfig
+      : canReusePreviousConfig
+        ? keepPreviousData
+        : undefined,
+    staleTime: 5 * 60_000,
+  })
+
   const displaySwitchesQuery = useQuery({
-    queryKey: ['general-setting', 'display-switches'],
+    queryKey: ['general-setting', 'client-settings'],
     queryFn: async () => {
       try {
-        return await listDisplaySwitches()
+        return await listClientSettings()
       } catch {
         return []
       }
     },
+    enabled: true,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   })
 
-  const statementLinkCatalog = useStatementLinkCatalog()
+  const statementLinkCatalog = useStatementLinkCatalog(needsStatementLinkCatalog)
 
-  const config = useMemo<ModulePageConfig>(() => {
-    const found = businessPageConfigs[moduleKey]
-    if (!found) {
-      throw new Error(`Unknown module key: ${moduleKey}`)
+  const config = useMemo<ModulePageConfig | undefined>(() => {
+    const found = moduleConfigQuery.data
+    if (!found || found.key !== moduleKey) {
+      return undefined
     }
 
-    const switchCode = WEIGHT_ONLY_VIEW_SETTING_CODES[moduleKey]
     const isWeightOnlyViewEnabled = Boolean(
       switchCode &&
         isDisplaySwitchEnabled(displaySwitchesQuery.data, switchCode),
@@ -147,7 +165,12 @@ export function useModulePageConfig({ moduleKey }: Props) {
       moduleKey,
       statementLinkCatalog,
     )
-  }, [moduleKey, displaySwitchesQuery.data, statementLinkCatalog])
+  }, [
+    moduleKey,
+    moduleConfigQuery.data,
+    displaySwitchesQuery.data,
+    statementLinkCatalog,
+  ])
 
   const showSnowflakeId = useMemo(
     () =>
@@ -163,10 +186,14 @@ export function useModulePageConfig({ moduleKey }: Props) {
     [moduleKey],
   )
 
+  useEffect(() => {
+    previousModuleKeyRef.current = moduleKey
+  }, [moduleKey])
+
   return {
     config,
     showSnowflakeId,
     supportsInvoiceAssist,
-    isLoading: displaySwitchesQuery.isLoading,
+    isLoading: moduleConfigQuery.isLoading || displaySwitchesQuery.isLoading,
   }
 }

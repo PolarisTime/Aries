@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { StatusTag } from '@/components/StatusTag'
@@ -12,6 +12,7 @@ declare module '@tanstack/react-table' {
     align?: string
     fixed?: string
     ellipsis?: string
+    renderCell?: (record: ModuleRecord) => ReactNode
   }
 }
 
@@ -19,6 +20,14 @@ interface Props {
   config: ModulePageConfig
   rowActions: (record: ModuleRecord) => ActionItem[]
   canUpdate: boolean
+}
+
+export interface GridColumnRenderMeta {
+  width?: string
+  align?: string
+  fixed?: string
+  ellipsis?: string
+  renderCell?: (record: ModuleRecord) => ReactNode
 }
 
 export function useGridColumns({
@@ -31,6 +40,22 @@ export function useGridColumns({
   const columns = useMemo((): ColumnDef<ModuleRecord>[] => {
     const cols: ColumnDef<ModuleRecord>[] = []
 
+    if (canUpdate) {
+      cols.push({
+        id: 'actions',
+        header: '操作',
+        meta: {
+          width: '180px',
+          align: 'center',
+          fixed: 'left',
+          renderCell: (record: ModuleRecord) => (
+            <TableActions items={rowActions(record)} />
+          ),
+        },
+        cell: ({ row }) => <TableActions items={rowActions(row.original)} />,
+      })
+    }
+
     for (const colDef of config.columns) {
       cols.push({
         id: colDef.dataIndex,
@@ -39,6 +64,16 @@ export function useGridColumns({
         meta: {
           width: colDef.width ? `${colDef.width}px` : undefined,
           align: colDef.align || 'center',
+          renderCell: (record: ModuleRecord) => {
+            const value = record[colDef.dataIndex]
+            if (colDef.type === 'status' && config.statusMap) {
+              const statusStr = String(value || '')
+              return (
+                <StatusTag status={statusStr} statusMap={config.statusMap} />
+              )
+            }
+            return <span>{formatCellValue(value, colDef.type)}</span>
+          },
         },
         cell: ({ getValue }) => {
           const value = getValue()
@@ -48,15 +83,6 @@ export function useGridColumns({
           }
           return <span>{formatCellValue(value, colDef.type)}</span>
         },
-      })
-    }
-
-    if (canUpdate) {
-      cols.push({
-        id: 'actions',
-        header: '操作',
-        meta: { width: '180px', align: 'center', fixed: 'right' },
-        cell: ({ row }) => <TableActions items={rowActions(row.original)} />,
       })
     }
 

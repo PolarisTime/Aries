@@ -7,6 +7,7 @@ export interface UploadRulePayload {
 interface NumberRuleGenerateRecord {
   moduleKey: string
   generatedNo: string
+  generatedId?: string | null
 }
 
 export interface UploadRuleRecord {

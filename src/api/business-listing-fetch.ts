@@ -18,6 +18,7 @@ export async function fetchModulePage(
   page: number,
   size: number,
   config?: AxiosRequestConfig,
+  fields?: string[],
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
   const response = await http.get<
@@ -28,6 +29,11 @@ export async function fetchModulePage(
       ...params,
       page,
       size,
+      ...(fields?.length
+        ? {
+            [endpointConfig.fieldsParam || 'fields']: fields.join(','),
+          }
+        : {}),
       ...(config?.params as Record<string, unknown> | undefined),
     },
   })
@@ -45,6 +51,7 @@ export async function fetchAllModuleRows(
   search: Record<string, unknown>,
   enforceLimit = false,
   config?: AxiosRequestConfig,
+  fields?: string[],
 ): Promise<{ rows: ModuleRecord[]; truncated: boolean }> {
   const filterParams = buildFilterParams(moduleKey, search)
   const allRows: ModuleRecord[] = []
@@ -59,6 +66,7 @@ export async function fetchAllModuleRows(
       page,
       FULL_SCAN_PAGE_SIZE,
       config,
+      fields,
     )
     allRows.push(...current.rows)
     totalFetched += current.rows.length

@@ -77,6 +77,7 @@ export const ENDPOINTS = {
   ATTACHMENTS_UPLOAD: '/attachments/upload',
   ATTACHMENTS_BINDINGS: '/attachments/bindings',
   NUMBER_RULES_NEXT: '/general-setting/number-rules/next',
+  GENERAL_SETTING_CLIENT_SETTINGS: '/general-setting/client-settings',
   UPLOAD_RULE: '/general-setting/upload-rule',
 
   // Materials

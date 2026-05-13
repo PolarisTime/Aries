@@ -29,6 +29,7 @@ export async function listBusinessModule(
   search: Record<string, unknown>,
   options: ListQueryOptions,
   config?: AxiosRequestConfig,
+  fields?: string[],
 ) {
   const useClientFilter = shouldClientFilter(moduleKey, search)
   if (useClientFilter) {
@@ -38,6 +39,7 @@ export async function listBusinessModule(
       search,
       true,
       config,
+      fields,
     )
     const filteredRows = applyClientFilters(moduleKey, fetchedRows, search)
     return buildTableResponse(
@@ -54,6 +56,7 @@ export async function listBusinessModule(
     Number(params.page || 0),
     Number(params.size || options.pageSize),
     config,
+    fields,
   )
   return buildTableResponse(current.rows, current.totalElements)
 }
@@ -106,6 +109,7 @@ export async function searchBusinessModule(
     0,
     maxSize,
     config,
+    undefined,
   )
   return page.rows
 }
