@@ -1,27 +1,28 @@
 import { z } from 'zod'
-import { materialInfoFields, weightPriceFields } from './api'
+import { materialInfoSchema, weightPriceSchema } from './api'
 
 // ── 行项目 Schema ──────────────────────────────────────
 
-/** 行项目通用字段 — .passthrough() 保留模块特有字段 */
+/** 行项目通用字段 — .passthrough() 保留模块特有字段兼容存量 */
 export const lineItemSchema = z.object({
   id: z.string().optional(),
   sourceNo: z.string().optional(),
   sourcePurchaseOrderItemId: z.union([z.string(), z.number()]).optional(),
   sourceSalesOrderItemId: z.union([z.string(), z.number()]).optional(),
   sourceInboundItemId: z.union([z.string(), z.number()]).optional(),
-  ...materialInfoFields,
   warehouseName: z.string().optional(),
   batchNo: z.string().optional(),
   settlementMode: z.string().optional(),
-  ...weightPriceFields,
   customerName: z.string().optional(),
   projectName: z.string().optional(),
   materialName: z.string().optional(),
   weighWeightTon: z.union([z.string(), z.number()]).optional(),
   weightAdjustmentTon: z.union([z.string(), z.number()]).optional(),
   weightAdjustmentAmount: z.union([z.string(), z.number()]).optional(),
-}).passthrough()
+})
+  .merge(materialInfoSchema)
+  .merge(weightPriceSchema)
+  .passthrough()
 
 export type LineItem = z.infer<typeof lineItemSchema>
 
@@ -41,17 +42,16 @@ export const moduleRecordSchema = z.object({
 
 export type ModuleRecord = z.infer<typeof moduleRecordSchema>
 
-// ── 业务实体 Schema（按模块） ──────────────────────────
+// ── 业务实体 Schema（按模块精确类型） ──────────────────
 
 /** 采购订单行项目 */
-export const purchaseOrderItemSchema = lineItemSchema.required({
-  materialCode: true,
-}).extend({
+export const purchaseOrderItemSchema = lineItemSchema.extend({
   quantity: z.number(),
   unitPrice: z.number(),
   pieceWeightTon: z.number(),
   piecesPerBundle: z.number(),
   unit: z.string(),
+  materialCode: z.string(),
 })
 export type PurchaseOrderItem = z.infer<typeof purchaseOrderItemSchema>
 
@@ -85,16 +85,19 @@ export const salesOutboundItemSchema = lineItemSchema.extend({
 })
 export type SalesOutboundItem = z.infer<typeof salesOutboundItemSchema>
 
-// ── 解析辅助 ───────────────────────────────────────────
+// ── 运行时解析（API 边界使用）──────────────────────────
 
-export function parseRecord(v: unknown): ModuleRecord {
-  return moduleRecordSchema.safeParse(v).success
-    ? (v as ModuleRecord)
-    : ({ id: '' } as ModuleRecord)
+const EMPTY_RECORD: ModuleRecord = { id: '' }
+const EMPTY_LINE_ITEM: LineItem = { id: '' }
+
+/** 安全解析模块记录，失败返回 id 为空的哨兵记录 */
+export function parseModuleRecord(v: unknown): ModuleRecord {
+  const r = moduleRecordSchema.safeParse(v)
+  return r.success ? r.data : EMPTY_RECORD
 }
 
+/** 安全解析行项目，失败返回 id 为空的哨兵记录 */
 export function parseLineItem(v: unknown): LineItem {
-  return lineItemSchema.safeParse(v).success
-    ? (v as LineItem)
-    : ({ id: '' } as LineItem)
+  const r = lineItemSchema.safeParse(v)
+  return r.success ? r.data : EMPTY_LINE_ITEM
 }

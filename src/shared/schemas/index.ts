@@ -1,14 +1,18 @@
-// API 契约
 export {
   apiResponseSchema,
   pagedResultSchema,
   businessNoResultSchema,
+  materialInfoSchema,
+  weightPriceSchema,
+  documentStatusSchema,
+  enabledStatusSchema,
   type ApiResponse,
   type PagedResult,
   type BusinessNoResult,
+  type DocumentStatus,
+  type EnabledStatus,
 } from './api'
 
-// 模块记录
 export {
   lineItemSchema,
   moduleRecordSchema,
@@ -16,7 +20,7 @@ export {
   salesOrderItemSchema,
   purchaseInboundItemSchema,
   salesOutboundItemSchema,
-  parseRecord,
+  parseModuleRecord,
   parseLineItem,
   type LineItem,
   type ModuleRecord,

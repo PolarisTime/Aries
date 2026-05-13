@@ -1,20 +1,16 @@
 /**
- * 类型安全 API 客户端 —— Zod Schema 校验 + 类型收窄
+ * 类型安全 API 客户端 —— Zod Schema 运行时校验 + TS 类型自动推导。
  *
  * 用法：
- *   import { z } from 'zod'
- *   import { typedPost, typedGet } from '@/api/typed-client'
- *   import { moduleRecordSchema } from '@/shared/schemas'
- *
- *   const result = await typedPost('/purchase-order', payload, moduleRecordSchema)
- *   // result 类型为 ModuleRecord，运行时已通过 Zod 校验
+ *   const result = await typedPost('/purchase-order', payload, purchaseOrderItemSchema)
+ *   // result 类型为 PurchaseOrderItem（由 z.infer 推导），且已通过运行时 Zod 校验
  */
 import { z } from 'zod'
 import { http } from './http'
 import { assertApiSuccess } from './client'
-import type { ApiResponse } from '@/shared/schemas'
+import { pagedResultSchema, type ApiResponse, type PagedResult } from '@/shared/schemas'
 
-// ── 类型安全的 POST ────────────────────────────────────
+// ── POST ────────────────────────────────────────────────
 
 export async function typedPost<T extends z.ZodTypeAny>(
   url: string,
@@ -26,11 +22,13 @@ export async function typedPost<T extends z.ZodTypeAny>(
   )
   const parsed = responseSchema.safeParse(response.data)
   if (!parsed.success) {
-    console.error('[typedPost] Schema validation failed for', url, parsed.error.issues)
+    console.error('[typedPost] Schema mismatch', url, parsed.error.issues)
     throw new Error(`响应数据校验失败: ${url}`)
   }
-  return parsed.data as z.infer<T>
+  return parsed.data
 }
+
+// ── PUT ─────────────────────────────────────────────────
 
 export async function typedPut<T extends z.ZodTypeAny>(
   url: string,
@@ -42,14 +40,15 @@ export async function typedPut<T extends z.ZodTypeAny>(
   )
   const parsed = responseSchema.safeParse(response.data)
   if (!parsed.success) {
-    console.error('[typedPut] Schema validation failed for', url, parsed.error.issues)
+    console.error('[typedPut] Schema mismatch', url, parsed.error.issues)
     throw new Error(`响应数据校验失败: ${url}`)
   }
-  return parsed.data as z.infer<T>
+  return parsed.data
 }
 
-// ── 类型安全的 GET ─────────────────────────────────────
+// ── GET ─────────────────────────────────────────────────
 
+/** params 允许 Record<string, unknown> — 网络边界原始数据，Schema 校验在响应侧 */
 export async function typedGet<T extends z.ZodTypeAny>(
   url: string,
   params: Record<string, unknown> | undefined,
@@ -60,13 +59,13 @@ export async function typedGet<T extends z.ZodTypeAny>(
   )
   const parsed = responseSchema.safeParse(response.data)
   if (!parsed.success) {
-    console.error('[typedGet] Schema validation failed for', url, parsed.error.issues)
+    console.error('[typedGet] Schema mismatch', url, parsed.error.issues)
     throw new Error(`响应数据校验失败: ${url}`)
   }
-  return parsed.data as z.infer<T>
+  return parsed.data
 }
 
-// ── 类型安全的 DELETE ──────────────────────────────────
+// ── DELETE ──────────────────────────────────────────────
 
 export async function typedDelete<T extends z.ZodTypeAny>(
   url: string,
@@ -78,16 +77,13 @@ export async function typedDelete<T extends z.ZodTypeAny>(
   )
   const parsed = responseSchema.safeParse(response.data)
   if (!parsed.success) {
-    console.error('[typedDelete] Schema validation failed for', url, parsed.error.issues)
+    console.error('[typedDelete] Schema mismatch', url, parsed.error.issues)
     throw new Error(`响应数据校验失败: ${url}`)
   }
-  return parsed.data as z.infer<T>
+  return parsed.data
 }
 
-// ── 分页查询 ───────────────────────────────────────────
-
-import { pagedResultSchema } from '@/shared/schemas'
-import type { PagedResult } from '@/shared/schemas'
+// ── 分页查询 ────────────────────────────────────────────
 
 export async function typedPage<T extends z.ZodTypeAny>(
   url: string,
@@ -100,8 +96,8 @@ export async function typedPage<T extends z.ZodTypeAny>(
   )
   const parsed = schema.safeParse(response.data)
   if (!parsed.success) {
-    console.error('[typedPage] Schema validation failed for', url, parsed.error.issues)
+    console.error('[typedPage] Schema mismatch', url, parsed.error.issues)
     throw new Error(`分页数据校验失败: ${url}`)
   }
-  return parsed.data as PagedResult<z.infer<T>>
+  return parsed.data
 }
