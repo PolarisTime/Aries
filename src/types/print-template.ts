@@ -1,25 +1,2 @@
-export interface PrintTemplateRecord {
-  id: string
-  templateName: string
-  templateHtml: string
-  isDefault: string
-  source?: 'db' | 'file'
-  fileName?: string
-  billType?: string
-  createTime?: string
-  updateTime?: string
-}
-
-export interface PrintTemplateResponse<T = unknown> {
-  code: number
-  data?: T
-  message?: string
-}
-
-export interface SavePrintTemplatePayload {
-  id?: string
-  billType: string
-  templateName: string
-  templateHtml: string
-  isDefault?: '0' | '1'
-}
+/** @deprecated 类型已迁移至 src/shared/schemas/print-template.ts，请从 '@/shared/schemas' 导入 */
+export type { PrintTemplateRecord, SavePrintTemplatePayload } from '@/shared/schemas'

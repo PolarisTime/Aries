@@ -1,14 +1,2 @@
-export interface MaterialImportResult {
-  totalRows: number
-  successCount: number
-  createdCount: number
-  updatedCount: number
-  failedCount: number
-  failures: MaterialImportFailure[]
-}
-
-export interface MaterialImportFailure {
-  rowNumber: number
-  materialCode: string
-  reason: string
-}
+/** @deprecated 类型已迁移至 src/shared/schemas/material.ts，请从 '@/shared/schemas' 导入 */
+export type { MaterialImportResult, MaterialImportFailure } from '@/shared/schemas'
