@@ -1,4 +1,6 @@
-import { Button, Divider, Popconfirm } from 'antd'
+import Button from 'antd/es/button'
+import Divider from 'antd/es/divider'
+import Popconfirm from 'antd/es/popconfirm'
 import type { ReactNode } from 'react'
 import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
 

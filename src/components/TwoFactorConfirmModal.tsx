@@ -1,5 +1,8 @@
 import { SafetyCertificateOutlined } from '@ant-design/icons'
-import { Flex, Input, Modal, Typography } from 'antd'
+import Flex from 'antd/es/flex'
+import Input from 'antd/es/input'
+import Modal from 'antd/es/modal'
+import Typography from 'antd/es/typography'
 import { useState } from 'react'
 import { message } from '@/utils/antd-app'
 
