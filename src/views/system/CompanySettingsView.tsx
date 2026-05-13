@@ -21,6 +21,7 @@ import {
   normalizeSettlementAccounts,
   type SettlementAccountFormRow,
 } from '@/views/system/company-settings-view-utils'
+import { asString } from '@/utils/type-narrowing'
 import { message } from '@/utils/antd-app'
 
 export function CompanySettingsView() {
@@ -167,7 +168,7 @@ export function CompanySettingsView() {
   const overviewItems = useMemo(
     () => [
       { label: '企业模式', value: '单企业' },
-      { label: '主体状态', value: form.getFieldValue('status') || '--' },
+      { label: '主体状态', value: asString(form.getFieldValue('status')) || '--' },
       { label: '结算银行', value: `${settlementAccounts.length} 个` },
     ],
     [form, settlementAccounts],
