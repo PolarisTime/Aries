@@ -1,8 +1,25 @@
-import type { ModuleLineItem, ModuleParentImportDefinition, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleLineItem,
+  ModuleParentImportDefinition,
+  ModuleRecord,
+} from '@/types/module-page'
 import { parseParentRelationNos } from './module-adapter-shared'
 
 function getSourceParentItemId(item: ModuleLineItem) {
-  return String(item.sourceInboundItemId || item.sourcePurchaseOrderItemId || item.sourceSalesOrderItemId || '').trim()
+  return String(
+    item.sourceInboundItemId ||
+      item.sourcePurchaseOrderItemId ||
+      item.sourceSalesOrderItemId ||
+      '',
+  ).trim()
+}
+
+function resolvePersistedParentRelationNo(item: ModuleLineItem) {
+  const explicitRelationNo = String(item._parentRelationNo || '').trim()
+  if (explicitRelationNo) {
+    return explicitRelationNo
+  }
+  return String(item.sourceNo || '').trim()
 }
 
 function toSafeNumber(value: unknown) {
@@ -27,29 +44,33 @@ function isZeroLike(value: unknown) {
 }
 
 function isEmptyDraftLineItem(item: ModuleLineItem) {
-  if (String(item._parentRelationNo || '').trim() || getSourceParentItemId(item)) {
+  if (
+    resolvePersistedParentRelationNo(item) ||
+    getSourceParentItemId(item)
+  ) {
     return false
   }
 
   const unit = String(item.unit ?? '').trim()
   const quantityUnit = String(item.quantityUnit ?? '').trim()
-  return [
-    item.materialCode,
-    item.brand,
-    item.category,
-    item.material,
-    item.spec,
-    item.length,
-    item.batchNo,
-    item.warehouseName,
-    item.sourceNo,
-    item.customerName,
-    item.projectName,
-    item.materialName,
-  ].every(isBlankString)
-    && (!unit || unit === '吨')
-    && (!quantityUnit || quantityUnit === '件')
-    && [
+  return (
+    [
+      item.materialCode,
+      item.brand,
+      item.category,
+      item.material,
+      item.spec,
+      item.length,
+      item.batchNo,
+      item.warehouseName,
+      item.sourceNo,
+      item.customerName,
+      item.projectName,
+      item.materialName,
+    ].every(isBlankString) &&
+    (!unit || unit === '吨') &&
+    (!quantityUnit || quantityUnit === '件') &&
+    [
       item.quantity,
       item.pieceWeightTon,
       item.piecesPerBundle,
@@ -60,6 +81,7 @@ function isEmptyDraftLineItem(item: ModuleLineItem) {
       item.unitPrice,
       item.amount,
     ].every(isZeroLike)
+  )
 }
 
 export function findParentRecordByRelationNo(
@@ -67,7 +89,9 @@ export function findParentRecordByRelationNo(
   parentDisplayFieldKey: string,
   relationNo: string,
 ) {
-  return rows.find((record) => String(record[parentDisplayFieldKey] || '') === relationNo)
+  return rows.find(
+    (record) => String(record[parentDisplayFieldKey] || '') === relationNo,
+  )
 }
 
 export function buildParentImportState(options: {
@@ -85,19 +109,29 @@ export function buildParentImportState(options: {
     cloneLineItems,
   } = options
 
-  const parentNo = String(parentRecord[parentImportConfig.parentDisplayFieldKey] || '')
+  const parentNo = String(
+    parentRecord[parentImportConfig.parentDisplayFieldKey] || '',
+  )
   const hasImportedCurrentParent = currentParentNos.includes(parentNo)
   const mergedParentNos = hasImportedCurrentParent
     ? currentParentNos
     : [...currentParentNos, parentNo]
   const mappedValues = parentImportConfig.mapParentToDraft?.(parentRecord) || {}
-  const shouldApplyMappedValues = !currentParentNos.length || (currentParentNos.length === 1 && hasImportedCurrentParent)
+  const shouldApplyMappedValues =
+    !currentParentNos.length ||
+    (currentParentNos.length === 1 && hasImportedCurrentParent)
 
   const sourceItems = parentImportConfig.transformItems
     ? parentImportConfig.transformItems(parentRecord)
-    : Array.isArray(parentRecord.items) ? cloneLineItems(parentRecord.items) : []
-  const effectiveCurrentItems = currentItems.filter((item) => !isEmptyDraftLineItem(item))
-  const currentParentItems = effectiveCurrentItems.filter((item) => String(item._parentRelationNo || '') === parentNo)
+    : Array.isArray(parentRecord.items)
+      ? cloneLineItems(parentRecord.items)
+      : []
+  const effectiveCurrentItems = currentItems.filter(
+    (item) => !isEmptyDraftLineItem(item),
+  )
+  const currentParentItems = effectiveCurrentItems.filter(
+    (item) => resolvePersistedParentRelationNo(item) === parentNo,
+  )
   const currentAllocatedQuantityMap = new Map<string, number>()
   const currentAllocatedWeightTonMap = new Map<string, number>()
   const currentAllocatedAmountMap = new Map<string, number>()
@@ -108,15 +142,18 @@ export function buildParentImportState(options: {
     }
     currentAllocatedQuantityMap.set(
       sourceParentItemId,
-      toSafeNumber(currentAllocatedQuantityMap.get(sourceParentItemId)) + toSafeNumber(item.quantity),
+      toSafeNumber(currentAllocatedQuantityMap.get(sourceParentItemId)) +
+        toSafeNumber(item.quantity),
     )
     currentAllocatedWeightTonMap.set(
       sourceParentItemId,
-      toSafeNumber(currentAllocatedWeightTonMap.get(sourceParentItemId)) + toSafeNumber(item.weightTon),
+      toSafeNumber(currentAllocatedWeightTonMap.get(sourceParentItemId)) +
+        toSafeNumber(item.weightTon),
     )
     currentAllocatedAmountMap.set(
       sourceParentItemId,
-      toSafeNumber(currentAllocatedAmountMap.get(sourceParentItemId)) + toSafeNumber(item.amount),
+      toSafeNumber(currentAllocatedAmountMap.get(sourceParentItemId)) +
+        toSafeNumber(item.amount),
     )
   })
   const importedItems: ModuleLineItem[] = sourceItems
@@ -129,29 +166,53 @@ export function buildParentImportState(options: {
       if (!sourceParentItemId) {
         return nextItem
       }
-      const remainingQuantity = toSafeNumber(item.remainingQuantity ?? item.quantity)
+      const remainingQuantity = toSafeNumber(
+        item.remainingQuantity ?? item.quantity,
+      )
       const currentAllocatedQuantity = sourceParentItemId
         ? toSafeNumber(currentAllocatedQuantityMap.get(sourceParentItemId))
         : 0
-      const nextQuantity = currentAllocatedQuantity > 0 ? currentAllocatedQuantity : remainingQuantity
+      const nextQuantity =
+        currentAllocatedQuantity > 0
+          ? currentAllocatedQuantity
+          : remainingQuantity
       const explicitMaxImportQuantity = toFiniteNumber(item.maxImportQuantity)
-      const maxImportQuantity = explicitMaxImportQuantity !== undefined
-        ? explicitMaxImportQuantity
-        : remainingQuantity + currentAllocatedQuantity
-      const remainingWeightTon = toSafeNumber(item.remainingWeightTon ?? item._maxImportWeightTon ?? item.weightTon)
-      const currentAllocatedWeightTon = toSafeNumber(currentAllocatedWeightTonMap.get(sourceParentItemId))
-      const nextWeightTon = currentAllocatedWeightTon > 0 ? currentAllocatedWeightTon : remainingWeightTon
-      const explicitMaxImportWeightTon = toFiniteNumber(item.maxImportWeightTon ?? item._maxImportWeightTon)
-      const maxImportWeightTon = explicitMaxImportWeightTon !== undefined
-        ? explicitMaxImportWeightTon
-        : remainingWeightTon + currentAllocatedWeightTon
-      const remainingAmount = toSafeNumber(item.remainingAmount ?? item._maxImportAmount ?? item.amount)
-      const currentAllocatedAmount = toSafeNumber(currentAllocatedAmountMap.get(sourceParentItemId))
-      const nextAmount = currentAllocatedAmount > 0 ? currentAllocatedAmount : remainingAmount
-      const explicitMaxImportAmount = toFiniteNumber(item.maxImportAmount ?? item._maxImportAmount)
-      const maxImportAmount = explicitMaxImportAmount !== undefined
-        ? explicitMaxImportAmount
-        : remainingAmount + currentAllocatedAmount
+      const maxImportQuantity =
+        explicitMaxImportQuantity !== undefined
+          ? explicitMaxImportQuantity
+          : remainingQuantity + currentAllocatedQuantity
+      const remainingWeightTon = toSafeNumber(
+        item.remainingWeightTon ?? item._maxImportWeightTon ?? item.weightTon,
+      )
+      const currentAllocatedWeightTon = toSafeNumber(
+        currentAllocatedWeightTonMap.get(sourceParentItemId),
+      )
+      const nextWeightTon =
+        currentAllocatedWeightTon > 0
+          ? currentAllocatedWeightTon
+          : remainingWeightTon
+      const explicitMaxImportWeightTon = toFiniteNumber(
+        item.maxImportWeightTon ?? item._maxImportWeightTon,
+      )
+      const maxImportWeightTon =
+        explicitMaxImportWeightTon !== undefined
+          ? explicitMaxImportWeightTon
+          : remainingWeightTon + currentAllocatedWeightTon
+      const remainingAmount = toSafeNumber(
+        item.remainingAmount ?? item._maxImportAmount ?? item.amount,
+      )
+      const currentAllocatedAmount = toSafeNumber(
+        currentAllocatedAmountMap.get(sourceParentItemId),
+      )
+      const nextAmount =
+        currentAllocatedAmount > 0 ? currentAllocatedAmount : remainingAmount
+      const explicitMaxImportAmount = toFiniteNumber(
+        item.maxImportAmount ?? item._maxImportAmount,
+      )
+      const maxImportAmount =
+        explicitMaxImportAmount !== undefined
+          ? explicitMaxImportAmount
+          : remainingAmount + currentAllocatedAmount
 
       nextItem.quantity = nextQuantity
       nextItem._maxImportQuantity = maxImportQuantity
@@ -165,7 +226,10 @@ export function buildParentImportState(options: {
       }
       return nextItem
     })
-    .filter((item) => getSourceParentItemId(item) === '' || Number(item.quantity || 0) > 0)
+    .filter(
+      (item) =>
+        getSourceParentItemId(item) === '' || Number(item.quantity || 0) > 0,
+    )
 
   return {
     parentNo,
@@ -176,13 +240,12 @@ export function buildParentImportState(options: {
     shouldApplyMappedValues,
     nextItems: hasImportedCurrentParent
       ? [
-          ...effectiveCurrentItems.filter((item) => String(item._parentRelationNo || '') !== parentNo),
+          ...effectiveCurrentItems.filter(
+            (item) => resolvePersistedParentRelationNo(item) !== parentNo,
+          ),
           ...importedItems,
         ]
-      : [
-          ...effectiveCurrentItems,
-          ...importedItems,
-        ],
+      : [...effectiveCurrentItems, ...importedItems],
   }
 }
 
@@ -193,9 +256,13 @@ export function buildOccupiedParentMap(
 ) {
   return Object.fromEntries(
     rows
-      .filter((record) => String(record.id) !== String(currentEditorRecordId || ''))
+      .filter(
+        (record) => String(record.id) !== String(currentEditorRecordId || ''),
+      )
       .flatMap((record) =>
-        parseParentRelationNos(record[parentFieldKey]).map((parentNo) => [parentNo, record] as const),
+        parseParentRelationNos(record[parentFieldKey]).map(
+          (parentNo) => [parentNo, record] as const,
+        ),
       ),
   )
 }

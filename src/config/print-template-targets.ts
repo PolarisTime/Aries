@@ -1,4 +1,4 @@
-import { businessPageConfigs } from '@/config/business-pages'
+import { modulePageMetaMap } from '@/config/module-page-meta'
 
 export interface PrintTemplateTargetOption {
   value: string
@@ -6,29 +6,30 @@ export interface PrintTemplateTargetOption {
 }
 
 export const allowedPrintTemplateTargetKeys = [
-  'purchase-orders',
-  'purchase-inbounds',
-  'sales-orders',
-  'sales-outbounds',
-  'freight-bills',
-  'purchase-contracts',
-  'sales-contracts',
-  'supplier-statements',
-  'customer-statements',
-  'freight-statements',
-  'receipts',
-  'payments',
-  'invoice-receipts',
-  'invoice-issues',
+  'purchase-order',
+  'purchase-inbound',
+  'sales-order',
+  'sales-outbound',
+  'freight-bill',
+  'purchase-contract',
+  'sales-contract',
+  'supplier-statement',
+  'customer-statement',
+  'freight-statement',
+  'receipt',
+  'payment',
+  'invoice-receipt',
+  'invoice-issue',
 ] as const
 
-export const printTemplateTargetOptions: PrintTemplateTargetOption[] = allowedPrintTemplateTargetKeys
-  .map((key) => businessPageConfigs[key])
-  .filter((config) => Boolean(config))
-  .map((config) => ({
-    value: config.key,
-    label: config.title,
-  }))
+export const printTemplateTargetOptions: PrintTemplateTargetOption[] =
+  allowedPrintTemplateTargetKeys
+    .map((key) => modulePageMetaMap[key])
+    .filter((config) => Boolean(config))
+    .map((config) => ({
+      value: config.key,
+      label: config.title,
+    }))
 
 export const printTemplateTargetMap = Object.fromEntries(
   printTemplateTargetOptions.map((item) => [item.value, item.label]),

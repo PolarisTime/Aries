@@ -31,11 +31,12 @@ export const ENDPOINTS = {
   ACCOUNT_2FA_DISABLE: '/account/security/2fa/disable',
 
   // User accounts
-  USER_ACCOUNTS: '/user-accounts',
-  USER_ACCOUNTS_LOGIN_NAME_CHECK: '/user-accounts/login-name-availability',
+  USER_ACCOUNTS: '/user-account',
+  USER_ACCOUNTS_LOGIN_NAME_CHECK: '/user-account/login-name-availability',
+  USER_ACCOUNT_PREFERENCES: '/user-account/preferences',
 
   // Permission catalog
-  PERMISSION_CATALOG: '/permission-management/catalog',
+  PERMISSION_CATALOG: '/permission/catalog',
 
   // Roles
   ROLE_SETTINGS: '/role-settings',
@@ -45,8 +46,8 @@ export const ENDPOINTS = {
   SYSTEM_MENUS_TREE: '/system/menus/tree',
 
   // Company settings
-  COMPANY_SETTINGS_CURRENT: '/company-settings/current',
-  COMPANY_NAME: '/company-settings/name',
+  COMPANY_SETTINGS_CURRENT: '/company-setting/current',
+  COMPANY_NAME: '/company-setting/name',
 
   // Health
   HEALTH: '/health',
@@ -60,10 +61,10 @@ export const ENDPOINTS = {
   DATABASE_IMPORT: '/system/database/import',
 
   // Security keys
-  SECURITY_KEYS: '/system/security-keys',
+  SECURITY_KEYS: '/system/security-key',
 
   // Print templates
-  PRINT_TEMPLATES: '/print-templates',
+  PRINT_TEMPLATES: '/print-template',
 
   // Setup
   SETUP_STATUS: '/setup/status',
@@ -75,23 +76,25 @@ export const ENDPOINTS = {
   // Attachments & general settings
   ATTACHMENTS_UPLOAD: '/attachments/upload',
   ATTACHMENTS_BINDINGS: '/attachments/bindings',
-  NUMBER_RULES_NEXT: '/general-settings/number-rules/next',
-  UPLOAD_RULE: '/general-settings/upload-rule',
+  NUMBER_RULES_NEXT: '/general-setting/number-rules/next',
+  GENERAL_SETTING_CLIENT_SETTINGS: '/general-setting/client-settings',
+  UPLOAD_RULE: '/general-setting/upload-rule',
 
   // Materials
-  MATERIALS_IMPORT: '/materials/import',
-  MATERIALS_TEMPLATE: '/materials/template',
-  MATERIALS_EXPORT: '/materials/export',
-  MATERIAL_GRADES: '/materials/grades',
+  MATERIALS_IMPORT: '/material/import',
+  MATERIALS_TEMPLATE: '/material/template',
+  MATERIALS_EXPORT: '/material/export',
+  MATERIALS_SEARCH: '/material/search',
+  MATERIAL_GRADES: '/material/grades',
 
   // Departments (used by user-accounts)
-  DEPARTMENTS_OPTIONS: '/departments/options',
+  DEPARTMENTS_OPTIONS: '/department/options',
 
   // Master data option lists (dynamic, replaces hardcoded module-options.ts values)
-  WAREHOUSES_OPTIONS: '/warehouses/options',
-  CUSTOMERS_OPTIONS: '/customers/options',
-  SUPPLIERS_OPTIONS: '/suppliers/options',
-  CARRIERS_OPTIONS: '/carriers/options',
+  WAREHOUSES_OPTIONS: '/warehouse/options',
+  CUSTOMERS_OPTIONS: '/customer/options',
+  SUPPLIERS_OPTIONS: '/supplier/options',
+  CARRIERS_OPTIONS: '/carrier/options',
   MATERIAL_CATEGORIES: '/material-categories/options',
 } as const
 

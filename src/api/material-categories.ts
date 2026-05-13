@@ -1,7 +1,6 @@
-import { http } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
-import { shallowRef } from 'vue'
+import { http } from './client'
 
 export interface MaterialCategoryOption {
   value: string
@@ -13,19 +12,16 @@ const cachedCategories = shallowRef<MaterialCategoryOption[] | null>(null)
 let fetchFailed = false
 let loadingCategories: Promise<MaterialCategoryOption[]> | null = null
 
-export async function fetchMaterialCategories(): Promise<MaterialCategoryOption[]> {
-  if (cachedCategories.value !== null) return cachedCategories.value
-  if (loadingCategories) return loadingCategories
-
-  loadingCategories = (async () => {
-    const response = await http.get<ApiResponse<MaterialCategoryOption[]>>(ENDPOINTS.MATERIAL_CATEGORIES)
-    cachedCategories.value = normalizeMaterialCategories(response.data || [])
-    fetchFailed = false
-    return cachedCategories.value
-  })()
-
+export async function fetchMaterialCategories(): Promise<
+  MaterialCategoryOption[]
+> {
+  if (cachedCategories) return cachedCategories
   try {
-    return await loadingCategories
+    const response = await http.get<ApiResponse<MaterialCategoryOption[]>>(
+      ENDPOINTS.MATERIAL_CATEGORIES,
+    )
+    cachedCategories = response.data || []
+    return cachedCategories
   } catch {
     fetchFailed = true
     return []

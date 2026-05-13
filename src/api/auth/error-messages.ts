@@ -44,13 +44,18 @@ export function normalizeErrorMessage(rawMessage: unknown, status?: number) {
     }
   }
 
-  const requiredFieldMatch = description.match(/^['"]?([^'"]+)['"]?\s+is required$/i)
+  const requiredFieldMatch = description.match(
+    /^['"]?([^'"]+)['"]?\s+is required$/i,
+  )
   if (requiredFieldMatch) {
     const fieldName = requiredFieldMatch[1]?.trim()
     return fieldName ? `缺少必填字段：${fieldName}` : '必填项不能为空'
   }
 
-  if (/request failed with status code 5\d{2}/i.test(description) || (status && status >= 500)) {
+  if (
+    /request failed with status code 5\d{2}/i.test(description) ||
+    (status && status >= 500)
+  ) {
     return '服务暂时不可用，请稍后重试'
   }
 

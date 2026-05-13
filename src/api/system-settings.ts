@@ -1,47 +1,48 @@
-import { assertApiSuccess, http } from '@/api/client'
-import type { ApiResponse } from '@/types/api'
+import {
+  listAllBusinessModuleRows,
+  saveBusinessModule,
+  updatePageUploadRule,
+} from '@/api/business'
+import type { UploadRulePayload } from '@/api/business-types'
 import type { ModuleRecord } from '@/types/module-page'
+import { isToggleSetting } from '@/views/system/general-settings-view-utils'
+
+const MODULE_KEY = 'general-setting'
 
 export const DISPLAY_SWITCH_CODES = {
-  hideAuditedListRecords: 'UI_HIDE_AUDITED_LIST_RECORDS',
-  showSnowflakeId: 'UI_SHOW_SNOWFLAKE_ID',
   weightOnlyPurchaseInbounds: 'UI_WEIGHT_ONLY_PURCHASE_INBOUNDS',
   weightOnlySalesOutbounds: 'UI_WEIGHT_ONLY_SALES_OUTBOUNDS',
+  showSnowflakeId: 'UI_SHOW_SNOWFLAKE_ID',
+  useSnowflakeBusinessNo: 'SYS_USE_SNOWFLAKE_ID_AS_BUSINESS_NO',
 } as const
 
-export type DisplaySwitchCode = typeof DISPLAY_SWITCH_CODES[keyof typeof DISPLAY_SWITCH_CODES]
-export const CLIENT_SETTING_CODES = {
-  defaultListPageSize: 'UI_DEFAULT_LIST_PAGE_SIZE',
-} as const
-
-export interface StatementGeneratorRules {
-  customerStatementReceiptAmountZero: boolean
-  supplierStatementFullPayment: boolean
+export function listSystemSettings() {
+  return listAllBusinessModuleRows(MODULE_KEY, {})
 }
 
-interface DisplaySwitchResponse {
-  id?: string | number
-  settingCode?: string
-  settingName?: string
-  billName?: string
-  sampleNo?: string
-  status?: string
-  remark?: string
+export function saveSystemSetting(record: ModuleRecord) {
+  return saveBusinessModule(MODULE_KEY, record)
 }
 
-function normalizeSwitch(record: DisplaySwitchResponse): ModuleRecord {
-  return {
-    ...record,
-    id: String(record.id ?? ''),
-  }
+export function updateSystemUploadRule(record: UploadRulePayload) {
+  return updatePageUploadRule(MODULE_KEY, record)
 }
 
-export async function listDisplaySwitches(): Promise<ModuleRecord[]> {
+export async function listDisplaySwitches() {
+  const rows = await listSystemSettings()
+  return rows.filter(isToggleSetting)
+}
+
+export async function listClientSettings() {
+  const { assertApiSuccess, http } = await import('@/api/client')
   const response = assertApiSuccess(
-    await http.get<ApiResponse<DisplaySwitchResponse[]>>('/general-settings/display-switches'),
-    '加载显示设置失败',
+    await http.get<{
+      code?: number
+      message?: string
+      data?: ModuleRecord[]
+    }>('/general-setting/client-settings'),
   )
-  return (response.data || []).map(normalizeSwitch)
+  return Array.isArray(response.data) ? response.data : []
 }
 
 export async function listClientSettings(): Promise<ModuleRecord[]> {
@@ -65,11 +66,12 @@ export async function getStatementGeneratorRules(): Promise<StatementGeneratorRu
 
 export function isDisplaySwitchEnabled(
   rows: ModuleRecord[] | undefined,
-  settingCode: DisplaySwitchCode | string,
+  settingCode: string,
 ) {
-  return Boolean((rows || []).some((row) =>
-    String(row.settingCode || '') === settingCode && String(row.status || '') === '正常',
-  ))
+  const matched = rows?.find(
+    (record) => String(record.settingCode || '').trim() === settingCode,
+  )
+  return String(matched?.status || '') === '正常'
 }
 
 export function getClientSettingNumber(

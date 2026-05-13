@@ -1,17 +1,18 @@
 # Aries Web
 
-Aries 是 Leo ERP 的前端工作台，负责业务单据录入、审批、查询、全局搜索、附件操作和系统设置页面。
+Aries 是 Leo ERP 的 React 前端工作台，基于 `Vite 8 + React 19 + TypeScript + Ant Design 6`。
 
 ## 技术栈
 
-- Vue 3
+- React 19
 - TypeScript
 - Vite 8
-- Pinia
-- Vue Router
+- TanStack Router
 - TanStack Query
-- Ant Design Vue
-- TanStack Table
+- Ant Design 6
+- Zustand
+- Day.js
+- Biome
 - Vitest
 - Playwright
 
@@ -42,10 +43,18 @@ pnpm dev --host 0.0.0.0
 - `VITE_API_BASE_URL=/api`
 - `VITE_PROXY_TARGET=http://127.0.0.1:11211`
 
+如果需要同时启动前后端，优先在工作区根目录执行：
+
+```bash
+bash scripts/start-local.sh
+```
+
 ## 常用命令
 
 ```bash
 pnpm lint
+pnpm lint:fix
+pnpm format
 pnpm typecheck
 pnpm test:unit
 pnpm build
@@ -91,8 +100,22 @@ docker build -t aries-web:ci .
 - `VITE_API_BASE_URL`
 - `VITE_PROXY_TARGET`
 
-## 提交前建议
+## 工程约定
+
+- 使用 `Biome` 统一处理 lint 和 format，不再单独使用 ESLint / Prettier。
+- 使用 `TanStack Query` 管理服务端状态与缓存。
+- 不引入 `ant-design-pro` 脚手架，不切换到 `Umi`。
+- 如需 Pro 风格组件，只局部引入 `@ant-design/pro-components`。
+
+## 提交前检查
 
 1. 确认 `.env.local` 未被跟踪。
-2. 确认测试代码没有写入真实账号或密码。
-3. 至少执行 `pnpm lint`、`pnpm typecheck`、`pnpm test:unit`。
+2. 确认测试或调试代码没有写死真实账号、密码、API Key。
+3. 运行以下检查：
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test:unit
+pnpm build-only
+```

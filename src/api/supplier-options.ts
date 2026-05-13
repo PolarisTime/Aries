@@ -1,26 +1,28 @@
-import { http } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
-import { shallowRef } from 'vue'
+import { http } from './client'
 
 export interface SupplierOption {
+  id?: string
   value: string
   label: string
 }
 
-const cachedSuppliers = shallowRef<SupplierOption[] | null>(null)
+let cachedSuppliers: SupplierOption[] | null = null
 let fetchFailed = false
 let loadingSuppliers: Promise<SupplierOption[]> | null = null
 
 export async function fetchSupplierOptions(): Promise<SupplierOption[]> {
-  if (cachedSuppliers.value !== null) return cachedSuppliers.value
+  if (cachedSuppliers !== null) return cachedSuppliers
   if (loadingSuppliers) return loadingSuppliers
 
   loadingSuppliers = (async () => {
-    const response = await http.get<ApiResponse<SupplierOption[]>>(ENDPOINTS.SUPPLIERS_OPTIONS)
-    cachedSuppliers.value = response.data || []
+    const response = await http.get<ApiResponse<SupplierOption[]>>(
+      ENDPOINTS.SUPPLIERS_OPTIONS,
+    )
+    cachedSuppliers = normalizeSupplierOptions(response.data || [])
     fetchFailed = false
-    return cachedSuppliers.value
+    return cachedSuppliers
   })()
 
   try {
@@ -34,18 +36,24 @@ export async function fetchSupplierOptions(): Promise<SupplierOption[]> {
 }
 
 export function getSupplierOptions(): SupplierOption[] {
-  if (cachedSuppliers.value === null && !loadingSuppliers) {
-    if (fetchFailed) {
-      fetchFailed = false
-    }
+  if (cachedSuppliers === null && !loadingSuppliers && !fetchFailed) {
     fetchSupplierOptions()
   }
-  return cachedSuppliers.value || []
+  return cachedSuppliers || []
 }
 
 export function reloadSupplierOptions() {
-  cachedSuppliers.value = null
+  cachedSuppliers = null
   fetchFailed = false
   loadingSuppliers = null
   return fetchSupplierOptions()
+}
+
+function normalizeSupplierOptions(options: SupplierOption[]): SupplierOption[] {
+  return options.map((option) => ({
+    ...option,
+    id: option.id == null ? undefined : String(option.id),
+    label: String(option.label || ''),
+    value: String(option.value || ''),
+  }))
 }

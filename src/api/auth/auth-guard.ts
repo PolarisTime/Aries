@@ -1,23 +1,26 @@
-import axios from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
+import axios from 'axios'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { HTTP_STATUS } from '@/constants/http-status'
-import { requestHadAuthorization } from './header-utils'
+import { requestHadAuthorization, requestUsesApiKey } from './header-utils'
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean
 }
 
-export function isAnonymousForbidden(error: unknown, originalRequest: RetryableRequestConfig | undefined) {
+export function isAnonymousForbidden(
+  error: unknown,
+  originalRequest: RetryableRequestConfig | undefined,
+) {
   if (!axios.isAxiosError(error)) {
     return false
   }
   const data = error.response?.data
   return (
-    error.response?.status === HTTP_STATUS.FORBIDDEN
-    && data?.error === 'Forbidden'
-    && data?.code == null
-    && !requestHadAuthorization(originalRequest)
+    error.response?.status === HTTP_STATUS.FORBIDDEN &&
+    data?.error === 'Forbidden' &&
+    data?.code == null &&
+    !requestHadAuthorization(originalRequest)
   )
 }
 
@@ -30,9 +33,11 @@ export function isUnauthorizedPayload(error: unknown) {
   const code = Number(data?.code)
   const messageText = String(data?.message || '').trim()
 
-  return code === ERROR_CODE.UNAUTHORIZED
-    || code === ERROR_CODE.SESSION_EVICTED
-    || /未登录|登录已失效|登录状态已失效/i.test(messageText)
+  return (
+    code === ERROR_CODE.UNAUTHORIZED ||
+    code === ERROR_CODE.SESSION_EVICTED ||
+    /未登录|登录已失效|登录状态已失效/i.test(messageText)
+  )
 }
 
 function isSessionEvicted(error: unknown): boolean {
@@ -50,11 +55,19 @@ export function shouldTriggerRefresh(
     return false
   }
 
+  if (requestUsesApiKey(originalRequest)) {
+    return false
+  }
+
   if (isSessionEvicted(error)) {
     return false
   }
 
-  return status === HTTP_STATUS.UNAUTHORIZED || isUnauthorizedPayload(error) || isAnonymousForbidden(error, originalRequest)
+  return (
+    status === HTTP_STATUS.UNAUTHORIZED ||
+    isUnauthorizedPayload(error) ||
+    isAnonymousForbidden(error, originalRequest)
+  )
 }
 
 export function shouldClearAuthState(
@@ -71,5 +84,7 @@ export function shouldClearAuthState(
     return true
   }
 
-  return isUnauthorizedPayload(error) || isAnonymousForbidden(error, originalRequest)
+  return (
+    isUnauthorizedPayload(error) || isAnonymousForbidden(error, originalRequest)
+  )
 }

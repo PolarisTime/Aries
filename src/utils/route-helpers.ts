@@ -5,7 +5,10 @@ export function getCurrentAppRoute() {
     return '/dashboard'
   }
 
-  return `${window.location.pathname}${window.location.search}${window.location.hash}` || '/dashboard'
+  return (
+    `${window.location.pathname}${window.location.search}${window.location.hash}` ||
+    '/dashboard'
+  )
 }
 
 export function getRequestPath(url: string) {
@@ -14,7 +17,12 @@ export function getRequestPath(url: string) {
   }
 
   try {
-    return new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost').pathname
+    return new URL(
+      url,
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : 'http://localhost',
+    ).pathname
   } catch {
     return url.split('#')[0]?.split('?')[0] || url
   }
@@ -31,7 +39,11 @@ export function restoreRedirectedHistoryRoute() {
 
   const currentUrl = new URL(window.location.href)
   const redirect = currentUrl.searchParams.get(APP_REDIRECT_QUERY_KEY)
-  if (!redirect || !redirect.startsWith('/') || /^https?:\/\//i.test(redirect)) {
+  if (
+    !redirect ||
+    !redirect.startsWith('/') ||
+    /^https?:\/\//i.test(redirect)
+  ) {
     return
   }
 

@@ -55,4 +55,3 @@ export interface TotpSetupResponse {
   qrCodeBase64: string
   secret: string
 }
-

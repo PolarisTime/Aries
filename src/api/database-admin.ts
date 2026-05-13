@@ -91,9 +91,13 @@ function normalizeTask(record: Record<string, unknown>): DatabaseExportTask {
 
 export async function createDatabaseExportTask(totpCode: string) {
   const response = assertApiSuccess(
-    await http.post<DatabaseResponse<Record<string, unknown>>>(ENDPOINTS.DATABASE_EXPORT_TASKS, null, {
-      headers: buildTotpHeaders(totpCode),
-    }),
+    await http.post<DatabaseResponse<Record<string, unknown>>>(
+      ENDPOINTS.DATABASE_EXPORT_TASKS,
+      null,
+      {
+        headers: buildTotpHeaders(totpCode),
+      },
+    ),
     '提交数据库导出任务失败',
   )
   return normalizeTask(response.data || {})
@@ -101,15 +105,21 @@ export async function createDatabaseExportTask(totpCode: string) {
 
 export async function listDatabaseExportTasks() {
   const response = assertApiSuccess(
-    await http.get<DatabaseResponse<Record<string, unknown>[]>>(ENDPOINTS.DATABASE_EXPORT_TASKS),
+    await http.get<DatabaseResponse<Record<string, unknown>[]>>(
+      ENDPOINTS.DATABASE_EXPORT_TASKS,
+    ),
     '加载数据库导出任务失败',
   )
-  return Array.isArray(response.data) ? response.data.map((item) => normalizeTask(item)) : []
+  return Array.isArray(response.data)
+    ? response.data.map((item) => normalizeTask(item))
+    : []
 }
 
 export async function generateDatabaseExportDownloadLink(taskId: string) {
   const response = assertApiSuccess(
-    await http.post<DatabaseResponse<Record<string, unknown>>>(`${ENDPOINTS.DATABASE_EXPORT_TASKS}/${encodeURIComponent(taskId)}/download-link`),
+    await http.post<DatabaseResponse<Record<string, unknown>>>(
+      `${ENDPOINTS.DATABASE_EXPORT_TASKS}/${encodeURIComponent(taskId)}/download-link`,
+    ),
     '生成下载链接失败',
   )
   return {
@@ -118,19 +128,28 @@ export async function generateDatabaseExportDownloadLink(taskId: string) {
   } as DatabaseExportDownloadLink
 }
 
-export async function importDatabaseBackup(file: File, totpCode: string, databaseUsername: string, databasePassword: string) {
+export async function importDatabaseBackup(
+  file: File,
+  totpCode: string,
+  databaseUsername: string,
+  databasePassword: string,
+) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('databaseUsername', databaseUsername.trim())
   formData.append('databasePassword', databasePassword)
 
   return assertApiSuccess(
-    await http.post<DatabaseResponse<null>>(ENDPOINTS.DATABASE_IMPORT, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        ...buildTotpHeaders(totpCode),
+    await http.post<DatabaseResponse<null>>(
+      ENDPOINTS.DATABASE_IMPORT,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...buildTotpHeaders(totpCode),
+        },
       },
-    }),
+    ),
     '导入数据库备份失败',
   )
 }

@@ -18,10 +18,18 @@ function createApiClient(instance: AxiosInstance) {
     get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
       return instance.get(url, config) as Promise<T>
     },
-    post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    post<T = unknown>(
+      url: string,
+      data?: unknown,
+      config?: AxiosRequestConfig,
+    ): Promise<T> {
       return instance.post(url, data, config) as Promise<T>
     },
-    put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    put<T = unknown>(
+      url: string,
+      data?: unknown,
+      config?: AxiosRequestConfig,
+    ): Promise<T> {
       return instance.put(url, data, config) as Promise<T>
     },
     delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {

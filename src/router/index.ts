@@ -1,166 +1,199 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteRecordRaw } from 'vue-router'
-import { routes } from './routes'
-import { appTitle } from '@/utils/env'
-import type { LoginUser } from '@/types/auth'
-import { useAuthStore } from '@/stores/auth'
-import { usePermissionStore } from '@/stores/permission'
-import { loadPermissionCatalog } from '@/constants/resource-permissions'
 import {
-  clearRouteLoadRecoveryMarker,
-  isRecoverableRouteLoadError,
-  recoverRouteLoadError,
-} from './route-load-recovery'
+  createBrowserHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  redirect,
+} from '@tanstack/react-router'
+import { lazy } from 'react'
+import {
+  appPageDefinitions,
+  getPageRoutePath,
+  type RouteViewKey,
+} from '@/config/page-registry'
+import { loadBusinessPageConfig } from '@/config/business-page-loader'
+import { useAuthStore } from '@/stores/authStore'
+import { checkAccessResources, usePermissionStore } from '@/stores/permissionStore'
+import { LazyLoginView } from '@/views/auth/LazyLoginView'
+import { LazyDashboardView } from '@/views/dashboard/LazyDashboardView'
+import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
 
-function resolveRoutePath(route: RouteRecordRaw) {
-  if (!route.path) {
-    return ''
-  }
-  return route.path.startsWith('/') ? route.path : `/${route.path}`
+const rootRoute = createRootRoute({ component: Outlet })
+
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LazyLoginView,
+})
+
+const setupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/setup',
+  component: lazy(() =>
+    import('@/views/auth/InitialSetupView').then((m) => ({
+      default: m.InitialSetupView,
+    })),
+  ),
+})
+
+const setup2faRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/setup-2fa',
+  component: lazy(() =>
+    import('@/views/auth/SetupTwoFactorView').then((m) => ({
+      default: m.SetupTwoFactorView,
+    })),
+  ),
+  beforeLoad: () => {
+    if (!useAuthStore.getState().isAuthenticated)
+      throw redirect({ to: '/login' as '/' })
+  },
+})
+
+const authenticatedLayoutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: 'authenticated-layout',
+  component: lazy(() =>
+    import('@/layouts/AppLayout').then((m) => ({ default: m.AppLayout })),
+  ),
+  beforeLoad: () => {
+    if (!useAuthStore.getState().isAuthenticated)
+      throw redirect({ to: '/login' as '/' })
+  },
+})
+
+const viewLoaders: Record<
+  Exclude<RouteViewKey, 'dashboard'>,
+  () => Promise<{ default: React.ComponentType }>
+> = {
+  'business-grid': () =>
+    import('@/views/modules/BusinessGridView').then((m) => ({
+      default: m.BusinessGridView,
+    })),
+  'number-rules': () =>
+    import('@/views/system/NumberRulesView').then((m) => ({
+      default: m.NumberRulesView,
+    })),
+  'general-setting': () =>
+    import('@/views/system/GeneralSettingsView').then((m) => ({
+      default: m.GeneralSettingsView,
+    })),
+  'company-setting': () =>
+    import('@/views/system/CompanySettingsView').then((m) => ({
+      default: m.CompanySettingsView,
+    })),
+  'print-template': () =>
+    import('@/views/system/PrintTemplateView').then((m) => ({
+      default: m.PrintTemplateView,
+    })),
+  'database': () =>
+    import('@/views/system/DatabaseBackupView').then((m) => ({
+      default: m.DatabaseBackupView,
+    })),
+  'session': () =>
+    import('@/views/system/SessionManagementView').then((m) => ({
+      default: m.SessionManagementView,
+    })),
+  'api-key': () =>
+    import('@/views/system/ApiKeyManagementView').then((m) => ({
+      default: m.ApiKeyManagementView,
+    })),
+  'access-control': () =>
+    import('@/views/system/AccessControlView').then((m) => ({
+      default: m.AccessControlView,
+    })),
+  'security-key': () =>
+    import('@/views/system/SecurityKeyManagementView').then((m) => ({
+      default: m.SecurityKeyManagementView,
+    })),
 }
 
-function canAccessRoute(route: RouteRecordRaw, permissionStore: ReturnType<typeof usePermissionStore>) {
-  if (route.meta?.hiddenInMenu) {
-    return false
-  }
-  const accessMenuKeys = Array.isArray(route.meta?.accessMenuKeys)
-    ? route.meta.accessMenuKeys.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-    : []
-  if (accessMenuKeys.length > 0) {
-    return accessMenuKeys.some((menuKey) => permissionStore.canAccessMenuKey(menuKey))
-  }
-  const menuKey = typeof route.meta?.menuKey === 'string' ? route.meta.menuKey : ''
-  return permissionStore.canAccessMenuKey(menuKey)
-}
+const moduleRoutes = appPageDefinitions.map((def) => {
+  const path = `/${getPageRoutePath(def)}`
+  const usesPageSkeleton =
+    def.view === 'business-grid' ||
+    def.view === 'number-rules' ||
+    def.view === 'general-setting' ||
+    def.view === 'company-setting' ||
+    def.view === 'print-template' ||
+    def.view === 'access-control' ||
+    def.view === 'database' ||
+    def.view === 'session' ||
+    def.view === 'api-key' ||
+    def.view === 'security-key'
 
-function canAccessTargetRoute(
-  menuKey: unknown,
-  accessMenuKeys: unknown,
-  permissionStore: ReturnType<typeof usePermissionStore>,
-) {
-  if (Array.isArray(accessMenuKeys)) {
-    const normalizedKeys = accessMenuKeys
-      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-    if (normalizedKeys.length > 0) {
-      return normalizedKeys.some((key) => permissionStore.canAccessMenuKey(key))
-    }
-  }
-  return permissionStore.canAccessMenuKey(typeof menuKey === 'string' ? menuKey : '')
-}
-
-export function requiresForcedTotpSetup(user: LoginUser | null | undefined) {
-  return Boolean(user?.forceTotpSetup && user?.totpEnabled !== true)
-}
-
-function sanitizeRedirectPath(candidate: unknown) {
-  if (typeof candidate !== 'string' || !candidate.startsWith('/')) {
-    return ''
-  }
-  if (/^https?:\/\//i.test(candidate)) {
-    return ''
-  }
-  return candidate
-}
-
-function buildSetupTotpRedirect(targetPath: string) {
-  const redirect = sanitizeRedirectPath(targetPath)
-  return redirect
-    ? {
-        path: '/setup-2fa',
-        query: { redirect },
+  return createRoute({
+    getParentRoute: () => authenticatedLayoutRoute,
+    path,
+    component:
+      def.view === 'dashboard'
+        ? LazyDashboardView
+        : lazy(viewLoaders[def.view]),
+    pendingComponent: usesPageSkeleton ? BusinessGridPageSkeleton : undefined,
+    pendingMinMs: usesPageSkeleton ? 200 : undefined,
+    loader:
+      def.view === 'business-grid' && def.moduleKey
+        ? async () => loadBusinessPageConfig(def.moduleKey as string)
+        : undefined,
+    beforeLoad: () => {
+      if (def.view === 'dashboard') return
+      const store = usePermissionStore.getState()
+      if (
+        Array.isArray(def.accessResources) &&
+        def.accessResources.length > 0
+      ) {
+        if (!checkAccessResources(def.accessResources, store.can)) {
+          throw redirect({ to: '/dashboard' as '/' })
+        }
+        return
       }
-    : '/setup-2fa'
-}
+      if (!store.can(def.resourceKey || def.key, 'read')) {
+        throw redirect({ to: '/dashboard' as '/' })
+      }
+    },
+  })
+})
 
-function getFirstAccessiblePath(permissionStore: ReturnType<typeof usePermissionStore>) {
-  const appRoute = routes.find((route) => route.path === '/')
-  const childRoutes = appRoute?.children || []
+const apiKeyDetailRoute = createRoute({
+  getParentRoute: () => authenticatedLayoutRoute,
+  path: '/api-key/$id',
+  component: lazy(() =>
+    import('@/views/system/ApiKeyDetailView').then((m) => ({
+      default: m.ApiKeyDetailView,
+    })),
+  ),
+  beforeLoad: () => {
+    if (!usePermissionStore.getState().can('api-key', 'read')) {
+      throw redirect({ to: '/dashboard' as '/' })
+    }
+  },
+})
 
-  const firstAccessibleRoute = childRoutes.find((route) => canAccessRoute(route, permissionStore))
-  return firstAccessibleRoute ? resolveRoutePath(firstAccessibleRoute) : '/login'
-}
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  beforeLoad: () => {
+    throw redirect({ to: '/dashboard' as '/' })
+  },
+})
+
+export const routeTree = rootRoute.addChildren([
+  indexRoute,
+  loginRoute,
+  setupRoute,
+  setup2faRoute,
+  authenticatedLayoutRoute.addChildren([...moduleRoutes, apiKeyDetailRoute]),
+])
 
 export const router = createRouter({
-  history: createWebHistory(),
-  routes,
-  scrollBehavior: () => ({ top: 0 }),
+  routeTree,
+  history: createBrowserHistory(),
+  defaultPreload: 'intent',
 })
 
-router.beforeEach((to) => {
-  document.title = to.meta.title ? `${to.meta.title} | ${appTitle}` : appTitle
-
-  const authStore = useAuthStore()
-  const permissionStore = usePermissionStore()
-  authStore.hydrate()
-  permissionStore.syncFromAuth()
-
-  const hasToken = Boolean(authStore.token)
-  if (hasToken) {
-    loadPermissionCatalog()
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router
   }
-  const currentUser = authStore.user
-  const forceTotpSetupRequired = requiresForcedTotpSetup(currentUser)
-
-  if (to.path === '/setup-2fa' && !hasToken) {
-    return {
-      path: '/login',
-      query: {
-        redirect: '/setup-2fa',
-      },
-    }
-  }
-
-  if (hasToken && forceTotpSetupRequired) {
-    if (to.path === '/setup-2fa') {
-      return true
-    }
-
-    const redirectTarget = to.path === '/login'
-      ? sanitizeRedirectPath(to.query.redirect)
-      : to.fullPath
-    return buildSetupTotpRedirect(redirectTarget)
-  }
-
-  if (hasToken && to.path === '/setup-2fa') {
-    const fallbackPath = getFirstAccessiblePath(permissionStore)
-    return fallbackPath === '/login' ? '/dashboard' : fallbackPath
-  }
-
-  if (to.meta.public) {
-    if (hasToken && to.path === '/login') {
-      const fallbackPath = getFirstAccessiblePath(permissionStore)
-      return fallbackPath === '/login' ? true : fallbackPath
-    }
-    return true
-  }
-
-  if (hasToken) {
-    if (canAccessTargetRoute(to.meta?.menuKey, to.meta?.accessMenuKeys, permissionStore)) {
-      return true
-    }
-
-    const fallbackPath = getFirstAccessiblePath(permissionStore)
-    if (fallbackPath === to.path) {
-      return false
-    }
-
-    return fallbackPath
-  }
-
-  return {
-    path: '/login',
-    query: {
-      redirect: to.fullPath,
-    },
-  }
-})
-
-router.afterEach(() => {
-  clearRouteLoadRecoveryMarker()
-})
-
-router.onError((error, to) => {
-  if (isRecoverableRouteLoadError(error)) {
-    recoverRouteLoadError(to?.fullPath)
-  }
-})
+}

@@ -1,6 +1,6 @@
-import { getBehaviorValue } from './module-behavior-registry'
 import { roleTypeValues } from '@/constants/module-options'
 import { getResourcePermissionLabel } from '@/constants/resource-permissions'
+import { getBehaviorValue } from './module-behavior-registry'
 
 export interface RbacRoleMeta {
   roleName: string
@@ -15,10 +15,7 @@ export const defaultRoleCatalog: RbacRoleMeta[] = [
   { roleName: '仓库主管', roleType: roleTypeValues[1] },
 ]
 
-const systemHelperTitleMap: Record<string, string> = {
-  'role-settings': '角色权限概览',
-  'user-accounts': '账号授权概览',
-}
+const systemHelperTitleMap: Record<string, string> = {}
 
 export function getPermissionLabels(permissionCodes: string[]) {
   return permissionCodes.map((code) => getResourcePermissionLabel(code))
@@ -54,7 +51,7 @@ export function syncSystemEditorState(
 ) {
   const syncFn = getBehaviorValue(moduleKey, 'syncEditorForm')
   if (syncFn) {
-    syncFn(editorForm)
+    syncFn(editorForm, { changedKeys: new Set<string>() })
   }
 }
 

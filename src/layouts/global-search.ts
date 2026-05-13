@@ -1,4 +1,5 @@
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type { ModuleRecord } from '@/types/module-page'
+import type { ModulePageMeta } from '@/config/module-page-meta'
 
 export interface GlobalSearchResult {
   value: string
@@ -23,10 +24,16 @@ export interface GlobalSearchSourceRecord {
 interface AccessibleGlobalSearchOptions {
   keyword: string
   moduleKeys: string[]
-  pageConfigs: Record<string, ModulePageConfig>
+  pageConfigs: Record<string, ModulePageMeta>
   canAccessModule: (moduleKey: string) => boolean
-  searchModule: (moduleKey: string, keyword: string) => Promise<ModuleRecord[]>
-  lookupRecordById?: (moduleKey: string, id: string) => Promise<ModuleRecord | null>
+  searchModule: (
+    moduleKey: string,
+    keyword: string,
+  ) => Promise<ModuleSearchResponse>
+  lookupRecordById?: (
+    moduleKey: string,
+    id: string,
+  ) => Promise<ModuleRecord | null>
   buildSummary: (record: ModuleRecord) => string
 }
 
@@ -69,12 +76,21 @@ export function normalizeGlobalSearchResult(source: GlobalSearchSourceRecord) {
 
 function buildGlobalSearchResult(
   moduleKey: string,
-  config: ModulePageConfig,
+  config: ModulePageMeta,
   record: ModuleRecord,
   keyword: string,
   buildSummary: (record: ModuleRecord) => string,
 ) {
-  return normalizeGlobalSearchResult({
+  const trackId = String(record.id || '')
+  const primaryNo = String(record[config.primaryNoKey || 'id'] || record.id)
+  const summary = buildSummary(record)
+  const matchedByTrackId = Boolean(trackId && trackId === keyword)
+  const idText =
+    matchedByTrackId && trackId !== primaryNo ? ` | ID ${trackId}` : ''
+
+  return {
+    value: `${moduleKey}::${primaryNo || trackId}`,
+    label: `${config.title} | ${primaryNo}${idText}${summary ? ` | ${summary}` : ''}`,
     moduleKey,
     title: config.title,
     trackId: String(record.id || ''),
@@ -84,15 +100,16 @@ function buildGlobalSearchResult(
   })
 }
 
-export async function searchAccessibleModules(options: AccessibleGlobalSearchOptions) {
+export async function searchAccessibleModules(
+  options: AccessibleGlobalSearchOptions,
+) {
   const normalizedKeyword = options.keyword.trim()
   if (!normalizedKeyword) {
     return []
   }
 
-  const accessibleModuleKeys = options.moduleKeys.filter((moduleKey) => options.canAccessModule(moduleKey))
-  const shouldLookupOnlyByTrackId = Boolean(
-    options.lookupRecordById && isLikelyTrackId(normalizedKeyword),
+  const accessibleModuleKeys = options.moduleKeys.filter((moduleKey) =>
+    options.canAccessModule(moduleKey),
   )
   const responseList = await Promise.all(
     accessibleModuleKeys.map(async (moduleKey) => {
@@ -103,17 +120,22 @@ export async function searchAccessibleModules(options: AccessibleGlobalSearchOpt
         }
 
         const rows: ModuleRecord[] = []
-        if (!shouldLookupOnlyByTrackId) {
-          try {
-            rows.push(...(await options.searchModule(moduleKey, normalizedKeyword)))
-          } catch {
-            // A failed keyword search should not block direct trackId lookup below.
-          }
+        try {
+          const response = await options.searchModule(
+            moduleKey,
+            normalizedKeyword,
+          )
+          rows.push(...(response.data?.rows || []))
+        } catch {
+          // A failed keyword search should not block direct trackId lookup below.
         }
 
         if (shouldLookupOnlyByTrackId && options.lookupRecordById) {
           try {
-            const record = await options.lookupRecordById(moduleKey, normalizedKeyword)
+            const record = await options.lookupRecordById(
+              moduleKey,
+              normalizedKeyword,
+            )
             if (record) {
               rows.push(record)
             }
@@ -125,7 +147,9 @@ export async function searchAccessibleModules(options: AccessibleGlobalSearchOpt
         const seenKeys = new Set<string>()
         return rows
           .filter((record) => {
-            const key = String(record.id || record[config.primaryNoKey || 'id'] || '')
+            const key = String(
+              record.id || record[config.primaryNoKey || 'id'] || '',
+            )
             if (!key || seenKeys.has(key)) {
               return false
             }
