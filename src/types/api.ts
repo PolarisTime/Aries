@@ -1,21 +1,2 @@
-export interface ApiResponse<T> {
-  code: number
-  data: T
-  message?: string
-}
-
-export interface TableResponse<T> {
-  code: number
-  data?: {
-    rows?: T[]
-    total?: number
-  }
-  message?: string
-}
-
-export interface PagedResult<T> {
-  rows: T[]
-  total: number
-  errorCode?: number
-  errorMessage?: string
-}
+/** @deprecated 类型已迁移至 src/shared/schemas/api.ts，请从 '@/shared/schemas' 导入 */
+export type { ApiResponse, PagedResult } from '@/shared/schemas'

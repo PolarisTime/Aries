@@ -1,57 +1,6 @@
-export interface LoginPayload {
-  loginName: string
-  password: string
-  remember?: boolean
-  captchaId?: string
-  captchaCode?: string
-}
-
-export interface CaptchaData {
-  captchaId: string
-  captchaImage: string
-  required: boolean
-}
-
-export interface Login2faPayload {
-  tempToken: string
-  totpCode: string
-  remember?: boolean
-}
-
-export interface LoginUser {
-  id: number | string
-  loginName: string
-  userName?: string
-  roleName?: string
-  totpEnabled?: boolean
-  forceTotpSetup?: boolean
-  permissions?: ResourcePermission[]
-  dataScopes?: Record<string, DataScope>
-}
-
-export interface ResourcePermission {
-  resource: string
-  actions: string[]
-}
-
-export type DataScope = 'all' | 'department' | 'self' | 'custom' | string
-
-export interface LoginResponseData {
-  accessToken: string
-  tokenType: string
-  expiresIn: number
-  refreshExpiresIn?: number
-  user: LoginUser
-}
-
-export interface LoginStep1Response {
-  requires2fa: boolean
-  tempToken: string
-}
-
-export type LoginResult = LoginResponseData | LoginStep1Response
-
-export interface TotpSetupResponse {
-  qrCodeBase64: string
-  secret: string
-}
+/** @deprecated 类型已迁移至 src/shared/schemas/auth.ts，请从 '@/shared/schemas' 导入 */
+export type {
+  LoginPayload, CaptchaData, Login2faPayload,
+  LoginUser, ResourcePermission, DataScope,
+  LoginResponseData, LoginStep1Response, TotpSetupResponse,
+} from '@/shared/schemas'
