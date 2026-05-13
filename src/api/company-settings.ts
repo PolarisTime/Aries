@@ -1,83 +1,62 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { asString, asNumber } from '@/utils/type-narrowing'
 
 export interface CompanySettlementAccount {
   id?: string | number
-  accountName: string
-  bankName: string
-  bankAccount: string
-  usageType: string
-  status: string
-  remark?: string
+  accountName: string; bankName: string; bankAccount: string
+  usageType: string; status: string; remark?: string
 }
 
 export interface CompanySettingProfile {
-  id: string
-  companyName: string
-  taxNo: string
-  bankName?: string
-  bankAccount?: string
-  taxRate?: number
+  id: string; companyName: string; taxNo: string
+  bankName?: string; bankAccount?: string; taxRate?: number
   settlementAccounts: CompanySettlementAccount[]
-  status: string
-  remark?: string
+  status: string; remark?: string
 }
 
-interface CompanyResponse<T> {
-  code: number
-  message?: string
-  data: T
-}
+interface CompanyResponse<T> { code: number; message?: string; data: T }
 
-function normalizeProfile(
-  record: Record<string, unknown> | null | undefined,
-): CompanySettingProfile | null {
-  if (!record) return null
+function normalizeProfile(raw: Record<string, unknown> | null | undefined): CompanySettingProfile | null {
+  if (!raw) return null
   return {
-    id: String(record.id || ''),
-    companyName: String(record.companyName || ''),
-    taxNo: String(record.taxNo || ''),
-    bankName: String(record.bankName || ''),
-    bankAccount: String(record.bankAccount || ''),
-    taxRate: Number(record.taxRate || 0),
-    settlementAccounts: Array.isArray(record.settlementAccounts)
-      ? record.settlementAccounts.map((item) => {
+    id: asString(raw.id),
+    companyName: asString(raw.companyName),
+    taxNo: asString(raw.taxNo),
+    bankName: raw.bankName ? asString(raw.bankName) : undefined,
+    bankAccount: raw.bankAccount ? asString(raw.bankAccount) : undefined,
+    taxRate: raw.taxRate ? asNumber(raw.taxRate) : undefined,
+    settlementAccounts: (Array.isArray(raw.settlementAccounts)
+      ? raw.settlementAccounts.map((item) => {
           const row = item as Record<string, unknown>
           return {
-            id: row.id == null ? '' : String(row.id),
-            accountName: String(row.accountName || ''),
-            bankName: String(row.bankName || ''),
-            bankAccount: String(row.bankAccount || ''),
-            usageType: String(row.usageType || '通用'),
-            status: String(row.status || '正常'),
-            remark: String(row.remark || ''),
+            id: row.id == null ? '' : asString(row.id),
+            accountName: asString(row.accountName),
+            bankName: asString(row.bankName),
+            bankAccount: asString(row.bankAccount),
+            usageType: asString(row.usageType) || '通用',
+            status: asString(row.status) || '正常',
+            remark: asString(row.remark),
           }
         })
-      : [],
-    status: String(record.status || '正常'),
-    remark: String(record.remark || ''),
+      : []) as CompanySettlementAccount[],
+    status: asString(raw.status) || '正常',
+    remark: asString(raw.remark),
   }
 }
 
 export async function getCompanySettingProfile() {
-  const response = assertApiSuccess(
-    await http.get<CompanyResponse<Record<string, unknown> | null>>(
-      ENDPOINTS.COMPANY_SETTINGS_CURRENT,
-    ),
+  const r = assertApiSuccess(
+    await http.get<CompanyResponse<Record<string, unknown> | null>>(ENDPOINTS.COMPANY_SETTINGS_CURRENT),
     '加载公司信息失败',
   )
-  return normalizeProfile(response.data)
+  return normalizeProfile(r.data)
 }
 
-export async function saveCompanySettingProfile(
-  payload: Omit<CompanySettingProfile, 'id'>,
-) {
-  const response = assertApiSuccess(
-    await http.put<CompanyResponse<Record<string, unknown>>>(
-      ENDPOINTS.COMPANY_SETTINGS_CURRENT,
-      payload,
-    ),
+export async function saveCompanySettingProfile(payload: Omit<CompanySettingProfile, 'id'>) {
+  const r = assertApiSuccess(
+    await http.put<CompanyResponse<Record<string, unknown>>>(ENDPOINTS.COMPANY_SETTINGS_CURRENT, payload),
     '保存公司信息失败',
   )
-  return normalizeProfile(response.data)
+  return normalizeProfile(r.data)
 }
