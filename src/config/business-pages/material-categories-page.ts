@@ -1,5 +1,5 @@
-import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { masterStatusFilter } from './shared-filters'
 import { actionSet, formatInteger } from './shared'
 
 export const materialCategoriesPageConfig: ModulePageConfig = {
@@ -16,12 +16,7 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       type: 'input',
       placeholder: '类别编码 / 类别名称',
     },
-    {
-      key: 'status',
-      label: '状态',
-      type: 'select',
-      options: enabledStatusOptions,
-    },
+    { ...masterStatusFilter },
   ],
   columns: [
     { title: '类别编码', dataIndex: 'categoryCode', width: 150 },
