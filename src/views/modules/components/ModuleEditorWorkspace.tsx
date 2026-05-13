@@ -145,7 +145,7 @@ export function ModuleEditorWorkspace({
           lineItemsLocked={lineItemsLocked}
           lockedLineItemsNotice={lockedLineItemsNotice}
           onCancel={onClose}
-          onSave={handleSave}
+          oonSave={() => { void handleSave }}
         />
       </Form>
 
@@ -165,7 +165,7 @@ export function ModuleEditorWorkspace({
         saving={saving}
         onAddItem={addItem}
         onCancel={onClose}
-        onSave={handleSave}
+        oonSave={() => { void handleSave }}
         onOpenParentSelector={openParentSelector}
         onCloseParentSelector={closeParentSelector}
         onRemoveSelectedItems={removeSelectedItems}

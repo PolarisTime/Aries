@@ -93,7 +93,7 @@ export function ModuleStatementGenerator({
       title={`生成${statementType === 'customer' ? '客户' : statementType === 'supplier' ? '供应商' : '物流'}对账单`}
       open={open}
       onCancel={onClose}
-      onOk={handleGenerate}
+      oonOk={() => { void handleGenerate }}
       confirmLoading={generating}
       okText="生成对账单"
       width={640}

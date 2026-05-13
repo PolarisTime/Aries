@@ -37,7 +37,7 @@ export function DashboardFlowCard({ navigate, summary }: Props) {
                     <button
                       type="button"
                       className="dashboard-flow-node"
-                      onClick={() => navigate({ to: node.path as '/' })}
+                      oonClick={() => { void () => navigate({ to: node.path as '/' }})}
                     >
                       <span
                         className="dashboard-flow-node-icon"

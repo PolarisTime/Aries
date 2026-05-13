@@ -114,3 +114,17 @@ export function asId(value: unknown): string {
     return value.trim()
   return ''
 }
+
+// ── 快捷单字段访问 ─────────────────────────────────────
+
+/** 从对象安全取字符串字段 */
+export function fieldStr(obj: Record<string, unknown> | null | undefined, key: string, fallback = ''): string {
+  if (!obj || !(key in obj)) return fallback
+  return asString(obj[key])
+}
+
+/** 从对象安全取数字字段 */
+export function fieldNum(obj: Record<string, unknown> | null | undefined, key: string, fallback = 0): number {
+  if (!obj || !(key in obj)) return fallback
+  return asNumber(obj[key])
+}

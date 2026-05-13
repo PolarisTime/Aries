@@ -263,7 +263,7 @@ export function LoginView() {
                 onLoadCaptcha={() => {
                   void loadCaptcha()
                 }}
-                onSubmit={handleLogin}
+                oonSubmit={() => { void handleLogin }}
                 shouldShowCaptcha={shouldShowCaptcha}
                 savedLoginName={savedSession?.loginName || ''}
                 form={form}

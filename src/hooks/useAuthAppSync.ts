@@ -23,7 +23,7 @@ function runWhenIdle(task: () => void, timeout = 1500) {
     return () => {}
   }
 
-  type IdleWindow = Window &
+  type _IdleWindow = Window &
     typeof globalThis & {
       requestIdleCallback?: (
         callback: (deadline: IdleDeadlineLike) => void,
