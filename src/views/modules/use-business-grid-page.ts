@@ -5,6 +5,7 @@ import { useBusinessQueries } from '@/hooks/useBusinessQueries'
 import type { SortingState } from '@/hooks/useDataTable'
 import { useDetailSupport } from '@/hooks/useDetailSupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
+import { resolveMasterOptionRequirements } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
 import { useModuleExportSupport } from '@/hooks/useModuleExportSupport'
@@ -15,7 +16,7 @@ import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import { useModuleRecordActions } from '@/hooks/useModuleRecordActions'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import { useModuleToolbarActions } from '@/hooks/useModuleToolbarActions'
-import type { ModuleRecord } from '@/types/module-page'
+import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { getBehaviorValue } from '@/views/modules/module-behavior-registry'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overlays'
@@ -24,10 +25,28 @@ import { useBusinessGridTable } from '@/views/modules/use-business-grid-table'
 interface Props {
   moduleKey: string
   pageDef: AppPageDefinition
+  initialConfig?: ModulePageConfig
 }
 
-export function useBusinessGridPage({ moduleKey, pageDef }: Props) {
-  const { config } = useModulePageConfig({ moduleKey })
+const EMPTY_CONFIG: ModulePageConfig = {
+  key: '',
+  title: '',
+  kicker: '',
+  description: '',
+  filters: [],
+  columns: [],
+  detailFields: [],
+  data: [],
+  buildOverview: () => [],
+}
+
+export function useBusinessGridPage({
+  moduleKey,
+  pageDef,
+  initialConfig,
+}: Props) {
+  const { config } = useModulePageConfig({ moduleKey, initialConfig })
+  const resolvedConfig = config || EMPTY_CONFIG
   const {
     canViewRecords,
     canCreateRecord,
@@ -48,8 +67,20 @@ export function useBusinessGridPage({ moduleKey, pageDef }: Props) {
   const [pageSize, setPageSize] = useState(20)
   const [sorting, setSorting] = useState<SortingState>([])
   const { formatCellValue } = useModuleDisplaySupport()
+  const listOptionRequirements = useMemo(
+    () => resolveMasterOptionRequirements(config?.filters || []),
+    [config?.filters],
+  )
 
-  useMasterOptions()
+  useMasterOptions(listOptionRequirements)
+
+  useEffect(() => {
+    setSelectedRowKeys([])
+    setSelectedRowMap({})
+    setPage(1)
+    setPageSize(20)
+    setSorting([])
+  }, [moduleKey])
 
   const {
     filters,
@@ -76,7 +107,7 @@ export function useBusinessGridPage({ moduleKey, pageDef }: Props) {
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const { exporting, handleExport } = useModuleExportSupport(moduleKey)
   const { detailOpen, detailRecord, detailLoading, openDetail, closeDetail } =
-    useDetailSupport({ moduleKey, config })
+    useDetailSupport({ moduleKey, config: resolvedConfig })
   const {
     editRecord,
     editorLockLoading,
@@ -85,9 +116,12 @@ export function useBusinessGridPage({ moduleKey, pageDef }: Props) {
     openEditor,
     closeEditor,
     handleSaved: handleEditorSaved,
-  } = useBusinessGridEditor({ moduleKey, config })
+  } = useBusinessGridEditor({ moduleKey, config: resolvedConfig })
   const overlays = useBusinessGridOverlays()
-  const { getRowClassName } = useModuleRecordHelpers({ moduleKey, config })
+  const { getRowClassName } = useModuleRecordHelpers({
+    moduleKey,
+    config: resolvedConfig,
+  })
 
   const clearSelection = useCallback(() => {
     setSelectedRowKeys([])
@@ -95,19 +129,35 @@ export function useBusinessGridPage({ moduleKey, pageDef }: Props) {
   }, [])
 
   useEffect(() => {
-    if (!records.length) {
-      return
-    }
+    const currentPageIds = new Set(records.map((r) => String(r.id)))
 
     setSelectedRowMap((prev) => {
-      const next = { ...prev }
+      const next: Record<string, ModuleRecord> = {}
+      for (const key of Object.keys(prev)) {
+        if (!currentPageIds.has(key) && selectedRowKeys.includes(key)) {
+          next[key] = prev[key]
+        }
+      }
       for (const record of records) {
         const id = String(record.id)
         if (selectedRowKeys.includes(id)) {
           next[id] = record
         }
       }
-      return next
+
+      const prevKeys = Object.keys(prev)
+      const nextKeys = Object.keys(next)
+      if (prevKeys.length !== nextKeys.length) {
+        return next
+      }
+
+      for (const key of nextKeys) {
+        if (prev[key] !== next[key]) {
+          return next
+        }
+      }
+
+      return prev
     })
   }, [records, selectedRowKeys])
 
@@ -131,7 +181,10 @@ export function useBusinessGridPage({ moduleKey, pageDef }: Props) {
     [moduleKey],
   )
 
-  const formFields = useMemo(() => config.formFields || [], [config.formFields])
+  const formFields = useMemo(
+    () => config?.formFields || [],
+    [config?.formFields],
+  )
   const {
     canUseBulkAuditActions,
     canUseBulkDeleteActions,
@@ -143,12 +196,13 @@ export function useBusinessGridPage({ moduleKey, pageDef }: Props) {
     moduleKey,
     formFields,
     lineItemLockRelatedRows: editorLockRelatedRows,
+    currentStatus: editRecord?.status ? String(editRecord.status) : undefined,
     canEditLineItems: canUpdateRecord,
     canSaveCurrentEditor: canCreateRecord || canUpdateRecord,
     canAuditRecords: canAuditRecord,
     canPrintRecords: canPrintRecord,
     canDeleteRecords: canDeleteRecord,
-    isReadOnly: Boolean(config.readOnly),
+    isReadOnly: Boolean(config?.readOnly),
     resolveModuleStatusOptions: (statusField) => {
       if (!statusField?.options) return []
       return (statusField.options as Array<{ value: string }>).map(
@@ -167,7 +221,7 @@ export function useBusinessGridPage({ moduleKey, pageDef }: Props) {
     handleStatementGenerate,
   } = useBusinessGridActions({
     moduleKey,
-    config,
+    config: resolvedConfig,
     selectedRowKeys,
     selectedRows: Object.values(selectedRowMap),
     submittedFilters,
@@ -180,7 +234,7 @@ export function useBusinessGridPage({ moduleKey, pageDef }: Props) {
 
   const { visibleToolbarActions, handleAction } = useModuleToolbarActions({
     moduleKey,
-    config,
+    config: resolvedConfig,
     formFields,
     isMaterialModule: false,
     selectedRowCount: selectedRowKeys.length,
@@ -244,6 +298,7 @@ export function useBusinessGridPage({ moduleKey, pageDef }: Props) {
     onColumnOrderChange,
     onSortingChange,
   } = useBusinessGridTable({
+    moduleKey,
     config,
     records,
     pageSize,

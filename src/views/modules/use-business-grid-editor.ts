@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { getBusinessModuleDetail, listAllBusinessModuleRows } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
 import type { ModuleRecord } from '@/types/module-page'
@@ -17,6 +17,7 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
     ModuleRecord[]
   >([])
   const [editorLockLoading, setEditorLockLoading] = useState(false)
+  const openVersionRef = useRef(0)
 
   const lineItemLockSourceModule = useMemo(
     () => String(getBehaviorValue(moduleKey, 'lineItemLockSourceModule') || ''),
@@ -88,15 +89,21 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
 
   const openEditor = useCallback(
     async (record: ModuleRecord | null) => {
+      const version = ++openVersionRef.current
       setEditorLockLoading(true)
       try {
-        const lockRelatedRows = await resolveEditorLockRelatedRows(record)
-        const resolvedRecord = await resolveEditorRecord(record)
+        const [lockRelatedRows, resolvedRecord] = await Promise.all([
+          resolveEditorLockRelatedRows(record),
+          resolveEditorRecord(record),
+        ])
+        if (version !== openVersionRef.current) return
         setEditorLockRelatedRows(lockRelatedRows)
         setEditRecord(resolvedRecord)
         setEditorOpen(true)
       } finally {
-        setEditorLockLoading(false)
+        if (version === openVersionRef.current) {
+          setEditorLockLoading(false)
+        }
       }
     },
     [resolveEditorLockRelatedRows, resolveEditorRecord],

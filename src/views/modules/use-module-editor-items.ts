@@ -32,7 +32,13 @@ export function useModuleEditorItems({
     items,
     setItems,
   })
-  const { itemColumns } = useModuleEditorItemColumns({
+  const {
+    itemColumns,
+    itemColumnOrder,
+    onItemColumnOrderChange,
+    toggleItemColumn,
+    visibleItemColumnKeys,
+  } = useModuleEditorItemColumns({
     moduleKey,
     config,
     items,
@@ -51,7 +57,11 @@ export function useModuleEditorItems({
     clearSelectedItems,
     handleDragOver,
     itemColumns,
+    itemColumnOrder,
+    onItemColumnOrderChange,
     removeSelectedItems,
     selectedItemIds,
+    toggleItemColumn,
+    visibleItemColumnKeys,
   }
 }

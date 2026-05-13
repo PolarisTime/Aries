@@ -40,10 +40,22 @@ export function getBehaviorValue<K extends keyof ModuleBehaviorConfig>(
   return moduleBehaviorRegistry.get(moduleKey)?.[flag]
 }
 
-export function isEditBlockedByStatus(status: unknown): boolean {
-  return protectedEditStatuses.has(String(status ?? '').trim())
+export function isEditBlockedByStatus(status: unknown, moduleKey?: string): boolean {
+  const normalized = String(status ?? '').trim()
+  if (!normalized) return false
+  if (moduleKey) {
+    const perModule = getBehaviorValue(moduleKey, 'protectedEditStatuses') as string[] | undefined
+    if (perModule) return new Set(perModule).has(normalized)
+  }
+  return protectedEditStatuses.has(normalized)
 }
 
-export function isDeleteBlockedByStatus(status: unknown): boolean {
-  return protectedDeleteStatuses.has(String(status ?? '').trim())
+export function isDeleteBlockedByStatus(status: unknown, moduleKey?: string): boolean {
+  const normalized = String(status ?? '').trim()
+  if (!normalized) return false
+  if (moduleKey) {
+    const perModule = getBehaviorValue(moduleKey, 'protectedDeleteStatuses') as string[] | undefined
+    if (perModule) return new Set(perModule).has(normalized)
+  }
+  return protectedDeleteStatuses.has(normalized)
 }

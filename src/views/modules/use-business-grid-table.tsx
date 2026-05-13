@@ -11,10 +11,11 @@ import type {
   SortingState,
 } from '@/hooks/useDataTable'
 import { useDataTable } from '@/hooks/useDataTable'
-import { useGridColumns } from '@/hooks/useGridColumns'
+import { type GridColumnRenderMeta, useGridColumns } from '@/hooks/useGridColumns'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
 interface Props {
+  moduleKey: string
   config: ModulePageConfig | undefined
   records: ModuleRecord[]
   pageSize: number
@@ -43,6 +44,7 @@ function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
 }
 
 export function useBusinessGridTable({
+  moduleKey,
   config,
   records,
   pageSize,
@@ -56,15 +58,12 @@ export function useBusinessGridTable({
   sorting,
   onSortingChange,
 }: Props) {
-  const pageKey = config?.key || 'default'
-
   const {
     columnOrder: savedOrder,
     columnVisibility,
-    loaded,
     handleColumnOrderChange,
     handleColumnVisibilityChange,
-  } = useColumnSettingsSupport(pageKey)
+  } = useColumnSettingsSupport(moduleKey, config?.defaultHiddenColumnKeys)
 
   const rowSelectionState: RowSelectionState = useMemo(() => {
     const state: RowSelectionState = {}
@@ -87,7 +86,7 @@ export function useBusinessGridTable({
       buildOverview: () => [],
     },
     rowActions: buildActions,
-    canUpdate: canUpdateRecord,
+    canUpdate: Boolean(config) && canUpdateRecord,
   })
 
   const allColumnIds = useMemo(
@@ -143,53 +142,43 @@ export function useBusinessGridTable({
         typeof updater === 'function' ? updater(rowSelectionState) : updater
       setSelectedRowKeys(Object.keys(next).filter((k) => next[k]))
     },
-    columnVisibility: loaded ? columnVisibility : undefined,
+    columnVisibility,
     onColumnVisibilityChange: handleColumnVisibilityChange,
-    columnOrder: loaded ? columnOrder : undefined,
+    columnOrder,
     onColumnOrderChange: handleColumnOrderChange,
     sorting,
   })
 
-  const antdColumns = useMemo((): TableColumnsType<ModuleRecord> => {
-    const headerGroup = table.getHeaderGroups()[0]
-    if (!headerGroup) return []
-
-    return headerGroup.headers.map((header) => ({
-      title: flexRender(header.column.columnDef.header, header.getContext()),
-      dataIndex: header.column.id,
-      key: header.column.id,
-      width: (
-        header.column.columnDef.meta as { width?: string | number } | undefined
-      )?.width,
-      align: ((
-        header.column.columnDef.meta as
-          | {
-              align?: ColumnType<ModuleRecord>['align']
-            }
-          | undefined
-      )?.align ?? 'center') as ColumnType<ModuleRecord>['align'],
-      ellipsis: true,
-      sorter: header.column.getCanSort(),
-      sortOrder:
-        header.column.getIsSorted() === 'asc'
-          ? 'ascend'
-          : header.column.getIsSorted() === 'desc'
-            ? 'descend'
-            : null,
-      render: (_: unknown, record: ModuleRecord) => {
-        const rows = table.getRowModel().rows
-        const row = rows.find(
-          (r) => String(r.original.id) === String(record.id),
-        )
-        if (!row) return null
-        const cell = row
-          .getVisibleCells()
-          .find((c) => c.column.id === header.column.id)
-        if (!cell) return null
-        return flexRender(cell.column.columnDef.cell, cell.getContext())
-      },
-    }))
-  }, [table])
+  const headerGroup = table.getHeaderGroups()[0]
+  const antdColumns: TableColumnsType<ModuleRecord> = headerGroup
+    ? headerGroup.headers.map((header) => ({
+        title: flexRender(header.column.columnDef.header, header.getContext()),
+        dataIndex: header.column.id,
+        key: header.column.id,
+        width: (
+          header.column.columnDef.meta as GridColumnRenderMeta | undefined
+        )?.width,
+        align: ((
+          header.column.columnDef.meta as
+            | GridColumnRenderMeta
+            | undefined
+        )?.align ?? 'center') as ColumnType<ModuleRecord>['align'],
+        ellipsis: true,
+        sorter: header.column.getCanSort(),
+        sortOrder:
+          header.column.getIsSorted() === 'asc'
+            ? 'ascend'
+            : header.column.getIsSorted() === 'desc'
+              ? 'descend'
+              : null,
+        render: (_: unknown, record: ModuleRecord) => {
+          const meta = header.column.columnDef.meta as
+            | GridColumnRenderMeta
+            | undefined
+          return meta?.renderCell?.(record) ?? null
+        },
+      }))
+    : []
 
   const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined =
     canUpdateRecord

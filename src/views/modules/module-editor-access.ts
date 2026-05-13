@@ -1,6 +1,27 @@
 import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'
 
+const SYSTEM_GENERATED_PRIMARY_NO_MODULES = new Set([
+  'purchase-order',
+  'purchase-inbound',
+  'sales-order',
+  'sales-outbound',
+  'freight-bill',
+  'purchase-contract',
+  'sales-contract',
+  'supplier-statement',
+  'customer-statement',
+  'freight-statement',
+  'receipt',
+  'payment',
+  'invoice-receipt',
+  'invoice-issue',
+])
+
+export function usesSystemGeneratedPrimaryNo(moduleKey: string) {
+  return SYSTEM_GENERATED_PRIMARY_NO_MODULES.has(moduleKey)
+}
+
 export function canModuleEditLineItems(
   moduleKey: string,
   hasItemColumns: boolean,
@@ -45,7 +66,11 @@ export function applyModuleDefaultEditorDraft(
 ) {
   const defaultDraftValues = getBehaviorValue(moduleKey, 'defaultDraftValues')
   if (defaultDraftValues) {
-    Object.assign(draft, defaultDraftValues as Record<string, unknown>)
+    const resolvedDraftValues =
+      typeof defaultDraftValues === 'function'
+        ? defaultDraftValues()
+        : defaultDraftValues
+    Object.assign(draft, resolvedDraftValues as Record<string, unknown>)
   }
 
   const defaultOperatorField = getBehaviorValue(
@@ -65,6 +90,9 @@ export function isEditorFieldDisabledForModule(
   fieldDisabled: boolean,
   canSaveCurrentEditor: boolean,
   lineItemsLocked: boolean,
+  primaryNoKey?: string,
+  parentFieldKey?: string,
+  record?: Record<string, unknown>,
 ) {
   if (!canSaveCurrentEditor) {
     return true
@@ -74,10 +102,30 @@ export function isEditorFieldDisabledForModule(
     return true
   }
 
+  if (
+    primaryNoKey &&
+    fieldKey === primaryNoKey &&
+    usesSystemGeneratedPrimaryNo(moduleKey)
+  ) {
+    return true
+  }
+
+  if (parentFieldKey && fieldKey === parentFieldKey) {
+    return true
+  }
+
   const readonlyFields = getBehaviorValue(moduleKey, 'readonlyEditorFields') as
     | string[]
     | undefined
   if ((readonlyFields || []).includes(fieldKey)) {
+    return true
+  }
+
+  const resolveReadonlyEditorFields = getBehaviorValue(
+    moduleKey,
+    'resolveReadonlyEditorFields',
+  ) as ((record: Record<string, unknown>) => string[]) | undefined
+  if (record && resolveReadonlyEditorFields?.(record).includes(fieldKey)) {
     return true
   }
 
@@ -115,7 +163,7 @@ export function isEditorItemColumnEditableForModule(
     return false
   }
 
-  if (moduleKey === 'purchase-inbound' && columnKey === 'batchNo') {
+  if (columnKey === 'batchNo' && (moduleKey === 'purchase-inbound' || moduleKey === 'purchase-order')) {
     return false
   }
 

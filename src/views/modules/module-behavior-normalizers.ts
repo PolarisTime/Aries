@@ -8,20 +8,31 @@ registerModuleBehavior('freight-bill', {
     const firstSourceItem = items.find((item) =>
       String(item.sourceNo || '').trim(),
     )
-    const firstCustomerItem = items.find((item) =>
-      String(item.customerName || '').trim(),
+    const customerNames = Array.from(
+      new Set(
+        items.map((item) => String(item.customerName || '').trim()).filter(Boolean),
+      ),
     )
-    const firstProjectItem = items.find((item) =>
-      String(item.projectName || '').trim(),
+    const projectNames = Array.from(
+      new Set(
+        items.map((item) => String(item.projectName || '').trim()).filter(Boolean),
+      ),
     )
-    if (!record.outboundNo && firstSourceItem) {
+    const sourceNos = collectUniqueSourceNos(items)
+    if (sourceNos) {
+      record.outboundNo = sourceNos
+    } else if (!record.outboundNo && firstSourceItem) {
       record.outboundNo = firstSourceItem.sourceNo
     }
-    if (!record.customerName && firstCustomerItem) {
-      record.customerName = firstCustomerItem.customerName
+    if (customerNames.length > 1) {
+      record.customerName = '多客户'
+    } else if (customerNames.length === 1) {
+      record.customerName = customerNames[0]
     }
-    if (!record.projectName && firstProjectItem) {
-      record.projectName = firstProjectItem.projectName
+    if (projectNames.length > 1) {
+      record.projectName = '多项目'
+    } else if (projectNames.length === 1) {
+      record.projectName = projectNames[0]
     }
     record.totalWeight = Number(
       ctx.sumLineItemsBy(items, 'weightTon').toFixed(3),

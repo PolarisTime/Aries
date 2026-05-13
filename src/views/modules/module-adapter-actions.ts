@@ -143,21 +143,26 @@ export function buildEditorAuditTarget(
   moduleKey: string,
   statusOptions: string[],
   lineItemsLocked: boolean,
+  currentStatus?: string,
 ) {
   const lockedAuditStatus = getBehaviorValue(moduleKey, 'lockedAuditStatus')
   if (lineItemsLocked && typeof lockedAuditStatus === 'string') {
+    if (currentStatus === lockedAuditStatus) return null
     return { key: 'status', value: lockedAuditStatus }
   }
 
   const auditStatus = getBehaviorValue(moduleKey, 'auditStatus')
   if (typeof auditStatus === 'string') {
+    if (currentStatus === auditStatus) return null
     return { key: 'status', value: auditStatus }
   }
 
   if (statusOptions.includes('已审核')) {
+    if (currentStatus === '已审核') return null
     return { key: 'status', value: '已审核' }
   }
   if (statusOptions.includes('已核准')) {
+    if (currentStatus === '已核准') return null
     return { key: 'status', value: '已核准' }
   }
 

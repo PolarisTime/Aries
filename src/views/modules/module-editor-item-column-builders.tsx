@@ -1,7 +1,14 @@
 import { MenuOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
-import { Checkbox, Input, InputNumber, Select } from 'antd'
-import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
+import Checkbox from 'antd/es/checkbox'
+import Input from 'antd/es/input'
+import InputNumber from 'antd/es/input-number'
+import Select from 'antd/es/select'
+import type {
+  ModuleColumnDefinition,
+  ModuleLineItem,
+  ModulePageConfig,
+} from '@/types/module-page'
 import {
   getEditorItemMin,
   getEditorItemPrecision,
@@ -44,10 +51,11 @@ function renderReadOnlyValue(
   formatCellValue: (value: unknown, columnType?: string) => string,
 ) {
   if (type === 'status') {
-    const meta = statusMap?.[String(value || '')]
+    const statusValue = typeof value === 'string' ? value : ''
+    const meta = statusMap?.[statusValue]
     return (
       <span className={`ant-tag ant-tag-${meta?.color || 'default'}`}>
-        {meta?.text || String(value || '--')}
+        {meta?.text || statusValue || '--'}
       </span>
     )
   }
@@ -83,16 +91,16 @@ function buildEditableColumnRender({
         return (
           <Select
             value={
-              record.materialCode ? String(record.materialCode) : undefined
+              typeof record.materialCode === 'string'
+                ? record.materialCode
+                : undefined
             }
             showSearch
             allowClear
             style={{ width: '100%' }}
             placeholder="搜索商品编码 / 品牌 / 材质 / 规格 / 长度"
             filterOption={(input, option) =>
-              String(
-                (option as MaterialOption | undefined)?.searchText || '',
-              ).includes(input.trim().toLowerCase())
+              (option?.searchText || '').includes(input.trim().toLowerCase())
             }
             onChange={(selectedValue) =>
               handleMaterialSelect(record.id, String(selectedValue || ''))
@@ -106,7 +114,9 @@ function buildEditableColumnRender({
         return (
           <Select
             value={
-              record.warehouseName ? String(record.warehouseName) : undefined
+              typeof record.warehouseName === 'string'
+                ? record.warehouseName
+                : undefined
             }
             showSearch
             allowClear
@@ -132,7 +142,9 @@ function buildEditableColumnRender({
         return (
           <Select
             value={
-              record.settlementMode ? String(record.settlementMode) : undefined
+              typeof record.settlementMode === 'string'
+                ? record.settlementMode
+                : undefined
             }
             style={{ width: '100%' }}
             placeholder="选择结算方式"
@@ -170,7 +182,7 @@ function buildEditableColumnRender({
 
       return (
         <Input
-          value={String(value || '')}
+          value={typeof value === 'string' ? value : ''}
           onChange={(event) =>
             handleItemInputChange(record.id, key, event.target.value)
           }
@@ -237,6 +249,7 @@ export function buildModuleEditorManagementColumns({
 
 export function buildModuleEditorDataColumns({
   config,
+  itemColumns,
   materialOptions,
   warehouses,
   formatCellValue,
@@ -246,7 +259,9 @@ export function buildModuleEditorDataColumns({
   handleMaterialSelect,
   handleSettlementModeChange,
   handleWarehouseSelect,
-}: EditableRenderOptions): TableColumnsType<ModuleLineItem> {
+}: EditableRenderOptions & {
+  itemColumns: ModuleColumnDefinition[]
+}): TableColumnsType<ModuleLineItem> {
   const renderEditableColumn = buildEditableColumnRender({
     config,
     materialOptions,
@@ -260,7 +275,7 @@ export function buildModuleEditorDataColumns({
     handleWarehouseSelect,
   })
 
-  return (config.itemColumns || []).map((column) => ({
+  return itemColumns.map((column) => ({
     title: column.title,
     dataIndex: column.dataIndex,
     key: column.dataIndex,

@@ -9,11 +9,12 @@ import type {
 import { parseParentRelationNos } from './module-adapter-shared'
 import { hasEditorValue } from './module-editor-shared'
 
-function getLineItemValidationMessage(
+function getLineItemValidationMessages(
   items: ModuleLineItem[],
   itemColumns: ModuleColumnDefinition[],
   moduleKey?: string,
-) {
+): string[] {
+  const messages: string[] = []
   const requiredColumns = itemColumns.filter((column) => column.required)
 
   for (const [index, item] of items.entries()) {
@@ -22,7 +23,7 @@ function getLineItemValidationMessage(
       Number.isFinite(maxImportQuantity) &&
       Number(item.quantity || 0) > maxImportQuantity
     ) {
-      return `第${index + 1}行可关联数量不能超过${maxImportQuantity}件`
+      messages.push(`第${index + 1}行可关联数量不能超过${maxImportQuantity}件`)
     }
     if (moduleKey === 'purchase-inbound') {
       const isWeighSettlement =
@@ -31,24 +32,24 @@ function getLineItemValidationMessage(
         isPurchaseWeighRequiredCategory(item.category) &&
         !isWeighSettlement
       ) {
-        return `第${index + 1}行商品类别需按过磅入库，请将本行结算方式改为过磅`
+        messages.push(`第${index + 1}行商品类别需按过磅入库，请将本行结算方式改为过磅`)
       }
       if (
         isWeighSettlement &&
         (!hasEditorValue(item.weighWeightTon) ||
           Number(item.weighWeightTon || 0) <= 0)
       ) {
-        return `请填写第${index + 1}行过磅重量`
+        messages.push(`请填写第${index + 1}行过磅重量`)
       }
     }
     for (const column of requiredColumns) {
       if (!hasEditorValue(item[column.dataIndex])) {
-        return `请填写第${index + 1}行${column.title}`
+        messages.push(`请填写第${index + 1}行${column.title}`)
       }
     }
   }
 
-  return null
+  return messages
 }
 
 export function getEditorValidationMessage(options: {
@@ -59,9 +60,11 @@ export function getEditorValidationMessage(options: {
   itemColumns?: ModuleColumnDefinition[]
   items?: ModuleLineItem[]
   itemCount: number
+  skipRequiredFieldKeys?: string[]
   parentImportConfig?: ModuleParentImportDefinition
   occupiedParentMap: Record<string, ModuleRecord>
   getPrimaryNo: (record: ModuleRecord) => string
+  collectAll?: boolean
 }) {
   const {
     fields,
@@ -70,29 +73,40 @@ export function getEditorValidationMessage(options: {
     itemColumns = [],
     items = [],
     itemCount,
+    skipRequiredFieldKeys = [],
     parentImportConfig,
     occupiedParentMap,
     getPrimaryNo,
+    collectAll = false,
   } = options
 
+  const allErrors: string[] = []
+  const skipRequiredFieldKeySet = new Set(skipRequiredFieldKeys)
+
   for (const field of fields) {
+    if (skipRequiredFieldKeySet.has(field.key)) {
+      continue
+    }
     if (field.required && !hasEditorValue(editorForm[field.key])) {
-      return `请填写${field.label}`
+      if (!collectAll) return `请填写${field.label}`
+      allErrors.push(`请填写${field.label}`)
     }
   }
 
   if (hasItemColumns && itemCount === 0) {
-    return '请至少填写一条明细'
+    if (!collectAll) return '请至少填写一条明细'
+    allErrors.push('请至少填写一条明细')
   }
 
   if (hasItemColumns) {
-    const itemValidationMessage = getLineItemValidationMessage(
+    const itemMessages = getLineItemValidationMessages(
       items,
       itemColumns,
       options.moduleKey,
     )
-    if (itemValidationMessage) {
-      return itemValidationMessage
+    if (itemMessages.length) {
+      if (!collectAll) return itemMessages[0]
+      allErrors.push(...itemMessages)
     }
   }
 
@@ -102,9 +116,16 @@ export function getEditorValidationMessage(options: {
     )
     for (const parentNo of parentNos) {
       if (occupiedParentMap[parentNo]) {
-        return `${parentImportConfig.label}已被${getPrimaryNo(occupiedParentMap[parentNo])}关联`
+        const occupiedPrimaryNo = getPrimaryNo(occupiedParentMap[parentNo])
+        const msg = `${parentImportConfig.label}${parentNo}已被${occupiedPrimaryNo}关联`
+        if (!collectAll) return msg
+        allErrors.push(msg)
       }
     }
+  }
+
+  if (allErrors.length) {
+    return allErrors.slice(0, 5).join('；') + (allErrors.length > 5 ? ` 等共${allErrors.length}个问题` : '')
   }
 
   return null
