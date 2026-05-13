@@ -1,6 +1,5 @@
 import { asString } from '@/utils/type-narrowing'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
-import { EditOutlined, ReloadOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
@@ -19,7 +18,6 @@ import {
   formatResetRuleLabel,
   NUMBER_RULE_STATUS_OPTIONS,
 } from '@/views/system/number-rules-view-utils'
-
 interface Props {
   keyword: string
   statusFilter?: string
@@ -34,7 +32,6 @@ interface Props {
   onEditNumberRule: (record: ModuleRecord) => void
   onEditUploadRule: (record: ModuleRecord) => void
 }
-
 export function NumberRulesTableCard({
   keyword,
   statusFilter,
@@ -102,7 +99,6 @@ export function NumberRulesTableCard({
       ),
     },
   ]
-
   const uploadRuleColumns: TableProps<ModuleRecord>['columns'] = [
     {
       title: '操作',
@@ -137,7 +133,6 @@ export function NumberRulesTableCard({
       ),
     },
   ]
-
   return (
     <Card
       title="编号规则"
@@ -180,7 +175,6 @@ export function NumberRulesTableCard({
           />
         </Col>
       </Row>
-
       <Typography.Title level={5}>单号规则</Typography.Title>
       <Table
         rowKey="id"
@@ -191,7 +185,6 @@ export function NumberRulesTableCard({
         pagination={false}
         style={{ marginBottom: 24 }}
       />
-
       <Typography.Title level={5}>上传规则</Typography.Title>
       <Table
         rowKey="id"

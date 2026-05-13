@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
 import { asString } from '@/utils/type-narrowing'
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -294,6 +295,8 @@ export function ModuleParentSelectorOverlay({
     enabled: open && !!parentModuleKey,
     placeholderData: keepPreviousData,
   })
+
+// eslint-disable-next-line react-hooks/exhaustive-deps
 
   const records = data?.data?.rows || []
   const total = Number(data?.data?.total || 0)

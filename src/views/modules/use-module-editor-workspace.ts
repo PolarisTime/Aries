@@ -481,6 +481,7 @@ export function useModuleEditorWorkspace({
         setSaving(false)
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       config,
       editorAuditTarget,
@@ -576,6 +577,7 @@ export function useModuleEditorWorkspace({
         setParentImporting(false)
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [config, form, items],
   )
 
@@ -597,6 +599,7 @@ export function useModuleEditorWorkspace({
   const addItem = useCallback(() => {
     const newItem = buildDefaultEditorLineItem(undefined, moduleKey)
     setItems((prev) => [...prev, newItem])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return {

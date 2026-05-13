@@ -4,20 +4,16 @@ import {
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
-  
-  
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
-import Input from 'antd/es/input'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { UserAccountRecord } from '@/types/user-account'
-
 interface Props {
   keyword: string
   statusFilter?: string
@@ -42,7 +38,6 @@ interface Props {
   onDelete: (record: UserAccountRecord) => void
   onPageChange: (page: number, pageSize: number) => void
 }
-
 export function UserAccountTableCard({
   keyword,
   statusFilter,
@@ -169,7 +164,6 @@ export function UserAccountTableCard({
       render: (value: string) => value || '--',
     },
   ]
-
   return (
     <Card
       title="用户账户管理"

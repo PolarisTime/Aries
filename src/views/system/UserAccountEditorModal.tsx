@@ -1,4 +1,3 @@
-import { getFormString, validateFormFields } from '@/utils/antd-form-safe'
 import type { FormInstance } from 'antd'
 import Col from 'antd/es/col'
 import Form from 'antd/es/form'
@@ -20,9 +19,7 @@ import type {
 } from '@/types/user-account'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
-
 type EditorMode = 'create' | 'edit'
-
 interface Props {
   open: boolean
   mode: EditorMode
@@ -41,7 +38,6 @@ interface Props {
   onSave: () => void
   onClose: () => void
 }
-
 export function UserAccountEditorModal({
   open,
   mode,
@@ -65,7 +61,6 @@ export function UserAccountEditorModal({
     'user-account-editor',
     'data-scope',
   )
-
   return (
     <FormModal
       title={isCreate ? '新增用户账户' : '编辑用户账户'}
@@ -168,7 +163,6 @@ export function UserAccountEditorModal({
               </Col>
             </Row>
           </div>
-
           <div className="form-section">
             <div className="form-section-title">权限配置</div>
             <Row gutter={24}>
@@ -230,7 +224,6 @@ export function UserAccountEditorModal({
               )}
             </Form.Item>
           </div>
-
           <div className="form-section">
             <div className="form-section-title">补充信息</div>
             <Form.Item name="remark" label="备注">
