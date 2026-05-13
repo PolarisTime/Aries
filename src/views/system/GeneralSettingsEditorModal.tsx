@@ -1,7 +1,7 @@
 import type { FormInstance } from 'antd'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import Modal from 'antd/es/modal'
+import { FormModal } from '@/components/FormModal'
 import Select from 'antd/es/select'
 import Switch from 'antd/es/switch'
 import Typography from 'antd/es/typography'
@@ -32,15 +32,13 @@ export function GeneralSettingsEditorModal({
   onClose,
 }: Props) {
   return (
-    <Modal
+    <FormModal
       title="编辑设置"
       open={open}
-      onCancel={onClose}
-      onOk={onSave}
+      onClose={onClose}
+      onSave={onSave}
       confirmLoading={saving}
       width={600}
-      mask={{ closable: false }}
-      forceRender
     >
       {record && (
         <Form form={form} layout="vertical">
@@ -106,6 +104,6 @@ export function GeneralSettingsEditorModal({
           )}
         </Form>
       )}
-    </Modal>
+    </FormModal>
   )
 }
