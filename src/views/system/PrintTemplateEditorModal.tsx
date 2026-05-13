@@ -2,7 +2,7 @@ import type { FormInstance } from 'antd'
 import Col from 'antd/es/col'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import Modal from 'antd/es/modal'
+import { FormModal } from '@/components/FormModal'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
@@ -37,15 +37,13 @@ export function PrintTemplateEditorModal({
   )
 
   return (
-    <Modal
+    <FormModal
       title={editing ? '编辑模板' : '新建模板'}
       open={open}
-      onCancel={onClose}
-      onOk={onSave}
+      onClose={onClose}
+      onSave={onSave}
       confirmLoading={saving}
       width={900}
-      mask={{ closable: false }}
-      forceRender
     >
       <Form form={form} layout="vertical">
         <Row gutter={16}>
@@ -91,6 +89,6 @@ export function PrintTemplateEditorModal({
           支持 HTML 模板和 LODOP 指令。使用 {'{{字段名}}'} 语法插入动态数据。
         </Typography.Text>
       </Form>
-    </Modal>
+    </FormModal>
   )
 }

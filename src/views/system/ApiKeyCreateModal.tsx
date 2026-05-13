@@ -4,7 +4,7 @@ import Button from 'antd/es/button'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import InputNumber from 'antd/es/input-number'
-import Modal from 'antd/es/modal'
+import { FormModal } from '@/components/FormModal'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Typography from 'antd/es/typography'
@@ -42,13 +42,11 @@ export function ApiKeyCreateModal({
   onClose,
 }: Props) {
   return (
-    <Modal
+    <FormModal
       title="生成 API Key"
       open={open}
-      onCancel={onClose}
+      onClose={onClose}
       footer={null}
-      mask={{ closable: false }}
-      forceRender
     >
       {!generatedKey ? (
         <Form form={form} layout="vertical">
@@ -149,6 +147,6 @@ export function ApiKeyCreateModal({
           </div>
         </>
       )}
-    </Modal>
+    </FormModal>
   )
 }
