@@ -1,55 +1,100 @@
 import { z } from 'zod'
+import { materialInfoFields, weightPriceFields } from './api'
 
-/**
- * 模块记录基础字段 Schema — 所有业务模块共有的字段。
- * 使用 .passthrough() 保留模块特有字段，同时为通用字段提供类型校验。
- */
-export const moduleRecordBaseSchema = z.object({
+// ── 行项目 Schema ──────────────────────────────────────
+
+/** 行项目通用字段 — .passthrough() 保留模块特有字段 */
+export const lineItemSchema = z.object({
+  id: z.string().optional(),
+  sourceNo: z.string().optional(),
+  sourcePurchaseOrderItemId: z.union([z.string(), z.number()]).optional(),
+  sourceSalesOrderItemId: z.union([z.string(), z.number()]).optional(),
+  sourceInboundItemId: z.union([z.string(), z.number()]).optional(),
+  ...materialInfoFields,
+  warehouseName: z.string().optional(),
+  batchNo: z.string().optional(),
+  settlementMode: z.string().optional(),
+  ...weightPriceFields,
+  customerName: z.string().optional(),
+  projectName: z.string().optional(),
+  materialName: z.string().optional(),
+  weighWeightTon: z.union([z.string(), z.number()]).optional(),
+  weightAdjustmentTon: z.union([z.string(), z.number()]).optional(),
+  weightAdjustmentAmount: z.union([z.string(), z.number()]).optional(),
+}).passthrough()
+
+export type LineItem = z.infer<typeof lineItemSchema>
+
+// ── 模块记录 Schema ────────────────────────────────────
+
+/** 模块记录通用字段 */
+export const moduleRecordSchema = z.object({
   id: z.string(),
   status: z.string().optional(),
   remark: z.string().optional(),
+  items: z.array(lineItemSchema).optional(),
+  attachmentIds: z.array(z.string()).optional(),
   createdBy: z.union([z.string(), z.number()]).optional(),
-  updatedBy: z.union([z.string(), z.number()]).optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
-  deletedFlag: z.boolean().optional(),
 }).passthrough()
 
-export type ModuleRecordBase = z.infer<typeof moduleRecordBaseSchema>
+export type ModuleRecord = z.infer<typeof moduleRecordSchema>
 
-/** 行项目基础字段 Schema */
-export const moduleLineItemBaseSchema = z.object({
-  id: z.string().optional(),
-  materialCode: z.string().optional(),
-  brand: z.string().optional(),
-  category: z.string().optional(),
-  material: z.string().optional(),
-  spec: z.string().optional(),
-  length: z.string().optional(),
-  unit: z.string().optional(),
-  warehouseName: z.string().optional(),
-  batchNo: z.string().optional(),
-  quantity: z.union([z.string(), z.number()]).optional(),
-  quantityUnit: z.string().optional(),
-  pieceWeightTon: z.union([z.string(), z.number()]).optional(),
-  piecesPerBundle: z.union([z.string(), z.number()]).optional(),
-  weightTon: z.union([z.string(), z.number()]).optional(),
-  unitPrice: z.union([z.string(), z.number()]).optional(),
-  amount: z.union([z.string(), z.number()]).optional(),
-}).passthrough()
+// ── 业务实体 Schema（按模块） ──────────────────────────
 
-export type ModuleLineItemBase = z.infer<typeof moduleLineItemBaseSchema>
+/** 采购订单行项目 */
+export const purchaseOrderItemSchema = lineItemSchema.required({
+  materialCode: true,
+}).extend({
+  quantity: z.number(),
+  unitPrice: z.number(),
+  pieceWeightTon: z.number(),
+  piecesPerBundle: z.number(),
+  unit: z.string(),
+})
+export type PurchaseOrderItem = z.infer<typeof purchaseOrderItemSchema>
 
-/**
- * 运行时安全校验：将 unknown 值校验为模块记录类型。
- * 失败时返回默认空记录，绝不抛异常。
- */
-export function parseModuleRecord(value: unknown): ModuleRecordBase {
-  const result = moduleRecordBaseSchema.safeParse(value)
-  return result.success ? result.data : { id: '' }
+/** 销售订单行项目 */
+export const salesOrderItemSchema = purchaseOrderItemSchema.extend({
+  sourceInboundItemId: z.number().optional(),
+  sourcePurchaseOrderItemId: z.number().optional(),
+})
+export type SalesOrderItem = z.infer<typeof salesOrderItemSchema>
+
+/** 采购入库行项目 */
+export const purchaseInboundItemSchema = lineItemSchema.extend({
+  sourcePurchaseOrderItemId: z.number().optional(),
+  settlementMode: z.string().optional(),
+  weighWeightTon: z.number().optional(),
+  weightAdjustmentTon: z.number().optional(),
+  weightAdjustmentAmount: z.number().optional(),
+  quantity: z.number(),
+  unitPrice: z.number(),
+  pieceWeightTon: z.number(),
+})
+export type PurchaseInboundItem = z.infer<typeof purchaseInboundItemSchema>
+
+/** 销售出库行项目 */
+export const salesOutboundItemSchema = lineItemSchema.extend({
+  sourceNo: z.string().optional(),
+  sourceSalesOrderItemId: z.number().optional(),
+  quantity: z.number(),
+  unitPrice: z.number(),
+  pieceWeightTon: z.number(),
+})
+export type SalesOutboundItem = z.infer<typeof salesOutboundItemSchema>
+
+// ── 解析辅助 ───────────────────────────────────────────
+
+export function parseRecord(v: unknown): ModuleRecord {
+  return moduleRecordSchema.safeParse(v).success
+    ? (v as ModuleRecord)
+    : ({ id: '' } as ModuleRecord)
 }
 
-export function parseModuleLineItem(value: unknown): ModuleLineItemBase {
-  const result = moduleLineItemBaseSchema.safeParse(value)
-  return result.success ? result.data : { id: '' }
+export function parseLineItem(v: unknown): LineItem {
+  return lineItemSchema.safeParse(v).success
+    ? (v as LineItem)
+    : ({ id: '' } as LineItem)
 }
