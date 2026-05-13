@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { FormInstance } from 'antd'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
@@ -74,7 +75,7 @@ export function GeneralSettingsEditorModal({
               >
                 <Switch checkedChildren="启用" unCheckedChildren="关闭" />
               </Form.Item>
-              {String(record.settingCode || '') ===
+              {asString(record.settingCode) ===
                 'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS' && (
                 <Form.Item name="selectedActions" label="记录的操作">
                   <Select
@@ -83,7 +84,7 @@ export function GeneralSettingsEditorModal({
                   />
                 </Form.Item>
               )}
-              {String(record.settingCode || '') ===
+              {asString(record.settingCode) ===
                 'UI_HIDE_AUDITED_LIST_RECORDS' && (
                 <Form.Item name="selectedActions" label="隐藏的状态">
                   <Select
@@ -97,9 +98,9 @@ export function GeneralSettingsEditorModal({
           <Form.Item name="remark" label="说明">
             <Input.TextArea rows={2} disabled />
           </Form.Item>
-          {SYSTEM_SWITCH_HELP_TEXT[String(record.settingCode || '')] && (
+          {SYSTEM_SWITCH_HELP_TEXT[asString(record.settingCode)] && (
             <Typography.Text type="secondary">
-              {SYSTEM_SWITCH_HELP_TEXT[String(record.settingCode || '')]}
+              {SYSTEM_SWITCH_HELP_TEXT[asString(record.settingCode)]}
             </Typography.Text>
           )}
         </Form>

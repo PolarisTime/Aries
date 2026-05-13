@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import Empty from 'antd/es/empty'
 import Table from 'antd/es/table'
 import type { ColumnsType, TableProps } from 'antd/es/table'
-import type { SorterResult, SortOrder } from 'antd/es/table/interface'
 import type { ModuleRecord } from '@/types/module-page'
 
 const MIN_TABLE_BODY_SCROLL_Y = 240

@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import {
   listAllBusinessModuleRows,
   saveBusinessModule,
@@ -50,7 +51,7 @@ export function isDisplaySwitchEnabled(
   settingCode: string,
 ) {
   const matched = rows?.find(
-    (record) => String(record.settingCode || '').trim() === settingCode,
+    (record) => asString(record.settingCode).trim() === settingCode,
   )
   return String(matched?.status || '') === '正常'
 }

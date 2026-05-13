@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { registerModuleBehavior } from '@/views/modules/module-behavior-registry-core'
 import {
   collectUniqueSourceNos,
@@ -6,16 +7,16 @@ import {
 registerModuleBehavior('freight-bill', {
   normalizeDraftRecord(record, items, ctx) {
     const firstSourceItem = items.find((item) =>
-      String(item.sourceNo || '').trim(),
+      asString(item.sourceNo).trim(),
     )
     const customerNames = Array.from(
       new Set(
-        items.map((item) => String(item.customerName || '').trim()).filter(Boolean),
+        items.map((item) => asString(item.customerName).trim()).filter(Boolean),
       ),
     )
     const projectNames = Array.from(
       new Set(
-        items.map((item) => String(item.projectName || '').trim()).filter(Boolean),
+        items.map((item) => asString(item.projectName).trim()).filter(Boolean),
       ),
     )
     const sourceNos = collectUniqueSourceNos(items)

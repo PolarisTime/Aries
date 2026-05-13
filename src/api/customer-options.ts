@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
 import { http } from './client'
@@ -169,7 +170,7 @@ function formatProjectOptionLabel(row: CustomerOption, projectName: string) {
 }
 
 function normalizeText(value: unknown) {
-  return String(value || '').trim()
+  return asString(value).trim()
 }
 
 export function reloadCustomerOptions() {

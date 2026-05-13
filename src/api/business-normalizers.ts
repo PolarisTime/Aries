@@ -16,7 +16,7 @@ export function normalizeLineItem(raw: Record<string, unknown>): ModuleLineItem 
       result[key] = value
     }
   }
-  return result as unknown as ModuleLineItem
+  return result
 }
 
 export function normalizeRecord(raw: Record<string, unknown>): ModuleRecord {

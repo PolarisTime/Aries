@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 
 function cloneRecord<T>(value: T): T {
@@ -50,9 +51,9 @@ export function transformFreightItems(
 }
 
 function resolveFreightMaterialName(item: ModuleLineItem) {
-  const explicitName = String(item.materialName || '').trim()
+  const explicitName = asString(item.materialName).trim()
   if (explicitName) {
     return explicitName
   }
-  return String(item.brand || '').trim()
+  return asString(item.brand).trim()
 }

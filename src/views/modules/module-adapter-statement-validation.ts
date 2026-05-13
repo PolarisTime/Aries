@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleRecord } from '@/types/module-page'
 
 export function getSupplierStatementSelectionError(
@@ -8,7 +9,7 @@ export function getSupplierStatementSelectionError(
   }
 
   const supplierNames = Array.from(
-    new Set(sourceInbounds.map((record) => String(record.supplierName || ''))),
+    new Set(sourceInbounds.map((record) => asString(record.supplierName))),
   )
   if (supplierNames.length !== 1) {
     return '仅支持同一供应商的采购入库单合并生成'
@@ -25,10 +26,10 @@ export function getCustomerStatementSelectionError(
   }
 
   const customerNames = Array.from(
-    new Set(sourceOrders.map((record) => String(record.customerName || ''))),
+    new Set(sourceOrders.map((record) => asString(record.customerName))),
   )
   const projectNames = Array.from(
-    new Set(sourceOrders.map((record) => String(record.projectName || ''))),
+    new Set(sourceOrders.map((record) => asString(record.projectName))),
   )
   if (customerNames.length !== 1 || projectNames.length !== 1) {
     return '仅支持同一客户同一项目的销售订单合并生成'
@@ -43,7 +44,7 @@ export function getFreightStatementSelectionError(sourceBills: ModuleRecord[]) {
   }
 
   const carrierNames = Array.from(
-    new Set(sourceBills.map((record) => String(record.carrierName || ''))),
+    new Set(sourceBills.map((record) => asString(record.carrierName))),
   )
   if (carrierNames.length !== 1) {
     return '仅支持同一物流商的物流单合并生成'

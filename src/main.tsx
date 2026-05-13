@@ -33,7 +33,7 @@ function App() {
   )
 }
 
-async function bootstrap() {
+function bootstrap() {
   ensureApiClientSetup()
 
   void import('dayjs').then(async ({ default: dayjs }) => {

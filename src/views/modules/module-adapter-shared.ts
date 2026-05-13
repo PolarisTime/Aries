@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleRecord } from '@/types/module-page'
 
 const primaryNoFallbackKeys = [
@@ -54,7 +55,7 @@ export function normalizeStringArray(value: unknown) {
 export function parseParentRelationNos(value: unknown) {
   return Array.from(
     new Set(
-      String(value || '')
+      asString(value)
         .split(/[，,\s]+/)
         .map((item) => item.trim())
         .filter(Boolean),
@@ -108,7 +109,7 @@ export function getTagListValues(value: unknown) {
     return value.map((item) => String(item)).filter(Boolean)
   }
 
-  return String(value || '')
+  return asString(value)
     .split(/[，,]+/)
     .map((item) => item.trim())
     .filter(Boolean)
@@ -119,6 +120,6 @@ export function isFriendlyTagColumnKey(columnKey: string) {
 }
 
 export function getFriendlyTagColor(columnKey: string, value: unknown) {
-  const normalizedValue = String(value || '')
+  const normalizedValue = asString(value)
   return friendlyTagColorMap[columnKey]?.[normalizedValue] || 'warning'
 }

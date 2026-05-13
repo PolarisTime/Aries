@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { useCallback } from 'react'
 import type { ModuleLineItem } from '@/types/module-page'
 import { recalculateEditorLineItem } from '@/views/modules/module-adapter-editor'
@@ -72,7 +73,7 @@ export function useModuleEditorItemColumnHandlers({ setItems }: Props) {
               if (item.id !== itemId) {
                 return item
               }
-              if (String(item.materialCode || '').trim() !== materialCode.trim()) {
+              if (asString(item.materialCode).trim() !== materialCode.trim()) {
                 return item
               }
               return { ...applyMaterial({ ...item }, resolvedMaterial) }

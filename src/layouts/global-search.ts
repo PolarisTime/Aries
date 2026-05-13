@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleRecord } from '@/types/module-page'
 import type { ModulePageMeta } from '@/config/module-page-meta'
 
@@ -126,7 +127,7 @@ export async function searchAccessibleModules(
         return rows
           .filter((record) => {
             const key = String(
-              record.id || record[config.primaryNoKey || 'id'] || '',
+              record.id || asString(record[config.primaryNoKey || 'id']),
             )
             if (!key || seenKeys.has(key)) {
               return false

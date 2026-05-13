@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
 import type { ModuleLineItem } from '@/types/module-page'
 import { getBehaviorValue } from './module-behavior-registry'
@@ -28,14 +29,14 @@ function isPersistedLineItem(item: ModuleLineItem) {
   if (typeof rawId === 'number') {
     return Number.isInteger(rawId) && rawId > 0
   }
-  const normalizedId = String(rawId || '').trim()
+  const normalizedId = asString(rawId).trim()
   return /^\d+$/.test(normalizedId)
 }
 
 function isEmptyDraftLineItem(item: ModuleLineItem) {
   const defaultItem = buildDefaultEditorLineItem('')
-  const unit = String(item.unit ?? '').trim()
-  const quantityUnit = String(item.quantityUnit ?? '').trim()
+  const unit = asString(item.unit).trim()
+  const quantityUnit = asString(item.quantityUnit).trim()
 
   if (isPersistedLineItem(item)) {
     return false

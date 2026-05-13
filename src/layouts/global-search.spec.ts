@@ -58,10 +58,10 @@ describe('searchAccessibleModules', () => {
       moduleKeys: ['purchase-order', 'sales-order'],
       pageConfigs: testPageConfigs,
       canAccessModule: (moduleKey) => moduleKey !== 'sales-order',
-      searchModule: async () => ({
+      searchModule: () => ({
         data: { rows: [purchaseRecord] },
       }),
-      lookupRecordById: async () => purchaseRecord,
+      lookupRecordById: () => purchaseRecord,
       buildSummary: buildGlobalSearchSummary,
     })
 

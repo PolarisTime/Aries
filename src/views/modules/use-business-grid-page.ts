@@ -273,17 +273,17 @@ export function useBusinessGridPage({
       openCreateEditor: async () => {
         await openEditor(null)
       },
-      openCustomerStatementGenerator: async () => {
+      openCustomerStatementGenerator: () => {
         overlays.openCustomerStatement()
       },
-      openFreightPickupList: async () => {
+      openFreightPickupList: () => {
         overlays.openFreightPickup()
       },
-      openFreightStatementGenerator: async () => {
+      openFreightStatementGenerator: () => {
         overlays.openFreightStatement()
       },
       openFreightSummary,
-      openSupplierStatementGenerator: async () => {
+      openSupplierStatementGenerator: () => {
         overlays.openSupplierStatement()
       },
     },

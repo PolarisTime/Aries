@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { useCallback } from 'react'
 import {
   deleteBusinessModule,
@@ -33,7 +34,7 @@ export function useBusinessGridBatchActions({
   listReverseAuditTarget,
   refreshAndClearSelection,
 }: Props) {
-  const handleSelectedAuditRecords = useCallback(async () => {
+  const handleSelectedAuditRecords = useCallback(() => {
     if (!selectedRowKeys.length) {
       message.warning('请先选择记录')
       return
@@ -46,7 +47,7 @@ export function useBusinessGridBatchActions({
     const selected = selectedRows
     const auditStatus = String(listAuditTarget.value ?? '').trim()
     const eligible = selected.filter((r) => {
-      const status = String(r.status ?? '').trim()
+      const status = asString(r.status).trim()
       if (!status) return true
       if (status === auditStatus) return false
       return !isEditBlockedByStatus(status)
@@ -165,7 +166,7 @@ export function useBusinessGridBatchActions({
     })
   }, [moduleKey, refreshAndClearSelection, selectedRowKeys, selectedRows])
 
-  const handleSelectedReverseAuditRecords = useCallback(async () => {
+  const handleSelectedReverseAuditRecords = useCallback(() => {
     if (!selectedRowKeys.length) {
       message.warning('请先选择记录')
       return
@@ -178,7 +179,7 @@ export function useBusinessGridBatchActions({
     const selected = selectedRows
     const auditStatus = String(listAuditTarget?.value ?? '').trim()
     const eligible = selected.filter((r) => {
-      const status = String(r.status ?? '').trim()
+      const status = asString(r.status).trim()
       return Boolean(auditStatus && status === auditStatus)
     })
     const skippedCount = selected.length - eligible.length
@@ -241,7 +242,7 @@ export function useBusinessGridBatchActions({
     selectedRows,
   ])
 
-  const markSelectedFreightDelivered = useCallback(async () => {
+  const markSelectedFreightDelivered = useCallback(() => {
     if (!selectedRowKeys.length) {
       message.warning('请先选择物流单')
       return

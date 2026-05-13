@@ -17,7 +17,7 @@ function normalizeRecord(raw: Record<string, unknown>): ModuleRecord {
         return { ...it, id: asId(it.id) || asString(it.id) }
       })
     : undefined
-  return { ...raw, id, items } as unknown as ModuleRecord
+  return { ...raw, id, items }
 }
 
 type StatementModuleKey = 'supplier-statement' | 'customer-statement' | 'freight-statement'

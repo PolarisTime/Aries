@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { useMemo } from 'react'
 import type {
   ModuleFormFieldDefinition,
@@ -51,7 +52,7 @@ export function useModuleEditorCapabilities({
         : isModuleLineItemsLocked(
             moduleKey,
             lineItemLockRelatedRows.map((record) =>
-              String(record.status || ''),
+              asString(record.status),
             ),
           ),
     [lineItemsLockedOverride, moduleKey, lineItemLockRelatedRows],

@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import type {
   CustomerStatementDraftOptions,
@@ -52,13 +53,13 @@ export function buildSupplierStatementDraftData({
   const sortedInbounds = structuredClone(sourceInbounds)
   sortedInbounds.sort(
     (left, right) =>
-      new Date(String(left.inboundDate || '')).getTime() -
-      new Date(String(right.inboundDate || '')).getTime(),
+      new Date(asString(left.inboundDate)).getTime() -
+      new Date(asString(right.inboundDate)).getTime(),
   )
 
   const firstInbound = sortedInbounds[0]
   const sourceInboundNos = sortedInbounds
-    .map((record) => String(record.inboundNo || ''))
+    .map((record) => asString(record.inboundNo))
     .filter(Boolean)
     .join(', ')
   const { startDate, endDate } = resolveStatementPeriod(
@@ -113,7 +114,7 @@ export function buildCustomerStatementDraftData({
 
   const firstOrder = sortedOrders[0]
   const sourceOrderNos = sortedOrders
-    .map((order) => String(order.orderNo || ''))
+    .map((order) => asString(order.orderNo))
     .filter(Boolean)
     .join(', ')
   const { startDate, endDate } = resolveStatementPeriod(
@@ -166,8 +167,8 @@ export function buildFreightStatementDraftData({
   const sortedBills = structuredClone(sourceBills)
   sortedBills.sort(
     (left, right) =>
-      new Date(String(left.billTime || '')).getTime() -
-      new Date(String(right.billTime || '')).getTime(),
+      new Date(asString(left.billTime)).getTime() -
+      new Date(asString(right.billTime)).getTime(),
   )
 
   const firstBill = sortedBills[0]
@@ -179,7 +180,7 @@ export function buildFreightStatementDraftData({
     })),
   )
   const sourceBillNos = sortedBills
-    .map((bill) => String(bill.billNo || ''))
+    .map((bill) => asString(bill.billNo))
     .filter(Boolean)
     .join(', ')
   const totalWeight = Number(

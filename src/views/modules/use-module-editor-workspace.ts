@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import dayjs from 'dayjs'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
@@ -93,7 +94,7 @@ function normalizeRecordForEditor(
 }
 
 function normalizeOptionalString(value: unknown) {
-  return String(value || '').trim()
+  return asString(value).trim()
 }
 
 function syncEditorFormValues(args: {
@@ -434,7 +435,7 @@ export function useModuleEditorWorkspace({
           id: record?.id || '',
           _preallocatedId:
             !record && useSnowflakeBusinessNo
-              ? String(values._preallocatedId || '')
+              ? asString(values._preallocatedId)
               : undefined,
           items: trimmedItems,
         }

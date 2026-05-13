@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import dayjs from 'dayjs'
 import { registerModuleBehavior } from '@/views/modules/module-behavior-registry-core'
 
@@ -36,7 +37,7 @@ registerModuleBehavior('purchase-contract', {
 })
 registerModuleBehavior('purchase-contract', {
   resolveReadonlyEditorFields(record) {
-    return String(record.sourcePurchaseOrderNos || '').trim()
+    return asString(record.sourcePurchaseOrderNos).trim()
       ? ['supplierName']
       : []
   },
@@ -52,7 +53,7 @@ registerModuleBehavior('purchase-contract', {
     const signDateValue = editorForm.signDate
     const signDate = dayjs.isDayjs(signDateValue)
       ? signDateValue
-      : dayjs(String(signDateValue || ''))
+      : dayjs(asString(signDateValue))
     if (!signDate.isValid()) {
       return
     }
@@ -64,7 +65,7 @@ registerModuleBehavior('purchase-contract', {
     const effectiveDateValue = editorForm.effectiveDate
     const effectiveDate = dayjs.isDayjs(effectiveDateValue)
       ? effectiveDateValue
-      : dayjs(String(effectiveDateValue || ''))
+      : dayjs(asString(effectiveDateValue))
     if (
       shouldFollowSignDate ||
       !effectiveDateValue ||
@@ -76,7 +77,7 @@ registerModuleBehavior('purchase-contract', {
     const expireDateValue = editorForm.expireDate
     const expireDate = dayjs.isDayjs(expireDateValue)
       ? expireDateValue
-      : dayjs(String(expireDateValue || ''))
+      : dayjs(asString(expireDateValue))
     if (shouldFollowSignDate || !expireDateValue || !expireDate.isValid()) {
       editorForm.expireDate = addOneYear(signDate)
     }

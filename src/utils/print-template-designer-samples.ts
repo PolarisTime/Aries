@@ -1,6 +1,5 @@
 import type {
   ModuleColumnDefinition,
-  ModuleDetailField,
 } from '@/types/module-page'
 
 const sampleDates = ['2026-04-26', '2026-04-27', '2026-04-28']

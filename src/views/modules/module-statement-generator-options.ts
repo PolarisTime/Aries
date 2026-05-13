@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { CarrierOption } from '@/api/carrier-options'
 import type { CustomerOption } from '@/api/customer-options'
 import type { SupplierOption } from '@/api/supplier-options'
@@ -10,7 +11,7 @@ export interface StatementCounterpartyOption {
 }
 
 function normalizeText(value: unknown) {
-  return String(value ?? '').trim()
+  return asString(value).trim()
 }
 
 function dedupeOptions(options: StatementCounterpartyOption[]) {

@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 export const operationLogActionOptions = [
   { label: '查询', value: '查询' },
   { label: '查看', value: '查看' },
@@ -135,7 +136,7 @@ export const operationLogModuleOptions = [
 export function resolveOperationLogActionOptions(
   filters: Record<string, unknown>,
 ) {
-  const moduleName = String(filters.moduleName || '').trim()
+  const moduleName = asString(filters.moduleName).trim()
   return [
     ...(operationLogActionOptionsByModule[moduleName] ||
       operationLogActionOptions),

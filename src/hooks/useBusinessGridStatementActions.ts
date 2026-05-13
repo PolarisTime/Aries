@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { useCallback } from 'react'
 import {
   generateBusinessPrimaryNo,
@@ -57,20 +58,20 @@ export function useBusinessGridStatementActions({
             : type === 'customer'
               ? candidate.deliveryDate
               : candidate.billTime
-        const currentDate = String(dateField || '')
+        const currentDate = asString(dateField)
 
         if (!currentDate || currentDate < startDate || currentDate > endDate) {
           return false
         }
 
         if (type === 'supplier') {
-          return String(candidate.supplierName || '') === counterpartyName
+          return asString(candidate.supplierName) === counterpartyName
         }
         if (type === 'customer') {
-          return String(candidate.customerName || '') === counterpartyName
+          return asString(candidate.customerName) === counterpartyName
         }
 
-        return String(candidate.carrierName || '') === counterpartyName
+        return asString(candidate.carrierName) === counterpartyName
       })
 
       if (!filteredCandidates.length) {
@@ -89,7 +90,7 @@ export function useBusinessGridStatementActions({
         const recordsByProject = new Map<string, ModuleRecord[]>()
 
         for (const record of sourceRecords) {
-          const projectName = String(record.projectName || '')
+          const projectName = asString(record.projectName)
           const current = recordsByProject.get(projectName) || []
           current.push(record)
           recordsByProject.set(projectName, current)

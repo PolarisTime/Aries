@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { StatusTag } from '@/components/StatusTag'
@@ -200,7 +201,7 @@ function buildSelectedRecordSummary(
       const rawValue =
         field.type != null
           ? formatValue(record[field.key], field.type)
-          : String(record[field.key] || '').trim()
+          : asString(record[field.key]).trim()
       const value = String(rawValue || '').trim()
       return value ? `${field.label}：${value}` : ''
     })
@@ -209,7 +210,7 @@ function buildSelectedRecordSummary(
   return {
     primary,
     meta,
-    status: String(record.status || '').trim(),
+    status: asString(record.status).trim(),
   }
 }
 
@@ -308,7 +309,7 @@ export function ModuleParentSelectorOverlay({
             if (column.type === 'status') {
               return (
                 <StatusTag
-                  status={String(value || '')}
+                  status={asString(value)}
                   statusMap={overlayStatusMap}
                   fallback={String(value || '--')}
                 />

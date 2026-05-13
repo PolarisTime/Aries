@@ -118,7 +118,7 @@ function applyFilterDefinition(
 
     const recordSearchKeys = filter.clientSearchKeys || []
     const lineItemSearchKeys = filter.clientSearchLineItemKeys || []
-    const rec = safe(record as Record<string, unknown>)
+    const rec = safe(record)
 
     if (recordSearchKeys.length || lineItemSearchKeys.length) {
       const matchedRecordField = recordSearchKeys.some((key) =>
@@ -128,7 +128,7 @@ function applyFilterDefinition(
       if (!lineItemSearchKeys.length || !Array.isArray(record.items)) return false
 
       return record.items.some((item) => {
-        const it = safe(item as Record<string, unknown>)
+        const it = safe(item)
         return lineItemSearchKeys.some((key) =>
           it.str(key).toLowerCase().includes(keyword),
         )
@@ -141,12 +141,12 @@ function applyFilterDefinition(
   }
 
   if (filter.type === 'select') {
-    return safe(record as Record<string, unknown>).str(filter.key) === asString(rawValue)
+    return safe(record).str(filter.key) === asString(rawValue)
   }
 
   if (filter.type === 'dateRange' && Array.isArray(rawValue) && rawValue.length === 2) {
     const [start, end] = rawValue
-    const current = safe(record as Record<string, unknown>).str(filter.key)
+    const current = safe(record).str(filter.key)
     if (!current || !start || !end) return true
     return current >= asString(start) && current <= asString(end)
   }

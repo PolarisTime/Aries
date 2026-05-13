@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleLineItem } from '@/types/module-page'
 import { toRoundedNumber } from './module-editor-shared'
 
@@ -22,7 +23,7 @@ function calculateWeightByPieceWeightTon(
 }
 
 function resolveTheoreticalWeightTon(item: ModuleLineItem) {
-  const isWeighSettlement = String(item.settlementMode || '').trim() === '过磅'
+  const isWeighSettlement = asString(item.settlementMode).trim() === '过磅'
   if (isWeighSettlement) {
     const sourcePieceWeightTon = Number(item._sourcePieceWeightTon)
     if (Number.isFinite(sourcePieceWeightTon) && sourcePieceWeightTon > 0) {
@@ -93,7 +94,7 @@ export function recalculateEditorLineItem(
   changedKey?: string,
 ) {
   const theoreticalWeightTon = resolveTheoreticalWeightTon(item)
-  const isWeighSettlement = String(item.settlementMode || '').trim() === '过磅'
+  const isWeighSettlement = asString(item.settlementMode).trim() === '过磅'
   const changedKeyString = String(changedKey || '')
   const changedValue = changedKeyString ? item[changedKeyString] : undefined
   const isChangedValueCleared =

@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleFormFieldOption, ModuleRecord } from '@/types/module-page'
 
 interface CustomerStatementOptionArgs {
@@ -18,7 +19,7 @@ export interface StatementLinkCatalog {
 }
 
 function normalizeText(value: unknown) {
-  return String(value || '').trim()
+  return asString(value).trim()
 }
 
 function normalizeAmount(value: unknown) {
@@ -27,7 +28,7 @@ function normalizeAmount(value: unknown) {
 }
 
 function normalizeId(value: unknown) {
-  const id = String(value || '').trim()
+  const id = asString(value).trim()
   return id ? id : null
 }
 
@@ -59,8 +60,8 @@ function compareStatements(left: ModuleRecord, right: ModuleRecord) {
   ) {
     return rightEndDate - leftEndDate
   }
-  return String(right.statementNo || '').localeCompare(
-    String(left.statementNo || ''),
+  return asString(right.statementNo).localeCompare(
+    asString(left.statementNo),
   )
 }
 
@@ -88,7 +89,7 @@ export function buildCustomerStatementOptions(
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
       value: String(record.id || ''),
-      label: `${String(record.statementNo || '')} | ${String(record.customerName || '')} / ${String(record.projectName || '')} | 待收 ${formatAmountLabel(record.closingAmount)}`,
+      label: `${asString(record.statementNo)} | ${String(record.customerName || '')} / ${String(record.projectName || '')} | 待收 ${formatAmountLabel(record.closingAmount)}`,
     }))
 }
 
@@ -110,7 +111,7 @@ export function buildSupplierStatementOptions(
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
       value: String(record.id || ''),
-      label: `${String(record.statementNo || '')} | ${String(record.supplierName || '')} | 待付 ${formatAmountLabel(record.closingAmount)}`,
+      label: `${asString(record.statementNo)} | ${String(record.supplierName || '')} | 待付 ${formatAmountLabel(record.closingAmount)}`,
     }))
 }
 
@@ -128,7 +129,7 @@ export function buildFreightStatementOptions(
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
       value: String(record.id || ''),
-      label: `${String(record.statementNo || '')} | ${String(record.carrierName || '')} | 待付 ${formatAmountLabel(record.unpaidAmount)}`,
+      label: `${asString(record.statementNo)} | ${String(record.carrierName || '')} | 待付 ${formatAmountLabel(record.unpaidAmount)}`,
     }))
 }
 

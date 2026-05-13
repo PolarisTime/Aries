@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 /**
  * Centralized registry for per-module behavioral configuration.
  * Replaces scattered Record<string, X> maps across multiple adapter files.
@@ -41,7 +42,7 @@ export function getBehaviorValue<K extends keyof ModuleBehaviorConfig>(
 }
 
 export function isEditBlockedByStatus(status: unknown, moduleKey?: string): boolean {
-  const normalized = String(status ?? '').trim()
+  const normalized = asString(status).trim()
   if (!normalized) return false
   if (moduleKey) {
     const perModule = getBehaviorValue(moduleKey, 'protectedEditStatuses')
@@ -51,7 +52,7 @@ export function isEditBlockedByStatus(status: unknown, moduleKey?: string): bool
 }
 
 export function isDeleteBlockedByStatus(status: unknown, moduleKey?: string): boolean {
-  const normalized = String(status ?? '').trim()
+  const normalized = asString(status).trim()
   if (!normalized) return false
   if (moduleKey) {
     const perModule = getBehaviorValue(moduleKey, 'protectedDeleteStatuses')
