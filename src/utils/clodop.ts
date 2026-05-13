@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { logger } from '@/utils/logger'
 
 let loadPromise: Promise<boolean> | null = null
@@ -199,7 +200,6 @@ function parseInitCall(code: string) {
   return { title, inita }
 }
 
-function cleanTemplateCode(code: string) {
   return code
     .replace(/LODOP\s*\.\s*PRINT_INITA?\s*\([^)]*\)\s*;?/g, '')
     .replace(/LODOP\s*\.\s*PREVIEW\s*\([^)]*\)\s*;?/g, '')

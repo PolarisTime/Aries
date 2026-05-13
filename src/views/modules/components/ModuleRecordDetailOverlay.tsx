@@ -41,7 +41,6 @@ export function ModuleRecordDetailOverlay({
     moduleKey: config.key,
     config,
   })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const detailItemColumns = config.detailItemColumns || config.itemColumns || []
   const detailTableColumns = useMemo<TableColumnsType<ModuleLineItem>>(
     () =>

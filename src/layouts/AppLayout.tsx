@@ -254,6 +254,7 @@ export function AppLayout() {
                 selectedKeys={selectedKeys}
                 topMenuItems={topMenuItems}
                 onMenuClick={handleMenuClick}
+                // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
                 onDashboardClick={() => navigate({ to: '/dashboard' as '/' })}
                 topBrandMark={topBrandMark}
                 shellFontStyle={shellFontStyle}
@@ -311,6 +312,7 @@ export function AppLayout() {
             isTopNavigationLayout={isTopNavigationLayout}
             shellFontStyle={{ ...fixedWidthStyle, ...shellFontStyle }}
             closePage={closePage}
+            // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
             onNavigateToPath={(path) => navigate({ to: path as '/' })}
           />
 

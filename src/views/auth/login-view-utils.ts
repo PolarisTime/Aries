@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import type { LoginUser } from '@/types/auth'
 import { apiBaseUrl } from '@/utils/env'
 

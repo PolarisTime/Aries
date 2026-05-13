@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import { asString } from '@/utils/type-narrowing'
 import { useQuery } from '@tanstack/react-query'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'

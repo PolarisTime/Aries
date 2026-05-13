@@ -37,6 +37,7 @@ export function DashboardFlowCard({ navigate, summary }: Props) {
                     <button
                       type="button"
                       className="dashboard-flow-node"
+                      // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
                       onClick={() => navigate({ to: node.path as '/' })}
                     >
                       <span

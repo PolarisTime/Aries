@@ -96,7 +96,6 @@ export function LoginView() {
     }
   }, [])
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
     void loadCaptcha()
   }, [loadCaptcha])
   const handleLogin = useCallback(

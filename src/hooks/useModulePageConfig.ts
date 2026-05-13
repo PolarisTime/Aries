@@ -165,7 +165,6 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
       moduleKey,
       statementLinkCatalog,
     )
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     moduleKey,
     moduleConfigQuery.data,
