@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { dashboardPageDefinitions } from '@/config/page-registry-dashboard'
 import { financePageDefinitions } from '@/config/page-registry-finance'
 import { masterPageDefinitions } from '@/config/page-registry-master'
@@ -33,7 +34,7 @@ export function getPageRoutePath(page: AppPageDefinition | string) {
   const target =
     typeof page === 'string' ? appPageDefinitionMap.get(page) : page
   if (!target) {
-    throw new Error(`未找到页面定义: ${String(page)}`)
+    throw new Error(`未找到页面定义: ${asString(page)}`)
   }
   return target.menuKey.replace(/^\/+/, '')
 }

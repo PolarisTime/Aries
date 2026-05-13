@@ -86,7 +86,7 @@ function normalizeRecordForEditor(
       continue
     }
 
-    const parsed = dayjs(String(rawValue))
+    const parsed = dayjs(asString(rawValue))
     normalized[field.key] = parsed.isValid() ? parsed : undefined
   }
 

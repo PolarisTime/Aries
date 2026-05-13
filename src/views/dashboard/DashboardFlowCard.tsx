@@ -3,7 +3,7 @@ import Card from 'antd/es/card'
 import type { DashboardSummary } from '@/api/dashboard'
 import { buildWorkflowSections } from '@/views/dashboard/dashboard-flow-utils'
 
-type Props = {
+interface Props {
   navigate: NavigateFn
   summary?: DashboardSummary
 }
@@ -37,7 +37,7 @@ export function DashboardFlowCard({ navigate, summary }: Props) {
                     <button
                       type="button"
                       className="dashboard-flow-node"
-                      onClick={() => { void navigate({ to: node.path as '/' }}
+                      onClick={() => navigate({ to: node.path as '/' })}
                     >
                       <span
                         className="dashboard-flow-node-icon"

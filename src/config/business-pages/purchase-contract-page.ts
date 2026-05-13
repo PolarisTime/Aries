@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { getSupplierOptions } from '@/constants/module-options'
 import dayjs from 'dayjs'
 import type { ModulePageConfig } from '@/types/module-page'
@@ -165,7 +166,7 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
         buyerName: parentRecord.buyerName || '',
         signDate,
         effectiveDate: signDate,
-        expireDate: signDate ? dayjs(String(signDate)).add(1, 'year') : undefined,
+        expireDate: signDate ? dayjs(asString(signDate)).add(1, 'year') : undefined,
         status: '已归档',
       }
     },

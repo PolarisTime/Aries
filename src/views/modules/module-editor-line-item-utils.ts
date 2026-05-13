@@ -139,7 +139,7 @@ export function applyMaterialToEditorLineItem(
   item.unitPrice = toRoundedNumber(materialRecord.unitPrice || 0, 2)
   item.settlementMode = isPurchaseWeighRequiredCategory(item.category)
     ? '过磅'
-    : String(item.settlementMode || '理算')
+    : asasString(item.settlementMode)
   item.weighWeightTon = undefined
   item.weightAdjustmentTon = 0
   item.weightAdjustmentAmount = 0

@@ -68,7 +68,7 @@ export function getModuleRecordPrimaryNo(
   configuredKey?: string,
 ) {
   if (configuredKey && record[configuredKey]) {
-    return String(record[configuredKey])
+    return asString(record[configuredKey])
   }
 
   const fallbackKey = primaryNoFallbackKeys.find((key) => record[key])

@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import {
   DeleteOutlined,
   DownloadOutlined,
@@ -82,7 +83,7 @@ export function ModuleAttachmentModal({
     setUploading(true)
     try {
       const uploadRes = await uploadAttachment(file, moduleKey)
-      const attachmentId = String(uploadRes.data?.id || '').trim()
+      const attachmentId = asString(uploadRes.data?.id).trim()
       if (!attachmentId) {
         throw new Error('上传成功但未返回附件标识')
       }

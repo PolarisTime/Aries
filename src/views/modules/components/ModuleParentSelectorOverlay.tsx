@@ -196,7 +196,7 @@ function buildSelectedRecordSummary(
     type?: 'date' | 'amount' | 'weight' | 'status',
   ) => string,
 ) {
-  const primary = String(record[displayFieldKey] || record.id || '--')
+  const primary = asString(record[displayFieldKey] || record.id)
   const meta = (selectedRecordSummaryFieldMap[parentModuleKey] || [])
     .map((field) => {
       const rawValue =
@@ -316,7 +316,7 @@ export function ModuleParentSelectorOverlay({
                 <StatusTag
                   status={asString(value)}
                   statusMap={overlayStatusMap}
-                  fallback={String(value || '--')}
+                  fallback={asasString(value)}
                 />
               )
             }

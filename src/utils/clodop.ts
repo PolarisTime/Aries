@@ -252,7 +252,6 @@ export function execPrintCode(code: string, options: PrintHtmlOptions = {}) {
     if (printer) {
       lodop.SET_PRINTER_INDEX(printer)
     }
-    const cleaned = cleanTemplateCode(code)
     // FIXME: replace new Function with safer alternative
 // new Function('LODOP', cleaned)(lodop)
     if (preview) {

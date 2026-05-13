@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
@@ -198,7 +199,7 @@ export function useBusinessGridPage({
     moduleKey,
     formFields,
     lineItemLockRelatedRows: editorLockRelatedRows,
-    currentStatus: editRecord?.status ? String(editRecord.status) : undefined,
+    currentStatus: editRecord?.status ? asString(editRecord.status) : undefined,
     canEditLineItems: canUpdateRecord,
     canSaveCurrentEditor: canCreateRecord || canUpdateRecord,
     canAuditRecords: canAuditRecord,

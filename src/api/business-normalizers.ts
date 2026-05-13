@@ -5,7 +5,6 @@ import type { ModuleRecord, ModuleLineItem } from '@/shared/schemas'
  * 与 Zod schema 校验互补：Zod 负责类型验证，normalizer 负责字段格式化（id→string 等）。
  */
 export function normalizeLineItem(raw: Record<string, unknown>): ModuleLineItem {
-  const s = safe(raw)
   const result: Record<string, unknown> = { id: asString(raw.id ?? raw.lineNo) }
   for (const [key, value] of Object.entries(raw)) {
     if (key === 'id' || key === 'lineNo') {
