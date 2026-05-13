@@ -54,7 +54,6 @@ export function CompanySettingsView() {
         status: profile.status || '正常',
         remark: profile.remark || '',
       })
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setSettlementAccounts(
         normalizeSettlementAccounts(profile.settlementAccounts),
       )
@@ -183,6 +182,7 @@ export function CompanySettingsView() {
         canSave={canSave}
         saving={saveMutation.isPending}
         overviewItems={overviewItems}
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
         onRefresh={() =>
           queryClient.invalidateQueries({
             queryKey: ['company-setting'],

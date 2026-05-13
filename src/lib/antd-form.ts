@@ -10,7 +10,7 @@ import Form from 'antd/es/form'
 import type { FormInstance } from 'antd/es/form'
 
 /** 为指定泛型创建类型安全的 Form.useForm */
-export function createTypedForm<T extends Record<string, unknown>>(): [FormInstance<T>, (values: Partial<T>) => void] {
+export function useTypedForm<T extends Record<string, unknown>>(): [FormInstance<T>, (values: Partial<T>) => void] {
   return Form.useForm<T>()
 }
 

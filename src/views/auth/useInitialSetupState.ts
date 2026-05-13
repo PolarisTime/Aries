@@ -70,7 +70,6 @@ export function useInitialSetupState() {
   }, [navigate])
 
   // mount-time data fetch — setState is unavoidable for async init
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void loadStatus() }, [])
    
 

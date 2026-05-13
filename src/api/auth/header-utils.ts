@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-base-to-string */
 import type { RetryableRequestConfig } from './types'
 
 export function getRequestHeader(

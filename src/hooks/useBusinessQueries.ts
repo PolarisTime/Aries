@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { listBusinessModule } from '@/api/business'

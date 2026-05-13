@@ -76,7 +76,7 @@ export function ApiKeyDetailView() {
     }
   }, [id])
 
-  const allowedResourceText = useMemo(() => {
+  const allowedResourceText = (() => {
     if (!record?.allowedResources?.length) {
       return '未限制'
     }
@@ -88,7 +88,7 @@ export function ApiKeyDetailView() {
       .join('、')
   }, [record?.allowedResources, resourceOptions])
 
-  const allowedActionText = useMemo(() => {
+  const allowedActionText = (() => {
     if (!record?.allowedActions?.length) {
       return '未设置'
     }
@@ -107,7 +107,7 @@ export function ApiKeyDetailView() {
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate({ to: '/api-key' as '/' })}
+            onClick={() => { void navigate({ to: '/api-key' as '/' }) }}
           >
             返回
           </Button>

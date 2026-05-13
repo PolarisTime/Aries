@@ -53,7 +53,6 @@ export function useSetupTwoFactorState() {
   }, [])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
     void fetchTotpSetup()
   }, [fetchTotpSetup])
 

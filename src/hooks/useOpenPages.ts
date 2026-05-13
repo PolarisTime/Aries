@@ -47,7 +47,6 @@ export function useOpenPages(
       closable: currentPage.key !== defaultPath,
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
     setPages((prev) => {
       const normalizedPages = [
         {

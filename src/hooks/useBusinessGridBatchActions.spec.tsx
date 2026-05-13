@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -73,7 +72,7 @@ describe('useBusinessGridBatchActions', () => {
       }),
     )
 
-    await act(async () => {
+    act(() => {
       result.current.handleSelectedAuditRecords()
     })
 

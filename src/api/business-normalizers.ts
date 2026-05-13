@@ -1,4 +1,4 @@
-import { safe, asString, asArray, asId } from '@/utils/type-narrowing'
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleRecord, ModuleLineItem } from '@/shared/schemas'
 /**
  * API 响应规范化 — 将后端返回的原始数据转换为类型安全的 ModuleRecord。

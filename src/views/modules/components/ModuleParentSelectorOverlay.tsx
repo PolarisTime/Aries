@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 import { asString } from '@/utils/type-narrowing'
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -242,7 +241,6 @@ export function ModuleParentSelectorOverlay({
 
   useEffect(() => {
     if (!open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setDraftFilters({})
       setSubmittedFilters({})
       setPage(1)
@@ -296,9 +294,6 @@ export function ModuleParentSelectorOverlay({
     placeholderData: keepPreviousData,
   })
 
- 
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- see instruction-5 analysis
   const records = data?.data?.rows || []
   const total = Number(data?.data?.total || 0)
 
@@ -338,7 +333,6 @@ export function ModuleParentSelectorOverlay({
     if (!records?.length || !allowMultipleSelection) {
       return
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
     setSelectedRecordMap((prev) => {
       let changed = false
       const next = { ...prev }

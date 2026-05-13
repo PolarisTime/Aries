@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 import { useQuery } from '@tanstack/react-query'
 import DatePicker from 'antd/es/date-picker'
 import Form from 'antd/es/form'
@@ -38,7 +37,6 @@ export function ModuleStatementGenerator({
   useEffect(() => {
     if (!open) {
       form.resetFields()
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setKeyword('')
     }
   }, [form, open])

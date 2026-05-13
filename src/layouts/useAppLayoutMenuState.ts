@@ -57,7 +57,6 @@ export function useAppLayoutMenuState(options: Options) {
       userCanAccessMenuCode: (resourceCode, menuCode) =>
         options.can(resourceCode || menuCode, 'read'),
     })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.can, options.menus])
 
   const menuPathByKey = useMemo(
@@ -77,7 +76,6 @@ export function useAppLayoutMenuState(options: Options) {
 
   useEffect(() => {
     if (options.collapsed) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setSiderOpenKeys([])
       return
     }

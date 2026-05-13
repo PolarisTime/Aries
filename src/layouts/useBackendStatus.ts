@@ -48,7 +48,6 @@ export function useBackendStatus(token: string) {
 
   useEffect(() => {
     if (!token) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setBackendOnline(false)
       return
     }

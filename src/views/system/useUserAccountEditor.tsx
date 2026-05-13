@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
 import { useCallback, useState } from 'react'
