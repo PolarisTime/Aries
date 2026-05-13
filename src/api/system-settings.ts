@@ -53,5 +53,5 @@ export function isDisplaySwitchEnabled(
   const matched = rows?.find(
     (record) => asString(record.settingCode).trim() === settingCode,
   )
-  return String(matched?.status || '') === '正常'
+  return asString(matched?.status) === '正常'
 }
