@@ -1,31 +1,20 @@
-import type { DragEndEvent } from '@dnd-kit/core'
-import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  horizontalListSortingStrategy,
-  SortableContext,
-} from '@dnd-kit/sortable'
-import type { TableColumnsType, TableProps } from 'antd'
-import { Alert, Card, Empty, Table } from 'antd'
-import type { SorterResult, SortOrder } from 'antd/es/table/interface'
-import type { MouseEvent, ReactNode } from 'react'
+import { useEffect, useState } from 'react'
+import Alert from 'antd/es/alert'
+import Card from 'antd/es/card'
+import type { ColumnsType, TableProps } from 'antd/es/table'
+import type { SortOrder } from 'antd/es/table/interface'
 import type {
   ModuleActionDefinition,
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
 import { ColumnSettingsPopover } from '@/views/modules/components/ColumnSettingsPopover'
-import { DraggableColumnHeader } from '@/views/modules/components/DraggableColumnHeader'
 import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterToolbar'
 import { ModuleTableToolbar } from '@/views/modules/components/ModuleTableToolbar'
 
 interface Props {
+  moduleKey: string
   config: ModulePageConfig
   filters: Record<string, unknown>
   total: number
@@ -35,7 +24,7 @@ interface Props {
   warningMessage: string
   columnVisibleKeys: string[]
   columnOrder: string[]
-  columns: TableColumnsType<ModuleRecord>
+  columns: ColumnsType<ModuleRecord>
   rowSelection?: TableProps<ModuleRecord>['rowSelection']
   rowClassName: (record: ModuleRecord) => string
   onUpdateFilter: (key: string, value: unknown) => void
@@ -45,6 +34,7 @@ interface Props {
   onExport: () => void
   onRefresh: () => void
   onToggleColumn: (key: string) => void
+  onColumnOrderChange: (order: string[]) => void
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
   page: number
@@ -54,11 +44,11 @@ interface Props {
   toolbarActions: ModuleActionDefinition[]
   onAction: (action: ModuleActionDefinition) => void
   onPageChange: (page: number, pageSize: number) => void
-  onColumnOrderChange: (order: string[]) => void
   onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
 }
 
 export function BusinessGridContent({
+  moduleKey,
   config,
   filters,
   total,
@@ -78,6 +68,7 @@ export function BusinessGridContent({
   onExport,
   onRefresh,
   onToggleColumn,
+  onColumnOrderChange,
   onRowClick,
   onRowDoubleClick,
   page,
@@ -87,41 +78,16 @@ export function BusinessGridContent({
   toolbarActions,
   onAction,
   onPageChange,
-  onColumnOrderChange,
   onSortingChange,
 }: Props) {
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor),
-  )
+  const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const oldIndex = columnOrder.indexOf(String(active.id))
-    const newIndex = columnOrder.indexOf(String(over.id))
-    if (oldIndex === -1 || newIndex === -1) return
-
-    const next = [...columnOrder]
-    next.splice(oldIndex, 1)
-    next.splice(newIndex, 0, String(active.id))
-    onColumnOrderChange(next)
-  }
-
-  const draggableColumns = columns.map((col) => ({
-    ...col,
-    title: col.key ? (
-      <DraggableColumnHeader columnId={String(col.key)}>
-        {col.title as ReactNode}
-      </DraggableColumnHeader>
-    ) : (
-      col.title
-    ),
-  }))
+  useEffect(() => {
+    setColumnSettingsOpen(false)
+  }, [moduleKey])
 
   return (
-    <Card>
+    <Card className="module-grid-card">
       <ModuleFilterToolbar
         config={config}
         filters={filters}
@@ -144,8 +110,12 @@ export function BusinessGridContent({
         extra={
           <ColumnSettingsPopover
             columns={config.columns}
+            orderedKeys={columnOrder}
             visibleKeys={columnVisibleKeys}
             onToggle={onToggleColumn}
+            onOrderChange={onColumnOrderChange}
+            open={columnSettingsOpen}
+            onOpenChange={setColumnSettingsOpen}
           />
         }
       />
@@ -159,82 +129,22 @@ export function BusinessGridContent({
         />
       ) : null}
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={columnOrder}
-          strategy={horizontalListSortingStrategy}
-        >
-          <div className="module-table-shell">
-            <Table
-              rowKey="id"
-              bordered
-              size="small"
-              loading={loading}
-              columns={draggableColumns}
-              dataSource={records}
-              rowSelection={rowSelection}
-              scroll={{ x: 'max-content' }}
-              rowClassName={rowClassName}
-              onRow={(record) => ({
-                onClick: (event: MouseEvent<HTMLElement>) => {
-                  const target = event.target as HTMLElement | null
-                  if (
-                    target?.closest(
-                      'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
-                    )
-                  ) {
-                    return
-                  }
-                  onRowClick(record)
-                },
-                onDoubleClick: (event: MouseEvent<HTMLElement>) => {
-                  const target = event.target as HTMLElement | null
-                  if (
-                    target?.closest(
-                      'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
-                    )
-                  ) {
-                    return
-                  }
-                  onRowDoubleClick(record)
-                },
-              })}
-              locale={{
-                emptyText: (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="暂无数据"
-                  />
-                ),
-              }}
-              onChange={(_pagination, _filters, sorter) => {
-                const activeSorter = Array.isArray(sorter)
-                  ? sorter[0]
-                  : (sorter as SorterResult<ModuleRecord>)
-                const columnKey = activeSorter?.columnKey
-                onSortingChange(
-                  typeof columnKey === 'bigint' ? String(columnKey) : columnKey,
-                  activeSorter?.order,
-                )
-              }}
-              pagination={{
-                current: page,
-                pageSize,
-                total,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                pageSizeOptions: ['10', '20', '50', '100'],
-                showTotal: (count) => `共 ${count} 条`,
-                onChange: onPageChange,
-              }}
-            />
-          </div>
-        </SortableContext>
-      </DndContext>
+      <BusinessGridTable
+        key={moduleKey}
+        moduleKey={moduleKey}
+        columns={columns}
+        dataSource={records}
+        loading={loading}
+        rowSelection={rowSelection}
+        rowClassName={rowClassName}
+        onRowClick={onRowClick}
+        onRowDoubleClick={onRowDoubleClick}
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={onPageChange}
+        onSortingChange={onSortingChange}
+      />
     </Card>
   )
 }

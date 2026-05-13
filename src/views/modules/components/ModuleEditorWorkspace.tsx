@@ -1,5 +1,9 @@
-import { Form } from 'antd'
+import Form from 'antd/es/form'
 import { useMemo } from 'react'
+import {
+  resolveMasterOptionRequirements,
+  useMasterOptions,
+} from '@/hooks/useMasterOptions'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
@@ -35,6 +39,11 @@ export function ModuleEditorWorkspace({
 }: Props) {
   const [form] = Form.useForm()
   const formFields = useMemo(() => config.formFields || [], [config.formFields])
+  const formOptionRequirements = useMemo(
+    () => resolveMasterOptionRequirements(formFields),
+    [formFields],
+  )
+  useMasterOptions(formOptionRequirements, open)
   const statusField = useMemo(
     () => formFields.find((field) => field.key === 'status'),
     [formFields],
@@ -98,8 +107,12 @@ export function ModuleEditorWorkspace({
     clearSelectedItems,
     handleDragOver,
     itemColumns,
+    itemColumnOrder,
+    onItemColumnOrderChange,
     removeSelectedItems,
     selectedItemIds,
+    toggleItemColumn,
+    visibleItemColumnKeys,
   } = useModuleEditorItems({
     moduleKey,
     config,
@@ -145,6 +158,8 @@ export function ModuleEditorWorkspace({
         parentImporting={parentImporting}
         parentSelectorOpen={parentSelectorOpen}
         itemColumns={itemColumns}
+        itemColumnOrder={itemColumnOrder}
+        visibleItemColumnKeys={visibleItemColumnKeys}
         canSave={canSave}
         canAudit={canSaveAndAuditInEditor}
         saving={saving}
@@ -154,10 +169,12 @@ export function ModuleEditorWorkspace({
         onOpenParentSelector={openParentSelector}
         onCloseParentSelector={closeParentSelector}
         onRemoveSelectedItems={removeSelectedItems}
-        onImportParentRecord={(parentRecord) => {
+        onImportParentRecord={(parentRecords) => {
           clearSelectedItems()
-          void handleImportParentRecord(parentRecord)
+          void handleImportParentRecord(parentRecords)
         }}
+        onItemColumnOrderChange={onItemColumnOrderChange}
+        onToggleItemColumn={toggleItemColumn}
         onRowDragOver={handleDragOver}
       />
     </WorkspaceOverlay>

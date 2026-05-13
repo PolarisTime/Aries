@@ -1,6 +1,13 @@
-import { Button, Col, DatePicker, Form, Input, Row, Select, Space } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
+import Button from 'antd/es/button'
+import Col from 'antd/es/col'
+import DatePicker from 'antd/es/date-picker'
+import Form from 'antd/es/form'
+import Input from 'antd/es/input'
+import Row from 'antd/es/row'
+import Select from 'antd/es/select'
+import Space from 'antd/es/space'
 import type {
   ModuleFilterDefinition,
   ModuleFilterOption,
@@ -8,6 +15,8 @@ import type {
   ModuleFilterOptionGroup,
   ModulePageConfig,
 } from '@/types/module-page'
+import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
+import { buildFormControlId } from '@/utils/form-control-id'
 import { padLabel } from '@/utils/label-utils'
 import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
 
@@ -26,6 +35,14 @@ export function ModuleFilterToolbar({
   onSearch,
   onReset,
 }: Props) {
+  const getFilterFieldId = (field: ModuleFilterDefinition) =>
+    buildFormControlId('module-filter', field.key)
+
+  const getFilterFieldLabelTargetId = (field: ModuleFilterDefinition) => {
+    const fieldId = getFilterFieldId(field)
+    return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
+  }
+
   const hasConfigKeywordFilter = config.filters.some(
     (field) => field.key === 'keyword',
   )
@@ -60,9 +77,13 @@ export function ModuleFilterToolbar({
   }
 
   const renderFilterField = (field: ModuleFilterDefinition) => {
+    const fieldId = getFilterFieldId(field)
+
     if (field.type === 'select') {
       return (
         <Select
+          id={fieldId}
+          aria-label={field.label}
           allowClear
           placeholder={field.placeholder || `请选择${field.label}`}
           value={
@@ -88,6 +109,11 @@ export function ModuleFilterToolbar({
 
       return (
         <DatePicker.RangePicker
+          id={{
+            start: `${fieldId}-start`,
+            end: `${fieldId}-end`,
+          }}
+          aria-label={field.label}
           value={rangeValue}
           style={{ width: '100%' }}
           onChange={(_, dateStrings) =>
@@ -102,6 +128,8 @@ export function ModuleFilterToolbar({
 
     return (
       <Input
+        id={fieldId}
+        name={field.key}
         allowClear
         placeholder={field.placeholder || `请输入${field.label}`}
         value={String(filters[field.key] || '')}
@@ -117,10 +145,15 @@ export function ModuleFilterToolbar({
         {!hasConfigKeywordFilter ? (
           <Col xs={24} sm={12} lg={8} xl={6}>
             <Form.Item
-              label={padLabel('关键字')}
+              {...buildLabeledFormItemProps({
+                label: padLabel('关键字'),
+                htmlFor: buildFormControlId('module-filter', 'keyword'),
+              })}
               className="module-filter-item"
             >
               <Input
+                id={buildFormControlId('module-filter', 'keyword')}
+                name="keyword"
                 allowClear
                 placeholder="搜索关键词..."
                 value={String(filters.keyword || '')}
@@ -135,7 +168,10 @@ export function ModuleFilterToolbar({
         {visibleFilters.map((field) => (
           <Col key={field.key} xs={24} sm={12} lg={8} xl={6}>
             <Form.Item
-              label={padLabel(field.label)}
+              {...buildLabeledFormItemProps({
+                label: padLabel(field.label),
+                htmlFor: getFilterFieldLabelTargetId(field),
+              })}
               className="module-filter-item"
             >
               {renderFilterField(field)}

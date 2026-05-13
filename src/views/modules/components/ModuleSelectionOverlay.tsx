@@ -1,6 +1,7 @@
 import { SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { Input, Table } from 'antd'
+import Input from 'antd/es/input'
+import Table from 'antd/es/table'
 import { useEffect, useState } from 'react'
 import { searchBusinessModule } from '@/api/business'
 import type { ModuleRecord } from '@/types/module-page'

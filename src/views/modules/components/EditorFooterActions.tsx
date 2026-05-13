@@ -1,5 +1,6 @@
 import { AuditOutlined, CloseOutlined, SaveOutlined } from '@ant-design/icons'
-import { Button, Space } from 'antd'
+import Button from 'antd/es/button'
+import Space from 'antd/es/space'
 
 interface Props {
   canSave: boolean
@@ -18,7 +19,11 @@ export function EditorFooterActions({
 }: Props) {
   return (
     <Space>
-      <Button className="overlay-action-button" icon={<CloseOutlined />} onClick={onCancel}>
+      <Button
+        className="overlay-action-button"
+        icon={<CloseOutlined />}
+        onClick={onCancel}
+      >
         取消
       </Button>
       {canSave && (

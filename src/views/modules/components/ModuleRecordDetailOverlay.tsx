@@ -1,10 +1,22 @@
-import { Button, Col, Empty, Flex, Row, Spin, Typography } from 'antd'
+import Button from 'antd/es/button'
+import Col from 'antd/es/col'
+import Empty from 'antd/es/empty'
+import Flex from 'antd/es/flex'
+import Row from 'antd/es/row'
+import Spin from 'antd/es/spin'
+import type { TableColumnsType } from 'antd'
+import { useMemo } from 'react'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleLineItem,
+  ModulePageConfig,
+  ModuleRecord,
+} from '@/types/module-page'
 import { padLabel } from '@/utils/label-utils'
 import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
-import { EditorItemsSummary } from './EditorItemsSummary'
+import { ModuleItemsPanel } from './ModuleItemsPanel'
+import { ModuleItemsTable } from './ModuleItemsTable'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -29,6 +41,19 @@ export function ModuleRecordDetailOverlay({
     moduleKey: config.key,
     config,
   })
+  const detailItemColumns = config.detailItemColumns || config.itemColumns || []
+  const detailTableColumns = useMemo<TableColumnsType<ModuleLineItem>>(
+    () =>
+      detailItemColumns.map((column) => ({
+        title: column.title,
+        dataIndex: column.dataIndex,
+        key: column.dataIndex,
+        width: column.width,
+        align: column.align,
+        render: (value: unknown) => formatCellValue(value, column.type),
+      })),
+    [detailItemColumns, formatCellValue],
+  )
   const detailFields = config.detailFields || []
   const colSpan = Math.max(
     6,
@@ -79,11 +104,38 @@ export function ModuleRecordDetailOverlay({
             })}
           </Row>
 
-          <div
-            className={`editor-items-head ${config.itemColumns?.length ? '' : 'editor-items-head-standalone'}`}
-            style={{ marginTop: 20, justifyContent: 'flex-start', gap: 16 }}
-          >
-            <div className="editor-items-actions">
+          {detailItemColumns.length ? (
+            <ModuleItemsPanel
+              className="module-detail-items-panel"
+              items={record.items || []}
+              actions={
+                <>
+                  <Button
+                    className="overlay-action-button"
+                    icon={resolveModuleActionIcon('关闭')}
+                    onClick={onClose}
+                  >
+                    关闭
+                  </Button>
+                  {canPrint ? (
+                    <Button
+                      className="overlay-action-button"
+                      icon={resolveModuleActionIcon('打印')}
+                    >
+                      打印
+                    </Button>
+                  ) : null}
+                </>
+              }
+            >
+              <ModuleItemsTable
+                columns={detailTableColumns}
+                dataSource={record.items || []}
+                emptyText="暂无明细数据"
+              />
+            </ModuleItemsPanel>
+          ) : (
+            <div style={{ marginTop: 20 }}>
               <Button
                 className="overlay-action-button"
                 icon={resolveModuleActionIcon('关闭')}
@@ -93,6 +145,7 @@ export function ModuleRecordDetailOverlay({
               </Button>
               {canPrint && (
                 <Button
+                  style={{ marginLeft: 8 }}
                   className="overlay-action-button"
                   icon={resolveModuleActionIcon('打印')}
                 >
@@ -100,50 +153,7 @@ export function ModuleRecordDetailOverlay({
                 </Button>
               )}
             </div>
-            <div className="editor-items-title-block">
-              <Typography.Title level={5} className="detail-section-title">
-                {config.itemColumns?.length ? '明细列表' : '操作'}
-              </Typography.Title>
-            </div>
-            {config.itemColumns?.length ? (
-              <EditorItemsSummary
-                items={record.items || []}
-                className="editor-items-summary-inline"
-              />
-            ) : null}
-          </div>
-
-          {config.itemColumns?.length ? (
-            record.items?.length ? (
-              <div className="module-detail-table">
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      {config.itemColumns.map((column) => (
-                        <th key={column.dataIndex}>{column.title}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {record.items.map((item) => (
-                      <tr key={item.id}>
-                        {config.itemColumns?.map((column) => (
-                          <td key={column.dataIndex}>
-                            {formatCellValue(
-                              item[column.dataIndex],
-                              column.type,
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <Empty description="暂无明细数据" />
-            )
-          ) : null}
+          )}
         </>
       )}
     </WorkspaceOverlay>

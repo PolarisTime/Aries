@@ -24,7 +24,8 @@ export function DraggableColumnHeader({ columnId, children }: Props) {
     cursor: 'grab',
     display: 'inline-flex',
     alignItems: 'center',
-    width: '100%',
+    maxWidth: '100%',
+    overflow: 'hidden',
   }
 
   return (

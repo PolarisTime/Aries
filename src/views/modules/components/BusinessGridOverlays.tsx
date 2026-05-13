@@ -1,12 +1,41 @@
+import { lazy, Suspense } from 'react'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { ModuleAttachmentModal } from '@/views/modules/components/ModuleAttachmentModal'
-import { ModuleEditorWorkspace } from '@/views/modules/components/ModuleEditorWorkspace'
-import { ModuleFreightPickupListOverlay } from '@/views/modules/components/ModuleFreightPickupListOverlay'
-import { ModuleRecordDetailOverlay } from '@/views/modules/components/ModuleRecordDetailOverlay'
-import { ModuleStatementGenerator } from '@/views/modules/components/ModuleStatementGenerator'
+
+const ModuleAttachmentModal = lazy(() =>
+  import('@/views/modules/components/ModuleAttachmentModal').then((module) => ({
+    default: module.ModuleAttachmentModal,
+  })),
+)
+const ModuleEditorWorkspace = lazy(() =>
+  import('@/views/modules/components/ModuleEditorWorkspace').then((module) => ({
+    default: module.ModuleEditorWorkspace,
+  })),
+)
+const ModuleFreightPickupListOverlay = lazy(() =>
+  import('@/views/modules/components/ModuleFreightPickupListOverlay').then(
+    (module) => ({
+      default: module.ModuleFreightPickupListOverlay,
+    }),
+  ),
+)
+const ModuleRecordDetailOverlay = lazy(() =>
+  import('@/views/modules/components/ModuleRecordDetailOverlay').then(
+    (module) => ({
+      default: module.ModuleRecordDetailOverlay,
+    }),
+  ),
+)
+const ModuleStatementGenerator = lazy(() =>
+  import('@/views/modules/components/ModuleStatementGenerator').then(
+    (module) => ({
+      default: module.ModuleStatementGenerator,
+    }),
+  ),
+)
 
 interface Props {
   moduleKey: string
+  resourceKey?: string
   config: ModulePageConfig
   editRecord: ModuleRecord | null
   editorOpen: boolean
@@ -50,6 +79,7 @@ interface Props {
 
 export function BusinessGridOverlays({
   moduleKey,
+  resourceKey,
   config,
   editRecord,
   editorOpen,
@@ -79,60 +109,75 @@ export function BusinessGridOverlays({
   onGenerateFreightStatement,
 }: Props) {
   return (
-    <>
-      <ModuleEditorWorkspace
-        open={editorOpen}
-        config={config}
-        record={editRecord}
-        moduleKey={moduleKey}
-        canSave={canSave}
-        canAudit={canAudit}
-        lineItemsLocked={lineItemsLocked}
-        lockedLineItemsNotice={lockedLineItemsNotice}
-        onClose={onCloseEditor}
-        onSaved={onSaved}
-      />
+    <Suspense fallback={null}>
+      {editorOpen ? (
+        <ModuleEditorWorkspace
+          open={editorOpen}
+          config={config}
+          record={editRecord}
+          moduleKey={moduleKey}
+          canSave={canSave}
+          canAudit={canAudit}
+          lineItemsLocked={lineItemsLocked}
+          lockedLineItemsNotice={lockedLineItemsNotice}
+          onClose={onCloseEditor}
+          onSaved={onSaved}
+        />
+      ) : null}
 
-      <ModuleRecordDetailOverlay
-        open={detailOpen}
-        config={config}
-        record={detailRecord}
-        loading={detailLoading}
-        canPrint={false}
-        onClose={onCloseDetail}
-      />
+      {detailOpen ? (
+        <ModuleRecordDetailOverlay
+          open={detailOpen}
+          config={config}
+          record={detailRecord}
+          loading={detailLoading}
+          canPrint={false}
+          onClose={onCloseDetail}
+        />
+      ) : null}
 
-      <ModuleAttachmentModal
-        open={attachOpen}
-        moduleKey={moduleKey}
-        recordId={attachRecordId}
-        onClose={onCloseAttachment}
-      />
+      {attachOpen ? (
+        <ModuleAttachmentModal
+          open={attachOpen}
+          moduleKey={moduleKey}
+          resourceKey={resourceKey}
+          recordId={attachRecordId}
+          onClose={onCloseAttachment}
+        />
+      ) : null}
 
-      <ModuleStatementGenerator
-        open={supplierStatementOpen}
-        statementType="supplier"
-        onClose={onCloseSupplierStatement}
-        onGenerate={onGenerateSupplierStatement}
-      />
-      <ModuleStatementGenerator
-        open={customerStatementOpen}
-        statementType="customer"
-        onClose={onCloseCustomerStatement}
-        onGenerate={onGenerateCustomerStatement}
-      />
-      <ModuleStatementGenerator
-        open={freightStatementOpen}
-        statementType="freight"
-        onClose={onCloseFreightStatement}
-        onGenerate={onGenerateFreightStatement}
-      />
+      {supplierStatementOpen ? (
+        <ModuleStatementGenerator
+          open={supplierStatementOpen}
+          statementType="supplier"
+          onClose={onCloseSupplierStatement}
+          onGenerate={onGenerateSupplierStatement}
+        />
+      ) : null}
+      {customerStatementOpen ? (
+        <ModuleStatementGenerator
+          open={customerStatementOpen}
+          statementType="customer"
+          onClose={onCloseCustomerStatement}
+          onGenerate={onGenerateCustomerStatement}
+        />
+      ) : null}
+      {freightStatementOpen ? (
+        <ModuleStatementGenerator
+          open={freightStatementOpen}
+          statementType="freight"
+          onClose={onCloseFreightStatement}
+          onGenerate={onGenerateFreightStatement}
+        />
+      ) : null}
 
-      <ModuleFreightPickupListOverlay
-        open={freightPickupOpen}
-        moduleKey={moduleKey}
-        onClose={onCloseFreightPickup}
-      />
-    </>
+      {freightPickupOpen ? (
+        <ModuleFreightPickupListOverlay
+          open={freightPickupOpen}
+          moduleKey={moduleKey}
+          onClose={onCloseFreightPickup}
+        />
+      ) : null}
+    </Suspense>
   )
 }

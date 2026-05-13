@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Table, Tag } from 'antd'
+import Table from 'antd/es/table'
+import Tag from 'antd/es/tag'
 import { listAllBusinessModuleRows } from '@/api/business'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
