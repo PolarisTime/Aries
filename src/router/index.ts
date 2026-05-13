@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-base-to-string, @typescript-eslint/no-unsafe-assignment */
 import {
   createBrowserHistory,
   createRootRoute,
@@ -47,7 +48,7 @@ const setup2faRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!useAuthStore.getState().isAuthenticated)
-      throw redirect({ to: '/login' })
+      throw new Error(String(redirect({ to: '/login' })))
   },
 })
 
@@ -59,7 +60,7 @@ const authenticatedLayoutRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!useAuthStore.getState().isAuthenticated)
-      throw redirect({ to: '/login' })
+      throw new Error(String(redirect({ to: '/login' })))
   },
 })
 
@@ -144,12 +145,12 @@ const moduleRoutes = appPageDefinitions.map((def) => {
         def.accessResources.length > 0
       ) {
         if (!checkAccessResources(def.accessResources, store.can)) {
-          throw redirect({ to: '/dashboard' as '/' })
+          throw new Error(String(redirect({ to: '/dashboard' as '/' })))
         }
         return
       }
       if (!store.can(def.resourceKey || def.key, 'read')) {
-        throw redirect({ to: '/dashboard' as '/' })
+        throw new Error(String(redirect({ to: '/dashboard' as '/' })))
       }
     },
   })
@@ -165,7 +166,7 @@ const apiKeyDetailRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!usePermissionStore.getState().can('api-key', 'read')) {
-      throw redirect({ to: '/dashboard' as '/' })
+      throw new Error(String(redirect({ to: '/dashboard' as '/' })))
     }
   },
 })
@@ -174,7 +175,7 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: () => {
-    throw redirect({ to: '/dashboard' as '/' })
+    throw new Error(String(redirect({ to: '/dashboard' as '/' })))
   },
 })
 
