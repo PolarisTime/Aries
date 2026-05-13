@@ -61,7 +61,7 @@ function buildGlobalSearchResult(
   buildSummary: (record: ModuleRecord) => string,
 ) {
   const trackId = String(record.id || '')
-  const primaryNo = String(record[config.primaryNoKey || 'id'] || record.id)
+  const primaryNo = String(record[asString(config.primaryNoKey)'id'] || record.id)
   const summary = buildSummary(record)
   const matchedByTrackId = Boolean(trackId && trackId === keyword)
   const idText =

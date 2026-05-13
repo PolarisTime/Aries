@@ -20,7 +20,7 @@ export function useIdleActivation(enabled = true, timeout = 1200) {
       return
     }
 
-    type IdleWindow = Window &
+    type _IdleWindow = Window &
       typeof globalThis & {
         requestIdleCallback?: (
           callback: (deadline: IdleDeadlineLike) => void,

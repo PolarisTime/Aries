@@ -47,7 +47,7 @@ export function TwoFactorConfirmModal({
     <Modal
       title={title}
       open={open}
-      onOk={handleOk}
+      oonOk={() => { void handleOk }}
       onCancel={handleCancel}
       confirmLoading={loading}
       okText="确认"
@@ -67,7 +67,7 @@ export function TwoFactorConfirmModal({
           maxLength={6}
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          onPressEnter={handleOk}
+          oonPressEnter={() => { void handleOk }}
           autoFocus
           size="large"
         />

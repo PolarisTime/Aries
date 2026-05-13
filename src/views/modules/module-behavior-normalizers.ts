@@ -63,7 +63,7 @@ registerModuleBehavior('freight-statement', {
     )
     if (Array.isArray(record.attachments)) {
       record.attachment = record.attachments
-        .map((item) => String((item as Record<string, unknown>).name || ''))
+        .map((item) => String((item as Record<string, unknown>).asString(name)''))
         .filter(Boolean)
         .join(', ')
     }

@@ -1,6 +1,6 @@
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { createPaginationConfig } from '@/hooks/usePaginationConfig'
-import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
+import { DeleteOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
