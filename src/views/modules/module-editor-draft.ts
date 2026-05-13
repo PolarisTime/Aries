@@ -7,7 +7,6 @@ export function normalizeDraftRecordForModule(options: {
   record: ModuleRecord
   items: ModuleLineItem[]
   primaryNoKey?: string
-  generatePrimaryNo: () => string
   currentOperatorName: string
   sumLineItemsBy: (items: ModuleLineItem[], key: string) => number
 }) {
@@ -16,14 +15,9 @@ export function normalizeDraftRecordForModule(options: {
     record,
     items,
     primaryNoKey,
-    generatePrimaryNo: createPrimaryNo,
     currentOperatorName,
     sumLineItemsBy,
   } = options
-
-  if (primaryNoKey && !record[primaryNoKey]) {
-    record[primaryNoKey] = createPrimaryNo()
-  }
 
   applyModuleDefaultEditorDraft(moduleKey, record, currentOperatorName)
 
@@ -36,7 +30,6 @@ export function normalizeDraftRecordForModule(options: {
   if (normalizeFn) {
     normalizeFn(record, items, {
       primaryNoKey,
-      generatePrimaryNo: createPrimaryNo,
       currentOperatorName,
       sumLineItemsBy,
     })
@@ -57,8 +50,9 @@ export function syncDerivedEditorFormValuesForModule(options: {
   record: ModuleRecord
   items: ModuleLineItem[]
   sumLineItemsBy: (items: ModuleLineItem[], key: string) => number
+  changedKeys?: ReadonlySet<string>
 }) {
-  const { moduleKey, record, items, sumLineItemsBy } = options
+  const { moduleKey, record, items, sumLineItemsBy, changedKeys } = options
 
   if (hasBehavior(moduleKey, 'computesAmounts')) {
     record.totalWeight = Number(sumLineItemsBy(items, 'weightTon').toFixed(3))
@@ -69,7 +63,6 @@ export function syncDerivedEditorFormValuesForModule(options: {
   if (normalizeFn) {
     normalizeFn(record, items, {
       primaryNoKey: undefined,
-      generatePrimaryNo: () => '',
       currentOperatorName: '',
       sumLineItemsBy,
     })
@@ -77,7 +70,9 @@ export function syncDerivedEditorFormValuesForModule(options: {
 
   const syncEditorForm = getBehaviorValue(moduleKey, 'syncEditorForm')
   if (syncEditorForm) {
-    syncEditorForm(record)
+    syncEditorForm(record, {
+      changedKeys: changedKeys || new Set<string>(),
+    })
   }
 
   return record

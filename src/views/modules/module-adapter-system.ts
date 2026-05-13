@@ -51,7 +51,7 @@ export function syncSystemEditorState(
 ) {
   const syncFn = getBehaviorValue(moduleKey, 'syncEditorForm')
   if (syncFn) {
-    syncFn(editorForm)
+    syncFn(editorForm, { changedKeys: new Set<string>() })
   }
 }
 

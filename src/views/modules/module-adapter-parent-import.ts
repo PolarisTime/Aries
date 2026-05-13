@@ -14,6 +14,14 @@ function getSourceParentItemId(item: ModuleLineItem) {
   ).trim()
 }
 
+function resolvePersistedParentRelationNo(item: ModuleLineItem) {
+  const explicitRelationNo = String(item._parentRelationNo || '').trim()
+  if (explicitRelationNo) {
+    return explicitRelationNo
+  }
+  return String(item.sourceNo || '').trim()
+}
+
 function toSafeNumber(value: unknown) {
   return Number.isFinite(Number(value)) ? Number(value) : 0
 }
@@ -37,7 +45,7 @@ function isZeroLike(value: unknown) {
 
 function isEmptyDraftLineItem(item: ModuleLineItem) {
   if (
-    String(item._parentRelationNo || '').trim() ||
+    resolvePersistedParentRelationNo(item) ||
     getSourceParentItemId(item)
   ) {
     return false
@@ -122,7 +130,7 @@ export function buildParentImportState(options: {
     (item) => !isEmptyDraftLineItem(item),
   )
   const currentParentItems = effectiveCurrentItems.filter(
-    (item) => String(item._parentRelationNo || '') === parentNo,
+    (item) => resolvePersistedParentRelationNo(item) === parentNo,
   )
   const currentAllocatedQuantityMap = new Map<string, number>()
   const currentAllocatedWeightTonMap = new Map<string, number>()
@@ -233,7 +241,7 @@ export function buildParentImportState(options: {
     nextItems: hasImportedCurrentParent
       ? [
           ...effectiveCurrentItems.filter(
-            (item) => String(item._parentRelationNo || '') !== parentNo,
+            (item) => resolvePersistedParentRelationNo(item) !== parentNo,
           ),
           ...importedItems,
         ]

@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import { registerModuleBehavior } from '@/views/modules/module-behavior-registry-core'
 
 const currentDateTime = () => dayjs()
+const addOneYear = (value: dayjs.Dayjs) => value.add(1, 'year')
 
 registerModuleBehavior('carrier', {
   defaultDraftValues: { priceMode: '按吨' },
@@ -21,14 +22,65 @@ registerModuleBehavior('sales-order', {
 
 registerModuleBehavior('purchase-order', { defaultOperatorField: 'buyerName' })
 registerModuleBehavior('purchase-order', {
-  defaultDraftValues: { orderDate: currentDateTime() },
+  defaultDraftValues: () => ({ orderDate: currentDateTime() }),
 })
 registerModuleBehavior('purchase-inbound', {
-  defaultDraftValues: { inboundDate: currentDateTime() },
+  defaultDraftValues: () => ({ inboundDate: currentDateTime() }),
 })
 registerModuleBehavior('sales-order', { defaultOperatorField: 'salesName' })
 registerModuleBehavior('sales-order', {
-  defaultDraftValues: { deliveryDate: currentDateTime() },
+  defaultDraftValues: () => ({ deliveryDate: currentDateTime() }),
+})
+registerModuleBehavior('purchase-contract', {
+  defaultOperatorField: 'buyerName',
+})
+registerModuleBehavior('purchase-contract', {
+  resolveReadonlyEditorFields(record) {
+    return String(record.sourcePurchaseOrderNos || '').trim()
+      ? ['supplierName']
+      : []
+  },
+  defaultDraftValues: () => {
+    const signDate = currentDateTime()
+    return {
+      signDate,
+      effectiveDate: signDate,
+      expireDate: addOneYear(signDate),
+    }
+  },
+  syncEditorForm(editorForm, ctx) {
+    const signDateValue = editorForm.signDate
+    const signDate = dayjs.isDayjs(signDateValue)
+      ? signDateValue
+      : dayjs(String(signDateValue || ''))
+    if (!signDate.isValid()) {
+      return
+    }
+
+    const shouldFollowSignDate =
+      ctx.changedKeys.has('signDate') ||
+      (!editorForm.effectiveDate && !editorForm.expireDate)
+
+    const effectiveDateValue = editorForm.effectiveDate
+    const effectiveDate = dayjs.isDayjs(effectiveDateValue)
+      ? effectiveDateValue
+      : dayjs(String(effectiveDateValue || ''))
+    if (
+      shouldFollowSignDate ||
+      !effectiveDateValue ||
+      !effectiveDate.isValid()
+    ) {
+      editorForm.effectiveDate = signDate
+    }
+
+    const expireDateValue = editorForm.expireDate
+    const expireDate = dayjs.isDayjs(expireDateValue)
+      ? expireDateValue
+      : dayjs(String(expireDateValue || ''))
+    if (shouldFollowSignDate || !expireDateValue || !expireDate.isValid()) {
+      editorForm.expireDate = addOneYear(signDate)
+    }
+  },
 })
 
 const operatorNameModules = [

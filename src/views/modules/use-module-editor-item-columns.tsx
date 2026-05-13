@@ -1,9 +1,14 @@
 import type { TableColumnsType } from 'antd'
 import { useCallback, useMemo } from 'react'
 import { fetchMaterialSearch } from '@/api/materials'
+import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
-import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
+import type {
+  ModuleColumnDefinition,
+  ModuleLineItem,
+  ModulePageConfig,
+} from '@/types/module-page'
 import { isEditorItemColumnEditableForModule } from '@/views/modules/module-adapter-editor'
 import {
   buildModuleEditorDataColumns,
@@ -27,6 +32,18 @@ interface Props {
   onDragEnd: () => void
 }
 
+function mergeColumnOrder(allIds: string[], savedOrder: string[]) {
+  const validIds = new Set(allIds)
+  const merged = savedOrder.filter((id) => validIds.has(id))
+  const ordered = new Set(merged)
+  for (const id of allIds) {
+    if (!ordered.has(id)) {
+      merged.push(id)
+    }
+  }
+  return merged
+}
+
 export function useModuleEditorItemColumns({
   moduleKey,
   config,
@@ -42,7 +59,16 @@ export function useModuleEditorItemColumns({
   onDragEnd,
 }: Props) {
   const { formatCellValue } = useModuleDisplaySupport()
-  const { warehouses, materials } = useMasterOptions()
+  const { warehouses, materials } = useMasterOptions({
+    warehouses: true,
+    materials: true,
+  })
+  const {
+    columnOrder: savedItemColumnOrder,
+    columnVisibility,
+    handleColumnOrderChange,
+    handleColumnVisibilityChange,
+  } = useColumnSettingsSupport(`${config.key}:editor-items`)
   const {
     handleItemInputChange,
     handleItemNumberChange,
@@ -97,7 +123,10 @@ export function useModuleEditorItemColumns({
         const material = String(record.material || '').trim()
         const spec = String(record.spec || '').trim()
         const length = String(record.length || '').trim()
-        const materialName = String(record.materialName || '').trim()
+        const materialName =
+          typeof record.materialName === 'string'
+            ? record.materialName.trim()
+            : ''
 
         return {
           label: [materialCode, brand || materialName, material, spec, length]
@@ -124,6 +153,27 @@ export function useModuleEditorItemColumns({
       value: string
     }>
   }, [materials])
+  const allItemColumnIds = useMemo(
+    () => (config.itemColumns || []).map((column) => column.dataIndex),
+    [config.itemColumns],
+  )
+  const itemColumnOrder = useMemo(
+    () => mergeColumnOrder(allItemColumnIds, savedItemColumnOrder),
+    [allItemColumnIds, savedItemColumnOrder],
+  )
+  const visibleItemColumnKeys = useMemo(
+    () => itemColumnOrder.filter((key) => columnVisibility[key] !== false),
+    [columnVisibility, itemColumnOrder],
+  )
+  const orderedVisibleItemColumns = useMemo(() => {
+    const columnMap = new Map<string, ModuleColumnDefinition>(
+      (config.itemColumns || []).map((column) => [column.dataIndex, column]),
+    )
+
+    return visibleItemColumnKeys
+      .map((key) => columnMap.get(key))
+      .filter(Boolean) as ModuleColumnDefinition[]
+  }, [config.itemColumns, visibleItemColumnKeys])
 
   const handleResolvedMaterialSelect = useCallback(
     (itemId: string, materialCode: string) => {
@@ -179,6 +229,7 @@ export function useModuleEditorItemColumns({
     cols.push(
       ...buildModuleEditorDataColumns({
         config,
+        itemColumns: orderedVisibleItemColumns,
         materialOptions,
         warehouses,
         formatCellValue,
@@ -209,11 +260,29 @@ export function useModuleEditorItemColumns({
     onDragStart,
     onSelectAll,
     onSelectItem,
+    orderedVisibleItemColumns,
     selectedItemIds,
     warehouses,
   ])
 
+  const toggleItemColumn = useCallback(
+    (key: string) => {
+      const next = { ...columnVisibility }
+      if (next[key] === false) {
+        delete next[key]
+      } else {
+        next[key] = false
+      }
+      handleColumnVisibilityChange(next)
+    },
+    [columnVisibility, handleColumnVisibilityChange],
+  )
+
   return {
     itemColumns,
+    itemColumnOrder,
+    onItemColumnOrderChange: handleColumnOrderChange,
+    toggleItemColumn,
+    visibleItemColumnKeys,
   }
 }

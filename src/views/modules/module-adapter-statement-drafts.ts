@@ -71,6 +71,7 @@ export function buildSupplierStatementDraftData({
       ...item,
       id: buildLineItemId(),
       sourceNo: record.inboundNo || '',
+      sourceInboundItemId: item.id,
     })),
   )
   const purchaseAmount = Number(
@@ -131,6 +132,7 @@ export function buildCustomerStatementDraftData({
       ...item,
       id: buildLineItemId(),
       sourceNo: order.orderNo || '',
+      sourceSalesOrderItemId: item.id,
     })),
   )
   const salesAmount = Number(

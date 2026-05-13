@@ -3,6 +3,7 @@ import type { ModuleLineItem } from '@/types/module-page'
 export type EditorItemDragPosition = 'before' | 'after'
 
 export const DERIVED_READONLY_ITEM_COLUMN_KEYS = new Set([
+  'sourceNo',
   'brand',
   'category',
   'material',
@@ -52,9 +53,22 @@ export function buildModuleLineItemId() {
   return `item-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+function generateBatchNo(): string {
+  const now = new Date()
+  const y = String(now.getFullYear()).slice(2)
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  const h = String(now.getHours()).padStart(2, '0')
+  const min = String(now.getMinutes()).padStart(2, '0')
+  const s = String(now.getSeconds()).padStart(2, '0')
+  return `B${y}${m}${d}${h}${min}${s}`
+}
+
 export function buildDefaultEditorLineItem(
   itemId = buildModuleLineItemId(),
+  moduleKey?: string,
 ): ModuleLineItem {
+  const autoBatchNo = moduleKey === 'purchase-order' ? generateBatchNo() : ''
   return {
     id: itemId,
     materialCode: '',
@@ -64,7 +78,7 @@ export function buildDefaultEditorLineItem(
     spec: '',
     length: '',
     unit: '吨',
-    batchNo: '',
+    batchNo: autoBatchNo,
     quantityUnit: '件',
     pieceWeightTon: 0,
     piecesPerBundle: 0,
