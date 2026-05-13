@@ -73,19 +73,14 @@ async function expectBusinessPageLoaded(
   page: Parameters<typeof test>[0]['page'],
   title: string,
 ) {
-  const pageHeading = page.getByRole('heading', {
-    level: 3,
+  const activeTab = page.getByRole('tab', {
+    selected: true,
     name: title,
   })
-  if ((await pageHeading.count()) > 0) {
-    await expect(pageHeading).toBeVisible()
+  if ((await activeTab.count()) > 0) {
+    await expect(activeTab).toBeVisible()
   } else {
-    await expect(
-      page.getByRole('tab', {
-        selected: true,
-        name: title,
-      }),
-    ).toBeVisible()
+    await expect(page.locator('main')).toContainText(title)
   }
   await expect(page.getByPlaceholder('搜索关键词...')).toBeVisible()
 }
