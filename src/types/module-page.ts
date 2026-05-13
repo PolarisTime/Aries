@@ -143,9 +143,17 @@ export interface ModuleParentImportDefinition {
   parentDisplayFieldKey: string
   buttonText?: string
   enforceUniqueRelation?: boolean
+  allowMultipleSelection?: boolean
+  validateBeforeOpen?: (currentRecord: ModuleRecord) => string | null
   remainingQuantityKey?: string
   mapParentToDraft?: (parentRecord: ModuleRecord) => Partial<ModuleRecord>
   transformItems?: (parentRecord: ModuleRecord) => ModuleLineItem[]
+  validateParentImport?: (args: {
+    currentRecord: ModuleRecord
+    currentItems: ModuleLineItem[]
+    currentParentNos: string[]
+    parentRecord: ModuleRecord
+  }) => string | null
 }
 
 export interface ModulePageConfig {
@@ -159,11 +167,13 @@ export interface ModulePageConfig {
   filters: ModuleFilterDefinition[]
   quickFilters?: ModuleQuickFilterDefinition[]
   columns: ModuleColumnDefinition[]
+  defaultHiddenColumnKeys?: string[]
   detailFields: ModuleDetailField[]
   detailColumnCount?: number
   formFields?: ModuleFormFieldDefinition[]
   parentImport?: ModuleParentImportDefinition
   itemColumns?: ModuleColumnDefinition[]
+  detailItemColumns?: ModuleColumnDefinition[]
   data: ModuleRecord[]
   actions?: ModuleActionDefinition[]
   buildOverview: (rows: ModuleRecord[]) => ModuleOverviewItem[]
