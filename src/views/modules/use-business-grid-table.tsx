@@ -126,7 +126,7 @@ export function useBusinessGridTable({
 
   const { table } = useDataTable<ModuleRecord>({
     data: records,
-    columns: columnDefs as ColumnDef<ModuleRecord, unknown>[],
+    columns: columnDefs,
     pageCount: Math.ceil(total / pageSize),
     total,
     manualPagination: true,
@@ -156,12 +156,10 @@ export function useBusinessGridTable({
         dataIndex: header.column.id,
         key: header.column.id,
         width: (
-          header.column.columnDef.meta as GridColumnRenderMeta | undefined
+          header.column.columnDef.meta
         )?.width,
         align: ((
-          header.column.columnDef.meta as
-            | GridColumnRenderMeta
-            | undefined
+          header.column.columnDef.meta
         )?.align ?? 'center') as ColumnType<ModuleRecord>['align'],
         ellipsis: true,
         sorter: header.column.getCanSort(),
@@ -172,9 +170,7 @@ export function useBusinessGridTable({
               ? 'descend'
               : null,
         render: (_: unknown, record: ModuleRecord) => {
-          const meta = header.column.columnDef.meta as
-            | GridColumnRenderMeta
-            | undefined
+          const meta = header.column.columnDef.meta
           return meta?.renderCell?.(record) ?? null
         },
       }))

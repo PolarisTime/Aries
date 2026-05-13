@@ -63,7 +63,7 @@ function getScalarFields(moduleKey: string): Promise<readonly string[]> {
     return cached
   }
   const fieldsPromise = resolveScalarFields(moduleKey).then((fields) =>
-    Object.freeze(fields) as readonly string[],
+    Object.freeze(fields),
   )
   scalarFieldCache.set(moduleKey, fieldsPromise)
   return fieldsPromise
@@ -157,7 +157,7 @@ function getCachedLineItemFields(
   const cached = lineItemFieldCache.get(moduleKey)
   if (cached) return cached
   const fieldsPromise = resolveLineItemFields(moduleKey).then((fields) =>
-    Object.freeze(fields) as readonly LineItemFieldSpec[],
+    Object.freeze(fields),
   )
   lineItemFieldCache.set(moduleKey, fieldsPromise)
   return fieldsPromise

@@ -74,7 +74,7 @@ export function useUserAccountEditor({
         )
       }
       setEditorOpen(false)
-      queryClient.invalidateQueries({ queryKey: ['user-account'] })
+      void queryClient.invalidateQueries({ queryKey: ['user-account'] })
     },
     onError: (error: Error) => {
       if (error.message.includes('登录账号已存在')) {

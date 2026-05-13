@@ -41,7 +41,7 @@ export function useInitialSetupState() {
 
       if (!res.data.setupRequired) {
         message.info('系统已完成初始化，即将跳转登录页')
-        setTimeout(() => navigate({ to: '/login' as '/' }), 1500)
+        setTimeout(() => navigate({ to: '/login' }), 1500)
       }
     } catch {
       message.error('获取初始化状态失败')
@@ -130,7 +130,7 @@ export function useInitialSetupState() {
         remark: values.remark?.trim() || '',
       })
       message.success(res.message || '公司信息初始化完成')
-      navigate({ to: '/login' as '/' })
+      void navigate({ to: '/login' })
     } catch (error) {
       message.error(error instanceof Error ? error.message : '初始化公司失败')
     } finally {

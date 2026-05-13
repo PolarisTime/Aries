@@ -16,7 +16,7 @@ interface Options {
 export function useAppLayoutSessionGuards(options: Options) {
   useEffect(() => {
     if (!options.token && options.locationPathname !== '/login') {
-      options.navigate({ to: '/login' })
+      void options.navigate({ to: '/login' })
     }
   }, [options.locationPathname, options.navigate, options.token])
 
@@ -27,7 +27,7 @@ export function useAppLayoutSessionGuards(options: Options) {
     }
 
     const redirectTarget = `${options.locationPathname}${window.location.search || ''}`
-    options.navigate({
+    void options.navigate({
       to: `/setup-2fa?redirect=${encodeURIComponent(redirectTarget)}` as '/',
     })
   }, [options.locationPathname, options.navigate, options.user])

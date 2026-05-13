@@ -38,7 +38,7 @@ export function normalizeDraftRecordForModule(options: {
   if (!record.status) {
     const defaultStatus = getBehaviorValue(moduleKey, 'defaultStatus')
     if (defaultStatus) {
-      record.status = defaultStatus as string
+      record.status = defaultStatus
     }
   }
 

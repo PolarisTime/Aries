@@ -29,7 +29,7 @@ export function useIdleActivation(enabled = true, timeout = 1200) {
         cancelIdleCallback?: (handle: IdleCallbackHandle) => void
       }
 
-    const idleWindow = window as IdleWindow
+    const idleWindow = window
     setActive(false)
 
     if (typeof idleWindow.requestIdleCallback === 'function') {

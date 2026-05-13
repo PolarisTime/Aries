@@ -44,7 +44,7 @@ export function isEditBlockedByStatus(status: unknown, moduleKey?: string): bool
   const normalized = String(status ?? '').trim()
   if (!normalized) return false
   if (moduleKey) {
-    const perModule = getBehaviorValue(moduleKey, 'protectedEditStatuses') as string[] | undefined
+    const perModule = getBehaviorValue(moduleKey, 'protectedEditStatuses')
     if (perModule) return new Set(perModule).has(normalized)
   }
   return protectedEditStatuses.has(normalized)
@@ -54,7 +54,7 @@ export function isDeleteBlockedByStatus(status: unknown, moduleKey?: string): bo
   const normalized = String(status ?? '').trim()
   if (!normalized) return false
   if (moduleKey) {
-    const perModule = getBehaviorValue(moduleKey, 'protectedDeleteStatuses') as string[] | undefined
+    const perModule = getBehaviorValue(moduleKey, 'protectedDeleteStatuses')
     if (perModule) return new Set(perModule).has(normalized)
   }
   return protectedDeleteStatuses.has(normalized)

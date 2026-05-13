@@ -71,7 +71,7 @@ export function ModuleMaterialImportDialogs({
           </Button>
           <Upload.Dragger
             beforeUpload={(f) => {
-              handleImport(f)
+              void handleImport(f)
               return false
             }}
             fileList={fileList}

@@ -153,7 +153,7 @@ export function BusinessGridTable({
         onChange={(_pagination, _filters, sorter) => {
           const activeSorter = Array.isArray(sorter)
             ? sorter[0]
-            : (sorter as SorterResult<ModuleRecord>)
+            : (sorter)
           const columnKey = activeSorter?.columnKey
           onSortingChange(
             typeof columnKey === 'bigint' ? String(columnKey) : columnKey,

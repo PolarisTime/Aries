@@ -75,7 +75,7 @@ export function CompanySettingsView() {
         )
       }
       message.success('公司信息已保存')
-      queryClient.invalidateQueries({ queryKey: ['company-setting'] })
+      void queryClient.invalidateQueries({ queryKey: ['company-setting'] })
     },
     onError: (err: Error) => showError(err, '保存公司信息失败'),
   })
