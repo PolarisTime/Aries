@@ -1,4 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
+import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import Form from 'antd/es/form'
 import { useCallback, useMemo, useState } from 'react'
 import { listSystemSettings, saveSystemSetting } from '@/api/system-settings'
@@ -17,7 +18,6 @@ import {
 import { isSystemSwitch } from '@/views/system/number-rules-view-utils'
 
 export function GeneralSettingsView() {
-  const queryClient = useQueryClient()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
   const canEdit = permissionStore.can('general-setting', 'update')
@@ -59,9 +59,7 @@ export function GeneralSettingsView() {
     [filteredRows],
   )
 
-  const refresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['general-setting'] })
-  }, [queryClient])
+  const refresh = useRefreshQuery('general-setting')
 
   const openEditor = useCallback(
     (record: ModuleRecord) => {

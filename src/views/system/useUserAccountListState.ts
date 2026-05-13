@@ -1,12 +1,12 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
+import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import {
   listUserAccounts,
   type UserAccountListParams,
 } from '@/api/user-accounts'
 
 export function useUserAccountListState(enabled = true) {
-  const queryClient = useQueryClient()
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<string | undefined>(
     undefined,
@@ -34,9 +34,7 @@ export function useUserAccountListState(enabled = true) {
     [usersData],
   )
 
-  const refresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['user-account'] })
-  }, [queryClient])
+  const refresh = useRefreshQuery('user-account')
 
   const handleSearch = useCallback(() => {
     setCurrentPage(1)

@@ -1,3 +1,4 @@
+import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
@@ -89,14 +90,12 @@ export function SessionManagementCard({
         loading={isLoading}
         size="middle"
         scroll={{ x: 1400 }}
-        pagination={{
+        pagination={createPaginationConfig({
           current: currentPage,
           pageSize,
           total: totalElements,
-          showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
           onChange: onPageChange,
-        }}
+        })}
       />
     </Card>
   )

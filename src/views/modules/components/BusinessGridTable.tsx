@@ -1,3 +1,4 @@
+import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import Empty from 'antd/es/empty'
 import Table from 'antd/es/table'
@@ -159,15 +160,12 @@ export function BusinessGridTable({
             activeSorter?.order,
           )
         }}
-        pagination={{
+        pagination={createPaginationConfig({
           current: page,
           pageSize,
           total,
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50', '100'],
-          showTotal: (count) => `共 ${count} 条`,
           onChange: onPageChange,
-        }}
+        })}
       />
     </div>
   )
