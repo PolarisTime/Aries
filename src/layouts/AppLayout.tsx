@@ -254,7 +254,7 @@ export function AppLayout() {
                 selectedKeys={selectedKeys}
                 topMenuItems={topMenuItems}
                 onMenuClick={handleMenuClick}
-                onDashboardClick={() => navigate({ to: '/dashboard' as '/' })}
+                onDashboardClick={() => { void navigate({ to: '/dashboard' as '/' }}
                 topBrandMark={topBrandMark}
                 shellFontStyle={shellFontStyle}
                 clockText={clockText}

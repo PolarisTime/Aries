@@ -54,7 +54,7 @@ export function useModuleRecordActions({
           danger: true,
           disabled: deleteBlocked,
           confirm: '确认删除该记录？',
-          onClick: async () => {
+          onClick: () => {
             try {
               await deleteBusinessModule(moduleKey, String(record.id))
               message.success('删除成功')
