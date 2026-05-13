@@ -102,6 +102,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     },
     { title: '备注', dataIndex: 'remark', width: 180 },
   ],
+  defaultHiddenColumnKeys: ['projectName', 'salesName', 'remark'],
   detailFields: [
     { label: '客户名称', key: 'customerName', row: 1 },
     { label: '订单编号', key: 'orderNo', row: 1 },

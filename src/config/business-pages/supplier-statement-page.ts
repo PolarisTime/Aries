@@ -69,6 +69,7 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
+  defaultHiddenColumnKeys: ['paymentAmount'],
   detailFields: [
     { label: '对账单号', key: 'statementNo' },
     { label: '供应商', key: 'supplierName' },

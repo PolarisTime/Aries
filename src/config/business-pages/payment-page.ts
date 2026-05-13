@@ -52,6 +52,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
+  defaultHiddenColumnKeys: ['payType'],
   detailFields: [
     { label: '付款单号', key: 'paymentNo', row: 1 },
     { label: '业务类型', key: 'businessType', row: 1 },

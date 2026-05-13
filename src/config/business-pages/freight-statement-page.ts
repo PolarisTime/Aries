@@ -94,6 +94,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
+  defaultHiddenColumnKeys: ['paidAmount'],
   detailFields: [
     { label: '对账单号', key: 'statementNo' },
     { label: '物流商', key: 'carrierName' },

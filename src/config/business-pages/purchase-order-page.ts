@@ -73,6 +73,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
     },
     { title: '备注', dataIndex: 'remark', width: 120 },
   ],
+  defaultHiddenColumnKeys: ['buyerName', 'remark'],
   detailFields: [
     { label: '供应商', key: 'supplierName', row: 1 },
     { label: '订单编号', key: 'orderNo', row: 1 },

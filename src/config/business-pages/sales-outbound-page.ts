@@ -101,6 +101,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
     },
     { title: '备注', dataIndex: 'remark', width: 180 },
   ],
+  defaultHiddenColumnKeys: ['projectName', 'remark'],
   detailFields: [
     { label: '出库单号', key: 'outboundNo', row: 1 },
     { label: '关联订单', key: 'salesOrderNo', row: 1 },
@@ -164,7 +165,16 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       projectName: parentRecord.projectName || '',
     }),
     transformItems: (parentRecord) =>
-      cloneLineItems(parentRecord.items, 'sales-outbound-item'),
+      cloneLineItems(
+        Array.isArray(parentRecord.items)
+          ? parentRecord.items.map((item) => ({
+              ...item,
+              sourceNo: parentRecord.orderNo || '',
+              sourceSalesOrderItemId: item.id,
+            }))
+          : [],
+        'sales-outbound-item',
+      ),
   },
   itemColumns: compactPurchaseItemColumns,
   data: [],

@@ -1,6 +1,6 @@
 import {
+  getWarehouseOptions,
   materialCategoryOptions,
-  warehouseOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { formatInteger, formatWeight, sumBy } from './shared'
@@ -24,7 +24,7 @@ export const inventoryReportPageConfig: ModulePageConfig = {
       key: 'warehouseName',
       label: '仓库',
       type: 'select',
-      options: warehouseOptions(),
+      options: getWarehouseOptions,
     },
     {
       key: 'category',
