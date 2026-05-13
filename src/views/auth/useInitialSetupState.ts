@@ -8,9 +8,31 @@ import {
   submitInitialCompany,
 } from '@/api/setup'
 import type { InitialSetupStatus, InitialSetupTotpResult } from '@/types/setup'
+import { asString } from '@/utils/type-narrowing'
 import { message } from '@/utils/antd-app'
 
 export type SetupStep = 'admin' | 'company'
+
+interface AdminFormValues {
+  adminLoginName: string
+  adminPassword: string
+  adminConfirmPassword: string
+  adminUserName: string
+  totpCode: string
+}
+
+interface CompanyFormValues {
+  companyName: string
+  taxNo: string
+  bankName: string
+  bankAccount: string
+  taxRate: number
+  remark: string
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : '操作失败'
+}
 
 export function useInitialSetupState() {
   const navigate = useNavigate()
@@ -18,9 +40,7 @@ export function useInitialSetupState() {
   const [status, setStatus] = useState<InitialSetupStatus | null>(null)
   const [currentStep, setCurrentStep] = useState<SetupStep>('admin')
   const [adminCompleted, setAdminCompleted] = useState(false)
-  const [totpSetup, setTotpSetup] = useState<InitialSetupTotpResult | null>(
-    null,
-  )
+  const [totpSetup, setTotpSetup] = useState<InitialSetupTotpResult | null>(null)
   const [loadingTotp, setLoadingTotp] = useState(false)
   const [loadingAdmin, setLoadingAdmin] = useState(false)
   const [loadingCompany, setLoadingCompany] = useState(false)
@@ -29,19 +49,18 @@ export function useInitialSetupState() {
   const loadStatus = useCallback(async () => {
     try {
       const res = await getInitialSetupStatus()
-      setStatus(res.data)
-
-      if (res.data.adminConfigured && !res.data.companyConfigured) {
+      const s = res.data
+      setStatus(s)
+      if (s.adminConfigured && !s.companyConfigured) {
         setAdminCompleted(true)
         setCurrentStep('company')
-      } else if (!res.data.adminConfigured) {
+      } else if (!s.adminConfigured) {
         setAdminCompleted(false)
         setCurrentStep('admin')
       }
-
-      if (!res.data.setupRequired) {
+      if (!s.setupRequired) {
         message.info('系统已完成初始化，即将跳转登录页')
-        setTimeout(() => navigate({ to: '/login' }), 1500)
+        setTimeout(() => { void navigate({ to: '/login' }) }, 1500)
       }
     } catch {
       message.error('获取初始化状态失败')
@@ -50,24 +69,24 @@ export function useInitialSetupState() {
     }
   }, [navigate])
 
-  useEffect(() => {
-    void loadStatus()
-  }, [loadStatus])
+  // mount-time data fetch — setState is unavoidable for async init
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void loadStatus() }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const handleGenerateTotp = useCallback(async () => {
-    const loginName = form.getFieldValue('adminLoginName')?.trim()
+    const loginName = asString(form.getFieldValue('adminLoginName')).trim()
     if (!loginName) {
       message.error('请先输入管理员登录名')
       return
     }
-
     setLoadingTotp(true)
     try {
       const res = await setupInitialAdmin2fa({ loginName })
       setTotpSetup(res.data)
       message.success('TOTP 密钥已生成')
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '生成2FA失败')
+      message.error(getErrorMessage(error))
     } finally {
       setLoadingTotp(false)
     }
@@ -75,13 +94,11 @@ export function useInitialSetupState() {
 
   const handleSubmitAdmin = useCallback(async () => {
     try {
-      const values = await form.validateFields([
-        'adminLoginName',
-        'adminPassword',
-        'adminConfirmPassword',
-        'adminUserName',
-        'totpCode',
-      ])
+      const values = (await form.validateFields([
+        'adminLoginName', 'adminPassword', 'adminConfirmPassword',
+        'adminUserName', 'totpCode',
+      ])) as unknown as AdminFormValues
+
       if (values.adminPassword !== values.adminConfirmPassword) {
         message.error('两次密码输入不一致')
         return
@@ -90,7 +107,6 @@ export function useInitialSetupState() {
         message.error('请先生成TOTP')
         return
       }
-
       setLoadingAdmin(true)
       const res = await submitInitialAdmin({
         admin: {
@@ -104,9 +120,9 @@ export function useInitialSetupState() {
       message.success(res.message || '管理员创建成功')
       setAdminCompleted(true)
       setCurrentStep('company')
-      await loadStatus()
+      void loadStatus()
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '创建管理员失败')
+      message.error(getErrorMessage(error))
     } finally {
       setLoadingAdmin(false)
     }
@@ -114,12 +130,10 @@ export function useInitialSetupState() {
 
   const handleSubmitCompany = useCallback(async () => {
     try {
-      const values = await form.validateFields([
-        'companyName',
-        'taxNo',
-        'bankName',
-        'bankAccount',
-      ])
+      const values = (await form.validateFields([
+        'companyName', 'taxNo', 'bankName', 'bankAccount',
+      ])) as unknown as CompanyFormValues
+
       setLoadingCompany(true)
       const res = await submitInitialCompany({
         companyName: values.companyName.trim(),
@@ -132,25 +146,16 @@ export function useInitialSetupState() {
       message.success(res.message || '公司信息初始化完成')
       void navigate({ to: '/login' })
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '初始化公司失败')
+      message.error(getErrorMessage(error))
     } finally {
       setLoadingCompany(false)
     }
   }, [form, navigate])
 
   return {
-    adminCompleted,
-    checking,
-    currentStep,
-    form,
-    handleGenerateTotp,
-    handleSubmitAdmin,
-    handleSubmitCompany,
-    loadingAdmin,
-    loadingCompany,
-    loadingTotp,
-    setCurrentStep,
-    status,
-    totpSetup,
+    adminCompleted, checking, currentStep, form,
+    handleGenerateTotp, handleSubmitAdmin, handleSubmitCompany,
+    loadingAdmin, loadingCompany, loadingTotp, setCurrentStep,
+    status, totpSetup,
   }
 }
