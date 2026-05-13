@@ -1,3 +1,4 @@
+import { getFormString, validateFormFields } from '@/utils/antd-form-safe'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Alert from 'antd/es/alert'
 import Card from 'antd/es/card'
@@ -113,7 +114,7 @@ export function CompanySettingsView() {
       return
     }
     try {
-      const values = await form.validateFields()
+      const values = await validateFormFields(form)
       if (!settlementAccounts.length) {
         message.warning('请至少维护一个结算账户')
         return
@@ -168,7 +169,7 @@ export function CompanySettingsView() {
   const overviewItems = useMemo(
     () => [
       { label: '企业模式', value: '单企业' },
-      { label: '主体状态', value: asString(form.getFieldValue('status')) || '--' },
+      { label: '主体状态', value: asString(getFormString(form, 'status')) || '--' },
       { label: '结算银行', value: `${settlementAccounts.length} 个` },
     ],
     [form, settlementAccounts],

@@ -1,3 +1,4 @@
+import { getFormString, validateFormFields } from '@/utils/antd-form-safe'
 import { EditOutlined, IdcardOutlined } from '@ant-design/icons'
 import type { FormInstance } from 'antd'
 import Card from 'antd/es/card'
@@ -64,10 +65,10 @@ export function CompanySubjectCard({
         </div>
         <div>
           <div style={{ fontWeight: 600 }}>
-            {form.getFieldValue('companyName') || '公司主体待配置'}
+            {getFormString(form, 'companyName') || '公司主体待配置'}
           </div>
           <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-            {form.getFieldValue('taxNo') || '税号待配置'} / 结算银行{' '}
+            {getFormString(form, 'taxNo') || '税号待配置'} / 结算银行{' '}
             {settlementAccountCount} 个
           </div>
         </div>

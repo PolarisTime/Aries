@@ -1,3 +1,4 @@
+import { getFormString, validateFormFields } from '@/utils/antd-form-safe'
 import type { FormInstance } from 'antd'
 import Col from 'antd/es/col'
 import Form from 'antd/es/form'
@@ -102,7 +103,7 @@ export function UserAccountEditorModal({
                     placeholder="请输入登录账号"
                     maxLength={64}
                     onBlur={() => {
-                      const loginName = form.getFieldValue('loginName')
+                      const loginName = getFormString(form, 'loginName')
                       if (loginName?.trim()) {
                         onCheckLoginName(
                           loginName,
