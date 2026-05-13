@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { Rule } from 'antd/es/form'
 import { z } from 'zod'
 
@@ -93,13 +94,13 @@ export function zodToAntdRules(schema: z.ZodType): Rule[] {
         if (check.kind === 'min') {
           rules.push({
             min: check.value as number,
-            message: check.message || `最小值为 ${check.value}`,
+            message: check.message || `最小值为 ${asString(check.value)}`,
           })
         }
         if (check.kind === 'max') {
           rules.push({
             max: check.value as number,
-            message: check.message || `最大值为 ${check.value}`,
+            message: check.message || `最大值为 ${asString(check.value)}`,
           })
         }
       }

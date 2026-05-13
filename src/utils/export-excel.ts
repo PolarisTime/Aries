@@ -1,9 +1,10 @@
+import { asString } from '@/utils/type-narrowing'
 import * as XLSX from 'xlsx'
 import type { ModuleColumnDefinition, ModuleRecord } from '@/types/module-page'
 
 function formatCell(value: unknown): string {
   if (value === undefined || value === null) return ''
-  return String(value)
+  return asString(value)
 }
 
 export function exportRecordsToXlsx(

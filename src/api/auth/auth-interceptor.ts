@@ -92,7 +92,7 @@ export function setupAuthInterceptors(http: AxiosInstance) {
     async (error) => {
       if (isCanceledRequestError(error)) {
         markHandledRequestError(error)
-        return Promise.reject(error)
+        return Promise.reject(new Error(String(error)))
       }
 
       const status = error.response?.status
@@ -147,7 +147,7 @@ export function setupAuthInterceptors(http: AxiosInstance) {
           markHandledRequestError(error)
           handleAuthFailure(refreshMessage)
           error.message = refreshMessage
-          return Promise.reject(error)
+          return Promise.reject(new Error(String(error)))
         }
       }
 
@@ -173,7 +173,7 @@ export function setupAuthInterceptors(http: AxiosInstance) {
 
       error.message = description
 
-      return Promise.reject(error)
+      return Promise.reject(new Error(String(error)))
     },
   )
 }

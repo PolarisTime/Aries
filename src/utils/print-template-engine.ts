@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 function formatNow() {
   const current = new Date()
   const date = [
@@ -20,7 +21,7 @@ function stringifyValue(value: unknown) {
   if (value === undefined || value === null) {
     return ''
   }
-  return String(value)
+  return asString(value)
 }
 
 import { escapeHtml } from '@/utils/escape-html'

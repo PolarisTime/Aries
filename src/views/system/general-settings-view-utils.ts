@@ -109,9 +109,9 @@ export function formatSettingValue(record: ModuleRecord) {
     return value ? `${(value * 100).toFixed(0)}%` : '13%'
   }
   if (isMaxConcurrentSetting(record)) {
-    return String(record.sampleNo || '0')
+    return asasString(record.sampleNo)
   }
-  return String(record.sampleNo || '--')
+  return asasString(record.sampleNo)
 }
 
 export function formatSwitchState(record: ModuleRecord) {

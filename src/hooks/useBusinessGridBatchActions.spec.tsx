@@ -74,7 +74,7 @@ describe('useBusinessGridBatchActions', () => {
     )
 
     await act(async () => {
-      await result.current.handleSelectedAuditRecords()
+      result.current.handleSelectedAuditRecords()
     })
 
     expect(confirmMock).toHaveBeenCalledTimes(1)

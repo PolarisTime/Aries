@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import dayjs from 'dayjs'
 
 export function useModuleDisplaySupport() {
@@ -6,7 +7,7 @@ export function useModuleDisplaySupport() {
     if (columnType === 'amount' || columnType === 'number') {
       const num = Number(value)
       return Number.isNaN(num)
-        ? String(value)
+        ? asString(value)
         : num.toLocaleString('zh-CN', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
@@ -15,7 +16,7 @@ export function useModuleDisplaySupport() {
     if (columnType === 'weight') {
       const num = Number(value)
       return Number.isNaN(num)
-        ? String(value)
+        ? asString(value)
         : num.toLocaleString('zh-CN', {
             minimumFractionDigits: 3,
             maximumFractionDigits: 3,
@@ -23,7 +24,7 @@ export function useModuleDisplaySupport() {
     }
     if (columnType === 'count' || columnType === 'integer') {
       const num = Number(value)
-      return Number.isNaN(num) ? String(value) : num.toLocaleString('zh-CN')
+      return Number.isNaN(num) ? asString(value) : num.toLocaleString('zh-CN')
     }
     if (columnType === 'date' || columnType === 'datetime') {
       const d = dayjs(value as string | number)
@@ -31,12 +32,12 @@ export function useModuleDisplaySupport() {
         ? d.format(
             columnType === 'datetime' ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD',
           )
-        : String(value)
+        : asString(value)
     }
     if (columnType === 'boolean') {
       return value ? '是' : '否'
     }
-    return String(value)
+    return asString(value)
   }
 
   return { formatCellValue }
