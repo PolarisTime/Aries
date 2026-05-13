@@ -48,6 +48,7 @@ export function PersonalSettingsModal({
     if (!open) {
       return
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
     setTab('display')
     resetSecurityState()
   }, [open, resetSecurityState])

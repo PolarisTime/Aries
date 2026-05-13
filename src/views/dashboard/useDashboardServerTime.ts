@@ -8,6 +8,7 @@ export function useDashboardServerTime(serverTime?: string | null) {
 
   useEffect(() => {
     if (!serverTime) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setAnimatedServerTime('—')
       return
     }

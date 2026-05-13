@@ -89,7 +89,7 @@ export function buildCustomerStatementOptions(
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
       value: String(record.id || ''),
-      label: `${asString(record.statementNo)} | ${String(record.customerName || '')} / ${String(record.projectName || '')} | 待收 ${formatAmountLabel(record.closingAmount)}`,
+      label: `${asString(record.statementNo)} | ${asString(record.customerName)} / ${String(record.projectName || '')} | 待收 ${formatAmountLabel(record.closingAmount)}`,
     }))
 }
 
@@ -111,7 +111,7 @@ export function buildSupplierStatementOptions(
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
       value: String(record.id || ''),
-      label: `${asString(record.statementNo)} | ${String(record.supplierName || '')} | 待付 ${formatAmountLabel(record.closingAmount)}`,
+      label: `${asString(record.statementNo)} | ${asString(record.supplierName)} | 待付 ${formatAmountLabel(record.closingAmount)}`,
     }))
 }
 
@@ -129,7 +129,7 @@ export function buildFreightStatementOptions(
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
       value: String(record.id || ''),
-      label: `${asString(record.statementNo)} | ${String(record.carrierName || '')} | 待付 ${formatAmountLabel(record.unpaidAmount)}`,
+      label: `${asString(record.statementNo)} | ${asString(record.carrierName)} | 待付 ${formatAmountLabel(record.unpaidAmount)}`,
     }))
 }
 

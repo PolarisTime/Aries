@@ -245,6 +245,7 @@ export function useModuleEditorWorkspace({
 
     if (record) {
       form.setFieldsValue(normalizeRecordForEditor(config, record))
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setItems((record.items as ModuleLineItem[]) || [])
       setPrimaryNoLoading(false)
     } else {
