@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Modal, message } from 'antd'
 import { useCallback } from 'react'
 import { deleteUserAccount } from '@/api/user-accounts'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { UserAccountRecord } from '@/types/user-account'
+import { message, modal } from '@/utils/antd-app'
 import { UserAccountCreateResultModal } from '@/views/system/UserAccountCreateResultModal'
 import { UserAccountDetailModal } from '@/views/system/UserAccountDetailModal'
 import { UserAccountEditorModal } from '@/views/system/UserAccountEditorModal'
@@ -19,7 +20,13 @@ import { useUserAccountEditor } from '@/views/system/useUserAccountEditor'
 import { useUserAccountListState } from '@/views/system/useUserAccountListState'
 import { useUserAccountTwoFactor } from '@/views/system/useUserAccountTwoFactor'
 
-export function UserAccountManagementView() {
+interface UserAccountManagementViewProps {
+  active?: boolean
+}
+
+export function UserAccountManagementView({
+  active = true,
+}: UserAccountManagementViewProps) {
   const queryClient = useQueryClient()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
@@ -29,6 +36,8 @@ export function UserAccountManagementView() {
   const canDelete = permissionStore.can('user-account', 'delete')
   const canViewRoleCatalog = permissionStore.can('role', 'read')
   const canViewDepartmentCatalog = permissionStore.can('department', 'read')
+  const isPageVisible = usePageVisibility()
+  const queryEnabled = active && isPageVisible
 
   const {
     keyword,
@@ -43,7 +52,7 @@ export function UserAccountManagementView() {
     handleStatusFilterChange,
     handlePageChange,
     refresh,
-  } = useUserAccountListState()
+  } = useUserAccountListState(queryEnabled)
 
   const {
     form,
@@ -70,6 +79,7 @@ export function UserAccountManagementView() {
   } = useUserAccountEditor({
     canViewRoleCatalog,
     canViewDepartmentCatalog,
+    enabled: queryEnabled,
   })
 
   const {
@@ -108,7 +118,7 @@ export function UserAccountManagementView() {
 
   const handleDelete = useCallback(
     (record: UserAccountRecord) => {
-      Modal.confirm({
+      modal.confirm({
         title: '删除用户账户',
         content: `确定删除账号「${record.loginName}」吗？删除后该用户将无法继续登录。`,
         okText: '确认删除',
@@ -162,66 +172,74 @@ export function UserAccountManagementView() {
         onPageChange={handlePageChange}
       />
 
-      <UserAccountEditorModal
-        open={editorOpen}
-        mode={editorMode}
-        loading={editorLoading}
-        saving={savePending}
-        form={form}
-        editingId={editingId}
-        loginNameValidationMessage={loginNameValidationMessage}
-        loginNameChecking={loginNameChecking}
-        departmentOptions={departmentOptions}
-        roleOptions={roleOptions}
-        selectedRoleNames={selectedRoleNames}
-        selectedRoleDataScope={selectedRoleDataScope}
-        selectedRoleSummaries={selectedRoleSummaries}
-        onCheckLoginName={(loginName, excludeUserId) => {
-          void runLoginNameCheck(loginName, excludeUserId)
-        }}
-        onSave={() => {
-          void handleSave()
-        }}
-        onClose={closeEditor}
-      />
+      {editorOpen ? (
+        <UserAccountEditorModal
+          open={editorOpen}
+          mode={editorMode}
+          loading={editorLoading}
+          saving={savePending}
+          form={form}
+          editingId={editingId}
+          loginNameValidationMessage={loginNameValidationMessage}
+          loginNameChecking={loginNameChecking}
+          departmentOptions={departmentOptions}
+          roleOptions={roleOptions}
+          selectedRoleNames={selectedRoleNames}
+          selectedRoleDataScope={selectedRoleDataScope}
+          selectedRoleSummaries={selectedRoleSummaries}
+          onCheckLoginName={(loginName, excludeUserId) => {
+            void runLoginNameCheck(loginName, excludeUserId)
+          }}
+          onSave={() => {
+            void handleSave()
+          }}
+          onClose={closeEditor}
+        />
+      ) : null}
 
-      <UserAccountDetailModal
-        open={detailOpen}
-        loading={detailLoading}
-        record={detailRecord}
-        getStatusColor={getUserAccountStatusColor}
-        getTotpColor={getUserAccountTotpColor}
-        onClose={closeDetailModal}
-      />
+      {detailOpen ? (
+        <UserAccountDetailModal
+          open={detailOpen}
+          loading={detailLoading}
+          record={detailRecord}
+          getStatusColor={getUserAccountStatusColor}
+          getTotpColor={getUserAccountTotpColor}
+          onClose={closeDetailModal}
+        />
+      ) : null}
 
-      <UserAccountCreateResultModal
-        open={createResultOpen}
-        result={createResult}
-        onCopy={(value, label) => {
-          void copyText(value, label)
-        }}
-        onClose={closeCreateResult}
-      />
+      {createResultOpen ? (
+        <UserAccountCreateResultModal
+          open={createResultOpen}
+          result={createResult}
+          onCopy={(value, label) => {
+            void copyText(value, label)
+          }}
+          onClose={closeCreateResult}
+        />
+      ) : null}
 
-      <UserAccountTwoFactorModal
-        open={twoFaOpen}
-        loading={twoFaLoading}
-        record={twoFaRecord}
-        setup={twoFaSetup}
-        code={twoFaCode}
-        setupLoading={twoFaSetupLoading}
-        enableLoading={twoFaEnableLoading}
-        disableLoading={twoFaDisableLoading}
-        onCodeChange={setTwoFaCode}
-        onGenerate={() => {
-          void handleGenerate2fa()
-        }}
-        onEnable={() => {
-          void handleEnable2fa()
-        }}
-        onDisable={handleDisable2fa}
-        onClose={close2faModal}
-      />
+      {twoFaOpen ? (
+        <UserAccountTwoFactorModal
+          open={twoFaOpen}
+          loading={twoFaLoading}
+          record={twoFaRecord}
+          setup={twoFaSetup}
+          code={twoFaCode}
+          setupLoading={twoFaSetupLoading}
+          enableLoading={twoFaEnableLoading}
+          disableLoading={twoFaDisableLoading}
+          onCodeChange={setTwoFaCode}
+          onGenerate={() => {
+            void handleGenerate2fa()
+          }}
+          onEnable={() => {
+            void handleEnable2fa()
+          }}
+          onDisable={handleDisable2fa}
+          onClose={close2faModal}
+        />
+      ) : null}
     </div>
   )
 }

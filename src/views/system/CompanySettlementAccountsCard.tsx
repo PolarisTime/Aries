@@ -1,5 +1,11 @@
 import { BankOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Input, Row, Select, Typography } from 'antd'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Col from 'antd/es/col'
+import Input from 'antd/es/input'
+import Row from 'antd/es/row'
+import Select from 'antd/es/select'
+import Typography from 'antd/es/typography'
 import type { SettlementAccountFormRow } from '@/views/system/company-settings-view-utils'
 
 interface Props {

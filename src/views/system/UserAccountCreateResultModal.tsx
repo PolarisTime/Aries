@@ -1,5 +1,7 @@
 import { CopyOutlined } from '@ant-design/icons'
-import { Button, Modal, Typography } from 'antd'
+import Button from 'antd/es/button'
+import Modal from 'antd/es/modal'
+import Typography from 'antd/es/typography'
 import type { UserAccountCreateResult } from '@/types/user-account'
 
 interface Props {

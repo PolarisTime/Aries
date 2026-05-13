@@ -1,15 +1,13 @@
 import { DatabaseOutlined, ReloadOutlined } from '@ant-design/icons'
-import {
-  Button,
-  Card,
-  Col,
-  Descriptions,
-  Row,
-  Skeleton,
-  Statistic,
-  Tag,
-  Typography,
-} from 'antd'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Col from 'antd/es/col'
+import Descriptions from 'antd/es/descriptions'
+import Row from 'antd/es/row'
+import Skeleton from 'antd/es/skeleton'
+import Statistic from 'antd/es/statistic'
+import Tag from 'antd/es/tag'
+import Typography from 'antd/es/typography'
 import type { DatabaseStatus } from '@/api/database-admin'
 import {
   formatDatabaseDateTime,

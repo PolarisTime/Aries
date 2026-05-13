@@ -1,5 +1,11 @@
 import type { FormInstance } from 'antd'
-import { Col, Form, Input, Modal, Row, Select, Typography } from 'antd'
+import Col from 'antd/es/col'
+import Form from 'antd/es/form'
+import Input from 'antd/es/input'
+import Modal from 'antd/es/modal'
+import Row from 'antd/es/row'
+import Select from 'antd/es/select'
+import Typography from 'antd/es/typography'
 import {
   buildRuleSampleNo,
   buildUploadRulePreview,

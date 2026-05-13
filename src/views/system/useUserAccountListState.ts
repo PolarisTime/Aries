@@ -5,7 +5,7 @@ import {
   type UserAccountListParams,
 } from '@/api/user-accounts'
 
-export function useUserAccountListState() {
+export function useUserAccountListState(enabled = true) {
   const queryClient = useQueryClient()
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<string | undefined>(
@@ -25,6 +25,7 @@ export function useUserAccountListState() {
       }
       return listUserAccounts(params)
     },
+    enabled,
   })
 
   const users = useMemo(() => usersData?.records || [], [usersData])

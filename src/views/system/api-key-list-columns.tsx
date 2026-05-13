@@ -1,6 +1,8 @@
 import { EyeOutlined, StopOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
-import { Button, Space, Tag } from 'antd'
+import Button from 'antd/es/button'
+import Space from 'antd/es/space'
+import Tag from 'antd/es/tag'
 import type {
   ApiKeyActionOption,
   ApiKeyRecord,

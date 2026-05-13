@@ -1,5 +1,9 @@
 import { ReloadOutlined, SaveOutlined } from '@ant-design/icons'
-import { Button, Col, Row, Space, Typography } from 'antd'
+import Button from 'antd/es/button'
+import Col from 'antd/es/col'
+import Row from 'antd/es/row'
+import Space from 'antd/es/space'
+import Typography from 'antd/es/typography'
 
 interface OverviewItem {
   label: string

@@ -1,7 +1,15 @@
 import { SessionManagementCard } from '@/views/system/SessionManagementCard'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useSessionManagementState } from '@/views/system/useSessionManagementState'
 
-export function SessionManagementView() {
+interface SessionManagementViewProps {
+  active?: boolean
+}
+
+export function SessionManagementView({
+  active = true,
+}: SessionManagementViewProps) {
+  const isPageVisible = usePageVisibility()
   const {
     canEdit,
     columns,
@@ -17,7 +25,7 @@ export function SessionManagementView() {
     summary,
     tokens,
     totalElements,
-  } = useSessionManagementState()
+  } = useSessionManagementState(active && isPageVisible)
 
   return (
     <div className="page-stack">

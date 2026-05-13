@@ -1,7 +1,4 @@
-import {
-  enabledStatusValues,
-  userAccountDataScopeValues,
-} from '@/constants/module-options'
+import { enabledStatusValues } from '@/constants/module-options'
 import type { RoleOptionRecord } from '@/types/user-account'
 
 export type UserAccountEditorMode = 'create' | 'edit'
@@ -78,7 +75,7 @@ export function buildDefaultUserAccountFormValues() {
     mobile: '',
     departmentId: null,
     roleNames: [],
-    dataScope: userAccountDataScopeValues[0],
+    dataScope: '本人',
     permissionSummary: '',
     status: enabledStatusValues[0],
     remark: '',

@@ -1,4 +1,7 @@
-import { Descriptions, Modal, Spin, Tag } from 'antd'
+import Descriptions from 'antd/es/descriptions'
+import Modal from 'antd/es/modal'
+import Spin from 'antd/es/spin'
+import Tag from 'antd/es/tag'
 import type { UserAccountRecord } from '@/types/user-account'
 
 interface Props {

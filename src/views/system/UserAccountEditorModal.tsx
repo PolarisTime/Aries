@@ -1,16 +1,14 @@
 import type { FormInstance } from 'antd'
-import {
-  Col,
-  Form,
-  Input,
-  Modal,
-  Row,
-  Select,
-  Space,
-  Spin,
-  Tag,
-  Typography,
-} from 'antd'
+import Col from 'antd/es/col'
+import Form from 'antd/es/form'
+import Input from 'antd/es/input'
+import Modal from 'antd/es/modal'
+import Row from 'antd/es/row'
+import Select from 'antd/es/select'
+import Space from 'antd/es/space'
+import Spin from 'antd/es/spin'
+import Tag from 'antd/es/tag'
+import Typography from 'antd/es/typography'
 import {
   enabledStatusOptions,
   enabledStatusValues,
@@ -19,6 +17,8 @@ import type {
   DepartmentOptionRecord,
   RoleOptionRecord,
 } from '@/types/user-account'
+import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
+import { buildFormControlId } from '@/utils/form-control-id'
 
 type EditorMode = 'create' | 'edit'
 
@@ -60,6 +60,10 @@ export function UserAccountEditorModal({
   onClose,
 }: Props) {
   const isCreate = mode === 'create'
+  const roleDataScopeId = buildFormControlId(
+    'user-account-editor',
+    'data-scope',
+  )
 
   return (
     <Modal
@@ -186,8 +190,18 @@ export function UserAccountEditorModal({
                 </Form.Item>
               </Col>
               <Col span={isCreate ? 8 : 5}>
-                <Form.Item label="角色数据范围">
-                  <Input value={selectedRoleDataScope} disabled />
+                <Form.Item
+                  {...buildLabeledFormItemProps({
+                    label: '角色数据范围',
+                    htmlFor: roleDataScopeId,
+                  })}
+                >
+                  <Input
+                    id={roleDataScopeId}
+                    name="role-data-scope"
+                    value={selectedRoleDataScope}
+                    disabled
+                  />
                 </Form.Item>
               </Col>
               {isCreate && (
@@ -201,7 +215,7 @@ export function UserAccountEditorModal({
                 </Col>
               )}
             </Row>
-            <Form.Item name="permissionSummary" label="权限摘要">
+            <Form.Item label="权限摘要">
               {selectedRoleSummaries.length > 0 ? (
                 <Space wrap>
                   {selectedRoleSummaries.map((summary) => (

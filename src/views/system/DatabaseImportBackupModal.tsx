@@ -1,5 +1,10 @@
 import type { FormInstance } from 'antd'
-import { Alert, Button, Form, Input, Modal, Upload } from 'antd'
+import Alert from 'antd/es/alert'
+import Button from 'antd/es/button'
+import Form from 'antd/es/form'
+import Input from 'antd/es/input'
+import Modal from 'antd/es/modal'
+import Upload from 'antd/es/upload'
 
 interface Props {
   open: boolean
@@ -57,6 +62,7 @@ export function DatabaseImportBackupModal({
         </Form.Item>
         <Form.Item label="备份文件" required>
           <Upload
+            name="database-backup-file"
             beforeUpload={(file) => {
               onSelectFile(file)
               return false

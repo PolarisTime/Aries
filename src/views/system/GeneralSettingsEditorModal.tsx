@@ -1,5 +1,10 @@
 import type { FormInstance } from 'antd'
-import { Form, Input, Modal, Select, Switch, Typography } from 'antd'
+import Form from 'antd/es/form'
+import Input from 'antd/es/input'
+import Modal from 'antd/es/modal'
+import Select from 'antd/es/select'
+import Switch from 'antd/es/switch'
+import Typography from 'antd/es/typography'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   DETAILED_OPERATION_ACTION_OPTIONS,

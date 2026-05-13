@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Form, message } from 'antd'
+import Form from 'antd/es/form'
 import { useCallback, useMemo, useState } from 'react'
 import { listSystemSettings, saveSystemSetting } from '@/api/system-settings'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
+import { message } from '@/utils/antd-app'
 import { GeneralSettingsEditorModal } from '@/views/system/GeneralSettingsEditorModal'
 import { GeneralSettingsTableCard } from '@/views/system/GeneralSettingsTableCard'
 import {
@@ -28,6 +29,7 @@ export function GeneralSettingsView() {
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState<ModuleRecord | null>(null)
   const [saving, setSaving] = useState(false)
+  const [toggling, setToggling] = useState(false)
   const [form] = Form.useForm()
 
   const { data: rows = [], isLoading } = useQuery<ModuleRecord[]>({
@@ -86,6 +88,35 @@ export function GeneralSettingsView() {
     [canEdit, form],
   )
 
+  const handleToggle = useCallback(
+    async (record: ModuleRecord) => {
+      setToggling(true)
+      const nextStatus = String(record.status || '') === '正常' ? '禁用' : '正常'
+      try {
+        await saveSystemSetting({
+          id: record.id,
+          settingCode: record.settingCode,
+          settingName: record.settingName,
+          billName: record.billName,
+          prefix: 'SYS',
+          dateRule: 'NONE',
+          serialLength: 6,
+          resetRule: 'NEVER',
+          sampleNo: record.sampleNo || 'ON',
+          status: nextStatus,
+          remark: record.remark,
+        })
+        message.success(nextStatus === '正常' ? '已启用' : '已关闭')
+        refresh()
+      } catch (error) {
+        showError(error, '操作失败')
+      } finally {
+        setToggling(false)
+      }
+    },
+    [refresh, showError],
+  )
+
   const handleSave = useCallback(async () => {
     if (!editingRecord) return
     setSaving(true)
@@ -102,13 +133,13 @@ export function GeneralSettingsView() {
         settingCode: values.settingCode,
         settingName: values.settingName,
         billName: values.billName,
-        prefix: '',
-        dateRule: '',
-        serialLength: 0,
-        resetRule: '',
+        prefix: 'SYS',
+        dateRule: 'NONE',
+        serialLength: 6,
+        resetRule: 'NEVER',
         remark: values.remark,
         status: values.enabled ? '正常' : '禁用',
-        sampleNo,
+        sampleNo: sampleNo || 'ON',
       })
       message.success('保存成功')
       refresh()
@@ -130,22 +161,26 @@ export function GeneralSettingsView() {
         switchRows={switchRows}
         loading={isLoading}
         canEdit={canEdit}
+        toggling={toggling}
         onKeywordChange={setKeyword}
         onStatusFilterChange={setStatusFilter}
         onRefresh={refresh}
         onEdit={openEditor}
+        onToggle={handleToggle}
       />
 
-      <GeneralSettingsEditorModal
-        open={editorOpen}
-        record={editingRecord}
-        form={form}
-        saving={saving}
-        onSave={() => {
-          void handleSave()
-        }}
-        onClose={() => setEditorOpen(false)}
-      />
+      {editorOpen ? (
+        <GeneralSettingsEditorModal
+          open={editorOpen}
+          record={editingRecord}
+          form={form}
+          saving={saving}
+          onSave={() => {
+            void handleSave()
+          }}
+          onClose={() => setEditorOpen(false)}
+        />
+      ) : null}
     </div>
   )
 }

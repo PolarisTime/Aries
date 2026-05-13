@@ -1,5 +1,8 @@
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Input, Select, Space } from 'antd'
+import Button from 'antd/es/button'
+import Input from 'antd/es/input'
+import Select from 'antd/es/select'
+import Space from 'antd/es/space'
 import type { ApiKeyUserOption } from '@/api/api-keys'
 import {
   apiKeyStatusOptions,

@@ -1,22 +1,19 @@
 import { EditOutlined, ReloadOutlined } from '@ant-design/icons'
-import {
-  Button,
-  Card,
-  Col,
-  Input,
-  Row,
-  Select,
-  Space,
-  Statistic,
-  Table,
-  type TableProps,
-  Tag,
-  Typography,
-} from 'antd'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Col from 'antd/es/col'
+import Input from 'antd/es/input'
+import Row from 'antd/es/row'
+import Select from 'antd/es/select'
+import Space from 'antd/es/space'
+import Statistic from 'antd/es/statistic'
+import Switch from 'antd/es/switch'
+import Table from 'antd/es/table'
+import type { TableProps } from 'antd/es/table'
+import Typography from 'antd/es/typography'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   formatSettingValue,
-  formatSwitchState,
   GENERAL_SETTING_STATUS_OPTIONS,
 } from '@/views/system/general-settings-view-utils'
 
@@ -27,11 +24,13 @@ interface Props {
   basicSettingRows: ModuleRecord[]
   switchRows: ModuleRecord[]
   loading: boolean
+  toggling: boolean
   canEdit: boolean
   onKeywordChange: (value: string) => void
   onStatusFilterChange: (value?: string) => void
   onRefresh: () => void
   onEdit: (record: ModuleRecord) => void
+  onToggle: (record: ModuleRecord) => void
 }
 
 export function GeneralSettingsTableCard({
@@ -41,11 +40,13 @@ export function GeneralSettingsTableCard({
   basicSettingRows,
   switchRows,
   loading,
+  toggling,
   canEdit,
   onKeywordChange,
   onStatusFilterChange,
   onRefresh,
   onEdit,
+  onToggle,
 }: Props) {
   const basicSettingColumns: TableProps<ModuleRecord>['columns'] = [
     {
@@ -65,7 +66,6 @@ export function GeneralSettingsTableCard({
         </Button>
       ),
     },
-    { dataIndex: 'billName', title: '适用范围', width: 160 },
     { dataIndex: 'settingName', title: '参数名称', width: 240 },
     {
       title: '当前值',
@@ -78,39 +78,30 @@ export function GeneralSettingsTableCard({
   ]
 
   const switchColumns: TableProps<ModuleRecord>['columns'] = [
-    {
-      title: '操作',
-      key: 'action',
-      width: 90,
-      align: 'center',
-      render: (_value, record) => (
-        <Button
-          type="link"
-          size="small"
-          icon={<EditOutlined />}
-          disabled={!canEdit}
-          onClick={() => onEdit(record)}
-        >
-          编辑
-        </Button>
-      ),
-    },
-    { dataIndex: 'billName', title: '适用范围', width: 160 },
     { dataIndex: 'settingName', title: '开关名称', width: 240 },
     {
-      title: '当前状态',
+      title: '当前状态 / 操作',
       key: 'state',
-      width: 120,
+      width: 160,
       align: 'center',
-      render: (_value, record) => (
-        <Tag
-          color={
-            String(record.status || '') === '正常' ? 'processing' : 'default'
-          }
-        >
-          {formatSwitchState(record)}
-        </Tag>
-      ),
+      render: (_value, record) => {
+        const enabled = String(record.status || '') === '正常'
+        return (
+          <Space>
+            <Switch
+              checked={enabled}
+              loading={toggling}
+              disabled={!canEdit}
+              checkedChildren="启用"
+              unCheckedChildren="关闭"
+              onChange={() => onToggle(record)}
+            />
+            <span style={{ fontSize: 12, color: enabled ? '#22c55e' : '#94a3b8' }}>
+              {enabled ? '已启用' : '已关闭'}
+            </span>
+          </Space>
+        )
+      },
     },
     { dataIndex: 'remark', title: '说明', width: 420 },
   ]

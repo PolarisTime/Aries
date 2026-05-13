@@ -1,5 +1,12 @@
 import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Input, Row, Space, Statistic, Table } from 'antd'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Col from 'antd/es/col'
+import Input from 'antd/es/input'
+import Row from 'antd/es/row'
+import Space from 'antd/es/space'
+import Statistic from 'antd/es/statistic'
+import Table from 'antd/es/table'
 import type { ColumnsType } from 'antd/es/table'
 import type {
   RefreshTokenRecord,

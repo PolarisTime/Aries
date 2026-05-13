@@ -1,5 +1,4 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Modal, message } from 'antd'
 import { useCallback, useState } from 'react'
 import {
   disableUserAccount2fa,
@@ -12,6 +11,7 @@ import { syncCurrentUserTotpStateById } from '@/stores/auth-user-sync'
 import { useAuthStore } from '@/stores/authStore'
 import type { TotpSetupResponse } from '@/types/auth'
 import type { UserAccountRecord } from '@/types/user-account'
+import { message, modal } from '@/utils/antd-app'
 
 export function useUserAccountTwoFactor() {
   const queryClient = useQueryClient()
@@ -107,7 +107,7 @@ export function useUserAccountTwoFactor() {
 
   const handleDisable2fa = useCallback(() => {
     if (!twoFaRecord) return
-    Modal.confirm({
+    modal.confirm({
       title: '关闭二次验证',
       content: `确定关闭用户「${twoFaRecord.loginName}」的 2FA 吗？`,
       okText: '确认关闭',

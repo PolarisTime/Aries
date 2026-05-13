@@ -6,7 +6,13 @@ import {
   ReloadOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
-import { Button, Card, Input, Select, Space, Table, Tag } from 'antd'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Input from 'antd/es/input'
+import Select from 'antd/es/select'
+import Space from 'antd/es/space'
+import Table from 'antd/es/table'
+import Tag from 'antd/es/tag'
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { UserAccountRecord } from '@/types/user-account'
 

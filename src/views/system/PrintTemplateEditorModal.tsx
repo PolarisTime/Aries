@@ -1,6 +1,14 @@
 import type { FormInstance } from 'antd'
-import { Col, Form, Input, Modal, Row, Select, Typography } from 'antd'
+import Col from 'antd/es/col'
+import Form from 'antd/es/form'
+import Input from 'antd/es/input'
+import Modal from 'antd/es/modal'
+import Row from 'antd/es/row'
+import Select from 'antd/es/select'
+import Typography from 'antd/es/typography'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
+import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
+import { buildFormControlId } from '@/utils/form-control-id'
 
 interface Props {
   open: boolean
@@ -23,6 +31,11 @@ export function PrintTemplateEditorModal({
   onSave,
   onClose,
 }: Props) {
+  const templateHtmlId = buildFormControlId(
+    'print-template-editor',
+    'template-html',
+  )
+
   return (
     <Modal
       title={editing ? '编辑模板' : '新建模板'}
@@ -57,8 +70,16 @@ export function PrintTemplateEditorModal({
             </Form.Item>
           </Col>
         </Row>
-        <Form.Item label="模板内容" required>
+        <Form.Item
+          {...buildLabeledFormItemProps({
+            label: '模板内容',
+            htmlFor: templateHtmlId,
+          })}
+          required
+        >
           <Input.TextArea
+            id={templateHtmlId}
+            name="template-html"
             value={templateHtml}
             onChange={(event) => onTemplateHtmlChange(event.target.value)}
             rows={16}

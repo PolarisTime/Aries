@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Form, message } from 'antd'
+import Form from 'antd/es/form'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   createDatabaseExportTask,
@@ -9,6 +9,7 @@ import {
   listDatabaseExportTasks,
 } from '@/api/database-admin'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useRequestError } from '@/hooks/useRequestError'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
@@ -17,6 +18,7 @@ import { DatabaseExportTasksCard } from '@/views/system/DatabaseExportTasksCard'
 import { DatabaseImportBackupModal } from '@/views/system/DatabaseImportBackupModal'
 import { DatabaseStatusOverview } from '@/views/system/DatabaseStatusOverview'
 import { isDatabaseTaskRunning } from '@/views/system/database-backup-view-utils'
+import { message } from '@/utils/antd-app'
 
 export function DatabaseBackupView() {
   const queryClient = useQueryClient()
@@ -27,6 +29,7 @@ export function DatabaseBackupView() {
   const canExport = permissionStore.can('database', 'export')
   const canImport = permissionStore.can('database', 'update')
   const isCurrentUserTotpDisabled = authStore.user?.totpEnabled === false
+  const isPageVisible = usePageVisibility()
 
   const [exportLoading, setExportLoading] = useState(false)
   const [importLoading, setImportLoading] = useState(false)
@@ -48,17 +51,20 @@ export function DatabaseBackupView() {
   const { data: exportTasks = [], isLoading: taskLoading } = useQuery({
     queryKey: ['database-export-tasks'],
     queryFn: listDatabaseExportTasks,
-    enabled: canExport,
+    enabled: canExport && isPageVisible,
   })
 
   const scheduleTaskPolling = useCallback(() => {
     if (taskPollingRef.current) clearTimeout(taskPollingRef.current)
-    if (exportTasks.some((task) => isDatabaseTaskRunning(task.status))) {
+    if (
+      isPageVisible &&
+      exportTasks.some((task) => isDatabaseTaskRunning(task.status))
+    ) {
       taskPollingRef.current = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['database-export-tasks'] })
       }, 3000)
     }
-  }, [exportTasks, queryClient])
+  }, [exportTasks, isPageVisible, queryClient])
 
   useEffect(() => {
     scheduleTaskPolling()
@@ -211,36 +217,42 @@ export function DatabaseBackupView() {
         />
       )}
 
-      <DatabaseImportBackupModal
-        open={importModalOpen}
-        loading={importLoading}
-        totpDisabled={isCurrentUserTotpDisabled}
-        form={importForm}
-        selectedFile={pendingImportFile}
-        onSelectFile={setPendingImportFile}
-        onSubmit={submitImportRequest}
-        onCancel={() => {
-          if (!importLoading) {
-            setImportModalOpen(false)
-            importForm.resetFields()
-            setPendingImportFile(null)
-          }
-        }}
-      />
+      {importModalOpen ? (
+        <DatabaseImportBackupModal
+          open={importModalOpen}
+          loading={importLoading}
+          totpDisabled={isCurrentUserTotpDisabled}
+          form={importForm}
+          selectedFile={pendingImportFile}
+          onSelectFile={setPendingImportFile}
+          onSubmit={submitImportRequest}
+          onCancel={() => {
+            if (!importLoading) {
+              setImportModalOpen(false)
+              importForm.resetFields()
+              setPendingImportFile(null)
+            }
+          }}
+        />
+      ) : null}
 
-      <TwoFactorConfirmModal
-        open={totpModalOpen}
-        onConfirm={handleTotpSubmit}
-        onCancel={() => {
-          if (!exportLoading && !importLoading) {
-            setTotpModalOpen(false)
-            setPendingAction(null)
+      {totpModalOpen ? (
+        <TwoFactorConfirmModal
+          open={totpModalOpen}
+          onConfirm={handleTotpSubmit}
+          onCancel={() => {
+            if (!exportLoading && !importLoading) {
+              setTotpModalOpen(false)
+              setPendingAction(null)
+            }
+          }}
+          title={
+            pendingAction === 'import'
+              ? '导入数据库备份'
+              : '提交数据库导出任务'
           }
-        }}
-        title={
-          pendingAction === 'import' ? '导入数据库备份' : '提交数据库导出任务'
-        }
-      />
+        />
+      ) : null}
     </div>
   )
 }

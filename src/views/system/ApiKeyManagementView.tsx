@@ -1,11 +1,20 @@
-import { Alert } from 'antd'
+import Alert from 'antd/es/alert'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { ApiKeyCreateModal } from '@/views/system/ApiKeyCreateModal'
 import { ApiKeyListCard } from '@/views/system/ApiKeyListCard'
 import { ApiKeyUsageAlert } from '@/views/system/ApiKeyUsageAlert'
 import { useApiKeyManagementState } from '@/views/system/useApiKeyManagementState'
 
-export function ApiKeyManagementView() {
+interface ApiKeyManagementViewProps {
+  active?: boolean
+}
+
+export function ApiKeyManagementView({
+  active = true,
+}: ApiKeyManagementViewProps) {
+  const isPageVisible = usePageVisibility()
+  const queryEnabled = active && isPageVisible
   const {
     actionOptions,
     canCreate,
@@ -40,7 +49,7 @@ export function ApiKeyManagementView() {
     totalElements,
     usageScopeFilter,
     userOptions,
-  } = useApiKeyManagementState()
+  } = useApiKeyManagementState(queryEnabled)
 
   return (
     <div className="page-stack">
@@ -97,30 +106,34 @@ export function ApiKeyManagementView() {
         }}
       />
 
-      <ApiKeyCreateModal
-        open={generateModalOpen}
-        generatedKey={generatedKey}
-        generating={false}
-        totpDisabled={isCurrentUserTotpDisabled}
-        form={form}
-        userOptions={userOptions}
-        resourceOptions={resourceOptions}
-        actionOptions={actionOptions}
-        onGenerate={() => {
-          void handleGenerate()
-        }}
-        onClose={() => {
-          setGenerateModalOpen(false)
-          setGeneratedKey(null)
-        }}
-      />
+      {generateModalOpen ? (
+        <ApiKeyCreateModal
+          open={generateModalOpen}
+          generatedKey={generatedKey}
+          generating={false}
+          totpDisabled={isCurrentUserTotpDisabled}
+          form={form}
+          userOptions={userOptions}
+          resourceOptions={resourceOptions}
+          actionOptions={actionOptions}
+          onGenerate={() => {
+            void handleGenerate()
+          }}
+          onClose={() => {
+            setGenerateModalOpen(false)
+            setGeneratedKey(null)
+          }}
+        />
+      ) : null}
 
-      <TwoFactorConfirmModal
-        open={totpModalOpen}
-        onConfirm={handleGenerateWithTotp}
-        onCancel={() => setTotpModalOpen(false)}
-        title="验证 2FA 后生成 API Key"
-      />
+      {totpModalOpen ? (
+        <TwoFactorConfirmModal
+          open={totpModalOpen}
+          onConfirm={handleGenerateWithTotp}
+          onCancel={() => setTotpModalOpen(false)}
+          title="验证 2FA 后生成 API Key"
+        />
+      ) : null}
     </div>
   )
 }

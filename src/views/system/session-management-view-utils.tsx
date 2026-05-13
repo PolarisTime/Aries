@@ -1,5 +1,6 @@
 import { StopOutlined } from '@ant-design/icons'
-import { Button, Tag } from 'antd'
+import Button from 'antd/es/button'
+import Tag from 'antd/es/tag'
 import type { ColumnsType } from 'antd/es/table'
 import type { RefreshTokenRecord } from '@/api/session-management'
 

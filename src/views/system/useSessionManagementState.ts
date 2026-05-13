@@ -1,5 +1,4 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Modal, message } from 'antd'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   getRefreshTokenSummary,
@@ -10,9 +9,10 @@ import {
 } from '@/api/session-management'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
+import { message, modal } from '@/utils/antd-app'
 import { buildSessionTableColumns } from '@/views/system/session-management-view-utils'
 
-export function useSessionManagementState() {
+export function useSessionManagementState(enabled = true) {
   const queryClient = useQueryClient()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
@@ -36,11 +36,13 @@ export function useSessionManagementState() {
         size: pageSize,
         keyword: keyword.trim() || undefined,
       }),
+    enabled,
   })
 
   const { data: summary } = useQuery({
     queryKey: ['refresh-tokens-summary'],
     queryFn: getRefreshTokenSummary,
+    enabled,
   })
 
   const tokens = tokensData?.records || []
@@ -61,9 +63,13 @@ export function useSessionManagementState() {
   }, [])
 
   useEffect(() => {
+    if (!enabled) {
+      stopAutoRefresh()
+      return
+    }
     startAutoRefresh()
     return stopAutoRefresh
-  }, [startAutoRefresh, stopAutoRefresh])
+  }, [enabled, startAutoRefresh, stopAutoRefresh])
 
   const handleRevoke = useCallback(
     (record: RefreshTokenRecord) => {
@@ -72,7 +78,7 @@ export function useSessionManagementState() {
         return
       }
 
-      Modal.confirm({
+      modal.confirm({
         title: '禁用令牌',
         content: '确定禁用该会话令牌吗？禁用后对应设备需要重新登录。',
         okText: '确认禁用',
@@ -98,7 +104,7 @@ export function useSessionManagementState() {
       return
     }
 
-    Modal.confirm({
+    modal.confirm({
       title: '清除全部令牌',
       content: '确定禁用所有有效的会话令牌吗？所有设备将需要重新登录。',
       okText: '确认清除',

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Form, Modal, message } from 'antd'
+import Form from 'antd/es/form'
 import { useCallback, useState } from 'react'
 import { createRole, type RoleRecord, updateRole } from '@/api/role-actions'
 import {
@@ -8,6 +8,7 @@ import {
   roleTypeValues,
 } from '@/constants/module-options'
 import { useRequestError } from '@/hooks/useRequestError'
+import { message, modal } from '@/utils/antd-app'
 
 interface UseRoleEditorOptions {
   canCreateRole: boolean
@@ -80,7 +81,7 @@ export function useRoleEditor({
 
       if (result.mode === 'create' && result.data) {
         message.success('角色创建成功')
-        Modal.confirm({
+        modal.confirm({
           title: '角色创建成功',
           content: '角色已创建完成，是否立即为此角色配置权限？',
           okText: '去配置',

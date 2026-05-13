@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Form, Modal, message } from 'antd'
+import Form from 'antd/es/form'
 import { useCallback, useState } from 'react'
 import {
   deletePrintTemplate,
@@ -14,6 +14,7 @@ import { PrintTemplateEditorModal } from '@/views/system/PrintTemplateEditorModa
 import { PrintTemplatePreviewModal } from '@/views/system/PrintTemplatePreviewModal'
 import { PrintTemplateTableCard } from '@/views/system/PrintTemplateTableCard'
 import { buildPrintTemplateCopyName } from '@/views/system/print-template-view-utils'
+import { message, modal } from '@/utils/antd-app'
 
 export function PrintTemplateView() {
   const queryClient = useQueryClient()
@@ -130,7 +131,7 @@ export function PrintTemplateView() {
         message.warning('暂无删除权限')
         return
       }
-      Modal.confirm({
+      modal.confirm({
         title: '删除打印模板',
         content: `确定删除模板「${record.templateName}」吗？`,
         okText: '确认删除',
@@ -181,24 +182,28 @@ export function PrintTemplateView() {
         onActiveChange={setActiveTemplateId}
       />
 
-      <PrintTemplateEditorModal
-        open={editorOpen}
-        editing={Boolean(activeTemplateId)}
-        form={form}
-        templateHtml={templateHtml}
-        saving={saveMutation.isPending}
-        onTemplateHtmlChange={setTemplateHtml}
-        onSave={() => {
-          void handleSave()
-        }}
-        onClose={() => setEditorOpen(false)}
-      />
+      {editorOpen ? (
+        <PrintTemplateEditorModal
+          open={editorOpen}
+          editing={Boolean(activeTemplateId)}
+          form={form}
+          templateHtml={templateHtml}
+          saving={saveMutation.isPending}
+          onTemplateHtmlChange={setTemplateHtml}
+          onSave={() => {
+            void handleSave()
+          }}
+          onClose={() => setEditorOpen(false)}
+        />
+      ) : null}
 
-      <PrintTemplatePreviewModal
-        open={previewOpen}
-        template={previewTemplate}
-        onClose={() => setPreviewOpen(false)}
-      />
+      {previewOpen ? (
+        <PrintTemplatePreviewModal
+          open={previewOpen}
+          template={previewTemplate}
+          onClose={() => setPreviewOpen(false)}
+        />
+      ) : null}
     </div>
   )
 }

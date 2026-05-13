@@ -1,6 +1,10 @@
 import { DownloadOutlined, ReloadOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
-import { Button, Card, Table, Tag, Typography } from 'antd'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Table from 'antd/es/table'
+import Tag from 'antd/es/tag'
+import Typography from 'antd/es/typography'
 import type { DatabaseExportTask } from '@/api/database-admin'
 import {
   formatDatabaseDateTime,
