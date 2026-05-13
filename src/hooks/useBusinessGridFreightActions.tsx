@@ -1,4 +1,5 @@
-import { Flex, Typography } from 'antd'
+import Flex from 'antd/es/flex'
+import Typography from 'antd/es/typography'
 import { useCallback } from 'react'
 import { listAllBusinessModuleRows } from '@/api/business'
 import { message, modal } from '@/utils/antd-app'

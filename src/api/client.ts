@@ -6,7 +6,16 @@ import { ERROR_CODE } from '@/constants/error-codes'
 import { setupAuthInterceptors } from './auth/auth-interceptor'
 import { http } from './http'
 
-setupAuthInterceptors(http.instance)
+let authInterceptorsInitialized = false
+
+export function ensureApiClientSetup() {
+  if (authInterceptorsInitialized) {
+    return
+  }
+
+  setupAuthInterceptors(http.instance)
+  authInterceptorsInitialized = true
+}
 
 export function isSuccessCode(code: unknown) {
   return Number(code) === ERROR_CODE.SUCCESS

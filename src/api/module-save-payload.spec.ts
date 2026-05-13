@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { serializeBusinessRecordForSave } from './module-save-payload'
 
 describe('module-save-payload', () => {
-  it('keeps receipt amount in save payload', () => {
-    const payload = serializeBusinessRecordForSave('receipt', {
+  it('keeps receipt amount in save payload', async () => {
+    const payload = await serializeBusinessRecordForSave('receipt', {
       id: '',
       receiptNo: 'RC20260001',
       customerName: '测试客户',
@@ -31,8 +31,8 @@ describe('module-save-payload', () => {
     })
   })
 
-  it('keeps payment amount in save payload', () => {
-    const payload = serializeBusinessRecordForSave('payment', {
+  it('keeps payment amount in save payload', async () => {
+    const payload = await serializeBusinessRecordForSave('payment', {
       id: '',
       paymentNo: 'FK20260001',
       businessType: '供应商',

@@ -24,29 +24,69 @@ function resolveUpdater<T>(updater: Updater<T>, current: T) {
     : updater
 }
 
-export function useColumnSettingsSupport(pageKey: string) {
-  const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [loaded, setLoaded] = useState(false)
+function buildDefaultSettings(
+  defaultHiddenKeys?: string[],
+): ListColumnSettings | null {
+  if (!defaultHiddenKeys?.length) {
+    return null
+  }
+  return {
+    orderedKeys: [],
+    hiddenKeys: [...defaultHiddenKeys],
+  }
+}
+
+function toColumnOrderState(settings: ListColumnSettings | null) {
+  return settings?.orderedKeys || []
+}
+
+function toVisibilityState(settings: ListColumnSettings | null) {
+  const nextVisibility: VisibilityState = {}
+  for (const key of settings?.hiddenKeys || []) {
+    nextVisibility[key] = false
+  }
+  return nextVisibility
+}
+
+function resolveInitialSettings(
+  pageKey: string,
+  userKey: string,
+  defaultSettings: ListColumnSettings | null,
+) {
+  return getListColumnSettings(pageKey, userKey) || defaultSettings
+}
+
+export function useColumnSettingsSupport(
+  pageKey: string,
+  defaultHiddenKeys?: string[],
+) {
   const user = useAuthStore((state) => state.user)
   const userKey = String(user?.id || user?.loginName || 'anonymous').trim()
+  const initialSettings = resolveInitialSettings(
+    pageKey,
+    userKey,
+    buildDefaultSettings(defaultHiddenKeys),
+  )
+  const [columnOrder, setColumnOrder] = useState<ColumnOrderState>(() =>
+    toColumnOrderState(initialSettings),
+  )
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+    () => toVisibilityState(initialSettings),
+  )
+  const [loaded, setLoaded] = useState(false)
   const remotePagesRef = useRef<UserColumnSettingsPayload['pages']>({})
   const syncWarningShownRef = useRef(false)
+  const defaultSettingsRef = useRef<ListColumnSettings | null>(
+    buildDefaultSettings(defaultHiddenKeys),
+  )
+
+  useEffect(() => {
+    defaultSettingsRef.current = buildDefaultSettings(defaultHiddenKeys)
+  }, [defaultHiddenKeys])
 
   const applySettings = useCallback((settings: ListColumnSettings | null) => {
-    if (!settings) {
-      setColumnOrder([])
-      setColumnVisibility({})
-      return
-    }
-
-    setColumnOrder(settings.orderedKeys || [])
-
-    const nextVisibility: VisibilityState = {}
-    for (const key of settings.hiddenKeys || []) {
-      nextVisibility[key] = false
-    }
-    setColumnVisibility(nextVisibility)
+    setColumnOrder(toColumnOrderState(settings))
+    setColumnVisibility(toVisibilityState(settings))
   }, [])
 
   useEffect(() => {
@@ -56,8 +96,9 @@ export function useColumnSettingsSupport(pageKey: string) {
       setLoaded(false)
 
       const localSettings = getListColumnSettings(pageKey, userKey)
-      if (localSettings && !cancelled) {
-        applySettings(localSettings)
+      const fallbackSettings = localSettings || defaultSettingsRef.current
+      if (!cancelled) {
+        applySettings(fallbackSettings)
       }
 
       if (!userKey || userKey === 'anonymous') {
@@ -65,6 +106,10 @@ export function useColumnSettingsSupport(pageKey: string) {
           setLoaded(true)
         }
         return
+      }
+
+      if (localSettings && !cancelled) {
+        applySettings(localSettings)
       }
 
       try {
@@ -75,12 +120,12 @@ export function useColumnSettingsSupport(pageKey: string) {
           setListColumnSettings(pageKey, remoteSettings, userKey)
         }
         if (!cancelled) {
-          applySettings(remoteSettings || localSettings)
+          applySettings(remoteSettings || fallbackSettings)
         }
       } catch (error) {
         logger.warn('Failed to load roaming column settings', error)
         if (!cancelled) {
-          applySettings(localSettings)
+          applySettings(fallbackSettings)
         }
       } finally {
         if (!cancelled) {

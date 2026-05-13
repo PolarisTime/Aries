@@ -13,6 +13,7 @@ export const DISPLAY_SWITCH_CODES = {
   weightOnlyPurchaseInbounds: 'UI_WEIGHT_ONLY_PURCHASE_INBOUNDS',
   weightOnlySalesOutbounds: 'UI_WEIGHT_ONLY_SALES_OUTBOUNDS',
   showSnowflakeId: 'UI_SHOW_SNOWFLAKE_ID',
+  useSnowflakeBusinessNo: 'SYS_USE_SNOWFLAKE_ID_AS_BUSINESS_NO',
 } as const
 
 export function listSystemSettings() {
@@ -30,6 +31,18 @@ export function updateSystemUploadRule(record: UploadRulePayload) {
 export async function listDisplaySwitches() {
   const rows = await listSystemSettings()
   return rows.filter(isToggleSetting)
+}
+
+export async function listClientSettings() {
+  const { assertApiSuccess, http } = await import('@/api/client')
+  const response = assertApiSuccess(
+    await http.get<{
+      code?: number
+      message?: string
+      data?: ModuleRecord[]
+    }>('/general-setting/client-settings'),
+  )
+  return Array.isArray(response.data) ? response.data : []
 }
 
 export function isDisplaySwitchEnabled(

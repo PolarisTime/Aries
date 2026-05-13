@@ -3,7 +3,7 @@ import {
   getModuleConfig,
   type ModuleEndpointConfig,
 } from '@/api/module-contracts'
-import { businessPageConfigs } from '@/config/business-pages'
+import { getModulePageSchema } from '@/config/module-page-schema'
 import type { ModuleFilterDefinition, ModuleRecord } from '@/types/module-page'
 import type { ListQueryOptions } from '@/utils/list'
 import { FULL_SCAN_PAGE_SIZE } from './business-listing-constants'
@@ -176,13 +176,13 @@ export function applyClientFilters(
   rows: ModuleRecord[],
   search: Record<string, unknown>,
 ) {
-  const pageConfig = businessPageConfigs[moduleKey]
-  if (!pageConfig) {
+  const filters = getModulePageSchema(moduleKey)?.filters
+  if (!filters?.length) {
     return rows
   }
 
   return rows.filter((record) =>
-    pageConfig.filters.every((filter) =>
+    filters.every((filter) =>
       applyFilterDefinition(record, filter, search[filter.key]),
     ),
   )

@@ -1,8 +1,7 @@
-import { http } from '@/api/http'
+// --- Catalog types (synced with backend CatalogEntryResponse / CatalogActionResponse) ---
+import { http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { logger } from '@/utils/logger'
-
-// --- Catalog types (synced with backend CatalogEntryResponse / CatalogActionResponse) ---
 
 export interface CatalogActionResponse {
   code: string

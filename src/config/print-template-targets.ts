@@ -1,4 +1,4 @@
-import { businessPageConfigs } from '@/config/business-pages'
+import { modulePageMetaMap } from '@/config/module-page-meta'
 
 export interface PrintTemplateTargetOption {
   value: string
@@ -24,7 +24,7 @@ export const allowedPrintTemplateTargetKeys = [
 
 export const printTemplateTargetOptions: PrintTemplateTargetOption[] =
   allowedPrintTemplateTargetKeys
-    .map((key) => businessPageConfigs[key])
+    .map((key) => modulePageMetaMap[key])
     .filter((config) => Boolean(config))
     .map((config) => ({
       value: config.key,

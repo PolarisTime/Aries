@@ -6,4 +6,5 @@ export const STORAGE_KEYS = {
   authPersistence: 'aries-auth-persistence',
   personalSettings: 'aries-personal-settings',
   listColumnSettingsPrefix: 'aries-list-column-settings:',
+  businessListCachePrefix: 'aries-business-list-cache:',
 } as const
