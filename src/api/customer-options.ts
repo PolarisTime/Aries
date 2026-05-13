@@ -98,7 +98,7 @@ export function resolveSingleCustomerProjectName(
 
 function ensureCustomerOptionsLoaded() {
   if (cachedCustomers === null && !loadingCustomers && !fetchFailed) {
-    fetchCustomerOptions()
+    void fetchCustomerOptions()
   }
 }
 

@@ -16,24 +16,24 @@ export const authHttp = axios.create(defaultConfig)
 function createApiClient(instance: AxiosInstance) {
   return {
     get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
-      return instance.get(url, config) as Promise<T>
+      return instance.get(url, config)
     },
     post<T = unknown>(
       url: string,
       data?: unknown,
       config?: AxiosRequestConfig,
     ): Promise<T> {
-      return instance.post(url, data, config) as Promise<T>
+      return instance.post(url, data, config)
     },
     put<T = unknown>(
       url: string,
       data?: unknown,
       config?: AxiosRequestConfig,
     ): Promise<T> {
-      return instance.put(url, data, config) as Promise<T>
+      return instance.put(url, data, config)
     },
     delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
-      return instance.delete(url, config) as Promise<T>
+      return instance.delete(url, config)
     },
     get instance() {
       return instance

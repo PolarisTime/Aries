@@ -38,7 +38,7 @@ export async function refreshSession(): Promise<LoginResponseData> {
     ENDPOINTS.AUTH_REFRESH,
     {},
   )
-  return (response.data as ApiResponse<LoginResponseData>).data
+  return (response.data).data
 }
 
 export function pingAuth() {

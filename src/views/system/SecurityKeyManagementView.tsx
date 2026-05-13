@@ -45,7 +45,7 @@ export function SecurityKeyManagementView() {
         totpCode: code,
       })
       message.success(`${rotateType.toUpperCase()} 密钥已轮换`)
-      queryClient.invalidateQueries({ queryKey: ['security-key'] })
+      void queryClient.invalidateQueries({ queryKey: ['security-key'] })
     } catch (err) {
       message.error(err instanceof Error ? err.message : '轮换失败')
       throw err

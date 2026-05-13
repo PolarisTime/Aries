@@ -49,7 +49,7 @@ export function PrintTemplateView() {
     mutationFn: savePrintTemplate,
     onSuccess: () => {
       message.success('保存成功')
-      queryClient.invalidateQueries({ queryKey: ['print-template'] })
+      void queryClient.invalidateQueries({ queryKey: ['print-template'] })
       setEditorOpen(false)
     },
     onError: (error: Error) => showError(error, '保存失败'),
@@ -59,7 +59,7 @@ export function PrintTemplateView() {
     mutationFn: deletePrintTemplate,
     onSuccess: () => {
       message.success('删除成功')
-      queryClient.invalidateQueries({ queryKey: ['print-template'] })
+      void queryClient.invalidateQueries({ queryKey: ['print-template'] })
     },
     onError: (error: Error) => showError(error, '删除失败'),
   })

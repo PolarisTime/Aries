@@ -34,9 +34,7 @@ export function isSalesOrderLineLocked(statuses: string[]) {
 }
 
 export function isModuleLineItemsLocked(moduleKey: string, statuses: string[]) {
-  const lockedStatuses = getBehaviorValue(moduleKey, 'lineItemLockStatuses') as
-    | string[]
-    | undefined
+  const lockedStatuses = getBehaviorValue(moduleKey, 'lineItemLockStatuses')
   if (!lockedStatuses?.length) {
     return false
   }
@@ -70,7 +68,7 @@ export function applyModuleDefaultEditorDraft(
       typeof defaultDraftValues === 'function'
         ? defaultDraftValues()
         : defaultDraftValues
-    Object.assign(draft, resolvedDraftValues as Record<string, unknown>)
+    Object.assign(draft, resolvedDraftValues)
   }
 
   const defaultOperatorField = getBehaviorValue(
@@ -114,9 +112,7 @@ export function isEditorFieldDisabledForModule(
     return true
   }
 
-  const readonlyFields = getBehaviorValue(moduleKey, 'readonlyEditorFields') as
-    | string[]
-    | undefined
+  const readonlyFields = getBehaviorValue(moduleKey, 'readonlyEditorFields')
   if ((readonlyFields || []).includes(fieldKey)) {
     return true
   }
@@ -133,9 +129,7 @@ export function isEditorFieldDisabledForModule(
     getBehaviorValue(moduleKey, 'locksLineItemsWhenRecordLocked') &&
     lineItemsLocked
   ) {
-    const lockedFields = getBehaviorValue(moduleKey, 'editableLockedFields') as
-      | string[]
-      | undefined
+    const lockedFields = getBehaviorValue(moduleKey, 'editableLockedFields')
     return !(lockedFields || []).includes(fieldKey)
   }
 
@@ -174,7 +168,7 @@ export function isEditorItemColumnEditableForModule(
     const lockedItemColumns = getBehaviorValue(
       moduleKey,
       'editableLockedItemColumns',
-    ) as string[] | undefined
+    )
     return (lockedItemColumns || []).includes(columnKey)
   }
 

@@ -86,7 +86,7 @@ export function useBusinessQueries({
     if (!supportsSessionCache || !listQuery.data) {
       return
     }
-    save(listQuery.data as TableResponse<ModuleRecord>)
+    save(listQuery.data)
   }, [listQuery.data, save, supportsSessionCache])
 
   const records: ModuleRecord[] = listQuery.data?.data?.rows || EMPTY_RECORDS

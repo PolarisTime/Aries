@@ -111,7 +111,7 @@ export function UserAccountManagementView({
     mutationFn: deleteUserAccount,
     onSuccess: () => {
       message.success('删除成功')
-      queryClient.invalidateQueries({ queryKey: ['user-account'] })
+      void queryClient.invalidateQueries({ queryKey: ['user-account'] })
     },
     onError: (error: Error) => showError(error, '删除失败'),
   })

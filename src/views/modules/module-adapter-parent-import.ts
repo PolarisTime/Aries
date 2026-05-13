@@ -110,7 +110,7 @@ export function buildParentImportState(options: {
   } = options
 
   const parentNo = String(
-    parentRecord[parentImportConfig.parentDisplayFieldKey] || '',
+    String(parentRecord[parentImportConfig.parentDisplayFieldKey] || ''),
   )
   const hasImportedCurrentParent = currentParentNos.includes(parentNo)
   const mergedParentNos = hasImportedCurrentParent

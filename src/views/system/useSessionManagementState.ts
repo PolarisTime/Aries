@@ -24,8 +24,8 @@ export function useSessionManagementState(enabled = true) {
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const refreshSessionData = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['refresh-tokens'] })
-    queryClient.invalidateQueries({ queryKey: ['refresh-tokens-summary'] })
+    void queryClient.invalidateQueries({ queryKey: ['refresh-tokens'] })
+    void queryClient.invalidateQueries({ queryKey: ['refresh-tokens-summary'] })
   }, [queryClient])
 
   const { data: tokensData, isLoading } = useQuery({

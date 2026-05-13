@@ -111,7 +111,7 @@ export function AppLayout() {
       if (result.trackId) {
         query.set('trackId', result.trackId)
       }
-      navigate({ to: `/${result.moduleKey}?${query.toString()}` as '/' })
+      void navigate({ to: `/${result.moduleKey}?${query.toString()}` as '/' })
     },
     [navigate],
   )
@@ -155,7 +155,7 @@ export function AppLayout() {
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
     const targetPath = resolveMenuPath(String(key))
     if (targetPath) {
-      navigate({ to: targetPath as '/' })
+      void navigate({ to: targetPath as '/' })
     }
   }
 
@@ -169,7 +169,7 @@ export function AppLayout() {
       cancelText: '取消',
       onOk: async () => {
         await signOut()
-        navigate({ to: '/login' })
+        void navigate({ to: '/login' })
       },
     })
   }

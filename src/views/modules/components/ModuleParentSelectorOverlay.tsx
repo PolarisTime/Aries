@@ -324,7 +324,7 @@ export function ModuleParentSelectorOverlay({
     () =>
       selectedRowKeys
         .map((key) => selectedRecordMap[String(key)])
-        .filter(Boolean) as ModuleRecord[],
+        .filter(Boolean),
     [selectedRecordMap, selectedRowKeys],
   )
 

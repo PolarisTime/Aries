@@ -102,7 +102,7 @@ function decorateStatementLinkConfig(
         ...field,
         options: (form?: Record<string, unknown>) =>
           buildStatementLinkOptions(
-            moduleKey as 'receipt' | 'payment',
+            moduleKey,
             form,
             catalog,
           ),

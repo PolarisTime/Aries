@@ -37,7 +37,7 @@ export async function fetchCarrierOptions(): Promise<CarrierOption[]> {
 
 export function getCarrierOptions(): CarrierOption[] {
   if (cachedCarriers === null && !loadingCarriers && !fetchFailed) {
-    fetchCarrierOptions()
+    void fetchCarrierOptions()
   }
   return cachedCarriers || []
 }

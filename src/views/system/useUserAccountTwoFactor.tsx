@@ -37,7 +37,7 @@ export function useUserAccountTwoFactor() {
   )
 
   const refreshUsers = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['user-account'] })
+    void queryClient.invalidateQueries({ queryKey: ['user-account'] })
   }, [queryClient])
 
   const open2faModal = useCallback(

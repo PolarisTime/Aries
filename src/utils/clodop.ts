@@ -14,7 +14,7 @@ function appendScript(src: string, onDone: (success: boolean) => void) {
     `script[data-clodop-src="${src}"]`,
   )
   if (existing) {
-    if ((existing as HTMLScriptElement).dataset.loaded === 'true') {
+    if ((existing).dataset.loaded === 'true') {
       onDone(true)
       return
     }

@@ -19,7 +19,7 @@ function detectLocale(): string {
   return 'zh-CN'
 }
 
-i18n.use(initReactI18next).init({
+void i18n.use(initReactI18next).init({
   resources: {
     'zh-CN': { translation: zhCN },
     'en-US': { translation: enUS },

@@ -27,7 +27,7 @@ export function inferPrintTemplateAlign(column: ModuleColumnDefinition) {
 
 export function inferPrintTemplateRowValue(
   key: string,
-  type: ModuleColumnDefinition['type'] | ModuleDetailField['type'],
+  type: ModuleColumnDefinition['type']  ,
   index = 0,
 ) {
   const normalizedKey = key.toLowerCase()

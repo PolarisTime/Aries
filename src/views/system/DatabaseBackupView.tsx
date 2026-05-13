@@ -61,7 +61,7 @@ export function DatabaseBackupView() {
       exportTasks.some((task) => isDatabaseTaskRunning(task.status))
     ) {
       taskPollingRef.current = setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['database-export-tasks'] })
+        void queryClient.invalidateQueries({ queryKey: ['database-export-tasks'] })
       }, 3000)
     }
   }, [exportTasks, isPageVisible, queryClient])
@@ -82,7 +82,7 @@ export function DatabaseBackupView() {
         message.success(
           '一次性下载链接已生成并开始下载；如需再次下载，请重新生成',
         )
-        queryClient.invalidateQueries({ queryKey: ['database-export-tasks'] })
+        void queryClient.invalidateQueries({ queryKey: ['database-export-tasks'] })
       } catch (err) {
         showError(err, '生成下载链接失败')
       }
@@ -149,7 +149,7 @@ export function DatabaseBackupView() {
           setExportLoading(true)
           message.loading('正在提交数据库导出任务...', 0)
           await createDatabaseExportTask(totpCode)
-          queryClient.invalidateQueries({ queryKey: ['database-export-tasks'] })
+          void queryClient.invalidateQueries({ queryKey: ['database-export-tasks'] })
           message.destroy()
           message.success('数据库导出任务已提交，完成后可在下方下载')
         } else if (pendingImportFile) {

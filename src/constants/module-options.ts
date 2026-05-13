@@ -23,7 +23,7 @@ function ensureMaterialCategoriesLoaded() {
     return
   }
   categoryOptionsLoading = true
-  fetchMaterialCategories().then((data) => {
+  void fetchMaterialCategories().then((data) => {
     if (data.length > 0) {
       _categoryOptions = data
     }
@@ -70,7 +70,7 @@ function ensureMaterialGradesLoaded() {
     return
   }
   gradeOptionsLoading = true
-  fetchMaterialGrades().then((data) => {
+  void fetchMaterialGrades().then((data) => {
     if (data.length > 0) {
       _gradeOptions = data
     }

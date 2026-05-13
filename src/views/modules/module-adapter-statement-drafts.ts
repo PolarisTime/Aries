@@ -49,7 +49,7 @@ export function buildSupplierStatementDraftData({
   void payments
   void defaultFullPayment
 
-  const sortedInbounds = structuredClone(sourceInbounds) as ModuleRecord[]
+  const sortedInbounds = structuredClone(sourceInbounds)
   sortedInbounds.sort(
     (left, right) =>
       new Date(String(left.inboundDate || '')).getTime() -
@@ -104,7 +104,7 @@ export function buildCustomerStatementDraftData({
 }: CustomerStatementDraftOptions) {
   void defaultReceiptAmountZero
 
-  const sortedOrders = structuredClone(sourceOrders) as ModuleRecord[]
+  const sortedOrders = structuredClone(sourceOrders)
   sortedOrders.sort(
     (left, right) =>
       new Date(String(left.deliveryDate || left.orderDate || '')).getTime() -
@@ -163,7 +163,7 @@ export function buildFreightStatementDraftData({
   cloneLineItems,
   buildLineItemId,
 }: FreightStatementDraftOptions) {
-  const sortedBills = structuredClone(sourceBills) as ModuleRecord[]
+  const sortedBills = structuredClone(sourceBills)
   sortedBills.sort(
     (left, right) =>
       new Date(String(left.billTime || '')).getTime() -

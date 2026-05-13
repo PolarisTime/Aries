@@ -23,7 +23,7 @@ export function BusinessGridView() {
   const location = useLocation()
   const loaderConfig = useLoaderData({
     strict: false,
-  }) as ModulePageConfig | undefined
+  })
   const pageDef = useMemo(() => {
     return getPageDefinition(location.pathname)
   }, [location.pathname])

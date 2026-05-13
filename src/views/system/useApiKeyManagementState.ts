@@ -123,7 +123,7 @@ export function useApiKeyManagementState(enabled = true) {
   }, [actionOptions, form, generateModalOpen])
 
   const refreshApiKeys = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['api-keys'] })
+    void queryClient.invalidateQueries({ queryKey: ['api-keys'] })
   }, [queryClient])
 
   const revokeMutation = useMutation({

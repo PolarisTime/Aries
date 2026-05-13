@@ -91,7 +91,7 @@ export function AccessControlView() {
 
   const handleTabChange = useCallback(
     (key: string) => {
-      navigate({ to: `/access-control?tab=${key}` as '/' })
+      void navigate({ to: `/access-control?tab=${key}` as '/' })
     },
     [navigate],
   )

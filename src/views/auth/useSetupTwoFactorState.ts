@@ -66,7 +66,7 @@ export function useSetupTwoFactorState() {
         syncCurrentUserTotpState(true)
         message.success('二次验证已启用')
         setTimeout(() => {
-          navigate({ to: resolveRedirectTarget() as '/' })
+          void navigate({ to: resolveRedirectTarget() as '/' })
         }, 300)
       } catch (error) {
         message.error(error instanceof Error ? error.message : '启用2FA失败')

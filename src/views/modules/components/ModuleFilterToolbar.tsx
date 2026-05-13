@@ -58,7 +58,7 @@ export function ModuleFilterToolbar({
 
     return rawOptions.map((option: ModuleFilterOptionEntry) => {
       if ('options' in option) {
-        const group = option as ModuleFilterOptionGroup
+        const group = option
         return {
           label: group.label,
           options: group.options.map((item: ModuleFilterOption) => ({
@@ -68,7 +68,7 @@ export function ModuleFilterToolbar({
         }
       }
 
-      const entry = option as ModuleFilterOption
+      const entry = option
       return {
         label: entry.label,
         value: entry.value,

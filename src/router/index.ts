@@ -47,7 +47,7 @@ const setup2faRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!useAuthStore.getState().isAuthenticated)
-      throw redirect({ to: '/login' as '/' })
+      throw redirect({ to: '/login' })
   },
 })
 
@@ -59,7 +59,7 @@ const authenticatedLayoutRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!useAuthStore.getState().isAuthenticated)
-      throw redirect({ to: '/login' as '/' })
+      throw redirect({ to: '/login' })
   },
 })
 

@@ -97,13 +97,13 @@ export function schedulePreRefresh(delayMs?: number) {
 
   const delay = delayMs ?? computePreRefreshDelay()
   if (delay <= 0) {
-    executePreRefresh()
+    void executePreRefresh()
     return
   }
   preRefreshTimer = setTimeout(
     () => {
       preRefreshTimer = null
-      executePreRefresh()
+      void executePreRefresh()
     },
     Math.min(delay, 2_147_483_647),
   )
