@@ -3,6 +3,14 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 
+const INITIAL_HTML_ANTD_PRELOAD_ALLOWLIST = new Set([
+  'antd-button',
+  'antd-avatar',
+  'antd-dropdown',
+  'antd-menu',
+  'antd-tag',
+])
+
 function getNodeModulePackageName(id: string) {
   const normalizedId = id.replace(/\\/g, '/')
   const marker = '/node_modules/'
@@ -25,8 +33,9 @@ function toChunkName(prefix: string, value: string) {
   return `${prefix}-${value.replace(/^@/, '').replace(/[\\/]/g, '-')}`
 }
 
-function resolveAntdChunk(id: string) {
-  const match = id.match(/\/antd\/(?:es|lib)\/([^/]+)/)
+function resolveAntdChunkName(id: string) {
+  const normalizedId = id.replace(/\\/g, '/')
+  const match = normalizedId.match(/\/antd\/(?:es|lib)\/([^/]+)/)
   const segment = match?.[1]
 
   if (!segment || segment.endsWith('.js')) {
@@ -47,74 +56,25 @@ function resolveAntdChunk(id: string) {
   return toChunkName('antd', segment)
 }
 
-function resolveVendorChunk(id: string) {
-  const normalizedId = id.replace(/\\/g, '/')
-  const pkg = getNodeModulePackageName(id)
-  if (!pkg) {
-    return undefined
-  }
-
-  if (pkg === 'react' || pkg === 'react-dom' || pkg === 'scheduler') {
-    return 'react-core'
-  }
-
-  if (pkg.startsWith('@tanstack/')) {
-    return 'tanstack'
-  }
-
-  if (pkg === 'antd') {
-    return resolveAntdChunk(normalizedId)
-  }
-
-  if (pkg === '@ant-design/icons' || pkg === '@ant-design/icons-svg') {
-    return 'antd-icons'
-  }
-
+function shouldKeepInitialHtmlPreload(dep: string) {
   if (
-    pkg === '@ant-design/cssinjs' ||
-    pkg === '@ant-design/colors' ||
-    pkg === '@ant-design/fast-color' ||
-    pkg === '@ctrl/tinycolor'
+    dep.includes('/react-core-') ||
+    dep.includes('/tanstack-') ||
+    dep.includes('/i18n-') ||
+    dep.includes('/vendor-zustand-') ||
+    dep.includes('/storage-') ||
+    dep.includes('/preload-helper-') ||
+    dep.includes('/rolldown-runtime-')
   ) {
-    return 'antd-style'
+    return true
   }
 
-  if (pkg.startsWith('@rc-component/') || pkg.startsWith('rc-')) {
-    return 'antd-rc'
+  const antdChunk = dep.match(/\/(antd-[^/]+)-[^/]+\.js$/)?.[1]
+  if (antdChunk) {
+    return INITIAL_HTML_ANTD_PRELOAD_ALLOWLIST.has(antdChunk)
   }
 
-  if (pkg.startsWith('@ant-design/')) {
-    return toChunkName('antd', pkg)
-  }
-
-  if (pkg === 'i18next' || pkg === 'react-i18next') {
-    return 'i18n'
-  }
-
-  if (pkg === 'dayjs') {
-    return 'dayjs'
-  }
-
-  if (pkg === 'axios') {
-    return 'network'
-  }
-
-  if (pkg === 'zod') {
-    return 'validation'
-  }
-
-  if (pkg === 'xlsx') {
-    return 'spreadsheet'
-  }
-
-  if (
-    normalizedId.includes('/src/views/modules/') ||
-    normalizedId.includes('/src/views/dashboard/')
-  ) {
-    return 'business'
-  }
-
-  return toChunkName('vendor', pkg)
+  return false
 }
 
 export default defineConfig(({ mode }) => {
@@ -141,9 +101,125 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       chunkSizeWarningLimit: 900,
-      rollupOptions: {
+      modulePreload: {
+        resolveDependencies(_filename, deps, context) {
+          if (context.hostType !== 'html') {
+            return deps
+          }
+
+          return deps.filter(shouldKeepInitialHtmlPreload)
+        },
+      },
+      rolldownOptions: {
         output: {
-          manualChunks: resolveVendorChunk,
+          codeSplitting: {
+            minSize: 20_000,
+            groups: [
+              {
+                name: 'react-core',
+                test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+                priority: 100,
+              },
+              {
+                name: 'tanstack',
+                test: /node_modules[\\/]@tanstack[\\/]/,
+                priority: 90,
+              },
+              {
+                name: 'i18n',
+                test: /node_modules[\\/](i18next|react-i18next)[\\/]/,
+                priority: 80,
+              },
+              {
+                name: 'dayjs',
+                test: /node_modules[\\/]dayjs[\\/]/,
+                priority: 70,
+              },
+              {
+                name: 'network',
+                test: /node_modules[\\/]axios[\\/]/,
+                priority: 60,
+              },
+              {
+                name: 'validation',
+                test: /node_modules[\\/]zod[\\/]/,
+                priority: 60,
+              },
+              {
+                name: 'spreadsheet',
+                test: /node_modules[\\/]xlsx[\\/]/,
+                priority: 60,
+              },
+              {
+                name: 'vendor-zustand',
+                test: /node_modules[\\/]zustand[\\/]/,
+                priority: 50,
+              },
+              {
+                name: (moduleId) => {
+                  const pkg = getNodeModulePackageName(moduleId)
+                  if (
+                    pkg === '@ant-design/icons' ||
+                    pkg === '@ant-design/icons-svg'
+                  ) {
+                    return 'antd-icons'
+                  }
+
+                  if (
+                    pkg === '@ant-design/cssinjs' ||
+                    pkg === '@ant-design/colors' ||
+                    pkg === '@ant-design/fast-color' ||
+                    pkg === '@ctrl/tinycolor'
+                  ) {
+                    return 'antd-style'
+                  }
+
+                  if (
+                    pkg?.startsWith('@rc-component/') ||
+                    pkg?.startsWith('rc-')
+                  ) {
+                    return 'antd-rc'
+                  }
+
+                  if (pkg === 'antd') {
+                    return resolveAntdChunkName(moduleId)
+                  }
+
+                  if (pkg?.startsWith('@ant-design/')) {
+                    return toChunkName('antd', pkg)
+                  }
+
+                  return null
+                },
+                minSize: 8_000,
+                priority: 40,
+              },
+              {
+                name: 'dashboard-flow',
+                test: /src[\\/]views[\\/]dashboard[\\/](DashboardFlowCard|dashboard-flow-utils)\.tsx$/,
+                minSize: 4_000,
+                priority: 18,
+              },
+              {
+                name: 'dashboard',
+                test: /src[\\/]views[\\/]dashboard[\\/]/,
+                minSize: 12_000,
+                priority: 15,
+              },
+              {
+                name: 'business-dnd',
+                test: /src[\\/]views[\\/]modules[\\/]components[\\/](BusinessGridSortableTable|DraggableColumnHeader)\.tsx$|node_modules[\\/]@dnd-kit[\\/]/,
+                minSize: 4_000,
+                priority: 14,
+              },
+              {
+                name: 'business',
+                test: /src[\\/]views[\\/]modules[\\/]/,
+                minSize: 30_000,
+                priority: 10,
+              },
+            ],
+          },
         },
       },
     },
