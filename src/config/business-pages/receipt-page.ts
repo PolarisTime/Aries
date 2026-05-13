@@ -50,6 +50,7 @@ export const receiptsPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
+  defaultHiddenColumnKeys: ['projectName', 'payType'],
   detailFields: [
     { label: '收款单号', key: 'receiptNo', row: 1 },
     { label: '客户', key: 'customerName', row: 1 },

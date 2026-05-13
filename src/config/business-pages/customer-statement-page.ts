@@ -70,6 +70,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
+  defaultHiddenColumnKeys: ['projectName', 'receiptAmount'],
   detailFields: [
     { label: '对账单号', key: 'statementNo' },
     { label: '客户', key: 'customerName' },

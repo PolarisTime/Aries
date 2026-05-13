@@ -15,6 +15,12 @@ import {
   transformFreightItems,
 } from './shared'
 
+function getNormalizedUniqueValues(values: unknown[]) {
+  return Array.from(
+    new Set(values.map((value) => String(value || '').trim()).filter(Boolean)),
+  )
+}
+
 export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
   'freight-bill': {
     key: 'freight-bill',
@@ -79,6 +85,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         type: 'amount',
       },
     ],
+    defaultHiddenColumnKeys: ['vehiclePlate', 'unitPrice'],
     detailFields: [
       { label: '物流单号', key: 'billNo' },
       { label: '关联出库单', key: 'outboundNo' },
@@ -150,10 +157,33 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       parentFieldKey: 'outboundNo',
       parentDisplayFieldKey: 'outboundNo',
       buttonText: '导入上级销售出库单',
+      enforceUniqueRelation: true,
+      allowMultipleSelection: true,
+      validateBeforeOpen: (currentRecord) =>
+        String(currentRecord.carrierName || '').trim()
+          ? null
+          : '请先选择物流商，再导入销售出库单',
       mapParentToDraft: (parentRecord) => ({
         customerName: parentRecord.customerName || '',
         projectName: parentRecord.projectName || '',
       }),
+      validateParentImport: ({ currentRecord, currentItems, parentRecord }) => {
+        const existingCustomerNames = getNormalizedUniqueValues([
+          currentRecord.customerName,
+          ...currentItems.map((item) => item.customerName),
+        ])
+        const nextCustomerName = String(parentRecord.customerName || '').trim()
+
+        if (
+          existingCustomerNames.length &&
+          nextCustomerName &&
+          !existingCustomerNames.includes(nextCustomerName)
+        ) {
+          return '仅支持同一客户名称的销售出库单合并生成物流单'
+        }
+
+        return null
+      },
       transformItems: transformFreightItems,
     },
     itemColumns: compactFreightItemColumns,

@@ -62,6 +62,7 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
+  defaultHiddenColumnKeys: ['sourceSalesOrderNos', 'projectName', 'taxAmount'],
   detailFields: [
     { label: '开票单号', key: 'issueNo' },
     { label: '关联销售订单', key: 'sourceSalesOrderNos' },

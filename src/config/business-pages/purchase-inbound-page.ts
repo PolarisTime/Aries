@@ -74,6 +74,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     },
     { title: '备注', dataIndex: 'remark', width: 180 },
   ],
+  defaultHiddenColumnKeys: ['remark'],
   detailFields: [
     { label: '入库单号', key: 'inboundNo', row: 1 },
     { label: '关联订单', key: 'purchaseOrderNo', row: 1 },
