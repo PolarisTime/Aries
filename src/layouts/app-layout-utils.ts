@@ -1,28 +1,19 @@
-import type { ThemeConfig } from 'antd'
 import type { CSSProperties } from 'react'
-import { buildAntdTheme } from '@/styles/antd-theme'
 import { appTitle } from '@/utils/env'
 
 interface BuildAppLayoutStylesOptions {
   appliedFontSize: number
   collapsed: boolean
-  companyName: string
-  currentUserName: string
-  currentUserLoginName: string
   isTopNavigationLayout: boolean
-  clockText: string
 }
 
 export interface AppLayoutStyles {
-  antdTheme: ThemeConfig
   fixedWidthStyle: CSSProperties
   headerClassName: string
   mainStyle: CSSProperties | undefined
   rootClassName: string
   shellFontStyle: CSSProperties
-  siderWidth: number
   topBrandMark: string
-  topBrandName: string
 }
 
 export interface AppLayoutUserInfo {
@@ -72,8 +63,7 @@ export function buildAppLayoutStyles(
     ? { width: '100%' }
     : { width: `calc(100% - ${siderWidth}px)` }
   const shellFontStyle = { fontSize: `${options.appliedFontSize}px` }
-  const topBrandName = options.companyName || appTitle
-  const topBrandMark = topBrandName.trim().charAt(0).toUpperCase() || 'L'
+  const topBrandMark = appTitle.trim().charAt(0).toUpperCase() || 'L'
 
   return {
     rootClassName,
@@ -81,14 +71,6 @@ export function buildAppLayoutStyles(
     mainStyle,
     fixedWidthStyle,
     shellFontStyle,
-    siderWidth,
-    topBrandName,
     topBrandMark,
-    antdTheme: {
-      ...buildAntdTheme({
-        borderRadius: 0,
-        fontSize: options.appliedFontSize,
-      }),
-    },
   }
 }

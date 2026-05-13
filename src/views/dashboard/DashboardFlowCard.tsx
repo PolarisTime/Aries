@@ -1,13 +1,16 @@
 import type { NavigateFn } from '@tanstack/react-router'
-import { Card } from 'antd'
-import type { WorkflowSection } from '@/views/dashboard/dashboard-view-types'
+import Card from 'antd/es/card'
+import type { DashboardSummary } from '@/api/dashboard'
+import { buildWorkflowSections } from '@/views/dashboard/dashboard-flow-utils'
 
 interface Props {
   navigate: NavigateFn
-  workflowSections: WorkflowSection[]
+  summary?: DashboardSummary
 }
 
-export function DashboardFlowCard({ navigate, workflowSections }: Props) {
+export function DashboardFlowCard({ navigate, summary }: Props) {
+  const workflowSections = buildWorkflowSections(summary)
+
   return (
     <Card title="业务流程总览" className="dashboard-flow-card">
       <div className="dashboard-flow-grid">

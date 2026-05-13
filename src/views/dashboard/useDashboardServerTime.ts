@@ -1,8 +1,10 @@
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 
 export function useDashboardServerTime(serverTime?: string | null) {
   const [animatedServerTime, setAnimatedServerTime] = useState('—')
+  const isPageVisible = usePageVisibility()
 
   useEffect(() => {
     if (!serverTime) {
@@ -25,9 +27,12 @@ export function useDashboardServerTime(serverTime?: string | null) {
     }
 
     update()
+    if (!isPageVisible) {
+      return
+    }
     const timer = window.setInterval(update, 1000)
     return () => window.clearInterval(timer)
-  }, [serverTime])
+  }, [isPageVisible, serverTime])
 
   return animatedServerTime
 }

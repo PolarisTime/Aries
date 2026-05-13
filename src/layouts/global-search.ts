@@ -1,4 +1,5 @@
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type { ModuleRecord } from '@/types/module-page'
+import type { ModulePageMeta } from '@/config/module-page-meta'
 
 export interface GlobalSearchResult {
   value: string
@@ -20,7 +21,7 @@ interface ModuleSearchResponse {
 interface AccessibleGlobalSearchOptions {
   keyword: string
   moduleKeys: string[]
-  pageConfigs: Record<string, ModulePageConfig>
+  pageConfigs: Record<string, ModulePageMeta>
   canAccessModule: (moduleKey: string) => boolean
   searchModule: (
     moduleKey: string,
@@ -53,7 +54,7 @@ function isLikelyTrackId(value: string) {
 
 function buildGlobalSearchResult(
   moduleKey: string,
-  config: ModulePageConfig,
+  config: ModulePageMeta,
   record: ModuleRecord,
   keyword: string,
   buildSummary: (record: ModuleRecord) => string,

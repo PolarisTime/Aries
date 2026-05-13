@@ -1,55 +1,60 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { Alert, Spin } from 'antd'
-import { useMemo } from 'react'
+import { lazy, Suspense, useMemo } from 'react'
+import Alert from 'antd/es/alert'
 import { getDashboardSummary } from '@/api/dashboard'
-import { DashboardFlowCard } from '@/views/dashboard/DashboardFlowCard'
+import { useIdleActivation } from '@/hooks/useIdleActivation'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { DashboardInfoPanels } from '@/views/dashboard/DashboardInfoPanels'
-import {
-  buildDashboardInfoItems,
-  buildWorkflowSections,
-} from '@/views/dashboard/dashboard-view-utils'
+import { buildDashboardInfoItems } from '@/views/dashboard/dashboard-info-utils'
 import { useDashboardServerTime } from '@/views/dashboard/useDashboardServerTime'
+
+const LazyDashboardFlowCard = lazy(() =>
+  import('@/views/dashboard/DashboardFlowCard').then((m) => ({
+    default: m.DashboardFlowCard,
+  })),
+)
 
 export function DashboardView() {
   const navigate = useNavigate()
+  const isPageVisible = usePageVisibility()
+  const canMountFlowCard = useIdleActivation(Boolean(isPageVisible), 1400)
   const summaryQuery = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: getDashboardSummary,
-    refetchInterval: 120000,
+    refetchInterval: isPageVisible ? 120000 : false,
   })
 
   const summary = summaryQuery.data
   const animatedServerTime = useDashboardServerTime(summary?.serverTime)
-  const workflowSections = useMemo(
-    () => buildWorkflowSections(summary),
-    [summary],
-  )
   const infoItems = useMemo(() => buildDashboardInfoItems(summary), [summary])
 
   return (
     <div className="page-stack dashboard-root">
-      <Spin spinning={summaryQuery.isPending}>
-        {summaryQuery.isError ? (
-          <Alert
-            type="error"
-            showIcon
-            title="工作台数据加载失败，请刷新页面重试"
-            style={{ marginBottom: 16 }}
-          />
-        ) : null}
-
-        <DashboardInfoPanels
-          animatedServerTime={animatedServerTime}
-          infoItems={infoItems}
-          summary={summary}
+      {summaryQuery.isError ? (
+        <Alert
+          type="error"
+          showIcon
+          title="工作台数据加载失败，请刷新页面重试"
+          style={{ marginBottom: 16 }}
         />
+      ) : null}
 
-        <DashboardFlowCard
-          navigate={navigate}
-          workflowSections={workflowSections}
-        />
-      </Spin>
+      <DashboardInfoPanels
+        animatedServerTime={animatedServerTime}
+        infoItems={infoItems}
+        summary={summary}
+      />
+
+      {canMountFlowCard ? (
+        <Suspense
+          fallback={<div className="dashboard-flow-card-placeholder" aria-hidden />}
+        >
+          <LazyDashboardFlowCard navigate={navigate} summary={summary} />
+        </Suspense>
+      ) : (
+        <div className="dashboard-flow-card-placeholder" aria-hidden />
+      )}
     </div>
   )
 }

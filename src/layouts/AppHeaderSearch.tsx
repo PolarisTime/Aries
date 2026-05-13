@@ -1,6 +1,9 @@
 import { SearchOutlined } from '@ant-design/icons'
-import type { AutoCompleteProps } from 'antd'
-import { AutoComplete, Button, Input } from 'antd'
+import AutoComplete from 'antd/es/auto-complete'
+import Button from 'antd/es/button'
+import Input from 'antd/es/input'
+import type { AutoCompleteProps } from 'antd/es/auto-complete'
+import { buildFormControlId } from '@/utils/form-control-id'
 
 export interface AppHeaderSearchProps {
   className: string
@@ -31,6 +34,8 @@ export function AppHeaderSearch({
   onSelect,
   onSubmit,
 }: AppHeaderSearchProps) {
+  const searchInputId = buildFormControlId('header-search', 'keyword')
+
   return (
     <div className={className}>
       <div className="header-global-search-group">
@@ -48,6 +53,8 @@ export function AppHeaderSearch({
           onOpenChange={onOpenChange}
         >
           <Input
+            id={searchInputId}
+            name="header-search-keyword"
             aria-label="搜索单号、合同号、对账单号"
             className="header-global-search-input"
             placeholder="搜索单号、合同号、对账单号"

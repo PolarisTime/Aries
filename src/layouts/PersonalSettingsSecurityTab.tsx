@@ -1,18 +1,17 @@
-import {
-  Alert,
-  Button,
-  Descriptions,
-  Divider,
-  Flex,
-  Form,
-  type FormInstance,
-  Image,
-  Input,
-  Tag,
-  Typography,
-} from 'antd'
+import Alert from 'antd/es/alert'
+import Button from 'antd/es/button'
+import Descriptions from 'antd/es/descriptions'
+import Divider from 'antd/es/divider'
+import Flex from 'antd/es/flex'
+import Form from 'antd/es/form'
+import type { FormInstance } from 'antd'
+import Image from 'antd/es/image'
+import Input from 'antd/es/input'
+import Tag from 'antd/es/tag'
+import Typography from 'antd/es/typography'
 import type { LoginUser } from '@/types/auth'
 import { toDataImageUrl } from '@/utils/data-url'
+import { buildFormControlId } from '@/utils/form-control-id'
 
 interface PasswordFormValues {
   oldPassword: string
@@ -46,6 +45,8 @@ export function PersonalSettingsSecurityTab({
   onSetTotpCode,
   onEnableTotp,
 }: Props) {
+  const totpInputId = buildFormControlId('personal-settings', 'totp-code')
+
   return (
     <Flex vertical gap={16}>
       <Alert
@@ -88,6 +89,9 @@ export function PersonalSettingsSecurityTab({
               <Typography.Text code>{totpSetup.secret}</Typography.Text>
               <Flex align="center" gap={8} wrap="wrap">
                 <Input
+                  id={totpInputId}
+                  name="personal-settings-totp-code"
+                  aria-label="输入 6 位验证码启用两步验证"
                   size="small"
                   placeholder="输入 6 位验证码"
                   maxLength={6}

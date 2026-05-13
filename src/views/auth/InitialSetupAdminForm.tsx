@@ -3,7 +3,12 @@ import {
   SafetyCertificateOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import { Button, Form, Image, Input, Space, Typography } from 'antd'
+import Button from 'antd/es/button'
+import Form from 'antd/es/form'
+import Image from 'antd/es/image'
+import Input from 'antd/es/input'
+import Space from 'antd/es/space'
+import Typography from 'antd/es/typography'
 import type { InitialSetupTotpResult } from '@/types/setup'
 import { toDataImageUrl } from '@/utils/data-url'
 

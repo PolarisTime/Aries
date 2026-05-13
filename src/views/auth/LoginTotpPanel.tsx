@@ -3,7 +3,11 @@ import {
   ClockCircleOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
-import { Alert, Button, Input, Space } from 'antd'
+import Alert from 'antd/es/alert'
+import Button from 'antd/es/button'
+import Input from 'antd/es/input'
+import Space from 'antd/es/space'
+import { buildFormControlId } from '@/utils/form-control-id'
 
 interface Props {
   countdownText: string
@@ -28,6 +32,8 @@ export function LoginTotpPanel({
   totpLoading,
   activeLoginName,
 }: Props) {
+  const totpInputId = buildFormControlId('login-totp', 'code')
+
   return (
     <div>
       <div className="login-step-tag is-totp">
@@ -64,6 +70,9 @@ export function LoginTotpPanel({
 
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <Input
+          id={totpInputId}
+          name="login-totp-code"
+          aria-label="输入 6 位动态验证码"
           size="large"
           prefix={<SafetyCertificateOutlined />}
           placeholder="请输入 6 位验证码"

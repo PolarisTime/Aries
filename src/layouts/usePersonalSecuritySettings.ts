@@ -1,4 +1,4 @@
-import { Form } from 'antd'
+import Form from 'antd/es/form'
 import { useCallback, useEffect, useState } from 'react'
 import { http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'

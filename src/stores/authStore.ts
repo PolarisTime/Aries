@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { login, login2fa, logout, refreshSession } from '@/api/auth'
 import { ERROR_CODE } from '@/constants/error-codes'
 import type {
   Login2faPayload,
@@ -16,6 +15,10 @@ import {
   getToken,
   setAuthSession,
 } from '@/utils/storage'
+
+async function loadAuthApi() {
+  return import('@/api/auth')
+}
 
 interface LoginStep2 {
   requires2fa: true
@@ -35,6 +38,7 @@ interface AuthState {
   token: string
   user: LoginUser | null
   isAuthenticated: boolean
+  authReady: boolean
   hydrate: () => void
   signIn: (payload: LoginPayload) => Promise<LoginResult>
   verify2fa: (payload: Login2faPayload) => Promise<LoginResponseData>
@@ -46,6 +50,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   token: getToken() || '',
   user: getStoredUser(),
   isAuthenticated: Boolean(getToken()),
+  authReady: false,
 
   hydrate: () => {
     const nextToken = getToken() || ''
@@ -54,10 +59,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       token: nextToken,
       user: nextUser,
       isAuthenticated: Boolean(nextToken),
+      authReady: false,
     })
   },
 
   signIn: async (payload: LoginPayload) => {
+    const { login } = await loadAuthApi()
     const response = await login(payload)
 
     if (response.code !== ERROR_CODE.SUCCESS) {
@@ -85,7 +92,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     setAuthSession(data.user, data.accessToken, data.expiresIn, mode)
-    set({ token: data.accessToken, user: data.user, isAuthenticated: true })
+    set({
+      token: data.accessToken,
+      user: data.user,
+      isAuthenticated: true,
+      authReady: true,
+    })
 
     return {
       requires2fa: false as const,
@@ -96,6 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   verify2fa: async (payload: Login2faPayload) => {
+    const { login2fa } = await loadAuthApi()
     const response = await login2fa(payload)
 
     if (response.code !== ERROR_CODE.SUCCESS) {
@@ -110,19 +123,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const mode: AuthPersistenceMode =
       payload.remember === false ? 'session' : 'local'
     setAuthSession(data.user, data.accessToken, data.expiresIn, mode)
-    set({ token: data.accessToken, user: data.user, isAuthenticated: true })
+    set({
+      token: data.accessToken,
+      user: data.user,
+      isAuthenticated: true,
+      authReady: true,
+    })
     return data
   },
 
   signOut: async () => {
     try {
+      const { logout } = await loadAuthApi()
       await logout()
     } catch {
       // logout request failures are non-critical
     }
     clearToken()
     clearStoredUser()
-    set({ token: '', user: null, isAuthenticated: false })
+    set({ token: '', user: null, isAuthenticated: false, authReady: true })
   },
 
   restoreSession: async () => {
@@ -131,11 +150,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const token = get().token
     const user = get().user
     if (!token) {
-      set({ token: '', user: null, isAuthenticated: false })
+      set({ token: '', user: null, isAuthenticated: false, authReady: true })
       return false
     }
 
     try {
+      const { refreshSession } = await loadAuthApi()
       const data = await refreshSession()
       if (!data.accessToken || !data.user) {
         throw new Error('Session 恢复失败')
@@ -146,16 +166,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         data.expiresIn,
         getAuthPersistenceMode(),
       )
-      set({ token: data.accessToken, user: data.user, isAuthenticated: true })
+      set({
+        token: data.accessToken,
+        user: data.user,
+        isAuthenticated: true,
+        authReady: true,
+      })
       return true
     } catch {
       if (token && user) {
-        set({ isAuthenticated: true })
+        set({ isAuthenticated: true, authReady: true })
         return true
       }
       clearToken()
       clearStoredUser()
-      set({ token: '', user: null, isAuthenticated: false })
+      set({ token: '', user: null, isAuthenticated: false, authReady: true })
       return false
     }
   },

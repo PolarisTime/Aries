@@ -1,4 +1,12 @@
-import { Card, Flex, Form, Result, Space, Spin, Steps, Typography } from 'antd'
+import Card from 'antd/es/card'
+import Flex from 'antd/es/flex'
+import Form from 'antd/es/form'
+import Result from 'antd/es/result'
+import Space from 'antd/es/space'
+import Spin from 'antd/es/spin'
+import Steps from 'antd/es/steps'
+import Typography from 'antd/es/typography'
+import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { appTitle } from '@/utils/env'
 import { InitialSetupAdminForm } from '@/views/auth/InitialSetupAdminForm'
 import { InitialSetupCompanyForm } from '@/views/auth/InitialSetupCompanyForm'
@@ -21,27 +29,19 @@ export function InitialSetupView() {
     totpSetup,
   } = useInitialSetupState()
 
-  if (checking) {
-    return (
-      <Flex align="center" justify="center" style={{ minHeight: '100vh' }}>
-        <Spin size="large" tip="正在检查初始化状态..." />
-      </Flex>
-    )
-  }
-
-  if (status && !status.setupRequired) {
-    return (
-      <Flex
-        align="center"
-        justify="center"
-        style={{ minHeight: '100vh', padding: 24 }}
-      >
-        <Result status="success" title="系统已完成初始化" />
-      </Flex>
-    )
-  }
-
-  return (
+  const content = checking ? (
+    <Flex align="center" justify="center" style={{ minHeight: '100vh' }}>
+      <Spin size="large" tip="正在检查初始化状态..." />
+    </Flex>
+  ) : status && !status.setupRequired ? (
+    <Flex
+      align="center"
+      justify="center"
+      style={{ minHeight: '100vh', padding: 24 }}
+    >
+      <Result status="success" title="系统已完成初始化" />
+    </Flex>
+  ) : (
     <Flex
       align="center"
       justify="center"
@@ -101,4 +101,6 @@ export function InitialSetupView() {
       </Card>
     </Flex>
   )
+
+  return <AppAntdProvider>{content}</AppAntdProvider>
 }

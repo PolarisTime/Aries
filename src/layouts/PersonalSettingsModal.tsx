@@ -1,4 +1,5 @@
-import { Modal, Tabs } from 'antd'
+import Modal from 'antd/es/modal'
+import Tabs from 'antd/es/tabs'
 import { useEffect, useState } from 'react'
 import { PersonalSettingsDisplayTab } from '@/layouts/PersonalSettingsDisplayTab'
 import { PersonalSettingsSecurityTab } from '@/layouts/PersonalSettingsSecurityTab'

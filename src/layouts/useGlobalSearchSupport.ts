@@ -1,13 +1,14 @@
 import { useCallback, useRef, useState } from 'react'
 import { getBusinessModuleDetail, searchBusinessModule } from '@/api/business'
-import { businessPageConfigs } from '@/config/business-pages'
+import { modulePageMetaMap } from '@/config/module-page-meta'
 import { getSearchableModuleKeys } from '@/config/page-registry'
 import {
   buildGlobalSearchSummary,
   type GlobalSearchResult,
   searchAccessibleModules,
 } from '@/layouts/global-search'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type { ModuleRecord } from '@/types/module-page'
+import type { ModulePageMeta } from '@/config/module-page-meta'
 
 interface ModuleSearchResponse {
   data?: {
@@ -19,7 +20,7 @@ interface UseGlobalSearchSupportOptions {
   canAccessModule: (moduleKey: string) => boolean
   onJump: (result: GlobalSearchResult) => void
   moduleKeys?: string[]
-  pageConfigs?: Record<string, ModulePageConfig>
+  pageConfigs?: Record<string, ModulePageMeta>
   searchModule?: (
     moduleKey: string,
     keyword: string,
@@ -62,7 +63,7 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
         const merged = await searchAccessibleModules({
           keyword: normalizedKeyword,
           moduleKeys: options.moduleKeys || getSearchableModuleKeys(),
-          pageConfigs: options.pageConfigs || businessPageConfigs,
+          pageConfigs: options.pageConfigs || modulePageMetaMap,
           canAccessModule: options.canAccessModule,
           searchModule:
             options.searchModule ||

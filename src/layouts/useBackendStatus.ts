@@ -1,35 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { apiBaseUrl } from '@/utils/env'
-import { logger } from '@/utils/logger'
 
 const HEALTH_CHECK_INTERVAL_MS = 30_000
 const HEALTH_CHECK_TIMEOUT_MS = 5_000
 const HEALTH_CHECK_MAX_RETRIES = 5
 const HEALTH_CHECK_MAX_BACKOFF_MS = 30_000
+const INITIAL_BOOT_DELAY_MS = 1200
 
 export function useBackendStatus(token: string) {
-  const [companyName, setCompanyName] = useState('')
   const [backendOnline, setBackendOnline] = useState(false)
   const healthTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const healthRetriesRef = useRef(0)
-
-  useEffect(() => {
-    if (!token) {
-      setCompanyName('')
-      return
-    }
-
-    http
-      .get<{ data: { companyName?: string } }>(
-        ENDPOINTS.COMPANY_SETTINGS_CURRENT,
-      )
-      .then((res) => setCompanyName(res.data?.companyName || ''))
-      .catch((err) => {
-        logger.warn('Failed to fetch company settings', err)
-      })
-  }, [token])
 
   const checkBackendHealth = useCallback(async () => {
     try {
@@ -70,14 +52,17 @@ export function useBackendStatus(token: string) {
       return
     }
 
-    void checkBackendHealth()
-    healthTimerRef.current = setInterval(() => {
-      if (healthRetriesRef.current === 0) {
-        void checkBackendHealth()
-      }
-    }, HEALTH_CHECK_INTERVAL_MS)
+    const timer = window.setTimeout(() => {
+      void checkBackendHealth()
+      healthTimerRef.current = setInterval(() => {
+        if (healthRetriesRef.current === 0) {
+          void checkBackendHealth()
+        }
+      }, HEALTH_CHECK_INTERVAL_MS)
+    }, INITIAL_BOOT_DELAY_MS)
 
     return () => {
+      window.clearTimeout(timer)
       if (healthTimerRef.current) {
         clearInterval(healthTimerRef.current)
       }
@@ -86,6 +71,5 @@ export function useBackendStatus(token: string) {
 
   return {
     backendOnline,
-    companyName,
   }
 }
