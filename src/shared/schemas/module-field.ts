@@ -1,43 +1,52 @@
 import { z } from 'zod'
-import { asString, asNumber, asBoolean } from '@/utils/type-narrowing'
-import type { ModuleRecordBase, ModuleLineItemBase } from './module-record'
+import { asString, asNumber, asBoolean, asArray } from '@/utils/type-narrowing'
 
 /**
- * 模块记录字段安全访问器。
- * 替代裸的 record[key] ?? '' / record[key] as string 等不安全访问，
- * 提供运行时类型校验 + 容错回退值。
+ * 模块记录安全字段访问器。
+ * 内部使用 Record<string, unknown> 作为动态键访问的类型边界（符合规则9），
+ * 对外暴露严格类型的方法，消除业务代码中的 `record[key] ?? ''` 模式。
+ *
+ * 用法：
+ *   const f = fieldsOf(record)  // record 来自 Zod parse
+ *   f.str('customerName')       // → string
+ *   f.num('quantity')           // → number
  */
 export class ModuleFieldAccessor {
-  constructor(private record: ModuleRecordBase | ModuleLineItemBase) {}
+  /** 内部存储为 Record<string, unknown> — 仅在此边界层使用 */
+  private readonly src: Record<string, unknown>
 
-  /** 安全获取字符串字段 */
-  str(key: string): string {
-    return asString(this.record[key])
+  constructor(record: Record<string, unknown>) {
+    this.src = record
   }
 
-  /** 安全获取数字字段 */
-  num(key: string): number {
-    return asNumber(this.record[key])
+  str(key: string, fallback = ''): string {
+    if (!(key in this.src)) return fallback
+    return asString(this.src[key])
   }
 
-  /** 安全获取布尔字段 */
-  bool(key: string): boolean {
-    return asBoolean(this.record[key])
+  num(key: string, fallback = 0): number {
+    if (!(key in this.src)) return fallback
+    return asNumber(this.src[key])
   }
 
-  /** 获取原始值（不转换类型） */
-  raw(key: string): unknown {
-    return this.record[key]
+  bool(key: string, fallback = false): boolean {
+    if (!(key in this.src)) return fallback
+    return asBoolean(this.src[key])
   }
 
-  /** Zod schema 校验获取 */
+  arr<T = unknown>(key: string, fallback: T[] = []): T[] {
+    if (!(key in this.src)) return fallback
+    return asArray<T>(this.src[key])
+  }
+
   get<T>(key: string, schema: z.ZodType<T>, fallback: T): T {
-    const result = schema.safeParse(this.record[key])
-    return result.success ? result.data : fallback
+    if (!(key in this.src)) return fallback
+    const r = schema.safeParse(this.src[key])
+    return r.success ? r.data : fallback
   }
 }
 
-/** 为单个记录创建字段访问器 */
-export function fieldsOf(record: ModuleRecordBase | ModuleLineItemBase): ModuleFieldAccessor {
+/** 从任意 Zod-validated 对象创建字段访问器（.passthrough() 类型兼容 Record<string, unknown>） */
+export function fieldsOf(record: Record<string, unknown>): ModuleFieldAccessor {
   return new ModuleFieldAccessor(record)
 }
