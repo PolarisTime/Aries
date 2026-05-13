@@ -1,3 +1,4 @@
+import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
@@ -51,24 +52,19 @@ export function SessionManagementCard({
     <Card
       title="会话管理"
       extra={
-        <Space>
-          <Input.Search
-            placeholder="搜索 Token ID / IP / 设备信息"
-            style={{ width: 320 }}
-            allowClear
-            value={keyword}
-            onChange={(event) => onKeywordChange(event.target.value)}
-            onSearch={onSearch}
-          />
-          <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-            刷新
-          </Button>
+        <SystemTableToolbar
+          keyword={keyword}
+          keywordPlaceholder="搜索 Token ID / IP / 设备信息"
+          onKeywordChange={onKeywordChange}
+          onSearch={onSearch}
+          onRefresh={onRefresh}
+        >
           {canEdit && (
             <Button danger icon={<DeleteOutlined />} onClick={onRevokeAll}>
               清除全部
             </Button>
           )}
-        </Space>
+        </SystemTableToolbar>
       }
     >
       <Row gutter={16} style={{ marginBottom: 16 }}>

@@ -1,3 +1,4 @@
+import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import {
   DeleteOutlined,
@@ -173,15 +174,14 @@ export function UserAccountTableCard({
     <Card
       title="用户账户管理"
       extra={
-        <Space>
-          <Input.Search
-            placeholder="搜索登录账号 / 用户姓名 / 手机号"
-            style={{ width: 320 }}
-            allowClear
-            value={keyword}
-            onChange={(event) => onKeywordChange(event.target.value)}
-            onSearch={onSearch}
-          />
+        <SystemTableToolbar
+          keyword={keyword}
+          keywordPlaceholder="搜索登录账号 / 用户姓名 / 手机号"
+          onKeywordChange={onKeywordChange}
+          onSearch={onSearch}
+          onRefresh={onRefresh}
+          onCreate={canCreate ? onCreate : undefined}
+        >
           <Select
             allowClear
             placeholder="全部状态"
@@ -190,15 +190,7 @@ export function UserAccountTableCard({
             onChange={onStatusFilterChange}
             options={enabledStatusOptions}
           />
-          <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-            刷新
-          </Button>
-          {canCreate && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-              新建
-            </Button>
-          )}
-        </Space>
+        </SystemTableToolbar>
       }
     >
       <Table

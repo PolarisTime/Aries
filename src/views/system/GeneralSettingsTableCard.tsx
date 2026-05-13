@@ -1,3 +1,4 @@
+import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { EditOutlined, ReloadOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
@@ -110,14 +111,13 @@ export function GeneralSettingsTableCard({
     <Card
       title="通用设置"
       extra={
-        <Space>
-          <Input.Search
-            placeholder="搜索设置项"
-            style={{ width: 280 }}
-            allowClear
-            value={keyword}
-            onChange={(event) => onKeywordChange(event.target.value)}
-          />
+        <SystemTableToolbar
+          keyword={keyword}
+          keywordPlaceholder="搜索设置项"
+          keywordWidth={280}
+          onKeywordChange={onKeywordChange}
+          onRefresh={onRefresh}
+        >
           <Select
             allowClear
             placeholder="全部状态"
@@ -126,10 +126,7 @@ export function GeneralSettingsTableCard({
             onChange={onStatusFilterChange}
             options={GENERAL_SETTING_STATUS_OPTIONS}
           />
-          <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-            刷新
-          </Button>
-        </Space>
+        </SystemTableToolbar>
       }
     >
       <Row gutter={16} style={{ marginBottom: 16 }}>
