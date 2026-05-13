@@ -3,7 +3,7 @@ import Alert from 'antd/es/alert'
 import Button from 'antd/es/button'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import Modal from 'antd/es/modal'
+import { FormModal } from '@/components/FormModal'
 import Upload from 'antd/es/upload'
 
 interface Props {
@@ -28,17 +28,15 @@ export function DatabaseImportBackupModal({
   onCancel,
 }: Props) {
   return (
-    <Modal
+    <FormModal
       title="导入数据库备份"
       open={open}
-      onCancel={onCancel}
-      onOk={onSubmit}
+      onClose={onCancel}
+      onSave={onSubmit}
       confirmLoading={loading}
       okText="验证并导入"
       cancelText="取消"
       width={480}
-      destroyOnHidden
-      forceRender
     >
       <Alert
         type="warning"
@@ -84,6 +82,6 @@ export function DatabaseImportBackupModal({
           </div>
         </Form.Item>
       </Form>
-    </Modal>
+    </FormModal>
   )
 }
