@@ -6,6 +6,7 @@ import {
 import { getModulePageSchema } from '@/config/module-page-schema'
 import type { ModuleFilterDefinition, ModuleRecord } from '@/types/module-page'
 import type { ListQueryOptions } from '@/utils/list'
+import { asString, safe } from '@/utils/type-narrowing'
 import { FULL_SCAN_PAGE_SIZE } from './business-listing-constants'
 
 export function hasValue(value: unknown) {
@@ -54,13 +55,13 @@ export function buildFilterParams(
 
     const dateRangeMapping = endpointConfig.dateRangeMapping?.[key]
     if (dateRangeMapping && Array.isArray(value) && value.length === 2) {
-      params[dateRangeMapping.startKey] = String(value[0] || '')
-      params[dateRangeMapping.endKey] = String(value[1] || '')
+      params[dateRangeMapping.startKey] = asString(value[0])
+      params[dateRangeMapping.endKey] = asString(value[1])
       return
     }
 
     if (isServerFilterKey(endpointConfig, key)) {
-      params[key] = Array.isArray(value) ? value.map(String) : String(value)
+      params[key] = Array.isArray(value) ? value.map(asString) : asString(value)
     }
   })
 
@@ -112,60 +113,42 @@ function applyFilterDefinition(
   }
 
   if (filter.type === 'input') {
-    const keyword = String(rawValue || '')
-      .trim()
-      .toLowerCase()
-    if (!keyword) {
-      return true
-    }
+    const keyword = asString(rawValue).trim().toLowerCase()
+    if (!keyword) return true
 
     const recordSearchKeys = filter.clientSearchKeys || []
     const lineItemSearchKeys = filter.clientSearchLineItemKeys || []
+    const rec = safe(record as Record<string, unknown>)
+
     if (recordSearchKeys.length || lineItemSearchKeys.length) {
       const matchedRecordField = recordSearchKeys.some((key) =>
-        String(record[key] ?? '')
-          .toLowerCase()
-          .includes(keyword),
+        rec.str(key).toLowerCase().includes(keyword),
       )
-      if (matchedRecordField) {
-        return true
-      }
+      if (matchedRecordField) return true
+      if (!lineItemSearchKeys.length || !Array.isArray(record.items)) return false
 
-      if (!lineItemSearchKeys.length || !Array.isArray(record.items)) {
-        return false
-      }
-
-      return record.items.some((item) =>
-        lineItemSearchKeys.some((key) =>
-          String(item[key] ?? '')
-            .toLowerCase()
-            .includes(keyword),
-        ),
-      )
+      return record.items.some((item) => {
+        const it = safe(item as Record<string, unknown>)
+        return lineItemSearchKeys.some((key) =>
+          it.str(key).toLowerCase().includes(keyword),
+        )
+      })
     }
 
     return Object.values(record).some((value) =>
-      String(value ?? '')
-        .toLowerCase()
-        .includes(keyword),
+      asString(value).toLowerCase().includes(keyword),
     )
   }
 
   if (filter.type === 'select') {
-    return String(record[filter.key] ?? '') === String(rawValue ?? '')
+    return safe(record as Record<string, unknown>).str(filter.key) === asString(rawValue)
   }
 
-  if (
-    filter.type === 'dateRange' &&
-    Array.isArray(rawValue) &&
-    rawValue.length === 2
-  ) {
+  if (filter.type === 'dateRange' && Array.isArray(rawValue) && rawValue.length === 2) {
     const [start, end] = rawValue
-    const current = String(record[filter.key] ?? '')
-    if (!current || !start || !end) {
-      return true
-    }
-    return current >= String(start) && current <= String(end)
+    const current = safe(record as Record<string, unknown>).str(filter.key)
+    if (!current || !start || !end) return true
+    return current >= asString(start) && current <= asString(end)
   }
 
   return true
