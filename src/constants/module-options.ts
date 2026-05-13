@@ -178,18 +178,7 @@ export const userAccountDataScopeOptions = createOptionList(
   userAccountDataScopeValues,
 )
 
-export const flexibleUserAccountDataScopeValues = [
-  '全部数据',
-  '全部',
-  '本部门',
-  '本人',
-] as const
-export const roleDataScopeValues = [
-  '全部数据',
-  '全部',
-  '本部门',
-  '本人',
-] as const
+export const roleDataScopeValues = userAccountDataScopeValues
 export const roleDataScopeOptions = createOptionList(roleDataScopeValues)
 
 export const roleTypeValues = [

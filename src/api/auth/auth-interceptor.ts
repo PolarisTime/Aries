@@ -1,4 +1,4 @@
-import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
+import type { AxiosInstance } from 'axios'
 import axios from 'axios'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { message } from '@/utils/antd-app'
@@ -19,10 +19,7 @@ import {
   setRefreshPromise,
 } from './auth-state'
 import { normalizeErrorMessage } from './error-messages'
-
-type RetryableRequestConfig = InternalAxiosRequestConfig & {
-  _retry?: boolean
-}
+import type { RetryableRequestConfig } from './types'
 
 type GuardedAxiosInstance = AxiosInstance & {
   __leoAuthInterceptorsSetup?: boolean
