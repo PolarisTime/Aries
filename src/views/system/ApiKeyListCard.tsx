@@ -69,8 +69,9 @@ export function ApiKeyListCard({
     canEdit,
     actionOptions,
     resourceOptions,
-    onView: (record) =>
-      navigate({ to: `/api-key/${record.id}` as '/' }),
+    onView: (record) => {
+      void navigate({ to: `/api-key/${record.id}` as '/' })
+    },
     onRevoke,
   })
 

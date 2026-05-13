@@ -183,8 +183,8 @@ export function CompanySettingsView() {
         canSave={canSave}
         saving={saveMutation.isPending}
         overviewItems={overviewItems}
-        onRefresh={() =>
-          queryClient.invalidateQueries({
+        onRefresh={() => {
+          void queryClient.invalidateQueries({
             queryKey: ['company-setting'],
           })
         }
