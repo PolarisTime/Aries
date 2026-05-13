@@ -1,0 +1,174 @@
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import Empty from 'antd/es/empty'
+import Table from 'antd/es/table'
+import type { ColumnsType, TableProps } from 'antd/es/table'
+import type { SorterResult, SortOrder } from 'antd/es/table/interface'
+import type { ModuleRecord } from '@/types/module-page'
+
+const MIN_TABLE_BODY_SCROLL_Y = 240
+const TABLE_SCROLL_RESERVED_SPACE = 8
+
+export function computeTableBodyScrollY(
+  containerHeight: number,
+  headerHeight: number,
+  paginationHeight: number,
+) {
+  return Math.max(
+    MIN_TABLE_BODY_SCROLL_Y,
+    Math.floor(
+      containerHeight -
+        headerHeight -
+        paginationHeight -
+        TABLE_SCROLL_RESERVED_SPACE,
+    ),
+  )
+}
+
+interface Props {
+  moduleKey: string
+  columns: ColumnsType<ModuleRecord>
+  dataSource: ModuleRecord[]
+  loading: boolean
+  rowSelection?: TableProps<ModuleRecord>['rowSelection']
+  rowClassName: (record: ModuleRecord) => string
+  onRowClick: (record: ModuleRecord) => void
+  onRowDoubleClick: (record: ModuleRecord) => void
+  page: number
+  pageSize: number
+  total: number
+  onPageChange: (page: number, pageSize: number) => void
+  onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
+}
+
+export function BusinessGridTable({
+  moduleKey,
+  columns,
+  dataSource,
+  loading,
+  rowSelection,
+  rowClassName,
+  onRowClick,
+  onRowDoubleClick,
+  page,
+  pageSize,
+  total,
+  onPageChange,
+  onSortingChange,
+}: Props) {
+  const shellRef = useRef<HTMLDivElement | null>(null)
+  const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
+
+  useEffect(() => {
+    const shell = shellRef.current
+    if (!shell || typeof ResizeObserver === 'undefined') {
+      return
+    }
+
+    let frameId = 0
+
+    const measure = () => {
+      const containerHeight = shell.clientHeight
+      if (containerHeight <= 0) {
+        return
+      }
+
+      const headerHeight =
+        shell
+          .querySelector('.ant-table-thead')
+          ?.getBoundingClientRect().height || 0
+      const paginationHeight =
+        shell
+          .querySelector('.ant-pagination')
+          ?.getBoundingClientRect().height || 0
+      const nextScrollY = computeTableBodyScrollY(
+        containerHeight,
+        headerHeight,
+        paginationHeight,
+      )
+
+      setScrollY((prev) => (prev === nextScrollY ? prev : nextScrollY))
+    }
+
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(frameId)
+      frameId = requestAnimationFrame(measure)
+    }
+
+    const observer = new ResizeObserver(scheduleMeasure)
+    observer.observe(shell)
+    scheduleMeasure()
+
+    return () => {
+      cancelAnimationFrame(frameId)
+      observer.disconnect()
+    }
+  }, [dataSource.length, pageSize, total])
+
+  return (
+    <div ref={shellRef} className="module-table-shell">
+      <Table
+        key={moduleKey}
+        rowKey="id"
+        bordered
+        size="small"
+        loading={loading}
+        columns={columns}
+        dataSource={dataSource}
+        rowSelection={rowSelection}
+        scroll={{ x: 'max-content', y: scrollY }}
+        rowClassName={rowClassName}
+        onRow={(record) => ({
+          onClick: (event: MouseEvent<HTMLElement>) => {
+            const target = event.target as HTMLElement | null
+            if (
+              target?.closest(
+                'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
+              )
+            ) {
+              return
+            }
+            onRowClick(record)
+          },
+          onDoubleClick: (event: MouseEvent<HTMLElement>) => {
+            const target = event.target as HTMLElement | null
+            if (
+              target?.closest(
+                'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
+              )
+            ) {
+              return
+            }
+            onRowDoubleClick(record)
+          },
+        })}
+        locale={{
+          emptyText: (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="暂无数据"
+            />
+          ),
+        }}
+        onChange={(_pagination, _filters, sorter) => {
+          const activeSorter = Array.isArray(sorter)
+            ? sorter[0]
+            : (sorter as SorterResult<ModuleRecord>)
+          const columnKey = activeSorter?.columnKey
+          onSortingChange(
+            typeof columnKey === 'bigint' ? String(columnKey) : columnKey,
+            activeSorter?.order,
+          )
+        }}
+        pagination={{
+          current: page,
+          pageSize,
+          total,
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
+          showTotal: (count) => `共 ${count} 条`,
+          onChange: onPageChange,
+        }}
+      />
+    </div>
+  )
+}

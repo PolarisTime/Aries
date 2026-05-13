@@ -1,4 +1,4 @@
-import { Tag } from 'antd'
+import Tag from 'antd/es/tag'
 import type { ReactNode } from 'react'
 
 interface StatusMeta {
