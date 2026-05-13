@@ -22,6 +22,7 @@ export const systemModuleEndpointContracts: Record<
       'resultStatus',
       'startTime',
       'endTime',
+      'recordId',
     ],
     dateRangeMapping: {
       operationTime: {
@@ -34,6 +35,10 @@ export const systemModuleEndpointContracts: Record<
     path: '/permission',
     readOnly: true,
     nativeFilterKeys: ['keyword'],
+  },
+  department: {
+    path: '/department',
+    nativeFilterKeys: ['keyword', 'status'],
   },
   departments: {
     path: '/department',

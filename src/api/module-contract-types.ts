@@ -8,4 +8,5 @@ export interface ModuleEndpointConfig {
   dateRangeMapping?: Record<string, { startKey: string; endKey: string }>
   sortByParam?: string
   sortDirectionParam?: string
+  fieldsParam?: string
 }
