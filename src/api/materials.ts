@@ -4,7 +4,7 @@ import type { ModuleRecord } from '@/types/module-page'
 import type { MaterialImportResult } from '@/types/material'
 import { http } from './client'
 
-interface MaterialSearchResponse extends ModuleRecord {
+type MaterialSearchResponse = ModuleRecord & {
   materialCode?: string
   brand?: string
   category?: string

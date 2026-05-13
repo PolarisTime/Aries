@@ -17,7 +17,7 @@ import {
 import { useModuleEditorItemColumnHandlers } from '@/views/modules/module-editor-item-column-handlers'
 import { applyMaterialToEditorLineItem } from '@/views/modules/module-editor-line-item-utils'
 
-interface Props {
+type Props = {
   moduleKey: string
   config: ModulePageConfig
   items: ModuleLineItem[]

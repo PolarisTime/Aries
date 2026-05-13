@@ -16,7 +16,7 @@ import Typography from 'antd/es/typography'
 import { toDataImageUrl } from '@/utils/data-url'
 import { setupTwoFactorSteps } from '@/views/auth/setup-two-factor-constants'
 
-interface Props {
+type Props = {
   currentUserName: string
   form: FormInstance<{ totpCode: string }>
   loading: boolean

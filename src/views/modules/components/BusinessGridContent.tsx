@@ -13,7 +13,7 @@ import { ColumnSettingsPopover } from '@/views/modules/components/ColumnSettings
 import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterToolbar'
 import { ModuleTableToolbar } from '@/views/modules/components/ModuleTableToolbar'
 
-interface Props {
+type Props = {
   moduleKey: string
   config: ModulePageConfig
   filters: Record<string, unknown>

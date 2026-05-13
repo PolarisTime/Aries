@@ -14,7 +14,7 @@ import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { UserAccountRecord } from '@/types/user-account'
-interface Props {
+type Props = {
   keyword: string
   statusFilter?: string
   currentPage: number

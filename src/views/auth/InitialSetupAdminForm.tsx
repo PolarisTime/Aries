@@ -12,7 +12,7 @@ import Typography from 'antd/es/typography'
 import type { InitialSetupTotpResult } from '@/types/setup'
 import { toDataImageUrl } from '@/utils/data-url'
 
-interface Props {
+type Props = {
   totpSetup: InitialSetupTotpResult | null
   loadingTotp: boolean
   loadingAdmin: boolean

@@ -1,7 +1,7 @@
 import Typography from 'antd/es/typography'
 import { EditorItemsSummary } from './EditorItemsSummary'
 
-interface Props {
+type Props = {
   title?: React.ReactNode
   actions?: React.ReactNode
   items?: Record<string, unknown>[]

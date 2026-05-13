@@ -20,7 +20,7 @@ import type {
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 type EditorMode = 'create' | 'edit'
-interface Props {
+type Props = {
   open: boolean
   mode: EditorMode
   loading: boolean

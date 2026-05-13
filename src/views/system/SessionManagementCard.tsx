@@ -13,7 +13,7 @@ import type {
   RefreshTokenSummaryData,
 } from '@/api/session-management'
 
-interface Props {
+type Props = {
   canEdit: boolean
   columns: ColumnsType<RefreshTokenRecord>
   currentPage: number

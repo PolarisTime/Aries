@@ -15,7 +15,7 @@ import {
   formatSettingValue,
   GENERAL_SETTING_STATUS_OPTIONS,
 } from '@/views/system/general-settings-view-utils'
-interface Props {
+type Props = {
   keyword: string
   statusFilter?: string
   filteredRows: ModuleRecord[]

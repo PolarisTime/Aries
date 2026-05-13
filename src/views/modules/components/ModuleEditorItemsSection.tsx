@@ -13,7 +13,7 @@ import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
 import { ModuleItemsTable } from './ModuleItemsTable'
 
-interface Props {
+type Props = {
   config: ModulePageConfig
   items: ModuleLineItem[]
   selectedItemIds: string[]

@@ -3,7 +3,7 @@ import Card from 'antd/es/card'
 import type { DashboardSummary } from '@/api/dashboard'
 import { buildWorkflowSections } from '@/views/dashboard/dashboard-flow-utils'
 
-interface Props {
+type Props = {
   navigate: NavigateFn
   summary?: DashboardSummary
 }

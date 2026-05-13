@@ -13,20 +13,17 @@ interface StatementDraftSharedOptions {
   buildLineItemId: () => string
 }
 
-export interface SupplierStatementDraftOptions
-  extends StatementDraftSharedOptions {
+export type SupplierStatementDraftOptions = StatementDraftSharedOptions & {
   sourceInbounds: ModuleRecord[]
   payments: ModuleRecord[]
   defaultFullPayment: boolean
 }
 
-export interface CustomerStatementDraftOptions
-  extends StatementDraftSharedOptions {
+export type CustomerStatementDraftOptions = StatementDraftSharedOptions & {
   sourceOrders: ModuleRecord[]
   defaultReceiptAmountZero: boolean
 }
 
-export interface FreightStatementDraftOptions
-  extends StatementDraftSharedOptions {
+export type FreightStatementDraftOptions = StatementDraftSharedOptions & {
   sourceBills: ModuleRecord[]
 }

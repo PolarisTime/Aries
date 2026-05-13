@@ -3,7 +3,7 @@ import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
 import { canModuleEditLineItems } from '@/views/modules/module-adapter-editor'
 import { hasBehavior } from '@/views/modules/module-behavior-registry'
 
-interface Props {
+type Props = {
   moduleKey: string
   config: ModulePageConfig
   editorMode: 'create' | 'edit'

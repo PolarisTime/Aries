@@ -10,7 +10,7 @@ import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 
-interface Props {
+type Props = {
   open: boolean
   editing: boolean
   form: FormInstance

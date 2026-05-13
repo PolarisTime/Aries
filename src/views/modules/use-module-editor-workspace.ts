@@ -53,7 +53,7 @@ interface WorkspaceFormApi {
 
 type FormChangedValues = Record<string, unknown>
 
-interface Props {
+type Props = {
   open: boolean
   config: ModulePageConfig
   record: ModuleRecord | null

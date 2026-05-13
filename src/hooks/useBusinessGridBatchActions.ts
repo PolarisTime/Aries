@@ -17,7 +17,7 @@ export interface AuditTarget {
   value: string
 }
 
-interface Props {
+type Props = {
   moduleKey: string
   selectedRowKeys: string[]
   selectedRows: ModuleRecord[]

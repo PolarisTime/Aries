@@ -6,7 +6,7 @@ import Col from 'antd/es/col'
 import Row from 'antd/es/row'
 import Typography from 'antd/es/typography'
 
-interface Props {
+type Props = {
   canExport: boolean
   canImport: boolean
   exportLoading: boolean
@@ -16,7 +16,7 @@ interface Props {
   onImport: () => void
 }
 
-interface ActionCardProps {
+type ActionCardProps = {
   icon: React.ReactNode
   title: string
   description: string

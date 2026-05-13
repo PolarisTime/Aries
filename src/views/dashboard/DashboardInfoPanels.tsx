@@ -6,7 +6,7 @@ import Statistic from 'antd/es/statistic'
 import type { DashboardSummary } from '@/api/dashboard'
 import type { DashboardInfoItem } from '@/views/dashboard/dashboard-view-types'
 
-interface Props {
+type Props = {
   animatedServerTime: string
   infoItems: DashboardInfoItem[]
   summary?: DashboardSummary

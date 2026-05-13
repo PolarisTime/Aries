@@ -9,7 +9,7 @@ import { execPrintCode, isCLodopCode, printHtml } from '@/utils/clodop'
 import { buildModulePrintHtml } from '@/utils/module-print'
 import { renderPrintTemplate } from '@/utils/print-template-engine'
 
-interface Props {
+type Props = {
   moduleKey: string
   config: ModulePageConfig
   selectedRowKeys: string[]

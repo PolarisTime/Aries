@@ -12,7 +12,7 @@ import { ModuleEditorFormSection } from './ModuleEditorFormSection'
 import { ModuleEditorItemsSection } from './ModuleEditorItemsSection'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
-interface Props {
+type Props = {
   open: boolean
   config: ModulePageConfig
   record: ModuleRecord | null

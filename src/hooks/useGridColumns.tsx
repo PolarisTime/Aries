@@ -17,7 +17,7 @@ declare module '@tanstack/react-table' {
   }
 }
 
-interface Props {
+type Props = {
   config: ModulePageConfig
   rowActions: (record: ModuleRecord) => ActionItem[]
   canUpdate: boolean

@@ -9,7 +9,7 @@ import Input from 'antd/es/input'
 import Space from 'antd/es/space'
 import { buildFormControlId } from '@/utils/form-control-id'
 
-interface Props {
+type Props = {
   countdownText: string
   isExpired: boolean
   isExpiring: boolean

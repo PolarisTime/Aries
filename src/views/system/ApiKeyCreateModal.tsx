@@ -16,7 +16,7 @@ import type {
 import { apiKeyUsageScopeOptions } from '@/views/system/api-key-form-options'
 import { getApiKeyUserDisplayName } from '@/views/system/api-key-view-utils'
 
-interface Props {
+type Props = {
   open: boolean
   generatedKey: string | null
   generating: boolean

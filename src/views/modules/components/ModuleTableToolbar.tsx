@@ -11,7 +11,7 @@ import Typography from 'antd/es/typography'
 import type { ModuleActionDefinition } from '@/types/module-page'
 import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
 
-interface Props {
+type Props = {
   canCreate: boolean
   canExport: boolean
   total: number

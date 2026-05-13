@@ -3,7 +3,7 @@ import type { ParsedLocation } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef } from 'react'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
-interface Props {
+type Props = {
   location: ParsedLocation
   config: ModulePageConfig | undefined
   records: ModuleRecord[]

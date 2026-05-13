@@ -2,7 +2,7 @@ import Button from 'antd/es/button'
 import type { ButtonProps } from 'antd'
 import { usePermissionStore } from '@/stores/permissionStore'
 
-interface PermButtonProps extends ButtonProps {
+type PermButtonProps = ButtonProps & {
   resource: string
   action: string
   permissionStoreOverride?: {

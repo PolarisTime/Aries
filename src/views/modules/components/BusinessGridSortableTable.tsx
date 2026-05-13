@@ -17,7 +17,7 @@ import type { ModuleRecord } from '@/types/module-page'
 import { DraggableColumnHeader } from '@/views/modules/components/DraggableColumnHeader'
 import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
 
-interface Props {
+type Props = {
   moduleKey: string
   columns: ColumnsType<ModuleRecord>
   columnOrder: string[]

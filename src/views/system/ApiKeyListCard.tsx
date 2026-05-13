@@ -11,7 +11,7 @@ import type {
 import { ApiKeyListToolbar } from '@/views/system/ApiKeyListToolbar'
 import { buildApiKeyListColumns } from '@/views/system/api-key-list-columns'
 
-interface Props {
+type Props = {
   keyword: string
   filterUserId?: string
   statusFilter?: string

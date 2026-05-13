@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { listDepartmentOptions, listRoleOptions } from '@/api/user-accounts'
 
-interface Props {
+type Props = {
   canViewRoleCatalog: boolean
   canViewDepartmentCatalog: boolean
   enabled?: boolean

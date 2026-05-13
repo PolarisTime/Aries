@@ -5,7 +5,7 @@ export interface ModuleFilterState {
   submittedFilters: Record<string, unknown>
 }
 
-interface Props {
+type Props = {
   setCurrentPage: (page: number) => void
 }
 

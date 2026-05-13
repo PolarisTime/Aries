@@ -39,7 +39,7 @@ function buildWeightOnlyViewConfig(
   }
 }
 
-interface Props {
+type Props = {
   moduleKey: string
   initialConfig?: ModulePageConfig
 }

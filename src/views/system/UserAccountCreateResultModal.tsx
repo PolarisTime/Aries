@@ -4,7 +4,7 @@ import { FormModal } from '@/components/FormModal'
 import Typography from 'antd/es/typography'
 import type { UserAccountCreateResult } from '@/types/user-account'
 
-interface Props {
+type Props = {
   open: boolean
   result: UserAccountCreateResult | null
   onCopy: (value: string, label: string) => void

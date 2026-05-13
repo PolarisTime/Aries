@@ -9,7 +9,7 @@ import { useRoleActionPermissions } from '@/views/system/useRoleActionPermission
 import { useRoleEditor } from '@/views/system/useRoleEditor'
 import { useRoleSettingsList } from '@/views/system/useRoleSettingsList'
 
-interface RoleActionEditorProps {
+type RoleActionEditorProps = {
   active?: boolean
 }
 

@@ -24,7 +24,7 @@ export function computeTableBodyScrollY(
   )
 }
 
-interface Props {
+type Props = {
   moduleKey: string
   columns: ColumnsType<ModuleRecord>
   dataSource: ModuleRecord[]

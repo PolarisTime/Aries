@@ -7,7 +7,7 @@ import {
 } from '@/layouts/personal-settings-constants'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
 
-interface Props {
+type Props = {
   fontSize: number
   layoutMode: LayoutMode
   onFontSizeChange: (value: number) => void

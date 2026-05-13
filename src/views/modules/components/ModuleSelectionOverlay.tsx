@@ -7,7 +7,7 @@ import { searchBusinessModule } from '@/api/business'
 import type { ModuleRecord } from '@/types/module-page'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
-interface Props {
+type Props = {
   open: boolean
   moduleKey: string
   title?: string

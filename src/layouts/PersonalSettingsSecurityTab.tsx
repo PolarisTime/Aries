@@ -18,7 +18,7 @@ interface PasswordFormValues {
   newPassword: string
 }
 
-interface Props {
+type Props = {
   user: LoginUser | null
   pwForm: FormInstance<PasswordFormValues>
   pwSaving: boolean

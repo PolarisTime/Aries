@@ -3,7 +3,7 @@ import { useCallback } from 'react'
 import type { ModuleLineItem } from '@/types/module-page'
 import { recalculateEditorLineItem } from '@/views/modules/module-adapter-editor'
 
-interface Props {
+type Props = {
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
 }
 

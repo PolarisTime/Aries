@@ -4,7 +4,7 @@ import Spin from 'antd/es/spin'
 import Tag from 'antd/es/tag'
 import type { UserAccountRecord } from '@/types/user-account'
 
-interface Props {
+type Props = {
   open: boolean
   loading: boolean
   record: UserAccountRecord | null

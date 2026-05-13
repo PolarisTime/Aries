@@ -3,7 +3,7 @@ import Typography from 'antd/es/typography'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { getPrintTemplateBillTypeLabel } from '@/views/system/print-template-view-utils'
 
-interface Props {
+type Props = {
   open: boolean
   template: PrintTemplateRecord | null
   onClose: () => void

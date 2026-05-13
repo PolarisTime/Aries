@@ -2,7 +2,7 @@ import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
 import { useModuleEditorItemColumns } from '@/views/modules/use-module-editor-item-columns'
 import { useModuleEditorItemInteractions } from '@/views/modules/use-module-editor-item-interactions'
 
-interface Props {
+type Props = {
   moduleKey: string
   config: ModulePageConfig
   items: ModuleLineItem[]

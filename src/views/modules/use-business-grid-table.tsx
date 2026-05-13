@@ -12,7 +12,7 @@ import type {
 } from '@/hooks/useDataTable'
 import { useDataTable } from '@/hooks/useDataTable'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-interface Props {
+type Props = {
   moduleKey: string
   config: ModulePageConfig | undefined
   records: ModuleRecord[]

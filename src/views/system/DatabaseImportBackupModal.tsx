@@ -6,7 +6,7 @@ import Input from 'antd/es/input'
 import { FormModal } from '@/components/FormModal'
 import Upload from 'antd/es/upload'
 
-interface Props {
+type Props = {
   open: boolean
   loading: boolean
   totpDisabled: boolean

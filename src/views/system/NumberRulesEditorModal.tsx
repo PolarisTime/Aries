@@ -15,7 +15,7 @@ import {
   RESET_RULE_OPTIONS,
 } from '@/views/system/number-rules-view-utils'
 
-interface Props {
+type Props = {
   open: boolean
   kind: NumberRuleEditorKind
   form: FormInstance

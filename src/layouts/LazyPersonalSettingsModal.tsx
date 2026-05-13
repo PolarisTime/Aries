@@ -7,7 +7,7 @@ const PersonalSettingsModal = lazy(() =>
   })),
 )
 
-interface Props {
+type Props = {
   open: boolean
   onClose: () => void
   onSaveDisplay: () => void

@@ -6,7 +6,7 @@ import { ApiKeyListCard } from '@/views/system/ApiKeyListCard'
 import { ApiKeyUsageAlert } from '@/views/system/ApiKeyUsageAlert'
 import { useApiKeyManagementState } from '@/views/system/useApiKeyManagementState'
 
-interface ApiKeyManagementViewProps {
+type ApiKeyManagementViewProps = {
   active?: boolean
 }
 

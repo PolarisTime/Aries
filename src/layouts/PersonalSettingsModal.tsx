@@ -7,7 +7,7 @@ import { usePersonalSecuritySettings } from '@/layouts/usePersonalSecuritySettin
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
 import { useAuthStore } from '@/stores/authStore'
 
-interface Props {
+type Props = {
   open: boolean
   onClose: () => void
   onSaveDisplay: () => void

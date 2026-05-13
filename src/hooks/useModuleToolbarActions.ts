@@ -34,7 +34,7 @@ interface Handlers {
   openSupplierStatementGenerator: () => Promise<void>
 }
 
-interface Props {
+type Props = {
   moduleKey: string
   config: ModulePageConfig
   formFields: ModuleFormFieldDefinition[]

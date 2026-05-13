@@ -16,7 +16,7 @@ import {
 
 type StatementType = 'supplier' | 'customer' | 'freight'
 
-interface Props {
+type Props = {
   refreshModuleQueries: () => Promise<void>
 }
 
