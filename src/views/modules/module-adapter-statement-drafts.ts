@@ -108,8 +108,8 @@ export function buildCustomerStatementDraftData({
   const sortedOrders = structuredClone(sourceOrders)
   sortedOrders.sort(
     (left, right) =>
-      new Date(String(left.deliveryDate || asString(\1))).getTime() -
-      new Date(String(right.deliveryDate || asString(\1))).getTime(),
+      new Date(asString(left.deliveryDate)).getTime() -
+      new Date(asString(right.deliveryDate)).getTime(),
   )
 
   const firstOrder = sortedOrders[0]

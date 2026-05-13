@@ -107,7 +107,7 @@ export function ApiKeyDetailView() {
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
-            oonClick={() => { void () => navigate({ to: '/api-key' as '/' }})}
+            onClick={() => navigate({ to: '/api-key' as '/' })}
           >
             返回
           </Button>

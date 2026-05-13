@@ -22,13 +22,6 @@ interface Props {
   canUpdate: boolean
 }
 
-  width?: string
-  align?: string
-  fixed?: string
-  ellipsis?: string
-  renderCell?: (record: ModuleRecord) => ReactNode
-}
-
 export function useGridColumns({
   config,
   rowActions,
