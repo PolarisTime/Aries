@@ -288,7 +288,7 @@ export function ModuleAttachmentModal({
                         type="link"
                         danger
                         icon={<DeleteOutlined />}
-                        oonClick={() => { void () => handleDelete(item.id) }}
+                        onClick={() => handleDelete(item.id)}
                       />
                     ) : null}
                   </Space>

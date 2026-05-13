@@ -195,7 +195,7 @@ function buildSelectedRecordSummary(
     type?: 'date' | 'amount' | 'weight' | 'status',
   ) => string,
 ) {
-  const primary = String(record[displayFieldKey] || asString(record.id)'--')
+  const primary = String(record[displayFieldKey] || record.id || '--')
   const meta = (selectedRecordSummaryFieldMap[parentModuleKey] || [])
     .map((field) => {
       const rawValue =

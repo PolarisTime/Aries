@@ -49,9 +49,9 @@ function keepCurrentOrOpenBalance(
 }
 
 function compareStatements(left: ModuleRecord, right: ModuleRecord) {
-  const leftEndDate = Date.parse(String(left.endDate || asString(\1)))
+  const leftEndDate = Date.parse(asString(left.endDate))
   const rightEndDate = Date.parse(
-    String(right.endDate || asString(\1)),
+    asString(right.endDate),
   )
   if (
     Number.isFinite(leftEndDate) &&

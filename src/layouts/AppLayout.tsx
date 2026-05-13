@@ -254,7 +254,7 @@ export function AppLayout() {
                 selectedKeys={selectedKeys}
                 topMenuItems={topMenuItems}
                 onMenuClick={handleMenuClick}
-                oonDashboardClick={() => { void () => navigate({ to: '/dashboard' as '/' }})}
+                onDashboardClick={() => navigate({ to: '/dashboard' as '/' })}
                 topBrandMark={topBrandMark}
                 shellFontStyle={shellFontStyle}
                 clockText={clockText}
@@ -311,7 +311,7 @@ export function AppLayout() {
             isTopNavigationLayout={isTopNavigationLayout}
             shellFontStyle={{ ...fixedWidthStyle, ...shellFontStyle }}
             closePage={closePage}
-            oonNavigateToPath={() => { void (path) => navigate({ to: path as '/' }})}
+            onNavigateToPath={(path) => navigate({ to: path as '/' })}
           />
 
           <Content className="leo-content">
