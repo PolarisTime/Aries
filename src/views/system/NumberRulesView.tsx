@@ -1,4 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
+import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import Form from 'antd/es/form'
 import { useCallback, useMemo, useState } from 'react'
 import {
@@ -20,7 +21,6 @@ import {
 } from '@/views/system/number-rules-view-utils'
 
 export function NumberRulesView() {
-  const queryClient = useQueryClient()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
   const canEdit = permissionStore.can('general-setting', 'update')
@@ -61,9 +61,7 @@ export function NumberRulesView() {
     [filteredRows],
   )
 
-  const refresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['number-rules'] })
-  }, [queryClient])
+  const refresh = useRefreshQuery('number-rules')
 
   const openNumberRuleEditor = useCallback(
     (record: ModuleRecord) => {

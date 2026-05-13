@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import Form from 'antd/es/form'
 import { useCallback, useState } from 'react'
 import {
@@ -63,9 +64,7 @@ export function PrintTemplateView() {
     onError: (error: Error) => showError(error, '删除失败'),
   })
 
-  const refresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['print-template'] })
-  }, [queryClient])
+  const refresh = useRefreshQuery('print-template')
 
   const openCreate = useCallback(() => {
     if (!canCreate) {

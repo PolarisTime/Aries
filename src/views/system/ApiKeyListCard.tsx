@@ -1,3 +1,4 @@
+import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import { useNavigate } from '@tanstack/react-router'
 import Card from 'antd/es/card'
 import Table from 'antd/es/table'
@@ -102,14 +103,12 @@ export function ApiKeyListCard({
         loading={loading}
         size="middle"
         scroll={{ x: 1800 }}
-        pagination={{
+        pagination={createPaginationConfig({
           current: currentPage,
           pageSize,
           total: totalElements,
-          showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
           onChange: onPageChange,
-        }}
+        })}
       />
     </Card>
   )

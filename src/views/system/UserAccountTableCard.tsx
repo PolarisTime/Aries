@@ -1,3 +1,4 @@
+import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import {
   DeleteOutlined,
   EditOutlined,
@@ -207,14 +208,12 @@ export function UserAccountTableCard({
         loading={loading}
         size="middle"
         scroll={{ x: 1400 }}
-        pagination={{
+        pagination={createPaginationConfig({
           current: currentPage,
           pageSize,
           total: totalElements,
-          showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
           onChange: onPageChange,
-        }}
+        })}
       />
     </Card>
   )
