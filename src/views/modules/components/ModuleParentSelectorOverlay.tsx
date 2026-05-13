@@ -296,7 +296,7 @@ export function ModuleParentSelectorOverlay({
     placeholderData: keepPreviousData,
   })
 
-// eslint-disable-next-line react-hooks/exhaustive-deps
+ 
 
   const records = data?.data?.rows || []
   const total = Number(data?.data?.total || 0)
