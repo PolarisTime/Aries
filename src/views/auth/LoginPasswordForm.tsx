@@ -3,8 +3,11 @@ import {
   SafetyCertificateOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import type { FormInstance } from 'antd'
-import { Button, Checkbox, Form, Input } from 'antd'
+import Button from 'antd/es/button'
+import Checkbox from 'antd/es/checkbox'
+import Form from 'antd/es/form'
+import Input from 'antd/es/input'
+import type { FormInstance } from 'antd/es/form'
 import type { LoginPayload } from '@/types/auth'
 
 interface Props {

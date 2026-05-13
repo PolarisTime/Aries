@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { Form } from 'antd'
+import Form from 'antd/es/form'
 import { useCallback, useEffect, useState } from 'react'
 import {
   getInitialSetupStatus,

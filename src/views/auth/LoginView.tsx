@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
-import { Card, Form } from 'antd'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Card from 'antd/es/card'
+import Form from 'antd/es/form'
 import { fetchCaptcha } from '@/api/auth'
 import { getInitialSetupStatus } from '@/api/setup'
 import { useAuthStore } from '@/stores/authStore'

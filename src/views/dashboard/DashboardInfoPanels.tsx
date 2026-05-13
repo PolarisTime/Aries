@@ -1,5 +1,8 @@
 import { UserOutlined } from '@ant-design/icons'
-import { Avatar, Card, Descriptions, Statistic } from 'antd'
+import Avatar from 'antd/es/avatar'
+import Card from 'antd/es/card'
+import Descriptions from 'antd/es/descriptions'
+import Statistic from 'antd/es/statistic'
 import type { DashboardSummary } from '@/api/dashboard'
 import type { DashboardInfoItem } from '@/views/dashboard/dashboard-view-types'
 

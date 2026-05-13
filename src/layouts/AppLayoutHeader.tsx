@@ -1,5 +1,5 @@
 import { LogoutOutlined, SettingOutlined } from '@ant-design/icons'
-import type { MenuProps } from 'antd'
+import type { MenuProps } from 'antd/es/menu'
 import type { CSSProperties } from 'react'
 import type { AppHeaderSearchProps } from '@/layouts/AppHeaderSearch'
 import { AppSideNavigationHeader } from '@/layouts/AppSideNavigationHeader'
@@ -23,7 +23,6 @@ interface TopNavigationHeaderProps extends SharedHeaderProps {
   onMenuClick: MenuProps['onClick']
   selectedKeys: string[]
   topBrandMark: string
-  topBrandName: string
   topMenuItems: NonNullable<MenuProps['items']>
 }
 
@@ -31,7 +30,6 @@ interface SideNavigationHeaderProps extends SharedHeaderProps {
   backendOnline: boolean
   clockText: string
   collapsed: boolean
-  companyName: string
   kind: 'side'
   onToggleCollapsed: () => void
   title: string

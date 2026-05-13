@@ -1,13 +1,14 @@
 import { DownOutlined } from '@ant-design/icons'
-import type { MenuProps } from 'antd'
-import { Dropdown, Menu } from 'antd'
+import Dropdown from 'antd/es/dropdown'
+import type { MenuProps } from 'antd/es/menu'
+import Menu from 'antd/es/menu'
 import type { CSSProperties } from 'react'
 import {
-  AppHeaderSearch,
-  type AppHeaderSearchProps,
-} from '@/layouts/AppHeaderSearch'
+  LazyAppHeaderSearch,
+  type LazyAppHeaderSearchProps,
+} from '@/layouts/LazyAppHeaderSearch'
 
-type LayoutHeaderSearchProps = Omit<AppHeaderSearchProps, 'className'>
+type LayoutHeaderSearchProps = Omit<LazyAppHeaderSearchProps, 'className'>
 
 interface Props {
   clockText: string
@@ -19,7 +20,6 @@ interface Props {
   selectedKeys: string[]
   shellFontStyle: CSSProperties
   topBrandMark: string
-  topBrandName: string
   topMenuItems: NonNullable<MenuProps['items']>
   userMenuItems: NonNullable<MenuProps['items']>
 }
@@ -34,7 +34,6 @@ export function AppTopNavigationHeader({
   selectedKeys,
   shellFontStyle,
   topBrandMark,
-  topBrandName,
   topMenuItems,
   userMenuItems,
 }: Props) {
@@ -47,10 +46,6 @@ export function AppTopNavigationHeader({
           onClick={onDashboardClick}
         >
           <span className="app-top-brand-mark">{topBrandMark}</span>
-          <span className="app-top-brand-copy">
-            <strong>{topBrandName}</strong>
-            <small>业务工作台</small>
-          </span>
         </button>
 
         <div className="app-top-menu-shell">
@@ -65,7 +60,7 @@ export function AppTopNavigationHeader({
       </div>
 
       <div className="app-top-nav-right" style={shellFontStyle}>
-        <AppHeaderSearch
+        <LazyAppHeaderSearch
           className="header-global-search header-global-search-top"
           {...search}
         />

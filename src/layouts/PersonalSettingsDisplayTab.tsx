@@ -1,4 +1,6 @@
-import { Button, Radio, Select } from 'antd'
+import Button from 'antd/es/button'
+import Radio from 'antd/es/radio'
+import Select from 'antd/es/select'
 import {
   fontSizeOptions,
   layoutModeOptions,

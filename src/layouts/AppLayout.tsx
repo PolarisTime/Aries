@@ -1,7 +1,11 @@
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
-import type { MenuProps } from 'antd'
-import { ConfigProvider, Layout, Menu } from 'antd'
+import Layout from 'antd/es/layout'
+import type { MenuProps } from 'antd/es/menu'
+import Menu from 'antd/es/menu'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AppAntdProvider } from '@/components/AppAntdProvider'
+import { getPageDefinition } from '@/config/page-registry'
+import { useAuthAppSync } from '@/hooks/useAuthAppSync'
 import { useAuthHeartbeat } from '@/hooks/useAuthHeartbeat'
 import { useAuthRefreshTimer } from '@/hooks/useAuthRefreshTimer'
 import { useOpenPages } from '@/hooks/useOpenPages'
@@ -13,7 +17,7 @@ import {
   buildClockText,
 } from '@/layouts/app-layout-utils'
 import type { GlobalSearchResult } from '@/layouts/global-search'
-import { PersonalSettingsModal } from '@/layouts/PersonalSettingsModal'
+import { LazyPersonalSettingsModal } from '@/layouts/LazyPersonalSettingsModal'
 import { resolveRoutePageContext } from '@/layouts/route-page-context'
 import { useAppLayoutClock } from '@/layouts/useAppLayoutClock'
 import { useAppLayoutMenuState } from '@/layouts/useAppLayoutMenuState'
@@ -22,7 +26,6 @@ import { useBackendStatus } from '@/layouts/useBackendStatus'
 import { useGlobalSearchSupport } from '@/layouts/useGlobalSearchSupport'
 import { usePersonalSettings } from '@/layouts/usePersonalSettings'
 import { useAuthStore } from '@/stores/authStore'
-import { getPageDefinition } from '@/config/page-registry'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { useSystemMenuStore } from '@/stores/systemMenuStore'
 import { message, modal } from '@/utils/antd-app'
@@ -31,6 +34,8 @@ import { appTitle } from '@/utils/env'
 const { Header, Sider, Content } = Layout
 
 export function AppLayout() {
+  useAuthAppSync()
+
   const location = useLocation()
   const navigate = useNavigate()
   const token = useAuthStore((state) => state.token)
@@ -47,7 +52,7 @@ export function AppLayout() {
     () => resolveRoutePageContext(location.pathname),
     [location.pathname],
   )
-  const { backendOnline, companyName } = useBackendStatus(token)
+  const { backendOnline } = useBackendStatus(token)
 
   const {
     visible: personalSettingsOpen,
@@ -185,38 +190,24 @@ export function AppLayout() {
   )
   const clockText = useMemo(() => buildClockText(clock), [clock])
   const {
-    antdTheme,
     fixedWidthStyle,
     headerClassName,
     mainStyle,
     rootClassName,
     shellFontStyle,
     topBrandMark,
-    topBrandName,
   } = useMemo(
     () =>
       buildAppLayoutStyles({
         appliedFontSize,
-        clockText,
         collapsed,
-        companyName,
-        currentUserLoginName,
-        currentUserName,
         isTopNavigationLayout,
       }),
-    [
-      appliedFontSize,
-      clockText,
-      collapsed,
-      companyName,
-      currentUserLoginName,
-      currentUserName,
-      isTopNavigationLayout,
-    ],
+    [appliedFontSize, collapsed, isTopNavigationLayout],
   )
 
   return (
-    <ConfigProvider theme={antdTheme}>
+    <AppAntdProvider>
       <Layout className={rootClassName} style={shellFontStyle}>
         <div className="leo-page-loader" />
 
@@ -265,7 +256,6 @@ export function AppLayout() {
                 onMenuClick={handleMenuClick}
                 onDashboardClick={() => navigate({ to: '/dashboard' as '/' })}
                 topBrandMark={topBrandMark}
-                topBrandName={topBrandName}
                 shellFontStyle={shellFontStyle}
                 clockText={clockText}
                 currentUserName={currentUserName}
@@ -292,7 +282,6 @@ export function AppLayout() {
                 collapsed={collapsed}
                 onToggleCollapsed={() => setCollapsed((value) => !value)}
                 title={routePageContext.title}
-                companyName={companyName}
                 backendOnline={backendOnline}
                 shellFontStyle={shellFontStyle}
                 clockText={clockText}
@@ -327,12 +316,12 @@ export function AppLayout() {
 
           <Content className="leo-content">
             <div className="leo-content-inner">
-              <Outlet />
+              <Outlet key={routePageContext.openPageKey} />
             </div>
           </Content>
         </Layout>
 
-        <PersonalSettingsModal
+        <LazyPersonalSettingsModal
           open={personalSettingsOpen}
           onClose={closePersonalSettings}
           onSaveDisplay={handleSavePersonalSettings}
@@ -343,6 +332,6 @@ export function AppLayout() {
           onLayoutModeChange={setLayoutMode}
         />
       </Layout>
-    </ConfigProvider>
+    </AppAntdProvider>
   )
 }

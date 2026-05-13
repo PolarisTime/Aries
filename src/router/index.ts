@@ -12,18 +12,19 @@ import {
   getPageRoutePath,
   type RouteViewKey,
 } from '@/config/page-registry'
+import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { useAuthStore } from '@/stores/authStore'
 import { checkAccessResources, usePermissionStore } from '@/stores/permissionStore'
+import { LazyLoginView } from '@/views/auth/LazyLoginView'
+import { LazyDashboardView } from '@/views/dashboard/LazyDashboardView'
+import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
 
 const rootRoute = createRootRoute({ component: Outlet })
-
-// Direct-import LoginView (no lazy) — avoids React 19 Suspense issues
-import { LoginView } from '@/views/auth/LoginView'
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
-  component: LoginView,
+  component: LazyLoginView,
 })
 
 const setupRoute = createRoute({
@@ -63,13 +64,9 @@ const authenticatedLayoutRoute = createRoute({
 })
 
 const viewLoaders: Record<
-  RouteViewKey,
+  Exclude<RouteViewKey, 'dashboard'>,
   () => Promise<{ default: React.ComponentType }>
 > = {
-  dashboard: () =>
-    import('@/views/dashboard/DashboardView').then((m) => ({
-      default: m.DashboardView,
-    })),
   'business-grid': () =>
     import('@/views/modules/BusinessGridView').then((m) => ({
       default: m.BusinessGridView,
@@ -114,10 +111,31 @@ const viewLoaders: Record<
 
 const moduleRoutes = appPageDefinitions.map((def) => {
   const path = `/${getPageRoutePath(def)}`
+  const usesPageSkeleton =
+    def.view === 'business-grid' ||
+    def.view === 'number-rules' ||
+    def.view === 'general-setting' ||
+    def.view === 'company-setting' ||
+    def.view === 'print-template' ||
+    def.view === 'access-control' ||
+    def.view === 'database' ||
+    def.view === 'session' ||
+    def.view === 'api-key' ||
+    def.view === 'security-key'
+
   return createRoute({
     getParentRoute: () => authenticatedLayoutRoute,
     path,
-    component: lazy(viewLoaders[def.view]),
+    component:
+      def.view === 'dashboard'
+        ? LazyDashboardView
+        : lazy(viewLoaders[def.view]),
+    pendingComponent: usesPageSkeleton ? BusinessGridPageSkeleton : undefined,
+    pendingMinMs: usesPageSkeleton ? 200 : undefined,
+    loader:
+      def.view === 'business-grid' && def.moduleKey
+        ? async () => loadBusinessPageConfig(def.moduleKey as string)
+        : undefined,
     beforeLoad: () => {
       if (def.view === 'dashboard') return
       const store = usePermissionStore.getState()

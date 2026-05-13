@@ -1,9 +1,9 @@
-import { Tabs } from 'antd'
 import type {
   CSSProperties,
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
 } from 'react'
+import Tabs from 'antd/es/tabs'
 import type { OpenPage } from '@/hooks/useOpenPages'
 
 interface AppPageTabsProps {
@@ -18,6 +18,7 @@ interface AppPageTabsProps {
 function buildPageTabLabel(page: OpenPage, onClose: (key: string) => void) {
   return (
     <span
+      className="app-page-tab-label"
       onDoubleClick={() => {
         if (page.closable) {
           onClose(page.key)

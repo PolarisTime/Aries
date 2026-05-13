@@ -3,21 +3,22 @@ import {
   MenuUnfoldOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
-import type { MenuProps } from 'antd'
-import { Button, Dropdown, Tag } from 'antd'
+import Button from 'antd/es/button'
+import Dropdown from 'antd/es/dropdown'
+import type { MenuProps } from 'antd/es/menu'
+import Tag from 'antd/es/tag'
 import type { CSSProperties } from 'react'
 import {
-  AppHeaderSearch,
-  type AppHeaderSearchProps,
-} from '@/layouts/AppHeaderSearch'
+  LazyAppHeaderSearch,
+  type LazyAppHeaderSearchProps,
+} from '@/layouts/LazyAppHeaderSearch'
 
-type LayoutHeaderSearchProps = Omit<AppHeaderSearchProps, 'className'>
+type LayoutHeaderSearchProps = Omit<LazyAppHeaderSearchProps, 'className'>
 
 interface Props {
   backendOnline: boolean
   clockText: string
   collapsed: boolean
-  companyName: string
   currentUserName: string
   onToggleCollapsed: () => void
   search: LayoutHeaderSearchProps
@@ -30,7 +31,6 @@ export function AppSideNavigationHeader({
   backendOnline,
   clockText,
   collapsed,
-  companyName,
   currentUserName,
   onToggleCollapsed,
   search,
@@ -49,11 +49,10 @@ export function AppSideNavigationHeader({
         <div className="header-page-desc">业务中心 / {title}</div>
       </div>
 
-      <AppHeaderSearch className="header-global-search" {...search} />
+      <LazyAppHeaderSearch className="header-global-search" {...search} />
 
       <div className="user-wrapper" style={shellFontStyle}>
         <span className="action action-tag">
-          {companyName ? <Tag color="blue">{companyName}</Tag> : null}
           <Tag color={backendOnline ? 'green' : 'red'}>
             {backendOnline ? 'API 正常' : 'API 离线'}
           </Tag>
