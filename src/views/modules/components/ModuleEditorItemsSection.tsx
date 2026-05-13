@@ -72,7 +72,7 @@ export function ModuleEditorItemsSection({
 
   return (
     <>
-      <div style={{ marginTop: 24 }}>
+      <div className="mt-6">
         <ModuleItemsPanel
           items={items}
           actions={

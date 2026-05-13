@@ -65,12 +65,12 @@ export function DashboardInfoPanels({
             <Statistic
               title="活跃会话"
               value={summary?.activeSessionCount ?? 0}
-              style={{ marginBottom: 16 }}
+              className="mb-4"
             />
             <Statistic
               title="可见菜单"
               value={summary?.visibleMenuCount ?? 0}
-              style={{ marginBottom: 16 }}
+              className="mb-4"
             />
             <Statistic title="操作权限项" value={summary?.actionCount ?? 0} />
           </Card>

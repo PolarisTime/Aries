@@ -74,7 +74,7 @@ export function UserAccountCreateResultModal({
             <div style={{ color: '#666', fontSize: 12 }}>所属部门</div>
             <div>{result.user.departmentName || '--'}</div>
           </div>
-          <div style={{ marginBottom: 16 }}>
+          <div className="mb-4">
             <div style={{ color: '#666', fontSize: 12 }}>所属角色</div>
             <div>{result.user.roleNames?.join('、') || '--'}</div>
           </div>

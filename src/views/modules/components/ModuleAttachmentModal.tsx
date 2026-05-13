@@ -256,7 +256,7 @@ export function ModuleAttachmentModal({
                     <Space
                       orientation="vertical"
                       size={0}
-                      style={{ minWidth: 0 }}
+                      className="min-w-0"
                     >
                       <Typography.Text strong ellipsis>
                         {item.originalFileName || item.fileName || item.name}

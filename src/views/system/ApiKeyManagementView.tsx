@@ -59,7 +59,7 @@ export function ApiKeyManagementView({
         <Alert
           type="warning"
           showIcon
-          style={{ marginBottom: 16 }}
+          className="mb-4"
           title="当前账号未启用 2FA，禁止生成 API Key。请先在用户管理中完成 2FA 绑定。"
         />
       )}

@@ -41,7 +41,7 @@ export function DatabaseImportBackupModal({
       <Alert
         type="warning"
         showIcon
-        style={{ marginBottom: 16 }}
+        className="mb-4"
         title="导入前会自动备份当前数据库"
         description="请选择 .sql 格式的备份文件，并填写当前 PostgreSQL 账号密码。导入操作会覆盖当前数据，请谨慎操作。"
       />

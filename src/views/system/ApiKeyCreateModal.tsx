@@ -97,12 +97,12 @@ export function ApiKeyCreateModal({
           <Form.Item name="expireDays" label="有效期（天）">
             <InputNumber
               placeholder="留空则永不过期"
-              style={{ width: '100%' }}
+              className="w-full"
               min={1}
               max={3650}
             />
           </Form.Item>
-          <div style={{ textAlign: 'right' }}>
+          <div className="text-right">
             <Space>
               <Button onClick={onClose}>取消</Button>
               <Button
@@ -121,7 +121,7 @@ export function ApiKeyCreateModal({
           <Alert
             type="warning"
             showIcon
-            style={{ marginBottom: 16 }}
+            className="mb-4"
             title="请立即复制保存，此密钥仅显示一次"
           />
           <div

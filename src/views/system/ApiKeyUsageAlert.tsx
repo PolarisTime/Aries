@@ -5,7 +5,7 @@ export function ApiKeyUsageAlert() {
     <Alert
       type="info"
       showIcon
-      style={{ marginBottom: 16 }}
+      className="mb-4"
       title="API Key 使用说明"
       description={
         <div style={{ display: 'grid', gap: 4, lineHeight: 1.7 }}>

@@ -53,7 +53,7 @@ export function InitialSetupView() {
       }}
     >
       <Card style={{ width: 'min(100%, 720px)' }}>
-        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" className="w-full">
           <Space
             orientation="vertical"
             size={4}

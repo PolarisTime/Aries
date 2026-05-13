@@ -155,7 +155,7 @@ export function NumberRulesTableCard({
         </SystemTableToolbar>
       }
     >
-      <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Row gutter={16} className="mb-4">
         <Col span={8}>
           <Statistic title="单号规则" value={numberRuleRows.length} />
         </Col>
@@ -183,7 +183,7 @@ export function NumberRulesTableCard({
         loading={loading}
         size="small"
         pagination={false}
-        style={{ marginBottom: 24 }}
+        className="mb-6"
       />
       <Typography.Title level={5}>上传规则</Typography.Title>
       <Table

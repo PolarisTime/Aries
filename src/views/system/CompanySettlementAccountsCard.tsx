@@ -117,7 +117,7 @@ export function CompanySettlementAccountsCard({
                 <Select
                   value={account.usageType}
                   disabled={!canSave}
-                  style={{ width: '100%' }}
+                  className="w-full"
                   onChange={(value) => onUpdate(index, 'usageType', value)}
                   options={[
                     { label: '通用', value: '通用' },
@@ -167,7 +167,7 @@ export function CompanySettlementAccountsCard({
                 <Select
                   value={account.status}
                   disabled={!canSave}
-                  style={{ width: '100%' }}
+                  className="w-full"
                   onChange={(value) => onUpdate(index, 'status', value)}
                   options={[
                     { label: '正常', value: '正常' },

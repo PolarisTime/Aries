@@ -56,7 +56,7 @@ export function UserAccountTwoFactorModal({
       <Spin spinning={loading}>
         {record && (
           <>
-            <div style={{ marginBottom: 16 }}>
+            <div className="mb-4">
               <Tag
                 color={record.totpEnabled ? 'success' : 'info'}
                 style={{ padding: '4px 12px' }}
@@ -88,7 +88,7 @@ export function UserAccountTwoFactorModal({
                 </Button>
 
                 {setup && (
-                  <div style={{ marginTop: 16 }}>
+                  <div className="mt-4">
                     <div style={{ textAlign: 'center', marginBottom: 16 }}>
                       <QRCode
                         value={setup.qrCodeBase64 || setup.secret}
