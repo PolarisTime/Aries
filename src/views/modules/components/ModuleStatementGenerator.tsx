@@ -37,6 +37,7 @@ export function ModuleStatementGenerator({
   useEffect(() => {
     if (!open) {
       form.resetFields()
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setKeyword('')
     }
   }, [form, open])

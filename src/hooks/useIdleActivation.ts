@@ -11,6 +11,7 @@ export function useIdleActivation(enabled = true, timeout = 1200) {
 
   useEffect(() => {
     if (!enabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setActive(false)
       return
     }

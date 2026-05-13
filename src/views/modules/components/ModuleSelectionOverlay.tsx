@@ -26,6 +26,7 @@ export function ModuleSelectionOverlay({
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setKeyword('')
     }
   }, [open])

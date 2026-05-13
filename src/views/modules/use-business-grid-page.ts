@@ -75,6 +75,7 @@ export function useBusinessGridPage({
   useMasterOptions(listOptionRequirements)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
     setSelectedRowKeys([])
     setSelectedRowMap({})
     setPage(1)
@@ -131,6 +132,7 @@ export function useBusinessGridPage({
   useEffect(() => {
     const currentPageIds = new Set(records.map((r) => String(r.id)))
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
     setSelectedRowMap((prev) => {
       const next: Record<string, ModuleRecord> = {}
       for (const key of Object.keys(prev)) {

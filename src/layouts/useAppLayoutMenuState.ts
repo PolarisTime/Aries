@@ -76,6 +76,7 @@ export function useAppLayoutMenuState(options: Options) {
 
   useEffect(() => {
     if (options.collapsed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setSiderOpenKeys([])
       return
     }

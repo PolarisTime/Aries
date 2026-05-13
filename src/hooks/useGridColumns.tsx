@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { useMemo, type ReactNode } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
@@ -59,7 +60,7 @@ export function useGridColumns({
           renderCell: (record: ModuleRecord) => {
             const value = record[colDef.dataIndex]
             if (colDef.type === 'status' && config.statusMap) {
-              const statusStr = String(value || '')
+              const statusStr = asString(value)
               return (
                 <StatusTag status={statusStr} statusMap={config.statusMap} />
               )
@@ -70,7 +71,7 @@ export function useGridColumns({
         cell: ({ getValue }) => {
           const value = getValue()
           if (colDef.type === 'status' && config.statusMap) {
-            const statusStr = String(value || '')
+            const statusStr = asString(value)
             return <StatusTag status={statusStr} statusMap={config.statusMap} />
           }
           return <span>{formatCellValue(value, colDef.type)}</span>

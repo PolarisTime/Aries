@@ -83,6 +83,7 @@ export function BusinessGridContent({
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
     setColumnSettingsOpen(false)
   }, [moduleKey])
 

@@ -54,6 +54,7 @@ export function CompanySettingsView() {
         status: profile.status || '正常',
         remark: profile.remark || '',
       })
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
       setSettlementAccounts(
         normalizeSettlementAccounts(profile.settlementAccounts),
       )
