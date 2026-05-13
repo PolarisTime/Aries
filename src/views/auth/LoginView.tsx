@@ -1,3 +1,4 @@
+import { getFormString, validateFormFields } from '@/utils/antd-form-safe'
 import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Card from 'antd/es/card'
@@ -160,7 +161,7 @@ export function LoginView() {
       const result = await verify2fa({
         tempToken,
         totpCode: totpCode.trim(),
-        remember: form.getFieldValue('remember') !== false,
+        remember: getFormString(form, 'remember') !== false,
       })
       clearTotpSession()
       message.success('登录成功')
@@ -202,7 +203,7 @@ export function LoginView() {
 
   const activeLoginName =
     String(
-      form.getFieldValue('loginName') || savedSession?.loginName || '',
+      getFormString(form, 'loginName') || savedSession?.loginName || '',
     ).trim() || '当前账户'
 
   const countdownText = useMemo(() => {

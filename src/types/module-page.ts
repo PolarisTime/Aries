@@ -118,13 +118,16 @@ export interface ModuleFormFieldDefinition {
   fullRow?: boolean
 }
 
-export interface ModuleLineItem extends Record<string, unknown> {
+/** 使用索引签名替代 extends Record<string, unknown>，保留已知字段类型 */
+export type ModuleLineItem = {
   id: string
+  [key: string]: unknown
 }
 
-export interface ModuleRecord extends Record<string, unknown> {
+export type ModuleRecord = {
   id: string
   items?: ModuleLineItem[]
+  [key: string]: unknown
 }
 
 export interface ListColumnSettings {
