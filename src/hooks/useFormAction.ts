@@ -43,12 +43,12 @@ export function useFormAction<T>(
 
   const submitAction = useCallback(
     (values: T) => {
-      dispatch(values as unknown)
+      dispatch(values)
     },
     [dispatch],
   )
 
-  return [state as FormState, submitAction, isPending]
+  return [state, submitAction, isPending]
 }
 
 export type { FormState, FormInstance }

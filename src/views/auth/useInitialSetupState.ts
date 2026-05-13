@@ -72,7 +72,7 @@ export function useInitialSetupState() {
   // mount-time data fetch — setState is unavoidable for async init
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void loadStatus() }, [])
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
 
   const handleGenerateTotp = useCallback(async () => {
     const loginName = asString(form.getFieldValue('adminLoginName')).trim()
