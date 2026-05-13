@@ -72,7 +72,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           disabled={disabledValue}
           min={field.min}
           precision={field.precision || 2}
-          style={{ width: '100%' }}
+          className="w-full"
         />,
       )
 
@@ -128,7 +128,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           disabled={disabledValue}
           format="YYYY-MM-DD HH:mm:ss"
           showTime={{ format: 'HH:mm:ss' }}
-          style={{ width: '100%' }}
+          className="w-full"
         />,
       )
 

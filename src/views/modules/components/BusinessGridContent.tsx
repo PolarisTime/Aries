@@ -126,7 +126,7 @@ export function BusinessGridContent({
           type="warning"
           showIcon
           title={warningMessage}
-          style={{ marginBottom: 16 }}
+          className="mb-4"
         />
       ) : null}
 

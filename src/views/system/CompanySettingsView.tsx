@@ -197,7 +197,7 @@ export function CompanySettingsView() {
         <Alert
           type="info"
           showIcon
-          style={{ marginBottom: 24 }}
+          className="mb-6"
           title="公司主体信息"
           description={
             '公司名称和税号由 OOBE 脚本初始化后锁定；默认税率已迁移到"通用设置"，本页只维护公司主体和结算银行信息。'
@@ -207,7 +207,7 @@ export function CompanySettingsView() {
           <Alert
             type="warning"
             showIcon
-            style={{ marginBottom: 24 }}
+            className="mb-6"
             title="暂无查看权限"
             description="当前账号没有公司信息查看权限。"
           />

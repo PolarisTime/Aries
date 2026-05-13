@@ -147,7 +147,7 @@ export function ColumnSettingsPopover({
           items={orderedSortableKeys}
           strategy={verticalListSortingStrategy}
         >
-          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <Space direction="vertical" size="small" className="w-full">
             {orderedSortableKeys.map((key) => {
               const column = columns.find((item) => item.dataIndex === key)
               if (!column) {

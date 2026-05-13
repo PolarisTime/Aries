@@ -68,7 +68,7 @@ export function LoginTotpPanel({
         />
       )}
 
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Space direction="vertical" size="middle" className="w-full">
         <Input
           id={totpInputId}
           name="login-totp-code"

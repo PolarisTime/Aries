@@ -44,7 +44,7 @@ export function ModuleTableToolbar({
       justify="space-between"
       wrap
       gap="small"
-      style={{ marginBottom: 16 }}
+      className="mb-4"
     >
       <Space wrap>
         {canCreate && (

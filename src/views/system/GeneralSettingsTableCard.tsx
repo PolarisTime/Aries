@@ -123,7 +123,7 @@ export function GeneralSettingsTableCard({
         </SystemTableToolbar>
       }
     >
-      <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Row gutter={16} className="mb-4">
         <Col span={8}>
           <Statistic title="基础参数" value={basicSettingRows.length} />
         </Col>
@@ -148,7 +148,7 @@ export function GeneralSettingsTableCard({
         loading={loading}
         size="small"
         pagination={false}
-        style={{ marginBottom: 24 }}
+        className="mb-6"
       />
       <Typography.Title level={5}>系统开关</Typography.Title>
       <Table

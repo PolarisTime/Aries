@@ -115,7 +115,7 @@ export function ModuleFilterToolbar({
           }}
           aria-label={field.label}
           value={rangeValue}
-          style={{ width: '100%' }}
+          className="w-full"
           onChange={(_, dateStrings) =>
             onUpdateFilter(
               field.key,
@@ -140,7 +140,7 @@ export function ModuleFilterToolbar({
   }
 
   return (
-    <Form onFinish={onSearch} colon={false} style={{ marginBottom: 16 }}>
+    <Form onFinish={onSearch} colon={false} className="mb-4">
       <Row gutter={[16, 8]}>
         {!hasConfigKeywordFilter ? (
           <Col xs={24} sm={12} lg={8} xl={6}>

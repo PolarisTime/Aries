@@ -53,7 +53,7 @@ export function ModuleSelectionOverlay({
       height="min(82vh, 760px)"
       zIndex={1100}
     >
-      <div style={{ marginBottom: 16 }}>
+      <div className="mb-4">
         <Input.Search
           placeholder="搜索..."
           value={keyword}

@@ -37,7 +37,7 @@ export function SetupTwoFactorContent({
 }: Props) {
   return (
     <Spin spinning={loading}>
-      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="large" className="w-full">
         <Space orientation="vertical" size={4}>
           <Tag color="blue" variant="filled" style={{ width: 'fit-content' }}>
             TOTP Setup
@@ -60,7 +60,7 @@ export function SetupTwoFactorContent({
                     orientation="vertical"
                     size="middle"
                     align="center"
-                    style={{ width: '100%' }}
+                    className="w-full"
                   >
                     <Image
                       preview={false}
@@ -132,7 +132,7 @@ export function SetupTwoFactorContent({
                     message: '请输入6位验证码',
                   },
                 ]}
-                style={{ marginBottom: 16 }}
+                className="mb-4"
               >
                 <Input
                   prefix={<SafetyCertificateOutlined />}

@@ -65,7 +65,7 @@ export function SessionManagementCard({
         </SystemTableToolbar>
       }
     >
-      <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Row gutter={16} className="mb-4">
         <Col span={8}>
           <Statistic title="在线人数" value={summary?.onlineUsers ?? 0} />
         </Col>

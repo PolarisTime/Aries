@@ -36,7 +36,7 @@ export function DashboardView() {
           type="error"
           showIcon
           title="工作台数据加载失败，请刷新页面重试"
-          style={{ marginBottom: 16 }}
+          className="mb-4"
         />
       ) : null}
 

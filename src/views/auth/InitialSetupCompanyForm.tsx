@@ -25,7 +25,7 @@ export function InitialSetupCompanyForm({
         <Alert
           type="success"
           title="管理员账户已创建成功"
-          style={{ marginBottom: 16 }}
+          className="mb-4"
         />
       )}
       <Form.Item
@@ -57,7 +57,7 @@ export function InitialSetupCompanyForm({
         <Input placeholder="银行账号" />
       </Form.Item>
       <Form.Item name="taxRate" label="税率">
-        <InputNumber min={0} max={1} step={0.01} style={{ width: '100%' }} />
+        <InputNumber min={0} max={1} step={0.01} className="w-full" />
       </Form.Item>
       <Form.Item name="remark" label="备注">
         <Input.TextArea rows={2} />

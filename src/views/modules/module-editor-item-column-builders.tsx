@@ -97,7 +97,7 @@ function buildEditableColumnRender({
             }
             showSearch
             allowClear
-            style={{ width: '100%' }}
+            className="w-full"
             placeholder="搜索商品编码 / 品牌 / 材质 / 规格 / 长度"
             filterOption={(input, option) =>
               (option?.searchText || '').includes(input.trim().toLowerCase())
@@ -120,7 +120,7 @@ function buildEditableColumnRender({
             }
             showSearch
             allowClear
-            style={{ width: '100%' }}
+            className="w-full"
             placeholder="选择码头"
             filterOption={(input, option) =>
               String(option?.label || '')
@@ -146,7 +146,7 @@ function buildEditableColumnRender({
                 ? record.settlementMode
                 : undefined
             }
-            style={{ width: '100%' }}
+            className="w-full"
             placeholder="选择结算方式"
             onChange={(selectedValue: string) =>
               handleSettlementModeChange(record.id, selectedValue)
@@ -169,7 +169,7 @@ function buildEditableColumnRender({
         return (
           <InputNumber
             value={value as number}
-            style={{ width: '100%' }}
+            className="w-full"
             min={min}
             precision={precision}
             controls={!hideControls}

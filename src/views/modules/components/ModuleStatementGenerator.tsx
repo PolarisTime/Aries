@@ -120,7 +120,7 @@ export function ModuleStatementGenerator({
           label="对账期间"
           rules={[{ required: true, message: '请选择日期范围' }]}
         >
-          <DatePicker.RangePicker style={{ width: '100%' }} />
+          <DatePicker.RangePicker className="w-full" />
         </Form.Item>
       </Form>
     </Modal>

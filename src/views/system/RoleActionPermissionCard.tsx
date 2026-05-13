@@ -130,14 +130,14 @@ export function RoleActionPermissionCard({
           <Alert
             type="info"
             showIcon
-            style={{ marginBottom: 16 }}
+            className="mb-4"
             message="附件权限说明"
             description="附件不单独配置权限，默认跟随对应模块权限：有查看权限可查看和下载附件，有编辑权限可上传附件，有删除权限可删除附件。"
           />
           {viewMode === 'list' ? (
           <div>
             {menuTree.map((group) => (
-              <div key={group.menuCode} style={{ marginBottom: 16 }}>
+              <div key={group.menuCode} className="mb-4">
                 {group.children.length > 0 && (
                   <div
                     style={{
