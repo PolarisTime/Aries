@@ -14,7 +14,7 @@ import {
   filterStatementCounterpartyOptions,
 } from '@/views/modules/module-statement-generator-options'
 
-interface Props {
+type Props = {
   open: boolean
   statementType: 'customer' | 'supplier' | 'freight'
   onClose: () => void

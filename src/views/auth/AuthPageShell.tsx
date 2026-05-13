@@ -3,7 +3,7 @@ import Row from 'antd/es/row'
 import type { ReactNode } from 'react'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 
-interface Props {
+type Props = {
   hero: ReactNode
   children: ReactNode
 }

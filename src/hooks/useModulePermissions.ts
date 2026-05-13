@@ -1,6 +1,6 @@
 import { usePermissionStore } from '@/stores/permissionStore'
 
-interface Props {
+type Props = {
   moduleKey: string
   resourceKey?: string
 }

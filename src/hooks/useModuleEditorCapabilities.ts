@@ -14,7 +14,7 @@ import {
 } from '@/views/modules/module-adapter-editor'
 import { getBehaviorValue } from '@/views/modules/module-behavior-registry'
 
-interface Props {
+type Props = {
   moduleKey: string
   formFields: ModuleFormFieldDefinition[]
   lineItemLockRelatedRows: ModuleRecord[]

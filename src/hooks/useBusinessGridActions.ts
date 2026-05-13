@@ -8,7 +8,7 @@ import { useBusinessGridPrintActions } from '@/hooks/useBusinessGridPrintActions
 import { useBusinessGridStatementActions } from '@/hooks/useBusinessGridStatementActions'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
-interface Props {
+type Props = {
   moduleKey: string
   config: ModulePageConfig
   selectedRowKeys: string[]

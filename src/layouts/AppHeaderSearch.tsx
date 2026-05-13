@@ -5,7 +5,7 @@ import Input from 'antd/es/input'
 import type { AutoCompleteProps } from 'antd/es/auto-complete'
 import { buildFormControlId } from '@/utils/form-control-id'
 
-export interface AppHeaderSearchProps {
+export type AppHeaderSearchProps = {
   className: string
   keyword: string
   options: NonNullable<AutoCompleteProps['options']>

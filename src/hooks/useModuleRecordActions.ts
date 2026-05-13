@@ -9,7 +9,7 @@ import {
   isEditBlockedByStatus,
 } from '@/views/modules/module-behavior-registry'
 
-interface Props {
+type Props = {
   moduleKey: string
   resourceKey?: string
   onEdit: (record: ModuleRecord) => void

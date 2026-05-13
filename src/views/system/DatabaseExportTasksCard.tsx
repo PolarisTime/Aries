@@ -12,7 +12,7 @@ import {
   formatDatabaseTaskStatusColor,
 } from '@/views/system/database-backup-view-utils'
 
-interface Props {
+type Props = {
   tasks: DatabaseExportTask[]
   loading: boolean
   onRefresh: () => void

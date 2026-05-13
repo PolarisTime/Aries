@@ -13,7 +13,7 @@ import {
   getModuleRecordPrimaryNo,
 } from '@/views/modules/module-adapter-shared'
 
-interface Props {
+type Props = {
   moduleKey: string
   config: ModulePageConfig
 }

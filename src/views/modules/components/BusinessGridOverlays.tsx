@@ -33,7 +33,7 @@ const ModuleStatementGenerator = lazy(() =>
   ),
 )
 
-interface Props {
+type Props = {
   moduleKey: string
   resourceKey?: string
   config: ModulePageConfig

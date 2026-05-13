@@ -22,7 +22,7 @@ import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overlays'
 import { useBusinessGridTable } from '@/views/modules/use-business-grid-table'
 
-interface Props {
+type Props = {
   moduleKey: string
   pageDef: AppPageDefinition
   initialConfig?: ModulePageConfig

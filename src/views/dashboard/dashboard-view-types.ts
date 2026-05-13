@@ -1,6 +1,6 @@
 import type { ComponentType, CSSProperties } from 'react'
 
-export interface DashboardIconProps {
+export type DashboardIconProps = {
   style?: CSSProperties
 }
 

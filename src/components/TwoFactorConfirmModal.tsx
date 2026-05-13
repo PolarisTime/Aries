@@ -6,7 +6,7 @@ import Typography from 'antd/es/typography'
 import { useState } from 'react'
 import { message } from '@/utils/antd-app'
 
-interface Props {
+type Props = {
   open: boolean
   onConfirm: (code: string) => Promise<void>
   onCancel: () => void

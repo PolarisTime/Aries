@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-interface BuildLabeledFormItemProps {
+type BuildLabeledFormItemProps = {
   label: ReactNode
   htmlFor: string
 }

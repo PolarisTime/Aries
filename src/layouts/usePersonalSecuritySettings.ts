@@ -11,7 +11,7 @@ interface TotpSetupState {
   secret: string
 }
 
-interface Props {
+type Props = {
   open: boolean
   tab: string
 }

@@ -20,7 +20,7 @@ import { buildFormControlId } from '@/utils/form-control-id'
 import { padLabel } from '@/utils/label-utils'
 import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
 
-interface Props {
+type Props = {
   config: ModulePageConfig
   filters: Record<string, unknown>
   onUpdateFilter: (key: string, value: unknown) => void

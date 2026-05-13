@@ -6,7 +6,7 @@ import Select from 'antd/es/select'
 import type { RoleRecord } from '@/api/role-actions'
 import { roleDataScopeValues, roleTypeValues } from '@/constants/module-options'
 
-interface Props {
+type Props = {
   open: boolean
   editingRole: RoleRecord | null
   form: FormInstance

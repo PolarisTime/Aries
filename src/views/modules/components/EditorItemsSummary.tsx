@@ -1,4 +1,4 @@
-interface Props {
+type Props = {
   items: Record<string, unknown>[]
   weightKey?: string
   amountKey?: string

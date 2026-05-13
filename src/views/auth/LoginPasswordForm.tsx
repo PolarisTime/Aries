@@ -10,7 +10,7 @@ import Input from 'antd/es/input'
 import type { FormInstance } from 'antd/es/form'
 import type { LoginPayload } from '@/types/auth'
 
-interface Props {
+type Props = {
   captchaImageSrc: string
   loading: boolean
   onLoadCaptcha: () => void

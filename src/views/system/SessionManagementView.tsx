@@ -2,7 +2,7 @@ import { SessionManagementCard } from '@/views/system/SessionManagementCard'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useSessionManagementState } from '@/views/system/useSessionManagementState'
 
-interface SessionManagementViewProps {
+type SessionManagementViewProps = {
   active?: boolean
 }
 

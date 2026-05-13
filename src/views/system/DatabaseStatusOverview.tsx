@@ -14,7 +14,7 @@ import {
   formatDatabaseMemory,
 } from '@/views/system/database-backup-view-utils'
 
-interface ServiceCardProps {
+type ServiceCardProps = {
   accent: string
   title: string
   version: string
@@ -96,7 +96,7 @@ function DatabaseServiceCard({
   )
 }
 
-interface Props {
+type Props = {
   dbStatus?: DatabaseStatus
   loading: boolean
   onRefresh: () => void

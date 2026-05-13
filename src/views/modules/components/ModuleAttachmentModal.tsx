@@ -25,7 +25,7 @@ import {
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
 
-interface Props {
+type Props = {
   open: boolean
   moduleKey: string
   resourceKey?: string

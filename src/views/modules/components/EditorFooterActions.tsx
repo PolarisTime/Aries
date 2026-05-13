@@ -2,7 +2,7 @@ import { AuditOutlined, CloseOutlined, SaveOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Space from 'antd/es/space'
 
-interface Props {
+type Props = {
   canSave: boolean
   canAudit: boolean
   saving: boolean

@@ -7,7 +7,7 @@ import Typography from 'antd/es/typography'
 import type { RoleRecord } from '@/api/role-actions'
 import { enabledStatusValues } from '@/constants/module-options'
 
-interface Props {
+type Props = {
   roles: RoleRecord[]
   selectedRoleId: string | null
   canCreateRole: boolean

@@ -10,7 +10,7 @@ interface OverviewItem {
   value: string
 }
 
-interface Props {
+type Props = {
   loading: boolean
   canSave: boolean
   saving: boolean

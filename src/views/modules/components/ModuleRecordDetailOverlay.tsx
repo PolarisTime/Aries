@@ -19,7 +19,7 @@ import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
-interface Props {
+type Props = {
   open: boolean
   config: ModulePageConfig
   record: ModuleRecord | null

@@ -6,7 +6,7 @@ import type {
 import Tabs from 'antd/es/tabs'
 import type { OpenPage } from '@/hooks/useOpenPages'
 
-interface AppPageTabsProps {
+type AppPageTabsProps = {
   activeKey: string
   isTopNavigationLayout: boolean
   onNavigateToPath: (path: string) => void

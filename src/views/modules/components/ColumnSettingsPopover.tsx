@@ -23,7 +23,7 @@ import Typography from 'antd/es/typography'
 import type { ReactNode } from 'react'
 import type { ModuleColumnDefinition } from '@/types/module-page'
 
-interface Props {
+type Props = {
   columns: ModuleColumnDefinition[]
   orderedKeys?: string[]
   visibleKeys: string[]
@@ -33,7 +33,7 @@ interface Props {
   onOpenChange: (open: boolean) => void
 }
 
-interface SortableColumnRowProps {
+type SortableColumnRowProps = {
   checked: boolean
   columnId: string
   label: ReactNode

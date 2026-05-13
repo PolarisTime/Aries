@@ -19,7 +19,7 @@ import type {
 import { ModuleFilterToolbar } from './ModuleFilterToolbar'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
-interface Props {
+type Props = {
   open: boolean
   parentModuleKey: string
   parentDisplayFieldKey?: string

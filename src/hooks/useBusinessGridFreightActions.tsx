@@ -4,7 +4,7 @@ import { useCallback } from 'react'
 import { listAllBusinessModuleRows } from '@/api/business'
 import { message, modal } from '@/utils/antd-app'
 
-interface Props {
+type Props = {
   submittedFilters: Record<string, unknown>
   formatCellValue: (value: unknown, columnType?: string) => string
 }

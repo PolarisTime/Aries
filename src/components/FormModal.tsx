@@ -2,7 +2,7 @@ import Modal from 'antd/es/modal'
 import type { ModalProps } from 'antd/es/modal'
 import type { ReactNode } from 'react'
 
-interface Props {
+type Props = {
   title: string
   open: boolean
   onClose: () => void

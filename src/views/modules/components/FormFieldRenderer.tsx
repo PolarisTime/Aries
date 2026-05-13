@@ -9,7 +9,7 @@ import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 import { padLabel } from '@/utils/label-utils'
 
-interface Props {
+type Props = {
   field: ModuleFormFieldDefinition
   disabled?: boolean
 }

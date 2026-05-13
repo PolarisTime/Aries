@@ -11,7 +11,7 @@ import type { UserAccountRecord } from '@/types/user-account'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 
-interface Props {
+type Props = {
   open: boolean
   loading: boolean
   record: UserAccountRecord | null

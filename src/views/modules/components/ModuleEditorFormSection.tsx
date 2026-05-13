@@ -12,7 +12,7 @@ import { groupFieldsByRow } from '@/views/modules/module-field-layout'
 import { EditorFooterActions } from './EditorFooterActions'
 import { FormFieldRenderer } from './FormFieldRenderer'
 
-interface Props {
+type Props = {
   config: ModulePageConfig
   moduleKey: string
   canSave: boolean

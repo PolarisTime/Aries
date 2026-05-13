@@ -19,7 +19,7 @@ import type { MenuNode, RoleRecord } from '@/api/role-actions'
 
 type MatrixRow = Record<string, unknown>
 
-interface Props {
+type Props = {
   selectedRoleInfo?: RoleRecord
   canEditPermissions: boolean
   viewMode: 'list' | 'matrix'

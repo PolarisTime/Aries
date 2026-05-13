@@ -5,7 +5,7 @@ import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
-interface Props {
+type Props = {
   form: FormInstance
   canSave: boolean
   settlementAccountCount: number

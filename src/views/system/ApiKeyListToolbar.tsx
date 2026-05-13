@@ -10,7 +10,7 @@ import {
 } from '@/views/system/api-key-form-options'
 import { getApiKeyUserDisplayName } from '@/views/system/api-key-view-utils'
 
-interface Props {
+type Props = {
   keyword: string
   filterUserId?: string
   statusFilter?: string

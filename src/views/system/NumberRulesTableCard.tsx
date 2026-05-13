@@ -18,7 +18,7 @@ import {
   formatResetRuleLabel,
   NUMBER_RULE_STATUS_OPTIONS,
 } from '@/views/system/number-rules-view-utils'
-interface Props {
+type Props = {
   keyword: string
   statusFilter?: string
   rows: ModuleRecord[]

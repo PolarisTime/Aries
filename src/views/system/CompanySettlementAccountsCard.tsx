@@ -8,7 +8,7 @@ import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
 import type { SettlementAccountFormRow } from '@/views/system/company-settings-view-utils'
 
-interface Props {
+type Props = {
   canSave: boolean
   settlementAccounts: SettlementAccountFormRow[]
   onAdd: () => void

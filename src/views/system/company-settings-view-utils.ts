@@ -1,6 +1,6 @@
 import type { CompanySettlementAccount } from '@/api/company-settings'
 
-export interface SettlementAccountFormRow extends CompanySettlementAccount {
+export type SettlementAccountFormRow = CompanySettlementAccount & {
   localKey: string
 }
 

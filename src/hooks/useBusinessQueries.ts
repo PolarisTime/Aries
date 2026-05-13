@@ -8,7 +8,7 @@ import type { ModuleRecord } from '@/types/module-page'
 
 const EMPTY_RECORDS: ModuleRecord[] = []
 
-interface Props {
+type Props = {
   moduleKey: string
   filters: Record<string, unknown>
   page: number

@@ -15,7 +15,7 @@ export interface ActionItem {
   onClick: () => void
 }
 
-interface Props {
+type Props = {
   items: ActionItem[]
   maxVisible?: number
 }

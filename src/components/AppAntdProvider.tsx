@@ -6,7 +6,7 @@ import { appAntdLocale } from '@/config/antd-locale'
 import { buildAntdTheme } from '@/styles/antd-theme'
 import { bindAntdAppApi } from '@/utils/antd-app'
 
-interface Props {
+type Props = {
   children: ReactNode
 }
 

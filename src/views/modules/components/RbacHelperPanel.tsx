@@ -4,7 +4,7 @@ import Row from 'antd/es/row'
 import Statistic from 'antd/es/statistic'
 import Typography from 'antd/es/typography'
 
-interface Props {
+type Props = {
   roleName?: string
   permissionCount?: number
   userCount?: number

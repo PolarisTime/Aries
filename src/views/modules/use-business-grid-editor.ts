@@ -6,7 +6,7 @@ import type { ModuleRecord } from '@/types/module-page'
 import type { ModulePageConfig } from '@/types/module-page'
 import { getBehaviorValue } from '@/views/modules/module-behavior-registry'
 
-interface Props {
+type Props = {
   moduleKey: string
   config: ModulePageConfig
 }

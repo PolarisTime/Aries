@@ -7,7 +7,7 @@ import {
   buildSelectedRoleSummaries,
 } from '@/views/system/user-account-view-utils'
 
-interface Props {
+type Props = {
   form: ReturnType<typeof Form.useForm<UserAccountEditorFormValues>>[0]
   roleOptions: RoleOptionRecord[]
 }

@@ -8,7 +8,7 @@ import { isEditBlockedByStatus } from '@/views/modules/module-behavior-registry'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
 
-interface Props {
+type Props = {
   pageDef: AppPageDefinition
   initialConfig?: ModulePageConfig
 }

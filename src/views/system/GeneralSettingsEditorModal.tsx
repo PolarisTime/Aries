@@ -15,7 +15,7 @@ import {
   SYSTEM_SWITCH_HELP_TEXT,
 } from '@/views/system/general-settings-view-utils'
 
-interface Props {
+type Props = {
   open: boolean
   record: ModuleRecord | null
   form: FormInstance

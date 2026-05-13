@@ -4,7 +4,7 @@ import Input from 'antd/es/input'
 import Space from 'antd/es/space'
 import type { ReactNode } from 'react'
 
-interface Props {
+type Props = {
   keyword: string
   keywordPlaceholder?: string
   keywordWidth?: number

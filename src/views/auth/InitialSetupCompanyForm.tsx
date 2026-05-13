@@ -6,7 +6,7 @@ import Input from 'antd/es/input'
 import InputNumber from 'antd/es/input-number'
 import Space from 'antd/es/space'
 
-interface Props {
+type Props = {
   adminCompleted: boolean
   loadingCompany: boolean
   onBack: () => void
