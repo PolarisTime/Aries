@@ -2,7 +2,7 @@ import type { FormInstance } from 'antd'
 import Col from 'antd/es/col'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import Modal from 'antd/es/modal'
+import { FormModal } from '@/components/FormModal'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
@@ -66,15 +66,13 @@ export function UserAccountEditorModal({
   )
 
   return (
-    <Modal
+    <FormModal
       title={isCreate ? '新增用户账户' : '编辑用户账户'}
       open={open}
-      onCancel={onClose}
-      onOk={onSave}
+      onClose={onClose}
+      onSave={onSave}
       confirmLoading={saving}
       width={760}
-      mask={{ closable: false }}
-      forceRender
     >
       <Spin spinning={loading}>
         <Form form={form} layout="vertical" className="user-account-form">
@@ -240,6 +238,6 @@ export function UserAccountEditorModal({
           </div>
         </Form>
       </Spin>
-    </Modal>
+    </FormModal>
   )
 }

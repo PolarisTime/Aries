@@ -1,7 +1,7 @@
 import Button from 'antd/es/button'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import Modal from 'antd/es/modal'
+import { FormModal } from '@/components/FormModal'
 import QRCode from 'antd/es/qr-code'
 import Spin from 'antd/es/spin'
 import Tag from 'antd/es/tag'
@@ -46,13 +46,12 @@ export function UserAccountTwoFactorModal({
   const verifyCodeId = buildFormControlId('user-account-2fa', 'verify-code')
 
   return (
-    <Modal
+    <FormModal
       title="2FA 管理"
       open={open}
-      onCancel={onClose}
+      onClose={onClose}
       footer={null}
       width={720}
-      mask={{ closable: false }}
     >
       <Spin spinning={loading}>
         {record && (
@@ -153,6 +152,6 @@ export function UserAccountTwoFactorModal({
           </>
         )}
       </Spin>
-    </Modal>
+    </FormModal>
   )
 }

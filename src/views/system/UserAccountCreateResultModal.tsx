@@ -1,6 +1,6 @@
 import { CopyOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
-import Modal from 'antd/es/modal'
+import { FormModal } from '@/components/FormModal'
 import Typography from 'antd/es/typography'
 import type { UserAccountCreateResult } from '@/types/user-account'
 
@@ -18,13 +18,12 @@ export function UserAccountCreateResultModal({
   onClose,
 }: Props) {
   return (
-    <Modal
+    <FormModal
       title="用户创建成功"
       open={open}
-      onCancel={onClose}
+      onClose={onClose}
       footer={null}
       width={560}
-      mask={{ closable: false }}
     >
       {result && (
         <div style={{ padding: '16px 0' }}>
@@ -89,6 +88,6 @@ export function UserAccountCreateResultModal({
           </div>
         </div>
       )}
-    </Modal>
+    </FormModal>
   )
 }

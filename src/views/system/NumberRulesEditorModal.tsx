@@ -2,7 +2,7 @@ import type { FormInstance } from 'antd'
 import Col from 'antd/es/col'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import Modal from 'antd/es/modal'
+import { FormModal } from '@/components/FormModal'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
@@ -45,15 +45,13 @@ export function NumberRulesEditorModal({
   const uploadRulePreview = buildUploadRulePreview(watchedRenamePattern || '')
 
   return (
-    <Modal
+    <FormModal
       title={kind === 'number-rule' ? '编辑单号规则' : '编辑上传规则'}
       open={open}
-      onCancel={onClose}
-      onOk={onSave}
+      onClose={onClose}
+      onSave={onSave}
       confirmLoading={saving}
       width={600}
-      mask={{ closable: false }}
-      forceRender
     >
       <Form form={form} layout="vertical">
         {kind === 'number-rule' ? (
@@ -126,6 +124,6 @@ export function NumberRulesEditorModal({
           </>
         )}
       </Form>
-    </Modal>
+    </FormModal>
   )
 }

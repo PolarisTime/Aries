@@ -1,7 +1,7 @@
 import type { FormInstance } from 'antd'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import Modal from 'antd/es/modal'
+import { FormModal } from '@/components/FormModal'
 import Select from 'antd/es/select'
 import type { RoleRecord } from '@/api/role-actions'
 import { roleDataScopeValues, roleTypeValues } from '@/constants/module-options'
@@ -24,16 +24,14 @@ export function RoleActionEditorModal({
   onClose,
 }: Props) {
   return (
-    <Modal
+    <FormModal
       title={editingRole ? '编辑角色' : '新增角色'}
       open={open}
-      onCancel={onClose}
-      onOk={onSave}
+      onClose={onClose}
+      onSave={onSave}
       confirmLoading={saving}
       okText="保存"
       cancelText="取消"
-      mask={{ closable: false }}
-      forceRender
     >
       <Form form={form} layout="vertical">
         <Form.Item name="roleName" label="角色名称" required>
@@ -63,6 +61,6 @@ export function RoleActionEditorModal({
           <Input.TextArea placeholder="角色描述" rows={3} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormModal>
   )
 }
