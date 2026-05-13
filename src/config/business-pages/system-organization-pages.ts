@@ -1,5 +1,5 @@
-import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { masterStatusFilter } from './shared-filters'
 import { actionSet, buildMasterOverview, statusMap } from './shared'
 
 export const systemOrganizationPageConfigs: Record<string, ModulePageConfig> = {
@@ -18,12 +18,7 @@ export const systemOrganizationPageConfigs: Record<string, ModulePageConfig> = {
         type: 'input',
         placeholder: '部门编码 / 部门名称 / 负责人',
       },
-      {
-        key: 'status',
-        label: '状态',
-        type: 'select',
-        options: enabledStatusOptions,
-      },
+      { ...masterStatusFilter },
     ],
     columns: [
       { title: '部门编码', dataIndex: 'departmentCode', width: 140 },

@@ -1,5 +1,5 @@
-import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { masterStatusFilter } from './shared-filters'
 import {
   actionSet,
   buildMasterOverview,
@@ -22,12 +22,7 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
         type: 'input',
         placeholder: '配置编码 / 单据名称 / 前缀',
       },
-      {
-        key: 'status',
-        label: '状态',
-        type: 'select',
-        options: enabledStatusOptions,
-      },
+      { ...masterStatusFilter },
     ],
     columns: [
       { title: '配置编码', dataIndex: 'settingCode', width: 150 },

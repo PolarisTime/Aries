@@ -1,5 +1,5 @@
-import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { masterStatusFilter } from './shared-filters'
 import { actionSet, buildMasterOverview, statusMap } from './shared'
 
 export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
@@ -29,11 +29,7 @@ export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
           { label: '第三方仓', value: '第三方仓' },
         ],
       },
-      {
-        key: 'status',
-        label: '状态',
-        type: 'select',
-        options: enabledStatusOptions,
+      { ...masterStatusFilter
       },
     ],
     columns: [

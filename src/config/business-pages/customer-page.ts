@@ -1,5 +1,5 @@
-import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { masterStatusFilter } from './shared-filters'
 import { actionSet, buildMasterOverview, statusMap } from './shared'
 
 export const customersPageConfig: ModulePageConfig = {
@@ -17,12 +17,7 @@ export const customersPageConfig: ModulePageConfig = {
       type: 'input',
       placeholder: '客户编码 / 名称 / 项目',
     },
-    {
-      key: 'status',
-      label: '状态',
-      type: 'select',
-      options: enabledStatusOptions,
-    },
+    { ...masterStatusFilter },
   ],
   columns: [
     { title: '客户编码', dataIndex: 'customerCode', width: 140 },

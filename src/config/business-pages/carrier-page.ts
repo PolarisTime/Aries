@@ -1,5 +1,5 @@
-import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { masterStatusFilter } from './shared-filters'
 import { actionSet, buildMasterOverview, statusMap } from './shared'
 
 export const carriersPageConfig: ModulePageConfig = {
@@ -17,12 +17,7 @@ export const carriersPageConfig: ModulePageConfig = {
       type: 'input',
       placeholder: '物流方编码 / 名称 / 联系人',
     },
-    {
-      key: 'status',
-      label: '状态',
-      type: 'select',
-      options: enabledStatusOptions,
-    },
+    { ...masterStatusFilter },
   ],
   columns: [
     { title: '物流方编码', dataIndex: 'carrierCode', width: 140 },

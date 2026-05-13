@@ -1,8 +1,6 @@
-import {
-  enabledStatusOptions,
-  userAccountDataScopeOptions,
-} from '@/constants/module-options'
+import { userAccountDataScopeOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { masterStatusFilter } from './shared-filters'
 import { buildMasterOverview, statusMap } from './shared'
 
 export const permissionManagementPageConfig: ModulePageConfig = {
@@ -20,12 +18,7 @@ export const permissionManagementPageConfig: ModulePageConfig = {
       type: 'input',
       placeholder: '权限编码 / 名称 / 模块',
     },
-    {
-      key: 'status',
-      label: '状态',
-      type: 'select',
-      options: enabledStatusOptions,
-    },
+    { ...masterStatusFilter },
   ],
   columns: [
     { title: '权限编码', dataIndex: 'permissionCode', width: 150 },
