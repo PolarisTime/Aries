@@ -16,14 +16,7 @@ export interface ModulePrintDocument {
   rows?: string[][]
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
-}
+import { escapeHtml } from '@/utils/escape-html'
 
 function formatPrintTime() {
   const current = new Date()

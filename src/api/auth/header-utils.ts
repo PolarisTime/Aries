@@ -1,8 +1,4 @@
-import type { InternalAxiosRequestConfig } from 'axios'
-
-type RetryableRequestConfig = InternalAxiosRequestConfig & {
-  _retry?: boolean
-}
+import type { RetryableRequestConfig } from './types'
 
 export function getRequestHeader(
   config: RetryableRequestConfig | undefined,

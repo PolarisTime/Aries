@@ -23,14 +23,7 @@ function stringifyValue(value: unknown) {
   return String(value)
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
-}
+import { escapeHtml } from '@/utils/escape-html'
 
 const missingValue = Symbol('missing-print-template-value')
 
