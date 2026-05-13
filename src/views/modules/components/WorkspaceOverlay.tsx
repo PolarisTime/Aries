@@ -12,6 +12,7 @@ interface Props {
   footer?: React.ReactNode
   variant?: 'drawer' | 'workspace'
   zIndex?: number
+  className?: string
 }
 
 export function WorkspaceOverlay({
@@ -24,6 +25,7 @@ export function WorkspaceOverlay({
   footer,
   variant = 'workspace',
   zIndex,
+  className,
 }: Props) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -55,7 +57,7 @@ export function WorkspaceOverlay({
     >
       <div className="workspace-overlay-mask" onClick={onClose} />
       <section
-        className={`workspace-overlay-panel workspace-overlay-panel--${variant}`}
+        className={`workspace-overlay-panel workspace-overlay-panel--${variant}${className ? ` ${className}` : ''}`}
         style={panelStyle}
       >
         <header className="workspace-overlay-header">

@@ -1,4 +1,8 @@
-import { Card, Col, Row, Statistic, Typography } from 'antd'
+import Card from 'antd/es/card'
+import Col from 'antd/es/col'
+import Row from 'antd/es/row'
+import Statistic from 'antd/es/statistic'
+import Typography from 'antd/es/typography'
 
 interface Props {
   roleName?: string

@@ -3,8 +3,11 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import { Button, Flex, Space, Typography } from 'antd'
 import type { ReactNode } from 'react'
+import Button from 'antd/es/button'
+import Flex from 'antd/es/flex'
+import Space from 'antd/es/space'
+import Typography from 'antd/es/typography'
 import type { ModuleActionDefinition } from '@/types/module-page'
 import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
 

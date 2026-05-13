@@ -1,4 +1,8 @@
-import { Alert, Col, Row, Typography } from 'antd'
+import Alert from 'antd/es/alert'
+import Col from 'antd/es/col'
+import Form from 'antd/es/form'
+import Row from 'antd/es/row'
+import Typography from 'antd/es/typography'
 import type {
   ModuleFormFieldDefinition,
   ModulePageConfig,
@@ -33,6 +37,8 @@ export function ModuleEditorFormSection({
   onCancel,
   onSave,
 }: Props) {
+  const form = Form.useFormInstance()
+  const formValues = Form.useWatch([], form) || {}
   const formFieldRows = groupFieldsByRow(config.formFields || [])
 
   if (!formFieldRows.length) {
@@ -93,6 +99,9 @@ export function ModuleEditorFormSection({
                   Boolean(field.disabled),
                   canSave,
                   lineItemsLocked,
+                  config.primaryNoKey,
+                  config.parentImport?.parentFieldKey,
+                  formValues,
                 )}
               />
             </Col>

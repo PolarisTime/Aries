@@ -1,32 +1,34 @@
 import {
   DeleteOutlined,
   DownloadOutlined,
+  EyeOutlined,
   PaperClipOutlined,
   UploadOutlined,
 } from '@ant-design/icons'
-import {
-  Button,
-  Card,
-  Empty,
-  Flex,
-  Modal,
-  Space,
-  Spin,
-  Typography,
-  Upload,
-} from 'antd'
-import { useCallback, useState } from 'react'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Empty from 'antd/es/empty'
+import Flex from 'antd/es/flex'
+import Image from 'antd/es/image'
+import Modal from 'antd/es/modal'
+import Space from 'antd/es/space'
+import Spin from 'antd/es/spin'
+import Typography from 'antd/es/typography'
+import Upload from 'antd/es/upload'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type AttachmentRecord,
   getAttachmentBindings,
   updateAttachmentBindings,
   uploadAttachment,
 } from '@/api/business'
+import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
 
 interface Props {
   open: boolean
   moduleKey: string
+  resourceKey?: string
   recordId: string
   onClose: () => void
 }
@@ -34,12 +36,20 @@ interface Props {
 export function ModuleAttachmentModal({
   open,
   moduleKey,
+  resourceKey,
   recordId,
   onClose,
 }: Props) {
+  const can = usePermissionStore((state) => state.can)
+  const resolvedResource = resourceKey || moduleKey
   const [attachments, setAttachments] = useState<AttachmentRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewSource, setPreviewSource] = useState('')
+  const pasteZoneRef = useRef<HTMLDivElement | null>(null)
+  const canCreateAttachment = can(resolvedResource, 'update')
+  const canDeleteAttachment = can(resolvedResource, 'delete')
 
   const fetchAttachments = useCallback(async () => {
     if (!recordId) return
@@ -54,7 +64,21 @@ export function ModuleAttachmentModal({
     }
   }, [moduleKey, recordId])
 
-  const handleUpload = async (file: File) => {
+  const bindAttachment = useCallback(
+    async (attachmentId: string) => {
+      const latestBindings = await getAttachmentBindings(moduleKey, recordId)
+      const latestAttachmentIds = (latestBindings.data?.attachments || []).map(
+        (item) => item.id,
+      )
+      await updateAttachmentBindings(moduleKey, recordId, [
+        ...latestAttachmentIds,
+        attachmentId,
+      ])
+    },
+    [moduleKey, recordId],
+  )
+
+  const handleUpload = useCallback(async (file: File) => {
     setUploading(true)
     try {
       const uploadRes = await uploadAttachment(file, moduleKey)
@@ -62,10 +86,7 @@ export function ModuleAttachmentModal({
       if (!attachmentId) {
         throw new Error('上传成功但未返回附件标识')
       }
-      await updateAttachmentBindings(moduleKey, recordId, [
-        ...attachments.map((item) => item.id),
-        attachmentId,
-      ])
+      await bindAttachment(attachmentId)
       message.success('上传并绑定成功')
       await fetchAttachments()
     } catch (err) {
@@ -74,7 +95,35 @@ export function ModuleAttachmentModal({
       setUploading(false)
     }
     return false
-  }
+  }, [bindAttachment, fetchAttachments, moduleKey])
+
+  const isImageAttachment = useCallback((attachment: AttachmentRecord) => {
+    if (attachment.previewType === 'image') {
+      return true
+    }
+    if (attachment.contentType?.startsWith('image/')) {
+      return true
+    }
+    const fileName = String(
+      attachment.originalFileName || attachment.fileName || attachment.name || '',
+    ).toLowerCase()
+    return /\.(png|jpe?g|gif|bmp|webp|svg)$/.test(fileName)
+  }, [])
+
+  const openPreview = useCallback((attachment: AttachmentRecord) => {
+    const src = attachment.previewUrl || attachment.downloadUrl || ''
+    if (!src) {
+      message.warning('当前附件暂无预览地址')
+      return
+    }
+    setPreviewSource(src)
+    setPreviewOpen(true)
+  }, [])
+
+  const imageAttachments = useMemo(
+    () => attachments.filter(isImageAttachment),
+    [attachments, isImageAttachment],
+  )
 
   const handleDownload = (attachment: AttachmentRecord) => {
     if (!attachment.downloadUrl) {
@@ -100,6 +149,40 @@ export function ModuleAttachmentModal({
     }
   }
 
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const handlePaste = (event: ClipboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!pasteZoneRef.current?.contains(target)) {
+        return
+      }
+
+      const clipboardItems = Array.from(event.clipboardData?.items || [])
+      const files = clipboardItems
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => Boolean(file))
+
+      if (!canCreateAttachment || !files.length) {
+        return
+      }
+
+      event.preventDefault()
+      void (async () => {
+        for (const file of files) {
+          await handleUpload(file)
+        }
+      })()
+    }
+
+    window.addEventListener('paste', handlePaste)
+    return () => {
+      window.removeEventListener('paste', handlePaste)
+    }
+  }, [canCreateAttachment, handleUpload, open])
+
   return (
     <Modal
       title="附件管理"
@@ -111,18 +194,32 @@ export function ModuleAttachmentModal({
         if (visible) void fetchAttachments()
       }}
     >
-      <div className="mb-3">
-        <Upload
-          beforeUpload={(f) => {
-            void handleUpload(f)
-            return false
-          }}
-          showUploadList={false}
+      <div
+        ref={pasteZoneRef}
+        className="module-attachment-upload-shell"
+        tabIndex={0}
+      >
+        {canCreateAttachment ? (
+          <Upload
+            beforeUpload={(f) => {
+              void handleUpload(f)
+              return false
+            }}
+            showUploadList={false}
+          >
+            <Button icon={<UploadOutlined />} loading={uploading}>
+              上传附件
+            </Button>
+          </Upload>
+        ) : null}
+        <Typography.Text
+          type="secondary"
+          className="module-attachment-upload-hint"
         >
-          <Button icon={<UploadOutlined />} loading={uploading}>
-            上传附件
-          </Button>
-        </Upload>
+          {canCreateAttachment
+            ? '支持点击上传，也支持在此区域内直接粘贴图片或文件'
+            : '当前账号无附件新增权限，可查看和下载已有附件'}
+        </Typography.Text>
       </div>
       <Spin spinning={loading}>
         {attachments.length > 0 ? (
@@ -135,7 +232,27 @@ export function ModuleAttachmentModal({
                     size={12}
                     style={{ minWidth: 0, flex: 1 }}
                   >
-                    <PaperClipOutlined />
+                    {isImageAttachment(item) ? (
+                      <button
+                        type="button"
+                        className="module-attachment-preview-thumb"
+                        onClick={() => openPreview(item)}
+                      >
+                        <Image
+                          preview={false}
+                          src={item.previewUrl || item.downloadUrl}
+                          alt={
+                            item.originalFileName || item.fileName || item.name
+                          }
+                          width={56}
+                          height={56}
+                        />
+                      </button>
+                    ) : (
+                      <span className="module-attachment-file-icon">
+                        <PaperClipOutlined />
+                      </span>
+                    )}
                     <Space
                       orientation="vertical"
                       size={0}
@@ -151,19 +268,29 @@ export function ModuleAttachmentModal({
                     </Space>
                   </Space>
                   <Space size={0}>
+                    {isImageAttachment(item) ? (
+                      <Button
+                        key="preview"
+                        type="link"
+                        icon={<EyeOutlined />}
+                        onClick={() => openPreview(item)}
+                      />
+                    ) : null}
                     <Button
                       key="download"
                       type="link"
                       icon={<DownloadOutlined />}
                       onClick={() => handleDownload(item)}
                     />
-                    <Button
-                      key="delete"
-                      type="link"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => handleDelete(item.id)}
-                    />
+                    {canDeleteAttachment ? (
+                      <Button
+                        key="delete"
+                        type="link"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDelete(item.id)}
+                      />
+                    ) : null}
                   </Space>
                 </Flex>
               </Card>
@@ -173,6 +300,36 @@ export function ModuleAttachmentModal({
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无附件" />
         )}
       </Spin>
+      {imageAttachments.length ? (
+        <Image.PreviewGroup
+          preview={{
+            visible: previewOpen,
+            current: Math.max(
+              imageAttachments.findIndex(
+                (item) =>
+                  (item.previewUrl || item.downloadUrl || '') === previewSource,
+              ),
+              0,
+            ),
+            onVisibleChange: (visible) => {
+              setPreviewOpen(visible)
+              if (!visible) {
+                setPreviewSource('')
+              }
+            },
+          }}
+        >
+          <div style={{ display: 'none' }}>
+            {imageAttachments.map((item) => (
+              <Image
+                key={item.id}
+                src={item.previewUrl || item.downloadUrl}
+                alt={item.originalFileName || item.fileName || item.name}
+              />
+            ))}
+          </div>
+        </Image.PreviewGroup>
+      ) : null}
     </Modal>
   )
 }
