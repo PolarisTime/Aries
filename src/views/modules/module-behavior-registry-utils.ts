@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleLineItem } from '@/types/module-page'
 
 export function normalizeBehaviorStringArray(value: unknown): string[] {
@@ -16,7 +17,7 @@ export function normalizeBehaviorStringArray(value: unknown): string[] {
 export function collectUniqueSourceNos(items: ModuleLineItem[]): string {
   return Array.from(
     new Set(
-      items.map((item) => String(item.sourceNo || '').trim()).filter(Boolean),
+      items.map((item) => asString(item.sourceNo).trim()).filter(Boolean),
     ),
   ).join(', ')
 }

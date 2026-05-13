@@ -1,12 +1,11 @@
+import { asString } from '@/utils/type-narrowing'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { EditOutlined, ReloadOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
-import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
-import Space from 'antd/es/space'
 import Statistic from 'antd/es/statistic'
 import Switch from 'antd/es/switch'
 import Table from 'antd/es/table'
@@ -86,7 +85,7 @@ export function GeneralSettingsTableCard({
       width: 160,
       align: 'center',
       render: (_value, record) => {
-        const enabled = String(record.status || '') === '正常'
+        const enabled = asString(record.status) === '正常'
         return (
           <Space>
             <Switch
@@ -140,7 +139,7 @@ export function GeneralSettingsTableCard({
           <Statistic
             title="当前启用"
             value={
-              filteredRows.filter((row) => String(row.status || '') === '正常')
+              filteredRows.filter((row) => asString(row.status) === '正常')
                 .length
             }
           />

@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
 import Button from 'antd/es/button'
@@ -12,7 +13,6 @@ import type {
   ModuleFilterDefinition,
   ModuleFilterOption,
   ModuleFilterOptionEntry,
-  ModuleFilterOptionGroup,
   ModulePageConfig,
 } from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
@@ -132,7 +132,7 @@ export function ModuleFilterToolbar({
         name={field.key}
         allowClear
         placeholder={field.placeholder || `请输入${field.label}`}
-        value={String(filters[field.key] || '')}
+        value={asString(filters[field.key])}
         onChange={(event) => onUpdateFilter(field.key, event.target.value)}
         onPressEnter={onSearch}
       />
@@ -156,7 +156,7 @@ export function ModuleFilterToolbar({
                 name="keyword"
                 allowClear
                 placeholder="搜索关键词..."
-                value={String(filters.keyword || '')}
+                value={asString(filters.keyword)}
                 onChange={(event) =>
                   onUpdateFilter('keyword', event.target.value)
                 }

@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { getBusinessModuleDetail, listAllBusinessModuleRows } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
@@ -43,7 +44,7 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
       ) {
         return []
       }
-      const targetValue = String(record[lineItemLockTargetField] || '').trim()
+      const targetValue = asString(record[lineItemLockTargetField]).trim()
       if (!targetValue) {
         return []
       }

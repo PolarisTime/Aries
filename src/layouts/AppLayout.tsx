@@ -161,7 +161,7 @@ export function AppLayout() {
 
   const activeTabKey = routePageContext.openPageKey
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     modal.confirm({
       title: '确认退出',
       content: '确定要退出登录吗？',

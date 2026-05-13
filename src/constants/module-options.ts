@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 // NOTE: These are fallback/default values for dropdown selects.
 // Supplier and carrier options intentionally have no fallback: business modules
 // must use master-data APIs so stale hardcoded names cannot be saved.
@@ -42,7 +43,7 @@ export function getMaterialCategoryOptions() {
 
 export function isPurchaseWeighRequiredCategory(category: unknown) {
   ensureMaterialCategoriesLoaded()
-  const normalized = String(category || '').trim()
+  const normalized = asString(category).trim()
   if (!normalized) {
     return false
   }

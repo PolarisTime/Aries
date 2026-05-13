@@ -1,12 +1,11 @@
+import { asString } from '@/utils/type-narrowing'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { EditOutlined, ReloadOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
-import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
-import Space from 'antd/es/space'
 import Statistic from 'antd/es/statistic'
 import Table from 'antd/es/table'
 import type { TableProps } from 'antd/es/table'
@@ -174,8 +173,8 @@ export function NumberRulesTableCard({
             value={
               rows.filter(
                 (row) =>
-                  String(row.ruleType || '') === 'UPLOAD_RULE' &&
-                  String(row.status || '') === '禁用',
+                  asString(row.ruleType) === 'UPLOAD_RULE' &&
+                  asString(row.status) === '禁用',
               ).length
             }
           />

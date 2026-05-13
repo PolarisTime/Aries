@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleRecord } from '@/types/module-page'
 
 export const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
@@ -65,13 +66,13 @@ export const GENERAL_SETTING_STATUS_OPTIONS = [
 
 export function isDefaultTaxRateSetting(record: ModuleRecord) {
   return (
-    String(record.settingCode || '').trim() === DEFAULT_TAX_RATE_SETTING_CODE
+    asString(record.settingCode).trim() === DEFAULT_TAX_RATE_SETTING_CODE
   )
 }
 
 export function isMaxConcurrentSetting(record: ModuleRecord) {
   return (
-    String(record.settingCode || '').trim() === MAX_CONCURRENT_SESSIONS_CODE
+    asString(record.settingCode).trim() === MAX_CONCURRENT_SESSIONS_CODE
   )
 }
 
@@ -80,7 +81,7 @@ export function isNumericSetting(record: ModuleRecord) {
 }
 
 export function isToggleSetting(record: ModuleRecord) {
-  const code = String(record.settingCode || '')
+  const code = asString(record.settingCode)
   return !isNumericSetting(record) && (code.startsWith('SYS_') || code.startsWith('UI_'))
 }
 
@@ -96,7 +97,7 @@ export function matchesGeneralSettingKeyword(
     record.billName,
     record.remark,
   ].some((item) =>
-    String(item || '')
+    asString(item)
       .toLowerCase()
       .includes(normalized),
   )
@@ -114,7 +115,7 @@ export function formatSettingValue(record: ModuleRecord) {
 }
 
 export function formatSwitchState(record: ModuleRecord) {
-  if (String(record.status || '') !== '正常') return '已关闭'
+  if (asString(record.status) !== '正常') return '已关闭'
   return '已启用'
 }
 

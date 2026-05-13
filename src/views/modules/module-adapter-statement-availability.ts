@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleRecord } from '@/types/module-page'
 import { parseParentRelationNos } from '@/views/modules/module-adapter-shared'
 
@@ -12,10 +13,10 @@ export function getAvailableSupplierStatementInbounds(
   )
 
   return inbounds.filter((record) => {
-    const inboundNo = String(record.inboundNo || '')
+    const inboundNo = asString(record.inboundNo)
     return (
       inboundNo &&
-      String(record.status || '') !== '草稿' &&
+      asString(record.status) !== '草稿' &&
       !occupiedInboundNoSet.has(inboundNo)
     )
   })
@@ -32,8 +33,8 @@ export function getAvailableCustomerStatementOrders(
   )
 
   return orders.filter((record) => {
-    const orderNo = String(record.orderNo || '')
-    const status = String(record.status || '')
+    const orderNo = asString(record.orderNo)
+    const status = asString(record.status)
     return (
       orderNo &&
       (status === '待完善' || status === '完成销售') &&
@@ -53,7 +54,7 @@ export function getAvailableFreightStatementBills(
   )
 
   return bills.filter((record) => {
-    const billNo = String(record.billNo || '')
+    const billNo = asString(record.billNo)
     return billNo && !occupiedBillNoSet.has(billNo)
   })
 }

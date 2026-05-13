@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
@@ -17,7 +18,7 @@ import {
 
 function getNormalizedUniqueValues(values: unknown[]) {
   return Array.from(
-    new Set(values.map((value) => String(value || '').trim()).filter(Boolean)),
+    new Set(values.map((value) => asString(value).trim()).filter(Boolean)),
   )
 }
 
@@ -160,7 +161,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       enforceUniqueRelation: true,
       allowMultipleSelection: true,
       validateBeforeOpen: (currentRecord) =>
-        String(currentRecord.carrierName || '').trim()
+        asString(currentRecord.carrierName).trim()
           ? null
           : '请先选择物流商，再导入销售出库单',
       mapParentToDraft: (parentRecord) => ({
@@ -172,7 +173,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
           currentRecord.customerName,
           ...currentItems.map((item) => item.customerName),
         ])
-        const nextCustomerName = String(parentRecord.customerName || '').trim()
+        const nextCustomerName = asString(parentRecord.customerName).trim()
 
         if (
           existingCustomerNames.length &&

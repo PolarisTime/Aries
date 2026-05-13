@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { useCallback } from 'react'
 import { getBusinessModuleDetail } from '@/api/business'
 import { getDefaultPrintTemplate } from '@/api/print-template'
@@ -88,7 +89,7 @@ export function useBusinessGridPrintActions({
 
             return buildModulePrintHtml({
               title: config.title,
-              subtitle: String(record[config.primaryNoKey || 'id'] || ''),
+              subtitle: asString(record[config.primaryNoKey || 'id']),
               fields,
               columns: itemColumns.map((column) => ({
                 title: column.title,

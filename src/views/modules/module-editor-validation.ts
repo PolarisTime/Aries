@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
 import type {
   ModuleColumnDefinition,
@@ -27,7 +28,7 @@ function getLineItemValidationMessages(
     }
     if (moduleKey === 'purchase-inbound') {
       const isWeighSettlement =
-        String(item.settlementMode || '').trim() === '过磅'
+        asString(item.settlementMode).trim() === '过磅'
       if (
         isPurchaseWeighRequiredCategory(item.category) &&
         !isWeighSettlement

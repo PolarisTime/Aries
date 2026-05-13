@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { useQuery } from '@tanstack/react-query'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import Form from 'antd/es/form'
@@ -44,7 +45,7 @@ export function NumberRulesView() {
   const filteredRows = useMemo(
     () =>
       rows.filter((record) => {
-        if (statusFilter && String(record.status || '') !== statusFilter) {
+        if (statusFilter && asString(record.status) !== statusFilter) {
           return false
         }
         return matchesNumberRuleKeyword(record, keyword)

@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type {
   ModuleLineItem,
   ModuleParentImportDefinition,
@@ -15,11 +16,11 @@ function getSourceParentItemId(item: ModuleLineItem) {
 }
 
 function resolvePersistedParentRelationNo(item: ModuleLineItem) {
-  const explicitRelationNo = String(item._parentRelationNo || '').trim()
+  const explicitRelationNo = asString(item._parentRelationNo).trim()
   if (explicitRelationNo) {
     return explicitRelationNo
   }
-  return String(item.sourceNo || '').trim()
+  return asString(item.sourceNo).trim()
 }
 
 function toSafeNumber(value: unknown) {
@@ -32,7 +33,7 @@ function toFiniteNumber(value: unknown) {
 }
 
 function isBlankString(value: unknown) {
-  return String(value ?? '').trim() === ''
+  return asString(value).trim() === ''
 }
 
 function isZeroLike(value: unknown) {
@@ -51,8 +52,8 @@ function isEmptyDraftLineItem(item: ModuleLineItem) {
     return false
   }
 
-  const unit = String(item.unit ?? '').trim()
-  const quantityUnit = String(item.quantityUnit ?? '').trim()
+  const unit = asString(item.unit).trim()
+  const quantityUnit = asString(item.quantityUnit).trim()
   return (
     [
       item.materialCode,
@@ -90,7 +91,7 @@ export function findParentRecordByRelationNo(
   relationNo: string,
 ) {
   return rows.find(
-    (record) => String(record[parentDisplayFieldKey] || '') === relationNo,
+    (record) => asString(record[parentDisplayFieldKey]) === relationNo,
   )
 }
 
@@ -110,7 +111,7 @@ export function buildParentImportState(options: {
   } = options
 
   const parentNo = String(
-    String(parentRecord[parentImportConfig.parentDisplayFieldKey] || ''),
+    asString(parentRecord[parentImportConfig.parentDisplayFieldKey]),
   )
   const hasImportedCurrentParent = currentParentNos.includes(parentNo)
   const mergedParentNos = hasImportedCurrentParent

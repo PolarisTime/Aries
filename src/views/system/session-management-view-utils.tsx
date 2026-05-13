@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { StopOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Tag from 'antd/es/tag'
@@ -21,7 +22,7 @@ export function getSessionOnlineLabel(record: RefreshTokenRecord) {
 }
 
 export function truncateSessionDeviceInfo(text: unknown) {
-  const normalized = String(text ?? '')
+  const normalized = asString(text)
   if (!normalized) return '--'
   return normalized.length > 60 ? `${normalized.slice(0, 60)}...` : normalized
 }

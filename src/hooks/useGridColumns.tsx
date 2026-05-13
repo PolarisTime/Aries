@@ -22,7 +22,6 @@ interface Props {
   canUpdate: boolean
 }
 
-export interface GridColumnRenderMeta {
   width?: string
   align?: string
   fixed?: string

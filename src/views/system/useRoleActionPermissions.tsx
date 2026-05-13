@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { TableColumnsType } from 'antd'
 import Checkbox from 'antd/es/checkbox'
@@ -218,7 +219,7 @@ export function useRoleActionPermissions({
               checked={Boolean(checked)}
               disabled={!canEditPermissions}
               onChange={() =>
-                toggleAction(String(record.menuCode || ''), action)
+                toggleAction(asString(record.menuCode), action)
               }
             />
           )

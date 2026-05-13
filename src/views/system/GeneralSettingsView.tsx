@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { useQuery } from '@tanstack/react-query'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import Form from 'antd/es/form'
@@ -42,7 +43,7 @@ export function GeneralSettingsView() {
       rows
         .filter(isSystemSwitch)
         .filter((record) => {
-          if (statusFilter && String(record.status || '') !== statusFilter) {
+          if (statusFilter && asString(record.status) !== statusFilter) {
             return false
           }
           return matchesGeneralSettingKeyword(record, keyword)
@@ -73,11 +74,11 @@ export function GeneralSettingsView() {
         settingName: record.settingName,
         billName: record.billName,
         remark: record.remark,
-        enabled: String(record.status || '') === '正常',
+        enabled: asString(record.status) === '正常',
         numericValue: isDefaultTaxRateSetting(record)
           ? Number(record.sampleNo || 0.13)
           : Number(record.sampleNo || 0),
-        selectedActions: String(record.sampleNo || '')
+        selectedActions: asString(record.sampleNo)
           .split(',')
           .filter(Boolean),
       })
@@ -89,7 +90,7 @@ export function GeneralSettingsView() {
   const handleToggle = useCallback(
     async (record: ModuleRecord) => {
       setToggling(true)
-      const nextStatus = String(record.status || '') === '正常' ? '禁用' : '正常'
+      const nextStatus = asString(record.status) === '正常' ? '禁用' : '正常'
       try {
         await saveSystemSetting({
           id: record.id,

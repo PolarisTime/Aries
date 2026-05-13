@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ModuleRecord } from '@/types/module-page'
 
 export type NumberRuleEditorKind = 'number-rule' | 'upload-rule'
@@ -20,12 +21,12 @@ export const NUMBER_RULE_STATUS_OPTIONS = [
 ]
 
 export function isUploadRule(record: ModuleRecord) {
-  return String(record.ruleType || '') === 'UPLOAD_RULE'
+  return asString(record.ruleType) === 'UPLOAD_RULE'
 }
 
 export function isSystemSwitch(record: ModuleRecord) {
   if (isUploadRule(record)) return false
-  const settingCode = String(record.settingCode || '')
+  const settingCode = asString(record.settingCode)
   return settingCode.startsWith('UI_') || settingCode.startsWith('SYS_')
 }
 
@@ -48,7 +49,7 @@ export function matchesNumberRuleKeyword(
     record.remark,
     record.moduleKey,
   ].some((item) =>
-    String(item || '')
+    asString(item)
       .toLowerCase()
       .includes(normalized),
   )

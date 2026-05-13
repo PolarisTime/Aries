@@ -39,7 +39,7 @@ function normalizeProfile(raw: Record<string, unknown> | null | undefined): Comp
             remark: asString(row.remark),
           }
         })
-      : []) as CompanySettlementAccount[],
+      : []),
     status: asString(raw.status) || '正常',
     remark: asString(raw.remark),
   }

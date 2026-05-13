@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import type { ParsedLocation } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef } from 'react'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
@@ -66,7 +67,7 @@ export function resolveAutoOpenDetailTarget({
   const matchedRecord = routeParams.trackId
     ? records.find((record) => String(record.id || '') === routeParams.trackId)
     : records.find(
-        (record) => String(record[primaryNoKey] || '') === routeParams.docNo,
+        (record) => asString(record[primaryNoKey]) === routeParams.docNo,
       )
 
   if (matchedRecord) {

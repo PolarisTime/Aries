@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import dayjs from 'dayjs'
 import { useCallback } from 'react'
 import { generateBusinessPrimaryNo } from '@/api/business'
@@ -45,7 +46,7 @@ export function useModuleRecordHelpers({ moduleKey, config }: Props) {
 
   const getRowClassName = useCallback(
     (record: ModuleRecord) => {
-      const status = String(record.status || '')
+      const status = asString(record.status)
       return config.rowHighlightStatuses?.includes(status)
         ? 'table-row-emphasis'
         : ''

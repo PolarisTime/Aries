@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
 import { http } from './client'
@@ -45,7 +46,7 @@ export function getCarrierOptions(): CarrierOption[] {
 export function findCarrierOption(
   carrierName: unknown,
 ): CarrierOption | undefined {
-  const normalizedCarrierName = String(carrierName || '').trim()
+  const normalizedCarrierName = asString(carrierName).trim()
   if (!normalizedCarrierName) return undefined
   return getCarrierOptions().find(
     (option) => String(option.value).trim() === normalizedCarrierName,

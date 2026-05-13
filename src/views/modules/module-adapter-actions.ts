@@ -1,3 +1,4 @@
+import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
 
 export type ModuleActionKind =
@@ -174,7 +175,7 @@ export function buildReverseAuditTarget(
   statusOptions: string[],
   preferredStatus?: unknown,
 ) {
-  const preferred = String(preferredStatus ?? '').trim()
+  const preferred = asString(preferredStatus).trim()
   if (preferred && statusOptions.includes(preferred)) {
     return { key: 'status', value: preferred }
   }
