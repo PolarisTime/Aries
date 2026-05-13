@@ -1,4 +1,3 @@
-import { getFormString, validateFormFields } from '@/utils/antd-form-safe'
 import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Card from 'antd/es/card'
@@ -23,20 +22,16 @@ import {
   requiresForcedTotpSetup,
 } from './login-view-utils'
 import { useLoginTotpSession } from './useLoginTotpSession'
-
 function useClientClock() {
   const [now, setNow] = useState(Date.now())
-
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(timer)
   }, [])
-
   const timeText = useMemo(() => {
     const d = new Date(now)
     return d.toLocaleTimeString('zh-CN', { hour12: false })
   }, [now])
-
   const dateText = useMemo(() => {
     const d = new Date(now)
     return d.toLocaleDateString('zh-CN', {
@@ -46,16 +41,13 @@ function useClientClock() {
       weekday: 'long',
     })
   }, [now])
-
   return { now, timeText, dateText }
 }
-
 export function LoginView() {
   const navigate = useNavigate()
   const signIn = useAuthStore((s) => s.signIn)
   const verify2fa = useAuthStore((s) => s.verify2fa)
   const { showError } = useRequestError()
-
   const {
     now: totpNow,
     reset2faStep,
@@ -66,7 +58,6 @@ export function LoginView() {
     tempToken,
     totpCode,
   } = useLoginTotpSession()
-
   const [loading, setLoading] = useState(false)
   const [totpLoading, setTotpLoading] = useState(false)
   const [captcha, setCaptcha] = useState<CaptchaData | null>(null)
@@ -74,10 +65,8 @@ export function LoginView() {
   const [flipped, setFlipped] = useState(!!savedSession)
   const [backendOnline, setBackendOnline] = useState(() => getCachedHealth().online)
   const [setupStatus, setSetupStatus] = useState<InitialSetupStatus | null>(null)
-
   const { timeText, dateText } = useClientClock()
   const healthTimerRef = useRef<ReturnType<typeof setInterval>>(null)
-
   useEffect(() => {
     void checkBackendHealth().then(setBackendOnline)
     healthTimerRef.current = setInterval(() => {
@@ -87,7 +76,6 @@ export function LoginView() {
       if (healthTimerRef.current) clearInterval(healthTimerRef.current)
     }
   }, [])
-
   useEffect(() => {
     getInitialSetupStatus()
       .then((res) => {
@@ -97,7 +85,6 @@ export function LoginView() {
         // non-critical
       })
   }, [])
-
   const loadCaptcha = useCallback(async () => {
     try {
       const response = await fetchCaptcha()
@@ -108,12 +95,10 @@ export function LoginView() {
       // captcha is optional
     }
   }, [])
-
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data fetch requires setState
     void loadCaptcha()
   }, [loadCaptcha])
-
   const handleLogin = useCallback(
     async (values: LoginPayload) => {
       setLoading(true)
@@ -127,7 +112,6 @@ export function LoginView() {
           setFlipped(true)
           return
         }
-
         clearTotpSession()
         message.success(
           requiresForcedTotpSetup(result.user)
@@ -144,19 +128,16 @@ export function LoginView() {
     },
     [captcha?.captchaId, loadCaptcha, navigate, showError, signIn, start2faStep],
   )
-
   const handleTotpVerify = useCallback(async () => {
     if (!/^\d{6}$/.test(totpCode.trim())) {
       message.error('请输入6位验证码')
       return
     }
-
     if (stepDeadline > 0 && Date.now() >= stepDeadline) {
       reset2faStep(true)
       setFlipped(false)
       return
     }
-
     setTotpLoading(true)
     try {
       const result = await verify2fa({
@@ -182,14 +163,11 @@ export function LoginView() {
     totpCode,
     verify2fa,
   ])
-
   const handleBackToPassword = useCallback(() => {
     reset2faStep(false)
     setFlipped(false)
   }, [reset2faStep])
-
   const isExpired = stepDeadline > 0 && totpNow >= stepDeadline
-
   useEffect(() => {
     if (isExpired && flipped) {
       const timer = setTimeout(() => {
@@ -199,14 +177,11 @@ export function LoginView() {
       return () => clearTimeout(timer)
     }
   }, [isExpired, flipped, reset2faStep])
-
   const isExpiring = !isExpired && stepDeadline > 0 && (stepDeadline - totpNow) < 60000
-
   const activeLoginName =
     String(
       getFormString(form, 'loginName') || savedSession?.loginName || '',
     ).trim() || '当前账户'
-
   const countdownText = useMemo(() => {
     if (stepDeadline > 0) {
       const remaining = Math.max(0, Math.ceil((stepDeadline - totpNow) / 1000))
@@ -216,15 +191,12 @@ export function LoginView() {
     }
     return '05:00'
   }, [stepDeadline, totpNow])
-
   const captchaImageSrc = useMemo(
     () => toDataImageUrl(captcha?.captchaImage),
     [captcha?.captchaImage],
   )
   const shouldShowCaptcha = Boolean(captcha?.required)
-
   const setupReady = !setupStatus?.setupRequired
-
   const hero = (
     <div className="login-hero-content">
       <div className="login-hero-logo">L</div>
@@ -232,7 +204,6 @@ export function LoginView() {
       <p className="login-hero-subtitle">
         统一采购、销售、库存、财务的一体化业务中台
       </p>
-
       <div className="login-hero-meta">
         <div className="login-hero-meta-item">
           <span
@@ -245,14 +216,12 @@ export function LoginView() {
           {setupReady ? '系统已就绪' : '待初始化配置'}
         </div>
       </div>
-
       <div style={{ marginTop: 40 }}>
         <div className="login-hero-clock">{timeText}</div>
         <div className="login-hero-date">{dateText}</div>
       </div>
     </div>
   )
-
   return (
     <AuthPageShell hero={hero}>
       <div className="login-scene">
@@ -272,7 +241,6 @@ export function LoginView() {
               />
             </Card>
           </div>
-
           <div className="login-card-face is-back">
             <Card className="login-form-card">
               <LoginTotpPanel

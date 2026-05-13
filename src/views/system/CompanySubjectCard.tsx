@@ -1,4 +1,3 @@
-import { getFormString, validateFormFields } from '@/utils/antd-form-safe'
 import { EditOutlined, IdcardOutlined } from '@ant-design/icons'
 import type { FormInstance } from 'antd'
 import Card from 'antd/es/card'
@@ -6,13 +5,11 @@ import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
-
 interface Props {
   form: FormInstance
   canSave: boolean
   settlementAccountCount: number
 }
-
 export function CompanySubjectCard({
   form,
   canSave,

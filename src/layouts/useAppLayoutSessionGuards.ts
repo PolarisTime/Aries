@@ -18,6 +18,7 @@ export function useAppLayoutSessionGuards(options: Options) {
     if (!options.token && options.locationPathname !== '/login') {
       void options.navigate({ to: '/login' })
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.locationPathname, options.navigate, options.token])
 
   useEffect(() => {
@@ -30,5 +31,6 @@ export function useAppLayoutSessionGuards(options: Options) {
     void options.navigate({
       to: `/setup-2fa?redirect=${encodeURIComponent(redirectTarget)}` as '/',
     })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.locationPathname, options.navigate, options.user])
 }

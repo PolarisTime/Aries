@@ -1,6 +1,5 @@
 import { asString } from '@/utils/type-narrowing'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
-import { EditOutlined, ReloadOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
@@ -16,7 +15,6 @@ import {
   formatSettingValue,
   GENERAL_SETTING_STATUS_OPTIONS,
 } from '@/views/system/general-settings-view-utils'
-
 interface Props {
   keyword: string
   statusFilter?: string
@@ -32,7 +30,6 @@ interface Props {
   onEdit: (record: ModuleRecord) => void
   onToggle: (record: ModuleRecord) => void
 }
-
 export function GeneralSettingsTableCard({
   keyword,
   statusFilter,
@@ -76,7 +73,6 @@ export function GeneralSettingsTableCard({
     },
     { dataIndex: 'remark', title: '说明', width: 420 },
   ]
-
   const switchColumns: TableProps<ModuleRecord>['columns'] = [
     { dataIndex: 'settingName', title: '开关名称', width: 240 },
     {
@@ -105,7 +101,6 @@ export function GeneralSettingsTableCard({
     },
     { dataIndex: 'remark', title: '说明', width: 420 },
   ]
-
   return (
     <Card
       title="通用设置"
@@ -145,7 +140,6 @@ export function GeneralSettingsTableCard({
           />
         </Col>
       </Row>
-
       <Typography.Title level={5}>基础参数</Typography.Title>
       <Table
         rowKey="id"
@@ -156,7 +150,6 @@ export function GeneralSettingsTableCard({
         pagination={false}
         style={{ marginBottom: 24 }}
       />
-
       <Typography.Title level={5}>系统开关</Typography.Title>
       <Table
         rowKey="id"

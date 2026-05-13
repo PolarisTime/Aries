@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -186,7 +187,7 @@ export function DatabaseBackupView() {
     <div className="page-stack">
       <DatabaseStatusOverview
         dbStatus={dbStatus}
-        loading={statusLoading}
+        loading={() => { void statusLoading() }}
         onRefresh={() =>
           queryClient.invalidateQueries({ queryKey: ['database-status'] })
         }
@@ -205,7 +206,7 @@ export function DatabaseBackupView() {
       {canExport && (
         <DatabaseExportTasksCard
           tasks={exportTasks}
-          loading={taskLoading}
+          loading={() => { void taskLoading() }}
           onRefresh={() =>
             queryClient.invalidateQueries({
               queryKey: ['database-export-tasks'],

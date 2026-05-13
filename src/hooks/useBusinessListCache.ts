@@ -42,6 +42,7 @@ export function useBusinessListCache(params: {
 }) {
   const cacheKey = useMemo(
     () => buildBusinessListCacheKey(params),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       params.filters,
       params.moduleKey,

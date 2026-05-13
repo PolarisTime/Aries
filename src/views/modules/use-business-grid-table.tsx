@@ -11,9 +11,7 @@ import type {
   SortingState,
 } from '@/hooks/useDataTable'
 import { useDataTable } from '@/hooks/useDataTable'
-import { type GridColumnRenderMeta, useGridColumns } from '@/hooks/useGridColumns'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-
 interface Props {
   moduleKey: string
   config: ModulePageConfig | undefined
@@ -33,7 +31,6 @@ interface Props {
   sorting: SortingState
   onSortingChange: (sorting: SortingState) => void
 }
-
 function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
   const ordered = new Set(savedOrder)
   const merged = [...savedOrder]
@@ -42,7 +39,6 @@ function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
   }
   return merged
 }
-
 export function useBusinessGridTable({
   moduleKey,
   config,
@@ -64,7 +60,6 @@ export function useBusinessGridTable({
     handleColumnOrderChange,
     handleColumnVisibilityChange,
   } = useColumnSettingsSupport(moduleKey, config?.defaultHiddenColumnKeys)
-
   const rowSelectionState: RowSelectionState = useMemo(() => {
     const state: RowSelectionState = {}
     for (const id of selectedRowKeys) {
@@ -72,7 +67,6 @@ export function useBusinessGridTable({
     }
     return state
   }, [selectedRowKeys])
-
   const { columns: columnDefs } = useGridColumns({
     config: config ?? {
       key: '',
@@ -88,7 +82,6 @@ export function useBusinessGridTable({
     rowActions: buildActions,
     canUpdate: Boolean(config) && canUpdateRecord,
   })
-
   const allColumnIds = useMemo(
     () =>
       columnDefs.map(
@@ -97,23 +90,19 @@ export function useBusinessGridTable({
       ),
     [columnDefs],
   )
-
   const columnOrder = useMemo(
     () => mergeColumnOrder(allColumnIds, savedOrder),
     [allColumnIds, savedOrder],
   )
-
   const handlePaginationChange = (p: PaginationState) => {
     onPaginationChange(p.pageIndex + 1, p.pageSize)
   }
-
   const handleAntdSortingChange = useCallback(
     (columnKey?: string | number, order?: 'ascend' | 'descend' | null) => {
       if (!columnKey || !order) {
         onSortingChange([])
         return
       }
-
       onSortingChange([
         {
           id: String(columnKey),
@@ -123,7 +112,6 @@ export function useBusinessGridTable({
     },
     [onSortingChange],
   )
-
   const { table } = useDataTable<ModuleRecord>({
     data: records,
     columns: columnDefs,
@@ -148,7 +136,6 @@ export function useBusinessGridTable({
     onColumnOrderChange: handleColumnOrderChange,
     sorting,
   })
-
   const headerGroup = table.getHeaderGroups()[0]
   const antdColumns: TableColumnsType<ModuleRecord> = headerGroup
     ? headerGroup.headers.map((header) => ({
@@ -175,7 +162,6 @@ export function useBusinessGridTable({
         },
       }))
     : []
-
   const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined =
     canUpdateRecord
       ? {
@@ -185,29 +171,24 @@ export function useBusinessGridTable({
             setSelectedRowKeys(normalizedKeys)
             setSelectedRowMap((prev) => {
               const next = { ...prev }
-
               for (const key of Object.keys(next)) {
                 if (!normalizedKeys.includes(key)) {
                   delete next[key]
                 }
               }
-
               for (const row of rows) {
                 next[String(row.id)] = row
               }
-
               return next
             })
           },
           preserveSelectedRowKeys: true,
         }
       : undefined
-
   const columnVisibleKeys = useMemo(
     () => allColumnIds.filter((id) => columnVisibility[id] !== false),
     [allColumnIds, columnVisibility],
   )
-
   const toggleColumn = useCallback(
     (key: string) => {
       const next = { ...columnVisibility }
@@ -220,7 +201,6 @@ export function useBusinessGridTable({
     },
     [columnVisibility, handleColumnVisibilityChange],
   )
-
   return {
     table,
     antdColumns,
