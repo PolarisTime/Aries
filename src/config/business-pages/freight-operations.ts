@@ -1,0 +1,195 @@
+import {
+  getCarrierOptions,
+  getCarrierVehiclePlateOptions,
+} from '@/constants/module-options'
+import type { ModulePageConfig } from '@/types/module-page'
+import {
+  AUDIT_STATUS_LABEL,
+  CARRIER_NAME_LABEL,
+  FREIGHT_NO_FILTER_LABEL,
+} from './filter-labels'
+import {
+  buildAmountWeightOverview,
+  compactFreightItemColumns,
+  statusMap,
+  transformFreightItems,
+} from './shared'
+
+function getNormalizedUniqueValues(values: unknown[]) {
+  return Array.from(
+    new Set(values.map((value) => String(value || '').trim()).filter(Boolean)),
+  )
+}
+
+export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
+  'freight-bill': {
+    key: 'freight-bill',
+    title: '物流单',
+    kicker: 'Freight',
+    description:
+      '物流单页面按现版逻辑建立在销售出库之上，支持关联出库单、自动计算总重量和总运费，并继续流向物流对账。',
+    primaryNoKey: 'billNo',
+    actions: [
+      { key: 'create_freight_bill', label: '新增物流单', type: 'primary' },
+      { key: 'generate_pickup_list', label: '生成提货清单', type: 'default' },
+      { key: 'mark_delivered', label: '标记送达', type: 'default' },
+    ],
+    filters: [
+      {
+        key: 'keyword',
+        label: FREIGHT_NO_FILTER_LABEL,
+        type: 'input',
+        placeholder: '输入物流单号',
+      },
+      {
+        key: 'carrierName',
+        label: CARRIER_NAME_LABEL,
+        type: 'select',
+        options: getCarrierOptions,
+      },
+      {
+        key: 'status',
+        label: AUDIT_STATUS_LABEL,
+        type: 'select',
+        options: [
+          { label: '未审核', value: '未审核' },
+          { label: '已审核', value: '已审核' },
+        ],
+      },
+      { key: 'billTime', label: '单据日期', type: 'dateRange' },
+    ],
+    columns: [
+      { title: '物流单号', dataIndex: 'billNo', width: 160 },
+      { title: '物流商', dataIndex: 'carrierName', width: 140 },
+      { title: '车号', dataIndex: 'vehiclePlate', width: 120 },
+      { title: '单据日期', dataIndex: 'billTime', width: 120, type: 'date' },
+      {
+        title: '总重量（吨）',
+        dataIndex: 'totalWeight',
+        width: 116,
+        align: 'right',
+        type: 'weight',
+      },
+      {
+        title: '单价',
+        dataIndex: 'unitPrice',
+        width: 100,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: '总运费',
+        dataIndex: 'totalFreight',
+        width: 110,
+        align: 'right',
+        type: 'amount',
+      },
+    ],
+    defaultHiddenColumnKeys: ['vehiclePlate', 'unitPrice'],
+    detailFields: [
+      { label: '物流单号', key: 'billNo' },
+      { label: '关联出库单', key: 'outboundNo' },
+      { label: '物流商', key: 'carrierName' },
+      { label: '车号', key: 'vehiclePlate' },
+      { label: '客户名称', key: 'customerName' },
+      { label: '项目名称', key: 'projectName' },
+      { label: '单据日期', key: 'billTime', type: 'date' },
+      { label: '单价', key: 'unitPrice', type: 'amount' },
+      { label: '总重量（吨）', key: 'totalWeight', type: 'weight' },
+      { label: '总运费', key: 'totalFreight', type: 'amount' },
+      { label: '审核状态', key: 'status', type: 'status' },
+      { label: '送达状态', key: 'deliveryStatus', type: 'status' },
+      { label: '备注', key: 'remark' },
+    ],
+    formFields: [
+      {
+        key: 'billNo',
+        label: '物流单号',
+        type: 'input',
+        required: true,
+        row: 1,
+      },
+      {
+        key: 'outboundNo',
+        label: '关联出库单',
+        type: 'input',
+        disabled: true,
+        placeholder: '通过上级单据导入',
+        row: 1,
+      },
+      {
+        key: 'carrierName',
+        label: '物流商',
+        type: 'select',
+        required: true,
+        options: getCarrierOptions,
+        row: 1,
+      },
+      {
+        key: 'vehiclePlate',
+        label: '车号',
+        type: 'autoComplete',
+        options: getCarrierVehiclePlateOptions,
+        row: 1,
+      },
+      {
+        key: 'billTime',
+        label: '单据日期',
+        type: 'date',
+        required: true,
+        row: 2,
+      },
+      {
+        key: 'unitPrice',
+        label: '单价',
+        type: 'number',
+        required: true,
+        min: 0,
+        precision: 2,
+        defaultValue: 0,
+        row: 2,
+      },
+      { key: 'remark', label: '备注', type: 'input', row: 2 },
+    ],
+    parentImport: {
+      parentModuleKey: 'sales-outbound',
+      label: '上级销售出库单',
+      parentFieldKey: 'outboundNo',
+      parentDisplayFieldKey: 'outboundNo',
+      buttonText: '导入上级销售出库单',
+      enforceUniqueRelation: true,
+      allowMultipleSelection: true,
+      validateBeforeOpen: (currentRecord) =>
+        String(currentRecord.carrierName || '').trim()
+          ? null
+          : '请先选择物流商，再导入销售出库单',
+      mapParentToDraft: (parentRecord) => ({
+        customerName: parentRecord.customerName || '',
+        projectName: parentRecord.projectName || '',
+      }),
+      validateParentImport: ({ currentRecord, currentItems, parentRecord }) => {
+        const existingCustomerNames = getNormalizedUniqueValues([
+          currentRecord.customerName,
+          ...currentItems.map((item) => item.customerName),
+        ])
+        const nextCustomerName = String(parentRecord.customerName || '').trim()
+
+        if (
+          existingCustomerNames.length &&
+          nextCustomerName &&
+          !existingCustomerNames.includes(nextCustomerName)
+        ) {
+          return '仅支持同一客户名称的销售出库单合并生成物流单'
+        }
+
+        return null
+      },
+      transformItems: transformFreightItems,
+    },
+    itemColumns: compactFreightItemColumns,
+    data: [],
+    buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalFreight'),
+    statusMap,
+    rowHighlightStatuses: ['未审核', '未送达'],
+  },
+}

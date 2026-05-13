@@ -25,19 +25,37 @@ export type PermissionActionCode =
 
 export function resolveModuleActionKind(options: {
   moduleKey: string
+  actionKey?: string
   actionLabel: string
   hasFormFields: boolean
   isMaterialModule: boolean
 }): ModuleActionKind {
-  const { moduleKey, actionLabel, hasFormFields, isMaterialModule } = options
+  const { moduleKey, actionKey, actionLabel, hasFormFields, isMaterialModule } =
+    options
 
-  const actionKindsByLabel = getBehaviorValue(moduleKey, 'actionKindsByLabel') as Record<string, ModuleActionKind> | undefined
+  if (actionKey) {
+    const actionKindsByKey = getBehaviorValue(moduleKey, 'actionKindsByKey') as
+      | Record<string, ModuleActionKind>
+      | undefined
+    const mappedByKey = actionKindsByKey?.[actionKey]
+    if (mappedByKey) {
+      return mappedByKey
+    }
+  }
+
+  const actionKindsByLabel = getBehaviorValue(
+    moduleKey,
+    'actionKindsByLabel',
+  ) as Record<string, ModuleActionKind> | undefined
   const mappedActionKind = actionKindsByLabel?.[actionLabel]
   if (mappedActionKind) {
     return mappedActionKind
   }
 
-  if ((actionLabel.includes('新增') || actionLabel.includes('生成')) && hasFormFields) {
+  if (
+    (actionLabel.includes('新增') || actionLabel.includes('生成')) &&
+    hasFormFields
+  ) {
     return 'openCreateEditor'
   }
 
@@ -48,7 +66,24 @@ export function resolveModuleActionKind(options: {
   return 'none'
 }
 
-export function resolveModuleActionPermissionCodes(actionLabel: string): PermissionActionCode[] {
+export function resolveModuleActionPermissionCodes(options: {
+  moduleKey?: string
+  actionKey?: string
+  actionLabel: string
+}): PermissionActionCode[] {
+  const { moduleKey, actionKey, actionLabel } = options
+
+  if (moduleKey && actionKey) {
+    const permissionCodesByActionKey = getBehaviorValue(
+      moduleKey,
+      'permissionCodesByActionKey',
+    ) as Record<string, PermissionActionCode[]> | undefined
+    const mappedByKey = permissionCodesByActionKey?.[actionKey]
+    if (mappedByKey?.length) {
+      return mappedByKey
+    }
+  }
+
   if (actionLabel === '配置权限') {
     return ['manage_permissions']
   }
@@ -127,21 +162,26 @@ export function buildEditorAuditTarget(
   moduleKey: string,
   statusOptions: string[],
   lineItemsLocked: boolean,
+  currentStatus?: string,
 ) {
   const lockedAuditStatus = getBehaviorValue(moduleKey, 'lockedAuditStatus')
   if (lineItemsLocked && typeof lockedAuditStatus === 'string') {
+    if (currentStatus === lockedAuditStatus) return null
     return { key: 'status', value: lockedAuditStatus }
   }
 
   const auditStatus = getBehaviorValue(moduleKey, 'auditStatus')
   if (typeof auditStatus === 'string') {
+    if (currentStatus === auditStatus) return null
     return { key: 'status', value: auditStatus }
   }
 
   if (statusOptions.includes('已审核')) {
+    if (currentStatus === '已审核') return null
     return { key: 'status', value: '已审核' }
   }
   if (statusOptions.includes('已核准')) {
+    if (currentStatus === '已核准') return null
     return { key: 'status', value: '已核准' }
   }
 
@@ -159,11 +199,16 @@ export function buildReverseAuditTarget(
   }
 
   const defaultStatus = getBehaviorValue(moduleKey, 'defaultStatus')
-  if (typeof defaultStatus === 'string' && statusOptions.includes(defaultStatus)) {
+  if (
+    typeof defaultStatus === 'string' &&
+    statusOptions.includes(defaultStatus)
+  ) {
     return { key: 'status', value: defaultStatus }
   }
 
   const fallbackStatuses = ['草稿', '未审核', '待审核', '待确认', '未核准']
-  const fallback = fallbackStatuses.find((status) => statusOptions.includes(status))
+  const fallback = fallbackStatuses.find((status) =>
+    statusOptions.includes(status),
+  )
   return fallback ? { key: 'status', value: fallback } : null
 }

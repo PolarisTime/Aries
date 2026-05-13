@@ -67,10 +67,16 @@ function renderItemsTable(columns: PrintableColumn[], rows: string[][]) {
   }
 
   const headerHtml = columns
-    .map((column) => `<th style="text-align:${column.align || 'left'};">${escapeHtml(column.title)}</th>`)
+    .map(
+      (column) =>
+        `<th style="text-align:${column.align || 'left'};">${escapeHtml(column.title)}</th>`,
+    )
     .join('')
   const bodyHtml = rows
-    .map((row) => `<tr>${row.map((cell, index) => `<td style="text-align:${columns[index]?.align || 'left'};">${escapeHtml(cell)}</td>`).join('')}</tr>`)
+    .map(
+      (row) =>
+        `<tr>${row.map((cell, index) => `<td style="text-align:${columns[index]?.align || 'left'};">${escapeHtml(cell)}</td>`).join('')}</tr>`,
+    )
     .join('')
 
   return `<div class="print-block">

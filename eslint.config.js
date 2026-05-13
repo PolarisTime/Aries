@@ -1,86 +1,52 @@
 import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
-import pluginVue from 'eslint-plugin-vue'
-import vueParser from 'vue-eslint-parser'
-import eslintConfigPrettier from 'eslint-config-prettier'
 
-export default [
+export default tseslint.config(
   {
-    ignores: ['dist/**', 'coverage/**', 'playwright-report/**'],
+    ignores: [
+      'dist',
+      'coverage',
+      'playwright-report',
+      'test-results',
+      'node_modules',
+    ],
   },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
-  ...pluginVue.configs['flat/recommended'],
   {
-    files: ['**/*.{js,ts,vue}'],
+    extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
+    files: ['**/*.{ts,tsx}'],
     languageOptions: {
+      ecmaVersion: 2024,
       globals: {
-        window: 'readonly',
-        document: 'readonly',
-        console: 'readonly',
-        AbortController: 'readonly',
-        Blob: 'readonly',
-        ClipboardEvent: 'readonly',
-        DragEvent: 'readonly',
-        Event: 'readonly',
-        fetch: 'readonly',
-        File: 'readonly',
-        FileReader: 'readonly',
-        FormData: 'readonly',
-        HTMLElement: 'readonly',
-        HTMLInputElement: 'readonly',
-        HTMLTextAreaElement: 'readonly',
-        KeyboardEvent: 'readonly',
-        MouseEvent: 'readonly',
-        sessionStorage: 'readonly',
-        URL: 'readonly',
-        clearTimeout: 'readonly',
-        setTimeout: 'readonly',
+        ...globals.browser,
+        ...globals.node,
+      },
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
       },
     },
-  },
-  {
-    files: ['**/*.{ts,vue}'],
-    languageOptions: {
-      parser: vueParser,
-      parserOptions: {
-        parser: '@typescript-eslint/parser',
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        extraFileExtensions: ['.vue'],
-      },
-      globals: {
-        window: 'readonly',
-        document: 'readonly',
-        console: 'readonly',
-        Blob: 'readonly',
-        ClipboardEvent: 'readonly',
-        DragEvent: 'readonly',
-        Event: 'readonly',
-        File: 'readonly',
-        FileReader: 'readonly',
-        FormData: 'readonly',
-        HTMLElement: 'readonly',
-        HTMLInputElement: 'readonly',
-        HTMLTextAreaElement: 'readonly',
-        KeyboardEvent: 'readonly',
-        MouseEvent: 'readonly',
-        URL: 'readonly',
-        setTimeout: 'readonly',
-      },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
     },
     rules: {
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
       '@typescript-eslint/no-explicit-any': 'error',
-      'vue/multi-word-component-names': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
   },
-  {
-    files: ['**/*.config.{ts,js}', 'vite.config.ts', 'vitest.config.ts'],
-    languageOptions: {
-      globals: {
-        process: 'readonly',
-      },
-    },
-  },
-  eslintConfigPrettier,
-]
+)

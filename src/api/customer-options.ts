@@ -1,10 +1,9 @@
-import { http } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
-import { shallowRef } from 'vue'
+import { http } from './client'
 
 export interface CustomerOption {
-  id?: string | number
+  id?: string
   value: string
   label: string
   customerCode?: string
@@ -13,19 +12,21 @@ export interface CustomerOption {
   projectNameAbbr?: string
 }
 
-const cachedCustomers = shallowRef<CustomerOption[] | null>(null)
+let cachedCustomers: CustomerOption[] | null = null
 let fetchFailed = false
 let loadingCustomers: Promise<CustomerOption[]> | null = null
 
 export async function fetchCustomerOptions(): Promise<CustomerOption[]> {
-  if (cachedCustomers.value !== null) return cachedCustomers.value
+  if (cachedCustomers !== null) return cachedCustomers
   if (loadingCustomers) return loadingCustomers
 
   loadingCustomers = (async () => {
-    const response = await http.get<ApiResponse<CustomerOption[]>>(ENDPOINTS.CUSTOMERS_OPTIONS)
-    cachedCustomers.value = normalizeCustomerRows(response.data || [])
+    const response = await http.get<ApiResponse<CustomerOption[]>>(
+      ENDPOINTS.CUSTOMERS_OPTIONS,
+    )
+    cachedCustomers = normalizeCustomerRows(response.data || [])
     fetchFailed = false
-    return cachedCustomers.value
+    return cachedCustomers
   })()
 
   try {
@@ -40,51 +41,63 @@ export async function fetchCustomerOptions(): Promise<CustomerOption[]> {
 
 export function getCustomerOptions(): CustomerOption[] {
   ensureCustomerOptionsLoaded()
-  return uniqueCustomerNameOptions(cachedCustomers.value || [])
+  return uniqueCustomerNameOptions(cachedCustomers || [])
 }
 
-export function getCustomerProjectOptions(form?: Record<string, unknown>): CustomerOption[] {
+export function getCustomerProjectOptions(
+  form?: Record<string, unknown>,
+): CustomerOption[] {
   ensureCustomerOptionsLoaded()
   const customerName = normalizeText(form?.customerName)
-  const rows = cachedCustomers.value || []
+  const rows = cachedCustomers || []
   const filteredRows = customerName
-    ? rows.filter((row) => normalizeText(row.customerName || row.value) === customerName)
+    ? rows.filter(
+        (row) => normalizeText(row.customerName || row.value) === customerName,
+      )
     : rows
   return uniqueProjectOptions(filteredRows, !customerName)
 }
 
-export function findCustomerOption(customerName: unknown, projectName?: unknown): CustomerOption | undefined {
+export function findCustomerOption(
+  customerName: unknown,
+  projectName?: unknown,
+): CustomerOption | undefined {
   ensureCustomerOptionsLoaded()
   const normalizedCustomer = normalizeText(customerName)
   const normalizedProject = normalizeText(projectName)
   if (!normalizedCustomer && !normalizedProject) {
     return undefined
   }
-  const rows = cachedCustomers.value || []
-  return rows.find((row) =>
-    (!normalizedCustomer || normalizeText(row.customerName || row.value) === normalizedCustomer)
-    && (!normalizedProject || normalizeText(row.projectName) === normalizedProject),
+  const rows = cachedCustomers || []
+  return rows.find(
+    (row) =>
+      (!normalizedCustomer ||
+        normalizeText(row.customerName || row.value) === normalizedCustomer) &&
+      (!normalizedProject ||
+        normalizeText(row.projectName) === normalizedProject),
   )
 }
 
-export function resolveSingleCustomerProjectName(customerName: unknown): string {
+export function resolveSingleCustomerProjectName(
+  customerName: unknown,
+): string {
   ensureCustomerOptionsLoaded()
   const normalizedCustomer = normalizeText(customerName)
   if (!normalizedCustomer) {
     return ''
   }
   const projects = uniqueProjectOptions(
-    (cachedCustomers.value || []).filter((row) => normalizeText(row.customerName || row.value) === normalizedCustomer),
+    (cachedCustomers || []).filter(
+      (row) =>
+        normalizeText(row.customerName || row.value) === normalizedCustomer,
+    ),
     false,
   )
   return projects.length === 1 ? String(projects[0].value || '') : ''
 }
 
 function ensureCustomerOptionsLoaded() {
-  if (cachedCustomers.value === null && !loadingCustomers) {
-    if (fetchFailed) {
-      fetchFailed = false
-    }
+  if (cachedCustomers === null && !loadingCustomers && !fetchFailed) {
     fetchCustomerOptions()
   }
 }
@@ -92,12 +105,17 @@ function ensureCustomerOptionsLoaded() {
 function normalizeCustomerRows(rows: CustomerOption[]) {
   return rows
     .map((row) => {
-      const customerName = normalizeText(row.customerName || row.value || row.label)
+      const customerName = normalizeText(
+        row.customerName || row.value || row.label,
+      )
       const projectName = normalizeText(row.projectName)
       return {
         ...row,
+        id: row.id == null ? undefined : String(row.id),
         value: customerName,
-        label: row.label || (projectName ? `${customerName} / ${projectName}` : customerName),
+        label:
+          row.label ||
+          (projectName ? `${customerName} / ${projectName}` : customerName),
         customerName,
         projectName,
       }
@@ -117,7 +135,10 @@ function uniqueCustomerNameOptions(rows: CustomerOption[]) {
   })
 }
 
-function uniqueProjectOptions(rows: CustomerOption[], includeCustomerInLabel: boolean) {
+function uniqueProjectOptions(
+  rows: CustomerOption[],
+  includeCustomerInLabel: boolean,
+) {
   const seen = new Set<string>()
   return rows.flatMap((row) => {
     const projectName = normalizeText(row.projectName)
@@ -127,14 +148,18 @@ function uniqueProjectOptions(rows: CustomerOption[], includeCustomerInLabel: bo
     seen.add(projectName)
     const customerName = normalizeText(row.customerName || row.value)
     const projectLabel = formatProjectOptionLabel(row, projectName)
-    return [{
-      label: includeCustomerInLabel ? `${projectLabel} / ${customerName}` : projectLabel,
-      value: projectName,
-      customerName,
-      projectName,
-      customerCode: row.customerCode,
-      projectNameAbbr: row.projectNameAbbr,
-    }]
+    return [
+      {
+        label: includeCustomerInLabel
+          ? `${projectLabel} / ${customerName}`
+          : projectLabel,
+        value: projectName,
+        customerName,
+        projectName,
+        customerCode: row.customerCode,
+        projectNameAbbr: row.projectNameAbbr,
+      },
+    ]
   })
 }
 
@@ -148,7 +173,7 @@ function normalizeText(value: unknown) {
 }
 
 export function reloadCustomerOptions() {
-  cachedCustomers.value = null
+  cachedCustomers = null
   fetchFailed = false
   loadingCustomers = null
   return fetchCustomerOptions()

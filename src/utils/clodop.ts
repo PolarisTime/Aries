@@ -1,3 +1,5 @@
+import { logger } from '@/utils/logger'
+
 let loadPromise: Promise<boolean> | null = null
 let licenseApplied = false
 
@@ -8,7 +10,9 @@ const scriptUrls = [
 ]
 
 function appendScript(src: string, onDone: (success: boolean) => void) {
-  const existing = document.querySelector<HTMLScriptElement>(`script[data-clodop-src="${src}"]`)
+  const existing = document.querySelector<HTMLScriptElement>(
+    `script[data-clodop-src="${src}"]`,
+  )
   if (existing) {
     if ((existing as HTMLScriptElement).dataset.loaded === 'true') {
       onDone(true)
@@ -60,7 +64,9 @@ export function loadCLodop() {
       }
     }
 
-    scriptUrls.forEach((src) => appendScript(src, finish))
+    for (const src of scriptUrls) {
+      appendScript(src, finish)
+    }
 
     window.setTimeout(() => {
       if (!settled) {
@@ -97,7 +103,7 @@ function applyLicense(lodop: CLodopInstance) {
       config.licenseB || '',
     )
   } catch (error) {
-    console.warn('CLodop 注册信息注入失败', error)
+    logger.warn('CLodop 注册信息注入失败', error)
   }
 }
 
@@ -133,7 +139,9 @@ export function getPrinterList() {
 
   try {
     const count = lodop.GET_PRINTER_COUNT()
-    return Array.from({ length: count }, (_, index) => lodop.GET_PRINTER_NAME(index))
+    return Array.from({ length: count }, (_, index) =>
+      lodop.GET_PRINTER_NAME(index),
+    )
   } catch {
     return []
   }
@@ -182,7 +190,9 @@ function parseInitCall(code: string) {
     title = matchedA[9]
     return { title, inita }
   }
-  const matched = code.match(/LODOP\s*\.\s*PRINT_INIT\s*\(\s*["']([^"']*)["']\s*\)/)
+  const matched = code.match(
+    /LODOP\s*\.\s*PRINT_INIT\s*\(\s*["']([^"']*)["']\s*\)/,
+  )
   if (matched) {
     title = matched[1]
   }
@@ -196,7 +206,11 @@ function cleanTemplateCode(code: string) {
     .replace(/LODOP\s*\.\s*PRINT\s*\([^)]*\)\s*;?/g, '')
 }
 
-function callInit(lodop: CLodopInstance, title: string, inita: string[] | null) {
+function callInit(
+  lodop: CLodopInstance,
+  title: string,
+  inita: string[] | null,
+) {
   if (inita) {
     lodop.PRINT_INITA(inita[0], inita[1], inita[2], inita[3], title)
     return
@@ -247,12 +261,15 @@ export function execPrintCode(code: string, options: PrintHtmlOptions = {}) {
     }
     return true
   } catch (error) {
-    console.error('CLodop 模板打印失败', error)
+    logger.error('CLodop 模板打印失败', error)
     return false
   }
 }
 
-export function printHtml(renderedHtml: string, options: PrintHtmlOptions = {}) {
+export function printHtml(
+  renderedHtml: string,
+  options: PrintHtmlOptions = {},
+) {
   const lodop = getCLodopInstance()
   if (!lodop) {
     return false
@@ -283,7 +300,7 @@ export function printHtml(renderedHtml: string, options: PrintHtmlOptions = {}) 
     }
     return true
   } catch (error) {
-    console.error('CLodop 打印失败', error)
+    logger.error('CLodop 打印失败', error)
     return false
   }
 }

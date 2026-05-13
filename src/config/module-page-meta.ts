@@ -1,0 +1,46 @@
+import { appPageDefinitions } from '@/config/page-registry'
+
+export interface ModulePageMeta {
+  key: string
+  title: string
+  primaryNoKey?: string
+}
+
+const primaryNoKeyMap: Record<string, string> = {
+  'purchase-order': 'orderNo',
+  'purchase-inbound': 'inboundNo',
+  'sales-order': 'orderNo',
+  'sales-outbound': 'outboundNo',
+  'freight-bill': 'billNo',
+  'purchase-contract': 'contractNo',
+  'sales-contract': 'contractNo',
+  'supplier-statement': 'statementNo',
+  'customer-statement': 'statementNo',
+  'freight-statement': 'statementNo',
+  receipt: 'receiptNo',
+  payment: 'paymentNo',
+  'invoice-receipt': 'receiveNo',
+  'invoice-issue': 'issueNo',
+  material: 'materialCode',
+}
+
+export const modulePageMetaMap: Record<string, ModulePageMeta> =
+  Object.fromEntries(
+    appPageDefinitions
+      .filter((entry) => Boolean(entry.moduleKey))
+      .map((entry) => {
+        const moduleKey = entry.moduleKey as string
+        return [
+          moduleKey,
+          {
+            key: moduleKey,
+            title: entry.title,
+            primaryNoKey: primaryNoKeyMap[moduleKey],
+          } satisfies ModulePageMeta,
+        ]
+      }),
+  )
+
+export function getModulePageMeta(moduleKey: string) {
+  return modulePageMetaMap[moduleKey]
+}

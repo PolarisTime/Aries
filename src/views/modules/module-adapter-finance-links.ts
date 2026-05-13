@@ -1,14 +1,20 @@
 import type { ModuleFormFieldOption, ModuleRecord } from '@/types/module-page'
 
 interface CustomerStatementOptionArgs {
-  currentStatementId?: number | null
+  currentStatementId?: string | null
   customerName?: string
   projectName?: string
 }
 
 interface CounterpartyStatementOptionArgs {
-  currentStatementId?: number | null
+  currentStatementId?: string | null
   counterpartyName?: string
+}
+
+export interface StatementLinkCatalog {
+  customerStatements: ModuleRecord[]
+  supplierStatements: ModuleRecord[]
+  freightStatements: ModuleRecord[]
 }
 
 function normalizeText(value: unknown) {
@@ -21,15 +27,19 @@ function normalizeAmount(value: unknown) {
 }
 
 function normalizeId(value: unknown) {
-  const id = Number(value)
-  return Number.isFinite(id) && id > 0 ? id : null
+  const id = String(value || '').trim()
+  return id ? id : null
 }
 
 function matchesFilter(actual: unknown, expected: string) {
   return !expected || normalizeText(actual) === expected
 }
 
-function keepCurrentOrOpenBalance(record: ModuleRecord, balanceField: string, currentStatementId?: number | null) {
+function keepCurrentOrOpenBalance(
+  record: ModuleRecord,
+  balanceField: string,
+  currentStatementId?: string | null,
+) {
   const recordId = normalizeId(record.id)
   if (recordId !== null && recordId === currentStatementId) {
     return true
@@ -39,11 +49,19 @@ function keepCurrentOrOpenBalance(record: ModuleRecord, balanceField: string, cu
 
 function compareStatements(left: ModuleRecord, right: ModuleRecord) {
   const leftEndDate = Date.parse(String(left.endDate || left.startDate || ''))
-  const rightEndDate = Date.parse(String(right.endDate || right.startDate || ''))
-  if (Number.isFinite(leftEndDate) && Number.isFinite(rightEndDate) && leftEndDate !== rightEndDate) {
+  const rightEndDate = Date.parse(
+    String(right.endDate || right.startDate || ''),
+  )
+  if (
+    Number.isFinite(leftEndDate) &&
+    Number.isFinite(rightEndDate) &&
+    leftEndDate !== rightEndDate
+  ) {
     return rightEndDate - leftEndDate
   }
-  return String(right.statementNo || '').localeCompare(String(left.statementNo || ''))
+  return String(right.statementNo || '').localeCompare(
+    String(left.statementNo || ''),
+  )
 }
 
 function formatAmountLabel(value: unknown) {
@@ -58,12 +76,18 @@ export function buildCustomerStatementOptions(
   const projectName = normalizeText(args.projectName)
 
   return [...statements]
-    .filter((record) => keepCurrentOrOpenBalance(record, 'closingAmount', args.currentStatementId))
+    .filter((record) =>
+      keepCurrentOrOpenBalance(
+        record,
+        'closingAmount',
+        args.currentStatementId,
+      ),
+    )
     .filter((record) => matchesFilter(record.customerName, customerName))
     .filter((record) => matchesFilter(record.projectName, projectName))
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
-      value: Number(record.id),
+      value: String(record.id || ''),
       label: `${String(record.statementNo || '')} | ${String(record.customerName || '')} / ${String(record.projectName || '')} | 待收 ${formatAmountLabel(record.closingAmount)}`,
     }))
 }
@@ -75,11 +99,17 @@ export function buildSupplierStatementOptions(
   const counterpartyName = normalizeText(args.counterpartyName)
 
   return [...statements]
-    .filter((record) => keepCurrentOrOpenBalance(record, 'closingAmount', args.currentStatementId))
+    .filter((record) =>
+      keepCurrentOrOpenBalance(
+        record,
+        'closingAmount',
+        args.currentStatementId,
+      ),
+    )
     .filter((record) => matchesFilter(record.supplierName, counterpartyName))
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
-      value: Number(record.id),
+      value: String(record.id || ''),
       label: `${String(record.statementNo || '')} | ${String(record.supplierName || '')} | 待付 ${formatAmountLabel(record.closingAmount)}`,
     }))
 }
@@ -91,19 +121,61 @@ export function buildFreightStatementOptions(
   const counterpartyName = normalizeText(args.counterpartyName)
 
   return [...statements]
-    .filter((record) => keepCurrentOrOpenBalance(record, 'unpaidAmount', args.currentStatementId))
+    .filter((record) =>
+      keepCurrentOrOpenBalance(record, 'unpaidAmount', args.currentStatementId),
+    )
     .filter((record) => matchesFilter(record.carrierName, counterpartyName))
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
-      value: Number(record.id),
+      value: String(record.id || ''),
       label: `${String(record.statementNo || '')} | ${String(record.carrierName || '')} | 待付 ${formatAmountLabel(record.unpaidAmount)}`,
     }))
 }
 
-export function findStatementRecordById(records: ModuleRecord[], statementId: unknown) {
+export function findStatementRecordById(
+  records: ModuleRecord[],
+  statementId: unknown,
+) {
   const normalizedId = normalizeId(statementId)
   if (normalizedId === null) {
     return null
   }
-  return records.find((record) => normalizeId(record.id) === normalizedId) || null
+  return (
+    records.find((record) => normalizeId(record.id) === normalizedId) || null
+  )
+}
+
+export function buildStatementLinkOptions(
+  moduleKey: 'receipt' | 'payment',
+  form: Record<string, unknown> | undefined,
+  catalog: StatementLinkCatalog,
+) {
+  const currentStatementId = normalizeId(form?.sourceStatementId)
+
+  if (moduleKey === 'receipt') {
+    return buildCustomerStatementOptions(catalog.customerStatements, {
+      currentStatementId,
+      customerName: normalizeText(form?.customerName),
+      projectName: normalizeText(form?.projectName),
+    })
+  }
+
+  const counterpartyName = normalizeText(form?.counterpartyName)
+  const businessType = normalizeText(form?.businessType)
+
+  if (businessType === '供应商') {
+    return buildSupplierStatementOptions(catalog.supplierStatements, {
+      currentStatementId,
+      counterpartyName,
+    })
+  }
+
+  if (businessType === '物流商') {
+    return buildFreightStatementOptions(catalog.freightStatements, {
+      currentStatementId,
+      counterpartyName,
+    })
+  }
+
+  return []
 }

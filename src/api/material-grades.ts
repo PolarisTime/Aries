@@ -1,7 +1,6 @@
-import { http } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
-import { shallowRef } from 'vue'
+import { http } from './client'
 
 export interface MaterialGradeOption {
   value: string
@@ -13,11 +12,11 @@ let fetchFailed = false
 let loadingGrades: Promise<MaterialGradeOption[]> | null = null
 
 export async function fetchMaterialGrades(): Promise<MaterialGradeOption[]> {
-  if (cachedGrades.value !== null) return cachedGrades.value
-  if (loadingGrades) return loadingGrades
-
-  loadingGrades = (async () => {
-    const response = await http.get<ApiResponse<string[]>>(ENDPOINTS.MATERIAL_GRADES)
+  if (cachedGrades) return cachedGrades
+  try {
+    const response = await http.get<ApiResponse<string[]>>(
+      ENDPOINTS.MATERIAL_GRADES,
+    )
     const list = response.data || []
     cachedGrades.value = normalizeMaterialGrades(list)
     fetchFailed = false

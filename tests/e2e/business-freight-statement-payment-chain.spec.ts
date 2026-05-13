@@ -1,0 +1,475 @@
+import type { Locator, Page } from '@playwright/test'
+import { waitForFirstDetailRow } from './support/business-e2e'
+import { expect, test } from './support/test'
+
+const API_BASE_URL = 'http://127.0.0.1:11211/api'
+const APP_BASE_URL = 'http://127.0.0.1:3100'
+
+function buildSuffix() {
+  return `${Date.now()}${Math.floor(Math.random() * 1000)}`
+}
+
+function isoToday() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function compareRecordIds(left: { id?: string }, right: { id?: string }) {
+  const leftId = BigInt(String(left.id || '0'))
+  const rightId = BigInt(String(right.id || '0'))
+  if (leftId === rightId) {
+    return 0
+  }
+  return leftId > rightId ? -1 : 1
+}
+
+async function loginAsTest9(page: Page) {
+  const response = await page.request.post(`${API_BASE_URL}/auth/login`, {
+    data: { loginName: 'test9', password: '123456' },
+  })
+  expect(response.ok()).toBeTruthy()
+  const payload = (await response.json()) as {
+    code: number
+    data?: {
+      accessToken?: string
+      expiresIn?: string | number
+      user?: Record<string, unknown>
+    }
+  }
+  expect(payload.code).toBe(0)
+  await page.addInitScript(
+    ({ token, currentUser, ttl }) => {
+      const expiresAt = String(Date.now() + ttl * 1000)
+      localStorage.setItem('aries-token', token)
+      localStorage.setItem('aries-token-expires-at', expiresAt)
+      localStorage.setItem('aries-user', JSON.stringify(currentUser))
+      localStorage.setItem('aries-auth-persistence', 'local')
+      sessionStorage.removeItem('aries-token')
+      sessionStorage.removeItem('aries-token-expires-at')
+      sessionStorage.removeItem('aries-user')
+      sessionStorage.removeItem('aries-auth-persistence')
+    },
+    {
+      token: String(payload.data?.accessToken || ''),
+      currentUser: payload.data?.user || null,
+      ttl: Number(payload.data?.expiresIn || 1800),
+    },
+  )
+  await page.goto(`${APP_BASE_URL}/dashboard`, { waitUntil: 'networkidle' })
+  await expect(page).not.toHaveURL(/\/login(?:\?|$)/)
+}
+
+async function getCurrentAccessToken(page: Page) {
+  const token = await page.evaluate(() => localStorage.getItem('aries-token') || '')
+  expect(token).toBeTruthy()
+  return token
+}
+
+async function openCreateOverlay(page: Page) {
+  const beforeCount = await page.locator('.workspace-overlay-panel').count()
+  await page.getByRole('button', { name: '新建' }).click()
+  const overlay = page.locator('.workspace-overlay-panel').nth(beforeCount)
+  await expect(overlay).toBeVisible()
+  return overlay
+}
+
+async function selectAntOption(target: Locator, optionText?: string) {
+  await target.click()
+  const dropdown = target.page().locator('.ant-select-dropdown:visible').last()
+  await expect(dropdown).toBeVisible()
+  if (optionText) {
+    const input = target.locator('input').last()
+    if ((await input.count()) > 0) {
+      await input.fill(optionText)
+    }
+    const matchedOption = dropdown
+      .locator('.ant-select-item-option')
+      .filter({ hasText: optionText })
+      .first()
+    await expect(matchedOption).toBeVisible()
+    await matchedOption.click()
+    return
+  }
+  const firstOption = dropdown
+    .locator('.ant-select-item-option:not(.ant-select-item-option-disabled)')
+    .first()
+  await expect(firstOption).toBeVisible()
+  await firstOption.click()
+}
+
+async function fillDateInput(target: Locator, value: string) {
+  await target.fill(value)
+  await target.press('Enter')
+}
+
+async function setSpinbuttonValue(target: Locator, value: string) {
+  await target.click()
+  await target.press('ControlOrMeta+A')
+  await target.pressSequentially(value)
+  await target.press('Enter')
+  await target.blur()
+}
+
+async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: string) {
+  const rowInList = expectedNo
+    ? page
+        .locator('tbody tr:not(.ant-table-measure-row)')
+        .filter({ hasText: expectedNo })
+        .first()
+    : null
+  const successMessage = page.locator('.ant-message-notice').filter({
+    hasText: /创建成功|更新成功|保存成功|对账单已生成/,
+  })
+  const errorMessage = page.locator('.ant-message-error').last()
+  const validationErrors = overlay.locator('.ant-form-item-explain-error')
+
+  await expect
+    .poll(
+      async () => {
+        if ((await errorMessage.count()) > 0 && (await errorMessage.isVisible())) {
+          const text = (await errorMessage.textContent())?.trim()
+          return text ? `error:${text}` : 'error'
+        }
+        if ((await validationErrors.count()) > 0) {
+          const firstError = validationErrors.first()
+          if (await firstError.isVisible()) {
+            const text = (await firstError.textContent())?.trim()
+            return text ? `validation:${text}` : 'validation'
+          }
+        }
+        if ((await successMessage.count()) > 0) return 'message'
+        if (rowInList && (await rowInList.count()) > 0 && (await rowInList.isVisible())) return 'row'
+        if (!(await overlay.isVisible().catch(() => false))) return 'closed'
+        return 'pending'
+      },
+      { timeout: 20_000, intervals: [200, 500, 1000] },
+    )
+    .not.toBe('pending')
+}
+
+async function saveOverlay(page: Page, overlay: Locator, expectedNo?: string) {
+  await overlay
+    .locator('button.overlay-action-button')
+    .filter({ hasText: /^保存$/ })
+    .click()
+  await waitForSaveOutcome(page, overlay, expectedNo)
+}
+
+async function saveAndAuditOverlay(page: Page, overlay: Locator, expectedNo?: string) {
+  await overlay
+    .locator('button.overlay-action-button')
+    .filter({ hasText: /^保存并审核$/ })
+    .click()
+  await waitForSaveOutcome(page, overlay, expectedNo)
+}
+
+async function importParentByKeyword(
+  page: Page,
+  overlay: Locator,
+  buttonName: string,
+  keyword: string,
+) {
+  const beforeCount = await page.locator('.workspace-overlay-panel').count()
+  await overlay.getByRole('button', { name: buttonName }).click()
+  const selector = page.locator('.workspace-overlay-panel').nth(beforeCount)
+  await expect(selector).toBeVisible()
+  await selector.getByPlaceholder('搜索单据号...').fill(keyword)
+  await selector.getByPlaceholder('搜索单据号...').press('Enter')
+  const row = selector
+    .locator('tbody tr:not(.ant-table-measure-row)')
+    .filter({ hasText: keyword })
+    .first()
+  await expect(row).toBeVisible()
+  await row.click()
+}
+
+async function createSalesOutboundChain(page: Page, suffix: string) {
+  const orderDate = isoToday()
+  const deliveryDate = isoToday()
+  const purchaseOrderNo = `PO-FB-${suffix}`
+  const salesOrderNo = `SO-FB-${suffix}`
+  const salesOutboundNo = `SOB-FB-${suffix}`
+
+  await page.goto('/purchase-order')
+  const purchaseOrderOverlay = await openCreateOverlay(page)
+  await selectAntOption(
+    purchaseOrderOverlay.locator('#supplierName'),
+    '益海（浙江）物联网科技有限公司',
+  )
+  await purchaseOrderOverlay.locator('#orderNo').fill(purchaseOrderNo)
+  await fillDateInput(purchaseOrderOverlay.locator('#orderDate'), orderDate)
+
+  const purchaseOrderRow = await waitForFirstDetailRow(purchaseOrderOverlay)
+  await purchaseOrderRow.locator('td').nth(3).locator('input').fill('HZ-YG-PL8')
+  await page.waitForTimeout(1200)
+  await selectAntOption(
+    purchaseOrderRow.locator('td').nth(10).locator('.ant-select'),
+    '升华物流',
+  )
+  await purchaseOrderRow.locator('td').nth(12).locator('input').fill('10')
+  await purchaseOrderRow.locator('td').nth(16).locator('input').fill('3200')
+  await saveOverlay(page, purchaseOrderOverlay, purchaseOrderNo)
+
+  await page.goto('/sales-order')
+  const salesOrderOverlay = await openCreateOverlay(page)
+  await salesOrderOverlay.locator('#orderNo').fill(salesOrderNo)
+  await selectAntOption(
+    salesOrderOverlay.locator('#customerName'),
+    '浙江大东吴杭萧绿建科技有限公司',
+  )
+  await selectAntOption(
+    salesOrderOverlay.locator('#projectName'),
+    '恒力(大连)船厂有限公司-绿色高端装备制造项目6#曲面分段车间',
+  )
+  await fillDateInput(salesOrderOverlay.locator('#deliveryDate'), deliveryDate)
+  await importParentByKeyword(
+    page,
+    salesOrderOverlay,
+    '导入采购订单明细',
+    purchaseOrderNo,
+  )
+  const salesOrderRow = await waitForFirstDetailRow(salesOrderOverlay)
+  await setSpinbuttonValue(
+    salesOrderRow.locator('input[role="spinbutton"]').nth(0),
+    '6',
+  )
+  await setSpinbuttonValue(
+    salesOrderRow.locator('input[role="spinbutton"]').nth(1),
+    '3600',
+  )
+  await saveOverlay(page, salesOrderOverlay, salesOrderNo)
+
+  await page.goto('/sales-outbound')
+  const salesOutboundOverlay = await openCreateOverlay(page)
+  await salesOutboundOverlay.locator('#outboundNo').fill(salesOutboundNo)
+  await fillDateInput(salesOutboundOverlay.locator('#outboundDate'), deliveryDate)
+  await importParentByKeyword(
+    page,
+    salesOutboundOverlay,
+    '导入销售订单明细',
+    salesOrderNo,
+  )
+  await saveAndAuditOverlay(page, salesOutboundOverlay, salesOutboundNo)
+
+  const token = await getCurrentAccessToken(page)
+  const outboundSearch = await page.request.get(
+    `${API_BASE_URL}/sales-outbound/search?keyword=${encodeURIComponent(salesOutboundNo)}&limit=5`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  )
+  const outboundSearchJson = (await outboundSearch.json()) as {
+    code: number
+    data?: Array<{ id?: string }>
+  }
+  expect(outboundSearchJson.code).toBe(0)
+  const salesOutboundId = String(outboundSearchJson.data?.[0]?.id || '')
+  expect(salesOutboundId).toBeTruthy()
+
+  const outboundDetailRes = await page.request.get(
+    `${API_BASE_URL}/sales-outbound/${salesOutboundId}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  )
+  const outboundDetailJson = (await outboundDetailRes.json()) as {
+    code: number
+    data?: { outboundDate?: string; status?: string }
+  }
+  expect(outboundDetailJson.code).toBe(0)
+  expect(String(outboundDetailJson.data?.status || '')).toBe('已审核')
+
+  return {
+    salesOutboundNo,
+    outboundDate: String(outboundDetailJson.data?.outboundDate || deliveryDate),
+  }
+}
+
+test('creates freight statement and freight payment from sales outbound flow', async ({
+  page,
+  assertNoFatalUiErrors,
+}) => {
+  test.setTimeout(240_000)
+  await loginAsTest9(page)
+
+  const suffix = buildSuffix()
+  const billNo = `WL-FB-${suffix}`
+  const paymentNo = `FK-FB-${suffix}`
+  const carrierName = '陈永祥'
+  const vehiclePlate = '浙A0S829'
+
+  const { salesOutboundNo, outboundDate } = await createSalesOutboundChain(
+    page,
+    suffix,
+  )
+
+  await page.goto('/freight-bill')
+  const freightBillOverlay = await openCreateOverlay(page)
+  await freightBillOverlay.locator('#billNo').fill(billNo)
+  await selectAntOption(
+    freightBillOverlay.locator('#carrierName'),
+    carrierName,
+  )
+  await selectAntOption(
+    freightBillOverlay.locator('#vehiclePlate'),
+    vehiclePlate,
+  )
+  await fillDateInput(freightBillOverlay.locator('#billTime'), outboundDate)
+  await freightBillOverlay.locator('#remark').fill('e2e freight flow')
+  await importParentByKeyword(
+    page,
+    freightBillOverlay,
+    '导入上级销售出库单',
+    salesOutboundNo,
+  )
+  await setSpinbuttonValue(
+    freightBillOverlay.getByRole('spinbutton', { name: '* 单价' }),
+    '180',
+  )
+  await saveOverlay(page, freightBillOverlay, billNo)
+
+  const token = await getCurrentAccessToken(page)
+  const billSearch = await page.request.get(
+    `${API_BASE_URL}/freight-bill/search?keyword=${encodeURIComponent(billNo)}&limit=5`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  )
+  const billSearchJson = (await billSearch.json()) as {
+    code: number
+    data?: Array<{ id?: string }>
+  }
+  expect(billSearchJson.code).toBe(0)
+  const billId = String(billSearchJson.data?.[0]?.id || '')
+  expect(billId).toBeTruthy()
+
+  const billDetailRes = await page.request.get(
+    `${API_BASE_URL}/freight-bill/${billId}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  )
+  const billDetailJson = (await billDetailRes.json()) as {
+    code: number
+    data?: { billTime?: string; totalFreight?: number; status?: string }
+  }
+  expect(billDetailJson.code).toBe(0)
+  const actualBillDate = String(billDetailJson.data?.billTime || outboundDate)
+  expect(Number(billDetailJson.data?.totalFreight || 0)).toBeGreaterThan(0)
+
+  await page.goto('/freight-statement')
+  await page.getByRole('button', { name: '生成物流对账单' }).click()
+  const statementModal = page.getByRole('dialog', { name: '生成物流对账单' })
+  await expect(statementModal).toBeVisible()
+  await selectAntOption(
+    statementModal.locator('.ant-select').first(),
+    carrierName,
+  )
+  const rangeInputs = statementModal.locator('.ant-picker-input input')
+  await fillDateInput(rangeInputs.nth(0), actualBillDate)
+  await fillDateInput(rangeInputs.nth(1), actualBillDate)
+  await statementModal.getByRole('button', { name: '生成对账单' }).click()
+
+  const fetchFreightStatementByKeyword = async () => {
+    const currentToken = await getCurrentAccessToken(page)
+    const response = await page.request.get(
+      `${API_BASE_URL}/freight-statement/search?keyword=${encodeURIComponent(billNo)}&limit=10`,
+      { headers: { Authorization: `Bearer ${currentToken}` } },
+    )
+    const json = (await response.json()) as {
+      code: number
+      data?: Array<{
+        id?: string
+        statementNo?: string
+        unpaidAmount?: number
+        carrierName?: string
+      }>
+    }
+    expect(json.code).toBe(0)
+    return (json.data || [])
+      .filter((item) => String(item.statementNo || item.id || '').length > 0)
+      .sort(compareRecordIds)[0] || null
+  }
+
+  await expect
+    .poll(
+      async () => String((await fetchFreightStatementByKeyword())?.id || ''),
+      { timeout: 20_000, intervals: [500, 1000, 2000] },
+    )
+    .not.toBe('')
+
+  const statement = await fetchFreightStatementByKeyword()
+  expect(statement).toBeTruthy()
+  const statementId = String(statement?.id || '')
+  expect(statementId).toBeTruthy()
+
+  await page.goto('/payment')
+  const paymentOverlay = await openCreateOverlay(page)
+  await paymentOverlay.locator('#paymentNo').fill(paymentNo)
+  await selectAntOption(paymentOverlay.locator('#businessType'), '物流商')
+  await paymentOverlay
+    .locator('#counterpartyName')
+    .fill(String(statement?.carrierName || carrierName))
+  await selectAntOption(
+    paymentOverlay.locator('#sourceStatementId'),
+    String(statement?.statementNo || ''),
+  )
+  await fillDateInput(paymentOverlay.locator('#paymentDate'), actualBillDate)
+  await selectAntOption(paymentOverlay.locator('#payType'), '银行转账')
+  await paymentOverlay
+    .locator('#amount')
+    .fill(String(Number(statement?.unpaidAmount || 0).toFixed(2)))
+  await selectAntOption(paymentOverlay.locator('#status'), '已付款')
+  await paymentOverlay.locator('#operatorName').fill('test9')
+  await saveOverlay(page, paymentOverlay, paymentNo)
+
+  const latestToken = await getCurrentAccessToken(page)
+  const paymentSearch = await page.request.get(
+    `${API_BASE_URL}/payment/search?keyword=${encodeURIComponent(paymentNo)}&limit=5`,
+    { headers: { Authorization: `Bearer ${latestToken}` } },
+  )
+  const paymentSearchJson = (await paymentSearch.json()) as {
+    code: number
+    data?: Array<{ id?: string }>
+  }
+  expect(paymentSearchJson.code).toBe(0)
+  const paymentId = String(paymentSearchJson.data?.[0]?.id || '')
+  expect(paymentId).toBeTruthy()
+
+  const paymentDetailRes = await page.request.get(
+    `${API_BASE_URL}/payment/${paymentId}`,
+    { headers: { Authorization: `Bearer ${latestToken}` } },
+  )
+  const paymentDetailJson = (await paymentDetailRes.json()) as {
+    code: number
+    data?: {
+      paymentNo?: string
+      status?: string
+      businessType?: string
+      sourceStatementId?: string | number | null
+      amount?: number
+      items?: Array<{ allocatedAmount?: number; sourceStatementId?: string | number }>
+    }
+  }
+  expect(paymentDetailJson.code).toBe(0)
+  expect(String(paymentDetailJson.data?.paymentNo || '')).toBe(paymentNo)
+  expect(String(paymentDetailJson.data?.status || '')).toBe('已付款')
+  expect(String(paymentDetailJson.data?.businessType || '')).toBe('物流商')
+  expect(String(paymentDetailJson.data?.sourceStatementId || '')).toBe(statementId)
+  expect(Number(paymentDetailJson.data?.amount || 0)).toBeGreaterThan(0)
+  expect(Number(paymentDetailJson.data?.items?.[0]?.allocatedAmount || 0)).toBeGreaterThan(0)
+
+  const refreshedStatementDetailRes = await page.request.get(
+    `${API_BASE_URL}/freight-statement/${statementId}`,
+    { headers: { Authorization: `Bearer ${latestToken}` } },
+  )
+  const refreshedStatementDetailJson = (await refreshedStatementDetailRes.json()) as {
+    code: number
+    data?: {
+      paidAmount?: number
+      unpaidAmount?: number
+      totalFreight?: number
+    }
+  }
+  expect(refreshedStatementDetailJson.code).toBe(0)
+  expect(Number(refreshedStatementDetailJson.data?.paidAmount || 0)).toBeGreaterThan(0)
+  expect(Number(refreshedStatementDetailJson.data?.unpaidAmount || 0)).toBe(0)
+  expect(Number(refreshedStatementDetailJson.data?.totalFreight || 0)).toBeGreaterThan(0)
+
+  await assertNoFatalUiErrors()
+})

@@ -7,6 +7,11 @@ export interface PersonalSettings {
   layoutMode?: 'sider' | 'top'
 }
 
+export interface BusinessListCacheEntry<T = unknown> {
+  savedAt: number
+  data: T
+}
+
 export type AuthPersistenceMode = 'local' | 'session'
 
 let accessToken = ''
@@ -56,8 +61,9 @@ function getStoredPersistenceMode(): AuthPersistenceMode | null {
     return null
   }
 
-  const raw = localStorage.getItem(STORAGE_KEYS.authPersistence)
-    || sessionStorage.getItem(STORAGE_KEYS.authPersistence)
+  const raw =
+    localStorage.getItem(STORAGE_KEYS.authPersistence) ||
+    sessionStorage.getItem(STORAGE_KEYS.authPersistence)
 
   return raw === 'local' || raw === 'session' ? raw : null
 }
@@ -71,7 +77,9 @@ function setStoredPersistenceMode(mode: AuthPersistenceMode) {
   getStorage(mode).setItem(STORAGE_KEYS.authPersistence, mode)
 }
 
-function resolvePersistenceMode(preferred?: AuthPersistenceMode): AuthPersistenceMode {
+function resolvePersistenceMode(
+  preferred?: AuthPersistenceMode,
+): AuthPersistenceMode {
   if (preferred) {
     return preferred
   }
@@ -82,10 +90,16 @@ function resolvePersistenceMode(preferred?: AuthPersistenceMode): AuthPersistenc
   }
 
   if (typeof window !== 'undefined') {
-    if (sessionStorage.getItem(STORAGE_KEYS.token) || sessionStorage.getItem(STORAGE_KEYS.user)) {
+    if (
+      sessionStorage.getItem(STORAGE_KEYS.token) ||
+      sessionStorage.getItem(STORAGE_KEYS.user)
+    ) {
       return 'session'
     }
-    if (localStorage.getItem(STORAGE_KEYS.token) || localStorage.getItem(STORAGE_KEYS.user)) {
+    if (
+      localStorage.getItem(STORAGE_KEYS.token) ||
+      localStorage.getItem(STORAGE_KEYS.user)
+    ) {
       return 'local'
     }
   }
@@ -153,7 +167,15 @@ export function getStoredUser() {
   }
 
   try {
-    return JSON.parse(raw) as LoginUser
+    const parsed = JSON.parse(raw)
+    if (
+      parsed &&
+      typeof parsed.id !== 'undefined' &&
+      typeof parsed.loginName === 'string'
+    ) {
+      return parsed as LoginUser
+    }
+    return null
   } catch {
     clearStorageItem(STORAGE_KEYS.user)
     return null
@@ -171,14 +193,22 @@ export function clearStoredUser() {
   clearStorageItem(STORAGE_KEYS.user)
 }
 
-export function setAuthSession(user: LoginUser, token: string, expiresIn: number, mode: AuthPersistenceMode) {
+export function setAuthSession(
+  user: LoginUser,
+  token: string,
+  expiresIn: number,
+  mode: AuthPersistenceMode,
+) {
   accessToken = token
   clearStorageItem(STORAGE_KEYS.token)
   clearStorageItem(STORAGE_KEYS.user)
   clearStorageItem(STORAGE_KEYS.tokenExpiresAt)
   getStorage(mode).setItem(STORAGE_KEYS.token, token)
   getStorage(mode).setItem(STORAGE_KEYS.user, JSON.stringify(user))
-  getStorage(mode).setItem(STORAGE_KEYS.tokenExpiresAt, String(Date.now() + expiresIn * 1000))
+  getStorage(mode).setItem(
+    STORAGE_KEYS.tokenExpiresAt,
+    String(Date.now() + expiresIn * 1000),
+  )
   setStoredPersistenceMode(mode)
   clearLegacyAuthStorage()
 }
@@ -194,7 +224,11 @@ export function getPersonalSettings() {
   }
 
   try {
-    return JSON.parse(raw) as PersonalSettings
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as PersonalSettings
+    }
+    return null
   } catch {
     localStorage.removeItem(STORAGE_KEYS.personalSettings)
     return null
@@ -205,34 +239,113 @@ export function setPersonalSettings(settings: PersonalSettings) {
   localStorage.setItem(STORAGE_KEYS.personalSettings, JSON.stringify(settings))
 }
 
-function getListColumnSettingsKey(pageKey: string) {
-  return `${STORAGE_KEYS.listColumnSettingsPrefix}${pageKey}`
+function getListColumnSettingsKey(pageKey: string, userKey?: string) {
+  const normalizedUserKey = String(userKey || 'anonymous').trim() || 'anonymous'
+  return `${STORAGE_KEYS.listColumnSettingsPrefix}${normalizedUserKey}:${pageKey}`
 }
 
-export function getListColumnSettings(pageKey: string) {
-  const raw = localStorage.getItem(getListColumnSettingsKey(pageKey))
+export function getListColumnSettings(pageKey: string, userKey?: string) {
+  const raw = localStorage.getItem(getListColumnSettingsKey(pageKey, userKey))
   if (!raw) {
     return null
   }
 
   try {
-    return JSON.parse(raw) as ListColumnSettings
+    const parsed = JSON.parse(raw)
+    if (
+      parsed &&
+      Array.isArray(parsed.orderedKeys) &&
+      Array.isArray(parsed.hiddenKeys)
+    ) {
+      return parsed as ListColumnSettings
+    }
+    return null
   } catch {
-    localStorage.removeItem(getListColumnSettingsKey(pageKey))
+    localStorage.removeItem(getListColumnSettingsKey(pageKey, userKey))
     return null
   }
 }
 
-export function setListColumnSettings(pageKey: string, settings: ListColumnSettings) {
-  localStorage.setItem(getListColumnSettingsKey(pageKey), JSON.stringify(settings))
+export function setListColumnSettings(
+  pageKey: string,
+  settings: ListColumnSettings,
+  userKey?: string,
+) {
+  localStorage.setItem(
+    getListColumnSettingsKey(pageKey, userKey),
+    JSON.stringify(settings),
+  )
 }
 
-export function clearListColumnSettings(pageKey: string) {
-  localStorage.removeItem(getListColumnSettingsKey(pageKey))
+export function clearListColumnSettings(pageKey: string, userKey?: string) {
+  localStorage.removeItem(getListColumnSettingsKey(pageKey, userKey))
+}
+
+function getBusinessListCacheKey(key: string) {
+  return `${STORAGE_KEYS.businessListCachePrefix}${key}`
+}
+
+export function getBusinessListCache<T = unknown>(
+  key: string,
+  maxAgeMs: number,
+): BusinessListCacheEntry<T> | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const raw = sessionStorage.getItem(getBusinessListCacheKey(key))
+  if (!raw) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as BusinessListCacheEntry<T>
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      typeof parsed.savedAt !== 'number' ||
+      !('data' in parsed)
+    ) {
+      sessionStorage.removeItem(getBusinessListCacheKey(key))
+      return null
+    }
+    if (Date.now() - parsed.savedAt > maxAgeMs) {
+      sessionStorage.removeItem(getBusinessListCacheKey(key))
+      return null
+    }
+    return parsed
+  } catch {
+    sessionStorage.removeItem(getBusinessListCacheKey(key))
+    return null
+  }
+}
+
+export function setBusinessListCache<T = unknown>(key: string, data: T) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const payload: BusinessListCacheEntry<T> = {
+    savedAt: Date.now(),
+    data,
+  }
+
+  sessionStorage.setItem(getBusinessListCacheKey(key), JSON.stringify(payload))
+}
+
+export function clearBusinessListCache(key: string) {
+  if (typeof window === 'undefined') {
+    return
+  }
+  sessionStorage.removeItem(getBusinessListCacheKey(key))
 }
 
 export function getTokenExpiresAt(): number | null {
-  return readTokenExpiresAtValue()
+  if (typeof window === 'undefined') return null
+  const raw =
+    localStorage.getItem(STORAGE_KEYS.tokenExpiresAt) ||
+    sessionStorage.getItem(STORAGE_KEYS.tokenExpiresAt)
+  return raw ? Number(raw) : null
 }
 
 export function clearTokenExpiresAt() {

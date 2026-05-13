@@ -1,24 +1,41 @@
-import { businessPageConfigs } from '@/config/business-pages'
-import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
-import { hasBehavior, getBehaviorValue } from '@/views/modules/module-behavior-registry'
-
-type PayloadBuilder = (record: ModuleRecord) => Record<string, unknown>
+import dayjs from 'dayjs'
+import { loadBusinessPageConfig } from '@/config/business-page-loader'
+import { getModulePageSchema } from '@/config/module-page-schema'
+import type { ModuleLineItem, ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { logger } from '@/utils/logger'
+import {
+  getBehaviorValue,
+  hasBehavior,
+} from '@/views/modules/module-behavior-registry'
 
 // Computed fields that the server calculates — never included in save payloads.
 const COMPUTED_FIELD_KEYS = new Set([
   'totalWeight',
   'totalAmount',
   'totalFreight',
-  'purchaseAmount',
-  'salesAmount',
   'taxAmount',
   'amount',
   'permissionSummary',
   'userCount',
 ])
 
-function resolveScalarFields(moduleKey: string): string[] {
-  const config = businessPageConfigs[moduleKey]
+async function loadModuleConfig(moduleKey: string): Promise<ModulePageConfig | null> {
+  try {
+    return await loadBusinessPageConfig(moduleKey)
+  } catch {
+    return null
+  }
+}
+
+async function resolveScalarFields(moduleKey: string): Promise<string[]> {
+  const schemaSaveFields = getModulePageSchema(moduleKey)?.saveFields
+  if (schemaSaveFields) {
+    const scalar = schemaSaveFields.scalar || []
+    const computed = new Set(schemaSaveFields.computed || [])
+    return scalar.filter((key) => !computed.has(key))
+  }
+
+  const config = await loadModuleConfig(moduleKey)
   if (!config) {
     return []
   }
@@ -38,23 +55,18 @@ function resolveScalarFields(moduleKey: string): string[] {
   return [...new Set([...fromDetailFields, ...extras])]
 }
 
-function resolveIgnoredScalarFields(moduleKey: string): string[] {
-  const config = businessPageConfigs[moduleKey]
-  const configuredComputed = config?.saveFields?.computed || []
-  return [...new Set([...COMPUTED_FIELD_KEYS, ...configuredComputed])]
-}
+const scalarFieldCache = new Map<string, Promise<readonly string[]>>()
 
-const scalarFieldCache = new Map<string, string[]>()
-const ignoredScalarFieldCache = new Map<string, readonly string[]>()
-
-function getScalarFields(moduleKey: string): readonly string[] {
+function getScalarFields(moduleKey: string): Promise<readonly string[]> {
   const cached = scalarFieldCache.get(moduleKey)
   if (cached) {
     return cached
   }
-  const fields: readonly string[] = Object.freeze(resolveScalarFields(moduleKey))
-  scalarFieldCache.set(moduleKey, fields as unknown as string[])
-  return fields
+  const fieldsPromise = resolveScalarFields(moduleKey).then((fields) =>
+    Object.freeze(fields) as readonly string[],
+  )
+  scalarFieldCache.set(moduleKey, fieldsPromise)
+  return fieldsPromise
 }
 
 function getIgnoredScalarFields(moduleKey: string): readonly string[] {
@@ -75,7 +87,10 @@ function pickDefinedFields(record: ModuleRecord, fields: readonly string[]) {
   const next: Record<string, unknown> = {}
   fields.forEach((field) => {
     if (record[field] !== undefined) {
-      next[field] = record[field]
+      const value = record[field]
+      next[field] = dayjs.isDayjs(value)
+        ? value.format('YYYY-MM-DD HH:mm:ss')
+        : value
     }
   })
   return next
@@ -136,8 +151,15 @@ const LINE_ITEM_FIELDS: readonly LineItemFieldSpec[] = [
   { key: 'warehouseName' },
 ]
 
-function getLineItemFields(moduleKey: string): readonly LineItemFieldSpec[] {
-  const config = businessPageConfigs[moduleKey]
+async function resolveLineItemFields(
+  moduleKey: string,
+): Promise<readonly LineItemFieldSpec[]> {
+  const schemaSaveFields = getModulePageSchema(moduleKey)?.saveFields
+  if (schemaSaveFields?.lineItem) {
+    return schemaSaveFields.lineItem.map((key) => ({ key }))
+  }
+
+  const config = await loadModuleConfig(moduleKey)
   const moduleSaveFields = config?.saveFields
   if (moduleSaveFields?.lineItem) {
     return moduleSaveFields.lineItem.map((key) => ({ key, numeric: NUMERIC_LINE_ITEM_FIELD_KEYS.has(key) }))
@@ -146,24 +168,35 @@ function getLineItemFields(moduleKey: string): readonly LineItemFieldSpec[] {
   return LINE_ITEM_FIELDS
 }
 
-const lineItemFieldCache = new Map<string, readonly LineItemFieldSpec[]>()
+const lineItemFieldCache = new Map<
+  string,
+  Promise<readonly LineItemFieldSpec[]>
+>()
 
-function getCachedLineItemFields(moduleKey: string): readonly LineItemFieldSpec[] {
+function getCachedLineItemFields(
+  moduleKey: string,
+): Promise<readonly LineItemFieldSpec[]> {
   const cached = lineItemFieldCache.get(moduleKey)
   if (cached) return cached
-  const fields = Object.freeze(getLineItemFields(moduleKey))
-  lineItemFieldCache.set(moduleKey, fields)
-  return fields
+  const fieldsPromise = resolveLineItemFields(moduleKey).then((fields) =>
+    Object.freeze(fields) as readonly LineItemFieldSpec[],
+  )
+  lineItemFieldCache.set(moduleKey, fieldsPromise)
+  return fieldsPromise
 }
 
-function serializeLineItem(item: ModuleLineItem, moduleKey: string) {
+function serializeLineItem(
+  item: ModuleLineItem,
+  moduleKey: string,
+  lineItemFields: readonly LineItemFieldSpec[],
+) {
   const persistedId = toPersistedLineItemId(item.id)
   const result: Record<string, unknown> = {}
   if (persistedId) {
     result.id = persistedId
   }
-  for (const field of getCachedLineItemFields(moduleKey)) {
-    if (field.key === 'settlementMode' && moduleKey !== 'purchase-inbounds') {
+  for (const field of lineItemFields) {
+    if (field.key === 'settlementMode' && moduleKey !== 'purchase-inbound') {
       continue
     }
     const value = item[field.key]
@@ -174,35 +207,27 @@ function serializeLineItem(item: ModuleLineItem, moduleKey: string) {
   return result
 }
 
-const scalarPayloadBuilders = new Map<string, PayloadBuilder>()
-
-function getPayloadBuilder(moduleKey: string): PayloadBuilder {
-  const cached = scalarPayloadBuilders.get(moduleKey)
-  if (cached) {
-    return cached
-  }
-  const fields = getScalarFields(moduleKey)
-  const builder: PayloadBuilder = (record: ModuleRecord) => pickDefinedFields(record, fields)
-  scalarPayloadBuilders.set(moduleKey, builder)
-  return builder
-}
-
 export function serializeBusinessRecordForSave(
   moduleKey: string,
   record: ModuleRecord,
 ) {
-  const builder = getPayloadBuilder(moduleKey)
+  return serializeBusinessRecordForSaveAsync(moduleKey, record)
+}
 
-  const payload = builder(record)
+async function serializeBusinessRecordForSaveAsync(
+  moduleKey: string,
+  record: ModuleRecord,
+) {
+  const scalarFields = await getScalarFields(moduleKey)
+  const payload = pickDefinedFields(record, scalarFields)
 
   if (import.meta.env.DEV) {
-    const scalarFields = new Set(getScalarFields(moduleKey))
-    const ignoredScalarFields = new Set(getIgnoredScalarFields(moduleKey))
+    const scalarFieldSet = new Set(scalarFields)
     for (const key of Object.keys(record)) {
       if (key === 'id' || key === 'items' || key === 'attachmentIds') continue
-      if (record[key] !== undefined && !scalarFields.has(key) && !ignoredScalarFields.has(key)) {
-        console.warn(
-          `[save-payload] ${moduleKey}: field "${key}" not in save schema, will be silently dropped`
+      if (record[key] !== undefined && !scalarFieldSet.has(key)) {
+        logger.warn(
+          `[save-payload] ${moduleKey}: field "${key}" not in save schema, will be silently dropped`,
         )
       }
     }
@@ -216,7 +241,10 @@ export function serializeBusinessRecordForSave(
   }
 
   if (hasBehavior(moduleKey, 'savePayloadLineItems')) {
-    payload.items = toArray(record.items).map((item) => serializeLineItem(item, moduleKey))
+    const lineItemFields = await getCachedLineItemFields(moduleKey)
+    payload.items = toArray(record.items).map((item) =>
+      serializeLineItem(item, moduleKey, lineItemFields),
+    )
   }
 
   return payload

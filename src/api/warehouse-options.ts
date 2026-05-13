@@ -1,7 +1,6 @@
-import { http } from './client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
-import { shallowRef } from 'vue'
+import { http } from './client'
 
 export interface WarehouseOption {
   value: string
@@ -13,12 +12,12 @@ let fetchFailed = false
 let loadingWarehouses: Promise<WarehouseOption[]> | null = null
 
 export async function fetchWarehouseOptions(): Promise<WarehouseOption[]> {
-  if (cachedWarehouses.value !== null) return cachedWarehouses.value
-  if (loadingWarehouses) return loadingWarehouses
-
-  loadingWarehouses = (async () => {
-    const response = await http.get<ApiResponse<WarehouseOption[]>>(ENDPOINTS.WAREHOUSES_OPTIONS)
-    cachedWarehouses.value = normalizeWarehouseOptions(response.data || [])
+  if (cachedWarehouses && cachedWarehouses.length > 0) return cachedWarehouses
+  try {
+    const response = await http.get<ApiResponse<WarehouseOption[]>>(
+      ENDPOINTS.WAREHOUSES_OPTIONS,
+    )
+    cachedWarehouses = response.data || []
     fetchFailed = false
     return cachedWarehouses.value
   })()
@@ -34,10 +33,7 @@ export async function fetchWarehouseOptions(): Promise<WarehouseOption[]> {
 }
 
 export function getWarehouseOptions(): WarehouseOption[] {
-  if (cachedWarehouses.value === null && !loadingWarehouses) {
-    if (fetchFailed) {
-      fetchFailed = false
-    }
+  if (cachedWarehouses === null && !fetchFailed) {
     fetchWarehouseOptions()
   }
   return cachedWarehouses.value || []
