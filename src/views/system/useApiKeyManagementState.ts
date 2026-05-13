@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Form, Modal, message } from 'antd'
-import { useCallback, useMemo, useState } from 'react'
+import Form from 'antd/es/form'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   type ApiKeyRecord,
   createApiKey,
@@ -13,6 +13,7 @@ import {
 import { useRequestError } from '@/hooks/useRequestError'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
+import { message, modal } from '@/utils/antd-app'
 
 interface ApiKeyCreateFormValues {
   userId?: string
@@ -23,7 +24,7 @@ interface ApiKeyCreateFormValues {
   expireDays?: number | null
 }
 
-export function useApiKeyManagementState() {
+export function useApiKeyManagementState(enabled = true) {
   const queryClient = useQueryClient()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
@@ -59,6 +60,7 @@ export function useApiKeyManagementState() {
   const [totpModalOpen, setTotpModalOpen] = useState(false)
   const [totpLoading, setTotpLoading] = useState(false)
   const [form] = Form.useForm<ApiKeyCreateFormValues>()
+  const loadCreateOptions = enabled && generateModalOpen
 
   const { data: keysData, isLoading } = useQuery({
     queryKey: [
@@ -79,6 +81,7 @@ export function useApiKeyManagementState() {
         status: statusFilter || undefined,
         usageScope: usageScopeFilter || undefined,
       }),
+    enabled,
   })
 
   const keys = useMemo(() => keysData?.records || [], [keysData])
@@ -90,17 +93,34 @@ export function useApiKeyManagementState() {
   const { data: userOptions = [] } = useQuery({
     queryKey: ['api-key-user-options'],
     queryFn: () => listApiKeyUserOptions(),
+    enabled,
   })
 
   const { data: resourceOptions = [] } = useQuery({
     queryKey: ['api-key-resource-options'],
     queryFn: listApiKeyResourceOptions,
+    enabled: loadCreateOptions,
   })
 
   const { data: actionOptions = [] } = useQuery({
     queryKey: ['api-key-action-options'],
     queryFn: listApiKeyActionOptions,
+    enabled: loadCreateOptions,
   })
+
+  useEffect(() => {
+    if (!generateModalOpen || actionOptions.length === 0) {
+      return
+    }
+    const currentActions = form.getFieldValue('allowedActions')
+    if (Array.isArray(currentActions) && currentActions.length > 0) {
+      return
+    }
+    form.setFieldValue(
+      'allowedActions',
+      actionOptions.map((item) => item.code),
+    )
+  }, [actionOptions, form, generateModalOpen])
 
   const refreshApiKeys = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['api-keys'] })
@@ -187,7 +207,7 @@ export function useApiKeyManagementState() {
         message.warning('暂无 API Key 管理权限')
         return
       }
-      Modal.confirm({
+      modal.confirm({
         title: '禁用 API Key',
         content: `确定禁用密钥「${record.keyName}」吗？禁用后使用该密钥的调用将失败。`,
         okText: '确认禁用',

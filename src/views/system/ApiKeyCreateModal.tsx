@@ -1,15 +1,13 @@
 import type { FormInstance } from 'antd'
-import {
-  Alert,
-  Button,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Select,
-  Space,
-  Typography,
-} from 'antd'
+import Alert from 'antd/es/alert'
+import Button from 'antd/es/button'
+import Form from 'antd/es/form'
+import Input from 'antd/es/input'
+import InputNumber from 'antd/es/input-number'
+import Modal from 'antd/es/modal'
+import Select from 'antd/es/select'
+import Space from 'antd/es/space'
+import Typography from 'antd/es/typography'
 import type {
   ApiKeyActionOption,
   ApiKeyResourceOption,

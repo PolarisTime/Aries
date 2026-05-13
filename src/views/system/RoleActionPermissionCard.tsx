@@ -6,16 +6,15 @@ import {
   UnorderedListOutlined,
 } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
-import {
-  Button,
-  Card,
-  Checkbox,
-  Empty,
-  Radio,
-  Space,
-  Table,
-  Typography,
-} from 'antd'
+import Alert from 'antd/es/alert'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Checkbox from 'antd/es/checkbox'
+import Empty from 'antd/es/empty'
+import Radio from 'antd/es/radio'
+import Space from 'antd/es/space'
+import Table from 'antd/es/table'
+import Typography from 'antd/es/typography'
 import type { MenuNode, RoleRecord } from '@/api/role-actions'
 
 type MatrixRow = Record<string, unknown>
@@ -127,7 +126,15 @@ export function RoleActionPermissionCard({
       }
     >
       {selectedRoleInfo ? (
-        viewMode === 'list' ? (
+        <div>
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="附件权限说明"
+            description="附件不单独配置权限，默认跟随对应模块权限：有查看权限可查看和下载附件，有编辑权限可上传附件，有删除权限可删除附件。"
+          />
+          {viewMode === 'list' ? (
           <div>
             {menuTree.map((group) => (
               <div key={group.menuCode} style={{ marginBottom: 16 }}>
@@ -184,17 +191,18 @@ export function RoleActionPermissionCard({
               </div>
             ))}
           </div>
-        ) : (
-          <Table
-            rowKey="key"
-            columns={matrixColumns}
-            dataSource={matrixData}
-            size="small"
-            bordered
-            pagination={false}
-            scroll={{ x: 800 }}
-          />
-        )
+          ) : (
+            <Table
+              rowKey="key"
+              columns={matrixColumns}
+              dataSource={matrixData}
+              size="small"
+              bordered
+              pagination={false}
+              scroll={{ x: 800 }}
+            />
+          )}
+        </div>
       ) : (
         <Empty
           description="请从左侧选择一个角色来配置权限"

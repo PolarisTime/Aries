@@ -6,7 +6,13 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import { Button, Card, Select, Space, Table, type TableProps, Tag } from 'antd'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Select from 'antd/es/select'
+import Space from 'antd/es/space'
+import Table from 'antd/es/table'
+import type { TableProps } from 'antd/es/table'
+import Tag from 'antd/es/tag'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { getPrintTemplateBillTypeLabel } from '@/views/system/print-template-view-utils'

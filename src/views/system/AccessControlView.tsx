@@ -1,11 +1,11 @@
+import { lazy } from 'react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { Empty, Tabs } from 'antd'
-import { useCallback, useMemo } from 'react'
+import Empty from 'antd/es/empty'
+import Tabs from 'antd/es/tabs'
+import { Suspense, useCallback, useMemo } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { usePermissionStore } from '@/stores/permissionStore'
-import { BusinessGridPage } from '@/views/modules/BusinessGridPage'
-import { RoleActionEditor } from '@/views/system/RoleActionEditor'
-import { UserAccountManagementView } from '@/views/system/UserAccountManagementView'
+import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
 
 type TabKey = 'users' | 'roles' | 'permissions'
 
@@ -25,6 +25,24 @@ const permPageDef: AppPageDefinition = {
   resourceKey: 'permission',
 }
 
+const LazyPermissionGridPage = lazy(() =>
+  import('@/views/modules/BusinessGridPage').then((m) => ({
+    default: m.BusinessGridPage,
+  })),
+)
+
+const LazyRoleActionEditor = lazy(() =>
+  import('@/views/system/RoleActionEditor').then((m) => ({
+    default: m.RoleActionEditor,
+  })),
+)
+
+const LazyUserAccountManagementView = lazy(() =>
+  import('@/views/system/UserAccountManagementView').then((m) => ({
+    default: m.UserAccountManagementView,
+  })),
+)
+
 export function AccessControlView() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -38,27 +56,23 @@ export function AccessControlView() {
     const items: Array<{
       key: TabKey
       label: string
-      children: React.ReactNode
     }> = []
     if (canViewUsers) {
       items.push({
         key: 'users',
         label: '用户账户',
-        children: <UserAccountManagementView />,
       })
     }
     if (canViewRoles) {
       items.push({
         key: 'roles',
         label: '角色权限',
-        children: <RoleActionEditor />,
       })
     }
     if (canViewPermissions) {
       items.push({
         key: 'permissions',
         label: '权限目录',
-        children: <BusinessGridPage pageDef={permPageDef} />,
       })
     }
     return items
@@ -93,6 +107,31 @@ export function AccessControlView() {
     )
   }
 
+  const activeContent = (() => {
+    if (activeTab === 'users') {
+      return (
+        <Suspense fallback={<BusinessGridPageSkeleton />}>
+          <LazyUserAccountManagementView active />
+        </Suspense>
+      )
+    }
+    if (activeTab === 'roles') {
+      return (
+        <Suspense fallback={<BusinessGridPageSkeleton />}>
+          <LazyRoleActionEditor active />
+        </Suspense>
+      )
+    }
+    if (activeTab === 'permissions') {
+      return (
+        <Suspense fallback={<BusinessGridPageSkeleton />}>
+          <LazyPermissionGridPage pageDef={permPageDef} />
+        </Suspense>
+      )
+    }
+    return null
+  })()
+
   return (
     <div className="page-stack">
       <Tabs
@@ -102,6 +141,7 @@ export function AccessControlView() {
         size="large"
         tabBarStyle={{ marginBottom: 0 }}
       />
+      {activeContent}
     </div>
   )
 }

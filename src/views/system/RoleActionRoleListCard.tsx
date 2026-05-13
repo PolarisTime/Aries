@@ -1,5 +1,9 @@
 import { PlusOutlined } from '@ant-design/icons'
-import { Button, Card, Empty, Tag, Typography } from 'antd'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Empty from 'antd/es/empty'
+import Tag from 'antd/es/tag'
+import Typography from 'antd/es/typography'
 import type { RoleRecord } from '@/api/role-actions'
 import { enabledStatusValues } from '@/constants/module-options'
 

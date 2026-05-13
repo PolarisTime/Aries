@@ -1,15 +1,13 @@
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import {
-  Button,
-  Card,
-  Descriptions,
-  Empty,
-  Flex,
-  Spin,
-  Tag,
-  Typography,
-} from 'antd'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Descriptions from 'antd/es/descriptions'
+import Empty from 'antd/es/empty'
+import Flex from 'antd/es/flex'
+import Spin from 'antd/es/spin'
+import Tag from 'antd/es/tag'
+import Typography from 'antd/es/typography'
 import { useEffect, useMemo, useState } from 'react'
 import {
   type ApiKeyActionOption,

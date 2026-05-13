@@ -1,4 +1,5 @@
-import { Modal, Typography } from 'antd'
+import Modal from 'antd/es/modal'
+import Typography from 'antd/es/typography'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { getPrintTemplateBillTypeLabel } from '@/views/system/print-template-view-utils'
 

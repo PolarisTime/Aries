@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
-import { Card, Table } from 'antd'
+import Card from 'antd/es/card'
+import Table from 'antd/es/table'
 import type {
   ApiKeyActionOption,
   ApiKeyRecord,

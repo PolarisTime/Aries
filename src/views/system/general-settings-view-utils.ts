@@ -30,6 +30,8 @@ export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
     '启用后，业务列表分页查询默认不显示下方勾选状态的单据。',
   UI_SHOW_SNOWFLAKE_ID:
     '启用后，业务列表显示系统雪花 ID 列，便于排查数据问题。',
+  SYS_USE_SNOWFLAKE_ID_AS_BUSINESS_NO:
+    '启用后，新建业务单据时会预分配真实雪花ID，并直接以该雪花ID作为单据号。',
   SYS_LOGIN_CAPTCHA: '启用后，登录时需输入图形验证码，增加暴力破解防护。',
 }
 

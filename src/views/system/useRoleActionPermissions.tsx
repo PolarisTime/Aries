@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { TableColumnsType } from 'antd'
-import { Checkbox, message } from 'antd'
+import Checkbox from 'antd/es/checkbox'
 import { useCallback, useMemo, useState } from 'react'
 import {
   getRoleActions,
@@ -18,15 +18,18 @@ import {
   ROLE_ACTION_LABELS,
   type RoleMatrixRow,
 } from '@/views/system/role-action-view-utils'
+import { message } from '@/utils/antd-app'
 
 interface UseRoleActionPermissionsOptions {
   roles: RoleRecord[]
   canEditPermissions: boolean
+  enabled?: boolean
 }
 
 export function useRoleActionPermissions({
   roles,
   canEditPermissions,
+  enabled = true,
 }: UseRoleActionPermissionsOptions) {
   const { showError } = useRequestError()
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null)
@@ -36,7 +39,7 @@ export function useRoleActionPermissions({
   const { data: menuTree = [] } = useQuery({
     queryKey: ['role-permission-options'],
     queryFn: listSystemMenus,
-    enabled: canEditPermissions,
+    enabled: enabled && canEditPermissions,
   })
 
   const selectedRoleInfo = useMemo(

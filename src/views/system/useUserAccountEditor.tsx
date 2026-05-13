@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Form, message } from 'antd'
+import Form from 'antd/es/form'
 import { useCallback, useState } from 'react'
 import {
   checkUserAccountLoginName,
@@ -23,15 +23,18 @@ import {
 } from '@/views/system/user-account-view-utils'
 import { useUserAccountEditorCatalogs } from '@/views/system/useUserAccountEditorCatalogs'
 import { useUserAccountEditorRoleState } from '@/views/system/useUserAccountEditorRoleState'
+import { message } from '@/utils/antd-app'
 
 interface UseUserAccountEditorOptions {
   canViewRoleCatalog: boolean
   canViewDepartmentCatalog: boolean
+  enabled?: boolean
 }
 
 export function useUserAccountEditor({
   canViewRoleCatalog,
   canViewDepartmentCatalog,
+  enabled = true,
 }: UseUserAccountEditorOptions) {
   const queryClient = useQueryClient()
   const { showError } = useRequestError()
@@ -49,6 +52,7 @@ export function useUserAccountEditor({
   const { departmentOptions, roleOptions } = useUserAccountEditorCatalogs({
     canViewRoleCatalog,
     canViewDepartmentCatalog,
+    enabled: enabled && editorOpen,
   })
   const { selectedRoleDataScope, selectedRoleNames, selectedRoleSummaries } =
     useUserAccountEditorRoleState({ form, roleOptions })

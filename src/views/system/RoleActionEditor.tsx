@@ -1,4 +1,6 @@
-import { Col, Row } from 'antd'
+import Col from 'antd/es/col'
+import Row from 'antd/es/row'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { RoleActionEditorModal } from '@/views/system/RoleActionEditorModal'
 import { RoleActionPermissionCard } from '@/views/system/RoleActionPermissionCard'
@@ -7,13 +9,19 @@ import { useRoleActionPermissions } from '@/views/system/useRoleActionPermission
 import { useRoleEditor } from '@/views/system/useRoleEditor'
 import { useRoleSettingsList } from '@/views/system/useRoleSettingsList'
 
-export function RoleActionEditor() {
+interface RoleActionEditorProps {
+  active?: boolean
+}
+
+export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
   const permissionStore = usePermissionStore()
   const canCreateRole = permissionStore.can('role', 'create')
   const canEditRole = permissionStore.can('role', 'update')
   const canEditPermissions = permissionStore.can('role', 'manage_permissions')
+  const isPageVisible = usePageVisibility()
+  const queryEnabled = active && isPageVisible
 
-  const { roles } = useRoleSettingsList()
+  const { roles } = useRoleSettingsList(queryEnabled)
   const {
     selectedRoleId,
     selectedRoleInfo,
@@ -36,6 +44,7 @@ export function RoleActionEditor() {
   } = useRoleActionPermissions({
     roles,
     canEditPermissions,
+    enabled: queryEnabled,
   })
 
   const {
@@ -92,16 +101,18 @@ export function RoleActionEditor() {
         </Col>
       </Row>
 
-      <RoleActionEditorModal
-        open={roleModalOpen}
-        editingRole={editingRole}
-        form={roleForm}
-        saving={roleSavePending}
-        onSave={() => {
-          void handleSaveRole()
-        }}
-        onClose={closeRoleModal}
-      />
+      {roleModalOpen ? (
+        <RoleActionEditorModal
+          open={roleModalOpen}
+          editingRole={editingRole}
+          form={roleForm}
+          saving={roleSavePending}
+          onSave={() => {
+            void handleSaveRole()
+          }}
+          onClose={closeRoleModal}
+        />
+      ) : null}
     </div>
   )
 }

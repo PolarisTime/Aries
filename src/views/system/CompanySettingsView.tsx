@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, Card, Col, Form, Input, message, Row, Skeleton } from 'antd'
+import Alert from 'antd/es/alert'
+import Card from 'antd/es/card'
+import Col from 'antd/es/col'
+import Form from 'antd/es/form'
+import Input from 'antd/es/input'
+import Row from 'antd/es/row'
+import Skeleton from 'antd/es/skeleton'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   getCompanySettingProfile,
@@ -15,6 +21,7 @@ import {
   normalizeSettlementAccounts,
   type SettlementAccountFormRow,
 } from '@/views/system/company-settings-view-utils'
+import { message } from '@/utils/antd-app'
 
 export function CompanySettingsView() {
   const queryClient = useQueryClient()

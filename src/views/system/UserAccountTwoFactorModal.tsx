@@ -1,6 +1,15 @@
-import { Button, Form, Input, Modal, QRCode, Spin, Tag, Typography } from 'antd'
+import Button from 'antd/es/button'
+import Form from 'antd/es/form'
+import Input from 'antd/es/input'
+import Modal from 'antd/es/modal'
+import QRCode from 'antd/es/qr-code'
+import Spin from 'antd/es/spin'
+import Tag from 'antd/es/tag'
+import Typography from 'antd/es/typography'
 import type { TotpSetupResponse } from '@/types/auth'
 import type { UserAccountRecord } from '@/types/user-account'
+import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
+import { buildFormControlId } from '@/utils/form-control-id'
 
 interface Props {
   open: boolean
@@ -33,6 +42,9 @@ export function UserAccountTwoFactorModal({
   onDisable,
   onClose,
 }: Props) {
+  const setupSecretId = buildFormControlId('user-account-2fa', 'setup-secret')
+  const verifyCodeId = buildFormControlId('user-account-2fa', 'verify-code')
+
   return (
     <Modal
       title="2FA 管理"
@@ -85,11 +97,28 @@ export function UserAccountTwoFactorModal({
                       />
                     </div>
                     <Form layout="vertical">
-                      <Form.Item label="手动绑定密钥">
-                        <Input value={setup.secret} readOnly />
-                      </Form.Item>
-                      <Form.Item label="步骤 2：输入 6 位验证码确认启用">
+                      <Form.Item
+                        {...buildLabeledFormItemProps({
+                          label: '手动绑定密钥',
+                          htmlFor: setupSecretId,
+                        })}
+                      >
                         <Input
+                          id={setupSecretId}
+                          name="two-factor-secret"
+                          value={setup.secret}
+                          readOnly
+                        />
+                      </Form.Item>
+                      <Form.Item
+                        {...buildLabeledFormItemProps({
+                          label: '步骤 2：输入 6 位验证码确认启用',
+                          htmlFor: verifyCodeId,
+                        })}
+                      >
+                        <Input
+                          id={verifyCodeId}
+                          name="two-factor-verify-code"
                           maxLength={6}
                           placeholder="请输入动态验证码"
                           value={code}

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Form, message } from 'antd'
+import Form from 'antd/es/form'
 import { useCallback, useMemo, useState } from 'react'
 import {
   listSystemSettings,
@@ -9,6 +9,7 @@ import {
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
+import { message } from '@/utils/antd-app'
 import { NumberRulesEditorModal } from '@/views/system/NumberRulesEditorModal'
 import { NumberRulesTableCard } from '@/views/system/NumberRulesTableCard'
 import {
@@ -162,16 +163,18 @@ export function NumberRulesView() {
         onEditUploadRule={openUploadRuleEditor}
       />
 
-      <NumberRulesEditorModal
-        open={editorOpen}
-        kind={editorKind}
-        form={form}
-        saving={saving}
-        onSave={() => {
-          void handleSave()
-        }}
-        onClose={() => setEditorOpen(false)}
-      />
+      {editorOpen ? (
+        <NumberRulesEditorModal
+          open={editorOpen}
+          kind={editorKind}
+          form={form}
+          saving={saving}
+          onSave={() => {
+            void handleSave()
+          }}
+          onClose={() => setEditorOpen(false)}
+        />
+      ) : null}
     </div>
   )
 }

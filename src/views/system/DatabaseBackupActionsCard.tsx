@@ -1,5 +1,10 @@
 import { DownloadOutlined, UploadOutlined } from '@ant-design/icons'
-import { Alert, Button, Card, Col, Row, Typography } from 'antd'
+import Alert from 'antd/es/alert'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Col from 'antd/es/col'
+import Row from 'antd/es/row'
+import Typography from 'antd/es/typography'
 
 interface Props {
   canExport: boolean

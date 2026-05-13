@@ -1,10 +1,14 @@
 import { RedoOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, Descriptions, Space } from 'antd'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
+import Descriptions from 'antd/es/descriptions'
+import Space from 'antd/es/space'
 import { useState } from 'react'
 import { http } from '@/api/client'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { usePageVisibility } from '@/hooks/usePageVisibility'
 import type { ApiResponse } from '@/types/api'
 import { message } from '@/utils/antd-app'
 
@@ -17,6 +21,7 @@ export function SecurityKeyManagementView() {
   const queryClient = useQueryClient()
   const [totpOpen, setTotpOpen] = useState(false)
   const [rotateType, setRotateType] = useState<'jwt' | 'totp'>('jwt')
+  const isPageVisible = usePageVisibility()
 
   const { data: keys, isLoading } = useQuery({
     queryKey: ['security-key'],
@@ -26,6 +31,7 @@ export function SecurityKeyManagementView() {
       )
       return res.data
     },
+    enabled: isPageVisible,
   })
 
   const handleRotate = (type: 'jwt' | 'totp') => {
@@ -66,12 +72,14 @@ export function SecurityKeyManagementView() {
           </Button>
         </Space>
       </Card>
-      <TwoFactorConfirmModal
-        open={totpOpen}
-        onConfirm={handleRotateConfirm}
-        onCancel={() => setTotpOpen(false)}
-        title={`确认轮换 ${rotateType.toUpperCase()} 密钥`}
-      />
+      {totpOpen ? (
+        <TwoFactorConfirmModal
+          open={totpOpen}
+          onConfirm={handleRotateConfirm}
+          onCancel={() => setTotpOpen(false)}
+          title={`确认轮换 ${rotateType.toUpperCase()} 密钥`}
+        />
+      ) : null}
     </div>
   )
 }
