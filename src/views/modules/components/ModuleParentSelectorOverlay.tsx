@@ -298,6 +298,7 @@ export function ModuleParentSelectorOverlay({
 
  
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- see instruction-5 analysis
   const records = data?.data?.rows || []
   const total = Number(data?.data?.total || 0)
 
