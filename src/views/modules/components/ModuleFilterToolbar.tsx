@@ -1,6 +1,3 @@
-import { asString } from '@/utils/type-narrowing'
-import type { Dayjs } from 'dayjs'
-import dayjs from 'dayjs'
 import Button from 'antd/es/button'
 import Col from 'antd/es/col'
 import DatePicker from 'antd/es/date-picker'
@@ -9,6 +6,9 @@ import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
+import type { Dayjs } from 'dayjs'
+import dayjs from 'dayjs'
+import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleFilterDefinition,
   ModuleFilterOption,
@@ -18,11 +18,12 @@ import type {
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 import { padLabel } from '@/utils/label-utils'
+import { asString } from '@/utils/type-narrowing'
 import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
 
-type Props = {
+interface Props {
   config: ModulePageConfig
-  filters: Record<string, unknown>
+  filters: SearchParams
   onUpdateFilter: (key: string, value: unknown) => void
   onSearch: () => void
   onReset: () => void
@@ -88,7 +89,7 @@ export function ModuleFilterToolbar({
           placeholder={field.placeholder || `请选择${field.label}`}
           value={
             typeof filters[field.key] === 'string'
-              ? (filters[field.key] as string)
+              ? asString(filters[field.key])
               : undefined
           }
           onChange={(value) => onUpdateFilter(field.key, value)}

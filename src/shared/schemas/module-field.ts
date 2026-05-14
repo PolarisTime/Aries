@@ -1,5 +1,5 @@
-import { z } from 'zod'
-import { asString, asNumber, asBoolean, asArray } from '@/utils/type-narrowing'
+import type { z } from 'zod'
+import { asArray, asBoolean, asNumber, asString } from '@/utils/type-narrowing'
 
 /**
  * 模块记录安全字段访问器。

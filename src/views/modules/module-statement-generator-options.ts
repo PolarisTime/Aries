@@ -1,7 +1,7 @@
-import { asString } from '@/utils/type-narrowing'
 import type { CarrierOption } from '@/api/carrier-options'
 import type { CustomerOption } from '@/api/customer-options'
 import type { SupplierOption } from '@/api/supplier-options'
+import { asString } from '@/utils/type-narrowing'
 
 export type StatementCounterpartyType = 'supplier' | 'customer' | 'freight'
 
@@ -61,17 +61,33 @@ function buildCustomerCounterpartyOptions(rows: CustomerOption[]) {
   )
 }
 
+function isCustomerStatementRows(
+  statementType: StatementCounterpartyType,
+  _rows: SupplierOption[] | CustomerOption[] | CarrierOption[],
+): _rows is CustomerOption[] {
+  return statementType === 'customer'
+}
+
+function isNamedStatementRows(
+  statementType: StatementCounterpartyType,
+  _rows: SupplierOption[] | CustomerOption[] | CarrierOption[],
+): _rows is Array<SupplierOption | CarrierOption> {
+  return statementType !== 'customer'
+}
+
 export function buildStatementCounterpartyOptions(
   statementType: StatementCounterpartyType,
   rows: SupplierOption[] | CustomerOption[] | CarrierOption[],
 ) {
-  if (statementType === 'customer') {
-    return buildCustomerCounterpartyOptions(rows as CustomerOption[])
+  if (isCustomerStatementRows(statementType, rows)) {
+    return buildCustomerCounterpartyOptions(rows)
   }
 
-  return buildNamedCounterpartyOptions(
-    rows as Array<SupplierOption | CarrierOption>,
-  )
+  if (isNamedStatementRows(statementType, rows)) {
+    return buildNamedCounterpartyOptions(rows)
+  }
+
+  return []
 }
 
 export function filterStatementCounterpartyOptions(
@@ -86,6 +102,8 @@ export function filterStatementCounterpartyOptions(
   return options.filter((option) => {
     const label = normalizeText(option.label).toLowerCase()
     const value = normalizeText(option.value).toLowerCase()
-    return label.includes(normalizedKeyword) || value.includes(normalizedKeyword)
+    return (
+      label.includes(normalizedKeyword) || value.includes(normalizedKeyword)
+    )
   })
 }

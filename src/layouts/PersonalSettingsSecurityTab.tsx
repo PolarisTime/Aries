@@ -1,14 +1,15 @@
+import type { FormInstance } from 'antd'
 import Alert from 'antd/es/alert'
 import Button from 'antd/es/button'
 import Descriptions from 'antd/es/descriptions'
 import Divider from 'antd/es/divider'
 import Flex from 'antd/es/flex'
 import Form from 'antd/es/form'
-import type { FormInstance } from 'antd'
 import Image from 'antd/es/image'
 import Input from 'antd/es/input'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type { LoginUser } from '@/types/auth'
 import { toDataImageUrl } from '@/utils/data-url'
 import { buildFormControlId } from '@/utils/form-control-id'
@@ -18,7 +19,7 @@ interface PasswordFormValues {
   newPassword: string
 }
 
-type Props = {
+interface Props {
   user: LoginUser | null
   pwForm: FormInstance<PasswordFormValues>
   pwSaving: boolean
@@ -45,36 +46,42 @@ export function PersonalSettingsSecurityTab({
   onSetTotpCode,
   onEnableTotp,
 }: Props) {
+  const { t } = useTranslation()
   const totpInputId = buildFormControlId('personal-settings', 'totp-code')
+  const displayName = user?.userName || user?.loginName || '--'
+  const loginName = user?.loginName || '--'
 
   return (
     <Flex vertical gap={16}>
       <Alert
         showIcon
         type="info"
-        title={`当前账号：${user?.userName || user?.loginName || '--'}（${user?.loginName || '--'}）`}
+        title={t('auth.personalsecurity.accountTitle', {
+          displayName,
+          loginName,
+        })}
         description={
           user?.totpEnabled
-            ? '已启用 2FA，高风险操作会要求二次验证。'
-            : '未启用 2FA，建议立即绑定认证器。'
+            ? t('auth.personalsecurity.enabledDescription')
+            : t('auth.personalsecurity.disabledDescription')
         }
       />
 
       <Descriptions bordered column={1} size="small">
-        <Descriptions.Item label="登录账号">
-          <Typography.Text strong>{user?.loginName || '--'}</Typography.Text>
+        <Descriptions.Item label={t('auth.personalsecurity.loginName')}>
+          <Typography.Text strong>{loginName}</Typography.Text>
         </Descriptions.Item>
-        <Descriptions.Item label="当前状态">
+        <Descriptions.Item label={t('auth.personalsecurity.currentStatus')}>
           {user?.totpEnabled ? (
-            <Tag color="green">已启用</Tag>
+            <Tag color="green">{t('auth.personalsecurity.enabled')}</Tag>
           ) : (
-            <Tag>未启用</Tag>
+            <Tag>{t('auth.personalsecurity.disabled')}</Tag>
           )}
         </Descriptions.Item>
-        <Descriptions.Item label="两步验证">
+        <Descriptions.Item label={t('auth.personalsecurity.twoFactor')}>
           {user?.totpEnabled ? (
             <Typography.Text type="secondary">
-              当前账号已启用两步验证。
+              {t('auth.personalsecurity.alreadyEnabled')}
             </Typography.Text>
           ) : totpSetup ? (
             <Flex vertical gap={12}>
@@ -91,13 +98,13 @@ export function PersonalSettingsSecurityTab({
                 <Input
                   id={totpInputId}
                   name="personal-settings-totp-code"
-                  aria-label="输入 6 位验证码启用两步验证"
+                  aria-label={t('auth.personalsecurity.codeAria')}
                   size="small"
-                  placeholder="输入 6 位验证码"
+                  placeholder={t('auth.personalsecurity.codePlaceholder')}
                   maxLength={6}
                   value={totpCode}
                   onChange={(event) => onSetTotpCode(event.target.value)}
-                  style={{ width: 132 }}
+                  className="w-[132px]"
                 />
                 <Button
                   size="small"
@@ -105,13 +112,13 @@ export function PersonalSettingsSecurityTab({
                   loading={totpEnabling}
                   onClick={onEnableTotp}
                 >
-                  验证启用
+                  {t('auth.personalsecurity.enable')}
                 </Button>
               </Flex>
             </Flex>
           ) : (
             <Button size="small" loading={totpLoading} onClick={onSetupTotp}>
-              生成绑定二维码
+              {t('auth.personalsecurity.generate')}
             </Button>
           )}
         </Descriptions.Item>
@@ -122,24 +129,35 @@ export function PersonalSettingsSecurityTab({
       <Form form={pwForm} onFinish={onChangePassword} layout="vertical">
         <Form.Item
           name="oldPassword"
-          label="当前密码"
-          rules={[{ required: true, message: '请输入当前密码' }]}
+          label={t('auth.personalsecurity.currentPassword')}
+          rules={[
+            {
+              required: true,
+              message: t('auth.personalsecurity.currentPasswordRequired'),
+            },
+          ]}
         >
           <Input.Password />
         </Form.Item>
         <Form.Item
           name="newPassword"
-          label="新密码"
-          rules={[{ required: true, min: 6, message: '至少 6 位' }]}
+          label={t('auth.personalsecurity.newPassword')}
+          rules={[
+            {
+              required: true,
+              min: 6,
+              message: t('auth.personalsecurity.newPasswordRequired'),
+            },
+          ]}
         >
           <Input.Password />
         </Form.Item>
         <Flex justify="space-between" align="center" gap={12} wrap="wrap">
           <Typography.Text type="secondary">
-            修改密码后，下次登录将使用新密码。
+            {t('auth.personalsecurity.passwordHint')}
           </Typography.Text>
           <Button type="primary" htmlType="submit" loading={pwSaving}>
-            更新密码
+            {t('auth.personalsecurity.updatePassword')}
           </Button>
         </Flex>
       </Form>

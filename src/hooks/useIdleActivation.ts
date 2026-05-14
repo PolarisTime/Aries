@@ -6,6 +6,15 @@ type IdleDeadlineLike = {
   timeRemaining: () => number
 }
 
+type IdleWindow = Window &
+  typeof globalThis & {
+    requestIdleCallback?: (
+      callback: (deadline: IdleDeadlineLike) => void,
+      options?: { timeout?: number },
+    ) => IdleCallbackHandle
+    cancelIdleCallback?: (handle: IdleCallbackHandle) => void
+  }
+
 export function useIdleActivation(enabled = true, timeout = 1200) {
   const [active, setActive] = useState(false)
 
@@ -20,16 +29,7 @@ export function useIdleActivation(enabled = true, timeout = 1200) {
       return
     }
 
-    type _IdleWindow = Window &
-      typeof globalThis & {
-        requestIdleCallback?: (
-          callback: (deadline: IdleDeadlineLike) => void,
-          options?: { timeout?: number },
-        ) => IdleCallbackHandle
-        cancelIdleCallback?: (handle: IdleCallbackHandle) => void
-      }
-
-    const idleWindow = window
+    const idleWindow: IdleWindow = window
     setActive(false)
 
     if (typeof idleWindow.requestIdleCallback === 'function') {

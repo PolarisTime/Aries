@@ -54,7 +54,7 @@ export function buildPrintTemplateStarter(config: ModulePageConfig) {
     margin: 0;
     padding: 0;
     color: #1f2329;
-    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
     font-size: 12px;
     background: #fff;
   }

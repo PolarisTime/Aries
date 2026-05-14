@@ -1,8 +1,9 @@
-import { asString } from '@/utils/type-narrowing'
 // NOTE: These are fallback/default values for dropdown selects.
 // Supplier and carrier options intentionally have no fallback: business modules
 // must use master-data APIs so stale hardcoded names cannot be saved.
 import type { MaterialCategoryOption } from '@/api/material-categories'
+import type { ModuleRecordInput } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
 function createOptionList(values: readonly string[]) {
   return values.map((value) => ({ label: value, value }))
@@ -122,7 +123,7 @@ export function getCustomerOptions() {
   return customerOptions()
 }
 
-export function getCustomerProjectOptions(form?: Record<string, unknown>) {
+export function getCustomerProjectOptions(form?: ModuleRecordInput) {
   return apiGetCustomerProjectOptions(form)
 }
 
@@ -144,7 +145,7 @@ export function getCarrierOptions() {
   return dynamic.length > 0 ? dynamic : _carrierOptions
 }
 
-export function getCarrierVehiclePlateOptions(form?: Record<string, unknown>) {
+export function getCarrierVehiclePlateOptions(form?: ModuleRecordInput) {
   return apiGetCarrierVehiclePlateOptions(form)
 }
 

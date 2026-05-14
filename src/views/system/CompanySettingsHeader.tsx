@@ -10,7 +10,7 @@ interface OverviewItem {
   value: string
 }
 
-type Props = {
+interface Props {
   loading: boolean
   canSave: boolean
   saving: boolean
@@ -28,23 +28,10 @@ export function CompanySettingsHeader({
   onSave,
 }: Props) {
   return (
-    <div
-      style={{
-        background: '#fff',
-        borderRadius: 8,
-        padding: 24,
-        marginBottom: 16,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: 20,
-        }}
-      >
+    <div className="bg-default rounded p-24 mb-16">
+      <div className="flex justify-between mb-20">
         <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
+          <Typography.Title level={4} className="m-0">
             公司信息
           </Typography.Title>
           <Typography.Text type="secondary">
@@ -78,15 +65,10 @@ export function CompanySettingsHeader({
         {overviewItems.map((item) => (
           <Col span={8} key={item.label}>
             <div
-              style={{
-                border: '1px solid #f0f0f0',
-                borderRadius: 12,
-                padding: '18px 20px',
-                background: 'linear-gradient(180deg, #fafafa 0%, #fff 100%)',
-              }}
+              className="rounded-lg border border-gray-200 px-[20px] py-[18px] bg-gradient-to-b from-gray-50 to-white"
             >
-              <div style={{ fontSize: 13, color: '#8c8c8c' }}>{item.label}</div>
-              <div style={{ marginTop: 10, fontSize: 22, fontWeight: 600 }}>
+              <div className="text-sm text-secondary">{item.label}</div>
+              <div className="mt-10 text-2xl font-semibold">
                 {item.value}
               </div>
             </div>

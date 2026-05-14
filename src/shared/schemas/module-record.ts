@@ -4,22 +4,23 @@ import { materialInfoSchema, weightPriceSchema } from './api'
 // ── 行项目 Schema ──────────────────────────────────────
 
 /** 行项目通用字段 — .passthrough() 保留模块特有字段兼容存量 */
-export const lineItemSchema = z.object({
-  id: z.string().optional(),
-  sourceNo: z.string().optional(),
-  sourcePurchaseOrderItemId: z.union([z.string(), z.number()]).optional(),
-  sourceSalesOrderItemId: z.union([z.string(), z.number()]).optional(),
-  sourceInboundItemId: z.union([z.string(), z.number()]).optional(),
-  warehouseName: z.string().optional(),
-  batchNo: z.string().optional(),
-  settlementMode: z.string().optional(),
-  customerName: z.string().optional(),
-  projectName: z.string().optional(),
-  materialName: z.string().optional(),
-  weighWeightTon: z.union([z.string(), z.number()]).optional(),
-  weightAdjustmentTon: z.union([z.string(), z.number()]).optional(),
-  weightAdjustmentAmount: z.union([z.string(), z.number()]).optional(),
-})
+export const lineItemSchema = z
+  .object({
+    id: z.string(),
+    sourceNo: z.string().optional(),
+    sourcePurchaseOrderItemId: z.union([z.string(), z.number()]).optional(),
+    sourceSalesOrderItemId: z.union([z.string(), z.number()]).optional(),
+    sourceInboundItemId: z.union([z.string(), z.number()]).optional(),
+    warehouseName: z.string().optional(),
+    batchNo: z.string().optional(),
+    settlementMode: z.string().optional(),
+    customerName: z.string().optional(),
+    projectName: z.string().optional(),
+    materialName: z.string().optional(),
+    weighWeightTon: z.union([z.string(), z.number()]).optional(),
+    weightAdjustmentTon: z.union([z.string(), z.number()]).optional(),
+    weightAdjustmentAmount: z.union([z.string(), z.number()]).optional(),
+  })
   .merge(materialInfoSchema)
   .merge(weightPriceSchema)
   .passthrough()
@@ -29,16 +30,18 @@ export type LineItem = z.infer<typeof lineItemSchema>
 // ── 模块记录 Schema ────────────────────────────────────
 
 /** 模块记录通用字段 */
-export const moduleRecordSchema = z.object({
-  id: z.string(),
-  status: z.string().optional(),
-  remark: z.string().optional(),
-  items: z.array(lineItemSchema).optional(),
-  attachmentIds: z.array(z.string()).optional(),
-  createdBy: z.union([z.string(), z.number()]).optional(),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
-}).passthrough()
+export const moduleRecordSchema = z
+  .object({
+    id: z.string(),
+    status: z.string().optional(),
+    remark: z.string().optional(),
+    items: z.array(lineItemSchema).optional(),
+    attachmentIds: z.array(z.string()).optional(),
+    createdBy: z.union([z.string(), z.number()]).optional(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+  })
+  .passthrough()
 
 export type ModuleRecord = z.infer<typeof moduleRecordSchema>
 

@@ -3,15 +3,15 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import type { ReactNode } from 'react'
 import Button from 'antd/es/button'
 import Flex from 'antd/es/flex'
 import Space from 'antd/es/space'
 import Typography from 'antd/es/typography'
+import type { ReactNode } from 'react'
 import type { ModuleActionDefinition } from '@/types/module-page'
 import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
 
-type Props = {
+interface Props {
   canCreate: boolean
   canExport: boolean
   total: number

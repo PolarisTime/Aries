@@ -18,18 +18,26 @@ import {
   buildTopMenuItems,
   findMenuParentKeys,
 } from '@/layouts/layout-menu-items'
-import { checkAccessResources, usePermissionStore } from '@/stores/permissionStore'
+import {
+  checkAccessResources,
+  usePermissionStore,
+} from '@/stores/permissionStore'
 
 const menuEntriesByGroup = buildMenuEntriesByGroup(appPageDefinitions)
 
 function resolveEntryAccess(entry: AppPageDefinition) {
-  if (Array.isArray(entry.accessResources) && entry.accessResources.length > 0) {
+  if (
+    Array.isArray(entry.accessResources) &&
+    entry.accessResources.length > 0
+  ) {
     return checkAccessResources(
       entry.accessResources,
       usePermissionStore.getState().can,
     )
   }
-  return usePermissionStore.getState().can(entry.resourceKey || entry.key, 'read')
+  return usePermissionStore
+    .getState()
+    .can(entry.resourceKey || entry.key, 'read')
 }
 
 interface Options {

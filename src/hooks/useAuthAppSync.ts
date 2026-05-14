@@ -17,22 +17,22 @@ type IdleDeadlineLike = {
   timeRemaining: () => number
 }
 
+type IdleWindow = Window &
+  typeof globalThis & {
+    requestIdleCallback?: (
+      callback: (deadline: IdleDeadlineLike) => void,
+      options?: { timeout?: number },
+    ) => IdleCallbackHandle
+    cancelIdleCallback?: (handle: IdleCallbackHandle) => void
+  }
+
 function runWhenIdle(task: () => void, timeout = 1500) {
   if (typeof window === 'undefined') {
     task()
     return () => {}
   }
 
-  type _IdleWindow = Window &
-    typeof globalThis & {
-      requestIdleCallback?: (
-        callback: (deadline: IdleDeadlineLike) => void,
-        options?: { timeout?: number },
-      ) => IdleCallbackHandle
-      cancelIdleCallback?: (handle: IdleCallbackHandle) => void
-    }
-
-  const idleWindow = window
+  const idleWindow: IdleWindow = window
   if (typeof idleWindow.requestIdleCallback === 'function') {
     const handle = idleWindow.requestIdleCallback(() => task(), { timeout })
     return () => idleWindow.cancelIdleCallback?.(handle)

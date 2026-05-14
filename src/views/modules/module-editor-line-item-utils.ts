@@ -1,6 +1,6 @@
-import { asString } from '@/utils/type-narrowing'
 import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
-import type { ModuleLineItem } from '@/types/module-page'
+import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
 import { recalculateEditorLineItem } from './module-editor-line-item-calculations'
 import {
@@ -120,7 +120,7 @@ export function moveEditorLineItemByDrag(
 
 export function applyMaterialToEditorLineItem(
   item: ModuleLineItem,
-  materialRecord?: Record<string, unknown> | null,
+  materialRecord?: ModuleRecord | null,
 ) {
   if (!materialRecord) {
     return item
@@ -139,7 +139,7 @@ export function applyMaterialToEditorLineItem(
   item.unitPrice = toRoundedNumber(materialRecord.unitPrice || 0, 2)
   item.settlementMode = isPurchaseWeighRequiredCategory(item.category)
     ? '过磅'
-    : asasString(item.settlementMode)
+    : asString(item.settlementMode)
   item.weighWeightTon = undefined
   item.weightAdjustmentTon = 0
   item.weightAdjustmentAmount = 0

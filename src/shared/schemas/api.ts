@@ -9,8 +9,27 @@ export type ApiResponse<T> = { code: number; data: T; message?: string }
 
 /** 分页结果 */
 export const pagedResultSchema = <T extends z.ZodTypeAny>(row: T) =>
-  z.object({ rows: z.array(row), total: z.number() })
-export type PagedResult<T> = { rows: T[]; total: number }
+  z
+    .object({
+      content: z.array(row).optional(),
+      records: z.array(row).optional(),
+      totalElements: z.number().optional(),
+      totalPages: z.number().optional(),
+      currentPage: z.number().optional(),
+      pageSize: z.number().optional(),
+      rows: z.array(row).optional(),
+      total: z.number().optional(),
+    })
+    .transform((page) => ({
+      rows: page.content ?? page.records ?? page.rows ?? [],
+      total: page.totalElements ?? page.total ?? 0,
+    }))
+export type PagedResult<T> = {
+  rows: T[]
+  total: number
+  errorCode?: number
+  errorMessage?: string
+}
 
 /** 业务单号生成 */
 export const businessNoResultSchema = z.object({
@@ -23,7 +42,7 @@ export type BusinessNoResult = z.infer<typeof businessNoResultSchema>
 
 /** 物料信息字段 */
 export const materialInfoSchema = z.object({
-  materialCode: z.string(),
+  materialCode: z.string().optional(),
   brand: z.string().optional(),
   category: z.string().optional(),
   material: z.string().optional(),
@@ -47,12 +66,32 @@ export const weightPriceSchema = z.object({
 
 /** 单据状态枚举 */
 export const documentStatusSchema = z.enum([
-  '草稿', '已审核', '未审核', '已完成',
-  '完成采购', '完成入库', '完成销售', '部分入库', '部分出库',
-  '已签署', '未签署', '已送达', '未送达',
-  '待确认', '已确认', '待审核',
-  '已收款', '已付款', '已收票', '已开票', '未收票',
-  '执行中', '已归档', '正常', '禁用', '部分结清',
+  '草稿',
+  '已审核',
+  '未审核',
+  '已完成',
+  '完成采购',
+  '完成入库',
+  '完成销售',
+  '部分入库',
+  '部分出库',
+  '已签署',
+  '未签署',
+  '已送达',
+  '未送达',
+  '待确认',
+  '已确认',
+  '待审核',
+  '已收款',
+  '已付款',
+  '已收票',
+  '已开票',
+  '未收票',
+  '执行中',
+  '已归档',
+  '正常',
+  '禁用',
+  '部分结清',
 ])
 export type DocumentStatus = z.infer<typeof documentStatusSchema>
 

@@ -1,12 +1,14 @@
-import { asString } from '@/utils/type-narrowing'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { getBusinessModuleDetail, listAllBusinessModuleRows } from '@/api/business'
+import {
+  getBusinessModuleDetail,
+  listAllBusinessModuleRows,
+} from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
-import type { ModuleRecord } from '@/types/module-page'
-import type { ModulePageConfig } from '@/types/module-page'
+import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from '@/views/modules/module-behavior-registry'
 
-type Props = {
+interface Props {
   moduleKey: string
   config: ModulePageConfig
 }

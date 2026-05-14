@@ -1,10 +1,10 @@
 import { CopyOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
-import { FormModal } from '@/components/FormModal'
 import Typography from 'antd/es/typography'
+import { FormModal } from '@/components/FormModal'
 import type { UserAccountCreateResult } from '@/types/user-account'
 
-type Props = {
+interface Props {
   open: boolean
   result: UserAccountCreateResult | null
   onCopy: (value: string, label: string) => void
@@ -17,6 +17,9 @@ export function UserAccountCreateResultModal({
   onCopy,
   onClose,
 }: Props) {
+  const loginName = result?.user?.loginName || result?.loginName || ''
+  const initialPassword = result?.initialPassword || result?.password || ''
+
   return (
     <FormModal
       title="用户创建成功"
@@ -26,62 +29,46 @@ export function UserAccountCreateResultModal({
       width={560}
     >
       {result && (
-        <div style={{ padding: '16px 0' }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 16,
-            }}
-          >
+        <div className="py-16">
+          <div className="flex justify-between items-center mb-16">
             <div>
-              <div style={{ color: '#666', fontSize: 12 }}>账号</div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>
-                {result.user.loginName}
-              </div>
+              <div className="text-secondary text-xs">账号</div>
+              <div className="text-lg font-semibold">{loginName}</div>
             </div>
             <Button
               icon={<CopyOutlined />}
-              onClick={() => onCopy(result.user.loginName, '账号')}
+              onClick={() => onCopy(loginName, '账号')}
             >
               复制账号
             </Button>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 16,
-            }}
-          >
+          <div className="flex justify-between items-center mb-16">
             <div>
-              <div style={{ color: '#666', fontSize: 12 }}>初始密码</div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#f5222d' }}>
-                {result.initialPassword}
+              <div className="text-secondary text-xs">初始密码</div>
+              <div className="text-lg font-semibold text-error">
+                {initialPassword}
               </div>
             </div>
             <Button
               type="primary"
               icon={<CopyOutlined />}
-              onClick={() => onCopy(result.initialPassword, '密码')}
+              onClick={() => onCopy(initialPassword, '密码')}
             >
               复制密码
             </Button>
           </div>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ color: '#666', fontSize: 12 }}>所属部门</div>
-            <div>{result.user.departmentName || '--'}</div>
+          <div className="mb-12">
+            <div className="text-secondary text-xs">所属部门</div>
+            <div>{result.user?.departmentName || '--'}</div>
           </div>
           <div className="mb-4">
-            <div style={{ color: '#666', fontSize: 12 }}>所属角色</div>
-            <div>{result.user.roleNames?.join('、') || '--'}</div>
+            <div className="text-secondary text-xs">所属角色</div>
+            <div>{result.user?.roleNames?.join('、') || '--'}</div>
           </div>
           <Typography.Text type="warning">
             请妥善保存初始密码，关闭后将不再展示。
           </Typography.Text>
-          <div style={{ textAlign: 'right', marginTop: 16 }}>
+          <div className="text-right mt-16">
             <Button type="primary" onClick={onClose}>
               知道了
             </Button>

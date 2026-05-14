@@ -8,7 +8,7 @@ interface StatusMeta {
   icon?: ReactNode
 }
 
-type Props = {
+interface Props {
   status: string
   statusMap: Record<string, StatusMeta>
   fallback?: string

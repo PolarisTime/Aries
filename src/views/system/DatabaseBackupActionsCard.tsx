@@ -6,7 +6,7 @@ import Col from 'antd/es/col'
 import Row from 'antd/es/row'
 import Typography from 'antd/es/typography'
 
-type Props = {
+interface Props {
   canExport: boolean
   canImport: boolean
   exportLoading: boolean
@@ -16,7 +16,7 @@ type Props = {
   onImport: () => void
 }
 
-type ActionCardProps = {
+interface ActionCardProps {
   icon: React.ReactNode
   title: string
   description: string
@@ -41,7 +41,7 @@ function ActionCard({
 }: ActionCardProps) {
   return (
     <Card hoverable>
-      <div style={{ textAlign: 'center', marginBottom: 16 }}>{icon}</div>
+      <div className="text-center mb-16">{icon}</div>
       <Typography.Title level={5} className="text-center">
         {title}
       </Typography.Title>
@@ -95,7 +95,7 @@ export function DatabaseBackupActionsCard({
         <Col span={12}>
           <ActionCard
             icon={
-              <DownloadOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+              <DownloadOutlined className="text-4xl text-primary" />
             }
             title="后台导出"
             description="将当前数据库导出为 SQL 备份文件，完成后提供下载链接"
@@ -108,7 +108,7 @@ export function DatabaseBackupActionsCard({
         </Col>
         <Col span={12}>
           <ActionCard
-            icon={<UploadOutlined style={{ fontSize: 48, color: '#ff4d4f' }} />}
+            icon={<UploadOutlined className="text-4xl text-error" />}
             title="导入恢复"
             description="从 SQL 备份文件恢复数据库（自动备份前置）"
             canShowAction={canImport}

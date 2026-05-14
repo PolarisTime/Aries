@@ -1,16 +1,16 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { listBusinessModule } from '@/api/business'
 import { useBusinessListCache } from '@/hooks/useBusinessListCache'
 import type { TableResponse } from '@/types/api'
+import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 
 const EMPTY_RECORDS: ModuleRecord[] = []
 
-type Props = {
+interface Props {
   moduleKey: string
-  filters: Record<string, unknown>
+  filters: SearchParams
   page: number
   pageSize: number
   enabled: boolean
@@ -75,7 +75,7 @@ export function useBusinessQueries({
       ),
     enabled: enabled && !!moduleKey,
     placeholderData,
-    staleTime: supportsSessionCache ? 30_000 : 0,
+    staleTime: supportsSessionCache ? 30_000 : 5_000,
     gcTime: supportsSessionCache ? 5 * 60_000 : 60_000,
   })
 

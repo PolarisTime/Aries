@@ -1,8 +1,7 @@
-import { lazy } from 'react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
 import Tabs from 'antd/es/tabs'
-import { Suspense, useCallback, useMemo } from 'react'
+import { lazy, Suspense, useCallback, useMemo } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
@@ -101,7 +100,7 @@ export function AccessControlView() {
       <div className="page-stack">
         <Empty
           description="暂无可用模块，请联系管理员分配权限"
-          style={{ marginTop: 120 }}
+          className="mt-120"
         />
       </div>
     )

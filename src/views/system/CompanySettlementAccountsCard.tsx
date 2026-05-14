@@ -8,7 +8,7 @@ import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
 import type { SettlementAccountFormRow } from '@/views/system/company-settings-view-utils'
 
-type Props = {
+interface Props {
   canSave: boolean
   settlementAccounts: SettlementAccountFormRow[]
   onAdd: () => void
@@ -30,15 +30,9 @@ export function CompanySettlementAccountsCard({
   return (
     <Card
       size="small"
-      style={{ background: '#fafafa', borderRadius: 12 }}
+      className="bg-secondary rounded-lg"
       title={
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
+        <div className="flex items-center justify-between">
           <span>
             <BankOutlined /> 结算信息
           </span>
@@ -55,30 +49,14 @@ export function CompanySettlementAccountsCard({
         </div>
       }
     >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-        }}
-      >
+      <div className="flex flex-col gap-12">
         {settlementAccounts.map((account, index) => (
           <div
             key={account.localKey}
-            style={{
-              padding: 16,
-              border: '1px solid #ebeef5',
-              borderRadius: 12,
-              background: '#fff',
-            }}
+            className="p-16 rounded-lg bg-default"
+            style={{ border: '1px solid var(--theme-card-border)' }}
           >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: 12,
-              }}
-            >
+            <div className="flex justify-between mb-12">
               <Typography.Text strong>结算账户 {index + 1}</Typography.Text>
               {canSave && (
                 <Button
@@ -94,9 +72,9 @@ export function CompanySettlementAccountsCard({
             </div>
             <Row gutter={12}>
               <Col span={8}>
-                <div style={{ marginBottom: 8 }}>
+                <div className="mb-8">
                   <Typography.Text type="secondary">
-                    账户名称 <span style={{ color: '#ff4d4f' }}>*</span>
+                    账户名称 <span className="text-error">*</span>
                   </Typography.Text>
                 </div>
                 <Input
@@ -109,9 +87,9 @@ export function CompanySettlementAccountsCard({
                 />
               </Col>
               <Col span={8}>
-                <div style={{ marginBottom: 8 }}>
+                <div className="mb-8">
                   <Typography.Text type="secondary">
-                    用途 <span style={{ color: '#ff4d4f' }}>*</span>
+                    用途 <span className="text-error">*</span>
                   </Typography.Text>
                 </div>
                 <Select
@@ -127,9 +105,9 @@ export function CompanySettlementAccountsCard({
                 />
               </Col>
               <Col span={8}>
-                <div style={{ marginBottom: 8 }}>
+                <div className="mb-8">
                   <Typography.Text type="secondary">
-                    开户银行 <span style={{ color: '#ff4d4f' }}>*</span>
+                    开户银行 <span className="text-error">*</span>
                   </Typography.Text>
                 </div>
                 <Input
@@ -142,11 +120,11 @@ export function CompanySettlementAccountsCard({
                 />
               </Col>
             </Row>
-            <Row gutter={12} style={{ marginTop: 8 }}>
+            <Row gutter={12} className="mt-8">
               <Col span={8}>
-                <div style={{ marginBottom: 8 }}>
+                <div className="mb-8">
                   <Typography.Text type="secondary">
-                    银行账号 <span style={{ color: '#ff4d4f' }}>*</span>
+                    银行账号 <span className="text-error">*</span>
                   </Typography.Text>
                 </div>
                 <Input
@@ -159,9 +137,9 @@ export function CompanySettlementAccountsCard({
                 />
               </Col>
               <Col span={8}>
-                <div style={{ marginBottom: 8 }}>
+                <div className="mb-8">
                   <Typography.Text type="secondary">
-                    状态 <span style={{ color: '#ff4d4f' }}>*</span>
+                    状态 <span className="text-error">*</span>
                   </Typography.Text>
                 </div>
                 <Select
@@ -176,7 +154,7 @@ export function CompanySettlementAccountsCard({
                 />
               </Col>
               <Col span={8}>
-                <div style={{ marginBottom: 8 }}>
+                <div className="mb-8">
                   <Typography.Text type="secondary">备注</Typography.Text>
                 </div>
                 <Input

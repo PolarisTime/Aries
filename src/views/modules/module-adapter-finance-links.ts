@@ -1,5 +1,9 @@
+import type {
+  ModuleFormFieldOption,
+  ModuleRecord,
+  ModuleRecordInput,
+} from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-import type { ModuleFormFieldOption, ModuleRecord } from '@/types/module-page'
 
 interface CustomerStatementOptionArgs {
   currentStatementId?: string | null
@@ -50,9 +54,7 @@ function keepCurrentOrOpenBalance(
 
 function compareStatements(left: ModuleRecord, right: ModuleRecord) {
   const leftEndDate = Date.parse(asString(left.endDate))
-  const rightEndDate = Date.parse(
-    asString(right.endDate),
-  )
+  const rightEndDate = Date.parse(asString(right.endDate))
   if (
     Number.isFinite(leftEndDate) &&
     Number.isFinite(rightEndDate) &&
@@ -60,9 +62,7 @@ function compareStatements(left: ModuleRecord, right: ModuleRecord) {
   ) {
     return rightEndDate - leftEndDate
   }
-  return asString(right.statementNo).localeCompare(
-    asString(left.statementNo),
-  )
+  return asString(right.statementNo).localeCompare(asString(left.statementNo))
 }
 
 function formatAmountLabel(value: unknown) {
@@ -148,7 +148,7 @@ export function findStatementRecordById(
 
 export function buildStatementLinkOptions(
   moduleKey: 'receipt' | 'payment',
-  form: Record<string, unknown> | undefined,
+  form: ModuleRecordInput | undefined,
   catalog: StatementLinkCatalog,
 ) {
   const currentStatementId = normalizeId(form?.sourceStatementId)

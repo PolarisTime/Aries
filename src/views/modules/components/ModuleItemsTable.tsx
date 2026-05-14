@@ -1,8 +1,7 @@
-import type { TableProps } from 'antd'
-import type { TableColumnsType } from 'antd'
+import type { TableColumnsType, TableProps } from 'antd'
 import Table from 'antd/es/table'
 
-interface BaseRecord {
+type BaseRecord = {
   id: string
 }
 
@@ -28,7 +27,9 @@ export function ModuleItemsTable<RecordType extends BaseRecord>({
       rowKey="id"
       size="small"
       bordered
-      className={['module-detail-table', className || ''].filter(Boolean).join(' ')}
+      className={['module-detail-table', className || '']
+        .filter(Boolean)
+        .join(' ')}
       columns={columns}
       dataSource={dataSource}
       pagination={false}

@@ -1,6 +1,7 @@
+import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { masterStatusFilter } from './shared-filters'
 import { actionSet, formatInteger } from './shared'
+import { masterStatusFilter } from './shared-filters'
 
 export const materialCategoriesPageConfig: ModulePageConfig = {
   key: 'material-categories',
@@ -35,8 +36,20 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
     { label: '备注', key: 'remark' },
   ],
   formFields: [
-    { key: 'categoryCode', label: '类别编码', type: 'input', required: true, row: 1 },
-    { key: 'categoryName', label: '类别名称', type: 'input', required: true, row: 1 },
+    {
+      key: 'categoryCode',
+      label: '类别编码',
+      type: 'input',
+      required: true,
+      row: 1,
+    },
+    {
+      key: 'categoryName',
+      label: '类别名称',
+      type: 'input',
+      required: true,
+      row: 1,
+    },
     {
       key: 'sortOrder',
       label: '排序',

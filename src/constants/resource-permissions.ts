@@ -183,7 +183,6 @@ export function resolveResourceKey(menuOrResource: string | null | undefined) {
   return menuResourceMap[normalized] || normalizeResource(normalized)
 }
 
-
 export function getResourcePermissionLabel(code: string) {
   const [rawResource, rawAction] = String(code || '').split(':')
   const resource = normalizeResource(rawResource)

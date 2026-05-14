@@ -13,18 +13,24 @@ export const initialSetupAdminPayloadSchema = z.object({
   userName: z.string().min(1),
   mobile: z.string().optional(),
 })
-export type InitialSetupAdminPayload = z.infer<typeof initialSetupAdminPayloadSchema>
+export type InitialSetupAdminPayload = z.infer<
+  typeof initialSetupAdminPayloadSchema
+>
 
 export const initialSetupTotpPayloadSchema = z.object({
   loginName: z.string(),
 })
-export type InitialSetupTotpPayload = z.infer<typeof initialSetupTotpPayloadSchema>
+export type InitialSetupTotpPayload = z.infer<
+  typeof initialSetupTotpPayloadSchema
+>
 
 export const initialSetupTotpResultSchema = z.object({
   qrCodeBase64: z.string(),
   secret: z.string(),
 })
-export type InitialSetupTotpResult = z.infer<typeof initialSetupTotpResultSchema>
+export type InitialSetupTotpResult = z.infer<
+  typeof initialSetupTotpResultSchema
+>
 
 export const initialSetupCompanyPayloadSchema = z.object({
   companyName: z.string().min(1),
@@ -32,5 +38,8 @@ export const initialSetupCompanyPayloadSchema = z.object({
   bankName: z.string().optional(),
   bankAccount: z.string().optional(),
   taxRate: z.union([z.string(), z.number()]).optional(),
+  remark: z.string().optional(),
 })
-export type InitialSetupCompanyPayload = z.infer<typeof initialSetupCompanyPayloadSchema>
+export type InitialSetupCompanyPayload = z.infer<
+  typeof initialSetupCompanyPayloadSchema
+>

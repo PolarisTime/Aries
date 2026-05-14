@@ -1,3 +1,4 @@
+import type { ModuleRecord } from '@/types/module-page'
 import type { ModulePageConfig } from '@/types/module-page'
 import {
   getPrintTemplateSampleCustomers,
@@ -8,7 +9,7 @@ import {
 } from '@/utils/print-template-designer-samples'
 import type { PrintTemplatePreviewData } from '@/utils/print-template-designer-types'
 
-function sumBy(details: Array<Record<string, unknown>>, key: string) {
+function sumBy(details: Array<ModuleRecord>, key: string) {
   return details.reduce((sum, item) => sum + Number(item[key] || 0), 0)
 }
 
@@ -19,7 +20,7 @@ export function buildPrintTemplatePreviewData(
   const detailCount = detailColumns.length ? 3 : 0
 
   const details = Array.from({ length: detailCount }, (_, index) => {
-    const item = detailColumns.reduce<Record<string, unknown>>(
+    const item = detailColumns.reduce<ModuleRecord>(
       (row, column) => {
         row[column.dataIndex] = inferPrintTemplateRowValue(
           column.dataIndex,
@@ -28,7 +29,7 @@ export function buildPrintTemplatePreviewData(
         )
         return row
       },
-      {},
+      {} as ModuleRecord,
     )
 
     const unitPrice = Number(item.unitPrice || 1280 + index * 135.5)
@@ -60,7 +61,7 @@ export function buildPrintTemplatePreviewData(
   const totalWeight = sumBy(details, 'weightTon').toFixed(3)
   const totalAmount = sumBy(details, 'amount').toFixed(2)
 
-  const model = config.detailFields.reduce<Record<string, unknown>>(
+  const model = config.detailFields.reduce<ModuleRecord>(
     (record, field, index) => {
       record[field.key] = inferPrintTemplateRowValue(
         field.key,
@@ -69,7 +70,7 @@ export function buildPrintTemplatePreviewData(
       )
       return record
     },
-    {},
+    {} as ModuleRecord,
   )
 
   if (config.primaryNoKey) {

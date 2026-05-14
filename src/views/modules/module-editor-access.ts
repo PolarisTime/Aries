@@ -1,3 +1,4 @@
+import type { ModuleRecord } from '@/types/module-page'
 import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'
 
@@ -59,7 +60,7 @@ export function canManageEditorLineItems(
 
 export function applyModuleDefaultEditorDraft(
   moduleKey: string,
-  draft: Record<string, unknown>,
+  draft: ModuleRecord,
   currentOperatorName: string,
 ) {
   const defaultDraftValues = getBehaviorValue(moduleKey, 'defaultDraftValues')
@@ -90,7 +91,7 @@ export function isEditorFieldDisabledForModule(
   lineItemsLocked: boolean,
   primaryNoKey?: string,
   parentFieldKey?: string,
-  record?: Record<string, unknown>,
+  record?: ModuleRecord,
 ) {
   if (!canSaveCurrentEditor) {
     return true
@@ -120,7 +121,7 @@ export function isEditorFieldDisabledForModule(
   const resolveReadonlyEditorFields = getBehaviorValue(
     moduleKey,
     'resolveReadonlyEditorFields',
-  ) as ((record: Record<string, unknown>) => string[]) | undefined
+  )
   if (record && resolveReadonlyEditorFields?.(record).includes(fieldKey)) {
     return true
   }
@@ -157,7 +158,10 @@ export function isEditorItemColumnEditableForModule(
     return false
   }
 
-  if (columnKey === 'batchNo' && (moduleKey === 'purchase-inbound' || moduleKey === 'purchase-order')) {
+  if (
+    columnKey === 'batchNo' &&
+    (moduleKey === 'purchase-inbound' || moduleKey === 'purchase-order')
+  ) {
     return false
   }
 

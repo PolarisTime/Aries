@@ -5,20 +5,13 @@ import Flex from 'antd/es/flex'
 import Modal from 'antd/es/modal'
 import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
-import Upload from 'antd/es/upload'
 import type { UploadFile } from 'antd/es/upload'
+import Upload from 'antd/es/upload'
 import { useState } from 'react'
-import { http } from '@/api/client'
-import type { ApiResponse } from '@/types/api'
+import type { ImportError, ImportResult } from '@/api/common-export'
+import { downloadImportTemplate, importModuleData } from '@/api/common-export'
 import { message } from '@/utils/antd-app'
 import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
-
-interface ImportResult {
-  totalRows: number
-  successCount: number
-  failCount: number
-  errors: { row: number; message: string }[]
-}
 
 export function ModuleMaterialImportDialogs({
   open,
@@ -34,15 +27,8 @@ export function ModuleMaterialImportDialogs({
   const handleImport = async (file: File) => {
     setUploading(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      const res = await http.post<ApiResponse<ImportResult>>(
-        '/material/import',
-        formData,
-      )
-      setResult(
-        res.data || { totalRows: 0, successCount: 0, failCount: 0, errors: [] },
-      )
+      const res = await importModuleData('material', file)
+      setResult(res)
     } catch (err) {
       message.error(err instanceof Error ? err.message : '导入失败')
     } finally {
@@ -52,7 +38,7 @@ export function ModuleMaterialImportDialogs({
   }
 
   const handleDownloadTemplate = () => {
-    window.open('/material/template', '_blank')
+    void downloadImportTemplate('material')
   }
 
   return (
@@ -80,9 +66,9 @@ export function ModuleMaterialImportDialogs({
             maxCount={1}
           >
             <InboxOutlined
-              style={{ fontSize: 32, color: 'var(--theme-primary)' }}
+              className="text-4xl text-primary"
             />
-            <Typography.Paragraph style={{ marginTop: 12, marginBottom: 0 }}>
+            <Typography.Paragraph className="mt-12 mb-0">
               点击或拖拽 XLSX/CSV 文件到此处
             </Typography.Paragraph>
           </Upload.Dragger>
@@ -95,10 +81,11 @@ export function ModuleMaterialImportDialogs({
             title={`导入完成: 总计 ${result.totalRows} 行，成功 ${result.successCount} 行，失败 ${result.failCount} 行`}
           />
           {result.errors.length > 0 && (
-            <Table
+            <Table<ImportError>
               dataSource={result.errors}
               columns={[
                 { dataIndex: 'row', title: '行号', width: 80 },
+                { dataIndex: 'field', title: '字段', width: 120 },
                 { dataIndex: 'message', title: '错误信息' },
               ]}
               rowKey="row"

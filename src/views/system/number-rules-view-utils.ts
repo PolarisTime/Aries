@@ -1,5 +1,5 @@
-import { asString } from '@/utils/type-narrowing'
 import type { ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
 export type NumberRuleEditorKind = 'number-rule' | 'upload-rule'
 
@@ -48,11 +48,7 @@ export function matchesNumberRuleKeyword(
     record.sampleNo,
     record.remark,
     record.moduleKey,
-  ].some((item) =>
-    asString(item)
-      .toLowerCase()
-      .includes(normalized),
-  )
+  ].some((item) => asString(item).toLowerCase().includes(normalized))
 }
 
 export function formatDateRuleLabel(value?: string) {

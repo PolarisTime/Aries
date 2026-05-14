@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   getPersonalSettings,
   type PersonalSettings,
+  type ThemeMode,
   setPersonalSettings,
 } from '@/utils/storage'
 
@@ -32,6 +33,12 @@ function normalizePersonalSettings(
       settings?.layoutMode === 'top' || settings?.layoutMode === 'sider'
         ? settings.layoutMode
         : defaultLayoutMode,
+    themeMode:
+      settings?.themeMode === 'light' ||
+      settings?.themeMode === 'dark' ||
+      settings?.themeMode === 'system'
+        ? settings.themeMode
+        : ('system' as ThemeMode),
   }
 }
 
@@ -76,6 +83,12 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   const [appliedLayoutMode, setAppliedLayoutMode] = useState<LayoutMode>(
     initialSettings.layoutMode,
   )
+  const [themeMode, setThemeMode] = useState<ThemeMode>(
+    initialSettings.themeMode,
+  )
+  const [appliedThemeMode, setAppliedThemeMode] = useState<ThemeMode>(
+    initialSettings.themeMode,
+  )
 
   const applySettings = useCallback(
     (settings: PersonalSettings | null | undefined) => {
@@ -88,6 +101,8 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
       setAppliedFontSize(normalized.fontSize)
       setLayoutMode(normalized.layoutMode)
       setAppliedLayoutMode(normalized.layoutMode)
+      setThemeMode(normalized.themeMode)
+      setAppliedThemeMode(normalized.themeMode)
     },
     [defaultFontSize, defaultLayoutMode],
   )
@@ -107,20 +122,23 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   const close = useCallback(() => {
     setFontSize(appliedFontSize)
     setLayoutMode(appliedLayoutMode)
+    setThemeMode(appliedThemeMode)
     setVisible(false)
-  }, [appliedFontSize, appliedLayoutMode])
+  }, [appliedFontSize, appliedLayoutMode, appliedThemeMode])
 
   const reset = useCallback(() => {
     setFontSize(defaultFontSize)
     setLayoutMode(defaultLayoutMode)
+    setThemeMode('system')
   }, [defaultFontSize, defaultLayoutMode])
 
   const save = useCallback(() => {
     setAppliedFontSize(fontSize)
     setAppliedLayoutMode(layoutMode)
-    setPersonalSettings({ fontSize, layoutMode })
+    setAppliedThemeMode(themeMode)
+    setPersonalSettings({ fontSize, layoutMode, themeMode })
     setVisible(false)
-  }, [fontSize, layoutMode])
+  }, [fontSize, layoutMode, themeMode])
 
   return {
     visible,
@@ -130,6 +148,8 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     layoutMode,
     appliedLayoutMode,
     setLayoutMode,
+    themeMode,
+    setThemeMode,
     open,
     close,
     reset,

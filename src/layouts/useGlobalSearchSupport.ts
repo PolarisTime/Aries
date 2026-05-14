@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { getBusinessModuleDetail, searchBusinessModule } from '@/api/business'
+import type { ModulePageMeta } from '@/config/module-page-meta'
 import { modulePageMetaMap } from '@/config/module-page-meta'
 import { getSearchableModuleKeys } from '@/config/page-registry'
 import {
@@ -8,7 +9,6 @@ import {
   searchAccessibleModules,
 } from '@/layouts/global-search'
 import type { ModuleRecord } from '@/types/module-page'
-import type { ModulePageMeta } from '@/config/module-page-meta'
 
 interface ModuleSearchResponse {
   data?: {

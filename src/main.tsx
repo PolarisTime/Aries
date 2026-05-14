@@ -1,27 +1,17 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ensureApiClientSetup } from '@/api/client'
+import { queryClient } from '@/lib/query-client'
 import { router } from '@/router'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
+import { initWebVitals } from '@/utils/web-vitals'
 import '@/i18n'
 import '@/styles/variables.css'
 import '@/styles/global.css'
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60_000,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-    mutations: {
-      retry: 0,
-    },
-  },
-})
+import '@/styles/utilities.css'
 
 function App() {
   return (
@@ -35,6 +25,7 @@ function App() {
 
 function bootstrap() {
   ensureApiClientSetup()
+  initWebVitals()
 
   void import('dayjs').then(async ({ default: dayjs }) => {
     await import('dayjs/locale/zh-cn')

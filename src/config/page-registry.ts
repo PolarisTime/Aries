@@ -1,10 +1,10 @@
-import { asString } from '@/utils/type-narrowing'
 import { dashboardPageDefinitions } from '@/config/page-registry-dashboard'
 import { financePageDefinitions } from '@/config/page-registry-finance'
 import { masterPageDefinitions } from '@/config/page-registry-master'
 import { operationPageDefinitions } from '@/config/page-registry-operations'
 import { systemPageDefinitions } from '@/config/page-registry-system'
 import type { AppPageDefinition } from '@/config/page-registry-types'
+import { asString } from '@/utils/type-narrowing'
 
 export type {
   AppPageDefinition,
@@ -28,7 +28,7 @@ for (const entry of appPageDefinitions) {
 }
 const searchableModuleKeys = appPageDefinitions
   .filter((entry) => entry.searchable && entry.moduleKey)
-  .map((entry) => entry.moduleKey as string)
+  .map((entry) => asString(entry.moduleKey))
 
 export function getPageRoutePath(page: AppPageDefinition | string) {
   const target =

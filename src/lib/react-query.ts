@@ -1,16 +1,26 @@
 /**
- * React Query 类型安全包装器。
+ * React Query 类型安全包装器 + 缓存策略。
  *
  * 规范：
  * - useQuery 必须传入完整泛型 TData, TError
  * - useMutation 必须传入 TData, TError, TVariables
+ * - 不同实体类型使用对应的 staleTime 常量
  */
 import {
-  useQuery as rawUseQuery,
   useMutation as rawUseMutation,
-  type UseQueryOptions,
+  useQuery as rawUseQuery,
   type UseMutationOptions,
+  type UseQueryOptions,
 } from '@tanstack/react-query'
+
+export const STALE_TIME = {
+  /** 实体列表 — 30 秒，平衡时效与缓存 */
+  LIST: 30 * 1000,
+  /** 实体详情 — 5 分钟，详情变更频率低 */
+  DETAIL: 5 * 60 * 1000,
+  /** 枚举/字典/配置 — 永不过期，仅手动 invalidate */
+  STATIC: Infinity,
+} as const
 
 /** 类型安全的 useQuery — 强制传入返回类型 */
 export function useQuery<TData, TError = Error>(

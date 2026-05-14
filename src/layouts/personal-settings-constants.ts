@@ -1,6 +1,16 @@
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
+import type { ThemeMode } from '@/utils/storage'
 
 export const fontSizeOptions = [11, 12, 13, 14, 16, 18]
+
+export const themeModeOptions: Array<{
+  value: ThemeMode
+  label: string
+}> = [
+  { value: 'light', label: '亮色' },
+  { value: 'dark', label: '暗色' },
+  { value: 'system', label: '跟随系统' },
+]
 
 export const layoutModeOptions: Array<{
   value: LayoutMode

@@ -1,6 +1,7 @@
+import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { masterStatusFilter } from './shared-filters'
 import { actionSet, buildMasterOverview, statusMap } from './shared'
+import { masterStatusFilter } from './shared-filters'
 
 export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
   warehouse: {
@@ -29,8 +30,7 @@ export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
           { label: '第三方仓', value: '第三方仓' },
         ],
       },
-      { ...masterStatusFilter
-      },
+      { ...masterStatusFilter },
     ],
     columns: [
       { title: '仓库编码', dataIndex: 'warehouseCode', width: 140 },
@@ -89,7 +89,13 @@ export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
       },
       { key: 'contactName', label: '联系人', type: 'input', row: 1 },
       { key: 'contactPhone', label: '联系电话', type: 'input', row: 2 },
-      { key: 'address', label: '仓库地址', type: 'input', row: 2, fullRow: true },
+      {
+        key: 'address',
+        label: '仓库地址',
+        type: 'input',
+        row: 2,
+        fullRow: true,
+      },
       {
         key: 'status',
         label: '状态',

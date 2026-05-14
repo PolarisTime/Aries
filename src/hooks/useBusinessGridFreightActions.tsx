@@ -2,10 +2,11 @@ import Flex from 'antd/es/flex'
 import Typography from 'antd/es/typography'
 import { useCallback } from 'react'
 import { listAllBusinessModuleRows } from '@/api/business'
+import type { SearchParams } from '@/types/api-raw'
 import { message, modal } from '@/utils/antd-app'
 
-type Props = {
-  submittedFilters: Record<string, unknown>
+interface Props {
+  submittedFilters: SearchParams
   formatCellValue: (value: unknown, columnType?: string) => string
 }
 
@@ -50,7 +51,7 @@ export function useBusinessGridFreightActions({
       title: '运费对账汇总',
       width: 720,
       content: (
-        <Flex vertical gap={12} style={{ marginTop: 12 }}>
+        <Flex vertical gap={12} className="mt-12">
           <Typography.Text>当前列表单据数：{rows.length}</Typography.Text>
           <Typography.Text>
             总重量（吨）：{formatCellValue(totalWeight, 'weight')}

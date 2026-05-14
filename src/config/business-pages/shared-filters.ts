@@ -1,10 +1,18 @@
-import { enabledStatusOptions } from '@/constants/module-options'
-import { getSupplierOptions } from '@/constants/module-options'
-import { getCustomerOptions } from '@/constants/module-options'
-import { getCarrierOptions } from '@/constants/module-options'
-import { getWarehouseOptions } from '@/constants/module-options'
-import { materialCategoryOptions } from '@/constants/module-options'
-import { BILL_STATUS_LABEL, SUPPLIER_NAME_LABEL, CUSTOMER_NAME_LABEL, CARRIER_NAME_LABEL } from './filter-labels'
+import {
+  enabledStatusOptions,
+  getCarrierOptions,
+  getCustomerOptions,
+  getSupplierOptions,
+  getWarehouseOptions,
+  materialCategoryOptions,
+} from '@/constants/module-options'
+import type { ModuleFilterOptionEntry } from '@/types/module-page'
+import {
+  BILL_STATUS_LABEL,
+  CARRIER_NAME_LABEL,
+  CUSTOMER_NAME_LABEL,
+  SUPPLIER_NAME_LABEL,
+} from './filter-labels'
 
 export const keywordFilter = (placeholder = '搜索...') => ({
   key: 'keyword' as const,
@@ -20,7 +28,7 @@ export const masterStatusFilter = {
   options: enabledStatusOptions,
 }
 
-export const billStatusFilter = (options: ReturnType<typeof import('@/constants/module-options').enabledStatusOptions>) => ({
+export const billStatusFilter = (options: ModuleFilterOptionEntry[]) => ({
   key: 'status' as const,
   label: BILL_STATUS_LABEL,
   type: 'select' as const,

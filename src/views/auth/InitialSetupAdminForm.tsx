@@ -9,10 +9,11 @@ import Image from 'antd/es/image'
 import Input from 'antd/es/input'
 import Space from 'antd/es/space'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type { InitialSetupTotpResult } from '@/types/setup'
 import { toDataImageUrl } from '@/utils/data-url'
 
-type Props = {
+interface Props {
   totpSetup: InitialSetupTotpResult | null
   loadingTotp: boolean
   loadingAdmin: boolean
@@ -27,31 +28,65 @@ export function InitialSetupAdminForm({
   onGenerateTotp,
   onSubmitAdmin,
 }: Props) {
+  const { t } = useTranslation()
+
   return (
     <>
       <Form.Item
         name="adminLoginName"
-        label="管理员登录名"
-        rules={[{ required: true, message: '请输入登录名' }]}
+        label={t('auth.initialsetup.admin.loginNameLabel')}
+        rules={[
+          {
+            required: true,
+            message: t('auth.initialsetup.admin.loginNameRequired'),
+          },
+        ]}
       >
-        <Input prefix={<UserOutlined />} placeholder="管理员登录名" autoFocus />
+        <Input
+          prefix={<UserOutlined />}
+          placeholder={t('auth.initialsetup.admin.loginNamePlaceholder')}
+          autoFocus
+        />
       </Form.Item>
       <Form.Item
         name="adminPassword"
-        label="密码"
-        rules={[{ required: true, min: 6, message: '密码至少6位' }]}
+        label={t('auth.initialsetup.admin.passwordLabel')}
+        rules={[
+          {
+            required: true,
+            min: 6,
+            message: t('auth.initialsetup.admin.passwordRequired'),
+          },
+        ]}
       >
-        <Input.Password prefix={<LockOutlined />} placeholder="至少6位" />
+        <Input.Password
+          prefix={<LockOutlined />}
+          placeholder={t('auth.initialsetup.admin.passwordPlaceholder')}
+        />
       </Form.Item>
       <Form.Item
         name="adminConfirmPassword"
-        label="确认密码"
-        rules={[{ required: true, message: '请确认密码' }]}
+        label={t('auth.initialsetup.admin.confirmPasswordLabel')}
+        rules={[
+          {
+            required: true,
+            message: t('auth.initialsetup.admin.confirmPasswordRequired'),
+          },
+        ]}
       >
-        <Input.Password prefix={<LockOutlined />} placeholder="再次输入密码" />
+        <Input.Password
+          prefix={<LockOutlined />}
+          placeholder={t('auth.initialsetup.admin.confirmPasswordPlaceholder')}
+        />
       </Form.Item>
-      <Form.Item name="adminUserName" label="管理员姓名">
-        <Input prefix={<UserOutlined />} placeholder="系统管理员" />
+      <Form.Item
+        name="adminUserName"
+        label={t('auth.initialsetup.admin.userNameLabel')}
+      >
+        <Input
+          prefix={<UserOutlined />}
+          placeholder={t('auth.initialsetup.admin.userNamePlaceholder')}
+        />
       </Form.Item>
       <div className="mb-4">
         <Button
@@ -60,7 +95,9 @@ export function InitialSetupAdminForm({
           onClick={onGenerateTotp}
           block
         >
-          {totpSetup ? '重新生成 TOTP 密钥' : '生成 TOTP 密钥'}
+          {totpSetup
+            ? t('auth.initialsetup.admin.regenerateTotp')
+            : t('auth.initialsetup.admin.generateTotp')}
         </Button>
       </div>
       {totpSetup && (
@@ -68,7 +105,7 @@ export function InitialSetupAdminForm({
           orientation="vertical"
           size="small"
           align="center"
-          style={{ width: '100%', marginBottom: 16 }}
+          className="mb-4 w-full"
         >
           <Image
             preview={false}
@@ -77,22 +114,25 @@ export function InitialSetupAdminForm({
             width={160}
           />
           <Typography.Text copyable={{ text: totpSetup.secret }}>
-            密钥: {totpSetup.secret}
+            {t('auth.initialsetup.admin.secretLabel')}: {totpSetup.secret}
           </Typography.Text>
         </Space>
       )}
       <Form.Item
         name="totpCode"
-        label="TOTP验证码"
+        label={t('auth.initialsetup.admin.totpCodeLabel')}
         rules={[
           {
             required: true,
             pattern: /^\d{6}$/,
-            message: '请输入6位验证码',
+            message: t('auth.initialsetup.admin.totpCodeRequired'),
           },
         ]}
       >
-        <Input placeholder="6位TOTP验证码" maxLength={6} />
+        <Input
+          placeholder={t('auth.initialsetup.admin.totpCodePlaceholder')}
+          maxLength={6}
+        />
       </Form.Item>
       <Button
         type="primary"
@@ -101,7 +141,7 @@ export function InitialSetupAdminForm({
         block
         size="large"
       >
-        创建管理员并继续
+        {t('auth.initialsetup.admin.submit')}
       </Button>
     </>
   )

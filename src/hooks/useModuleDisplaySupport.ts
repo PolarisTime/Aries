@@ -1,5 +1,9 @@
-import { asString } from '@/utils/type-narrowing'
 import dayjs from 'dayjs'
+import { asString } from '@/utils/type-narrowing'
+
+function asDateInput(value: unknown): string | number {
+  return typeof value === 'number' ? value : asString(value)
+}
 
 export function useModuleDisplaySupport() {
   const formatCellValue = (value: unknown, columnType?: string): string => {
@@ -27,7 +31,7 @@ export function useModuleDisplaySupport() {
       return Number.isNaN(num) ? asString(value) : num.toLocaleString('zh-CN')
     }
     if (columnType === 'date' || columnType === 'datetime') {
-      const d = dayjs(value as string | number)
+      const d = dayjs(asDateInput(value))
       return d.isValid()
         ? d.format(
             columnType === 'datetime' ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD',

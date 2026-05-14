@@ -1,4 +1,3 @@
-import { asString } from '@/utils/type-narrowing'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { TableColumnsType } from 'antd'
 import Checkbox from 'antd/es/checkbox'
@@ -11,6 +10,8 @@ import {
   updateRoleActions,
 } from '@/api/role-actions'
 import { useRequestError } from '@/hooks/useRequestError'
+import { message } from '@/utils/antd-app'
+import { asArray, asString } from '@/utils/type-narrowing'
 import {
   ALL_ROLE_ACTIONS,
   buildNormalizedRoleActionSet,
@@ -19,7 +20,6 @@ import {
   ROLE_ACTION_LABELS,
   type RoleMatrixRow,
 } from '@/views/system/role-action-view-utils'
-import { message } from '@/utils/antd-app'
 
 interface UseRoleActionPermissionsOptions {
   roles: RoleRecord[]
@@ -208,19 +208,15 @@ export function useRoleActionPermissions({
         width: 70,
         align: 'center',
         render: (checked: unknown, record: RoleMatrixRow) => {
-          const supported =
-            Array.isArray(record.actions) &&
-            (record.actions as string[]).includes(action)
+          const supported = asArray<string>(record.actions).includes(action)
           if (!supported) {
-            return <span style={{ color: '#d9d9d9' }}>-</span>
+            return <span className="text-disabled">-</span>
           }
           return (
             <Checkbox
               checked={Boolean(checked)}
               disabled={!canEditPermissions}
-              onChange={() =>
-                toggleAction(asString(record.menuCode), action)
-              }
+              onChange={() => toggleAction(asString(record.menuCode), action)}
             />
           )
         },

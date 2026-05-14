@@ -6,7 +6,7 @@ import Statistic from 'antd/es/statistic'
 import type { DashboardSummary } from '@/api/dashboard'
 import type { DashboardInfoItem } from '@/views/dashboard/dashboard-view-types'
 
-type Props = {
+interface Props {
   animatedServerTime: string
   infoItems: DashboardInfoItem[]
   summary?: DashboardSummary
@@ -27,7 +27,7 @@ export function DashboardInfoPanels({
           <p className="dashboard-hero-desc">服务器时间 {animatedServerTime}</p>
         </div>
         <div className="dashboard-hero-right">
-          <Avatar size={48} style={{ backgroundColor: '#1677ff' }}>
+          <Avatar size={48} className="bg-primary">
             <UserOutlined />
           </Avatar>
           <div className="dashboard-hero-user">
@@ -51,7 +51,7 @@ export function DashboardInfoPanels({
                   label: item.label,
                   children: (
                     <>
-                      <Icon style={{ marginRight: 6, opacity: 0.45 }} />
+                      <Icon className="mr-6 opacity-45" />
                       {item.value}
                     </>
                   ),

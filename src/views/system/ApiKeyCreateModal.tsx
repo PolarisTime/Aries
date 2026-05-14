@@ -4,7 +4,6 @@ import Button from 'antd/es/button'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import InputNumber from 'antd/es/input-number'
-import { FormModal } from '@/components/FormModal'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Typography from 'antd/es/typography'
@@ -13,10 +12,11 @@ import type {
   ApiKeyResourceOption,
   ApiKeyUserOption,
 } from '@/api/api-keys'
+import { FormModal } from '@/components/FormModal'
 import { apiKeyUsageScopeOptions } from '@/views/system/api-key-form-options'
 import { getApiKeyUserDisplayName } from '@/views/system/api-key-view-utils'
 
-type Props = {
+interface Props {
   open: boolean
   generatedKey: string | null
   generating: boolean
@@ -42,12 +42,7 @@ export function ApiKeyCreateModal({
   onClose,
 }: Props) {
   return (
-    <FormModal
-      title="生成 API Key"
-      open={open}
-      onClose={onClose}
-      footer={null}
-    >
+    <FormModal title="生成 API Key" open={open} onClose={onClose} footer={null}>
       {!generatedKey ? (
         <Form form={form} layout="vertical">
           <Form.Item name="userId" label="所属用户" required>
@@ -125,22 +120,17 @@ export function ApiKeyCreateModal({
             title="请立即复制保存，此密钥仅显示一次"
           />
           <div
-            style={{
-              background: '#f5f5f5',
-              border: '1px solid #d9d9d9',
-              borderRadius: 6,
-              padding: 16,
-            }}
+            className="p-16 rounded bg-gray-100 border border-gray-300"
           >
             <Typography.Paragraph
               copyable
               code
-              style={{ margin: 0, wordBreak: 'break-all' }}
+              className="m-0 break-all"
             >
               {generatedKey}
             </Typography.Paragraph>
           </div>
-          <div style={{ textAlign: 'right', marginTop: 16 }}>
+          <div className="text-right mt-16">
             <Button type="primary" onClick={onClose}>
               关闭
             </Button>

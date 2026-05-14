@@ -1,8 +1,8 @@
 import { SearchOutlined } from '@ant-design/icons'
+import type { AutoCompleteProps } from 'antd/es/auto-complete'
 import AutoComplete from 'antd/es/auto-complete'
 import Button from 'antd/es/button'
 import Input from 'antd/es/input'
-import type { AutoCompleteProps } from 'antd/es/auto-complete'
 import { buildFormControlId } from '@/utils/form-control-id'
 
 export type AppHeaderSearchProps = {

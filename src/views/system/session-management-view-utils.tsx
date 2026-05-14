@@ -1,9 +1,9 @@
-import { asString } from '@/utils/type-narrowing'
 import { StopOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
-import Tag from 'antd/es/tag'
 import type { ColumnsType } from 'antd/es/table'
+import Tag from 'antd/es/tag'
 import type { RefreshTokenRecord } from '@/api/session-management'
+import { asString } from '@/utils/type-narrowing'
 
 export function getSessionStatusColor(status: string) {
   if (status === '有效') return 'green'

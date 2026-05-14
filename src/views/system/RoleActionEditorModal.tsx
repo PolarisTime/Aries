@@ -1,12 +1,12 @@
 import type { FormInstance } from 'antd'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import { FormModal } from '@/components/FormModal'
 import Select from 'antd/es/select'
 import type { RoleRecord } from '@/api/role-actions'
+import { FormModal } from '@/components/FormModal'
 import { roleDataScopeValues, roleTypeValues } from '@/constants/module-options'
 
-type Props = {
+interface Props {
   open: boolean
   editingRole: RoleRecord | null
   form: FormInstance

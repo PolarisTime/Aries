@@ -21,20 +21,20 @@ interface Handlers {
   exportMaterialRows: () => Promise<void>
   exportRows: (mode: 'selected' | 'page' | 'filtered') => Promise<void>
   handlePrintSelectedRecords: (preview: boolean) => Promise<void>
-  handleSelectedAuditRecords: () => Promise<void>
+  handleSelectedAuditRecords: () => void
   handleSelectedDeleteRecords: () => void
-  handleSelectedReverseAuditRecords: () => Promise<void>
-  markSelectedFreightDelivered: () => Promise<void>
+  handleSelectedReverseAuditRecords: () => void
+  markSelectedFreightDelivered: () => void
   navigateToRoleActionEditor: () => void
   openCreateEditor: () => Promise<void>
-  openCustomerStatementGenerator: () => Promise<void>
-  openFreightPickupList: () => Promise<void>
-  openFreightStatementGenerator: () => Promise<void>
+  openCustomerStatementGenerator: () => void
+  openFreightPickupList: () => void
+  openFreightStatementGenerator: () => void
   openFreightSummary: () => Promise<void>
-  openSupplierStatementGenerator: () => Promise<void>
+  openSupplierStatementGenerator: () => void
 }
 
-type Props = {
+interface Props {
   moduleKey: string
   config: ModulePageConfig
   formFields: ModuleFormFieldDefinition[]
@@ -149,11 +149,11 @@ export function useModuleToolbarActions({
       }
 
       if (action.label === BULK_AUDIT_LABEL) {
-        await handlers.handleSelectedAuditRecords()
+        handlers.handleSelectedAuditRecords()
         return
       }
       if (action.label === BULK_REVERSE_AUDIT_LABEL) {
-        await handlers.handleSelectedReverseAuditRecords()
+        handlers.handleSelectedReverseAuditRecords()
         return
       }
       if (action.label === BULK_PRINT_PREVIEW_LABEL) {
@@ -179,13 +179,13 @@ export function useModuleToolbarActions({
         })
       ) {
         case 'openSupplierStatementGenerator':
-          await handlers.openSupplierStatementGenerator()
+          handlers.openSupplierStatementGenerator()
           return
         case 'openCustomerStatementGenerator':
-          await handlers.openCustomerStatementGenerator()
+          handlers.openCustomerStatementGenerator()
           return
         case 'openFreightStatementGenerator':
-          await handlers.openFreightStatementGenerator()
+          handlers.openFreightStatementGenerator()
           return
         case 'openCreateEditor':
           await handlers.openCreateEditor()
@@ -197,10 +197,10 @@ export function useModuleToolbarActions({
           await handlers.exportRows('filtered')
           return
         case 'openFreightPickupList':
-          await handlers.openFreightPickupList()
+          handlers.openFreightPickupList()
           return
         case 'markSelectedFreightDelivered':
-          await handlers.markSelectedFreightDelivered()
+          handlers.markSelectedFreightDelivered()
           return
         case 'openFreightSummary':
           await handlers.openFreightSummary()

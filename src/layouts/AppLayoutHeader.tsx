@@ -7,7 +7,7 @@ import { AppTopNavigationHeader } from '@/layouts/AppTopNavigationHeader'
 
 type LayoutHeaderSearchProps = Omit<AppHeaderSearchProps, 'className'>
 
-type SharedHeaderProps = {
+interface SharedHeaderProps {
   currentUserName: string
   onOpenPersonalSettings: () => void
   onSignOut: () => void
@@ -15,7 +15,7 @@ type SharedHeaderProps = {
   shellFontStyle: CSSProperties
 }
 
-type TopNavigationHeaderProps = SharedHeaderProps & {
+interface TopNavigationHeaderProps extends SharedHeaderProps {
   currentUserLoginName: string
   kind: 'top'
   clockText: string
@@ -26,7 +26,7 @@ type TopNavigationHeaderProps = SharedHeaderProps & {
   topMenuItems: NonNullable<MenuProps['items']>
 }
 
-type SideNavigationHeaderProps = SharedHeaderProps & {
+interface SideNavigationHeaderProps extends SharedHeaderProps {
   backendOnline: boolean
   clockText: string
   collapsed: boolean

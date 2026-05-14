@@ -8,6 +8,7 @@ import type {
   ModuleColumnDefinition,
   ModuleLineItem,
   ModulePageConfig,
+  ModuleRecord,
 } from '@/types/module-page'
 import { isEditorItemColumnEditableForModule } from '@/views/modules/module-adapter-editor'
 import {
@@ -17,7 +18,7 @@ import {
 import { useModuleEditorItemColumnHandlers } from '@/views/modules/module-editor-item-column-handlers'
 import { applyMaterialToEditorLineItem } from '@/views/modules/module-editor-line-item-utils'
 
-type Props = {
+interface Props {
   moduleKey: string
   config: ModulePageConfig
   items: ModuleLineItem[]
@@ -30,6 +31,13 @@ type Props = {
   onDragStart: (itemId: string, event: React.DragEvent) => void
   onDragOver: (itemId: string, event: React.DragEvent) => void
   onDragEnd: () => void
+}
+
+type MaterialLookupEntry = readonly [string, ModuleRecord]
+type MaterialSelectOption = {
+  label: string
+  searchText: string
+  value: string
 }
 
 function mergeColumnOrder(allIds: string[], savedOrder: string[]) {
@@ -63,12 +71,13 @@ export function useModuleEditorItemColumns({
     warehouses: true,
     materials: true,
   })
+  const totalItemColumnCount = config.itemColumns?.length ?? 0
   const {
     columnOrder: savedItemColumnOrder,
     columnVisibility,
     handleColumnOrderChange,
     handleColumnVisibilityChange,
-  } = useColumnSettingsSupport(`${config.key}:editor-items`)
+  } = useColumnSettingsSupport(`${config?.key ?? moduleKey}:editor-items`, undefined, totalItemColumnCount)
   const {
     handleItemInputChange,
     handleItemNumberChange,
@@ -89,15 +98,13 @@ export function useModuleEditorItemColumns({
   )
 
   const materialLookup = useMemo(() => {
-    const entries = materials
-      .map((record) => {
-        const materialCode = String(record.materialCode || '').trim()
-        if (!materialCode) {
-          return null
-        }
-        return [materialCode.toLowerCase(), record] as const
-      })
-      .filter(Boolean) as Array<readonly [string, Record<string, unknown>]>
+    const entries = materials.flatMap((record): MaterialLookupEntry[] => {
+      const materialCode = String(record.materialCode || '').trim()
+      if (!materialCode) {
+        return []
+      }
+      return [[materialCode.toLowerCase(), record]]
+    })
 
     return new Map(entries)
   }, [materials])
@@ -105,30 +112,30 @@ export function useModuleEditorItemColumns({
   const materialOptions = useMemo(() => {
     const seen = new Set<string>()
 
-    return materials
-      .map((record) => {
-        const materialCode = String(record.materialCode || '').trim()
-        if (!materialCode) {
-          return null
-        }
+    return materials.flatMap((record): MaterialSelectOption[] => {
+      const materialCode = String(record.materialCode || '').trim()
+      if (!materialCode) {
+        return []
+      }
 
-        const normalizedCode = materialCode.toLowerCase()
-        if (seen.has(normalizedCode)) {
-          return null
-        }
-        seen.add(normalizedCode)
+      const normalizedCode = materialCode.toLowerCase()
+      if (seen.has(normalizedCode)) {
+        return []
+      }
+      seen.add(normalizedCode)
 
-        const brand = String(record.brand || '').trim()
-        const category = String(record.category || '').trim()
-        const material = String(record.material || '').trim()
-        const spec = String(record.spec || '').trim()
-        const length = String(record.length || '').trim()
-        const materialName =
-          typeof record.materialName === 'string'
-            ? record.materialName.trim()
-            : ''
+      const brand = String(record.brand || '').trim()
+      const category = String(record.category || '').trim()
+      const material = String(record.material || '').trim()
+      const spec = String(record.spec || '').trim()
+      const length = String(record.length || '').trim()
+      const materialName =
+        typeof record.materialName === 'string'
+          ? record.materialName.trim()
+          : ''
 
-        return {
+      return [
+        {
           label: [materialCode, brand || materialName, material, spec, length]
             .filter(Boolean)
             .join(' | '),
@@ -145,13 +152,9 @@ export function useModuleEditorItemColumns({
             .join(' ')
             .toLowerCase(),
           value: materialCode,
-        }
-      })
-      .filter(Boolean) as Array<{
-      label: string
-      searchText: string
-      value: string
-    }>
+        },
+      ]
+    })
   }, [materials])
   const allItemColumnIds = useMemo(
     () => (config.itemColumns || []).map((column) => column.dataIndex),

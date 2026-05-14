@@ -12,7 +12,7 @@ import { groupFieldsByRow } from '@/views/modules/module-field-layout'
 import { EditorFooterActions } from './EditorFooterActions'
 import { FormFieldRenderer } from './FormFieldRenderer'
 
-type Props = {
+interface Props {
   config: ModulePageConfig
   moduleKey: string
   canSave: boolean
@@ -62,12 +62,12 @@ export function ModuleEditorFormSection({
           type="warning"
           showIcon
           title={lockedLineItemsNotice}
-          style={{ marginBottom: 12 }}
+          className="mb-12"
         />
       ) : null}
       <div className="editor-form-head">
         <div className="editor-form-title-block">
-          <Typography.Title level={5} style={{ margin: 0 }}>
+          <Typography.Title level={5} className="m-0">
             单据信息
           </Typography.Title>
         </div>

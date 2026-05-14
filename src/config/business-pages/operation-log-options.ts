@@ -1,3 +1,4 @@
+import type { SearchParams } from '@/types/api-raw'
 import { asString } from '@/utils/type-narrowing'
 export const operationLogActionOptions = [
   { label: '查询', value: '查询' },
@@ -134,7 +135,7 @@ export const operationLogModuleOptions = [
 ]
 
 export function resolveOperationLogActionOptions(
-  filters: Record<string, unknown>,
+  filters: SearchParams,
 ) {
   const moduleName = asString(filters.moduleName).trim()
   return [

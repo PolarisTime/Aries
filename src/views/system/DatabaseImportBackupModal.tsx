@@ -3,10 +3,10 @@ import Alert from 'antd/es/alert'
 import Button from 'antd/es/button'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import { FormModal } from '@/components/FormModal'
 import Upload from 'antd/es/upload'
+import { FormModal } from '@/components/FormModal'
 
-type Props = {
+interface Props {
   open: boolean
   loading: boolean
   totpDisabled: boolean
@@ -77,7 +77,7 @@ export function DatabaseImportBackupModal({
               选择备份文件
             </Button>
           </Upload>
-          <div style={{ marginTop: 8, color: 'rgba(0,0,0,0.45)' }}>
+          <div className="mt-8 text-secondary">
             {selectedFile?.name || '未选择文件'}
           </div>
         </Form.Item>

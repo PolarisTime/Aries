@@ -8,7 +8,11 @@ import {
 } from '@/api/system-settings'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { buildWeightOverview } from '@/config/business-pages/shared'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type {
+  ModulePageConfig,
+  ModuleRecord,
+  ModuleRecordInput,
+} from '@/types/module-page'
 import {
   buildStatementLinkOptions,
   type StatementLinkCatalog,
@@ -19,10 +23,7 @@ const WEIGHT_ONLY_VIEW_SETTING_CODES: Record<string, string> = {
   'sales-outbound': DISPLAY_SWITCH_CODES.weightOnlySalesOutbounds,
 }
 
-const INVOICE_ASSIST_MODULE_KEYS = new Set([
-  'invoice-receipt',
-  'invoice-issue',
-])
+const INVOICE_ASSIST_MODULE_KEYS = new Set(['invoice-receipt', 'invoice-issue'])
 
 function buildWeightOnlyViewConfig(
   baseConfig: ModulePageConfig,
@@ -39,7 +40,7 @@ function buildWeightOnlyViewConfig(
   }
 }
 
-type Props = {
+interface Props {
   moduleKey: string
   initialConfig?: ModulePageConfig
 }
@@ -50,7 +51,8 @@ function useStatementLinkCatalog(enabled: boolean) {
     queryFn: () => listAllBusinessModuleRows('customer-statement', {}),
     enabled,
     placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   })
 
   const supplierStatementsQuery = useQuery({
@@ -58,7 +60,8 @@ function useStatementLinkCatalog(enabled: boolean) {
     queryFn: () => listAllBusinessModuleRows('supplier-statement', {}),
     enabled,
     placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   })
 
   const freightStatementsQuery = useQuery({
@@ -66,7 +69,8 @@ function useStatementLinkCatalog(enabled: boolean) {
     queryFn: () => listAllBusinessModuleRows('freight-statement', {}),
     enabled,
     placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   })
 
   return useMemo<StatementLinkCatalog>(
@@ -100,12 +104,8 @@ function decorateStatementLinkConfig(
       }
       return {
         ...field,
-        options: (form?: Record<string, unknown>) =>
-          buildStatementLinkOptions(
-            moduleKey,
-            form,
-            catalog,
-          ),
+        options: (form?: ModuleRecordInput) =>
+          buildStatementLinkOptions(moduleKey, form, catalog),
       }
     }),
   }
@@ -143,12 +143,14 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
     staleTime: 30_000,
   })
 
-  const statementLinkCatalog = useStatementLinkCatalog(needsStatementLinkCatalog)
+  const statementLinkCatalog = useStatementLinkCatalog(
+    needsStatementLinkCatalog,
+  )
 
   const config = useMemo<ModulePageConfig | undefined>(() => {
     const found = moduleConfigQuery.data
     if (!found || found.key !== moduleKey) {
-      return undefined
+      return initialConfig
     }
 
     const isWeightOnlyViewEnabled = Boolean(

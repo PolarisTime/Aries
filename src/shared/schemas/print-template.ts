@@ -20,4 +20,6 @@ export const savePrintTemplatePayloadSchema = z.object({
   templateHtml: z.string().min(1),
   isDefault: z.enum(['0', '1']).optional(),
 })
-export type SavePrintTemplatePayload = z.infer<typeof savePrintTemplatePayloadSchema>
+export type SavePrintTemplatePayload = z.infer<
+  typeof savePrintTemplatePayloadSchema
+>

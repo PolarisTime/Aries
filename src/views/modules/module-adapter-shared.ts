@@ -1,5 +1,8 @@
-import { asString } from '@/utils/type-narrowing'
 import type { ModuleRecord } from '@/types/module-page'
+import { normalizeStringArray } from '@/utils/normalizers'
+import { asString } from '@/utils/type-narrowing'
+
+export { normalizeStringArray }
 
 const primaryNoFallbackKeys = [
   'orderNo',
@@ -41,16 +44,6 @@ const friendlyTagColorMap: Record<string, Record<string, string>> = {
 
 const tagListColumnKeySet = new Set(['roleNames'])
 const friendlyTagColumnKeySet = new Set(Object.keys(friendlyTagColorMap))
-
-export function normalizeStringArray(value: unknown) {
-  if (!Array.isArray(value)) {
-    return []
-  }
-
-  return Array.from(
-    new Set(value.map((item) => String(item || '').trim()).filter(Boolean)),
-  )
-}
 
 export function parseParentRelationNos(value: unknown) {
   return Array.from(

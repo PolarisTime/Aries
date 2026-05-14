@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { lazy, Suspense, useMemo } from 'react'
 import Alert from 'antd/es/alert'
+import { lazy, Suspense, useMemo } from 'react'
 import { getDashboardSummary } from '@/api/dashboard'
 import { useIdleActivation } from '@/hooks/useIdleActivation'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
@@ -48,7 +48,9 @@ export function DashboardView() {
 
       {canMountFlowCard ? (
         <Suspense
-          fallback={<div className="dashboard-flow-card-placeholder" aria-hidden />}
+          fallback={
+            <div className="dashboard-flow-card-placeholder" aria-hidden />
+          }
         >
           <LazyDashboardFlowCard navigate={navigate} summary={summary} />
         </Suspense>

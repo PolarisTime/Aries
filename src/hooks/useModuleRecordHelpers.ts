@@ -1,4 +1,3 @@
-import { asString } from '@/utils/type-narrowing'
 import dayjs from 'dayjs'
 import { useCallback } from 'react'
 import { generateBusinessPrimaryNo } from '@/api/business'
@@ -8,12 +7,13 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { getStoredUser } from '@/utils/storage'
+import { asString } from '@/utils/type-narrowing'
 import {
   generatePrimaryNo as buildModulePrimaryNo,
   getModuleRecordPrimaryNo,
 } from '@/views/modules/module-adapter-shared'
 
-type Props = {
+interface Props {
   moduleKey: string
   config: ModulePageConfig
 }

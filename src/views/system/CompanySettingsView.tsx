@@ -1,4 +1,3 @@
-import { getFormString, validateFormFields } from '@/utils/antd-form-safe'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Alert from 'antd/es/alert'
 import Card from 'antd/es/card'
@@ -13,7 +12,10 @@ import {
   saveCompanySettingProfile,
 } from '@/api/company-settings'
 import { useRequestError } from '@/hooks/useRequestError'
+import { getFormString, validateForm } from '@/lib/antd-form'
 import { usePermissionStore } from '@/stores/permissionStore'
+import { message } from '@/utils/antd-app'
+import { asString } from '@/utils/type-narrowing'
 import { CompanySettingsHeader } from '@/views/system/CompanySettingsHeader'
 import { CompanySettlementAccountsCard } from '@/views/system/CompanySettlementAccountsCard'
 import { CompanySubjectCard } from '@/views/system/CompanySubjectCard'
@@ -22,8 +24,14 @@ import {
   normalizeSettlementAccounts,
   type SettlementAccountFormRow,
 } from '@/views/system/company-settings-view-utils'
-import { asString } from '@/utils/type-narrowing'
-import { message } from '@/utils/antd-app'
+
+type CompanySettingFormValues = {
+  companyName: string
+  taxNo: string
+  status: string
+  remark?: string
+  [key: string]: unknown
+}
 
 export function CompanySettingsView() {
   const queryClient = useQueryClient()
@@ -114,7 +122,12 @@ export function CompanySettingsView() {
       return
     }
     try {
-      const values = await validateFormFields(form)
+      const values = await validateForm<CompanySettingFormValues>(form, [
+        'companyName',
+        'taxNo',
+        'status',
+        'remark',
+      ])
       if (!settlementAccounts.length) {
         message.warning('请至少维护一个结算账户')
         return
@@ -169,7 +182,10 @@ export function CompanySettingsView() {
   const overviewItems = useMemo(
     () => [
       { label: '企业模式', value: '单企业' },
-      { label: '主体状态', value: asString(getFormString(form, 'status')) || '--' },
+      {
+        label: '主体状态',
+        value: asString(getFormString(form, 'status')) || '--',
+      },
       { label: '结算银行', value: `${settlementAccounts.length} 个` },
     ],
     [form, settlementAccounts],
@@ -197,7 +213,7 @@ export function CompanySettingsView() {
         <Alert
           type="info"
           showIcon
-          style={{ marginBottom: 24 }}
+          className="mb-24"
           title="公司主体信息"
           description={
             '公司名称和税号由 OOBE 脚本初始化后锁定；默认税率已迁移到"通用设置"，本页只维护公司主体和结算银行信息。'
@@ -207,7 +223,7 @@ export function CompanySettingsView() {
           <Alert
             type="warning"
             showIcon
-            style={{ marginBottom: 24 }}
+            className="mb-24"
             title="暂无查看权限"
             description="当前账号没有公司信息查看权限。"
           />
@@ -236,7 +252,7 @@ export function CompanySettingsView() {
             </Row>
             <Card
               size="small"
-              style={{ marginTop: 16, background: '#fafafa', borderRadius: 12 }}
+              className="mt-16 bg-secondary rounded-lg"
               title="补充说明"
             >
               <Form.Item name="remark" label="备注">

@@ -14,7 +14,7 @@ import {
   formatDatabaseMemory,
 } from '@/views/system/database-backup-view-utils'
 
-type ServiceCardProps = {
+interface ServiceCardProps {
   accent: string
   title: string
   version: string
@@ -32,48 +32,29 @@ function DatabaseServiceCard({
   details,
 }: ServiceCardProps) {
   return (
-    <Card size="small" style={{ background: '#fafafa' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 20,
-        }}
-      >
+    <Card size="small" className="bg-secondary">
+      <div className="flex items-center gap-12 mb-20">
         <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 12,
-            background: accent,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 24,
-            color: '#fff',
-          }}
+          className="flex items-center justify-center text-2xl w-48 h-48 rounded-xl text-white"
+          style={{ background: accent }}
         >
           <DatabaseOutlined />
         </div>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 600 }}>{title}</div>
-          <div style={{ fontSize: 12, color: '#8c8c8c' }}>{version}</div>
+          <div className="text-xl font-semibold">{title}</div>
+          <div className="text-xs text-secondary">{version}</div>
         </div>
         <Tag
           color={status === '正常' ? 'green' : 'red'}
-          style={{ marginLeft: 'auto' }}
+          className="ml-auto"
         >
           {status}
         </Tag>
       </div>
       <Row
         gutter={16}
-        style={{
-          marginBottom: 20,
-          paddingBottom: 20,
-          borderBottom: '1px solid #f0f0f0',
-        }}
+        className="mb-20 pb-20"
+style={{ borderBottom: '1px solid var(--theme-card-border)' }}
       >
         {summary.map((item) => (
           <Col key={item.title} span={8}>
@@ -96,7 +77,7 @@ function DatabaseServiceCard({
   )
 }
 
-type Props = {
+interface Props {
   dbStatus?: DatabaseStatus
   loading: boolean
   onRefresh: () => void
@@ -108,22 +89,9 @@ export function DatabaseStatusOverview({
   onRefresh,
 }: Props) {
   return (
-    <div
-      style={{
-        background: '#fff',
-        borderRadius: 8,
-        padding: 24,
-        marginBottom: 16,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: 20,
-        }}
-      >
-        <Typography.Title level={5} style={{ margin: 0 }}>
+    <div className="bg-default rounded p-24 mb-16">
+      <div className="flex justify-between mb-20">
+        <Typography.Title level={5} className="m-0">
           数据库状态
         </Typography.Title>
         <Button
@@ -140,7 +108,7 @@ export function DatabaseStatusOverview({
         <Row gutter={20}>
           <Col span={12}>
             <DatabaseServiceCard
-              accent="linear-gradient(135deg, #1890ff, #096dd9)"
+              accent="var(--theme-primary)"
               title="PostgreSQL"
               version={dbStatus.postgres.version}
               status={dbStatus.postgres.status}
@@ -173,7 +141,7 @@ export function DatabaseStatusOverview({
           </Col>
           <Col span={12}>
             <DatabaseServiceCard
-              accent="linear-gradient(135deg, #ff4d4f, #cf1322)"
+              accent="var(--theme-error)"
               title="Redis"
               version={dbStatus.redis.version}
               status={dbStatus.redis.status}

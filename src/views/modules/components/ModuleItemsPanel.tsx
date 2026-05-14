@@ -1,10 +1,11 @@
 import Typography from 'antd/es/typography'
+import type { ModuleRecord } from '@/types/module-page'
 import { EditorItemsSummary } from './EditorItemsSummary'
 
-type Props = {
+interface Props {
   title?: React.ReactNode
   actions?: React.ReactNode
-  items?: Record<string, unknown>[]
+  items?: ModuleRecord[]
   className?: string
   children: React.ReactNode
 }
@@ -29,7 +30,9 @@ export function ModuleItemsPanel({
           <Typography.Title level={5} className="detail-section-title">
             {title}
           </Typography.Title>
-          {actions ? <div className="editor-items-actions">{actions}</div> : null}
+          {actions ? (
+            <div className="editor-items-actions">{actions}</div>
+          ) : null}
         </div>
         {hasSummary ? (
           <EditorItemsSummary
@@ -39,7 +42,10 @@ export function ModuleItemsPanel({
         ) : null}
       </div>
       {hasSummary ? (
-        <EditorItemsSummary items={items} className="editor-items-summary-mobile" />
+        <EditorItemsSummary
+          items={items}
+          className="editor-items-summary-mobile"
+        />
       ) : null}
       {children}
     </div>

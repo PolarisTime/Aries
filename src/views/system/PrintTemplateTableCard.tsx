@@ -10,14 +10,14 @@ import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
-import Table from 'antd/es/table'
 import type { TableProps } from 'antd/es/table'
+import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { getPrintTemplateBillTypeLabel } from '@/views/system/print-template-view-utils'
 
-type Props = {
+interface Props {
   selectedBillType: string
   activeTemplateId?: string
   templates: PrintTemplateRecord[]
@@ -133,7 +133,7 @@ export function PrintTemplateTableCard({
           <Select
             value={selectedBillType}
             onChange={onBillTypeChange}
-            style={{ width: 200 }}
+            className="w-200"
             options={printTemplateTargetOptions}
           />
           <Button icon={<ReloadOutlined />} onClick={onRefresh}>
@@ -158,7 +158,7 @@ export function PrintTemplateTableCard({
           onClick: () => onActiveChange(record.id),
           style: {
             cursor: 'pointer',
-            background: activeTemplateId === record.id ? '#e6f7ff' : undefined,
+            background: activeTemplateId === record.id ? 'var(--theme-highlight-bg)' : undefined,
           },
         })}
       />

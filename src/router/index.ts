@@ -7,14 +7,20 @@ import {
   redirect,
 } from '@tanstack/react-router'
 import { lazy } from 'react'
+import { listBusinessModule } from '@/api/business-listing'
+import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import {
   appPageDefinitions,
   getPageRoutePath,
   type RouteViewKey,
 } from '@/config/page-registry'
-import { loadBusinessPageConfig } from '@/config/business-page-loader'
+import { queryClient } from '@/lib/query-client'
 import { useAuthStore } from '@/stores/authStore'
-import { checkAccessResources, usePermissionStore } from '@/stores/permissionStore'
+import {
+  checkAccessResources,
+  usePermissionStore,
+} from '@/stores/permissionStore'
+import { asString } from '@/utils/type-narrowing'
 import { LazyLoginView } from '@/views/auth/LazyLoginView'
 import { LazyDashboardView } from '@/views/dashboard/LazyDashboardView'
 import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
@@ -47,7 +53,7 @@ const setup2faRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!useAuthStore.getState().isAuthenticated)
-      throw new Error(String(redirect({ to: '/login' })))
+      throw redirect({ to: '/login' })
   },
 })
 
@@ -59,7 +65,7 @@ const authenticatedLayoutRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!useAuthStore.getState().isAuthenticated)
-      throw new Error(String(redirect({ to: '/login' })))
+      throw redirect({ to: '/login' })
   },
 })
 
@@ -87,11 +93,11 @@ const viewLoaders: Record<
     import('@/views/system/PrintTemplateView').then((m) => ({
       default: m.PrintTemplateView,
     })),
-  'database': () =>
+  database: () =>
     import('@/views/system/DatabaseBackupView').then((m) => ({
       default: m.DatabaseBackupView,
     })),
-  'session': () =>
+  session: () =>
     import('@/views/system/SessionManagementView').then((m) => ({
       default: m.SessionManagementView,
     })),
@@ -131,10 +137,44 @@ const moduleRoutes = appPageDefinitions.map((def) => {
         ? LazyDashboardView
         : lazy(viewLoaders[def.view]),
     pendingComponent: usesPageSkeleton ? BusinessGridPageSkeleton : undefined,
-    pendingMinMs: usesPageSkeleton ? 200 : undefined,
+    pendingMinMs: usesPageSkeleton ? 50 : undefined,
     loader:
       def.view === 'business-grid' && def.moduleKey
-        ? async () => loadBusinessPageConfig(def.moduleKey as string)
+        ? async () => {
+            const moduleKey = asString(def.moduleKey)
+            const resourceKey = def.resourceKey || moduleKey
+            const canView = usePermissionStore.getState().can(resourceKey, 'read')
+
+            const config = await loadBusinessPageConfig(moduleKey)
+
+            if (canView) {
+              try {
+                await queryClient.ensureQueryData({
+                  queryKey: [
+                    'business-grid',
+                    moduleKey,
+                    {},
+                    1,
+                    20,
+                    '',
+                    '',
+                  ],
+                  queryFn: ({ signal }) =>
+                    listBusinessModule(
+                      moduleKey,
+                      {},
+                      { currentPage: 1, pageSize: 20 },
+                      { signal },
+                    ),
+                  staleTime: 5_000,
+                })
+              } catch {
+                // 预取失败不影响页面渲染，组件内 useQuery 会自行重试
+              }
+            }
+
+            return config
+          }
         : undefined,
     beforeLoad: () => {
       if (def.view === 'dashboard') return
@@ -144,12 +184,12 @@ const moduleRoutes = appPageDefinitions.map((def) => {
         def.accessResources.length > 0
       ) {
         if (!checkAccessResources(def.accessResources, store.can)) {
-          throw new Error(String(redirect({ to: '/dashboard' as '/' })))
+          throw redirect({ to: '/dashboard' })
         }
         return
       }
       if (!store.can(def.resourceKey || def.key, 'read')) {
-        throw new Error(String(redirect({ to: '/dashboard' as '/' })))
+        throw redirect({ to: '/dashboard' })
       }
     },
   })
@@ -165,7 +205,7 @@ const apiKeyDetailRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!usePermissionStore.getState().can('api-key', 'read')) {
-      throw new Error(String(redirect({ to: '/dashboard' as '/' })))
+      throw redirect({ to: '/dashboard' })
     }
   },
 })
@@ -174,7 +214,7 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: () => {
-    throw new Error(String(redirect({ to: '/dashboard' as '/' })))
+    throw redirect({ to: '/dashboard' })
   },
 })
 

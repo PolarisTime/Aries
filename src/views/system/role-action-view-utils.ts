@@ -1,5 +1,6 @@
 import type { MenuNode } from '@/api/role-actions'
 import { normalizeAction } from '@/constants/resource-permissions'
+import type { ModuleRecord } from '@/types/module-page'
 
 export const ROLE_ACTION_LABELS: Record<string, string> = {
   read: '查看',
@@ -31,7 +32,7 @@ export interface FlattenedRoleMenu {
   actions: string[]
 }
 
-export type RoleMatrixRow = Record<string, unknown>
+export type RoleMatrixRow = ModuleRecord
 
 export function flattenRoleActionMenus(menuTree: MenuNode[]) {
   const result: FlattenedRoleMenu[] = []
@@ -70,6 +71,7 @@ export function buildRoleMatrixData(
 ) {
   return flatMenus.map((menu) => {
     const row: RoleMatrixRow = {
+      id: menu.menuCode,
       key: menu.menuCode,
       menuName: menu.menuName,
       menuCode: menu.menuCode,

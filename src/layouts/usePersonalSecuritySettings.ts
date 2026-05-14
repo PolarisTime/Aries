@@ -1,31 +1,48 @@
 import Form from 'antd/es/form'
 import { useCallback, useEffect, useState } from 'react'
-import { http } from '@/api/client'
-import { ENDPOINTS } from '@/constants/endpoints'
+import { useTranslation } from 'react-i18next'
+import {
+  changeOwnPassword,
+  enableOwn2fa,
+  setupOwn2fa,
+} from '@/api/account-security'
 import { syncCurrentUserTotpState } from '@/stores/auth-user-sync'
-import type { ApiResponse } from '@/types/api'
+import type { TotpSetupResponse } from '@/types/auth'
 import { message } from '@/utils/antd-app'
 
-interface TotpSetupState {
-  qrCodeBase64: string
-  secret: string
-}
-
-type Props = {
+interface Props {
   open: boolean
   tab: string
 }
 
-interface PasswordFormValues {
+type PasswordFormValues = {
   oldPassword: string
   newPassword: string
 }
 
-export function usePersonalSecuritySettings({ open, tab }: Props) {
+type UsePersonalSecuritySettingsResult = {
+  handleChangePassword: (values: PasswordFormValues) => Promise<void>
+  handleEnableTotp: () => Promise<void>
+  handleSetupTotp: () => Promise<void>
+  pwForm: ReturnType<typeof Form.useForm<PasswordFormValues>>[0]
+  pwSaving: boolean
+  resetSecurityState: () => void
+  totpCode: string
+  totpEnabling: boolean
+  totpLoading: boolean
+  totpSetup: TotpSetupResponse | null
+  setTotpCode: (value: string) => void
+}
+
+export function usePersonalSecuritySettings({
+  open,
+  tab,
+}: Props): UsePersonalSecuritySettingsResult {
+  const { t } = useTranslation()
   const [pwForm] = Form.useForm<PasswordFormValues>()
   const [pwSaving, setPwSaving] = useState(false)
   const [totpLoading, setTotpLoading] = useState(false)
-  const [totpSetup, setTotpSetup] = useState<TotpSetupState | null>(null)
+  const [totpSetup, setTotpSetup] = useState<TotpSetupResponse | null>(null)
   const [totpCode, setTotpCode] = useState('')
   const [totpEnabling, setTotpEnabling] = useState(false)
 
@@ -36,61 +53,71 @@ export function usePersonalSecuritySettings({ open, tab }: Props) {
     pwForm.resetFields()
   }, [open, pwForm, tab])
 
-  const resetSecurityState = useCallback(() => {
+  const resetSecurityState = useCallback((): void => {
     setTotpSetup(null)
     setTotpCode('')
   }, [])
 
   const handleChangePassword = useCallback(
-    async (values: PasswordFormValues) => {
+    async (values: PasswordFormValues): Promise<void> => {
       setPwSaving(true)
       try {
-        await http.post(ENDPOINTS.ACCOUNT_PASSWORD, values)
-        message.success('密码修改成功')
+        await changeOwnPassword({
+          currentPassword: values.oldPassword,
+          newPassword: values.newPassword,
+        })
+        message.success(t('auth.personalsecurity.passwordSuccess'))
         pwForm.resetFields()
       } catch (error) {
-        message.error(error instanceof Error ? error.message : '修改失败')
+        message.error(
+          error instanceof Error
+            ? error.message
+            : t('auth.personalsecurity.passwordFailed'),
+        )
       } finally {
         setPwSaving(false)
       }
     },
-    [pwForm],
+    [pwForm, t],
   )
 
-  const handleSetupTotp = useCallback(async () => {
+  const handleSetupTotp = useCallback(async (): Promise<void> => {
     setTotpLoading(true)
     try {
-      const response = await http.post<
-        ApiResponse<{ qrCodeBase64: string; secret: string }>
-      >(ENDPOINTS.ACCOUNT_2FA_SETUP, {})
-      setTotpSetup(response.data)
+      setTotpSetup((await setupOwn2fa()).data)
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '获取失败')
+      message.error(
+        error instanceof Error
+          ? error.message
+          : t('auth.personalsecurity.setupFailed'),
+      )
     } finally {
       setTotpLoading(false)
     }
-  }, [])
+  }, [t])
 
-  const handleEnableTotp = useCallback(async () => {
+  const handleEnableTotp = useCallback(async (): Promise<void> => {
     if (!/^\d{6}$/.test(totpCode.trim())) {
-      message.error('请输入 6 位验证码')
+      message.error(t('auth.personalsecurity.codeInvalid'))
       return
     }
 
     setTotpEnabling(true)
     try {
-      await http.post(ENDPOINTS.ACCOUNT_2FA_ENABLE, {
-        totpCode: totpCode.trim(),
-      })
+      await enableOwn2fa(totpCode.trim())
       syncCurrentUserTotpState(true)
-      message.success('二次验证已启用')
+      message.success(t('auth.personalsecurity.enableSuccess'))
       resetSecurityState()
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '启用失败')
+      message.error(
+        error instanceof Error
+          ? error.message
+          : t('auth.personalsecurity.enableFailed'),
+      )
     } finally {
       setTotpEnabling(false)
     }
-  }, [resetSecurityState, totpCode])
+  }, [resetSecurityState, t, totpCode])
 
   return {
     handleChangePassword,

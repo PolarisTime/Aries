@@ -1,5 +1,5 @@
-import { asString } from '@/utils/type-narrowing'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import type {
   CustomerStatementDraftOptions,
   FreightStatementDraftOptions,

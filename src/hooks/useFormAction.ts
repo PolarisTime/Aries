@@ -11,8 +11,9 @@
  *     <Button htmlType="submit" loading={isPending}>保存</Button>
  *   </Form>
  */
-import { useActionState, useCallback } from 'react'
+
 import type { FormInstance } from 'antd/es/form'
+import { useActionState, useCallback } from 'react'
 
 type FormState = {
   error: string | null
@@ -51,4 +52,4 @@ export function useFormAction<T>(
   return [state, submitAction, isPending]
 }
 
-export type { FormState, FormInstance }
+export type { FormInstance, FormState }

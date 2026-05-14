@@ -13,6 +13,7 @@ import type {
   UserAccountFormPayload,
   UserAccountRecord,
 } from '@/types/user-account'
+import { message } from '@/utils/antd-app'
 import type {
   LoginNameValidationResult,
   UserAccountEditorFormValues,
@@ -23,7 +24,6 @@ import {
 } from '@/views/system/user-account-view-utils'
 import { useUserAccountEditorCatalogs } from '@/views/system/useUserAccountEditorCatalogs'
 import { useUserAccountEditorRoleState } from '@/views/system/useUserAccountEditorRoleState'
-import { message } from '@/utils/antd-app'
 
 interface UseUserAccountEditorOptions {
   canViewRoleCatalog: boolean

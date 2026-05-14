@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
 import Alert from 'antd/es/alert'
 import Card from 'antd/es/card'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
+import { useEffect, useState } from 'react'
+import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleActionDefinition,
   ModulePageConfig,
@@ -13,10 +14,10 @@ import { ColumnSettingsPopover } from '@/views/modules/components/ColumnSettings
 import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterToolbar'
 import { ModuleTableToolbar } from '@/views/modules/components/ModuleTableToolbar'
 
-type Props = {
+interface Props {
   moduleKey: string
   config: ModulePageConfig
-  filters: Record<string, unknown>
+  filters: SearchParams
   total: number
   loading: boolean
   exporting: boolean

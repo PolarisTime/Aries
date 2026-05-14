@@ -1,6 +1,6 @@
-import { asString } from '@/utils/type-narrowing'
 import type { Rule } from 'antd/es/form'
 import { z } from 'zod'
+import { asNumber, asString } from '@/utils/type-narrowing'
 
 /**
  * Convert Zod schemas to Ant Design form validation rules.
@@ -93,13 +93,13 @@ export function zodToAntdRules(schema: z.ZodType): Rule[] {
       for (const check of checks) {
         if (check.kind === 'min') {
           rules.push({
-            min: check.value as number,
+            min: asNumber(check.value),
             message: check.message || `最小值为 ${asString(check.value)}`,
           })
         }
         if (check.kind === 'max') {
           rules.push({
-            max: check.value as number,
+            max: asNumber(check.value),
             message: check.message || `最大值为 ${asString(check.value)}`,
           })
         }

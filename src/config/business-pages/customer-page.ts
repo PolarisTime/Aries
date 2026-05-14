@@ -1,6 +1,7 @@
+import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { masterStatusFilter } from './shared-filters'
 import { actionSet, buildMasterOverview, statusMap } from './shared'
+import { masterStatusFilter } from './shared-filters'
 
 export const customersPageConfig: ModulePageConfig = {
   key: 'customer',
@@ -50,11 +51,35 @@ export const customersPageConfig: ModulePageConfig = {
   ],
   detailColumnCount: 4,
   formFields: [
-    { key: 'customerCode', label: '客户编码', type: 'input', required: true, row: 1 },
-    { key: 'customerName', label: '客户名称', type: 'input', required: true, row: 1 },
-    { key: 'projectName', label: '项目名称', type: 'input', required: true, row: 1 },
+    {
+      key: 'customerCode',
+      label: '客户编码',
+      type: 'input',
+      required: true,
+      row: 1,
+    },
+    {
+      key: 'customerName',
+      label: '客户名称',
+      type: 'input',
+      required: true,
+      row: 1,
+    },
+    {
+      key: 'projectName',
+      label: '项目名称',
+      type: 'input',
+      required: true,
+      row: 1,
+    },
     { key: 'projectNameAbbr', label: '项目缩写', type: 'input', row: 1 },
-    { key: 'projectAddress', label: '项目地址', type: 'input', row: 2, fullRow: true },
+    {
+      key: 'projectAddress',
+      label: '项目地址',
+      type: 'input',
+      row: 2,
+      fullRow: true,
+    },
     { key: 'contactName', label: '联系人', type: 'input', row: 3 },
     { key: 'contactPhone', label: '联系电话', type: 'input', row: 3 },
     { key: 'city', label: '所在城市', type: 'input', row: 3 },

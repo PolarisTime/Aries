@@ -10,7 +10,7 @@ import {
 } from '@/views/system/api-key-form-options'
 import { getApiKeyUserDisplayName } from '@/views/system/api-key-view-utils'
 
-type Props = {
+interface Props {
   keyword: string
   filterUserId?: string
   statusFilter?: string
@@ -47,7 +47,7 @@ export function ApiKeyListToolbar({
     <Space>
       <Input.Search
         placeholder="搜索密钥名称 / 前缀"
-        style={{ width: 280 }}
+        className="w-280"
         allowClear
         value={keyword}
         onChange={(event) => onKeywordChange(event.target.value)}
@@ -57,7 +57,7 @@ export function ApiKeyListToolbar({
         showSearch
         allowClear
         placeholder="筛选所属用户"
-        style={{ width: 260 }}
+        className="w-260"
         value={filterUserId}
         onChange={onFilterUserChange}
         options={userOptions.map((item) => ({
@@ -73,7 +73,7 @@ export function ApiKeyListToolbar({
       <Select
         allowClear
         placeholder="全部状态"
-        style={{ width: 140 }}
+        className="w-140"
         value={statusFilter}
         onChange={onStatusFilterChange}
         options={apiKeyStatusOptions}
@@ -81,7 +81,7 @@ export function ApiKeyListToolbar({
       <Select
         allowClear
         placeholder="全部范围"
-        style={{ width: 150 }}
+        className="w-150"
         value={usageScopeFilter}
         onChange={onUsageScopeFilterChange}
         options={apiKeyUsageScopeOptions}

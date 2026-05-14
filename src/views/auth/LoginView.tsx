@@ -1,13 +1,15 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Card from 'antd/es/card'
 import Form from 'antd/es/form'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fetchCaptcha } from '@/api/auth'
 import { getInitialSetupStatus } from '@/api/setup'
+import { useRequestError } from '@/hooks/useRequestError'
+import { getFormString } from '@/lib/antd-form'
 import { useAuthStore } from '@/stores/authStore'
 import type { CaptchaData, LoginPayload } from '@/types/auth'
 import type { InitialSetupStatus } from '@/types/setup'
-import { useRequestError } from '@/hooks/useRequestError'
 import { message } from '@/utils/antd-app'
 import { toDataImageUrl } from '@/utils/data-url'
 import { appTitle } from '@/utils/env'
@@ -22,7 +24,8 @@ import {
   requiresForcedTotpSetup,
 } from './login-view-utils'
 import { useLoginTotpSession } from './useLoginTotpSession'
-function useClientClock() {
+
+function useClientClock(): { now: number; timeText: string; dateText: string } {
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
@@ -44,6 +47,7 @@ function useClientClock() {
   return { now, timeText, dateText }
 }
 export function LoginView() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const signIn = useAuthStore((s) => s.signIn)
   const verify2fa = useAuthStore((s) => s.verify2fa)
@@ -63,8 +67,12 @@ export function LoginView() {
   const [captcha, setCaptcha] = useState<CaptchaData | null>(null)
   const [form] = Form.useForm()
   const [flipped, setFlipped] = useState(!!savedSession)
-  const [backendOnline, setBackendOnline] = useState(() => getCachedHealth().online)
-  const [setupStatus, setSetupStatus] = useState<InitialSetupStatus | null>(null)
+  const [backendOnline, setBackendOnline] = useState(
+    () => getCachedHealth().online,
+  )
+  const [setupStatus, setSetupStatus] = useState<InitialSetupStatus | null>(
+    null,
+  )
   const { timeText, dateText } = useClientClock()
   const healthTimerRef = useRef<ReturnType<typeof setInterval>>(null)
   useEffect(() => {
@@ -114,22 +122,22 @@ export function LoginView() {
         clearTotpSession()
         message.success(
           requiresForcedTotpSetup(result.user)
-            ? '账号已登录，请先完成 2FA 绑定后再进入系统。'
-            : '登录成功',
+            ? t('auth.loginview.forceTotpSetupSuccess')
+            : t('auth.loginSuccess'),
         )
         await navigate({ to: buildPostLoginTarget(result.user) as '/' })
       } catch (err) {
-        showError(err, '登录失败')
+        showError(err, t('auth.loginFailed'))
         void loadCaptcha()
       } finally {
         setLoading(false)
       }
     },
-    [captcha?.captchaId, loadCaptcha, navigate, showError, signIn, start2faStep],
+    [captcha, loadCaptcha, navigate, showError, signIn, start2faStep, t],
   )
   const handleTotpVerify = useCallback(async () => {
     if (!/^\d{6}$/.test(totpCode.trim())) {
-      message.error('请输入6位验证码')
+      message.error(t('auth.loginview.codeInvalid'))
       return
     }
     if (stepDeadline > 0 && Date.now() >= stepDeadline) {
@@ -142,13 +150,13 @@ export function LoginView() {
       const result = await verify2fa({
         tempToken,
         totpCode: totpCode.trim(),
-        remember: getFormString(form, 'remember') !== false,
+        remember: Boolean(form.getFieldValue('remember')),
       })
       clearTotpSession()
-      message.success('登录成功')
+      message.success(t('auth.loginSuccess'))
       await navigate({ to: buildPostLoginTarget(result.user) as '/' })
     } catch (err) {
-      showError(err, '二次验证失败')
+      showError(err, t('auth.twofactormodal.verifyFailed'))
     } finally {
       setTotpLoading(false)
     }
@@ -158,6 +166,7 @@ export function LoginView() {
     reset2faStep,
     showError,
     stepDeadline,
+    t,
     tempToken,
     totpCode,
     verify2fa,
@@ -176,11 +185,12 @@ export function LoginView() {
       return () => clearTimeout(timer)
     }
   }, [isExpired, flipped, reset2faStep])
-  const isExpiring = !isExpired && stepDeadline > 0 && (stepDeadline - totpNow) < 60000
+  const isExpiring =
+    !isExpired && stepDeadline > 0 && stepDeadline - totpNow < 60000
   const activeLoginName =
     String(
       getFormString(form, 'loginName') || savedSession?.loginName || '',
-    ).trim() || '当前账户'
+    ).trim() || t('auth.setup2fa.currentUserFallback')
   const countdownText = useMemo(() => {
     if (stepDeadline > 0) {
       const remaining = Math.max(0, Math.ceil((stepDeadline - totpNow) / 1000))
@@ -201,21 +211,25 @@ export function LoginView() {
       <div className="login-hero-logo">L</div>
       <h1 className="login-hero-title">{appTitle}</h1>
       <p className="login-hero-subtitle">
-        统一采购、销售、库存、财务的一体化业务中台
+        {t('auth.loginview.heroSubtitle')}
       </p>
       <div className="login-hero-meta">
         <div className="login-hero-meta-item">
           <span
             className={`login-hero-meta-dot${backendOnline ? ' is-up' : ' is-down'}`}
           />
-          {backendOnline ? '后端服务正常' : '后端服务离线'}
+          {backendOnline
+            ? t('auth.loginview.backendOnline')
+            : t('auth.loginview.backendOffline')}
         </div>
         <div className="login-hero-meta-item">
           <span className="login-hero-meta-dot is-up" />
-          {setupReady ? '系统已就绪' : '待初始化配置'}
+          {setupReady
+            ? t('auth.loginview.setupReady')
+            : t('auth.loginview.setupPending')}
         </div>
       </div>
-      <div style={{ marginTop: 40 }}>
+      <div className="mt-10">
         <div className="login-hero-clock">{timeText}</div>
         <div className="login-hero-date">{dateText}</div>
       </div>
@@ -233,7 +247,9 @@ export function LoginView() {
                 onLoadCaptcha={() => {
                   void loadCaptcha()
                 }}
-                oonSubmit={() => { void handleLogin }}
+                onSubmit={(values) => {
+                  void handleLogin(values)
+                }}
                 shouldShowCaptcha={shouldShowCaptcha}
                 savedLoginName={savedSession?.loginName || ''}
                 form={form}

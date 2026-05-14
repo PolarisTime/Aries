@@ -6,8 +6,9 @@ import { PersonalSettingsSecurityTab } from '@/layouts/PersonalSettingsSecurityT
 import { usePersonalSecuritySettings } from '@/layouts/usePersonalSecuritySettings'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
 import { useAuthStore } from '@/stores/authStore'
+import type { ThemeMode } from '@/utils/storage'
 
-type Props = {
+interface Props {
   open: boolean
   onClose: () => void
   onSaveDisplay: () => void
@@ -16,6 +17,8 @@ type Props = {
   onFontSizeChange: (value: number) => void
   layoutMode: LayoutMode
   onLayoutModeChange: (value: LayoutMode) => void
+  themeMode: ThemeMode
+  onThemeModeChange: (value: ThemeMode) => void
 }
 
 export function PersonalSettingsModal({
@@ -27,6 +30,8 @@ export function PersonalSettingsModal({
   onFontSizeChange,
   layoutMode,
   onLayoutModeChange,
+  themeMode,
+  onThemeModeChange,
 }: Props) {
   const [tab, setTab] = useState('display')
   const user = useAuthStore((state) => state.user)
@@ -74,8 +79,10 @@ export function PersonalSettingsModal({
         <PersonalSettingsDisplayTab
           fontSize={fontSize}
           layoutMode={layoutMode}
+          themeMode={themeMode}
           onFontSizeChange={onFontSizeChange}
           onLayoutModeChange={onLayoutModeChange}
+          onThemeModeChange={onThemeModeChange}
           onResetDisplay={onResetDisplay}
           onSaveDisplay={onSaveDisplay}
         />

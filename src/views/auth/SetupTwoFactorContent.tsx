@@ -4,8 +4,8 @@ import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
 import Flex from 'antd/es/flex'
-import Form from 'antd/es/form'
 import type { FormInstance } from 'antd/es/form'
+import Form from 'antd/es/form'
 import Image from 'antd/es/image'
 import Input from 'antd/es/input'
 import Row from 'antd/es/row'
@@ -13,10 +13,12 @@ import Space from 'antd/es/space'
 import Spin from 'antd/es/spin'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toDataImageUrl } from '@/utils/data-url'
-import { setupTwoFactorSteps } from '@/views/auth/setup-two-factor-constants'
+import { buildSetupTwoFactorSteps } from '@/views/auth/setup-two-factor-constants'
 
-type Props = {
+interface Props {
   currentUserName: string
   form: FormInstance<{ totpCode: string }>
   loading: boolean
@@ -35,19 +37,23 @@ export function SetupTwoFactorContent({
   onRefresh,
   onEnable,
 }: Props) {
+  const { t } = useTranslation()
+  const setupTwoFactorSteps = useMemo(() => buildSetupTwoFactorSteps(t), [t])
+
   return (
     <Spin spinning={loading}>
       <Space orientation="vertical" size="large" className="w-full">
         <Space orientation="vertical" size={4}>
-          <Tag color="blue" variant="filled" style={{ width: 'fit-content' }}>
-            TOTP Setup
+          <Tag color="blue" variant="filled" className="w-fit">
+            {t('auth.setup2fa.content.tag')}
           </Tag>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            设置二次验证
+          <Typography.Title level={3} className="m-0">
+            {t('auth.setup2fa.content.title')}
           </Typography.Title>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-            {currentUserName}，请按下面步骤完成 Authenticator
-            绑定并启用动态验证码登录。
+          <Typography.Paragraph type="secondary" className="mb-0">
+            {t('auth.setup2fa.content.description', {
+              userName: currentUserName,
+            })}
           </Typography.Paragraph>
         </Space>
 
@@ -73,7 +79,7 @@ export function SetupTwoFactorContent({
                       onClick={onRefresh}
                       loading={loading}
                     >
-                      重新生成二维码
+                      {t('auth.setup2fa.content.regenerate')}
                     </Button>
                   </Space>
                 </Card>
@@ -98,11 +104,10 @@ export function SetupTwoFactorContent({
             </Row>
 
             <Card size="small">
-              <Space
-                align="center"
-                style={{ width: '100%', justifyContent: 'space-between' }}
-              >
-                <Typography.Text type="secondary">绑定密钥</Typography.Text>
+              <Space align="center" className="w-full justify-between">
+                <Typography.Text type="secondary">
+                  {t('auth.setup2fa.content.secretLabel')}
+                </Typography.Text>
                 <Typography.Text copyable={{ text: totpData.secret }} strong>
                   {totpData.secret}
                 </Typography.Text>
@@ -113,7 +118,7 @@ export function SetupTwoFactorContent({
               type="info"
               showIcon
               icon={<SafetyCertificateOutlined />}
-              title="建议先保存密钥，再提交验证码。更换手机时可用该密钥重新恢复账户。"
+              title={t('auth.setup2fa.content.backupHint')}
             />
 
             <Form
@@ -124,19 +129,19 @@ export function SetupTwoFactorContent({
             >
               <Form.Item
                 name="totpCode"
-                label="动态验证码"
+                label={t('auth.setup2fa.content.codeLabel')}
                 rules={[
                   {
                     required: true,
                     pattern: /^\d{6}$/,
-                    message: '请输入6位验证码',
+                    message: t('auth.setup2fa.content.codeRequired'),
                   },
                 ]}
                 className="mb-4"
               >
                 <Input
                   prefix={<SafetyCertificateOutlined />}
-                  placeholder="请输入 6 位 TOTP 验证码"
+                  placeholder={t('auth.setup2fa.content.codePlaceholder')}
                   maxLength={6}
                   autoFocus
                   inputMode="numeric"
@@ -144,16 +149,16 @@ export function SetupTwoFactorContent({
                 />
               </Form.Item>
 
-              <Form.Item style={{ marginBottom: 0 }}>
+              <Form.Item className="mb-0">
                 <Button
                   type="primary"
                   htmlType="submit"
                   loading={enabling}
                   block
                   size="large"
-                  style={{ height: 46, fontWeight: 600 }}
+                  className="h-[46px] font-semibold"
                 >
-                  验证并启用
+                  {t('auth.setup2fa.content.submit')}
                 </Button>
               </Form.Item>
             </Form>
@@ -163,10 +168,10 @@ export function SetupTwoFactorContent({
             <Alert
               type="warning"
               showIcon
-              title="二维码生成失败，请重新获取后再继续绑定。"
+              title={t('auth.setup2fa.content.loadFailed')}
             />
             <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-              重新获取二维码
+              {t('auth.setup2fa.content.retry')}
             </Button>
           </Space>
         )}

@@ -1,6 +1,7 @@
+import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { masterStatusFilter } from './shared-filters'
 import { actionSet, buildMasterOverview, statusMap } from './shared'
+import { masterStatusFilter } from './shared-filters'
 
 export const carriersPageConfig: ModulePageConfig = {
   key: 'carrier',

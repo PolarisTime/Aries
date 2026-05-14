@@ -15,7 +15,7 @@ import {
 
 type LayoutHeaderSearchProps = Omit<LazyAppHeaderSearchProps, 'className'>
 
-type Props = {
+interface Props {
   backendOnline: boolean
   clockText: string
   collapsed: boolean

@@ -1,7 +1,7 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
-import enUS from '@/locales/en-US'
-import zhCN from '@/locales/zh-CN'
+import { enUS } from '@/locales/en-US'
+import { zhCN } from '@/locales/zh-CN'
 
 const LOCALE_STORAGE_KEY = 'leo-locale'
 
@@ -30,5 +30,3 @@ void i18n.use(initReactI18next).init({
     escapeValue: false,
   },
 })
-
-export default i18n

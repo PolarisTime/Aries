@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   disableUserAccount2fa,
   enableUserAccount2fa,
@@ -14,6 +15,7 @@ import type { UserAccountRecord } from '@/types/user-account'
 import { message, modal } from '@/utils/antd-app'
 
 export function useUserAccountTwoFactor() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { showError } = useRequestError()
   const currentUser = useAuthStore((state) => state.user)
@@ -49,13 +51,13 @@ export function useUserAccountTwoFactor() {
       try {
         setTwoFaRecord(await getUserAccountDetail(record.id))
       } catch (error) {
-        showError(error, '加载 2FA 信息失败')
+        showError(error, t('auth.user2fa.loadFailed'))
         setTwoFaOpen(false)
       } finally {
         setTwoFaLoading(false)
       }
     },
-    [showError],
+    [showError, t],
   )
 
   const handleGenerate2fa = useCallback(async () => {
@@ -65,18 +67,18 @@ export function useUserAccountTwoFactor() {
       const response = await setupUserAccount2fa(twoFaRecord.id)
       setTwoFaSetup(response.data)
       setTwoFaCode('')
-      message.success(response.message || '二维码生成成功')
+      message.success(response.message || t('auth.user2fa.generateSuccess'))
     } catch (error) {
-      showError(error, '二维码生成失败')
+      showError(error, t('auth.user2fa.generateFailed'))
     } finally {
       setTwoFaSetupLoading(false)
     }
-  }, [showError, twoFaRecord])
+  }, [showError, t, twoFaRecord])
 
   const handleEnable2fa = useCallback(async () => {
     if (!twoFaRecord) return
     if (!/^\d{6}$/.test(twoFaCode.trim())) {
-      message.warning('请输入 6 位动态验证码')
+      message.warning(t('auth.user2fa.codeInvalid'))
       return
     }
     setTwoFaEnableLoading(true)
@@ -89,11 +91,11 @@ export function useUserAccountTwoFactor() {
       syncCurrentUserTotpState(response.data)
       setTwoFaSetup(null)
       setTwoFaCode('')
-      message.success(response.message || '2FA 已启用')
+      message.success(response.message || t('auth.user2fa.enableSuccess'))
       setTwoFaOpen(false)
       refreshUsers()
     } catch (error) {
-      showError(error, '启用 2FA 失败')
+      showError(error, t('auth.user2fa.enableFailed'))
     } finally {
       setTwoFaEnableLoading(false)
     }
@@ -101,6 +103,7 @@ export function useUserAccountTwoFactor() {
     refreshUsers,
     showError,
     syncCurrentUserTotpState,
+    t,
     twoFaCode,
     twoFaRecord,
   ])
@@ -108,10 +111,12 @@ export function useUserAccountTwoFactor() {
   const handleDisable2fa = useCallback(() => {
     if (!twoFaRecord) return
     modal.confirm({
-      title: '关闭二次验证',
-      content: `确定关闭用户「${twoFaRecord.loginName}」的 2FA 吗？`,
-      okText: '确认关闭',
-      cancelText: '取消',
+      title: t('auth.user2fa.disableTitle'),
+      content: t('auth.user2fa.disableContent', {
+        loginName: twoFaRecord.loginName,
+      }),
+      okText: t('auth.user2fa.disableOk'),
+      cancelText: t('common.cancel'),
       okButtonProps: { danger: true },
       onOk: async () => {
         setTwoFaDisableLoading(true)
@@ -121,17 +126,17 @@ export function useUserAccountTwoFactor() {
           syncCurrentUserTotpState(response.data)
           setTwoFaSetup(null)
           setTwoFaCode('')
-          message.success(response.message || '2FA 已关闭')
+          message.success(response.message || t('auth.user2fa.disableSuccess'))
           setTwoFaOpen(false)
           refreshUsers()
         } catch (error) {
-          showError(error, '关闭 2FA 失败')
+          showError(error, t('auth.user2fa.disableFailed'))
         } finally {
           setTwoFaDisableLoading(false)
         }
       },
     })
-  }, [refreshUsers, showError, syncCurrentUserTotpState, twoFaRecord])
+  }, [refreshUsers, showError, syncCurrentUserTotpState, t, twoFaRecord])
 
   const close2faModal = useCallback(() => {
     setTwoFaOpen(false)

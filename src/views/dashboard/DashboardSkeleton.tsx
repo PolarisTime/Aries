@@ -38,7 +38,7 @@ export function DashboardSkeleton() {
         <div className="dashboard-skeleton-block dashboard-skeleton-card-title" />
         <div className="dashboard-flow-grid">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="dashboard-flow-section">
+            <div key={`skeleton-flow-${index}`} className="dashboard-flow-section">
               <div className="dashboard-flow-section-head">
                 <div className="dashboard-skeleton-block dashboard-skeleton-flow-title" />
                 <div className="dashboard-flow-section-desc">

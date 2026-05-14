@@ -1,7 +1,16 @@
 import type { NavigateFn } from '@tanstack/react-router'
 import Card from 'antd/es/card'
+import type { CSSProperties } from 'react'
 import type { DashboardSummary } from '@/api/dashboard'
 import { buildWorkflowSections } from '@/views/dashboard/dashboard-flow-utils'
+
+type FlowSectionStyle = CSSProperties & {
+  '--flow-accent': string
+}
+
+function flowSectionStyle(accent: string): FlowSectionStyle {
+  return { '--flow-accent': accent }
+}
 
 interface Props {
   navigate: NavigateFn
@@ -18,7 +27,7 @@ export function DashboardFlowCard({ navigate, summary }: Props) {
           <section
             key={section.key}
             className="dashboard-flow-section"
-            style={{ ['--flow-accent' as string]: section.accent }}
+            style={flowSectionStyle(section.accent)}
           >
             <div className="dashboard-flow-section-head">
               <div className="dashboard-flow-section-title">
