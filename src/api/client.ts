@@ -28,36 +28,26 @@ export function assertApiSuccess<T extends { code?: number; message?: string }>(
   fallbackMessage?: string,
 ) {
   if (!isSuccessCode(response?.code)) {
-    throw new Error(response?.message || fallbackMessage || getApiMessage('requestFailed'))
+    throw new Error(
+      response?.message || fallbackMessage || getApiMessage('requestFailed'),
+    )
   }
 
   return response
 }
 
-export function restGet<T>(
-  url: string,
-  params?: SearchParams,
-): Promise<T> {
+export function restGet<T>(url: string, params?: SearchParams): Promise<T> {
   return http.get<T>(url, { params })
 }
 
-export function restPost<T>(
-  url: string,
-  data?: SearchParams,
-): Promise<T> {
+export function restPost<T>(url: string, data?: SearchParams): Promise<T> {
   return http.post<T>(url, data)
 }
 
-export function restPut<T>(
-  url: string,
-  data?: SearchParams,
-): Promise<T> {
+export function restPut<T>(url: string, data?: SearchParams): Promise<T> {
   return http.put<T>(url, data)
 }
 
-export function restDelete<T>(
-  url: string,
-  params?: SearchParams,
-): Promise<T> {
+export function restDelete<T>(url: string, params?: SearchParams): Promise<T> {
   return http.delete<T>(url, { params })
 }

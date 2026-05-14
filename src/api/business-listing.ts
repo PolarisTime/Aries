@@ -95,7 +95,9 @@ export async function searchBusinessModule(
       }
     } catch {
       if (endpointConfig.supportsSearch === true) {
-        throw new Error(`${getApiMessage('loadSearchResultsFailed')}: ${moduleKey}`)
+        throw new Error(
+          `${getApiMessage('loadSearchResultsFailed')}: ${moduleKey}`,
+        )
       }
     }
   }

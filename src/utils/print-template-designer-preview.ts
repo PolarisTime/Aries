@@ -1,5 +1,4 @@
-import type { ModuleRecord } from '@/types/module-page'
-import type { ModulePageConfig } from '@/types/module-page'
+import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import {
   getPrintTemplateSampleCustomers,
   getPrintTemplateSampleProjects,
@@ -20,17 +19,14 @@ export function buildPrintTemplatePreviewData(
   const detailCount = detailColumns.length ? 3 : 0
 
   const details = Array.from({ length: detailCount }, (_, index) => {
-    const item = detailColumns.reduce<ModuleRecord>(
-      (row, column) => {
-        row[column.dataIndex] = inferPrintTemplateRowValue(
-          column.dataIndex,
-          column.type,
-          index,
-        )
-        return row
-      },
-      {} as ModuleRecord,
-    )
+    const item = detailColumns.reduce<ModuleRecord>((row, column) => {
+      row[column.dataIndex] = inferPrintTemplateRowValue(
+        column.dataIndex,
+        column.type,
+        index,
+      )
+      return row
+    }, {} as ModuleRecord)
 
     const unitPrice = Number(item.unitPrice || 1280 + index * 135.5)
     const quantity = Number(item.quantity || 18 + index * 6)

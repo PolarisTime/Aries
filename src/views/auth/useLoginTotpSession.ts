@@ -18,17 +18,20 @@ export function useLoginTotpSession() {
   const [stepDeadline, setStepDeadline] = useState(savedSession?.deadline || 0)
   const [now, setNow] = useState(Date.now())
 
-  const reset2faStep = useCallback((showMessage = false) => {
-    clearTotpSession()
-    setLoginStep('password')
-    setTempToken('')
-    setTotpCode('')
-    setStepDeadline(0)
-    setNow(Date.now())
-    if (showMessage) {
-      message.warning(t('auth.totppanel.expired'))
-    }
-  }, [t])
+  const reset2faStep = useCallback(
+    (showMessage = false) => {
+      clearTotpSession()
+      setLoginStep('password')
+      setTempToken('')
+      setTotpCode('')
+      setStepDeadline(0)
+      setNow(Date.now())
+      if (showMessage) {
+        message.warning(t('auth.totppanel.expired'))
+      }
+    },
+    [t],
+  )
 
   useEffect(() => {
     if (loginStep !== 'totp' || !stepDeadline) {

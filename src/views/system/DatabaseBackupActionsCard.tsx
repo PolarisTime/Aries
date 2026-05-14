@@ -94,9 +94,7 @@ export function DatabaseBackupActionsCard({
       <Row gutter={20}>
         <Col span={12}>
           <ActionCard
-            icon={
-              <DownloadOutlined className="text-4xl text-primary" />
-            }
+            icon={<DownloadOutlined className="text-4xl text-primary" />}
             title="后台导出"
             description="将当前数据库导出为 SQL 备份文件，完成后提供下载链接"
             canShowAction={canExport}

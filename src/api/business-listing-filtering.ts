@@ -33,19 +33,13 @@ export function isServerFilterKey(
   )
 }
 
-export function shouldClientFilter(
-  moduleKey: string,
-  search: SearchParams,
-) {
+export function shouldClientFilter(moduleKey: string, search: SearchParams) {
   const endpointConfig = getModuleConfig(moduleKey)
   const keys = Object.keys(search).filter((key) => hasValue(search[key]))
   return keys.some((key) => !isServerFilterKey(endpointConfig, key))
 }
 
-export function buildFilterParams(
-  moduleKey: string,
-  search: SearchParams,
-) {
+export function buildFilterParams(moduleKey: string, search: SearchParams) {
   const endpointConfig = getModuleConfig(moduleKey)
   const params: Record<string, QueryValue> = {}
 

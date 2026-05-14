@@ -1,5 +1,9 @@
 import { useMemo } from 'react'
-import type { ModuleLineItem, ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleLineItem,
+  ModulePageConfig,
+  ModuleRecord,
+} from '@/types/module-page'
 import { canModuleEditLineItems } from '@/views/modules/module-adapter-editor'
 import { hasBehavior } from '@/views/modules/module-behavior-registry'
 

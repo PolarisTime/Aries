@@ -155,11 +155,17 @@ export function useColumnSettingsSupport(
         remotePagesRef.current = remote?.pages || {}
         const remoteSettings = remote?.pages?.[pageKey] || null
         if (remoteSettings) {
-          if (hasAbnormalHiddenKeys(remoteSettings.hiddenKeys, totalColumnCount)) {
+          if (
+            hasAbnormalHiddenKeys(remoteSettings.hiddenKeys, totalColumnCount)
+          ) {
             logger.warn(
               `Remote column settings for "${pageKey}" has abnormal hiddenKeys, resetting`,
             )
-            setListColumnSettings(pageKey, { orderedKeys: [], hiddenKeys: [] }, userKey)
+            setListColumnSettings(
+              pageKey,
+              { orderedKeys: [], hiddenKeys: [] },
+              userKey,
+            )
           } else {
             setListColumnSettings(pageKey, remoteSettings, userKey)
             if (!userChangedRef.current) {

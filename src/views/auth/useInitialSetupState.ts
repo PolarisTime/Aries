@@ -92,7 +92,9 @@ export function useInitialSetupState() {
       setTotpSetup(res.data)
       message.success(t('auth.initialsetup.totpGenerated'))
     } catch (error) {
-      message.error(getErrorMessage(error, t('auth.initialsetup.operationFailed')))
+      message.error(
+        getErrorMessage(error, t('auth.initialsetup.operationFailed')),
+      )
     } finally {
       setLoadingTotp(false)
     }
@@ -133,7 +135,9 @@ export function useInitialSetupState() {
       setCurrentStep('company')
       void loadStatus()
     } catch (error) {
-      message.error(getErrorMessage(error, t('auth.initialsetup.operationFailed')))
+      message.error(
+        getErrorMessage(error, t('auth.initialsetup.operationFailed')),
+      )
     } finally {
       setLoadingAdmin(false)
     }
@@ -157,10 +161,14 @@ export function useInitialSetupState() {
         taxRate: values.taxRate || 0.13,
         remark: values.remark?.trim() || '',
       })
-      message.success(res.message || t('auth.initialsetup.companyCreateSuccess'))
+      message.success(
+        res.message || t('auth.initialsetup.companyCreateSuccess'),
+      )
       void navigate({ to: '/login' })
     } catch (error) {
-      message.error(getErrorMessage(error, t('auth.initialsetup.operationFailed')))
+      message.error(
+        getErrorMessage(error, t('auth.initialsetup.operationFailed')),
+      )
     } finally {
       setLoadingCompany(false)
     }

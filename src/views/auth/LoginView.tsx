@@ -210,9 +210,7 @@ export function LoginView() {
     <div className="login-hero-content">
       <div className="login-hero-logo">L</div>
       <h1 className="login-hero-title">{appTitle}</h1>
-      <p className="login-hero-subtitle">
-        {t('auth.loginview.heroSubtitle')}
-      </p>
+      <p className="login-hero-subtitle">{t('auth.loginview.heroSubtitle')}</p>
       <div className="login-hero-meta">
         <div className="login-hero-meta-item">
           <span

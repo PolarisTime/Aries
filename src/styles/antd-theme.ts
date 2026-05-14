@@ -1,4 +1,4 @@
-import { theme, type ThemeConfig } from 'antd'
+import { type ThemeConfig, theme } from 'antd'
 import { getPersonalControlHeights } from '@/layouts/usePersonalSettings'
 
 const ANT_DESIGN_FONT_FAMILY =

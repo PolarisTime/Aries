@@ -51,7 +51,10 @@ export function RoleActionRoleListCard({
               selectedRoleId === role.id
                 ? '1px solid var(--theme-highlight-border)'
                 : '1px solid transparent',
-            background: selectedRoleId === role.id ? 'var(--theme-highlight-bg)' : undefined,
+            background:
+              selectedRoleId === role.id
+                ? 'var(--theme-highlight-bg)'
+                : undefined,
           }}
           onClick={() => onSelectRole(role)}
         >

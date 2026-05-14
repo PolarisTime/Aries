@@ -158,7 +158,10 @@ export function PrintTemplateTableCard({
           onClick: () => onActiveChange(record.id),
           style: {
             cursor: 'pointer',
-            background: activeTemplateId === record.id ? 'var(--theme-highlight-bg)' : undefined,
+            background:
+              activeTemplateId === record.id
+                ? 'var(--theme-highlight-bg)'
+                : undefined,
           },
         })}
       />

@@ -143,22 +143,16 @@ const moduleRoutes = appPageDefinitions.map((def) => {
         ? async () => {
             const moduleKey = asString(def.moduleKey)
             const resourceKey = def.resourceKey || moduleKey
-            const canView = usePermissionStore.getState().can(resourceKey, 'read')
+            const canView = usePermissionStore
+              .getState()
+              .can(resourceKey, 'read')
 
             const config = await loadBusinessPageConfig(moduleKey)
 
             if (canView) {
               try {
                 await queryClient.ensureQueryData({
-                  queryKey: [
-                    'business-grid',
-                    moduleKey,
-                    {},
-                    1,
-                    20,
-                    '',
-                    '',
-                  ],
+                  queryKey: ['business-grid', moduleKey, {}, 1, 20, '', ''],
                   queryFn: ({ signal }) =>
                     listBusinessModule(
                       moduleKey,
@@ -184,12 +178,12 @@ const moduleRoutes = appPageDefinitions.map((def) => {
         def.accessResources.length > 0
       ) {
         if (!checkAccessResources(def.accessResources, store.can)) {
-          throw redirect({ to: '/dashboard' })
+          throw redirect({ to: '/' })
         }
         return
       }
       if (!store.can(def.resourceKey || def.key, 'read')) {
-        throw redirect({ to: '/dashboard' })
+        throw redirect({ to: '/' })
       }
     },
   })
@@ -205,7 +199,7 @@ const apiKeyDetailRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!usePermissionStore.getState().can('api-key', 'read')) {
-      throw redirect({ to: '/dashboard' })
+      throw redirect({ to: '/' })
     }
   },
 })
@@ -214,7 +208,8 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: () => {
-    throw redirect({ to: '/dashboard' })
+    // biome-ignore lint/suspicious/noExplicitAny: TanStack Router 类型推断限制，dashboard 由 moduleRoutes 动态生成
+    throw redirect({ to: '/dashboard' as any })
   },
 })
 

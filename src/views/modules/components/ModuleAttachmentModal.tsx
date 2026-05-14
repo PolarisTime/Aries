@@ -201,11 +201,7 @@ export function ModuleAttachmentModal({
         if (visible) void fetchAttachments()
       }}
     >
-      <div
-        ref={pasteZoneRef}
-        className="module-attachment-upload-shell"
-        tabIndex={0}
-      >
+      <div ref={pasteZoneRef} className="module-attachment-upload-shell">
         {canCreateAttachment ? (
           <Upload
             beforeUpload={(f) => {
@@ -234,11 +230,7 @@ export function ModuleAttachmentModal({
             {attachments.map((item) => (
               <Card key={item.id} size="small">
                 <Flex align="center" justify="space-between" gap={16}>
-                  <Space
-                    align="start"
-                    size={12}
-                    className="flex-1 min-w-0"
-                  >
+                  <Space align="start" size={12} className="flex-1 min-w-0">
                     {isImageAttachment(item) ? (
                       <button
                         type="button"

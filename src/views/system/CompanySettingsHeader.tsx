@@ -64,13 +64,9 @@ export function CompanySettingsHeader({
       <Row gutter={16}>
         {overviewItems.map((item) => (
           <Col span={8} key={item.label}>
-            <div
-              className="rounded-lg border border-gray-200 px-[20px] py-[18px] bg-gradient-to-b from-gray-50 to-white"
-            >
+            <div className="rounded-lg border border-gray-200 px-[20px] py-[18px] bg-gradient-to-b from-gray-50 to-white">
               <div className="text-sm text-secondary">{item.label}</div>
-              <div className="mt-10 text-2xl font-semibold">
-                {item.value}
-              </div>
+              <div className="mt-10 text-2xl font-semibold">{item.value}</div>
             </div>
           </Col>
         ))}

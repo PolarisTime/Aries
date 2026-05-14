@@ -22,10 +22,7 @@ export function cloneLineItems(
   return cloneRecord(items) as ModuleLineItem[]
 }
 
-export function resetReactiveObject(
-  target: ModuleRecord,
-  next: ModuleRecord,
-) {
+export function resetReactiveObject(target: ModuleRecord, next: ModuleRecord) {
   Object.keys(target).forEach((key) => {
     delete target[key]
   })

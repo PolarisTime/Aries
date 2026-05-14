@@ -82,9 +82,7 @@ export function ExcelImportDialog({
             accept=".xlsx,.xls,.csv"
             maxCount={1}
           >
-            <InboxOutlined
-              className="text-4xl text-primary"
-            />
+            <InboxOutlined className="text-4xl text-primary" />
             <Typography.Paragraph className="mt-12 mb-0">
               点击或拖拽 XLSX / CSV 文件到此处
             </Typography.Paragraph>

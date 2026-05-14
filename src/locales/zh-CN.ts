@@ -415,7 +415,8 @@ export const zhCN: MessageSchema = {
     clearAllSessionsFailed: '清除全部会话失败',
     loadAccountColumnSettingsFailed: '加载账号列设置失败',
     saveAccountColumnSettingsFailed: '保存账号列设置失败',
-    resultIncomplete: '结果不完整：已达客户端过滤上限。请缩小筛选范围或联系管理员启用服务端过滤。',
+    resultIncomplete:
+      '结果不完整：已达客户端过滤上限。请缩小筛选范围或联系管理员启用服务端过滤。',
     loadSecurityKeyStatusFailed: '加载安全密钥状态失败',
     jwtKeyRotationFailed: 'JWT 主密钥轮转失败',
     twoFactorKeyRotationFailed: '2FA 主密钥轮转失败',
@@ -454,7 +455,8 @@ export const zhCN: MessageSchema = {
     importDatabaseBackupFailed: '导入数据库备份失败',
     queryStatementCandidatesFailed: '查询对账候选单据失败',
     loginExpiring: '登录即将过期',
-    loginExpiringDescription: '您的登录状态将在明天过期，请及时保存工作并重新登录',
+    loginExpiringDescription:
+      '您的登录状态将在明天过期，请及时保存工作并重新登录',
     refreshLoginStatusFailed: '刷新登录状态失败',
     loginStatusExpired: '登录状态已失效，请重新登录',
   },

@@ -134,9 +134,7 @@ export const operationLogModuleOptions = [
   },
 ]
 
-export function resolveOperationLogActionOptions(
-  filters: SearchParams,
-) {
+export function resolveOperationLogActionOptions(filters: SearchParams) {
   const moduleName = asString(filters.moduleName).trim()
   return [
     ...(operationLogActionOptionsByModule[moduleName] ||

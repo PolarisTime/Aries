@@ -172,6 +172,8 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
     moduleConfigQuery.data,
     displaySwitchesQuery.data,
     statementLinkCatalog,
+    switchCode,
+    initialConfig,
   ])
 
   const showSnowflakeId = useMemo(

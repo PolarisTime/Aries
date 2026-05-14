@@ -871,7 +871,12 @@ body,
 .module-page-skeleton-block,
 .module-page-skeleton-button,
 .module-page-skeleton-line {
-  background: linear-gradient(90deg, var(--theme-skeleton-from) 25%, var(--theme-skeleton-to) 50%, var(--theme-skeleton-from) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--theme-skeleton-from) 25%,
+    var(--theme-skeleton-to) 50%,
+    var(--theme-skeleton-from) 75%
+  );
   background-size: 200% 100%;
   animation: module-page-skeleton-shimmer 1.4s ease-in-out infinite;
 }
@@ -1149,7 +1154,8 @@ body,
     var(--theme-surface) 0%,
     var(--theme-sider-surface) 100%
   );
-  border: 1px solid color-mix(in srgb, var(--flow-accent) 18%, var(--theme-card-border));
+  border: 1px solid
+    color-mix(in srgb, var(--flow-accent) 18%, var(--theme-card-border));
   border-radius: 14px;
 }
 
@@ -1204,7 +1210,11 @@ body,
 
 .dashboard-flow-node:hover {
   transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--flow-accent) 40%, var(--theme-card-border));
+  border-color: color-mix(
+    in srgb,
+    var(--flow-accent) 40%,
+    var(--theme-card-border)
+  );
   box-shadow: 0 14px 28px var(--theme-shadow-md);
 }
 

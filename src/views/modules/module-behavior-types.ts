@@ -10,9 +10,7 @@ export interface NormalizeDraftContext {
   sumLineItemsBy: (items: ModuleLineItem[], key: string) => number
 }
 
-type ModuleDefaultDraftValues =
-  | ModuleRecordInput
-  | (() => ModuleRecordInput)
+type ModuleDefaultDraftValues = ModuleRecordInput | (() => ModuleRecordInput)
 
 export interface SyncEditorFormContext {
   changedKeys: ReadonlySet<string>

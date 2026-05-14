@@ -85,7 +85,7 @@ export function BusinessGridContent({
 
   useEffect(() => {
     setColumnSettingsOpen(false)
-  }, [moduleKey])
+  }, [])
 
   return (
     <Card className="module-grid-card">

@@ -44,17 +44,14 @@ function DatabaseServiceCard({
           <div className="text-xl font-semibold">{title}</div>
           <div className="text-xs text-secondary">{version}</div>
         </div>
-        <Tag
-          color={status === '正常' ? 'green' : 'red'}
-          className="ml-auto"
-        >
+        <Tag color={status === '正常' ? 'green' : 'red'} className="ml-auto">
           {status}
         </Tag>
       </div>
       <Row
         gutter={16}
         className="mb-20 pb-20"
-style={{ borderBottom: '1px solid var(--theme-card-border)' }}
+        style={{ borderBottom: '1px solid var(--theme-card-border)' }}
       >
         {summary.map((item) => (
           <Col key={item.title} span={8}>

@@ -96,7 +96,13 @@ export function RoleActionPermissionCard({
               </Button>
             )}
             {canEditPermissions && (
-              <span className="inline-block" style={{ borderLeft: '1px solid var(--theme-card-border)', height: 20 }} />
+              <span
+                className="inline-block"
+                style={{
+                  borderLeft: '1px solid var(--theme-card-border)',
+                  height: 20,
+                }}
+              />
             )}
             <Radio.Group
               size="small"
@@ -111,7 +117,13 @@ export function RoleActionPermissionCard({
                 <AppstoreOutlined /> 矩阵
               </Radio.Button>
             </Radio.Group>
-            <span className="inline-block" style={{ borderLeft: '1px solid var(--theme-card-border)', height: 20 }} />
+            <span
+              className="inline-block"
+              style={{
+                borderLeft: '1px solid var(--theme-card-border)',
+                height: 20,
+              }}
+            />
             {canEditPermissions && (
               <Button
                 type="primary"

@@ -74,5 +74,6 @@ export async function checkAuthPing(): Promise<boolean> {
 
 export async function fetchBackendHealth(): Promise<HealthResponse> {
   const response = await http.get<ApiResponse<HealthResponse>>(ENDPOINTS.HEALTH)
-  return assertApiSuccess(response, getApiMessage('backendServiceUnavailable')).data
+  return assertApiSuccess(response, getApiMessage('backendServiceUnavailable'))
+    .data
 }

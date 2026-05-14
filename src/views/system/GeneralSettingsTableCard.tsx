@@ -97,7 +97,11 @@ export function GeneralSettingsTableCard({
             />
             <span
               className="text-xs"
-              style={{ color: enabled ? 'var(--theme-success)' : 'var(--theme-disabled)' }}
+              style={{
+                color: enabled
+                  ? 'var(--theme-success)'
+                  : 'var(--theme-disabled)',
+              }}
             >
               {enabled ? '已启用' : '已关闭'}
             </span>

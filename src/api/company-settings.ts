@@ -66,14 +66,14 @@ function normalizeProfile(
     taxRate: raw.taxRate ? asNumber(raw.taxRate) : undefined,
     settlementAccounts: Array.isArray(raw.settlementAccounts)
       ? raw.settlementAccounts.map((item) => ({
-            id: item.id == null ? '' : asString(item.id),
-            accountName: asString(item.accountName),
-            bankName: asString(item.bankName),
-            bankAccount: asString(item.bankAccount),
-            usageType: asString(item.usageType) || '通用',
-            status: asString(item.status) || '正常',
-            remark: asString(item.remark),
-          }))
+          id: item.id == null ? '' : asString(item.id),
+          accountName: asString(item.accountName),
+          bankName: asString(item.bankName),
+          bankAccount: asString(item.bankAccount),
+          usageType: asString(item.usageType) || '通用',
+          status: asString(item.status) || '正常',
+          remark: asString(item.remark),
+        }))
       : [],
     status: asString(raw.status) || '正常',
     remark: asString(raw.remark),

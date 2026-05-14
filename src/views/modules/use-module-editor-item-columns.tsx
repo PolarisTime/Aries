@@ -77,7 +77,11 @@ export function useModuleEditorItemColumns({
     columnVisibility,
     handleColumnOrderChange,
     handleColumnVisibilityChange,
-  } = useColumnSettingsSupport(`${config?.key ?? moduleKey}:editor-items`, undefined, totalItemColumnCount)
+  } = useColumnSettingsSupport(
+    `${config?.key ?? moduleKey}:editor-items`,
+    undefined,
+    totalItemColumnCount,
+  )
   const {
     handleItemInputChange,
     handleItemNumberChange,
