@@ -97,6 +97,13 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: 3100,
+      warmup: {
+        clientFiles: [
+          'src/main.tsx',
+          'src/router/index.ts',
+          'src/api/client.ts',
+        ],
+      },
       proxy: env.VITE_PROXY_TARGET
         ? {
             '^/api(?:/|$)': {
@@ -107,6 +114,8 @@ export default defineConfig(({ mode }) => {
         : undefined,
     },
     build: {
+      target: 'esnext',
+      cssMinify: 'lightningcss',
       chunkSizeWarningLimit: 900,
       modulePreload: {
         resolveDependencies(_filename, deps, context) {

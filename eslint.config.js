@@ -1,20 +1,35 @@
 import js from '@eslint/js'
-import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'playwright-report', 'test-results', 'node_modules', 'src/utils/clodop.ts'] },
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'playwright-report',
+      'test-results',
+      'node_modules',
+      'src/utils/clodop.ts',
+    ],
+  },
 
   // ── 全项目严格规则 ───────────────────────────────────
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommendedTypeChecked,
+    ],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2024,
       globals: { ...globals.browser, ...globals.node },
-      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
     rules: {
@@ -45,9 +60,14 @@ export default tseslint.config(
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-base-to-string': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', {
-        argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_',
-      }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
   },
 
