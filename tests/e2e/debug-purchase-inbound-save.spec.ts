@@ -140,7 +140,11 @@ test('debug purchase inbound save result', async ({ page }) => {
     .locator('button.overlay-action-button')
     .filter({ hasText: /^保存$/ })
     .click()
-  await expect(page.locator('.ant-message-notice').filter({ hasText: /创建成功|更新成功|保存成功/ })).toHaveCount(1)
+  await expect(
+    page
+      .locator('.ant-message-notice')
+      .filter({ hasText: /创建成功|更新成功|保存成功/ }),
+  ).toHaveCount(1)
 
   await page.goto('/purchase-inbound')
   const purchaseInboundOverlay = await openCreateOverlay(page)
@@ -183,7 +187,9 @@ test('debug purchase inbound save result', async ({ page }) => {
 
   await page.waitForTimeout(2000)
   await responsePromise
-  const messageTexts = await page.locator('.ant-message-notice').allTextContents()
+  const messageTexts = await page
+    .locator('.ant-message-notice')
+    .allTextContents()
   const rowTexts = await purchaseInboundRow.locator('td').allTextContents()
   const spinValues = await purchaseInboundRow
     .locator('input[role="spinbutton"]')

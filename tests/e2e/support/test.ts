@@ -32,9 +32,11 @@ export const test = base.extend<FatalErrorFixture>({
       }
     })
 
-    await applyFixture(async () => {
-      expect(fatalErrors, fatalErrors.join('\n')).toEqual([])
-    })
+    await applyFixture(() =>
+      Promise.resolve().then(() => {
+        expect(fatalErrors, fatalErrors.join('\n')).toEqual([])
+      }),
+    )
   },
 })
 

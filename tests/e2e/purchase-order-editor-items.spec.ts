@@ -1,9 +1,10 @@
+import type { Page } from '@playwright/test'
 import { expect, test } from './support/test'
 
 const API_BASE_URL = 'http://127.0.0.1:11211/api'
 const APP_BASE_URL = 'http://127.0.0.1:3100'
 
-async function loginAsTest9(page: Parameters<typeof test>[0]['page']) {
+async function loginAsTest9(page: Page) {
   const response = await page.request.post(`${API_BASE_URL}/auth/login`, {
     data: {
       loginName: 'test9',
@@ -27,7 +28,15 @@ async function loginAsTest9(page: Parameters<typeof test>[0]['page']) {
   const expiresIn = Number(payload.data?.expiresIn || 1800)
 
   await page.addInitScript(
-    ({ token, currentUser, ttl }) => {
+    ({
+      token,
+      currentUser,
+      ttl,
+    }: {
+      token: string
+      currentUser: unknown
+      ttl: number
+    }) => {
       const expiresAt = String(Date.now() + ttl * 1000)
       localStorage.setItem('aries-token', token)
       localStorage.setItem('aries-token-expires-at', expiresAt)
@@ -41,10 +50,14 @@ async function loginAsTest9(page: Parameters<typeof test>[0]['page']) {
     },
   )
 
-  await page.goto(`${APP_BASE_URL}/purchase-order`, { waitUntil: 'networkidle' })
+  await page.goto(`${APP_BASE_URL}/purchase-order`, {
+    waitUntil: 'networkidle',
+  })
 }
 
-test('purchase order editor loads detail items from detail api', async ({ page }) => {
+test('purchase order editor loads detail items from detail api', async ({
+  page,
+}) => {
   test.setTimeout(60_000)
   await loginAsTest9(page)
 
@@ -62,8 +75,12 @@ test('purchase order editor loads detail items from detail api', async ({ page }
   await expect(overlay).toBeVisible()
 
   await expect(
-    overlay.locator('.module-detail-table tbody tr:not(.ant-table-measure-row)'),
+    overlay.locator(
+      '.module-detail-table tbody tr:not(.ant-table-measure-row)',
+    ),
   ).toHaveCount(1)
-  await expect(overlay.locator('input[value="HZ-YG-PL8"]').first()).toBeVisible()
+  await expect(
+    overlay.locator('input[value="HZ-YG-PL8"]').first(),
+  ).toBeVisible()
   await expect(overlay.locator('.module-detail-table')).toContainText('永钢')
 })

@@ -63,7 +63,9 @@ async function loginAsTest9(page: Page) {
 }
 
 async function getCurrentAccessToken(page: Page) {
-  const token = await page.evaluate(() => localStorage.getItem('aries-token') || '')
+  const token = await page.evaluate(
+    () => localStorage.getItem('aries-token') || '',
+  )
   expect(token).toBeTruthy()
   return token
 }
@@ -113,7 +115,11 @@ async function setSpinbuttonValue(target: Locator, value: string) {
   await target.blur()
 }
 
-async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: string) {
+async function waitForSaveOutcome(
+  page: Page,
+  overlay: Locator,
+  expectedNo?: string,
+) {
   const rowInList = expectedNo
     ? page
         .locator('tbody tr:not(.ant-table-measure-row)')
@@ -129,7 +135,10 @@ async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: str
   await expect
     .poll(
       async () => {
-        if ((await errorMessage.count()) > 0 && (await errorMessage.isVisible())) {
+        if (
+          (await errorMessage.count()) > 0 &&
+          (await errorMessage.isVisible())
+        ) {
           const text = (await errorMessage.textContent())?.trim()
           return text ? `error:${text}` : 'error'
         }
@@ -141,7 +150,12 @@ async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: str
           }
         }
         if ((await successMessage.count()) > 0) return 'message'
-        if (rowInList && (await rowInList.count()) > 0 && (await rowInList.isVisible())) return 'row'
+        if (
+          rowInList &&
+          (await rowInList.count()) > 0 &&
+          (await rowInList.isVisible())
+        )
+          return 'row'
         if (!(await overlay.isVisible().catch(() => false))) return 'closed'
         return 'pending'
       },
@@ -158,7 +172,11 @@ async function saveOverlay(page: Page, overlay: Locator, expectedNo?: string) {
   await waitForSaveOutcome(page, overlay, expectedNo)
 }
 
-async function saveAndAuditOverlay(page: Page, overlay: Locator, expectedNo?: string) {
+async function saveAndAuditOverlay(
+  page: Page,
+  overlay: Locator,
+  expectedNo?: string,
+) {
   await overlay
     .locator('button.overlay-action-button')
     .filter({ hasText: /^保存并审核$/ })
@@ -245,7 +263,10 @@ async function createSalesOutboundChain(page: Page, suffix: string) {
   await page.goto('/sales-outbound')
   const salesOutboundOverlay = await openCreateOverlay(page)
   await salesOutboundOverlay.locator('#outboundNo').fill(salesOutboundNo)
-  await fillDateInput(salesOutboundOverlay.locator('#outboundDate'), deliveryDate)
+  await fillDateInput(
+    salesOutboundOverlay.locator('#outboundDate'),
+    deliveryDate,
+  )
   await importParentByKeyword(
     page,
     salesOutboundOverlay,
@@ -305,10 +326,7 @@ test('creates freight statement and freight payment from sales outbound flow', a
   await page.goto('/freight-bill')
   const freightBillOverlay = await openCreateOverlay(page)
   await freightBillOverlay.locator('#billNo').fill(billNo)
-  await selectAntOption(
-    freightBillOverlay.locator('#carrierName'),
-    carrierName,
-  )
+  await selectAntOption(freightBillOverlay.locator('#carrierName'), carrierName)
   await selectAntOption(
     freightBillOverlay.locator('#vehiclePlate'),
     vehiclePlate,
@@ -381,9 +399,11 @@ test('creates freight statement and freight payment from sales outbound flow', a
       }>
     }
     expect(json.code).toBe(0)
-    return (json.data || [])
-      .filter((item) => String(item.statementNo || item.id || '').length > 0)
-      .sort(compareRecordIds)[0] || null
+    return (
+      (json.data || [])
+        .filter((item) => String(item.statementNo || item.id || '').length > 0)
+        .sort(compareRecordIds)[0] || null
+    )
   }
 
   await expect
@@ -443,33 +463,45 @@ test('creates freight statement and freight payment from sales outbound flow', a
       businessType?: string
       sourceStatementId?: string | number | null
       amount?: number
-      items?: Array<{ allocatedAmount?: number; sourceStatementId?: string | number }>
+      items?: Array<{
+        allocatedAmount?: number
+        sourceStatementId?: string | number
+      }>
     }
   }
   expect(paymentDetailJson.code).toBe(0)
   expect(String(paymentDetailJson.data?.paymentNo || '')).toBe(paymentNo)
   expect(String(paymentDetailJson.data?.status || '')).toBe('已付款')
   expect(String(paymentDetailJson.data?.businessType || '')).toBe('物流商')
-  expect(String(paymentDetailJson.data?.sourceStatementId || '')).toBe(statementId)
+  expect(String(paymentDetailJson.data?.sourceStatementId || '')).toBe(
+    statementId,
+  )
   expect(Number(paymentDetailJson.data?.amount || 0)).toBeGreaterThan(0)
-  expect(Number(paymentDetailJson.data?.items?.[0]?.allocatedAmount || 0)).toBeGreaterThan(0)
+  expect(
+    Number(paymentDetailJson.data?.items?.[0]?.allocatedAmount || 0),
+  ).toBeGreaterThan(0)
 
   const refreshedStatementDetailRes = await page.request.get(
     `${API_BASE_URL}/freight-statement/${statementId}`,
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
-  const refreshedStatementDetailJson = (await refreshedStatementDetailRes.json()) as {
-    code: number
-    data?: {
-      paidAmount?: number
-      unpaidAmount?: number
-      totalFreight?: number
+  const refreshedStatementDetailJson =
+    (await refreshedStatementDetailRes.json()) as {
+      code: number
+      data?: {
+        paidAmount?: number
+        unpaidAmount?: number
+        totalFreight?: number
+      }
     }
-  }
   expect(refreshedStatementDetailJson.code).toBe(0)
-  expect(Number(refreshedStatementDetailJson.data?.paidAmount || 0)).toBeGreaterThan(0)
+  expect(
+    Number(refreshedStatementDetailJson.data?.paidAmount || 0),
+  ).toBeGreaterThan(0)
   expect(Number(refreshedStatementDetailJson.data?.unpaidAmount || 0)).toBe(0)
-  expect(Number(refreshedStatementDetailJson.data?.totalFreight || 0)).toBeGreaterThan(0)
+  expect(
+    Number(refreshedStatementDetailJson.data?.totalFreight || 0),
+  ).toBeGreaterThan(0)
 
   await assertNoFatalUiErrors()
 })

@@ -23,10 +23,7 @@ test.describe('global search coverage', () => {
     const firstRecord = collection.records[0]
     const searchTerm = String(firstRecord.orderNo || '').trim()
 
-    await expect(
-      searchTerm,
-      'purchase-order 缺少可用于全局搜索的文本',
-    ).toBeTruthy()
+    expect(searchTerm, 'purchase-order 缺少可用于全局搜索的文本').toBeTruthy()
 
     const searchBox = page.getByRole('combobox', {
       name: '搜索单号、合同号、对账单号',

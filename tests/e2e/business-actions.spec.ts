@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import {
   fetchCollection,
   pickSearchTerm,
@@ -69,10 +70,7 @@ const businessActionRoutes: BusinessActionRoute[] = [
   },
 ]
 
-async function expectBusinessPageLoaded(
-  page: Parameters<typeof test>[0]['page'],
-  title: string,
-) {
+async function expectBusinessPageLoaded(page: Page, title: string) {
   const activeTab = page.getByRole('tab', {
     selected: true,
     name: title,
@@ -85,16 +83,13 @@ async function expectBusinessPageLoaded(
   await expect(page.getByPlaceholder('搜索关键词...')).toBeVisible()
 }
 
-async function closeWorkspaceOverlay(page: Parameters<typeof test>[0]['page']) {
+async function closeWorkspaceOverlay(page: Page) {
   const overlay = page.locator('.workspace-overlay-panel').last()
   await overlay.locator('.workspace-overlay-close').click()
   await expect(page.locator('.workspace-overlay-panel')).toHaveCount(0)
 }
 
-async function openEditor(
-  page: Parameters<typeof test>[0]['page'],
-  title: string,
-) {
+async function openEditor(page: Page, title: string) {
   const createButton = page.getByRole('button', { name: '新建' })
   await expect(createButton).toBeVisible()
   await createButton.click()
@@ -107,11 +102,11 @@ async function openEditor(
   return overlay
 }
 
-function queryButton(page: Parameters<typeof test>[0]['page']) {
+function queryButton(page: Page) {
   return page.getByRole('button', { name: /查\s*询/ })
 }
 
-function resetButton(page: Parameters<typeof test>[0]['page']) {
+function resetButton(page: Page) {
   return page.getByRole('button', { name: /重\s*置/ })
 }
 

@@ -192,7 +192,6 @@ export const businessRoutes: BusinessRouteManifest[] = [
   },
 ]
 
-
 export const systemRoutes: SystemRouteManifest[] = [
   { path: '/general-setting', title: '通用设置', marker: '系统开关' },
   { path: '/company-setting', title: '公司信息', marker: '公司名称' },
