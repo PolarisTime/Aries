@@ -45,13 +45,16 @@ export interface AttachmentBindingRecord {
 }
 
 export interface LeoPageData<T> {
-  records: T[]
-  page: number
-  size: number
+  content?: T[]
+  records?: T[]
+  currentPage?: number
+  page?: number
+  pageSize?: number
+  size?: number
   totalElements: number
   totalPages: number
-  first: boolean
-  last: boolean
+  first?: boolean
+  last?: boolean
 }
 
 export type { NumberRuleGenerateRecord }

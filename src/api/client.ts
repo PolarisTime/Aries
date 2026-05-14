@@ -3,6 +3,8 @@ export { type ApiClient, authHttp, http } from './http'
 export { isHandledRequestError } from './request-errors'
 
 import { ERROR_CODE } from '@/constants/error-codes'
+import type { SearchParams } from '@/types/api-raw'
+import { getApiMessage } from '@/utils/api-messages'
 import { setupAuthInterceptors } from './auth/auth-interceptor'
 import { http } from './http'
 
@@ -23,10 +25,10 @@ export function isSuccessCode(code: unknown) {
 
 export function assertApiSuccess<T extends { code?: number; message?: string }>(
   response: T,
-  fallbackMessage = '请求失败',
+  fallbackMessage?: string,
 ) {
   if (!isSuccessCode(response?.code)) {
-    throw new Error(response?.message || fallbackMessage)
+    throw new Error(response?.message || fallbackMessage || getApiMessage('requestFailed'))
   }
 
   return response
@@ -34,28 +36,28 @@ export function assertApiSuccess<T extends { code?: number; message?: string }>(
 
 export function restGet<T>(
   url: string,
-  params?: Record<string, unknown>,
+  params?: SearchParams,
 ): Promise<T> {
   return http.get<T>(url, { params })
 }
 
 export function restPost<T>(
   url: string,
-  data?: Record<string, unknown>,
+  data?: SearchParams,
 ): Promise<T> {
   return http.post<T>(url, data)
 }
 
 export function restPut<T>(
   url: string,
-  data?: Record<string, unknown>,
+  data?: SearchParams,
 ): Promise<T> {
   return http.put<T>(url, data)
 }
 
 export function restDelete<T>(
   url: string,
-  params?: Record<string, unknown>,
+  params?: SearchParams,
 ): Promise<T> {
   return http.delete<T>(url, { params })
 }

@@ -5,10 +5,16 @@
  *   const result = await typedPost('/purchase-order', payload, purchaseOrderItemSchema)
  *   // result 类型为 PurchaseOrderItem（由 z.infer 推导），且已通过运行时 Zod 校验
  */
-import { z } from 'zod'
-import { http } from './http'
+import type { z } from 'zod'
+import {
+  type ApiResponse,
+  type PagedResult,
+  pagedResultSchema,
+} from '@/shared/schemas'
+import type { SearchParams } from '@/types/api-raw'
+import { getApiMessage } from '@/utils/api-messages'
 import { assertApiSuccess } from './client'
-import { pagedResultSchema, type ApiResponse, type PagedResult } from '@/shared/schemas'
+import { http } from './http'
 
 // ── POST ────────────────────────────────────────────────
 
@@ -23,7 +29,7 @@ export async function typedPost<T extends z.ZodTypeAny>(
   const parsed = responseSchema.safeParse(response.data)
   if (!parsed.success) {
     console.error('[typedPost] Schema mismatch', url, parsed.error.issues)
-    throw new Error(`响应数据校验失败: ${url}`)
+    throw new Error(`${getApiMessage('responseValidationFailed')}: ${url}`)
   }
   return parsed.data
 }
@@ -41,17 +47,17 @@ export async function typedPut<T extends z.ZodTypeAny>(
   const parsed = responseSchema.safeParse(response.data)
   if (!parsed.success) {
     console.error('[typedPut] Schema mismatch', url, parsed.error.issues)
-    throw new Error(`响应数据校验失败: ${url}`)
+    throw new Error(`${getApiMessage('responseValidationFailed')}: ${url}`)
   }
   return parsed.data
 }
 
 // ── GET ─────────────────────────────────────────────────
 
-/** params 允许 Record<string, unknown> — 网络边界原始数据，Schema 校验在响应侧 */
+/** params 使用 SearchParams 类型 — 网络边界原始数据，Schema 校验在响应侧 */
 export async function typedGet<T extends z.ZodTypeAny>(
   url: string,
-  params: Record<string, unknown> | undefined,
+  params: SearchParams | undefined,
   responseSchema: T,
 ): Promise<z.infer<T>> {
   const response = assertApiSuccess(
@@ -60,7 +66,7 @@ export async function typedGet<T extends z.ZodTypeAny>(
   const parsed = responseSchema.safeParse(response.data)
   if (!parsed.success) {
     console.error('[typedGet] Schema mismatch', url, parsed.error.issues)
-    throw new Error(`响应数据校验失败: ${url}`)
+    throw new Error(`${getApiMessage('responseValidationFailed')}: ${url}`)
   }
   return parsed.data
 }
@@ -69,7 +75,7 @@ export async function typedGet<T extends z.ZodTypeAny>(
 
 export async function typedDelete<T extends z.ZodTypeAny>(
   url: string,
-  params: Record<string, unknown> | undefined,
+  params: SearchParams | undefined,
   responseSchema: T,
 ): Promise<z.infer<T>> {
   const response = assertApiSuccess(
@@ -78,7 +84,7 @@ export async function typedDelete<T extends z.ZodTypeAny>(
   const parsed = responseSchema.safeParse(response.data)
   if (!parsed.success) {
     console.error('[typedDelete] Schema mismatch', url, parsed.error.issues)
-    throw new Error(`响应数据校验失败: ${url}`)
+    throw new Error(`${getApiMessage('responseValidationFailed')}: ${url}`)
   }
   return parsed.data
 }
@@ -87,7 +93,7 @@ export async function typedDelete<T extends z.ZodTypeAny>(
 
 export async function typedPage<T extends z.ZodTypeAny>(
   url: string,
-  params: Record<string, unknown> | undefined,
+  params: SearchParams | undefined,
   rowSchema: T,
 ): Promise<PagedResult<z.infer<T>>> {
   const schema = pagedResultSchema(rowSchema)
@@ -97,7 +103,7 @@ export async function typedPage<T extends z.ZodTypeAny>(
   const parsed = schema.safeParse(response.data)
   if (!parsed.success) {
     console.error('[typedPage] Schema mismatch', url, parsed.error.issues)
-    throw new Error(`分页数据校验失败: ${url}`)
+    throw new Error(`${getApiMessage('pageDataValidationFailed')}: ${url}`)
   }
   return parsed.data
 }

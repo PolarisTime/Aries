@@ -1,5 +1,7 @@
 import { assertApiSuccess, http } from '@/api/client'
+import { pageContent } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { getApiMessage } from '@/utils/api-messages'
 
 export interface RefreshTokenRecord {
   id: string
@@ -17,9 +19,12 @@ export interface RefreshTokenRecord {
   online: boolean
 }
 export interface RefreshTokenPageData {
-  records: RefreshTokenRecord[]
-  page: number
-  size: number
+  content?: RefreshTokenRecord[]
+  records?: RefreshTokenRecord[]
+  currentPage?: number
+  page?: number
+  pageSize?: number
+  size?: number
   totalElements: number
   totalPages: number
 }
@@ -45,16 +50,19 @@ export async function listRefreshTokens(params: {
       ENDPOINTS.REFRESH_TOKENS,
       { params },
     ),
-    '加载会话列表失败',
+    getApiMessage('loadSessionsFailed'),
   )
-  return response.data
+  return {
+    ...response.data,
+    records: pageContent(response.data),
+  }
 }
 export async function getRefreshTokenSummary() {
   const response = assertApiSuccess(
     await http.get<SessionResponse<RefreshTokenSummaryData>>(
       ENDPOINTS.REFRESH_TOKENS_SUMMARY,
     ),
-    '加载会话汇总失败',
+    getApiMessage('loadSessionSummaryFailed'),
   )
   return response.data
 }
@@ -63,7 +71,7 @@ export async function revokeRefreshToken(id: string) {
     await http.post<SessionResponse<null>>(
       `${ENDPOINTS.REFRESH_TOKENS}/${id}/revoke`,
     ),
-    '禁用会话失败',
+    getApiMessage('disableSessionFailed'),
   )
 }
 export async function revokeAllRefreshTokens() {
@@ -71,6 +79,6 @@ export async function revokeAllRefreshTokens() {
     await http.post<SessionResponse<null>>(
       `${ENDPOINTS.REFRESH_TOKENS}/revoke-all`,
     ),
-    '清除全部会话失败',
+    getApiMessage('clearAllSessionsFailed'),
   )
 }

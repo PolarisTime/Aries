@@ -4,6 +4,7 @@ import { assertApiSuccess, http, restDelete } from '@/api/client'
 import { getModuleConfig } from '@/api/module-contracts'
 import { serializeBusinessRecordForSave } from '@/api/module-save-payload'
 import type { ApiResponse } from '@/types/api'
+import type { RawApiRecord } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 
 export async function generateBusinessPrimaryNo(moduleKey: string) {
@@ -50,7 +51,7 @@ export async function getBusinessModuleDetail(moduleKey: string, id: string) {
   }
 
   const response = assertApiSuccess(
-    await http.get<ApiResponse<Record<string, unknown>>>(
+    await http.get<ApiResponse<RawApiRecord>>(
       `${endpointConfig.path}/${encodeURIComponent(id)}`,
     ),
   )
@@ -79,11 +80,11 @@ export async function saveBusinessModule(
   const hasId = Boolean(record.id)
   const response = assertApiSuccess(
     hasId
-      ? await http.put<ApiResponse<Record<string, unknown>>>(
+      ? await http.put<ApiResponse<RawApiRecord>>(
           `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`,
           payload,
         )
-      : await http.post<ApiResponse<Record<string, unknown>>>(
+      : await http.post<ApiResponse<RawApiRecord>>(
           endpointConfig.path,
           payload,
           preallocatedId

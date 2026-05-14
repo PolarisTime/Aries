@@ -5,7 +5,7 @@ export const financeModuleEndpointContracts: Record<
   ModuleEndpointConfig
 > = {
   'supplier-statement': {
-    path: '/supplier-statement',
+    path: '/supplier-statements',
     nativeFilterKeys: ['keyword', 'supplierName', 'status'],
     dateRangeMapping: {
       endDate: {
@@ -15,7 +15,7 @@ export const financeModuleEndpointContracts: Record<
     },
   },
   'customer-statement': {
-    path: '/customer-statement',
+    path: '/customer-statements',
     nativeFilterKeys: ['keyword', 'customerName', 'status'],
     dateRangeMapping: {
       endDate: {
@@ -25,7 +25,7 @@ export const financeModuleEndpointContracts: Record<
     },
   },
   'freight-statement': {
-    path: '/freight-statement',
+    path: '/freight-statements',
     nativeFilterKeys: ['keyword', 'carrierName', 'status', 'signStatus'],
     dateRangeMapping: {
       endDate: {
@@ -35,7 +35,7 @@ export const financeModuleEndpointContracts: Record<
     },
   },
   receipt: {
-    path: '/receipt',
+    path: '/receipts',
     nativeFilterKeys: [
       'keyword',
       'customerName',
@@ -51,7 +51,7 @@ export const financeModuleEndpointContracts: Record<
     },
   },
   payment: {
-    path: '/payment',
+    path: '/payments',
     nativeFilterKeys: [
       'keyword',
       'businessType',
@@ -67,7 +67,7 @@ export const financeModuleEndpointContracts: Record<
     },
   },
   'invoice-receipt': {
-    path: '/invoice-receipt',
+    path: '/invoice-receipts',
     nativeFilterKeys: [
       'keyword',
       'supplierName',
@@ -83,7 +83,7 @@ export const financeModuleEndpointContracts: Record<
     },
   },
   'invoice-issue': {
-    path: '/invoice-issue',
+    path: '/invoice-issues',
     nativeFilterKeys: [
       'keyword',
       'customerName',
@@ -99,7 +99,7 @@ export const financeModuleEndpointContracts: Record<
     },
   },
   'receivable-payable': {
-    path: '/receivable-payable',
+    path: '/receivable-payables',
     readOnly: true,
     sortDirectionParam: 'sortDirection',
     nativeFilterKeys: ['keyword', 'direction', 'counterpartyType', 'status'],

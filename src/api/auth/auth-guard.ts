@@ -1,8 +1,8 @@
-import type { RetryableRequestConfig } from './types'
 import axios from 'axios'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { HTTP_STATUS } from '@/constants/http-status'
 import { requestHadAuthorization, requestUsesApiKey } from './header-utils'
+import type { RetryableRequestConfig } from './types'
 
 export function isAnonymousForbidden(
   error: unknown,

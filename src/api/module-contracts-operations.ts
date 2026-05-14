@@ -5,7 +5,7 @@ export const operationModuleEndpointContracts: Record<
   ModuleEndpointConfig
 > = {
   'purchase-order': {
-    path: '/purchase-order',
+    path: '/purchase-orders',
     nativeFilterKeys: [
       'keyword',
       'supplierName',
@@ -21,7 +21,7 @@ export const operationModuleEndpointContracts: Record<
     },
   },
   'purchase-inbound': {
-    path: '/purchase-inbound',
+    path: '/purchase-inbounds',
     nativeFilterKeys: [
       'keyword',
       'supplierName',
@@ -37,7 +37,7 @@ export const operationModuleEndpointContracts: Record<
     },
   },
   'sales-order': {
-    path: '/sales-order',
+    path: '/sales-orders',
     nativeFilterKeys: [
       'keyword',
       'customerName',
@@ -54,7 +54,7 @@ export const operationModuleEndpointContracts: Record<
     },
   },
   'sales-outbound': {
-    path: '/sales-outbound',
+    path: '/sales-outbounds',
     nativeFilterKeys: [
       'keyword',
       'customerName',
@@ -71,7 +71,7 @@ export const operationModuleEndpointContracts: Record<
     },
   },
   'freight-bill': {
-    path: '/freight-bill',
+    path: '/freight-bills',
     nativeFilterKeys: [
       'keyword',
       'carrierName',
@@ -87,7 +87,7 @@ export const operationModuleEndpointContracts: Record<
     },
   },
   'purchase-contract': {
-    path: '/purchase-contract',
+    path: '/purchase-contracts',
     nativeFilterKeys: [
       'keyword',
       'supplierName',
@@ -103,7 +103,7 @@ export const operationModuleEndpointContracts: Record<
     },
   },
   'sales-contract': {
-    path: '/sales-contract',
+    path: '/sales-contracts',
     nativeFilterKeys: [
       'keyword',
       'customerName',

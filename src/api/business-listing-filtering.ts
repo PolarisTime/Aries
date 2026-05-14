@@ -4,6 +4,7 @@ import {
   type ModuleEndpointConfig,
 } from '@/api/module-contracts'
 import { getModulePageSchema } from '@/config/module-page-schema'
+import type { SearchParams } from '@/types/api-raw'
 import type { ModuleFilterDefinition, ModuleRecord } from '@/types/module-page'
 import type { ListQueryOptions } from '@/utils/list'
 import { asString, safe } from '@/utils/type-narrowing'
@@ -34,7 +35,7 @@ export function isServerFilterKey(
 
 export function shouldClientFilter(
   moduleKey: string,
-  search: Record<string, unknown>,
+  search: SearchParams,
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
   const keys = Object.keys(search).filter((key) => hasValue(search[key]))
@@ -43,7 +44,7 @@ export function shouldClientFilter(
 
 export function buildFilterParams(
   moduleKey: string,
-  search: Record<string, unknown>,
+  search: SearchParams,
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
   const params: Record<string, QueryValue> = {}
@@ -70,7 +71,7 @@ export function buildFilterParams(
 
 export function getUnsupportedFilterKeys(
   moduleKey: string,
-  search: Record<string, unknown>,
+  search: SearchParams,
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
   return Object.keys(search).filter(
@@ -80,7 +81,7 @@ export function getUnsupportedFilterKeys(
 
 export function buildQueryParams(
   moduleKey: string,
-  search: Record<string, unknown>,
+  search: SearchParams,
   options: ListQueryOptions,
   useClientFilter: boolean,
 ) {
@@ -125,7 +126,8 @@ function applyFilterDefinition(
         rec.str(key).toLowerCase().includes(keyword),
       )
       if (matchedRecordField) return true
-      if (!lineItemSearchKeys.length || !Array.isArray(record.items)) return false
+      if (!lineItemSearchKeys.length || !Array.isArray(record.items))
+        return false
 
       return record.items.some((item) => {
         const it = safe(item)
@@ -144,7 +146,11 @@ function applyFilterDefinition(
     return safe(record).str(filter.key) === asString(rawValue)
   }
 
-  if (filter.type === 'dateRange' && Array.isArray(rawValue) && rawValue.length === 2) {
+  if (
+    filter.type === 'dateRange' &&
+    Array.isArray(rawValue) &&
+    rawValue.length === 2
+  ) {
     const [start, end] = rawValue
     const current = safe(record).str(filter.key)
     if (!current || !start || !end) return true
@@ -157,7 +163,7 @@ function applyFilterDefinition(
 export function applyClientFilters(
   moduleKey: string,
   rows: ModuleRecord[],
-  search: Record<string, unknown>,
+  search: SearchParams,
 ) {
   const filters = getModulePageSchema(moduleKey)?.filters
   if (!filters?.length) {

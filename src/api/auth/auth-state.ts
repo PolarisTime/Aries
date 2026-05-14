@@ -6,6 +6,7 @@ import { ERROR_CODE } from '@/constants/error-codes'
 import type { ApiResponse } from '@/types/api'
 import type { LoginResponseData } from '@/types/auth'
 import { message, notification } from '@/utils/antd-app'
+import { getApiMessage } from '@/utils/api-messages'
 import { isApiKeyToken } from '@/utils/auth-token'
 import { getCurrentAppRoute } from '@/utils/route-helpers'
 import {
@@ -159,8 +160,8 @@ export function checkRefreshTokenExpiry() {
 
   if (remaining > 0 && remaining <= ONE_DAY_MS) {
     notification.warning({
-      message: '登录即将过期',
-      description: '您的登录状态将在明天过期，请及时保存工作并重新登录',
+      message: getApiMessage('loginExpiring'),
+      description: getApiMessage('loginExpiringDescription'),
       duration: 0,
     })
     localStorage.setItem(REFRESH_WARNED_KEY, '1')
@@ -177,11 +178,11 @@ export async function refreshAccessToken() {
   const payload = response.data
 
   if (payload.code !== ERROR_CODE.SUCCESS) {
-    throw new Error(payload.message || '刷新登录状态失败')
+    throw new Error(payload.message || getApiMessage('refreshLoginStatusFailed'))
   }
 
   if (!payload.data?.accessToken || !payload.data?.user) {
-    throw new Error(payload.message || '登录状态已失效，请重新登录')
+    throw new Error(payload.message || getApiMessage('loginStatusExpired'))
   }
 
   applyTokenResponse(payload.data)

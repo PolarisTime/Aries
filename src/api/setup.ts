@@ -9,13 +9,14 @@ import type {
   InitialSetupTotpPayload,
   InitialSetupTotpResult,
 } from '@/types/setup'
+import { getApiMessage } from '@/utils/api-messages'
 import { assertApiSuccess, http } from './client'
 
 export async function getInitialSetupStatus() {
   const response = await http.get<ApiResponse<InitialSetupStatus>>(
     ENDPOINTS.SETUP_STATUS,
   )
-  return assertApiSuccess(response, '获取初始化状态失败')
+  return assertApiSuccess(response, getApiMessage('getInitStatusFailed'))
 }
 
 export async function submitInitialSetup(payload: InitialSetupPayload) {
@@ -23,7 +24,7 @@ export async function submitInitialSetup(payload: InitialSetupPayload) {
     ENDPOINTS.SETUP_INITIALIZE,
     payload,
   )
-  return assertApiSuccess(response, '首次初始化失败')
+  return assertApiSuccess(response, getApiMessage('firstInitFailed'))
 }
 
 export async function setupInitialAdmin2fa(payload: InitialSetupTotpPayload) {
@@ -31,7 +32,7 @@ export async function setupInitialAdmin2fa(payload: InitialSetupTotpPayload) {
     ENDPOINTS.SETUP_ADMIN_2FA,
     payload,
   )
-  return assertApiSuccess(response, '生成管理员 2FA 失败')
+  return assertApiSuccess(response, getApiMessage('generateAdmin2faFailed'))
 }
 
 export async function submitInitialAdmin(
@@ -41,7 +42,7 @@ export async function submitInitialAdmin(
     ENDPOINTS.SETUP_ADMIN,
     payload,
   )
-  return assertApiSuccess(response, '管理员账号初始化失败')
+  return assertApiSuccess(response, getApiMessage('adminAccountInitFailed'))
 }
 
 export async function submitInitialCompany(
@@ -51,5 +52,5 @@ export async function submitInitialCompany(
     ENDPOINTS.SETUP_COMPANY,
     payload,
   )
-  return assertApiSuccess(response, '公司主体初始化失败')
+  return assertApiSuccess(response, getApiMessage('companyInitFailed'))
 }

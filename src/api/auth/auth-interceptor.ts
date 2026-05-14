@@ -1,14 +1,14 @@
 import type { AxiosInstance } from 'axios'
 import axios from 'axios'
+import {
+  isCanceledRequestError,
+  markHandledRequestError,
+} from '@/api/request-errors'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { message } from '@/utils/antd-app'
 import { isApiKeyToken } from '@/utils/auth-token'
 import { getRequestPath, isExactAuthEndpoint } from '@/utils/route-helpers'
 import { getToken } from '@/utils/storage'
-import {
-  isCanceledRequestError,
-  markHandledRequestError,
-} from '@/api/request-errors'
 import { shouldClearAuthState, shouldTriggerRefresh } from './auth-guard'
 import {
   getRefreshPromise,

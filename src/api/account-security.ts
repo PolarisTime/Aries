@@ -2,6 +2,7 @@ import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
 import type { TotpSetupResponse } from '@/types/auth'
+import { getApiMessage } from '@/utils/api-messages'
 
 export interface ChangeOwnPasswordPayload {
   currentPassword: string
@@ -17,7 +18,9 @@ export interface CurrentUserSecurityState {
   forbidDisable2fa?: boolean
 }
 
-function buildTotpHeaders(totpCode: string) {
+function buildTotpHeaders(totpCode: string): {
+  headers: { 'X-TOTP-Code': string }
+} {
   return {
     headers: {
       'X-TOTP-Code': totpCode.trim(),
@@ -25,41 +28,49 @@ function buildTotpHeaders(totpCode: string) {
   }
 }
 
-export async function changeOwnPassword(payload: ChangeOwnPasswordPayload) {
+export async function changeOwnPassword(
+  payload: ChangeOwnPasswordPayload,
+): Promise<ApiResponse<null>> {
   const response = await http.post<ApiResponse<null>>(
     ENDPOINTS.ACCOUNT_PASSWORD,
     payload,
   )
-  return assertApiSuccess(response, '修改密码失败')
+  return assertApiSuccess(response, getApiMessage('changePasswordFailed'))
 }
 
-export async function setupOwn2fa() {
+export async function setupOwn2fa(): Promise<ApiResponse<TotpSetupResponse>> {
   const response = await http.post<ApiResponse<TotpSetupResponse>>(
     ENDPOINTS.ACCOUNT_2FA_SETUP,
   )
-  return assertApiSuccess(response, '生成 2FA 二维码失败')
+  return assertApiSuccess(response, getApiMessage('generate2faQrCodeFailed'))
 }
 
-export async function enableOwn2fa(totpCode: string) {
+export async function enableOwn2fa(
+  totpCode: string,
+): Promise<ApiResponse<CurrentUserSecurityState>> {
   const response = await http.post<ApiResponse<CurrentUserSecurityState>>(
     ENDPOINTS.ACCOUNT_2FA_ENABLE,
     { totpCode },
   )
-  return assertApiSuccess(response, '启用 2FA 失败')
+  return assertApiSuccess(response, getApiMessage('enable2faFailed'))
 }
 
-export async function disableOwn2fa(totpCode: string) {
+export async function disableOwn2fa(
+  totpCode: string,
+): Promise<ApiResponse<CurrentUserSecurityState>> {
   const response = await http.post<ApiResponse<CurrentUserSecurityState>>(
     ENDPOINTS.ACCOUNT_2FA_DISABLE,
     null,
     buildTotpHeaders(totpCode),
   )
-  return assertApiSuccess(response, '关闭 2FA 失败')
+  return assertApiSuccess(response, getApiMessage('disable2faFailed'))
 }
 
-export async function fetchAccountSecurityStatus() {
+export async function fetchAccountSecurityStatus(): Promise<
+  ApiResponse<CurrentUserSecurityState>
+> {
   const response = await http.get<ApiResponse<CurrentUserSecurityState>>(
     ENDPOINTS.ACCOUNT_SECURITY_STATUS,
   )
-  return assertApiSuccess(response, '加载安全状态失败')
+  return assertApiSuccess(response, getApiMessage('loadSecurityStatusFailed'))
 }

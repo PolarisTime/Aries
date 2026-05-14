@@ -1,39 +1,15 @@
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
-import { http } from './client'
+import { createCachedOptions } from '@/lib/create-cached-options'
 
-export interface WarehouseOption {
+export type WarehouseOption = {
   value: string
   label: string
 }
 
-let cachedWarehouses: WarehouseOption[] | null = null
-let fetchFailed = false
+const cached = createCachedOptions<WarehouseOption>({
+  endpoint: ENDPOINTS.WAREHOUSES_OPTIONS,
+})
 
-export async function fetchWarehouseOptions(): Promise<WarehouseOption[]> {
-  if (cachedWarehouses && cachedWarehouses.length > 0) return cachedWarehouses
-  try {
-    const response = await http.get<ApiResponse<WarehouseOption[]>>(
-      ENDPOINTS.WAREHOUSES_OPTIONS,
-    )
-    cachedWarehouses = response.data || []
-    fetchFailed = false
-    return cachedWarehouses
-  } catch {
-    fetchFailed = true
-    return []
-  }
-}
-
-export function getWarehouseOptions(): WarehouseOption[] {
-  if (cachedWarehouses === null && !fetchFailed) {
-    void fetchWarehouseOptions()
-  }
-  return cachedWarehouses || []
-}
-
-export function reloadWarehouseOptions() {
-  cachedWarehouses = null
-  fetchFailed = false
-  return fetchWarehouseOptions()
-}
+export const fetchWarehouseOptions = cached.fetch
+export const getWarehouseOptions = cached.get
+export const reloadWarehouseOptions = cached.reload

@@ -1,26 +1,27 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { getModuleConfig } from '@/api/module-contracts'
-import { asString, asId } from '@/utils/type-narrowing'
+import { pageContent, pageTotalElements } from '@/api/page-contract'
 import type { ApiResponse } from '@/types/api'
+import type { RawApiRecord, RawPagePayload } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
+import { getApiMessage } from '@/utils/api-messages'
+import { asId, asString } from '@/utils/type-narrowing'
 
-interface PagePayload<T> {
-  records: T[]
-  totalElements: number
-}
-
-function normalizeRecord(raw: Record<string, unknown>): ModuleRecord {
+function normalizeRecord(raw: RawApiRecord): ModuleRecord {
   const id = asId(raw.id) || asString(raw.id)
   const items = Array.isArray(raw.items)
-    ? raw.items.map((item) => {
-        const it = item as Record<string, unknown>
-        return { ...it, id: asId(it.id) || asString(it.id) }
-      })
+    ? raw.items.map((item) => ({
+        ...item,
+        id: asId(item.id) || asString(item.id),
+      }))
     : undefined
   return { ...raw, id, items }
 }
 
-type StatementModuleKey = 'supplier-statement' | 'customer-statement' | 'freight-statement'
+type StatementModuleKey =
+  | 'supplier-statement'
+  | 'customer-statement'
+  | 'freight-statement'
 
 export async function listStatementCandidates(
   statementModuleKey: StatementModuleKey,
@@ -30,17 +31,16 @@ export async function listStatementCandidates(
 ) {
   const endpointConfig = getModuleConfig(statementModuleKey)
   const response = assertApiSuccess(
-    await http.get<ApiResponse<PagePayload<Record<string, unknown>>>>(
+    await http.get<ApiResponse<RawPagePayload>>(
       `${endpointConfig.path}/candidates`,
       { params: { keyword: keyword.trim(), page, size } },
     ),
-    '查询对账候选单据失败',
+    getApiMessage('queryStatementCandidatesFailed'),
   )
+  const content = pageContent(response.data)
   return {
-    rows: Array.isArray(response.data?.records)
-      ? response.data.records.map(normalizeRecord)
-      : [],
-    total: Number(response.data?.totalElements ?? 0),
+    rows: content.map(normalizeRecord),
+    total: pageTotalElements(response.data),
   }
 }
 
@@ -53,7 +53,12 @@ export async function listAllStatementCandidates(
   let page = 0
   let total = 0
   while (true) {
-    const current = await listStatementCandidates(statementModuleKey, keyword, page, pageSize)
+    const current = await listStatementCandidates(
+      statementModuleKey,
+      keyword,
+      page,
+      pageSize,
+    )
     if (page === 0) total = current.total
     rows.push(...current.rows)
     if (rows.length >= total || current.rows.length < pageSize) break
