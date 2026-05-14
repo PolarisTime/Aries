@@ -1,7 +1,7 @@
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
-import type { ModuleRecord } from '@/types/module-page'
 import type { MaterialImportResult } from '@/types/material'
+import type { ModuleRecord } from '@/types/module-page'
 import { http } from './client'
 
 type MaterialSearchResponse = ModuleRecord & {

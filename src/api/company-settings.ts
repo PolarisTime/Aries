@@ -1,23 +1,61 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { asString, asNumber } from '@/utils/type-narrowing'
+import { getApiMessage } from '@/utils/api-messages'
+import { asNumber, asString } from '@/utils/type-narrowing'
 
 export interface CompanySettlementAccount {
   id?: string | number
-  accountName: string; bankName: string; bankAccount: string
-  usageType: string; status: string; remark?: string
+  accountName: string
+  bankName: string
+  bankAccount: string
+  usageType: string
+  status: string
+  remark?: string
 }
 
 export interface CompanySettingProfile {
-  id: string; companyName: string; taxNo: string
-  bankName?: string; bankAccount?: string; taxRate?: number
+  id: string
+  companyName: string
+  taxNo: string
+  bankName?: string
+  bankAccount?: string
+  taxRate?: number
   settlementAccounts: CompanySettlementAccount[]
-  status: string; remark?: string
+  status: string
+  remark?: string
 }
 
-interface CompanyResponse<T> { code: number; message?: string; data: T }
+interface CompanyResponse<T> {
+  code: number
+  message?: string
+  data: T
+}
 
-function normalizeProfile(raw: Record<string, unknown> | null | undefined): CompanySettingProfile | null {
+type RawSettlementAccount = {
+  id?: string | number
+  accountName?: string
+  bankName?: string
+  bankAccount?: string
+  usageType?: string
+  status?: string
+  remark?: string
+}
+
+type RawCompanyProfile = {
+  id?: string | number
+  companyName?: string
+  taxNo?: string
+  bankName?: string
+  bankAccount?: string
+  taxRate?: number
+  settlementAccounts?: RawSettlementAccount[]
+  status?: string
+  remark?: string
+}
+
+function normalizeProfile(
+  raw: RawCompanyProfile | null | undefined,
+): CompanySettingProfile | null {
   if (!raw) return null
   return {
     id: asString(raw.id),
@@ -26,20 +64,17 @@ function normalizeProfile(raw: Record<string, unknown> | null | undefined): Comp
     bankName: raw.bankName ? asString(raw.bankName) : undefined,
     bankAccount: raw.bankAccount ? asString(raw.bankAccount) : undefined,
     taxRate: raw.taxRate ? asNumber(raw.taxRate) : undefined,
-    settlementAccounts: (Array.isArray(raw.settlementAccounts)
-      ? raw.settlementAccounts.map((item) => {
-          const row = item as Record<string, unknown>
-          return {
-            id: row.id == null ? '' : asString(row.id),
-            accountName: asString(row.accountName),
-            bankName: asString(row.bankName),
-            bankAccount: asString(row.bankAccount),
-            usageType: asString(row.usageType) || '通用',
-            status: asString(row.status) || '正常',
-            remark: asString(row.remark),
-          }
-        })
-      : []),
+    settlementAccounts: Array.isArray(raw.settlementAccounts)
+      ? raw.settlementAccounts.map((item) => ({
+            id: item.id == null ? '' : asString(item.id),
+            accountName: asString(item.accountName),
+            bankName: asString(item.bankName),
+            bankAccount: asString(item.bankAccount),
+            usageType: asString(item.usageType) || '通用',
+            status: asString(item.status) || '正常',
+            remark: asString(item.remark),
+          }))
+      : [],
     status: asString(raw.status) || '正常',
     remark: asString(raw.remark),
   }
@@ -47,16 +82,23 @@ function normalizeProfile(raw: Record<string, unknown> | null | undefined): Comp
 
 export async function getCompanySettingProfile() {
   const r = assertApiSuccess(
-    await http.get<CompanyResponse<Record<string, unknown> | null>>(ENDPOINTS.COMPANY_SETTINGS_CURRENT),
-    '加载公司信息失败',
+    await http.get<CompanyResponse<RawCompanyProfile | null>>(
+      ENDPOINTS.COMPANY_SETTINGS_CURRENT,
+    ),
+    getApiMessage('loadCompanyInfoFailed'),
   )
   return normalizeProfile(r.data)
 }
 
-export async function saveCompanySettingProfile(payload: Omit<CompanySettingProfile, 'id'>) {
+export async function saveCompanySettingProfile(
+  payload: Omit<CompanySettingProfile, 'id'>,
+) {
   const r = assertApiSuccess(
-    await http.put<CompanyResponse<Record<string, unknown>>>(ENDPOINTS.COMPANY_SETTINGS_CURRENT, payload),
-    '保存公司信息失败',
+    await http.put<CompanyResponse<RawCompanyProfile>>(
+      ENDPOINTS.COMPANY_SETTINGS_CURRENT,
+      payload,
+    ),
+    getApiMessage('saveCompanyInfoFailed'),
   )
   return normalizeProfile(r.data)
 }

@@ -3,7 +3,14 @@ import { normalizeRows } from '@/api/business-normalizers'
 import type { LeoPageData } from '@/api/business-types'
 import { http } from '@/api/client'
 import { getModuleConfig, type QueryValue } from '@/api/module-contracts'
+import {
+  pageContent,
+  pageLast,
+  pageTotalElements,
+  pageTotalPages,
+} from '@/api/page-contract'
 import type { ApiResponse } from '@/types/api'
+import type { RawApiRecord, SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   FULL_SCAN_PAGE_SIZE,
@@ -22,7 +29,7 @@ export async function fetchModulePage(
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
   const response = await http.get<
-    ApiResponse<LeoPageData<Record<string, unknown>>>
+    ApiResponse<LeoPageData<RawApiRecord>>
   >(endpointConfig.path, {
     ...config,
     params: {
@@ -34,21 +41,21 @@ export async function fetchModulePage(
             [endpointConfig.fieldsParam || 'fields']: fields.join(','),
           }
         : {}),
-      ...(config?.params as Record<string, unknown> | undefined),
+      ...(config?.params as SearchParams | undefined),
     },
   })
 
   return {
-    rows: normalizeRows(response.data?.records),
-    totalElements: Number(response.data?.totalElements ?? 0),
-    totalPages: Math.max(Number(response.data?.totalPages ?? 1), 1),
-    last: Boolean(response.data?.last),
+    rows: normalizeRows(pageContent(response.data)),
+    totalElements: pageTotalElements(response.data),
+    totalPages: pageTotalPages(response.data),
+    last: pageLast(response.data),
   }
 }
 
 export async function fetchAllModuleRows(
   moduleKey: string,
-  search: Record<string, unknown>,
+  search: SearchParams,
   enforceLimit = false,
   config?: AxiosRequestConfig,
   fields?: string[],

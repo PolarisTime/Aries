@@ -5,15 +5,15 @@ export const systemModuleEndpointContracts: Record<
   ModuleEndpointConfig
 > = {
   'general-setting': {
-    path: '/general-setting',
+    path: '/general-settings',
     nativeFilterKeys: ['keyword', 'status'],
   },
   'company-setting': {
-    path: '/company-setting',
+    path: '/company-settings',
     nativeFilterKeys: ['keyword', 'status'],
   },
   'operation-log': {
-    path: '/operation-log',
+    path: '/operation-logs',
     readOnly: true,
     nativeFilterKeys: [
       'keyword',
@@ -31,17 +31,17 @@ export const systemModuleEndpointContracts: Record<
       },
     },
   },
-  'permission': {
-    path: '/permission',
+  permission: {
+    path: '/permissions',
     readOnly: true,
     nativeFilterKeys: ['keyword'],
   },
   department: {
-    path: '/department',
+    path: '/departments',
     nativeFilterKeys: ['keyword', 'status'],
   },
   departments: {
-    path: '/department',
+    path: '/departments',
     nativeFilterKeys: ['keyword', 'status'],
   },
 }

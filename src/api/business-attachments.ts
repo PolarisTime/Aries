@@ -5,6 +5,7 @@ import type {
 } from '@/api/business-types'
 import { http } from '@/api/client'
 import type { ApiResponse } from '@/types/api'
+import type { RawApiRecord } from '@/types/api-raw'
 
 export async function uploadAttachment(
   file: File,
@@ -16,7 +17,7 @@ export async function uploadAttachment(
   formData.append('moduleKey', moduleKey)
   formData.append('sourceType', sourceType)
 
-  return http.post<ApiResponse<Record<string, unknown>>>(
+  return http.post<ApiResponse<RawApiRecord>>(
     '/attachments/upload',
     formData,
     {

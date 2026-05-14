@@ -1,7 +1,11 @@
 import dayjs from 'dayjs'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { getModulePageSchema } from '@/config/module-page-schema'
-import type { ModuleLineItem, ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleLineItem,
+  ModulePageConfig,
+  ModuleRecord,
+} from '@/types/module-page'
 import { logger } from '@/utils/logger'
 import {
   getBehaviorValue,
@@ -19,7 +23,9 @@ const COMPUTED_FIELD_KEYS = new Set([
   'userCount',
 ])
 
-async function loadModuleConfig(moduleKey: string): Promise<ModulePageConfig | null> {
+async function loadModuleConfig(
+  moduleKey: string,
+): Promise<ModulePageConfig | null> {
   try {
     return await loadBusinessPageConfig(moduleKey)
   } catch {

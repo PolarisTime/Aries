@@ -1,35 +1,19 @@
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
-import { http } from './client'
+import { createCachedOptions } from '@/lib/create-cached-options'
 
-export interface MaterialCategoryOption {
+export type MaterialCategoryOption = {
   value: string
   label: string
   purchaseWeighRequired?: boolean
 }
 
-let cachedCategories: MaterialCategoryOption[] | null = null
+const cached = createCachedOptions<MaterialCategoryOption>({
+  endpoint: ENDPOINTS.MATERIAL_CATEGORIES,
+})
 
-export async function fetchMaterialCategories(): Promise<
-  MaterialCategoryOption[]
-> {
-  if (cachedCategories) return cachedCategories
-  try {
-    const response = await http.get<ApiResponse<MaterialCategoryOption[]>>(
-      ENDPOINTS.MATERIAL_CATEGORIES,
-    )
-    cachedCategories = response.data || []
-    return cachedCategories
-  } catch {
-    return []
-  }
-}
+export const fetchMaterialCategories = cached.fetch
+export const reloadMaterialCategories = cached.reload
 
 export function getCachedMaterialCategories(): MaterialCategoryOption[] {
-  return cachedCategories || []
-}
-
-export function reloadMaterialCategories() {
-  cachedCategories = null
-  return fetchMaterialCategories()
+  return cached.get()
 }

@@ -1,3 +1,4 @@
+import type { SearchParams } from '@/types/api-raw'
 import { logger } from '@/utils/logger'
 import { SOFT_WARN_ROW_THRESHOLD } from './business-listing-constants'
 import { getUnsupportedFilterKeys } from './business-listing-filtering'
@@ -11,7 +12,7 @@ export function resetReportedClientFilterSignatures() {
 
 export function reportClientFilterFallback(
   moduleKey: string,
-  search: Record<string, unknown>,
+  search: SearchParams,
 ) {
   const unsupportedKeys = getUnsupportedFilterKeys(moduleKey, search)
   if (unsupportedKeys.length === 0) {

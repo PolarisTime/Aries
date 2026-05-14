@@ -1,52 +1,10 @@
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
-import { http } from './client'
+import { createCachedOptions } from '@/lib/create-cached-options'
 
-export interface SupplierOption {
+export type SupplierOption = {
   id?: string
   value: string
   label: string
-}
-
-let cachedSuppliers: SupplierOption[] | null = null
-let fetchFailed = false
-let loadingSuppliers: Promise<SupplierOption[]> | null = null
-
-export async function fetchSupplierOptions(): Promise<SupplierOption[]> {
-  if (cachedSuppliers !== null) return cachedSuppliers
-  if (loadingSuppliers) return loadingSuppliers
-
-  loadingSuppliers = (async () => {
-    const response = await http.get<ApiResponse<SupplierOption[]>>(
-      ENDPOINTS.SUPPLIERS_OPTIONS,
-    )
-    cachedSuppliers = normalizeSupplierOptions(response.data || [])
-    fetchFailed = false
-    return cachedSuppliers
-  })()
-
-  try {
-    return await loadingSuppliers
-  } catch {
-    fetchFailed = true
-    return []
-  } finally {
-    loadingSuppliers = null
-  }
-}
-
-export function getSupplierOptions(): SupplierOption[] {
-  if (cachedSuppliers === null && !loadingSuppliers && !fetchFailed) {
-    void fetchSupplierOptions()
-  }
-  return cachedSuppliers || []
-}
-
-export function reloadSupplierOptions() {
-  cachedSuppliers = null
-  fetchFailed = false
-  loadingSuppliers = null
-  return fetchSupplierOptions()
 }
 
 function normalizeSupplierOptions(options: SupplierOption[]): SupplierOption[] {
@@ -57,3 +15,12 @@ function normalizeSupplierOptions(options: SupplierOption[]): SupplierOption[] {
     value: String(option.value || ''),
   }))
 }
+
+const cached = createCachedOptions<SupplierOption>({
+  endpoint: ENDPOINTS.SUPPLIERS_OPTIONS,
+  normalizer: normalizeSupplierOptions,
+})
+
+export const fetchSupplierOptions = cached.fetch
+export const getSupplierOptions = cached.get
+export const reloadSupplierOptions = cached.reload

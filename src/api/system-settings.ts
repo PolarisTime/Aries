@@ -1,4 +1,3 @@
-import { asString } from '@/utils/type-narrowing'
 import {
   listAllBusinessModuleRows,
   saveBusinessModule,
@@ -6,6 +5,7 @@ import {
 } from '@/api/business'
 import type { UploadRulePayload } from '@/api/business-types'
 import type { ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { isToggleSetting } from '@/views/system/general-settings-view-utils'
 
 const MODULE_KEY = 'general-setting'
@@ -35,13 +35,14 @@ export async function listDisplaySwitches() {
 }
 
 export async function listClientSettings() {
+  const { ENDPOINTS } = await import('@/constants/endpoints')
   const { assertApiSuccess, http } = await import('@/api/client')
   const response = assertApiSuccess(
     await http.get<{
       code?: number
       message?: string
       data?: ModuleRecord[]
-    }>('/general-setting/client-settings'),
+    }>(ENDPOINTS.GENERAL_SETTING_CLIENT_SETTINGS),
   )
   return Array.isArray(response.data) ? response.data : []
 }

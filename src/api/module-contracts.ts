@@ -4,6 +4,7 @@ import { masterModuleEndpointContracts } from '@/api/module-contracts-master'
 import { operationModuleEndpointContracts } from '@/api/module-contracts-operations'
 import { reportModuleEndpointContracts } from '@/api/module-contracts-reports'
 import { systemModuleEndpointContracts } from '@/api/module-contracts-system'
+import { getApiMessage } from '@/utils/api-messages'
 
 export type {
   ModuleEndpointConfig,
@@ -21,7 +22,7 @@ export const moduleEndpointContracts: Record<string, ModuleEndpointConfig> = {
 export function getModuleConfig(moduleKey: string) {
   const config = moduleEndpointContracts[moduleKey]
   if (!config) {
-    throw new Error(`未配置模块接口: ${moduleKey}`)
+    throw new Error(`${getApiMessage('moduleNotConfigured')}: ${moduleKey}`)
   }
   return config
 }
