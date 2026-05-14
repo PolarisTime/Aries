@@ -1,4 +1,4 @@
-import { expect, test } from './support/test'
+import type { Page } from '@playwright/test'
 import {
   API_BASE_URL,
   buildSuffix,
@@ -12,11 +12,9 @@ import {
   selectAntOption,
   waitForFirstDetailRow,
 } from './support/business-e2e'
+import { expect, test } from './support/test'
 
-async function createPurchaseOrder(
-  page: Parameters<typeof test>[0]['page'],
-  orderNo: string,
-) {
+async function createPurchaseOrder(page: Page, orderNo: string) {
   const orderDate = isoToday()
   await page.goto('/purchase-order')
   const overlay = await openCreateOverlay(page)
@@ -29,7 +27,10 @@ async function createPurchaseOrder(
   const row = await waitForFirstDetailRow(overlay)
   await row.locator('td').nth(3).locator('input').fill('HZ-YG-PL8')
   await page.waitForTimeout(1200)
-  await selectAntOption(row.locator('td').nth(10).locator('.ant-select'), '升华物流')
+  await selectAntOption(
+    row.locator('td').nth(10).locator('.ant-select'),
+    '升华物流',
+  )
   await row.locator('td').nth(12).locator('input').fill('10')
   await row.locator('td').nth(16).locator('input').fill('3200')
   await saveOverlay(page, overlay, orderNo)
@@ -85,7 +86,9 @@ test('pending invoice receipt report shrinks after invoice receipt is created', 
   const pendingBefore = await fetchPendingRows()
   const pendingBeforeRow = pendingBefore[0] || {}
   const pendingBeforeAmount = Number(pendingBeforeRow.pendingInvoiceAmount || 0)
-  const pendingBeforeWeight = Number(pendingBeforeRow.pendingInvoiceWeightTon || 0)
+  const pendingBeforeWeight = Number(
+    pendingBeforeRow.pendingInvoiceWeightTon || 0,
+  )
   expect(pendingBeforeAmount).toBeGreaterThan(0)
   expect(pendingBeforeWeight).toBeGreaterThan(0)
 
@@ -102,7 +105,12 @@ test('pending invoice receipt report shrinks after invoice receipt is created', 
   await selectAntOption(overlay.locator('#invoiceType'), '增值税专票')
   await selectAntOption(overlay.locator('#status'), '已收票')
   await overlay.locator('#operatorName').fill('test9')
-  await importParentByKeyword(page, overlay, '导入采购订单明细', purchaseOrderNo)
+  await importParentByKeyword(
+    page,
+    overlay,
+    '导入采购订单明细',
+    purchaseOrderNo,
+  )
   await saveOverlay(page, overlay, receiveNo)
 
   await expect

@@ -134,7 +134,9 @@ test('debug sales order imported row columns', async ({ page }) => {
     .filter({ hasText: /^保存$/ })
     .click()
   await expect(
-    page.locator('.ant-message-notice').filter({ hasText: /创建成功|更新成功|保存成功/ }),
+    page
+      .locator('.ant-message-notice')
+      .filter({ hasText: /创建成功|更新成功|保存成功/ }),
   ).toHaveCount(1)
 
   await page.goto('/sales-order')

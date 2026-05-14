@@ -1,4 +1,4 @@
-import { expect, test } from './support/test'
+import type { Page } from '@playwright/test'
 import {
   API_BASE_URL,
   buildSuffix,
@@ -9,14 +9,14 @@ import {
   isoToday,
   loginAsTest9,
   openCreateOverlay,
-  saveAndAuditOverlay,
   saveOverlay,
   selectAntOption,
   setSpinbuttonValue,
   waitForFirstDetailRow,
 } from './support/business-e2e'
+import { expect, test } from './support/test'
 
-async function createPurchaseOrder(page: Parameters<typeof test>[0]['page'], orderNo: string) {
+async function createPurchaseOrder(page: Page, orderNo: string) {
   const orderDate = isoToday()
   await page.goto('/purchase-order')
   const overlay = await openCreateOverlay(page)
@@ -29,7 +29,10 @@ async function createPurchaseOrder(page: Parameters<typeof test>[0]['page'], ord
   const row = await waitForFirstDetailRow(overlay)
   await row.locator('td').nth(3).locator('input').fill('HZ-YG-PL8')
   await page.waitForTimeout(1200)
-  await selectAntOption(row.locator('td').nth(10).locator('.ant-select'), '升华物流')
+  await selectAntOption(
+    row.locator('td').nth(10).locator('.ant-select'),
+    '升华物流',
+  )
   await row.locator('td').nth(12).locator('input').fill('10')
   await row.locator('td').nth(16).locator('input').fill('3200')
   await saveOverlay(page, overlay, orderNo)
@@ -37,7 +40,7 @@ async function createPurchaseOrder(page: Parameters<typeof test>[0]['page'], ord
 }
 
 async function createSalesOrder(
-  page: Parameters<typeof test>[0]['page'],
+  page: Page,
   orderNo: string,
   sourcePurchaseOrderNo: string,
 ) {
@@ -54,10 +57,18 @@ async function createSalesOrder(
     '恒力(大连)船厂有限公司-绿色高端装备制造项目6#曲面分段车间',
   )
   await fillDateInput(overlay.locator('#deliveryDate'), deliveryDate)
-  await importParentByKeyword(page, overlay, '导入采购订单明细', sourcePurchaseOrderNo)
+  await importParentByKeyword(
+    page,
+    overlay,
+    '导入采购订单明细',
+    sourcePurchaseOrderNo,
+  )
   const row = await waitForFirstDetailRow(overlay)
   await setSpinbuttonValue(row.locator('input[role="spinbutton"]').nth(0), '6')
-  await setSpinbuttonValue(row.locator('input[role="spinbutton"]').nth(1), '3600')
+  await setSpinbuttonValue(
+    row.locator('input[role="spinbutton"]').nth(1),
+    '3600',
+  )
   await saveOverlay(page, overlay, orderNo)
   return { deliveryDate }
 }
@@ -89,7 +100,12 @@ test('creates invoice receipt from imported purchase order items', async ({
   await selectAntOption(overlay.locator('#invoiceType'), '增值税专票')
   await selectAntOption(overlay.locator('#status'), '已收票')
   await overlay.locator('#operatorName').fill('test9')
-  await importParentByKeyword(page, overlay, '导入采购订单明细', purchaseOrderNo)
+  await importParentByKeyword(
+    page,
+    overlay,
+    '导入采购订单明细',
+    purchaseOrderNo,
+  )
 
   const detailRows = overlay.locator(
     '.module-detail-table tbody tr:not(.ant-table-measure-row)',
@@ -152,16 +168,24 @@ test('creates invoice receipt from imported purchase order items', async ({
   expect(detailJson.code).toBe(0)
   expect(String(detailJson.data?.receiveNo || '')).toBe(receiveNo)
   expect(String(detailJson.data?.invoiceNo || '')).toBe(invoiceNo)
-  expect(String(detailJson.data?.sourcePurchaseOrderNos || '')).toContain(purchaseOrderNo)
+  expect(String(detailJson.data?.sourcePurchaseOrderNos || '')).toContain(
+    purchaseOrderNo,
+  )
   expect(String(detailJson.data?.supplierName || '')).toBe(
     '益海（浙江）物联网科技有限公司',
   )
   expect(Number(detailJson.data?.amount || 0)).toBe(draftAmount)
   expect(String(detailJson.data?.status || '')).toBe('已收票')
   expect(detailJson.data?.items?.length || 0).toBeGreaterThan(0)
-  expect(String(detailJson.data?.items?.[0]?.sourceNo || '')).toBe(purchaseOrderNo)
-  expect(String(detailJson.data?.items?.[0]?.materialCode || '')).toBe('HZ-YG-PL8')
-  expect(String(detailJson.data?.items?.[0]?.sourcePurchaseOrderItemId || '')).toBeTruthy()
+  expect(String(detailJson.data?.items?.[0]?.sourceNo || '')).toBe(
+    purchaseOrderNo,
+  )
+  expect(String(detailJson.data?.items?.[0]?.materialCode || '')).toBe(
+    'HZ-YG-PL8',
+  )
+  expect(
+    String(detailJson.data?.items?.[0]?.sourcePurchaseOrderItemId || ''),
+  ).toBeTruthy()
   expect(Number(detailJson.data?.items?.[0]?.amount || 0)).toBeGreaterThan(0)
 
   await assertNoFatalUiErrors()
@@ -181,7 +205,11 @@ test('creates invoice issue from imported sales order items', async ({
   const invoiceNo = `INV-I-${suffix}`
 
   await createPurchaseOrder(page, purchaseOrderNo)
-  const { deliveryDate } = await createSalesOrder(page, salesOrderNo, purchaseOrderNo)
+  const { deliveryDate } = await createSalesOrder(
+    page,
+    salesOrderNo,
+    purchaseOrderNo,
+  )
 
   await page.goto('/invoice-issue')
   const overlay = await openCreateOverlay(page)
@@ -262,7 +290,9 @@ test('creates invoice issue from imported sales order items', async ({
   expect(detailJson.code).toBe(0)
   expect(String(detailJson.data?.issueNo || '')).toBe(issueNo)
   expect(String(detailJson.data?.invoiceNo || '')).toBe(invoiceNo)
-  expect(String(detailJson.data?.sourceSalesOrderNos || '')).toContain(salesOrderNo)
+  expect(String(detailJson.data?.sourceSalesOrderNos || '')).toContain(
+    salesOrderNo,
+  )
   expect(String(detailJson.data?.customerName || '')).toBe(
     '浙江大东吴杭萧绿建科技有限公司',
   )
@@ -271,8 +301,12 @@ test('creates invoice issue from imported sales order items', async ({
   expect(String(detailJson.data?.status || '')).toBe('已开票')
   expect(detailJson.data?.items?.length || 0).toBeGreaterThan(0)
   expect(String(detailJson.data?.items?.[0]?.sourceNo || '')).toBe(salesOrderNo)
-  expect(String(detailJson.data?.items?.[0]?.materialCode || '')).toBe('HZ-YG-PL8')
-  expect(String(detailJson.data?.items?.[0]?.sourceSalesOrderItemId || '')).toBeTruthy()
+  expect(String(detailJson.data?.items?.[0]?.materialCode || '')).toBe(
+    'HZ-YG-PL8',
+  )
+  expect(
+    String(detailJson.data?.items?.[0]?.sourceSalesOrderItemId || ''),
+  ).toBeTruthy()
   expect(Number(detailJson.data?.items?.[0]?.amount || 0)).toBeGreaterThan(0)
 
   await assertNoFatalUiErrors()

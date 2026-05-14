@@ -74,7 +74,9 @@ export async function loginAsTest9(page: Page) {
 }
 
 export async function getCurrentAccessToken(page: Page) {
-  const token = await page.evaluate(() => localStorage.getItem('aries-token') || '')
+  const token = await page.evaluate(
+    () => localStorage.getItem('aries-token') || '',
+  )
   expect(token).toBeTruthy()
   return token
 }
@@ -169,7 +171,11 @@ export async function waitForSaveOutcome(
     if ((await successMessage.count()) > 0) {
       return 'message'
     }
-    if (rowInList && (await rowInList.count()) > 0 && (await rowInList.isVisible())) {
+    if (
+      rowInList &&
+      (await rowInList.count()) > 0 &&
+      (await rowInList.isVisible())
+    ) {
       return 'row'
     }
     if (!(await overlay.isVisible().catch(() => false))) {
@@ -184,7 +190,11 @@ export async function waitForSaveOutcome(
   throw new Error('save outcome timeout')
 }
 
-export async function saveOverlay(page: Page, overlay: Locator, expectedNo?: string) {
+export async function saveOverlay(
+  page: Page,
+  overlay: Locator,
+  expectedNo?: string,
+) {
   await overlay
     .locator('button.overlay-action-button')
     .filter({ hasText: /^保存$/ })

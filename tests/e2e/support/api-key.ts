@@ -22,7 +22,9 @@ const E2E_BACKEND_MODE =
 const IS_REAL_BACKEND = E2E_BACKEND_MODE === 'real'
 const API_KEY = String(process.env.E2E_API_KEY || '').trim()
 const LOGIN_NAME = String(process.env.E2E_LOGIN_NAME || 'sakura').trim()
-const LOGIN_PASSWORD = String(process.env.E2E_LOGIN_PASSWORD || '97143658').trim()
+const LOGIN_PASSWORD = String(
+  process.env.E2E_LOGIN_PASSWORD || '97143658',
+).trim()
 const LOGIN_MAX_RETRIES = 5
 const LOGIN_RETRY_DELAYS_MS = [0, 2_000, 5_000, 10_000, 15_000] as const
 
@@ -178,6 +180,8 @@ interface BrowserSession {
 }
 
 let cachedSessionPromise: Promise<BrowserSession> | null = null
+type RequestHeaders = Record<string, string>
+const EMPTY_RECORDS: Array<Record<string, unknown>> = []
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -198,7 +202,11 @@ function readCachedSessionFromDisk() {
     ) as BrowserSession & { cachedAt?: number }
     const tokenExpiresAt =
       Number(parsed.cachedAt || 0) + Number(parsed.expiresIn || 0) * 1000
-    if (!parsed.accessToken || !parsed.user || Date.now() >= tokenExpiresAt - 60_000) {
+    if (
+      !parsed.accessToken ||
+      !parsed.user ||
+      Date.now() >= tokenExpiresAt - 60_000
+    ) {
       return null
     }
     return parsed
@@ -243,7 +251,9 @@ function parseSetCookie(
     if (!cookie.startsWith(`${cookieName}=`)) {
       continue
     }
-    const [nameValue, ...attributes] = cookie.split(';').map((part) => part.trim())
+    const [nameValue, ...attributes] = cookie
+      .split(';')
+      .map((part) => part.trim())
     const separatorIndex = nameValue.indexOf('=')
     const name = nameValue.slice(0, separatorIndex)
     const value = nameValue.slice(separatorIndex + 1)
@@ -267,7 +277,10 @@ function requireApiKey() {
 
 function requireLoginCredentials() {
   expect(LOGIN_NAME, '缺少 E2E_LOGIN_NAME，无法执行真实登录 e2e').toBeTruthy()
-  expect(LOGIN_PASSWORD, '缺少 E2E_LOGIN_PASSWORD，无法执行真实登录 e2e').toBeTruthy()
+  expect(
+    LOGIN_PASSWORD,
+    '缺少 E2E_LOGIN_PASSWORD，无法执行真实登录 e2e',
+  ).toBeTruthy()
 }
 
 function buildFallbackPermissions() {
@@ -305,7 +318,7 @@ function buildMockBrowserSession(): BrowserSession {
   }
 }
 
-export function buildApiKeyHeaders(token?: string) {
+export function buildApiKeyHeaders(token?: string): RequestHeaders {
   if (!IS_REAL_BACKEND || !API_KEY) {
     return {}
   }
@@ -315,7 +328,7 @@ export function buildApiKeyHeaders(token?: string) {
   }
 }
 
-function buildAuthorizationHeaders(token: string) {
+function buildAuthorizationHeaders(token: string): RequestHeaders {
   return {
     Authorization: `Bearer ${token}`,
   }
@@ -405,9 +418,7 @@ async function createPasswordSession(
 
   for (let attempt = 0; attempt < LOGIN_MAX_RETRIES; attempt += 1) {
     const delayMs =
-      LOGIN_RETRY_DELAYS_MS[
-        Math.min(attempt, LOGIN_RETRY_DELAYS_MS.length - 1)
-      ]
+      LOGIN_RETRY_DELAYS_MS[Math.min(attempt, LOGIN_RETRY_DELAYS_MS.length - 1)]
     if (delayMs > 0) {
       await sleep(delayMs)
     }
@@ -447,6 +458,9 @@ async function createPasswordSession(
 
     expect(accessToken, '登录响应缺少 accessToken').toBeTruthy()
     expect(user, '登录响应缺少 user').toBeTruthy()
+    if (!user) {
+      throw new Error('登录响应缺少 user')
+    }
 
     const permissionCatalog = await loadPermissionCatalog(request, accessToken)
     const currentPermissions =
@@ -456,7 +470,8 @@ async function createPasswordSession(
 
     return {
       accessToken,
-      expiresIn: Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 1_800,
+      expiresIn:
+        Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 1_800,
       user: {
         ...user,
         permissions: currentPermissions,
@@ -466,7 +481,8 @@ async function createPasswordSession(
             currentPermissions.map((entry) => [entry.resource, 'all']),
           ),
       },
-      refreshCookie: parseSetCookie(response.headers()['set-cookie'] || null),
+      refreshCookie:
+        parseSetCookie(response.headers()['set-cookie'] || null) || undefined,
     }
   }
 
@@ -641,7 +657,7 @@ export async function fetchCollection(
     return {
       ok: false,
       status: 0,
-      records: [] as Array<Record<string, unknown>>,
+      records: EMPTY_RECORDS,
     }
   }
 
@@ -667,7 +683,7 @@ export async function fetchCollection(
     return {
       ok: false,
       status: response.status(),
-      records: [] as Array<Record<string, unknown>>,
+      records: EMPTY_RECORDS,
     }
   }
 
@@ -678,7 +694,7 @@ export async function fetchCollection(
     return {
       ok: false,
       status: response.status(),
-      records: [] as Array<Record<string, unknown>>,
+      records: EMPTY_RECORDS,
     }
   }
 
@@ -744,7 +760,7 @@ export async function fetchData(
   return {
     ok: payload.code === 0,
     status: response.status(),
-    data: payload.code === 0 ? payload.data ?? null : null,
+    data: payload.code === 0 ? (payload.data ?? null) : null,
   }
 }
 
