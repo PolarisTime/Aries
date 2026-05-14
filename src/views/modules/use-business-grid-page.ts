@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import { useBusinessQueries } from '@/hooks/useBusinessQueries'
@@ -91,7 +91,7 @@ export function useBusinessGridPage({
     setPage(1)
     setPageSize(20)
     setSorting([])
-  }, [moduleKey])
+  }, [])
 
   const {
     filters,

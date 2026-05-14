@@ -8,7 +8,10 @@ export async function getUserColumnSettings() {
   const response = await http.get<ApiResponse<UserColumnSettingsPayload>>(
     ENDPOINTS.USER_ACCOUNT_PREFERENCES,
   )
-  return assertApiSuccess(response, getApiMessage('loadAccountColumnSettingsFailed')).data
+  return assertApiSuccess(
+    response,
+    getApiMessage('loadAccountColumnSettingsFailed'),
+  ).data
 }
 
 export async function saveUserColumnSettings(
@@ -18,5 +21,8 @@ export async function saveUserColumnSettings(
     ENDPOINTS.USER_ACCOUNT_PREFERENCES,
     payload,
   )
-  return assertApiSuccess(response, getApiMessage('saveAccountColumnSettingsFailed')).data
+  return assertApiSuccess(
+    response,
+    getApiMessage('saveAccountColumnSettingsFailed'),
+  ).data
 }

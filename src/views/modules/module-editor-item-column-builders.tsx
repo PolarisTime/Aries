@@ -238,9 +238,7 @@ export function buildModuleEditorManagementColumns({
           onDragEnd={onDragEnd}
           className="cursor-grab"
         >
-          <MenuOutlined
-            className="mr-4 opacity-45 text-xs"
-          />
+          <MenuOutlined className="mr-4 opacity-45 text-xs" />
           {index + 1}
         </span>
       ),

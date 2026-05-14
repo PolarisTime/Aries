@@ -46,7 +46,10 @@ export async function getSecurityKeyOverview(): Promise<
   const response = await http.get<SecurityKeyResponse<SecurityKeyOverview>>(
     ENDPOINTS.SECURITY_KEYS,
   )
-  return assertApiSuccess(response, getApiMessage('loadSecurityKeyStatusFailed'))
+  return assertApiSuccess(
+    response,
+    getApiMessage('loadSecurityKeyStatusFailed'),
+  )
 }
 
 export async function rotateJwtSecurityKey(

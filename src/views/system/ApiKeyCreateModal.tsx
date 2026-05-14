@@ -119,14 +119,8 @@ export function ApiKeyCreateModal({
             className="mb-4"
             title="请立即复制保存，此密钥仅显示一次"
           />
-          <div
-            className="p-16 rounded bg-gray-100 border border-gray-300"
-          >
-            <Typography.Paragraph
-              copyable
-              code
-              className="m-0 break-all"
-            >
+          <div className="p-16 rounded bg-gray-100 border border-gray-300">
+            <Typography.Paragraph copyable code className="m-0 break-all">
               {generatedKey}
             </Typography.Paragraph>
           </div>

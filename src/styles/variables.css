@@ -88,7 +88,7 @@ a {
   text-decoration: none;
 }
 
-[data-theme='dark'] {
+[data-theme="dark"] {
   --theme-primary: #4f8eff;
   --theme-primary-hover: #6ba3ff;
   --theme-primary-soft: #1e3a5f;

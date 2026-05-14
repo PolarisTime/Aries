@@ -32,10 +32,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
 
   if (!state.config) {
     return (
-      <Empty
-        description={`模块配置未找到: ${moduleKey}`}
-        className="mt-96"
-      />
+      <Empty description={`模块配置未找到: ${moduleKey}`} className="mt-96" />
     )
   }
 

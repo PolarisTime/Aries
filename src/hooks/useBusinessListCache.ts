@@ -47,6 +47,7 @@ export function useBusinessListCache(params: {
       params.pageSize,
       params.sortBy,
       params.sortDirection,
+      params,
     ],
   )
 

@@ -120,19 +120,22 @@ export async function listRoleOptions() {
       params: { page: 0, size: 200 },
     },
   )
-  return pageContent(assertApiSuccess(response, getApiMessage('loadRolesFailed')).data)
+  return pageContent(
+    assertApiSuccess(response, getApiMessage('loadRolesFailed')).data,
+  )
 }
 
 export async function listDepartmentOptions() {
   const response = await http.get<ApiResponse<DepartmentOptionRecord[]>>(
     ENDPOINTS.DEPARTMENTS_OPTIONS,
   )
-  return (assertApiSuccess(response, getApiMessage('loadDepartmentsFailed')).data || []).map(
-    (item) => ({
-      ...item,
-      id: String(item.id || ''),
-      departmentCode: String(item.departmentCode || ''),
-      departmentName: String(item.departmentName || ''),
-    }),
-  )
+  return (
+    assertApiSuccess(response, getApiMessage('loadDepartmentsFailed')).data ||
+    []
+  ).map((item) => ({
+    ...item,
+    id: String(item.id || ''),
+    departmentCode: String(item.departmentCode || ''),
+    departmentName: String(item.departmentName || ''),
+  }))
 }

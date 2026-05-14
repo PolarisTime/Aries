@@ -56,7 +56,7 @@ export function asDateString(value: unknown): string {
   const s = asString(value)
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
   const d = new Date(s)
-  if (isNaN(d.getTime())) return ''
+  if (Number.isNaN(d.getTime())) return ''
   return d.toISOString().slice(0, 10)
 }
 

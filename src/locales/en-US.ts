@@ -424,7 +424,8 @@ export const enUS: MessageSchema = {
     clearAllSessionsFailed: 'Failed to clear all sessions',
     loadAccountColumnSettingsFailed: 'Failed to load account column settings',
     saveAccountColumnSettingsFailed: 'Failed to save account column settings',
-    resultIncomplete: 'Result incomplete: client filter limit reached. Please narrow your filters or contact admin to enable server-side filtering.',
+    resultIncomplete:
+      'Result incomplete: client filter limit reached. Please narrow your filters or contact admin to enable server-side filtering.',
     loadSecurityKeyStatusFailed: 'Failed to load security key status',
     jwtKeyRotationFailed: 'JWT key rotation failed',
     twoFactorKeyRotationFailed: '2FA key rotation failed',
@@ -463,7 +464,8 @@ export const enUS: MessageSchema = {
     importDatabaseBackupFailed: 'Failed to import database backup',
     queryStatementCandidatesFailed: 'Failed to query statement candidates',
     loginExpiring: 'Login expiring',
-    loginExpiringDescription: 'Your login will expire tomorrow. Please save your work and log in again.',
+    loginExpiringDescription:
+      'Your login will expire tomorrow. Please save your work and log in again.',
     refreshLoginStatusFailed: 'Failed to refresh login status',
     loginStatusExpired: 'Login status expired, please log in again',
   },

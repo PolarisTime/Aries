@@ -122,7 +122,7 @@ export function BusinessGridTable({
       cancelAnimationFrame(frameId)
       observer.disconnect()
     }
-  }, [dataSource.length, pageSize, total])
+  }, [])
 
   return (
     <div ref={shellRef} className="module-table-shell">

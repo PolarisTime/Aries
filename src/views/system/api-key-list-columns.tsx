@@ -87,9 +87,7 @@ export function buildApiKeyListColumns({
             <strong>{record.userName || record.loginName}</strong>
           </div>
           {record.userName && (
-            <div className="text-xs text-secondary">
-              {record.loginName}
-            </div>
+            <div className="text-xs text-secondary">{record.loginName}</div>
           )}
         </div>
       ),

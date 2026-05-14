@@ -28,22 +28,23 @@ export async function fetchModulePage(
   fields?: string[],
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
-  const response = await http.get<
-    ApiResponse<LeoPageData<RawApiRecord>>
-  >(endpointConfig.path, {
-    ...config,
-    params: {
-      ...params,
-      page,
-      size,
-      ...(fields?.length
-        ? {
-            [endpointConfig.fieldsParam || 'fields']: fields.join(','),
-          }
-        : {}),
-      ...(config?.params as SearchParams | undefined),
+  const response = await http.get<ApiResponse<LeoPageData<RawApiRecord>>>(
+    endpointConfig.path,
+    {
+      ...config,
+      params: {
+        ...params,
+        page,
+        size,
+        ...(fields?.length
+          ? {
+              [endpointConfig.fieldsParam || 'fields']: fields.join(','),
+            }
+          : {}),
+        ...(config?.params as SearchParams | undefined),
+      },
     },
-  })
+  )
 
   return {
     rows: normalizeRows(pageContent(response.data)),

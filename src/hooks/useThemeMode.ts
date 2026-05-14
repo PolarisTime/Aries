@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   getPersonalSettings,
-  type ThemeMode,
   setPersonalSettings,
+  type ThemeMode,
 } from '@/utils/storage'
 
 type ResolvedTheme = 'light' | 'dark'

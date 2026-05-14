@@ -271,7 +271,7 @@ export function ModuleParentSelectorOverlay({
     setPageSize(DEFAULT_PAGE_SIZE)
     setSelectedRowKeys([])
     setSelectedRecordMap({})
-  }, [open, parentModuleKey])
+  }, [open])
 
   const { data: parentPageConfig, isLoading: isConfigLoading } = useQuery({
     queryKey: ['parent-selector-config', parentModuleKey],

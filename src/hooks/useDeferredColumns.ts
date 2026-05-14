@@ -10,7 +10,9 @@ const INITIAL_COLUMN_COUNT = 5
  * 仅在列数从少变多时触发延迟渲染，页面间切换直接显示全部列，避免闪烁。
  */
 export function useDeferredColumns<T>(columns: ColumnsType<T>): ColumnsType<T> {
-  const [expanded, setExpanded] = useState(columns.length <= INITIAL_COLUMN_COUNT)
+  const [expanded, setExpanded] = useState(
+    columns.length <= INITIAL_COLUMN_COUNT,
+  )
   const prevCountRef = useRef(columns.length)
 
   useEffect(() => {

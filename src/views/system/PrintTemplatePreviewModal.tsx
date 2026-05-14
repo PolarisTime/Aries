@@ -24,12 +24,8 @@ export function PrintTemplatePreviewModal({ open, template, onClose }: Props) {
           <Typography.Paragraph type="secondary">
             单据类型：{getPrintTemplateBillTypeLabel(template.billType)}
           </Typography.Paragraph>
-          <div
-            className="p-16 rounded overflow-auto bg-gray-100 border border-gray-300 max-h-400"
-          >
-            <pre
-              className="m-0 text-xs whitespace-pre-wrap break-all"
-            >
+          <div className="p-16 rounded overflow-auto bg-gray-100 border border-gray-300 max-h-400">
+            <pre className="m-0 text-xs whitespace-pre-wrap break-all">
               {template.templateHtml || '（空模板）'}
             </pre>
           </div>

@@ -50,5 +50,17 @@
         "useTemplate": "off"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/config/antd-locale.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noTemplateCurlyInString": "off"
+          }
+        }
+      }
+    }
+  ]
 }

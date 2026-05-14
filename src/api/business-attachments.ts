@@ -17,13 +17,9 @@ export async function uploadAttachment(
   formData.append('moduleKey', moduleKey)
   formData.append('sourceType', sourceType)
 
-  return http.post<ApiResponse<RawApiRecord>>(
-    '/attachments/upload',
-    formData,
-    {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    },
-  )
+  return http.post<ApiResponse<RawApiRecord>>('/attachments/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
 }
 
 export async function getAttachmentBindings(

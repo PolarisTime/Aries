@@ -64,7 +64,11 @@ export function useBusinessGridTable({
     columnVisibility,
     handleColumnOrderChange,
     handleColumnVisibilityChange,
-  } = useColumnSettingsSupport(moduleKey, config?.defaultHiddenColumnKeys, totalColumnCount)
+  } = useColumnSettingsSupport(
+    moduleKey,
+    config?.defaultHiddenColumnKeys,
+    totalColumnCount,
+  )
   const rowSelectionState: RowSelectionState = useMemo(() => {
     const state: RowSelectionState = {}
     for (const id of selectedRowKeys) {

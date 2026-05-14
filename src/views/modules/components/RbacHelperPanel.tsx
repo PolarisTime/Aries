@@ -28,7 +28,11 @@ export function RbacHelperPanel({
             <Card
               variant="borderless"
               styles={{
-                body: { padding: 16, background: 'var(--theme-sider-surface)', borderRadius: 12 },
+                body: {
+                  padding: 16,
+                  background: 'var(--theme-sider-surface)',
+                  borderRadius: 12,
+                },
               }}
             >
               <Statistic title="权限数量" value={permissionCount} />
@@ -40,7 +44,11 @@ export function RbacHelperPanel({
             <Card
               variant="borderless"
               styles={{
-                body: { padding: 16, background: 'var(--theme-sider-surface)', borderRadius: 12 },
+                body: {
+                  padding: 16,
+                  background: 'var(--theme-sider-surface)',
+                  borderRadius: 12,
+                },
               }}
             >
               <Statistic title="关联用户" value={userCount} />

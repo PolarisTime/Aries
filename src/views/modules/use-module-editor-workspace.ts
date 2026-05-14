@@ -327,7 +327,6 @@ export function useModuleEditorWorkspace({
     }
   }, [
     autoInsertBlankItemOnCreate,
-    clientSettings,
     config,
     form,
     getCurrentOperatorName,
@@ -499,6 +498,7 @@ export function useModuleEditorWorkspace({
       record,
       refreshModuleQueries,
       sumLineItemsBy,
+      useSnowflakeBusinessNo,
     ],
   )
 
@@ -580,7 +580,7 @@ export function useModuleEditorWorkspace({
         setParentImporting(false)
       }
     },
-    [config, form, items],
+    [config, form, items, systemSettings, sumLineItemsBy, moduleKey],
   )
 
   const openParentSelector = useCallback(() => {
@@ -601,7 +601,7 @@ export function useModuleEditorWorkspace({
   const addItem = useCallback(() => {
     const newItem = buildDefaultEditorLineItem(undefined, moduleKey)
     setItems((prev) => [...prev, newItem])
-  }, [])
+  }, [moduleKey])
 
   return {
     addItem,

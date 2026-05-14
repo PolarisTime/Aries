@@ -178,7 +178,9 @@ export async function refreshAccessToken() {
   const payload = response.data
 
   if (payload.code !== ERROR_CODE.SUCCESS) {
-    throw new Error(payload.message || getApiMessage('refreshLoginStatusFailed'))
+    throw new Error(
+      payload.message || getApiMessage('refreshLoginStatusFailed'),
+    )
   }
 
   if (!payload.data?.accessToken || !payload.data?.user) {

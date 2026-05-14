@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   getPersonalSettings,
   type PersonalSettings,
-  type ThemeMode,
   setPersonalSettings,
+  type ThemeMode,
 } from '@/utils/storage'
 
 export type LayoutMode = NonNullable<PersonalSettings['layoutMode']>
