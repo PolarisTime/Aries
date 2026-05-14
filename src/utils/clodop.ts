@@ -15,7 +15,7 @@ function appendScript(src: string, onDone: (success: boolean) => void) {
     `script[data-clodop-src="${src}"]`,
   )
   if (existing) {
-    if ((existing).dataset.loaded === 'true') {
+    if (existing.dataset.loaded === 'true') {
       onDone(true)
       return
     }
@@ -152,7 +152,7 @@ function wrapHtml(body: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
     @page { size: A4 portrait; margin: 10mm; }
     *, *::before, *::after { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; color: #1f2329; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; font-size: 12px; }
+    html, body { margin: 0; padding: 0; color: #1f2329; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; font-size: 12px; }
     body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     th, td { border: 1px solid #111827; padding: 7px 8px; font-size: 12px; vertical-align: middle; word-break: break-all; }
@@ -200,6 +200,7 @@ function parseInitCall(code: string) {
   return { title, inita }
 }
 
+function cleanPrintCode(code: string) {
   return code
     .replace(/LODOP\s*\.\s*PRINT_INITA?\s*\([^)]*\)\s*;?/g, '')
     .replace(/LODOP\s*\.\s*PREVIEW\s*\([^)]*\)\s*;?/g, '')
@@ -252,8 +253,9 @@ export function execPrintCode(code: string, options: PrintHtmlOptions = {}) {
     if (printer) {
       lodop.SET_PRINTER_INDEX(printer)
     }
+    const cleaned = cleanPrintCode(code)
     // FIXME: replace new Function with safer alternative
-// new Function('LODOP', cleaned)(lodop)
+    new Function('LODOP', cleaned)(lodop)
     if (preview) {
       lodop.PREVIEW()
     } else {

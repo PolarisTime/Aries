@@ -1,5 +1,6 @@
 import { roleTypeValues } from '@/constants/module-options'
 import { getResourcePermissionLabel } from '@/constants/resource-permissions'
+import type { ModuleRecord } from '@/types/module-page'
 import { getBehaviorValue } from './module-behavior-registry'
 
 export interface RbacRoleMeta {
@@ -47,7 +48,7 @@ export function buildRoleTreeData(roleCatalog: RbacRoleMeta[]) {
 
 export function syncSystemEditorState(
   moduleKey: string,
-  editorForm: Record<string, unknown>,
+  editorForm: ModuleRecord,
 ) {
   const syncFn = getBehaviorValue(moduleKey, 'syncEditorForm')
   if (syncFn) {

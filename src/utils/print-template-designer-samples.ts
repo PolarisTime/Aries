@@ -1,6 +1,4 @@
-import type {
-  ModuleColumnDefinition,
-} from '@/types/module-page'
+import type { ModuleColumnDefinition } from '@/types/module-page'
 
 const sampleDates = ['2026-04-26', '2026-04-27', '2026-04-28']
 const sampleWarehouses = ['一号仓', '二号仓', '三号仓']
@@ -26,7 +24,7 @@ export function inferPrintTemplateAlign(column: ModuleColumnDefinition) {
 
 export function inferPrintTemplateRowValue(
   key: string,
-  type: ModuleColumnDefinition['type']  ,
+  type: ModuleColumnDefinition['type'],
   index = 0,
 ) {
   const normalizedKey = key.toLowerCase()

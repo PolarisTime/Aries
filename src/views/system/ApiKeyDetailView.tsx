@@ -26,6 +26,18 @@ function getStatusColor(status: string) {
   return 'default'
 }
 
+function formatAllowedCodes(
+  codes: string[] | undefined,
+  options: Array<{ code: string; title: string }>,
+  fallback: string,
+): string {
+  if (!codes?.length) {
+    return fallback
+  }
+  const titleMap = new Map(options.map((item) => [item.code, item.title]))
+  return codes.map((item) => titleMap.get(item) || item).join('、')
+}
+
 export function ApiKeyDetailView() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -76,29 +88,16 @@ export function ApiKeyDetailView() {
     }
   }, [id])
 
-  const allowedResourceText = (() => {
-    if (!record?.allowedResources?.length) {
-      return '未限制'
-    }
-    const titleMap = new Map(
-      resourceOptions.map((item) => [item.code, item.title]),
-    )
-    return record.allowedResources
-      .map((item) => titleMap.get(item) || item)
-      .join('、')
-  }, [record?.allowedResources, resourceOptions])
-
-  const allowedActionText = (() => {
-    if (!record?.allowedActions?.length) {
-      return '未设置'
-    }
-    const titleMap = new Map(
-      actionOptions.map((item) => [item.code, item.title]),
-    )
-    return record.allowedActions
-      .map((item) => titleMap.get(item) || item)
-      .join('、')
-  }, [actionOptions, record?.allowedActions])
+  const allowedResourceText = formatAllowedCodes(
+    record?.allowedResources,
+    resourceOptions,
+    '未限制',
+  )
+  const allowedActionText = formatAllowedCodes(
+    record?.allowedActions,
+    actionOptions,
+    '未设置',
+  )
 
   return (
     <div className="page-stack">
@@ -107,11 +106,13 @@ export function ApiKeyDetailView() {
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => { void navigate({ to: '/api-key' as '/' }) }}
+            onClick={() => {
+              void navigate({ to: '/api-key' as '/' })
+            }}
           >
             返回
           </Button>
-          <Typography.Title level={5} style={{ margin: 0 }}>
+          <Typography.Title level={5} className="m-0">
             API Key 详情
           </Typography.Title>
         </Flex>
@@ -140,7 +141,7 @@ export function ApiKeyDetailView() {
                 {record.userId}
               </Descriptions.Item>
               <Descriptions.Item label="密钥前缀">
-                <Typography.Paragraph copyable code style={{ marginBottom: 0 }}>
+                <Typography.Paragraph copyable code className="mb-0">
                   {record.keyPrefix}
                 </Typography.Paragraph>
               </Descriptions.Item>

@@ -1,10 +1,8 @@
 import { useMemo } from 'react'
 import type { TableResponse } from '@/types/api'
+import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
-import {
-  getBusinessListCache,
-  setBusinessListCache,
-} from '@/utils/storage'
+import { getBusinessListCache, setBusinessListCache } from '@/utils/storage'
 
 const BUSINESS_LIST_CACHE_MAX_AGE_MS = 90_000
 
@@ -16,7 +14,7 @@ function normalizeForCache(value: unknown) {
 
 export function buildBusinessListCacheKey(input: {
   moduleKey: string
-  filters: Record<string, unknown>
+  filters: SearchParams
   page: number
   pageSize: number
   sortBy?: string
@@ -34,7 +32,7 @@ export function buildBusinessListCacheKey(input: {
 
 export function useBusinessListCache(params: {
   moduleKey: string
-  filters: Record<string, unknown>
+  filters: SearchParams
   page: number
   pageSize: number
   sortBy?: string

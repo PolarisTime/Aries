@@ -1,21 +1,24 @@
-import { asString } from '@/utils/type-narrowing'
-import { SystemTableToolbar } from '@/components/SystemTableToolbar'
+import { EditOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
+import Space from 'antd/es/space'
 import Statistic from 'antd/es/statistic'
 import Switch from 'antd/es/switch'
-import Table from 'antd/es/table'
 import type { TableProps } from 'antd/es/table'
+import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
+import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import type { ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   formatSettingValue,
   GENERAL_SETTING_STATUS_OPTIONS,
 } from '@/views/system/general-settings-view-utils'
-type Props = {
+
+interface Props {
   keyword: string
   statusFilter?: string
   filteredRows: ModuleRecord[]
@@ -92,7 +95,10 @@ export function GeneralSettingsTableCard({
               unCheckedChildren="关闭"
               onChange={() => onToggle(record)}
             />
-            <span style={{ fontSize: 12, color: enabled ? '#22c55e' : '#94a3b8' }}>
+            <span
+              className="text-xs"
+              style={{ color: enabled ? 'var(--theme-success)' : 'var(--theme-disabled)' }}
+            >
               {enabled ? '已启用' : '已关闭'}
             </span>
           </Space>
@@ -115,7 +121,7 @@ export function GeneralSettingsTableCard({
           <Select
             allowClear
             placeholder="全部状态"
-            style={{ width: 140 }}
+            className="w-140"
             value={statusFilter}
             onChange={onStatusFilterChange}
             options={GENERAL_SETTING_STATUS_OPTIONS}

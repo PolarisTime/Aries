@@ -10,10 +10,18 @@ import {
 import { useRequestError } from '@/hooks/useRequestError'
 import { message, modal } from '@/utils/antd-app'
 
-interface UseRoleEditorOptions {
+type UseRoleEditorOptions = {
   canCreateRole: boolean
   canEditRole: boolean
   onCreatedRoleSelect: (role: RoleRecord) => void
+}
+
+type RoleFormValues = {
+  roleCode?: string
+  roleName?: string
+  roleType?: string
+  dataScope?: string
+  remark?: string | null
 }
 
 export function useRoleEditor({
@@ -61,11 +69,11 @@ export function useRoleEditor({
 
   const saveRoleMutation = useMutation({
     mutationFn: async (
-      values: Record<string, unknown>,
+      values: RoleFormValues,
     ): Promise<{ mode: 'edit' } | { mode: 'create'; data: RoleRecord }> => {
       const payload = {
         ...values,
-        remark: values.remark || null,
+        remark: values.remark || undefined,
         status: editingRole?.status || enabledStatusValues[0],
       }
       if (editingRole) {

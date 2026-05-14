@@ -1,12 +1,12 @@
-import { asString } from '@/utils/type-narrowing'
 import type { FormInstance } from 'antd'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import { FormModal } from '@/components/FormModal'
 import Select from 'antd/es/select'
 import Switch from 'antd/es/switch'
 import Typography from 'antd/es/typography'
+import { FormModal } from '@/components/FormModal'
 import type { ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   DETAILED_OPERATION_ACTION_OPTIONS,
   HIDE_AUDITED_STATUS_OPTIONS,
@@ -15,7 +15,7 @@ import {
   SYSTEM_SWITCH_HELP_TEXT,
 } from '@/views/system/general-settings-view-utils'
 
-type Props = {
+interface Props {
   open: boolean
   record: ModuleRecord | null
   form: FormInstance

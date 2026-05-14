@@ -1,11 +1,12 @@
+import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { masterStatusFilter } from './shared-filters'
 import {
   actionSet,
   buildMasterOverview,
   formatInteger,
   statusMap,
 } from './shared'
+import { masterStatusFilter } from './shared-filters'
 
 export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
   'general-setting': {
@@ -61,9 +62,27 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
       { label: '备注', key: 'remark' },
     ],
     formFields: [
-      { key: 'settingCode', label: '配置编码', type: 'input', required: true, row: 1 },
-      { key: 'settingName', label: '配置名称', type: 'input', required: true, row: 1 },
-      { key: 'billName', label: '单据名称', type: 'input', required: true, row: 1 },
+      {
+        key: 'settingCode',
+        label: '配置编码',
+        type: 'input',
+        required: true,
+        row: 1,
+      },
+      {
+        key: 'settingName',
+        label: '配置名称',
+        type: 'input',
+        required: true,
+        row: 1,
+      },
+      {
+        key: 'billName',
+        label: '单据名称',
+        type: 'input',
+        required: true,
+        row: 1,
+      },
       { key: 'prefix', label: '前缀', type: 'input', required: true, row: 1 },
       {
         key: 'dateRule',

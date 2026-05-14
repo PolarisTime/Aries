@@ -1,14 +1,11 @@
+import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { registerModuleBehavior } from '@/views/modules/module-behavior-registry-core'
-import {
-  collectUniqueSourceNos,
-} from '@/views/modules/module-behavior-registry-utils'
+import { collectUniqueSourceNos } from '@/views/modules/module-behavior-registry-utils'
 
 registerModuleBehavior('freight-bill', {
   normalizeDraftRecord(record, items, ctx) {
-    const firstSourceItem = items.find((item) =>
-      asString(item.sourceNo).trim(),
-    )
+    const firstSourceItem = items.find((item) => asString(item.sourceNo).trim())
     const customerNames = Array.from(
       new Set(
         items.map((item) => asString(item.customerName).trim()).filter(Boolean),
@@ -63,7 +60,7 @@ registerModuleBehavior('freight-statement', {
     )
     if (Array.isArray(record.attachments)) {
       record.attachment = record.attachments
-        .map((item) => asString((item as Record<string, unknown>).name))
+        .map((item) => asString((item as ModuleRecord).name))
         .filter(Boolean)
         .join(', ')
     }

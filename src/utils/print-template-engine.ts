@@ -1,4 +1,6 @@
+import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
+
 function formatNow() {
   const current = new Date()
   const date = [
@@ -47,16 +49,16 @@ function resolvePath(source: unknown, path: string) {
     ) {
       return missingValue
     }
-    current = (current as Record<string, unknown>)[segment]
+    current = (current as ModuleRecord)[segment]
   }
 
   return current
 }
 
 interface RenderScope {
-  model: Record<string, unknown>
-  details: Array<Record<string, unknown>>
-  current: Record<string, unknown> | null
+  model: ModuleRecord
+  details: Array<ModuleRecord>
+  current: ModuleRecord | null
   index: number
   system: {
     printDate: string
@@ -180,8 +182,8 @@ function renderSection(template: string, scope: RenderScope): string {
 
 export function renderPrintTemplate(
   template: string,
-  model: Record<string, unknown>,
-  details: Array<Record<string, unknown>>,
+  model: ModuleRecord,
+  details: Array<ModuleRecord>,
 ) {
   if (!template) {
     return ''

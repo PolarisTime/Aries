@@ -1,5 +1,5 @@
+import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-import type { ModuleLineItem } from '@/types/module-page'
 
 export type EditorItemDragPosition = 'before' | 'after'
 
@@ -41,7 +41,7 @@ export function toRoundedNumber(value: unknown, precision: number) {
   return Number(numericValue.toFixed(precision))
 }
 
-export function inferQuantityUnit(record?: Record<string, unknown> | null) {
+export function inferQuantityUnit(record?: ModuleRecord | null) {
   const explicitUnit = asString(record?.quantityUnit).trim()
   if (explicitUnit) {
     return explicitUnit

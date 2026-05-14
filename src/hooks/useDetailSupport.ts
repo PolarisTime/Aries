@@ -1,8 +1,7 @@
 import { useCallback, useState } from 'react'
 import { getBusinessModuleDetail } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
-import type { ModulePageConfig } from '@/types/module-page'
-import type { ModuleRecord } from '@/types/module-page'
+import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
 interface Options {
   moduleKey: string
@@ -16,8 +15,7 @@ export function useDetailSupport({ moduleKey, config }: Options) {
 
   const openDetail = useCallback(
     async (target: string | ModuleRecord) => {
-      const fallbackRecord =
-        typeof target === 'string' ? null : target
+      const fallbackRecord = typeof target === 'string' ? null : target
       const recordId =
         typeof target === 'string' ? target : String(target.id || '')
       const endpointConfig = getModuleConfig(moduleKey)

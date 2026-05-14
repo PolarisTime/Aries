@@ -2,7 +2,7 @@ import { CloseOutlined } from '@ant-design/icons'
 import { useCallback, useEffect } from 'react'
 import '@/styles/workspace-overlay.css'
 
-type Props = {
+interface Props {
   open: boolean
   title: string
   onClose: () => void

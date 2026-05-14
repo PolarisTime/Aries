@@ -1,20 +1,20 @@
-import { asString } from '@/utils/type-narrowing'
 import { useCallback } from 'react'
-import type { ModuleLineItem } from '@/types/module-page'
+import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { recalculateEditorLineItem } from '@/views/modules/module-adapter-editor'
 
-type Props = {
+interface Props {
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
 }
 
 type MaterialDraftApplicator = (
   item: ModuleLineItem,
-  materialRecord?: Record<string, unknown> | null,
+  materialRecord?: ModuleRecord | null,
 ) => ModuleLineItem
 
 type MaterialLookupResolver = (
   materialCode: string,
-) => Promise<Record<string, unknown> | null>
+) => Promise<ModuleRecord | null>
 
 export function useModuleEditorItemColumnHandlers({ setItems }: Props) {
   const handleItemNumberChange = useCallback(
@@ -48,7 +48,7 @@ export function useModuleEditorItemColumnHandlers({ setItems }: Props) {
     (
       itemId: string,
       materialCode: string,
-      materialRecord?: Record<string, unknown> | null,
+      materialRecord?: ModuleRecord | null,
       applyMaterial?: MaterialDraftApplicator,
       resolveMaterial?: MaterialLookupResolver,
     ) => {

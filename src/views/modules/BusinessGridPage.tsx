@@ -9,7 +9,7 @@ const BusinessGridRouteContent = lazy(() =>
   })),
 )
 
-type Props = {
+interface Props {
   pageDef: AppPageDefinition
   initialConfig?: ModulePageConfig
 }

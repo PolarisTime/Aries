@@ -1,5 +1,5 @@
-import { asString } from '@/utils/type-narrowing'
 import type { ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
 export const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
 export const MAX_CONCURRENT_SESSIONS_CODE = 'SYS_MAX_CONCURRENT_SESSIONS'
@@ -65,15 +65,11 @@ export const GENERAL_SETTING_STATUS_OPTIONS = [
 ]
 
 export function isDefaultTaxRateSetting(record: ModuleRecord) {
-  return (
-    asString(record.settingCode).trim() === DEFAULT_TAX_RATE_SETTING_CODE
-  )
+  return asString(record.settingCode).trim() === DEFAULT_TAX_RATE_SETTING_CODE
 }
 
 export function isMaxConcurrentSetting(record: ModuleRecord) {
-  return (
-    asString(record.settingCode).trim() === MAX_CONCURRENT_SESSIONS_CODE
-  )
+  return asString(record.settingCode).trim() === MAX_CONCURRENT_SESSIONS_CODE
 }
 
 export function isNumericSetting(record: ModuleRecord) {
@@ -82,7 +78,10 @@ export function isNumericSetting(record: ModuleRecord) {
 
 export function isToggleSetting(record: ModuleRecord) {
   const code = asString(record.settingCode)
-  return !isNumericSetting(record) && (code.startsWith('SYS_') || code.startsWith('UI_'))
+  return (
+    !isNumericSetting(record) &&
+    (code.startsWith('SYS_') || code.startsWith('UI_'))
+  )
 }
 
 export function matchesGeneralSettingKeyword(
@@ -96,11 +95,7 @@ export function matchesGeneralSettingKeyword(
     record.settingName,
     record.billName,
     record.remark,
-  ].some((item) =>
-    asString(item)
-      .toLowerCase()
-      .includes(normalized),
-  )
+  ].some((item) => asString(item).toLowerCase().includes(normalized))
 }
 
 export function formatSettingValue(record: ModuleRecord) {
@@ -109,9 +104,9 @@ export function formatSettingValue(record: ModuleRecord) {
     return value ? `${(value * 100).toFixed(0)}%` : '13%'
   }
   if (isMaxConcurrentSetting(record)) {
-    return asasString(record.sampleNo)
+    return asString(record.sampleNo)
   }
-  return asasString(record.sampleNo)
+  return asString(record.sampleNo)
 }
 
 export function formatSwitchState(record: ModuleRecord) {

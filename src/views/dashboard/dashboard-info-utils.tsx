@@ -5,17 +5,11 @@ import {
   ShopOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import dayjs from 'dayjs'
 import type { DashboardSummary } from '@/api/dashboard'
+import { formatDateTime } from '@/utils/formatters'
 import type { DashboardInfoItem } from '@/views/dashboard/dashboard-view-types'
 
-export function formatDateTime(value?: string | null) {
-  if (!value) {
-    return '—'
-  }
-  const parsed = dayjs(value)
-  return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : value
-}
+export { formatDateTime }
 
 export function buildDashboardInfoItems(
   summary?: DashboardSummary,

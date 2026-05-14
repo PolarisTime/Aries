@@ -1,4 +1,8 @@
-import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleLineItem,
+  ModuleRecord,
+  ModuleRecordInput,
+} from '@/types/module-page'
 
 export interface NormalizeDraftContext {
   primaryNoKey?: string
@@ -7,8 +11,8 @@ export interface NormalizeDraftContext {
 }
 
 type ModuleDefaultDraftValues =
-  | Record<string, unknown>
-  | (() => Record<string, unknown>)
+  | ModuleRecordInput
+  | (() => ModuleRecordInput)
 
 export interface SyncEditorFormContext {
   changedKeys: ReadonlySet<string>
@@ -51,7 +55,7 @@ export interface ModuleBehaviorConfig {
     ctx: NormalizeDraftContext,
   ) => void
   syncEditorForm?: (
-    editorForm: Record<string, unknown>,
+    editorForm: ModuleRecord,
     ctx: SyncEditorFormContext,
   ) => void
   savePayloadLineItems?: boolean

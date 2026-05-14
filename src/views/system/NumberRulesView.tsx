@@ -1,6 +1,4 @@
-import { asString } from '@/utils/type-narrowing'
 import { useQuery } from '@tanstack/react-query'
-import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import Form from 'antd/es/form'
 import { useCallback, useMemo, useState } from 'react'
 import {
@@ -8,10 +6,12 @@ import {
   saveSystemSetting,
   updateSystemUploadRule,
 } from '@/api/system-settings'
+import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
+import { asString } from '@/utils/type-narrowing'
 import { NumberRulesEditorModal } from '@/views/system/NumberRulesEditorModal'
 import { NumberRulesTableCard } from '@/views/system/NumberRulesTableCard'
 import {

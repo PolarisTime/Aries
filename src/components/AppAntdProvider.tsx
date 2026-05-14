@@ -1,12 +1,13 @@
-import type { ReactNode } from 'react'
-import { useEffect } from 'react'
 import AntdApp from 'antd/es/app'
 import ConfigProvider from 'antd/es/config-provider'
+import type { ReactNode } from 'react'
+import { useEffect } from 'react'
 import { appAntdLocale } from '@/config/antd-locale'
+import { useThemeMode } from '@/hooks/useThemeMode'
 import { buildAntdTheme } from '@/styles/antd-theme'
 import { bindAntdAppApi } from '@/utils/antd-app'
 
-type Props = {
+interface Props {
   children: ReactNode
 }
 
@@ -24,6 +25,7 @@ function AntdAppRuntimeBridge({ children }: Props) {
 }
 
 export function AppAntdProvider({ children }: Props) {
+  const { resolvedTheme } = useThemeMode()
   return (
     <ConfigProvider
       locale={appAntdLocale}
@@ -31,6 +33,7 @@ export function AppAntdProvider({ children }: Props) {
         cssVarKey: 'aries',
         borderRadius: 8,
         fontSize: 12,
+        darkMode: resolvedTheme === 'dark',
       })}
     >
       <AntdApp className="leo-antd-app">

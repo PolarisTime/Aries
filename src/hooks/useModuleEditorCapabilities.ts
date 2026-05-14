@@ -1,9 +1,9 @@
-import { asString } from '@/utils/type-narrowing'
 import { useMemo } from 'react'
 import type {
   ModuleFormFieldDefinition,
   ModuleRecord,
 } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   buildEditorAuditTarget,
   buildReverseAuditTarget,
@@ -14,7 +14,7 @@ import {
 } from '@/views/modules/module-adapter-editor'
 import { getBehaviorValue } from '@/views/modules/module-behavior-registry'
 
-type Props = {
+interface Props {
   moduleKey: string
   formFields: ModuleFormFieldDefinition[]
   lineItemLockRelatedRows: ModuleRecord[]
@@ -51,9 +51,7 @@ export function useModuleEditorCapabilities({
         ? lineItemsLockedOverride
         : isModuleLineItemsLocked(
             moduleKey,
-            lineItemLockRelatedRows.map((record) =>
-              asString(record.status),
-            ),
+            lineItemLockRelatedRows.map((record) => asString(record.status)),
           ),
     [lineItemsLockedOverride, moduleKey, lineItemLockRelatedRows],
   )
@@ -66,7 +64,13 @@ export function useModuleEditorCapabilities({
       lineItemsLocked,
       currentStatus,
     )
-  }, [moduleKey, formFields, lineItemsLocked, currentStatus, resolveModuleStatusOptions])
+  }, [
+    moduleKey,
+    formFields,
+    lineItemsLocked,
+    currentStatus,
+    resolveModuleStatusOptions,
+  ])
 
   const listStatusField = useMemo(
     () => formFields.find((field) => field.key === 'status'),

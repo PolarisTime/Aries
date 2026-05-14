@@ -6,20 +6,35 @@
  * - Form.useForm<FormType>() 显式提供泛型
  * - Form.Item name 禁止字符串硬编码，使用 typedName() 辅助
  */
-import Form from 'antd/es/form'
-import type { FormInstance } from 'antd/es/form'
 
-/** 为指定泛型创建类型安全的 Form.useForm */
-export function useTypedForm<T extends Record<string, unknown>>(): [FormInstance<T>, (values: Partial<T>) => void] {
-  return Form.useForm<T>()
+import type { FormInstance } from 'antd/es/form'
+import Form from 'antd/es/form'
+
+type MutableFormInstance = {
+  setFieldsValue: (values: unknown) => void
+  getFieldValue: (field: string) => unknown
+  validateFields: (fields?: string[]) => Promise<unknown>
 }
 
-/** 类型安全取值 — 消除 form.getFieldValue 的 any 返回 */
-export function getFormValue<T extends Record<string, unknown>, K extends keyof T & string>(
-  form: FormInstance<T>,
-  field: K,
-): T[K] {
-  return form.getFieldValue(field)
+/** 为指定泛型创建类型安全的 Form.useForm */
+export function useTypedForm<T extends Record<string, unknown>>(): [
+  FormInstance<T>,
+  (values: Partial<T>) => void,
+] {
+  const [form] = Form.useForm<T>()
+  return [
+    form,
+    (values: Partial<T>) =>
+      (form as unknown as MutableFormInstance).setFieldsValue(values),
+  ]
+}
+
+/** 类型安全取值，隔离 form.getFieldValue 的未知返回 */
+export function getFormValue<
+  T extends Record<string, unknown>,
+  K extends keyof T & string,
+>(form: FormInstance<T>, field: K): T[K] {
+  return (form as unknown as MutableFormInstance).getFieldValue(field) as T[K]
 }
 
 /** 类型安全取字符串字段 */
@@ -27,7 +42,7 @@ export function getFormString<T extends Record<string, unknown>>(
   form: FormInstance<T>,
   field: string,
 ): string {
-  const v: unknown = form.getFieldValue(field)
+  const v = (form as unknown as MutableFormInstance).getFieldValue(field)
   return typeof v === 'string' ? v : ''
 }
 
@@ -37,9 +52,11 @@ export async function validateForm<T extends Record<string, unknown>>(
   fields?: (keyof T & string)[],
 ): Promise<T> {
   if (fields) {
-    return form.validateFields(fields as string[])
+    return (await (form as unknown as MutableFormInstance).validateFields(
+      fields,
+    )) as T
   }
-  return form.validateFields()
+  return (await (form as unknown as MutableFormInstance).validateFields()) as T
 }
 
 export type { FormInstance }

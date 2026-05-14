@@ -40,7 +40,7 @@ export const loginUserSchema = z.object({
   totpEnabled: z.boolean().optional(),
   forceTotpSetup: z.boolean().optional(),
   permissions: z.array(resourcePermissionSchema).optional(),
-  dataScopes: z.record(z.string(), z.any()).optional(),
+  dataScopes: z.record(z.string(), z.string()).optional(),
 })
 export type LoginUser = z.infer<typeof loginUserSchema>
 

@@ -1,15 +1,16 @@
-import { asString } from '@/utils/type-narrowing'
 import type { ParsedLocation } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef } from 'react'
+import type { SearchParams } from '@/types/api-raw'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
-type Props = {
+interface Props {
   location: ParsedLocation
   config: ModulePageConfig | undefined
   records: ModuleRecord[]
   setPage: (page: number) => void
   clearSelection: () => void
-  setSubmittedFilters: (filters: Record<string, unknown>) => void
+  setSubmittedFilters: (filters: SearchParams) => void
   updateFilter: (key: string, value: unknown) => void
   openDetail: (target: string | ModuleRecord) => Promise<void>
 }

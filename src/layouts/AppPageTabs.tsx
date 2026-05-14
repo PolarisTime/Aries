@@ -1,12 +1,12 @@
+import Tabs from 'antd/es/tabs'
 import type {
   CSSProperties,
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
 } from 'react'
-import Tabs from 'antd/es/tabs'
 import type { OpenPage } from '@/hooks/useOpenPages'
 
-type AppPageTabsProps = {
+interface AppPageTabsProps {
   activeKey: string
   isTopNavigationLayout: boolean
   onNavigateToPath: (path: string) => void

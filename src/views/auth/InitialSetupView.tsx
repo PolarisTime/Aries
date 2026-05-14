@@ -6,6 +6,7 @@ import Space from 'antd/es/space'
 import Spin from 'antd/es/spin'
 import Steps from 'antd/es/steps'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { appTitle } from '@/utils/env'
 import { InitialSetupAdminForm } from '@/views/auth/InitialSetupAdminForm'
@@ -13,6 +14,7 @@ import { InitialSetupCompanyForm } from '@/views/auth/InitialSetupCompanyForm'
 import { useInitialSetupState } from '@/views/auth/useInitialSetupState'
 
 export function InitialSetupView() {
+  const { t } = useTranslation()
   const {
     adminCompleted,
     checking,
@@ -30,49 +32,44 @@ export function InitialSetupView() {
   } = useInitialSetupState()
 
   const content = checking ? (
-    <Flex align="center" justify="center" style={{ minHeight: '100vh' }}>
-      <Spin size="large" tip="正在检查初始化状态..." />
+    <Flex align="center" justify="center" className="min-h-screen">
+      <Spin size="large" tip={t('auth.initialsetup.checking')} />
     </Flex>
   ) : status && !status.setupRequired ? (
-    <Flex
-      align="center"
-      justify="center"
-      style={{ minHeight: '100vh', padding: 24 }}
-    >
-      <Result status="success" title="系统已完成初始化" />
+    <Flex align="center" justify="center" className="min-h-screen p-6">
+      <Result status="success" title={t('auth.initialsetup.completedTitle')} />
     </Flex>
   ) : (
     <Flex
       align="center"
       justify="center"
-      style={{
-        minHeight: '100vh',
-        padding: 24,
-        background:
-          'radial-gradient(circle at top left, rgba(37,99,235,0.18), transparent 26%), linear-gradient(135deg, #eef4fb 0%, #f8fafc 55%, #e8eff8 100%)',
-      }}
+      className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.18),transparent_26%),linear-gradient(135deg,#eef4fb_0%,#f8fafc_55%,#e8eff8_100%)] p-6"
     >
-      <Card style={{ width: 'min(100%, 720px)' }}>
+      <Card className="w-[min(100%,720px)]">
         <Space orientation="vertical" size="large" className="w-full">
-          <Space
-            orientation="vertical"
-            size={4}
-            style={{ width: '100%', textAlign: 'center' }}
-          >
-            <Typography.Title level={2} style={{ margin: 0 }}>
+          <Space orientation="vertical" size={4} className="w-full text-center">
+            <Typography.Title level={2} className="m-0">
               {appTitle}
             </Typography.Title>
-            <Typography.Text type="secondary">系统初始化向导</Typography.Text>
+            <Typography.Text type="secondary">
+              {t('auth.initialsetup.guideTitle')}
+            </Typography.Text>
           </Space>
           <Steps
             current={currentStep === 'admin' ? 0 : 1}
-            items={[{ title: '管理员配置' }, { title: '公司主体配置' }]}
-            style={{ marginBottom: 8 }}
+            items={[
+              { title: t('auth.initialsetup.adminStep') },
+              { title: t('auth.initialsetup.companyStep') },
+            ]}
+            className="mb-2"
           />
           <Form
             form={form}
             layout="vertical"
-            initialValues={{ adminUserName: '系统管理员', taxRate: 0.13 }}
+            initialValues={{
+              adminUserName: t('auth.initialsetup.defaultAdminUserName'),
+              taxRate: 0.13,
+            }}
           >
             {currentStep === 'admin' ? (
               <InitialSetupAdminForm

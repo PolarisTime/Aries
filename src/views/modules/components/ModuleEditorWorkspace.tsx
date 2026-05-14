@@ -12,7 +12,7 @@ import { ModuleEditorFormSection } from './ModuleEditorFormSection'
 import { ModuleEditorItemsSection } from './ModuleEditorItemsSection'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
-type Props = {
+interface Props {
   open: boolean
   config: ModulePageConfig
   record: ModuleRecord | null
@@ -145,7 +145,9 @@ export function ModuleEditorWorkspace({
           lineItemsLocked={lineItemsLocked}
           lockedLineItemsNotice={lockedLineItemsNotice}
           onCancel={onClose}
-          oonSave={() => { void handleSave }}
+          onSave={() => {
+            void handleSave
+          }}
         />
       </Form>
 
@@ -165,7 +167,9 @@ export function ModuleEditorWorkspace({
         saving={saving}
         onAddItem={addItem}
         onCancel={onClose}
-        oonSave={() => { void handleSave }}
+        onSave={() => {
+          void handleSave
+        }}
         onOpenParentSelector={openParentSelector}
         onCloseParentSelector={closeParentSelector}
         onRemoveSelectedItems={removeSelectedItems}

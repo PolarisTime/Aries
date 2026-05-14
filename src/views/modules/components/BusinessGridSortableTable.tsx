@@ -11,13 +11,13 @@ import {
   horizontalListSortingStrategy,
   SortableContext,
 } from '@dnd-kit/sortable'
-import type { ReactNode } from 'react'
 import type { ColumnsType } from 'antd/es/table'
+import type { ReactNode } from 'react'
 import type { ModuleRecord } from '@/types/module-page'
-import { DraggableColumnHeader } from '@/views/modules/components/DraggableColumnHeader'
 import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
+import { DraggableColumnHeader } from '@/views/modules/components/DraggableColumnHeader'
 
-type Props = {
+interface Props {
   moduleKey: string
   columns: ColumnsType<ModuleRecord>
   columnOrder: string[]

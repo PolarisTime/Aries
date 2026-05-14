@@ -69,7 +69,11 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
-  defaultHiddenColumnKeys: ['sourcePurchaseOrderNos', 'invoiceTitle', 'taxAmount'],
+  defaultHiddenColumnKeys: [
+    'sourcePurchaseOrderNos',
+    'invoiceTitle',
+    'taxAmount',
+  ],
   detailFields: [
     { label: '收票单号', key: 'receiveNo' },
     { label: '关联采购订单', key: 'sourcePurchaseOrderNos' },

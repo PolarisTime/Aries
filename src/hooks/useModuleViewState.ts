@@ -1,13 +1,13 @@
 import { useMemo } from 'react'
-import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
+import type { ModuleLineItem, ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { canModuleEditLineItems } from '@/views/modules/module-adapter-editor'
 import { hasBehavior } from '@/views/modules/module-behavior-registry'
 
-type Props = {
+interface Props {
   moduleKey: string
   config: ModulePageConfig
   editorMode: 'create' | 'edit'
-  editorForm: Record<string, unknown>
+  editorForm: ModuleRecord
   canCreateRecords: boolean
   canEditRecords: boolean
 }
@@ -54,10 +54,7 @@ export function useModuleViewState({
     [config.itemColumns],
   )
   const editorItems = useMemo<ModuleLineItem[]>(
-    () =>
-      Array.isArray(editorForm.items)
-        ? (editorForm.items as ModuleLineItem[])
-        : [],
+    () => (Array.isArray(editorForm.items) ? editorForm.items : []),
     [editorForm.items],
   )
   const editorItemWeightTotal = useMemo(

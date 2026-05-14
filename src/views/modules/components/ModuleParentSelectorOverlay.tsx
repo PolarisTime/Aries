@@ -1,24 +1,22 @@
-import { asString } from '@/utils/type-narrowing'
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { StatusTag } from '@/components/StatusTag'
-import { listBusinessModule } from '@/api/business'
-import { loadBusinessPageConfig } from '@/config/business-page-loader'
-import { getModuleConfig } from '@/api/module-contracts'
-import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import Button from 'antd/es/button'
-import Table from 'antd/es/table'
 import type { ColumnsType } from 'antd/es/table'
+import Table from 'antd/es/table'
 import { useEffect, useMemo, useState } from 'react'
+import { listBusinessModule } from '@/api/business'
+import { getModuleConfig } from '@/api/module-contracts'
+import { StatusTag } from '@/components/StatusTag'
+import { loadBusinessPageConfig } from '@/config/business-page-loader'
+import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import type { SearchParams } from '@/types/api-raw'
+import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { compactSearch } from '@/utils/list'
-import type {
-  ModulePageConfig,
-  ModuleRecord,
-} from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { ModuleFilterToolbar } from './ModuleFilterToolbar'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
-type Props = {
+interface Props {
   open: boolean
   parentModuleKey: string
   parentDisplayFieldKey?: string
@@ -68,7 +66,12 @@ const parentSelectorColumnMap: Record<string, OverlayColumn[]> = {
     { dataIndex: 'supplierName', title: '供应商', width: 180 },
     { dataIndex: 'buyerName', title: '采购员', width: 120 },
     { dataIndex: 'orderDate', title: '订单日期', width: 130, type: 'date' },
-    { dataIndex: 'totalWeight', title: '总重量（吨）', width: 130, type: 'weight' },
+    {
+      dataIndex: 'totalWeight',
+      title: '总重量（吨）',
+      width: 130,
+      type: 'weight',
+    },
     { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
     { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
   ],
@@ -78,7 +81,12 @@ const parentSelectorColumnMap: Record<string, OverlayColumn[]> = {
     { dataIndex: 'customerName', title: '客户名称', width: 160 },
     { dataIndex: 'projectName', title: '项目名称', width: 180 },
     { dataIndex: 'deliveryDate', title: '送货日期', width: 130, type: 'date' },
-    { dataIndex: 'totalWeight', title: '总重量（吨）', width: 130, type: 'weight' },
+    {
+      dataIndex: 'totalWeight',
+      title: '总重量（吨）',
+      width: 130,
+      type: 'weight',
+    },
     { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
     { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
   ],
@@ -88,7 +96,12 @@ const parentSelectorColumnMap: Record<string, OverlayColumn[]> = {
     { dataIndex: 'customerName', title: '客户名称', width: 160 },
     { dataIndex: 'projectName', title: '项目名称', width: 180 },
     { dataIndex: 'outboundDate', title: '出库日期', width: 130, type: 'date' },
-    { dataIndex: 'totalWeight', title: '总重量（吨）', width: 130, type: 'weight' },
+    {
+      dataIndex: 'totalWeight',
+      title: '总重量（吨）',
+      width: 130,
+      type: 'weight',
+    },
     { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
     { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
   ],
@@ -97,7 +110,12 @@ const parentSelectorColumnMap: Record<string, OverlayColumn[]> = {
     { dataIndex: 'purchaseOrderNo', title: '关联订单', width: 160 },
     { dataIndex: 'supplierName', title: '供应商', width: 180 },
     { dataIndex: 'inboundDate', title: '入库日期', width: 130, type: 'date' },
-    { dataIndex: 'totalWeight', title: '总重量（吨）', width: 130, type: 'weight' },
+    {
+      dataIndex: 'totalWeight',
+      title: '总重量（吨）',
+      width: 130,
+      type: 'weight',
+    },
     { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
     { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
   ],
@@ -117,7 +135,7 @@ function resolveParentSelectorColumns(
   ]
 }
 
-function normalizeFilterValues(filters: Record<string, unknown>) {
+function normalizeFilterValues(filters: SearchParams) {
   return Object.fromEntries(
     Object.entries(filters).map(([key, value]) => [
       key,
@@ -224,10 +242,8 @@ export function ModuleParentSelectorOverlay({
   onClose,
 }: Props) {
   const { formatCellValue } = useModuleDisplaySupport()
-  const [draftFilters, setDraftFilters] = useState<Record<string, unknown>>({})
-  const [submittedFilters, setSubmittedFilters] = useState<
-    Record<string, unknown>
-  >({})
+  const [draftFilters, setDraftFilters] = useState<SearchParams>({})
+  const [submittedFilters, setSubmittedFilters] = useState<SearchParams>({})
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -311,7 +327,7 @@ export function ModuleParentSelectorOverlay({
                 <StatusTag
                   status={asString(value)}
                   statusMap={overlayStatusMap}
-                  fallback={asasString(value)}
+                  fallback={asString(value)}
                 />
               )
             }
@@ -338,10 +354,7 @@ export function ModuleParentSelectorOverlay({
       const next = { ...prev }
       records.forEach((record) => {
         const key = String(record.id)
-        if (
-          selectedRowKeys.includes(key) &&
-          next[key] !== record
-        ) {
+        if (selectedRowKeys.includes(key) && next[key] !== record) {
           next[key] = record
           changed = true
         }
@@ -414,18 +427,11 @@ export function ModuleParentSelectorOverlay({
       className="workspace-overlay-panel--parent-selector"
       footer={
         allowMultipleSelection ? (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            <span style={{ color: 'var(--ant-color-text-secondary)' }}>
+          <div className="flex justify-between items-center gap-12">
+            <span className="text-secondary">
               已选择 {selectedRows.length} 条
             </span>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="flex gap-8">
               <Button onClick={onClose}>取消</Button>
               <Button
                 type="primary"
@@ -561,8 +567,7 @@ export function ModuleParentSelectorOverlay({
                       const matchedRow = rows.find(
                         (row) => String(row.id) === normalizedKey,
                       )
-                      next[normalizedKey] =
-                        matchedRow || prev[normalizedKey]
+                      next[normalizedKey] = matchedRow || prev[normalizedKey]
                     })
                     return next
                   })

@@ -1,14 +1,14 @@
-import { asString } from '@/utils/type-narrowing'
 import { useCallback } from 'react'
 import { getBusinessModuleDetail } from '@/api/business'
 import { getDefaultPrintTemplate } from '@/api/print-template'
-import type { ModulePageConfig } from '@/types/module-page'
+import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
 import { execPrintCode, isCLodopCode, printHtml } from '@/utils/clodop'
 import { buildModulePrintHtml } from '@/utils/module-print'
 import { renderPrintTemplate } from '@/utils/print-template-engine'
+import { asArray, asString } from '@/utils/type-narrowing'
 
-type Props = {
+interface Props {
   moduleKey: string
   config: ModulePageConfig
   selectedRowKeys: string[]
@@ -46,9 +46,7 @@ export function useBusinessGridPrintActions({
             renderPrintTemplate(
               template.templateHtml,
               record,
-              Array.isArray(record.items)
-                ? (record.items as Array<Record<string, unknown>>)
-                : [],
+              asArray<ModuleLineItem>(record.items),
             ),
           )
           const renderedHtml = isCLodopCode(template.templateHtml)

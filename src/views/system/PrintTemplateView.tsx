@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import Form from 'antd/es/form'
 import { useCallback, useState } from 'react'
 import {
@@ -8,14 +7,15 @@ import {
   savePrintTemplate,
 } from '@/api/print-template'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
+import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { PrintTemplateRecord } from '@/types/print-template'
+import { message, modal } from '@/utils/antd-app'
 import { PrintTemplateEditorModal } from '@/views/system/PrintTemplateEditorModal'
 import { PrintTemplatePreviewModal } from '@/views/system/PrintTemplatePreviewModal'
 import { PrintTemplateTableCard } from '@/views/system/PrintTemplateTableCard'
 import { buildPrintTemplateCopyName } from '@/views/system/print-template-view-utils'
-import { message, modal } from '@/utils/antd-app'
 
 export function PrintTemplateView() {
   const queryClient = useQueryClient()

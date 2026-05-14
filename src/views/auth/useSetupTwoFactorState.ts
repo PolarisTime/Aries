@@ -1,29 +1,34 @@
 import { useNavigate } from '@tanstack/react-router'
 import Form from 'antd/es/form'
 import { useCallback, useEffect, useState } from 'react'
-import { http } from '@/api/client'
-import { ENDPOINTS } from '@/constants/endpoints'
+import { useTranslation } from 'react-i18next'
+import { enableOwn2fa, setupOwn2fa } from '@/api/account-security'
 import { syncCurrentUserTotpState } from '@/stores/auth-user-sync'
-import type { ApiResponse } from '@/types/api'
+import type { TotpSetupResponse } from '@/types/auth'
 import { message } from '@/utils/antd-app'
 
-interface TotpSetupData {
-  qrCodeBase64: string
-  secret: string
-}
-
-interface TotpCodeFormValues {
+type TotpCodeFormValues = {
   totpCode: string
 }
 
-export function useSetupTwoFactorState() {
+type UseSetupTwoFactorStateResult = {
+  enabling: boolean
+  fetchTotpSetup: () => Promise<void>
+  form: ReturnType<typeof Form.useForm<TotpCodeFormValues>>[0]
+  handleEnable: (values: TotpCodeFormValues) => Promise<void>
+  loading: boolean
+  totpData: TotpSetupResponse | null
+}
+
+export function useSetupTwoFactorState(): UseSetupTwoFactorStateResult {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [enabling, setEnabling] = useState(false)
-  const [totpData, setTotpData] = useState<TotpSetupData | null>(null)
+  const [totpData, setTotpData] = useState<TotpSetupResponse | null>(null)
   const [form] = Form.useForm<TotpCodeFormValues>()
 
-  const resolveRedirectTarget = useCallback(() => {
+  const resolveRedirectTarget = useCallback((): string => {
     if (typeof window === 'undefined') {
       return '/dashboard'
     }
@@ -37,44 +42,46 @@ export function useSetupTwoFactorState() {
     return redirect
   }, [])
 
-  const fetchTotpSetup = useCallback(async () => {
+  const fetchTotpSetup = useCallback(async (): Promise<void> => {
     setLoading(true)
     try {
-      const res = await http.post<ApiResponse<TotpSetupData>>(
-        ENDPOINTS.ACCOUNT_2FA_SETUP,
-        {},
-      )
-      setTotpData(res.data)
+      setTotpData((await setupOwn2fa()).data)
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '获取2FA设置失败')
+      message.error(
+        error instanceof Error
+          ? error.message
+          : t('auth.setup2fa.content.loadFailed'),
+      )
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void fetchTotpSetup()
   }, [fetchTotpSetup])
 
   const handleEnable = useCallback(
-    async (values: TotpCodeFormValues) => {
+    async (values: TotpCodeFormValues): Promise<void> => {
       try {
         setEnabling(true)
-        await http.post(ENDPOINTS.ACCOUNT_2FA_ENABLE, {
-          totpCode: values.totpCode,
-        })
+        await enableOwn2fa(values.totpCode)
         syncCurrentUserTotpState(true)
-        message.success('二次验证已启用')
+        message.success(t('auth.personalsecurity.enableSuccess'))
         setTimeout(() => {
           void navigate({ to: resolveRedirectTarget() as '/' })
         }, 300)
       } catch (error) {
-        message.error(error instanceof Error ? error.message : '启用2FA失败')
+        message.error(
+          error instanceof Error
+            ? error.message
+            : t('auth.personalsecurity.enableFailed'),
+        )
       } finally {
         setEnabling(false)
       }
     },
-    [navigate, resolveRedirectTarget],
+    [navigate, resolveRedirectTarget, t],
   )
 
   return {

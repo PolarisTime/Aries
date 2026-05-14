@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
-import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import {
   listUserAccounts,
   type UserAccountListParams,
 } from '@/api/user-accounts'
+import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 
 export function useUserAccountListState(enabled = true) {
   const [keyword, setKeyword] = useState('')

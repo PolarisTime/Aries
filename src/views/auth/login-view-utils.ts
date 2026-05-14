@@ -1,13 +1,7 @@
+import { checkAuthPing } from '@/api/auth'
 import type { LoginUser } from '@/types/auth'
-import { apiBaseUrl } from '@/utils/env'
 
 const TOTP_SESSION_KEY = 'aries-totp-session'
-
-export const loginHeroStats = [
-  { label: '业务域', value: '采购 / 销售 / 财务' },
-  { label: '安全策略', value: '密码 + 2FA' },
-  { label: '部署方式', value: '本地自托管' },
-] as const
 
 export interface SavedTotpSession {
   token: string
@@ -22,15 +16,7 @@ let healthCache: { online: boolean; checkedAt: number } = {
 
 export async function checkBackendHealth(): Promise<boolean> {
   try {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 5000)
-    const res = await fetch(`${apiBaseUrl}/auth/ping`, {
-      signal: controller.signal,
-      headers: { Accept: 'application/json' },
-    })
-    clearTimeout(timer)
-    const body = (await res.json()) as { code?: number }
-    const online = body?.code === 0
+    const online = await checkAuthPing()
     healthCache = { online, checkedAt: Date.now() }
     return online
   } catch {
@@ -39,7 +25,7 @@ export async function checkBackendHealth(): Promise<boolean> {
   }
 }
 
-export function getCachedHealth() {
+export function getCachedHealth(): { online: boolean; checkedAt: number } {
   return healthCache
 }
 
@@ -47,14 +33,14 @@ export function saveTotpSession(
   token: string,
   deadline: number,
   loginName: string,
-) {
+): void {
   sessionStorage.setItem(
     TOTP_SESSION_KEY,
     JSON.stringify({ token, deadline, loginName }),
   )
 }
 
-export function clearTotpSession() {
+export function clearTotpSession(): void {
   sessionStorage.removeItem(TOTP_SESSION_KEY)
 }
 
@@ -83,14 +69,14 @@ export function restoreTotpSession(): SavedTotpSession | null {
   return null
 }
 
-export function sanitizeRedirectPath(candidate: string) {
+export function sanitizeRedirectPath(candidate: string): string {
   if (!candidate.startsWith('/') || /^https?:\/\//i.test(candidate)) {
     return '/dashboard'
   }
   return candidate
 }
 
-export function getRedirectTarget() {
+export function getRedirectTarget(): string {
   if (typeof window === 'undefined') {
     return '/dashboard'
   }
@@ -98,11 +84,15 @@ export function getRedirectTarget() {
   return sanitizeRedirectPath(params.get('redirect') || '/dashboard')
 }
 
-export function requiresForcedTotpSetup(user: LoginUser | null | undefined) {
+export function requiresForcedTotpSetup(
+  user: LoginUser | null | undefined,
+): boolean {
   return Boolean(user?.forceTotpSetup && user?.totpEnabled !== true)
 }
 
-export function buildPostLoginTarget(user: LoginUser | null | undefined) {
+export function buildPostLoginTarget(
+  user: LoginUser | null | undefined,
+): string {
   const redirect = getRedirectTarget()
   if (requiresForcedTotpSetup(user)) {
     return `/setup-2fa?redirect=${encodeURIComponent(redirect)}`
@@ -110,7 +100,7 @@ export function buildPostLoginTarget(user: LoginUser | null | undefined) {
   return redirect
 }
 
-export function buildTotpCountdown(now: number, stepDeadline: number) {
+export function buildTotpCountdown(now: number, stepDeadline: number): string {
   if (!stepDeadline || now >= stepDeadline) {
     return '00:00'
   }

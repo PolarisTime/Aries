@@ -1,5 +1,5 @@
-import { asString } from '@/utils/type-narrowing'
 import type { ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { parseParentRelationNos } from '@/views/modules/module-adapter-shared'
 
 export function getAvailableSupplierStatementInbounds(

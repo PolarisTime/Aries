@@ -29,10 +29,14 @@ export const userAccountFormPayloadSchema = z.object({
   status: z.string(),
   remark: z.string(),
 })
-export type UserAccountFormPayload = z.infer<typeof userAccountFormPayloadSchema>
+export type UserAccountFormPayload = z.infer<
+  typeof userAccountFormPayloadSchema
+>
 
 export const userAccountCreateResultSchema = z.object({
+  user: userAccountRecordSchema.optional(),
   loginName: z.string(),
+  initialPassword: z.string().optional(),
   password: z.string(),
   totpSetup: z
     .object({
@@ -41,18 +45,25 @@ export const userAccountCreateResultSchema = z.object({
     })
     .optional(),
 })
-export type UserAccountCreateResult = z.infer<typeof userAccountCreateResultSchema>
+export type UserAccountCreateResult = z.infer<
+  typeof userAccountCreateResultSchema
+>
 
 export const departmentOptionRecordSchema = z.object({
   id: z.union([z.string(), z.number()]),
+  departmentCode: z.string().optional(),
   departmentName: z.string(),
 })
-export type DepartmentOptionRecord = z.infer<typeof departmentOptionRecordSchema>
+export type DepartmentOptionRecord = z.infer<
+  typeof departmentOptionRecordSchema
+>
 
 export const roleOptionRecordSchema = z.object({
   id: z.union([z.string(), z.number()]),
   roleName: z.string(),
   roleCode: z.string(),
   status: z.string().optional(),
+  dataScope: z.string().optional(),
+  permissionSummary: z.string().optional(),
 })
 export type RoleOptionRecord = z.infer<typeof roleOptionRecordSchema>

@@ -5,7 +5,9 @@ import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
-type Props = {
+import { getFormString } from '@/lib/antd-form'
+
+interface Props {
   form: FormInstance
   canSave: boolean
   settlementAccountCount: number
@@ -16,7 +18,7 @@ export function CompanySubjectCard({
   settlementAccountCount,
 }: Props) {
   return (
-    <Card size="small" style={{ background: '#fafafa', borderRadius: 12 }}>
+    <Card size="small" className="bg-secondary rounded-lg">
       <Typography.Title level={5}>
         <EditOutlined /> 基础主体
       </Typography.Title>
@@ -36,35 +38,26 @@ export function CompanySubjectCard({
         />
       </Form.Item>
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: 16,
-          borderRadius: 12,
-          background: 'linear-gradient(135deg, #e6f4ff 0%, #f6ffed 100%)',
-        }}
+        className="flex items-center gap-12 p-16 rounded-lg"
+        style={{ background: 'var(--theme-highlight-bg)' }}
       >
         <div
+          className="flex items-center justify-center text-xl"
           style={{
             width: 44,
             height: 44,
             borderRadius: 12,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: '#1677ff',
+            background: 'var(--theme-primary)',
             color: '#fff',
-            fontSize: 20,
           }}
         >
           <IdcardOutlined />
         </div>
         <div>
-          <div style={{ fontWeight: 600 }}>
+          <div className="font-semibold">
             {getFormString(form, 'companyName') || '公司主体待配置'}
           </div>
-          <div style={{ fontSize: 12, color: '#8c8c8c' }}>
+          <div className="text-xs text-secondary">
             {getFormString(form, 'taxNo') || '税号待配置'} / 结算银行{' '}
             {settlementAccountCount} 个
           </div>

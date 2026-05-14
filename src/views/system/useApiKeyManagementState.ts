@@ -14,6 +14,7 @@ import { useRequestError } from '@/hooks/useRequestError'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message, modal } from '@/utils/antd-app'
+import { asString } from '@/utils/type-narrowing'
 
 interface ApiKeyCreateFormValues {
   userId?: string
@@ -177,7 +178,7 @@ export function useApiKeyManagementState(enabled = true) {
       setTotpLoading(true)
       try {
         const response = await createApiKey(
-          values.userId as string,
+          asString(values.userId),
           {
             keyName: values.keyName?.trim() || '',
             usageScope: values.usageScope || '',

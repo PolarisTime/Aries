@@ -8,8 +8,9 @@ import type { ModuleFormFieldDefinition } from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 import { padLabel } from '@/utils/label-utils'
+import { asString } from '@/utils/type-narrowing'
 
-type Props = {
+interface Props {
   field: ModuleFormFieldDefinition
   disabled?: boolean
 }
@@ -87,7 +88,10 @@ export function FormFieldRenderer({ field, disabled }: Props) {
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
-                  value: opt.value as string | number,
+                  value:
+                    typeof opt.value === 'number'
+                      ? opt.value
+                      : asString(opt.value),
                 }))
               : []
           }
@@ -112,7 +116,10 @@ export function FormFieldRenderer({ field, disabled }: Props) {
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
-                  value: opt.value as string | number,
+                  value:
+                    typeof opt.value === 'number'
+                      ? opt.value
+                      : asString(opt.value),
                 }))
               : []
           }
@@ -161,7 +168,10 @@ export function FormFieldRenderer({ field, disabled }: Props) {
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
-                  value: opt.value as string | number,
+                  value:
+                    typeof opt.value === 'number'
+                      ? opt.value
+                      : asString(opt.value),
                 }))
               : []
           }

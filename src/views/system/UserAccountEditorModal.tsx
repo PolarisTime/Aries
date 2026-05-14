@@ -2,25 +2,27 @@ import type { FormInstance } from 'antd'
 import Col from 'antd/es/col'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import { FormModal } from '@/components/FormModal'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Spin from 'antd/es/spin'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
+import { FormModal } from '@/components/FormModal'
 import {
   enabledStatusOptions,
   enabledStatusValues,
 } from '@/constants/module-options'
+import { getFormString } from '@/lib/antd-form'
 import type {
   DepartmentOptionRecord,
   RoleOptionRecord,
 } from '@/types/user-account'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
+
 type EditorMode = 'create' | 'edit'
-type Props = {
+interface Props {
   open: boolean
   mode: EditorMode
   loading: boolean

@@ -1,5 +1,7 @@
-type Props = {
-  items: Record<string, unknown>[]
+import type { ModuleRecord } from '@/types/module-page'
+
+interface Props {
+  items: ModuleRecord[]
   weightKey?: string
   amountKey?: string
   countKey?: string
@@ -27,7 +29,11 @@ export function EditorItemsSummary({
   )
 
   return (
-    <div className={['editor-items-summary', className || ''].filter(Boolean).join(' ')}>
+    <div
+      className={['editor-items-summary', className || '']
+        .filter(Boolean)
+        .join(' ')}
+    >
       <span>行数 {items.length}</span>
       {totalCount > 0 && <span>数量 {totalCount}</span>}
       {totalWeight > 0 && <span>重量 {totalWeight.toFixed(3)}</span>}

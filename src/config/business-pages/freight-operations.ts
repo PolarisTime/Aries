@@ -1,9 +1,9 @@
-import { asString } from '@/utils/type-narrowing'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   AUDIT_STATUS_LABEL,
   CARRIER_NAME_LABEL,

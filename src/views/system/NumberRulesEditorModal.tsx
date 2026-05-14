@@ -2,10 +2,10 @@ import type { FormInstance } from 'antd'
 import Col from 'antd/es/col'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import { FormModal } from '@/components/FormModal'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
+import { FormModal } from '@/components/FormModal'
 import {
   buildRuleSampleNo,
   buildUploadRulePreview,
@@ -15,7 +15,7 @@ import {
   RESET_RULE_OPTIONS,
 } from '@/views/system/number-rules-view-utils'
 
-type Props = {
+interface Props {
   open: boolean
   kind: NumberRuleEditorKind
   form: FormInstance

@@ -3,35 +3,42 @@ import Flex from 'antd/es/flex'
 import Space from 'antd/es/space'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/authStore'
 import { appTitle } from '@/utils/env'
 import { SetupTwoFactorContent } from '@/views/auth/SetupTwoFactorContent'
-import { setupSecurityHighlights } from '@/views/auth/setup-two-factor-constants'
+import { buildSetupSecurityHighlights } from '@/views/auth/setup-two-factor-constants'
 import { useSetupTwoFactorState } from '@/views/auth/useSetupTwoFactorState'
 import { AuthPageShell } from './AuthPageShell'
 
-export function SetupTwoFactorView() {
+export function SetupTwoFactorView(): React.JSX.Element {
+  const { t } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const { enabling, fetchTotpSetup, form, handleEnable, loading, totpData } =
     useSetupTwoFactorState()
+  const setupSecurityHighlights = useMemo(
+    () => buildSetupSecurityHighlights(t),
+    [t],
+  )
 
-  const currentUserName = user?.userName || user?.loginName || '当前账户'
+  const currentUserName =
+    user?.userName || user?.loginName || t('auth.setup2fa.currentUserFallback')
   const hero = (
     <Flex vertical gap={12}>
       <div>
-        <Tag color="blue" variant="filled" style={{ width: 'fit-content' }}>
-          Account Security
+        <Tag color="blue" variant="filled" className="w-fit">
+          {t('auth.setup2fa.heroTag')}
         </Tag>
-        <Typography.Title level={2} style={{ margin: '16px 0 8px' }}>
+        <Typography.Title level={2} className="my-4 mb-2">
           {appTitle}
         </Typography.Title>
-        <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          为账户启用二次验证
+        <Typography.Paragraph type="secondary" className="mb-0">
+          {t('auth.setup2fa.heroSubtitle')}
         </Typography.Paragraph>
       </div>
-      <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-        当前账户登录后仍需补齐安全绑定。认证入口统一改成 Ant Design
-        组件结构，用更标准的卡片、列表和表单完成 2FA 接入。
+      <Typography.Paragraph type="secondary" className="mb-0">
+        {t('auth.setup2fa.heroDescription')}
       </Typography.Paragraph>
       <Flex vertical gap={12}>
         {setupSecurityHighlights.map((item, index) => (
@@ -40,7 +47,7 @@ export function SetupTwoFactorView() {
               <Tag color="blue" variant="filled">
                 {index + 1}
               </Tag>
-              <Space direction="vertical" size={2}>
+              <Space orientation="vertical" size={2}>
                 <Typography.Text strong>{item.title}</Typography.Text>
                 <Typography.Text type="secondary">
                   {item.description}

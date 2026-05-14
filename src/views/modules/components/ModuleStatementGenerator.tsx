@@ -13,7 +13,7 @@ import {
   filterStatementCounterpartyOptions,
 } from '@/views/modules/module-statement-generator-options'
 
-type Props = {
+interface Props {
   open: boolean
   statementType: 'customer' | 'supplier' | 'freight'
   onClose: () => void
@@ -93,7 +93,9 @@ export function ModuleStatementGenerator({
       title={`生成${statementType === 'customer' ? '客户' : statementType === 'supplier' ? '供应商' : '物流'}对账单`}
       open={open}
       onCancel={onClose}
-      oonOk={() => { void handleGenerate }}
+      onOk={() => {
+        void handleGenerate
+      }}
       confirmLoading={generating}
       okText="生成对账单"
       width={640}

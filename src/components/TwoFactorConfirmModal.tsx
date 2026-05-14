@@ -4,9 +4,10 @@ import Input from 'antd/es/input'
 import Modal from 'antd/es/modal'
 import Typography from 'antd/es/typography'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { message } from '@/utils/antd-app'
 
-type Props = {
+interface Props {
   open: boolean
   onConfirm: (code: string) => Promise<void>
   onCancel: () => void
@@ -17,14 +18,15 @@ export function TwoFactorConfirmModal({
   open,
   onConfirm,
   onCancel,
-  title = '二次验证确认',
-}: Props) {
+  title,
+}: Props): React.JSX.Element {
+  const { t } = useTranslation()
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleOk = async () => {
+  const handleOk = async (): Promise<void> => {
     if (code.length !== 6) {
-      message.error('请输入6位验证码')
+      message.error(t('auth.twofactormodal.codeRequired'))
       return
     }
     setLoading(true)
@@ -32,42 +34,46 @@ export function TwoFactorConfirmModal({
       await onConfirm(code)
       setCode('')
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '验证失败')
+      message.error(
+        err instanceof Error
+          ? err.message
+          : t('auth.twofactormodal.verifyFailed'),
+      )
     } finally {
       setLoading(false)
     }
   }
 
-  const handleCancel = () => {
+  const handleCancel = (): void => {
     setCode('')
     onCancel()
   }
 
   return (
     <Modal
-      title={title}
+      title={title ?? t('auth.twofactormodal.title')}
       open={open}
-      oonOk={() => { void handleOk }}
+      onOk={() => {
+        void handleOk()
+      }}
       onCancel={handleCancel}
       confirmLoading={loading}
-      okText="确认"
-      cancelText="取消"
+      okText={t('common.confirm')}
+      cancelText={t('common.cancel')}
     >
-      <Flex vertical gap={12} style={{ paddingBlock: 16 }}>
+      <Flex vertical gap={12} className="py-4">
         <Typography.Text type="secondary">
-          请输入身份验证器当前显示的 6 位动态验证码。
+          {t('auth.twofactormodal.description')}
         </Typography.Text>
         <Input
-          prefix={
-            <SafetyCertificateOutlined
-              style={{ color: 'rgba(0, 0, 0, 0.45)' }}
-            />
-          }
-          placeholder="请输入6位TOTP验证码"
+          prefix={<SafetyCertificateOutlined className="text-black/45" />}
+          placeholder={t('auth.twofactormodal.placeholder')}
           maxLength={6}
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          oonPressEnter={() => { void handleOk }}
+          onPressEnter={() => {
+            void handleOk()
+          }}
           autoFocus
           size="large"
         />

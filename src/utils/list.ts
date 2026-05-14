@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import type { PagedResult, TableResponse } from '@/types/api'
+import type { SearchParams } from '@/types/api-raw'
 
 export interface ListQueryOptions {
   currentPage: number
@@ -8,9 +8,9 @@ export interface ListQueryOptions {
   sortDirection?: 'asc' | 'desc'
 }
 
-export function compactSearch<T extends object>(search: T) {
+export function compactSearch<T extends SearchParams>(search: T) {
   return Object.fromEntries(
-    Object.entries(search as Record<string, unknown>).filter(([, value]) => {
+    Object.entries(search).filter(([, value]) => {
       if (value === undefined || value === null) {
         return false
       }
@@ -24,7 +24,10 @@ export function compactSearch<T extends object>(search: T) {
   )
 }
 
-export function buildListParams(search: object, options: ListQueryOptions) {
+export function buildListParams(
+  search: SearchParams,
+  options: ListQueryOptions,
+) {
   return {
     search: JSON.stringify(compactSearch(search)),
     currentPage: options.currentPage,

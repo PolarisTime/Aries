@@ -24,7 +24,10 @@ interface BuildLayoutMenuOptions {
   menuGroupOrder: MenuGroupKey[]
   systemMenuTree: MenuNode[]
   userCanAccessEntry: (entry: AppPageDefinition) => boolean
-  userCanAccessMenuCode: (resourceCode: string | null, menuCode: string) => boolean
+  userCanAccessMenuCode: (
+    resourceCode: string | null,
+    menuCode: string,
+  ) => boolean
 }
 
 function resolveEntryPath(entry: AppPageDefinition) {
@@ -127,8 +130,10 @@ function appendAliasEntries(
     (entry) =>
       !entry.hiddenInMenu &&
       options.userCanAccessEntry(entry) &&
-      ((Array.isArray(entry.accessMenuKeys) && entry.accessMenuKeys.length > 0) ||
-       (Array.isArray(entry.accessResources) && entry.accessResources.length > 0)),
+      ((Array.isArray(entry.accessMenuKeys) &&
+        entry.accessMenuKeys.length > 0) ||
+        (Array.isArray(entry.accessResources) &&
+          entry.accessResources.length > 0)),
   )
 
   aliasEntries.forEach((entry) => {

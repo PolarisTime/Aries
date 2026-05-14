@@ -1,10 +1,10 @@
 import { useLoaderData, useLocation } from '@tanstack/react-router'
-import { useEffect, useMemo } from 'react'
 import Empty from 'antd/es/empty'
+import { useEffect, useMemo } from 'react'
 import { primeBusinessPageConfig } from '@/config/business-page-loader'
 import {
-  getPageDefinition,
   type AppPageDefinition,
+  getPageDefinition,
 } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
 import { BusinessGridPage } from '@/views/modules/BusinessGridPage'
@@ -28,7 +28,15 @@ export function BusinessGridView() {
     return getPageDefinition(location.pathname)
   }, [location.pathname])
   const initialConfig = useMemo(
-    () => resolveBusinessGridInitialConfig(pageDef, loaderConfig),
+    () =>
+      resolveBusinessGridInitialConfig(
+        pageDef,
+        loaderConfig &&
+          typeof loaderConfig === 'object' &&
+          'key' in loaderConfig
+          ? (loaderConfig as ModulePageConfig)
+          : undefined,
+      ),
     [loaderConfig, pageDef],
   )
 
@@ -39,7 +47,7 @@ export function BusinessGridView() {
   }, [initialConfig, pageDef?.moduleKey])
 
   if (!pageDef?.moduleKey) {
-    return <Empty description="页面配置未找到" style={{ marginTop: 96 }} />
+    return <Empty description="页面配置未找到" className="mt-96" />
   }
 
   return (

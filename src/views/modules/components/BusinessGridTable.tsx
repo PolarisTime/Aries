@@ -1,8 +1,10 @@
-import { createPaginationConfig } from '@/hooks/usePaginationConfig'
-import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import Empty from 'antd/es/empty'
-import Table from 'antd/es/table'
 import type { ColumnsType, TableProps } from 'antd/es/table'
+import Table from 'antd/es/table'
+import type { SortOrder } from 'antd/es/table/interface'
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { useDeferredColumns } from '@/hooks/useDeferredColumns'
+import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import type { ModuleRecord } from '@/types/module-page'
 
 const MIN_TABLE_BODY_SCROLL_Y = 240
@@ -24,7 +26,7 @@ export function computeTableBodyScrollY(
   )
 }
 
-type Props = {
+interface Props {
   moduleKey: string
   columns: ColumnsType<ModuleRecord>
   dataSource: ModuleRecord[]
@@ -57,6 +59,25 @@ export function BusinessGridTable({
 }: Props) {
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
+  const visibleColumns = useDeferredColumns(columns)
+
+  const isVirtual = dataSource.length * visibleColumns.length > 80
+  const scrollX = useMemo(() => {
+    if (!isVirtual) return 'max-content' as const
+    let total = 0
+    for (const col of visibleColumns) {
+      const raw = col.width
+      if (typeof raw === 'number') {
+        total += raw
+      } else if (typeof raw === 'string') {
+        const parsed = Number.parseInt(raw, 10)
+        total += Number.isFinite(parsed) ? parsed : 120
+      } else {
+        total += 120
+      }
+    }
+    return total
+  }, [visibleColumns, isVirtual])
 
   useEffect(() => {
     const shell = shellRef.current
@@ -73,13 +94,11 @@ export function BusinessGridTable({
       }
 
       const headerHeight =
-        shell
-          .querySelector('.ant-table-thead')
-          ?.getBoundingClientRect().height || 0
+        shell.querySelector('.ant-table-thead')?.getBoundingClientRect()
+          .height || 0
       const paginationHeight =
-        shell
-          .querySelector('.ant-pagination')
-          ?.getBoundingClientRect().height || 0
+        shell.querySelector('.ant-pagination')?.getBoundingClientRect()
+          .height || 0
       const nextScrollY = computeTableBodyScrollY(
         containerHeight,
         headerHeight,
@@ -96,6 +115,7 @@ export function BusinessGridTable({
 
     const observer = new ResizeObserver(scheduleMeasure)
     observer.observe(shell)
+
     scheduleMeasure()
 
     return () => {
@@ -112,10 +132,11 @@ export function BusinessGridTable({
         bordered
         size="small"
         loading={loading}
-        columns={columns}
+        columns={visibleColumns}
         dataSource={dataSource}
         rowSelection={rowSelection}
-        scroll={{ x: 'max-content', y: scrollY }}
+        virtual={isVirtual}
+        scroll={{ x: scrollX, y: scrollY }}
         rowClassName={rowClassName}
         onRow={(record) => ({
           onClick: (event: MouseEvent<HTMLElement>) => {
@@ -150,9 +171,7 @@ export function BusinessGridTable({
           ),
         }}
         onChange={(_pagination, _filters, sorter) => {
-          const activeSorter = Array.isArray(sorter)
-            ? sorter[0]
-            : (sorter)
+          const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter
           const columnKey = activeSorter?.columnKey
           onSortingChange(
             typeof columnKey === 'bigint' ? String(columnKey) : columnKey,

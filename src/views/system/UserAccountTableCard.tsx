@@ -1,5 +1,3 @@
-import { SystemTableToolbar } from '@/components/SystemTableToolbar'
-import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import {
   DeleteOutlined,
   EditOutlined,
@@ -12,9 +10,12 @@ import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
+import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import type { UserAccountRecord } from '@/types/user-account'
-type Props = {
+
+interface Props {
   keyword: string
   statusFilter?: string
   currentPage: number
@@ -179,7 +180,7 @@ export function UserAccountTableCard({
           <Select
             allowClear
             placeholder="全部状态"
-            style={{ width: 140 }}
+            className="w-140"
             value={statusFilter}
             onChange={onStatusFilterChange}
             options={enabledStatusOptions}

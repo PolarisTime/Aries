@@ -9,7 +9,7 @@ import {
   isEditBlockedByStatus,
 } from '@/views/modules/module-behavior-registry'
 
-type Props = {
+interface Props {
   moduleKey: string
   resourceKey?: string
   onEdit: (record: ModuleRecord) => void
@@ -56,9 +56,14 @@ export function useModuleRecordActions({
           confirm: '确认删除该记录？',
           onClick: () => {
             try {
-              await deleteBusinessModule(moduleKey, String(record.id))
-              message.success('删除成功')
-              await onRefresh()
+              void deleteBusinessModule(moduleKey, String(record.id))
+                .then(async () => {
+                  message.success('删除成功')
+                  await onRefresh()
+                })
+                .catch((err: unknown) => {
+                  message.error(err instanceof Error ? err.message : '删除失败')
+                })
             } catch (err) {
               message.error(err instanceof Error ? err.message : '删除失败')
             }

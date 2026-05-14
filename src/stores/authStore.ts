@@ -1,9 +1,19 @@
 import { create } from 'zustand'
 import { ERROR_CODE } from '@/constants/error-codes'
-import type { Login2faPayload, LoginPayload, LoginResponseData, LoginUser } from '@/types/auth'
+import type {
+  Login2faPayload,
+  LoginPayload,
+  LoginResponseData,
+  LoginUser,
+} from '@/types/auth'
 import {
-  type AuthPersistenceMode, clearStoredUser, clearToken,
-  getAuthPersistenceMode, getStoredUser, getToken, setAuthSession,
+  type AuthPersistenceMode,
+  clearStoredUser,
+  clearToken,
+  getAuthPersistenceMode,
+  getStoredUser,
+  getToken,
+  setAuthSession,
 } from '@/utils/storage'
 
 async function loadAuthApi() {
@@ -40,7 +50,12 @@ interface AuthState {
   restoreSession: () => Promise<boolean>
 }
 
-function persistSession(user: LoginUser, token: string, expiresIn: number, remember: boolean) {
+function persistSession(
+  user: LoginUser,
+  token: string,
+  expiresIn: number,
+  remember: boolean,
+) {
   const mode: AuthPersistenceMode = remember ? 'local' : 'session'
   if (typeof window !== 'undefined') {
     window.sessionStorage.removeItem('aries-logged-out')
@@ -78,9 +93,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!data.accessToken || !data.user) {
       throw new Error('登录响应缺少 token 或用户信息')
     }
-    persistSession(data.user, data.accessToken, data.expiresIn, payload.remember !== false)
-    set({ token: data.accessToken, user: data.user, isAuthenticated: true, authReady: true })
-    return { requires2fa: false, accessToken: data.accessToken, user: data.user, expiresIn: data.expiresIn }
+    persistSession(
+      data.user,
+      data.accessToken,
+      data.expiresIn,
+      payload.remember !== false,
+    )
+    set({
+      token: data.accessToken,
+      user: data.user,
+      isAuthenticated: true,
+      authReady: true,
+    })
+    return {
+      requires2fa: false,
+      accessToken: data.accessToken,
+      user: data.user,
+      expiresIn: data.expiresIn,
+    }
   },
 
   verify2fa: async (payload: Login2faPayload) => {
@@ -93,8 +123,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!data.accessToken || !data.user) {
       throw new Error('二次验证响应缺少 token 或用户信息')
     }
-    persistSession(data.user, data.accessToken, data.expiresIn, payload.remember !== false)
-    set({ token: data.accessToken, user: data.user, isAuthenticated: true, authReady: true })
+    persistSession(
+      data.user,
+      data.accessToken,
+      data.expiresIn,
+      payload.remember !== false,
+    )
+    set({
+      token: data.accessToken,
+      user: data.user,
+      isAuthenticated: true,
+      authReady: true,
+    })
     return data
   },
 
@@ -102,7 +142,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const { logout } = await loadAuthApi()
       await logout()
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
     clearToken()
     clearStoredUser()
     set({ token: '', user: null, isAuthenticated: false, authReady: true })
@@ -119,8 +161,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { refreshSession } = await loadAuthApi()
       const data = await refreshSession()
       if (!data.accessToken || !data.user) throw new Error('Session 恢复失败')
-      persistSession(data.user, data.accessToken, data.expiresIn, getAuthPersistenceMode())
-      set({ token: data.accessToken, user: data.user, isAuthenticated: true, authReady: true })
+      persistSession(
+        data.user,
+        data.accessToken,
+        data.expiresIn,
+        getAuthPersistenceMode() === 'local',
+      )
+      set({
+        token: data.accessToken,
+        user: data.user,
+        isAuthenticated: true,
+        authReady: true,
+      })
       return true
     } catch {
       if (token && user) {

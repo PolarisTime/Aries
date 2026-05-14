@@ -2,7 +2,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { ReactNode } from 'react'
 
-type Props = {
+interface Props {
   columnId: string
   children: ReactNode
 }

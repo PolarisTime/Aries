@@ -1,9 +1,9 @@
-import { asString } from '@/utils/type-narrowing'
 import type {
   ModuleLineItem,
   ModuleParentImportDefinition,
   ModuleRecord,
 } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { parseParentRelationNos } from './module-adapter-shared'
 
 function getSourceParentItemId(item: ModuleLineItem) {
@@ -45,10 +45,7 @@ function isZeroLike(value: unknown) {
 }
 
 function isEmptyDraftLineItem(item: ModuleLineItem) {
-  if (
-    resolvePersistedParentRelationNo(item) ||
-    getSourceParentItemId(item)
-  ) {
+  if (resolvePersistedParentRelationNo(item) || getSourceParentItemId(item)) {
     return false
   }
 

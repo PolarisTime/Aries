@@ -4,7 +4,7 @@ import Tag from 'antd/es/tag'
 import { listAllBusinessModuleRows } from '@/api/business'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
-type Props = {
+interface Props {
   open: boolean
   moduleKey: string
   onClose: () => void

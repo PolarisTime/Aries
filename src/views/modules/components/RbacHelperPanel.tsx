@@ -4,7 +4,7 @@ import Row from 'antd/es/row'
 import Statistic from 'antd/es/statistic'
 import Typography from 'antd/es/typography'
 
-type Props = {
+interface Props {
   roleName?: string
   permissionCount?: number
   userCount?: number
@@ -19,7 +19,7 @@ export function RbacHelperPanel({
   return (
     <Card
       size="small"
-      style={{ marginBottom: 12 }}
+      className="mb-12"
       title={<Typography.Text strong>权限概览 · {roleName}</Typography.Text>}
     >
       <Row gutter={[12, 12]}>
@@ -28,7 +28,7 @@ export function RbacHelperPanel({
             <Card
               variant="borderless"
               styles={{
-                body: { padding: 16, background: '#f8fafc', borderRadius: 12 },
+                body: { padding: 16, background: 'var(--theme-sider-surface)', borderRadius: 12 },
               }}
             >
               <Statistic title="权限数量" value={permissionCount} />
@@ -40,7 +40,7 @@ export function RbacHelperPanel({
             <Card
               variant="borderless"
               styles={{
-                body: { padding: 16, background: '#f8fafc', borderRadius: 12 },
+                body: { padding: 16, background: 'var(--theme-sider-surface)', borderRadius: 12 },
               }}
             >
               <Statistic title="关联用户" value={userCount} />

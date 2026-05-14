@@ -1,4 +1,3 @@
-import { asString } from '@/utils/type-narrowing'
 import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
 import type {
   ModuleColumnDefinition,
@@ -7,6 +6,7 @@ import type {
   ModuleParentImportDefinition,
   ModuleRecord,
 } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { parseParentRelationNos } from './module-adapter-shared'
 import { hasEditorValue } from './module-editor-shared'
 
@@ -27,13 +27,14 @@ function getLineItemValidationMessages(
       messages.push(`第${index + 1}行可关联数量不能超过${maxImportQuantity}件`)
     }
     if (moduleKey === 'purchase-inbound') {
-      const isWeighSettlement =
-        asString(item.settlementMode).trim() === '过磅'
+      const isWeighSettlement = asString(item.settlementMode).trim() === '过磅'
       if (
         isPurchaseWeighRequiredCategory(item.category) &&
         !isWeighSettlement
       ) {
-        messages.push(`第${index + 1}行商品类别需按过磅入库，请将本行结算方式改为过磅`)
+        messages.push(
+          `第${index + 1}行商品类别需按过磅入库，请将本行结算方式改为过磅`,
+        )
       }
       if (
         isWeighSettlement &&
@@ -55,7 +56,7 @@ function getLineItemValidationMessages(
 
 export function getEditorValidationMessage(options: {
   fields: ModuleFormFieldDefinition[]
-  editorForm: Record<string, unknown>
+  editorForm: ModuleRecord
   moduleKey?: string
   hasItemColumns: boolean
   itemColumns?: ModuleColumnDefinition[]
@@ -126,7 +127,10 @@ export function getEditorValidationMessage(options: {
   }
 
   if (allErrors.length) {
-    return allErrors.slice(0, 5).join('；') + (allErrors.length > 5 ? ` 等共${allErrors.length}个问题` : '')
+    return (
+      allErrors.slice(0, 5).join('；') +
+      (allErrors.length > 5 ? ` 等共${allErrors.length}个问题` : '')
+    )
   }
 
   return null

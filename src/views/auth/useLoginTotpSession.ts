@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { message } from '@/utils/antd-app'
 import {
   clearTotpSession,
@@ -7,6 +8,7 @@ import {
 } from '@/views/auth/login-view-utils'
 
 export function useLoginTotpSession() {
+  const { t } = useTranslation()
   const savedSession = restoreTotpSession()
   const [loginStep, setLoginStep] = useState<'password' | 'totp'>(
     savedSession ? 'totp' : 'password',
@@ -24,9 +26,9 @@ export function useLoginTotpSession() {
     setStepDeadline(0)
     setNow(Date.now())
     if (showMessage) {
-      message.warning('二次验证已超时，请重新输入账号密码')
+      message.warning(t('auth.totppanel.expired'))
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     if (loginStep !== 'totp' || !stepDeadline) {

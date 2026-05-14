@@ -2,9 +2,12 @@ import { STORAGE_KEYS } from '@/constants/storage'
 import type { LoginUser } from '@/types/auth'
 import type { ListColumnSettings } from '@/types/module-page'
 
+export type ThemeMode = 'light' | 'dark' | 'system'
+
 export interface PersonalSettings {
   fontSize?: number
   layoutMode?: 'sider' | 'top'
+  themeMode?: ThemeMode
 }
 
 export interface BusinessListCacheEntry<T = unknown> {

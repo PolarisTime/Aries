@@ -1,16 +1,7 @@
 import type { ModuleOverviewItem, ModuleRecord } from '@/types/module-page'
+import { formatAmount, formatInteger, formatWeight } from '@/utils/formatters'
 
-export function formatInteger(value: number) {
-  return String(value)
-}
-
-export function formatAmount(value: number) {
-  return value.toFixed(2)
-}
-
-export function formatWeight(value: number) {
-  return value.toFixed(3)
-}
+export { formatAmount, formatInteger, formatWeight }
 
 export function sumBy(rows: ModuleRecord[], key: string) {
   return rows.reduce((sum, row) => sum + Number(row[key] || 0), 0)

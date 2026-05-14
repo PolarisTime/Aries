@@ -20,7 +20,7 @@ import { useUserAccountEditor } from '@/views/system/useUserAccountEditor'
 import { useUserAccountListState } from '@/views/system/useUserAccountListState'
 import { useUserAccountTwoFactor } from '@/views/system/useUserAccountTwoFactor'
 
-type UserAccountManagementViewProps = {
+interface UserAccountManagementViewProps {
   active?: boolean
 }
 

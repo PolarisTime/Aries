@@ -83,7 +83,13 @@ export const materialsPageConfig: ModulePageConfig = {
     { label: '备注', key: 'remark' },
   ],
   formFields: [
-    { key: 'materialCode', label: '商品编码', type: 'input', required: true, row: 1 },
+    {
+      key: 'materialCode',
+      label: '商品编码',
+      type: 'input',
+      required: true,
+      row: 1,
+    },
     { key: 'brand', label: '品牌', type: 'input', required: true, row: 1 },
     { key: 'material', label: '材质', type: 'input', required: true, row: 1 },
     {
@@ -97,7 +103,13 @@ export const materialsPageConfig: ModulePageConfig = {
     { key: 'spec', label: '规格', type: 'input', required: true, row: 2 },
     { key: 'length', label: '长度', type: 'input', required: true, row: 2 },
     { key: 'unit', label: '单位', type: 'input', required: true, row: 2 },
-    { key: 'quantityUnit', label: '数量单位', type: 'input', required: true, row: 2 },
+    {
+      key: 'quantityUnit',
+      label: '数量单位',
+      type: 'input',
+      required: true,
+      row: 2,
+    },
     {
       key: 'pieceWeightTon',
       label: '件重/吨',

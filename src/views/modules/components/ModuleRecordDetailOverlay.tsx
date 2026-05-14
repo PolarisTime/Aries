@@ -1,10 +1,10 @@
+import type { TableColumnsType } from 'antd'
 import Button from 'antd/es/button'
 import Col from 'antd/es/col'
 import Empty from 'antd/es/empty'
 import Flex from 'antd/es/flex'
 import Row from 'antd/es/row'
 import Spin from 'antd/es/spin'
-import type { TableColumnsType } from 'antd'
 import { useMemo } from 'react'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
@@ -19,7 +19,7 @@ import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
-type Props = {
+interface Props {
   open: boolean
   config: ModulePageConfig
   record: ModuleRecord | null
@@ -69,7 +69,7 @@ export function ModuleRecordDetailOverlay({
       onClose={onClose}
     >
       {loading ? (
-        <Flex justify="center" align="center" style={{ paddingBlock: 64 }}>
+        <Flex justify="center" align="center" className="py-64">
           <Spin />
         </Flex>
       ) : !record ? (
@@ -135,7 +135,7 @@ export function ModuleRecordDetailOverlay({
               />
             </ModuleItemsPanel>
           ) : (
-            <div style={{ marginTop: 20 }}>
+            <div className="mt-20">
               <Button
                 className="overlay-action-button"
                 icon={resolveModuleActionIcon('关闭')}
@@ -145,8 +145,7 @@ export function ModuleRecordDetailOverlay({
               </Button>
               {canPrint && (
                 <Button
-                  style={{ marginLeft: 8 }}
-                  className="overlay-action-button"
+                  className="overlay-action-button ml-8"
                   icon={resolveModuleActionIcon('打印')}
                 >
                   打印

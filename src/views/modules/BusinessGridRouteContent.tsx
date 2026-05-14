@@ -2,20 +2,21 @@ import { useLocation } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
 import type { AppPageDefinition } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
 import { isEditBlockedByStatus } from '@/views/modules/module-behavior-registry'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
 
-type Props = {
+interface Props {
   pageDef: AppPageDefinition
   initialConfig?: ModulePageConfig
 }
 
 export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
   const location = useLocation()
-  const moduleKey = pageDef.moduleKey as string
+  const moduleKey = asString(pageDef.moduleKey)
   const state = useBusinessGridPage({ moduleKey, pageDef, initialConfig })
 
   useBusinessGridRouteSync({
@@ -33,7 +34,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     return (
       <Empty
         description={`模块配置未找到: ${moduleKey}`}
-        style={{ marginTop: 96 }}
+        className="mt-96"
       />
     )
   }

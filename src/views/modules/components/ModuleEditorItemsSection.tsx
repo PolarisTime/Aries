@@ -10,10 +10,10 @@ import type {
 import { ColumnSettingsPopover } from './ColumnSettingsPopover'
 import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
-import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
 import { ModuleItemsTable } from './ModuleItemsTable'
+import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
 
-type Props = {
+interface Props {
   config: ModulePageConfig
   items: ModuleLineItem[]
   selectedItemIds: string[]

@@ -1,4 +1,3 @@
-import { asString } from '@/utils/type-narrowing'
 import {
   DeleteOutlined,
   DownloadOutlined,
@@ -25,8 +24,9 @@ import {
 } from '@/api/business'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
+import { asString } from '@/utils/type-narrowing'
 
-type Props = {
+interface Props {
   open: boolean
   moduleKey: string
   resourceKey?: string
@@ -79,24 +79,27 @@ export function ModuleAttachmentModal({
     [moduleKey, recordId],
   )
 
-  const handleUpload = useCallback(async (file: File) => {
-    setUploading(true)
-    try {
-      const uploadRes = await uploadAttachment(file, moduleKey)
-      const attachmentId = asString(uploadRes.data?.id).trim()
-      if (!attachmentId) {
-        throw new Error('上传成功但未返回附件标识')
+  const handleUpload = useCallback(
+    async (file: File) => {
+      setUploading(true)
+      try {
+        const uploadRes = await uploadAttachment(file, moduleKey)
+        const attachmentId = asString(uploadRes.data?.id).trim()
+        if (!attachmentId) {
+          throw new Error('上传成功但未返回附件标识')
+        }
+        await bindAttachment(attachmentId)
+        message.success('上传并绑定成功')
+        await fetchAttachments()
+      } catch (err) {
+        message.error(err instanceof Error ? err.message : '上传失败')
+      } finally {
+        setUploading(false)
       }
-      await bindAttachment(attachmentId)
-      message.success('上传并绑定成功')
-      await fetchAttachments()
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '上传失败')
-    } finally {
-      setUploading(false)
-    }
-    return false
-  }, [bindAttachment, fetchAttachments, moduleKey])
+      return false
+    },
+    [bindAttachment, fetchAttachments, moduleKey],
+  )
 
   const isImageAttachment = useCallback((attachment: AttachmentRecord) => {
     if (attachment.previewType === 'image') {
@@ -106,7 +109,10 @@ export function ModuleAttachmentModal({
       return true
     }
     const fileName = String(
-      attachment.originalFileName || attachment.fileName || attachment.name || '',
+      attachment.originalFileName ||
+        attachment.fileName ||
+        attachment.name ||
+        '',
     ).toLowerCase()
     return /\.(png|jpe?g|gif|bmp|webp|svg)$/.test(fileName)
   }, [])
@@ -231,7 +237,7 @@ export function ModuleAttachmentModal({
                   <Space
                     align="start"
                     size={12}
-                    style={{ minWidth: 0, flex: 1 }}
+                    className="flex-1 min-w-0"
                   >
                     {isImageAttachment(item) ? (
                       <button
@@ -254,11 +260,7 @@ export function ModuleAttachmentModal({
                         <PaperClipOutlined />
                       </span>
                     )}
-                    <Space
-                      orientation="vertical"
-                      size={0}
-                      className="min-w-0"
-                    >
+                    <Space orientation="vertical" size={0} className="min-w-0">
                       <Typography.Text strong ellipsis>
                         {item.originalFileName || item.fileName || item.name}
                       </Typography.Text>
@@ -289,7 +291,9 @@ export function ModuleAttachmentModal({
                         type="link"
                         danger
                         icon={<DeleteOutlined />}
-                        onClick={() => { void handleDelete(item.id) }}
+                        onClick={() => {
+                          void handleDelete(item.id)
+                        }}
                       />
                     ) : null}
                   </Space>
@@ -320,7 +324,7 @@ export function ModuleAttachmentModal({
             },
           }}
         >
-          <div style={{ display: 'none' }}>
+          <div className="hidden">
             {imageAttachments.map((item) => (
               <Image
                 key={item.id}

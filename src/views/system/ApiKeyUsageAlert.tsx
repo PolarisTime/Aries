@@ -8,7 +8,7 @@ export function ApiKeyUsageAlert() {
       className="mb-4"
       title="API Key 使用说明"
       description={
-        <div style={{ display: 'grid', gap: 4, lineHeight: 1.7 }}>
+        <div className="grid gap-4 leading-relaxed">
           <div>
             1. 生成后会返回完整密钥，仅显示一次，关闭弹窗后无法再次查看。
           </div>

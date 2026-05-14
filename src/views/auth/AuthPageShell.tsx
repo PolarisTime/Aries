@@ -3,7 +3,7 @@ import Row from 'antd/es/row'
 import type { ReactNode } from 'react'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 
-type Props = {
+interface Props {
   hero: ReactNode
   children: ReactNode
 }
@@ -11,7 +11,7 @@ type Props = {
 export function AuthPageShell({ hero, children }: Props) {
   return (
     <AppAntdProvider>
-      <Row style={{ minHeight: '100vh' }}>
+      <Row className="min-h-screen">
         <Col xs={24} lg={10} className="login-hero">
           {hero}
         </Col>

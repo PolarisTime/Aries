@@ -10,14 +10,15 @@
  *   // 旧: const qty = Number(record.quantity || 0)
  *   // 新: const qty = asNumber(record.quantity)
  */
-import { z } from 'zod'
+import type { z } from 'zod'
 
 // ── 基础类型收窄 ──────────────────────────────────────
 
 /** 安全转为 string。非字符串/数字/布尔/大整数原语 → '' */
 export function asString(value: unknown): string {
   if (typeof value === 'string') return value
-  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : ''
+  if (typeof value === 'number')
+    return Number.isFinite(value) ? String(value) : ''
   if (typeof value === 'boolean') return String(value)
   if (typeof value === 'bigint') return String(value)
   return ''
@@ -62,13 +63,20 @@ export function asDateString(value: unknown): string {
 // ── Schema 辅助 ───────────────────────────────────────
 
 /** Zod Schema 安全解析，失败返回 undefined */
-export function parseOr<T>(schema: z.ZodType<T>, value: unknown): T | undefined {
+export function parseOr<T>(
+  schema: z.ZodType<T>,
+  value: unknown,
+): T | undefined {
   const r = schema.safeParse(value)
   return r.success ? r.data : undefined
 }
 
 /** Zod Schema 安全解析，失败返回默认值 */
-export function parseOrDefault<T>(schema: z.ZodType<T>, value: unknown, fallback: T): T {
+export function parseOrDefault<T>(
+  schema: z.ZodType<T>,
+  value: unknown,
+  fallback: T,
+): T {
   const r = schema.safeParse(value)
   return r.success ? r.data : fallback
 }
@@ -108,9 +116,14 @@ export function safe(record: Record<string, unknown> | null | undefined) {
 
 /** 安全转为正整数字符串 ID。无效 → '' */
 export function asId(value: unknown): string {
-  if (typeof value === 'number' && Number.isInteger(value) && value > 0) return String(value)
+  if (typeof value === 'number' && Number.isInteger(value) && value > 0)
+    return String(value)
   if (typeof value === 'bigint' && value > 0n) return String(value)
-  if (typeof value === 'string' && /^\d+$/.test(value.trim()) && value.trim() !== '0')
+  if (
+    typeof value === 'string' &&
+    /^\d+$/.test(value.trim()) &&
+    value.trim() !== '0'
+  )
     return value.trim()
   return ''
 }
@@ -118,13 +131,64 @@ export function asId(value: unknown): string {
 // ── 快捷单字段访问 ─────────────────────────────────────
 
 /** 从对象安全取字符串字段 */
-export function fieldStr(obj: Record<string, unknown> | null | undefined, key: string, fallback = ''): string {
+export function fieldStr(
+  obj: Record<string, unknown> | null | undefined,
+  key: string,
+  fallback = '',
+): string {
   if (!obj || !(key in obj)) return fallback
   return asString(obj[key])
 }
 
 /** 从对象安全取数字字段 */
-export function fieldNum(obj: Record<string, unknown> | null | undefined, key: string, fallback = 0): number {
+export function fieldNum(
+  obj: Record<string, unknown> | null | undefined,
+  key: string,
+  fallback = 0,
+): number {
   if (!obj || !(key in obj)) return fallback
   return asNumber(obj[key])
+}
+
+// ── 数组工具 ──────────────────────────────────────────
+
+/**
+ * 去重字符串数组（自动去空、去重）
+ */
+export function uniqueStrings(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return Array.from(
+    new Set(value.map((item) => String(item || '').trim()).filter(Boolean)),
+  )
+}
+
+/**
+ * 安全过滤数组（移除 falsy 值）
+ */
+export function compact<T>(
+  array: (T | null | undefined | false | '' | 0)[],
+): T[] {
+  return array.filter(Boolean) as T[]
+}
+
+/**
+ * 安全获取数组元素
+ */
+export function safeAt<T>(
+  array: T[] | null | undefined,
+  index: number,
+): T | undefined {
+  if (!array || index < 0 || index >= array.length) {
+    return undefined
+  }
+  return array[index]
+}
+
+/**
+ * 将值转换为数组（如果不是数组则包装）
+ */
+export function toArray<T>(value: T | T[]): T[] {
+  return Array.isArray(value) ? value : [value]
 }

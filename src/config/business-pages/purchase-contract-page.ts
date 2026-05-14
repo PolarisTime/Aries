@@ -1,7 +1,7 @@
-import { asString } from '@/utils/type-narrowing'
-import { getSupplierOptions } from '@/constants/module-options'
 import dayjs from 'dayjs'
+import { getSupplierOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { contractStatusOptions } from './contract-shared'
 import {
   BILL_STATUS_LABEL,
@@ -166,7 +166,9 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
         buyerName: parentRecord.buyerName || '',
         signDate,
         effectiveDate: signDate,
-        expireDate: signDate ? dayjs(asString(signDate)).add(1, 'year') : undefined,
+        expireDate: signDate
+          ? dayjs(asString(signDate)).add(1, 'year')
+          : undefined,
         status: '已归档',
       }
     },

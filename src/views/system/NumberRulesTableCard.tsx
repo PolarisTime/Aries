@@ -1,16 +1,17 @@
-import { asString } from '@/utils/type-narrowing'
-import { SystemTableToolbar } from '@/components/SystemTableToolbar'
+import { EditOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Statistic from 'antd/es/statistic'
-import Table from 'antd/es/table'
 import type { TableProps } from 'antd/es/table'
+import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
+import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import type { ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   formatDateRuleLabel,
   formatNumberRuleStatusColor,
@@ -18,7 +19,8 @@ import {
   formatResetRuleLabel,
   NUMBER_RULE_STATUS_OPTIONS,
 } from '@/views/system/number-rules-view-utils'
-type Props = {
+
+interface Props {
   keyword: string
   statusFilter?: string
   rows: ModuleRecord[]
@@ -147,7 +149,7 @@ export function NumberRulesTableCard({
           <Select
             allowClear
             placeholder="全部状态"
-            style={{ width: 140 }}
+            className="w-140"
             value={statusFilter}
             onChange={onStatusFilterChange}
             options={NUMBER_RULE_STATUS_OPTIONS}

@@ -10,7 +10,7 @@ import {
 
 type LayoutHeaderSearchProps = Omit<LazyAppHeaderSearchProps, 'className'>
 
-type Props = {
+interface Props {
   clockText: string
   currentUserLoginName: string
   currentUserName: string

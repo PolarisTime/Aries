@@ -3,7 +3,7 @@ import type { ModuleLineItem } from '@/types/module-page'
 import type { EditorItemDragPosition } from '@/views/modules/module-adapter-editor'
 import { moveEditorLineItemByDrag } from '@/views/modules/module-adapter-editor'
 
-type Props = {
+interface Props {
   items: ModuleLineItem[]
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
 }

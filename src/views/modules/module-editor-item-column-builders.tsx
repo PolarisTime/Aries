@@ -9,6 +9,7 @@ import type {
   ModuleLineItem,
   ModulePageConfig,
 } from '@/types/module-page'
+import { asNumber } from '@/utils/type-narrowing'
 import {
   getEditorItemMin,
   getEditorItemPrecision,
@@ -168,7 +169,7 @@ function buildEditableColumnRender({
 
         return (
           <InputNumber
-            value={value as number}
+            value={asNumber(value)}
             className="w-full"
             min={min}
             precision={precision}
@@ -235,10 +236,10 @@ export function buildModuleEditorManagementColumns({
           onDragStart={(event) => onDragStart(record.id, event)}
           onDragOver={(event) => onDragOver(record.id, event)}
           onDragEnd={onDragEnd}
-          style={{ cursor: 'grab' }}
+          className="cursor-grab"
         >
           <MenuOutlined
-            style={{ marginRight: 4, opacity: 0.45, fontSize: 12 }}
+            className="mr-4 opacity-45 text-xs"
           />
           {index + 1}
         </span>

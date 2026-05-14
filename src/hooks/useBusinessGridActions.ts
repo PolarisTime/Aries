@@ -6,14 +6,15 @@ import {
 import { useBusinessGridFreightActions } from '@/hooks/useBusinessGridFreightActions'
 import { useBusinessGridPrintActions } from '@/hooks/useBusinessGridPrintActions'
 import { useBusinessGridStatementActions } from '@/hooks/useBusinessGridStatementActions'
+import type { SearchParams } from '@/types/api-raw'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
-type Props = {
+interface Props {
   moduleKey: string
   config: ModulePageConfig
   selectedRowKeys: string[]
   selectedRows: ModuleRecord[]
-  submittedFilters: Record<string, unknown>
+  submittedFilters: SearchParams
   listAuditTarget: AuditTarget | null
   listReverseAuditTarget: AuditTarget | null
   refreshModuleQueries: () => Promise<void>

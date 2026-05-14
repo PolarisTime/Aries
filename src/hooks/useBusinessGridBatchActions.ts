@@ -1,4 +1,3 @@
-import { asString } from '@/utils/type-narrowing'
 import { useCallback } from 'react'
 import {
   deleteBusinessModule,
@@ -7,6 +6,7 @@ import {
 } from '@/api/business'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
+import { asString } from '@/utils/type-narrowing'
 import {
   isDeleteBlockedByStatus,
   isEditBlockedByStatus,
@@ -17,7 +17,7 @@ export interface AuditTarget {
   value: string
 }
 
-type Props = {
+interface Props {
   moduleKey: string
   selectedRowKeys: string[]
   selectedRows: ModuleRecord[]

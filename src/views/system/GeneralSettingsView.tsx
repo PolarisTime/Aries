@@ -1,13 +1,13 @@
-import { asString } from '@/utils/type-narrowing'
 import { useQuery } from '@tanstack/react-query'
-import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import Form from 'antd/es/form'
 import { useCallback, useMemo, useState } from 'react'
 import { listSystemSettings, saveSystemSetting } from '@/api/system-settings'
+import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
+import { asString } from '@/utils/type-narrowing'
 import { GeneralSettingsEditorModal } from '@/views/system/GeneralSettingsEditorModal'
 import { GeneralSettingsTableCard } from '@/views/system/GeneralSettingsTableCard'
 import {
@@ -40,14 +40,12 @@ export function GeneralSettingsView() {
 
   const filteredRows = useMemo(
     () =>
-      rows
-        .filter(isSystemSwitch)
-        .filter((record) => {
-          if (statusFilter && asString(record.status) !== statusFilter) {
-            return false
-          }
-          return matchesGeneralSettingKeyword(record, keyword)
-        }),
+      rows.filter(isSystemSwitch).filter((record) => {
+        if (statusFilter && asString(record.status) !== statusFilter) {
+          return false
+        }
+        return matchesGeneralSettingKeyword(record, keyword)
+      }),
     [rows, keyword, statusFilter],
   )
 
@@ -78,9 +76,7 @@ export function GeneralSettingsView() {
         numericValue: isDefaultTaxRateSetting(record)
           ? Number(record.sampleNo || 0.13)
           : Number(record.sampleNo || 0),
-        selectedActions: asString(record.sampleNo)
-          .split(',')
-          .filter(Boolean),
+        selectedActions: asString(record.sampleNo).split(',').filter(Boolean),
       })
       setEditorOpen(true)
     },
@@ -165,7 +161,9 @@ export function GeneralSettingsView() {
         onStatusFilterChange={setStatusFilter}
         onRefresh={refresh}
         onEdit={openEditor}
-        oonToggle={() => { void handleToggle }}
+        onToggle={() => {
+          void handleToggle
+        }}
       />
 
       {editorOpen ? (

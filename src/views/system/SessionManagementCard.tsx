@@ -1,19 +1,19 @@
-import { SystemTableToolbar } from '@/components/SystemTableToolbar'
-import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import { DeleteOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
 import Row from 'antd/es/row'
 import Statistic from 'antd/es/statistic'
-import Table from 'antd/es/table'
 import type { ColumnsType } from 'antd/es/table'
+import Table from 'antd/es/table'
 import type {
   RefreshTokenRecord,
   RefreshTokenSummaryData,
 } from '@/api/session-management'
+import { SystemTableToolbar } from '@/components/SystemTableToolbar'
+import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 
-type Props = {
+interface Props {
   canEdit: boolean
   columns: ColumnsType<RefreshTokenRecord>
   currentPage: number

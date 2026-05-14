@@ -47,4 +47,3 @@ registerModuleBehavior('freight-statement', {
     view_freight_summary: ['read'],
   },
 })
-

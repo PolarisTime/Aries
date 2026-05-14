@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { type CarrierOption, fetchCarrierOptions } from '@/api/carrier-options'
 import {
   type CustomerOption,
@@ -12,7 +12,6 @@ import {
   type SupplierOption,
 } from '@/api/supplier-options'
 import { fetchWarehouseOptions } from '@/api/warehouse-options'
-import { useAuthStore } from '@/stores/authStore'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
@@ -22,6 +21,7 @@ import {
   getWarehouseOptions,
   materialCategoryOptions,
 } from '@/constants/module-options'
+import { useAuthStore } from '@/stores/authStore'
 
 interface MasterOptions {
   suppliers: SupplierOption[]
@@ -29,7 +29,23 @@ interface MasterOptions {
   carriers: CarrierOption[]
   warehouses: { value: string; label: string }[]
   materialCategories: { value: string; label: string }[]
-  materials: Array<Record<string, unknown>>
+  materials: Array<{
+    id?: string
+    materialCode?: string
+    brand?: string
+    category?: string
+    material?: string
+    spec?: string
+    length?: string
+    unit?: string
+    quantityUnit?: string
+    pieceWeightTon?: number
+    piecesPerBundle?: number
+    unitPrice?: number
+    batchNoEnabled?: boolean
+    remark?: string
+    [key: string]: unknown
+  }>
 }
 
 export interface MasterOptionRequirements {
@@ -72,12 +88,18 @@ export function resolveMasterOptionRequirements(
       continue
     }
 
-    if (options === getCustomerOptions || options === getCustomerProjectOptions) {
+    if (
+      options === getCustomerOptions ||
+      options === getCustomerProjectOptions
+    ) {
       requirements.customers = true
       continue
     }
 
-    if (options === getCarrierOptions || options === getCarrierVehiclePlateOptions) {
+    if (
+      options === getCarrierOptions ||
+      options === getCarrierVehiclePlateOptions
+    ) {
       requirements.carriers = true
       continue
     }

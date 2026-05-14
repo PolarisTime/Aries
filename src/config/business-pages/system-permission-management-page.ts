@@ -1,7 +1,10 @@
-import { userAccountDataScopeOptions } from '@/constants/module-options'
+import {
+  enabledStatusOptions,
+  userAccountDataScopeOptions,
+} from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { masterStatusFilter } from './shared-filters'
 import { buildMasterOverview, statusMap } from './shared'
+import { masterStatusFilter } from './shared-filters'
 
 export const permissionManagementPageConfig: ModulePageConfig = {
   key: 'permission',
@@ -103,7 +106,13 @@ export const permissionManagementPageConfig: ModulePageConfig = {
         { label: '自定义范围', value: '自定义范围' },
       ],
     },
-    { key: 'resourceKey', label: '资源标识', type: 'input', required: true, row: 2 },
+    {
+      key: 'resourceKey',
+      label: '资源标识',
+      type: 'input',
+      required: true,
+      row: 2,
+    },
     {
       key: 'status',
       label: '状态',

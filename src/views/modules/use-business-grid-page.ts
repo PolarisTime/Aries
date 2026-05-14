@@ -1,15 +1,16 @@
-import { asString } from '@/utils/type-narrowing'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import { useBusinessQueries } from '@/hooks/useBusinessQueries'
 import type { SortingState } from '@/hooks/useDataTable'
 import { useDetailSupport } from '@/hooks/useDetailSupport'
-import { useMasterOptions } from '@/hooks/useMasterOptions'
-import { resolveMasterOptionRequirements } from '@/hooks/useMasterOptions'
+import { useExcelExport } from '@/hooks/useExcelExport'
+import {
+  resolveMasterOptionRequirements,
+  useMasterOptions,
+} from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
-import { useModuleExportSupport } from '@/hooks/useModuleExportSupport'
 import { useModuleFilters } from '@/hooks/useModuleFilters'
 import { useModulePageConfig } from '@/hooks/useModulePageConfig'
 import { useModulePermissions } from '@/hooks/useModulePermissions'
@@ -18,12 +19,13 @@ import { useModuleRecordActions } from '@/hooks/useModuleRecordActions'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import { useModuleToolbarActions } from '@/hooks/useModuleToolbarActions'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from '@/views/modules/module-behavior-registry'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overlays'
 import { useBusinessGridTable } from '@/views/modules/use-business-grid-table'
 
-type Props = {
+interface Props {
   moduleKey: string
   pageDef: AppPageDefinition
   initialConfig?: ModulePageConfig
@@ -75,6 +77,14 @@ export function useBusinessGridPage({
 
   useMasterOptions(listOptionRequirements)
 
+  const handlePaginationChange = useCallback(
+    (nextPage: number, nextPageSize: number) => {
+      setPage(nextPage)
+      setPageSize(nextPageSize)
+    },
+    [],
+  )
+
   useEffect(() => {
     setSelectedRowKeys([])
     setSelectedRowMap({})
@@ -100,13 +110,13 @@ export function useBusinessGridPage({
       filters: submittedFilters,
       page,
       pageSize,
-      enabled: canViewRecords && !!config,
+      enabled: canViewRecords,
       sortBy: sorting[0]?.id,
       sortDirection: sorting[0]?.desc ? 'desc' : sorting[0] ? 'asc' : undefined,
     })
 
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
-  const { exporting, handleExport } = useModuleExportSupport(moduleKey)
+  const { exporting, handleExport } = useExcelExport(moduleKey)
   const { detailOpen, detailRecord, detailLoading, openDetail, closeDetail } =
     useDetailSupport({ moduleKey, config: resolvedConfig })
   const {
@@ -205,10 +215,10 @@ export function useBusinessGridPage({
     canDeleteRecords: canDeleteRecord,
     isReadOnly: Boolean(config?.readOnly),
     resolveModuleStatusOptions: (statusField) => {
-      if (!statusField?.options) return []
-      return (statusField.options as Array<{ value: string }>).map(
-        (option) => option.value,
-      )
+      if (!Array.isArray(statusField?.options)) return []
+      return statusField.options
+        .map((option) => ('value' in option ? asString(option.value) : ''))
+        .filter(Boolean)
     },
   })
 
@@ -309,10 +319,7 @@ export function useBusinessGridPage({
     setSelectedRowKeys,
     setSelectedRowMap,
     buildActions,
-    onPaginationChange: (nextPage, nextPageSize) => {
-      setPage(nextPage)
-      setPageSize(nextPageSize)
-    },
+    onPaginationChange: handlePaginationChange,
     sorting,
     onSortingChange: setSorting,
   })

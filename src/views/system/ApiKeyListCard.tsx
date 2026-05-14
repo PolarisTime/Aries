@@ -1,4 +1,3 @@
-import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import { useNavigate } from '@tanstack/react-router'
 import Card from 'antd/es/card'
 import Table from 'antd/es/table'
@@ -8,10 +7,11 @@ import type {
   ApiKeyResourceOption,
   ApiKeyUserOption,
 } from '@/api/api-keys'
+import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import { ApiKeyListToolbar } from '@/views/system/ApiKeyListToolbar'
 import { buildApiKeyListColumns } from '@/views/system/api-key-list-columns'
 
-type Props = {
+interface Props {
   keyword: string
   filterUserId?: string
   statusFilter?: string

@@ -1,10 +1,10 @@
-import { asString } from '@/utils/type-narrowing'
-import { useMemo, type ReactNode } from 'react'
-import { type ColumnDef } from '@tanstack/react-table'
-import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import type { ColumnDef } from '@tanstack/react-table'
+import { type ReactNode, useMemo } from 'react'
 import { StatusTag } from '@/components/StatusTag'
-import { TableActions, type ActionItem } from '@/components/TableActions'
-import type { ModuleRecord, ModulePageConfig } from '@/types/module-page'
+import { type ActionItem, TableActions } from '@/components/TableActions'
+import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -17,17 +17,13 @@ declare module '@tanstack/react-table' {
   }
 }
 
-type Props = {
+interface Props {
   config: ModulePageConfig
   rowActions: (record: ModuleRecord) => ActionItem[]
   canUpdate: boolean
 }
 
-export function useGridColumns({
-  config,
-  rowActions,
-  canUpdate,
-}: Props) {
+export function useGridColumns({ config, rowActions, canUpdate }: Props) {
   const { formatCellValue } = useModuleDisplaySupport()
 
   const columns = useMemo((): ColumnDef<ModuleRecord>[] => {

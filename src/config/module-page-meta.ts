@@ -1,4 +1,5 @@
 import { appPageDefinitions } from '@/config/page-registry'
+import { asString } from '@/utils/type-narrowing'
 
 export interface ModulePageMeta {
   key: string
@@ -29,7 +30,7 @@ export const modulePageMetaMap: Record<string, ModulePageMeta> =
     appPageDefinitions
       .filter((entry) => Boolean(entry.moduleKey))
       .map((entry) => {
-        const moduleKey = entry.moduleKey as string
+        const moduleKey = asString(entry.moduleKey)
         return [
           moduleKey,
           {

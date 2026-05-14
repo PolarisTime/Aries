@@ -30,7 +30,7 @@ export type ModuleFilterOptionEntry =
   | ModuleFilterOption
   | ModuleFilterOptionGroup
 export type ModuleFilterOptionResolver = (
-  filters: Record<string, unknown>,
+  filters: ModuleRecordInput,
 ) => ModuleFilterOptionEntry[]
 
 export interface ModuleFormFieldOption {
@@ -44,7 +44,7 @@ export interface ModuleFormFieldOption {
 }
 
 export type ModuleFormFieldOptionResolver = (
-  form?: Record<string, unknown>,
+  form?: ModuleRecordInput,
 ) => ModuleFormFieldOption[]
 
 export interface ModuleFilterDefinition {
@@ -119,6 +119,12 @@ export interface ModuleFormFieldDefinition {
 }
 
 /** 使用索引签名替代 extends Record<string, unknown>，保留已知字段类型 */
+export type ModuleRecordInput = {
+  id?: string | number
+  items?: ModuleRecordInput[]
+  [key: string]: unknown
+}
+
 export type ModuleLineItem = {
   id: string
   [key: string]: unknown

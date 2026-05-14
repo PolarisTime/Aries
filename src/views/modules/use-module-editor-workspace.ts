@@ -1,6 +1,5 @@
-import { asString } from '@/utils/type-narrowing'
-import dayjs from 'dayjs'
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { useCallback, useEffect, useState } from 'react'
 import {
   allocateBusinessPrimaryNo,
@@ -24,7 +23,7 @@ import type {
 import { message, modal } from '@/utils/antd-app'
 import { cloneLineItems } from '@/utils/clone-utils'
 import { getStoredUser } from '@/utils/storage'
-import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view-utils'
+import { asString } from '@/utils/type-narrowing'
 import {
   applyModuleDefaultEditorDraft,
   buildDefaultEditorLineItem,
@@ -33,11 +32,15 @@ import {
   syncDerivedEditorFormValuesForModule,
   trimEditorItemsForModule,
 } from '@/views/modules/module-adapter-editor'
-import { buildOccupiedParentMap, buildParentImportState } from '@/views/modules/module-adapter-parent-import'
+import {
+  buildOccupiedParentMap,
+  buildParentImportState,
+} from '@/views/modules/module-adapter-parent-import'
 import {
   getModuleRecordPrimaryNo,
   parseParentRelationNos,
 } from '@/views/modules/module-adapter-shared'
+import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view-utils'
 
 interface AuditTarget {
   key: string
@@ -45,15 +48,15 @@ interface AuditTarget {
 }
 
 interface WorkspaceFormApi {
-  validateFields: () => Promise<Record<string, unknown>>
-  getFieldsValue: (all?: boolean) => Record<string, unknown>
-  setFieldsValue: (values: Record<string, unknown>) => void
+  validateFields: () => Promise<ModuleRecord>
+  getFieldsValue: (all?: boolean) => ModuleRecord
+  setFieldsValue: (values: ModuleRecord) => void
   resetFields: () => void
 }
 
-type FormChangedValues = Record<string, unknown>
+type FormChangedValues = ModuleRecord
 
-type Props = {
+interface Props {
   open: boolean
   config: ModulePageConfig
   record: ModuleRecord | null
@@ -115,7 +118,7 @@ function syncEditorFormValues(args: {
     changedValues,
     systemSettings,
   } = args
-  const currentValues = form.getFieldsValue(true) as ModuleRecord
+  const currentValues = form.getFieldsValue(true)
   const changedKeys = new Set(Object.keys(changedValues || {}))
   const nextValues = syncDerivedEditorFormValuesForModule({
     moduleKey,
@@ -249,7 +252,7 @@ export function useModuleEditorWorkspace({
       setPrimaryNoLoading(false)
     } else {
       form.resetFields()
-      const defaultDraft: Record<string, unknown> = {}
+      const defaultDraft: ModuleRecord = {} as ModuleRecord
       applyModuleDefaultEditorDraft(
         moduleKey,
         defaultDraft,
@@ -257,7 +260,9 @@ export function useModuleEditorWorkspace({
       )
       form.setFieldsValue(defaultDraft)
       setItems(
-        autoInsertBlankItemOnCreate ? [buildDefaultEditorLineItem(undefined, moduleKey)] : [],
+        autoInsertBlankItemOnCreate
+          ? [buildDefaultEditorLineItem(undefined, moduleKey)]
+          : [],
       )
       if (config.primaryNoKey) {
         setPrimaryNoLoading(true)
@@ -270,7 +275,7 @@ export function useModuleEditorWorkspace({
               form.setFieldsValue({
                 ...defaultDraft,
                 _preallocatedId: generatedId || '',
-                [config.primaryNoKey as string]: generatedNo,
+                [asString(config.primaryNoKey)]: generatedNo,
               })
             })
             .catch((err) => {
@@ -294,7 +299,7 @@ export function useModuleEditorWorkspace({
               }
               form.setFieldsValue({
                 ...defaultDraft,
-                [config.primaryNoKey as string]: generatedNo,
+                [asString(config.primaryNoKey)]: generatedNo,
               })
             })
             .catch((err) => {
@@ -510,7 +515,7 @@ export function useModuleEditorWorkspace({
 
       setParentImporting(true)
       try {
-        let nextValues = form.getFieldsValue(true) as ModuleRecord
+        let nextValues = form.getFieldsValue(true)
         let nextItems = items
         let importedParentCount = 0
         let importedItemCount = 0
@@ -583,7 +588,7 @@ export function useModuleEditorWorkspace({
     if (!parentImportConfig) {
       return
     }
-    const currentValues = form.getFieldsValue(true) as ModuleRecord
+    const currentValues = form.getFieldsValue(true)
     const validationError =
       parentImportConfig.validateBeforeOpen?.(currentValues)
     if (validationError) {

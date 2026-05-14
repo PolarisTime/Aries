@@ -9,7 +9,7 @@ import { useRoleActionPermissions } from '@/views/system/useRoleActionPermission
 import { useRoleEditor } from '@/views/system/useRoleEditor'
 import { useRoleSettingsList } from '@/views/system/useRoleSettingsList'
 
-type RoleActionEditorProps = {
+interface RoleActionEditorProps {
   active?: boolean
 }
 
@@ -65,7 +65,7 @@ export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
 
   return (
     <div className="page-stack">
-      <Row gutter={16} style={{ height: 'calc(100vh - 160px)' }}>
+      <Row gutter={16} className="h-full h-[calc(100vh-160px)]">
         <Col span={6}>
           <RoleActionRoleListCard
             roles={roles}

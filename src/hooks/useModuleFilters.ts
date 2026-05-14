@@ -1,19 +1,18 @@
 import { useCallback, useState } from 'react'
+import type { SearchParams } from '@/types/api-raw'
 
 export interface ModuleFilterState {
-  filters: Record<string, unknown>
-  submittedFilters: Record<string, unknown>
+  filters: SearchParams
+  submittedFilters: SearchParams
 }
 
-type Props = {
+interface Props {
   setCurrentPage: (page: number) => void
 }
 
 export function useModuleFilters({ setCurrentPage }: Props) {
-  const [filters, setFilters] = useState<Record<string, unknown>>({})
-  const [submittedFilters, setSubmittedFilters] = useState<
-    Record<string, unknown>
-  >({})
+  const [filters, setFilters] = useState<SearchParams>({})
+  const [submittedFilters, setSubmittedFilters] = useState<SearchParams>({})
 
   const handleSearch = useCallback(() => {
     setCurrentPage(1)

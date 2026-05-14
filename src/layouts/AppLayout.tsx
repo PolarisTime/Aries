@@ -62,6 +62,8 @@ export function AppLayout() {
     layoutMode,
     appliedLayoutMode,
     setLayoutMode,
+    themeMode,
+    setThemeMode,
     open: openPersonalSettings,
     close: closePersonalSettings,
     reset: resetPersonalSettings,
@@ -332,6 +334,8 @@ export function AppLayout() {
           onFontSizeChange={setFontSize}
           layoutMode={layoutMode}
           onLayoutModeChange={setLayoutMode}
+          themeMode={themeMode}
+          onThemeModeChange={setThemeMode}
         />
       </Layout>
     </AppAntdProvider>

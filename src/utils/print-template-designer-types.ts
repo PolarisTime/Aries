@@ -1,3 +1,5 @@
+import type { ModuleRecord } from '@/types/module-page'
+
 export interface PrintTemplateTokenDescriptor {
   key: string
   label: string
@@ -20,6 +22,6 @@ export interface PrintTemplateSnippet {
 }
 
 export interface PrintTemplatePreviewData {
-  model: Record<string, unknown>
-  details: Array<Record<string, unknown>>
+  model: ModuleRecord
+  details: Array<ModuleRecord>
 }

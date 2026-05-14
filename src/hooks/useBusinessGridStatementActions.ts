@@ -1,4 +1,3 @@
-import { asString } from '@/utils/type-narrowing'
 import { useCallback } from 'react'
 import {
   generateBusinessPrimaryNo,
@@ -8,6 +7,7 @@ import {
 import { listAllStatementCandidates } from '@/api/statements'
 import type { ModuleRecord } from '@/types/module-page'
 import { cloneLineItems } from '@/utils/clone-utils'
+import { asString } from '@/utils/type-narrowing'
 import {
   buildCustomerStatementDraftData,
   buildFreightStatementDraftData,
@@ -16,7 +16,7 @@ import {
 
 type StatementType = 'supplier' | 'customer' | 'freight'
 
-type Props = {
+interface Props {
   refreshModuleQueries: () => Promise<void>
 }
 
@@ -103,9 +103,8 @@ export function useBusinessGridStatementActions({
           const draft = buildCustomerStatementDraftData({
             baseDraft: {
               id: '',
-              statementNo: await generateBusinessPrimaryNo(
-                'customer-statement',
-              ),
+              statementNo:
+                await generateBusinessPrimaryNo('customer-statement'),
               status: '待确认',
               remark: '',
             },

@@ -2,15 +2,15 @@ import type { FormInstance } from 'antd'
 import Col from 'antd/es/col'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import { FormModal } from '@/components/FormModal'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
+import { FormModal } from '@/components/FormModal'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 
-type Props = {
+interface Props {
   open: boolean
   editing: boolean
   form: FormInstance
@@ -82,7 +82,7 @@ export function PrintTemplateEditorModal({
             onChange={(event) => onTemplateHtmlChange(event.target.value)}
             rows={16}
             placeholder="请输入 HTML 模板内容"
-            style={{ fontFamily: 'monospace', fontSize: 12 }}
+            className="text-xs font-mono"
           />
         </Form.Item>
         <Typography.Text type="secondary">

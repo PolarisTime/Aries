@@ -1,5 +1,5 @@
-import { asString } from '@/utils/type-narrowing'
 import type { ModuleLineItem } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { toRoundedNumber } from './module-editor-shared'
 
 function calculateAveragePieceWeightTon(quantity: unknown, weightTon: unknown) {

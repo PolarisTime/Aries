@@ -5,47 +5,46 @@ import Card from 'antd/es/card'
 import Descriptions from 'antd/es/descriptions'
 import Space from 'antd/es/space'
 import { useState } from 'react'
-import { http } from '@/api/client'
+import {
+  getSecurityKeyOverview,
+  rotateJwtSecurityKey,
+  rotateTotpSecurityKey,
+} from '@/api/security-keys'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
-import { ENDPOINTS } from '@/constants/endpoints'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
-import type { ApiResponse } from '@/types/api'
 import { message } from '@/utils/antd-app'
 
-interface SecurityKeys {
-  jwtLastRotatedAt: string
-  totpLastRotatedAt: string
-}
+const SECURITY_KEY_QUERY_KEY = ['security-key'] as const
 
-export function SecurityKeyManagementView() {
+type RotateType = 'jwt' | 'totp'
+
+export function SecurityKeyManagementView(): React.JSX.Element {
   const queryClient = useQueryClient()
   const [totpOpen, setTotpOpen] = useState(false)
-  const [rotateType, setRotateType] = useState<'jwt' | 'totp'>('jwt')
+  const [rotateType, setRotateType] = useState<RotateType>('jwt')
   const isPageVisible = usePageVisibility()
 
   const { data: keys, isLoading } = useQuery({
-    queryKey: ['security-key'],
-    queryFn: async () => {
-      const res = await http.get<ApiResponse<SecurityKeys>>(
-        `${ENDPOINTS.SECURITY_KEYS}/overview`,
-      )
-      return res.data
-    },
+    queryKey: SECURITY_KEY_QUERY_KEY,
+    queryFn: getSecurityKeyOverview,
     enabled: isPageVisible,
   })
 
-  const handleRotate = (type: 'jwt' | 'totp') => {
+  const handleRotate = (type: RotateType): void => {
     setRotateType(type)
     setTotpOpen(true)
   }
 
-  const handleRotateConfirm = async (code: string) => {
+  const handleRotateConfirm = async (code: string): Promise<void> => {
     try {
-      await http.post(`${ENDPOINTS.SECURITY_KEYS}/${rotateType}/rotate`, {
-        totpCode: code,
-      })
+      if (rotateType === 'jwt') {
+        await rotateJwtSecurityKey(code)
+      } else {
+        await rotateTotpSecurityKey(code)
+      }
       message.success(`${rotateType.toUpperCase()} 密钥已轮换`)
-      void queryClient.invalidateQueries({ queryKey: ['security-key'] })
+      setTotpOpen(false)
+      void queryClient.invalidateQueries({ queryKey: SECURITY_KEY_QUERY_KEY })
     } catch (err) {
       message.error(err instanceof Error ? err.message : '轮换失败')
       throw err
@@ -57,10 +56,10 @@ export function SecurityKeyManagementView() {
       <Card title="安全密钥管理" loading={isLoading}>
         <Descriptions column={1} bordered size="small">
           <Descriptions.Item label="JWT 密钥最后轮换">
-            {keys?.jwtLastRotatedAt || '--'}
+            {keys?.data.jwt.activatedAt || '--'}
           </Descriptions.Item>
           <Descriptions.Item label="TOTP 密钥最后轮换">
-            {keys?.totpLastRotatedAt || '--'}
+            {keys?.data.totp.activatedAt || '--'}
           </Descriptions.Item>
         </Descriptions>
         <Space className="mt-4">

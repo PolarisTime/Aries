@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import Form from 'antd/es/form'
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getInitialSetupStatus,
   setupInitialAdmin2fa,
@@ -8,12 +9,12 @@ import {
   submitInitialCompany,
 } from '@/api/setup'
 import type { InitialSetupStatus, InitialSetupTotpResult } from '@/types/setup'
-import { asString } from '@/utils/type-narrowing'
 import { message } from '@/utils/antd-app'
+import { asString } from '@/utils/type-narrowing'
 
 export type SetupStep = 'admin' | 'company'
 
-interface AdminFormValues {
+type AdminFormValues = {
   adminLoginName: string
   adminPassword: string
   adminConfirmPassword: string
@@ -21,7 +22,7 @@ interface AdminFormValues {
   totpCode: string
 }
 
-interface CompanyFormValues {
+type CompanyFormValues = {
   companyName: string
   taxNo: string
   bankName: string
@@ -30,17 +31,20 @@ interface CompanyFormValues {
   remark: string
 }
 
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : '操作失败'
+function getErrorMessage(error: unknown, fallbackMessage: string): string {
+  return error instanceof Error ? error.message : fallbackMessage
 }
 
 export function useInitialSetupState() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [checking, setChecking] = useState(true)
   const [status, setStatus] = useState<InitialSetupStatus | null>(null)
   const [currentStep, setCurrentStep] = useState<SetupStep>('admin')
   const [adminCompleted, setAdminCompleted] = useState(false)
-  const [totpSetup, setTotpSetup] = useState<InitialSetupTotpResult | null>(null)
+  const [totpSetup, setTotpSetup] = useState<InitialSetupTotpResult | null>(
+    null,
+  )
   const [loadingTotp, setLoadingTotp] = useState(false)
   const [loadingAdmin, setLoadingAdmin] = useState(false)
   const [loadingCompany, setLoadingCompany] = useState(false)
@@ -59,51 +63,57 @@ export function useInitialSetupState() {
         setCurrentStep('admin')
       }
       if (!s.setupRequired) {
-        message.info('系统已完成初始化，即将跳转登录页')
-        setTimeout(() => { void navigate({ to: '/login' }) }, 1500)
+        message.info(t('auth.initialsetup.alreadyCompletedRedirect'))
+        setTimeout(() => {
+          void navigate({ to: '/login' })
+        }, 1500)
       }
     } catch {
-      message.error('获取初始化状态失败')
+      message.error(t('auth.initialsetup.loadStatusFailed'))
     } finally {
       setChecking(false)
     }
-  }, [navigate])
+  }, [navigate, t])
 
   // mount-time data fetch — setState is unavoidable for async init
-  useEffect(() => { void loadStatus() }, [])
-   
+  useEffect(() => {
+    void loadStatus()
+  }, [loadStatus])
 
   const handleGenerateTotp = useCallback(async () => {
     const loginName = asString(form.getFieldValue('adminLoginName')).trim()
     if (!loginName) {
-      message.error('请先输入管理员登录名')
+      message.error(t('auth.initialsetup.inputAdminLoginFirst'))
       return
     }
     setLoadingTotp(true)
     try {
       const res = await setupInitialAdmin2fa({ loginName })
       setTotpSetup(res.data)
-      message.success('TOTP 密钥已生成')
+      message.success(t('auth.initialsetup.totpGenerated'))
     } catch (error) {
-      message.error(getErrorMessage(error))
+      message.error(getErrorMessage(error, t('auth.initialsetup.operationFailed')))
     } finally {
       setLoadingTotp(false)
     }
-  }, [form])
+  }, [form, t])
 
   const handleSubmitAdmin = useCallback(async () => {
     try {
       const values = (await form.validateFields([
-        'adminLoginName', 'adminPassword', 'adminConfirmPassword',
-        'adminUserName', 'totpCode',
+        'adminLoginName',
+        'adminPassword',
+        'adminConfirmPassword',
+        'adminUserName',
+        'totpCode',
       ])) as unknown as AdminFormValues
 
       if (values.adminPassword !== values.adminConfirmPassword) {
-        message.error('两次密码输入不一致')
+        message.error(t('auth.initialsetup.passwordMismatch'))
         return
       }
       if (!totpSetup?.secret) {
-        message.error('请先生成TOTP')
+        message.error(t('auth.initialsetup.totpRequired'))
         return
       }
       setLoadingAdmin(true)
@@ -111,26 +121,31 @@ export function useInitialSetupState() {
         admin: {
           loginName: values.adminLoginName.trim(),
           password: values.adminPassword,
-          userName: (values.adminUserName || '系统管理员').trim(),
+          userName: (
+            values.adminUserName || t('auth.initialsetup.defaultAdminUserName')
+          ).trim(),
         },
         totpSecret: totpSetup.secret,
         totpCode: values.totpCode.trim(),
       })
-      message.success(res.message || '管理员创建成功')
+      message.success(res.message || t('auth.initialsetup.adminCreateSuccess'))
       setAdminCompleted(true)
       setCurrentStep('company')
       void loadStatus()
     } catch (error) {
-      message.error(getErrorMessage(error))
+      message.error(getErrorMessage(error, t('auth.initialsetup.operationFailed')))
     } finally {
       setLoadingAdmin(false)
     }
-  }, [form, loadStatus, totpSetup])
+  }, [form, loadStatus, t, totpSetup])
 
   const handleSubmitCompany = useCallback(async () => {
     try {
       const values = (await form.validateFields([
-        'companyName', 'taxNo', 'bankName', 'bankAccount',
+        'companyName',
+        'taxNo',
+        'bankName',
+        'bankAccount',
       ])) as unknown as CompanyFormValues
 
       setLoadingCompany(true)
@@ -142,19 +157,28 @@ export function useInitialSetupState() {
         taxRate: values.taxRate || 0.13,
         remark: values.remark?.trim() || '',
       })
-      message.success(res.message || '公司信息初始化完成')
+      message.success(res.message || t('auth.initialsetup.companyCreateSuccess'))
       void navigate({ to: '/login' })
     } catch (error) {
-      message.error(getErrorMessage(error))
+      message.error(getErrorMessage(error, t('auth.initialsetup.operationFailed')))
     } finally {
       setLoadingCompany(false)
     }
-  }, [form, navigate])
+  }, [form, navigate, t])
 
   return {
-    adminCompleted, checking, currentStep, form,
-    handleGenerateTotp, handleSubmitAdmin, handleSubmitCompany,
-    loadingAdmin, loadingCompany, loadingTotp, setCurrentStep,
-    status, totpSetup,
+    adminCompleted,
+    checking,
+    currentStep,
+    form,
+    handleGenerateTotp,
+    handleSubmitAdmin,
+    handleSubmitCompany,
+    loadingAdmin,
+    loadingCompany,
+    loadingTotp,
+    setCurrentStep,
+    status,
+    totpSetup,
   }
 }
