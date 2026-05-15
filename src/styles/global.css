@@ -1367,9 +1367,10 @@ body,
   overflow: auto;
 }
 
-.module-table-shell .ant-pagination {
+.module-table-shell .ant-pagination,
+.module-table-shell .ant-table-pagination {
   flex-shrink: 0;
-  margin-top: 0;
+  margin: 0 !important;
 }
 
 .module-table-shell .ant-table-selection-column {
