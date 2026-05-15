@@ -23,7 +23,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     location,
     config: state.config,
     records: state.records,
-    setPage: state.setPage,
+    setPage: () => {},
     clearSelection: state.clearSelection,
     setSubmittedFilters: state.setSubmittedFilters,
     updateFilter: state.updateFilter,
@@ -43,10 +43,12 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         moduleKey={moduleKey}
         config={state.config}
         filters={state.filters}
-        total={state.total}
         loading={state.isLoading || state.editorLockLoading}
         exporting={state.exporting}
         records={state.records}
+        hasNextPage={state.hasNextPage}
+        fetchNextPage={state.fetchNextPage}
+        isFetchingNextPage={state.isFetchingNextPage}
         warningMessage={state.warningMessage}
         columnVisibleKeys={state.columnVisibleKeys}
         columnOrder={state.columnOrder}
@@ -77,17 +79,11 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
             void state.openDetail(record)
           }
         }}
-        page={state.page}
-        pageSize={state.pageSize}
         canCreate={state.canCreateRecord}
         canExport={state.canExportData}
         toolbarActions={state.visibleToolbarActions}
         onAction={(action) => {
           void state.handleAction(action)
-        }}
-        onPageChange={(nextPage, nextPageSize) => {
-          state.setPage(nextPage)
-          state.setPageSize(nextPageSize)
         }}
         onSortingChange={state.onSortingChange}
       />
