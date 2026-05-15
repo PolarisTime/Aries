@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
@@ -165,11 +166,29 @@ export function useBusinessGridPage({
     })
   }, [records, selectedRowKeys])
 
+  const navigate = useNavigate()
+  const detailRoutePath = getBehaviorValue(moduleKey, 'detailRoutePath') as
+    | string
+    | undefined
+
   const handleEdit = useCallback(
     (record: ModuleRecord) => {
       void openEditor(record)
     },
     [openEditor],
+  )
+
+  const handleDetail = useCallback(
+    (record: ModuleRecord) => {
+      if (detailRoutePath) {
+        const path = detailRoutePath.replace(
+          ':projectId',
+          String(record.projectId),
+        )
+        void navigate({ to: path as never })
+      }
+    },
+    [detailRoutePath, navigate],
   )
 
   const { buildActions } = useModuleRecordActions({
@@ -178,6 +197,7 @@ export function useBusinessGridPage({
     onEdit: handleEdit,
     onAttach: overlays.openAttachment,
     onRefresh: refreshModuleQueries,
+    onDetail: detailRoutePath ? handleDetail : undefined,
   })
 
   const lockedLineItemsNotice = useMemo(
@@ -310,6 +330,7 @@ export function useBusinessGridPage({
     setSelectedRowKeys,
     setSelectedRowMap,
     buildActions,
+    showActions: Boolean(detailRoutePath),
     sorting,
     onSortingChange: setSorting,
   })

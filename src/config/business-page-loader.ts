@@ -65,6 +65,9 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
     (await import('@/config/business-pages/invoice-pages')).invoicePageConfigs,
   'receivable-payable': async () =>
     (await import('@/config/business-pages/balance-pages')).balancePageConfigs,
+  'project-ar': async () =>
+    (await import('@/config/business-pages/project-ar-pages'))
+      .projectArPageConfigs,
   'inventory-report': async () =>
     (await import('@/config/business-pages/finance-report-pages'))
       .financeReportPageConfigs,

@@ -3,6 +3,7 @@ import { asString } from '@/utils/type-narrowing'
 
 export const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
 export const MAX_CONCURRENT_SESSIONS_CODE = 'SYS_MAX_CONCURRENT_SESSIONS'
+export const DEFAULT_LIST_PAGE_SIZE_SETTING_CODE = 'UI_DEFAULT_LIST_PAGE_SIZE'
 
 export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_DEFAULT_TAX_RATE:
@@ -72,8 +73,18 @@ export function isMaxConcurrentSetting(record: ModuleRecord) {
   return asString(record.settingCode).trim() === MAX_CONCURRENT_SESSIONS_CODE
 }
 
+export function isDefaultListPageSizeSetting(record: ModuleRecord) {
+  return (
+    asString(record.settingCode).trim() === DEFAULT_LIST_PAGE_SIZE_SETTING_CODE
+  )
+}
+
 export function isNumericSetting(record: ModuleRecord) {
-  return isDefaultTaxRateSetting(record) || isMaxConcurrentSetting(record)
+  return (
+    isDefaultTaxRateSetting(record) ||
+    isMaxConcurrentSetting(record) ||
+    isDefaultListPageSizeSetting(record)
+  )
 }
 
 export function isToggleSetting(record: ModuleRecord) {

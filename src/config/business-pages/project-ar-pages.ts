@@ -1,0 +1,115 @@
+import type { ModulePageConfig } from '@/types/module-page'
+import { formatAmount, formatInteger, statusMap, sumBy } from './shared'
+
+export const projectArPageConfigs: Record<string, ModulePageConfig> = {
+  'project-ar': {
+    key: 'project-ar',
+    title: '项目应收',
+    kicker: 'Finance',
+    description: '按项目维度展示应收汇总，支持下钻到项目明细。',
+    readOnly: true,
+    actions: [{ key: 'export_project_ar', label: '导出', type: 'primary' }],
+    filters: [
+      {
+        key: 'keyword',
+        label: '搜索',
+        type: 'input',
+        placeholder: '客户编码/名称、项目名称/简称/负责人',
+      },
+    ],
+    columns: [
+      { title: '客户编码', dataIndex: 'customerCode', width: 120 },
+      { title: '客户名称', dataIndex: 'customerName', width: 140 },
+      { title: '项目名称', dataIndex: 'projectName', width: 180 },
+      { title: '项目简称', dataIndex: 'projectNameAbbr', width: 120 },
+      { title: '项目负责人', dataIndex: 'projectManager', width: 110 },
+      {
+        title: '完成销售金额',
+        dataIndex: 'completedSalesAmount',
+        width: 140,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: '已收金额',
+        dataIndex: 'receivedAmount',
+        width: 120,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: '未收金额',
+        dataIndex: 'unreceivedAmount',
+        width: 120,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: '项目预收余额',
+        dataIndex: 'prepaymentBalance',
+        width: 130,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: '净未收金额',
+        dataIndex: 'netUnreceivedAmount',
+        width: 130,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: '未对账单据数',
+        dataIndex: 'unreconciledDocumentCount',
+        width: 120,
+        align: 'right',
+        type: 'count',
+      },
+      {
+        title: '已对账单据数',
+        dataIndex: 'reconciledDocumentCount',
+        width: 120,
+        align: 'right',
+        type: 'count',
+      },
+      {
+        title: '最近业务日期',
+        dataIndex: 'latestBusinessDate',
+        width: 130,
+        type: 'date',
+      },
+    ],
+    detailFields: [
+      { label: '客户编码', key: 'customerCode' },
+      { label: '客户名称', key: 'customerName' },
+      { label: '项目名称', key: 'projectName' },
+      { label: '项目简称', key: 'projectNameAbbr' },
+      { label: '项目负责人', key: 'projectManager' },
+      { label: '完成销售金额', key: 'completedSalesAmount', type: 'amount' },
+      { label: '已收金额', key: 'receivedAmount', type: 'amount' },
+      { label: '未收金额', key: 'unreceivedAmount', type: 'amount' },
+      { label: '项目预收余额', key: 'prepaymentBalance', type: 'amount' },
+      { label: '净未收金额', key: 'netUnreceivedAmount', type: 'amount' },
+      {
+        label: '未对账单据数',
+        key: 'unreconciledDocumentCount',
+        type: 'count',
+      },
+      { label: '已对账单据数', key: 'reconciledDocumentCount', type: 'count' },
+      { label: '最近业务日期', key: 'latestBusinessDate', type: 'date' },
+    ],
+    data: [],
+    buildOverview: (rows) => [
+      { label: '项目数', value: formatInteger(rows.length) },
+      {
+        label: '完成销售总额',
+        value: formatAmount(sumBy(rows, 'completedSalesAmount')),
+      },
+      {
+        label: '净未收总额',
+        value: formatAmount(sumBy(rows, 'netUnreceivedAmount')),
+      },
+    ],
+    statusMap,
+  },
+}

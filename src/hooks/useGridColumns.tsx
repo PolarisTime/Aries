@@ -21,15 +21,21 @@ interface Props {
   config: ModulePageConfig
   rowActions: (record: ModuleRecord) => ActionItem[]
   canUpdate: boolean
+  showActions?: boolean
 }
 
-export function useGridColumns({ config, rowActions, canUpdate }: Props) {
+export function useGridColumns({
+  config,
+  rowActions,
+  canUpdate,
+  showActions,
+}: Props) {
   const { formatCellValue } = useModuleDisplaySupport()
 
   const columns = useMemo((): ColumnDef<ModuleRecord>[] => {
     const cols: ColumnDef<ModuleRecord>[] = []
 
-    if (canUpdate) {
+    if (canUpdate || showActions) {
       cols.push({
         id: 'actions',
         header: '操作',
@@ -76,7 +82,7 @@ export function useGridColumns({ config, rowActions, canUpdate }: Props) {
     }
 
     return cols
-  }, [config, rowActions, canUpdate, formatCellValue])
+  }, [config, rowActions, canUpdate, formatCellValue, showActions])
 
   return { columns }
 }

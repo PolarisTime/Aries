@@ -1,7 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { listBusinessModule } from '@/api/business-listing'
-import { useBusinessListCache } from '@/hooks/useBusinessListCache'
 import type { TableResponse } from '@/types/api'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
@@ -23,21 +22,6 @@ export function useInfiniteBusinessItems({
   sortBy,
   sortDirection,
 }: Props) {
-  const supportsSessionCache =
-    moduleKey === 'purchase-order' ||
-    moduleKey === 'sales-order' ||
-    moduleKey === 'purchase-inbound' ||
-    moduleKey === 'sales-outbound'
-
-  const { cached, save } = useBusinessListCache({
-    moduleKey,
-    filters,
-    page: 1,
-    pageSize: PAGE_SIZE,
-    sortBy,
-    sortDirection,
-  })
-
   const query = useInfiniteQuery<TableResponse<ModuleRecord>>({
     queryKey: [
       'business-grid-infinite',
@@ -68,15 +52,7 @@ export function useInfiniteBusinessItems({
       return loaded >= total ? undefined : allPages.length + 1
     },
     enabled: enabled && !!moduleKey,
-    placeholderData: cached
-      ? () => ({
-          pages: [cached],
-          pageParams: [1],
-        })
-      : undefined,
-    staleTime: supportsSessionCache ? 30_000 : 5_000,
-    gcTime: supportsSessionCache ? 5 * 60_000 : 60_000,
-    maxPages: 10,
+    staleTime: 5_000,
   })
 
   const records: ModuleRecord[] = useMemo(
@@ -88,16 +64,6 @@ export function useInfiniteBusinessItems({
   const responseCode = Number(query.data?.pages[0]?.code ?? 0)
   const warningMessage =
     responseCode === 0 ? '' : String(query.data?.pages[0]?.message || '')
-
-  const firstPageData =
-    query.data?.pages[0] && (!cached || query.data.pages.length > 1)
-      ? query.data.pages[0]
-      : null
-
-  // Save first page to cache
-  if (firstPageData && supportsSessionCache) {
-    save(firstPageData)
-  }
 
   return {
     query,

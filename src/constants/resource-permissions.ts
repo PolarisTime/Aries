@@ -66,6 +66,8 @@ const FALLBACK_RESOURCE_LABEL_MAP: Record<string, string> = {
   'invoice-receipt': '收票单',
   'invoice-issue': '开票单',
   'receivable-payable': '应收应付',
+  project: '项目管理',
+  'project-ar': '项目应收',
   'general-setting': '通用设置',
   'company-setting': '公司信息',
   'operation-log': '操作日志',

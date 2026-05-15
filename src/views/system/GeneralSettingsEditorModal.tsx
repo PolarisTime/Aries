@@ -10,6 +10,7 @@ import { asString } from '@/utils/type-narrowing'
 import {
   DETAILED_OPERATION_ACTION_OPTIONS,
   HIDE_AUDITED_STATUS_OPTIONS,
+  isDefaultListPageSizeSetting,
   isDefaultTaxRateSetting,
   isNumericSetting,
   SYSTEM_SWITCH_HELP_TEXT,
@@ -62,6 +63,8 @@ export function GeneralSettingsEditorModal({
                   step={0.01}
                   addonAfter="%"
                 />
+              ) : isDefaultListPageSizeSetting(record) ? (
+                <Input type="number" min={1} max={200} step={1} />
               ) : (
                 <Input type="number" min={0} />
               )}

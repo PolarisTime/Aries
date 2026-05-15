@@ -65,4 +65,5 @@ export interface ModuleBehaviorConfig {
   hasUploadRuleExpandedRow?: boolean
   alertActionLink?: { text: string; to: string }
   permissionCodesByActionKey?: Record<string, string[]>
+  detailRoutePath?: string
 }

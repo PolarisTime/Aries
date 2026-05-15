@@ -26,6 +26,7 @@ interface Props {
     ) => Record<string, ModuleRecord>,
   ) => void
   buildActions: (record: ModuleRecord) => ActionItem[]
+  showActions?: boolean
   sorting: SortingState
   onSortingChange: (sorting: SortingState) => void
 }
@@ -48,6 +49,7 @@ export function useBusinessGridTable({
   setSelectedRowKeys,
   setSelectedRowMap,
   buildActions,
+  showActions,
   sorting,
   onSortingChange,
 }: Props) {
@@ -83,6 +85,7 @@ export function useBusinessGridTable({
     },
     rowActions: buildActions,
     canUpdate: Boolean(config) && canUpdateRecord,
+    showActions,
   })
   const allColumnIds = useMemo(
     () =>
