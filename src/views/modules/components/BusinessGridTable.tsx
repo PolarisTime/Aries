@@ -4,20 +4,12 @@ import Spin from 'antd/es/spin'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
-import {
-  type MouseEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
 import type { ModuleRecord } from '@/types/module-page'
 
 const MIN_TABLE_BODY_SCROLL_Y = 240
 const TABLE_SCROLL_RESERVED_SPACE = 0
-const SCROLL_THRESHOLD = 80
 
 export function computeTableBodyScrollY(
   containerHeight: number,
@@ -132,59 +124,27 @@ export function BusinessGridTable({
     }
   }, [])
 
-  // Scroll detection + auto-preload
-  const handleShellScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
-      const target = e.target as HTMLElement
-      if (target === e.currentTarget) return
-      const { scrollTop, scrollHeight, clientHeight } = target
-      if (
-        scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD &&
-        hasNextPage &&
-        !isFetchingNextPage
-      ) {
-        fetchNextPage()
-      }
-    },
-    [hasNextPage, isFetchingNextPage, fetchNextPage],
-  )
+  // Sentinel + IntersectionObserver — triggers fetch when sentinel enters viewport
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
 
-  // Auto-preload until scrollbar appears (max 3 pages)
-  const preloadCountRef = useRef(0)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on module change
-  useEffect(() => {
-    preloadCountRef.current = 0
-  }, [moduleKey])
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
-  useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage || preloadCountRef.current >= 3)
-      return
-    const shell = shellRef.current
-    if (!shell) return
-    const body =
-      shell.querySelector('.ant-table-body') ||
-      shell.querySelector('.ant-table-tbody-virtual') ||
-      shell.querySelector('[class*="virtual"]')
-    if (!body) return
-    const el = body as HTMLElement
-    if (el.scrollHeight <= el.clientHeight) {
-      preloadCountRef.current += 1
-      fetchNextPage()
-    }
-  }, [
-    dataSource.length,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-    moduleKey,
-  ])
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: '100px' },
+    )
+
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
-    <div
-      ref={shellRef}
-      className="module-table-shell"
-      onScrollCapture={handleShellScroll}
-    >
+    <div ref={shellRef} className="module-table-shell">
       <Table
         key={moduleKey}
         rowKey="id"
@@ -238,36 +198,34 @@ export function BusinessGridTable({
             activeSorter?.order,
           )
         }}
-        footer={() =>
-          isFetchingNextPage ? (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '8px 0',
-                color: '#999',
-                fontSize: 12,
-              }}
-            >
-              <Spin
-                indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />}
-                size="small"
-              />
-              <span style={{ marginLeft: 6 }}>加载中...</span>
-            </div>
-          ) : !hasNextPage && dataSource.length > 0 ? (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '8px 0',
-                color: '#999',
-                fontSize: 12,
-              }}
-            >
-              <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 14 }} />
-              <span style={{ marginLeft: 6 }}>已加载全部数据</span>
-            </div>
-          ) : undefined
-        }
+        footer={() => (
+          <div
+            ref={sentinelRef}
+            style={{
+              textAlign: 'center',
+              padding: '8px 0',
+              color: '#999',
+              fontSize: 12,
+            }}
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Spin
+                  indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />}
+                  size="small"
+                />
+                <span style={{ marginLeft: 6 }}>加载中...</span>
+              </>
+            ) : !hasNextPage && dataSource.length > 0 ? (
+              <>
+                <CheckCircleOutlined
+                  style={{ color: '#52c41a', fontSize: 14 }}
+                />
+                <span style={{ marginLeft: 6 }}>已加载全部数据</span>
+              </>
+            ) : null}
+          </div>
+        )}
       />
     </div>
   )
