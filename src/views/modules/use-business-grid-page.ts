@@ -118,14 +118,16 @@ export function useBusinessGridPage({
     })
 
   // Accumulate records: page 1 replaces, subsequent pages append
-  const prevRecordsRef = useRef<ModuleRecord[]>([])
   useEffect(() => {
     if (page === 1) {
       setAllRecords(records)
-    } else if (records.length > 0 && records !== prevRecordsRef.current) {
-      setAllRecords((prev) => [...prev, ...records])
+    } else if (records.length > 0) {
+      setAllRecords((prev) => {
+        const existingIds = new Set(prev.map((r) => String(r.id)))
+        const newRecords = records.filter((r) => !existingIds.has(String(r.id)))
+        return newRecords.length > 0 ? [...prev, ...newRecords] : prev
+      })
     }
-    prevRecordsRef.current = records
   }, [records, page])
 
   const hasMore = allRecords.length < total
