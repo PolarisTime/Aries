@@ -844,6 +844,7 @@ body,
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
+  padding-bottom: 0;
 }
 
 .module-page-skeleton {
