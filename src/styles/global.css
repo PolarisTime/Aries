@@ -1339,6 +1339,7 @@ body,
 }
 
 .module-table-shell .ant-spin-nested-loading,
+.module-table-shell .ant-spin,
 .module-table-shell .ant-spin-container {
   display: flex !important;
   flex: 1 1 auto !important;
