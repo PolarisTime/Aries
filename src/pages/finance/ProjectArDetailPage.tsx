@@ -5,7 +5,7 @@ import Card from 'antd/es/card'
 import Descriptions from 'antd/es/descriptions'
 import Flex from 'antd/es/flex'
 import Spin from 'antd/es/spin'
-import Table from 'antd/es/table'
+import Table, { type ColumnsType } from 'antd/es/table'
 import Tabs from 'antd/es/tabs'
 import Typography from 'antd/es/typography'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -65,7 +65,7 @@ function formatDate(value: string | undefined | null): string {
   return value
 }
 
-const detailColumns = [
+const detailColumns: ColumnsType<ProjectArDetailRow> = [
   { title: '来源单据号', dataIndex: 'sourceDocumentNo', width: 160 },
   { title: '单据类型', dataIndex: 'documentType', width: 100 },
   {
@@ -80,21 +80,21 @@ const detailColumns = [
     title: '金额',
     dataIndex: 'amount',
     width: 120,
-    align: 'right' as const,
+    align: 'right',
     render: (v: number) => formatAmount(v),
   },
   {
     title: '已核销金额',
     dataIndex: 'writtenOffAmount',
     width: 120,
-    align: 'right' as const,
+    align: 'right',
     render: (v: number) => formatAmount(v),
   },
   {
     title: '未核销金额',
     dataIndex: 'unwrittenOffAmount',
     width: 120,
-    align: 'right' as const,
+    align: 'right',
     render: (v: number) => formatAmount(v),
   },
   { title: '对账状态', dataIndex: 'reconciliationStatus', width: 120 },
@@ -103,7 +103,7 @@ const detailColumns = [
   { title: '备注', dataIndex: 'remark', width: 150 },
 ]
 
-export function ProjectArDetailPage() {
+export function ProjectArDetailPage(): React.JSX.Element {
   const location = useLocation()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -117,7 +117,7 @@ export function ProjectArDetailPage() {
   const [reconciledTotal, setReconciledTotal] = useState(0)
   const [tabLoading, setTabLoading] = useState(false)
 
-  const projectId = useMemo(() => {
+  const projectId: string = useMemo(() => {
     const segments = location.pathname.split('/').filter(Boolean)
     return segments[segments.length - 1] || ''
   }, [location.pathname])
@@ -185,19 +185,19 @@ export function ProjectArDetailPage() {
 
   if (loading) {
     return (
-      <Flex justify="center" align="center" style={{ minHeight: 400 }}>
+      <Flex justify="center" align="center" className="min-h-[400px]">
         <Spin size="large" />
       </Flex>
     )
   }
 
   return (
-    <Flex vertical gap="middle" style={{ padding: '0 0 24px 0' }}>
+    <Flex vertical gap="middle" className="pb-6">
       <Flex align="center" gap="small">
         <Button icon={<ArrowLeftOutlined />} onClick={handleBack}>
           返回
         </Button>
-        <Title level={4} style={{ margin: 0 }}>
+        <Title level={4} className="!mb-0">
           项目应收明细
         </Title>
       </Flex>
@@ -228,22 +228,22 @@ export function ProjectArDetailPage() {
             </Descriptions.Item>
             <Descriptions.Item label="联系人">{'-'}</Descriptions.Item>
             <Descriptions.Item label="完成销售总额">
-              <Text strong style={{ fontSize: 16 }}>
+              <Text strong className="text-base">
                 {formatAmount(summary.completedSalesAmount)}
               </Text>
             </Descriptions.Item>
             <Descriptions.Item label="项目预收余额">
-              <Text style={{ fontSize: 16 }}>
+              <Text className="text-base">
                 {formatAmount(summary.prepaymentBalance)}
               </Text>
             </Descriptions.Item>
             <Descriptions.Item label="应收未收金额">
-              <Text type="danger" style={{ fontSize: 16 }}>
+              <Text type="danger" className="text-base">
                 {formatAmount(summary.unreceivedAmount)}
               </Text>
             </Descriptions.Item>
             <Descriptions.Item label="净未收敞口">
-              <Text type="danger" strong style={{ fontSize: 16 }}>
+              <Text type="danger" strong className="text-base">
                 {formatAmount(summary.netUnreceivedAmount)}
               </Text>
             </Descriptions.Item>

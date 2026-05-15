@@ -43,14 +43,8 @@ export function useInfiniteBusinessItems({
         { signal },
       ),
     initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      const total = lastPage?.data?.total ?? 0
-      const loaded = allPages.reduce(
-        (sum, p) => sum + (p?.data?.rows?.length || 0),
-        0,
-      )
-      return loaded >= total ? undefined : allPages.length + 1
-    },
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage?.data?.hasMore ? allPages.length + 1 : undefined,
     enabled: enabled && !!moduleKey,
     staleTime: 5_000,
   })

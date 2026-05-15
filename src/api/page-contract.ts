@@ -10,6 +10,7 @@ export type PagePayload<T> = {
   pageSize?: number
   size?: number
   last?: boolean
+  hasMore?: boolean
 }
 
 export function pageContent<T>(page: PagePayload<T> | null | undefined): T[] {
@@ -35,4 +36,17 @@ export function pageLast<T>(page: PagePayload<T> | null | undefined): boolean {
   return (
     Number(page?.currentPage ?? page?.page ?? 0) >= pageTotalPages(page) - 1
   )
+}
+
+export function pageHasMore<T>(
+  page: PagePayload<T> | null | undefined,
+): boolean {
+  if (page?.hasMore != null) {
+    return Boolean(page.hasMore)
+  }
+  // 兼容旧后端：用 last 字段反推
+  if (page?.last != null) {
+    return !page.last
+  }
+  return Number(page?.currentPage ?? page?.page ?? 0) < pageTotalPages(page) - 1
 }

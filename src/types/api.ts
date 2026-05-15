@@ -7,5 +7,6 @@ export type TableResponse<T> = {
   data?: {
     rows?: T[]
     total?: number
+    hasMore?: boolean
   }
 }
