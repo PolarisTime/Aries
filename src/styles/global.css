@@ -1367,6 +1367,12 @@ body,
   margin-top: 0;
 }
 
+.module-table-shell .ant-table-selection-column {
+  width: 40px !important;
+  min-width: 40px !important;
+  padding: 0 8px !important;
+}
+
 .module-table-shell .ant-table-thead > tr > th,
 .module-table-shell .ant-table-thead > tr > td,
 .module-table-shell .ant-table-thead .ant-table-cell {
