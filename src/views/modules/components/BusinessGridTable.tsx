@@ -124,23 +124,43 @@ export function BusinessGridTable({
     }
   }, [])
 
-  // Sentinel + IntersectionObserver — triggers fetch when sentinel enters viewport
+  // Sentinel + IntersectionObserver with table scroll body as root
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     const sentinel = sentinelRef.current
     if (!sentinel) return
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage()
-        }
-      },
-      { rootMargin: '100px' },
-    )
+    let retries = 0
+    let timer = 0
 
-    observer.observe(sentinel)
-    return () => observer.disconnect()
+    const init = () => {
+      const root = shellRef.current?.querySelector(
+        '.ant-table-body',
+      ) as HTMLElement | null
+      if (!root) {
+        if (retries++ < 10) timer = window.setTimeout(init, 100)
+        return
+      }
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage()
+          }
+        },
+        { root, rootMargin: '100px' },
+      )
+
+      observer.observe(sentinel)
+      return () => observer.disconnect()
+    }
+
+    const cleanup = init()
+
+    return () => {
+      clearTimeout(timer)
+      cleanup?.()
+    }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
