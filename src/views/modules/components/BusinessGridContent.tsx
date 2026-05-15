@@ -18,12 +18,10 @@ interface Props {
   moduleKey: string
   config: ModulePageConfig
   filters: SearchParams
+  total: number
   loading: boolean
   exporting: boolean
   records: ModuleRecord[]
-  hasMore: boolean
-  loadMore: () => void
-  isFetching: boolean
   warningMessage: string
   columnVisibleKeys: string[]
   columnOrder: string[]
@@ -40,10 +38,13 @@ interface Props {
   onColumnOrderChange: (order: string[]) => void
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
+  page: number
+  pageSize: number
   canCreate: boolean
   canExport: boolean
   toolbarActions: ModuleActionDefinition[]
   onAction: (action: ModuleActionDefinition) => void
+  onPageChange: (page: number, pageSize: number) => void
   onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
 }
 
@@ -51,12 +52,10 @@ export function BusinessGridContent({
   moduleKey,
   config,
   filters,
+  total,
   loading,
   exporting,
   records,
-  hasMore,
-  loadMore,
-  isFetching,
   warningMessage,
   columnVisibleKeys,
   columnOrder,
@@ -73,10 +72,13 @@ export function BusinessGridContent({
   onColumnOrderChange,
   onRowClick,
   onRowDoubleClick,
+  page,
+  pageSize,
   canCreate,
   canExport,
   toolbarActions,
   onAction,
+  onPageChange,
   onSortingChange,
 }: Props) {
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
@@ -98,7 +100,7 @@ export function BusinessGridContent({
       <ModuleTableToolbar
         canCreate={canCreate}
         canExport={canExport}
-        total={records.length}
+        total={total}
         loading={loading}
         exporting={exporting}
         onCreate={onCreate}
@@ -138,9 +140,10 @@ export function BusinessGridContent({
         rowClassName={rowClassName}
         onRowClick={onRowClick}
         onRowDoubleClick={onRowDoubleClick}
-        hasMore={hasMore}
-        loadMore={loadMore}
-        isFetching={isFetching}
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={onPageChange}
         onSortingChange={onSortingChange}
       />
     </Card>

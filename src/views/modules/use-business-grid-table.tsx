@@ -6,6 +6,7 @@ import type { ActionItem } from '@/components/TableActions'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import type {
   ColumnDef,
+  PaginationState,
   RowSelectionState,
   SortingState,
 } from '@/hooks/useDataTable'
@@ -17,6 +18,8 @@ interface Props {
   moduleKey: string
   config: ModulePageConfig | undefined
   records: ModuleRecord[]
+  pageSize: number
+  total: number
   canUpdateRecord: boolean
   selectedRowKeys: string[]
   setSelectedRowKeys: (keys: string[]) => void
@@ -26,6 +29,7 @@ interface Props {
     ) => Record<string, ModuleRecord>,
   ) => void
   buildActions: (record: ModuleRecord) => ActionItem[]
+  onPaginationChange: (page: number, pageSize: number) => void
   sorting: SortingState
   onSortingChange: (sorting: SortingState) => void
 }
@@ -43,11 +47,14 @@ export function useBusinessGridTable({
   moduleKey,
   config,
   records,
+  pageSize,
+  total,
   canUpdateRecord,
   selectedRowKeys,
   setSelectedRowKeys,
   setSelectedRowMap,
   buildActions,
+  onPaginationChange,
   sorting,
   onSortingChange,
 }: Props) {
@@ -96,6 +103,12 @@ export function useBusinessGridTable({
     () => mergeColumnOrder(allColumnIds, savedOrder),
     [allColumnIds, savedOrder],
   )
+  const handlePaginationChange = useCallback(
+    (p: PaginationState) => {
+      onPaginationChange(p.pageIndex + 1, p.pageSize)
+    },
+    [onPaginationChange],
+  )
   const handleAntdSortingChange = useCallback(
     (columnKey?: string | number, order?: 'ascend' | 'descend' | null) => {
       if (!columnKey || !order) {
@@ -114,9 +127,14 @@ export function useBusinessGridTable({
   const { table } = useDataTable<ModuleRecord>({
     data: records,
     columns: columnDefs,
+    pageCount: Math.ceil(total / pageSize),
+    total,
+    manualPagination: true,
     manualSorting: true,
     enableSorting: true,
     enableRowSelection: canUpdateRecord,
+    initialPageSize: pageSize,
+    onPaginationChange: handlePaginationChange,
     onSortingChange,
     rowSelection: rowSelectionState,
     onRowSelectionChange: (updater) => {
