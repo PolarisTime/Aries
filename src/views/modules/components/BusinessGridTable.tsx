@@ -1,3 +1,4 @@
+import { CheckCircleOutlined, LoadingOutlined } from '@ant-design/icons'
 import Empty from 'antd/es/empty'
 import Spin from 'antd/es/spin'
 import type { ColumnsType, TableProps } from 'antd/es/table'
@@ -239,19 +240,31 @@ export function BusinessGridTable({
         }}
         footer={() =>
           isFetchingNextPage ? (
-            <div style={{ textAlign: 'center', padding: '4px 0' }}>
-              <Spin size="small" />
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '8px 0',
+                color: '#999',
+                fontSize: 12,
+              }}
+            >
+              <Spin
+                indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />}
+                size="small"
+              />
+              <span style={{ marginLeft: 6 }}>加载中...</span>
             </div>
           ) : !hasNextPage && dataSource.length > 0 ? (
             <div
               style={{
                 textAlign: 'center',
-                padding: '4px 0',
+                padding: '8px 0',
                 color: '#999',
                 fontSize: 12,
               }}
             >
-              已加载全部数据
+              <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 14 }} />
+              <span style={{ marginLeft: 6 }}>已加载全部数据</span>
             </div>
           ) : undefined
         }
