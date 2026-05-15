@@ -135,8 +135,7 @@ export function BusinessGridTable({
   const handleShellScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement
-      // Scroll event bubbles from .ant-table-body
-      if (!target.classList.contains('ant-table-body')) return
+      if (target === e.currentTarget) return
       const { scrollTop, scrollHeight, clientHeight } = target
       if (
         scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD &&
@@ -150,15 +149,19 @@ export function BusinessGridTable({
   )
 
   // Auto-preload when data first arrives.
-  // dataSource.length ensures re-run when table body enters DOM.
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
   useEffect(() => {
     if (!hasNextPage || isFetchingNextPage) return
-    const body = shellRef.current?.querySelector(
-      '.ant-table-body',
-    ) as HTMLElement | null
+    const shell = shellRef.current
+    if (!shell) return
+    const body =
+      shell.querySelector('.ant-table-body') ||
+      shell.querySelector('.ant-table-tbody-virtual') ||
+      shell.querySelector('[class*="virtual"]')
     if (!body) return
-    if (body.scrollHeight <= body.clientHeight) {
+    if (
+      (body as HTMLElement).scrollHeight <= (body as HTMLElement).clientHeight
+    ) {
       fetchNextPage()
     }
   }, [dataSource.length, hasNextPage, isFetchingNextPage, fetchNextPage])

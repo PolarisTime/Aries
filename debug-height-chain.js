@@ -1,47 +1,52 @@
 (function debugHeightChain() {
   function h(sel) { var e = document.querySelector(sel); return e ? e.clientHeight : -1 }
+  function cs(sel, prop) { var e = document.querySelector(sel); return e ? getComputedStyle(e)[prop] : 'N/A' }
 
   function show() {
     var m = h('.leo-main')
     console.clear()
-    console.log('视口: ' + window.innerWidth + 'x' + window.innerHeight + '  leo-main(100dvh): ' + m)
+    console.log('视口: ' + window.innerWidth + 'x' + window.innerHeight + '  leo-main: ' + m)
     console.log('')
-    console.log('── 上游父级 ──')
-    console.log('leo-content         clientH=' + h('.leo-content'))
-    console.log('leo-content-inner   clientH=' + h('.leo-content-inner'))
-    console.log('page-stack          clientH=' + h('.page-stack'))
-    console.log('module-grid-card    clientH=' + h('.module-grid-card'))
-    console.log('ant-card-body       clientH=' + h('.ant-card-body'))
-    console.log('')
-    console.log('── 表格容器 ──')
-    console.log('module-table-shell  clientH=' + h('.module-table-shell'))
 
-    // 实际 DOM 探路
-    var sc = document.querySelector('.module-table-shell .ant-spin-container')
-    if (sc) {
-      var p = sc.parentElement
-      console.log('ant-spin-container   clientH=' + sc.clientHeight)
-      console.log('  父级元素:', p ? (p.tagName + '.' + p.className.replace(/ /g, '.')) : 'NONE')
-      console.log('  父级 clientH:', p ? p.clientHeight : -1)
-      console.log('  父级 computed display:', p ? getComputedStyle(p).display : 'N/A')
-      console.log('  父级 computed flex:', p ? getComputedStyle(p).flex : 'N/A')
-      if (p) {
-        var pp = p.parentElement
-        console.log('  祖父元素:', pp ? (pp.tagName + '.' + pp.className.replace(/ /g, '.')) : 'NONE')
-        console.log('  祖父 clientH:', pp ? pp.clientHeight : -1)
-        console.log('  祖父 computed display:', pp ? getComputedStyle(pp).display : 'N/A')
-        console.log('  祖父 computed flex:', pp ? getComputedStyle(pp).flex : 'N/A')
+    var items = [
+      ['leo-content', h('.leo-content'), cs('.leo-content','height')],
+      ['leo-content-inner', h('.leo-content-inner'), cs('.leo-content-inner','height')],
+      ['page-stack', h('.page-stack'), cs('.page-stack','flex')],
+      ['module-grid-card', h('.module-grid-card'), cs('.module-grid-card','flex')],
+      ['ant-card-body', h('.ant-card-body'), cs('.ant-card-body','flex')],
+      ['module-table-shell', h('.module-table-shell'), cs('.module-table-shell','flex')],
+      ['ant-spin', h('.module-table-shell .ant-spin'), cs('.module-table-shell .ant-spin','flex')],
+      ['ant-spin-container', h('.module-table-shell .ant-spin-container'), cs('.module-table-shell .ant-spin-container','flex')],
+      ['ant-table-wrapper', h('.module-table-shell .ant-table-wrapper'), cs('.module-table-shell .ant-table-wrapper','flex')],
+      ['ant-table', h('.module-table-shell .ant-table'), cs('.module-table-shell .ant-table','flex')],
+      ['ant-table-body', h('.module-table-shell .ant-table-body'), cs('.module-table-shell .ant-table-body','overflow')],
+    ]
+
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i]
+      var gap = ''
+      if (i > 0) {
+        var prev = items[i-1][1]
+        var diff = prev - item[1]
+        if (diff > 2 || diff < -2) gap = ' ← ' + (diff > 0 ? '-' : '+') + Math.abs(diff)
       }
-    } else {
-      console.log('ant-spin-container   NOT FOUND')
+      console.log(item[0].padEnd(22) + ' H=' + item[1] + '  ' + item[2] + gap)
     }
 
-    console.log('ant-table-wrapper   clientH=' + h('.module-table-shell .ant-table-wrapper'))
-    console.log('ant-table           clientH=' + h('.module-table-shell .ant-table'))
-    console.log('ant-table-body      clientH=' + h('.module-table-shell .ant-table-body'))
+    // Detailed ant-spin-container children
     console.log('')
-    var s = h('.module-table-shell')
-    console.log('shell/leo-main = ' + s + '/' + m + ' = ' + (m>0?(s/m*100).toFixed(1):0) + '%')
+    console.log('── ant-spin-container 内部 ──')
+    var sc = document.querySelector('.module-table-shell .ant-spin-container')
+    if (sc) {
+      var cs2 = getComputedStyle(sc)
+      console.log('  display:', cs2.display, ' flex:', cs2.flex, ' overflow:', cs2.overflow)
+      console.log('  scrollHeight:', sc.scrollHeight, ' clientHeight:', sc.clientHeight)
+      console.log('  children:')
+      for (var j = 0; j < sc.children.length; j++) {
+        var c = sc.children[j]
+        console.log('    ' + c.tagName + '.' + (c.className || '').split(' ').slice(0,2).join('.'), 'H=' + c.clientHeight)
+      }
+    }
   }
 
   show()
