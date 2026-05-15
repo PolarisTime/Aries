@@ -45,6 +45,8 @@ interface Props {
   toolbarActions: ModuleActionDefinition[]
   onAction: (action: ModuleActionDefinition) => void
   onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
+  /** 容器 ref callback，用于动态 pageSize 计算 */
+  containerRef?: (node: HTMLElement | null) => void
 }
 
 export function BusinessGridContent({
@@ -78,6 +80,7 @@ export function BusinessGridContent({
   toolbarActions,
   onAction,
   onSortingChange,
+  containerRef,
 }: Props) {
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
@@ -86,7 +89,7 @@ export function BusinessGridContent({
   }, [])
 
   return (
-    <Card className="module-grid-card">
+    <Card className="module-grid-card" bodyStyle={{ padding: 0 }}>
       <ModuleFilterToolbar
         config={config}
         filters={filters}
@@ -142,6 +145,7 @@ export function BusinessGridContent({
         fetchNextPage={fetchNextPage}
         isFetchingNextPage={isFetchingNextPage}
         onSortingChange={onSortingChange}
+        containerRef={containerRef}
       />
     </Card>
   )

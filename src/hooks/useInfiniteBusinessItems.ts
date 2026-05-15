@@ -12,6 +12,8 @@ interface Props {
   enabled: boolean
   sortBy?: string
   sortDirection?: 'asc' | 'desc'
+  /** 外部传入的动态 pageSize，优先级高于系统设置 */
+  dynamicPageSize?: number | null
 }
 
 export function useInfiniteBusinessItems({
@@ -20,8 +22,11 @@ export function useInfiniteBusinessItems({
   enabled,
   sortBy,
   sortDirection,
+  dynamicPageSize,
 }: Props) {
-  const pageSize = useDefaultPageSize()
+  const defaultPageSize = useDefaultPageSize()
+  // 优先使用外部传入的动态 pageSize，fallback 到系统设置
+  const pageSize = dynamicPageSize ?? defaultPageSize
   const query = useInfiniteQuery<TableResponse<ModuleRecord>>({
     queryKey: [
       'business-grid-infinite',
@@ -29,6 +34,7 @@ export function useInfiniteBusinessItems({
       filters,
       sortBy || '',
       sortDirection || '',
+      pageSize,
     ],
     queryFn: ({ pageParam, signal }) =>
       listBusinessModule(

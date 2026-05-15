@@ -86,6 +86,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           void state.handleAction(action)
         }}
         onSortingChange={state.onSortingChange}
+        containerRef={state.containerRef}
       />
 
       <BusinessGridOverlays
