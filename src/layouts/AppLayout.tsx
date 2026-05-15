@@ -308,28 +308,31 @@ export function AppLayout() {
             )}
           </Header>
 
-          <AppPageTabs
-            activeKey={activeTabKey}
-            pages={pages}
-            isTopNavigationLayout={isTopNavigationLayout}
-            shellFontStyle={{ ...fixedWidthStyle, ...shellFontStyle }}
-            closePage={closePage}
-            // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
-            onNavigateToPath={(path) => navigate({ to: path as '/' })}
-          />
+          <div style={{ display:'flex', alignItems:'center' }}>
+            <AppPageTabs
+              activeKey={activeTabKey}
+              pages={pages}
+              isTopNavigationLayout={isTopNavigationLayout}
+              shellFontStyle={{ ...fixedWidthStyle, ...shellFontStyle }}
+              closePage={closePage}
+              // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
+              onNavigateToPath={(path) => navigate({ to: path as '/' })}
+            />
+            {import.meta.env.DEV ? (
+              <button
+                onClick={() => { if ('caches' in window) { void caches.keys().then(keys => { void Promise.all(keys.map(k => caches.delete(k))) }) } window.location.reload() }}
+                title={new Date().toLocaleTimeString()}
+                style={{ padding:'0 8px', height:28, background:'#1a1a2e', color:'#ff6b6b', border:'1px solid #333', borderRadius:3, cursor:'pointer', font:'11px monospace', whiteSpace:'nowrap', marginLeft:8, flexShrink:0 }}
+              >
+                强制刷新
+              </button>
+            ) : null}
+          </div>
 
           <Content className="leo-content">
             <div className="leo-content-inner">
               <Outlet key={routePageContext.openPageKey} />
             </div>
-            {import.meta.env.DEV ? (
-              <div style={{ position:'fixed',bottom:12,right:12,zIndex:99999,display:'flex',alignItems:'center',gap:8,padding:'6px 12px',background:'#1a1a2e',border:'1px solid #333',borderRadius:6,font:'11px monospace',color:'#aaa' }}>
-                <span>{new Date().toLocaleTimeString()}</span>
-                <button onClick={() => { if ('caches' in window) { void caches.keys().then(keys => { void Promise.all(keys.map(k => caches.delete(k))) }) } window.location.reload() }} style={{ padding:'2px 8px',background:'#ff6b6b',color:'#fff',border:'none',borderRadius:3,cursor:'pointer',font:'11px monospace' }}>
-                  强制刷新
-                </button>
-              </div>
-            ) : null}
           </Content>
         </Layout>
 
