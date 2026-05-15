@@ -8,7 +8,7 @@ import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import type { ModuleRecord } from '@/types/module-page'
 
 const MIN_TABLE_BODY_SCROLL_Y = 240
-const TABLE_SCROLL_RESERVED_SPACE = 16
+const TABLE_SCROLL_RESERVED_SPACE = 8
 
 export function computeTableBodyScrollY(
   containerHeight: number,
