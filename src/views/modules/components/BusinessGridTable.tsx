@@ -124,39 +124,59 @@ export function BusinessGridTable({
     }
   }, [])
 
-  // Scroll detection for infinite loading
+  // Scroll detection + auto-preload.
+  // dataSource.length is intentionally in deps so the effect re-runs
+  // when data arrives and .ant-table-body enters the DOM.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
   useEffect(() => {
     const shell = shellRef.current
     if (!shell) return
-    const body = shell.querySelector('.ant-table-body') as HTMLElement | null
-    if (!body) return
 
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = body
+    // Retry until table body is available
+    let retries = 0
+    let timer = 0
+
+    const init = () => {
+      const body = shell.querySelector('.ant-table-body') as HTMLElement | null
+      if (!body) {
+        if (retries++ < 10) {
+          timer = window.setTimeout(init, 100)
+        }
+        return
+      }
+
+      const handleScroll = () => {
+        const { scrollTop, scrollHeight, clientHeight } = body
+        if (
+          scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD &&
+          hasNextPage &&
+          !isFetchingNextPage
+        ) {
+          fetchNextPage()
+        }
+      }
+
+      body.addEventListener('scroll', handleScroll, { passive: true })
+
+      // Auto-preload if viewport not filled
       if (
-        scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD &&
         hasNextPage &&
-        !isFetchingNextPage
+        !isFetchingNextPage &&
+        body.scrollHeight <= body.clientHeight
       ) {
         fetchNextPage()
       }
+
+      return () => body.removeEventListener('scroll', handleScroll)
     }
 
-    body.addEventListener('scroll', handleScroll, { passive: true })
-    return () => body.removeEventListener('scroll', handleScroll)
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+    const cleanup = init()
 
-  // Auto-preload when viewport not filled
-  useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return
-    const body = shellRef.current?.querySelector(
-      '.ant-table-body',
-    ) as HTMLElement | null
-    if (!body) return
-    if (body.scrollHeight <= body.clientHeight) {
-      fetchNextPage()
+    return () => {
+      clearTimeout(timer)
+      cleanup?.()
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [dataSource.length, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
     <div ref={shellRef} className="module-table-shell">
