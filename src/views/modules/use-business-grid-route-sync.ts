@@ -8,7 +8,7 @@ interface Props {
   location: ParsedLocation
   config: ModulePageConfig | undefined
   records: ModuleRecord[]
-  setPage: (page: number) => void
+  resetPage: () => void
   clearSelection: () => void
   setSubmittedFilters: (filters: SearchParams) => void
   updateFilter: (key: string, value: unknown) => void
@@ -92,7 +92,7 @@ export function useBusinessGridRouteSync({
   location,
   config,
   records,
-  setPage,
+  resetPage,
   clearSelection,
   setSubmittedFilters,
   updateFilter,
@@ -109,7 +109,7 @@ export function useBusinessGridRouteSync({
   )
 
   useEffect(() => {
-    setPage(1)
+    resetPage()
     clearSelection()
     autoOpenedRouteKeyRef.current = ''
 
@@ -124,7 +124,7 @@ export function useBusinessGridRouteSync({
   }, [
     clearSelection,
     routeParams.routeKeyword,
-    setPage,
+    resetPage,
     setSubmittedFilters,
     updateFilter,
   ])

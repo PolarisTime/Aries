@@ -252,9 +252,32 @@ export function AppLayout() {
           <Header className={headerClassName} style={fixedWidthStyle}>
             {import.meta.env.DEV ? (
               <button
-                onClick={() => { if ('caches' in window) { void caches.keys().then(keys => { void Promise.all(keys.map(k => caches.delete(k))) }) } window.location.reload() }}
+                type="button"
+                onClick={() => {
+                  if ('caches' in window) {
+                    void caches.keys().then((keys) => {
+                      void Promise.all(keys.map((k) => caches.delete(k)))
+                    })
+                  }
+                  window.location.reload()
+                }}
                 title={new Date().toLocaleTimeString()}
-                style={{ position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', zIndex:10, padding:'0 6px', height:24, background:'#1a1a2e', color:'#ff6b6b', border:'1px solid #333', borderRadius:3, cursor:'pointer', font:'10px monospace', whiteSpace:'nowrap' }}
+                style={{
+                  position: 'absolute',
+                  left: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  zIndex: 10,
+                  padding: '0 6px',
+                  height: 24,
+                  background: '#1a1a2e',
+                  color: '#ff6b6b',
+                  border: '1px solid #333',
+                  borderRadius: 3,
+                  cursor: 'pointer',
+                  font: '10px monospace',
+                  whiteSpace: 'nowrap',
+                }}
               >
                 强制刷新
               </button>
