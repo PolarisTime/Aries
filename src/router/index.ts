@@ -113,6 +113,10 @@ const viewLoaders: Record<
     import('@/views/system/SecurityKeyManagementView').then((m) => ({
       default: m.SecurityKeyManagementView,
     })),
+  'project-ar-detail': () =>
+    import('@/pages/finance/ProjectArDetailPage').then((m) => ({
+      default: m.ProjectArDetailPage,
+    })),
 }
 
 const moduleRoutes = appPageDefinitions.map((def) => {

@@ -149,12 +149,14 @@ export function BusinessGridTable({
   // Auto-preload when viewport not filled
   useEffect(() => {
     if (!hasNextPage || isFetchingNextPage) return
-    const body = shellRef.current?.querySelector('.ant-table-body') as HTMLElement | null
+    const body = shellRef.current?.querySelector(
+      '.ant-table-body',
+    ) as HTMLElement | null
     if (!body) return
     if (body.scrollHeight <= body.clientHeight) {
       fetchNextPage()
     }
-  }, [dataSource.length, hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
     <div ref={shellRef} className="module-table-shell">

@@ -104,4 +104,10 @@ export const financeModuleEndpointContracts: Record<
     sortDirectionParam: 'sortDirection',
     nativeFilterKeys: ['keyword', 'direction', 'counterpartyType', 'status'],
   },
+  'project-ar': {
+    path: '/project-ar/summary',
+    readOnly: true,
+    sortDirectionParam: 'sortDirection',
+    nativeFilterKeys: ['keyword', 'projectId'],
+  },
 }

@@ -15,6 +15,7 @@ interface Props {
   onEdit: (record: ModuleRecord) => void
   onAttach: (record: ModuleRecord) => void
   onRefresh: () => Promise<void>
+  onDetail?: (record: ModuleRecord) => void
 }
 
 export function useModuleRecordActions({
@@ -23,6 +24,7 @@ export function useModuleRecordActions({
   onEdit,
   onAttach,
   onRefresh,
+  onDetail,
 }: Props) {
   const can = usePermissionStore((s) => s.can)
   const resource = resourceKey || moduleKey
@@ -32,6 +34,13 @@ export function useModuleRecordActions({
       const items: ActionItem[] = []
       const editBlocked = isEditBlockedByStatus(record.status)
       const deleteBlocked = isDeleteBlockedByStatus(record.status)
+      if (onDetail && can(resource, 'read')) {
+        items.push({
+          key: 'detail',
+          label: '查看',
+          onClick: () => onDetail(record),
+        })
+      }
       if (can(resource, 'update')) {
         items.push({
           key: 'edit',
@@ -72,7 +81,7 @@ export function useModuleRecordActions({
       }
       return items
     },
-    [can, resource, moduleKey, onEdit, onAttach, onRefresh],
+    [can, resource, moduleKey, onEdit, onAttach, onRefresh, onDetail],
   )
 
   return { buildActions }
