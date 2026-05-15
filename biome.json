@@ -9,7 +9,8 @@
       "!!**/test-results",
       "!!**/src/components.d.ts",
       "!!**/.git",
-      "!!**/node_modules"
+      "!!**/node_modules",
+      "!!debug-height-chain.js"
     ]
   },
   "formatter": {
