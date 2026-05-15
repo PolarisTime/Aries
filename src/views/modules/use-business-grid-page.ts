@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
-import { useBusinessQueries } from '@/hooks/useBusinessQueries'
 import type { SortingState } from '@/hooks/useDataTable'
 import { useDetailSupport } from '@/hooks/useDetailSupport'
 import { useExcelExport } from '@/hooks/useExcelExport'
+import { useInfiniteBusinessItems } from '@/hooks/useInfiniteBusinessItems'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
@@ -66,8 +66,6 @@ export function useBusinessGridPage({
   const [selectedRowMap, setSelectedRowMap] = useState<
     Record<string, ModuleRecord>
   >({})
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
   const [sorting, setSorting] = useState<SortingState>([])
   const { formatCellValue } = useModuleDisplaySupport()
   const listOptionRequirements = useMemo(
@@ -77,19 +75,9 @@ export function useBusinessGridPage({
 
   useMasterOptions(listOptionRequirements)
 
-  const handlePaginationChange = useCallback(
-    (nextPage: number, nextPageSize: number) => {
-      setPage(nextPage)
-      setPageSize(nextPageSize)
-    },
-    [],
-  )
-
   useEffect(() => {
     setSelectedRowKeys([])
     setSelectedRowMap({})
-    setPage(1)
-    setPageSize(20)
     setSorting([])
   }, [])
 
@@ -101,19 +89,24 @@ export function useBusinessGridPage({
     updateFilter,
     setSubmittedFilters,
   } = useModuleFilters({
-    setCurrentPage: (nextPage: number) => setPage(nextPage),
+    setCurrentPage: () => {},
   })
 
-  const { records, total, isLoading, isFetching, warningMessage } =
-    useBusinessQueries({
-      moduleKey,
-      filters: submittedFilters,
-      page,
-      pageSize,
-      enabled: canViewRecords,
-      sortBy: sorting[0]?.id,
-      sortDirection: sorting[0]?.desc ? 'desc' : sorting[0] ? 'asc' : undefined,
-    })
+  const {
+    records,
+    isLoading,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    warningMessage,
+  } = useInfiniteBusinessItems({
+    moduleKey,
+    filters: submittedFilters,
+    enabled: canViewRecords,
+    sortBy: sorting[0]?.id,
+    sortDirection: sorting[0]?.desc ? 'desc' : sorting[0] ? 'asc' : undefined,
+  })
 
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const { exporting, handleExport } = useExcelExport(moduleKey)
@@ -312,14 +305,11 @@ export function useBusinessGridPage({
     moduleKey,
     config,
     records,
-    pageSize,
-    total,
     canUpdateRecord,
     selectedRowKeys,
     setSelectedRowKeys,
     setSelectedRowMap,
     buildActions,
-    onPaginationChange: handlePaginationChange,
     sorting,
     onSortingChange: setSorting,
   })
@@ -358,19 +348,17 @@ export function useBusinessGridPage({
     openDetail,
     openEditor,
     overlays,
-    page,
-    pageSize,
     records,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
     refreshModuleQueries,
     rowSelection,
     selectedRowKeys,
-    setPage,
-    setPageSize,
     setSelectedRowKeys,
     setSubmittedFilters,
     antdColumns,
     toggleColumn,
-    total,
     updateFilter,
     visibleToolbarActions,
     warningMessage,

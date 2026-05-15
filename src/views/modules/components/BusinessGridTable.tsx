@@ -1,14 +1,15 @@
 import Empty from 'antd/es/empty'
+import Spin from 'antd/es/spin'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
-import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import type { ModuleRecord } from '@/types/module-page'
 
 const MIN_TABLE_BODY_SCROLL_Y = 240
 const TABLE_SCROLL_RESERVED_SPACE = 0
+const SCROLL_THRESHOLD = 80
 
 export function computeTableBodyScrollY(
   containerHeight: number,
@@ -35,10 +36,9 @@ interface Props {
   rowClassName: (record: ModuleRecord) => string
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
-  page: number
-  pageSize: number
-  total: number
-  onPageChange: (page: number, pageSize: number) => void
+  hasNextPage: boolean
+  fetchNextPage: () => void
+  isFetchingNextPage: boolean
   onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
 }
 
@@ -51,10 +51,9 @@ export function BusinessGridTable({
   rowClassName,
   onRowClick,
   onRowDoubleClick,
-  page,
-  pageSize,
-  total,
-  onPageChange,
+  hasNextPage,
+  fetchNextPage,
+  isFetchingNextPage,
   onSortingChange,
 }: Props) {
   const shellRef = useRef<HTMLDivElement | null>(null)
@@ -100,13 +99,10 @@ export function BusinessGridTable({
       const headerHeight =
         shell.querySelector('.ant-table-thead')?.getBoundingClientRect()
           .height || 0
-      const paginationHeight =
-        shell.querySelector('.ant-pagination')?.getBoundingClientRect()
-          .height || 0
       const nextScrollY = computeTableBodyScrollY(
         containerHeight,
         headerHeight,
-        paginationHeight,
+        0,
       )
 
       setScrollY((prev) => (prev === nextScrollY ? prev : nextScrollY))
@@ -127,6 +123,28 @@ export function BusinessGridTable({
       observer.disconnect()
     }
   }, [])
+
+  // Scroll detection for infinite loading
+  useEffect(() => {
+    const shell = shellRef.current
+    if (!shell) return
+    const body = shell.querySelector('.ant-table-body') as HTMLElement | null
+    if (!body) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = body
+      if (
+        scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD &&
+        hasNextPage &&
+        !isFetchingNextPage
+      ) {
+        fetchNextPage()
+      }
+    }
+
+    body.addEventListener('scroll', handleScroll, { passive: true })
+    return () => body.removeEventListener('scroll', handleScroll)
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
     <div ref={shellRef} className="module-table-shell">
@@ -182,13 +200,21 @@ export function BusinessGridTable({
             activeSorter?.order,
           )
         }}
-        pagination={createPaginationConfig({
-          current: page,
-          pageSize,
-          total,
-          onChange: onPageChange,
-        })}
       />
+      <div
+        style={{
+          textAlign: 'center',
+          padding: '8px 0',
+          color: '#999',
+          fontSize: 12,
+        }}
+      >
+        {isFetchingNextPage ? (
+          <Spin size="small" />
+        ) : !hasNextPage && dataSource.length > 0 ? (
+          '已加载全部数据'
+        ) : null}
+      </div>
     </div>
   )
 }
