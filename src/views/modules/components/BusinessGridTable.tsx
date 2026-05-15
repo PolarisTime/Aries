@@ -60,6 +60,10 @@ export function BusinessGridTable({
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
   const visibleColumns = useDeferredColumns(columns)
+  const selection = useMemo(
+    () => (rowSelection ? { ...rowSelection, columnWidth: 40 } : undefined),
+    [rowSelection],
+  )
 
   const isVirtual = dataSource.length * visibleColumns.length > 80
   const scrollX = useMemo(() => {
@@ -134,7 +138,7 @@ export function BusinessGridTable({
         loading={loading}
         columns={visibleColumns}
         dataSource={dataSource}
-        rowSelection={rowSelection ? { ...rowSelection, columnWidth: 40 } : undefined}
+        rowSelection={selection}
         virtual={isVirtual}
         scroll={{ x: scrollX, y: scrollY }}
         rowClassName={rowClassName}
