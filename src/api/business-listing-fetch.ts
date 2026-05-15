@@ -5,6 +5,7 @@ import { http } from '@/api/client'
 import { getModuleConfig, type QueryValue } from '@/api/module-contracts'
 import {
   pageContent,
+  pageHasMore,
   pageLast,
   pageTotalElements,
   pageTotalPages,
@@ -51,6 +52,7 @@ export async function fetchModulePage(
     totalElements: pageTotalElements(response.data),
     totalPages: pageTotalPages(response.data),
     last: pageLast(response.data),
+    hasMore: pageHasMore(response.data),
   }
 }
 

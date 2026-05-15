@@ -60,7 +60,12 @@ export async function listBusinessModule(
     config,
     fields,
   )
-  return buildTableResponse(current.rows, current.totalElements)
+  return buildTableResponse(
+    current.rows,
+    current.totalElements,
+    false,
+    current.hasMore,
+  )
 }
 
 export async function searchBusinessModule(

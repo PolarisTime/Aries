@@ -7,6 +7,7 @@ export function buildTableResponse(
   rows: ModuleRecord[],
   total: number,
   truncated = false,
+  hasMore?: boolean,
 ): TableResponse<ModuleRecord> {
   return {
     code: truncated ? 4000 : 0,
@@ -16,6 +17,7 @@ export function buildTableResponse(
     data: {
       rows,
       total,
+      hasMore,
     },
   }
 }
