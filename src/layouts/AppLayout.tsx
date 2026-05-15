@@ -322,6 +322,14 @@ export function AppLayout() {
             <div className="leo-content-inner">
               <Outlet key={routePageContext.openPageKey} />
             </div>
+            {import.meta.env.DEV ? (
+              <div style={{ position:'fixed',bottom:12,right:12,zIndex:99999,display:'flex',alignItems:'center',gap:8,padding:'6px 12px',background:'#1a1a2e',border:'1px solid #333',borderRadius:6,font:'11px monospace',color:'#aaa' }}>
+                <span>{new Date().toLocaleTimeString()}</span>
+                <button onClick={() => { if ('caches' in window) { void caches.keys().then(keys => { void Promise.all(keys.map(k => caches.delete(k))) }) } window.location.reload() }} style={{ padding:'2px 8px',background:'#ff6b6b',color:'#fff',border:'none',borderRadius:3,cursor:'pointer',font:'11px monospace' }}>
+                  强制刷新
+                </button>
+              </div>
+            ) : null}
           </Content>
         </Layout>
 
