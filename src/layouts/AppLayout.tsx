@@ -250,6 +250,15 @@ export function AppLayout() {
           style={mainStyle}
         >
           <Header className={headerClassName} style={fixedWidthStyle}>
+            {import.meta.env.DEV ? (
+              <button
+                onClick={() => { if ('caches' in window) { void caches.keys().then(keys => { void Promise.all(keys.map(k => caches.delete(k))) }) } window.location.reload() }}
+                title={new Date().toLocaleTimeString()}
+                style={{ position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', zIndex:10, padding:'0 6px', height:24, background:'#1a1a2e', color:'#ff6b6b', border:'1px solid #333', borderRadius:3, cursor:'pointer', font:'10px monospace', whiteSpace:'nowrap' }}
+              >
+                强制刷新
+              </button>
+            ) : null}
             {isTopNavigationLayout ? (
               <AppLayoutHeader
                 kind="top"
@@ -308,26 +317,15 @@ export function AppLayout() {
             )}
           </Header>
 
-          <div style={{ display:'flex', alignItems:'center' }}>
-            <AppPageTabs
-              activeKey={activeTabKey}
-              pages={pages}
-              isTopNavigationLayout={isTopNavigationLayout}
-              shellFontStyle={{ ...fixedWidthStyle, ...shellFontStyle }}
-              closePage={closePage}
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
-              onNavigateToPath={(path) => navigate({ to: path as '/' })}
-            />
-            {import.meta.env.DEV ? (
-              <button
-                onClick={() => { if ('caches' in window) { void caches.keys().then(keys => { void Promise.all(keys.map(k => caches.delete(k))) }) } window.location.reload() }}
-                title={new Date().toLocaleTimeString()}
-                style={{ padding:'0 8px', height:28, background:'#1a1a2e', color:'#ff6b6b', border:'1px solid #333', borderRadius:3, cursor:'pointer', font:'11px monospace', whiteSpace:'nowrap', marginLeft:8, flexShrink:0 }}
-              >
-                强制刷新
-              </button>
-            ) : null}
-          </div>
+          <AppPageTabs
+            activeKey={activeTabKey}
+            pages={pages}
+            isTopNavigationLayout={isTopNavigationLayout}
+            shellFontStyle={{ ...fixedWidthStyle, ...shellFontStyle }}
+            closePage={closePage}
+            // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
+            onNavigateToPath={(path) => navigate({ to: path as '/' })}
+          />
 
           <Content className="leo-content">
             <div className="leo-content-inner">
