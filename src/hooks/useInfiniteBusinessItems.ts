@@ -1,11 +1,10 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { listBusinessModule } from '@/api/business-listing'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import type { TableResponse } from '@/types/api'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
-
-const PAGE_SIZE = 20
 
 interface Props {
   moduleKey: string
@@ -22,6 +21,7 @@ export function useInfiniteBusinessItems({
   sortBy,
   sortDirection,
 }: Props) {
+  const pageSize = useDefaultPageSize()
   const query = useInfiniteQuery<TableResponse<ModuleRecord>>({
     queryKey: [
       'business-grid-infinite',
@@ -36,7 +36,7 @@ export function useInfiniteBusinessItems({
         filters,
         {
           currentPage: pageParam as number,
-          pageSize: PAGE_SIZE,
+          pageSize: pageSize,
           sortBy,
           sortDirection,
         },
