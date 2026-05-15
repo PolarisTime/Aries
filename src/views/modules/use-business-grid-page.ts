@@ -4,6 +4,7 @@ import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import type { SortingState } from '@/hooks/useDataTable'
 import { useDetailSupport } from '@/hooks/useDetailSupport'
+import { useDynamicPageSize } from '@/hooks/useDynamicPageSize'
 import { useExcelExport } from '@/hooks/useExcelExport'
 import { useInfiniteBusinessItems } from '@/hooks/useInfiniteBusinessItems'
 import {
@@ -69,6 +70,15 @@ export function useBusinessGridPage({
   >({})
   const [sorting, setSorting] = useState<SortingState>([])
   const { formatCellValue } = useModuleDisplaySupport()
+
+  // 动态 pageSize：监听窗口/容器变化，自动计算合适的每页条数
+  const onPageResize = useCallback((_newPageSize: number) => {
+    // pageSize 变化时清空选中行（因为数据会重新加载）
+    setSelectedRowKeys([])
+    setSelectedRowMap({})
+  }, [])
+  const { pageSize: dynamicPageSize, containerRef } =
+    useDynamicPageSize(onPageResize)
   const listOptionRequirements = useMemo(
     () => resolveMasterOptionRequirements(config?.filters || []),
     [config?.filters],
@@ -107,6 +117,7 @@ export function useBusinessGridPage({
     enabled: canViewRecords,
     sortBy: sorting[0]?.id,
     sortDirection: sorting[0]?.desc ? 'desc' : sorting[0] ? 'asc' : undefined,
+    dynamicPageSize,
   })
 
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
@@ -348,6 +359,7 @@ export function useBusinessGridPage({
     onColumnOrderChange,
     onSortingChange,
     config,
+    containerRef,
     detailLoading,
     detailOpen,
     detailRecord,
