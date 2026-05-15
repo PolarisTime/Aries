@@ -148,10 +148,15 @@ export function BusinessGridTable({
     [hasNextPage, isFetchingNextPage, fetchNextPage],
   )
 
-  // Auto-preload when data first arrives.
+  // Auto-preload once when data doesn't fill viewport.
+  const preloadedRef = useRef(false)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on module change
+  useEffect(() => {
+    preloadedRef.current = false
+  }, [moduleKey])
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
   useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return
+    if (!hasNextPage || isFetchingNextPage || preloadedRef.current) return
     const shell = shellRef.current
     if (!shell) return
     const body =
@@ -162,9 +167,16 @@ export function BusinessGridTable({
     if (
       (body as HTMLElement).scrollHeight <= (body as HTMLElement).clientHeight
     ) {
+      preloadedRef.current = true
       fetchNextPage()
     }
-  }, [dataSource.length, hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [
+    dataSource.length,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    moduleKey,
+  ])
 
   return (
     <div
