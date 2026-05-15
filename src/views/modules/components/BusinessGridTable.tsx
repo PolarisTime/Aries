@@ -134,7 +134,7 @@ export function BusinessGridTable({
         loading={loading}
         columns={visibleColumns}
         dataSource={dataSource}
-        rowSelection={rowSelection}
+        rowSelection={rowSelection ? { ...rowSelection, columnWidth: 40 } : undefined}
         virtual={isVirtual}
         scroll={{ x: scrollX, y: scrollY }}
         rowClassName={rowClassName}
