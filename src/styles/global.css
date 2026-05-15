@@ -1338,8 +1338,14 @@ body,
   min-height: 0;
 }
 
-.module-table-shell .ant-table-wrapper .ant-spin-nested-loading,
-.module-table-shell .ant-table-wrapper .ant-spin-container,
+.module-table-shell .ant-spin-nested-loading,
+.module-table-shell .ant-spin-container {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+
 .module-table-shell .ant-table-wrapper .ant-table,
 .module-table-shell .ant-table-wrapper .ant-table-container {
   display: flex;
