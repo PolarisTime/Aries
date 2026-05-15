@@ -60,9 +60,12 @@ export function useInfiniteBusinessItems({
       ),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
-      const rows = lastPage?.data?.rows || []
-      if (rows.length < PAGE_SIZE) return undefined
-      return allPages.length + 1
+      const total = lastPage?.data?.total ?? 0
+      const loaded = allPages.reduce(
+        (sum, p) => sum + (p?.data?.rows?.length || 0),
+        0,
+      )
+      return loaded >= total ? undefined : allPages.length + 1
     },
     enabled: enabled && !!moduleKey,
     placeholderData: cached
