@@ -1,0 +1,28 @@
+import { useQuery } from '@tanstack/react-query'
+import { listClientSettings } from '@/api/system-settings'
+import { DEFAULT_LIST_PAGE_SIZE_SETTING_CODE } from '@/views/system/general-settings-view-utils'
+
+const DEFAULT_SIZE = 20
+
+export function useDefaultPageSize() {
+  const { data: rows } = useQuery({
+    queryKey: ['general-setting', 'client-settings'],
+    queryFn: async () => {
+      try {
+        return await listClientSettings()
+      } catch {
+        return []
+      }
+    },
+    staleTime: 30_000,
+  })
+
+  if (!rows) return DEFAULT_SIZE
+  const setting = rows.find(
+    (r) =>
+      String(r.settingCode || '').trim() ===
+      DEFAULT_LIST_PAGE_SIZE_SETTING_CODE,
+  )
+  const value = Number(setting?.sampleNo)
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : DEFAULT_SIZE
+}
