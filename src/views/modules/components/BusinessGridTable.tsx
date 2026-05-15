@@ -3,7 +3,14 @@ import Spin from 'antd/es/spin'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
-import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
 import type { ModuleRecord } from '@/types/module-page'
 
@@ -124,62 +131,44 @@ export function BusinessGridTable({
     }
   }, [])
 
-  // Scroll detection + auto-preload.
-  // dataSource.length is intentionally in deps so the effect re-runs
-  // when data arrives and .ant-table-body enters the DOM.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
-  useEffect(() => {
-    const shell = shellRef.current
-    if (!shell) return
-
-    // Retry until table body is available
-    let retries = 0
-    let timer = 0
-
-    const init = () => {
-      const body = shell.querySelector('.ant-table-body') as HTMLElement | null
-      if (!body) {
-        if (retries++ < 10) {
-          timer = window.setTimeout(init, 100)
-        }
-        return
-      }
-
-      const handleScroll = () => {
-        const { scrollTop, scrollHeight, clientHeight } = body
-        if (
-          scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD &&
-          hasNextPage &&
-          !isFetchingNextPage
-        ) {
-          fetchNextPage()
-        }
-      }
-
-      body.addEventListener('scroll', handleScroll, { passive: true })
-
-      // Auto-preload if viewport not filled
+  // Scroll detection + auto-preload
+  const handleShellScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement
+      // Scroll event bubbles from .ant-table-body
+      if (!target.classList.contains('ant-table-body')) return
+      const { scrollTop, scrollHeight, clientHeight } = target
       if (
+        scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD &&
         hasNextPage &&
-        !isFetchingNextPage &&
-        body.scrollHeight <= body.clientHeight
+        !isFetchingNextPage
       ) {
         fetchNextPage()
       }
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage],
+  )
 
-      return () => body.removeEventListener('scroll', handleScroll)
-    }
-
-    const cleanup = init()
-
-    return () => {
-      clearTimeout(timer)
-      cleanup?.()
+  // Auto-preload when data first arrives.
+  // dataSource.length ensures re-run when table body enters DOM.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return
+    const body = shellRef.current?.querySelector(
+      '.ant-table-body',
+    ) as HTMLElement | null
+    if (!body) return
+    if (body.scrollHeight <= body.clientHeight) {
+      fetchNextPage()
     }
   }, [dataSource.length, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
-    <div ref={shellRef} className="module-table-shell">
+    <div
+      ref={shellRef}
+      className="module-table-shell"
+      onScrollCapture={handleShellScroll}
+    >
       <Table
         key={moduleKey}
         rowKey="id"
@@ -233,21 +222,25 @@ export function BusinessGridTable({
             activeSorter?.order,
           )
         }}
+        footer={() =>
+          isFetchingNextPage ? (
+            <div style={{ textAlign: 'center', padding: '4px 0' }}>
+              <Spin size="small" />
+            </div>
+          ) : !hasNextPage && dataSource.length > 0 ? (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '4px 0',
+                color: '#999',
+                fontSize: 12,
+              }}
+            >
+              已加载全部数据
+            </div>
+          ) : undefined
+        }
       />
-      <div
-        style={{
-          textAlign: 'center',
-          padding: '8px 0',
-          color: '#999',
-          fontSize: 12,
-        }}
-      >
-        {isFetchingNextPage ? (
-          <Spin size="small" />
-        ) : !hasNextPage && dataSource.length > 0 ? (
-          '已加载全部数据'
-        ) : null}
-      </div>
     </div>
   )
 }
