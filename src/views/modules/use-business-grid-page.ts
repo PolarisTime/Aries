@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import { useBusinessQueries } from '@/hooks/useBusinessQueries'
@@ -67,8 +67,10 @@ export function useBusinessGridPage({
     Record<string, ModuleRecord>
   >({})
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
+  const pageSize = 20
   const [sorting, setSorting] = useState<SortingState>([])
+  const [allRecords, setAllRecords] = useState<ModuleRecord[]>([])
+  const previousModuleKeyRef = useRef(moduleKey)
   const { formatCellValue } = useModuleDisplaySupport()
   const listOptionRequirements = useMemo(
     () => resolveMasterOptionRequirements(config?.filters || []),
@@ -77,19 +79,19 @@ export function useBusinessGridPage({
 
   useMasterOptions(listOptionRequirements)
 
-  const handlePaginationChange = useCallback(
-    (nextPage: number, nextPageSize: number) => {
-      setPage(nextPage)
-      setPageSize(nextPageSize)
-    },
-    [],
-  )
+  // Reset accumulation when module changes
+  useEffect(() => {
+    if (previousModuleKeyRef.current !== moduleKey) {
+      previousModuleKeyRef.current = moduleKey
+      setAllRecords([])
+      setPage(1)
+    }
+  }, [moduleKey])
 
   useEffect(() => {
     setSelectedRowKeys([])
     setSelectedRowMap({})
     setPage(1)
-    setPageSize(20)
     setSorting([])
   }, [])
 
@@ -114,6 +116,47 @@ export function useBusinessGridPage({
       sortBy: sorting[0]?.id,
       sortDirection: sorting[0]?.desc ? 'desc' : sorting[0] ? 'asc' : undefined,
     })
+
+  // Accumulate records: page 1 replaces, subsequent pages append
+  const prevRecordsRef = useRef<ModuleRecord[]>([])
+  useEffect(() => {
+    if (page === 1) {
+      setAllRecords(records)
+    } else if (records.length > 0 && records !== prevRecordsRef.current) {
+      setAllRecords((prev) => [...prev, ...records])
+    }
+    prevRecordsRef.current = records
+  }, [records, page])
+
+  const hasMore = allRecords.length < total
+
+  const loadMore = useCallback(() => {
+    if (!isFetching && hasMore) {
+      setPage((p) => p + 1)
+    }
+  }, [isFetching, hasMore])
+
+  // Wrap search/reset to clear accumulation
+  const handleSearchAndReset = useCallback(() => {
+    setAllRecords([])
+    setPage(1)
+    handleSearch()
+  }, [handleSearch])
+
+  const handleResetAndClear = useCallback(() => {
+    setAllRecords([])
+    setPage(1)
+    handleReset()
+  }, [handleReset])
+
+  const setSubmittedFiltersAndReset = useCallback(
+    (filters: Record<string, unknown>) => {
+      setAllRecords([])
+      setPage(1)
+      setSubmittedFilters(filters)
+    },
+    [setSubmittedFilters],
+  )
 
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const { exporting, handleExport } = useExcelExport(moduleKey)
@@ -140,7 +183,7 @@ export function useBusinessGridPage({
   }, [])
 
   useEffect(() => {
-    const currentPageIds = new Set(records.map((r) => String(r.id)))
+    const currentPageIds = new Set(allRecords.map((r) => String(r.id)))
 
     setSelectedRowMap((prev) => {
       const next: Record<string, ModuleRecord> = {}
@@ -149,7 +192,7 @@ export function useBusinessGridPage({
           next[key] = prev[key]
         }
       }
-      for (const record of records) {
+      for (const record of allRecords) {
         const id = String(record.id)
         if (selectedRowKeys.includes(id)) {
           next[id] = record
@@ -170,7 +213,7 @@ export function useBusinessGridPage({
 
       return prev
     })
-  }, [records, selectedRowKeys])
+  }, [allRecords, selectedRowKeys])
 
   const handleEdit = useCallback(
     (record: ModuleRecord) => {
@@ -311,18 +354,20 @@ export function useBusinessGridPage({
   } = useBusinessGridTable({
     moduleKey,
     config,
-    records,
-    pageSize,
-    total,
+    records: allRecords,
     canUpdateRecord,
     selectedRowKeys,
     setSelectedRowKeys,
     setSelectedRowMap,
     buildActions,
-    onPaginationChange: handlePaginationChange,
     sorting,
     onSortingChange: setSorting,
   })
+
+  const resetPage = useCallback(() => {
+    setAllRecords([])
+    setPage(1)
+  }, [])
 
   return {
     canAuditRecord,
@@ -349,8 +394,8 @@ export function useBusinessGridPage({
     handleAction,
     handleEditorSaved,
     handleExport,
-    handleReset,
-    handleSearch,
+    handleReset: handleResetAndClear,
+    handleSearch: handleSearchAndReset,
     handleStatementGenerate,
     isFetching,
     isLoading,
@@ -358,19 +403,17 @@ export function useBusinessGridPage({
     openDetail,
     openEditor,
     overlays,
-    page,
-    pageSize,
-    records,
+    records: allRecords,
+    hasMore,
+    loadMore,
+    resetPage,
     refreshModuleQueries,
     rowSelection,
     selectedRowKeys,
-    setPage,
-    setPageSize,
     setSelectedRowKeys,
-    setSubmittedFilters,
+    setSubmittedFilters: setSubmittedFiltersAndReset,
     antdColumns,
     toggleColumn,
-    total,
     updateFilter,
     visibleToolbarActions,
     warningMessage,

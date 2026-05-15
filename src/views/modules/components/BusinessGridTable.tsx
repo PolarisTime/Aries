@@ -1,14 +1,15 @@
 import Empty from 'antd/es/empty'
+import Spin from 'antd/es/spin'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
-import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import type { ModuleRecord } from '@/types/module-page'
 
 const MIN_TABLE_BODY_SCROLL_Y = 240
 const TABLE_SCROLL_RESERVED_SPACE = 0
+const SCROLL_THRESHOLD = 80
 
 export function computeTableBodyScrollY(
   containerHeight: number,
@@ -35,10 +36,9 @@ interface Props {
   rowClassName: (record: ModuleRecord) => string
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
-  page: number
-  pageSize: number
-  total: number
-  onPageChange: (page: number, pageSize: number) => void
+  hasMore: boolean
+  loadMore: () => void
+  isFetching: boolean
   onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
 }
 
@@ -51,19 +51,14 @@ export function BusinessGridTable({
   rowClassName,
   onRowClick,
   onRowDoubleClick,
-  page,
-  pageSize,
-  total,
-  onPageChange,
+  hasMore,
+  loadMore,
+  isFetching,
   onSortingChange,
 }: Props) {
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
   const visibleColumns = useDeferredColumns(columns)
-  const selection = useMemo(
-    () => (rowSelection ? { ...rowSelection, columnWidth: 40 } : undefined),
-    [rowSelection],
-  )
 
   const isVirtual = dataSource.length * visibleColumns.length > 80
   const scrollX = useMemo(() => {
@@ -82,6 +77,11 @@ export function BusinessGridTable({
     }
     return total
   }, [visibleColumns, isVirtual])
+
+  const selection = useMemo(
+    () => (rowSelection ? { ...rowSelection, columnWidth: 40 } : undefined),
+    [rowSelection],
+  )
 
   useEffect(() => {
     const shell = shellRef.current
@@ -127,6 +127,28 @@ export function BusinessGridTable({
       observer.disconnect()
     }
   }, [])
+
+  // Attach scroll listener to table body for infinite loading
+  useEffect(() => {
+    const shell = shellRef.current
+    if (!shell) return
+    const body = shell.querySelector('.ant-table-body') as HTMLElement | null
+    if (!body) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = body
+      if (
+        scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD &&
+        hasMore &&
+        !isFetching
+      ) {
+        loadMore()
+      }
+    }
+
+    body.addEventListener('scroll', handleScroll, { passive: true })
+    return () => body.removeEventListener('scroll', handleScroll)
+  }, [hasMore, isFetching, loadMore])
 
   return (
     <div ref={shellRef} className="module-table-shell">
@@ -182,13 +204,12 @@ export function BusinessGridTable({
             activeSorter?.order,
           )
         }}
-        pagination={createPaginationConfig({
-          current: page,
-          pageSize,
-          total,
-          onChange: onPageChange,
-        })}
       />
+      {isFetching && hasMore ? (
+        <div style={{ textAlign: 'center', padding: 8 }}>
+          <Spin size="small" />
+        </div>
+      ) : null}
     </div>
   )
 }

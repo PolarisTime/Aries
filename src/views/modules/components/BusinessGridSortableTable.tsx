@@ -27,10 +27,9 @@ interface Props {
   rowClassName: (record: ModuleRecord) => string
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
-  page: number
-  pageSize: number
-  total: number
-  onPageChange: (page: number, pageSize: number) => void
+  hasMore: boolean
+  loadMore: () => void
+  isFetching: boolean
   onSortingChange: (
     columnKey?: string | number,
     order?: import('antd/es/table/interface').SortOrder,
@@ -48,10 +47,9 @@ export function BusinessGridSortableTable({
   rowClassName,
   onRowClick,
   onRowDoubleClick,
-  page,
-  pageSize,
-  total,
-  onPageChange,
+  hasMore,
+  loadMore,
+  isFetching,
   onSortingChange,
   onColumnOrderChange,
 }: Props) {
@@ -104,10 +102,9 @@ export function BusinessGridSortableTable({
           rowClassName={rowClassName}
           onRowClick={onRowClick}
           onRowDoubleClick={onRowDoubleClick}
-          page={page}
-          pageSize={pageSize}
-          total={total}
-          onPageChange={onPageChange}
+          hasMore={hasMore}
+          loadMore={loadMore}
+          isFetching={isFetching}
           onSortingChange={onSortingChange}
         />
       </SortableContext>
