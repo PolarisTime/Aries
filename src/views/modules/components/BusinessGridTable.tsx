@@ -149,6 +149,36 @@ export function BusinessGridTable({
     [hasNextPage, isFetchingNextPage, fetchNextPage],
   )
 
+  // Auto-preload until scrollbar appears (max 3 pages)
+  const preloadCountRef = useRef(0)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on module change
+  useEffect(() => {
+    preloadCountRef.current = 0
+  }, [moduleKey])
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage || preloadCountRef.current >= 3)
+      return
+    const shell = shellRef.current
+    if (!shell) return
+    const body =
+      shell.querySelector('.ant-table-body') ||
+      shell.querySelector('.ant-table-tbody-virtual') ||
+      shell.querySelector('[class*="virtual"]')
+    if (!body) return
+    const el = body as HTMLElement
+    if (el.scrollHeight <= el.clientHeight) {
+      preloadCountRef.current += 1
+      fetchNextPage()
+    }
+  }, [
+    dataSource.length,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    moduleKey,
+  ])
+
   return (
     <div
       ref={shellRef}
