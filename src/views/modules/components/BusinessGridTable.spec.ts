@@ -3,7 +3,7 @@ import { computeTableBodyScrollY } from '@/views/modules/components/BusinessGrid
 
 describe('computeTableBodyScrollY', () => {
   it('should reserve space for table header and pagination', () => {
-    expect(computeTableBodyScrollY(600, 48, 56)).toBe(488)
+    expect(computeTableBodyScrollY(600, 48, 56)).toBe(496)
   })
 
   it('should keep a safe minimum height for small containers', () => {

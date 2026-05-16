@@ -40,7 +40,7 @@ export function useGridColumns({
         id: 'actions',
         header: '操作',
         meta: {
-          width: '180px',
+          width: '240px',
           align: 'center',
           fixed: 'left',
           renderCell: (record: ModuleRecord) => (
@@ -57,7 +57,7 @@ export function useGridColumns({
         header: colDef.title,
         accessorKey: colDef.dataIndex,
         meta: {
-          width: colDef.width ? `${colDef.width}px` : undefined,
+          width: colDef.width ? `${colDef.width}px` : '120px',
           align: colDef.align || 'center',
           renderCell: (record: ModuleRecord) => {
             const value = record[colDef.dataIndex]

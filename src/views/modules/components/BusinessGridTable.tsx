@@ -40,7 +40,6 @@ interface Props {
   fetchNextPage: () => void
   isFetchingNextPage: boolean
   onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
-  /** 外部传入的容器 ref callback，用于动态 pageSize 计算 */
   containerRef?: (node: HTMLElement | null) => void
 }
 
@@ -67,9 +66,8 @@ export function BusinessGridTable({
     [rowSelection],
   )
 
-  const isVirtual = dataSource.length * visibleColumns.length > 80
+  const isVirtual = dataSource.length > 100
   const scrollX = useMemo(() => {
-    if (!isVirtual) return 'max-content' as const
     let total = 0
     for (const col of visibleColumns) {
       const raw = col.width
@@ -82,31 +80,57 @@ export function BusinessGridTable({
         total += 120
       }
     }
-    return total
-  }, [visibleColumns, isVirtual])
+    // 勾选框列宽 40px
+    return total + 40
+  }, [visibleColumns])
 
-  // 用 ref 持久化滚动监听状态和最新闭包值
-  const prevBodyRef = useRef<HTMLElement | null>(null)
-  const scrollHandlerRef = useRef<(() => void) | null>(null)
+  // ---- Ref 快照 ----
   const isFetchingNextPageRef = useRef(isFetchingNextPage)
   const hasNextPageRef = useRef(hasNextPage)
+  const fetchNextPageRef = useRef(fetchNextPage)
+  const dataSourceRef = useRef(dataSource)
   isFetchingNextPageRef.current = isFetchingNextPage
   hasNextPageRef.current = hasNextPage
+  fetchNextPageRef.current = fetchNextPage
+  dataSourceRef.current = dataSource
 
+  // O(1) 查找 record id → dataSource 索引
+  const dataIndexMapRef = useRef<Map<string, number>>(new Map())
+  useEffect(() => {
+    const map = new Map<string, number>()
+    dataSource.forEach((r, i) => map.set(String(r.id), i))
+    dataIndexMapRef.current = map
+  }, [dataSource])
+
+  // 估算填满视口需要的行数（antd small size 行高约 36px）
+  const estimatedVisibleRows = useMemo(() => {
+    if (scrollY <= 0) return 10
+    return Math.ceil(scrollY / 36)
+  }, [scrollY])
+
+  // 检测：最后一个可见行在数据源中的索引是否接近末尾
+  const isLastVisibleNearEnd = useCallback((): boolean => {
+    const shell = shellRef.current
+    if (!shell) return false
+    const rows = shell.querySelectorAll('.ant-table-row')
+    if (rows.length === 0) return false
+    const lastRow = rows[rows.length - 1] as HTMLElement
+    const lastKey = lastRow.getAttribute('data-row-key')
+    if (lastKey == null) return false
+    const lastIndex = dataIndexMapRef.current.get(lastKey)
+    if (lastIndex == null) return false
+    return lastIndex >= dataSourceRef.current.length - 3
+  }, [])
+
+  // ---- scrollY 计算 ----
   useEffect(() => {
     const shell = shellRef.current
-    if (!shell || typeof ResizeObserver === 'undefined') {
-      return
-    }
+    if (!shell || typeof ResizeObserver === 'undefined') return
 
     let frameId = 0
-
     const measure = () => {
       const containerHeight = shell.clientHeight
-      if (containerHeight <= 0) {
-        return
-      }
-
+      if (containerHeight <= 0) return
       const headerHeight =
         shell.querySelector('.ant-table-thead')?.getBoundingClientRect()
           .height || 0
@@ -115,101 +139,63 @@ export function BusinessGridTable({
         headerHeight,
         0,
       )
-
       setScrollY((prev) => (prev === nextScrollY ? prev : nextScrollY))
     }
-
-    // 绑定滚动监听到表格容器（包含 header + body + footer）
-    // 监听 .ant-table-container 而非 .ant-table-body，确保捕获所有滚动事件
-    const attachScrollListener = (container: HTMLElement | null) => {
-      if (container === prevBodyRef.current) return
-      if (prevBodyRef.current && scrollHandlerRef.current) {
-        prevBodyRef.current.removeEventListener('scroll', scrollHandlerRef.current)
-      }
-      prevBodyRef.current = container
-      if (!container) {
-        scrollHandlerRef.current = null
-        return
-      }
-      // 通过 ref 读取最新值，不依赖闭包
-      scrollHandlerRef.current = (e: Event) => {
-        if (isFetchingNextPageRef.current || !hasNextPageRef.current) return
-        const target = e.target as HTMLElement
-        if (!target || target.scrollHeight <= target.clientHeight) return
-        const { scrollTop, scrollHeight, clientHeight } = target
-        if (scrollHeight - scrollTop - clientHeight < 100) {
-          fetchNextPage()
-        }
-      }
-      container.addEventListener('scroll', scrollHandlerRef.current, { passive: true })
-    }
-
     const scheduleMeasure = () => {
       cancelAnimationFrame(frameId)
-      frameId = requestAnimationFrame(() => {
-        measure()
-        const container = shell.querySelector('.ant-table-container') as HTMLElement | null
-        attachScrollListener(container)
-      })
+      frameId = requestAnimationFrame(measure)
     }
-
     const observer = new ResizeObserver(scheduleMeasure)
     observer.observe(shell)
-
     scheduleMeasure()
-
     return () => {
       cancelAnimationFrame(frameId)
       observer.disconnect()
     }
-  }, [fetchNextPage])
-
-  // 组件卸载时清理滚动监听
-  useEffect(() => {
-    return () => {
-      if (prevBodyRef.current && scrollHandlerRef.current) {
-        prevBodyRef.current.removeEventListener('scroll', scrollHandlerRef.current)
-      }
-    }
   }, [])
 
-  // 自动补齐：首屏数据未填满视口时，持续加载直至出现滚动条或数据耗尽
+  // ---- 自动补齐：行数不足填满视口时拉取更多 ----
   useEffect(() => {
     if (loading || isFetchingNextPage || !hasNextPage) return
+    if (dataSource.length >= estimatedVisibleRows) return
+
+    const timer = setTimeout(() => {
+      if (hasNextPageRef.current && !isFetchingNextPageRef.current) {
+        fetchNextPageRef.current()
+      }
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [dataSource.length, estimatedVisibleRows, loading, isFetchingNextPage, hasNextPage])
+
+  // ---- 滚动加载检测 ----
+  useEffect(() => {
+    if (!hasNextPage) return
 
     const shell = shellRef.current
     if (!shell) return
 
-    let frameId = 0
-
-    const checkAndFill = () => {
-      // 查找实际滚动元素（body 或 content）
-      const scrollTarget =
-        shell.querySelector('.ant-table-body') as HTMLElement | null
-      if (!scrollTarget) return
-      // 已有滚动条 → 交给滚动监听，停止自动补齐
-      if (scrollTarget.scrollHeight > scrollTarget.clientHeight) return
-      fetchNextPage()
+    const tryLoadMore = () => {
+      if (isFetchingNextPageRef.current || !hasNextPageRef.current) return
+      if (isLastVisibleNearEnd()) {
+        fetchNextPageRef.current()
+      }
     }
 
-    // rAF 确保 DOM 渲染完成后再测量
-    frameId = requestAnimationFrame(checkAndFill)
+    // 非虚拟模式：scroll 事件
+    const body = shell.querySelector('.ant-table-body') as HTMLElement | null
+    body?.addEventListener('scroll', tryLoadMore, { passive: true })
 
-    // 窗口变大导致内容又不够时，重新触发补齐
-    const handleResize = () => {
-      cancelAnimationFrame(frameId)
-      frameId = requestAnimationFrame(checkAndFill)
-    }
-    window.addEventListener('resize', handleResize)
+    // 虚拟模式：wheel 事件（VirtualList 拦截 wheel，事件冒泡到 shell）
+    shell.addEventListener('wheel', tryLoadMore, { passive: true })
 
     return () => {
-      cancelAnimationFrame(frameId)
-      window.removeEventListener('resize', handleResize)
+      body?.removeEventListener('scroll', tryLoadMore)
+      shell.removeEventListener('wheel', tryLoadMore)
     }
-  }, [dataSource, loading, isFetchingNextPage, hasNextPage, fetchNextPage])
+  }, [hasNextPage, isLastVisibleNearEnd])
 
-
-  // 合并内部 shellRef 和外部 containerRef
+  // ---- 合并 shellRef 和外部 containerRef ----
   const setShellRef = useCallback(
     (node: HTMLDivElement | null) => {
       shellRef.current = node
@@ -230,9 +216,37 @@ export function BusinessGridTable({
         dataSource={dataSource}
         rowSelection={selection}
         virtual={isVirtual}
+        tableLayout="fixed"
         pagination={false}
         scroll={{ x: scrollX, y: scrollY }}
         rowClassName={rowClassName}
+        footer={() => (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '8px 0',
+              color: '#999',
+              fontSize: 12,
+            }}
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Spin
+                  indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />}
+                  size="small"
+                />
+                <span style={{ marginLeft: 6 }}>加载中...</span>
+              </>
+            ) : !hasNextPage && dataSource.length > 0 ? (
+              <>
+                <CheckCircleOutlined
+                  style={{ color: '#52c41a', fontSize: 14 }}
+                />
+                <span style={{ marginLeft: 6 }}>已加载全部数据</span>
+              </>
+            ) : null}
+          </div>
+        )}
         onRow={(record) => ({
           onClick: (event: MouseEvent<HTMLElement>) => {
             const target = event.target as HTMLElement | null
@@ -273,33 +287,6 @@ export function BusinessGridTable({
             activeSorter?.order,
           )
         }}
-        footer={() => (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '8px 0',
-              color: '#999',
-              fontSize: 12,
-            }}
-          >
-            {isFetchingNextPage ? (
-              <>
-                <Spin
-                  indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />}
-                  size="small"
-                />
-                <span style={{ marginLeft: 6 }}>加载中...</span>
-              </>
-            ) : !hasNextPage && dataSource.length > 0 ? (
-              <>
-                <CheckCircleOutlined
-                  style={{ color: '#52c41a', fontSize: 14 }}
-                />
-                <span style={{ marginLeft: 6 }}>已加载全部数据</span>
-              </>
-            ) : null}
-          </div>
-        )}
       />
     </div>
   )
