@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { listBusinessModule } from '@/api/business-listing'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
@@ -53,6 +53,7 @@ export function useInfiniteBusinessItems({
       lastPage?.data?.hasMore ? allPages.length + 1 : undefined,
     enabled: enabled && !!moduleKey,
     staleTime: 5_000,
+    placeholderData: keepPreviousData,
   })
 
   const records: ModuleRecord[] = useMemo(

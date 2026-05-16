@@ -37,6 +37,12 @@ function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
   for (const id of allIds) {
     if (!ordered.has(id)) merged.push(id)
   }
+  // 强制操作列始终排在数据列第一位（勾选框之后）
+  const idx = merged.indexOf('actions')
+  if (idx > 0) {
+    merged.splice(idx, 1)
+    merged.unshift('actions')
+  }
   return merged
 }
 
@@ -144,6 +150,18 @@ export function useBusinessGridTable({
             ),
             dataIndex: header.column.id,
             key: header.column.id,
+            fixed: header.column.columnDef.meta?.fixed,
+            className: header.column.id === 'actions'
+              ? 'sticky-actions-col'
+              : undefined,
+            onCell:
+              header.column.id === 'actions'
+                ? () => ({ className: 'sticky-actions-col' })
+                : undefined,
+            onHeaderCell:
+              header.column.id === 'actions'
+                ? () => ({ className: 'sticky-actions-col' })
+                : undefined,
             width: header.column.columnDef.meta?.width,
             align: (header.column.columnDef.meta?.align ??
               'center') as ColumnType<ModuleRecord>['align'],

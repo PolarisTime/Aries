@@ -1352,18 +1352,8 @@ body,
   min-height: 0 !important;
 }
 
-.module-table-shell .ant-table-wrapper .ant-table,
-.module-table-shell .ant-table-wrapper .ant-table-container {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-height: 0;
-}
-
 .module-table-shell .ant-table-wrapper .ant-table-body,
 .module-table-shell .ant-table-wrapper .ant-table-content {
-  flex: 1 1 auto;
-  min-height: 0;
   overflow: auto;
 }
 
@@ -1393,6 +1383,22 @@ body,
   background: var(--theme-table-header-bg);
   border-color: var(--theme-card-border) !important;
   border-style: dashed !important;
+}
+
+/* 操作列宽度固定 + 背景色（fixed 定位由 antd 处理） */
+.module-table-shell .sticky-actions-col,
+.module-table-shell .ant-table-fixed-left .sticky-actions-col {
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+}
+.module-table-shell .ant-table-thead .sticky-actions-col,
+.module-table-shell .ant-table-fixed-left .ant-table-thead .sticky-actions-col {
+  background: var(--theme-table-header-bg) !important;
+}
+.module-table-shell .ant-table-tbody .sticky-actions-col,
+.module-table-shell .ant-table-fixed-left .ant-table-tbody .sticky-actions-col {
+  background: var(--theme-card-bg) !important;
 }
 
 .module-table-shell .ant-table-tbody > tr > td,
