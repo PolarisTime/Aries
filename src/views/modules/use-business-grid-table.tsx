@@ -165,7 +165,7 @@ export function useBusinessGridTable({
             width: header.column.columnDef.meta?.width,
             align: (header.column.columnDef.meta?.align ??
               'center') as ColumnType<ModuleRecord>['align'],
-            ellipsis: true,
+            ellipsis: false,
             sorter: header.column.getCanSort(),
             sortOrder:
               header.column.getIsSorted() === 'asc'
@@ -182,11 +182,14 @@ export function useBusinessGridTable({
     [headerGroup],
   )
   // 保留上一次有效的列定义，避免 config 短暂为 undefined 时表格只显示勾选框
-  const antdColumnsRef = useRef<TableColumnsType<ModuleRecord>>([])
-  if (computedColumns.length > 0) {
-    antdColumnsRef.current = computedColumns
-  }
-  const antdColumns = antdColumnsRef.current
+  const prevColumnsRef = useRef<TableColumnsType<ModuleRecord>>([])
+  const antdColumns = useMemo(() => {
+    if (computedColumns.length > 0) {
+      prevColumnsRef.current = computedColumns
+      return computedColumns
+    }
+    return prevColumnsRef.current
+  }, [computedColumns])
   const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined =
     useMemo(
       () =>

@@ -145,8 +145,8 @@ export function ModuleEditorWorkspace({
           lineItemsLocked={lineItemsLocked}
           lockedLineItemsNotice={lockedLineItemsNotice}
           onCancel={onClose}
-          onSave={() => {
-            void handleSave
+          onSave={(audit) => {
+            void handleSave(audit)
           }}
         />
       </Form>

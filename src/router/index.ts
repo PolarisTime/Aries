@@ -217,11 +217,22 @@ const indexRoute = createRoute({
   },
 })
 
+const notFoundRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '*',
+  component: lazy(() =>
+    import('@/views/error/NotFoundView').then((m) => ({
+      default: m.NotFoundView,
+    })),
+  ),
+})
+
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   setupRoute,
   setup2faRoute,
+  notFoundRoute,
   authenticatedLayoutRoute.addChildren([...moduleRoutes, apiKeyDetailRoute]),
 ])
 
@@ -229,6 +240,11 @@ export const router = createRouter({
   routeTree,
   history: createBrowserHistory(),
   defaultPreload: 'intent',
+  defaultErrorComponent: lazy(() =>
+    import('@/views/error/ErrorView').then((m) => ({
+      default: m.ErrorView,
+    })),
+  ),
 })
 
 declare module '@tanstack/react-router' {
