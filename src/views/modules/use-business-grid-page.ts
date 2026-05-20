@@ -50,7 +50,7 @@ export function useBusinessGridPage({
   pageDef,
   initialConfig,
 }: Props) {
-  const { config } = useModulePageConfig({ moduleKey, initialConfig })
+  const { config, isLoading: configLoading } = useModulePageConfig({ moduleKey, initialConfig })
   const resolvedConfig = config || EMPTY_CONFIG
   const {
     canViewRecords,
@@ -377,6 +377,7 @@ export function useBusinessGridPage({
     handleStatementGenerate,
     isFetching,
     isLoading,
+    configLoading,
     lockedLineItemsNotice,
     openDetail,
     openEditor,

@@ -1,4 +1,5 @@
 import type { TableColumnsType } from 'antd'
+import { pinyin } from 'pinyin-pro'
 import { useCallback, useMemo } from 'react'
 import { fetchMaterialSearch } from '@/api/materials'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
@@ -140,21 +141,18 @@ export function useModuleEditorItemColumns({
 
       return [
         {
-          label: [materialCode, brand || materialName, material, spec, length]
+          label: [brand || materialName, category, material, spec, length]
             .filter(Boolean)
             .join(' | '),
-          searchText: [
-            materialCode,
-            brand,
-            materialName,
-            category,
-            material,
-            spec,
-            length,
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase(),
+          searchText: (() => {
+            const pyFields = [brand, materialName, category, material, spec]
+              .filter(Boolean)
+              .map((s) => pinyin(s, { toneType: 'none', type: 'array' }).map((p) => p[0]).join(''))
+            return [brand, materialName, category, material, spec, ...pyFields]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase()
+          })(),
           value: materialCode,
         },
       ]
@@ -194,7 +192,7 @@ export function useModuleEditorItemColumns({
         itemId,
         materialCode,
         materialRecord,
-        applyMaterialToEditorLineItem,
+        (item, record) => applyMaterialToEditorLineItem(item, record, moduleKey),
         async (keyword) => {
           const normalizedKeyword = keyword.trim()
           if (!normalizedKeyword) {

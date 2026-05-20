@@ -76,7 +76,8 @@ export function useModuleEditorItemColumnHandlers({ setItems }: Props) {
               if (asString(item.materialCode).trim() !== materialCode.trim()) {
                 return item
               }
-              return { ...applyMaterial({ ...item }, resolvedMaterial) }
+              const applied = applyMaterial({ ...item }, resolvedMaterial)
+              return { ...applied }
             }),
           )
         })

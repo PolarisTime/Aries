@@ -5,7 +5,7 @@ const compactFreightItemWidthMap: Record<string, number> = {
   sourceNo: 140,
   customerName: 136,
   projectName: 156,
-  materialCode: 148,
+  materialCode: 240,
   materialName: 156,
   brand: 92,
   category: 84,

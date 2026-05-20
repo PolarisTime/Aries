@@ -38,7 +38,7 @@ export function CompanySettlementAccountsCard({
           </span>
           {canSave && (
             <Button
-              type="dashed"
+              type="default"
               size="small"
               icon={<PlusOutlined />}
               onClick={onAdd}

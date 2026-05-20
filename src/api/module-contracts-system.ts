@@ -19,6 +19,7 @@ export const systemModuleEndpointContracts: Record<
       'keyword',
       'moduleName',
       'actionType',
+      'authType',
       'resultStatus',
       'startTime',
       'endTime',

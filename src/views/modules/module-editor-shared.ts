@@ -54,22 +54,32 @@ export function buildModuleLineItemId() {
   return `item-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-function generateBatchNo(): string {
-  const now = new Date()
-  const y = String(now.getFullYear()).slice(2)
-  const m = String(now.getMonth() + 1).padStart(2, '0')
-  const d = String(now.getDate()).padStart(2, '0')
-  const h = String(now.getHours()).padStart(2, '0')
-  const min = String(now.getMinutes()).padStart(2, '0')
-  const s = String(now.getSeconds()).padStart(2, '0')
-  return `B${y}${m}${d}${h}${min}${s}`
+// 前端雪花 ID，与后端 SnowflakeIdGenerator 保持相同 epoch
+const SNOWFLAKE_EPOCH = 1704038400000n
+const SNOWFLAKE_WORKER_ID = BigInt(Math.floor(Math.random() * 1024))
+let snowflakeSequence = 0n
+let snowflakeLastTimestamp = -1n
+
+export function generatePlaceholderBatchNo(): string {
+  let timestamp = BigInt(Date.now())
+  if (timestamp === snowflakeLastTimestamp) {
+    snowflakeSequence = (snowflakeSequence + 1n) & 4095n
+    if (snowflakeSequence === 0n) {
+      while (BigInt(Date.now()) <= timestamp) { /* spin */ }
+      timestamp = BigInt(Date.now())
+    }
+  } else {
+    snowflakeSequence = 0n
+  }
+  snowflakeLastTimestamp = timestamp
+  const id = ((timestamp - SNOWFLAKE_EPOCH) << 22n) | (SNOWFLAKE_WORKER_ID << 12n) | snowflakeSequence
+  return id.toString(36).toUpperCase()
 }
 
 export function buildDefaultEditorLineItem(
   itemId = buildModuleLineItemId(),
   moduleKey?: string,
 ): ModuleLineItem {
-  const autoBatchNo = moduleKey === 'purchase-order' ? generateBatchNo() : ''
   return {
     id: itemId,
     materialCode: '',
@@ -79,7 +89,7 @@ export function buildDefaultEditorLineItem(
     spec: '',
     length: '',
     unit: '吨',
-    batchNo: autoBatchNo,
+    batchNo: '',
     quantityUnit: '件',
     pieceWeightTon: 0,
     piecesPerBundle: 0,

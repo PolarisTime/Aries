@@ -228,12 +228,6 @@ export default defineConfig(({ mode }) => {
                 minSize: 4_000,
                 priority: 14,
               },
-              {
-                name: 'business',
-                test: /src[\\/]views[\\/]modules[\\/]/,
-                minSize: 30_000,
-                priority: 10,
-              },
             ],
           },
         },

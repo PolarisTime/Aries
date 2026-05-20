@@ -1,0 +1,26 @@
+.workspace-split-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workspace-split-container .ant-splitter {
+  flex: 1;
+  min-height: 0;
+}
+
+.workspace-editor-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #fff;
+  border-left: 1px solid var(--theme-border-subtle, rgba(226, 232, 240, 0.92));
+  overflow: hidden;
+}
+
+.workspace-editor-panel .workspace-overlay--inline {
+  flex: 1;
+  min-height: 0;
+}

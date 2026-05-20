@@ -1,5 +1,6 @@
 import Alert from 'antd/es/alert'
 import Card from 'antd/es/card'
+import Space from 'antd/es/space'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
 import { useEffect, useState } from 'react'
@@ -10,6 +11,7 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
+import { ClodopStatusBadge } from '@/views/modules/components/ClodopStatusBadge'
 import { ColumnSettingsPopover } from '@/views/modules/components/ColumnSettingsPopover'
 import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterToolbar'
 import { ModuleTableToolbar } from '@/views/modules/components/ModuleTableToolbar'
@@ -89,7 +91,7 @@ export function BusinessGridContent({
   }, [])
 
   return (
-    <Card className="module-grid-card" bodyStyle={{ padding: 0 }}>
+    <Card className="module-grid-card" styles={{ body: { padding: '12px 16px 0' } }}>
       <ModuleFilterToolbar
         config={config}
         filters={filters}
@@ -109,16 +111,21 @@ export function BusinessGridContent({
         onRefresh={onRefresh}
         toolbarActions={toolbarActions}
         onAction={onAction}
+        isFetchingNextPage={isFetchingNextPage}
+        hasNextPage={hasNextPage}
         extra={
-          <ColumnSettingsPopover
-            columns={config.columns}
-            orderedKeys={columnOrder}
-            visibleKeys={columnVisibleKeys}
-            onToggle={onToggleColumn}
-            onOrderChange={onColumnOrderChange}
-            open={columnSettingsOpen}
-            onOpenChange={setColumnSettingsOpen}
-          />
+          <Space>
+            <ColumnSettingsPopover
+              columns={config.columns}
+              orderedKeys={columnOrder}
+              visibleKeys={columnVisibleKeys}
+              onToggle={onToggleColumn}
+              onOrderChange={onColumnOrderChange}
+              open={columnSettingsOpen}
+              onOpenChange={setColumnSettingsOpen}
+            />
+            <ClodopStatusBadge />
+          </Space>
         }
       />
 

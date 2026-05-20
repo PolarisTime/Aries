@@ -10,7 +10,7 @@ import type { ModuleRecord } from '@/types/module-page'
 export async function generateBusinessPrimaryNo(moduleKey: string) {
   const response = assertApiSuccess(
     await http.post<ApiResponse<NumberRuleGenerateRecord>>(
-      '/general-setting/number-rules/next',
+      '/general-settings/number-rule/next',
       null,
       {
         params: { moduleKey },
@@ -28,7 +28,7 @@ export async function generateBusinessPrimaryNo(moduleKey: string) {
 export async function allocateBusinessPrimaryNo(moduleKey: string) {
   const response = assertApiSuccess(
     await http.post<ApiResponse<NumberRuleGenerateRecord>>(
-      '/general-setting/number-rules/next',
+      '/general-settings/number-rule/next',
       null,
       {
         params: { moduleKey },
