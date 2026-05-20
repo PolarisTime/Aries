@@ -60,6 +60,23 @@ export function AppTopNavigationHeader({
       </div>
 
       <div className="app-top-nav-right" style={shellFontStyle}>
+        {import.meta.env.DEV ? (
+          <button
+            type="button"
+            className="app-dev-refresh-btn"
+            title={new Date().toLocaleTimeString()}
+            onClick={() => {
+              if ('caches' in window) {
+                void caches.keys().then((keys) => {
+                  void Promise.all(keys.map((k) => caches.delete(k)))
+                })
+              }
+              window.location.reload()
+            }}
+          >
+            强制刷新
+          </button>
+        ) : null}
         <LazyAppHeaderSearch
           className="header-global-search header-global-search-top"
           {...search}

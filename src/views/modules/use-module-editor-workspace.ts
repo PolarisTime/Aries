@@ -96,6 +96,16 @@ function normalizeRecordForEditor(
   return normalized
 }
 
+function isAntdFormValidationError(err: unknown): boolean {
+  if (err == null || typeof err !== 'object') return false
+  const obj = err as Record<string, unknown>
+  return (
+    Array.isArray(obj.errorFields) &&
+    typeof obj.values === 'object' &&
+    obj.values !== null
+  )
+}
+
 function normalizeOptionalString(value: unknown) {
   return asString(value).trim()
 }
@@ -477,8 +487,12 @@ export function useModuleEditorWorkspace({
         onSaved()
         onClose()
       } catch (err) {
-        if (err instanceof Error) {
+        if (isAntdFormValidationError(err)) {
+          // Form 已内联展示校验错误，不重复提示
+        } else if (err instanceof Error) {
           message.error(err.message || '保存失败')
+        } else {
+          message.error('保存失败，请稍后重试')
         }
       } finally {
         setSaving(false)

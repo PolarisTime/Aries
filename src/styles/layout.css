@@ -1,0 +1,89 @@
+.app-dev-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  height: calc(var(--app-header-height) - 14px);
+  padding: 0 10px;
+  color: var(--theme-header-muted);
+  font-size: calc(var(--app-font-size) - 1px);
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: 6px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.app-dev-refresh-btn:hover {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+.app-top-menu-shell {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--app-header-height);
+  overflow: hidden;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.leo-top-menu.ant-menu-horizontal > .ant-menu-item,
+.leo-top-menu.ant-menu-horizontal > .ant-menu-submenu {
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  height: var(--app-header-height);
+  margin: 0 2px;
+  line-height: var(--app-header-height);
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0;
+  transition: color 0.2s ease;
+}
+
+.leo-top-menu.ant-menu-horizontal > .ant-menu-item {
+  padding-inline: 16px;
+}
+
+.leo-top-menu.ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title {
+  height: var(--app-header-height);
+  padding-inline: 16px !important;
+  margin: 0;
+  line-height: var(--app-header-height);
+  border-radius: 0;
+}
+
+.leo-top-menu.ant-menu-horizontal > .ant-menu-item::after,
+.leo-top-menu.ant-menu-horizontal > .ant-menu-submenu::after {
+  left: 16px;
+  right: 16px;
+  border-bottom: 2px solid transparent !important;
+  transition: border-color 0.2s ease;
+}
+
+.leo-top-menu.ant-menu-horizontal > .ant-menu-item:hover,
+.leo-top-menu.ant-menu-horizontal > .ant-menu-submenu:hover,
+.leo-top-menu.ant-menu-horizontal > .ant-menu-item-active,
+.leo-top-menu.ant-menu-horizontal > .ant-menu-submenu-active {
+  color: var(--theme-primary) !important;
+  background: transparent;
+}
+
+.leo-top-menu.ant-menu-horizontal > .ant-menu-item:hover::after,
+.leo-top-menu.ant-menu-horizontal > .ant-menu-submenu:hover::after {
+  border-bottom-color: var(--theme-primary-soft-strong) !important;
+}
+
+.leo-top-menu.ant-menu-horizontal > .ant-menu-item-selected,
+.leo-top-menu.ant-menu-horizontal > .ant-menu-submenu-selected {
+  color: var(--theme-primary) !important;
+  font-weight: 600;
+  background: transparent;
+  box-shadow: none;
+}
+
+.leo-top-menu.ant-menu-horizontal > .ant-menu-item-selected::after,
+.leo-top-menu.ant-menu-horizontal > .ant-menu-submenu-selected::after {
+  border-bottom-color: var(--theme-primary) !important;
+}

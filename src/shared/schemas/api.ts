@@ -4,8 +4,18 @@ import { z } from 'zod'
 
 /** 统一 API 响应 */
 export const apiResponseSchema = <T extends z.ZodTypeAny>(data: T) =>
-  z.object({ code: z.number(), data, message: z.string().optional() })
-export type ApiResponse<T> = { code: number; data: T; message?: string }
+  z.object({
+    code: z.number(),
+    data,
+    message: z.string().optional(),
+    traceId: z.string().optional(),
+  })
+export type ApiResponse<T> = {
+  code: number
+  data: T
+  message?: string
+  traceId?: string
+}
 
 /** 分页结果 */
 export const pagedResultSchema = <T extends z.ZodTypeAny>(row: T) =>

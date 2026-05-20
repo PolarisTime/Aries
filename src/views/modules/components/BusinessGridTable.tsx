@@ -84,6 +84,11 @@ export function BusinessGridTable({
     return total + 40
   }, [visibleColumns])
 
+  const scroll = useMemo(
+    () => ({ x: scrollX, y: scrollY }),
+    [scrollX, scrollY],
+  )
+
   // ---- Ref 快照 ----
   const isFetchingNextPageRef = useRef(isFetchingNextPage)
   const hasNextPageRef = useRef(hasNextPage)
@@ -204,10 +209,78 @@ export function BusinessGridTable({
     [externalContainerRef],
   )
 
+  const onRow = useCallback(
+    (record: ModuleRecord) => ({
+      onClick: (event: MouseEvent<HTMLElement>) => {
+        const target = event.target as HTMLElement | null
+        if (
+          target?.closest(
+            'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
+          )
+        ) return
+        onRowClick(record)
+      },
+      onDoubleClick: (event: MouseEvent<HTMLElement>) => {
+        const target = event.target as HTMLElement | null
+        if (
+          target?.closest(
+            'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
+          )
+        ) return
+        onRowDoubleClick(record)
+      },
+    }),
+    [onRowClick, onRowDoubleClick],
+  )
+
+  const footer = useCallback(
+    () => (
+      <div
+        style={{
+          textAlign: 'center',
+          padding: '8px 0',
+          color: '#999',
+          fontSize: 12,
+        }}
+      >
+        {isFetchingNextPage ? (
+          <>
+            <Spin indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />} size="small" />
+            <span style={{ marginLeft: 6 }}>加载中...</span>
+          </>
+        ) : !hasNextPage && dataSource.length > 0 ? (
+          <>
+            <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 14 }} />
+            <span style={{ marginLeft: 6 }}>已加载全部数据</span>
+          </>
+        ) : null}
+      </div>
+    ),
+    [isFetchingNextPage, hasNextPage, dataSource.length],
+  )
+
+  const emptyText = useMemo(
+    () => <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" />,
+    [],
+  )
+
+  const locale = useMemo(() => ({ emptyText }), [emptyText])
+
+  const onChange = useCallback(
+    (_pagination: unknown, _filters: unknown, sorter: unknown) => {
+      const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter
+      const columnKey = (activeSorter as { columnKey?: string | number })?.columnKey
+      onSortingChange(
+        typeof columnKey === 'bigint' ? String(columnKey) : columnKey,
+        (activeSorter as { order?: SortOrder })?.order,
+      )
+    },
+    [onSortingChange],
+  )
+
   return (
     <div ref={setShellRef} className="module-table-shell">
       <Table
-        key={moduleKey}
         rowKey="id"
         bordered
         size="small"
@@ -218,75 +291,12 @@ export function BusinessGridTable({
         virtual={isVirtual}
         tableLayout="fixed"
         pagination={false}
-        scroll={{ x: scrollX, y: scrollY }}
+        scroll={scroll}
         rowClassName={rowClassName}
-        footer={() => (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '8px 0',
-              color: '#999',
-              fontSize: 12,
-            }}
-          >
-            {isFetchingNextPage ? (
-              <>
-                <Spin
-                  indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />}
-                  size="small"
-                />
-                <span style={{ marginLeft: 6 }}>加载中...</span>
-              </>
-            ) : !hasNextPage && dataSource.length > 0 ? (
-              <>
-                <CheckCircleOutlined
-                  style={{ color: '#52c41a', fontSize: 14 }}
-                />
-                <span style={{ marginLeft: 6 }}>已加载全部数据</span>
-              </>
-            ) : null}
-          </div>
-        )}
-        onRow={(record) => ({
-          onClick: (event: MouseEvent<HTMLElement>) => {
-            const target = event.target as HTMLElement | null
-            if (
-              target?.closest(
-                'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
-              )
-            ) {
-              return
-            }
-            onRowClick(record)
-          },
-          onDoubleClick: (event: MouseEvent<HTMLElement>) => {
-            const target = event.target as HTMLElement | null
-            if (
-              target?.closest(
-                'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
-              )
-            ) {
-              return
-            }
-            onRowDoubleClick(record)
-          },
-        })}
-        locale={{
-          emptyText: (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="暂无数据"
-            />
-          ),
-        }}
-        onChange={(_pagination, _filters, sorter) => {
-          const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter
-          const columnKey = activeSorter?.columnKey
-          onSortingChange(
-            typeof columnKey === 'bigint' ? String(columnKey) : columnKey,
-            activeSorter?.order,
-          )
-        }}
+        footer={footer}
+        onRow={onRow}
+        locale={locale}
+        onChange={onChange}
       />
     </div>
   )

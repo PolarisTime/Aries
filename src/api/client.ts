@@ -23,14 +23,17 @@ export function isSuccessCode(code: unknown) {
   return Number(code) === ERROR_CODE.SUCCESS
 }
 
-export function assertApiSuccess<T extends { code?: number; message?: string }>(
-  response: T,
-  fallbackMessage?: string,
-) {
+export function assertApiSuccess<
+  T extends { code?: number; message?: string; traceId?: string },
+>(response: T, fallbackMessage?: string) {
   if (!isSuccessCode(response?.code)) {
-    throw new Error(
+    const err = new Error(
       response?.message || fallbackMessage || getApiMessage('requestFailed'),
     )
+    if (response?.traceId) {
+      ;(err as Error & { traceId: string }).traceId = response.traceId
+    }
+    throw err
   }
 
   return response

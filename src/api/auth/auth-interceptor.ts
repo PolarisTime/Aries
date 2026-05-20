@@ -21,6 +21,18 @@ import {
 import { normalizeErrorMessage } from './error-messages'
 import type { RetryableRequestConfig } from './types'
 
+function extractBackendTraceId(error: {
+  response?: { data?: { traceId?: string } }
+}): string | undefined {
+  return error.response?.data?.traceId
+}
+
+function attachTraceIdToError(err: Error, traceId: string | undefined) {
+  if (traceId) {
+    ;(err as Error & { traceId: string }).traceId = traceId
+  }
+}
+
 type GuardedAxiosInstance = AxiosInstance & {
   __leoAuthInterceptorsSetup?: boolean
 }
@@ -91,7 +103,9 @@ export function setupAuthInterceptors(http: AxiosInstance) {
     async (error) => {
       if (isCanceledRequestError(error)) {
         markHandledRequestError(error)
-        return Promise.reject(new Error(String(error)))
+        const canceledErr = new Error(String(error))
+        attachTraceIdToError(canceledErr, extractBackendTraceId(error))
+        return Promise.reject(canceledErr)
       }
 
       const status = error.response?.status
@@ -146,7 +160,14 @@ export function setupAuthInterceptors(http: AxiosInstance) {
           markHandledRequestError(error)
           handleAuthFailure(refreshMessage)
           error.message = refreshMessage
-          return Promise.reject(new Error(String(error)))
+          const refreshErr = new Error(String(error))
+          attachTraceIdToError(
+            refreshErr,
+            extractBackendTraceId(
+              axios.isAxiosError(refreshError) ? refreshError : error,
+            ),
+          )
+          return Promise.reject(refreshErr)
         }
       }
 
@@ -171,8 +192,10 @@ export function setupAuthInterceptors(http: AxiosInstance) {
       }
 
       error.message = description
+      const normalizedErr = new Error(String(error))
+      attachTraceIdToError(normalizedErr, extractBackendTraceId(error))
 
-      return Promise.reject(new Error(String(error)))
+      return Promise.reject(normalizedErr)
     },
   )
 }
