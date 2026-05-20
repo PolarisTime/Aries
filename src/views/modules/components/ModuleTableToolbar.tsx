@@ -1,11 +1,14 @@
 import {
+  CheckCircleOutlined,
   DownloadOutlined,
+  LoadingOutlined,
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Flex from 'antd/es/flex'
 import Space from 'antd/es/space'
+import Spin from 'antd/es/spin'
 import Typography from 'antd/es/typography'
 import type { ReactNode } from 'react'
 import type { ModuleActionDefinition } from '@/types/module-page'
@@ -23,6 +26,8 @@ interface Props {
   extra?: ReactNode
   toolbarActions?: ModuleActionDefinition[]
   onAction?: (action: ModuleActionDefinition) => void
+  isFetchingNextPage?: boolean
+  hasNextPage?: boolean
 }
 
 export function ModuleTableToolbar({
@@ -37,6 +42,8 @@ export function ModuleTableToolbar({
   extra,
   toolbarActions = [],
   onAction,
+  isFetchingNextPage = false,
+  hasNextPage = false,
 }: Props) {
   return (
     <Flex
@@ -88,6 +95,20 @@ export function ModuleTableToolbar({
         {extra}
       </Space>
       <Space size="middle">
+        {isFetchingNextPage ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Spin
+              indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />}
+              size="small"
+            />
+            <span style={{ marginLeft: 6 }}>加载中...</span>
+          </Typography.Text>
+        ) : !hasNextPage && total > 0 ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 14 }} />
+            <span style={{ marginLeft: 6 }}>已加载全部数据</span>
+          </Typography.Text>
+        ) : null}
         <Typography.Text type="secondary">共 {total} 条</Typography.Text>
         <Button
           icon={<ReloadOutlined />}

@@ -10,7 +10,7 @@ import { applyCompactItemLayout } from './shared-item-column-utils'
 
 const compactTradeItemWidthMap: Record<string, number> = {
   sourceNo: 140,
-  materialCode: 136,
+  materialCode: 240,
   brand: 68,
   category: 58,
   material: 76,

@@ -238,12 +238,12 @@ export function ProjectArDetailPage(): React.JSX.Element {
               </Text>
             </Descriptions.Item>
             <Descriptions.Item label="应收未收金额">
-              <Text type="danger" className="text-base">
+              <Text color="danger" className="text-base">
                 {formatAmount(summary.unreceivedAmount)}
               </Text>
             </Descriptions.Item>
             <Descriptions.Item label="净未收敞口">
-              <Text type="danger" strong className="text-base">
+              <Text color="danger" strong className="text-base">
                 {formatAmount(summary.netUnreceivedAmount)}
               </Text>
             </Descriptions.Item>

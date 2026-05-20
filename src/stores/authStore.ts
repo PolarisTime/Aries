@@ -151,9 +151,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   restoreSession: async () => {
-    get().hydrate()
     const { token, user } = get()
-    if (!token) {
+    if (!token || !user) {
       set({ token: '', user: null, isAuthenticated: false, authReady: true })
       return false
     }
@@ -175,14 +174,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       })
       return true
     } catch {
-      if (token && user) {
-        set({ isAuthenticated: true, authReady: true })
-        return true
-      }
-      clearToken()
-      clearStoredUser()
-      set({ token: '', user: null, isAuthenticated: false, authReady: true })
-      return false
+      // refresh 失败时保留本地已有的 token 和 user，不清除登录态
+      set({ isAuthenticated: true, authReady: true })
+      return true
     }
   },
 }))

@@ -5,7 +5,7 @@ const materialInfoColumns: ModuleColumnDefinition[] = [
   {
     title: '商品编码',
     dataIndex: 'materialCode',
-    width: 128,
+    width: 240,
     required: true,
     align: 'center',
   },

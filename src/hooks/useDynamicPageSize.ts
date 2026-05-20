@@ -40,6 +40,7 @@ export function useDynamicPageSize(
   // 防抖函数 ref
   const debounceTimerRef = useRef(0)
   const lastPageSizeRef = useRef<number | null>(null)
+  const isFirstMeasurementRef = useRef(true)
 
   // 测量并计算 pageSize
   const measure = useCallback(() => {
@@ -76,13 +77,19 @@ export function useDynamicPageSize(
     if (lastPageSizeRef.current === nextPageSize) return
     lastPageSizeRef.current = nextPageSize
 
-    setPageSize(nextPageSize)
-
-    // 防抖通知外部
-    window.clearTimeout(debounceTimerRef.current)
-    debounceTimerRef.current = window.setTimeout(() => {
+    if (isFirstMeasurementRef.current) {
+      // 首次测量立即更新，避免初始加载时多一次请求
+      isFirstMeasurementRef.current = false
+      setPageSize(nextPageSize)
       onPageResizeRef.current(nextPageSize)
-    }, DEBOUNCE_MS)
+    } else {
+      // 后续 resize 防抖更新，避免窗口拖动时频繁触发数据重新加载
+      window.clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = window.setTimeout(() => {
+        setPageSize(nextPageSize)
+        onPageResizeRef.current(nextPageSize)
+      }, DEBOUNCE_MS)
+    }
   }, [])
 
   // 容器 ref callback：挂载/卸载时连接 ResizeObserver + MutationObserver

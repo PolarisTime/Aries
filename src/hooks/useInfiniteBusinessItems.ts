@@ -54,12 +54,19 @@ export function useInfiniteBusinessItems({
     enabled: enabled && !!moduleKey,
     staleTime: 5_000,
     placeholderData: keepPreviousData,
+    structuralSharing: false,
   })
 
-  const records: ModuleRecord[] = useMemo(
-    () => query.data?.pages.flatMap((p) => p?.data?.rows || []) ?? [],
-    [query.data],
-  )
+  const records: ModuleRecord[] = useMemo(() => {
+    const all = query.data?.pages.flatMap((p) => p?.data?.rows || []) ?? []
+    const seen = new Set<string>()
+    return all.filter((r) => {
+      const id = String(r.id)
+      if (seen.has(id)) return false
+      seen.add(id)
+      return true
+    })
+  }, [query.data])
 
   const total = query.data?.pages[query.data.pages.length - 1]?.data?.total ?? 0
   const responseCode = Number(query.data?.pages[0]?.code ?? 0)

@@ -3,6 +3,7 @@ import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
 import { recalculateEditorLineItem } from './module-editor-line-item-calculations'
+import { generatePlaceholderBatchNo } from './module-editor-shared'
 import {
   buildDefaultEditorLineItem,
   type EditorItemDragPosition,
@@ -121,6 +122,7 @@ export function moveEditorLineItemByDrag(
 export function applyMaterialToEditorLineItem(
   item: ModuleLineItem,
   materialRecord?: ModuleRecord | null,
+  moduleKey?: string,
 ) {
   if (!materialRecord) {
     return item
@@ -132,7 +134,9 @@ export function applyMaterialToEditorLineItem(
   item.spec = materialRecord.spec || ''
   item.length = materialRecord.length || ''
   item.unit = materialRecord.unit || '吨'
-  item.batchNo = ''
+  if (!item.batchNo && moduleKey === 'purchase-order') {
+    item.batchNo = generatePlaceholderBatchNo()
+  }
   item.quantityUnit = inferQuantityUnit(materialRecord)
   item.pieceWeightTon = toRoundedNumber(materialRecord.pieceWeightTon || 0, 3)
   item.piecesPerBundle = toRoundedNumber(materialRecord.piecesPerBundle || 0, 0)

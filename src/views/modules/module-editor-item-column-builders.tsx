@@ -99,10 +99,12 @@ function buildEditableColumnRender({
             showSearch
             allowClear
             className="w-full"
-            placeholder="搜索商品编码 / 品牌 / 材质 / 规格 / 长度"
-            filterOption={(input, option) =>
-              (option?.searchText || '').includes(input.trim().toLowerCase())
-            }
+            placeholder="搜索品牌 / 类别 / 材质 / 规格 / 长度"
+            filterOption={(input, option) => {
+              const keywords = input.trim().toLowerCase().split(/\s+/)
+              const searchText = (option?.searchText || '').toLowerCase()
+              return keywords.every((kw) => searchText.includes(kw))
+            }}
             onChange={(selectedValue) =>
               handleMaterialSelect(record.id, String(selectedValue || ''))
             }

@@ -161,8 +161,8 @@ export function GeneralSettingsView() {
         onStatusFilterChange={setStatusFilter}
         onRefresh={refresh}
         onEdit={openEditor}
-        onToggle={() => {
-          void handleToggle
+        onToggle={(record) => {
+          void handleToggle(record)
         }}
       />
 

@@ -1,13 +1,29 @@
 import { useLocation } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
+import Spin from 'antd/es/spin'
+import { lazy, Suspense, useMemo } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
+import { WorkspaceContainer } from '@/views/modules/components/WorkspaceContainer'
 import { isEditBlockedByStatus } from '@/views/modules/module-behavior-registry'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
+import { useEditorTabsAdapter } from '@/views/modules/useEditorTabsAdapter'
+
+const ModuleEditorWorkspace = lazy(() =>
+  import('@/views/modules/components/ModuleEditorWorkspace').then((module) => ({
+    default: module.ModuleEditorWorkspace,
+  })),
+)
+
+const EditorTabBar = lazy(() =>
+  import('@/views/modules/components/EditorTabBar').then((module) => ({
+    default: module.EditorTabBar,
+  })),
+)
 
 interface Props {
   pageDef: AppPageDefinition
@@ -30,24 +46,30 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     openDetail: state.openDetail,
   })
 
-  if (!state.config) {
-    return (
-      <Empty description={`模块配置未找到: ${moduleKey}`} className="mt-96" />
-    )
-  }
+  const editorTabs = useEditorTabsAdapter({
+    moduleKey,
+    editRecord: state.editRecord,
+    editorOpen: state.editorOpen,
+    configTitle: state.config?.title || '',
+    onCloseEditor: state.closeEditor,
+  })
 
-  return (
-    <div key={moduleKey} className="page-stack module-page-stack">
+  const hasActiveEditor = editorTabs.activeKey !== null
+
+  const gridContent = useMemo(
+    () => (
       <BusinessGridContent
         key={moduleKey}
         moduleKey={moduleKey}
-        config={state.config}
+        config={state.config!}
         filters={state.filters}
         loading={state.isLoading || state.editorLockLoading}
         exporting={state.exporting}
         records={state.records}
         hasNextPage={state.hasNextPage}
-        fetchNextPage={state.fetchNextPage}
+        fetchNextPage={() => {
+          void state.fetchNextPage()
+        }}
         isFetchingNextPage={state.isFetchingNextPage}
         warningMessage={state.warningMessage}
         columnVisibleKeys={state.columnVisibleKeys}
@@ -88,13 +110,71 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         onSortingChange={state.onSortingChange}
         containerRef={state.containerRef}
       />
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [moduleKey, state],
+  )
+
+  const editorContent = useMemo(() => {
+    if (!hasActiveEditor || !state.config) return null
+    return (
+      <Suspense fallback={null}>
+        <EditorTabBar
+          sessions={editorTabs.sessions}
+          activeKey={editorTabs.activeKey}
+          onSwitch={(key) => editorTabs.switchTab(key)}
+          onClose={(key) => {
+            void editorTabs.closeTab(key)
+          }}
+        />
+        <ModuleEditorWorkspace
+          open={state.editorOpen}
+          config={state.config}
+          record={state.editRecord}
+          moduleKey={moduleKey}
+          canSave={
+            state.editRecord ? state.canUpdateRecord : state.canCreateRecord
+          }
+          canAudit={state.canAuditRecord}
+          lineItemsLocked={state.editorLineItemsLocked}
+          lockedLineItemsNotice={
+            state.editorLineItemsLocked ? state.lockedLineItemsNotice : ''
+          }
+          onClose={state.closeEditor}
+          onSaved={() => {
+            state.setSelectedRowKeys([])
+            state.handleEditorSaved()
+          }}
+          variant="inline"
+          sessionKey={editorTabs.activeKey ?? undefined}
+        />
+      </Suspense>
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasActiveEditor, moduleKey, state, editorTabs.activeKey, editorTabs.sessions])
+
+  if (state.configLoading || (state.isLoading && state.records.length === 0)) {
+    return <Spin className="flex justify-center mt-96" />
+  }
+
+  if (!state.config) {
+    return (
+      <Empty description={`模块配置未找到: ${moduleKey}`} className="mt-96" />
+    )
+  }
+
+  return (
+    <div key={moduleKey} className="page-stack module-page-stack">
+      <WorkspaceContainer
+        gridContent={gridContent}
+        editorContent={editorContent}
+        hasActiveEditor={hasActiveEditor}
+      />
 
       <BusinessGridOverlays
         moduleKey={moduleKey}
         resourceKey={pageDef.resourceKey}
         config={state.config}
-        editRecord={state.editRecord}
-        editorOpen={state.editorOpen}
         attachOpen={state.overlays.attachOpen}
         attachRecordId={state.overlays.attachRecordId}
         detailOpen={state.detailOpen}
@@ -104,19 +184,6 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         customerStatementOpen={state.overlays.customerStatementOpen}
         freightStatementOpen={state.overlays.freightStatementOpen}
         freightPickupOpen={state.overlays.freightPickupOpen}
-        canSave={
-          state.editRecord ? state.canUpdateRecord : state.canCreateRecord
-        }
-        canAudit={state.canAuditRecord}
-        lineItemsLocked={state.editorLineItemsLocked}
-        lockedLineItemsNotice={
-          state.editorLineItemsLocked ? state.lockedLineItemsNotice : ''
-        }
-        onCloseEditor={state.closeEditor}
-        onSaved={() => {
-          state.setSelectedRowKeys([])
-          state.handleEditorSaved()
-        }}
         onCloseDetail={state.closeDetail}
         onCloseAttachment={state.overlays.closeAttachment}
         onCloseSupplierStatement={state.overlays.closeSupplierStatement}

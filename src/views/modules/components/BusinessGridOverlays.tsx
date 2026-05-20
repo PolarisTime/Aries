@@ -6,11 +6,6 @@ const ModuleAttachmentModal = lazy(() =>
     default: module.ModuleAttachmentModal,
   })),
 )
-const ModuleEditorWorkspace = lazy(() =>
-  import('@/views/modules/components/ModuleEditorWorkspace').then((module) => ({
-    default: module.ModuleEditorWorkspace,
-  })),
-)
 const ModuleFreightPickupListOverlay = lazy(() =>
   import('@/views/modules/components/ModuleFreightPickupListOverlay').then(
     (module) => ({
@@ -37,8 +32,6 @@ interface Props {
   moduleKey: string
   resourceKey?: string
   config: ModulePageConfig
-  editRecord: ModuleRecord | null
-  editorOpen: boolean
   attachOpen: boolean
   attachRecordId: string
   detailOpen: boolean
@@ -48,12 +41,6 @@ interface Props {
   customerStatementOpen: boolean
   freightStatementOpen: boolean
   freightPickupOpen: boolean
-  canSave: boolean
-  canAudit: boolean
-  lineItemsLocked: boolean
-  lockedLineItemsNotice: string
-  onCloseEditor: () => void
-  onSaved: () => void
   onCloseDetail: () => void
   onCloseAttachment: () => void
   onCloseSupplierStatement: () => void
@@ -81,8 +68,6 @@ export function BusinessGridOverlays({
   moduleKey,
   resourceKey,
   config,
-  editRecord,
-  editorOpen,
   attachOpen,
   attachRecordId,
   detailOpen,
@@ -92,12 +77,6 @@ export function BusinessGridOverlays({
   customerStatementOpen,
   freightStatementOpen,
   freightPickupOpen,
-  canSave,
-  canAudit,
-  lineItemsLocked,
-  lockedLineItemsNotice,
-  onCloseEditor,
-  onSaved,
   onCloseDetail,
   onCloseAttachment,
   onCloseSupplierStatement,
@@ -110,21 +89,6 @@ export function BusinessGridOverlays({
 }: Props) {
   return (
     <Suspense fallback={null}>
-      {editorOpen ? (
-        <ModuleEditorWorkspace
-          open={editorOpen}
-          config={config}
-          record={editRecord}
-          moduleKey={moduleKey}
-          canSave={canSave}
-          canAudit={canAudit}
-          lineItemsLocked={lineItemsLocked}
-          lockedLineItemsNotice={lockedLineItemsNotice}
-          onClose={onCloseEditor}
-          onSaved={onSaved}
-        />
-      ) : null}
-
       {detailOpen ? (
         <ModuleRecordDetailOverlay
           open={detailOpen}
