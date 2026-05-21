@@ -1,5 +1,7 @@
+import Button from 'antd/es/button'
 import Form from 'antd/es/form'
 import { useMemo } from 'react'
+import { AppResultModal } from '@/components/AppResultModal'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
@@ -80,6 +82,7 @@ export function ModuleEditorWorkspace({
   const canImportParentItems = Boolean(config.parentImport && canManageItems)
   const {
     addItem,
+    clearSaveResult,
     closeParentSelector,
     handleImportParentRecord,
     handleSave,
@@ -88,6 +91,7 @@ export function ModuleEditorWorkspace({
     openParentSelector,
     parentImporting,
     parentSelectorOpen,
+    saveResult,
     saving,
     setItems,
   } = useModuleEditorWorkspace({
@@ -123,64 +127,87 @@ export function ModuleEditorWorkspace({
   })
 
   return (
-    <WorkspaceOverlay
-      open={open}
-      title={`${isEdit ? '编辑' : '新建'} — ${config.title}`}
-      onClose={onClose}
-    >
-      <Form
-        form={form}
-        layout="horizontal"
-        colon={false}
-        labelWrap={false}
-        className="editor-form-shell"
+    <>
+      <WorkspaceOverlay
+        open={open}
+        title={`${isEdit ? '编辑' : '新建'} — ${config.title}`}
+        onClose={onClose}
       >
-        <ModuleEditorFormSection
+        <Form
+          form={form}
+          layout="horizontal"
+          colon={false}
+          labelWrap={false}
+          className="editor-form-shell"
+        >
+          <ModuleEditorFormSection
+            config={config}
+            moduleKey={moduleKey}
+            canSave={canSave}
+            canAudit={canSaveAndAuditInEditor}
+            saving={saving}
+            showActions={!config.itemColumns?.length}
+            lineItemsLocked={lineItemsLocked}
+            lockedLineItemsNotice={lockedLineItemsNotice}
+            onCancel={onClose}
+            onSave={(audit) => {
+              void handleSave(audit)
+            }}
+          />
+        </Form>
+
+        <ModuleEditorItemsSection
           config={config}
-          moduleKey={moduleKey}
+          items={items}
+          selectedItemIds={selectedItemIds}
+          canAddManualItems={canAddManualItems}
+          canImportParentItems={canImportParentItems}
+          parentImporting={parentImporting}
+          parentSelectorOpen={parentSelectorOpen}
+          itemColumns={itemColumns}
+          itemColumnOrder={itemColumnOrder}
+          visibleItemColumnKeys={visibleItemColumnKeys}
           canSave={canSave}
           canAudit={canSaveAndAuditInEditor}
           saving={saving}
-          showActions={!config.itemColumns?.length}
-          lineItemsLocked={lineItemsLocked}
-          lockedLineItemsNotice={lockedLineItemsNotice}
+          onAddItem={addItem}
           onCancel={onClose}
           onSave={(audit) => {
             void handleSave(audit)
           }}
+          onOpenParentSelector={openParentSelector}
+          onCloseParentSelector={closeParentSelector}
+          onRemoveSelectedItems={removeSelectedItems}
+          onImportParentRecord={(parentRecords) => {
+            clearSelectedItems()
+            void handleImportParentRecord(parentRecords)
+          }}
+          onItemColumnOrderChange={onItemColumnOrderChange}
+          onToggleItemColumn={toggleItemColumn}
+          onRowDragOver={handleDragOver}
         />
-      </Form>
+      </WorkspaceOverlay>
 
-      <ModuleEditorItemsSection
-        config={config}
-        items={items}
-        selectedItemIds={selectedItemIds}
-        canAddManualItems={canAddManualItems}
-        canImportParentItems={canImportParentItems}
-        parentImporting={parentImporting}
-        parentSelectorOpen={parentSelectorOpen}
-        itemColumns={itemColumns}
-        itemColumnOrder={itemColumnOrder}
-        visibleItemColumnKeys={visibleItemColumnKeys}
-        canSave={canSave}
-        canAudit={canSaveAndAuditInEditor}
-        saving={saving}
-        onAddItem={addItem}
-        onCancel={onClose}
-        onSave={(audit) => {
-          void handleSave(audit)
+      <AppResultModal
+        open={!!saveResult}
+        status={saveResult?.status ?? 'success'}
+        subTitle={saveResult?.message}
+        footer={
+          <Button
+            type="primary"
+            onClick={() => {
+              clearSaveResult()
+              onClose()
+            }}
+          >
+            知道了
+          </Button>
+        }
+        onClose={() => {
+          clearSaveResult()
+          onClose()
         }}
-        onOpenParentSelector={openParentSelector}
-        onCloseParentSelector={closeParentSelector}
-        onRemoveSelectedItems={removeSelectedItems}
-        onImportParentRecord={(parentRecords) => {
-          clearSelectedItems()
-          void handleImportParentRecord(parentRecords)
-        }}
-        onItemColumnOrderChange={onItemColumnOrderChange}
-        onToggleItemColumn={toggleItemColumn}
-        onRowDragOver={handleDragOver}
       />
-    </WorkspaceOverlay>
+    </>
   )
 }
