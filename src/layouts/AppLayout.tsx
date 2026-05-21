@@ -4,6 +4,7 @@ import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
+import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { getPageDefinition } from '@/config/page-registry'
 import { useAuthAppSync } from '@/hooks/useAuthAppSync'
 import { useAuthHeartbeat } from '@/hooks/useAuthHeartbeat'
@@ -320,7 +321,9 @@ export function AppLayout() {
 
           <Content className="leo-content">
             <div className="leo-content-inner">
-              <Outlet key={routePageContext.openPageKey} />
+              <AppErrorBoundary>
+                <Outlet key={routePageContext.openPageKey} />
+              </AppErrorBoundary>
             </div>
           </Content>
         </Layout>
