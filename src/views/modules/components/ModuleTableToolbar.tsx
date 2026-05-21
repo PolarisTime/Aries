@@ -99,7 +99,6 @@ export function ModuleTableToolbar({
           pageSize={pageSize}
           total={total}
           size="small"
-          showQuickJumper
           showSizeChanger
           showTotal={(t) => `共 ${t} 条`}
           onChange={onPageChange}
