@@ -167,8 +167,8 @@ export function ModuleEditorWorkspace({
         saving={saving}
         onAddItem={addItem}
         onCancel={onClose}
-        onSave={() => {
-          void handleSave
+        onSave={(audit) => {
+          void handleSave(audit)
         }}
         onOpenParentSelector={openParentSelector}
         onCloseParentSelector={closeParentSelector}
