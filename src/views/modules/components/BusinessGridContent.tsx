@@ -88,7 +88,7 @@ export function BusinessGridContent({
   }, [])
 
   return (
-    <Card className="module-grid-card" styles={{ body: { padding: 0 } }}>
+    <Card className="module-grid-card" styles={{ body: { padding: '12px 16px 0' } }}>
       <ModuleFilterToolbar
         config={config}
         filters={filters}
