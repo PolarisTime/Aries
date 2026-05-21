@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
+import BorderBeam from 'antd/es/border-beam'
 import Card from 'antd/es/card'
 import Form from 'antd/es/form'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -238,25 +239,28 @@ export function LoginView() {
       <div className="login-scene">
         <div className={`login-card-inner${flipped ? ' is-flipped' : ''}`}>
           <div className="login-card-face">
-            <Card className="login-form-card">
-              <LoginPasswordForm
-                captchaImageSrc={captchaImageSrc}
-                loading={loading}
-                onLoadCaptcha={() => {
-                  void loadCaptcha()
-                }}
-                onSubmit={(values) => {
-                  void handleLogin(values)
-                }}
-                shouldShowCaptcha={shouldShowCaptcha}
-                savedLoginName={savedSession?.loginName || ''}
-                form={form}
-              />
-            </Card>
+            <BorderBeam>
+              <Card className="login-form-card">
+                <LoginPasswordForm
+                  captchaImageSrc={captchaImageSrc}
+                  loading={loading}
+                  onLoadCaptcha={() => {
+                    void loadCaptcha()
+                  }}
+                  onSubmit={(values) => {
+                    void handleLogin(values)
+                  }}
+                  shouldShowCaptcha={shouldShowCaptcha}
+                  savedLoginName={savedSession?.loginName || ''}
+                  form={form}
+                />
+              </Card>
+            </BorderBeam>
           </div>
           <div className="login-card-face is-back">
-            <Card className="login-form-card">
-              <LoginTotpPanel
+            <BorderBeam>
+              <Card className="login-form-card">
+                <LoginTotpPanel
                 countdownText={countdownText}
                 isExpired={isExpired}
                 isExpiring={isExpiring}
@@ -270,6 +274,7 @@ export function LoginView() {
                 activeLoginName={activeLoginName}
               />
             </Card>
+            </BorderBeam>
           </div>
         </div>
       </div>
