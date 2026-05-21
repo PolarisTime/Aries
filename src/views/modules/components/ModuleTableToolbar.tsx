@@ -99,7 +99,6 @@ export function ModuleTableToolbar({
           pageSize={pageSize}
           total={total}
           size="small"
-          showTotal={(t) => `共 ${t} 条`}
           onChange={onPageChange}
           itemRender={(_, type, originalElement) => {
             if (type === 'prev') return <a>上一页</a>
