@@ -101,7 +101,13 @@ export function ModuleTableToolbar({
           size="small"
           showQuickJumper
           showSizeChanger
+          showTotal={(t) => `共 ${t} 条`}
           onChange={onPageChange}
+          itemRender={(_, type, originalElement) => {
+            if (type === 'prev') return <a>上一页</a>
+            if (type === 'next') return <a>下一页</a>
+            return originalElement
+          }}
         />
         <Button
           icon={<ReloadOutlined />}
