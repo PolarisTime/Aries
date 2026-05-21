@@ -43,7 +43,7 @@ export function BusinessGridTable({
   onSortingChange,
 }: Props) {
   const shellRef = useRef<HTMLDivElement | null>(null)
-  const [scrollY, setScrollY] = useState<number | undefined>(undefined)
+  const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
   const visibleColumns = useDeferredColumns(columns)
 
   useEffect(() => {
@@ -56,14 +56,10 @@ export function BusinessGridTable({
       if (containerHeight <= 0) return
       const headerHeight =
         shell.querySelector('.ant-table-thead')?.getBoundingClientRect().height || 0
-      const bodyEl = shell.querySelector('.ant-table-body') as HTMLElement | null
-      const bodyNaturalHeight = bodyEl?.scrollHeight || 0
-      const availableHeight = containerHeight - headerHeight
-      // 内容能完整显示时不设置 scrollY
-      const nextScrollY =
-        bodyNaturalHeight > availableHeight
-          ? Math.max(MIN_TABLE_BODY_SCROLL_Y, availableHeight)
-          : undefined
+      const nextScrollY = Math.max(
+        MIN_TABLE_BODY_SCROLL_Y,
+        containerHeight - headerHeight,
+      )
       setScrollY((prev) =>
         prev === nextScrollY ? prev : nextScrollY,
       )
@@ -101,12 +97,8 @@ export function BusinessGridTable({
     return totalWidth + 40
   }, [visibleColumns])
 
-  const scroll = useMemo<{ x: number; y?: number }>(
-    () => {
-      const s: { x: number; y?: number } = { x: scrollX }
-      if (scrollY !== undefined) s.y = scrollY
-      return s
-    },
+  const scroll = useMemo(
+    () => ({ x: scrollX, y: scrollY }),
     [scrollX, scrollY],
   )
 
