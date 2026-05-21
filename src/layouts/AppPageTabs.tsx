@@ -1,9 +1,5 @@
 import Tabs from 'antd/es/tabs'
-import type {
-  CSSProperties,
-  KeyboardEvent as ReactKeyboardEvent,
-  MouseEvent as ReactMouseEvent,
-} from 'react'
+import type { CSSProperties } from 'react'
 import type { OpenPage } from '@/hooks/useOpenPages'
 
 interface AppPageTabsProps {
@@ -13,21 +9,6 @@ interface AppPageTabsProps {
   pages: OpenPage[]
   shellFontStyle: CSSProperties
   closePage: (key: string, navigate: (path: string) => void) => void
-}
-
-function buildPageTabLabel(page: OpenPage, onClose: (key: string) => void) {
-  return (
-    <span
-      className="app-page-tab-label"
-      onDoubleClick={() => {
-        if (page.closable) {
-          onClose(page.key)
-        }
-      }}
-    >
-      {page.title}
-    </span>
-  )
 }
 
 export function AppPageTabs({
@@ -40,8 +21,7 @@ export function AppPageTabs({
 }: AppPageTabsProps) {
   const tabItems = pages.map((page) => ({
     key: page.key,
-    label: buildPageTabLabel(page, (key) => closePage(key, onNavigateToPath)),
-    closable: page.closable,
+    label: page.title,
   }))
 
   const handleTabChange = (key: string) => {
@@ -51,27 +31,15 @@ export function AppPageTabs({
     }
   }
 
-  const handleTabEdit = (
-    event: ReactMouseEvent | ReactKeyboardEvent | string,
-    action: 'add' | 'remove',
-  ) => {
-    if (action === 'remove' && typeof event === 'string') {
-      closePage(event, onNavigateToPath)
-    }
-  }
-
   return (
     <div
       className={`tab-layout-tabs${isTopNavigationLayout ? ' tab-layout-tabs-top-nav' : ''}`}
       style={shellFontStyle}
     >
       <Tabs
-        type="editable-card"
-        hideAdd
         activeKey={activeKey}
         items={tabItems}
         onChange={handleTabChange}
-        onEdit={handleTabEdit}
         size="small"
       />
     </div>
