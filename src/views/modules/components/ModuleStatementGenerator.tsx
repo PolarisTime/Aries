@@ -4,8 +4,8 @@ import Space from 'antd/es/space'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useMemo, useState } from 'react'
+import { AppResultModal } from '@/components/AppResultModal'
 import type { ModuleRecord } from '@/types/module-page'
-import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 
 const TYPE_LABEL: Record<string, string> = {
@@ -60,6 +60,10 @@ export function ModuleStatementGenerator({
   onGenerate,
 }: Props) {
   const [generating, setGenerating] = useState(false)
+  const [result, setResult] = useState<{
+    status: 'success' | 'error'
+    message: string
+  } | null>(null)
 
   const summary = useMemo(() => {
     if (!selectedRows.length) return null
@@ -77,10 +81,12 @@ export function ModuleStatementGenerator({
     try {
       setGenerating(true)
       await onGenerate(summary.counterparty, summary.start, summary.end)
-      message.success('对账单已生成')
-      onClose()
+      setResult({ status: 'success', message: '对账单已生成' })
     } catch (err) {
-      if (err instanceof Error) message.error(err.message)
+      setResult({
+        status: 'error',
+        message: err instanceof Error ? err.message : '生成失败，请稍后重试',
+      })
     } finally {
       setGenerating(false)
     }
@@ -132,5 +138,27 @@ export function ModuleStatementGenerator({
         </div>
       )}
     </Modal>
+
+      <AppResultModal
+        open={!!result}
+        status={result?.status ?? 'success'}
+        subTitle={result?.message}
+        footer={
+          <Button
+            type="primary"
+            onClick={() => {
+              setResult(null)
+              if (result?.status === 'success') onClose()
+            }}
+          >
+            知道了
+          </Button>
+        }
+        onClose={() => {
+          setResult(null)
+          if (result?.status === 'success') onClose()
+        }}
+      />
+    </>
   )
 }
