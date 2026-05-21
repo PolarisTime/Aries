@@ -379,6 +379,7 @@ export function useBusinessGridPage({
     total,
     pageSize,
     setCurrentPage,
+    setPageSize,
     refreshModuleQueries,
     rowSelection,
     selectedRowKeys,
