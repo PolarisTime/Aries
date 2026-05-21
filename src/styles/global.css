@@ -761,9 +761,14 @@ body,
   left: 0;
   right: 0;
   z-index: 80;
+  height: var(--app-tabs-height);
   padding: 0 16px;
   background: var(--theme-surface);
   border-bottom: 1px solid var(--theme-border-subtle);
+}
+
+.tab-layout-tabs .ant-tabs {
+  height: 100%;
 }
 
 .tab-layout-tabs.ant-tabs {
