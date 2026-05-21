@@ -106,6 +106,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           }
           state.setCurrentPage(page)
         }}
+        selectedCount={state.selectedRowKeys.length}
       />
 
       <BusinessGridOverlays
