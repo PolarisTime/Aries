@@ -1,15 +1,12 @@
 import {
-  CheckCircleOutlined,
   DownloadOutlined,
-  LoadingOutlined,
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Flex from 'antd/es/flex'
+import Pagination from 'antd/es/pagination'
 import Space from 'antd/es/space'
-import Spin from 'antd/es/spin'
-import Typography from 'antd/es/typography'
 import type { ReactNode } from 'react'
 import type { ModuleActionDefinition } from '@/types/module-page'
 import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
@@ -18,32 +15,34 @@ interface Props {
   canCreate: boolean
   canExport: boolean
   total: number
+  currentPage: number
+  pageSize: number
   loading: boolean
   exporting: boolean
   onCreate: () => void
   onExport: () => void
   onRefresh: () => void
+  onPageChange: (page: number, pageSize: number) => void
   extra?: ReactNode
   toolbarActions?: ModuleActionDefinition[]
   onAction?: (action: ModuleActionDefinition) => void
-  isFetchingNextPage?: boolean
-  hasNextPage?: boolean
 }
 
 export function ModuleTableToolbar({
   canCreate,
   canExport,
   total,
+  currentPage,
+  pageSize,
   loading,
   exporting,
   onCreate,
   onExport,
   onRefresh,
+  onPageChange,
   extra,
   toolbarActions = [],
   onAction,
-  isFetchingNextPage = false,
-  hasNextPage = false,
 }: Props) {
   return (
     <Flex
@@ -95,21 +94,15 @@ export function ModuleTableToolbar({
         {extra}
       </Space>
       <Space size="middle">
-        {isFetchingNextPage ? (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            <Spin
-              indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />}
-              size="small"
-            />
-            <span style={{ marginLeft: 6 }}>加载中...</span>
-          </Typography.Text>
-        ) : !hasNextPage && total > 0 ? (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 14 }} />
-            <span style={{ marginLeft: 6 }}>已加载全部数据</span>
-          </Typography.Text>
-        ) : null}
-        <Typography.Text type="secondary">共 {total} 条</Typography.Text>
+        <Pagination
+          current={currentPage}
+          pageSize={pageSize}
+          total={total}
+          size="small"
+          showQuickJumper
+          showSizeChanger
+          onChange={onPageChange}
+        />
         <Button
           icon={<ReloadOutlined />}
           onClick={onRefresh}

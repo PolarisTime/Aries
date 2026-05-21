@@ -1,29 +1,13 @@
 import { useLocation } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
-import Spin from 'antd/es/spin'
-import { lazy, Suspense } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
-import { WorkspaceContainer } from '@/views/modules/components/WorkspaceContainer'
 import { isEditBlockedByStatus } from '@/views/modules/module-behavior-registry'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
-import { useEditorTabsAdapter } from '@/views/modules/useEditorTabsAdapter'
-
-const ModuleEditorWorkspace = lazy(() =>
-  import('@/views/modules/components/ModuleEditorWorkspace').then((module) => ({
-    default: module.ModuleEditorWorkspace,
-  })),
-)
-
-const EditorTabBar = lazy(() =>
-  import('@/views/modules/components/EditorTabBar').then((module) => ({
-    default: module.EditorTabBar,
-  })),
-)
 
 interface Props {
   pageDef: AppPageDefinition
@@ -46,20 +30,6 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     openDetail: state.openDetail,
   })
 
-  const editorTabs = useEditorTabsAdapter({
-    moduleKey,
-    editRecord: state.editRecord,
-    editorOpen: state.editorOpen,
-    configTitle: state.config?.title || '',
-    onCloseEditor: state.closeEditor,
-  })
-
-  const hasActiveEditor = editorTabs.activeKey !== null
-
-  if (state.configLoading || (state.isLoading && state.records.length === 0)) {
-    return <Spin className="flex justify-center mt-96" />
-  }
-
   if (!state.config) {
     return (
       <Empty description={`模块配置未找到: ${moduleKey}`} className="mt-96" />
@@ -68,98 +38,82 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
 
   return (
     <div key={moduleKey} className="page-stack module-page-stack">
-      <WorkspaceContainer hasActiveEditor={hasActiveEditor}>
-        <BusinessGridContent
-          key={moduleKey}
-          moduleKey={moduleKey}
-          config={state.config!}
-          filters={state.filters}
-          loading={state.isLoading || state.editorLockLoading}
-          exporting={state.exporting}
-          records={state.records}
-          hasNextPage={state.hasNextPage}
-          fetchNextPage={() => {
-            void state.fetchNextPage()
-          }}
-          isFetchingNextPage={state.isFetchingNextPage}
-          warningMessage={state.warningMessage}
-          columnVisibleKeys={state.columnVisibleKeys}
-          columnOrder={state.columnOrder}
-          columns={state.antdColumns}
-          rowSelection={state.rowSelection}
-          rowClassName={state.getRowClassName}
-          onUpdateFilter={state.updateFilter}
-          onSearch={state.handleSearch}
-          onReset={state.handleReset}
-          onCreate={() => {
-            void state.openEditor(null)
-          }}
-          onExport={() => {
-            void state.handleExport()
-          }}
-          onRefresh={() => {
-            void state.refreshModuleQueries()
-          }}
-          onToggleColumn={state.toggleColumn}
-          onColumnOrderChange={state.onColumnOrderChange}
-          onRowClick={() => {}}
-          onRowDoubleClick={(record) => {
-            if (state.canUpdateRecord && !isEditBlockedByStatus(record.status)) {
-              void state.openEditor(record)
-              return
+      <BusinessGridContent
+        key={moduleKey}
+        moduleKey={moduleKey}
+        config={state.config}
+        filters={state.filters}
+        loading={state.isLoading || state.editorLockLoading}
+        exporting={state.exporting}
+        records={state.records}
+        total={state.total}
+        currentPage={state.currentPage}
+        pageSize={state.pageSize}
+        warningMessage={state.warningMessage}
+        columnVisibleKeys={state.columnVisibleKeys}
+        columnOrder={state.columnOrder}
+        columns={state.antdColumns}
+        rowSelection={state.rowSelection}
+        rowClassName={state.getRowClassName}
+        onUpdateFilter={state.updateFilter}
+        onSearch={state.handleSearch}
+        onReset={state.handleReset}
+        onCreate={() => {
+          void state.openEditor(null)
+        }}
+        onExport={() => {
+          void state.handleExport()
+        }}
+        onRefresh={() => {
+          void state.refreshModuleQueries()
+        }}
+        onToggleColumn={state.toggleColumn}
+        onColumnOrderChange={state.onColumnOrderChange}
+        onRowClick={(record) => {
+          const id = String(record.id)
+          state.setSelectedRowKeys((prev) => {
+            if (prev.includes(id)) return prev.filter((k) => k !== id)
+            return [...prev, id]
+          })
+          state.setSelectedRowMap((prev) => {
+            if (prev[id]) {
+              const next = { ...prev }
+              delete next[id]
+              return next
             }
-            if (state.canViewRecords) {
-              void state.openDetail(record)
-            }
-          }}
-          canCreate={state.canCreateRecord}
-          canExport={state.canExportData}
-          toolbarActions={state.visibleToolbarActions}
-          onAction={(action) => {
-            void state.handleAction(action)
-          }}
-          onSortingChange={state.onSortingChange}
-          containerRef={state.containerRef}
-        />
-        {hasActiveEditor && state.config ? (
-          <Suspense fallback={null}>
-            <EditorTabBar
-              sessions={editorTabs.sessions}
-              activeKey={editorTabs.activeKey}
-              onSwitch={(key) => editorTabs.switchTab(key)}
-              onClose={(key) => {
-                void editorTabs.closeTab(key)
-              }}
-            />
-            <ModuleEditorWorkspace
-              open={state.editorOpen}
-              config={state.config}
-              record={state.editRecord}
-              moduleKey={moduleKey}
-              canSave={
-                state.editRecord ? state.canUpdateRecord : state.canCreateRecord
-              }
-              canAudit={state.canAuditRecord}
-              lineItemsLocked={state.editorLineItemsLocked}
-              lockedLineItemsNotice={
-                state.editorLineItemsLocked ? state.lockedLineItemsNotice : ''
-              }
-              onClose={state.closeEditor}
-              onSaved={() => {
-                state.setSelectedRowKeys([])
-                state.handleEditorSaved()
-              }}
-              variant="inline"
-              sessionKey={editorTabs.activeKey ?? undefined}
-            />
-          </Suspense>
-        ) : null}
-      </WorkspaceContainer>
+            return { ...prev, [id]: record }
+          })
+        }}
+        onRowDoubleClick={(record) => {
+          if (state.canUpdateRecord && !isEditBlockedByStatus(record.status)) {
+            void state.openEditor(record)
+            return
+          }
+          if (state.canViewRecords) {
+            void state.openDetail(record)
+          }
+        }}
+        canCreate={state.canCreateRecord}
+        canExport={state.canExportData}
+        toolbarActions={state.visibleToolbarActions}
+        onAction={(action) => {
+          void state.handleAction(action)
+        }}
+        onSortingChange={state.onSortingChange}
+        onPageChange={(page, ps) => {
+          if (ps !== state.pageSize) {
+            state.setPageSize(ps)
+          }
+          state.setCurrentPage(page)
+        }}
+      />
 
       <BusinessGridOverlays
         moduleKey={moduleKey}
         resourceKey={pageDef.resourceKey}
         config={state.config}
+        editRecord={state.editRecord}
+        editorOpen={state.editorOpen}
         attachOpen={state.overlays.attachOpen}
         attachRecordId={state.overlays.attachRecordId}
         detailOpen={state.detailOpen}
@@ -169,6 +123,20 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         customerStatementOpen={state.overlays.customerStatementOpen}
         freightStatementOpen={state.overlays.freightStatementOpen}
         freightPickupOpen={state.overlays.freightPickupOpen}
+        selectedRows={state.selectedRows}
+        canSave={
+          state.editRecord ? state.canUpdateRecord : state.canCreateRecord
+        }
+        canAudit={state.canAuditRecord}
+        lineItemsLocked={state.editorLineItemsLocked}
+        lockedLineItemsNotice={
+          state.editorLineItemsLocked ? state.lockedLineItemsNotice : ''
+        }
+        onCloseEditor={state.closeEditor}
+        onSaved={() => {
+          state.setSelectedRowKeys([])
+          state.handleEditorSaved()
+        }}
         onCloseDetail={state.closeDetail}
         onCloseAttachment={state.overlays.closeAttachment}
         onCloseSupplierStatement={state.overlays.closeSupplierStatement}

@@ -165,7 +165,7 @@ export function useBusinessGridTable({
             width: header.column.columnDef.meta?.width,
             align: (header.column.columnDef.meta?.align ??
               'center') as ColumnType<ModuleRecord>['align'],
-            ellipsis: false,
+            ellipsis: true,
             sorter: header.column.getCanSort(),
             sortOrder:
               header.column.getIsSorted() === 'asc'

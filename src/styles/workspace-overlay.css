@@ -12,12 +12,6 @@
   padding: 0;
 }
 
-.workspace-overlay--drawer {
-  display: flex;
-  justify-content: flex-end;
-  overflow: hidden;
-}
-
 .workspace-overlay-mask {
   position: absolute;
   inset: 0;
@@ -31,13 +25,6 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.workspace-overlay-panel--drawer {
-  max-width: 1200px;
-  height: 100%;
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
-  animation: workspace-panel-slide-in 0.3s ease;
 }
 
 .workspace-overlay-panel--workspace {
@@ -230,33 +217,6 @@
   padding: 12px 16px;
   border-top: 1px solid #f0f0f0;
   background: #fff;
-}
-
-@keyframes workspace-mask-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes workspace-panel-slide-in {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-@keyframes workspace-panel-pop-in {
-  from {
-    opacity: 0.96;
-  }
-  to {
-    opacity: 1;
-  }
 }
 
 @media (max-width: 768px) {

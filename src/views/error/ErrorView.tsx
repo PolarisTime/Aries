@@ -1,3 +1,4 @@
+import Button from 'antd/es/button'
 import Typography from 'antd/es/typography'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useNavigate, useRouter } from '@tanstack/react-router'
@@ -51,7 +52,7 @@ export function ErrorView() {
             <Typography.Text
               type="secondary"
               copyable={{ text: traceId }}
-              style={{ fontFamily: 'monospace', fontSize: 11 }}
+              className="font-mono text-[11px]"
             >
               Trace ID: {traceId}
             </Typography.Text>
@@ -61,9 +62,7 @@ export function ErrorView() {
       showHomeButton
       showBackButton
       extra={
-        <button type="button" className="ant-btn ant-btn-default" onClick={handleRetry}>
-          重试
-        </button>
+        <Button onClick={handleRetry}>重试</Button>
       }
     />
   )
