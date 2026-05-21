@@ -54,8 +54,8 @@
   --app-tab-card-height: 34px;
   --app-tab-card-top-gap: 6px;
   --app-top-offset: calc(var(--app-header-height) + var(--app-tabs-height));
-  --app-content-padding: 16px;
-  --app-page-gap: 12px;
+  --app-content-padding: 0px;
+  --app-page-gap: 0px;
   --app-card-body-padding: 12px;
   --app-table-cell-padding-y: 12px;
   --app-table-th-padding-y: 10px;

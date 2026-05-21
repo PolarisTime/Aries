@@ -1745,6 +1745,11 @@ body,
 .module-detail-table {
   width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.module-detail-table .ant-table-body {
+  overflow-y: hidden !important;
 }
 
 .module-detail-table.ant-table-wrapper,
@@ -1854,7 +1859,7 @@ body,
     --app-header-height: 56px;
     --app-tabs-height: 36px;
     --app-tab-card-height: 32px;
-    --app-content-padding: 12px;
+    --app-content-padding: 0px;
     --app-card-body-padding: 10px;
   }
 
@@ -1881,7 +1886,7 @@ body,
 @media (max-width: 1280px) {
   :root {
     --app-control-height: 32px;
-    --app-content-padding: 8px;
+    --app-content-padding: 0px;
     --app-card-body-padding: 8px;
   }
 
@@ -1962,7 +1967,7 @@ body,
 
 @media (max-width: 720px) {
   :root {
-    --app-content-padding: 6px;
+    --app-content-padding: 0px;
   }
 
   .header-page-meta,
