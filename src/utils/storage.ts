@@ -8,6 +8,8 @@ export interface PersonalSettings {
   fontSize?: number
   layoutMode?: 'sider' | 'top'
   themeMode?: ThemeMode
+  watermarkEnabled?: boolean
+  watermarkContent?: string
 }
 
 export interface BusinessListCacheEntry<T = unknown> {

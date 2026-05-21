@@ -2,6 +2,7 @@ import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import Layout from 'antd/es/layout'
 import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
+import Watermark from 'antd/es/watermark'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
@@ -70,6 +71,12 @@ export function AppLayout() {
     reset: resetPersonalSettings,
     save: savePersonalSettings,
     load: loadPersonalSettings,
+    watermarkEnabled,
+    setWatermarkEnabled,
+    watermarkContent,
+    setWatermarkContent,
+    appliedWatermarkEnabled,
+    appliedWatermarkContent,
   } = usePersonalSettings()
 
   const isTopNavigationLayout = appliedLayoutMode === 'top'
@@ -209,8 +216,18 @@ export function AppLayout() {
     [appliedFontSize, collapsed, isTopNavigationLayout],
   )
 
+  const watermarkContent = appliedWatermarkEnabled
+    ? (appliedWatermarkContent || currentUserLoginName)
+    : undefined
+
   return (
     <AppAntdProvider>
+      <Watermark
+        content={watermarkContent}
+        font={{ fontSize: 18, color: 'rgba(0,0,0,0.08)' }}
+        gap={[200, 200]}
+        style={{ minHeight: '100dvh' }}
+      >
       <Layout className={rootClassName} style={shellFontStyle}>
         <div className="leo-page-loader" />
 
@@ -339,8 +356,13 @@ export function AppLayout() {
           onLayoutModeChange={setLayoutMode}
           themeMode={themeMode}
           onThemeModeChange={setThemeMode}
+          watermarkEnabled={watermarkEnabled}
+          watermarkContent={watermarkContent}
+          onWatermarkEnabledChange={setWatermarkEnabled}
+          onWatermarkContentChange={setWatermarkContent}
         />
       </Layout>
+      </Watermark>
     </AppAntdProvider>
   )
 }
