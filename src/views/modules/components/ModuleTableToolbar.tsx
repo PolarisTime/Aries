@@ -101,6 +101,7 @@ export function ModuleTableToolbar({
           pageSize={pageSize}
           total={total}
           size="small"
+          showSizeChanger={false}
           showTotal={(t) =>
             selectedCount > 0
               ? `已选 ${selectedCount} / 共 ${t} 条`
