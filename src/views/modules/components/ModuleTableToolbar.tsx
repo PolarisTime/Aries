@@ -17,6 +17,7 @@ interface Props {
   total: number
   currentPage: number
   pageSize: number
+  selectedCount: number
   loading: boolean
   exporting: boolean
   onCreate: () => void
@@ -34,6 +35,7 @@ export function ModuleTableToolbar({
   total,
   currentPage,
   pageSize,
+  selectedCount,
   loading,
   exporting,
   onCreate,
@@ -99,6 +101,11 @@ export function ModuleTableToolbar({
           pageSize={pageSize}
           total={total}
           size="small"
+          showTotal={(t) =>
+            selectedCount > 0
+              ? `已选 ${selectedCount} / 共 ${t} 条`
+              : `共 ${t} 条`
+          }
           onChange={onPageChange}
           itemRender={(_, type, originalElement) => {
             if (type === 'prev') return <a>上一页</a>

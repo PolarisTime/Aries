@@ -46,6 +46,7 @@ interface Props {
   onAction: (action: ModuleActionDefinition) => void
   onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
   onPageChange: (page: number, pageSize: number) => void
+  selectedCount: number
 }
 
 export function BusinessGridContent({
@@ -80,6 +81,7 @@ export function BusinessGridContent({
   onAction,
   onSortingChange,
   onPageChange,
+  selectedCount,
 }: Props) {
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
@@ -103,6 +105,7 @@ export function BusinessGridContent({
         total={total}
         currentPage={currentPage}
         pageSize={pageSize}
+        selectedCount={selectedCount}
         loading={loading}
         exporting={exporting}
         onPageChange={onPageChange}
