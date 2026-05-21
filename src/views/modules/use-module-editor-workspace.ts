@@ -219,6 +219,11 @@ export function useModuleEditorWorkspace({
   const [parentSelectorOpen, setParentSelectorOpen] = useState(false)
   const [parentImporting, setParentImporting] = useState(false)
   const [items, setItems] = useState<ModuleLineItem[]>([])
+  const [saveResult, setSaveResult] = useState<{
+    status: 'success' | 'error' | 'warning'
+    message: string
+    traceId?: string
+  } | null>(null)
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const isEdit = !!record
   const { data: systemSettings = [] } = useQuery({
@@ -475,24 +480,28 @@ export function useModuleEditorWorkspace({
           draftRecord,
           savedRecord: savedResult.data,
         })
-        message.success(isEdit ? '更新成功' : '创建成功')
-        if (preallocatedIdWarning) {
-          modal.warning({
-            title: preallocatedIdWarning.title,
-            content: preallocatedIdWarning.content,
-            okText: '知道了',
-          })
-        }
         await refreshModuleQueries()
         onSaved()
-        onClose()
+        if (preallocatedIdWarning) {
+          setSaveResult({
+            status: 'warning',
+            message: preallocatedIdWarning.content,
+          })
+        } else {
+          onClose()
+        }
       } catch (err) {
         if (isAntdFormValidationError(err)) {
           // Form 已内联展示校验错误，不重复提示
         } else if (err instanceof Error) {
-          message.error(err.message || '保存失败')
+          const traceId = (err as Error & { traceId?: string }).traceId
+          setSaveResult({
+            status: 'error',
+            message: err.message || '保存失败',
+            traceId,
+          })
         } else {
-          message.error('保存失败，请稍后重试')
+          setSaveResult({ status: 'error', message: '保存失败，请稍后重试' })
         }
       } finally {
         setSaving(false)
@@ -628,6 +637,8 @@ export function useModuleEditorWorkspace({
     parentImporting,
     parentSelectorOpen,
     primaryNoLoading,
+    saveResult,
+    clearSaveResult: useCallback(() => setSaveResult(null), []),
     saving,
     setItems,
     handleFormValuesChange,
