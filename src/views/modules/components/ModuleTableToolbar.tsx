@@ -99,7 +99,6 @@ export function ModuleTableToolbar({
           pageSize={pageSize}
           total={total}
           size="small"
-          showSizeChanger
           showTotal={(t) => `共 ${t} 条`}
           onChange={onPageChange}
           itemRender={(_, type, originalElement) => {
@@ -112,7 +111,9 @@ export function ModuleTableToolbar({
           icon={<ReloadOutlined />}
           onClick={onRefresh}
           loading={loading}
-        />
+        >
+          刷新
+        </Button>
       </Space>
     </Flex>
   )
