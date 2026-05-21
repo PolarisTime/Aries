@@ -89,6 +89,18 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   const [appliedThemeMode, setAppliedThemeMode] = useState<ThemeMode>(
     initialSettings.themeMode,
   )
+  const [watermarkEnabled, setWatermarkEnabled] = useState(
+    initialSettings.watermarkEnabled,
+  )
+  const [appliedWatermarkEnabled, setAppliedWatermarkEnabled] = useState(
+    initialSettings.watermarkEnabled,
+  )
+  const [watermarkContent, setWatermarkContent] = useState(
+    initialSettings.watermarkContent,
+  )
+  const [appliedWatermarkContent, setAppliedWatermarkContent] = useState(
+    initialSettings.watermarkContent,
+  )
 
   const applySettings = useCallback(
     (settings: PersonalSettings | null | undefined) => {
@@ -103,6 +115,10 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
       setAppliedLayoutMode(normalized.layoutMode)
       setThemeMode(normalized.themeMode)
       setAppliedThemeMode(normalized.themeMode)
+      setWatermarkEnabled(normalized.watermarkEnabled)
+      setAppliedWatermarkEnabled(normalized.watermarkEnabled)
+      setWatermarkContent(normalized.watermarkContent)
+      setAppliedWatermarkContent(normalized.watermarkContent)
     },
     [defaultFontSize, defaultLayoutMode],
   )
@@ -123,22 +139,34 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setFontSize(appliedFontSize)
     setLayoutMode(appliedLayoutMode)
     setThemeMode(appliedThemeMode)
+    setWatermarkEnabled(appliedWatermarkEnabled)
+    setWatermarkContent(appliedWatermarkContent)
     setVisible(false)
-  }, [appliedFontSize, appliedLayoutMode, appliedThemeMode])
+  }, [appliedFontSize, appliedLayoutMode, appliedThemeMode, appliedWatermarkEnabled, appliedWatermarkContent])
 
   const reset = useCallback(() => {
     setFontSize(defaultFontSize)
     setLayoutMode(defaultLayoutMode)
     setThemeMode('system')
+    setWatermarkEnabled(false)
+    setWatermarkContent('')
   }, [defaultFontSize, defaultLayoutMode])
 
   const save = useCallback(() => {
     setAppliedFontSize(fontSize)
     setAppliedLayoutMode(layoutMode)
     setAppliedThemeMode(themeMode)
-    setPersonalSettings({ fontSize, layoutMode, themeMode })
+    setAppliedWatermarkEnabled(watermarkEnabled)
+    setAppliedWatermarkContent(watermarkContent)
+    setPersonalSettings({
+      fontSize,
+      layoutMode,
+      themeMode,
+      watermarkEnabled,
+      watermarkContent,
+    })
     setVisible(false)
-  }, [fontSize, layoutMode, themeMode])
+  }, [fontSize, layoutMode, themeMode, watermarkEnabled, watermarkContent])
 
   return {
     visible,
@@ -150,6 +178,12 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setLayoutMode,
     themeMode,
     setThemeMode,
+    watermarkEnabled,
+    setWatermarkEnabled,
+    watermarkContent,
+    setWatermarkContent,
+    appliedWatermarkEnabled,
+    appliedWatermarkContent,
     open,
     close,
     reset,
