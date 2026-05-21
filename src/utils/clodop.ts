@@ -7,7 +7,7 @@ let licenseApplied = false
 const scriptUrls = [
   'http://localhost:8000/CLodopfuncs.js?priority=1',
   'http://localhost:18000/CLodopfuncs.js?priority=1',
-  'https://localhost:8443/CLodopfuncs.js?priority=1',
+  // 'https://localhost:8443/CLodopfuncs.js?priority=1',
 ]
 
 function appendScript(src: string, onDone: (success: boolean) => void) {

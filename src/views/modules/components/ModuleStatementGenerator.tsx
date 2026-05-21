@@ -1,84 +1,82 @@
-import { useQuery } from '@tanstack/react-query'
-import DatePicker from 'antd/es/date-picker'
-import Form from 'antd/es/form'
+import Button from 'antd/es/button'
 import Modal from 'antd/es/modal'
-import Select from 'antd/es/select'
-import { useEffect, useMemo, useState } from 'react'
-import { fetchCarrierOptions } from '@/api/carrier-options'
-import { fetchCustomerOptions } from '@/api/customer-options'
-import { fetchSupplierOptions } from '@/api/supplier-options'
+import Space from 'antd/es/space'
+import Tag from 'antd/es/tag'
+import Typography from 'antd/es/typography'
+import { useMemo, useState } from 'react'
+import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
-import {
-  buildStatementCounterpartyOptions,
-  filterStatementCounterpartyOptions,
-} from '@/views/modules/module-statement-generator-options'
+import { asString } from '@/utils/type-narrowing'
+
+const TYPE_LABEL: Record<string, string> = {
+  supplier: '供应商',
+  customer: '客户',
+  freight: '物流',
+}
+
+const DATE_FIELD: Record<string, keyof ModuleRecord> = {
+  supplier: 'inboundDate',
+  customer: 'deliveryDate',
+  freight: 'billTime',
+}
+
+const NAME_FIELD: Record<string, keyof ModuleRecord> = {
+  supplier: 'supplierName',
+  customer: 'customerName',
+  freight: 'carrierName',
+}
+
+function extractCounterparty(rows: ModuleRecord[], type: string): string {
+  const nameField = NAME_FIELD[type]
+  const names = new Set(rows.map((r) => asString(r[nameField])).filter(Boolean))
+  if (names.size === 0) throw new Error('未找到对方单位信息')
+  if (names.size > 1) throw new Error('选中的单据包含多个对方单位，请只勾选同一单位的单据')
+  return [...names][0]
+}
+
+function extractDateRange(rows: ModuleRecord[], type: string): { start: string; end: string } {
+  const dateField = DATE_FIELD[type]
+  const dates = rows
+    .map((r) => asString(r[dateField]))
+    .filter(Boolean)
+    .sort()
+  if (dates.length === 0) throw new Error('选中的单据缺少日期信息')
+  return { start: dates[0], end: dates[dates.length - 1] }
+}
 
 interface Props {
   open: boolean
   statementType: 'customer' | 'supplier' | 'freight'
+  selectedRows: ModuleRecord[]
   onClose: () => void
-  onGenerate: (
-    counterpartyName: string,
-    startDate: string,
-    endDate: string,
-  ) => Promise<void>
+  onGenerate: (counterpartyName: string, startDate: string, endDate: string) => Promise<void>
 }
 
 export function ModuleStatementGenerator({
   open,
   statementType,
+  selectedRows,
   onClose,
   onGenerate,
 }: Props) {
-  const [form] = Form.useForm()
   const [generating, setGenerating] = useState(false)
-  const [keyword, setKeyword] = useState('')
 
-  useEffect(() => {
-    if (!open) {
-      form.resetFields()
-      setKeyword('')
+  const summary = useMemo(() => {
+    if (!selectedRows.length) return null
+    try {
+      const counterparty = extractCounterparty(selectedRows, statementType)
+      const { start, end } = extractDateRange(selectedRows, statementType)
+      return { counterparty, start, end }
+    } catch {
+      return null
     }
-  }, [form, open])
-
-  const { data: counterpartyOptions = [] } = useQuery({
-    queryKey: ['statement-counterparties', statementType],
-    queryFn: async () => {
-      if (statementType === 'supplier') {
-        return buildStatementCounterpartyOptions(
-          statementType,
-          await fetchSupplierOptions(),
-        )
-      }
-      if (statementType === 'customer') {
-        return buildStatementCounterpartyOptions(
-          statementType,
-          await fetchCustomerOptions(),
-        )
-      }
-      return buildStatementCounterpartyOptions(
-        statementType,
-        await fetchCarrierOptions(),
-      )
-    },
-    enabled: open,
-    staleTime: 300_000,
-  })
-
-  const filteredOptions = useMemo(
-    () => filterStatementCounterpartyOptions(counterpartyOptions, keyword),
-    [counterpartyOptions, keyword],
-  )
+  }, [selectedRows, statementType])
 
   const handleGenerate = async () => {
+    if (!summary) return
     try {
-      const values = await form.validateFields()
       setGenerating(true)
-      await onGenerate(
-        values.counterpartyName,
-        values.dateRange?.[0]?.format('YYYY-MM-DD') || '',
-        values.dateRange?.[1]?.format('YYYY-MM-DD') || '',
-      )
+      await onGenerate(summary.counterparty, summary.start, summary.end)
       message.success('对账单已生成')
       onClose()
     } catch (err) {
@@ -88,41 +86,51 @@ export function ModuleStatementGenerator({
     }
   }
 
+  const typeLabel = TYPE_LABEL[statementType] || ''
+
   return (
     <Modal
-      title={`生成${statementType === 'customer' ? '客户' : statementType === 'supplier' ? '供应商' : '物流'}对账单`}
+      title={`生成${typeLabel}对账单`}
       open={open}
       onCancel={onClose}
-      onOk={() => {
-        void handleGenerate
-      }}
-      confirmLoading={generating}
-      okText="生成对账单"
-      width={640}
-      forceRender
+      footer={
+        <Space>
+          <Button onClick={onClose}>取消</Button>
+          <Button
+            type="primary"
+            loading={generating}
+            disabled={!summary}
+            onClick={() => {
+              void handleGenerate()
+            }}
+          >
+            生成对账单
+          </Button>
+        </Space>
+      }
+      width={520}
+      destroyOnHidden
     >
-      <Form form={form} layout="vertical">
-        <Form.Item
-          name="counterpartyName"
-          label="对方单位"
-          rules={[{ required: true, message: '请选择' }]}
-        >
-          <Select
-            showSearch
-            placeholder="搜索并选择..."
-            filterOption={false}
-            onSearch={setKeyword}
-            options={filteredOptions}
-          />
-        </Form.Item>
-        <Form.Item
-          name="dateRange"
-          label="对账期间"
-          rules={[{ required: true, message: '请选择日期范围' }]}
-        >
-          <DatePicker.RangePicker className="w-full" />
-        </Form.Item>
-      </Form>
+      {selectedRows.length === 0 ? (
+        <Typography.Text type="secondary">请先在列表中勾选需要生成对账单的单据</Typography.Text>
+      ) : !summary ? (
+        <Typography.Text type="danger">无法从选中的单据中提取对账信息，请检查数据完整性</Typography.Text>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">对方单位：</span>
+            <Tag color="blue">{summary.counterparty}</Tag>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">对账期间：</span>
+            <span className="font-medium">{summary.start} ~ {summary.end}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">单据数量：</span>
+            <span className="font-medium">{selectedRows.length} 笔</span>
+          </div>
+        </div>
+      )}
     </Modal>
   )
 }
