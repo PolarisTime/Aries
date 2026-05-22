@@ -61,7 +61,12 @@ export function GeneralSettingsEditorModal({
             isWatermarkContentSetting(record) ? (
               <Form.Item name="numericValue" label={
                 asString(record.settingCode) === WATERMARK_COLOR_CODE ? '水印颜色' : '水印内容'
-              }>
+              }
+                rules={[{
+                  max: asString(record.settingCode) === WATERMARK_COLOR_CODE ? 50 : 64,
+                  message: `最多${asString(record.settingCode) === WATERMARK_COLOR_CODE ? 50 : 64}个字符`,
+                }]}
+              >
                 {asString(record.settingCode) === WATERMARK_COLOR_CODE ? (
                   <Input placeholder="rgba(0,0,0,0.08)" maxLength={50} />
                 ) : (
