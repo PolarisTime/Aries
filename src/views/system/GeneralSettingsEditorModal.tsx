@@ -14,6 +14,9 @@ import {
   isDefaultTaxRateSetting,
   isNumericSetting,
   isWatermarkContentSetting,
+  isWatermarkPropSetting,
+  WATERMARK_FONT_SIZE_CODE,
+  WATERMARK_ROTATE_CODE,
   SYSTEM_SWITCH_HELP_TEXT,
 } from '@/views/system/general-settings-view-utils'
 
@@ -56,21 +59,27 @@ export function GeneralSettingsEditorModal({
           </Form.Item>
           {isNumericSetting(record) ? (
             isWatermarkContentSetting(record) ? (
-              <Form.Item name="numericValue" label="水印内容">
-                <Input.TextArea rows={3} maxLength={200} showCount />
+              <Form.Item name="numericValue" label={
+                asString(record.settingCode) === WATERMARK_COLOR_CODE ? '水印颜色' : '水印内容'
+              }>
+                {asString(record.settingCode) === WATERMARK_COLOR_CODE ? (
+                  <Input placeholder="rgba(0,0,0,0.08)" maxLength={50} />
+                ) : (
+                  <Input.TextArea rows={3} maxLength={200} showCount />
+                )}
               </Form.Item>
             ) : (
               <Form.Item name="numericValue" label="当前值" required>
                 {isDefaultTaxRateSetting(record) ? (
-                  <Input
-                    type="number"
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    addonAfter="%"
-                  />
+                  <Input type="number" min={0} max={1} step={0.01} addonAfter="%" />
                 ) : isDefaultListPageSizeSetting(record) ? (
                   <Input type="number" min={1} max={200} step={1} />
+                ) : isWatermarkPropSetting(record) ? (
+                  asString(record.settingCode) === WATERMARK_FONT_SIZE_CODE ? (
+                    <Input type="number" min={8} max={72} step={1} addonAfter="px" />
+                  ) : (
+                    <Input type="number" min={-90} max={90} step={1} addonAfter="°" />
+                  )
                 ) : (
                   <Input type="number" min={0} />
                 )}
