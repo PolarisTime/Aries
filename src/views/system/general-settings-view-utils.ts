@@ -6,6 +6,9 @@ export const MAX_CONCURRENT_SESSIONS_CODE = 'SYS_MAX_CONCURRENT_SESSIONS'
 export const DEFAULT_LIST_PAGE_SIZE_SETTING_CODE = 'UI_DEFAULT_LIST_PAGE_SIZE'
 export const WATERMARK_ENABLED_CODE = 'UI_WATERMARK_ENABLED'
 export const WATERMARK_CONTENT_CODE = 'SYS_WATERMARK_CONTENT'
+export const WATERMARK_FONT_SIZE_CODE = 'SYS_WATERMARK_FONT_SIZE'
+export const WATERMARK_ROTATE_CODE = 'SYS_WATERMARK_ROTATE'
+export const WATERMARK_COLOR_CODE = 'SYS_WATERMARK_COLOR'
 
 export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_DEFAULT_TAX_RATE:
@@ -82,7 +85,13 @@ export function isDefaultListPageSizeSetting(record: ModuleRecord) {
 }
 
 export function isWatermarkContentSetting(record: ModuleRecord) {
-  return asString(record.settingCode).trim() === WATERMARK_CONTENT_CODE
+  const code = asString(record.settingCode).trim()
+  return code === WATERMARK_CONTENT_CODE || code === WATERMARK_COLOR_CODE
+}
+
+export function isWatermarkPropSetting(record: ModuleRecord) {
+  const code = asString(record.settingCode).trim()
+  return code === WATERMARK_FONT_SIZE_CODE || code === WATERMARK_ROTATE_CODE
 }
 
 export function isNumericSetting(record: ModuleRecord) {
@@ -90,6 +99,7 @@ export function isNumericSetting(record: ModuleRecord) {
     isDefaultTaxRateSetting(record) ||
     isMaxConcurrentSetting(record) ||
     isDefaultListPageSizeSetting(record) ||
+    isWatermarkPropSetting(record) ||
     isWatermarkContentSetting(record)
   )
 }

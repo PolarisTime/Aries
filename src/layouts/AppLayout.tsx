@@ -226,6 +226,15 @@ export function AppLayout() {
   const watermarkContentSetting = systemSettings.find(
     (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_CONTENT',
   )
+  const watermarkFontSize = Number(
+    systemSettings.find((s) => String(s.settingCode).trim() === 'SYS_WATERMARK_FONT_SIZE')?.sampleNo,
+  ) || 18
+  const watermarkRotate = Number(
+    systemSettings.find((s) => String(s.settingCode).trim() === 'SYS_WATERMARK_ROTATE')?.sampleNo,
+  )
+  const watermarkColor = String(
+    systemSettings.find((s) => String(s.settingCode).trim() === 'SYS_WATERMARK_COLOR')?.sampleNo || 'rgba(0,0,0,0.08)',
+  ).trim()
   const watermarkText = useMemo(() => {
     if (!watermarkEnabled) return undefined
     const raw = String(watermarkContentSetting?.sampleNo || '').trim()
@@ -241,7 +250,8 @@ export function AppLayout() {
     <AppAntdProvider>
       <Watermark
         content={watermarkText}
-        font={{ fontSize: 18, color: 'rgba(0,0,0,0.08)' }}
+        font={{ fontSize: watermarkFontSize, color: watermarkColor }}
+        rotate={watermarkRotate}
         gap={[200, 200]}
         style={{ minHeight: '100dvh' }}
       >
