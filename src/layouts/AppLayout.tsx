@@ -1,9 +1,11 @@
+import { useQuery } from '@tanstack/react-query'
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import Layout from 'antd/es/layout'
 import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
 import Watermark from 'antd/es/watermark'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { listClientSettings } from '@/api/system-settings'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { getPageDefinition } from '@/config/page-registry'
@@ -71,12 +73,6 @@ export function AppLayout() {
     reset: resetPersonalSettings,
     save: savePersonalSettings,
     load: loadPersonalSettings,
-    watermarkEnabled,
-    setWatermarkEnabled,
-    watermarkContent,
-    setWatermarkContent,
-    appliedWatermarkEnabled,
-    appliedWatermarkContent,
   } = usePersonalSettings()
 
   const isTopNavigationLayout = appliedLayoutMode === 'top'
@@ -216,14 +212,28 @@ export function AppLayout() {
     [appliedFontSize, collapsed, isTopNavigationLayout],
   )
 
-  const resolvedWatermarkContent = appliedWatermarkEnabled
-    ? (appliedWatermarkContent || currentUserLoginName)
+  const { data: clientSettings = [] } = useQuery({
+    queryKey: ['general-setting', 'client-settings'],
+    queryFn: async () => {
+      try { return await listClientSettings() } catch { return [] }
+    },
+    staleTime: 60_000,
+  })
+
+  const watermarkEnabled = clientSettings.some(
+    (s) => String(s.settingCode).trim() === 'WATERMARK_ENABLED' && String(s.status) === '正常',
+  )
+  const watermarkContentSetting = clientSettings.find(
+    (s) => String(s.settingCode).trim() === 'WATERMARK_CONTENT',
+  )
+  const watermarkText = watermarkEnabled
+    ? (String(watermarkContentSetting?.sampleNo || '').trim() || currentUserLoginName)
     : undefined
 
   return (
     <AppAntdProvider>
       <Watermark
-        content={resolvedWatermarkContent}
+        content={watermarkText}
         font={{ fontSize: 18, color: 'rgba(0,0,0,0.08)' }}
         gap={[200, 200]}
         style={{ minHeight: '100dvh' }}
@@ -356,10 +366,6 @@ export function AppLayout() {
           onLayoutModeChange={setLayoutMode}
           themeMode={themeMode}
           onThemeModeChange={setThemeMode}
-          watermarkEnabled={watermarkEnabled}
-          watermarkContent={watermarkContent}
-          onWatermarkEnabledChange={setWatermarkEnabled}
-          onWatermarkContentChange={setWatermarkContent}
         />
       </Layout>
       </Watermark>

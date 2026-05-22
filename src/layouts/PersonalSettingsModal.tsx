@@ -3,7 +3,6 @@ import Tabs from 'antd/es/tabs'
 import { useEffect, useState } from 'react'
 import { PersonalSettingsDisplayTab } from '@/layouts/PersonalSettingsDisplayTab'
 import { PersonalSettingsSecurityTab } from '@/layouts/PersonalSettingsSecurityTab'
-import { PersonalSettingsWatermarkTab } from '@/layouts/PersonalSettingsWatermarkTab'
 import { usePersonalSecuritySettings } from '@/layouts/usePersonalSecuritySettings'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
 import { useAuthStore } from '@/stores/authStore'
@@ -20,10 +19,6 @@ interface Props {
   onLayoutModeChange: (value: LayoutMode) => void
   themeMode: ThemeMode
   onThemeModeChange: (value: ThemeMode) => void
-  watermarkEnabled: boolean
-  watermarkContent: string
-  onWatermarkEnabledChange: (value: boolean) => void
-  onWatermarkContentChange: (value: string) => void
 }
 
 export function PersonalSettingsModal({
@@ -37,10 +32,6 @@ export function PersonalSettingsModal({
   onLayoutModeChange,
   themeMode,
   onThemeModeChange,
-  watermarkEnabled,
-  watermarkContent,
-  onWatermarkEnabledChange,
-  onWatermarkContentChange,
 }: Props) {
   const [tab, setTab] = useState('display')
   const user = useAuthStore((state) => state.user)
@@ -80,7 +71,6 @@ export function PersonalSettingsModal({
         onChange={setTab}
         items={[
           { key: 'display', label: '显示偏好' },
-          { key: 'watermark', label: '水印' },
           { key: 'security', label: '账户安全' },
         ]}
       />
@@ -95,13 +85,6 @@ export function PersonalSettingsModal({
           onThemeModeChange={onThemeModeChange}
           onResetDisplay={onResetDisplay}
           onSaveDisplay={onSaveDisplay}
-        />
-      ) : tab === 'watermark' ? (
-        <PersonalSettingsWatermarkTab
-          watermarkEnabled={watermarkEnabled}
-          watermarkContent={watermarkContent}
-          onWatermarkEnabledChange={onWatermarkEnabledChange}
-          onWatermarkContentChange={onWatermarkContentChange}
         />
       ) : (
         <PersonalSettingsSecurityTab
