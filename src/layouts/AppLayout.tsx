@@ -216,14 +216,14 @@ export function AppLayout() {
     [appliedFontSize, collapsed, isTopNavigationLayout],
   )
 
-  const watermarkContent = appliedWatermarkEnabled
+  const resolvedWatermarkContent = appliedWatermarkEnabled
     ? (appliedWatermarkContent || currentUserLoginName)
     : undefined
 
   return (
     <AppAntdProvider>
       <Watermark
-        content={watermarkContent}
+        content={resolvedWatermarkContent}
         font={{ fontSize: 18, color: 'rgba(0,0,0,0.08)' }}
         gap={[200, 200]}
         style={{ minHeight: '100dvh' }}
