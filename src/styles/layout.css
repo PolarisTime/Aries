@@ -9,7 +9,9 @@
   background: transparent;
   border: 1px solid var(--theme-border-subtle);
   border-radius: 6px;
-  transition: color 0.2s, border-color 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
 }
 
 .app-dev-refresh-btn:hover {
@@ -46,7 +48,9 @@
   padding-inline: 16px;
 }
 
-.leo-top-menu.ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title {
+.leo-top-menu.ant-menu-horizontal
+  > .ant-menu-submenu
+  > .ant-menu-submenu-title {
   height: var(--app-header-height);
   padding-inline: 16px !important;
   margin: 0;

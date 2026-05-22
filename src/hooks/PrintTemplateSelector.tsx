@@ -8,9 +8,16 @@ interface Props {
   onSelect: (id: string) => void
 }
 
-export function PrintTemplateSelector({ templates, defaultId, onSelect }: Props) {
+export function PrintTemplateSelector({
+  templates,
+  defaultId,
+  onSelect,
+}: Props) {
   return (
-    <Radio.Group defaultValue={defaultId} onChange={(e) => onSelect(e.target.value)}>
+    <Radio.Group
+      defaultValue={defaultId}
+      onChange={(e) => onSelect(e.target.value)}
+    >
       <Space direction="vertical" className="w-full">
         {templates.map((t) => (
           <Radio key={t.id} value={t.id}>

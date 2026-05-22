@@ -2,7 +2,14 @@ import Empty from 'antd/es/empty'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
-import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
 import type { ModuleRecord } from '@/types/module-page'
 
@@ -55,14 +62,13 @@ export function BusinessGridTable({
       const containerHeight = shell.clientHeight
       if (containerHeight <= 0) return
       const headerHeight =
-        shell.querySelector('.ant-table-thead')?.getBoundingClientRect().height || 0
+        shell.querySelector('.ant-table-thead')?.getBoundingClientRect()
+          .height || 0
       const nextScrollY = Math.max(
         MIN_TABLE_BODY_SCROLL_Y,
         containerHeight - headerHeight,
       )
-      setScrollY((prev) =>
-        prev === nextScrollY ? prev : nextScrollY,
-      )
+      setScrollY((prev) => (prev === nextScrollY ? prev : nextScrollY))
     }
     const scheduleMeasure = () => {
       cancelAnimationFrame(frameId)
@@ -97,10 +103,7 @@ export function BusinessGridTable({
     return totalWidth + 40
   }, [visibleColumns])
 
-  const scroll = useMemo(
-    () => ({ x: scrollX, y: scrollY }),
-    [scrollX, scrollY],
-  )
+  const scroll = useMemo(() => ({ x: scrollX, y: scrollY }), [scrollX, scrollY])
 
   const doubleClickCooldownRef = useRef(0)
   const onRowClickRef = useRef(onRowClick)
@@ -116,7 +119,8 @@ export function BusinessGridTable({
           target?.closest(
             'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
           )
-        ) return
+        )
+          return
         onRowClickRef.current(record)
       },
       onDoubleClick: (event: MouseEvent<HTMLElement>) => {
@@ -125,7 +129,8 @@ export function BusinessGridTable({
           target?.closest(
             'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
           )
-        ) return
+        )
+          return
         const now = Date.now()
         if (now - doubleClickCooldownRef.current < 500) return
         doubleClickCooldownRef.current = now
@@ -144,7 +149,8 @@ export function BusinessGridTable({
   const onChange = useCallback(
     (_pagination: unknown, _filters: unknown, sorter: unknown) => {
       const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter
-      const columnKey = (activeSorter as { columnKey?: string | number })?.columnKey
+      const columnKey = (activeSorter as { columnKey?: string | number })
+        ?.columnKey
       onSortingChange(
         typeof columnKey === 'bigint' ? String(columnKey) : columnKey,
         (activeSorter as { order?: SortOrder })?.order,

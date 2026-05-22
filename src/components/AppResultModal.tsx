@@ -30,7 +30,12 @@ export function AppResultModal({
       centered
       destroyOnHidden
     >
-      <AppResult status={status} title={title} subTitle={subTitle} icon={icon} />
+      <AppResult
+        status={status}
+        title={title}
+        subTitle={subTitle}
+        icon={icon}
+      />
     </Modal>
   )
 }

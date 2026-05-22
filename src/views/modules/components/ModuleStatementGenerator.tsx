@@ -30,11 +30,15 @@ function extractCounterparty(rows: ModuleRecord[], type: string): string {
   const nameField = NAME_FIELD[type]
   const names = new Set(rows.map((r) => asString(r[nameField])).filter(Boolean))
   if (names.size === 0) throw new Error('未找到对方单位信息')
-  if (names.size > 1) throw new Error('选中的单据包含多个对方单位，请只勾选同一单位的单据')
+  if (names.size > 1)
+    throw new Error('选中的单据包含多个对方单位，请只勾选同一单位的单据')
   return [...names][0]
 }
 
-function extractDateRange(rows: ModuleRecord[], type: string): { start: string; end: string } {
+function extractDateRange(
+  rows: ModuleRecord[],
+  type: string,
+): { start: string; end: string } {
   const dateField = DATE_FIELD[type]
   const dates = rows
     .map((r) => asString(r[dateField]))
@@ -49,7 +53,11 @@ interface Props {
   statementType: 'customer' | 'supplier' | 'freight'
   selectedRows: ModuleRecord[]
   onClose: () => void
-  onGenerate: (counterpartyName: string, startDate: string, endDate: string) => Promise<void>
+  onGenerate: (
+    counterpartyName: string,
+    startDate: string,
+    endDate: string,
+  ) => Promise<void>
 }
 
 export function ModuleStatementGenerator({
@@ -96,49 +104,55 @@ export function ModuleStatementGenerator({
 
   return (
     <>
-    <Modal
-      title={`生成${typeLabel}对账单`}
-      open={open}
-      onCancel={onClose}
-      footer={
-        <Space>
-          <Button onClick={onClose}>取消</Button>
-          <Button
-            type="primary"
-            loading={generating}
-            disabled={!summary}
-            onClick={() => {
-              void handleGenerate()
-            }}
-          >
-            生成对账单
-          </Button>
-        </Space>
-      }
-      width={520}
-      destroyOnHidden
-    >
-      {selectedRows.length === 0 ? (
-        <Typography.Text type="secondary">请先在列表中勾选需要生成对账单的单据</Typography.Text>
-      ) : !summary ? (
-        <Typography.Text type="danger">无法从选中的单据中提取对账信息，请检查数据完整性</Typography.Text>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500">对方单位：</span>
-            <Tag color="blue">{summary.counterparty}</Tag>
+      <Modal
+        title={`生成${typeLabel}对账单`}
+        open={open}
+        onCancel={onClose}
+        footer={
+          <Space>
+            <Button onClick={onClose}>取消</Button>
+            <Button
+              type="primary"
+              loading={generating}
+              disabled={!summary}
+              onClick={() => {
+                void handleGenerate()
+              }}
+            >
+              生成对账单
+            </Button>
+          </Space>
+        }
+        width={520}
+        destroyOnHidden
+      >
+        {selectedRows.length === 0 ? (
+          <Typography.Text type="secondary">
+            请先在列表中勾选需要生成对账单的单据
+          </Typography.Text>
+        ) : !summary ? (
+          <Typography.Text type="danger">
+            无法从选中的单据中提取对账信息，请检查数据完整性
+          </Typography.Text>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500">对方单位：</span>
+              <Tag color="blue">{summary.counterparty}</Tag>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500">对账期间：</span>
+              <span className="font-medium">
+                {summary.start} ~ {summary.end}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500">单据数量：</span>
+              <span className="font-medium">{selectedRows.length} 笔</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500">对账期间：</span>
-            <span className="font-medium">{summary.start} ~ {summary.end}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500">单据数量：</span>
-            <span className="font-medium">{selectedRows.length} 笔</span>
-          </div>
-        </div>
-      )}
-    </Modal>
+        )}
+      </Modal>
 
       <AppResultModal
         open={!!result}

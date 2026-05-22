@@ -16,8 +16,8 @@ import {
   isWatermarkContentSetting,
   isWatermarkPropSetting,
   SYSTEM_SWITCH_HELP_TEXT,
-  WATERMARK_FONT_SIZE_CODE,
   WATERMARK_COLOR_CODE,
+  WATERMARK_FONT_SIZE_CODE,
 } from '@/views/system/general-settings-view-utils'
 
 interface Props {

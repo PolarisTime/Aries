@@ -5,7 +5,12 @@ import { PrintTemplateSelector } from '@/hooks/PrintTemplateSelector'
 import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
-import { execPrintCode, isCLodopCode, loadCLodop, printHtml } from '@/utils/clodop'
+import {
+  execPrintCode,
+  isCLodopCode,
+  loadCLodop,
+  printHtml,
+} from '@/utils/clodop'
 import { buildModulePrintHtml } from '@/utils/module-print'
 import { renderPrintTemplate } from '@/utils/print-template-engine'
 import { asArray, asString } from '@/utils/type-narrowing'
@@ -17,7 +22,9 @@ interface Props {
   formatCellValue: (value: unknown, columnType?: string) => string
 }
 
-async function pickPrintTemplate(moduleKey: string): Promise<PrintTemplateRecord | null> {
+async function pickPrintTemplate(
+  moduleKey: string,
+): Promise<PrintTemplateRecord | null> {
   const response = await listPrintTemplates(moduleKey)
   const templates = (response?.data || []).filter((t) => t.templateHtml?.trim())
 

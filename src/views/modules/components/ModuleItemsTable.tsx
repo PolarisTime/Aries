@@ -1,4 +1,4 @@
-import { type TableColumnsType, type TableProps, Table } from 'antd'
+import { Table, type TableColumnsType, type TableProps } from 'antd'
 import { useMemo } from 'react'
 
 type BaseRecord = {

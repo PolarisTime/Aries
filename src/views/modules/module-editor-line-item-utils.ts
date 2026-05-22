@@ -3,10 +3,10 @@ import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
 import { recalculateEditorLineItem } from './module-editor-line-item-calculations'
-import { generatePlaceholderBatchNo } from './module-editor-shared'
 import {
   buildDefaultEditorLineItem,
   type EditorItemDragPosition,
+  generatePlaceholderBatchNo,
   hasEditorValue,
   inferQuantityUnit,
   toRoundedNumber,

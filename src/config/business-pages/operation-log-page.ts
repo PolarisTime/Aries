@@ -45,10 +45,15 @@ export const operationLogsPageConfig: ModulePageConfig = {
         { label: '失败', value: '失败' },
       ],
     },
-    { key: 'authType', label: '认证方式', type: 'select', options: [
-      { label: 'WEB', value: 'WEB' },
-      { label: 'API_KEY', value: 'API_KEY' },
-    ]},
+    {
+      key: 'authType',
+      label: '认证方式',
+      type: 'select',
+      options: [
+        { label: 'WEB', value: 'WEB' },
+        { label: 'API_KEY', value: 'API_KEY' },
+      ],
+    },
     { key: 'operationTime', label: '操作时间', type: 'dateRange' },
   ],
   columns: [
