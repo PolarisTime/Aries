@@ -4,6 +4,8 @@ import { asString } from '@/utils/type-narrowing'
 export const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
 export const MAX_CONCURRENT_SESSIONS_CODE = 'SYS_MAX_CONCURRENT_SESSIONS'
 export const DEFAULT_LIST_PAGE_SIZE_SETTING_CODE = 'UI_DEFAULT_LIST_PAGE_SIZE'
+export const WATERMARK_ENABLED_CODE = 'UI_WATERMARK_ENABLED'
+export const WATERMARK_CONTENT_CODE = 'SYS_WATERMARK_CONTENT'
 
 export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_DEFAULT_TAX_RATE:
@@ -79,11 +81,16 @@ export function isDefaultListPageSizeSetting(record: ModuleRecord) {
   )
 }
 
+export function isWatermarkContentSetting(record: ModuleRecord) {
+  return asString(record.settingCode).trim() === WATERMARK_CONTENT_CODE
+}
+
 export function isNumericSetting(record: ModuleRecord) {
   return (
     isDefaultTaxRateSetting(record) ||
     isMaxConcurrentSetting(record) ||
-    isDefaultListPageSizeSetting(record)
+    isDefaultListPageSizeSetting(record) ||
+    isWatermarkContentSetting(record)
   )
 }
 

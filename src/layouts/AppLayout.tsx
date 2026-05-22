@@ -221,10 +221,10 @@ export function AppLayout() {
   })
 
   const watermarkEnabled = clientSettings.some(
-    (s) => String(s.settingCode).trim() === 'WATERMARK_ENABLED' && String(s.status) === '正常',
+    (s) => String(s.settingCode).trim() === 'UI_WATERMARK_ENABLED' && String(s.status) === '正常',
   )
   const watermarkContentSetting = clientSettings.find(
-    (s) => String(s.settingCode).trim() === 'WATERMARK_CONTENT',
+    (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_CONTENT',
   )
   const watermarkText = watermarkEnabled
     ? (String(watermarkContentSetting?.sampleNo || '').trim() || currentUserLoginName)

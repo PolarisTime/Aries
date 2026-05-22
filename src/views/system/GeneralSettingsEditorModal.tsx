@@ -13,6 +13,7 @@ import {
   isDefaultListPageSizeSetting,
   isDefaultTaxRateSetting,
   isNumericSetting,
+  isWatermarkContentSetting,
   SYSTEM_SWITCH_HELP_TEXT,
 } from '@/views/system/general-settings-view-utils'
 
@@ -54,21 +55,27 @@ export function GeneralSettingsEditorModal({
             <Input disabled />
           </Form.Item>
           {isNumericSetting(record) ? (
-            <Form.Item name="numericValue" label="当前值" required>
-              {isDefaultTaxRateSetting(record) ? (
-                <Input
-                  type="number"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  addonAfter="%"
-                />
-              ) : isDefaultListPageSizeSetting(record) ? (
-                <Input type="number" min={1} max={200} step={1} />
-              ) : (
-                <Input type="number" min={0} />
-              )}
-            </Form.Item>
+            isWatermarkContentSetting(record) ? (
+              <Form.Item name="numericValue" label="水印内容">
+                <Input.TextArea rows={3} maxLength={200} showCount />
+              </Form.Item>
+            ) : (
+              <Form.Item name="numericValue" label="当前值" required>
+                {isDefaultTaxRateSetting(record) ? (
+                  <Input
+                    type="number"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    addonAfter="%"
+                  />
+                ) : isDefaultListPageSizeSetting(record) ? (
+                  <Input type="number" min={1} max={200} step={1} />
+                ) : (
+                  <Input type="number" min={0} />
+                )}
+              </Form.Item>
+            )
           ) : (
             <>
               <Form.Item
