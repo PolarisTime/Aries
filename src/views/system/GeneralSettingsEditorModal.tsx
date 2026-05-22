@@ -65,7 +65,7 @@ export function GeneralSettingsEditorModal({
                 {asString(record.settingCode) === WATERMARK_COLOR_CODE ? (
                   <Input placeholder="rgba(0,0,0,0.08)" maxLength={50} />
                 ) : (
-                  <Input.TextArea rows={3} maxLength={200} showCount />
+                  <Input.TextArea rows={3} maxLength={64} showCount />
                 )}
               </Form.Item>
             ) : (
