@@ -19,10 +19,6 @@ interface Props {
   onLayoutModeChange: (value: LayoutMode) => void
   themeMode: ThemeMode
   onThemeModeChange: (value: ThemeMode) => void
-  watermarkEnabled: boolean
-  watermarkContent: string
-  onWatermarkEnabledChange: (value: boolean) => void
-  onWatermarkContentChange: (value: string) => void
 }
 
 export function LazyPersonalSettingsModal(props: Props) {
