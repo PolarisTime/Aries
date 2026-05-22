@@ -141,6 +141,11 @@ export function LoginView() {
       message.error(t('auth.loginview.codeInvalid'))
       return
     }
+    if (!tempToken) {
+      reset2faStep(true)
+      setFlipped(false)
+      return
+    }
     if (stepDeadline > 0 && Date.now() >= stepDeadline) {
       reset2faStep(true)
       setFlipped(false)
@@ -199,7 +204,7 @@ export function LoginView() {
       const s = remaining % 60
       return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
     }
-    return '05:00'
+    return '00:00'
   }, [stepDeadline, totpNow])
   const captchaImageSrc = useMemo(
     () => toDataImageUrl(captcha?.captchaImage),
