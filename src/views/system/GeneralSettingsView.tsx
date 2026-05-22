@@ -122,7 +122,7 @@ export function GeneralSettingsView() {
       const values = await form.validateFields()
       let sampleNo = ''
       if (isWatermarkContentSetting(editingRecord)) {
-        sampleNo = String(values.numericValue || '')
+        sampleNo = String(values.numericValue || 'ON')
       } else if (isNumericSetting(editingRecord)) {
         sampleNo = String(values.numericValue || 0)
       } else if (isToggleSetting(editingRecord)) {
