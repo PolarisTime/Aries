@@ -54,6 +54,7 @@ export function LoginView() {
   const verify2fa = useAuthStore((s) => s.verify2fa)
   const { showError } = useRequestError()
   const {
+    loginStep,
     now: totpNow,
     reset2faStep,
     savedSession,
@@ -63,6 +64,12 @@ export function LoginView() {
     tempToken,
     totpCode,
   } = useLoginTotpSession()
+  // 当 2FA 密码阶段被重置时，同步翻转到登录表单
+  useEffect(() => {
+    if (loginStep === 'password' && flipped) {
+      setFlipped(false)
+    }
+  }, [loginStep, flipped])
   const [loading, setLoading] = useState(false)
   const [totpLoading, setTotpLoading] = useState(false)
   const [captcha, setCaptcha] = useState<CaptchaData | null>(null)
@@ -184,11 +191,8 @@ export function LoginView() {
   const isExpired = stepDeadline > 0 && totpNow >= stepDeadline
   useEffect(() => {
     if (isExpired && flipped) {
-      const timer = setTimeout(() => {
-        reset2faStep(true)
-        setFlipped(false)
-      }, 1200)
-      return () => clearTimeout(timer)
+      reset2faStep(true)
+      setFlipped(false)
     }
   }, [isExpired, flipped, reset2faStep])
   const isExpiring =
