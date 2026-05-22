@@ -76,7 +76,7 @@ export function GeneralSettingsView() {
         enabled: asString(record.status) === '正常',
         numericValue: isWatermarkContentSetting(record)
           ? asString(record.sampleNo)
-          : isDefaultTaxRateSetting(record)
+          : isWatermarkPropSetting(record) || isDefaultTaxRateSetting(record)
             ? Number(record.sampleNo || 0.13)
             : Number(record.sampleNo || 0),
         selectedActions: asString(record.sampleNo).split(',').filter(Boolean),
