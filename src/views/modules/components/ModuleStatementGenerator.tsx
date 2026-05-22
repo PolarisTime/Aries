@@ -95,6 +95,7 @@ export function ModuleStatementGenerator({
   const typeLabel = TYPE_LABEL[statementType] || ''
 
   return (
+    <>
     <Modal
       title={`生成${typeLabel}对账单`}
       open={open}
