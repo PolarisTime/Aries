@@ -15,6 +15,7 @@ import {
   isNumericSetting,
   isToggleSetting,
   isWatermarkContentSetting,
+  isWatermarkPropSetting,
   matchesGeneralSettingKeyword,
 } from '@/views/system/general-settings-view-utils'
 import { isSystemSwitch } from '@/views/system/number-rules-view-utils'
