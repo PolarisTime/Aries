@@ -2,51 +2,25 @@ import { useNavigate } from '@tanstack/react-router'
 import BorderBeam from 'antd/es/border-beam'
 import Card from 'antd/es/card'
 import Form from 'antd/es/form'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchCaptcha } from '@/api/auth'
-import { getInitialSetupStatus } from '@/api/setup'
 import { useRequestError } from '@/hooks/useRequestError'
 import { getFormString } from '@/lib/antd-form'
 import { useAuthStore } from '@/stores/authStore'
 import type { CaptchaData, LoginPayload } from '@/types/auth'
-import type { InitialSetupStatus } from '@/types/setup'
 import { message } from '@/utils/antd-app'
 import { toDataImageUrl } from '@/utils/data-url'
-import { appTitle } from '@/utils/env'
 import { AuthPageShell } from './AuthPageShell'
 import { LoginPasswordForm } from './LoginPasswordForm'
 import { LoginTotpPanel } from './LoginTotpPanel'
 import {
   buildPostLoginTarget,
-  checkBackendHealth,
   clearTotpSession,
-  getCachedHealth,
   requiresForcedTotpSetup,
 } from './login-view-utils'
 import { useLoginTotpSession } from './useLoginTotpSession'
 
-function useClientClock(): { now: number; timeText: string; dateText: string } {
-  const [now, setNow] = useState(Date.now())
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000)
-    return () => window.clearInterval(timer)
-  }, [])
-  const timeText = useMemo(() => {
-    const d = new Date(now)
-    return d.toLocaleTimeString('zh-CN', { hour12: false })
-  }, [now])
-  const dateText = useMemo(() => {
-    const d = new Date(now)
-    return d.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long',
-    })
-  }, [now])
-  return { now, timeText, dateText }
-}
 export function LoginView() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -75,32 +49,6 @@ export function LoginView() {
       setFlipped(false)
     }
   }, [loginStep, flipped])
-  const [backendOnline, setBackendOnline] = useState(
-    () => getCachedHealth().online,
-  )
-  const [setupStatus, setSetupStatus] = useState<InitialSetupStatus | null>(
-    null,
-  )
-  const { timeText, dateText } = useClientClock()
-  const healthTimerRef = useRef<ReturnType<typeof setInterval>>(null)
-  useEffect(() => {
-    void checkBackendHealth().then(setBackendOnline)
-    healthTimerRef.current = setInterval(() => {
-      void checkBackendHealth().then(setBackendOnline)
-    }, 30000)
-    return () => {
-      if (healthTimerRef.current) clearInterval(healthTimerRef.current)
-    }
-  }, [])
-  useEffect(() => {
-    getInitialSetupStatus()
-      .then((res) => {
-        if (res.code === 0) setSetupStatus(res.data)
-      })
-      .catch(() => {
-        // non-critical
-      })
-  }, [])
   const loadCaptcha = useCallback(async () => {
     try {
       const response = await fetchCaptcha()
@@ -215,78 +163,42 @@ export function LoginView() {
     [captcha?.captchaImage],
   )
   const shouldShowCaptcha = Boolean(captcha?.required)
-  const setupReady = !setupStatus?.setupRequired
-  const hero = (
-    <div className="login-hero-content">
-      <div className="login-hero-logo">L</div>
-      <h1 className="login-hero-title">{appTitle}</h1>
-      <p className="login-hero-subtitle">{t('auth.loginview.heroSubtitle')}</p>
-      <div className="login-hero-meta">
-        <div className="login-hero-meta-item">
-          <span
-            className={`login-hero-meta-dot${backendOnline ? ' is-up' : ' is-down'}`}
-          />
-          {backendOnline
-            ? t('auth.loginview.backendOnline')
-            : t('auth.loginview.backendOffline')}
-        </div>
-        <div className="login-hero-meta-item">
-          <span className="login-hero-meta-dot is-up" />
-          {setupReady
-            ? t('auth.loginview.setupReady')
-            : t('auth.loginview.setupPending')}
-        </div>
-      </div>
-      <div className="mt-10">
-        <div className="login-hero-clock">{timeText}</div>
-        <div className="login-hero-date">{dateText}</div>
-      </div>
-    </div>
-  )
+
   return (
-    <AuthPageShell hero={hero}>
-      <div className="login-scene">
-        <div className={`login-card-inner${flipped ? ' is-flipped' : ''}`}>
-          <div className="login-card-face">
-            <BorderBeam>
-              <Card className="login-form-card">
-                <LoginPasswordForm
-                  captchaImageSrc={captchaImageSrc}
-                  loading={loading}
-                  onLoadCaptcha={() => {
-                    void loadCaptcha()
-                  }}
-                  onSubmit={(values) => {
-                    void handleLogin(values)
-                  }}
-                  shouldShowCaptcha={shouldShowCaptcha}
-                  savedLoginName={savedSession?.loginName || ''}
-                  form={form}
-                />
-              </Card>
-            </BorderBeam>
-          </div>
-          <div className="login-card-face is-back">
-            <BorderBeam>
-              <Card className="login-form-card">
-                <LoginTotpPanel
-                countdownText={countdownText}
-                isExpired={isExpired}
-                isExpiring={isExpiring}
-                onBackToPassword={handleBackToPassword}
-                onTotpCodeChange={setTotpCode}
-                onVerify={() => {
-                  void handleTotpVerify()
-                }}
-                totpCode={totpCode}
-                totpLoading={totpLoading}
-                activeLoginName={activeLoginName}
-              />
-            </Card>
-            </BorderBeam>
-          </div>
-        </div>
-      </div>
+    <AuthPageShell>
+      <BorderBeam>
+        <Card className="login-form-card">
+          {flipped ? (
+            <LoginTotpPanel
+              countdownText={countdownText}
+              isExpired={isExpired}
+              isExpiring={isExpiring}
+              onBackToPassword={handleBackToPassword}
+              onTotpCodeChange={setTotpCode}
+              onVerify={() => {
+                void handleTotpVerify()
+              }}
+              totpCode={totpCode}
+              totpLoading={totpLoading}
+              activeLoginName={activeLoginName}
+            />
+          ) : (
+            <LoginPasswordForm
+              captchaImageSrc={captchaImageSrc}
+              loading={loading}
+              onLoadCaptcha={() => {
+                void loadCaptcha()
+              }}
+              onSubmit={(values) => {
+                void handleLogin(values)
+              }}
+              shouldShowCaptcha={shouldShowCaptcha}
+              savedLoginName={savedSession?.loginName || ''}
+              form={form}
+            />
+          )}
+        </Card>
+      </BorderBeam>
     </AuthPageShell>
   )
 }
