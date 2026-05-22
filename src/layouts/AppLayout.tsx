@@ -5,7 +5,7 @@ import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
 import Watermark from 'antd/es/watermark'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { listClientSettings } from '@/api/system-settings'
+import { listSystemSettings } from '@/api/system-settings'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { getPageDefinition } from '@/config/page-registry'
@@ -212,18 +212,18 @@ export function AppLayout() {
     [appliedFontSize, collapsed, isTopNavigationLayout],
   )
 
-  const { data: clientSettings = [] } = useQuery({
-    queryKey: ['general-setting', 'client-settings'],
+  const { data: systemSettings = [] } = useQuery({
+    queryKey: ['general-setting'],
     queryFn: async () => {
-      try { return await listClientSettings() } catch { return [] }
+      try { return await listSystemSettings() } catch { return [] }
     },
     staleTime: 60_000,
   })
 
-  const watermarkEnabled = clientSettings.some(
+  const watermarkEnabled = systemSettings.some(
     (s) => String(s.settingCode).trim() === 'UI_WATERMARK_ENABLED' && String(s.status) === '正常',
   )
-  const watermarkContentSetting = clientSettings.find(
+  const watermarkContentSetting = systemSettings.find(
     (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_CONTENT',
   )
   const watermarkText = watermarkEnabled
