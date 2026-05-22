@@ -64,17 +64,17 @@ export function LoginView() {
     tempToken,
     totpCode,
   } = useLoginTotpSession()
+  const [loading, setLoading] = useState(false)
+  const [totpLoading, setTotpLoading] = useState(false)
+  const [captcha, setCaptcha] = useState<CaptchaData | null>(null)
+  const [form] = Form.useForm()
+  const [flipped, setFlipped] = useState(!!savedSession)
   // 当 2FA 密码阶段被重置时，同步翻转到登录表单
   useEffect(() => {
     if (loginStep === 'password' && flipped) {
       setFlipped(false)
     }
   }, [loginStep, flipped])
-  const [loading, setLoading] = useState(false)
-  const [totpLoading, setTotpLoading] = useState(false)
-  const [captcha, setCaptcha] = useState<CaptchaData | null>(null)
-  const [form] = Form.useForm()
-  const [flipped, setFlipped] = useState(!!savedSession)
   const [backendOnline, setBackendOnline] = useState(
     () => getCachedHealth().online,
   )
