@@ -10,11 +10,11 @@ import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import { GeneralSettingsEditorModal } from '@/views/system/GeneralSettingsEditorModal'
 import { GeneralSettingsTableCard } from '@/views/system/GeneralSettingsTableCard'
-import { WatermarkSettingsCard } from '@/views/system/WatermarkSettingsCard'
 import {
   isDefaultTaxRateSetting,
   isNumericSetting,
   isToggleSetting,
+  isWatermarkContentSetting,
   matchesGeneralSettingKeyword,
 } from '@/views/system/general-settings-view-utils'
 import { isSystemSwitch } from '@/views/system/number-rules-view-utils'
@@ -74,9 +74,11 @@ export function GeneralSettingsView() {
         billName: record.billName,
         remark: record.remark,
         enabled: asString(record.status) === '正常',
-        numericValue: isDefaultTaxRateSetting(record)
-          ? Number(record.sampleNo || 0.13)
-          : Number(record.sampleNo || 0),
+        numericValue: isWatermarkContentSetting(record)
+          ? asString(record.sampleNo)
+          : isDefaultTaxRateSetting(record)
+            ? Number(record.sampleNo || 0.13)
+            : Number(record.sampleNo || 0),
         selectedActions: asString(record.sampleNo).split(',').filter(Boolean),
       })
       setEditorOpen(true)
@@ -119,7 +121,9 @@ export function GeneralSettingsView() {
     try {
       const values = await form.validateFields()
       let sampleNo = ''
-      if (isNumericSetting(editingRecord)) {
+      if (isWatermarkContentSetting(editingRecord)) {
+        sampleNo = String(values.numericValue || '')
+      } else if (isNumericSetting(editingRecord)) {
         sampleNo = String(values.numericValue || 0)
       } else if (isToggleSetting(editingRecord)) {
         sampleNo = values.selectedActions?.join(',') || ''
@@ -166,8 +170,6 @@ export function GeneralSettingsView() {
           void handleToggle(record)
         }}
       />
-
-      <WatermarkSettingsCard />
 
       {editorOpen ? (
         <GeneralSettingsEditorModal
