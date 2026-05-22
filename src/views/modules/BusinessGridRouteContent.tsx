@@ -124,7 +124,9 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         customerStatementOpen={state.overlays.customerStatementOpen}
         freightStatementOpen={state.overlays.freightStatementOpen}
         freightPickupOpen={state.overlays.freightPickupOpen}
-        selectedRows={state.selectedRows}
+        selectedRows={state.records.filter((r) =>
+          state.selectedRowKeys.includes(String(r.id)),
+        )}
         canSave={
           state.editRecord ? state.canUpdateRecord : state.canCreateRecord
         }
