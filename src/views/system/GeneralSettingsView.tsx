@@ -10,6 +10,7 @@ import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import { GeneralSettingsEditorModal } from '@/views/system/GeneralSettingsEditorModal'
 import { GeneralSettingsTableCard } from '@/views/system/GeneralSettingsTableCard'
+import { WatermarkSettingsCard } from '@/views/system/WatermarkSettingsCard'
 import {
   isDefaultTaxRateSetting,
   isNumericSetting,
@@ -165,6 +166,8 @@ export function GeneralSettingsView() {
           void handleToggle(record)
         }}
       />
+
+      <WatermarkSettingsCard />
 
       {editorOpen ? (
         <GeneralSettingsEditorModal
