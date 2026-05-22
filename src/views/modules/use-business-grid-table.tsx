@@ -151,9 +151,8 @@ export function useBusinessGridTable({
             dataIndex: header.column.id,
             key: header.column.id,
             fixed: header.column.columnDef.meta?.fixed,
-            className: header.column.id === 'actions'
-              ? 'sticky-actions-col'
-              : undefined,
+            className:
+              header.column.id === 'actions' ? 'sticky-actions-col' : undefined,
             onCell:
               header.column.id === 'actions'
                 ? () => ({ className: 'sticky-actions-col' })

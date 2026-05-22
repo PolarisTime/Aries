@@ -65,20 +65,25 @@ export function generatePlaceholderBatchNo(): string {
   if (timestamp === snowflakeLastTimestamp) {
     snowflakeSequence = (snowflakeSequence + 1n) & 4095n
     if (snowflakeSequence === 0n) {
-      while (BigInt(Date.now()) <= timestamp) { /* spin */ }
+      while (BigInt(Date.now()) <= timestamp) {
+        /* spin */
+      }
       timestamp = BigInt(Date.now())
     }
   } else {
     snowflakeSequence = 0n
   }
   snowflakeLastTimestamp = timestamp
-  const id = ((timestamp - SNOWFLAKE_EPOCH) << 22n) | (SNOWFLAKE_WORKER_ID << 12n) | snowflakeSequence
+  const id =
+    ((timestamp - SNOWFLAKE_EPOCH) << 22n) |
+    (SNOWFLAKE_WORKER_ID << 12n) |
+    snowflakeSequence
   return id.toString(36).toUpperCase()
 }
 
 export function buildDefaultEditorLineItem(
   itemId = buildModuleLineItemId(),
-  moduleKey?: string,
+  _moduleKey?: string,
 ): ModuleLineItem {
   return {
     id: itemId,

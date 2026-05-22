@@ -1,7 +1,7 @@
-import Button from 'antd/es/button'
-import Result from 'antd/es/result'
-import type { ResultProps } from 'antd/es/result'
 import { useNavigate } from '@tanstack/react-router'
+import Button from 'antd/es/button'
+import type { ResultProps } from 'antd/es/result'
+import Result from 'antd/es/result'
 
 const PRESET_COPY: Record<string, { title: string; subTitle: string }> = {
   '403': { title: '403', subTitle: '抱歉，您没有权限访问此页面' },

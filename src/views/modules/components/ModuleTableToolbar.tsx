@@ -109,16 +109,12 @@ export function ModuleTableToolbar({
           }
           onChange={onPageChange}
           itemRender={(_, type, originalElement) => {
-            if (type === 'prev') return <a>上一页</a>
-            if (type === 'next') return <a>下一页</a>
+            if (type === 'prev') return <button type="button">上一页</button>
+            if (type === 'next') return <button type="button">下一页</button>
             return originalElement
           }}
         />
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={onRefresh}
-          loading={loading}
-        >
+        <Button icon={<ReloadOutlined />} onClick={onRefresh} loading={loading}>
           刷新
         </Button>
       </Space>

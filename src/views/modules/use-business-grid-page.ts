@@ -97,21 +97,16 @@ export function useBusinessGridPage({
     setCurrentPage: (page: number) => setCurrentPage(page),
   })
 
-  const {
-    records,
-    total,
-    isLoading,
-    isFetching,
-    warningMessage,
-  } = useInfiniteBusinessItems({
-    moduleKey,
-    filters: submittedFilters,
-    enabled: canViewRecords,
-    currentPage,
-    pageSize,
-    sortBy: sorting[0]?.id,
-    sortDirection: sorting[0]?.desc ? 'desc' : sorting[0] ? 'asc' : undefined,
-  })
+  const { records, total, isLoading, isFetching, warningMessage } =
+    useInfiniteBusinessItems({
+      moduleKey,
+      filters: submittedFilters,
+      enabled: canViewRecords,
+      currentPage,
+      pageSize,
+      sortBy: sorting[0]?.id,
+      sortDirection: sorting[0]?.desc ? 'desc' : sorting[0] ? 'asc' : undefined,
+    })
 
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const { exporting, handleExport } = useExcelExport(moduleKey)
@@ -332,7 +327,6 @@ export function useBusinessGridPage({
     canUpdateRecord,
     selectedRowKeys,
     setSelectedRowKeys,
-    setSelectedRowMap,
     setSelectedRowMap,
     buildActions,
     showActions: Boolean(detailRoutePath),

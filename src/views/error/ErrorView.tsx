@@ -1,7 +1,7 @@
+import { useNavigate, useRouter } from '@tanstack/react-router'
 import Button from 'antd/es/button'
 import Typography from 'antd/es/typography'
 import { useCallback, useEffect, useMemo } from 'react'
-import { useNavigate, useRouter } from '@tanstack/react-router'
 import { AppResult } from '@/components/AppResult'
 
 function extractBackendTraceId(error: unknown): string | undefined {
@@ -61,9 +61,7 @@ export function ErrorView() {
       }
       showHomeButton
       showBackButton
-      extra={
-        <Button onClick={handleRetry}>重试</Button>
-      }
+      extra={<Button onClick={handleRetry}>重试</Button>}
     />
   )
 }
@@ -71,7 +69,12 @@ export function ErrorView() {
 function getErrorStatus(error: unknown): '403' | '500' | 'error' {
   if (error instanceof Error) {
     const msg = error.message.toLowerCase()
-    if (msg.includes('403') || msg.includes('unauthorized') || msg.includes('forbidden')) return '403'
+    if (
+      msg.includes('403') ||
+      msg.includes('unauthorized') ||
+      msg.includes('forbidden')
+    )
+      return '403'
     if (msg.includes('500') || msg.includes('internal server')) return '500'
     if (msg.includes('timeout') || msg.includes('network')) return '500'
   }

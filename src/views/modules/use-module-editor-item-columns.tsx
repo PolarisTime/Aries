@@ -147,7 +147,11 @@ export function useModuleEditorItemColumns({
           searchText: (() => {
             const pyFields = [brand, materialName, category, material, spec]
               .filter(Boolean)
-              .map((s) => pinyin(s, { toneType: 'none', type: 'array' }).map((p) => p[0]).join(''))
+              .map((s) =>
+                pinyin(s, { toneType: 'none', type: 'array' })
+                  .map((p) => p[0])
+                  .join(''),
+              )
             return [brand, materialName, category, material, spec, ...pyFields]
               .filter(Boolean)
               .join(' ')
@@ -192,7 +196,8 @@ export function useModuleEditorItemColumns({
         itemId,
         materialCode,
         materialRecord,
-        (item, record) => applyMaterialToEditorLineItem(item, record, moduleKey),
+        (item, record) =>
+          applyMaterialToEditorLineItem(item, record, moduleKey),
         async (keyword) => {
           const normalizedKeyword = keyword.trim()
           if (!normalizedKeyword) {
@@ -209,7 +214,7 @@ export function useModuleEditorItemColumns({
         },
       )
     },
-    [handleMaterialSelect, materialLookup],
+    [handleMaterialSelect, materialLookup, moduleKey],
   )
 
   const itemColumns = useMemo<TableColumnsType<ModuleLineItem>>(() => {

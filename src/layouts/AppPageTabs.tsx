@@ -17,7 +17,6 @@ export function AppPageTabs({
   onNavigateToPath,
   pages,
   shellFontStyle,
-  closePage,
 }: AppPageTabsProps) {
   const tabItems = pages.map((page) => ({
     key: page.key,
