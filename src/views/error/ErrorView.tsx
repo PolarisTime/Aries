@@ -23,7 +23,7 @@ function stripTraceSuffix(message: string): string {
 export function ErrorView() {
   const router = useRouter()
   const navigate = useNavigate()
-  const error = router.state.error
+  const error = (router.state as unknown as Record<string, unknown>).error
 
   const status = getErrorStatus(error)
   const rawMessage = getErrorMessage(error, status)

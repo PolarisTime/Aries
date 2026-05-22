@@ -150,7 +150,8 @@ export function useBusinessGridTable({
             ),
             dataIndex: header.column.id,
             key: header.column.id,
-            fixed: header.column.columnDef.meta?.fixed,
+            fixed: header.column.columnDef.meta
+              ?.fixed as ColumnType<ModuleRecord>['fixed'],
             className:
               header.column.id === 'actions' ? 'sticky-actions-col' : undefined,
             onCell:

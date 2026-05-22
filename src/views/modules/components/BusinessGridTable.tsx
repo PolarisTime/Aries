@@ -36,6 +36,9 @@ interface Props {
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
   onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
+  hasNextPage?: boolean
+  fetchNextPage?: () => void
+  isFetchingNextPage?: boolean
 }
 
 export function BusinessGridTable({
@@ -48,6 +51,9 @@ export function BusinessGridTable({
   onRowClick,
   onRowDoubleClick,
   onSortingChange,
+  hasNextPage: _hasNextPage,
+  fetchNextPage: _fetchNextPage,
+  isFetchingNextPage: _isFetchingNextPage,
 }: Props) {
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
