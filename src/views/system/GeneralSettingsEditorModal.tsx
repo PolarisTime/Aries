@@ -15,9 +15,9 @@ import {
   isNumericSetting,
   isWatermarkContentSetting,
   isWatermarkPropSetting,
-  WATERMARK_FONT_SIZE_CODE,
-  WATERMARK_ROTATE_CODE,
   SYSTEM_SWITCH_HELP_TEXT,
+  WATERMARK_FONT_SIZE_CODE,
+  WATERMARK_COLOR_CODE,
 } from '@/views/system/general-settings-view-utils'
 
 interface Props {
@@ -59,13 +59,22 @@ export function GeneralSettingsEditorModal({
           </Form.Item>
           {isNumericSetting(record) ? (
             isWatermarkContentSetting(record) ? (
-              <Form.Item name="numericValue" label={
-                asString(record.settingCode) === WATERMARK_COLOR_CODE ? '水印颜色' : '水印内容'
-              }
-                rules={[{
-                  max: asString(record.settingCode) === WATERMARK_COLOR_CODE ? 50 : 64,
-                  message: `最多${asString(record.settingCode) === WATERMARK_COLOR_CODE ? 50 : 64}个字符`,
-                }]}
+              <Form.Item
+                name="numericValue"
+                label={
+                  asString(record.settingCode) === WATERMARK_COLOR_CODE
+                    ? '水印颜色'
+                    : '水印内容'
+                }
+                rules={[
+                  {
+                    max:
+                      asString(record.settingCode) === WATERMARK_COLOR_CODE
+                        ? 50
+                        : 64,
+                    message: `最多${asString(record.settingCode) === WATERMARK_COLOR_CODE ? 50 : 64}个字符`,
+                  },
+                ]}
               >
                 {asString(record.settingCode) === WATERMARK_COLOR_CODE ? (
                   <Input placeholder="rgba(0,0,0,0.08)" maxLength={50} />
@@ -76,14 +85,32 @@ export function GeneralSettingsEditorModal({
             ) : (
               <Form.Item name="numericValue" label="当前值" required>
                 {isDefaultTaxRateSetting(record) ? (
-                  <Input type="number" min={0} max={1} step={0.01} addonAfter="%" />
+                  <Input
+                    type="number"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    addonAfter="%"
+                  />
                 ) : isDefaultListPageSizeSetting(record) ? (
                   <Input type="number" min={1} max={200} step={1} />
                 ) : isWatermarkPropSetting(record) ? (
                   asString(record.settingCode) === WATERMARK_FONT_SIZE_CODE ? (
-                    <Input type="number" min={8} max={72} step={1} addonAfter="px" />
+                    <Input
+                      type="number"
+                      min={8}
+                      max={72}
+                      step={1}
+                      addonAfter="px"
+                    />
                   ) : (
-                    <Input type="number" min={-90} max={90} step={1} addonAfter="°" />
+                    <Input
+                      type="number"
+                      min={-90}
+                      max={90}
+                      step={1}
+                      addonAfter="°"
+                    />
                   )
                 ) : (
                   <Input type="number" min={0} />
