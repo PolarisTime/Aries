@@ -228,11 +228,13 @@ export function AppLayout() {
   )
   const watermarkText = useMemo(() => {
     if (!watermarkEnabled) return undefined
-    const configured = String(watermarkContentSetting?.sampleNo || '').trim()
-    if (configured && configured !== 'ON') return configured
+    const raw = String(watermarkContentSetting?.sampleNo || '').trim()
+    const template = raw && raw !== 'ON' ? raw : '{username}  {time}'
     const now = new Date()
-    const time = now.toLocaleString('zh-CN', { hour12: false })
-    return `${currentUserLoginName}  ${time}`
+    return template
+      .replace(/\{username\}/g, currentUserLoginName)
+      .replace(/\{time\}/g, now.toLocaleString('zh-CN', { hour12: false }))
+      .replace(/\{date\}/g, now.toLocaleDateString('zh-CN'))
   }, [watermarkEnabled, watermarkContentSetting?.sampleNo, currentUserLoginName])
 
   return (
