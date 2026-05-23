@@ -257,10 +257,18 @@ function SaveResultOverlay({
       />
     )
 
-  const handleCreatePurchaseInbound = () => {
+  const NEXT_MODULE: Record<string, { label: string; path: string }> = {
+    'purchase-order': { label: '创建采购入库', path: '/purchase-inbound' },
+    'sales-order': { label: '创建销售出库', path: '/sales-outbound' },
+    'sales-outbound': { label: '创建物流单', path: '/freight-bill' },
+  }
+
+  const nextModule = isSuccess ? NEXT_MODULE[moduleKey] : null
+
+  const handleCreateNext = () => {
     onClear()
     navigate({
-      to: '/purchase-inbound',
+      to: nextModule!.path,
       search: new URLSearchParams({
         sourceModule: moduleKey,
         sourceRecordId: String(saveResult.record?.id || ''),
@@ -268,16 +276,15 @@ function SaveResultOverlay({
     } as never)
   }
 
-  const quickActions =
-    isSuccess && moduleKey === 'purchase-order' ? (
-      <Button
-        type="primary"
-        icon={<ArrowRightOutlined />}
-        onClick={handleCreatePurchaseInbound}
-      >
-        创建采购入库
-      </Button>
-    ) : null
+  const quickActions = nextModule ? (
+    <Button
+      type="primary"
+      icon={<ArrowRightOutlined />}
+      onClick={handleCreateNext}
+    >
+      {nextModule.label}
+    </Button>
+  ) : null
 
   return (
     <WorkspaceOverlay
