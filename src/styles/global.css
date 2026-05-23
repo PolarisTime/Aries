@@ -1494,6 +1494,20 @@ body,
   object-fit: cover;
 }
 
+.module-attachment-pdf-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  min-width: 56px;
+  height: 56px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  background: #e74c3c;
+  border-radius: 10px;
+}
+
 .module-attachment-file-icon {
   display: inline-flex;
   align-items: center;
