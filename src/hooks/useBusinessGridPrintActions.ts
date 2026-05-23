@@ -10,17 +10,34 @@ import { execPrintCode, loadCLodop, printHtml } from '@/utils/clodop'
 import { buildModulePrintHtml } from '@/utils/module-print'
 import { asString } from '@/utils/type-narrowing'
 
-function buildPrintData(
+interface PrintRequestPayload {
+  templateId?: string
+  moduleKey: string
+  data: Record<string, string>
+  items?: Record<string, unknown>[]
+  title?: string
+}
+
+function buildPrintPayload(
   record: Record<string, unknown>,
   config: ModulePageConfig,
-): Record<string, string> {
+  templateId: string,
+  moduleKey: string,
+): PrintRequestPayload {
   const data: Record<string, string> = {}
   for (const col of config.columns || []) {
     const key = col.dataIndex
     const val = record[key]
     data[key] = val == null ? '' : String(val)
   }
-  return data
+  const items = (Array.isArray(record.items) ? record.items : []) as Record<string, unknown>[]
+  return {
+    templateId,
+    moduleKey,
+    data,
+    items: items.length > 0 ? items : undefined,
+    title: config.title,
+  }
 }
 
 interface Props {
@@ -104,11 +121,7 @@ export function useBusinessGridPrintActions({
               code: number
               data: { script: string }
               message?: string
-            }>('/print/generate', {
-              templateId: template.id,
-              moduleKey,
-              data: buildPrintData(record, config),
-            })
+            }>('/print/generate', buildPrintPayload(record, config, template.id, moduleKey))
             assertApiSuccess(r, '打印脚本生成失败')
             if (r.data?.script) scripts.push(r.data.script)
           }
