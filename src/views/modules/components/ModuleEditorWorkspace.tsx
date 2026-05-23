@@ -364,17 +364,6 @@ function SaveResultOverlay({
         </div>
       }
     >
-      <div className="text-center mb-16">
-        <Typography.Text type="secondary">{saveResult.message}</Typography.Text>
-        {saveResult.traceId ? (
-          <div className="mt-4">
-            <Typography.Text type="secondary" className="text-xs">
-              Trace: {saveResult.traceId}
-            </Typography.Text>
-          </div>
-        ) : null}
-      </div>
-
       {saveResult.record ? (
         <Card size="small" className="mb-16">
           <Space direction="vertical" size={4}>
