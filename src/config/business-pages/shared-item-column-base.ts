@@ -102,7 +102,7 @@ export const orderItemColumns: ModuleColumnDefinition[] = [
 
 export const batchOrderItemColumns: ModuleColumnDefinition[] = [
   ...materialInfoColumns.slice(0, 7),
-  { title: '批号', dataIndex: 'batchNo', width: 100 },
+  { title: '批号', dataIndex: 'batchNo', width: 130 },
   {
     title: '数量',
     dataIndex: 'quantity',
@@ -141,8 +141,8 @@ export const batchOrderItemColumns: ModuleColumnDefinition[] = [
 
 export const purchaseItemColumns: ModuleColumnDefinition[] = [
   ...materialInfoColumns.slice(0, 7),
-  { title: '码头', dataIndex: 'warehouseName', width: 96, required: true },
-  { title: '批号', dataIndex: 'batchNo', width: 100 },
+  { title: '码头', dataIndex: 'warehouseName', width: 110, required: true },
+  { title: '批号', dataIndex: 'batchNo', width: 130 },
   {
     title: '数量',
     dataIndex: 'quantity',
