@@ -17,6 +17,7 @@ import { message } from '@/utils/antd-app'
 import { DatabaseBackupActionsCard } from '@/views/system/DatabaseBackupActionsCard'
 import { DatabaseExportTasksCard } from '@/views/system/DatabaseExportTasksCard'
 import { DatabaseImportBackupModal } from '@/views/system/DatabaseImportBackupModal'
+import { DatabaseMonitoringPanel } from '@/views/system/DatabaseMonitoringPanel'
 import { DatabaseStatusOverview } from '@/views/system/DatabaseStatusOverview'
 import { isDatabaseTaskRunning } from '@/views/system/database-backup-view-utils'
 
@@ -197,6 +198,8 @@ export function DatabaseBackupView() {
           void queryClient.invalidateQueries({ queryKey: ['database-status'] })
         }
       />
+
+      <DatabaseMonitoringPanel visible={canExport} />
 
       <DatabaseBackupActionsCard
         canExport={canExport}
