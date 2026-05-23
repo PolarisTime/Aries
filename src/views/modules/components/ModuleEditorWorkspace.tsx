@@ -225,7 +225,7 @@ interface SaveResultOverlayProps {
   onClear: () => void
 }
 
-const ITEM_SUMMARY_COLUMNS = [
+const BASE_ITEM_COLUMNS = [
   { title: "品牌", dataIndex: "brand", ellipsis: true },
   { title: "材质", dataIndex: "material", ellipsis: true },
   { title: "规格", dataIndex: "spec", ellipsis: true },
@@ -233,7 +233,17 @@ const ITEM_SUMMARY_COLUMNS = [
   { title: "数量", dataIndex: "quantity", align: "right" as const },
   { title: "总重", dataIndex: "weightTon", align: "right" as const, render: (v: unknown) => v != null ? Number(v).toFixed(3) : "-" },
 ]
-function isPurchaseOrSales(key: string) { return key === "purchase-order" || key === "sales-order" }
+const FINANCE_ITEM_COLUMNS = [
+  { title: "单价", dataIndex: "unitPrice", align: "right" as const, render: (v: unknown) => v != null ? Number(v).toFixed(2) : "-" },
+  { title: "金额", dataIndex: "amount", align: "right" as const, render: (v: unknown) => v != null ? Number(v).toFixed(2) : "-" },
+]
+function isFinanceModule(key: string) {
+  return key === 'receipt' || key === 'payment' || key === 'invoice-issue' || key === 'invoice-receipt'
+      || key === 'customer-statement' || key === 'supplier-statement' || key === 'freight-statement'
+}
+function buildItemColumns(moduleKey: string) {
+  return isFinanceModule(moduleKey) ? [...BASE_ITEM_COLUMNS, ...FINANCE_ITEM_COLUMNS] : BASE_ITEM_COLUMNS
+}
 
 function SaveResultOverlay({
   saveResult,
@@ -242,7 +252,6 @@ function SaveResultOverlay({
   onClear,
 }: SaveResultOverlayProps) {
   const navigate = useNavigate()
-  const itemColumns = config.itemColumns || []
   const items: ModuleRecord[] = Array.isArray(saveResult.record?.items)
     ? (saveResult.record.items as ModuleRecord[])
     : []
@@ -342,20 +351,7 @@ function SaveResultOverlay({
             <Table
               rowKey={(_, i) => String(i)}
               dataSource={items}
-              columns={isPurchaseOrSales(moduleKey) ? ITEM_SUMMARY_COLUMNS : itemColumns.map((col) => ({
-                title: col.title,
-                dataIndex: col.dataIndex || col.dataIndex,
-                key: col.dataIndex || col.dataIndex,
-                ellipsis: true,
-                render: (val: unknown) => {
-                  if (val == null || val === '') return '-'
-                  if (typeof val === 'number')
-                    return String(col.type) === 'money'
-                      ? val.toFixed(2)
-                      : String(val)
-                  return String(val)
-                },
-              }))}
+              columns={buildItemColumns(moduleKey)}
               size="small"
               pagination={false}
               scroll={{ x: 'max-content' }}
