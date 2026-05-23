@@ -147,8 +147,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     parentDisplayFieldKey: 'orderNo',
     buttonText: '导入采购订单明细',
     mapParentToDraft: (parentRecord) => ({
-      orderNo: parentRecord.orderNo || '',
-      buyerName: parentRecord.buyerName || '',
+      purchaseOrderNo: parentRecord.orderNo || '',
       supplierName: parentRecord.supplierName || '',
     }),
     transformItems: (parentRecord) =>

@@ -42,6 +42,7 @@ export function AppLayout() {
 
   const location = useLocation()
   const navigate = useNavigate()
+  const authReady = useAuthStore((state) => state.authReady)
   const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
   const signOut = useAuthStore((state) => state.signOut)
@@ -154,6 +155,7 @@ export function AppLayout() {
   useAppLayoutSessionGuards({
     locationPathname: location.pathname,
     navigate,
+    authReady,
     token,
     user,
   })
