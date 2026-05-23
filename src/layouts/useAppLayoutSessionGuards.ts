@@ -9,16 +9,25 @@ interface UserLike {
 interface Options {
   locationPathname: string
   navigate: NavigateFn
+  authReady: boolean
   token: string
   user: UserLike | null | undefined
 }
 
 export function useAppLayoutSessionGuards(options: Options) {
   useEffect(() => {
+    if (!options.authReady) {
+      return
+    }
     if (!options.token && options.locationPathname !== '/login') {
       void options.navigate({ to: '/login' })
     }
-  }, [options.locationPathname, options.navigate, options.token])
+  }, [
+    options.authReady,
+    options.locationPathname,
+    options.navigate,
+    options.token,
+  ])
 
   useEffect(() => {
     const user = options.user
