@@ -71,10 +71,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   hydrate: () => {
     const nextToken = getToken() || ''
+    const nextUser = getStoredUser()
     set({
       token: nextToken,
-      user: getStoredUser(),
-      isAuthenticated: Boolean(nextToken),
+      user: nextUser,
+      isAuthenticated: Boolean(nextToken || nextUser),
       authReady: false,
     })
   },
