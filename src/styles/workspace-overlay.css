@@ -172,7 +172,7 @@
   justify-content: space-between;
   min-height: var(--app-overlay-header-height, 56px);
   padding: 0 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   background: var(--ant-color-bg-container, #fff);
   flex-shrink: 0;
 }
@@ -193,13 +193,13 @@
   background: transparent;
   cursor: pointer;
   border-radius: 6px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
   transition: all 0.2s;
 }
 
 .workspace-overlay-close:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: rgba(0, 0, 0, 0.88);
+  background: var(--ant-color-fill-tertiary, rgba(0, 0, 0, 0.06));
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
 }
 
 .workspace-overlay-body {
@@ -215,7 +215,7 @@
   gap: 8px;
   flex: 0 0 auto;
   padding: 12px 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   background: var(--ant-color-bg-container, #fff);
 }
 
