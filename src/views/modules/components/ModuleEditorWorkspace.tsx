@@ -364,36 +364,38 @@ function SaveResultOverlay({
         </div>
       }
     >
-      {saveResult.record ? (
-        <Card size="small" className="mb-16">
-          <Space direction="vertical" size={4}>
-            {(config.formFields || []).map((field) => {
-              const val = saveResult.record?.[field.key]
-              if (val == null || val === '') return null
-              return (
-                <div key={field.key}>
-                  <Typography.Text type="secondary">
-                    {field.label}：
-                  </Typography.Text>
-                  <Typography.Text>{String(val)}</Typography.Text>
-                </div>
-              )
-            })}
-          </Space>
-        </Card>
-      ) : null}
+      <div className="flex flex-col items-center justify-center min-h-full">
+        {saveResult.record ? (
+          <Card size="small" className="mb-16 w-full max-w-2xl">
+            <Space direction="vertical" size={4}>
+              {(config.formFields || []).map((field) => {
+                const val = saveResult.record?.[field.key]
+                if (val == null || val === '') return null
+                return (
+                  <div key={field.key}>
+                    <Typography.Text type="secondary">
+                      {field.label}：
+                    </Typography.Text>
+                    <Typography.Text>{String(val)}</Typography.Text>
+                  </div>
+                )
+              })}
+            </Space>
+          </Card>
+        ) : null}
 
-      {items.length > 0 ? (
-        <div className="flex justify-center">
-          <Table
-            rowKey={(_, i) => String(i)}
-            dataSource={items}
-            columns={buildItemColumns(moduleKey)}
-            size="small"
-            pagination={false}
-          />
-        </div>
-      ) : null}
+        {items.length > 0 ? (
+          <div className="w-full max-w-5xl">
+            <Table
+              rowKey={(_, i) => String(i)}
+              dataSource={items}
+              columns={buildItemColumns(moduleKey)}
+              size="small"
+              pagination={false}
+            />
+          </div>
+        ) : null}
+      </div>
     </WorkspaceOverlay>
   )
 }
