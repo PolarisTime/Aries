@@ -48,6 +48,8 @@ export function ModuleAttachmentModal({
   const [uploading, setUploading] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewSource, setPreviewSource] = useState('')
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState('')
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false)
   const pasteZoneRef = useRef<HTMLDivElement | null>(null)
   const canCreateAttachment = can(resolvedResource, 'update')
   const canDeleteAttachment = can(resolvedResource, 'delete')
@@ -102,12 +104,8 @@ export function ModuleAttachmentModal({
   )
 
   const isImageAttachment = useCallback((attachment: AttachmentRecord) => {
-    if (attachment.previewType === 'image') {
-      return true
-    }
-    if (attachment.contentType?.startsWith('image/')) {
-      return true
-    }
+    if (attachment.previewType === 'image') return true
+    if (attachment.contentType?.startsWith('image/')) return true
     const fileName = String(
       attachment.originalFileName ||
         attachment.fileName ||
@@ -117,7 +115,19 @@ export function ModuleAttachmentModal({
     return /\.(png|jpe?g|gif|bmp|webp|svg)$/.test(fileName)
   }, [])
 
-  const openPreview = useCallback((attachment: AttachmentRecord) => {
+  const isPdfAttachment = useCallback((attachment: AttachmentRecord) => {
+    if (attachment.previewType === 'pdf') return true
+    if (attachment.contentType === 'application/pdf') return true
+    const fileName = String(
+      attachment.originalFileName ||
+        attachment.fileName ||
+        attachment.name ||
+        '',
+    ).toLowerCase()
+    return fileName.endsWith('.pdf')
+  }, [])
+
+  const openImagePreview = useCallback((attachment: AttachmentRecord) => {
     const src = attachment.previewUrl || attachment.downloadUrl || ''
     if (!src) {
       message.warning('当前附件暂无预览地址')
@@ -125,6 +135,16 @@ export function ModuleAttachmentModal({
     }
     setPreviewSource(src)
     setPreviewOpen(true)
+  }, [])
+
+  const openPdfPreview = useCallback((attachment: AttachmentRecord) => {
+    const src = attachment.previewUrl || attachment.downloadUrl || ''
+    if (!src) {
+      message.warning('当前附件暂无预览地址')
+      return
+    }
+    setPdfPreviewUrl(src)
+    setPdfPreviewOpen(true)
   }, [])
 
   const imageAttachments = useMemo(
@@ -235,7 +255,7 @@ export function ModuleAttachmentModal({
                       <button
                         type="button"
                         className="module-attachment-preview-thumb"
-                        onClick={() => openPreview(item)}
+                        onClick={() => openImagePreview(item)}
                       >
                         <Image
                           preview={false}
@@ -246,6 +266,14 @@ export function ModuleAttachmentModal({
                           width={56}
                           height={56}
                         />
+                      </button>
+                    ) : isPdfAttachment(item) ? (
+                      <button
+                        type="button"
+                        className="module-attachment-preview-thumb"
+                        onClick={() => openPdfPreview(item)}
+                      >
+                        <span className="module-attachment-pdf-icon">PDF</span>
                       </button>
                     ) : (
                       <span className="module-attachment-file-icon">
@@ -263,12 +291,15 @@ export function ModuleAttachmentModal({
                     </Space>
                   </Space>
                   <Space size={0}>
-                    {isImageAttachment(item) ? (
+                    {isImageAttachment(item) || isPdfAttachment(item) ? (
                       <Button
                         key="preview"
                         type="link"
                         icon={<EyeOutlined />}
-                        onClick={() => openPreview(item)}
+                        onClick={() => {
+                          if (isPdfAttachment(item)) openPdfPreview(item)
+                          else openImagePreview(item)
+                        }}
                       />
                     ) : null}
                     <Button
@@ -310,9 +341,7 @@ export function ModuleAttachmentModal({
             ),
             onVisibleChange: (visible) => {
               setPreviewOpen(visible)
-              if (!visible) {
-                setPreviewSource('')
-              }
+              if (!visible) setPreviewSource('')
             },
           }}
         >
@@ -327,6 +356,23 @@ export function ModuleAttachmentModal({
           </div>
         </Image.PreviewGroup>
       ) : null}
+      <Modal
+        title="PDF 预览"
+        open={pdfPreviewOpen}
+        onCancel={() => setPdfPreviewOpen(false)}
+        footer={null}
+        width="90%"
+        style={{ top: 20 }}
+        destroyOnClose
+      >
+        {pdfPreviewUrl ? (
+          <iframe
+            src={pdfPreviewUrl}
+            style={{ width: '100%', height: '80vh', border: 'none' }}
+            title="PDF Preview"
+          />
+        ) : null}
+      </Modal>
     </Modal>
   )
 }
