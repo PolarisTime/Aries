@@ -41,6 +41,8 @@ export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_USE_SNOWFLAKE_ID_AS_BUSINESS_NO:
     '启用后，新建业务单据时会预分配真实雪花ID，并直接以该雪花ID作为单据号。',
   SYS_LOGIN_CAPTCHA: '启用后，登录时需输入图形验证码，增加暴力破解防护。',
+  SYS_ATTACHMENT_WATERMARK_ENABLED:
+    '启用后，非管理员用户下载或预览图片/PDF 附件时自动添加平铺水印（用户名+时间），管理员不受限。',
 }
 
 export const DETAILED_OPERATION_ACTION_OPTIONS = [
