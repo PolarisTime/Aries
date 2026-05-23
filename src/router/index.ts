@@ -93,10 +93,6 @@ const viewLoaders: Record<
     import('@/views/system/PrintTemplateView').then((m) => ({
       default: m.PrintTemplateView,
     })),
-  database: () =>
-    import('@/views/system/DatabaseBackupView').then((m) => ({
-      default: m.DatabaseBackupView,
-    })),
   session: () =>
     import('@/views/system/SessionManagementView').then((m) => ({
       default: m.SessionManagementView,
@@ -128,7 +124,6 @@ const moduleRoutes = appPageDefinitions.map((def) => {
     def.view === 'company-setting' ||
     def.view === 'print-template' ||
     def.view === 'access-control' ||
-    def.view === 'database' ||
     def.view === 'session' ||
     def.view === 'api-key' ||
     def.view === 'security-key'

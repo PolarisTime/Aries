@@ -69,15 +69,6 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     accessResources: ['access-control'],
   },
   {
-    key: 'database',
-    title: '数据库管理',
-    menuKey: '/database',
-    view: 'database',
-    icon: 'DatabaseOutlined',
-    menuParent: 'system',
-    resourceKey: 'database',
-  },
-  {
     key: 'session',
     title: '会话管理',
     menuKey: '/session',
