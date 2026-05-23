@@ -10,36 +10,6 @@ import { execPrintCode, loadCLodop, printHtml } from '@/utils/clodop'
 import { buildModulePrintHtml } from '@/utils/module-print'
 import { asString } from '@/utils/type-narrowing'
 
-interface PrintRequestPayload {
-  templateId?: string
-  moduleKey: string
-  data: Record<string, string>
-  items?: Record<string, unknown>[]
-  title?: string
-}
-
-function buildPrintPayload(
-  record: Record<string, unknown>,
-  config: ModulePageConfig,
-  templateId: string,
-  moduleKey: string,
-): PrintRequestPayload {
-  const data: Record<string, string> = {}
-  for (const col of config.columns || []) {
-    const key = col.dataIndex
-    const val = record[key]
-    data[key] = val == null ? '' : String(val)
-  }
-  const items = (Array.isArray(record.items) ? record.items : []) as Record<string, unknown>[]
-  return {
-    templateId,
-    moduleKey,
-    data,
-    items: items.length > 0 ? items : undefined,
-    title: config.title,
-  }
-}
-
 interface Props {
   moduleKey: string
   config: ModulePageConfig
@@ -114,14 +84,18 @@ export function useBusinessGridPrintActions({
         await loadCLodop()
 
         if (template?.templateHtml?.trim()) {
-          // 后端生成脚本 → 前端安全执行
+          // 传 recordId，后端从 DB 加载数据生成脚本（防前端篡改）
           const scripts: string[] = []
           for (const record of selectedRecords) {
             const r = await http.post<{
               code: number
               data: { script: string }
               message?: string
-            }>('/print/generate', buildPrintPayload(record, config, template.id, moduleKey))
+            }>('/print/record', {
+              templateId: template.id,
+              moduleKey,
+              recordId: record.id,
+            })
             assertApiSuccess(r, '打印脚本生成失败')
             if (r.data?.script) scripts.push(r.data.script)
           }
