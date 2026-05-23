@@ -102,9 +102,11 @@ export function setupAuthInterceptors(http: AxiosInstance) {
     (response) => response.data,
     async (error) => {
       if (isCanceledRequestError(error)) {
-        markHandledRequestError(error)
-        const canceledErr = new Error(String(error))
+        const canceledErr = new Error(
+          error?.message || '请求已取消',
+        )
         attachTraceIdToError(canceledErr, extractBackendTraceId(error))
+        markHandledRequestError(canceledErr)
         return Promise.reject(canceledErr)
       }
 
@@ -159,14 +161,14 @@ export function setupAuthInterceptors(http: AxiosInstance) {
 
           markHandledRequestError(error)
           handleAuthFailure(refreshMessage)
-          error.message = refreshMessage
-          const refreshErr = new Error(String(error))
+          const refreshErr = new Error(refreshMessage)
           attachTraceIdToError(
             refreshErr,
             extractBackendTraceId(
               axios.isAxiosError(refreshError) ? refreshError : error,
             ),
           )
+          markHandledRequestError(refreshErr)
           return Promise.reject(refreshErr)
         }
       }
@@ -191,9 +193,9 @@ export function setupAuthInterceptors(http: AxiosInstance) {
         message.error(description)
       }
 
-      error.message = description
-      const normalizedErr = new Error(String(error))
+      const normalizedErr = new Error(description)
       attachTraceIdToError(normalizedErr, extractBackendTraceId(error))
+      markHandledRequestError(normalizedErr)
 
       return Promise.reject(normalizedErr)
     },

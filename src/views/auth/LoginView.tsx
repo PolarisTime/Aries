@@ -84,7 +84,7 @@ export function LoginView() {
         await navigate({ to: buildPostLoginTarget(result.user) as '/' })
       } catch (err) {
         const msg = err instanceof Error ? err.message : ''
-        if (msg.includes('验证码') || msg.includes('过期')) {
+        if (msg.includes('验证码')) {
           form.setFieldValue('captchaCode', '')
           void loadCaptcha()
           message.warning(t('auth.loginform.captchaExpired'))
