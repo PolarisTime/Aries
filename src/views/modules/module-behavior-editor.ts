@@ -26,6 +26,7 @@ registerModuleBehavior('purchase-order', {
   defaultDraftValues: () => ({ orderDate: currentDateTime() }),
 })
 registerModuleBehavior('purchase-inbound', {
+  defaultOperatorField: 'buyerName',
   defaultDraftValues: () => ({ inboundDate: currentDateTime() }),
 })
 registerModuleBehavior('sales-order', { defaultOperatorField: 'salesName' })
