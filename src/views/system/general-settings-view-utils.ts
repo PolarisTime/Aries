@@ -15,7 +15,7 @@ export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_DEFAULT_TAX_RATE:
     '用于发票默认税率与税额自动计算，修改后新开票草稿会使用该值。',
   SYS_MAX_CONCURRENT_SESSIONS:
-    '限制同一用户同时保持的有效会话数量，超出后最早的会话将被自动清理。设为 0 或留空表示不限制。',
+    '限制同一用户同时保持的有效会话数量，超出后最早的会话将被自动清理。设为 0 表示不限制，留空将使用系统默认值 3。',
   UI_WEIGHT_ONLY_PURCHASE_INBOUNDS:
     '启用后，采购入库页面切换到重量视图，隐藏金额和单价字段。',
   UI_WEIGHT_ONLY_SALES_OUTBOUNDS:
@@ -35,7 +35,7 @@ export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_BATCH_NO_AUTO_GENERATE:
     '启用后，批号管理商品在明细未填写批号时，系统按单号规则中的批号生成规则自动补齐。',
   UI_HIDE_AUDITED_LIST_RECORDS:
-    '启用后，业务列表分页查询默认不显示下方勾选状态的单据。',
+    '启用后，业务列表分页查询默认不显示下方多选中所勾选状态的单据。',
   UI_SHOW_SNOWFLAKE_ID:
     '启用后，业务列表显示系统雪花 ID 列，便于排查数据问题。',
   SYS_USE_SNOWFLAKE_ID_AS_BUSINESS_NO:

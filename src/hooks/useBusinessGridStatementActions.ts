@@ -1,9 +1,14 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   generateBusinessPrimaryNo,
   getBusinessModuleDetail,
   saveBusinessModule,
 } from '@/api/business'
+import {
+  isDisplaySwitchEnabled,
+  listDisplaySwitches,
+} from '@/api/system-settings'
 import { listAllStatementCandidates } from '@/api/statements'
 import type { ModuleRecord } from '@/types/module-page'
 import { cloneLineItems } from '@/utils/clone-utils'
@@ -23,6 +28,29 @@ interface Props {
 export function useBusinessGridStatementActions({
   refreshModuleQueries,
 }: Props) {
+  const { data: displaySwitches = [] } = useQuery({
+    queryKey: ['display-switches'],
+    queryFn: () => listDisplaySwitches(),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const customerReceiptZero = useMemo(
+    () =>
+      isDisplaySwitchEnabled(
+        displaySwitches,
+        'SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER',
+      ),
+    [displaySwitches],
+  )
+
+  const supplierFullPayment = useMemo(
+    () =>
+      isDisplaySwitchEnabled(
+        displaySwitches,
+        'SYS_SUPPLIER_STATEMENT_FULL_PAYMENT_FROM_PURCHASE',
+      ),
+    [displaySwitches],
+  )
   const buildDraftLineItemId = useCallback((prefix: string) => {
     let index = 0
     return () => `${prefix}-${Date.now()}-${index++}`
@@ -111,7 +139,7 @@ export function useBusinessGridStatementActions({
             sourceOrders: projectRecords,
             today: endDate,
             statementPeriod,
-            defaultReceiptAmountZero: true,
+            defaultReceiptAmountZero: customerReceiptZero,
             cloneLineItems,
             buildLineItemId,
           })
@@ -133,7 +161,7 @@ export function useBusinessGridStatementActions({
           payments: [],
           today: endDate,
           statementPeriod,
-          defaultFullPayment: false,
+          defaultFullPayment: supplierFullPayment,
           cloneLineItems,
           buildLineItemId,
         })
@@ -163,7 +191,7 @@ export function useBusinessGridStatementActions({
 
       await refreshModuleQueries()
     },
-    [buildDraftLineItemId, refreshModuleQueries],
+    [buildDraftLineItemId, refreshModuleQueries, customerReceiptZero, supplierFullPayment],
   )
 
   return { handleStatementGenerate }
