@@ -210,7 +210,6 @@ export function useModuleEditorWorkspace({
   moduleKey,
   editorAuditTarget,
   form,
-  onClose,
   onSaved,
   autoInsertBlankItemOnCreate,
 }: Props) {
@@ -223,6 +222,7 @@ export function useModuleEditorWorkspace({
     status: 'success' | 'error' | 'warning'
     message: string
     traceId?: string
+    record?: ModuleRecord
   } | null>(null)
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const isEdit = !!record
@@ -486,9 +486,14 @@ export function useModuleEditorWorkspace({
           setSaveResult({
             status: 'warning',
             message: preallocatedIdWarning.content,
+            record: savedResult.data,
           })
         } else {
-          onClose()
+          setSaveResult({
+            status: 'success',
+            message: isEdit ? '编辑成功' : '新增成功',
+            record: savedResult.data,
+          })
         }
       } catch (err) {
         if (isAntdFormValidationError(err)) {
@@ -515,7 +520,7 @@ export function useModuleEditorWorkspace({
       isEdit,
       items,
       moduleKey,
-      onClose,
+
       onSaved,
       primaryNoLoading,
       record,

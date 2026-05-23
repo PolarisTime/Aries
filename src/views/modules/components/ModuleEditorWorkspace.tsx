@@ -1,7 +1,9 @@
 import Button from 'antd/es/button'
 import Form from 'antd/es/form'
+import Modal from 'antd/es/modal'
+import Result from 'antd/es/result'
+import Typography from 'antd/es/typography'
 import { useMemo } from 'react'
-import { AppResultModal } from '@/components/AppResultModal'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
@@ -188,26 +190,70 @@ export function ModuleEditorWorkspace({
         />
       </WorkspaceOverlay>
 
-      <AppResultModal
+      <Modal
         open={!!saveResult}
-        status={saveResult?.status ?? 'success'}
-        subTitle={saveResult?.message}
-        footer={
-          <Button
-            type="primary"
-            onClick={() => {
-              clearSaveResult()
-              onClose()
-            }}
-          >
-            知道了
-          </Button>
-        }
-        onClose={() => {
+        footer={null}
+        closable={false}
+        width={480}
+        onCancel={() => {
           clearSaveResult()
           onClose()
         }}
-      />
+      >
+        <Result
+          status={saveResult?.status ?? 'success'}
+          title={
+            saveResult?.status === 'success'
+              ? '保存成功'
+              : saveResult?.status === 'warning'
+                ? '提示'
+                : '保存失败'
+          }
+          subTitle={saveResult?.message}
+          extra={
+            <div className="text-left mt-16">
+              {saveResult?.record ? (
+                <>
+                  {config.primaryNoKey &&
+                  saveResult.record[config.primaryNoKey] != null ? (
+                    <div className="mb-8">
+                      <Typography.Text type="secondary">
+                        单据编号：
+                      </Typography.Text>
+                      <Typography.Text strong>
+                        {String(saveResult.record[config.primaryNoKey])}
+                      </Typography.Text>
+                    </div>
+                  ) : null}
+                  {(config.formFields || []).slice(0, 5).map((field) => {
+                    const val = saveResult.record?.[field.key]
+                    if (val == null || val === '') return null
+                    return (
+                      <div key={field.key} className="mb-4">
+                        <Typography.Text type="secondary">
+                          {field.label}：
+                        </Typography.Text>
+                        <Typography.Text>{String(val)}</Typography.Text>
+                      </div>
+                    )
+                  })}
+                </>
+              ) : null}
+              <div className="mt-16 text-center">
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    clearSaveResult()
+                    onClose()
+                  }}
+                >
+                  知道了
+                </Button>
+              </div>
+            </div>
+          }
+        />
+      </Modal>
     </>
   )
 }
