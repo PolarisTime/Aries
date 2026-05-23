@@ -17,7 +17,7 @@ const compactFreightItemWidthMap: Record<string, number> = {
   pieceWeightTon: 90,
   weightTon: 108,
   warehouseName: 132,
-  batchNo: 112,
+  batchNo: 120,
 }
 
 export const freightItemColumns: ModuleColumnDefinition[] = [
@@ -53,7 +53,7 @@ export const freightItemColumns: ModuleColumnDefinition[] = [
     align: 'center',
     type: 'count',
   },
-  { title: '批号', dataIndex: 'batchNo', width: 100 },
+  { title: '批号', dataIndex: 'batchNo', width: 130 },
   {
     title: '总重量（吨）',
     dataIndex: 'weightTon',
