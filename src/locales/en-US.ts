@@ -170,6 +170,8 @@ export const enUS: MessageSchema = {
       captchaPlaceholder: 'Enter captcha',
       captchaAlt: 'Captcha',
       captchaRefresh: 'Refresh',
+      captchaExpired:
+        'Captcha expired, refreshed automatically, please re-enter',
       remember: 'Remember sign-in state',
       submit: 'Sign In',
     },

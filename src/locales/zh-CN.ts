@@ -167,6 +167,7 @@ export const zhCN: MessageSchema = {
       captchaPlaceholder: '请输入验证码',
       captchaAlt: '验证码',
       captchaRefresh: '刷新',
+      captchaExpired: '验证码已过期，已自动刷新，请重新输入',
       remember: '记住登录状态',
       submit: '登录系统',
     },

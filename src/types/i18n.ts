@@ -162,6 +162,7 @@ export interface MessageSchema {
       captchaPlaceholder: string
       captchaAlt: string
       captchaRefresh: string
+      captchaExpired: string
       remember: string
       submit: string
     }
