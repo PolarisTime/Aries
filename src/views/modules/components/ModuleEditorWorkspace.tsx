@@ -343,12 +343,17 @@ function SaveResultOverlay({
     </Button>
   ) : null
 
-  const titleText = isSuccess ? '保存成功' : '保存失败'
+  const headerTitle = (
+    <span className="flex items-center gap-8">
+      {statusIcon}
+      <span>{isSuccess ? '保存成功' : '保存失败'}</span>
+    </span>
+  )
 
   return (
     <WorkspaceOverlay
       open
-      title={titleText}
+      title={headerTitle}
       onClose={onClear}
       footer={
         <div className="flex justify-end gap-8">
@@ -359,8 +364,7 @@ function SaveResultOverlay({
         </div>
       }
     >
-      <div className="text-center mb-20">
-        <div className="mb-8">{statusIcon}</div>
+      <div className="text-center mb-16">
         <Typography.Text type="secondary">{saveResult.message}</Typography.Text>
         {saveResult.traceId ? (
           <div className="mt-4">
