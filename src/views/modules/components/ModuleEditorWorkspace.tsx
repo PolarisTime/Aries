@@ -225,6 +225,16 @@ interface SaveResultOverlayProps {
   onClear: () => void
 }
 
+const ITEM_SUMMARY_COLUMNS = [
+  { title: "品牌", dataIndex: "brand", ellipsis: true },
+  { title: "材质", dataIndex: "material", ellipsis: true },
+  { title: "规格", dataIndex: "spec", ellipsis: true },
+  { title: "长度", dataIndex: "length", ellipsis: true },
+  { title: "数量", dataIndex: "quantity", align: "right" as const },
+  { title: "总重", dataIndex: "weightTon", align: "right" as const, render: (v: unknown) => v != null ? Number(v).toFixed(3) : "-" },
+]
+function isPurchaseOrSales(key: string) { return key === "purchase-order" || key === "sales-order" }
+
 function SaveResultOverlay({
   saveResult,
   config,
@@ -327,12 +337,12 @@ function SaveResultOverlay({
           </Card>
         ) : null}
 
-        {items.length > 0 && itemColumns.length > 0 ? (
+        {items.length > 0 ? (
           <Card size="small" title="明细" className="mb-16">
             <Table
               rowKey={(_, i) => String(i)}
               dataSource={items}
-              columns={itemColumns.map((col) => ({
+              columns={isPurchaseOrSales(moduleKey) ? ITEM_SUMMARY_COLUMNS : itemColumns.map((col) => ({
                 title: col.title,
                 dataIndex: col.dataIndex || col.dataIndex,
                 key: col.dataIndex || col.dataIndex,
