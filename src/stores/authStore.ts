@@ -174,9 +174,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       })
       return true
     } catch {
-      // refresh 失败时保留本地已有的 token 和 user，不清除登录态
+      // refresh 失败时保留本地已有的 token 不丢失，但标记会话待验证
       set({ isAuthenticated: true, authReady: true })
-      return true
+      return false
     }
   },
 }))
