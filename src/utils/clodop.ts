@@ -200,11 +200,76 @@ function parseInitCall(code: string) {
   return { title, inita }
 }
 
-function cleanPrintCode(code: string) {
-  return code
-    .replace(/LODOP\s*\.\s*PRINT_INITA?\s*\([^)]*\)\s*;?/g, '')
-    .replace(/LODOP\s*\.\s*PREVIEW\s*\([^)]*\)\s*;?/g, '')
-    .replace(/LODOP\s*\.\s*PRINT\s*\([^)]*\)\s*;?/g, '')
+/**
+ * Safely execute LODOP API calls without eval / new Function.
+ * Only allows LODOP.SET_*, LODOP.ADD_*, LODOP.SET_PRINT_* and similar safe methods.
+ */
+function executeLodopCalls(lodop: CLodopInstance, code: string) {
+  const SAFE_METHOD =
+    /^LODOP\.(SET_|ADD_|NewPage|SET_PRINT|SELECT_|DELETE_)[A-Za-z_]*\s*\(/
+  const lines = code.split(/;\r?\n?/)
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || !trimmed.startsWith('LODOP.')) continue
+    if (!SAFE_METHOD.test(trimmed)) continue
+
+    try {
+      const openParen = trimmed.indexOf('(')
+      const methodName = trimmed.substring(6, openParen)
+      const argsStr = trimmed.substring(openParen + 1, trimmed.lastIndexOf(')'))
+      const args = parseArgs(argsStr)
+      const fn = (
+        lodop as unknown as Record<string, (...a: unknown[]) => void>
+      )[methodName]
+      if (typeof fn === 'function') fn(...args)
+    } catch {
+      // skip broken lines
+    }
+  }
+}
+
+function parseArgs(argsStr: string): unknown[] {
+  if (!argsStr.trim()) return []
+  const result: unknown[] = []
+  let depth = 0
+  let current = ''
+  for (let i = 0; i < argsStr.length; i++) {
+    const ch = argsStr[i]
+    if (ch === '"' || ch === "'") {
+      const quote = ch
+      let j = i + 1
+      while (j < argsStr.length && argsStr[j] !== quote) j++
+      current = argsStr.substring(i + 1, j)
+      i = j
+      result.push(current)
+      current = ''
+      // skip comma
+      while (i + 1 < argsStr.length && argsStr[i + 1] === ' ') i++
+      if (i + 1 < argsStr.length && argsStr[i + 1] === ',') i++
+      continue
+    }
+    if (ch === '(') depth++
+    else if (ch === ')') depth--
+    else if (ch === ',' && depth === 0) {
+      const val = current.trim()
+      if (val) result.push(coerceValue(val))
+      current = ''
+      continue
+    }
+    current += ch
+  }
+  const val = current.trim()
+  if (val) result.push(coerceValue(val))
+  return result
+}
+
+function coerceValue(v: string): unknown {
+  if (v === '') return ''
+  if (v === 'true') return true
+  if (v === 'false') return false
+  const num = Number(v)
+  if (!Number.isNaN(num) && v !== '') return num
+  return v
 }
 
 function callInit(
@@ -253,9 +318,7 @@ export function execPrintCode(code: string, options: PrintHtmlOptions = {}) {
     if (printer) {
       lodop.SET_PRINTER_INDEX(printer)
     }
-    const cleaned = cleanPrintCode(code)
-    // FIXME: replace new Function with safer alternative
-    new Function('LODOP', cleaned)(lodop)
+    executeLodopCalls(lodop, code)
     if (preview) {
       lodop.PREVIEW()
     } else {

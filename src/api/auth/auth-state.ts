@@ -89,7 +89,8 @@ function redirectToLogin() {
     return
   }
 
-  window.location.href = `/login?redirect=${encodeURIComponent(currentRoute)}`
+  const safe = currentRoute.startsWith('/') ? currentRoute : '/dashboard'
+  window.location.href = `/login?redirect=${encodeURIComponent(safe)}`
 }
 
 export function schedulePreRefresh(delayMs?: number) {
