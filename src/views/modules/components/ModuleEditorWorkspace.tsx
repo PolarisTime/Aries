@@ -193,11 +193,12 @@ export function ModuleEditorWorkspace({
       <Modal
         open={!!saveResult}
         footer={null}
-        closable={false}
+        closable={saveResult?.status === 'error'}
+        maskClosable={saveResult?.status === 'error'}
         width={480}
         onCancel={() => {
           clearSaveResult()
-          onClose()
+          if (saveResult?.status !== 'error') onClose()
         }}
       >
         <Result
@@ -244,10 +245,10 @@ export function ModuleEditorWorkspace({
                   type="primary"
                   onClick={() => {
                     clearSaveResult()
-                    onClose()
+                    if (saveResult?.status !== 'error') onClose()
                   }}
                 >
-                  知道了
+                  {saveResult?.status === 'error' ? '返回编辑' : '知道了'}
                 </Button>
               </div>
             </div>
