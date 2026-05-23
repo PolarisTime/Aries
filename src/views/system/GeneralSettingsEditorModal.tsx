@@ -80,7 +80,7 @@ export function GeneralSettingsEditorModal({
                 ]}
               >
                 {asString(record.settingCode) === WATERMARK_COLOR_CODE ? (
-                  <Space.Compact style={{ width: '100%' }}>
+                  <Space.Compact className="w-full">
                     <ColorPicker
                       format="rgb"
                       onChange={(_, hex) =>
