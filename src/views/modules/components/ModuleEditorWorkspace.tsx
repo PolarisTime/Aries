@@ -384,14 +384,15 @@ function SaveResultOverlay({
       ) : null}
 
       {items.length > 0 ? (
-        <Table
-          rowKey={(_, i) => String(i)}
-          dataSource={items}
-          columns={buildItemColumns(moduleKey)}
-          size="small"
-          pagination={false}
-          scroll={{ x: 'max-content' }}
-        />
+        <div className="flex justify-center">
+          <Table
+            rowKey={(_, i) => String(i)}
+            dataSource={items}
+            columns={buildItemColumns(moduleKey)}
+            size="small"
+            pagination={false}
+          />
+        </div>
       ) : null}
     </WorkspaceOverlay>
   )
