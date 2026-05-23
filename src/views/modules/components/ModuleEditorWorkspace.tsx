@@ -370,12 +370,16 @@ function SaveResultOverlay({
             {(config.formFields || []).map((field) => {
               const val = saveResult.record?.[field.key]
               if (val == null || val === '') return null
+              const suffix =
+                (field as Record<string, unknown>).type === 'weight' ? ' 吨'
+                : (field as Record<string, unknown>).type === 'amount' ? ' 元'
+                : ''
               return (
                 <div key={field.key}>
                   <Typography.Text type="secondary">
                     {field.label}：
                   </Typography.Text>
-                  <Typography.Text>{String(val)}</Typography.Text>
+                  <Typography.Text>{String(val)}{suffix}</Typography.Text>
                 </div>
               )
             })}
