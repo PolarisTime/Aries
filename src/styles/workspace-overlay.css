@@ -178,7 +178,7 @@
 }
 
 .workspace-overlay-title {
-  color: #262626;
+  color: var(--ant-color-text, #262626);
   font-size: calc(var(--app-font-size, 14px) + 4px);
   font-weight: 500;
 }
