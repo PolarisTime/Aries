@@ -96,10 +96,53 @@ function normalizeTask(raw: RawDatabaseExportTask): DatabaseExportTask {
 
 // ── 公开 API ────────────────────────────────────────────
 
+export interface SlowQueryItem {
+  queryPreview: string
+  calls: number
+  avgMs: number
+  pctTotal: number
+  cacheHitPct: number
+}
+export interface CacheItem {
+  tableName: string
+  heapCachePct: number
+  idxCachePct: number
+  hotUpdatePct: number
+}
+export interface BloatItem {
+  tableName: string
+  liveRows: number
+  deadRows: number
+  deadPct: number
+  lastAutovacuum: string | null
+}
+export interface UnusedIndexItem {
+  indexName: string
+  tableName: string
+  size: string
+  scans: number
+}
+export interface PgMonitoring {
+  topSlowQueries: SlowQueryItem[]
+  cacheEfficiency: CacheItem[]
+  tableBloat: BloatItem[]
+  unusedIndexes: UnusedIndexItem[]
+}
+
 export async function getDatabaseStatus() {
   const r = assertApiSuccess(
     await http.get<DatabaseResponse<DatabaseStatus>>(ENDPOINTS.DATABASE_STATUS),
     getApiMessage('loadDatabaseStatusFailed'),
+  )
+  return r.data
+}
+
+export async function getPgMonitoring() {
+  const r = assertApiSuccess(
+    await http.get<DatabaseResponse<PgMonitoring>>(
+      '/system/databases/monitoring',
+    ),
+    '获取 PG 监控数据失败',
   )
   return r.data
 }
