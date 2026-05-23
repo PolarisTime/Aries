@@ -362,13 +362,13 @@ export function ModuleAttachmentModal({
         onCancel={() => setPdfPreviewOpen(false)}
         footer={null}
         width="90%"
-        style={{ top: 20 }}
+        className="modal-top-20"
         destroyOnClose
       >
         {pdfPreviewUrl ? (
           <iframe
             src={pdfPreviewUrl}
-            style={{ width: '100%', height: '80vh', border: 'none' }}
+            className="w-full border-none pdf-preview-iframe"
             title="PDF Preview"
           />
         ) : null}
