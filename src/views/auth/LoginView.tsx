@@ -83,13 +83,20 @@ export function LoginView() {
         )
         await navigate({ to: buildPostLoginTarget(result.user) as '/' })
       } catch (err) {
-        showError(err, t('auth.loginFailed'))
-        void loadCaptcha()
+        const msg = err instanceof Error ? err.message : ''
+        if (msg.includes('验证码') || msg.includes('过期')) {
+          form.setFieldValue('captchaCode', '')
+          void loadCaptcha()
+          message.warning(t('auth.loginform.captchaExpired'))
+        } else {
+          showError(err, t('auth.loginFailed'))
+          void loadCaptcha()
+        }
       } finally {
         setLoading(false)
       }
     },
-    [captcha, loadCaptcha, navigate, showError, signIn, start2faStep, t],
+    [captcha, loadCaptcha, navigate, showError, signIn, start2faStep, t, form],
   )
   const handleTotpVerify = useCallback(async () => {
     if (!/^\d{6}$/.test(totpCode.trim())) {
