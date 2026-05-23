@@ -1,8 +1,4 @@
-import {
-  LockOutlined,
-  SafetyCertificateOutlined,
-  UserOutlined,
-} from '@ant-design/icons'
+import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Checkbox from 'antd/es/checkbox'
 import type { FormInstance } from 'antd/es/form'
@@ -12,21 +8,15 @@ import { useTranslation } from 'react-i18next'
 import type { LoginPayload } from '@/types/auth'
 
 interface Props {
-  captchaImageSrc: string
   loading: boolean
-  onLoadCaptcha: () => void
   onSubmit: (values: LoginPayload) => void
-  shouldShowCaptcha: boolean
   savedLoginName: string
   form: FormInstance
 }
 
 export function LoginPasswordForm({
-  captchaImageSrc,
   loading,
-  onLoadCaptcha,
   onSubmit,
-  shouldShowCaptcha,
   savedLoginName,
   form,
 }: Props) {
@@ -75,39 +65,6 @@ export function LoginPasswordForm({
             autoComplete="current-password"
           />
         </Form.Item>
-
-        {shouldShowCaptcha && (
-          <Form.Item
-            name="captchaCode"
-            label={t('auth.loginform.captchaLabel')}
-            rules={[
-              { required: true, message: t('auth.loginform.captchaRequired') },
-            ]}
-          >
-            <Input
-              prefix={<SafetyCertificateOutlined />}
-              placeholder={t('auth.loginform.captchaPlaceholder')}
-              suffix={
-                <Button
-                  type="text"
-                  size="small"
-                  onClick={onLoadCaptcha}
-                  className="h-8 p-0"
-                >
-                  {captchaImageSrc ? (
-                    <img
-                      src={captchaImageSrc}
-                      alt={t('auth.loginform.captchaAlt')}
-                      className="h-7 rounded"
-                    />
-                  ) : (
-                    t('auth.loginform.captchaRefresh')
-                  )}
-                </Button>
-              }
-            />
-          </Form.Item>
-        )}
 
         <Form.Item name="remember" valuePropName="checked">
           <Checkbox>{t('auth.loginform.remember')}</Checkbox>

@@ -5,14 +5,12 @@ import Form from 'antd/es/form'
 import Typography from 'antd/es/typography'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { fetchCaptcha } from '@/api/auth'
 import { SliderCaptcha } from '@/components/SliderCaptcha'
 import { useRequestError } from '@/hooks/useRequestError'
 import { getFormString } from '@/lib/antd-form'
 import { useAuthStore } from '@/stores/authStore'
-import type { CaptchaData, LoginPayload } from '@/types/auth'
+import type { LoginPayload } from '@/types/auth'
 import { message } from '@/utils/antd-app'
-import { toDataImageUrl } from '@/utils/data-url'
 import { AuthPageShell } from './AuthPageShell'
 import { LoginPasswordForm } from './LoginPasswordForm'
 import { LoginTotpPanel } from './LoginTotpPanel'
@@ -44,7 +42,6 @@ export function LoginView() {
   } = useLoginTotpSession()
   const [loading, setLoading] = useState(false)
   const [totpLoading, setTotpLoading] = useState(false)
-  const [captcha, setCaptcha] = useState<CaptchaData | null>(null)
   const [loginAttempts, setLoginAttempts] = useState(0)
   const [sliderVerified, setSliderVerified] = useState(false)
   const [form] = Form.useForm()
@@ -56,28 +53,12 @@ export function LoginView() {
       setFlipped(false)
     }
   }, [loginStep, flipped])
-  const loadCaptcha = useCallback(async () => {
-    try {
-      const response = await fetchCaptcha()
-      if (response.code === 0) {
-        setCaptcha(response.data)
-      }
-    } catch {
-      // captcha is optional
-    }
-  }, [])
-  useEffect(() => {
-    void loadCaptcha()
-  }, [loadCaptcha])
   const handleLogin = useCallback(
     async (values: LoginPayload) => {
       if (needSlider && !sliderVerified) return
       setLoading(true)
       try {
-        const result = await signIn({
-          ...values,
-          captchaId: captcha?.captchaId,
-        })
+        const result = await signIn(values)
         if (result.requires2fa) {
           start2faStep(result.tempToken, values.loginName)
           setFlipped(true)
@@ -97,31 +78,12 @@ export function LoginView() {
       } catch (err) {
         setLoginAttempts((p) => p + 1)
         setSliderVerified(false)
-        const msg = err instanceof Error ? err.message : ''
-        if (msg.includes('验证码')) {
-          form.setFieldValue('captchaCode', '')
-          void loadCaptcha()
-          message.warning(t('auth.loginform.captchaExpired'))
-        } else {
-          showError(err, t('auth.loginFailed'))
-          void loadCaptcha()
-        }
+        showError(err, t('auth.loginFailed'))
       } finally {
         setLoading(false)
       }
     },
-    [
-      captcha,
-      loadCaptcha,
-      navigate,
-      needSlider,
-      showError,
-      signIn,
-      sliderVerified,
-      start2faStep,
-      t,
-      form,
-    ],
+    [navigate, needSlider, showError, signIn, sliderVerified, start2faStep, t],
   )
   const handleTotpVerify = useCallback(async () => {
     if (!/^\d{6}$/.test(totpCode.trim())) {
@@ -194,12 +156,6 @@ export function LoginView() {
     }
     return '00:00'
   }, [stepDeadline, totpNow])
-  const captchaImageSrc = useMemo(
-    () => toDataImageUrl(captcha?.captchaImage),
-    [captcha?.captchaImage],
-  )
-  const shouldShowCaptcha = Boolean(captcha?.required)
-
   return (
     <AuthPageShell>
       <BorderBeam>
@@ -220,15 +176,10 @@ export function LoginView() {
             />
           ) : (
             <LoginPasswordForm
-              captchaImageSrc={captchaImageSrc}
               loading={loading}
-              onLoadCaptcha={() => {
-                void loadCaptcha()
-              }}
               onSubmit={(values) => {
                 void handleLogin(values)
               }}
-              shouldShowCaptcha={shouldShowCaptcha}
               savedLoginName={savedSession?.loginName || ''}
               form={form}
             />
