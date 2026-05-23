@@ -2151,3 +2151,11 @@ body,
   font-size: 15px;
   border-radius: 10px;
 }
+
+.modal-top-20 .ant-modal {
+  top: 20px;
+}
+
+.pdf-preview-iframe {
+  height: 80vh;
+}
