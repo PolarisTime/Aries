@@ -1,7 +1,9 @@
 import type { FormInstance } from 'antd'
+import ColorPicker from 'antd/es/color-picker'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Select from 'antd/es/select'
+import Space from 'antd/es/space'
 import Switch from 'antd/es/switch'
 import Typography from 'antd/es/typography'
 import { FormModal } from '@/components/FormModal'
@@ -78,7 +80,15 @@ export function GeneralSettingsEditorModal({
                 ]}
               >
                 {asString(record.settingCode) === WATERMARK_COLOR_CODE ? (
-                  <Input placeholder="rgba(0,0,0,0.08)" maxLength={50} />
+                  <Space.Compact style={{ width: '100%' }}>
+                    <ColorPicker
+                      format="rgb"
+                      onChange={(_, hex) =>
+                        form.setFieldValue('numericValue', hex)
+                      }
+                    />
+                    <Input placeholder="rgba(0,0,0,0.08)" maxLength={50} />
+                  </Space.Compact>
                 ) : (
                   <>
                     <Input.TextArea rows={3} maxLength={64} showCount />
