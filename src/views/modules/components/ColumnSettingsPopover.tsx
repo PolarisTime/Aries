@@ -124,7 +124,7 @@ export function ColumnSettingsPopover({
   }
 
   const content = (
-    <Space orientation="vertical" size="small" className="min-w-240">
+    <Space orientation="vertical" size="small" style={{ minWidth: 200, maxWidth: 280 }}>
       <Typography.Text strong>列设置</Typography.Text>
       <Divider className="my-4 mb-8" />
       <DndContext
@@ -149,7 +149,7 @@ export function ColumnSettingsPopover({
                   columnId={column.dataIndex}
                   checked={visibleKeys.includes(column.dataIndex)}
                   onToggle={() => onToggle(column.dataIndex)}
-                  label={column.title}
+                  label={<span style={{ fontSize: 12 }}>{column.title}</span>}
                 />
               )
             })}
@@ -166,6 +166,7 @@ export function ColumnSettingsPopover({
       placement="bottomRight"
       open={open}
       onOpenChange={onOpenChange}
+      overlayInnerStyle={{ maxWidth: 300 }}
     >
       <Button icon={<SettingOutlined />}>列设置</Button>
     </Popover>
