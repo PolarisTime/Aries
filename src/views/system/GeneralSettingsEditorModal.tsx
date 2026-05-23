@@ -42,7 +42,7 @@ export function GeneralSettingsEditorModal({
 }: Props) {
   return (
     <FormModal
-      title="编辑设置"
+      title={`编辑 ${record?.settingName || '设置'}`}
       open={open}
       onClose={onClose}
       onSave={onSave}
@@ -92,14 +92,37 @@ export function GeneralSettingsEditorModal({
                 ) : (
                   <>
                     <Input.TextArea rows={3} maxLength={64} showCount />
-                    <Typography.Text type="secondary" className="text-xs">
-                      可用变量：{'{username}'} {'{time}'} {'{date}'}
+                    <Typography.Text
+                      type="secondary"
+                      className="mt-1 block text-xs"
+                    >
+                      魔法变量：{' '}
+                      <Typography.Text code className="text-xs">
+                        {'{username}'}
+                      </Typography.Text>{' '}
+                      <Typography.Text code className="text-xs">
+                        {'{time}'}
+                      </Typography.Text>{' '}
+                      <Typography.Text code className="text-xs">
+                        {'{date}'}
+                      </Typography.Text>{' '}
+                      — 前端渲染时自动替换
                     </Typography.Text>
                   </>
                 )}
               </Form.Item>
             ) : (
-              <Form.Item name="numericValue" label="当前值" required>
+              <Form.Item
+                name="numericValue"
+                label={
+                  asString(record.settingCode) === WATERMARK_FONT_SIZE_CODE
+                    ? '水印字号'
+                    : asString(record.settingCode) === WATERMARK_DENSITY_CODE
+                      ? '水印密度'
+                      : '当前值'
+                }
+                required
+              >
                 {isDefaultTaxRateSetting(record) ? (
                   <Input
                     type="number"

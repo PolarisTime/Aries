@@ -1,15 +1,15 @@
-import { useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useCallback, useMemo } from 'react'
 import {
   generateBusinessPrimaryNo,
   getBusinessModuleDetail,
   saveBusinessModule,
 } from '@/api/business'
+import { listAllStatementCandidates } from '@/api/statements'
 import {
   isDisplaySwitchEnabled,
   listDisplaySwitches,
 } from '@/api/system-settings'
-import { listAllStatementCandidates } from '@/api/statements'
 import type { ModuleRecord } from '@/types/module-page'
 import { cloneLineItems } from '@/utils/clone-utils'
 import { asString } from '@/utils/type-narrowing'
@@ -191,7 +191,12 @@ export function useBusinessGridStatementActions({
 
       await refreshModuleQueries()
     },
-    [buildDraftLineItemId, refreshModuleQueries, customerReceiptZero, supplierFullPayment],
+    [
+      buildDraftLineItemId,
+      refreshModuleQueries,
+      customerReceiptZero,
+      supplierFullPayment,
+    ],
   )
 
   return { handleStatementGenerate }
