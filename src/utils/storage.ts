@@ -90,32 +90,17 @@ function resolvePersistenceMode(
 }
 
 export function getToken() {
-  if (typeof window === 'undefined') {
-    return accessToken
-  }
-
-  if (!accessToken) {
-    const mode = resolvePersistenceMode()
-    accessToken = getStorage(mode).getItem(STORAGE_KEYS.token) || ''
-  }
   return accessToken
 }
 
-export function setToken(token: string, mode?: AuthPersistenceMode) {
-  const persistenceMode = resolvePersistenceMode(mode)
+export function setToken(token: string, _mode?: AuthPersistenceMode) {
   accessToken = token
-  clearStorageItem(STORAGE_KEYS.token)
-  getStorage(persistenceMode).setItem(STORAGE_KEYS.token, token)
-  setStoredPersistenceMode(persistenceMode)
-  clearLegacyAuthStorage()
+  // Token 仅存内存，不持久化到 Web Storage（防 XSS 窃取）
+  // 页面刷新后通过 HttpOnly refresh token cookie 自动恢复
 }
 
 export function clearToken() {
   accessToken = ''
-  clearStorageItem(STORAGE_KEYS.token)
-  clearStorageItem(STORAGE_KEYS.tokenExpiresAt)
-  clearStorageItem(STORAGE_KEYS.authPersistence)
-  clearLegacyAuthStorage()
 }
 
 export function getStoredUser() {
