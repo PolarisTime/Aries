@@ -36,8 +36,8 @@ export function EditorItemsSummary({
     >
       <span>行数 {items.length}</span>
       {totalCount > 0 && <span>数量 {totalCount}</span>}
-      {totalWeight > 0 && <span>重量 {totalWeight.toFixed(3)}</span>}
-      {totalAmount > 0 && <span>金额 {totalAmount.toFixed(2)}</span>}
+      {totalWeight > 0 && <span>重量 {totalWeight.toFixed(3)} 吨</span>}
+      {totalAmount > 0 && <span>金额 {totalAmount.toFixed(2)} 元</span>}
     </div>
   )
 }
