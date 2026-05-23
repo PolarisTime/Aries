@@ -359,18 +359,16 @@ function SaveResultOverlay({
         </div>
       }
     >
-      <div className="flex items-center gap-12 mb-16">
-        {statusIcon}
-        <div>
-          <Typography.Text type="secondary">
-            {saveResult.message}
-          </Typography.Text>
-          {saveResult.traceId ? (
-            <Typography.Text type="secondary" className="text-xs ml-8">
+      <div className="text-center mb-20">
+        <div className="mb-8">{statusIcon}</div>
+        <Typography.Text type="secondary">{saveResult.message}</Typography.Text>
+        {saveResult.traceId ? (
+          <div className="mt-4">
+            <Typography.Text type="secondary" className="text-xs">
               Trace: {saveResult.traceId}
             </Typography.Text>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
 
       {saveResult.record ? (
