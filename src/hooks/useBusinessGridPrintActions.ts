@@ -1,19 +1,27 @@
 import { createElement, useCallback } from 'react'
 import { getBusinessModuleDetail } from '@/api/business'
+import { assertApiSuccess, http } from '@/api/client'
 import { listPrintTemplates } from '@/api/print-template'
 import { PrintTemplateSelector } from '@/hooks/PrintTemplateSelector'
-import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
+import type { ModulePageConfig } from '@/types/module-page'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
-import {
-  execPrintCode,
-  isCLodopCode,
-  loadCLodop,
-  printHtml,
-} from '@/utils/clodop'
+import { execPrintCode, loadCLodop, printHtml } from '@/utils/clodop'
 import { buildModulePrintHtml } from '@/utils/module-print'
-import { renderPrintTemplate } from '@/utils/print-template-engine'
-import { asArray, asString } from '@/utils/type-narrowing'
+import { asString } from '@/utils/type-narrowing'
+
+function buildPrintData(
+  record: Record<string, unknown>,
+  config: ModulePageConfig,
+): Record<string, string> {
+  const data: Record<string, string> = {}
+  for (const col of config.columns || []) {
+    const key = col.dataIndex
+    const val = record[key]
+    data[key] = val == null ? '' : String(val)
+  }
+  return data
+}
 
 interface Props {
   moduleKey: string
@@ -89,26 +97,31 @@ export function useBusinessGridPrintActions({
         await loadCLodop()
 
         if (template?.templateHtml?.trim()) {
-          const renderedTemplates = selectedRecords.map((record) =>
-            renderPrintTemplate(
-              template.templateHtml,
-              record,
-              asArray<ModuleLineItem>(record.items),
-            ),
-          )
-          const renderedHtml = isCLodopCode(template.templateHtml)
-            ? renderedTemplates.join('\nLODOP.NEWPAGEA();\n')
-            : renderedTemplates.join('<div class="print-page"></div>')
+          // 后端生成脚本 → 前端安全执行
+          const scripts: string[] = []
+          for (const record of selectedRecords) {
+            const r = await http.post<{
+              code: number
+              data: { script: string }
+              message?: string
+            }>('/print/generate', {
+              templateId: template.id,
+              data: buildPrintData(record, config),
+            })
+            assertApiSuccess(r, '打印脚本生成失败')
+            if (r.data?.script) scripts.push(r.data.script)
+          }
 
-          const success = isCLodopCode(template.templateHtml)
-            ? execPrintCode(renderedHtml, {
-                preview,
-                title: template.templateName || config.title,
-              })
-            : printHtml(renderedHtml, {
-                preview,
-                title: template.templateName || config.title,
-              })
+          if (!scripts.length) {
+            message.warning('未生成打印脚本')
+            return
+          }
+
+          const joinedScript = scripts.join('\nLODOP.NEWPAGEA();\n')
+          const success = execPrintCode(joinedScript, {
+            preview,
+            title: template.templateName || config.title,
+          })
 
           if (!success) {
             throw new Error('打印服务不可用，请检查 CLodop 或打印模板配置')
