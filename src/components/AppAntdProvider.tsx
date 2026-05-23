@@ -31,7 +31,7 @@ export function AppAntdProvider({ children }: Props) {
     () =>
       buildAntdTheme({
         borderRadius: 8,
-        cssVarKey: 'antd',
+        cssVarKey: 'ant',
         fontSize: 12,
         darkMode: resolvedTheme === 'dark',
       }),
