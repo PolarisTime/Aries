@@ -226,10 +226,10 @@ interface SaveResultOverlayProps {
 }
 
 const BASE_ITEM_COLUMNS = [
-  { title: '品牌', dataIndex: 'brand', ellipsis: true },
-  { title: '材质', dataIndex: 'material', ellipsis: true },
-  { title: '规格', dataIndex: 'spec', ellipsis: true },
-  { title: '长度', dataIndex: 'length', ellipsis: true },
+  { title: '品牌', dataIndex: 'brand', ellipsis: true, align: 'center' as const },
+  { title: '材质', dataIndex: 'material', ellipsis: true, align: 'center' as const },
+  { title: '规格', dataIndex: 'spec', ellipsis: true, align: 'center' as const },
+  { title: '长度', dataIndex: 'length', ellipsis: true, align: 'center' as const },
   { title: '数量', dataIndex: 'quantity', align: 'right' as const },
   {
     title: '总重',
