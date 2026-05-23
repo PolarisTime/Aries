@@ -2,10 +2,8 @@ import { useNavigate } from '@tanstack/react-router'
 import BorderBeam from 'antd/es/border-beam'
 import Card from 'antd/es/card'
 import Form from 'antd/es/form'
-import Typography from 'antd/es/typography'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SliderCaptcha } from '@/components/SliderCaptcha'
 import { useRequestError } from '@/hooks/useRequestError'
 import { getFormString } from '@/lib/antd-form'
 import { useAuthStore } from '@/stores/authStore'
@@ -20,8 +18,6 @@ import {
   requiresForcedTotpSetup,
 } from './login-view-utils'
 import { useLoginTotpSession } from './useLoginTotpSession'
-
-const SLIDER_THRESHOLD = 3
 
 export function LoginView() {
   const { t } = useTranslation()
@@ -42,12 +38,8 @@ export function LoginView() {
   } = useLoginTotpSession()
   const [loading, setLoading] = useState(false)
   const [totpLoading, setTotpLoading] = useState(false)
-  const [loginAttempts, setLoginAttempts] = useState(0)
-  const [sliderVerified, setSliderVerified] = useState(false)
   const [form] = Form.useForm()
   const [flipped, setFlipped] = useState(!!savedSession)
-  const needSlider = loginAttempts >= SLIDER_THRESHOLD
-  // 当 2FA 密码阶段被重置时，同步翻转到登录表单
   useEffect(() => {
     if (loginStep === 'password' && flipped) {
       setFlipped(false)
@@ -55,15 +47,12 @@ export function LoginView() {
   }, [loginStep, flipped])
   const handleLogin = useCallback(
     async (values: LoginPayload) => {
-      if (needSlider && !sliderVerified) return
       setLoading(true)
       try {
         const result = await signIn(values)
         if (result.requires2fa) {
           start2faStep(result.tempToken, values.loginName)
           setFlipped(true)
-          setLoginAttempts(0)
-          setSliderVerified(false)
           return
         }
         clearTotpSession()
@@ -73,17 +62,13 @@ export function LoginView() {
             : t('auth.loginSuccess'),
         )
         await navigate({ to: buildPostLoginTarget(result.user) as '/' })
-        setLoginAttempts(0)
-        setSliderVerified(false)
       } catch (err) {
-        setLoginAttempts((p) => p + 1)
-        setSliderVerified(false)
         showError(err, t('auth.loginFailed'))
       } finally {
         setLoading(false)
       }
     },
-    [navigate, needSlider, showError, signIn, sliderVerified, start2faStep, t],
+    [navigate, showError, signIn, start2faStep, t],
   )
   const handleTotpVerify = useCallback(async () => {
     if (!/^\d{6}$/.test(totpCode.trim())) {
@@ -110,11 +95,7 @@ export function LoginView() {
       clearTotpSession()
       message.success(t('auth.loginSuccess'))
       await navigate({ to: buildPostLoginTarget(result.user) as '/' })
-      setLoginAttempts(0)
-      setSliderVerified(false)
     } catch (err) {
-      setLoginAttempts((p) => p + 1)
-      setSliderVerified(false)
       showError(err, t('auth.twofactormodal.verifyFailed'))
     } finally {
       setTotpLoading(false)
@@ -184,14 +165,6 @@ export function LoginView() {
               form={form}
             />
           )}
-          {!flipped && needSlider ? (
-            <SliderCaptcha onVerify={() => setSliderVerified(true)} />
-          ) : null}
-          {!flipped && !needSlider && loginAttempts > 0 ? (
-            <Typography.Text type="secondary" className="text-xs">
-              失败 {loginAttempts}/{SLIDER_THRESHOLD} 次后需滑动验证
-            </Typography.Text>
-          ) : null}
         </Card>
       </BorderBeam>
     </AuthPageShell>
