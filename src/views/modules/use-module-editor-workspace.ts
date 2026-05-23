@@ -132,7 +132,7 @@ function syncEditorFormValues(args: {
   const changedKeys = new Set(Object.keys(changedValues || {}))
   const nextValues = syncDerivedEditorFormValuesForModule({
     moduleKey,
-    record: { ...currentValues },
+    record: { ...currentValues, ...changedValues },
     items,
     sumLineItemsBy,
     changedKeys,
