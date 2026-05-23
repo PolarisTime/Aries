@@ -1,7 +1,15 @@
+import {
+  ArrowRightOutlined,
+  CheckCircleFilled,
+  CloseCircleFilled,
+  WarningFilled,
+} from '@ant-design/icons'
+import { useNavigate } from '@tanstack/react-router'
 import Button from 'antd/es/button'
+import Card from 'antd/es/card'
 import Form from 'antd/es/form'
-import Modal from 'antd/es/modal'
-import Result from 'antd/es/result'
+import Space from 'antd/es/space'
+import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
 import { useMemo } from 'react'
 import {
@@ -190,71 +198,161 @@ export function ModuleEditorWorkspace({
         />
       </WorkspaceOverlay>
 
-      <Modal
-        open={!!saveResult}
-        footer={null}
-        closable={saveResult?.status === 'error'}
-        maskClosable={saveResult?.status === 'error'}
-        width={480}
-        onCancel={() => {
-          clearSaveResult()
-          if (saveResult?.status !== 'error') onClose()
-        }}
-      >
-        <Result
-          status={saveResult?.status ?? 'success'}
-          title={
-            saveResult?.status === 'success'
-              ? '保存成功'
-              : saveResult?.status === 'warning'
-                ? '提示'
-                : '保存失败'
-          }
-          subTitle={saveResult?.message}
-          extra={
-            <div className="text-left mt-16">
-              {saveResult?.record ? (
-                <>
-                  {config.primaryNoKey &&
-                  saveResult.record[config.primaryNoKey] != null ? (
-                    <div className="mb-8">
-                      <Typography.Text type="secondary">
-                        单据编号：
-                      </Typography.Text>
-                      <Typography.Text strong>
-                        {String(saveResult.record[config.primaryNoKey])}
-                      </Typography.Text>
-                    </div>
-                  ) : null}
-                  {(config.formFields || []).slice(0, 5).map((field) => {
-                    const val = saveResult.record?.[field.key]
-                    if (val == null || val === '') return null
-                    return (
-                      <div key={field.key} className="mb-4">
-                        <Typography.Text type="secondary">
-                          {field.label}：
-                        </Typography.Text>
-                        <Typography.Text>{String(val)}</Typography.Text>
-                      </div>
-                    )
-                  })}
-                </>
-              ) : null}
-              <div className="mt-16 text-center">
-                <Button
-                  type="primary"
-                  onClick={() => {
-                    clearSaveResult()
-                    if (saveResult?.status !== 'error') onClose()
-                  }}
-                >
-                  {saveResult?.status === 'error' ? '返回编辑' : '知道了'}
-                </Button>
-              </div>
-            </div>
-          }
+      {saveResult ? (
+        <SaveResultOverlay
+          saveResult={saveResult}
+          config={config}
+          moduleKey={moduleKey}
+          onClear={() => {
+            clearSaveResult()
+            if (saveResult.status !== 'error') onClose()
+          }}
         />
-      </Modal>
+      ) : null}
     </>
+  )
+}
+
+interface SaveResultOverlayProps {
+  saveResult: {
+    status: 'success' | 'error' | 'warning'
+    message: string
+    traceId?: string
+    record?: ModuleRecord
+  }
+  config: ModulePageConfig
+  moduleKey: string
+  onClear: () => void
+}
+
+function SaveResultOverlay({
+  saveResult,
+  config,
+  moduleKey,
+  onClear,
+}: SaveResultOverlayProps) {
+  const navigate = useNavigate()
+  const itemColumns = config.itemColumns || []
+  const items: ModuleRecord[] = Array.isArray(saveResult.record?.items)
+    ? (saveResult.record.items as ModuleRecord[])
+    : []
+  const isSuccess =
+    saveResult.status === 'success' || saveResult.status === 'warning'
+
+  const statusIcon =
+    saveResult.status === 'success' ? (
+      <CheckCircleFilled
+        className="text-4xl"
+        style={{ color: 'var(--ant-color-success, #52c41a)' }}
+      />
+    ) : saveResult.status === 'warning' ? (
+      <WarningFilled
+        className="text-4xl"
+        style={{ color: 'var(--ant-color-warning, #faad14)' }}
+      />
+    ) : (
+      <CloseCircleFilled
+        className="text-4xl"
+        style={{ color: 'var(--ant-color-error, #ff4d4f)' }}
+      />
+    )
+
+  const handleCreatePurchaseInbound = () => {
+    onClear()
+    navigate({
+      to: '/purchase-inbound',
+      search: new URLSearchParams({
+        sourceModule: moduleKey,
+        sourceRecordId: String(saveResult.record?.id || ''),
+      }).toString(),
+    } as never)
+  }
+
+  const quickActions =
+    isSuccess && moduleKey === 'purchase-order' ? (
+      <Button
+        type="primary"
+        icon={<ArrowRightOutlined />}
+        onClick={handleCreatePurchaseInbound}
+      >
+        创建采购入库
+      </Button>
+    ) : null
+
+  return (
+    <WorkspaceOverlay
+      open
+      title={isSuccess ? '保存成功' : '保存失败'}
+      onClose={onClear}
+      variant="workspace"
+    >
+      <div className="p-24">
+        <div className="flex items-center gap-12 mb-16">
+          {statusIcon}
+          <div>
+            <Typography.Title level={4} className="m-0">
+              {saveResult.message}
+            </Typography.Title>
+            {saveResult.traceId ? (
+              <Typography.Text type="secondary" className="text-xs">
+                Trace: {saveResult.traceId}
+              </Typography.Text>
+            ) : null}
+          </div>
+        </div>
+
+        {saveResult.record ? (
+          <Card size="small" className="mb-16">
+            <Space direction="vertical" size={4}>
+              {(config.formFields || []).map((field) => {
+                const val = saveResult.record?.[field.key]
+                if (val == null || val === '') return null
+                return (
+                  <div key={field.key}>
+                    <Typography.Text type="secondary">
+                      {field.label}：
+                    </Typography.Text>
+                    <Typography.Text>{String(val)}</Typography.Text>
+                  </div>
+                )
+              })}
+            </Space>
+          </Card>
+        ) : null}
+
+        {items.length > 0 && itemColumns.length > 0 ? (
+          <Card size="small" title="明细" className="mb-16">
+            <Table
+              rowKey={(_, i) => String(i)}
+              dataSource={items}
+              columns={itemColumns.map((col) => ({
+                title: col.title,
+                dataIndex: col.dataIndex || col.dataIndex,
+                key: col.dataIndex || col.dataIndex,
+                ellipsis: true,
+                render: (val: unknown) => {
+                  if (val == null || val === '') return '-'
+                  if (typeof val === 'number')
+                    return String(col.type) === 'money'
+                      ? val.toFixed(2)
+                      : String(val)
+                  return String(val)
+                },
+              }))}
+              size="small"
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+            />
+          </Card>
+        ) : null}
+
+        <div className="flex justify-end gap-8">
+          {quickActions}
+          <Button onClick={onClear}>
+            {saveResult.status === 'error' ? '返回编辑' : '关闭'}
+          </Button>
+        </div>
+      </div>
+    </WorkspaceOverlay>
   )
 }

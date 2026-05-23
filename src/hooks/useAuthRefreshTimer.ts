@@ -18,9 +18,12 @@ export function useAuthRefreshTimer(onRefresh: () => void) {
         return
       }
 
-      timerRef.current = setTimeout(() => {
-        onRefresh()
-      }, Math.min(delay, 2_147_483_647))
+      timerRef.current = setTimeout(
+        () => {
+          onRefresh()
+        },
+        Math.min(delay, 2_147_483_647),
+      )
     }
 
     schedule()
