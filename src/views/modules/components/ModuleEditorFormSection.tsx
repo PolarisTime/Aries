@@ -65,6 +65,9 @@ export function ModuleEditorFormSection({
           className="mb-12"
         />
       ) : null}
+      <Form.Item name="_preallocatedId" hidden>
+        <input />
+      </Form.Item>
       <div className="editor-form-head">
         <div className="editor-form-title-block">
           <Typography.Title level={5} className="m-0">
