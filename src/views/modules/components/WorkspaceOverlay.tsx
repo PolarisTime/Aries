@@ -4,7 +4,7 @@ import '@/styles/workspace-overlay.css'
 
 interface Props {
   open: boolean
-  title: string
+  title: React.ReactNode
   onClose: () => void
   children: React.ReactNode
   width?: number | string
