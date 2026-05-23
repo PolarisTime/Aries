@@ -248,6 +248,12 @@ export function AppLayout() {
       (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_COLOR',
     )?.sampleNo || 'rgba(0,0,0,0.08)',
   ).trim()
+  const watermarkDensity =
+    Number(
+      systemSettings.find(
+        (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_DENSITY',
+      )?.sampleNo,
+    ) || 200
   const watermarkText = useMemo(() => {
     if (!watermarkEnabled) return undefined
     const raw = String(watermarkContentSetting?.sampleNo || '').trim()
@@ -269,7 +275,7 @@ export function AppLayout() {
         content={watermarkText}
         font={{ fontSize: watermarkFontSize, color: watermarkColor }}
         rotate={watermarkRotate}
-        gap={[200, 200]}
+        gap={[watermarkDensity, watermarkDensity]}
         style={{ minHeight: '100dvh' }}
       >
         <Layout className={rootClassName} style={shellFontStyle}>
