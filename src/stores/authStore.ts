@@ -151,8 +151,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   restoreSession: async () => {
-    const { token, user } = get()
-    if (!token || !user) {
+    const { user } = get()
+    // 无本地用户数据 → 未登录，静默跳过
+    if (!user) {
       set({ token: '', user: null, isAuthenticated: false, authReady: true })
       return false
     }
@@ -174,8 +175,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       })
       return true
     } catch {
-      // refresh 失败时保留本地已有的 token 不丢失，但标记会话待验证
-      set({ isAuthenticated: true, authReady: true })
+      // refresh token 已过期 → 清除登录态
+      set({ token: '', user: null, isAuthenticated: false, authReady: true })
       return false
     }
   },
