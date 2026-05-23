@@ -226,32 +226,61 @@ interface SaveResultOverlayProps {
 }
 
 const BASE_ITEM_COLUMNS = [
-  { title: "品牌", dataIndex: "brand", ellipsis: true },
-  { title: "材质", dataIndex: "material", ellipsis: true },
-  { title: "规格", dataIndex: "spec", ellipsis: true },
-  { title: "长度", dataIndex: "length", ellipsis: true },
-  { title: "数量", dataIndex: "quantity", align: "right" as const },
-  { title: "总重", dataIndex: "weightTon", align: "right" as const, render: (v: unknown) => v != null ? Number(v).toFixed(3) : "-" },
+  { title: '品牌', dataIndex: 'brand', ellipsis: true },
+  { title: '材质', dataIndex: 'material', ellipsis: true },
+  { title: '规格', dataIndex: 'spec', ellipsis: true },
+  { title: '长度', dataIndex: 'length', ellipsis: true },
+  { title: '数量', dataIndex: 'quantity', align: 'right' as const },
+  {
+    title: '总重',
+    dataIndex: 'weightTon',
+    align: 'right' as const,
+    render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-'),
+  },
 ]
 const FINANCE_ITEM_COLUMNS = [
-  { title: "单价", dataIndex: "unitPrice", align: "right" as const, render: (v: unknown) => v != null ? Number(v).toFixed(2) : "-" },
-  { title: "金额", dataIndex: "amount", align: "right" as const, render: (v: unknown) => v != null ? Number(v).toFixed(2) : "-" },
+  {
+    title: '单价',
+    dataIndex: 'unitPrice',
+    align: 'right' as const,
+    render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-'),
+  },
+  {
+    title: '金额',
+    dataIndex: 'amount',
+    align: 'right' as const,
+    render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-'),
+  },
 ]
 function isFinanceModule(key: string) {
-  return key === 'receipt' || key === 'payment' || key === 'invoice-issue' || key === 'invoice-receipt'
-      || key === 'customer-statement' || key === 'supplier-statement' || key === 'freight-statement'
+  return (
+    key === 'receipt' ||
+    key === 'payment' ||
+    key === 'invoice-issue' ||
+    key === 'invoice-receipt' ||
+    key === 'customer-statement' ||
+    key === 'supplier-statement' ||
+    key === 'freight-statement'
+  )
 }
 const FREIGHT_ITEM_COLUMNS = [
-  { title: "码头", dataIndex: "warehouseName", ellipsis: true },
-  { title: "材质", dataIndex: "material", ellipsis: true },
-  { title: "规格", dataIndex: "spec", ellipsis: true },
-  { title: "长度", dataIndex: "length", ellipsis: true },
-  { title: "数量", dataIndex: "quantity", align: "right" as const },
-  { title: "总重", dataIndex: "weightTon", align: "right" as const, render: (v: unknown) => v != null ? Number(v).toFixed(3) : "-" },
+  { title: '码头', dataIndex: 'warehouseName', ellipsis: true },
+  { title: '材质', dataIndex: 'material', ellipsis: true },
+  { title: '规格', dataIndex: 'spec', ellipsis: true },
+  { title: '长度', dataIndex: 'length', ellipsis: true },
+  { title: '数量', dataIndex: 'quantity', align: 'right' as const },
+  {
+    title: '总重',
+    dataIndex: 'weightTon',
+    align: 'right' as const,
+    render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-'),
+  },
 ]
 function buildItemColumns(moduleKey: string) {
   if (moduleKey === 'freight-bill') return FREIGHT_ITEM_COLUMNS
-  return isFinanceModule(moduleKey) ? [...BASE_ITEM_COLUMNS, ...FINANCE_ITEM_COLUMNS] : BASE_ITEM_COLUMNS
+  return isFinanceModule(moduleKey)
+    ? [...BASE_ITEM_COLUMNS, ...FINANCE_ITEM_COLUMNS]
+    : BASE_ITEM_COLUMNS
 }
 
 function SaveResultOverlay({
@@ -314,67 +343,65 @@ function SaveResultOverlay({
     </Button>
   ) : null
 
+  const titleText = isSuccess ? '保存成功' : '保存失败'
+
   return (
     <WorkspaceOverlay
       open
-      title={isSuccess ? '保存成功' : '保存失败'}
+      title={titleText}
       onClose={onClear}
-      variant="workspace"
-    >
-      <div className="p-24">
-        <div className="flex items-center gap-12 mb-16">
-          {statusIcon}
-          <div>
-            <Typography.Title level={4} className="m-0">
-              {saveResult.message}
-            </Typography.Title>
-            {saveResult.traceId ? (
-              <Typography.Text type="secondary" className="text-xs">
-                Trace: {saveResult.traceId}
-              </Typography.Text>
-            ) : null}
-          </div>
-        </div>
-
-        {saveResult.record ? (
-          <Card size="small" className="mb-16">
-            <Space direction="vertical" size={4}>
-              {(config.formFields || []).map((field) => {
-                const val = saveResult.record?.[field.key]
-                if (val == null || val === '') return null
-                return (
-                  <div key={field.key}>
-                    <Typography.Text type="secondary">
-                      {field.label}：
-                    </Typography.Text>
-                    <Typography.Text>{String(val)}</Typography.Text>
-                  </div>
-                )
-              })}
-            </Space>
-          </Card>
-        ) : null}
-
-        {items.length > 0 ? (
-          <Card size="small" title="明细" className="mb-16">
-            <Table
-              rowKey={(_, i) => String(i)}
-              dataSource={items}
-              columns={buildItemColumns(moduleKey)}
-              size="small"
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-            />
-          </Card>
-        ) : null}
-
+      footer={
         <div className="flex justify-end gap-8">
           {quickActions}
-          <Button onClick={onClear}>
+          <Button type="primary" onClick={onClear}>
             {saveResult.status === 'error' ? '返回编辑' : '关闭'}
           </Button>
         </div>
+      }
+    >
+      <div className="flex items-center gap-12 mb-16">
+        {statusIcon}
+        <div>
+          <Typography.Text type="secondary">
+            {saveResult.message}
+          </Typography.Text>
+          {saveResult.traceId ? (
+            <Typography.Text type="secondary" className="text-xs ml-8">
+              Trace: {saveResult.traceId}
+            </Typography.Text>
+          ) : null}
+        </div>
       </div>
+
+      {saveResult.record ? (
+        <Card size="small" className="mb-16">
+          <Space direction="vertical" size={4}>
+            {(config.formFields || []).map((field) => {
+              const val = saveResult.record?.[field.key]
+              if (val == null || val === '') return null
+              return (
+                <div key={field.key}>
+                  <Typography.Text type="secondary">
+                    {field.label}：
+                  </Typography.Text>
+                  <Typography.Text>{String(val)}</Typography.Text>
+                </div>
+              )
+            })}
+          </Space>
+        </Card>
+      ) : null}
+
+      {items.length > 0 ? (
+        <Table
+          rowKey={(_, i) => String(i)}
+          dataSource={items}
+          columns={buildItemColumns(moduleKey)}
+          size="small"
+          pagination={false}
+          scroll={{ x: 'max-content' }}
+        />
+      ) : null}
     </WorkspaceOverlay>
   )
 }

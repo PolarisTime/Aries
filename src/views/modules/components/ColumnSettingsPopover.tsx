@@ -124,7 +124,11 @@ export function ColumnSettingsPopover({
   }
 
   const content = (
-    <Space orientation="vertical" size="small" style={{ minWidth: 200, maxWidth: 280 }}>
+    <Space
+      orientation="vertical"
+      size="small"
+      style={{ minWidth: 200, maxWidth: 280 }}
+    >
       <Typography.Text strong>列设置</Typography.Text>
       <Divider className="my-4 mb-8" />
       <DndContext
