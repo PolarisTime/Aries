@@ -102,9 +102,7 @@ export function setupAuthInterceptors(http: AxiosInstance) {
     (response) => response.data,
     async (error) => {
       if (isCanceledRequestError(error)) {
-        const canceledErr = new Error(
-          error?.message || '请求已取消',
-        )
+        const canceledErr = new Error(error?.message || '请求已取消')
         attachTraceIdToError(canceledErr, extractBackendTraceId(error))
         markHandledRequestError(canceledErr)
         return Promise.reject(canceledErr)
