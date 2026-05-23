@@ -17,6 +17,7 @@ import {
   isWatermarkPropSetting,
   SYSTEM_SWITCH_HELP_TEXT,
   WATERMARK_COLOR_CODE,
+  WATERMARK_DENSITY_CODE,
   WATERMARK_FONT_SIZE_CODE,
 } from '@/views/system/general-settings-view-utils'
 
@@ -79,7 +80,12 @@ export function GeneralSettingsEditorModal({
                 {asString(record.settingCode) === WATERMARK_COLOR_CODE ? (
                   <Input placeholder="rgba(0,0,0,0.08)" maxLength={50} />
                 ) : (
-                  <Input.TextArea rows={3} maxLength={64} showCount />
+                  <>
+                    <Input.TextArea rows={3} maxLength={64} showCount />
+                    <Typography.Text type="secondary" className="text-xs">
+                      可用变量：{'{username}'} {'{time}'} {'{date}'}
+                    </Typography.Text>
+                  </>
                 )}
               </Form.Item>
             ) : (
@@ -101,6 +107,15 @@ export function GeneralSettingsEditorModal({
                       min={8}
                       max={72}
                       step={1}
+                      addonAfter="px"
+                    />
+                  ) : asString(record.settingCode) ===
+                    WATERMARK_DENSITY_CODE ? (
+                    <Input
+                      type="number"
+                      min={50}
+                      max={400}
+                      step={10}
                       addonAfter="px"
                     />
                   ) : (

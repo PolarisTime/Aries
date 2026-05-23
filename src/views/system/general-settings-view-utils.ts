@@ -9,6 +9,7 @@ export const WATERMARK_CONTENT_CODE = 'SYS_WATERMARK_CONTENT'
 export const WATERMARK_FONT_SIZE_CODE = 'SYS_WATERMARK_FONT_SIZE'
 export const WATERMARK_ROTATE_CODE = 'SYS_WATERMARK_ROTATE'
 export const WATERMARK_COLOR_CODE = 'SYS_WATERMARK_COLOR'
+export const WATERMARK_DENSITY_CODE = 'SYS_WATERMARK_DENSITY'
 
 export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_DEFAULT_TAX_RATE:
@@ -91,7 +92,11 @@ export function isWatermarkContentSetting(record: ModuleRecord) {
 
 export function isWatermarkPropSetting(record: ModuleRecord) {
   const code = asString(record.settingCode).trim()
-  return code === WATERMARK_FONT_SIZE_CODE || code === WATERMARK_ROTATE_CODE
+  return (
+    code === WATERMARK_FONT_SIZE_CODE ||
+    code === WATERMARK_ROTATE_CODE ||
+    code === WATERMARK_DENSITY_CODE
+  )
 }
 
 export function isNumericSetting(record: ModuleRecord) {
