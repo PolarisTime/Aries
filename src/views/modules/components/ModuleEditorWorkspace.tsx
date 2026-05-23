@@ -241,7 +241,16 @@ function isFinanceModule(key: string) {
   return key === 'receipt' || key === 'payment' || key === 'invoice-issue' || key === 'invoice-receipt'
       || key === 'customer-statement' || key === 'supplier-statement' || key === 'freight-statement'
 }
+const FREIGHT_ITEM_COLUMNS = [
+  { title: "码头", dataIndex: "warehouseName", ellipsis: true },
+  { title: "材质", dataIndex: "material", ellipsis: true },
+  { title: "规格", dataIndex: "spec", ellipsis: true },
+  { title: "长度", dataIndex: "length", ellipsis: true },
+  { title: "数量", dataIndex: "quantity", align: "right" as const },
+  { title: "总重", dataIndex: "weightTon", align: "right" as const, render: (v: unknown) => v != null ? Number(v).toFixed(3) : "-" },
+]
 function buildItemColumns(moduleKey: string) {
+  if (moduleKey === 'freight-bill') return FREIGHT_ITEM_COLUMNS
   return isFinanceModule(moduleKey) ? [...BASE_ITEM_COLUMNS, ...FINANCE_ITEM_COLUMNS] : BASE_ITEM_COLUMNS
 }
 
