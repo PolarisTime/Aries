@@ -67,6 +67,12 @@ export const compactWeightOnlyPurchaseItemColumns = applyCompactItemLayout(
   ['piecesPerBundle', 'unitPrice', 'amount'],
 )
 
+export const compactWeightOnlyPurchaseInboundItemColumns = applyCompactItemLayout(
+  purchaseInboundItemColumns,
+  compactTradeItemWidthMap,
+  ["piecesPerBundle", "unitPrice", "amount", "weightAdjustmentTon", "weightAdjustmentAmount"],
+)
+
 export const compactCustomerStatementItemColumns = applyCompactItemLayout(
   [{ title: '订单号', dataIndex: 'sourceNo', width: 160 }, ...orderItemColumns],
   compactTradeItemWidthMap,

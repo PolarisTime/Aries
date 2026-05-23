@@ -371,8 +371,8 @@ function SaveResultOverlay({
               const val = saveResult.record?.[field.key]
               if (val == null || val === '') return null
               const suffix =
-                (field as Record<string, unknown>).type === 'weight' ? ' 吨'
-                : (field as Record<string, unknown>).type === 'amount' ? ' 元'
+                (field as unknown as Record<string, unknown>).type === 'weight' ? ' 吨'
+                : (field as unknown as Record<string, unknown>).type === 'amount' ? ' 元'
                 : ''
               return (
                 <div key={field.key}>
