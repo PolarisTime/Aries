@@ -106,6 +106,7 @@ export function useBusinessGridPrintActions({
               message?: string
             }>('/print/generate', {
               templateId: template.id,
+              moduleKey,
               data: buildPrintData(record, config),
             })
             assertApiSuccess(r, '打印脚本生成失败')
