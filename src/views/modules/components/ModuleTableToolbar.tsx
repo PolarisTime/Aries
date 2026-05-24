@@ -10,7 +10,7 @@ import Space from 'antd/es/space'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ModuleActionDefinition } from '@/types/module-page'
-import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
+import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 
 interface Props {
   canCreate: boolean

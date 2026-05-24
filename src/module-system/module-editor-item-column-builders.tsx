@@ -14,7 +14,7 @@ import {
   getEditorItemMin,
   getEditorItemPrecision,
   isNumberEditorColumn,
-} from '@/views/modules/module-adapter-editor'
+} from '@/module-system/module-adapter-editor'
 
 interface MaterialOption {
   label: string

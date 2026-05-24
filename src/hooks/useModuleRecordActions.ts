@@ -8,7 +8,7 @@ import { message } from '@/utils/antd-app'
 import {
   isDeleteBlockedByStatus,
   isEditBlockedByStatus,
-} from '@/views/modules/module-behavior-registry'
+} from '@/module-system/module-behavior-registry'
 
 interface Props {
   moduleKey: string

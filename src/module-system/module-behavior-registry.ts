@@ -5,21 +5,21 @@ import { asString } from '@/utils/type-narrowing'
  * Replaces scattered Record<string, X> maps across multiple adapter files.
  */
 
-import { moduleBehaviorRegistry } from '@/views/modules/module-behavior-registry-core'
+import { moduleBehaviorRegistry } from '@/module-system/module-behavior-registry-core'
 import {
   protectedDeleteStatuses,
   protectedEditStatuses,
-} from '@/views/modules/module-behavior-statuses'
-import type { ModuleBehaviorConfig } from '@/views/modules/module-behavior-types'
-import '@/views/modules/module-behavior-actions'
-import '@/views/modules/module-behavior-editor'
-import '@/views/modules/module-behavior-normalizers'
-import '@/views/modules/module-behavior-save'
-import '@/views/modules/module-behavior-statuses'
+} from '@/module-system/module-behavior-statuses'
+import type { ModuleBehaviorConfig } from '@/module-system/module-behavior-types'
+import '@/module-system/module-behavior-actions'
+import '@/module-system/module-behavior-editor'
+import '@/module-system/module-behavior-normalizers'
+import '@/module-system/module-behavior-save'
+import '@/module-system/module-behavior-statuses'
 
 export type {
   ModuleBehaviorConfig,
-} from '@/views/modules/module-behavior-types'
+} from '@/module-system/module-behavior-types'
 
 function getModuleBehavior(moduleKey: string): ModuleBehaviorConfig {
   return moduleBehaviorRegistry.get(moduleKey) || {}

@@ -4,7 +4,7 @@ import {
   buildCustomerStatementOptions,
   buildStatementLinkOptions,
   findStatementRecordById,
-} from './module-adapter-finance-links'
+} from '@/module-system/module-adapter-finance-links'
 
 describe('module-adapter-finance-links', () => {
   it('preserves snowflake ids as strings in statement options', () => {

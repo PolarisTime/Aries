@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { asString } from '@/utils/type-narrowing'
-import { registerModuleBehavior } from '@/views/modules/module-behavior-registry-core'
+import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 
 const currentDateTime = () => dayjs()
 const addOneYear = (value: dayjs.Dayjs) => value.add(1, 'year')

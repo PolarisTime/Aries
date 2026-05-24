@@ -33,7 +33,7 @@ vi.mock('@/api/business', () => ({
   saveBusinessModule: saveBusinessModuleMock,
 }))
 
-vi.mock('@/views/modules/module-behavior-registry', () => ({
+vi.mock('@/module-system/module-behavior-registry', () => ({
   isDeleteBlockedByStatus: (status: unknown) => status === '已审核',
   isEditBlockedByStatus: (status: unknown) => status === '已完成',
 }))

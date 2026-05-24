@@ -10,7 +10,7 @@ import { logger } from '@/utils/logger'
 import {
   getBehaviorValue,
   hasBehavior,
-} from '@/views/modules/module-behavior-registry'
+} from '@/module-system/module-behavior-registry'
 
 // Computed fields that the server calculates — never included in save payloads.
 const COMPUTED_FIELD_KEYS = new Set([

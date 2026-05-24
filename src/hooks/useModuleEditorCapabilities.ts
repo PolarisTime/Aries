@@ -7,12 +7,12 @@ import { asString } from '@/utils/type-narrowing'
 import {
   buildEditorAuditTarget,
   buildReverseAuditTarget,
-} from '@/views/modules/module-adapter-actions'
+} from '@/module-system/module-adapter-actions'
 import {
   canManageEditorLineItems,
   isModuleLineItemsLocked,
-} from '@/views/modules/module-adapter-editor'
-import { getBehaviorValue } from '@/views/modules/module-behavior-registry'
+} from '@/module-system/module-adapter-editor'
+import { getBehaviorValue } from '@/module-system/module-behavior-registry'
 
 interface Props {
   moduleKey: string

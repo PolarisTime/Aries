@@ -1,4 +1,4 @@
-import { registerModuleBehavior } from '@/views/modules/module-behavior-registry-core'
+import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 
 const lineItemPayloadModules = [
   'purchase-order',

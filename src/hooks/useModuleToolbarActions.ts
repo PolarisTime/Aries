@@ -9,7 +9,7 @@ import {
   type PermissionActionCode,
   resolveModuleActionKind,
   resolveModuleActionPermissionCodes,
-} from '@/views/modules/module-adapter-actions'
+} from '@/module-system/module-adapter-actions'
 
 const BULK_DELETE_LABEL = '删除'
 const BULK_AUDIT_LABEL = '审核'
