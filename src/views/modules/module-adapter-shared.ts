@@ -1,8 +1,5 @@
 import type { ModuleRecord } from '@/types/module-page'
-import { normalizeStringArray } from '@/utils/normalizers'
 import { asString } from '@/utils/type-narrowing'
-
-export { normalizeStringArray }
 
 const primaryNoFallbackKeys = [
   'orderNo',

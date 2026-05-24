@@ -23,7 +23,7 @@ type StatementModuleKey =
   | 'customer-statement'
   | 'freight-statement'
 
-export async function listStatementCandidates(
+async function listStatementCandidates(
   statementModuleKey: StatementModuleKey,
   keyword = '',
   page = 0,

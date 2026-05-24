@@ -24,7 +24,6 @@ import type { ModuleRecord } from '@/types/module-page'
 import { getApiMessage } from '@/utils/api-messages'
 import type { ListQueryOptions } from '@/utils/list'
 
-export { resetReportedClientFilterSignatures }
 
 export async function listBusinessModule(
   moduleKey: string,

@@ -39,7 +39,7 @@ export function asNumber(value: unknown): number {
 }
 
 /** 安全转为 boolean */
-export function asBoolean(value: unknown): boolean {
+function asBoolean(value: unknown): boolean {
   if (typeof value === 'boolean') return value
   if (typeof value === 'string') return value === 'true' || value === '1'
   if (typeof value === 'number') return value !== 0
@@ -56,7 +56,7 @@ export function asArray<T = unknown>(value: unknown): T[] {
 // ── Schema 辅助 ───────────────────────────────────────
 
 /** Zod Schema 安全解析，失败返回 undefined */
-export function parseOr<T>(
+function parseOr<T>(
   schema: z.ZodType<T>,
   value: unknown,
 ): T | undefined {
@@ -65,7 +65,7 @@ export function parseOr<T>(
 }
 
 /** Zod Schema 安全解析，失败返回默认值 */
-export function parseOrDefault<T>(
+function parseOrDefault<T>(
   schema: z.ZodType<T>,
   value: unknown,
   fallback: T,
@@ -124,7 +124,7 @@ export function asId(value: unknown): string {
 // ── 快捷单字段访问 ─────────────────────────────────────
 
 /** 从对象安全取字符串字段 */
-export function fieldStr(
+function fieldStr(
   obj: Record<string, unknown> | null | undefined,
   key: string,
   fallback = '',
@@ -134,7 +134,7 @@ export function fieldStr(
 }
 
 /** 从对象安全取数字字段 */
-export function fieldNum(
+function fieldNum(
   obj: Record<string, unknown> | null | undefined,
   key: string,
   fallback = 0,
@@ -148,7 +148,7 @@ export function fieldNum(
 /**
  * 去重字符串数组（自动去空、去重）
  */
-export function uniqueStrings(value: unknown): string[] {
+function uniqueStrings(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return []
   }
@@ -165,7 +165,7 @@ export function uniqueStrings(value: unknown): string[] {
 /**
  * 安全过滤数组（移除 falsy 值）
  */
-export function compact<T>(
+function compact<T>(
   array: (T | null | undefined | false | '' | 0)[],
 ): T[] {
   return array.filter(Boolean) as T[]
@@ -174,7 +174,7 @@ export function compact<T>(
 /**
  * 安全获取数组元素
  */
-export function safeAt<T>(
+function safeAt<T>(
   array: T[] | null | undefined,
   index: number,
 ): T | undefined {
@@ -187,6 +187,6 @@ export function safeAt<T>(
 /**
  * 将值转换为数组（如果不是数组则包装）
  */
-export function toArray<T>(value: T | T[]): T[] {
+function toArray<T>(value: T | T[]): T[] {
   return Array.isArray(value) ? value : [value]
 }

@@ -2,17 +2,6 @@ import type { ModuleRecord } from '@/types/module-page'
 import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'
 
-export function canModuleEditLineItems(
-  moduleKey: string,
-  hasItemColumns: boolean,
-) {
-  return hasBehavior(moduleKey, 'supportsLineItems') && hasItemColumns
-}
-
-export function isSalesOrderLineLocked(statuses: string[]) {
-  return isModuleLineItemsLocked('sales-order', statuses)
-}
-
 export function isModuleLineItemsLocked(moduleKey: string, statuses: string[]) {
   const lockedStatuses = getBehaviorValue(moduleKey, 'lineItemLockStatuses')
   if (!lockedStatuses?.length) {

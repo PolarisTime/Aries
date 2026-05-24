@@ -3,12 +3,12 @@ import { http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { logger } from '@/utils/logger'
 
-export interface CatalogActionResponse {
+interface CatalogActionResponse {
   code: string
   title: string
 }
 
-export interface CatalogEntryResponse {
+interface CatalogEntryResponse {
   code: string
   title: string
   group: string
@@ -161,7 +161,7 @@ export async function loadPermissionCatalog(): Promise<void> {
 
 // --- Normalization & resolution ---
 
-export function normalizePermissionKey(value: string | null | undefined) {
+function normalizePermissionKey(value: string | null | undefined) {
   return String(value || '')
     .replace(/^\/+/, '')
     .trim()
@@ -181,7 +181,7 @@ export function resolveResourceKey(menuOrResource: string | null | undefined) {
   return menuResourceMap[normalized] || normalizeResource(normalized)
 }
 
-export function getResourcePermissionLabel(code: string) {
+function getResourcePermissionLabel(code: string) {
   const [rawResource, rawAction] = String(code || '').split(':')
   const resource = normalizeResource(rawResource)
   const action = normalizeAction(rawAction)

@@ -45,5 +45,3 @@ export const useSystemMenuStore = create<SystemMenuState>((set, get) => ({
     set({ menus: [], loaded: false })
   },
 }))
-
-export type { MenuNode }

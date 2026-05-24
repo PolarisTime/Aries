@@ -5,7 +5,7 @@ import { asNumber, asString } from '@/utils/type-narrowing'
 
 // ── 类型（数据库管理专用，暂保留手动定义 — 后续迁移至 shared/schemas） ──
 
-export interface PostgresStatus {
+interface PostgresStatus {
   host: string
   port: number
   database: string
@@ -18,7 +18,7 @@ export interface PostgresStatus {
   serverStartTime: string | null
   status: string
 }
-export interface RedisStatus {
+interface RedisStatus {
   host: string
   port: number
   database: number
@@ -48,10 +48,6 @@ export interface DatabaseExportTask {
   finishedAt?: string
   expiresAt?: string
   downloadUrl?: string
-}
-export interface DatabaseExportDownloadLink {
-  downloadUrl: string
-  expiresAt?: string
 }
 
 // ── 内部 ────────────────────────────────────────────────
@@ -96,27 +92,27 @@ function normalizeTask(raw: RawDatabaseExportTask): DatabaseExportTask {
 
 // ── 公开 API ────────────────────────────────────────────
 
-export interface SlowQueryItem {
+interface SlowQueryItem {
   queryPreview: string
   calls: number
   avgMs: number
   pctTotal: number
   cacheHitPct: number
 }
-export interface CacheItem {
+interface CacheItem {
   tableName: string
   heapCachePct: number
   idxCachePct: number
   hotUpdatePct: number
 }
-export interface BloatItem {
+interface BloatItem {
   tableName: string
   liveRows: number
   deadRows: number
   deadPct: number
   lastAutovacuum: string | null
 }
-export interface UnusedIndexItem {
+interface UnusedIndexItem {
   indexName: string
   tableName: string
   size: string

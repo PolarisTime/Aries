@@ -1,12 +1,12 @@
 import type { ModuleFilterDefinition } from '@/types/module-page'
 
-export interface ModuleSaveFieldSchema {
+interface ModuleSaveFieldSchema {
   scalar?: string[]
   lineItem?: string[]
   computed?: string[]
 }
 
-export interface ModulePageSchema {
+interface ModulePageSchema {
   filters?: ModuleFilterDefinition[]
   saveFields?: ModuleSaveFieldSchema
 }

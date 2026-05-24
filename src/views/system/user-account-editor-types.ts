@@ -17,20 +17,7 @@ export interface UserAccountEditorFormValues {
   remark: string
 }
 
-export interface UserAccountEditorState {
-  editorOpen: boolean
-  editorMode: UserAccountEditorMode
-  editorLoading: boolean
-  editingId: string | null
-  loginNameValidationMessage: string
-  loginNameChecking: boolean
-  createResultOpen: boolean
-  createResult: UserAccountCreateResult | null
-}
-
 export interface LoginNameValidationResult {
   available: boolean
   message: string
 }
-
-export type UserAccountDetailRecord = UserAccountRecord

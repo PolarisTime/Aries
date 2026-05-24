@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { SearchParams } from '@/types/api-raw'
 
-export interface ModuleFilterState {
+interface ModuleFilterState {
   filters: SearchParams
   submittedFilters: SearchParams
 }

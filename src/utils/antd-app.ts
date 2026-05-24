@@ -90,7 +90,7 @@ export const message = {
     ),
 }
 
-export const notification = {
+const notification = {
   warning: (...args: NotifMethod) =>
     callMethod(
       getNotificationApi(),

@@ -55,7 +55,7 @@ export async function enableOwn2fa(
   return assertApiSuccess(response, getApiMessage('enable2faFailed'))
 }
 
-export async function disableOwn2fa(
+async function disableOwn2fa(
   totpCode: string,
 ): Promise<ApiResponse<CurrentUserSecurityState>> {
   const response = await http.post<ApiResponse<CurrentUserSecurityState>>(

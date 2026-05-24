@@ -1,6 +1,5 @@
 export { recalculateEditorLineItem } from './module-editor-line-item-calculations'
 export {
-  applyMaterialToEditorLineItem,
   getEditorItemMin,
   getEditorItemPrecision,
   isNumberEditorColumn,

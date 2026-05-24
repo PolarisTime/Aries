@@ -1,6 +1,4 @@
-export { restoreRedirectedHistoryRoute } from '@/utils/route-helpers'
-export { type ApiClient, authHttp, http } from './http'
-export { isHandledRequestError } from './request-errors'
+export { authHttp, http } from './http'
 
 import { ERROR_CODE } from '@/constants/error-codes'
 import type { SearchParams } from '@/types/api-raw'

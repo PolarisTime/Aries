@@ -19,10 +19,9 @@ import '@/views/modules/module-behavior-statuses'
 
 export type {
   ModuleBehaviorConfig,
-  NormalizeDraftContext,
 } from '@/views/modules/module-behavior-types'
 
-export function getModuleBehavior(moduleKey: string): ModuleBehaviorConfig {
+function getModuleBehavior(moduleKey: string): ModuleBehaviorConfig {
   return moduleBehaviorRegistry.get(moduleKey) || {}
 }
 

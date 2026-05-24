@@ -179,7 +179,7 @@ export const purchaseItemColumns: ModuleColumnDefinition[] = [
   },
 ]
 
-export const purchaseWeighColumns: ModuleColumnDefinition[] = [
+const purchaseWeighColumns: ModuleColumnDefinition[] = [
   {
     title: '过磅重量',
     dataIndex: 'weighWeightTon',
@@ -220,7 +220,7 @@ export const purchaseInboundItemColumns = insertColumnsAfter(
   purchaseInboundSettlementColumns,
 )
 
-export const supplierStatementItemColumns = insertColumnsAfter(
+const supplierStatementItemColumns = insertColumnsAfter(
   orderItemColumns,
   'weightTon',
   purchaseWeighColumns,

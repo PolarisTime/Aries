@@ -57,7 +57,7 @@ export async function updateAttachmentBindings(
   )
 }
 
-export async function getPageUploadRule(moduleKey: string) {
+async function getPageUploadRule(moduleKey: string) {
   return (
     (await http.get<ApiResponse<UploadRuleRecord> | undefined>(
       '/general-setting/upload-rule',

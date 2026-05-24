@@ -10,7 +10,7 @@
  * MessageSchema key under 'auth' that can be resolved via vue-i18n.
  */
 
-export const ERROR_MESSAGE_KEYS: Record<string, string> = {
+const ERROR_MESSAGE_KEYS: Record<string, string> = {
   "'' is required": 'auth.validation.required',
   'network error': 'auth.error.network',
   'failed to fetch': 'auth.error.network',

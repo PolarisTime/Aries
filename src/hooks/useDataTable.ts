@@ -11,7 +11,6 @@ import {
   type Row,
   type RowSelectionState,
   type SortingState,
-  type Table,
   type Updater,
   useReactTable,
   type VisibilityState,
@@ -164,10 +163,8 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
 
 export type {
   ColumnDef,
-  ExpandedState,
   PaginationState,
   RowSelectionState,
   SortingState,
-  Table,
   UseDataTableOptions,
 }

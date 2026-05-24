@@ -20,8 +20,7 @@ const importResultSchema = z.object({
   errors: z.array(importErrorSchema),
 })
 
-export type ImportError = z.infer<typeof importErrorSchema>
-export type ImportResult = z.infer<typeof importResultSchema>
+type ImportResult = z.infer<typeof importResultSchema>
 
 export async function exportModuleData(
   module: string,
@@ -33,14 +32,14 @@ export async function exportModuleData(
   downloadBlob(response.data as Blob, `${module}.xlsx`)
 }
 
-export async function downloadImportTemplate(module: string): Promise<void> {
+async function downloadImportTemplate(module: string): Promise<void> {
   const response = await http.instance.get(`/${module}/template`, {
     responseType: 'blob',
   })
   downloadBlob(response.data as Blob, `${module}_import_template.xlsx`)
 }
 
-export async function importModuleData(
+async function importModuleData(
   module: string,
   file: File,
 ): Promise<ImportResult> {

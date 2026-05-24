@@ -35,7 +35,7 @@ export function formatDateTime(value?: string | null): string {
 /**
  * 格式化日期（YYYY-MM-DD）
  */
-export function formatDate(value?: string | null): string {
+function formatDate(value?: string | null): string {
   if (!value) {
     return '—'
   }
@@ -57,6 +57,6 @@ export function formatBytes(bytes: number): string {
 /**
  * 格式化百分比
  */
-export function formatPercent(value: number, decimals = 1): string {
+function formatPercent(value: number, decimals = 1): string {
   return `${(value * 100).toFixed(decimals)}%`
 }
