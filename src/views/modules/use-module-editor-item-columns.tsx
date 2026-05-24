@@ -179,9 +179,10 @@ export function useModuleEditorItemColumns({
       (config.itemColumns || []).map((column) => [column.dataIndex, column]),
     )
 
-    return visibleItemColumnKeys
-      .map((key) => columnMap.get(key))
-      .filter(Boolean) as ModuleColumnDefinition[]
+    return visibleItemColumnKeys.flatMap((key) => {
+      const col = columnMap.get(key)
+      return col ? [col] : []
+    }) as ModuleColumnDefinition[]
   }, [config.itemColumns, visibleItemColumnKeys])
 
   const handleResolvedMaterialSelect = useCallback(

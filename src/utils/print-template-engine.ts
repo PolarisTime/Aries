@@ -35,10 +35,10 @@ function resolvePath(source: unknown, path: string) {
     return source
   }
 
-  const segments = path
-    .split('.')
-    .map((segment) => segment.trim())
-    .filter(Boolean)
+  const segments = path.split('.').flatMap((segment) => {
+    const v = segment.trim()
+    return v ? [v] : []
+  })
 
   let current = source
   for (const segment of segments) {

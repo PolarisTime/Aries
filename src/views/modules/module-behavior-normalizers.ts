@@ -8,12 +8,18 @@ registerModuleBehavior('freight-bill', {
     const firstSourceItem = items.find((item) => asString(item.sourceNo).trim())
     const customerNames = Array.from(
       new Set(
-        items.map((item) => asString(item.customerName).trim()).filter(Boolean),
+        items.flatMap((item) => {
+          const name = asString(item.customerName).trim()
+          return name ? [name] : []
+        }),
       ),
     )
     const projectNames = Array.from(
       new Set(
-        items.map((item) => asString(item.projectName).trim()).filter(Boolean),
+        items.flatMap((item) => {
+          const name = asString(item.projectName).trim()
+          return name ? [name] : []
+        }),
       ),
     )
     const sourceNos = collectUniqueSourceNos(items)
@@ -60,8 +66,10 @@ registerModuleBehavior('freight-statement', {
     )
     if (Array.isArray(record.attachments)) {
       record.attachment = record.attachments
-        .map((item) => asString((item as ModuleRecord).name))
-        .filter(Boolean)
+        .flatMap((item) => {
+          const v = asString((item as ModuleRecord).name)
+          return v ? [v] : []
+        })
         .join(', ')
     }
   },

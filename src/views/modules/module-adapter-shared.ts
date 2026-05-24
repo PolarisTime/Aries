@@ -50,8 +50,10 @@ export function parseParentRelationNos(value: unknown) {
     new Set(
       asString(value)
         .split(/[，,\s]+/)
-        .map((item) => item.trim())
-        .filter(Boolean),
+        .flatMap((item) => {
+          const v = item.trim()
+          return v ? [v] : []
+        }),
     ),
   )
 }
@@ -99,13 +101,18 @@ export function isTagListColumnKey(columnKey: string) {
 
 export function getTagListValues(value: unknown) {
   if (Array.isArray(value)) {
-    return value.map((item) => String(item)).filter(Boolean)
+    return value.flatMap((item) => {
+      const v = String(item)
+      return v ? [v] : []
+    })
   }
 
   return asString(value)
     .split(/[，,]+/)
-    .map((item) => item.trim())
-    .filter(Boolean)
+    .flatMap((item) => {
+      const v = item.trim()
+      return v ? [v] : []
+    })
 }
 
 export function isFriendlyTagColumnKey(columnKey: string) {

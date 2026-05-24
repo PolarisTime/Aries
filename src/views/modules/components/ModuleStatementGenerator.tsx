@@ -28,7 +28,12 @@ const NAME_FIELD: Record<string, keyof ModuleRecord> = {
 
 function extractCounterparty(rows: ModuleRecord[], type: string): string {
   const nameField = NAME_FIELD[type]
-  const names = new Set(rows.map((r) => asString(r[nameField])).filter(Boolean))
+  const names = new Set(
+    rows.flatMap((r) => {
+      const v = asString(r[nameField])
+      return v ? [v] : []
+    }),
+  )
   if (names.size === 0) throw new Error('未找到对方单位信息')
   if (names.size > 1)
     throw new Error('选中的单据包含多个对方单位，请只勾选同一单位的单据')
@@ -41,8 +46,10 @@ function extractDateRange(
 ): { start: string; end: string } {
   const dateField = DATE_FIELD[type]
   const dates = rows
-    .map((r) => asString(r[dateField]))
-    .filter(Boolean)
+    .flatMap((r) => {
+      const v = asString(r[dateField])
+      return v ? [v] : []
+    })
     .sort()
   if (dates.length === 0) throw new Error('选中的单据缺少日期信息')
   return { start: dates[0], end: dates[dates.length - 1] }

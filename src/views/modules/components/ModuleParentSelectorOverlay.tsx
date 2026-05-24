@@ -214,16 +214,16 @@ function buildSelectedRecordSummary(
   ) => string,
 ) {
   const primary = asString(record[displayFieldKey] || record.id)
-  const meta = (selectedRecordSummaryFieldMap[parentModuleKey] || [])
-    .map((field) => {
+  const meta = (selectedRecordSummaryFieldMap[parentModuleKey] || []).flatMap(
+    (field) => {
       const rawValue =
         field.type != null
           ? formatValue(record[field.key], field.type)
           : asString(record[field.key]).trim()
       const value = String(rawValue || '').trim()
-      return value ? `${field.label}：${value}` : ''
-    })
-    .filter(Boolean)
+      return value ? [`${field.label}：${value}`] : []
+    },
+  )
 
   return {
     primary,
@@ -339,9 +339,10 @@ export function ModuleParentSelectorOverlay({
   )
   const selectedRows = useMemo(
     () =>
-      selectedRowKeys
-        .map((key) => selectedRecordMap[String(key)])
-        .filter(Boolean),
+      selectedRowKeys.flatMap((key) => {
+        const record = selectedRecordMap[String(key)]
+        return record ? [record] : []
+      }),
     [selectedRecordMap, selectedRowKeys],
   )
 

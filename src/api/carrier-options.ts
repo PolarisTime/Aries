@@ -17,9 +17,10 @@ function normalizeCarrierOptions(options: CarrierOption[]): CarrierOption[] {
     label: String(option.label || ''),
     value: String(option.value || ''),
     vehiclePlates: Array.isArray(option.vehiclePlates)
-      ? option.vehiclePlates
-          .map((plate) => String(plate || '').trim())
-          .filter(Boolean)
+      ? option.vehiclePlates.flatMap((plate) => {
+          const v = String(plate || '').trim()
+          return v ? [v] : []
+        })
       : [],
   }))
 }

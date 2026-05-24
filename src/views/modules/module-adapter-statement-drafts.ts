@@ -59,8 +59,10 @@ export function buildSupplierStatementDraftData({
 
   const firstInbound = sortedInbounds[0]
   const sourceInboundNos = sortedInbounds
-    .map((record) => asString(record.inboundNo))
-    .filter(Boolean)
+    .flatMap((record) => {
+      const v = asString(record.inboundNo)
+      return v ? [v] : []
+    })
     .join(', ')
   const { startDate, endDate } = resolveStatementPeriod(
     statementPeriod,
@@ -114,8 +116,10 @@ export function buildCustomerStatementDraftData({
 
   const firstOrder = sortedOrders[0]
   const sourceOrderNos = sortedOrders
-    .map((order) => asString(order.orderNo))
-    .filter(Boolean)
+    .flatMap((order) => {
+      const v = asString(order.orderNo)
+      return v ? [v] : []
+    })
     .join(', ')
   const { startDate, endDate } = resolveStatementPeriod(
     statementPeriod,
@@ -180,8 +184,10 @@ export function buildFreightStatementDraftData({
     })),
   )
   const sourceBillNos = sortedBills
-    .map((bill) => asString(bill.billNo))
-    .filter(Boolean)
+    .flatMap((bill) => {
+      const v = asString(bill.billNo)
+      return v ? [v] : []
+    })
     .join(', ')
   const totalWeight = Number(
     sortedBills

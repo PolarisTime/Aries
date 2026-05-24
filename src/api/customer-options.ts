@@ -18,24 +18,26 @@ function normalizeText(value: unknown) {
 }
 
 function normalizeCustomerRows(rows: CustomerOption[]) {
-  return rows
-    .map((row) => {
-      const customerName = normalizeText(
-        row.customerName || row.value || row.label,
-      )
-      const projectName = normalizeText(row.projectName)
-      return {
-        ...row,
-        id: row.id == null ? undefined : String(row.id),
-        value: customerName,
-        label:
-          row.label ||
-          (projectName ? `${customerName} / ${projectName}` : customerName),
-        customerName,
-        projectName,
-      }
-    })
-    .filter((row) => row.customerName)
+  return rows.flatMap((row) => {
+    const customerName = normalizeText(
+      row.customerName || row.value || row.label,
+    )
+    const projectName = normalizeText(row.projectName)
+    return customerName
+      ? [
+          {
+            ...row,
+            id: row.id == null ? undefined : String(row.id),
+            value: customerName,
+            label:
+              row.label ||
+              (projectName ? `${customerName} / ${projectName}` : customerName),
+            customerName,
+            projectName,
+          },
+        ]
+      : []
+  })
 }
 
 const cached = createCachedOptions<CustomerOption>({

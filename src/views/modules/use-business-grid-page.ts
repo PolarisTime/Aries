@@ -228,9 +228,10 @@ export function useBusinessGridPage({
     isReadOnly: Boolean(config?.readOnly),
     resolveModuleStatusOptions: (statusField) => {
       if (!Array.isArray(statusField?.options)) return []
-      return statusField.options
-        .map((option) => ('value' in option ? asString(option.value) : ''))
-        .filter(Boolean)
+      return statusField.options.flatMap((option) => {
+        const v = 'value' in option ? asString(option.value) : ''
+        return v ? [v] : []
+      })
     },
   })
 

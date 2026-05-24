@@ -7,7 +7,10 @@ export { toStringArray as normalizeBehaviorStringArray }
 export function collectUniqueSourceNos(items: ModuleLineItem[]): string {
   return Array.from(
     new Set(
-      items.map((item) => asString(item.sourceNo).trim()).filter(Boolean),
+      items.flatMap((item) => {
+        const v = asString(item.sourceNo).trim()
+        return v ? [v] : []
+      }),
     ),
   ).join(', ')
 }

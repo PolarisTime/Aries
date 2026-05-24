@@ -15,7 +15,12 @@ export function normalizeStringArray(value: unknown): string[] {
     return []
   }
   return Array.from(
-    new Set(value.map((item) => String(item || '').trim()).filter(Boolean)),
+    new Set(
+      value.flatMap((item) => {
+        const v = String(item || '').trim()
+        return v ? [v] : []
+      }),
+    ),
   )
 }
 
@@ -24,10 +29,10 @@ export function normalizeStringArray(value: unknown): string[] {
  */
 export function parseCommaSeparatedString(value: unknown): string[] {
   if (typeof value === 'string') {
-    return value
-      .split(/[，,]+/)
-      .map((item) => item.trim())
-      .filter(Boolean)
+    return value.split(/[，,]+/).flatMap((item) => {
+      const v = item.trim()
+      return v ? [v] : []
+    })
   }
   return []
 }
@@ -37,13 +42,16 @@ export function parseCommaSeparatedString(value: unknown): string[] {
  */
 export function toStringArray(value: unknown): string[] {
   if (Array.isArray(value)) {
-    return value.map((item) => String(item).trim()).filter(Boolean)
+    return value.flatMap((item) => {
+      const v = String(item).trim()
+      return v ? [v] : []
+    })
   }
   if (typeof value === 'string') {
-    return value
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
+    return value.split(',').flatMap((item) => {
+      const v = item.trim()
+      return v ? [v] : []
+    })
   }
   return []
 }

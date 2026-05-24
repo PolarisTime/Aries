@@ -125,30 +125,33 @@ export function useBusinessGridStatementActions({
         }
 
         await Promise.all(
-          Array.from(recordsByProject, async ([projectName, projectRecords]) => {
-            const localBuildLineItemId = buildDraftLineItemId(
-              `draft-customer-${projectName || 'project'}`,
-            )
-            const draft = buildCustomerStatementDraftData({
-              baseDraft: {
-                id: '',
-                statementNo:
-                  await generateBusinessPrimaryNo('customer-statement'),
-                status: '待确认',
+          Array.from(
+            recordsByProject,
+            async ([projectName, projectRecords]) => {
+              const localBuildLineItemId = buildDraftLineItemId(
+                `draft-customer-${projectName || 'project'}`,
+              )
+              const draft = buildCustomerStatementDraftData({
+                baseDraft: {
+                  id: '',
+                  statementNo:
+                    await generateBusinessPrimaryNo('customer-statement'),
+                  status: '待确认',
+                  remark: '',
+                },
+                sourceOrders: projectRecords,
+                today: endDate,
+                statementPeriod,
+                defaultReceiptAmountZero: customerReceiptZero,
+                cloneLineItems,
+                buildLineItemId: localBuildLineItemId,
+              })
+              await saveBusinessModule('customer-statement', {
+                ...draft,
                 remark: '',
-              },
-              sourceOrders: projectRecords,
-              today: endDate,
-              statementPeriod,
-              defaultReceiptAmountZero: customerReceiptZero,
-              cloneLineItems,
-              buildLineItemId: localBuildLineItemId,
-            })
-            await saveBusinessModule('customer-statement', {
-              ...draft,
-              remark: '',
-            })
-          }),
+              })
+            },
+          ),
         )
       } else if (type === 'supplier') {
         const buildLineItemId = buildDraftLineItemId('draft-supplier')
