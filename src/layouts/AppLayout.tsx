@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import Layout from 'antd/es/layout'
 import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
 import Watermark from 'antd/es/watermark'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { listSystemSettings } from '@/api/system-settings'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { getPageDefinition } from '@/config/page-registry'
@@ -40,6 +42,7 @@ const { Header, Sider, Content } = Layout
 export function AppLayout() {
   useAuthAppSync()
 
+  const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
   const authReady = useAuthStore((state) => state.authReady)
@@ -172,10 +175,10 @@ export function AppLayout() {
 
   const handleSignOut = () => {
     modal.confirm({
-      title: '确认退出',
-      content: '确定要退出登录吗？',
-      okText: '确认退出',
-      cancelText: '取消',
+      title: t('common.confirmLogout'),
+      content: t('common.confirmLogoutContent'),
+      okText: t('common.confirmLogout'),
+      cancelText: t('common.cancel'),
       onOk: async () => {
         await signOut()
         void navigate({ to: '/login' })
@@ -190,7 +193,7 @@ export function AppLayout() {
 
   const handleSavePersonalSettings = useCallback(() => {
     savePersonalSettings()
-    message.success('显示设置已保存')
+    message.success(t('common.displaySettingsSaved'))
   }, [savePersonalSettings])
 
   const { currentUserLoginName, currentUserName } = useMemo(
@@ -216,7 +219,7 @@ export function AppLayout() {
   )
 
   const { data: systemSettings = [] } = useQuery({
-    queryKey: ['general-setting'],
+    queryKey: QUERY_KEYS.generalSetting,
     queryFn: async () => {
       try {
         return await listSystemSettings()
@@ -299,7 +302,7 @@ export function AppLayout() {
                 {!collapsed ? (
                   <div className="leo-brand-copy">
                     <strong>{appTitle}</strong>
-                    <span>钢贸业务中台</span>
+                    <span>{t('common.brandSubtitle')}</span>
                   </div>
                 ) : null}
               </div>

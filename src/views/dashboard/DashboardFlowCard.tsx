@@ -1,6 +1,7 @@
 import type { NavigateFn } from '@tanstack/react-router'
 import Card from 'antd/es/card'
 import type { CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { DashboardSummary } from '@/api/dashboard'
 import { buildWorkflowSections } from '@/views/dashboard/dashboard-flow-utils'
 
@@ -18,10 +19,11 @@ interface Props {
 }
 
 export function DashboardFlowCard({ navigate, summary }: Props) {
-  const workflowSections = buildWorkflowSections(summary)
+  const { t } = useTranslation()
+  const workflowSections = buildWorkflowSections(t, summary)
 
   return (
-    <Card title="业务流程总览" className="dashboard-flow-card">
+    <Card title={t('dashboard.title')} className="dashboard-flow-card">
       <div className="dashboard-flow-grid">
         {workflowSections.map((section) => (
           <section

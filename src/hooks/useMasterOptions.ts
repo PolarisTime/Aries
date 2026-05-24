@@ -21,6 +21,7 @@ import {
   getWarehouseOptions,
   materialCategoryOptions,
 } from '@/constants/module-options'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useAuthStore } from '@/stores/authStore'
 
 interface MasterOptions {
@@ -144,42 +145,42 @@ export function useMasterOptions(
   const queryEnabled = enabled && !!token
 
   const suppliers = useQuery({
-    queryKey: ['master-options', 'supplier'],
+    queryKey: QUERY_KEYS.masterOptions.supplier,
     queryFn: fetchSupplierOptions,
     enabled: queryEnabled && normalizedRequirements.suppliers,
     staleTime: 300_000,
   })
 
   const customers = useQuery({
-    queryKey: ['master-options', 'customer'],
+    queryKey: QUERY_KEYS.masterOptions.customer,
     queryFn: fetchCustomerOptions,
     enabled: queryEnabled && normalizedRequirements.customers,
     staleTime: 300_000,
   })
 
   const carriers = useQuery({
-    queryKey: ['master-options', 'carrier'],
+    queryKey: QUERY_KEYS.masterOptions.carrier,
     queryFn: fetchCarrierOptions,
     enabled: queryEnabled && normalizedRequirements.carriers,
     staleTime: 300_000,
   })
 
   const warehouses = useQuery({
-    queryKey: ['master-options', 'warehouse'],
+    queryKey: QUERY_KEYS.masterOptions.warehouse,
     queryFn: fetchWarehouseOptions,
     enabled: queryEnabled && normalizedRequirements.warehouses,
     staleTime: 300_000,
   })
 
   const materialCategories = useQuery({
-    queryKey: ['master-options', 'material-categories'],
+    queryKey: QUERY_KEYS.masterOptions.materialCategories,
     queryFn: fetchMaterialCategories,
     enabled: queryEnabled && normalizedRequirements.materialCategories,
     staleTime: 300_000,
   })
 
   const materials = useQuery({
-    queryKey: ['master-options', 'material'],
+    queryKey: QUERY_KEYS.masterOptions.material,
     queryFn: () => fetchMaterialSearch('', 500),
     enabled: queryEnabled && normalizedRequirements.materials,
     staleTime: 300_000,

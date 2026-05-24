@@ -15,6 +15,7 @@ import {
   type RouteViewKey,
 } from '@/config/page-registry'
 import { queryClient } from '@/lib/query-client'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useAuthStore } from '@/stores/authStore'
 import {
   checkAccessResources,
@@ -155,7 +156,7 @@ const moduleRoutes = appPageDefinitions.map((def) => {
             if (canView) {
               try {
                 await queryClient.ensureQueryData({
-                  queryKey: ['business-grid', moduleKey, {}, 1, 20, '', ''],
+                  queryKey: QUERY_KEYS.businessGridPage(moduleKey),
                   queryFn: ({ signal }) =>
                     listBusinessModule(
                       moduleKey,

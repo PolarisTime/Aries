@@ -1,6 +1,7 @@
 import type { ModalProps } from 'antd/es/modal'
 import Modal from 'antd/es/modal'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   title: string
@@ -23,12 +24,13 @@ export function FormModal({
   onSave,
   confirmLoading = false,
   width = 640,
-  okText = '保存',
-  cancelText = '取消',
+  okText,
+  cancelText,
   danger = false,
   children,
   footer,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <Modal
       title={title}
@@ -37,8 +39,8 @@ export function FormModal({
       onOk={onSave}
       confirmLoading={confirmLoading}
       width={width}
-      okText={okText}
-      cancelText={cancelText}
+      okText={okText ?? t('common.save')}
+      cancelText={cancelText ?? t('common.cancel')}
       okButtonProps={danger ? { danger: true } : undefined}
       maskClosable={false}
       forceRender

@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import Form from 'antd/es/form'
 import { useCallback, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { listSystemSettings, saveSystemSetting } from '@/api/system-settings'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
@@ -22,6 +24,7 @@ import { isSystemSwitch } from '@/views/system/number-rules-view-utils'
 import { RateLimitRulesCard } from '@/views/system/RateLimitRulesCard'
 
 export function GeneralSettingsView() {
+  const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
   const canEdit = permissionStore.can('general-setting', 'update')
@@ -37,7 +40,7 @@ export function GeneralSettingsView() {
   const [form] = Form.useForm()
 
   const { data: rows = [], isLoading } = useQuery<ModuleRecord[]>({
-    queryKey: ['general-setting'],
+    queryKey: QUERY_KEYS.generalSetting,
     queryFn: () => listSystemSettings(),
   })
 
@@ -143,7 +146,7 @@ export function GeneralSettingsView() {
         status: values.enabled ? '正常' : '禁用',
         sampleNo: sampleNo || 'ON',
       })
-      message.success('保存成功')
+      message.success(t('common.saveSuccess'))
       refresh()
       setEditorOpen(false)
     } catch (error) {

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   type ApiKeyRecord,
   createApiKey,
@@ -11,6 +12,7 @@ import {
   revokeApiKey,
 } from '@/api/api-keys'
 import { useRequestError } from '@/hooks/useRequestError'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message, modal } from '@/utils/antd-app'
@@ -27,6 +29,7 @@ interface ApiKeyCreateFormValues {
 
 export function useApiKeyManagementState(enabled = true) {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
   const authStore = useAuthStore()
@@ -64,15 +67,14 @@ export function useApiKeyManagementState(enabled = true) {
   const loadCreateOptions = enabled && generateModalOpen
 
   const { data: keysData, isLoading } = useQuery({
-    queryKey: [
-      'api-keys',
+    queryKey: QUERY_KEYS.apiKeyList(
       currentPage,
       pageSize,
       keyword,
       filterUserId,
       statusFilter,
       usageScopeFilter,
-    ],
+    ),
     queryFn: async () =>
       listApiKeys({
         page: currentPage - 1,
@@ -92,19 +94,19 @@ export function useApiKeyManagementState(enabled = true) {
   )
 
   const { data: userOptions = [] } = useQuery({
-    queryKey: ['api-key-user-options'],
+    queryKey: QUERY_KEYS.apiKeyUserOptions,
     queryFn: () => listApiKeyUserOptions(),
     enabled,
   })
 
   const { data: resourceOptions = [] } = useQuery({
-    queryKey: ['api-key-resource-options'],
+    queryKey: QUERY_KEYS.apiKeyResourceOptions,
     queryFn: listApiKeyResourceOptions,
     enabled: loadCreateOptions,
   })
 
   const { data: actionOptions = [] } = useQuery({
-    queryKey: ['api-key-action-options'],
+    queryKey: QUERY_KEYS.apiKeyActionOptions,
     queryFn: listApiKeyActionOptions,
     enabled: loadCreateOptions,
   })
@@ -124,7 +126,7 @@ export function useApiKeyManagementState(enabled = true) {
   }, [actionOptions, form, generateModalOpen])
 
   const refreshApiKeys = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['api-keys'] })
+    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.apiKeys })
   }, [queryClient])
 
   const revokeMutation = useMutation({
@@ -211,8 +213,8 @@ export function useApiKeyManagementState(enabled = true) {
       modal.confirm({
         title: '禁用 API Key',
         content: `确定禁用密钥「${record.keyName}」吗？禁用后使用该密钥的调用将失败。`,
-        okText: '确认禁用',
-        cancelText: '取消',
+        okText: t('common.ok'),
+        cancelText: t('common.cancel'),
         okButtonProps: { danger: true },
         onOk: () => revokeMutation.mutateAsync(record.id),
       })

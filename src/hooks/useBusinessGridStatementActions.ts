@@ -5,6 +5,7 @@ import {
   getBusinessModuleDetail,
   saveBusinessModule,
 } from '@/api/business'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { listAllStatementCandidates } from '@/api/statements'
 import {
   isDisplaySwitchEnabled,
@@ -29,7 +30,7 @@ export function useBusinessGridStatementActions({
   refreshModuleQueries,
 }: Props) {
   const { data: displaySwitches = [] } = useQuery({
-    queryKey: ['display-switches'],
+    queryKey: QUERY_KEYS.displaySwitches,
     queryFn: () => listDisplaySwitches(),
     staleTime: 5 * 60 * 1000,
   })

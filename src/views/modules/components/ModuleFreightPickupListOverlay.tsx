@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
 import { listAllBusinessModuleRows } from '@/api/business'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -16,7 +17,7 @@ export function ModuleFreightPickupListOverlay({
   onClose,
 }: Props) {
   const { data: records, isLoading } = useQuery({
-    queryKey: ['freight-pickup', moduleKey],
+    queryKey: QUERY_KEYS.freightPickup(moduleKey),
     queryFn: () => listAllBusinessModuleRows('freight-bill', {}),
     enabled: open,
   })

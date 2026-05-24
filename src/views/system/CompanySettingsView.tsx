@@ -7,11 +7,13 @@ import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Skeleton from 'antd/es/skeleton'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getCompanySettingProfile,
   saveCompanySettingProfile,
 } from '@/api/company-settings'
 import { useRequestError } from '@/hooks/useRequestError'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { getFormString, validateForm } from '@/lib/antd-form'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
@@ -35,6 +37,7 @@ type CompanySettingFormValues = {
 
 export function CompanySettingsView() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
 
@@ -48,7 +51,7 @@ export function CompanySettingsView() {
   const [initialized, setInitialized] = useState(false)
 
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['company-setting'],
+    queryKey: QUERY_KEYS.companySetting,
     queryFn: getCompanySettingProfile,
     enabled: canView,
   })
@@ -84,8 +87,8 @@ export function CompanySettingsView() {
           normalizeSettlementAccounts(data.settlementAccounts),
         )
       }
-      message.success('公司信息已保存')
-      void queryClient.invalidateQueries({ queryKey: ['company-setting'] })
+      message.success(t('common.saveSuccess'))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.companySetting })
     },
     onError: (err: Error) => showError(err, '保存公司信息失败'),
   })
@@ -201,7 +204,7 @@ export function CompanySettingsView() {
         // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
         onRefresh={() =>
           queryClient.invalidateQueries({
-            queryKey: ['company-setting'],
+            queryKey: QUERY_KEYS.companySetting,
           })
         }
         onSave={() => {

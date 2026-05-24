@@ -21,6 +21,7 @@ import Popover from 'antd/es/popover'
 import Space from 'antd/es/space'
 import Typography from 'antd/es/typography'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ModuleColumnDefinition } from '@/types/module-page'
 
 interface Props {
@@ -101,6 +102,7 @@ export function ColumnSettingsPopover({
   open,
   onOpenChange,
 }: Props) {
+  const { t } = useTranslation()
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor),
@@ -129,7 +131,7 @@ export function ColumnSettingsPopover({
       size="small"
       style={{ minWidth: 200, maxWidth: 280 }}
     >
-      <Typography.Text strong>列设置</Typography.Text>
+      <Typography.Text strong>{t('common.columnSettings')}</Typography.Text>
       <Divider className="my-4 mb-8" />
       <DndContext
         sensors={sensors}
@@ -172,7 +174,7 @@ export function ColumnSettingsPopover({
       onOpenChange={onOpenChange}
       overlayInnerStyle={{ maxWidth: 300 }}
     >
-      <Button icon={<SettingOutlined />}>列设置</Button>
+      <Button icon={<SettingOutlined />}>{t('common.columnSettings')}</Button>
     </Popover>
   )
 }

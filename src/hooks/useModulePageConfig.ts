@@ -6,6 +6,7 @@ import {
   isDisplaySwitchEnabled,
   listClientSettings,
 } from '@/api/system-settings'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { buildWeightOverview } from '@/config/business-pages/shared'
 import type {
@@ -47,7 +48,7 @@ interface Props {
 
 function useStatementLinkCatalog(enabled: boolean) {
   const customerStatementsQuery = useQuery({
-    queryKey: ['statement-link-options', 'customer-statement'],
+    queryKey: QUERY_KEYS.statementLinkOptions('customer-statement'),
     queryFn: () => listAllBusinessModuleRows('customer-statement', {}),
     enabled,
     placeholderData: keepPreviousData,
@@ -56,7 +57,7 @@ function useStatementLinkCatalog(enabled: boolean) {
   })
 
   const supplierStatementsQuery = useQuery({
-    queryKey: ['statement-link-options', 'supplier-statement'],
+    queryKey: QUERY_KEYS.statementLinkOptions('supplier-statement'),
     queryFn: () => listAllBusinessModuleRows('supplier-statement', {}),
     enabled,
     placeholderData: keepPreviousData,
@@ -65,7 +66,7 @@ function useStatementLinkCatalog(enabled: boolean) {
   })
 
   const freightStatementsQuery = useQuery({
-    queryKey: ['statement-link-options', 'freight-statement'],
+    queryKey: QUERY_KEYS.statementLinkOptions('freight-statement'),
     queryFn: () => listAllBusinessModuleRows('freight-statement', {}),
     enabled,
     placeholderData: keepPreviousData,
@@ -119,7 +120,7 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
   const canReusePreviousConfig = previousModuleKeyRef.current === moduleKey
 
   const moduleConfigQuery = useQuery({
-    queryKey: ['business-page-config', moduleKey],
+    queryKey: QUERY_KEYS.businessPageConfig(moduleKey),
     queryFn: () => loadBusinessPageConfig(moduleKey),
     placeholderData: initialConfig
       ? () => initialConfig
@@ -130,7 +131,7 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
   })
 
   const displaySwitchesQuery = useQuery({
-    queryKey: ['general-setting', 'client-settings'],
+    queryKey: QUERY_KEYS.clientSettings,
     queryFn: async () => {
       try {
         return await listClientSettings()

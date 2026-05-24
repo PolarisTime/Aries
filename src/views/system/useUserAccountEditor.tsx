@@ -7,6 +7,7 @@ import {
   getUserAccountDetail,
   updateUserAccount,
 } from '@/api/user-accounts'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRequestError } from '@/hooks/useRequestError'
 import type {
   UserAccountCreateResult,
@@ -74,7 +75,7 @@ export function useUserAccountEditor({
         )
       }
       setEditorOpen(false)
-      void queryClient.invalidateQueries({ queryKey: ['user-account'] })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.userAccountBase })
     },
     onError: (error: Error) => {
       if (error.message.includes('登录账号已存在')) {

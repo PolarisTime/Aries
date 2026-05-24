@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createRole, type RoleRecord, updateRole } from '@/api/role-actions'
 import {
   enabledStatusValues,
@@ -8,6 +9,7 @@ import {
   roleTypeValues,
 } from '@/constants/module-options'
 import { useRequestError } from '@/hooks/useRequestError'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { message, modal } from '@/utils/antd-app'
 
 type UseRoleEditorOptions = {
@@ -29,6 +31,7 @@ export function useRoleEditor({
   canEditRole,
   onCreatedRoleSelect,
 }: UseRoleEditorOptions) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { showError } = useRequestError()
   const [roleModalOpen, setRoleModalOpen] = useState(false)
@@ -39,7 +42,7 @@ export function useRoleEditor({
     (mode: 'create' | 'edit', role?: RoleRecord) => {
       if (mode === 'edit' && role) {
         if (!canEditRole) {
-          message.warning('暂无编辑角色权限')
+          message.warning(t('common.noPermission'))
           return
         }
         setEditingRole(role)
@@ -52,7 +55,7 @@ export function useRoleEditor({
         })
       } else {
         if (!canCreateRole) {
-          message.warning('暂无新增角色权限')
+          message.warning(t('common.noPermission'))
           return
         }
         setEditingRole(null)
@@ -85,12 +88,12 @@ export function useRoleEditor({
     },
     onSuccess: async (result) => {
       setRoleModalOpen(false)
-      await queryClient.invalidateQueries({ queryKey: ['role-settings'] })
+      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleSettings })
 
       if (result.mode === 'create' && result.data) {
-        message.success('角色创建成功')
+        message.success(t('common.addSuccess'))
         modal.confirm({
-          title: '角色创建成功',
+          title: t('common.addSuccess'),
           content: '角色已创建完成，是否立即为此角色配置权限？',
           okText: '去配置',
           cancelText: '稍后配置',
@@ -101,9 +104,9 @@ export function useRoleEditor({
         return
       }
 
-      message.success('角色更新成功')
+      message.success(t('common.editSuccess'))
     },
-    onError: (error: Error) => showError(error, '保存失败'),
+    onError: (error: Error) => showError(error, t('common.saveFailed')),
   })
 
   const handleSaveRole = useCallback(async () => {

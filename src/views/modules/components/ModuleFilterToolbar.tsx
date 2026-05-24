@@ -8,6 +8,7 @@ import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
+import { useTranslation } from 'react-i18next'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleFilterDefinition,
@@ -36,6 +37,8 @@ export function ModuleFilterToolbar({
   onSearch,
   onReset,
 }: Props) {
+  const { t } = useTranslation()
+
   const getFilterFieldId = (field: ModuleFilterDefinition) =>
     buildFormControlId('module-filter', field.key)
 
@@ -147,7 +150,7 @@ export function ModuleFilterToolbar({
           <Col xs={24} sm={12} lg={8} xl={6}>
             <Form.Item
               {...buildLabeledFormItemProps({
-                label: padLabel('关键字'),
+                label: padLabel(t('common.keyword')),
                 htmlFor: buildFormControlId('module-filter', 'keyword'),
               })}
               className="module-filter-item"
@@ -156,7 +159,7 @@ export function ModuleFilterToolbar({
                 id={buildFormControlId('module-filter', 'keyword')}
                 name="keyword"
                 allowClear
-                placeholder="搜索关键词..."
+                placeholder={t('common.pleaseInput')}
                 value={asString(filters.keyword)}
                 onChange={(event) =>
                   onUpdateFilter('keyword', event.target.value)
@@ -187,10 +190,10 @@ export function ModuleFilterToolbar({
                 htmlType="submit"
                 icon={resolveModuleActionIcon('查询')}
               >
-                查询
+                {t('common.query')}
               </Button>
               <Button icon={resolveModuleActionIcon('重置')} onClick={onReset}>
-                重置
+                {t('common.reset')}
               </Button>
             </Space>
           </Form.Item>

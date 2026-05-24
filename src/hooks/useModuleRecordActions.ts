@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { deleteBusinessModule } from '@/api/business'
 import type { ActionItem } from '@/components/TableActions'
 import { usePermissionStore } from '@/stores/permissionStore'
@@ -26,6 +27,7 @@ export function useModuleRecordActions({
   onRefresh,
   onDetail,
 }: Props) {
+  const { t } = useTranslation()
   const can = usePermissionStore((s) => s.can)
   const resource = resourceKey || moduleKey
 
@@ -67,7 +69,7 @@ export function useModuleRecordActions({
             try {
               void deleteBusinessModule(moduleKey, String(record.id))
                 .then(async () => {
-                  message.success('删除成功')
+                  message.success(t('common.deleteSuccess'))
                   await onRefresh()
                 })
                 .catch((err: unknown) => {
