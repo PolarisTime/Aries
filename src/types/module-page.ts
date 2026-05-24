@@ -1,85 +1,40 @@
-type ModuleColumnType =
-  | 'text'
-  | 'amount'
-  | 'weight'
-  | 'status'
-  | 'date'
-  | 'count'
+import type {
+  ModuleColumnDefinition,
+  ModuleDetailField,
+  ModuleFilterDefinition,
+  ModuleFilterOption,
+  ModuleFilterOptionEntry,
+  ModuleFilterOptionGroup,
+  ModuleFilterOptionResolver,
+  ModuleFilterType,
+  ModuleFormFieldDefinition,
+  ModuleFormFieldOption,
+  ModuleFormFieldOptionResolver,
+  ModuleFormFieldType,
+  ModuleQuickFilterDefinition,
+} from '@/types/module-page-fields'
 
-type ModuleFilterType = 'input' | 'select' | 'dateRange'
-type ModuleFormFieldType =
-  | 'input'
-  | 'select'
-  | 'autoComplete'
-  | 'multiSelect'
-  | 'date'
-  | 'textarea'
-  | 'number'
+export type {
+  ModuleColumnType,
+  ModuleFilterType,
+  ModuleFormFieldType,
+  ModuleFilterOption,
+  ModuleFilterOptionGroup,
+  ModuleFilterOptionEntry,
+  ModuleFilterOptionResolver,
+  ModuleFormFieldOption,
+  ModuleFormFieldOptionResolver,
+  ModuleFilterDefinition,
+  ModuleQuickFilterDefinition,
+  ModuleColumnDefinition,
+  ModuleDetailField,
+  ModuleFormFieldDefinition,
+} from '@/types/module-page-fields'
 
-export interface ModuleFilterOption {
-  label: string
-  value: string
-}
-
-interface ModuleFilterOptionGroup {
-  label: string
-  options: ModuleFilterOption[]
-}
-
-export type ModuleFilterOptionEntry =
-  | ModuleFilterOption
-  | ModuleFilterOptionGroup
-type ModuleFilterOptionResolver = (
-  filters: ModuleRecordInput,
-) => ModuleFilterOptionEntry[]
-
-export interface ModuleFormFieldOption {
-  label: string
-  value: string | number | boolean
-  customerCode?: string
-  customerName?: string
-  projectName?: string
-  projectNameAbbr?: string
-  purchaseWeighRequired?: boolean
-}
-
-type ModuleFormFieldOptionResolver = (
-  form?: ModuleRecordInput,
-) => ModuleFormFieldOption[]
-
-export interface ModuleFilterDefinition {
-  key: string
-  label: string
-  type: ModuleFilterType
-  placeholder?: string
-  clientSearchKeys?: string[]
-  clientSearchLineItemKeys?: string[]
-  options?: ModuleFilterOptionEntry[] | ModuleFilterOptionResolver
-  row?: number
-}
-
-interface ModuleQuickFilterDefinition {
-  key: string
-  label: string
-  values: Record<string, string | undefined>
-}
-
-export interface ModuleColumnDefinition {
-  title: string
-  dataIndex: string
-  width?: number
-  align?: 'left' | 'center' | 'right'
-  type?: ModuleColumnType
-  required?: boolean
-}
-
-interface ModuleDetailField {
-  label: string
-  key: string
-  type?: ModuleColumnType
-  row?: number
-  fullRow?: boolean
-}
+export type {
+  ListColumnSettings,
+  UserColumnSettingsPayload,
+} from '@/types/module-page-settings'
 
 export interface ModuleStatusMeta {
   text: string
@@ -100,25 +55,6 @@ export interface ModuleActionDefinition {
   loading?: boolean
 }
 
-export interface ModuleFormFieldDefinition {
-  key: string
-  label: string
-  type: ModuleFormFieldType
-  placeholder?: string
-  options?: ModuleFormFieldOption[] | ModuleFormFieldOptionResolver
-  required?: boolean
-  disabled?: boolean
-  allowClear?: boolean
-  defaultValue?: string | number | boolean
-  min?: number
-  precision?: number
-  readonlyWhenLocked?: boolean
-  row?: number
-  colSpan?: number
-  fullRow?: boolean
-}
-
-/** 使用索引签名替代 extends Record<string, unknown>，保留已知字段类型 */
 export type ModuleRecordInput = {
   id?: string | number
   items?: ModuleRecordInput[]
@@ -134,15 +70,6 @@ export type ModuleRecord = {
   id: string
   items?: ModuleLineItem[]
   [key: string]: unknown
-}
-
-export interface ListColumnSettings {
-  orderedKeys: string[]
-  hiddenKeys: string[]
-}
-
-export interface UserColumnSettingsPayload {
-  pages: Record<string, ListColumnSettings>
 }
 
 export interface ModuleParentImportDefinition {
@@ -188,7 +115,6 @@ export interface ModulePageConfig {
   buildOverview: (rows: ModuleRecord[]) => ModuleOverviewItem[]
   statusMap?: Record<string, ModuleStatusMeta>
   rowHighlightStatuses?: string[]
-  /** Per-module save field schema. Replaces global COMPUTED_FIELD_KEYS + EXTRA_SCALAR_FIELDS + LINE_ITEM_FIELDS. */
   saveFields?: {
     scalar?: string[]
     lineItem?: string[]
