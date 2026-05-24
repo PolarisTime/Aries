@@ -26,9 +26,9 @@ for (const entry of appPageDefinitions) {
   appPageDefinitionMap.set(entry.key, entry)
   appPageDefinitionMap.set(entry.menuKey, entry)
 }
-const searchableModuleKeys = appPageDefinitions
-  .filter((entry) => entry.searchable && entry.moduleKey)
-  .map((entry) => asString(entry.moduleKey))
+const searchableModuleKeys = appPageDefinitions.flatMap((entry) =>
+  entry.searchable && entry.moduleKey ? [asString(entry.moduleKey)] : [],
+)
 
 export function getPageRoutePath(page: AppPageDefinition | string) {
   const target =

@@ -124,18 +124,15 @@ export async function searchAccessibleModules(
         }
 
         const seenKeys = new Set<string>()
-        return rows
-          .filter((record) => {
-            const key = String(
-              record.id || asString(record[config.primaryNoKey || 'id']),
-            )
-            if (!key || seenKeys.has(key)) {
-              return false
-            }
-            seenKeys.add(key)
-            return true
-          })
-          .map((record) =>
+        return rows.flatMap((record) => {
+          const key = String(
+            record.id || asString(record[config.primaryNoKey || 'id']),
+          )
+          if (!key || seenKeys.has(key)) {
+            return []
+          }
+          seenKeys.add(key)
+          return [
             buildGlobalSearchResult(
               moduleKey,
               config,
@@ -143,7 +140,8 @@ export async function searchAccessibleModules(
               normalizedKeyword,
               options.buildSummary,
             ),
-          )
+          ]
+        })
       } catch {
         return []
       }

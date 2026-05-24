@@ -43,10 +43,10 @@ export function GeneralSettingsView() {
 
   const filteredRows = useMemo(
     () =>
-      rows.filter(isSystemSwitch).filter((record) => {
-        if (statusFilter && asString(record.status) !== statusFilter) {
+      rows.filter((record) => {
+        if (!isSystemSwitch(record)) return false
+        if (statusFilter && asString(record.status) !== statusFilter)
           return false
-        }
         return matchesGeneralSettingKeyword(record, keyword)
       }),
     [rows, keyword, statusFilter],
