@@ -222,12 +222,6 @@ export default defineConfig(({ mode }) => {
                 minSize: 12_000,
                 priority: 15,
               },
-              {
-                name: 'business-dnd',
-                test: /src[\\/]views[\\/]modules[\\/]components[\\/](BusinessGridSortableTable|DraggableColumnHeader)\.tsx$|node_modules[\\/]@dnd-kit[\\/]/,
-                minSize: 4_000,
-                priority: 14,
-              },
             ],
           },
         },
