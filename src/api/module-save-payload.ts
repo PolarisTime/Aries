@@ -53,8 +53,9 @@ async function resolveScalarFields(moduleKey: string): Promise<string[]> {
     return scalar.filter((key) => !computed.has(key))
   }
 
-  const fromDetailFields = (config.detailFields || [])
-    .flatMap((f) => (!COMPUTED_FIELD_KEYS.has(f.key) ? [f.key] : []))
+  const fromDetailFields = (config.detailFields || []).flatMap((f) =>
+    !COMPUTED_FIELD_KEYS.has(f.key) ? [f.key] : [],
+  )
 
   const extras = getBehaviorValue(moduleKey, 'extraScalarFields') || []
   return [...new Set([...fromDetailFields, ...extras])]

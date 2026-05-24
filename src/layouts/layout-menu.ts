@@ -50,14 +50,14 @@ function buildStaticFallbackMenuTree(
       !entry.hiddenInMenu &&
       options.userCanAccessEntry(entry),
   )
-  const menuGroups = options.menuGroupOrder
-    .map((groupKey) => ({
-      ...options.menuGroupDefinitions[groupKey],
-      items: options
-        .getMenuEntriesByGroup(groupKey)
-        .filter((entry) => options.userCanAccessEntry(entry)),
-    }))
-    .filter((group) => group.items.length > 0)
+  const menuGroups = options.menuGroupOrder.flatMap((groupKey) => {
+    const items = options
+      .getMenuEntriesByGroup(groupKey)
+      .filter((entry) => options.userCanAccessEntry(entry))
+    return items.length > 0
+      ? [{ ...options.menuGroupDefinitions[groupKey], items }]
+      : []
+  })
 
   return [
     ...topLevelMenuEntries.map<LayoutMenuEntry>((entry) => ({

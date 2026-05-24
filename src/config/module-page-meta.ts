@@ -27,19 +27,20 @@ const primaryNoKeyMap: Record<string, string> = {
 
 export const modulePageMetaMap: Record<string, ModulePageMeta> =
   Object.fromEntries(
-    appPageDefinitions
-      .filter((entry) => Boolean(entry.moduleKey))
-      .map((entry) => {
-        const moduleKey = asString(entry.moduleKey)
-        return [
+    appPageDefinitions.flatMap((entry) => {
+      if (!entry.moduleKey) return []
+      const moduleKey = asString(entry.moduleKey)
+      return [
+        [
           moduleKey,
           {
             key: moduleKey,
             title: entry.title,
             primaryNoKey: primaryNoKeyMap[moduleKey],
           } satisfies ModulePageMeta,
-        ]
-      }),
+        ],
+      ]
+    }),
   )
 
 export function getModulePageMeta(moduleKey: string) {

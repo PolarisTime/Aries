@@ -60,11 +60,13 @@ export function buildSelectedRoleSummaries(
   selectedRoleNames: string[],
   roleOptions: RoleOptionRecord[],
 ) {
-  return roleOptions
-    .filter((role) => selectedRoleNames.includes(role.roleName))
-    .map((role) => role.permissionSummary)
-    .filter((summary): summary is string => Boolean(summary?.trim()))
-    .filter((summary, index, values) => values.indexOf(summary) === index)
+  return roleOptions.reduce<string[]>((acc, role) => {
+    if (!selectedRoleNames.includes(role.roleName)) return acc
+    const summary = role.permissionSummary?.trim()
+    if (!summary || acc.includes(summary)) return acc
+    acc.push(summary)
+    return acc
+  }, [])
 }
 
 export function buildDefaultUserAccountFormValues() {

@@ -193,9 +193,9 @@ export function useColumnSettingsSupport(
   const persist = useCallback(
     async (order: ColumnOrderState, visibility: VisibilityState) => {
       const orderedKeys = order.length > 0 ? order : undefined
-      const hiddenKeys = Object.entries(visibility)
-        .filter(([, v]) => !v)
-        .map(([k]) => k)
+      const hiddenKeys = Object.entries(visibility).flatMap(([k, v]) =>
+        !v ? [k] : [],
+      )
       const settings: ListColumnSettings = {
         orderedKeys: orderedKeys || [],
         hiddenKeys,

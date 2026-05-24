@@ -165,9 +165,9 @@ export function ModuleAttachmentModal({
       await updateAttachmentBindings(
         moduleKey,
         recordId,
-        attachments
-          .filter((item) => String(item.id) !== id)
-          .map((item) => item.id),
+        attachments.flatMap((item) =>
+          String(item.id) !== id ? [item.id] : [],
+        ),
       )
       message.success('解除绑定成功')
       await fetchAttachments()

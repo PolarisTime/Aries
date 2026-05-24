@@ -162,42 +162,50 @@ export function RoleActionPermissionCard({
                       <Typography.Text strong>{group.menuName}</Typography.Text>
                     </div>
                   )}
-                  {(group.children.length > 0 ? group.children : [group])
-                    .filter((menu) => menu.actions.length > 0)
-                    .map((child) => (
-                      <div
-                        key={child.menuCode}
-                        className="flex items-center"
-                        style={{ padding: '6px 0 6px 16px' }}
-                      >
-                        <div className="w-160 flex-shrink-0">
-                          <Checkbox
-                            checked={isMenuChecked(child.menuCode)}
-                            indeterminate={isMenuPartiallyChecked(child)}
-                            disabled={!canEditPermissions}
-                            onChange={() => onToggleAllMenuActions(child)}
+                  {(group.children.length > 0
+                    ? group.children
+                    : [group]
+                  ).flatMap((child) =>
+                    child.actions.length > 0
+                      ? [
+                          <div
+                            key={child.menuCode}
+                            className="flex items-center"
+                            style={{ padding: '6px 0 6px 16px' }}
                           >
-                            <Typography.Text strong>
-                              {child.menuName}
-                            </Typography.Text>
-                          </Checkbox>
-                        </div>
-                        <Space size={16} wrap>
-                          {child.actions.map((action) => (
-                            <Checkbox
-                              key={action}
-                              checked={isActionSelected(child.menuCode, action)}
-                              disabled={!canEditPermissions}
-                              onChange={() =>
-                                onToggleAction(child.menuCode, action)
-                              }
-                            >
-                              {actionLabels[action] || action}
-                            </Checkbox>
-                          ))}
-                        </Space>
-                      </div>
-                    ))}
+                            <div className="w-160 flex-shrink-0">
+                              <Checkbox
+                                checked={isMenuChecked(child.menuCode)}
+                                indeterminate={isMenuPartiallyChecked(child)}
+                                disabled={!canEditPermissions}
+                                onChange={() => onToggleAllMenuActions(child)}
+                              >
+                                <Typography.Text strong>
+                                  {child.menuName}
+                                </Typography.Text>
+                              </Checkbox>
+                            </div>
+                            <Space size={16} wrap>
+                              {child.actions.map((action) => (
+                                <Checkbox
+                                  key={action}
+                                  checked={isActionSelected(
+                                    child.menuCode,
+                                    action,
+                                  )}
+                                  disabled={!canEditPermissions}
+                                  onChange={() =>
+                                    onToggleAction(child.menuCode, action)
+                                  }
+                                >
+                                  {actionLabels[action] || action}
+                                </Checkbox>
+                              ))}
+                            </Space>
+                          </div>,
+                        ]
+                      : [],
+                  )}
                 </div>
               ))}
             </div>
