@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { listBusinessModule } from '@/api/business-listing'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 
@@ -23,15 +24,14 @@ export function useInfiniteBusinessItems({
   sortDirection,
 }: Props) {
   const query = useQuery({
-    queryKey: [
-      'business-grid',
+    queryKey: QUERY_KEYS.businessGridList(
       moduleKey,
       filters,
       sortBy || '',
       sortDirection || '',
       currentPage,
       pageSize,
-    ],
+    ),
     queryFn: ({ signal }) =>
       listBusinessModule(
         moduleKey,

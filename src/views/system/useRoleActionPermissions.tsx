@@ -2,13 +2,16 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import type { TableColumnsType } from 'antd'
 import Checkbox from 'antd/es/checkbox'
 import { useCallback, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getRoleActions,
   listSystemMenus,
+} from '@/api/role-actions'
   type MenuNode,
   type RoleRecord,
   updateRoleActions,
 } from '@/api/role-actions'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRequestError } from '@/hooks/useRequestError'
 import { message } from '@/utils/antd-app'
 import { asArray, asString } from '@/utils/type-narrowing'
@@ -32,13 +35,14 @@ export function useRoleActionPermissions({
   canEditPermissions,
   enabled = true,
 }: UseRoleActionPermissionsOptions) {
+  const { t } = useTranslation()
   const { showError } = useRequestError()
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null)
   const [selectedActions, setSelectedActions] = useState<Set<string>>(new Set())
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list')
 
   const { data: menuTree = [] } = useQuery({
-    queryKey: ['role-permission-options'],
+    queryKey: QUERY_KEYS.rolePermissionOptions,
     queryFn: listSystemMenus,
     enabled: enabled && canEditPermissions,
   })
@@ -183,7 +187,7 @@ export function useRoleActionPermissions({
       await updateRoleActions(selectedRoleId, actions)
     },
     onSuccess: () => {
-      message.success('权限保存成功')
+      message.success(t('common.saveSuccess'))
     },
     onError: (error: Error) => showError(error, '保存失败'),
   })

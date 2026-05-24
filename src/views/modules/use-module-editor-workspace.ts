@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   allocateBusinessPrimaryNo,
   generateBusinessPrimaryNo,
@@ -218,6 +220,7 @@ export function useModuleEditorWorkspace({
   const [parentSelectorOpen, setParentSelectorOpen] = useState(false)
   const [parentImporting, setParentImporting] = useState(false)
   const [items, setItems] = useState<ModuleLineItem[]>([])
+  const { t } = useTranslation()
   const [saveResult, setSaveResult] = useState<{
     status: 'success' | 'error' | 'warning'
     message: string
@@ -227,11 +230,11 @@ export function useModuleEditorWorkspace({
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const isEdit = !!record
   const { data: systemSettings = [] } = useQuery({
-    queryKey: ['general-setting'],
+    queryKey: QUERY_KEYS.generalSetting,
     queryFn: listSystemSettings,
   })
   const { data: clientSettings = [] } = useQuery({
-    queryKey: ['general-setting', 'client-settings'],
+    queryKey: QUERY_KEYS.clientSettings,
     queryFn: listClientSettings,
     staleTime: 30_000,
   })
@@ -298,7 +301,7 @@ export function useModuleEditorWorkspace({
                 return
               }
               message.error(
-                err instanceof Error ? err.message : '预分配系统单号失败',
+                err instanceof Error ? err.message : t('common.preallocateNoFailed'),
               )
             })
             .finally(() => {
@@ -322,7 +325,7 @@ export function useModuleEditorWorkspace({
                 return
               }
               message.error(
-                err instanceof Error ? err.message : '获取系统单号失败',
+                err instanceof Error ? err.message : t('common.generateNoFailed'),
               )
             })
             .finally(() => {
@@ -390,7 +393,7 @@ export function useModuleEditorWorkspace({
     async (audit = false) => {
       try {
         if (primaryNoLoading) {
-          message.warning('系统单号生成中，请稍后再保存')
+          message.warning(t('common.primaryNoGenerating'))
           return
         }
 
@@ -437,10 +440,10 @@ export function useModuleEditorWorkspace({
         if (audit && editorAuditTarget) {
           const confirmed = await new Promise<boolean>((resolve) => {
             modal.confirm({
-              title: '保存并审核',
-              content: '审核后单据状态将变更为已审核，且不可再编辑。确定继续？',
-              okText: '确定审核',
-              cancelText: '取消',
+              title: t('common.saveAndAudit'),
+              content: t('common.auditConfirm'),
+              okText: t('common.confirmAudit'),
+              cancelText: t('common.cancel'),
               onOk: () => resolve(true),
               onCancel: () => resolve(false),
             })
@@ -491,7 +494,7 @@ export function useModuleEditorWorkspace({
         } else {
           setSaveResult({
             status: 'success',
-            message: isEdit ? '编辑成功' : '新增成功',
+            message: isEdit ? t('common.editSuccess') : t('common.addSuccess'),
             record: savedResult.data,
           })
         }
@@ -502,11 +505,11 @@ export function useModuleEditorWorkspace({
           const traceId = (err as Error & { traceId?: string }).traceId
           setSaveResult({
             status: 'error',
-            message: err.message || '保存失败',
+            message: err.message || t('common.saveFailed'),
             traceId,
           })
         } else {
-          setSaveResult({ status: 'error', message: '保存失败，请稍后重试' })
+          setSaveResult({ status: 'error', message: t('common.saveFailedRetry') })
         }
       } finally {
         setSaving(false)
@@ -537,7 +540,7 @@ export function useModuleEditorWorkspace({
         return
       }
       if (!selectedRecords.length) {
-        message.warning(`请先选择${parentImportConfig.label}`)
+        message.warning(t('common.pleaseSelectWith', { label: parentImportConfig.label }))
         return
       }
 
@@ -599,11 +602,11 @@ export function useModuleEditorWorkspace({
         setParentSelectorOpen(false)
         message.success(
           importedParentCount > 1
-            ? `已导入 ${importedParentCount} 张上级单据，共 ${importedItemCount} 条明细`
-            : `已导入 ${importedItemCount} 条明细`,
+            ? t('common.importParentSuccess', { parentCount: importedParentCount, itemCount: importedItemCount })
+            : t('common.importParentSuccessSimple', { itemCount: importedItemCount }),
         )
       } catch (err) {
-        message.error(err instanceof Error ? err.message : '导入上级单据失败')
+        message.error(err instanceof Error ? err.message : t('common.importParentFailed'))
       } finally {
         setParentImporting(false)
       }

@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import Alert from 'antd/es/alert'
 import { lazy, Suspense, useMemo } from 'react'
 import { getDashboardSummary } from '@/api/dashboard'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useIdleActivation } from '@/hooks/useIdleActivation'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { DashboardInfoPanels } from '@/views/dashboard/DashboardInfoPanels'
@@ -20,7 +21,7 @@ export function DashboardView() {
   const isPageVisible = usePageVisibility()
   const canMountFlowCard = useIdleActivation(Boolean(isPageVisible), 1400)
   const summaryQuery = useQuery({
-    queryKey: ['dashboard-summary'],
+    queryKey: QUERY_KEYS.dashboardSummary,
     queryFn: getDashboardSummary,
     refetchInterval: isPageVisible ? 120000 : false,
   })

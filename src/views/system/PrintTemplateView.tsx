@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   deletePrintTemplate,
   listPrintTemplates,
@@ -9,6 +10,7 @@ import {
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
@@ -19,6 +21,7 @@ import { buildPrintTemplateCopyName } from '@/views/system/print-template-view-u
 
 export function PrintTemplateView() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
 
@@ -40,7 +43,7 @@ export function PrintTemplateView() {
   const [form] = Form.useForm()
 
   const { data: templatesResponse, isLoading } = useQuery({
-    queryKey: ['print-template', selectedBillType],
+    queryKey: QUERY_KEYS.printTemplateByType(selectedBillType),
     queryFn: () => listPrintTemplates(selectedBillType),
   })
   const templates = templatesResponse?.data || []
@@ -48,8 +51,8 @@ export function PrintTemplateView() {
   const saveMutation = useMutation({
     mutationFn: savePrintTemplate,
     onSuccess: () => {
-      message.success('保存成功')
-      void queryClient.invalidateQueries({ queryKey: ['print-template'] })
+      message.success(t('common.saveSuccess'))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
       setEditorOpen(false)
     },
     onError: (error: Error) => showError(error, '保存失败'),
@@ -58,8 +61,8 @@ export function PrintTemplateView() {
   const deleteMutation = useMutation({
     mutationFn: deletePrintTemplate,
     onSuccess: () => {
-      message.success('删除成功')
-      void queryClient.invalidateQueries({ queryKey: ['print-template'] })
+      message.success(t('common.deleteSuccess'))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
     },
     onError: (error: Error) => showError(error, '删除失败'),
   })
@@ -127,14 +130,14 @@ export function PrintTemplateView() {
   const handleDelete = useCallback(
     (record: PrintTemplateRecord) => {
       if (!canDelete) {
-        message.warning('暂无删除权限')
+        message.warning(t('common.noPermission'))
         return
       }
       modal.confirm({
         title: '删除打印模板',
         content: `确定删除模板「${record.templateName}」吗？`,
-        okText: '确认删除',
-        cancelText: '取消',
+        okText: t('common.deleteConfirm'),
+        cancelText: t('common.cancel'),
         okButtonProps: { danger: true },
         onOk: () => deleteMutation.mutateAsync(record.id),
       })

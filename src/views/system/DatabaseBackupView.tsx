@@ -11,6 +11,7 @@ import {
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useRequestError } from '@/hooks/useRequestError'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
@@ -45,12 +46,12 @@ export function DatabaseBackupView() {
   const taskPollingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { data: dbStatus, isLoading: statusLoading } = useQuery({
-    queryKey: ['database-status'],
+    queryKey: QUERY_KEYS.databaseStatus,
     queryFn: getDatabaseStatus,
   })
 
   const { data: exportTasks = [], isLoading: taskLoading } = useQuery({
-    queryKey: ['database-export-tasks'],
+    queryKey: QUERY_KEYS.databaseExportTasks,
     queryFn: listDatabaseExportTasks,
     enabled: canExport && isPageVisible,
   })
@@ -63,7 +64,7 @@ export function DatabaseBackupView() {
     ) {
       taskPollingRef.current = setTimeout(() => {
         void queryClient.invalidateQueries({
-          queryKey: ['database-export-tasks'],
+          queryKey: QUERY_KEYS.databaseExportTasks,
         })
       }, 3000)
     }
@@ -86,7 +87,7 @@ export function DatabaseBackupView() {
           '一次性下载链接已生成并开始下载；如需再次下载，请重新生成',
         )
         void queryClient.invalidateQueries({
-          queryKey: ['database-export-tasks'],
+          queryKey: QUERY_KEYS.databaseExportTasks,
         })
       } catch (err) {
         showError(err, '生成下载链接失败')
@@ -155,7 +156,7 @@ export function DatabaseBackupView() {
           message.loading('正在提交数据库导出任务...', 0)
           await createDatabaseExportTask(totpCode)
           void queryClient.invalidateQueries({
-            queryKey: ['database-export-tasks'],
+            queryKey: QUERY_KEYS.databaseExportTasks,
           })
           message.destroy()
           message.success('数据库导出任务已提交，完成后可在下方下载')
@@ -195,7 +196,7 @@ export function DatabaseBackupView() {
         dbStatus={dbStatus}
         loading={statusLoading}
         onRefresh={() =>
-          void queryClient.invalidateQueries({ queryKey: ['database-status'] })
+          void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.databaseStatus })
         }
       />
 
@@ -217,7 +218,7 @@ export function DatabaseBackupView() {
           loading={taskLoading}
           onRefresh={() =>
             void queryClient.invalidateQueries({
-              queryKey: ['database-export-tasks'],
+              queryKey: QUERY_KEYS.databaseExportTasks,
             })
           }
           onGenerateDownloadLink={(taskId) => {

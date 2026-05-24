@@ -1,4 +1,5 @@
 import { createElement, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail } from '@/api/business'
 import { assertApiSuccess, http } from '@/api/client'
 import { listPrintTemplates } from '@/api/print-template'
@@ -19,6 +20,7 @@ interface Props {
 
 async function pickPrintTemplate(
   moduleKey: string,
+  t: (key: string) => string,
 ): Promise<PrintTemplateRecord | null> {
   const response = await listPrintTemplates(moduleKey)
   const templates = (response?.data || []).filter((t) => t.templateHtml?.trim())
@@ -35,8 +37,8 @@ async function pickPrintTemplate(
       title: '选择打印模板',
       width: 480,
       icon: null,
-      okText: '确定',
-      cancelText: '取消',
+      okText: t('common.ok'),
+      cancelText: t('common.cancel'),
       content: createElement(PrintTemplateSelector, {
         templates,
         defaultId: selectedId,
@@ -60,14 +62,15 @@ export function useBusinessGridPrintActions({
   selectedRowKeys,
   formatCellValue,
 }: Props) {
+  const { t } = useTranslation()
   const handlePrintSelectedRecords = useCallback(
     async (preview: boolean) => {
       if (!selectedRowKeys.length) {
-        message.warning('请先选择记录')
+        message.warning(t('common.pleaseSelect'))
         return
       }
 
-      const template = await pickPrintTemplate(moduleKey)
+      const template = await pickPrintTemplate(moduleKey, t)
 
       try {
         const selectedDetails = await Promise.all(
@@ -164,7 +167,7 @@ export function useBusinessGridPrintActions({
         message.error(err instanceof Error ? err.message : '打印失败')
       }
     },
-    [config, formatCellValue, moduleKey, selectedRowKeys],
+    [config, formatCellValue, moduleKey, selectedRowKeys, t],
   )
 
   return { handlePrintSelectedRecords }

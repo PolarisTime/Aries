@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { listBusinessModule } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
 import { StatusTag } from '@/components/StatusTag'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { SearchParams } from '@/types/api-raw'
@@ -273,7 +274,7 @@ export function ModuleParentSelectorOverlay({
   }, [open])
 
   const { data: parentPageConfig, isLoading: isConfigLoading } = useQuery({
-    queryKey: ['parent-selector-config', parentModuleKey],
+    queryKey: QUERY_KEYS.parentSelectorConfig(parentModuleKey),
     queryFn: () => loadBusinessPageConfig(parentModuleKey),
     enabled: open && !!parentModuleKey,
     staleTime: Infinity,
@@ -288,13 +289,12 @@ export function ModuleParentSelectorOverlay({
   )
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: [
-      'parent-selector-list',
+    queryKey: QUERY_KEYS.parentSelectorList(
       parentModuleKey,
       submittedFilters,
       page,
       pageSize,
-    ],
+    ),
     queryFn: ({ signal }) =>
       listBusinessModule(
         parentModuleKey,

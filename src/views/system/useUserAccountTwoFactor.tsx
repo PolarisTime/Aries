@@ -8,6 +8,7 @@ import {
   setupUserAccount2fa,
 } from '@/api/user-accounts'
 import { useRequestError } from '@/hooks/useRequestError'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { syncCurrentUserTotpStateById } from '@/stores/auth-user-sync'
 import { useAuthStore } from '@/stores/authStore'
 import type { TotpSetupResponse } from '@/types/auth'
@@ -39,7 +40,7 @@ export function useUserAccountTwoFactor() {
   )
 
   const refreshUsers = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['user-account'] })
+    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.userAccountBase })
   }, [queryClient])
 
   const open2faModal = useCallback(

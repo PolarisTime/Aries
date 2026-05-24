@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import Form from 'antd/es/form'
 import { useCallback, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   listSystemSettings,
   saveSystemSetting,
@@ -8,6 +9,7 @@ import {
 } from '@/api/system-settings'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
@@ -22,6 +24,7 @@ import {
 } from '@/views/system/number-rules-view-utils'
 
 export function NumberRulesView() {
+  const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
   const canEdit = permissionStore.can('general-setting', 'update')
@@ -38,7 +41,7 @@ export function NumberRulesView() {
   const [form] = Form.useForm()
 
   const { data: rows = [], isLoading } = useQuery<ModuleRecord[]>({
-    queryKey: ['number-rules'],
+    queryKey: QUERY_KEYS.numberRules,
     queryFn: () => listSystemSettings(),
   })
 
@@ -135,7 +138,7 @@ export function NumberRulesView() {
           remark: values.remark,
         })
       }
-      message.success('保存成功')
+      message.success(t('common.saveSuccess'))
       refresh()
       setEditorOpen(false)
     } catch (error) {

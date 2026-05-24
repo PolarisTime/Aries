@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getRefreshTokenSummary,
   listRefreshTokens,
@@ -8,11 +9,13 @@ import {
   revokeRefreshToken,
 } from '@/api/session-management'
 import { useRequestError } from '@/hooks/useRequestError'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message, modal } from '@/utils/antd-app'
 import { buildSessionTableColumns } from '@/views/system/session-management-view-utils'
 
 export function useSessionManagementState(enabled = true) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
@@ -24,12 +27,12 @@ export function useSessionManagementState(enabled = true) {
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const refreshSessionData = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['refresh-tokens'] })
-    void queryClient.invalidateQueries({ queryKey: ['refresh-tokens-summary'] })
+    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.refreshTokensBase })
+    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.refreshTokensSummary })
   }, [queryClient])
 
   const { data: tokensData, isLoading } = useQuery({
-    queryKey: ['refresh-tokens', currentPage, pageSize, keyword],
+    queryKey: QUERY_KEYS.refreshTokens(currentPage, pageSize, keyword),
     queryFn: async () =>
       listRefreshTokens({
         page: currentPage - 1,
@@ -40,7 +43,7 @@ export function useSessionManagementState(enabled = true) {
   })
 
   const { data: summary } = useQuery({
-    queryKey: ['refresh-tokens-summary'],
+    queryKey: QUERY_KEYS.refreshTokensSummary,
     queryFn: getRefreshTokenSummary,
     enabled,
   })
@@ -74,7 +77,7 @@ export function useSessionManagementState(enabled = true) {
   const handleRevoke = useCallback(
     (record: RefreshTokenRecord) => {
       if (!canEdit) {
-        message.warning('暂无会话管理权限')
+        message.warning(t('common.noPermission'))
         return
       }
 
@@ -82,12 +85,12 @@ export function useSessionManagementState(enabled = true) {
         title: '禁用令牌',
         content: '确定禁用该会话令牌吗？禁用后对应设备需要重新登录。',
         okText: '确认禁用',
-        cancelText: '取消',
+        cancelText: t('common.cancel'),
         okButtonProps: { danger: true },
         onOk: async () => {
           try {
             await revokeRefreshToken(record.id)
-            message.success('已禁用')
+            message.success(t('common.disabled'))
             refreshSessionData()
           } catch (error) {
             showError(error, '禁用失败')
@@ -100,15 +103,15 @@ export function useSessionManagementState(enabled = true) {
 
   const handleRevokeAll = useCallback(() => {
     if (!canEdit) {
-      message.warning('暂无会话管理权限')
+      message.warning(t('common.noPermission'))
       return
     }
 
     modal.confirm({
-      title: '清除全部令牌',
+      title: t('common.batchDelete'),
       content: '确定禁用所有有效的会话令牌吗？所有设备将需要重新登录。',
       okText: '确认清除',
-      cancelText: '取消',
+      cancelText: t('common.cancel'),
       okButtonProps: { danger: true },
       onOk: async () => {
         try {

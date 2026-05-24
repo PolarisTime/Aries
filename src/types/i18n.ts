@@ -122,6 +122,43 @@ export interface MessageSchema {
     selected: string
     pleaseSelect: string
     pleaseInput: string
+    confirmLogout: string
+    logout: string
+    saveSuccess: string
+    addSuccess: string
+    editSuccess: string
+    deleteSuccess: string
+    deleteConfirm: string
+    columnSettings: string
+    saveAndAudit: string
+    auditConfirm: string
+    confirmLogoutContent: string
+    displaySettingsSaved: string
+    brandSubtitle: string
+    confirmAudit: string
+    saveFailed: string
+    saveFailedRetry: string
+    query: string
+    masterData: string
+    purchaseChain: string
+    salesChain: string
+    masterDataDesc: string
+    purchaseChainDesc: string
+    salesChainDesc: string
+    prevPage: string
+    nextPage: string
+    preallocateNoFailed: string
+    generateNoFailed: string
+    primaryNoGenerating: string
+    noPermission: string
+    importParentFailed: string
+    logisticsChain: string
+    logisticsChainDesc: string
+    pleaseSelectWith: string
+    importParentSuccess: string
+    importParentSuccessSimple: string
+    disabled: string
+    batchDelete: string
   }
   auth: {
     login: string

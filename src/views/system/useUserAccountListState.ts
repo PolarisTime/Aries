@@ -4,6 +4,7 @@ import {
   listUserAccounts,
   type UserAccountListParams,
 } from '@/api/user-accounts'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 
 export function useUserAccountListState(enabled = true) {
@@ -15,7 +16,7 @@ export function useUserAccountListState(enabled = true) {
   const [pageSize, setPageSize] = useState(20)
 
   const { data: usersData, isLoading } = useQuery({
-    queryKey: ['user-account', currentPage, pageSize, keyword, statusFilter],
+    queryKey: QUERY_KEYS.userAccount(currentPage, pageSize, keyword, statusFilter),
     queryFn: async () => {
       const params: UserAccountListParams = {
         page: currentPage - 1,

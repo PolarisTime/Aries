@@ -12,17 +12,19 @@ import {
   SwapOutlined,
   TeamOutlined,
 } from '@ant-design/icons'
+import type { TFunction } from 'i18next'
 import type { DashboardSummary } from '@/api/dashboard'
 import type { WorkflowSection } from '@/views/dashboard/dashboard-view-types'
 
 export function buildWorkflowSections(
+  t: TFunction,
   summary?: DashboardSummary,
 ): WorkflowSection[] {
   return [
     {
       key: 'master',
-      title: '基础建档',
-      description: '先维护业务主数据，后续单据可直接关联带出。',
+      title: t('common.masterData'),
+      description: t('common.masterDataDesc'),
       accent: '#0f766e',
       nodes: [
         {
@@ -64,8 +66,8 @@ export function buildWorkflowSections(
     },
     {
       key: 'purchase',
-      title: '采购链路',
-      description: '从合同与订单开始，经过入库、对账，最终完成付款。',
+      title: t('common.purchaseChain'),
+      description: t('common.purchaseChainDesc'),
       accent: '#2563eb',
       nodes: [
         {
@@ -112,8 +114,8 @@ export function buildWorkflowSections(
     },
     {
       key: 'sales',
-      title: '销售链路',
-      description: '从销售合同与订单开始，经过出库、对账，最终形成收款闭环。',
+      title: t('common.salesChain'),
+      description: t('common.salesChainDesc'),
       accent: '#d97706',
       nodes: [
         {
@@ -160,8 +162,8 @@ export function buildWorkflowSections(
     },
     {
       key: 'freight',
-      title: '物流协同',
-      description: '物流相关单据可独立流转，也能嵌入采购和销售业务链路。',
+      title: t('common.logisticsChain'),
+      description: t('common.logisticsChainDesc'),
       accent: '#7c3aed',
       nodes: [
         {

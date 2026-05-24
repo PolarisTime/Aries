@@ -8,6 +8,7 @@ import Flex from 'antd/es/flex'
 import Pagination from 'antd/es/pagination'
 import Space from 'antd/es/space'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ModuleActionDefinition } from '@/types/module-page'
 import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
 
@@ -46,6 +47,7 @@ export function ModuleTableToolbar({
   toolbarActions = [],
   onAction,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <Flex
       align="center"
@@ -57,7 +59,7 @@ export function ModuleTableToolbar({
       <Space wrap>
         {canCreate && (
           <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-            新建
+            {t('common.create')}
           </Button>
         )}
         {toolbarActions.map((action) => {
@@ -90,7 +92,7 @@ export function ModuleTableToolbar({
             onClick={onExport}
             loading={exporting}
           >
-            导出
+            {t('common.export')}
           </Button>
         )}
         {extra}
@@ -102,20 +104,20 @@ export function ModuleTableToolbar({
           total={total}
           size="small"
           showSizeChanger={false}
-          showTotal={(t) =>
+          showTotal={(total) =>
             selectedCount > 0
-              ? `已选 ${selectedCount} / 共 ${t} 条`
-              : `共 ${t} 条`
+              ? `${t('common.selected', { count: selectedCount })} / ${t('common.total', { count: total })}`
+              : t('common.total', { count: total })
           }
           onChange={onPageChange}
           itemRender={(_, type, originalElement) => {
-            if (type === 'prev') return <button type="button">上一页</button>
-            if (type === 'next') return <button type="button">下一页</button>
+            if (type === 'prev') return <button type="button">{t('common.prevPage')}</button>
+            if (type === 'next') return <button type="button">{t('common.nextPage')}</button>
             return originalElement
           }}
         />
         <Button icon={<ReloadOutlined />} onClick={onRefresh} loading={loading}>
-          刷新
+          {t('common.refresh')}
         </Button>
       </Space>
     </Flex>

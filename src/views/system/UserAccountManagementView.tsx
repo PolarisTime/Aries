@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { deleteUserAccount } from '@/api/user-accounts'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useRequestError } from '@/hooks/useRequestError'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { UserAccountRecord } from '@/types/user-account'
 import { message, modal } from '@/utils/antd-app'
@@ -28,6 +30,7 @@ export function UserAccountManagementView({
   active = true,
 }: UserAccountManagementViewProps) {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
 
@@ -110,8 +113,8 @@ export function UserAccountManagementView({
   const deleteMutation = useMutation({
     mutationFn: deleteUserAccount,
     onSuccess: () => {
-      message.success('删除成功')
-      void queryClient.invalidateQueries({ queryKey: ['user-account'] })
+      message.success(t('common.deleteSuccess'))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.userAccountBase })
     },
     onError: (error: Error) => showError(error, '删除失败'),
   })
@@ -121,8 +124,8 @@ export function UserAccountManagementView({
       modal.confirm({
         title: '删除用户账户',
         content: `确定删除账号「${record.loginName}」吗？删除后该用户将无法继续登录。`,
-        okText: '确认删除',
-        cancelText: '取消',
+        okText: t('common.deleteConfirm'),
+        cancelText: t('common.cancel'),
         okButtonProps: { danger: true },
         onOk: () => deleteMutation.mutateAsync(record.id),
       })
