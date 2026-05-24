@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeTableBodyScrollY } from '@/views/modules/components/BusinessGridTable'
+import { computeTableBodyScrollY } from '@/views/modules/components/business-grid-table-utils'
 
 describe('computeTableBodyScrollY', () => {
   it('should reserve space for table header and pagination', () => {

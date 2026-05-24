@@ -12,19 +12,9 @@ import {
 } from 'react'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
 import type { ModuleRecord } from '@/types/module-page'
+import { computeTableBodyScrollY } from '@/views/modules/components/business-grid-table-utils'
 
 const MIN_TABLE_BODY_SCROLL_Y = 240
-
-export function computeTableBodyScrollY(
-  containerHeight: number,
-  headerHeight: number,
-  paginationHeight: number,
-) {
-  return Math.max(
-    MIN_TABLE_BODY_SCROLL_Y,
-    containerHeight - headerHeight - paginationHeight,
-  )
-}
 
 interface Props {
   moduleKey: string
