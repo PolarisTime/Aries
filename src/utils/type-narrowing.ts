@@ -52,13 +52,6 @@ export function asArray<T = unknown>(value: unknown): T[] {
 }
 
 /** 安全转为日期字符串 (YYYY-MM-DD)。无效日期 → '' */
-export function asDateString(value: unknown): string {
-  const s = asString(value)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
-  const d = new Date(s)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toISOString().slice(0, 10)
-}
 
 // ── Schema 辅助 ───────────────────────────────────────
 

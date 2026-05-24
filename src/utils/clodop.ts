@@ -80,10 +80,6 @@ export function loadCLodop() {
   return loadPromise
 }
 
-export function resetCLodop() {
-  loadPromise = null
-  licenseApplied = false
-}
 
 function applyLicense(lodop: CLodopInstance) {
   if (licenseApplied) {
@@ -108,7 +104,7 @@ function applyLicense(lodop: CLodopInstance) {
   }
 }
 
-export function getCLodopInstance() {
+function getCLodopInstance() {
   let lodop: CLodopInstance | null = null
 
   try {
@@ -128,25 +124,10 @@ export function getCLodopInstance() {
   return lodop
 }
 
-export function isCLodopAvailable() {
+function isCLodopAvailable() {
   return getCLodopInstance() !== null
 }
 
-export function getPrinterList() {
-  const lodop = getCLodopInstance()
-  if (!lodop) {
-    return []
-  }
-
-  try {
-    const count = lodop.GET_PRINTER_COUNT()
-    return Array.from({ length: count }, (_, index) =>
-      lodop.GET_PRINTER_NAME(index),
-    )
-  } catch {
-    return []
-  }
-}
 
 function wrapHtml(body: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
@@ -292,17 +273,6 @@ export interface PrintHtmlOptions {
   preview?: boolean
 }
 
-export function isCLodopCode(template: string) {
-  const lines = template.split('\n')
-  for (const rawLine of lines) {
-    const line = rawLine.trim()
-    if (!line || line.startsWith('//')) {
-      continue
-    }
-    return line.startsWith('LODOP.')
-  }
-  return false
-}
 
 export function execPrintCode(code: string, options: PrintHtmlOptions = {}) {
   const lodop = getCLodopInstance()

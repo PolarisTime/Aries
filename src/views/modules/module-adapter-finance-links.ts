@@ -93,7 +93,7 @@ export function buildCustomerStatementOptions(
     }))
 }
 
-export function buildSupplierStatementOptions(
+function buildSupplierStatementOptions(
   statements: ModuleRecord[],
   args: CounterpartyStatementOptionArgs = {},
 ) {
@@ -115,7 +115,7 @@ export function buildSupplierStatementOptions(
     }))
 }
 
-export function buildFreightStatementOptions(
+function buildFreightStatementOptions(
   statements: ModuleRecord[],
   args: CounterpartyStatementOptionArgs = {},
 ) {

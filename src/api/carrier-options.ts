@@ -37,7 +37,7 @@ export function getCarrierOptions(): CarrierOption[] {
   return cached.get()
 }
 
-export function findCarrierOption(
+function findCarrierOption(
   carrierName: unknown,
 ): CarrierOption | undefined {
   const normalizedCarrierName = asString(carrierName).trim()

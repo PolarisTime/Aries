@@ -82,15 +82,6 @@ function isEmptyDraftLineItem(item: ModuleLineItem) {
   )
 }
 
-export function findParentRecordByRelationNo(
-  rows: ModuleRecord[],
-  parentDisplayFieldKey: string,
-  relationNo: string,
-) {
-  return rows.find(
-    (record) => asString(record[parentDisplayFieldKey]) === relationNo,
-  )
-}
 
 export function buildParentImportState(options: {
   parentImportConfig: ModuleParentImportDefinition

@@ -1,5 +1,5 @@
-/** @deprecated 类型已迁移至 src/shared/schemas/api.ts，请从 '@/shared/schemas' 导入 */
-export type { ApiResponse, PagedResult } from '@/shared/schemas'
+export type ApiResponse<T> = { code: number; data: T; message?: string }
+export type PagedResult<T> = { rows: T[]; total: number }
 
 export type TableResponse<T> = {
   code?: number

@@ -11,7 +11,6 @@ import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { compactSearch } from '@/utils/list'
 import { asString } from '@/utils/type-narrowing'
 import { ModuleFilterToolbar } from './ModuleFilterToolbar'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
@@ -394,7 +393,17 @@ export function ModuleParentSelectorOverlay({
 
   const submitFilters = () => {
     setPage(1)
-    setSubmittedFilters(compactSearch(normalizeFilterValues(draftFilters)))
+    setSubmittedFilters(
+      Object.fromEntries(
+        Object.entries(normalizeFilterValues(draftFilters)).filter(
+          ([, value]) => {
+            if (value === undefined || value === null) return false
+            if (typeof value === 'string') return value.length > 0
+            return true
+          },
+        ),
+      ),
+    )
   }
 
   const resetFilters = () => {

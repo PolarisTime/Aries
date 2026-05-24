@@ -11,7 +11,7 @@ export type {
   QueryValue,
 } from '@/api/module-contract-types'
 
-export const moduleEndpointContracts: Record<string, ModuleEndpointConfig> = {
+const moduleEndpointContracts: Record<string, ModuleEndpointConfig> = {
   ...masterModuleEndpointContracts,
   ...operationModuleEndpointContracts,
   ...financeModuleEndpointContracts,

@@ -4,7 +4,7 @@ import { HTTP_STATUS } from '@/constants/http-status'
 import { requestHadAuthorization, requestUsesApiKey } from './header-utils'
 import type { RetryableRequestConfig } from './types'
 
-export function isAnonymousForbidden(
+function isAnonymousForbidden(
   error: unknown,
   originalRequest: RetryableRequestConfig | undefined,
 ) {
@@ -20,7 +20,7 @@ export function isAnonymousForbidden(
   )
 }
 
-export function isUnauthorizedPayload(error: unknown) {
+function isUnauthorizedPayload(error: unknown) {
   if (!axios.isAxiosError(error)) {
     return false
   }

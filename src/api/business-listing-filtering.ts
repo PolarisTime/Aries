@@ -23,7 +23,7 @@ export function hasValue(value: unknown) {
   return true
 }
 
-export function isServerFilterKey(
+function isServerFilterKey(
   endpointConfig: ModuleEndpointConfig,
   key: string,
 ) {

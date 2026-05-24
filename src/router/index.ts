@@ -222,7 +222,7 @@ const notFoundRoute = createRoute({
   ),
 })
 
-export const routeTree = rootRoute.addChildren([
+const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   setupRoute,

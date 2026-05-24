@@ -66,11 +66,3 @@ export async function disableOwn2fa(
   return assertApiSuccess(response, getApiMessage('disable2faFailed'))
 }
 
-export async function fetchAccountSecurityStatus(): Promise<
-  ApiResponse<CurrentUserSecurityState>
-> {
-  const response = await http.get<ApiResponse<CurrentUserSecurityState>>(
-    ENDPOINTS.ACCOUNT_SECURITY_STATUS,
-  )
-  return assertApiSuccess(response, getApiMessage('loadSecurityStatusFailed'))
-}

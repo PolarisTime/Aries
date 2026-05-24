@@ -3,49 +3,7 @@ import { z } from 'zod'
 // ── API 响应 Schema（工厂函数，类型附在旁边便于泛型引用） ──
 
 /** 统一 API 响应 */
-export const apiResponseSchema = <T extends z.ZodTypeAny>(data: T) =>
-  z.object({
-    code: z.number(),
-    data,
-    message: z.string().optional(),
-    traceId: z.string().optional(),
-  })
-export type ApiResponse<T> = {
-  code: number
-  data: T
-  message?: string
-  traceId?: string
-}
-
-/** 分页结果 */
-export const pagedResultSchema = <T extends z.ZodTypeAny>(row: T) =>
-  z
-    .object({
-      content: z.array(row).optional(),
-      records: z.array(row).optional(),
-      totalElements: z.number().optional(),
-      totalPages: z.number().optional(),
-      currentPage: z.number().optional(),
-      pageSize: z.number().optional(),
-      rows: z.array(row).optional(),
-      total: z.number().optional(),
-    })
-    .transform((page) => ({
-      rows: page.content ?? page.records ?? page.rows ?? [],
-      total: page.totalElements ?? page.total ?? 0,
-    }))
-export type PagedResult<T> = {
-  rows: T[]
-  total: number
-  errorCode?: number
-  errorMessage?: string
-}
-
-/** 业务单号生成 */
-export const businessNoResultSchema = z.object({
-  generatedNo: z.string(),
-  generatedId: z.string().optional(),
-})
+const businessNoResultSchema = z.object({})
 export type BusinessNoResult = z.infer<typeof businessNoResultSchema>
 
 // ── 可复用字段 Schema（Zod 对象，可 .extend() / .merge()） ──
@@ -75,7 +33,7 @@ export const weightPriceSchema = z.object({
 // ── 枚举 / 常量 Schema ──────────────────────────────────
 
 /** 单据状态枚举 */
-export const documentStatusSchema = z.enum([
+const documentStatusSchema = z.enum([
   '草稿',
   '已审核',
   '未审核',
@@ -106,5 +64,5 @@ export const documentStatusSchema = z.enum([
 export type DocumentStatus = z.infer<typeof documentStatusSchema>
 
 /** 启用/禁用状态 */
-export const enabledStatusSchema = z.enum(['正常', '禁用'])
+const enabledStatusSchema = z.enum(['正常', '禁用'])
 export type EnabledStatus = z.infer<typeof enabledStatusSchema>

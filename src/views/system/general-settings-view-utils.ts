@@ -1,13 +1,12 @@
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
-export const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
-export const MAX_CONCURRENT_SESSIONS_CODE = 'SYS_MAX_CONCURRENT_SESSIONS'
+const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
+const MAX_CONCURRENT_SESSIONS_CODE = 'SYS_MAX_CONCURRENT_SESSIONS'
 export const DEFAULT_LIST_PAGE_SIZE_SETTING_CODE = 'UI_DEFAULT_LIST_PAGE_SIZE'
-export const WATERMARK_ENABLED_CODE = 'UI_WATERMARK_ENABLED'
-export const WATERMARK_CONTENT_CODE = 'SYS_WATERMARK_CONTENT'
+const WATERMARK_CONTENT_CODE = 'SYS_WATERMARK_CONTENT'
 export const WATERMARK_FONT_SIZE_CODE = 'SYS_WATERMARK_FONT_SIZE'
-export const WATERMARK_ROTATE_CODE = 'SYS_WATERMARK_ROTATE'
+const WATERMARK_ROTATE_CODE = 'SYS_WATERMARK_ROTATE'
 export const WATERMARK_COLOR_CODE = 'SYS_WATERMARK_COLOR'
 export const WATERMARK_DENSITY_CODE = 'SYS_WATERMARK_DENSITY'
 
@@ -77,7 +76,7 @@ export function isDefaultTaxRateSetting(record: ModuleRecord) {
   return asString(record.settingCode).trim() === DEFAULT_TAX_RATE_SETTING_CODE
 }
 
-export function isMaxConcurrentSetting(record: ModuleRecord) {
+function isMaxConcurrentSetting(record: ModuleRecord) {
   return asString(record.settingCode).trim() === MAX_CONCURRENT_SESSIONS_CODE
 }
 
@@ -142,11 +141,6 @@ export function formatSettingValue(record: ModuleRecord) {
     return asString(record.sampleNo)
   }
   return asString(record.sampleNo)
-}
-
-export function formatSwitchState(record: ModuleRecord) {
-  if (asString(record.status) !== '正常') return '已关闭'
-  return '已启用'
 }
 
 export function resolveDefaultTaxRateValue(rows: ModuleRecord[] | undefined) {

@@ -5,14 +5,6 @@ import type {
   SavePrintTemplatePayload,
 } from '@/types/print-template'
 
-export function getDefaultPrintTemplate(billType: string) {
-  return restGet<PrintTemplateResponse<PrintTemplateRecord | null>>(
-    '/print-templates/default',
-    {
-      billType,
-    },
-  )
-}
 
 export function listPrintTemplates(billType: string) {
   return restGet<PrintTemplateResponse<PrintTemplateRecord[]>>(

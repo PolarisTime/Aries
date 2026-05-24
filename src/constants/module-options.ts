@@ -92,7 +92,7 @@ const supplierFallbackOptions: ReturnType<typeof createOptionList> = []
 
 const _supplierOptions = supplierFallbackOptions
 
-export function supplierOptions() {
+function supplierOptions() {
   const dynamic = apiGetSupplierOptions()
   return dynamic.length > 0 ? dynamic : _supplierOptions
 }
@@ -131,9 +131,6 @@ const carrierFallbackOptions: ReturnType<typeof createOptionList> = []
 
 const _carrierOptions = carrierFallbackOptions
 
-export function carrierOptions() {
-  return _carrierOptions
-}
 
 import {
   getCarrierOptions as apiGetCarrierOptions,
@@ -153,9 +150,6 @@ const warehouseFallbackOptions = createOptionList(['一号库', '二号库'] as 
 
 const _warehouseOptions = warehouseFallbackOptions
 
-export function warehouseOptions() {
-  return _warehouseOptions
-}
 
 import { getWarehouseOptions as apiGetWarehouseOptions } from '@/api/warehouse-options'
 
@@ -167,10 +161,10 @@ export function getWarehouseOptions() {
 export const enabledStatusValues = ['正常', '禁用'] as const
 export const enabledStatusOptions = createOptionList(enabledStatusValues)
 
-export const statementStatusValues = ['待确认', '已确认'] as const
+const statementStatusValues = ['待确认', '已确认'] as const
 export const statementStatusOptions = createOptionList(statementStatusValues)
 
-export const userAccountDataScopeValues = [
+const userAccountDataScopeValues = [
   '全部数据',
   '全部',
   '本部门',
@@ -181,7 +175,6 @@ export const userAccountDataScopeOptions = createOptionList(
 )
 
 export const roleDataScopeValues = userAccountDataScopeValues
-export const roleDataScopeOptions = createOptionList(roleDataScopeValues)
 
 export const roleTypeValues = [
   '平台角色',
@@ -189,7 +182,6 @@ export const roleTypeValues = [
   '业务角色',
   '财务角色',
 ] as const
-export const roleTypeOptions = createOptionList(roleTypeValues)
 
 export function buildValueOptions(...values: string[]) {
   return createOptionList(values)

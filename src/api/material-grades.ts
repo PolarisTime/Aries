@@ -23,6 +23,3 @@ export async function fetchMaterialGrades(): Promise<MaterialGradeOption[]> {
   }
 }
 
-export function getCachedMaterialGrades(): MaterialGradeOption[] {
-  return cachedGrades || []
-}

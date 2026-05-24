@@ -43,6 +43,3 @@ export const modulePageMetaMap: Record<string, ModulePageMeta> =
     }),
   )
 
-export function getModulePageMeta(moduleKey: string) {
-  return modulePageMetaMap[moduleKey]
-}

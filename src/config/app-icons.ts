@@ -30,7 +30,7 @@ import {
 import type { ComponentType } from 'react'
 import type { AppIconKey } from '@/config/navigation-registry'
 
-export const appIconMap: Record<AppIconKey, ComponentType> = {
+const appIconMap: Record<AppIconKey, ComponentType> = {
   AccountBookOutlined,
   ApartmentOutlined,
   AppstoreOutlined,
