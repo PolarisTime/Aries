@@ -124,30 +124,32 @@ export function useBusinessGridStatementActions({
           recordsByProject.set(projectName, current)
         }
 
-        for (const [projectName, projectRecords] of recordsByProject) {
-          const buildLineItemId = buildDraftLineItemId(
-            `draft-customer-${projectName || 'project'}`,
-          )
-          const draft = buildCustomerStatementDraftData({
-            baseDraft: {
-              id: '',
-              statementNo:
-                await generateBusinessPrimaryNo('customer-statement'),
-              status: '待确认',
+        await Promise.all(
+          Array.from(recordsByProject, async ([projectName, projectRecords]) => {
+            const localBuildLineItemId = buildDraftLineItemId(
+              `draft-customer-${projectName || 'project'}`,
+            )
+            const draft = buildCustomerStatementDraftData({
+              baseDraft: {
+                id: '',
+                statementNo:
+                  await generateBusinessPrimaryNo('customer-statement'),
+                status: '待确认',
+                remark: '',
+              },
+              sourceOrders: projectRecords,
+              today: endDate,
+              statementPeriod,
+              defaultReceiptAmountZero: customerReceiptZero,
+              cloneLineItems,
+              buildLineItemId: localBuildLineItemId,
+            })
+            await saveBusinessModule('customer-statement', {
+              ...draft,
               remark: '',
-            },
-            sourceOrders: projectRecords,
-            today: endDate,
-            statementPeriod,
-            defaultReceiptAmountZero: customerReceiptZero,
-            cloneLineItems,
-            buildLineItemId,
-          })
-          await saveBusinessModule('customer-statement', {
-            ...draft,
-            remark: '',
-          })
-        }
+            })
+          }),
+        )
       } else if (type === 'supplier') {
         const buildLineItemId = buildDraftLineItemId('draft-supplier')
         const draft = buildSupplierStatementDraftData({
