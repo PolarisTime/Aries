@@ -79,6 +79,7 @@ export function AccessControlView() {
 
   const searchParams = useMemo(
     () => new URLSearchParams(location.searchStr),
+    // eslint-disable-next-line react-doctor/no-mutable-in-deps -- TanStack Router useLocation is reactive
     [location.searchStr],
   )
   const requestedTab = parseTabKey(searchParams.get('tab'))

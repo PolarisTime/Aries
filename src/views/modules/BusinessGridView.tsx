@@ -8,16 +8,7 @@ import {
 } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
 import { BusinessGridPage } from '@/views/modules/BusinessGridPage'
-
-export function resolveBusinessGridInitialConfig(
-  pageDef: AppPageDefinition | undefined,
-  loaderConfig?: ModulePageConfig,
-) {
-  if (!pageDef?.moduleKey || loaderConfig?.key !== pageDef.moduleKey) {
-    return undefined
-  }
-  return loaderConfig
-}
+import { resolveBusinessGridInitialConfig } from '@/views/modules/business-grid-view-utils'
 
 export function BusinessGridView() {
   const location = useLocation()
@@ -26,6 +17,7 @@ export function BusinessGridView() {
   })
   const pageDef = useMemo(() => {
     return getPageDefinition(location.pathname)
+    // eslint-disable-next-line react-doctor/no-mutable-in-deps -- TanStack Router useLocation is reactive
   }, [location.pathname])
   const initialConfig = useMemo(
     () =>
