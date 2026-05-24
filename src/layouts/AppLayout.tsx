@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import Layout from 'antd/es/layout'
@@ -6,8 +5,6 @@ import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
 import Watermark from 'antd/es/watermark'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { listSystemSettings } from '@/api/system-settings'
-import { QUERY_KEYS } from '@/constants/query-keys'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { getPageDefinition } from '@/config/page-registry'
@@ -28,6 +25,7 @@ import { resolveRoutePageContext } from '@/layouts/route-page-context'
 import { useAppLayoutClock } from '@/layouts/useAppLayoutClock'
 import { useAppLayoutMenuState } from '@/layouts/useAppLayoutMenuState'
 import { useAppLayoutSessionGuards } from '@/layouts/useAppLayoutSessionGuards'
+import { useAppWatermark } from '@/layouts/useAppWatermark'
 import { useBackendStatus } from '@/layouts/useBackendStatus'
 import { useGlobalSearchSupport } from '@/layouts/useGlobalSearchSupport'
 import { usePersonalSettings } from '@/layouts/usePersonalSettings'
@@ -218,70 +216,15 @@ export function AppLayout() {
     [appliedFontSize, collapsed, isTopNavigationLayout],
   )
 
-  const { data: systemSettings = [] } = useQuery({
-    queryKey: QUERY_KEYS.generalSetting,
-    queryFn: async () => {
-      try {
-        return await listSystemSettings()
-      } catch {
-        return []
-      }
-    },
-    staleTime: 60_000,
-  })
-
-  const watermarkEnabled = systemSettings.some(
-    (s) =>
-      String(s.settingCode).trim() === 'UI_WATERMARK_ENABLED' &&
-      String(s.status) === '正常',
-  )
-  const watermarkContentSetting = systemSettings.find(
-    (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_CONTENT',
-  )
-  const watermarkFontSize =
-    Number(
-      systemSettings.find(
-        (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_FONT_SIZE',
-      )?.sampleNo,
-    ) || 18
-  const watermarkRotate = Number(
-    systemSettings.find(
-      (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_ROTATE',
-    )?.sampleNo,
-  )
-  const watermarkColor = String(
-    systemSettings.find(
-      (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_COLOR',
-    )?.sampleNo || 'rgba(0,0,0,0.08)',
-  ).trim()
-  const watermarkDensity =
-    Number(
-      systemSettings.find(
-        (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_DENSITY',
-      )?.sampleNo,
-    ) || 200
-  const watermarkText = useMemo(() => {
-    if (!watermarkEnabled) return undefined
-    const raw = String(watermarkContentSetting?.sampleNo || '').trim()
-    const template = raw && raw !== 'ON' ? raw : '{username}  {time}'
-    const now = new Date()
-    return template
-      .replace(/\{username\}/g, currentUserLoginName)
-      .replace(/\{time\}/g, now.toLocaleString('zh-CN', { hour12: false }))
-      .replace(/\{date\}/g, now.toLocaleDateString('zh-CN'))
-  }, [
-    watermarkEnabled,
-    watermarkContentSetting?.sampleNo,
-    currentUserLoginName,
-  ])
+  const wm = useAppWatermark(currentUserLoginName)
 
   return (
     <AppAntdProvider>
       <Watermark
-        content={watermarkText}
-        font={{ fontSize: watermarkFontSize, color: watermarkColor }}
-        rotate={watermarkRotate}
-        gap={[watermarkDensity, watermarkDensity]}
+        content={wm.text}
+        font={{ fontSize: wm.fontSize, color: wm.color }}
+        rotate={wm.rotate}
+        gap={[wm.density, wm.density]}
         style={{ minHeight: '100dvh' }}
       >
         <Layout className={rootClassName} style={shellFontStyle}>
