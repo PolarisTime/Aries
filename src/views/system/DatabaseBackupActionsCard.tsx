@@ -1,4 +1,3 @@
-/** @file-dynamic-ref:route — 数据库操作卡片，由 DatabaseBackupView 内部引用 */
 import { DownloadOutlined, UploadOutlined } from '@ant-design/icons'
 import Alert from 'antd/es/alert'
 import Button from 'antd/es/button'

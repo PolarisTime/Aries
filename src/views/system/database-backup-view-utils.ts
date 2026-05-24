@@ -1,4 +1,3 @@
-/** @file-dynamic-ref:route — 数据库管理工具函数，由 DatabaseBackupView 等组件引用 */
 import { formatBytes, formatDateTime } from '@/utils/formatters'
 
 export function isDatabaseTaskRunning(status: string) {

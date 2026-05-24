@@ -95,4 +95,13 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     menuParent: 'system',
     resourceKey: 'security-key',
   },
+  {
+    key: 'database-backup',
+    title: '数据库管理',
+    menuKey: '/database-backup',
+    view: 'database-backup',
+    icon: 'DatabaseOutlined',
+    menuParent: 'system',
+    resourceKey: 'database',
+  },
 ]

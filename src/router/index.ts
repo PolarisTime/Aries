@@ -113,6 +113,10 @@ const viewLoaders: Record<
     import('@/pages/finance/ProjectArDetailPage').then((m) => ({
       default: m.ProjectArDetailPage,
     })),
+  'database-backup': () =>
+    import('@/views/system/DatabaseBackupView').then((m) => ({
+      default: m.DatabaseBackupView,
+    })),
 }
 
 const moduleRoutes = appPageDefinitions.map((def) => {
