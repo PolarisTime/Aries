@@ -1,6 +1,6 @@
 import type { ComponentType, CSSProperties } from 'react'
 
-type DashboardIconProps = {
+interface DashboardIconProps {
   className?: string
   style?: CSSProperties
 }
