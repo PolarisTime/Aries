@@ -1,4 +1,3 @@
-/** @file-dynamic-ref:route — 数据库管理视图，待注册路由后可达 */
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
 import { useCallback, useEffect, useRef, useState } from 'react'

@@ -12,6 +12,7 @@ export type RouteViewKey =
   | 'api-key'
   | 'security-key'
   | 'project-ar-detail'
+  | 'database-backup'
 
 export interface AppPageDefinition {
   key: string

@@ -1,4 +1,3 @@
-/** @file-dynamic-ref:route — 数据库状态总览，由 DatabaseBackupView 内部引用 */
 import { DatabaseOutlined, ReloadOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'

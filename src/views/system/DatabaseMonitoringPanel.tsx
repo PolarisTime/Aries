@@ -1,4 +1,3 @@
-/** @file-dynamic-ref:route — PG 监控面板，由 DatabaseBackupView 内部引用 */
 import { ReloadOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
