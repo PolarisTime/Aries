@@ -424,7 +424,7 @@ export function ModuleParentSelectorOverlay({
     })
   }
 
-  const clearSelectedRecords = () => {
+  const handleClearSelectedRecords = () => {
     setSelectedRowKeys([])
     setSelectedRecordMap({})
   }
@@ -486,7 +486,7 @@ export function ModuleParentSelectorOverlay({
               </span>
               <Button
                 disabled={!selectedRows.length}
-                onClick={clearSelectedRecords}
+                onClick={handleClearSelectedRecords}
               >
                 清空已选
               </Button>
