@@ -9,9 +9,13 @@ import { usePermissionStore } from '@/stores/permissionStore'
 import { initWebVitals } from '@/utils/web-vitals'
 import '@/i18n'
 import '@/styles/variables.css'
-import '@/styles/global.css'
 import '@/styles/utilities.css'
+import '@/styles/global.css'
+import '@/styles/layout-shell.css'
+import '@/styles/module-table.css'
+import '@/styles/pages.css'
 import '@/styles/layout.css'
+import '@/styles/workspace-overlay.css'
 
 function App() {
   return (
