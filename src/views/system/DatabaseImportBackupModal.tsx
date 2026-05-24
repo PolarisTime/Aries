@@ -1,3 +1,4 @@
+/** @file-dynamic-ref:route — 导入备份弹窗，由 DatabaseBackupView 内部引用 */
 import type { FormInstance } from 'antd'
 import Alert from 'antd/es/alert'
 import Button from 'antd/es/button'

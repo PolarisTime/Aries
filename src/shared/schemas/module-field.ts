@@ -8,6 +8,6 @@
  *   const f = fieldsOf(record)  // record 来自 Zod parse
  *   f.str('customerName')       // → string
  *   f.num('quantity')           // → number
- */
+ *//** @file-dynamic-ref:unreferenced — 安全字段访问器抽象层，暂无消费者，保留供未来 API 迁移使用 */
 
 /** 从任意 Zod-validated 对象创建字段访问器（.passthrough() 类型兼容 Record<string, unknown>） */

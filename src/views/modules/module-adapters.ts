@@ -1,5 +1,0 @@
-export * from './module-adapter-actions'
-export * from './module-adapter-editor'
-export * from './module-adapter-parent-import'
-export * from './module-adapter-shared'
-export * from './module-adapter-statements'

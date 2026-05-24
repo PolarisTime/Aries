@@ -1,3 +1,4 @@
+/** @file-dynamic-ref:barrel — 公共 API 入口，对下游消费者暴露类型契约 */
 // ── API 契约 ────────────────────────────────────────────
 export {
   type BusinessNoResult,

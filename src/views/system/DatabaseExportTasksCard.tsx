@@ -1,3 +1,4 @@
+/** @file-dynamic-ref:route — 导出任务卡片，由 DatabaseBackupView 内部引用 */
 import { DownloadOutlined, ReloadOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
 import Button from 'antd/es/button'

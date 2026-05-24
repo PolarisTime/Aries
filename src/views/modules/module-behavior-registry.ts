@@ -1,3 +1,4 @@
+/** @file-dynamic-ref:registry — 模块行为注册表，通过 side-effect import 和字符串 key 动态调用 */
 import { asString } from '@/utils/type-narrowing'
 /**
  * Centralized registry for per-module behavioral configuration.
