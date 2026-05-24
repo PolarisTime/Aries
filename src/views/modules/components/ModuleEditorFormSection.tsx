@@ -7,8 +7,8 @@ import type {
   ModuleFormFieldDefinition,
   ModulePageConfig,
 } from '@/types/module-page'
-import { isEditorFieldDisabledForModule } from '@/views/modules/module-adapter-editor'
-import { groupFieldsByRow } from '@/views/modules/module-field-layout'
+import { isEditorFieldDisabledForModule } from '@/module-system/module-adapter-editor'
+import { groupFieldsByRow } from '@/module-system/module-field-layout'
 import { EditorFooterActions } from './EditorFooterActions'
 import { FormFieldRenderer } from './FormFieldRenderer'
 

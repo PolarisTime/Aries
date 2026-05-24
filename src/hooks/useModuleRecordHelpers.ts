@@ -11,7 +11,7 @@ import { asString } from '@/utils/type-narrowing'
 import {
   generatePrimaryNo as buildModulePrimaryNo,
   getModuleRecordPrimaryNo,
-} from '@/views/modules/module-adapter-shared'
+} from '@/module-system/module-adapter-shared'
 
 interface Props {
   moduleKey: string

@@ -33,15 +33,15 @@ import {
   normalizeDraftRecordForModule,
   syncDerivedEditorFormValuesForModule,
   trimEditorItemsForModule,
-} from '@/views/modules/module-adapter-editor'
+} from '@/module-system/module-adapter-editor'
 import {
   buildOccupiedParentMap,
   buildParentImportState,
-} from '@/views/modules/module-adapter-parent-import'
+} from '@/module-system/module-adapter-parent-import'
 import {
   getModuleRecordPrimaryNo,
   parseParentRelationNos,
-} from '@/views/modules/module-adapter-shared'
+} from '@/module-system/module-adapter-shared'
 import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view-utils'
 
 interface AuditTarget {

@@ -1,4 +1,4 @@
-import type { ModuleBehaviorConfig } from '@/views/modules/module-behavior-types'
+import type { ModuleBehaviorConfig } from '@/module-system/module-behavior-types'
 
 export const moduleBehaviorRegistry = new Map<string, ModuleBehaviorConfig>()
 

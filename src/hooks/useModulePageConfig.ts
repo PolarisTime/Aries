@@ -17,7 +17,7 @@ import type {
 import {
   buildStatementLinkOptions,
   type StatementLinkCatalog,
-} from '@/views/modules/module-adapter-finance-links'
+} from '@/module-system/module-adapter-finance-links'
 
 const WEIGHT_ONLY_VIEW_SETTING_CODES: Record<string, string> = {
   'purchase-inbound': DISPLAY_SWITCH_CODES.weightOnlyPurchaseInbounds,

@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-import { recalculateEditorLineItem } from '@/views/modules/module-adapter-editor'
+import { recalculateEditorLineItem } from '@/module-system/module-adapter-editor'
 
 interface Props {
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>

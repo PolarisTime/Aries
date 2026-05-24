@@ -14,7 +14,7 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { padLabel } from '@/utils/label-utils'
-import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
+import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { WorkspaceOverlay } from './WorkspaceOverlay'

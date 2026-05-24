@@ -10,7 +10,7 @@ import { asString } from '@/utils/type-narrowing'
 import {
   isDeleteBlockedByStatus,
   isEditBlockedByStatus,
-} from '@/views/modules/module-behavior-registry'
+} from '@/module-system/module-behavior-registry'
 
 export interface AuditTarget {
   key: string

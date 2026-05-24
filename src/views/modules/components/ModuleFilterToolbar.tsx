@@ -20,7 +20,7 @@ import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 import { padLabel } from '@/utils/label-utils'
 import { asString } from '@/utils/type-narrowing'
-import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
+import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 
 interface Props {
   config: ModulePageConfig

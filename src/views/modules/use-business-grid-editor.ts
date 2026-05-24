@@ -6,7 +6,7 @@ import {
 import { getModuleConfig } from '@/api/module-contracts'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-import { getBehaviorValue } from '@/views/modules/module-behavior-registry'
+import { getBehaviorValue } from '@/module-system/module-behavior-registry'
 
 interface Props {
   moduleKey: string

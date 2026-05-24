@@ -11,13 +11,13 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
-import { isEditorItemColumnEditableForModule } from '@/views/modules/module-adapter-editor'
+import { isEditorItemColumnEditableForModule } from '@/module-system/module-adapter-editor'
 import {
   buildModuleEditorDataColumns,
   buildModuleEditorManagementColumns,
-} from '@/views/modules/module-editor-item-column-builders'
-import { useModuleEditorItemColumnHandlers } from '@/views/modules/module-editor-item-column-handlers'
-import { applyMaterialToEditorLineItem } from '@/views/modules/module-editor-line-item-utils'
+} from '@/module-system/module-editor-item-column-builders'
+import { useModuleEditorItemColumnHandlers } from '@/module-system/module-editor-item-column-handlers'
+import { applyMaterialToEditorLineItem } from '@/module-system/module-editor-line-item-utils'
 
 interface Props {
   moduleKey: string

@@ -5,7 +5,7 @@ import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
-import { isEditBlockedByStatus } from '@/views/modules/module-behavior-registry'
+import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
 

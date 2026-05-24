@@ -2,7 +2,7 @@ import Button from 'antd/es/button'
 import Divider from 'antd/es/divider'
 import Popconfirm from 'antd/es/popconfirm'
 import type { ReactNode } from 'react'
-import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
+import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 
 export interface ActionItem {
   key: string
