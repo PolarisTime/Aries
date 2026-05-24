@@ -50,7 +50,7 @@ export function inferQuantityUnit(record?: ModuleRecord | null) {
   return '件'
 }
 
-export function buildModuleLineItemId() {
+function buildModuleLineItemId() {
   return `item-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 

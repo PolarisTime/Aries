@@ -1,7 +1,7 @@
 import { ENDPOINTS } from '@/constants/endpoints'
 import { createCachedOptions } from '@/lib/create-cached-options'
 
-export type WarehouseOption = {
+type WarehouseOption = {
   value: string
   label: string
 }

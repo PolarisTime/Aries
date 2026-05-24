@@ -2,7 +2,7 @@ import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { getApiMessage } from '@/utils/api-messages'
 
-export interface SecurityKeyItem {
+interface SecurityKeyItem {
   keyCode: string
   keyName: string
   source: string

@@ -4,8 +4,6 @@ export {
   type BusinessNoResult,
   type DocumentStatus,
   type EnabledStatus,
-  materialInfoSchema,
-  weightPriceSchema,
 } from './api'
 // ── 认证 ────────────────────────────────────────────────
 export {

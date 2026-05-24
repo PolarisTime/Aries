@@ -1,4 +1,4 @@
-export type ModuleColumnType =
+type ModuleColumnType =
   | 'text'
   | 'amount'
   | 'weight'
@@ -6,8 +6,8 @@ export type ModuleColumnType =
   | 'date'
   | 'count'
 
-export type ModuleFilterType = 'input' | 'select' | 'dateRange'
-export type ModuleFormFieldType =
+type ModuleFilterType = 'input' | 'select' | 'dateRange'
+type ModuleFormFieldType =
   | 'input'
   | 'select'
   | 'autoComplete'
@@ -21,7 +21,7 @@ export interface ModuleFilterOption {
   value: string
 }
 
-export interface ModuleFilterOptionGroup {
+interface ModuleFilterOptionGroup {
   label: string
   options: ModuleFilterOption[]
 }
@@ -29,7 +29,7 @@ export interface ModuleFilterOptionGroup {
 export type ModuleFilterOptionEntry =
   | ModuleFilterOption
   | ModuleFilterOptionGroup
-export type ModuleFilterOptionResolver = (
+type ModuleFilterOptionResolver = (
   filters: ModuleRecordInput,
 ) => ModuleFilterOptionEntry[]
 
@@ -43,7 +43,7 @@ export interface ModuleFormFieldOption {
   purchaseWeighRequired?: boolean
 }
 
-export type ModuleFormFieldOptionResolver = (
+type ModuleFormFieldOptionResolver = (
   form?: ModuleRecordInput,
 ) => ModuleFormFieldOption[]
 
@@ -58,7 +58,7 @@ export interface ModuleFilterDefinition {
   row?: number
 }
 
-export interface ModuleQuickFilterDefinition {
+interface ModuleQuickFilterDefinition {
   key: string
   label: string
   values: Record<string, string | undefined>
@@ -73,7 +73,7 @@ export interface ModuleColumnDefinition {
   required?: boolean
 }
 
-export interface ModuleDetailField {
+interface ModuleDetailField {
   label: string
   key: string
   type?: ModuleColumnType

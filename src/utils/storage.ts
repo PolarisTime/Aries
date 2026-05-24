@@ -10,7 +10,7 @@ export interface PersonalSettings {
   themeMode?: ThemeMode
 }
 
-export interface BusinessListCacheEntry<T = unknown> {
+interface BusinessListCacheEntry<T = unknown> {
   savedAt: number
   data: T
 }
@@ -93,7 +93,7 @@ export function getToken() {
   return accessToken
 }
 
-export function setToken(token: string, _mode?: AuthPersistenceMode) {
+function setToken(token: string, _mode?: AuthPersistenceMode) {
   accessToken = token
   // Token 仅存内存，不持久化到 Web Storage（防 XSS 窃取）
   // 页面刷新后通过 HttpOnly refresh token cookie 自动恢复
@@ -225,7 +225,7 @@ export function setListColumnSettings(
   )
 }
 
-export function clearListColumnSettings(pageKey: string, userKey?: string) {
+function clearListColumnSettings(pageKey: string, userKey?: string) {
   localStorage.removeItem(getListColumnSettingsKey(pageKey, userKey))
 }
 
@@ -233,7 +233,7 @@ function getBusinessListCacheKey(key: string) {
   return `${STORAGE_KEYS.businessListCachePrefix}${key}`
 }
 
-export function getBusinessListCache<T = unknown>(
+function getBusinessListCache<T = unknown>(
   key: string,
   maxAgeMs: number,
 ): BusinessListCacheEntry<T> | null {
@@ -268,7 +268,7 @@ export function getBusinessListCache<T = unknown>(
   }
 }
 
-export function setBusinessListCache<T = unknown>(key: string, data: T) {
+function setBusinessListCache<T = unknown>(key: string, data: T) {
   if (typeof window === 'undefined') {
     return
   }
@@ -281,7 +281,7 @@ export function setBusinessListCache<T = unknown>(key: string, data: T) {
   sessionStorage.setItem(getBusinessListCacheKey(key), JSON.stringify(payload))
 }
 
-export function clearBusinessListCache(key: string) {
+function clearBusinessListCache(key: string) {
   if (typeof window === 'undefined') {
     return
   }

@@ -4,7 +4,7 @@ import type {
   ModuleRecordInput,
 } from '@/types/module-page'
 
-export interface NormalizeDraftContext {
+interface NormalizeDraftContext {
   primaryNoKey?: string
   currentOperatorName: string
   sumLineItemsBy: (items: ModuleLineItem[], key: string) => number
@@ -12,7 +12,7 @@ export interface NormalizeDraftContext {
 
 type ModuleDefaultDraftValues = ModuleRecordInput | (() => ModuleRecordInput)
 
-export interface SyncEditorFormContext {
+interface SyncEditorFormContext {
   changedKeys: ReadonlySet<string>
 }
 

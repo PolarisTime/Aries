@@ -106,4 +106,4 @@ export const ENDPOINTS = {
   MATERIAL_CATEGORIES: '/material-categories/option',
 } as const
 
-export type EndpointKey = keyof typeof ENDPOINTS
+type EndpointKey = keyof typeof ENDPOINTS

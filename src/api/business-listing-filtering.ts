@@ -10,7 +10,7 @@ import type { ListQueryOptions } from '@/utils/list'
 import { asString, safe } from '@/utils/type-narrowing'
 import { FULL_SCAN_PAGE_SIZE } from './business-listing-constants'
 
-export function hasValue(value: unknown) {
+function hasValue(value: unknown) {
   if (value == null) {
     return false
   }

@@ -55,7 +55,6 @@ export function isPurchaseWeighRequiredCategory(category: unknown) {
   )
 }
 
-export { materialCategoryFallbackOptions }
 
 import { fetchMaterialCategories } from '@/api/material-categories'
 
@@ -84,7 +83,6 @@ export function materialGradeOptions() {
   return _gradeOptions
 }
 
-export { materialGradeFallbackOptions }
 
 import { fetchMaterialGrades } from '@/api/material-grades'
 
@@ -103,7 +101,6 @@ export function getSupplierOptions() {
   return supplierOptions()
 }
 
-export { supplierFallbackOptions }
 
 const customerFallbackOptions: ReturnType<typeof createOptionList> = []
 

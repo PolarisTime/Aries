@@ -11,7 +11,7 @@ export function markHandledRequestError(error: unknown): void {
 }
 
 /** 检查 error 是否已被标记 */
-export function isHandledRequestError(error: unknown): boolean {
+function isHandledRequestError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
   return (error as Record<string, unknown>)[FLAG] === true
 }

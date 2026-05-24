@@ -19,7 +19,7 @@ export async function getInitialSetupStatus() {
   return assertApiSuccess(response, getApiMessage('getInitStatusFailed'))
 }
 
-export async function submitInitialSetup(payload: InitialSetupPayload) {
+async function submitInitialSetup(payload: InitialSetupPayload) {
   const response = await http.post<ApiResponse<InitialSetupResult>>(
     ENDPOINTS.SETUP_INITIALIZE,
     payload,

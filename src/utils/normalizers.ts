@@ -5,33 +5,10 @@ import type {
 } from '@/types/module-page'
 import { asArray, asId, asString } from '@/utils/type-narrowing'
 
-export type LineItem = ModuleLineItem
-
-/**
- * 将字符串数组规范化为去重、去空的字符串数组
- */
-export function normalizeStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return []
-  }
-  return Array.from(
-    new Set(
-      value.flatMap((item) => {
-        const v = String(item || '').trim()
-        return v ? [v] : []
-      }),
-    ),
-  )
-}
-
-/**
- * 将逗号分隔的字符串解析为字符串数组
- */
-
 /**
  * 将未知值规范化为字符串数组（支持数组和逗号分隔字符串）
  */
-export function toStringArray(value: unknown): string[] {
+function toStringArray(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.flatMap((item) => {
       const v = String(item).trim()

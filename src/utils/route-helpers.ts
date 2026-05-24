@@ -1,5 +1,3 @@
-const APP_REDIRECT_QUERY_KEY = '__redirect'
-
 export function getCurrentAppRoute() {
   if (typeof window === 'undefined') {
     return '/dashboard'
@@ -30,27 +28,4 @@ export function getRequestPath(url: string) {
 
 export function isExactAuthEndpoint(url: string, endpoint: string) {
   return getRequestPath(url) === endpoint
-}
-
-export function restoreRedirectedHistoryRoute() {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  const currentUrl = new URL(window.location.href)
-  const redirect = currentUrl.searchParams.get(APP_REDIRECT_QUERY_KEY)
-  if (
-    !redirect ||
-    !redirect.startsWith('/') ||
-    /^https?:\/\//i.test(redirect)
-  ) {
-    return
-  }
-
-  currentUrl.searchParams.delete(APP_REDIRECT_QUERY_KEY)
-  window.history.replaceState(
-    null,
-    '',
-    `${redirect}${currentUrl.searchParams.toString() ? `?${currentUrl.searchParams.toString()}` : ''}${currentUrl.hash}`,
-  )
 }
