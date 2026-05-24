@@ -18,7 +18,12 @@ import {
 
 function getNormalizedUniqueValues(values: unknown[]) {
   return Array.from(
-    new Set(values.map((value) => asString(value).trim()).filter(Boolean)),
+    new Set(
+      values.flatMap((value) => {
+        const v = asString(value).trim()
+        return v ? [v] : []
+      }),
+    ),
   )
 }
 

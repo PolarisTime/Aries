@@ -160,7 +160,12 @@ export function uniqueStrings(value: unknown): string[] {
     return []
   }
   return Array.from(
-    new Set(value.map((item) => String(item || '').trim()).filter(Boolean)),
+    new Set(
+      value.flatMap((item) => {
+        const v = String(item || '').trim()
+        return v ? [v] : []
+      }),
+    ),
   )
 }
 

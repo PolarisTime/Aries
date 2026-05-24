@@ -226,10 +226,30 @@ interface SaveResultOverlayProps {
 }
 
 const BASE_ITEM_COLUMNS = [
-  { title: '品牌', dataIndex: 'brand', ellipsis: true, align: 'center' as const },
-  { title: '材质', dataIndex: 'material', ellipsis: true, align: 'center' as const },
-  { title: '规格', dataIndex: 'spec', ellipsis: true, align: 'center' as const },
-  { title: '长度', dataIndex: 'length', ellipsis: true, align: 'center' as const },
+  {
+    title: '品牌',
+    dataIndex: 'brand',
+    ellipsis: true,
+    align: 'center' as const,
+  },
+  {
+    title: '材质',
+    dataIndex: 'material',
+    ellipsis: true,
+    align: 'center' as const,
+  },
+  {
+    title: '规格',
+    dataIndex: 'spec',
+    ellipsis: true,
+    align: 'center' as const,
+  },
+  {
+    title: '长度',
+    dataIndex: 'length',
+    ellipsis: true,
+    align: 'center' as const,
+  },
   { title: '数量', dataIndex: 'quantity', align: 'center' as const },
   {
     title: '总重(吨)',
@@ -371,15 +391,21 @@ function SaveResultOverlay({
               const val = saveResult.record?.[field.key]
               if (val == null || val === '') return null
               const suffix =
-                (field as unknown as Record<string, unknown>).type === 'weight' ? ' 吨'
-                : (field as unknown as Record<string, unknown>).type === 'amount' ? ' 元'
-                : ''
+                (field as unknown as Record<string, unknown>).type === 'weight'
+                  ? ' 吨'
+                  : (field as unknown as Record<string, unknown>).type ===
+                      'amount'
+                    ? ' 元'
+                    : ''
               return (
                 <div key={field.key}>
                   <Typography.Text type="secondary">
                     {field.label}：
                   </Typography.Text>
-                  <Typography.Text>{String(val)}{suffix}</Typography.Text>
+                  <Typography.Text>
+                    {String(val)}
+                    {suffix}
+                  </Typography.Text>
                 </div>
               )
             })}

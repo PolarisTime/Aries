@@ -42,9 +42,10 @@ export async function updateAttachmentBindings(
   recordId: string | number,
   attachmentIds: Array<string | number>,
 ) {
-  const normalizedAttachmentIds = attachmentIds
-    .map((item) => String(item).trim())
-    .filter((item) => /^\d+$/.test(item) && item !== '0')
+  const normalizedAttachmentIds = attachmentIds.flatMap((item) => {
+    const v = String(item).trim()
+    return /^\d+$/.test(v) && v !== '0' ? [v] : []
+  })
 
   return http.put<ApiResponse<AttachmentBindingRecord>>(
     '/attachments/bindings',
