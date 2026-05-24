@@ -1,3 +1,4 @@
+/** @file-dynamic-ref:route — 数据库管理 API，由 DatabaseBackupView 等组件引用 */
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { getApiMessage } from '@/utils/api-messages'
