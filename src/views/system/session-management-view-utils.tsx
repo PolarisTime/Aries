@@ -5,23 +5,23 @@ import Tag from 'antd/es/tag'
 import type { RefreshTokenRecord } from '@/api/session-management'
 import { asString } from '@/utils/type-narrowing'
 
-export function getSessionStatusColor(status: string) {
+function getSessionStatusColor(status: string) {
   if (status === '有效') return 'green'
   if (status === '已禁用') return 'red'
   return 'default'
 }
 
-export function getSessionOnlineColor(record: RefreshTokenRecord) {
+function getSessionOnlineColor(record: RefreshTokenRecord) {
   if (record.status !== '有效') return 'default'
   return record.online ? 'green' : 'orange'
 }
 
-export function getSessionOnlineLabel(record: RefreshTokenRecord) {
+function getSessionOnlineLabel(record: RefreshTokenRecord) {
   if (record.status !== '有效') return '离线'
   return record.online ? '在线' : '离线'
 }
 
-export function truncateSessionDeviceInfo(text: unknown) {
+function truncateSessionDeviceInfo(text: unknown) {
   const normalized = asString(text)
   if (!normalized) return '--'
   return normalized.length > 60 ? `${normalized.slice(0, 60)}...` : normalized

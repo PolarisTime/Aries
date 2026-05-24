@@ -23,7 +23,7 @@ const productKeywordFilter: ModuleFilterDefinition = {
   ],
 }
 
-export const modulePageSchemaMap: Record<string, ModulePageSchema> = {
+const modulePageSchemaMap: Record<string, ModulePageSchema> = {
   'purchase-order': {
     filters: [
       {

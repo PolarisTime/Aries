@@ -9,8 +9,6 @@ import type { DashboardSummary } from '@/api/dashboard'
 import { formatDateTime } from '@/utils/formatters'
 import type { DashboardInfoItem } from '@/views/dashboard/dashboard-view-types'
 
-export { formatDateTime }
-
 export function buildDashboardInfoItems(
   summary?: DashboardSummary,
 ): DashboardInfoItem[] {

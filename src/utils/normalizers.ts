@@ -27,15 +27,6 @@ export function normalizeStringArray(value: unknown): string[] {
 /**
  * 将逗号分隔的字符串解析为字符串数组
  */
-export function parseCommaSeparatedString(value: unknown): string[] {
-  if (typeof value === 'string') {
-    return value.split(/[，,]+/).flatMap((item) => {
-      const v = item.trim()
-      return v ? [v] : []
-    })
-  }
-  return []
-}
 
 /**
  * 将未知值规范化为字符串数组（支持数组和逗号分隔字符串）
@@ -59,7 +50,7 @@ export function toStringArray(value: unknown): string[] {
 /**
  * 规范化行项目数据
  */
-export function normalizeLineItem(raw: ModuleRecordInput): ModuleLineItem {
+function normalizeLineItem(raw: ModuleRecordInput): ModuleLineItem {
   const result: ModuleLineItem = { id: asString(raw.id ?? raw.lineNo) }
   for (const [key, value] of Object.entries(raw)) {
     if (key === 'id' || key === 'lineNo') {

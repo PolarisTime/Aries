@@ -2,10 +2,7 @@ import { useLoaderData, useLocation } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
 import { useEffect, useMemo } from 'react'
 import { primeBusinessPageConfig } from '@/config/business-page-loader'
-import {
-  type AppPageDefinition,
-  getPageDefinition,
-} from '@/config/page-registry'
+import { getPageDefinition } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
 import { BusinessGridPage } from '@/views/modules/BusinessGridPage'
 import { resolveBusinessGridInitialConfig } from '@/views/modules/business-grid-view-utils'

@@ -5,7 +5,7 @@ export interface PrintTemplateTargetOption {
   label: string
 }
 
-export const allowedPrintTemplateTargetKeys = [
+const allowedPrintTemplateTargetKeys = [
   'purchase-order',
   'purchase-inbound',
   'sales-order',

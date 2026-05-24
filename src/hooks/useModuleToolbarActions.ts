@@ -11,11 +11,11 @@ import {
   resolveModuleActionPermissionCodes,
 } from '@/views/modules/module-adapter-actions'
 
-export const BULK_DELETE_LABEL = '删除'
-export const BULK_AUDIT_LABEL = '审核'
-export const BULK_REVERSE_AUDIT_LABEL = '反审核'
-export const BULK_PRINT_PREVIEW_LABEL = '打印预览'
-export const BULK_DIRECT_PRINT_LABEL = '直接打印'
+const BULK_DELETE_LABEL = '删除'
+const BULK_AUDIT_LABEL = '审核'
+const BULK_REVERSE_AUDIT_LABEL = '反审核'
+const BULK_PRINT_PREVIEW_LABEL = '打印预览'
+const BULK_DIRECT_PRINT_LABEL = '直接打印'
 
 interface Handlers {
   exportMaterialRows: () => Promise<void>

@@ -65,43 +65,7 @@ export function getCustomerProjectOptions(
   return uniqueProjectOptions(filteredRows, !customerName)
 }
 
-export function findCustomerOption(
-  customerName: unknown,
-  projectName?: unknown,
-): CustomerOption | undefined {
-  const normalizedCustomer = normalizeText(customerName)
-  const normalizedProject = normalizeText(projectName)
-  if (!normalizedCustomer && !normalizedProject) {
-    return undefined
-  }
-  const rows = cached.get()
-  return rows.find(
-    (row) =>
-      (!normalizedCustomer ||
-        normalizeText(row.customerName || row.value) === normalizedCustomer) &&
-      (!normalizedProject ||
-        normalizeText(row.projectName) === normalizedProject),
-  )
-}
 
-export function resolveSingleCustomerProjectName(
-  customerName: unknown,
-): string {
-  const normalizedCustomer = normalizeText(customerName)
-  if (!normalizedCustomer) {
-    return ''
-  }
-  const projects = uniqueProjectOptions(
-    cached
-      .get()
-      .filter(
-        (row) =>
-          normalizeText(row.customerName || row.value) === normalizedCustomer,
-      ),
-    false,
-  )
-  return projects.length === 1 ? String(projects[0].value || '') : ''
-}
 
 function uniqueCustomerNameOptions(rows: CustomerOption[]) {
   const seen = new Set<string>()

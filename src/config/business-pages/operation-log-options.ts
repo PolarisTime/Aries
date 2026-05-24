@@ -1,6 +1,6 @@
 import type { SearchParams } from '@/types/api-raw'
 import { asString } from '@/utils/type-narrowing'
-export const operationLogActionOptions = [
+const operationLogActionOptions = [
   { label: '查询', value: '查询' },
   { label: '查看', value: '查看' },
   { label: '新增', value: '新增' },
@@ -29,7 +29,7 @@ export const operationLogActionOptions = [
   { label: '上传附件', value: '上传附件' },
 ]
 
-export const operationLogActionOptionsByModule: Record<
+const operationLogActionOptionsByModule: Record<
   string,
   ReadonlyArray<{ label: string; value: string }>
 > = {

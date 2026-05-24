@@ -8,7 +8,6 @@
  */
 
 import type { FormInstance } from 'antd/es/form'
-import Form from 'antd/es/form'
 
 type MutableFormInstance = {
   setFieldsValue: (values: unknown) => void
@@ -17,25 +16,8 @@ type MutableFormInstance = {
 }
 
 /** 为指定泛型创建类型安全的 Form.useForm */
-export function useTypedForm<T extends Record<string, unknown>>(): [
-  FormInstance<T>,
-  (values: Partial<T>) => void,
-] {
-  const [form] = Form.useForm<T>()
-  return [
-    form,
-    (values: Partial<T>) =>
-      (form as unknown as MutableFormInstance).setFieldsValue(values),
-  ]
-}
 
 /** 类型安全取值，隔离 form.getFieldValue 的未知返回 */
-export function getFormValue<
-  T extends Record<string, unknown>,
-  K extends keyof T & string,
->(form: FormInstance<T>, field: K): T[K] {
-  return (form as unknown as MutableFormInstance).getFieldValue(field) as T[K]
-}
 
 /** 类型安全取字符串字段 */
 export function getFormString<T extends Record<string, unknown>>(

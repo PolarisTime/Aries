@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { http, isSuccessCode } from '@/api/client'
-import type { ApiResponse } from '@/shared/schemas'
+import type { ApiResponse } from '@/types/api'
 import type { SearchParams } from '@/types/api-raw'
 import { getApiMessage } from '@/utils/api-messages'
 import { downloadBlob } from '@/utils/download'

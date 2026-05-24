@@ -1,4 +1,3 @@
-import { checkAuthPing } from '@/api/auth'
 import type { LoginUser } from '@/types/auth'
 
 const TOTP_SESSION_KEY = 'aries-totp-session'
@@ -9,25 +8,7 @@ export interface SavedTotpSession {
   loginName: string
 }
 
-let healthCache: { online: boolean; checkedAt: number } = {
-  online: false,
-  checkedAt: 0,
-}
 
-export async function checkBackendHealth(): Promise<boolean> {
-  try {
-    const online = await checkAuthPing()
-    healthCache = { online, checkedAt: Date.now() }
-    return online
-  } catch {
-    healthCache = { online: false, checkedAt: Date.now() }
-    return false
-  }
-}
-
-export function getCachedHealth(): { online: boolean; checkedAt: number } {
-  return healthCache
-}
 
 export function saveTotpSession(
   token: string,
@@ -69,14 +50,14 @@ export function restoreTotpSession(): SavedTotpSession | null {
   return null
 }
 
-export function sanitizeRedirectPath(candidate: string): string {
+function sanitizeRedirectPath(candidate: string): string {
   if (!candidate.startsWith('/') || /^https?:\/\//i.test(candidate)) {
     return '/dashboard'
   }
   return candidate
 }
 
-export function getRedirectTarget(): string {
+function getRedirectTarget(): string {
   if (typeof window === 'undefined') {
     return '/dashboard'
   }
@@ -100,12 +81,3 @@ export function buildPostLoginTarget(
   return redirect
 }
 
-export function buildTotpCountdown(now: number, stepDeadline: number): string {
-  if (!stepDeadline || now >= stepDeadline) {
-    return '00:00'
-  }
-  const remainingSeconds = Math.max(Math.ceil((stepDeadline - now) / 1000), 0)
-  const minutes = Math.floor(remainingSeconds / 60)
-  const seconds = remainingSeconds % 60
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-}

@@ -5,7 +5,7 @@ import { ENDPOINTS } from '@/constants/endpoints'
 import { ERROR_CODE } from '@/constants/error-codes'
 import type { ApiResponse } from '@/types/api'
 import type { LoginResponseData } from '@/types/auth'
-import { message, notification } from '@/utils/antd-app'
+import { message } from '@/utils/antd-app'
 import { getApiMessage } from '@/utils/api-messages'
 import { isApiKeyToken } from '@/utils/auth-token'
 import { getCurrentAppRoute } from '@/utils/route-helpers'
@@ -24,7 +24,6 @@ let authFailureHandled = false
 const PRE_REFRESH_ADVANCE_MS = 5 * 60 * 1000
 const REFRESH_EXPIRES_AT_KEY = 'aries-refresh-expires-at'
 const REFRESH_WARNED_KEY = 'aries-refresh-warned'
-const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
 let preRefreshTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -34,7 +33,7 @@ function notifyAuthStateChanged() {
   }
 }
 
-export function clearAuthState() {
+function clearAuthState() {
   clearToken()
   clearStoredUser()
   clearTokenExpiresAt()
@@ -42,7 +41,7 @@ export function clearAuthState() {
   notifyAuthStateChanged()
 }
 
-export function applyTokenResponse(data: LoginResponseData) {
+function applyTokenResponse(data: LoginResponseData) {
   authFailureHandled = false
   if (data.user) {
     setAuthSession(
@@ -93,7 +92,7 @@ function redirectToLogin() {
   window.location.href = `/login?redirect=${encodeURIComponent(safe)}`
 }
 
-export function schedulePreRefresh(delayMs?: number) {
+function schedulePreRefresh(delayMs?: number) {
   cancelPreRefresh()
   if (typeof window === 'undefined') return
 
@@ -111,7 +110,7 @@ export function schedulePreRefresh(delayMs?: number) {
   )
 }
 
-export function cancelPreRefresh() {
+function cancelPreRefresh() {
   if (preRefreshTimer !== null) {
     clearTimeout(preRefreshTimer)
     preRefreshTimer = null
@@ -150,24 +149,6 @@ async function executePreRefresh() {
   }
 }
 
-export function checkRefreshTokenExpiry() {
-  if (typeof window === 'undefined') return
-  const raw = localStorage.getItem(REFRESH_EXPIRES_AT_KEY)
-  if (!raw) return
-  if (localStorage.getItem(REFRESH_WARNED_KEY)) return
-
-  const expiresAt = Number(raw)
-  const remaining = expiresAt - Date.now()
-
-  if (remaining > 0 && remaining <= ONE_DAY_MS) {
-    notification.warning({
-      message: getApiMessage('loginExpiring'),
-      description: getApiMessage('loginExpiringDescription'),
-      duration: 0,
-    })
-    localStorage.setItem(REFRESH_WARNED_KEY, '1')
-  }
-}
 
 let refreshPromise: Promise<void> | null = null
 

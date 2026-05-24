@@ -2,27 +2,6 @@ import type { ModuleRecord } from '@/types/module-page'
 import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'
 
-const SYSTEM_GENERATED_PRIMARY_NO_MODULES = new Set([
-  'purchase-order',
-  'purchase-inbound',
-  'sales-order',
-  'sales-outbound',
-  'freight-bill',
-  'purchase-contract',
-  'sales-contract',
-  'supplier-statement',
-  'customer-statement',
-  'freight-statement',
-  'receipt',
-  'payment',
-  'invoice-receipt',
-  'invoice-issue',
-])
-
-export function usesSystemGeneratedPrimaryNo(moduleKey: string) {
-  return SYSTEM_GENERATED_PRIMARY_NO_MODULES.has(moduleKey)
-}
-
 export function canModuleEditLineItems(
   moduleKey: string,
   hasItemColumns: boolean,
@@ -104,7 +83,7 @@ export function isEditorFieldDisabledForModule(
   if (
     primaryNoKey &&
     fieldKey === primaryNoKey &&
-    usesSystemGeneratedPrimaryNo(moduleKey)
+    false
   ) {
     return true
   }

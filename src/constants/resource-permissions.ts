@@ -20,7 +20,7 @@ export interface CatalogEntryResponse {
 
 // --- Hardcoded fallback values (used before catalog loads or when catalog is unavailable) ---
 
-export const ACTION_ALIASES: Record<string, string> = {
+const ACTION_ALIASES: Record<string, string> = {
   VIEW: 'read',
   CREATE: 'create',
   EDIT: 'update',
@@ -99,18 +99,14 @@ const FALLBACK_ACTION_LABEL_MAP: Record<string, string> = {
 let catalogReady = false
 let catalogPromise: Promise<void> | null = null
 
-export let menuResourceMap: Record<string, string> = {
+let menuResourceMap: Record<string, string> = {
   ...FALLBACK_MENU_RESOURCE_MAP,
 }
-export let resourceLabelMap: Record<string, string> = {
+let resourceLabelMap: Record<string, string> = {
   ...FALLBACK_RESOURCE_LABEL_MAP,
 }
-export let actionLabelMap: Record<string, string> = {
+let actionLabelMap: Record<string, string> = {
   ...FALLBACK_ACTION_LABEL_MAP,
-}
-
-export function isCatalogReady() {
-  return catalogReady
 }
 
 export async function loadPermissionCatalog(): Promise<void> {
@@ -171,7 +167,7 @@ export function normalizePermissionKey(value: string | null | undefined) {
     .trim()
 }
 
-export function normalizeResource(value: string | null | undefined) {
+function normalizeResource(value: string | null | undefined) {
   return normalizePermissionKey(value).toLowerCase()
 }
 

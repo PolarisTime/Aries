@@ -1,6 +1,6 @@
 import type { RetryableRequestConfig } from './types'
 
-export function getRequestHeader(
+function getRequestHeader(
   config: RetryableRequestConfig | undefined,
   headerName: string,
 ) {

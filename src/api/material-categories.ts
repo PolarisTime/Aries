@@ -14,6 +14,3 @@ const cached = createCachedOptions<MaterialCategoryOption>({
 export const fetchMaterialCategories = cached.fetch
 export const reloadMaterialCategories = cached.reload
 
-export function getCachedMaterialCategories(): MaterialCategoryOption[] {
-  return cached.get()
-}
