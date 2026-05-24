@@ -198,9 +198,7 @@ export function ModuleAttachmentModal({
 
       event.preventDefault()
       void (async () => {
-        for (const file of files) {
-          await handleUpload(file)
-        }
+        await Promise.allSettled(files.map((file) => handleUpload(file)))
       })()
     }
 

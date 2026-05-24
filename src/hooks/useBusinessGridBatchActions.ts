@@ -65,24 +65,30 @@ export function useBusinessGridBatchActions({
         skippedCount > 0 ? `另有 ${skippedCount} 条因状态不支持将跳过。` : ''
       }`,
       onOk: async () => {
+        const auditResults = await Promise.allSettled(
+          eligible.map((record) =>
+            getBusinessModuleDetail(moduleKey, String(record.id)).then(
+              (detail) =>
+                saveBusinessModule(moduleKey, {
+                  ...detail.data,
+                  [listAuditTarget.key]: listAuditTarget.value,
+                }),
+            ),
+          ),
+        )
         let successCount = 0
         let failedCount = 0
         let firstError = ''
-        for (const record of eligible) {
-          try {
-            const detail = await getBusinessModuleDetail(
-              moduleKey,
-              String(record.id),
-            )
-            await saveBusinessModule(moduleKey, {
-              ...detail.data,
-              [listAuditTarget.key]: listAuditTarget.value,
-            })
+        for (const result of auditResults) {
+          if (result.status === 'fulfilled') {
             successCount += 1
-          } catch (err) {
+          } else {
             failedCount += 1
             if (!firstError) {
-              firstError = err instanceof Error ? err.message : '审核失败'
+              firstError =
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : '审核失败'
             }
           }
         }
@@ -133,17 +139,24 @@ export function useBusinessGridBatchActions({
       }`,
       okButtonProps: { danger: true },
       onOk: async () => {
+        const deleteResults = await Promise.allSettled(
+          eligible.map((record) =>
+            deleteBusinessModule(moduleKey, String(record.id)),
+          ),
+        )
         let successCount = 0
         let failedCount = 0
         let firstError = ''
-        for (const record of eligible) {
-          try {
-            await deleteBusinessModule(moduleKey, String(record.id))
+        for (const result of deleteResults) {
+          if (result.status === 'fulfilled') {
             successCount += 1
-          } catch (err) {
+          } else {
             failedCount += 1
             if (!firstError) {
-              firstError = err instanceof Error ? err.message : '删除失败'
+              firstError =
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : '删除失败'
             }
           }
         }
@@ -195,24 +208,30 @@ export function useBusinessGridBatchActions({
         skippedCount > 0 ? `另有 ${skippedCount} 条因状态不支持将跳过。` : ''
       }`,
       onOk: async () => {
+        const reverseAuditResults = await Promise.allSettled(
+          eligible.map((record) =>
+            getBusinessModuleDetail(moduleKey, String(record.id)).then(
+              (detail) =>
+                saveBusinessModule(moduleKey, {
+                  ...detail.data,
+                  [listReverseAuditTarget.key]: listReverseAuditTarget.value,
+                }),
+            ),
+          ),
+        )
         let successCount = 0
         let failedCount = 0
         let firstError = ''
-        for (const record of eligible) {
-          try {
-            const detail = await getBusinessModuleDetail(
-              moduleKey,
-              String(record.id),
-            )
-            await saveBusinessModule(moduleKey, {
-              ...detail.data,
-              [listReverseAuditTarget.key]: listReverseAuditTarget.value,
-            })
+        for (const result of reverseAuditResults) {
+          if (result.status === 'fulfilled') {
             successCount += 1
-          } catch (err) {
+          } else {
             failedCount += 1
             if (!firstError) {
-              firstError = err instanceof Error ? err.message : '反审核失败'
+              firstError =
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : '反审核失败'
             }
           }
         }
@@ -252,21 +271,29 @@ export function useBusinessGridBatchActions({
       title: '批量标记送达',
       content: `确定将选中的 ${selectedRowKeys.length} 条物流单标记为已送达吗？`,
       onOk: async () => {
+        const deliveredResults = await Promise.allSettled(
+          selectedRowKeys.map((id) =>
+            getBusinessModuleDetail('freight-bill', id).then((detail) =>
+              saveBusinessModule('freight-bill', {
+                ...detail.data,
+                deliveryStatus: '已送达',
+              }),
+            ),
+          ),
+        )
         let successCount = 0
         let failedCount = 0
         let firstError = ''
-        for (const id of selectedRowKeys) {
-          try {
-            const detail = await getBusinessModuleDetail('freight-bill', id)
-            await saveBusinessModule('freight-bill', {
-              ...detail.data,
-              deliveryStatus: '已送达',
-            })
+        for (const result of deliveredResults) {
+          if (result.status === 'fulfilled') {
             successCount += 1
-          } catch (err) {
+          } else {
             failedCount += 1
             if (!firstError) {
-              firstError = err instanceof Error ? err.message : '标记送达失败'
+              firstError =
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : '标记送达失败'
             }
           }
         }

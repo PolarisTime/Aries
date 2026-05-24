@@ -85,20 +85,25 @@ export function useBusinessGridPrintActions({
 
         if (template?.templateHtml?.trim()) {
           // 传 recordId，后端从 DB 加载数据生成脚本（防前端篡改）
-          const scripts: string[] = []
-          for (const record of selectedRecords) {
-            const r = await http.post<{
-              code: number
-              data: { script: string }
-              message?: string
-            }>('/print/record', {
-              templateId: template.id,
-              moduleKey,
-              recordId: record.id,
-            })
+          const results = await Promise.all(
+            selectedRecords.map((record) =>
+              http.post<{
+                code: number
+                data: { script: string }
+                message?: string
+              }>('/print/record', {
+                templateId: template.id,
+                moduleKey,
+                recordId: record.id,
+              }),
+            ),
+          )
+          for (const r of results) {
             assertApiSuccess(r, '打印脚本生成失败')
-            if (r.data?.script) scripts.push(r.data.script)
           }
+          const scripts = results
+            .map((r) => r.data?.script)
+            .filter((s): s is string => Boolean(s))
 
           if (!scripts.length) {
             message.warning('未生成打印脚本')
