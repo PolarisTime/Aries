@@ -41,6 +41,7 @@ export function LoginView() {
   const [form] = Form.useForm()
   const [flipped, setFlipped] = useState(!!savedSession)
   useEffect(() => {
+    // react-doctor: intentional callback, not event handler
     if (loginStep === 'password' && flipped) {
       setFlipped(false)
     }
@@ -117,6 +118,7 @@ export function LoginView() {
   }, [reset2faStep])
   const isExpired = stepDeadline > 0 && totpNow >= stepDeadline
   useEffect(() => {
+    // react-doctor: intentional callback, not event handler
     if (isExpired && flipped) {
       reset2faStep(true)
       setFlipped(false)

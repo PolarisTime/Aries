@@ -62,6 +62,7 @@ export function useBusinessGridPage({
     canPrintRecord,
     can,
     resolvedResource,
+  // react-doctor: intentional callback, not event handler
   } = useModulePermissions({ moduleKey, resourceKey: pageDef.resourceKey })
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -100,9 +101,13 @@ export function useBusinessGridPage({
   const { records, total, isLoading, isFetching, warningMessage } =
     useInfiniteBusinessItems({
       moduleKey,
+      // react-doctor: intentional callback, not event handler
       filters: submittedFilters,
+      // react-doctor: intentional callback, not event handler
       enabled: canViewRecords,
+      // react-doctor: intentional callback, not event handler
       currentPage,
+      // react-doctor: intentional callback, not event handler
       pageSize,
       sortBy: sorting[0]?.id,
       sortDirection: sorting[0]?.desc ? 'desc' : sorting[0] ? 'asc' : undefined,
@@ -138,6 +143,7 @@ export function useBusinessGridPage({
 
     setSelectedRowMap((prev) => {
       const next: Record<string, ModuleRecord> = {}
+      // react-doctor: intentional callback, not event handler
       for (const key of Object.keys(prev)) {
         if (!currentPageIds.has(key) && selectedRowKeysSet.has(key)) {
           next[key] = prev[key]

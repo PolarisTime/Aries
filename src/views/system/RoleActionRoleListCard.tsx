@@ -45,6 +45,8 @@ export function RoleActionRoleListCard({
         <div
           key={role.id}
           className="rounded cursor-pointer mb-4"
+          role="button"
+          tabIndex={0}
           style={{
             padding: '12px 16px',
             border:
@@ -57,6 +59,7 @@ export function RoleActionRoleListCard({
                 : undefined,
           }}
           onClick={() => onSelectRole(role)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectRole(role) }}
         >
           <div className="flex justify-between mb-4">
             <Typography.Text strong>{role.roleName}</Typography.Text>

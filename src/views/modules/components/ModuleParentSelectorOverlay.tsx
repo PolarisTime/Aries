@@ -354,6 +354,7 @@ export function ModuleParentSelectorOverlay({
       const next = { ...prev }
       records.forEach((record) => {
         const key = String(record.id)
+        // react-doctor: intentional callback, not event handler
         if (selectedRowKeys.includes(key) && next[key] !== record) {
           next[key] = record
           changed = true

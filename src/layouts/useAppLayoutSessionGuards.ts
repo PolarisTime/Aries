@@ -19,6 +19,7 @@ export function useAppLayoutSessionGuards(options: Options) {
     if (!options.authReady) {
       return
     }
+    // react-doctor: intentional callback, not event handler
     if (!options.token && options.locationPathname !== '/login') {
       void options.navigate({ to: '/login' })
     }

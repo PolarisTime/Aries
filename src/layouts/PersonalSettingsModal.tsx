@@ -1,6 +1,6 @@
 import Modal from 'antd/es/modal'
 import Tabs from 'antd/es/tabs'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { PersonalSettingsDisplayTab } from '@/layouts/PersonalSettingsDisplayTab'
 import { PersonalSettingsSecurityTab } from '@/layouts/PersonalSettingsSecurityTab'
 import { usePersonalSecuritySettings } from '@/layouts/usePersonalSecuritySettings'
@@ -41,7 +41,6 @@ export function PersonalSettingsModal({
     handleSetupTotp,
     pwForm,
     pwSaving,
-    resetSecurityState,
     totpCode,
     totpEnabling,
     totpLoading,
@@ -49,16 +48,9 @@ export function PersonalSettingsModal({
     setTotpCode,
   } = usePersonalSecuritySettings({ open, tab })
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-    setTab('display')
-    resetSecurityState()
-  }, [open, resetSecurityState])
-
   return (
     <Modal
+      key={String(open)}
       title="个人设置"
       open={open}
       onCancel={onClose}

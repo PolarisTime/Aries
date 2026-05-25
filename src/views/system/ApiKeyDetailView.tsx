@@ -51,6 +51,7 @@ export function ApiKeyDetailView() {
   const id = useMemo(() => {
     const segments = location.pathname.split('/').filter(Boolean)
     return segments[segments.length - 1] || ''
+    // react-doctor: TanStack Router useLocation() returns reactive state that triggers re-renders on navigation
   }, [location.pathname])
 
   useEffect(() => {

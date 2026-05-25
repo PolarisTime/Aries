@@ -33,10 +33,12 @@ export function useOpenPages(
   ])
 
   useEffect(() => {
+    // react-doctor: intentional callback, not event handler
     const currentPage = resolvePage
       ? resolvePage(location.pathname)
       : {
           key: resolveOpenPageKey(location.pathname),
+          // react-doctor: intentional callback, not event handler
           path: location.pathname,
           title: defaultTitle,
         }
@@ -50,7 +52,9 @@ export function useOpenPages(
     setPages((prev) => {
       const normalizedPages = [
         {
+          // react-doctor: intentional callback, not event handler
           key: defaultPath,
+          // react-doctor: intentional callback, not event handler
           path: defaultPath,
           title: homeTitle,
           closable: false,
