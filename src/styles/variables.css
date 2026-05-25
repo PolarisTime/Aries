@@ -50,7 +50,7 @@
   --theme-text-muted: #666;
   --theme-text-muted-light: #8c8c8c;
   --app-header-height: 48px;
-  --app-tabs-height: 32px;
+  --app-tabs-height: 38px;
   --app-tab-card-height: 34px;
   --app-tab-card-top-gap: 6px;
   --app-top-offset: calc(var(--app-header-height) + var(--app-tabs-height));
