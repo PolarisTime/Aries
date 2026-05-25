@@ -17,6 +17,7 @@ import { padLabel } from '@/utils/label-utils'
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
+import { PieceWeightPopover } from './PieceWeightPopover'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -50,7 +51,16 @@ export function ModuleRecordDetailOverlay({
         key: column.dataIndex,
         width: column.width,
         align: column.align,
-        render: (value: unknown) => formatCellValue(value, column.type),
+        render:
+          column.dataIndex === 'weightTon'
+            ? (value: unknown, record: ModuleLineItem) => (
+                <PieceWeightPopover
+                  itemId={record.id}
+                  weightTon={value as string | number}
+                  category={record.category as string | undefined}
+                />
+              )
+            : (value: unknown) => formatCellValue(value, column.type),
       })),
     [detailItemColumns, formatCellValue],
   )
