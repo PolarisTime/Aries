@@ -89,7 +89,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
                   value:
-                    typeof opt.value === 'number'
+                    typeof opt.value === 'number' || typeof opt.value === 'boolean'
                       ? opt.value
                       : asString(opt.value),
                 }))
@@ -117,7 +117,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
                   value:
-                    typeof opt.value === 'number'
+                    typeof opt.value === 'number' || typeof opt.value === 'boolean'
                       ? opt.value
                       : asString(opt.value),
                 }))
@@ -169,7 +169,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
                   value:
-                    typeof opt.value === 'number'
+                    typeof opt.value === 'number' || typeof opt.value === 'boolean'
                       ? opt.value
                       : asString(opt.value),
                 }))
