@@ -29,6 +29,7 @@ export interface ModuleBehaviorConfig {
   computesAmounts?: boolean
   editableLockedFields?: string[]
   editableLockedItemColumns?: string[]
+  readonlyItemColumns?: string[]
   readonlyEditorFields?: string[]
   resolveReadonlyEditorFields?: (record: ModuleRecord) => string[]
   defaultOperatorField?: string

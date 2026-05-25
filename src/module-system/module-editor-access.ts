@@ -107,6 +107,11 @@ export function isEditorItemColumnEditableForModule(
     return false
   }
 
+  const readonlyItemColumns = getBehaviorValue(moduleKey, 'readonlyItemColumns')
+  if (readonlyItemColumns?.includes(columnKey)) {
+    return false
+  }
+
   if (getBehaviorValue(moduleKey, 'readonlyLineItems') === true) {
     return false
   }
