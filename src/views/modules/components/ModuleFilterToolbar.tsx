@@ -1,5 +1,6 @@
 import { ReloadOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
+import { useRouter } from '@tanstack/react-router'
 import Col from 'antd/es/col'
 import DatePicker from 'antd/es/date-picker'
 import Form from 'antd/es/form'
@@ -138,6 +139,7 @@ export function ModuleFilterToolbar({
   onReset,
 }: Props) {
   const { t } = useTranslation()
+  const router = useRouter()
 
   const getFilterFieldLabelTargetId = (field: ModuleFilterDefinition) => {
     const fieldId = buildFormControlId('module-filter', field.key)
@@ -208,7 +210,7 @@ export function ModuleFilterToolbar({
               <Button icon={resolveModuleActionIcon('重置')} onClick={onReset}>
                 {t('common.reset')}
               </Button>
-              <Button icon={<ReloadOutlined />} onClick={onSearch}>
+              <Button icon={<ReloadOutlined />} onClick={() => router.invalidate()}>
                 重载
               </Button>
             </Space>
