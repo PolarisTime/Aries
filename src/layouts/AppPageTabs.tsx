@@ -17,10 +17,20 @@ export function AppPageTabs({
   onNavigateToPath,
   pages,
   shellFontStyle,
+  closePage,
 }: AppPageTabsProps) {
   const tabItems = pages.map((page) => ({
     key: page.key,
-    label: page.title,
+    label: (
+      <span
+        onDoubleClick={(e) => {
+          e.stopPropagation()
+          closePage(page.key, onNavigateToPath)
+        }}
+      >
+        {page.title}
+      </span>
+    ),
   }))
 
   const handleTabChange = (key: string) => {
