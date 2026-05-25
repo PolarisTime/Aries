@@ -124,6 +124,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         customerStatementOpen={state.overlays.customerStatementOpen}
         freightStatementOpen={state.overlays.freightStatementOpen}
         freightPickupOpen={state.overlays.freightPickupOpen}
+        freightPickupRecords={state.overlays.freightPickupRecords}
         selectedRows={state.records.filter((r) =>
           state.selectedRowKeys.includes(String(r.id)),
         )}

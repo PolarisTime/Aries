@@ -94,6 +94,7 @@ export function BusinessGridOverlays({
   customerStatementOpen,
   freightStatementOpen,
   freightPickupOpen,
+  freightPickupRecords = [],
   selectedRows,
   canSave,
   canAudit,
@@ -181,6 +182,7 @@ export function BusinessGridOverlays({
         <ModuleFreightPickupListOverlay
           open={freightPickupOpen}
           moduleKey={moduleKey}
+          records={freightPickupRecords}
           onClose={onCloseFreightPickup}
         />
       ) : null}
