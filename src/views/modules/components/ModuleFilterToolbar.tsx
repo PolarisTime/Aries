@@ -1,3 +1,4 @@
+import { ReloadOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Col from 'antd/es/col'
 import DatePicker from 'antd/es/date-picker'
@@ -206,6 +207,9 @@ export function ModuleFilterToolbar({
               </Button>
               <Button icon={resolveModuleActionIcon('重置')} onClick={onReset}>
                 {t('common.reset')}
+              </Button>
+              <Button icon={<ReloadOutlined />} onClick={onSearch}>
+                重载
               </Button>
             </Space>
           </Form.Item>
