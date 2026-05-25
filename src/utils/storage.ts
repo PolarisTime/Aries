@@ -10,10 +10,6 @@ export interface PersonalSettings {
   themeMode?: ThemeMode
 }
 
-interface BusinessListCacheEntry<T = unknown> {
-  savedAt: number
-  data: T
-}
 
 export type AuthPersistenceMode = 'local' | 'session'
 
@@ -93,11 +89,6 @@ export function getToken() {
   return accessToken
 }
 
-function setToken(token: string, _mode?: AuthPersistenceMode) {
-  accessToken = token
-  // Token 仅存内存，不持久化到 Web Storage（防 XSS 窃取）
-  // 页面刷新后通过 HttpOnly refresh token cookie 自动恢复
-}
 
 export function clearToken() {
   accessToken = ''
@@ -225,68 +216,10 @@ export function setListColumnSettings(
   )
 }
 
-function clearListColumnSettings(pageKey: string, userKey?: string) {
-  localStorage.removeItem(getListColumnSettingsKey(pageKey, userKey))
-}
 
-function getBusinessListCacheKey(key: string) {
-  return `${STORAGE_KEYS.businessListCachePrefix}${key}`
-}
 
-function getBusinessListCache<T = unknown>(
-  key: string,
-  maxAgeMs: number,
-): BusinessListCacheEntry<T> | null {
-  if (typeof window === 'undefined') {
-    return null
-  }
 
-  const raw = sessionStorage.getItem(getBusinessListCacheKey(key))
-  if (!raw) {
-    return null
-  }
 
-  try {
-    const parsed = JSON.parse(raw) as BusinessListCacheEntry<T>
-    if (
-      !parsed ||
-      typeof parsed !== 'object' ||
-      typeof parsed.savedAt !== 'number' ||
-      !('data' in parsed)
-    ) {
-      sessionStorage.removeItem(getBusinessListCacheKey(key))
-      return null
-    }
-    if (Date.now() - parsed.savedAt > maxAgeMs) {
-      sessionStorage.removeItem(getBusinessListCacheKey(key))
-      return null
-    }
-    return parsed
-  } catch {
-    sessionStorage.removeItem(getBusinessListCacheKey(key))
-    return null
-  }
-}
-
-function setBusinessListCache<T = unknown>(key: string, data: T) {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  const payload: BusinessListCacheEntry<T> = {
-    savedAt: Date.now(),
-    data,
-  }
-
-  sessionStorage.setItem(getBusinessListCacheKey(key), JSON.stringify(payload))
-}
-
-function clearBusinessListCache(key: string) {
-  if (typeof window === 'undefined') {
-    return
-  }
-  sessionStorage.removeItem(getBusinessListCacheKey(key))
-}
 
 export function getTokenExpiresAt(): number | null {
   if (typeof window === 'undefined') return null

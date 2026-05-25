@@ -35,10 +35,6 @@ function getMessageApi() {
   return currentAntdAppApi?.message
 }
 
-function getNotificationApi() {
-  return currentAntdAppApi?.notification
-}
-
 function getModalApi() {
   return currentAntdAppApi?.modal
 }
@@ -50,9 +46,6 @@ export function bindAntdAppApi(api: AntdAppApi | null): void {
 }
 
 type MsgMethod = Parameters<AntdAppApi['message'][keyof AntdAppApi['message']]>
-type NotifMethod = Parameters<
-  AntdAppApi['notification'][keyof AntdAppApi['notification']]
->
 type ModMethod = Parameters<AntdAppApi['modal'][keyof AntdAppApi['modal']]>
 
 export const message = {
@@ -87,51 +80,6 @@ export const message = {
       'destroy',
       args,
       () => import('antd/es/message'),
-    ),
-}
-
-const notification = {
-  warning: (...args: NotifMethod) =>
-    callMethod(
-      getNotificationApi(),
-      'warning',
-      args,
-      () => import('antd/es/notification'),
-    ),
-  info: (...args: NotifMethod) =>
-    callMethod(
-      getNotificationApi(),
-      'info',
-      args,
-      () => import('antd/es/notification'),
-    ),
-  success: (...args: NotifMethod) =>
-    callMethod(
-      getNotificationApi(),
-      'success',
-      args,
-      () => import('antd/es/notification'),
-    ),
-  error: (...args: NotifMethod) =>
-    callMethod(
-      getNotificationApi(),
-      'error',
-      args,
-      () => import('antd/es/notification'),
-    ),
-  open: (...args: NotifMethod) =>
-    callMethod(
-      getNotificationApi(),
-      'open',
-      args,
-      () => import('antd/es/notification'),
-    ),
-  destroy: (...args: NotifMethod) =>
-    callMethod(
-      getNotificationApi(),
-      'destroy',
-      args,
-      () => import('antd/es/notification'),
     ),
 }
 

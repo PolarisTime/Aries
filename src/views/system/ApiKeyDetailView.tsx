@@ -51,7 +51,6 @@ export function ApiKeyDetailView() {
   const id = useMemo(() => {
     const segments = location.pathname.split('/').filter(Boolean)
     return segments[segments.length - 1] || ''
-    // eslint-disable-next-line react-doctor/no-mutable-in-deps -- TanStack Router useLocation is reactive
   }, [location.pathname])
 
   useEffect(() => {

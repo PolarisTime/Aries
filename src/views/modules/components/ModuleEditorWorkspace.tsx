@@ -311,8 +311,9 @@ function SaveResultOverlay({
 }: SaveResultOverlayProps) {
   const navigate = useNavigate()
   const items: ModuleRecord[] = Array.isArray(saveResult.record?.items)
-    ? (saveResult.record.items as ModuleRecord[])
+    ? saveResult.record.items
     : []
+
   const isSuccess =
     saveResult.status === 'success' || saveResult.status === 'warning'
 
@@ -344,7 +345,7 @@ function SaveResultOverlay({
 
   const handleCreateNext = () => {
     onClear()
-    navigate({
+    void navigate({
       to: nextModule!.path,
       search: new URLSearchParams({
         sourceModule: moduleKey,

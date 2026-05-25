@@ -56,7 +56,6 @@ export function AppLayout() {
 
   const routePageContext = useMemo(
     () => resolveRoutePageContext(location.pathname),
-    // eslint-disable-next-line react-doctor/no-mutable-in-deps -- TanStack Router useLocation is reactive
     [location.pathname],
   )
   const { backendOnline } = useBackendStatus(token)

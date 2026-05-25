@@ -18,16 +18,6 @@ export interface CurrentUserSecurityState {
   forbidDisable2fa?: boolean
 }
 
-function buildTotpHeaders(totpCode: string): {
-  headers: { 'X-TOTP-Code': string }
-} {
-  return {
-    headers: {
-      'X-TOTP-Code': totpCode.trim(),
-    },
-  }
-}
-
 export async function changeOwnPassword(
   payload: ChangeOwnPasswordPayload,
 ): Promise<ApiResponse<null>> {
@@ -53,16 +43,5 @@ export async function enableOwn2fa(
     { totpCode },
   )
   return assertApiSuccess(response, getApiMessage('enable2faFailed'))
-}
-
-async function disableOwn2fa(
-  totpCode: string,
-): Promise<ApiResponse<CurrentUserSecurityState>> {
-  const response = await http.post<ApiResponse<CurrentUserSecurityState>>(
-    ENDPOINTS.ACCOUNT_2FA_DISABLE,
-    null,
-    buildTotpHeaders(totpCode),
-  )
-  return assertApiSuccess(response, getApiMessage('disable2faFailed'))
 }
 

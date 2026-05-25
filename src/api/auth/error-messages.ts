@@ -10,16 +10,6 @@
  * MessageSchema key under 'auth' that can be resolved via vue-i18n.
  */
 
-const ERROR_MESSAGE_KEYS: Record<string, string> = {
-  "'' is required": 'auth.validation.required',
-  'network error': 'auth.error.network',
-  'failed to fetch': 'auth.error.network',
-  timeout: 'auth.error.timeout',
-  ECONNABORTED: 'auth.error.timeout',
-  'status code 401': 'auth.error.sessionExpired',
-  'status code 403': 'auth.error.forbidden',
-  'status code 404': 'auth.error.notFound',
-}
 
 const DEFAULT_MESSAGES: Record<string, string> = {
   "'' is required": '必填项不能为空',

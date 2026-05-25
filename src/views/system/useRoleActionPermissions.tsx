@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next'
 import {
   getRoleActions,
   listSystemMenus,
-} from '@/api/role-actions'
   type MenuNode,
   type RoleRecord,
   updateRoleActions,

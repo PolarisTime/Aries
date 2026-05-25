@@ -1,5 +1,5 @@
 import type { ModuleRecord } from '@/types/module-page'
-import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
+import { getBehaviorValue } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'
 
 export function isModuleLineItemsLocked(moduleKey: string, statuses: string[]) {
@@ -57,7 +57,7 @@ export function isEditorFieldDisabledForModule(
   fieldDisabled: boolean,
   canSaveCurrentEditor: boolean,
   lineItemsLocked: boolean,
-  primaryNoKey?: string,
+  _primaryNoKey?: string,
   parentFieldKey?: string,
   record?: ModuleRecord,
 ) {
@@ -66,14 +66,6 @@ export function isEditorFieldDisabledForModule(
   }
 
   if (fieldDisabled) {
-    return true
-  }
-
-  if (
-    primaryNoKey &&
-    fieldKey === primaryNoKey &&
-    false
-  ) {
     return true
   }
 

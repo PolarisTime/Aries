@@ -1,8 +1,3 @@
-import type {
-  UserAccountCreateResult,
-  UserAccountRecord,
-} from '@/types/user-account'
-import type { UserAccountEditorMode } from '@/views/system/user-account-view-utils'
 
 export interface UserAccountEditorFormValues {
   loginName: string
