@@ -291,6 +291,7 @@ function isFinanceOrTradeModule(key: string) {
 }
 const FREIGHT_ITEM_COLUMNS = [
   { title: '码头', dataIndex: 'warehouseName', ellipsis: true },
+  { title: '品牌', dataIndex: 'brand', ellipsis: true },
   { title: '材质', dataIndex: 'material', ellipsis: true },
   { title: '规格', dataIndex: 'spec', ellipsis: true },
   { title: '长度', dataIndex: 'length', ellipsis: true },
