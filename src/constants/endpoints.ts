@@ -63,6 +63,9 @@ export const ENDPOINTS = {
   // Dashboard (pure action → singular)
   DASHBOARD_SUMMARY: '/dashboard/summary',
 
+  // Global search (aggregate query → singular)
+  GLOBAL_SEARCH: '/global-search',
+
   // Database (business entity → plural)
   DATABASE_STATUS: '/system/databases/status',
   DATABASE_EXPORT_TASKS: '/system/databases/export-tasks',
@@ -105,4 +108,3 @@ export const ENDPOINTS = {
   CARRIERS_OPTIONS: '/carriers/option',
   MATERIAL_CATEGORIES: '/material-categories/option',
 } as const
-
