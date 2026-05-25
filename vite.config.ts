@@ -1,5 +1,6 @@
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 
@@ -82,6 +83,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      TanStackRouterVite({ autoCodeSplitting: true }),
       react({
         babel: {
           plugins: [['babel-plugin-react-compiler', { target: '19' }]],
@@ -112,6 +114,19 @@ export default defineConfig(({ mode }) => {
             },
           }
         : undefined,
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom'],
+            router: ['@tanstack/react-router'],
+            query: ['@tanstack/react-query'],
+            antd: ['antd'],
+            i18n: ['i18next', 'react-i18next'],
+          },
+        },
+      },
     },
     build: {
       target: 'esnext',

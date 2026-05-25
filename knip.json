@@ -9,5 +9,12 @@
     "src/env.d.ts",
     "tests/e2e/support/**"
   ],
-  "ignoreDependencies": []
+  "ignoreDependencies": [],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  },
+  "rules": {
+    "types": "warn"
+  }
 }
