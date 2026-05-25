@@ -6,25 +6,6 @@ import type {
 import { asArray, asId, asString } from '@/utils/type-narrowing'
 
 /**
- * 将未知值规范化为字符串数组（支持数组和逗号分隔字符串）
- */
-function toStringArray(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.flatMap((item) => {
-      const v = String(item).trim()
-      return v ? [v] : []
-    })
-  }
-  if (typeof value === 'string') {
-    return value.split(',').flatMap((item) => {
-      const v = item.trim()
-      return v ? [v] : []
-    })
-  }
-  return []
-}
-
-/**
  * 规范化行项目数据
  */
 function normalizeLineItem(raw: ModuleRecordInput): ModuleLineItem {

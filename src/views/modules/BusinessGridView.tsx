@@ -14,7 +14,6 @@ export function BusinessGridView() {
   })
   const pageDef = useMemo(() => {
     return getPageDefinition(location.pathname)
-    // eslint-disable-next-line react-doctor/no-mutable-in-deps -- TanStack Router useLocation is reactive
   }, [location.pathname])
   const initialConfig = useMemo(
     () =>

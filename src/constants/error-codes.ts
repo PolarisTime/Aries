@@ -10,4 +10,3 @@ export const ERROR_CODE = {
   INTERNAL_ERROR: 5000,
 } as const
 
-type ErrorCodeValue = (typeof ERROR_CODE)[keyof typeof ERROR_CODE]

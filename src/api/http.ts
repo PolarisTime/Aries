@@ -41,6 +41,5 @@ function createApiClient(instance: AxiosInstance) {
   }
 }
 
-type ApiClient = ReturnType<typeof createApiClient>
 
 export const http = createApiClient(rawHttp)

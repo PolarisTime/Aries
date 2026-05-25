@@ -10,12 +10,6 @@ export function markHandledRequestError(error: unknown): void {
   }
 }
 
-/** 检查 error 是否已被标记 */
-function isHandledRequestError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false
-  return (error as Record<string, unknown>)[FLAG] === true
-}
-
 /** 检查是否为取消请求错误 */
 export function isCanceledRequestError(error: unknown): boolean {
   if (axios.isCancel(error)) return true

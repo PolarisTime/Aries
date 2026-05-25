@@ -166,9 +166,7 @@ export function useBusinessGridPage({
   }, [records, selectedRowKeys])
 
   const navigate = useNavigate()
-  const detailRoutePath = getBehaviorValue(moduleKey, 'detailRoutePath') as
-    | string
-    | undefined
+  const detailRoutePath = getBehaviorValue(moduleKey, 'detailRoutePath')
 
   const handleEdit = useCallback(
     (record: ModuleRecord) => {

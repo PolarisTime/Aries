@@ -17,7 +17,7 @@ const userAccountRecordSchema = z.object({
 })
 export type UserAccountRecord = z.infer<typeof userAccountRecordSchema>
 
-const userAccountFormPayloadSchema = z.object({
+export const userAccountFormPayloadSchema = z.object({
   loginName: z.string().min(1),
   password: z.string().optional(),
   userName: z.string().min(1),
@@ -33,7 +33,7 @@ export type UserAccountFormPayload = z.infer<
   typeof userAccountFormPayloadSchema
 >
 
-const userAccountCreateResultSchema = z.object({
+export const userAccountCreateResultSchema = z.object({
   user: userAccountRecordSchema.optional(),
   loginName: z.string(),
   initialPassword: z.string().optional(),
@@ -49,7 +49,7 @@ export type UserAccountCreateResult = z.infer<
   typeof userAccountCreateResultSchema
 >
 
-const departmentOptionRecordSchema = z.object({
+export const departmentOptionRecordSchema = z.object({
   id: z.union([z.string(), z.number()]),
   departmentCode: z.string().optional(),
   departmentName: z.string(),
@@ -58,7 +58,7 @@ export type DepartmentOptionRecord = z.infer<
   typeof departmentOptionRecordSchema
 >
 
-const roleOptionRecordSchema = z.object({
+export const roleOptionRecordSchema = z.object({
   id: z.union([z.string(), z.number()]),
   roleName: z.string(),
   roleCode: z.string(),

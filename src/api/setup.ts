@@ -3,7 +3,6 @@ import type { ApiResponse } from '@/types/api'
 import type {
   InitialSetupAdminSubmitPayload,
   InitialSetupCompanyPayload,
-  InitialSetupPayload,
   InitialSetupResult,
   InitialSetupStatus,
   InitialSetupTotpPayload,
@@ -19,13 +18,6 @@ export async function getInitialSetupStatus() {
   return assertApiSuccess(response, getApiMessage('getInitStatusFailed'))
 }
 
-async function submitInitialSetup(payload: InitialSetupPayload) {
-  const response = await http.post<ApiResponse<InitialSetupResult>>(
-    ENDPOINTS.SETUP_INITIALIZE,
-    payload,
-  )
-  return assertApiSuccess(response, getApiMessage('firstInitFailed'))
-}
 
 export async function setupInitialAdmin2fa(payload: InitialSetupTotpPayload) {
   const response = await http.post<ApiResponse<InitialSetupTotpResult>>(

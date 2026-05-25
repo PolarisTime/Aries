@@ -182,7 +182,7 @@ export function useModuleEditorItemColumns({
     return visibleItemColumnKeys.flatMap((key) => {
       const col = columnMap.get(key)
       return col ? [col] : []
-    }) as ModuleColumnDefinition[]
+    })
   }, [config.itemColumns, visibleItemColumnKeys])
 
   const handleResolvedMaterialSelect = useCallback(

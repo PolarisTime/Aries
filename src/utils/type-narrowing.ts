@@ -2,7 +2,7 @@
  * 类型收窄工具集 —— 运行时校验 + 容错回退，禁止裸 `as` 断言。
  *
  * 用法：
- *   import { asString, asNumber, asArray, parseOr } from '@/utils/type-narrowing'
+ *   import { asString, asNumber, asArray } from '@/utils/type-narrowing'
  *
  *   // 旧: const name = record.customerName ?? ''  // no-base-to-string
  *   // 新: const name = asString(record.customerName)
@@ -54,15 +54,6 @@ export function asArray<T = unknown>(value: unknown): T[] {
 /** 安全转为日期字符串 (YYYY-MM-DD)。无效日期 → '' */
 
 // ── Schema 辅助 ───────────────────────────────────────
-
-/** Zod Schema 安全解析，失败返回 undefined */
-function parseOr<T>(
-  schema: z.ZodType<T>,
-  value: unknown,
-): T | undefined {
-  const r = schema.safeParse(value)
-  return r.success ? r.data : undefined
-}
 
 /** Zod Schema 安全解析，失败返回默认值 */
 function parseOrDefault<T>(
@@ -121,72 +112,4 @@ export function asId(value: unknown): string {
   return ''
 }
 
-// ── 快捷单字段访问 ─────────────────────────────────────
 
-/** 从对象安全取字符串字段 */
-function fieldStr(
-  obj: Record<string, unknown> | null | undefined,
-  key: string,
-  fallback = '',
-): string {
-  if (!obj || !(key in obj)) return fallback
-  return asString(obj[key])
-}
-
-/** 从对象安全取数字字段 */
-function fieldNum(
-  obj: Record<string, unknown> | null | undefined,
-  key: string,
-  fallback = 0,
-): number {
-  if (!obj || !(key in obj)) return fallback
-  return asNumber(obj[key])
-}
-
-// ── 数组工具 ──────────────────────────────────────────
-
-/**
- * 去重字符串数组（自动去空、去重）
- */
-function uniqueStrings(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return []
-  }
-  return Array.from(
-    new Set(
-      value.flatMap((item) => {
-        const v = String(item || '').trim()
-        return v ? [v] : []
-      }),
-    ),
-  )
-}
-
-/**
- * 安全过滤数组（移除 falsy 值）
- */
-function compact<T>(
-  array: (T | null | undefined | false | '' | 0)[],
-): T[] {
-  return array.filter(Boolean) as T[]
-}
-
-/**
- * 安全获取数组元素
- */
-function safeAt<T>(
-  array: T[] | null | undefined,
-  index: number,
-): T | undefined {
-  if (!array || index < 0 || index >= array.length) {
-    return undefined
-  }
-  return array[index]
-}
-
-/**
- * 将值转换为数组（如果不是数组则包装）
- */
-function toArray<T>(value: T | T[]): T[] {
-  return Array.isArray(value) ? value : [value]
-}

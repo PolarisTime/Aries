@@ -220,11 +220,6 @@ export const purchaseInboundItemColumns = insertColumnsAfter(
   purchaseInboundSettlementColumns,
 )
 
-const supplierStatementItemColumns = insertColumnsAfter(
-  orderItemColumns,
-  'weightTon',
-  purchaseWeighColumns,
-)
 
 export const batchSupplierStatementItemColumns = insertColumnsAfter(
   batchOrderItemColumns,

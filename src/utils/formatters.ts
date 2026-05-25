@@ -33,17 +33,6 @@ export function formatDateTime(value?: string | null): string {
 }
 
 /**
- * 格式化日期（YYYY-MM-DD）
- */
-function formatDate(value?: string | null): string {
-  if (!value) {
-    return '—'
-  }
-  const parsed = dayjs(value)
-  return parsed.isValid() ? parsed.format('YYYY-MM-DD') : value
-}
-
-/**
  * 格式化字节大小
  */
 export function formatBytes(bytes: number): string {
@@ -54,9 +43,3 @@ export function formatBytes(bytes: number): string {
   return parseFloat((bytes / k ** i).toFixed(2)) + ' ' + sizes[i]
 }
 
-/**
- * 格式化百分比
- */
-function formatPercent(value: number, decimals = 1): string {
-  return `${(value * 100).toFixed(decimals)}%`
-}

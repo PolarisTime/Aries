@@ -54,6 +54,7 @@ const setup2faRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!useAuthStore.getState().isAuthenticated)
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw redirect({ to: '/login' })
   },
 })
@@ -66,6 +67,7 @@ const authenticatedLayoutRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!useAuthStore.getState().isAuthenticated)
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw redirect({ to: '/login' })
   },
 })
@@ -182,11 +184,13 @@ const moduleRoutes = appPageDefinitions.map((def) => {
         def.accessResources.length > 0
       ) {
         if (!checkAccessResources(def.accessResources, store.can)) {
+          // eslint-disable-next-line @typescript-eslint/only-throw-error
           throw redirect({ to: '/' })
         }
         return
       }
       if (!store.can(def.resourceKey || def.key, 'read')) {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
         throw redirect({ to: '/' })
       }
     },
@@ -203,6 +207,7 @@ const apiKeyDetailRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!usePermissionStore.getState().can('api-key', 'read')) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw redirect({ to: '/' })
     }
   },
@@ -213,6 +218,7 @@ const indexRoute = createRoute({
   path: '/',
   beforeLoad: () => {
     // biome-ignore lint/suspicious/noExplicitAny: TanStack Router 类型推断限制，dashboard 由 moduleRoutes 动态生成
+    // eslint-disable-next-line @typescript-eslint/only-throw-error, @typescript-eslint/no-explicit-any
     throw redirect({ to: '/dashboard' as any })
   },
 })

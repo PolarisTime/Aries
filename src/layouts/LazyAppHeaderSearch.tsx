@@ -7,7 +7,7 @@ const AppHeaderSearch = lazy(() =>
   })),
 )
 
-export interface LazyAppHeaderSearchProps extends AppHeaderSearchProps {}
+export type LazyAppHeaderSearchProps = AppHeaderSearchProps
 
 export function LazyAppHeaderSearch(props: LazyAppHeaderSearchProps) {
   return (

@@ -21,9 +21,6 @@ export type {
   ModuleBehaviorConfig,
 } from '@/module-system/module-behavior-types'
 
-function getModuleBehavior(moduleKey: string): ModuleBehaviorConfig {
-  return moduleBehaviorRegistry.get(moduleKey) || {}
-}
 
 export function hasBehavior(
   moduleKey: string,

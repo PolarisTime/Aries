@@ -42,7 +42,7 @@ export function GeneralSettingsEditorModal({
 }: Props) {
   return (
     <FormModal
-      title={`编辑 ${record?.settingName || '设置'}`}
+      title={`编辑 ${asString(record?.settingName) || '设置'}`}
       open={open}
       onClose={onClose}
       onSave={onSave}

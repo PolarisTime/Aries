@@ -13,7 +13,6 @@ import { buildTableResponse } from '@/api/business-listing-response'
 import {
   reportClientFilterFallback,
   reportUnpaginatedRowFetch,
-  resetReportedClientFilterSignatures,
 } from '@/api/business-listing-warnings'
 import { normalizeRows } from '@/api/business-normalizers'
 import { http, isSuccessCode } from '@/api/client'

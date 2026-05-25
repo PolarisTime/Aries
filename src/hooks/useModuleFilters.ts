@@ -1,10 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { SearchParams } from '@/types/api-raw'
 
-interface ModuleFilterState {
-  filters: SearchParams
-  submittedFilters: SearchParams
-}
 
 interface Props {
   setCurrentPage: (page: number) => void
