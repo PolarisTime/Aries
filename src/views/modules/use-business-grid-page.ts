@@ -306,7 +306,8 @@ export function useBusinessGridPage({
         overlays.openCustomerStatement()
       },
       openFreightPickupList: () => {
-        overlays.openFreightPickup()
+        const selected = records.filter((r) => selectedRowKeys.includes(String(r.id)))
+        overlays.openFreightPickup(selected)
       },
       openFreightStatementGenerator: () => {
         overlays.openFreightStatement()
