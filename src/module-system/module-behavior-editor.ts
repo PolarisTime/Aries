@@ -43,6 +43,7 @@ registerModuleBehavior('sales-order', {
 })
 registerModuleBehavior('purchase-contract', {
   defaultOperatorField: 'buyerName',
+  readonlyLineItems: true,
 })
 registerModuleBehavior('purchase-contract', {
   resolveReadonlyEditorFields(record) {
