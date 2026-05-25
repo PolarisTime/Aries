@@ -18,9 +18,4 @@ export type InitialSetupAdminSubmitPayload = {
   totpCode?: string
 }
 
-export type InitialSetupPayload = {
-  admin?: InitialSetupAdminSubmitPayload
-  company?: InitialSetupCompanyPayload
-}
-
 export type InitialSetupResult = InitialSetupStatus
