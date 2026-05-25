@@ -172,7 +172,7 @@ export function ColumnSettingsPopover({
       placement="bottomRight"
       open={open}
       onOpenChange={onOpenChange}
-      overlayInnerStyle={{ maxWidth: 300 }}
+      styles={{ container: { maxWidth: 300 } }}
     >
       <Button icon={<SettingOutlined />}>{t('common.columnSettings')}</Button>
     </Popover>

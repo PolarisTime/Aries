@@ -28,6 +28,14 @@ registerModuleBehavior('purchase-order', {
 registerModuleBehavior('purchase-inbound', {
   defaultOperatorField: 'buyerName',
   defaultDraftValues: () => ({ inboundDate: currentDateTime() }),
+  readonlyItemColumns: [
+    'warehouseName',
+    'quantity',
+    'weightTon',
+    'unitPrice',
+    'settlementMode',
+    'amount',
+  ],
 })
 registerModuleBehavior('sales-order', { defaultOperatorField: 'salesName' })
 registerModuleBehavior('sales-order', {
