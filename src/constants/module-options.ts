@@ -41,6 +41,7 @@ export function buildValueOptions(...values: string[]) {
 
 // Re-export API-backed option resolvers for backward compatibility.
 // All existing imports from '@/constants/module-options' continue to work.
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- intentional barrel for backward compat
 export {
   materialCategoryOptions,
   getMaterialCategoryOptions,

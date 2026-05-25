@@ -1,4 +1,5 @@
 // --- Catalog types (synced with backend CatalogEntryResponse / CatalogActionResponse) ---
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- lazy API call, no side effects on import
 import { http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { logger } from '@/utils/logger'

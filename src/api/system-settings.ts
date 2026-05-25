@@ -6,7 +6,7 @@ import {
 import type { UploadRulePayload } from '@/api/business-types'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-import { isToggleSetting } from '@/views/system/general-settings-view-utils'
+import { isToggleSetting } from '@/module-system/settings-constants'
 
 const MODULE_KEY = 'general-setting'
 

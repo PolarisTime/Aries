@@ -71,6 +71,72 @@ export default tseslint.config(
     },
   },
 
+  // ── 架构边界规则 — 强制单向依赖 ─────────────────────────
+  {
+    files: ['src/api/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/views/*', '@/hooks/*', '@/stores/*', '@/components/*'],
+              message: 'api/ 层禁止导入 views/hooks/stores/components，应保持底层纯净',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/hooks/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/views/*'],
+              message: 'hooks/ 层禁止导入 views/，应导入 @/module-system/',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/constants/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/api/*'],
+              message: 'constants/ 层禁止导入 api/，常量应为纯数据无副作用',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/stores/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/views/*', '@/hooks/*', '@/components/*'],
+              message: 'stores/ 层禁止导入 views/hooks/components，应保持底层纯净',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // ── Spec 文件 ────────────────────────────────────────
   {
     files: ['**/*.spec.{ts,tsx}'],
