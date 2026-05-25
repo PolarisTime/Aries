@@ -166,9 +166,16 @@
 .editor-items-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.editor-form-head {
+  justify-content: space-between;
+}
+
+.editor-items-head {
+  justify-content: flex-start;
 }
 
 .editor-form-title-block,

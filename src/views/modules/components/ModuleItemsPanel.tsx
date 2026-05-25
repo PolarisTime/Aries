@@ -33,13 +33,13 @@ export function ModuleItemsPanel({
           {actions ? (
             <div className="editor-items-actions">{actions}</div>
           ) : null}
+          {hasSummary ? (
+            <EditorItemsSummary
+              items={items}
+              className="editor-items-summary-inline"
+            />
+          ) : null}
         </div>
-        {hasSummary ? (
-          <EditorItemsSummary
-            items={items}
-            className="editor-items-summary-inline"
-          />
-        ) : null}
       </div>
       {hasSummary ? (
         <EditorItemsSummary
