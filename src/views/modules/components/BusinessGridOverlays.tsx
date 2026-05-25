@@ -48,6 +48,7 @@ interface Props {
   customerStatementOpen: boolean
   freightStatementOpen: boolean
   freightPickupOpen: boolean
+  freightPickupRecords?: ModuleRecord[]
   selectedRows: ModuleRecord[]
   canSave: boolean
   canAudit: boolean
