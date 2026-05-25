@@ -1,50 +1,35 @@
 import { lazy, Suspense } from 'react'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { trackLazyLoad } from '@/utils/lazy-load-progress'
 
 const ModuleAttachmentModal = lazy(() =>
-  trackLazyLoad('附件管理弹窗', () =>
-    import('@/views/modules/components/ModuleAttachmentModal').then(
-      (module) => ({
-        default: module.ModuleAttachmentModal,
-      }),
-    ),
-  ),
+  import('@/views/modules/components/ModuleAttachmentModal').then((module) => ({
+    default: module.ModuleAttachmentModal,
+  })),
 )
 const ModuleEditorWorkspace = lazy(() =>
-  trackLazyLoad('单据编辑工作区', () =>
-    import('@/views/modules/components/ModuleEditorWorkspace').then(
-      (module) => ({
-        default: module.ModuleEditorWorkspace,
-      }),
-    ),
-  ),
+  import('@/views/modules/components/ModuleEditorWorkspace').then((module) => ({
+    default: module.ModuleEditorWorkspace,
+  })),
 )
 const ModuleFreightPickupListOverlay = lazy(() =>
-  trackLazyLoad('运费提货列表弹窗', () =>
-    import('@/views/modules/components/ModuleFreightPickupListOverlay').then(
-      (module) => ({
-        default: module.ModuleFreightPickupListOverlay,
-      }),
-    ),
+  import('@/views/modules/components/ModuleFreightPickupListOverlay').then(
+    (module) => ({
+      default: module.ModuleFreightPickupListOverlay,
+    }),
   ),
 )
 const ModuleRecordDetailOverlay = lazy(() =>
-  trackLazyLoad('单据详情弹窗', () =>
-    import('@/views/modules/components/ModuleRecordDetailOverlay').then(
-      (module) => ({
-        default: module.ModuleRecordDetailOverlay,
-      }),
-    ),
+  import('@/views/modules/components/ModuleRecordDetailOverlay').then(
+    (module) => ({
+      default: module.ModuleRecordDetailOverlay,
+    }),
   ),
 )
 const ModuleStatementGenerator = lazy(() =>
-  trackLazyLoad('对账单生成器', () =>
-    import('@/views/modules/components/ModuleStatementGenerator').then(
-      (module) => ({
-        default: module.ModuleStatementGenerator,
-      }),
-    ),
+  import('@/views/modules/components/ModuleStatementGenerator').then(
+    (module) => ({
+      default: module.ModuleStatementGenerator,
+    }),
   ),
 )
 

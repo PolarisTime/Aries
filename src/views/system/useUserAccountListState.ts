@@ -6,7 +6,6 @@ import {
 } from '@/api/user-accounts'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
-import { trackLoadTaskOnce } from '@/utils/lazy-load-progress'
 
 export function useUserAccountListState(enabled = true) {
   const [keyword, setKeyword] = useState('')
@@ -23,24 +22,12 @@ export function useUserAccountListState(enabled = true) {
       keyword,
       statusFilter,
     ),
-    queryFn: () => {
+    queryFn: async () => {
       const params: UserAccountListParams = {
         page: currentPage - 1,
         size: pageSize,
         keyword: keyword.trim() || undefined,
         status: statusFilter || undefined,
-      }
-      if (
-        currentPage === 1 &&
-        pageSize === 20 &&
-        !params.keyword &&
-        !params.status
-      ) {
-        return trackLoadTaskOnce(
-          'user-account-first-page',
-          '用户账户首屏数据',
-          () => listUserAccounts(params),
-        )
       }
       return listUserAccounts(params)
     },

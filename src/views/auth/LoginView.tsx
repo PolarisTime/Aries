@@ -5,7 +5,6 @@ import Form from 'antd/es/form'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRequestError } from '@/hooks/useRequestError'
-import { preloadPostLoginShell } from '@/router/preload-post-login'
 import { useAuthStore } from '@/stores/authStore'
 import type { LoginPayload } from '@/types/auth'
 import { message } from '@/utils/antd-app'
@@ -50,11 +49,6 @@ export function LoginView() {
       setFlipped(false)
     }
   }, [loginStep, flipped])
-
-  useEffect(() => {
-    preloadPostLoginShell()
-  }, [])
-
   const handleLogin = useCallback(
     async (values: LoginPayload) => {
       setLoading(true)

@@ -18,7 +18,6 @@ import type {
   ModuleRecord,
   ModuleRecordInput,
 } from '@/types/module-page'
-import { trackLoadTaskOnce } from '@/utils/lazy-load-progress'
 
 const WEIGHT_ONLY_VIEW_SETTING_CODES: Record<string, string> = {
   'purchase-inbound': DISPLAY_SWITCH_CODES.weightOnlyPurchaseInbounds,
@@ -122,12 +121,7 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
 
   const moduleConfigQuery = useQuery({
     queryKey: QUERY_KEYS.businessPageConfig(moduleKey),
-    queryFn: () =>
-      trackLoadTaskOnce(
-        `business-page-config:${moduleKey}`,
-        `${moduleKey} 页面配置`,
-        () => loadBusinessPageConfig(moduleKey),
-      ),
+    queryFn: () => loadBusinessPageConfig(moduleKey),
     placeholderData: initialConfig
       ? () => initialConfig
       : canReusePreviousConfig

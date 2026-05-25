@@ -2,12 +2,10 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { createRoot } from 'react-dom/client'
 import { ensureApiClientSetup } from '@/api/client'
-import { AppLazyLoadProgressOverlay } from '@/components/AppLazyLoadProgressOverlay'
 import { queryClient } from '@/lib/query-client'
 import { router } from '@/router'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
-import { trackLoadTask } from '@/utils/lazy-load-progress'
 import { initWebVitals } from '@/utils/web-vitals'
 import '@/i18n'
 import '@/styles/variables.css'
@@ -23,7 +21,6 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
-      <AppLazyLoadProgressOverlay />
     </QueryClientProvider>
   )
 }
@@ -44,9 +41,7 @@ async function bootstrap() {
   // mounting so permission changes from RBAC migrations are reflected on first
   // route resolution instead of briefly using stale localStorage snapshots.
   if (authStore.isAuthenticated) {
-    await trackLoadTask('恢复登录会话', () =>
-      authStore.restoreSession().catch(() => false),
-    )
+    await authStore.restoreSession().catch(() => false)
   }
 
   // Route guards run before React effects. Prime permissions from the
