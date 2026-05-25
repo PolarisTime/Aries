@@ -55,7 +55,7 @@ export function useUserAccountEditor({
     canViewDepartmentCatalog,
     enabled: enabled && editorOpen,
   })
-  const { selectedRoleDataScope, selectedRoleNames, selectedRoleSummaries } =
+  const { selectedRoleDataScope, selectedRoleIds, selectedRoleSummaries } =
     useUserAccountEditorRoleState({ form, roleOptions })
 
   const saveMutation = useMutation({
@@ -228,7 +228,7 @@ export function useUserAccountEditor({
     loginNameChecking,
     departmentOptions,
     roleOptions,
-    selectedRoleNames,
+    selectedRoleIds,
     selectedRoleDataScope,
     selectedRoleSummaries,
     createResultOpen,

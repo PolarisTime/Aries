@@ -13,25 +13,25 @@ interface Props {
 }
 
 export function useUserAccountEditorRoleState({ form, roleOptions }: Props) {
-  const watchedRoleNames = Form.useWatch('roleNames', form)
-  const selectedRoleNames = useMemo(
-    () => (Array.isArray(watchedRoleNames) ? watchedRoleNames : []),
-    [watchedRoleNames],
+  const watchedRoleIds = Form.useWatch('roleIds', form)
+  const selectedRoleIds = useMemo(
+    () => (Array.isArray(watchedRoleIds) ? watchedRoleIds.map(Number) : []),
+    [watchedRoleIds],
   )
 
   const selectedRoleDataScope = useMemo(
     () =>
       buildSelectedRoleDataScope(
-        selectedRoleNames,
+        selectedRoleIds,
         roleOptions,
         form.getFieldValue('dataScope'),
       ),
-    [selectedRoleNames, roleOptions, form],
+    [selectedRoleIds, roleOptions, form],
   )
 
   const selectedRoleSummaries = useMemo(
-    () => buildSelectedRoleSummaries(selectedRoleNames, roleOptions),
-    [selectedRoleNames, roleOptions],
+    () => buildSelectedRoleSummaries(selectedRoleIds, roleOptions),
+    [selectedRoleIds, roleOptions],
   )
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export function useUserAccountEditorRoleState({ form, roleOptions }: Props) {
 
   return {
     selectedRoleDataScope,
-    selectedRoleNames,
+    selectedRoleIds,
     selectedRoleSummaries,
   }
 }
