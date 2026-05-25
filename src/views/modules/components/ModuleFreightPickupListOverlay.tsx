@@ -21,8 +21,6 @@ const ITEM_COLUMNS = [
   { title: '材质', dataIndex: 'material', ellipsis: true, align: 'center' as const },
   { title: '规格', dataIndex: 'spec', ellipsis: true, align: 'center' as const },
   { title: '长度', dataIndex: 'length', ellipsis: true, align: 'center' as const },
-  { title: '客户', dataIndex: 'customerName', width: 120 },
-  { title: '项目', dataIndex: 'projectName', width: 140 },
   { title: '数量', dataIndex: 'quantity', align: 'center' as const },
   {
     title: '总重(吨)', dataIndex: 'weightTon', align: 'center' as const,
@@ -31,37 +29,43 @@ const ITEM_COLUMNS = [
 ]
 
 function DetailCard({ record }: { record: ModuleRecord }) {
-  const fields: [string, string][] = [
-    ['运单号', 'billNo'], ['物流方', 'carrierName'], ['车牌号', 'vehiclePlate'],
-    ['客户', 'customerName'], ['项目', 'projectName'],
-  ]
   const items = (Array.isArray(record.items) ? record.items : []) as ModuleRecord[]
 
   return (
     <Card size="small" style={{ marginBottom: 12 }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', marginBottom: items.length > 0 ? 12 : 0 }}>
-        {fields.map(([label, key]) => {
-          const val = record[key]
-          if (val == null || val === '') return null
-          return (
-            <span key={key}>
-              <Typography.Text type="secondary">{label}：</Typography.Text>
-              <Typography.Text strong>{String(val)}</Typography.Text>
-            </span>
-          )
-        })}
-        <span>
-          <Typography.Text type="secondary">总重(吨)：</Typography.Text>
-          <Typography.Text strong>
-            {record.totalWeight != null ? Number(record.totalWeight).toFixed(3) : '-'}
-          </Typography.Text>
-        </span>
-        <span>
-          <Typography.Text type="secondary">总运费：</Typography.Text>
-          <Typography.Text strong>
-            {record.totalFreight != null ? Number(record.totalFreight).toFixed(2) : '-'}
-          </Typography.Text>
-        </span>
+      <div style={{ marginBottom: items.length > 0 ? 12 : 0 }}>
+        <div style={{ marginBottom: 4 }}>
+          <Typography.Text type="secondary">运单号：</Typography.Text>
+          <Typography.Text strong>{String(record.billNo ?? '-')}</Typography.Text>
+        </div>
+        <div style={{ marginBottom: 4 }}>
+          <Typography.Text type="secondary">客户：</Typography.Text>
+          <Typography.Text strong>{String(record.customerName ?? '-')}</Typography.Text>
+          <span style={{ marginLeft: 24 }}>
+            <Typography.Text type="secondary">项目：</Typography.Text>
+            <Typography.Text strong>{String(record.projectName ?? '-')}</Typography.Text>
+          </span>
+        </div>
+        <div>
+          <Typography.Text type="secondary">物流方：</Typography.Text>
+          <Typography.Text strong>{String(record.carrierName ?? '-')}</Typography.Text>
+          <span style={{ marginLeft: 24 }}>
+            <Typography.Text type="secondary">车牌号：</Typography.Text>
+            <Typography.Text strong>{String(record.vehiclePlate ?? '-')}</Typography.Text>
+          </span>
+          <span style={{ marginLeft: 24 }}>
+            <Typography.Text type="secondary">总重(吨)：</Typography.Text>
+            <Typography.Text strong>
+              {record.totalWeight != null ? Number(record.totalWeight).toFixed(3) : '-'}
+            </Typography.Text>
+          </span>
+          <span style={{ marginLeft: 24 }}>
+            <Typography.Text type="secondary">总运费：</Typography.Text>
+            <Typography.Text strong>
+              {record.totalFreight != null ? Number(record.totalFreight).toFixed(2) : '-'}
+            </Typography.Text>
+          </span>
+        </div>
       </div>
       {items.length > 0 ? (
         <Table rowKey="id" columns={ITEM_COLUMNS} dataSource={items} size="small" pagination={false} />
