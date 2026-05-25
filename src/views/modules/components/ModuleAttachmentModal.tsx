@@ -368,6 +368,7 @@ export function ModuleAttachmentModal({
             src={pdfPreviewUrl}
             className="w-full border-none pdf-preview-iframe"
             title="PDF Preview"
+            sandbox="allow-scripts allow-same-origin"
           />
         ) : null}
       </Modal>

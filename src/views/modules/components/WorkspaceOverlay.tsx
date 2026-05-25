@@ -1,5 +1,5 @@
 import { CloseOutlined } from '@ant-design/icons'
-import { useCallback, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import '@/styles/workspace-overlay.css'
 
 interface Props {
@@ -27,21 +27,20 @@ export function WorkspaceOverlay({
   zIndex,
   className,
 }: Props) {
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    },
-    [onClose],
-  )
+  const handleKeyDownRef = useRef<((e: KeyboardEvent) => void) | null>(null)
+  handleKeyDownRef.current = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') onClose()
+  }
 
   useEffect(() => {
     if (open) {
-      document.addEventListener('keydown', handleKeyDown)
+      const handler = (e: KeyboardEvent) => handleKeyDownRef.current?.(e)
+      document.addEventListener('keydown', handler)
+      return () => {
+        document.removeEventListener('keydown', handler)
+      }
     }
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [open, handleKeyDown])
+  }, [open])
 
   if (!open) return null
 

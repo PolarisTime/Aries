@@ -110,12 +110,13 @@ export function useRoleEditor({
   })
 
   const handleSaveRole = useCallback(async () => {
+    const rawValues = roleForm.getFieldsValue()
+    if (!rawValues.roleName?.trim() || !rawValues.roleCode?.trim()) {
+      message.warning('请填写角色名称和编码')
+      return
+    }
     try {
       const values = await roleForm.validateFields()
-      if (!values.roleName?.trim() || !values.roleCode?.trim()) {
-        message.warning('请填写角色名称和编码')
-        return
-      }
       saveRoleMutation.mutate(values)
     } catch {
       // validation failed

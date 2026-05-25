@@ -546,16 +546,21 @@ export function useModuleEditorWorkspace({
 
       setParentImporting(true)
       try {
+        const parentDetails = await Promise.all(
+          selectedRecords.map((selectedRecord) =>
+            getBusinessModuleDetail(
+              parentImportConfig.parentModuleKey,
+              String(selectedRecord.id),
+            ),
+          ),
+        )
+
         let nextValues = form.getFieldsValue(true)
         let nextItems = items
         let importedParentCount = 0
         let importedItemCount = 0
 
-        for (const selectedRecord of selectedRecords) {
-          const parentDetail = await getBusinessModuleDetail(
-            parentImportConfig.parentModuleKey,
-            String(selectedRecord.id),
-          )
+        for (const parentDetail of parentDetails) {
           const parentRecord = parentDetail.data
           const currentParentNos = parseParentRelationNos(
             nextValues[parentImportConfig.parentFieldKey],

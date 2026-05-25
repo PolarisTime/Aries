@@ -16,7 +16,7 @@ export function useLoginTotpSession() {
   const [tempToken, setTempToken] = useState(savedSession?.token || '')
   const [totpCode, setTotpCode] = useState('')
   const [stepDeadline, setStepDeadline] = useState(savedSession?.deadline || 0)
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(() => Date.now())
 
   const reset2faStep = useCallback(
     (showMessage = false) => {

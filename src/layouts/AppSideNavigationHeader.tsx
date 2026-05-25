@@ -7,7 +7,7 @@ import Button from 'antd/es/button'
 import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
 import Tag from 'antd/es/tag'
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import {
   LazyAppHeaderSearch,
   type LazyAppHeaderSearchProps,
@@ -38,6 +38,11 @@ export function AppSideNavigationHeader({
   title,
   userMenuItems,
 }: Props) {
+  const [devTimeString, setDevTimeString] = useState('')
+  useEffect(() => {
+    setDevTimeString(new Date().toLocaleTimeString())
+  }, [])
+
   return (
     <div className="app-header-bar">
       <span className="app-trigger" onClick={onToggleCollapsed}>
@@ -72,7 +77,7 @@ export function AppSideNavigationHeader({
           <button
             type="button"
             className="app-dev-refresh-btn"
-            title={new Date().toLocaleTimeString()}
+            title={devTimeString}
             onClick={() => {
               if ('caches' in window) {
                 void caches.keys().then((keys) => {

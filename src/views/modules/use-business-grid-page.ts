@@ -134,17 +134,18 @@ export function useBusinessGridPage({
 
   useEffect(() => {
     const currentPageIds = new Set(records.map((r) => String(r.id)))
+    const selectedRowKeysSet = new Set(selectedRowKeys)
 
     setSelectedRowMap((prev) => {
       const next: Record<string, ModuleRecord> = {}
       for (const key of Object.keys(prev)) {
-        if (!currentPageIds.has(key) && selectedRowKeys.includes(key)) {
+        if (!currentPageIds.has(key) && selectedRowKeysSet.has(key)) {
           next[key] = prev[key]
         }
       }
       for (const record of records) {
         const id = String(record.id)
-        if (selectedRowKeys.includes(id)) {
+        if (selectedRowKeysSet.has(id)) {
           next[id] = record
         }
       }

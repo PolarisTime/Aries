@@ -35,7 +35,7 @@ function DatabaseServiceCard({
     <Card size="small" className="bg-secondary">
       <div className="flex items-center gap-12 mb-20">
         <div
-          className="flex items-center justify-center text-2xl w-48 h-48 rounded-xl text-white"
+          className="flex items-center justify-center text-2xl size-48 rounded-xl text-white"
           style={{ background: accent }}
         >
           <DatabaseOutlined />

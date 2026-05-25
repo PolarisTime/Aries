@@ -2,7 +2,7 @@ import Alert from 'antd/es/alert'
 import Card from 'antd/es/card'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleActionDefinition,
@@ -85,9 +85,7 @@ export function BusinessGridContent({
 }: Props) {
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
-  useEffect(() => {
-    setColumnSettingsOpen(false)
-  }, [])
+  // columnSettingsOpen initialised to false via useState; no mount-effect needed
 
   return (
     <Card

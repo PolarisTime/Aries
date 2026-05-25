@@ -10,6 +10,8 @@ import Space from 'antd/es/space'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ModuleActionDefinition } from '@/types/module-page'
+
+const EMPTY_TOOLBAR_ACTIONS: never[] = []
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 
 interface Props {
@@ -44,7 +46,7 @@ export function ModuleTableToolbar({
   onRefresh,
   onPageChange,
   extra,
-  toolbarActions = [],
+  toolbarActions = EMPTY_TOOLBAR_ACTIONS,
   onAction,
 }: Props) {
   const { t } = useTranslation()

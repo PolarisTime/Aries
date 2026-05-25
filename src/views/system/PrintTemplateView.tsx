@@ -146,12 +146,12 @@ export function PrintTemplateView() {
   )
 
   const handleSave = useCallback(async () => {
+    if (!templateHtml.trim()) {
+      message.warning('请输入模板内容')
+      return
+    }
     try {
       const values = await form.validateFields()
-      if (!templateHtml.trim()) {
-        message.warning('请输入模板内容')
-        return
-      }
       saveMutation.mutate({
         id: activeTemplateId || undefined,
         billType: values.billType,

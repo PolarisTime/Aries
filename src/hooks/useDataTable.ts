@@ -15,7 +15,7 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 interface UseDataTableOptions<TData> {
   data: TData[]
@@ -132,10 +132,7 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
     getExpandedRowModel: enableExpanding ? getExpandedRowModel() : undefined,
   })
 
-  const currentPage = useMemo(
-    () => pagination.pageIndex + 1,
-    [pagination.pageIndex],
-  )
+  const currentPage = pagination.pageIndex + 1
   const pageSize = pagination.pageSize
 
   const setCurrentPage = useCallback(

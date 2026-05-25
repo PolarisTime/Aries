@@ -22,7 +22,7 @@ export function AuthPageShell({ children, hero }: Props) {
         >
           {hero || (
             <div className="mb-8 text-center">
-              <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-400 text-white text-2xl font-bold shadow-lg shadow-blue-500/20">
+              <div className="inline-flex items-center justify-center size-14 mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-400 text-white text-2xl font-bold shadow-lg shadow-blue-500/20">
                 L
               </div>
               <Typography.Title level={3} className="!mb-1">

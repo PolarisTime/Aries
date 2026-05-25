@@ -78,9 +78,10 @@ export function buildRoleMatrixData(
       resource: menu.resource,
       actions: menu.actions,
     }
+    const menuActionsSet = new Set(menu.actions)
     let count = 0
     for (const action of ALL_ROLE_ACTIONS) {
-      const supported = menu.actions.includes(action)
+      const supported = menuActionsSet.has(action)
       const checked =
         supported && selectedActions.has(`${menu.resource}:${action}`)
       row[action] = checked
