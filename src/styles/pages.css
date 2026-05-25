@@ -122,7 +122,7 @@
   }
 
   .app-top-nav-left {
-    gap: 14px;
+    gap: 8px;
   }
 
   .app-top-menu-shell {
@@ -137,7 +137,7 @@
   }
 
   .user-wrapper .action {
-    padding: 0 6px;
+    padding: 0 2px;
   }
 }
 
@@ -169,7 +169,7 @@
   }
 
   .user-wrapper .action {
-    padding: 0 5px;
+    padding: 0 2px;
   }
 }
 
