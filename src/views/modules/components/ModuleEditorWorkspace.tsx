@@ -274,8 +274,12 @@ const FINANCE_ITEM_COLUMNS = [
     render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-'),
   },
 ]
-function isFinanceModule(key: string) {
+function isFinanceOrTradeModule(key: string) {
   return (
+    key === 'purchase-order' ||
+    key === 'purchase-inbound' ||
+    key === 'sales-order' ||
+    key === 'sales-outbound' ||
     key === 'receipt' ||
     key === 'payment' ||
     key === 'invoice-issue' ||
@@ -300,7 +304,7 @@ const FREIGHT_ITEM_COLUMNS = [
 ]
 function buildItemColumns(moduleKey: string) {
   if (moduleKey === 'freight-bill') return FREIGHT_ITEM_COLUMNS
-  return isFinanceModule(moduleKey)
+  return isFinanceOrTradeModule(moduleKey)
     ? [...BASE_ITEM_COLUMNS, ...FINANCE_ITEM_COLUMNS]
     : BASE_ITEM_COLUMNS
 }
