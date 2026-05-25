@@ -251,6 +251,11 @@ export const router = createRouter({
       default: m.ErrorView,
     })),
   ),
+  defaultNotFoundComponent: lazy(() =>
+    import('@/views/error/NotFoundView').then((m) => ({
+      default: m.NotFoundView,
+    })),
+  ),
 })
 
 declare module '@tanstack/react-router' {
