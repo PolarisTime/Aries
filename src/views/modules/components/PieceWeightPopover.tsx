@@ -44,12 +44,13 @@ export function PieceWeightPopover({ itemId, weightTon, category }: Props) {
       open={open}
       onOpenChange={setOpen}
       trigger="click"
-      title={data.length > 0 ? `逐件重量明细（共 ${data.length} 件 / ${total.toFixed(3)} 吨）` : '逐件重量明细'}
+      title={data.length > 0 ? `${data.length}件 / ${total.toFixed(3)}吨` : '逐件明细'}
+      overlayStyle={{ maxWidth: 260 }}
       content={
         isFetching ? (
-          <div className="py-16 text-center text-gray-400">加载中...</div>
+          <div className="py-8 text-center">加载中...</div>
         ) : data.length === 0 ? (
-          <div className="py-16 text-center text-gray-400">暂无逐件数据</div>
+          <div className="py-8 text-center text-gray-400">暂无数据</div>
         ) : (
           <Table
             rowKey="pieceNo"
@@ -57,15 +58,15 @@ export function PieceWeightPopover({ itemId, weightTon, category }: Props) {
             size="small"
             pagination={false}
             columns={[
-              { title: '件号', dataIndex: 'pieceNo', width: 60, align: 'center' as const },
+              { title: '#', dataIndex: 'pieceNo', width: 40, align: 'center' as const },
               {
-                title: '重量(吨)',
+                title: '吨',
                 dataIndex: 'weightTon',
-                width: 90,
+                width: 70,
                 align: 'right' as const,
                 render: (v: number) => v.toFixed(3),
               },
-              { title: '关联销售订单', dataIndex: 'salesOrderNo', width: 180, ellipsis: true },
+              { title: '关联单号', dataIndex: 'salesOrderNo', width: 140, ellipsis: true },
             ]}
           />
         )
