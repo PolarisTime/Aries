@@ -9,7 +9,7 @@ import type {
   ModuleLineItem,
   ModulePageConfig,
 } from '@/types/module-page'
-import { asNumber } from '@/utils/type-narrowing'
+import { asNumber, asString } from '@/utils/type-narrowing'
 import {
   getEditorItemMin,
   getEditorItemPrecision,
