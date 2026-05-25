@@ -54,7 +54,7 @@ export async function listRoleSettingsPage(page: number, size: number) {
 export async function getRoleActions(id: string) {
   const response = assertApiSuccess(
     await http.get<RoleResponse<RolePermissionRecord[]>>(
-      `${ENDPOINTS.ROLE_SETTINGS}/${id}/permissions`,
+      `${ENDPOINTS.ROLE_SETTINGS}/${id}/permission`,
     ),
     getApiMessage('loadRolePermissionsFailed'),
   )
@@ -66,7 +66,7 @@ export async function updateRoleActions(
 ) {
   return assertApiSuccess(
     await http.put<RoleResponse<null>>(
-      `${ENDPOINTS.ROLE_SETTINGS}/${id}/permissions`,
+      `${ENDPOINTS.ROLE_SETTINGS}/${id}/permission`,
       actions,
     ),
     getApiMessage('saveRolePermissionsFailed'),

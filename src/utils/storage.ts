@@ -85,13 +85,37 @@ function resolvePersistenceMode(
   return 'local'
 }
 
+function readStoredToken() {
+  if (typeof window === 'undefined') {
+    return ''
+  }
+
+  const mode = resolvePersistenceMode()
+  const storage = getStorage(mode)
+  const token = storage.getItem(STORAGE_KEYS.token) || ''
+  if (!token) {
+    return ''
+  }
+
+  const expiresAt = Number(storage.getItem(STORAGE_KEYS.tokenExpiresAt) || 0)
+  if (expiresAt > 0 && expiresAt <= Date.now()) {
+    clearToken()
+    return ''
+  }
+
+  accessToken = token
+  return token
+}
+
 export function getToken() {
-  return accessToken
+  return accessToken || readStoredToken()
 }
 
 
 export function clearToken() {
   accessToken = ''
+  clearStorageItem(STORAGE_KEYS.token)
+  clearStorageItem(STORAGE_KEYS.tokenExpiresAt)
 }
 
 export function getStoredUser() {

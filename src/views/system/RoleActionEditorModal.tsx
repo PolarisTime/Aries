@@ -36,8 +36,10 @@ export function RoleActionEditorModal({
     queryKey: ['role-templates'],
     queryFn: async () => {
       const { http } = await import('@/api/client')
-      const resp = await http.get<{ data: RoleTemplate[] }>('/role-settings/templates')
-      return (resp.data as { data: RoleTemplate[] }).data ?? []
+      const resp = await http.get<{ data?: RoleTemplate[] } | RoleTemplate[]>(
+        '/role-settings/templates',
+      )
+      return Array.isArray(resp) ? resp : (resp.data ?? [])
     },
     enabled: open && !editingRole,
     staleTime: 10 * 60 * 1000,

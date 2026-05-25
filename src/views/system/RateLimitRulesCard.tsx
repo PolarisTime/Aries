@@ -8,8 +8,20 @@ import Typography from 'antd/es/typography'
 import { assertApiSuccess, http } from '@/api/client'
 import { usePermissionStore } from '@/stores/permissionStore'
 
+interface RawRateLimitRule {
+  id: string
+  rule_key: string
+  rule_type: string
+  rate: number
+  capacity: number
+  tokens_per_request: number
+  priority: number
+  enabled: boolean
+  created_at: string
+}
+
 interface RateLimitRule {
-  id: number
+  id: string
   ruleKey: string
   ruleType: string
   rate: number
@@ -26,11 +38,20 @@ export function RateLimitRulesCard() {
     queryFn: async () => {
       const r = await http.get<{
         code: number
-        data: RateLimitRule[]
+        data: RawRateLimitRule[]
         message?: string
       }>('/admin/rate-limit/rules')
       assertApiSuccess(r, '加载限流规则失败')
-      return r.data || []
+      return (r.data || []).map((item): RateLimitRule => ({
+        id: item.id,
+        ruleKey: item.rule_key,
+        ruleType: item.rule_type,
+        rate: item.rate,
+        capacity: item.capacity,
+        tokensPerRequest: item.tokens_per_request,
+        priority: item.priority,
+        enabled: item.enabled,
+      }))
     },
   })
 
@@ -58,29 +79,36 @@ export function RateLimitRulesCard() {
         <Table
           rowKey="id"
           dataSource={rules}
+          scroll={{ x: 700 }}
           columns={[
             {
               dataIndex: 'ruleKey',
               title: '规则键',
-              width: 200,
+              width: 180,
               ellipsis: true,
             },
             {
               dataIndex: 'ruleType',
               title: '类型',
-              width: 75,
+              width: 70,
               render: (v: string) => <Tag color={typeColor(v)}>{v}</Tag>,
             },
             {
               dataIndex: 'rate',
               title: '令牌/s',
-              width: 75,
+              width: 80,
               align: 'right',
               render: (v: number) => v.toFixed(2),
             },
             {
               dataIndex: 'capacity',
               title: '突发',
+              width: 55,
+              align: 'right',
+            },
+            {
+              dataIndex: 'tokensPerRequest',
+              title: '消耗',
               width: 55,
               align: 'right',
             },
@@ -92,7 +120,7 @@ export function RateLimitRulesCard() {
             },
             {
               dataIndex: 'enabled',
-              title: '',
+              title: '状态',
               width: 50,
               render: (v: boolean) => (
                 <Tag color={v ? 'success' : 'default'}>{v ? '开' : '关'}</Tag>

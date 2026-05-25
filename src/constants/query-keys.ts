@@ -46,14 +46,14 @@ export const QUERY_KEYS = {
     page: number,
     size: number,
     keyword: string,
-    userId: string,
-    status: string,
-    scope: string,
+    userId: string | undefined,
+    status: string | undefined,
+    scope: string | undefined,
   ) => ['api-keys', page, size, keyword, userId, status, scope] as const,
   apiKeyActionOptions: ['api-key-action-options'] as const,
   apiKeyResourceOptions: ['api-key-resource-options'] as const,
   apiKeyUserOptions: ['api-key-user-options'] as const,
-  userAccount: (page: number, size: number, keyword: string, statusFilter: string) =>
+  userAccount: (page: number, size: number, keyword: string, statusFilter: string | undefined) =>
     ['user-account', page, size, keyword, statusFilter] as const,
   userAccountBase: ['user-account'] as const,
   roleOptions: ['role-options'] as const,
