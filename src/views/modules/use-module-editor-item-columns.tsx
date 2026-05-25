@@ -26,6 +26,7 @@ interface Props {
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
   canManageItems: boolean
   lineItemsLocked: boolean
+  canEditItemColumns: boolean
   selectedItemIds: string[]
   onSelectAll: (checked: boolean) => void
   onSelectItem: (itemId: string, checked: boolean) => void
@@ -60,6 +61,7 @@ export function useModuleEditorItemColumns({
   setItems,
   canManageItems,
   lineItemsLocked,
+  canEditItemColumns,
   selectedItemIds,
   onSelectAll,
   onSelectItem,
@@ -96,10 +98,10 @@ export function useModuleEditorItemColumns({
       isEditorItemColumnEditableForModule(
         moduleKey,
         columnKey,
-        canManageItems,
+        canEditItemColumns,
         lineItemsLocked,
       ),
-    [canManageItems, lineItemsLocked, moduleKey],
+    [canEditItemColumns, lineItemsLocked, moduleKey],
   )
 
   const materialLookup = useMemo(() => {

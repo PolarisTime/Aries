@@ -19,7 +19,10 @@ export function canManageEditorLineItems(
   return (
     canEditLineItems &&
     canSaveCurrentEditor &&
-    !lineItemsLocked
+    !(
+      Boolean(getBehaviorValue(moduleKey, 'locksLineItemsWhenRecordLocked')) &&
+      lineItemsLocked
+    )
   )
 }
 
