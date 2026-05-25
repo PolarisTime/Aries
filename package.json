@@ -22,7 +22,8 @@
     "test:e2e": "playwright test",
     "test:e2e:real": "E2E_BACKEND_MODE=real playwright test",
     "test:e2e:mock": "E2E_BACKEND_MODE=mock playwright test",
-    "generate:api": "openapi-typescript http://localhost:11211/api/v3/api-docs -o src/types/api-schema.ts"
+    "generate:api": "openapi-typescript http://localhost:11211/api/v3/api-docs -o src/types/api-schema.ts",
+    "doctor": "react-doctor"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
@@ -70,6 +71,7 @@
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.9",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "react-doctor": "^0.2.5"
   }
 }
