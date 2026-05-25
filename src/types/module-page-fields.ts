@@ -7,6 +7,7 @@ export type ModuleColumnType =
   | 'status'
   | 'date'
   | 'count'
+  | 'boolean'
 
 export type ModuleFilterType = 'input' | 'select' | 'dateRange'
 

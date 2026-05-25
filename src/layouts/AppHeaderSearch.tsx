@@ -48,8 +48,19 @@ export function AppHeaderSearch({
             onOpen()
             void onSearch(value)
           }}
-          onChange={(value) => onKeywordChange(String(value))}
-          onSelect={(value) => onSelect(String(value))}
+          onChange={(value) => {
+            const nextValue = String(value)
+            const isOptionValue = options.some(
+              (option) => String(option.value) === nextValue,
+            )
+            if (!isOptionValue) {
+              onKeywordChange(nextValue)
+            }
+          }}
+          onSelect={(value) => {
+            const selectedValue = String(value)
+            onSelect(selectedValue)
+          }}
           onOpenChange={onOpenChange}
         >
           <Input

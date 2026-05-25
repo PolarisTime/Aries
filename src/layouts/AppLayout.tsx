@@ -7,7 +7,7 @@ import Watermark from 'antd/es/watermark'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
-import { getPageDefinition } from '@/config/page-registry'
+import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
 import { useAuthAppSync } from '@/hooks/useAuthAppSync'
 import { useAuthHeartbeat } from '@/hooks/useAuthHeartbeat'
 import { useAuthRefreshTimer } from '@/hooks/useAuthRefreshTimer'
@@ -112,6 +112,11 @@ export function AppLayout() {
   const handleJumpToSearchResult = useCallback(
     (result: GlobalSearchResult) => {
       setSearchOpen(false)
+      const targetPage = getPageDefinition(result.moduleKey)
+      if (!targetPage) {
+        message.warning('未找到对应业务页面')
+        return
+      }
       const query = new URLSearchParams({
         docNo: result.primaryNo,
         openDetail: '1',
@@ -119,7 +124,9 @@ export function AppLayout() {
       if (result.trackId) {
         query.set('trackId', result.trackId)
       }
-      void navigate({ to: `/${result.moduleKey}?${query.toString()}` as '/' })
+      void navigate({
+        to: `/${getPageRoutePath(targetPage)}?${query.toString()}` as '/',
+      })
     },
     [navigate],
   )
