@@ -68,7 +68,7 @@ function buildGlobalSearchResult(
     matchedByTrackId && trackId !== primaryNo ? ` | ID ${trackId}` : ''
 
   return {
-    value: `${moduleKey}::${primaryNo || trackId}`,
+    value: `${moduleKey}::${trackId || primaryNo}`,
     label: `${config.title} | ${primaryNo}${idText}${summary ? ` | ${summary}` : ''}`,
     moduleKey,
     title: config.title,

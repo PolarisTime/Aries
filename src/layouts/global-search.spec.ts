@@ -68,6 +68,7 @@ describe('searchAccessibleModules', () => {
 
     expect(results).toHaveLength(1)
     expect(results[0]).toMatchObject({
+      value: 'purchase-order::1001',
       moduleKey: 'purchase-order',
       primaryNo: 'PO-001',
       trackId: '1001',

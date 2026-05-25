@@ -8,7 +8,7 @@ import Flex from 'antd/es/flex'
 import Spin from 'antd/es/spin'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   type ApiKeyActionOption,
   type ApiKeyRecord,
@@ -39,7 +39,6 @@ function formatAllowedCodes(
 }
 
 export function ApiKeyDetailView() {
-  const location = useLocation()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [record, setRecord] = useState<ApiKeyRecord | null>(null)

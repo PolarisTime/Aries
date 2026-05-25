@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { getBusinessModuleDetail, searchBusinessModule } from '@/api/business'
+import { searchGlobalDocuments } from '@/api/global-search'
 import type { ModulePageMeta } from '@/config/module-page-meta'
 import { modulePageMetaMap } from '@/config/module-page-meta'
 import { getSearchableModuleKeys } from '@/config/page-registry'
@@ -60,32 +60,26 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
       setLoading(true)
 
       try {
-        const merged = await searchAccessibleModules({
-          keyword: normalizedKeyword,
-          moduleKeys: options.moduleKeys || getSearchableModuleKeys(),
-          pageConfigs: options.pageConfigs || modulePageMetaMap,
-          canAccessModule: options.canAccessModule,
-          searchModule:
-            options.searchModule ||
-            (async (moduleKey, keyword) => ({
-              data: {
-                rows: await searchBusinessModule(moduleKey, keyword, 6, {
-                  signal: controller.signal,
-                }),
-              },
-            })),
-          lookupRecordById:
-            options.lookupRecordById ||
-            (async (moduleKey, id) => {
-              try {
-                const response = await getBusinessModuleDetail(moduleKey, id)
-                return response.data || null
-              } catch {
-                return null
-              }
-            }),
-          buildSummary: options.buildSummary || buildGlobalSearchSummary,
-        })
+        const moduleKeys = options.moduleKeys || getSearchableModuleKeys()
+        const accessibleModuleKeys = moduleKeys.filter(options.canAccessModule)
+        const merged =
+          options.searchModule || options.lookupRecordById
+            ? await searchAccessibleModules({
+                keyword: normalizedKeyword,
+                moduleKeys,
+                pageConfigs: options.pageConfigs || modulePageMetaMap,
+                canAccessModule: options.canAccessModule,
+                searchModule:
+                  options.searchModule ||
+                  (() => Promise.resolve({ data: { rows: [] } })),
+                lookupRecordById: options.lookupRecordById,
+                buildSummary: options.buildSummary || buildGlobalSearchSummary,
+              })
+            : await searchGlobalDocuments(
+                normalizedKeyword,
+                accessibleModuleKeys,
+                controller.signal,
+              )
 
         if (currentRequestId !== requestIdRef.current) {
           return []
