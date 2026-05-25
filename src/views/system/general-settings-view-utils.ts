@@ -1,9 +1,6 @@
 import type { ModuleRecord } from '@/types/module-page'
+import { DEFAULT_LIST_PAGE_SIZE_SETTING_CODE } from '@/module-system/settings-constants'
 import { asString } from '@/utils/type-narrowing'
-export {
-  DEFAULT_LIST_PAGE_SIZE_SETTING_CODE,
-  isToggleSetting,
-} from '@/module-system/settings-constants'
 
 const DEFAULT_TAX_RATE_SETTING_CODE = 'SYS_DEFAULT_TAX_RATE'
 const MAX_CONCURRENT_SESSIONS_CODE = 'SYS_MAX_CONCURRENT_SESSIONS'
