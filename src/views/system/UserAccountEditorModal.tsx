@@ -33,7 +33,7 @@ interface Props {
   loginNameChecking: boolean
   departmentOptions: DepartmentOptionRecord[]
   roleOptions: RoleOptionRecord[]
-  selectedRoleNames: string[]
+  selectedRoleIds: number[]
   selectedRoleDataScope: string
   selectedRoleSummaries: string[]
   onCheckLoginName: (loginName: string, excludeUserId?: string) => void
@@ -51,7 +51,7 @@ export function UserAccountEditorModal({
   loginNameChecking,
   departmentOptions,
   roleOptions,
-  selectedRoleNames,
+  selectedRoleIds,
   selectedRoleDataScope,
   selectedRoleSummaries,
   onCheckLoginName,
@@ -169,17 +169,19 @@ export function UserAccountEditorModal({
             <div className="form-section-title">权限配置</div>
             <Row gutter={24}>
               <Col span={isCreate ? 16 : 14}>
-                <Form.Item name="roleNames" label="所属角色" required>
+                <Form.Item name="roleIds" label="所属角色" required
+                  getValueFromEvent={(ids: (string | number)[]) => ids?.map(Number)}
+                >
                   <Select
                     mode="multiple"
                     placeholder="请选择角色"
                     maxTagCount={5}
                     options={roleOptions.map((role) => ({
                       label: role.roleName,
-                      value: role.roleName,
+                      value: role.id,
                       disabled:
                         role.status === enabledStatusValues[1] &&
-                        !selectedRoleNames.includes(role.roleName),
+                        !selectedRoleIds.includes(Number(role.id)),
                     }))}
                   />
                 </Form.Item>
