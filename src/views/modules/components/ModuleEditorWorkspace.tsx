@@ -88,6 +88,7 @@ export function ModuleEditorWorkspace({
   })
 
   const canManageItems = canManageEditorItems
+  const canEditItemColumns = canSave && Boolean(config.itemColumns?.length)
   const canAddManualItems = canAddManualEditorItems
   const canImportParentItems = Boolean(config.parentImport && canManageItems)
   const {
@@ -134,6 +135,7 @@ export function ModuleEditorWorkspace({
     setItems,
     canManageItems,
     lineItemsLocked,
+    canEditItemColumns,
   })
 
   return (

@@ -9,6 +9,7 @@ interface Props {
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
   canManageItems: boolean
   lineItemsLocked: boolean
+  canEditItemColumns: boolean
 }
 
 export function useModuleEditorItems({
@@ -17,6 +18,7 @@ export function useModuleEditorItems({
   setItems,
   canManageItems,
   lineItemsLocked,
+  canEditItemColumns,
   moduleKey,
 }: Props) {
   const {
@@ -45,6 +47,7 @@ export function useModuleEditorItems({
     setItems,
     canManageItems,
     lineItemsLocked,
+    canEditItemColumns,
     selectedItemIds,
     onSelectAll: handleSelectAll,
     onSelectItem: handleSelectItem,

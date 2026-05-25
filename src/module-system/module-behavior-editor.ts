@@ -18,7 +18,7 @@ registerModuleBehavior('sales-order', {
   lineItemLockTargetField: 'orderNo',
   lineItemLockStatuses: ['已审核'],
   lockedLineItemsNotice:
-    '当前销售订单已存在已审核的销售出库，数量和商品信息已锁定，仅允许调整单价、金额、送货日期和备注。',
+    '当前销售订单已存在已审核的销售出库，数量和商品信息已锁定，仅允许调整单价、送货日期和备注。',
 })
 
 registerModuleBehavior('purchase-order', { defaultOperatorField: 'buyerName' })
