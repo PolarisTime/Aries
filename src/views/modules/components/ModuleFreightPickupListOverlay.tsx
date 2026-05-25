@@ -1,36 +1,24 @@
-import { useQuery } from '@tanstack/react-query'
 import Card from 'antd/es/card'
 import Table from 'antd/es/table'
-import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
-import { listAllBusinessModuleRows } from '@/api/business'
-import { QUERY_KEYS } from '@/constants/query-keys'
 import type { ModuleRecord } from '@/types/module-page'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
   open: boolean
   moduleKey: string
+  records: ModuleRecord[]
   onClose: () => void
 }
 
-const LIST_COLUMNS = [
-  { dataIndex: 'billNo', title: '运单号', width: 160 },
-  { dataIndex: 'carrierName', title: '物流方', width: 120 },
-  { dataIndex: 'vehiclePlate', title: '车牌号', width: 100 },
-  { dataIndex: 'customerName', title: '客户', width: 140, ellipsis: true },
-  { dataIndex: 'projectName', title: '项目', width: 160, ellipsis: true },
-  {
-    dataIndex: 'status', title: '状态', width: 80,
-    render: (v: string) => <Tag color={v === '已送达' ? 'green' : 'processing'}>{v}</Tag>,
-  },
-]
-
 const ITEM_COLUMNS = [
+  { title: '出库单号', dataIndex: 'sourceNo', width: 140 },
   { title: '品牌', dataIndex: 'brand', ellipsis: true, align: 'center' as const },
   { title: '材质', dataIndex: 'material', ellipsis: true, align: 'center' as const },
   { title: '规格', dataIndex: 'spec', ellipsis: true, align: 'center' as const },
   { title: '长度', dataIndex: 'length', ellipsis: true, align: 'center' as const },
+  { title: '客户', dataIndex: 'customerName', width: 120 },
+  { title: '项目', dataIndex: 'projectName', width: 140 },
   { title: '数量', dataIndex: 'quantity', align: 'center' as const },
   {
     title: '总重(吨)', dataIndex: 'weightTon', align: 'center' as const,
@@ -38,17 +26,10 @@ const ITEM_COLUMNS = [
   },
 ]
 
-interface DetailCardProps {
-  record: ModuleRecord
-}
-function DetailCard({ record }: DetailCardProps) {
+function DetailCard({ record }: { record: ModuleRecord }) {
   const fields: [string, string][] = [
-    ['运单号', 'billNo'],
-    ['物流方', 'carrierName'],
-    ['车牌号', 'vehiclePlate'],
-    ['客户', 'customerName'],
-    ['项目', 'projectName'],
-    ['出库单号', 'sourceNo'],
+    ['运单号', 'billNo'], ['物流方', 'carrierName'], ['车牌号', 'vehiclePlate'],
+    ['客户', 'customerName'], ['项目', 'projectName'],
   ]
   const items = (Array.isArray(record.items) ? record.items : []) as ModuleRecord[]
 
@@ -79,34 +60,16 @@ function DetailCard({ record }: DetailCardProps) {
         </span>
       </div>
       {items.length > 0 ? (
-        <Table
-          rowKey="id"
-          columns={ITEM_COLUMNS}
-          dataSource={items}
-          size="small"
-          pagination={false}
-        />
+        <Table rowKey="id" columns={ITEM_COLUMNS} dataSource={items} size="small" pagination={false} />
       ) : null}
     </Card>
   )
 }
 
-export function ModuleFreightPickupListOverlay({
-  open,
-  moduleKey,
-  onClose,
-}: Props) {
-  const { data: records, isLoading } = useQuery<ModuleRecord[]>({
-    queryKey: QUERY_KEYS.freightPickup(moduleKey),
-    queryFn: () => listAllBusinessModuleRows('freight-bill', {}),
-    enabled: open,
-  })
-
-  const detailMode = (records?.length ?? 0) <= 10
-
+export function ModuleFreightPickupListOverlay({ open, moduleKey, records, onClose }: Props) {
   return (
     <WorkspaceOverlay
-      title="提货清单 — 物流单"
+      title={`提货清单 — 物流单（${records.length} 条）`}
       open={open}
       onClose={onClose}
       variant="workspace"
@@ -114,23 +77,11 @@ export function ModuleFreightPickupListOverlay({
       height="min(84vh, 780px)"
       zIndex={1050}
     >
-      {detailMode ? (
-        <div style={{ overflow: 'auto', flex: 1 }}>
-          {(records ?? []).map((record) => (
-            <DetailCard key={record.id as string | number} record={record} />
-          ))}
-        </div>
-      ) : (
-        <Table
-          rowKey="id"
-          columns={LIST_COLUMNS}
-          dataSource={records || []}
-          loading={isLoading}
-          size="small"
-          scroll={{ x: 960 }}
-          pagination={{ pageSize: 20 }}
-        />
-      )}
+      <div style={{ overflow: 'auto', flex: 1 }}>
+        {records.map((record) => (
+          <DetailCard key={record.id as string | number} record={record} />
+        ))}
+      </div>
     </WorkspaceOverlay>
   )
 }
