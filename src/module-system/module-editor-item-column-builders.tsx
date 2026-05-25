@@ -141,6 +141,36 @@ function buildEditableColumnRender({
         )
       }
 
+      if (
+        key === 'weighWeightTon' &&
+        config.key === 'purchase-inbound'
+      ) {
+        const isWeigh = asString(record.settlementMode) === '过磅'
+        const displayValue = isWeigh
+          ? asNumber(value)
+          : asNumber(record.weightTon)
+        if (!isWeigh) {
+          return renderReadOnlyValue(
+            displayValue,
+            type,
+            config.statusMap,
+            formatCellValue,
+          )
+        }
+        return (
+          <InputNumber
+            value={asNumber(value)}
+            className="w-full"
+            min={0}
+            precision={3}
+            controls={false}
+            onChange={(nextValue) =>
+              handleItemNumberChange(record.id, key, nextValue)
+            }
+          />
+        )
+      }
+
       if (key === 'settlementMode') {
         return (
           <Select
