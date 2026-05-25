@@ -3,7 +3,6 @@ import { listBusinessModule } from '@/api/business-listing'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
-import { trackLoadTaskOnce } from '@/utils/lazy-load-progress'
 
 interface Props {
   moduleKey: string
@@ -33,36 +32,18 @@ export function useInfiniteBusinessItems({
       currentPage,
       pageSize,
     ),
-    queryFn: ({ signal }) => {
-      const listTask = () =>
-        listBusinessModule(
-          moduleKey,
-          filters,
-          {
-            currentPage,
-            pageSize,
-            sortBy,
-            sortDirection,
-          },
-          { signal },
-        )
-
-      if (
-        currentPage === 1 &&
-        pageSize === 20 &&
-        !sortBy &&
-        !sortDirection &&
-        Object.keys(filters).length === 0
-      ) {
-        return trackLoadTaskOnce(
-          `business-grid-first-page:${moduleKey}`,
-          `${moduleKey} 首屏数据`,
-          listTask,
-        )
-      }
-
-      return listTask()
-    },
+    queryFn: ({ signal }) =>
+      listBusinessModule(
+        moduleKey,
+        filters,
+        {
+          currentPage,
+          pageSize,
+          sortBy,
+          sortDirection,
+        },
+        { signal },
+      ),
     enabled: enabled && !!moduleKey,
     staleTime: 5_000,
     placeholderData: keepPreviousData,

@@ -13,7 +13,6 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRequestError } from '@/hooks/useRequestError'
 import { message } from '@/utils/antd-app'
-import { trackLoadTaskOnce } from '@/utils/lazy-load-progress'
 import { asArray, asString } from '@/utils/type-narrowing'
 import {
   ALL_ROLE_ACTIONS,
@@ -44,12 +43,7 @@ export function useRoleActionPermissions({
 
   const { data: menuTree = [] } = useQuery({
     queryKey: QUERY_KEYS.rolePermissionOptions,
-    queryFn: () =>
-      trackLoadTaskOnce(
-        'role-permission-options',
-        '角色权限菜单树',
-        listSystemMenus,
-      ),
+    queryFn: listSystemMenus,
     enabled: enabled && canEditPermissions,
   })
 
@@ -78,11 +72,7 @@ export function useRoleActionPermissions({
       setSelectedRoleId(role.id)
       try {
         const actions = buildNormalizedRoleActionSet(
-          await trackLoadTaskOnce(
-            `role-actions:${role.id}`,
-            `${role.roleName || role.roleCode}权限数据`,
-            () => getRoleActions(role.id),
-          ),
+          await getRoleActions(role.id),
         )
         setSelectedActions(actions)
       } catch (error) {

@@ -4,7 +4,6 @@ import Tabs from 'antd/es/tabs'
 import { lazy, Suspense, useCallback, useMemo } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { usePermissionStore } from '@/stores/permissionStore'
-import { trackLazyLoad } from '@/utils/lazy-load-progress'
 import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
 
 type TabKey = 'users' | 'roles' | 'permissions'
@@ -26,27 +25,21 @@ const permPageDef: AppPageDefinition = {
 }
 
 const LazyPermissionGridPage = lazy(() =>
-  trackLazyLoad('权限目录页面', () =>
-    import('@/views/modules/BusinessGridPage').then((m) => ({
-      default: m.BusinessGridPage,
-    })),
-  ),
+  import('@/views/modules/BusinessGridPage').then((m) => ({
+    default: m.BusinessGridPage,
+  })),
 )
 
 const LazyRoleActionEditor = lazy(() =>
-  trackLazyLoad('角色权限编辑器', () =>
-    import('@/views/system/RoleActionEditor').then((m) => ({
-      default: m.RoleActionEditor,
-    })),
-  ),
+  import('@/views/system/RoleActionEditor').then((m) => ({
+    default: m.RoleActionEditor,
+  })),
 )
 
 const LazyUserAccountManagementView = lazy(() =>
-  trackLazyLoad('用户账户管理页', () =>
-    import('@/views/system/UserAccountManagementView').then((m) => ({
-      default: m.UserAccountManagementView,
-    })),
-  ),
+  import('@/views/system/UserAccountManagementView').then((m) => ({
+    default: m.UserAccountManagementView,
+  })),
 )
 
 export function AccessControlView() {
