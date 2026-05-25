@@ -23,22 +23,26 @@ export function ModuleFreightPickupListOverlay({
   })
 
   const columns = [
-    { dataIndex: 'freightBillNo', title: '运单号' },
-    { dataIndex: 'carrierName', title: '物流方' },
-    { dataIndex: 'vehiclePlate', title: '车牌号' },
-    { dataIndex: 'totalWeight', title: '总重量(吨)' },
+    { dataIndex: 'billNo', title: '运单号', width: 160 },
+    { dataIndex: 'carrierName', title: '物流方', width: 120 },
+    { dataIndex: 'vehiclePlate', title: '车牌号', width: 100 },
+    { dataIndex: 'customerName', title: '客户', width: 140, ellipsis: true },
+    { dataIndex: 'projectName', title: '项目', width: 160, ellipsis: true },
+    { dataIndex: 'totalWeight', title: '总重(吨)', width: 90, align: 'right' as const },
+    { dataIndex: 'totalFreight', title: '总运费', width: 100, align: 'right' as const },
     {
       dataIndex: 'status',
       title: '状态',
+      width: 80,
       render: (v: string) => (
-        <Tag color={v === 'delivered' ? 'green' : 'processing'}>{v}</Tag>
+        <Tag color={v === '已送达' ? 'green' : 'processing'}>{v}</Tag>
       ),
     },
   ]
 
   return (
     <WorkspaceOverlay
-      title="提货清单"
+      title="提货清单 — 物流单"
       open={open}
       onClose={onClose}
       variant="workspace"
@@ -52,6 +56,7 @@ export function ModuleFreightPickupListOverlay({
         dataSource={records || []}
         loading={isLoading}
         size="small"
+        scroll={{ x: 960 }}
         pagination={{ pageSize: 20 }}
       />
     </WorkspaceOverlay>
