@@ -344,9 +344,10 @@ function SaveResultOverlay({
   const nextModule = isSuccess ? NEXT_MODULE[moduleKey] : null
 
   const handleCreateNext = () => {
+    if (!nextModule) return
     onClear()
     void navigate({
-      to: nextModule!.path,
+      to: nextModule.path,
       search: new URLSearchParams({
         sourceModule: moduleKey,
         sourceRecordId: String(saveResult.record?.id || ''),
