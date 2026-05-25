@@ -1,10 +1,13 @@
 import { lazy, Suspense } from 'react'
+import { trackLazyLoad } from '@/utils/lazy-load-progress'
 import { LoginSkeleton } from '@/views/auth/LoginSkeleton'
 
 const LoginViewContent = lazy(() =>
-  import('@/views/auth/LoginView').then((m) => ({
-    default: m.LoginView,
-  })),
+  trackLazyLoad('登录页', () =>
+    import('@/views/auth/LoginView').then((m) => ({
+      default: m.LoginView,
+    })),
+  ),
 )
 
 export function LazyLoginView() {

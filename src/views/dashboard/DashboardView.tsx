@@ -6,14 +6,17 @@ import { getDashboardSummary } from '@/api/dashboard'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useIdleActivation } from '@/hooks/useIdleActivation'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
+import { trackLazyLoad, trackLoadTaskOnce } from '@/utils/lazy-load-progress'
 import { DashboardInfoPanels } from '@/views/dashboard/DashboardInfoPanels'
 import { buildDashboardInfoItems } from '@/views/dashboard/dashboard-info-utils'
 import { useDashboardServerTime } from '@/views/dashboard/useDashboardServerTime'
 
 const LazyDashboardFlowCard = lazy(() =>
-  import('@/views/dashboard/DashboardFlowCard').then((m) => ({
-    default: m.DashboardFlowCard,
-  })),
+  trackLazyLoad('工作台流程卡片', () =>
+    import('@/views/dashboard/DashboardFlowCard').then((m) => ({
+      default: m.DashboardFlowCard,
+    })),
+  ),
 )
 
 export function DashboardView() {
@@ -22,7 +25,12 @@ export function DashboardView() {
   const canMountFlowCard = useIdleActivation(Boolean(isPageVisible), 1400)
   const summaryQuery = useQuery({
     queryKey: QUERY_KEYS.dashboardSummary,
-    queryFn: getDashboardSummary,
+    queryFn: () =>
+      trackLoadTaskOnce(
+        'dashboard-summary',
+        '工作台摘要数据',
+        getDashboardSummary,
+      ),
     refetchInterval: isPageVisible ? 120000 : false,
   })
 

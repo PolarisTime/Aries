@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { listDepartmentOptions, listRoleOptions } from '@/api/user-accounts'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { trackLoadTaskOnce } from '@/utils/lazy-load-progress'
 
 interface Props {
   canViewRoleCatalog: boolean
@@ -15,13 +16,19 @@ export function useUserAccountEditorCatalogs({
 }: Props) {
   const { data: roleOptions = [] } = useQuery({
     queryKey: QUERY_KEYS.roleOptions,
-    queryFn: listRoleOptions,
+    queryFn: () =>
+      trackLoadTaskOnce('user-role-options', '用户角色选项', listRoleOptions),
     enabled: enabled && canViewRoleCatalog,
   })
 
   const { data: departmentOptions = [] } = useQuery({
     queryKey: QUERY_KEYS.departmentOptions,
-    queryFn: listDepartmentOptions,
+    queryFn: () =>
+      trackLoadTaskOnce(
+        'user-department-options',
+        '用户部门选项',
+        listDepartmentOptions,
+      ),
     enabled: enabled && canViewDepartmentCatalog,
   })
 
