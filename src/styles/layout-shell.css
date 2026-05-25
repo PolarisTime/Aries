@@ -287,9 +287,9 @@
 }
 
 .app-header-bar-top {
-  gap: 24px;
+  gap: 12px;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 12px;
 }
 
 .app-top-nav-left,
@@ -301,13 +301,13 @@
 
 .app-top-nav-left {
   flex: 1 1 auto;
-  gap: 16px;
+  gap: 8px;
 }
 
 .app-top-nav-right {
   flex: 0 0 auto;
   flex-wrap: nowrap;
-  gap: 10px;
+  gap: 6px;
 }
 
 .app-top-brand {
@@ -592,7 +592,7 @@
 .user-wrapper {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   flex-wrap: nowrap;
   margin-left: auto;
   white-space: nowrap;
@@ -628,7 +628,7 @@
   display: inline-flex;
   align-items: center;
   height: var(--app-header-height);
-  padding: 0 4px;
+  padding: 0 2px;
   color: var(--theme-header-text);
   flex: 0 0 auto;
   white-space: nowrap;
