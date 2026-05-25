@@ -13,6 +13,7 @@ import {
   getAuthPersistenceMode,
   getStoredUser,
   getToken,
+  getTokenExpiresAt,
   setAuthSession,
 } from '@/utils/storage'
 
@@ -155,6 +156,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get()
     // 无本地用户数据 → 未登录，静默跳过
     if (!user) {
+      clearToken()
+      clearStoredUser()
       set({ token: '', user: null, isAuthenticated: false, authReady: true })
       return false
     }
@@ -176,7 +179,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       })
       return true
     } catch {
-      // refresh token 已过期 → 清除登录态
+      const fallbackToken = getToken()
+      const fallbackUser = getStoredUser()
+      const tokenExpiresAt = getTokenExpiresAt()
+      if (
+        fallbackToken &&
+        fallbackUser &&
+        (!tokenExpiresAt || tokenExpiresAt > Date.now())
+      ) {
+        set({
+          token: fallbackToken,
+          user: fallbackUser,
+          isAuthenticated: true,
+          authReady: true,
+        })
+        return true
+      }
+
+      // refresh token 已过期且无可用 access token → 清除登录态
+      clearToken()
+      clearStoredUser()
       set({ token: '', user: null, isAuthenticated: false, authReady: true })
       return false
     }

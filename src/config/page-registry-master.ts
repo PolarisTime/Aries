@@ -18,6 +18,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     icon: 'TagsOutlined',
     menuParent: 'master',
     moduleKey: 'material-categories',
+    resourceKey: 'material',
   },
   {
     key: 'supplier',

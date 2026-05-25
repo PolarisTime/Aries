@@ -25,7 +25,7 @@ function App() {
   )
 }
 
-function bootstrap() {
+async function bootstrap() {
   ensureApiClientSetup()
   initWebVitals()
 
@@ -37,21 +37,21 @@ function bootstrap() {
   const authStore = useAuthStore.getState()
   authStore.hydrate()
 
+  // Route guards depend on the permission store. Refresh the session before
+  // mounting so permission changes from RBAC migrations are reflected on first
+  // route resolution instead of briefly using stale localStorage snapshots.
+  if (authStore.isAuthenticated) {
+    await authStore.restoreSession().catch(() => false)
+  }
+
   // Route guards run before React effects. Prime permissions from the
   // restored auth user here so deep links are not redirected incorrectly.
-  usePermissionStore.getState().syncFromUser(authStore.user)
+  usePermissionStore.getState().syncFromUser(useAuthStore.getState().user)
 
   const root = document.getElementById('app')
   if (!root) throw new Error('Root element not found')
 
   createRoot(root).render(<App />)
-
-  // Do not block first paint on refresh-token exchange. Stored auth state is
-  // enough for initial route resolution; session refresh can complete after
-  // the app shell is visible.
-  void authStore.restoreSession().catch(() => {
-    // session restore failed, app-level guards will handle fallback state
-  })
 }
 
 void bootstrap()

@@ -51,7 +51,7 @@ describe('useBusinessGridBatchActions', () => {
   })
 
   it('uses selected rows from preserved cross-page selection for audit', async () => {
-    getBusinessModuleDetailMock.mockImplementation((_moduleKey, id) => ({
+    getBusinessModuleDetailMock.mockImplementation(async (_moduleKey, id) => ({
       data: { id, status: '待审核' },
     }))
     saveBusinessModuleMock.mockResolvedValue(undefined)
