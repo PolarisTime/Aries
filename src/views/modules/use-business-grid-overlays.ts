@@ -8,6 +8,7 @@ export function useBusinessGridOverlays() {
   const [customerStatementOpen, setCustomerStatementOpen] = useState(false)
   const [freightStatementOpen, setFreightStatementOpen] = useState(false)
   const [freightPickupOpen, setFreightPickupOpen] = useState(false)
+  const [freightPickupRecords, setFreightPickupRecords] = useState<ModuleRecord[]>([])
 
   const openAttachment = useCallback((record: ModuleRecord) => {
     setAttachRecordId(String(record.id || ''))
@@ -49,7 +50,14 @@ export function useBusinessGridOverlays() {
       () => setFreightStatementOpen(false),
       [],
     ),
-    openFreightPickup: useCallback(() => setFreightPickupOpen(true), []),
-    closeFreightPickup: useCallback(() => setFreightPickupOpen(false), []),
+    freightPickupRecords,
+    openFreightPickup: useCallback((records: ModuleRecord[]) => {
+      setFreightPickupRecords(records)
+      setFreightPickupOpen(true)
+    }, []),
+    closeFreightPickup: useCallback(() => {
+      setFreightPickupOpen(false)
+      setFreightPickupRecords([])
+    }, []),
   }
 }
