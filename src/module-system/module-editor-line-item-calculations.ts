@@ -120,8 +120,8 @@ export function recalculateEditorLineItem(
   }
 
   if (changedKey === 'settlementMode' && !isWeighSettlement) {
-    item.weighWeightTon = undefined
     item.weightTon = theoreticalWeightTon
+    item.weighWeightTon = item.weightTon
   }
 
   if (
