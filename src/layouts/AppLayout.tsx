@@ -56,8 +56,7 @@ export function AppLayout() {
 
   const routePageContext = useMemo(
     () => resolveRoutePageContext(location.pathname),
-    // react-doctor: TanStack Router useLocation() returns reactive state that triggers re-renders on navigation
-    [location.pathname],
+    [location],
   )
   const { backendOnline } = useBackendStatus(token)
 

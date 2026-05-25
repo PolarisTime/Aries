@@ -14,8 +14,7 @@ export function BusinessGridView() {
   })
   const pageDef = useMemo(() => {
     return getPageDefinition(location.pathname)
-    // react-doctor: TanStack Router useLocation() returns reactive state that triggers re-renders on navigation
-  }, [location.pathname])
+  }, [location])
   const initialConfig = useMemo(
     () =>
       resolveBusinessGridInitialConfig(
