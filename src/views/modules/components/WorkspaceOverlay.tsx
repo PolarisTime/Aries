@@ -58,6 +58,7 @@ export function WorkspaceOverlay({
         className="workspace-overlay-mask"
         role="button"
         tabIndex={-1}
+        aria-label="关闭工作区"
         onClick={onClose}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose() }}
       />

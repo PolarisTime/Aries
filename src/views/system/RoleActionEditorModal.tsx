@@ -2,6 +2,8 @@ import type { FormInstance } from 'antd'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Select from 'antd/es/select'
+import Typography from 'antd/es/typography'
+import { useQuery } from '@tanstack/react-query'
 import type { RoleRecord } from '@/api/role-actions'
 import { FormModal } from '@/components/FormModal'
 import { roleDataScopeValues, roleTypeValues } from '@/constants/module-options'
@@ -13,6 +15,12 @@ interface Props {
   saving: boolean
   onSave: () => void
   onClose: () => void
+  onApplyTemplate?: (templateName: string) => void
+}
+
+interface RoleTemplate {
+  name: string
+  description: string
 }
 
 export function RoleActionEditorModal({
@@ -22,7 +30,19 @@ export function RoleActionEditorModal({
   saving,
   onSave,
   onClose,
+  onApplyTemplate,
 }: Props) {
+  const { data: templates = [] } = useQuery<RoleTemplate[]>({
+    queryKey: ['role-templates'],
+    queryFn: async () => {
+      const { http } = await import('@/api/client')
+      const resp = await http.get<{ data: RoleTemplate[] }>('/role-settings/templates')
+      return (resp.data as { data: RoleTemplate[] }).data ?? []
+    },
+    enabled: open && !editingRole,
+    staleTime: 10 * 60 * 1000,
+  })
+
   return (
     <FormModal
       title={editingRole ? '编辑角色' : '新增角色'}
@@ -34,6 +54,24 @@ export function RoleActionEditorModal({
       cancelText="取消"
     >
       <Form form={form} layout="vertical">
+        {!editingRole && templates.length > 0 ? (
+          <Form.Item label="权限模板">
+            <Select
+              placeholder="选择模板一键填充权限（可选）"
+              allowClear
+              options={templates.map((t) => ({
+                label: `${t.name} — ${t.description}`,
+                value: t.name,
+              }))}
+              onChange={(name) => {
+                if (name && onApplyTemplate) onApplyTemplate(name as string)
+              }}
+            />
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              选择模板后自动填充角色名称、编码和权限配置
+            </Typography.Text>
+          </Form.Item>
+        ) : null}
         <Form.Item name="roleName" label="角色名称" required>
           <Input placeholder="例如：采购主管" maxLength={64} />
         </Form.Item>

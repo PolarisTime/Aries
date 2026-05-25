@@ -191,7 +191,7 @@ export function AppLayout() {
   const handleSavePersonalSettings = useCallback(() => {
     savePersonalSettings()
     message.success(t('common.displaySettingsSaved'))
-  }, [savePersonalSettings])
+  }, [savePersonalSettings, t])
 
   const { currentUserLoginName, currentUserName } = useMemo(
     () => buildAppLayoutUserInfo(user),
