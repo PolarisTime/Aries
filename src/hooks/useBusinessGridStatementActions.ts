@@ -18,7 +18,7 @@ import {
   buildCustomerStatementDraftData,
   buildFreightStatementDraftData,
   buildSupplierStatementDraftData,
-} from '@/views/modules/module-adapter-statements'
+} from '@/module-system/module-adapter-statement-drafts'
 
 type StatementType = 'supplier' | 'customer' | 'freight'
 

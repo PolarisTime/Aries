@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { listClientSettings } from '@/api/system-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { DEFAULT_LIST_PAGE_SIZE_SETTING_CODE } from '@/views/system/general-settings-view-utils'
+import { DEFAULT_LIST_PAGE_SIZE_SETTING_CODE } from '@/module-system/settings-constants'
 
 const DEFAULT_SIZE = 20
 

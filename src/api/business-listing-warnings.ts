@@ -6,10 +6,6 @@ import { getUnsupportedFilterKeys } from './business-listing-filtering'
 const REPORTED_CLIENT_FILTER_SIGNATURES = new Map<string, number>()
 const CLIENT_FILTER_REPORT_INTERVAL_MS = 5 * 60 * 1000
 
-function resetReportedClientFilterSignatures() {
-  REPORTED_CLIENT_FILTER_SIGNATURES.clear()
-}
-
 export function reportClientFilterFallback(
   moduleKey: string,
   search: SearchParams,
