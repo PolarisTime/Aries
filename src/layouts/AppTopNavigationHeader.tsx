@@ -1,4 +1,4 @@
-import { DownOutlined } from '@ant-design/icons'
+import { DownOutlined, ReloadOutlined } from '@ant-design/icons'
 import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
@@ -79,7 +79,7 @@ export function AppTopNavigationHeader({
               window.location.reload()
             }}
           >
-            强制刷新
+            <ReloadOutlined />
           </button>
         ) : null}
         <LazyAppHeaderSearch
