@@ -29,9 +29,7 @@ export function useAuthRefreshTimer(onRefresh: () => void) {
     schedule()
 
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-      }
+      if (timerRef.current) clearTimeout(timerRef.current)
     }
   }, [onRefresh])
 }
