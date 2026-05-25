@@ -1,5 +1,5 @@
 import { ArrowLeftOutlined } from '@ant-design/icons'
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Descriptions from 'antd/es/descriptions'
@@ -48,10 +48,8 @@ export function ApiKeyDetailView() {
   >([])
   const [actionOptions, setActionOptions] = useState<ApiKeyActionOption[]>([])
 
-  const id = useMemo(() => {
-    const segments = location.pathname.split('/').filter(Boolean)
-    return segments[segments.length - 1] || ''
-  }, [location])
+  const params = useParams({ strict: false }) as { id?: string }
+  const id = params.id ?? ''
 
   useEffect(() => {
     if (!id) {
