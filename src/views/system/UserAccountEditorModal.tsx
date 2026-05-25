@@ -34,6 +34,7 @@ interface Props {
   departmentOptions: DepartmentOptionRecord[]
   roleOptions: RoleOptionRecord[]
   selectedRoleIds: number[]
+  roleConflicts?: Record<number, number[]>
   selectedRoleDataScope: string
   selectedRoleSummaries: string[]
   onCheckLoginName: (loginName: string, excludeUserId?: string) => void
@@ -176,13 +177,22 @@ export function UserAccountEditorModal({
                     mode="multiple"
                     placeholder="请选择角色"
                     maxTagCount={5}
-                    options={roleOptions.map((role) => ({
-                      label: role.roleName,
-                      value: role.id,
-                      disabled:
+                    options={roleOptions.map((role) => {
+                      const roleId = Number(role.id)
+                      const isDisabled =
                         role.status === enabledStatusValues[1] &&
-                        !selectedRoleIds.includes(Number(role.id)),
-                    }))}
+                        !selectedRoleIds.includes(roleId)
+                      const conflictWith = selectedRoleIds.find(
+                        (sid) => roleConflicts?.[sid]?.includes(roleId),
+                      )
+                      return {
+                        label: conflictWith != null
+                          ? `${role.roleName} (与已选角色互斥)`
+                          : role.roleName,
+                        value: role.id,
+                        disabled: isDisabled || conflictWith != null,
+                      }
+                    })}
                   />
                 </Form.Item>
               </Col>
