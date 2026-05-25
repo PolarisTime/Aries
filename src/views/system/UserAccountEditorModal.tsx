@@ -53,6 +53,7 @@ export function UserAccountEditorModal({
   departmentOptions,
   roleOptions,
   selectedRoleIds,
+  roleConflicts = {},
   selectedRoleDataScope,
   selectedRoleSummaries,
   onCheckLoginName,
