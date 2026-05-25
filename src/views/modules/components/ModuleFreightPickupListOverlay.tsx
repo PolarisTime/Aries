@@ -74,11 +74,14 @@ export function ModuleFreightPickupListOverlay({ open, moduleKey, records, onClo
       onClose={onClose}
       variant="workspace"
       width="min(94vw, 1120px)"
+      height="min(84vh, 780px)"
       zIndex={1050}
     >
-      {records.map((record) => (
-        <DetailCard key={record.id as string | number} record={record} />
-      ))}
+      <div style={{ overflow: 'auto', flex: 1 }}>
+        {records.map((record) => (
+          <DetailCard key={record.id as string | number} record={record} />
+        ))}
+      </div>
     </WorkspaceOverlay>
   )
 }
