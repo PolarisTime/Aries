@@ -137,6 +137,7 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setAppliedLayoutMode(layoutMode)
     setAppliedThemeMode(themeMode)
     setPersonalSettings({ fontSize, layoutMode, themeMode })
+    window.dispatchEvent(new CustomEvent('personal-settings-changed'))
     setVisible(false)
   }, [fontSize, layoutMode, themeMode])
 

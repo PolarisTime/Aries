@@ -1,6 +1,7 @@
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  ReloadOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
 import Button from 'antd/es/button'
@@ -93,7 +94,7 @@ export function AppSideNavigationHeader({
               window.location.reload()
             }}
           >
-            强制刷新
+            <ReloadOutlined className="mr-4" />
           </button>
         ) : null}
       </div>

@@ -301,13 +301,13 @@
 
 .app-top-nav-left {
   flex: 1 1 auto;
-  gap: 24px;
+  gap: 16px;
 }
 
 .app-top-nav-right {
   flex: 0 0 auto;
   flex-wrap: nowrap;
-  gap: 18px;
+  gap: 10px;
 }
 
 .app-top-brand {
@@ -592,7 +592,7 @@
 .user-wrapper {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   flex-wrap: nowrap;
   margin-left: auto;
   white-space: nowrap;
@@ -628,7 +628,7 @@
   display: inline-flex;
   align-items: center;
   height: var(--app-header-height);
-  padding: 0 10px;
+  padding: 0 4px;
   color: var(--theme-header-text);
   flex: 0 0 auto;
   white-space: nowrap;
