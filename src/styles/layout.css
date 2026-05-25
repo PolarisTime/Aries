@@ -1,10 +1,12 @@
 .app-dev-refresh-btn {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   height: calc(var(--app-header-height) - 14px);
   padding: 0 10px;
   color: var(--theme-header-muted);
   font-size: calc(var(--app-font-size) - 1px);
+  line-height: 1;
   cursor: pointer;
   background: transparent;
   border: 1px solid var(--theme-border-subtle);

@@ -79,7 +79,7 @@ export function AppTopNavigationHeader({
               window.location.reload()
             }}
           >
-            <ReloadOutlined className="mr-4" />刷新
+            <ReloadOutlined />刷新
           </button>
         ) : null}
         <LazyAppHeaderSearch
