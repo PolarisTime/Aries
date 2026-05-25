@@ -32,15 +32,15 @@ function getUserAccountDataScopeRank(value: string) {
 }
 
 export function buildSelectedRoleDataScope(
-  selectedRoleNames: string[],
+  selectedRoleIds: number[],
   roleOptions: RoleOptionRecord[],
   currentDataScope?: string,
 ) {
   const selectedRoles = roleOptions.filter((role) =>
-    selectedRoleNames.includes(role.roleName),
+    selectedRoleIds.includes(Number(role.id)),
   )
   if (!selectedRoles.length) {
-    return selectedRoleNames.length
+    return selectedRoleIds.length
       ? normalizeUserAccountDataScopeLabel(currentDataScope)
       : '本人'
   }
@@ -57,11 +57,11 @@ export function buildSelectedRoleDataScope(
 }
 
 export function buildSelectedRoleSummaries(
-  selectedRoleNames: string[],
+  selectedRoleIds: number[],
   roleOptions: RoleOptionRecord[],
 ) {
   return roleOptions.reduce<string[]>((acc, role) => {
-    if (!selectedRoleNames.includes(role.roleName)) return acc
+    if (!selectedRoleIds.includes(Number(role.id))) return acc
     const summary = role.permissionSummary?.trim()
     if (!summary || acc.includes(summary)) return acc
     acc.push(summary)

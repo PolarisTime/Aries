@@ -67,7 +67,7 @@ export function UserAccountManagementView({
     loginNameChecking,
     departmentOptions,
     roleOptions,
-    selectedRoleNames,
+    selectedRoleIds,
     selectedRoleDataScope,
     selectedRoleSummaries,
     createResultOpen,
@@ -187,7 +187,7 @@ export function UserAccountManagementView({
           loginNameChecking={loginNameChecking}
           departmentOptions={departmentOptions}
           roleOptions={roleOptions}
-          selectedRoleNames={selectedRoleNames}
+          selectedRoleIds={selectedRoleIds}
           selectedRoleDataScope={selectedRoleDataScope}
           selectedRoleSummaries={selectedRoleSummaries}
           onCheckLoginName={(loginName, excludeUserId) => {
