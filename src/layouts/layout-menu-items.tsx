@@ -80,14 +80,27 @@ export function buildSideMenuItems(
 export function buildTopMenuItems(
   entries: LayoutMenuEntry[],
 ): NonNullable<MenuProps['items']> {
-  return entries.map((entry) => ({
-    key: entry.path || entry.menuCode,
-    label: entry.title,
-    children: entry.children.length
-      ? entry.children.map((child) => ({
-          key: child.path || child.menuCode,
-          label: child.title,
-        }))
-      : undefined,
-  }))
+  return entries.map((entry) => {
+    const Icon = isKnownAppIconKey(entry.icon)
+      ? resolveAppIcon(entry.icon)
+      : null
+
+    return {
+      key: entry.path || entry.menuCode,
+      icon: Icon ? <Icon /> : undefined,
+      label: entry.title,
+      children: entry.children.length
+        ? entry.children.map((child) => {
+            const ChildIcon = isKnownAppIconKey(child.icon)
+              ? resolveAppIcon(child.icon)
+              : null
+            return {
+              key: child.path || child.menuCode,
+              icon: ChildIcon ? <ChildIcon /> : undefined,
+              label: child.title,
+            }
+          })
+        : undefined,
+    }
+  })
 }

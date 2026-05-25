@@ -94,7 +94,7 @@ export function AppSideNavigationHeader({
               window.location.reload()
             }}
           >
-            <ReloadOutlined className="mr-4" />
+            <ReloadOutlined className="mr-4" />刷新
           </button>
         ) : null}
       </div>
