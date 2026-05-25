@@ -6,18 +6,19 @@ import {
   isDisplaySwitchEnabled,
   listClientSettings,
 } from '@/api/system-settings'
-import { QUERY_KEYS } from '@/constants/query-keys'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { buildWeightOverview } from '@/config/business-pages/shared'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import {
+  buildStatementLinkOptions,
+  type StatementLinkCatalog,
+} from '@/module-system/module-adapter-finance-links'
 import type {
   ModulePageConfig,
   ModuleRecord,
   ModuleRecordInput,
 } from '@/types/module-page'
-import {
-  buildStatementLinkOptions,
-  type StatementLinkCatalog,
-} from '@/module-system/module-adapter-finance-links'
+import { trackLoadTaskOnce } from '@/utils/lazy-load-progress'
 
 const WEIGHT_ONLY_VIEW_SETTING_CODES: Record<string, string> = {
   'purchase-inbound': DISPLAY_SWITCH_CODES.weightOnlyPurchaseInbounds,
@@ -121,7 +122,12 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
 
   const moduleConfigQuery = useQuery({
     queryKey: QUERY_KEYS.businessPageConfig(moduleKey),
-    queryFn: () => loadBusinessPageConfig(moduleKey),
+    queryFn: () =>
+      trackLoadTaskOnce(
+        `business-page-config:${moduleKey}`,
+        `${moduleKey} 页面配置`,
+        () => loadBusinessPageConfig(moduleKey),
+      ),
     placeholderData: initialConfig
       ? () => initialConfig
       : canReusePreviousConfig

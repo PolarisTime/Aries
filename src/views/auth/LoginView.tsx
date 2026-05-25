@@ -5,7 +5,7 @@ import Form from 'antd/es/form'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRequestError } from '@/hooks/useRequestError'
-import { getFormString } from '@/lib/antd-form'
+import { preloadPostLoginShell } from '@/router/preload-post-login'
 import { useAuthStore } from '@/stores/authStore'
 import type { LoginPayload } from '@/types/auth'
 import { message } from '@/utils/antd-app'
@@ -40,15 +40,26 @@ export function LoginView() {
   const [totpLoading, setTotpLoading] = useState(false)
   const [form] = Form.useForm()
   const [flipped, setFlipped] = useState(!!savedSession)
+  const [pendingLoginName, setPendingLoginName] = useState(
+    savedSession?.loginName || '',
+  )
+  const [pendingRemember, setPendingRemember] = useState(true)
   useEffect(() => {
     // react-doctor: intentional callback, not event handler
     if (loginStep === 'password' && flipped) {
       setFlipped(false)
     }
   }, [loginStep, flipped])
+
+  useEffect(() => {
+    preloadPostLoginShell()
+  }, [])
+
   const handleLogin = useCallback(
     async (values: LoginPayload) => {
       setLoading(true)
+      setPendingLoginName(values.loginName)
+      setPendingRemember(values.remember !== false)
       try {
         const result = await signIn(values)
         if (result.requires2fa) {
@@ -91,7 +102,7 @@ export function LoginView() {
       const result = await verify2fa({
         tempToken,
         totpCode: totpCode.trim(),
-        remember: Boolean(form.getFieldValue('remember')),
+        remember: pendingRemember,
       })
       clearTotpSession()
       message.success(t('auth.loginSuccess'))
@@ -102,8 +113,8 @@ export function LoginView() {
       setTotpLoading(false)
     }
   }, [
-    form,
     navigate,
+    pendingRemember,
     reset2faStep,
     showError,
     stepDeadline,
@@ -127,9 +138,8 @@ export function LoginView() {
   const isExpiring =
     !isExpired && stepDeadline > 0 && stepDeadline - totpNow < 60000
   const activeLoginName =
-    String(
-      getFormString(form, 'loginName') || savedSession?.loginName || '',
-    ).trim() || t('auth.setup2fa.currentUserFallback')
+    String(pendingLoginName || savedSession?.loginName || '').trim() ||
+    t('auth.setup2fa.currentUserFallback')
   const countdownText = useMemo(() => {
     if (stepDeadline > 0) {
       const remaining = Math.max(0, Math.ceil((stepDeadline - totpNow) / 1000))

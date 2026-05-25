@@ -1,12 +1,15 @@
 import { lazy, Suspense } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
+import { trackLazyLoad } from '@/utils/lazy-load-progress'
 import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
 
 const BusinessGridRouteContent = lazy(() =>
-  import('@/views/modules/BusinessGridRouteContent').then((m) => ({
-    default: m.BusinessGridRouteContent,
-  })),
+  trackLazyLoad('业务表格内容', () =>
+    import('@/views/modules/BusinessGridRouteContent').then((m) => ({
+      default: m.BusinessGridRouteContent,
+    })),
+  ),
 )
 
 interface Props {
