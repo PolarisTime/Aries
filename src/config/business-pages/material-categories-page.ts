@@ -23,7 +23,7 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
     { title: '类别编码', dataIndex: 'categoryCode', width: 150 },
     { title: '类别名称', dataIndex: 'categoryName', width: 180 },
     { title: '排序', dataIndex: 'sortOrder', width: 80, align: 'right' },
-    { title: '采购过磅', dataIndex: 'purchaseWeighRequired', width: 100 },
+    { title: '采购过磅', dataIndex: 'purchaseWeighRequired', width: 100, render: (v: unknown) => v === true || v === 'true' ? '需要' : '不需要' },
     { title: '状态', dataIndex: 'status', width: 90 },
     { title: '备注', dataIndex: 'remark', width: 200 },
   ],
@@ -66,6 +66,7 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       type: 'select',
       defaultValue: false,
       row: 1,
+      colSpan: 4,
       options: [
         { label: '需要', value: true },
         { label: '不需要', value: false },
