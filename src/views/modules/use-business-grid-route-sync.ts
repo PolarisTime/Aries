@@ -100,6 +100,7 @@ export function useBusinessGridRouteSync({
 }: Props) {
   const autoOpenedRouteKeyRef = useRef('')
   const rawSearchStr = useMemo(
+    // react-doctor: intentional callback, not event handler
     () => getRawSearchString(location.searchStr),
     [location.searchStr],
   )

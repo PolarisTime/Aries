@@ -1,10 +1,10 @@
 import { ReloadOutlined } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
-import { useCallback, useEffect, useState } from 'react'
 import { assertApiSuccess, http } from '@/api/client'
 import { usePermissionStore } from '@/stores/permissionStore'
 
@@ -21,29 +21,18 @@ interface RateLimitRule {
 
 export function RateLimitRulesCard() {
   const can = usePermissionStore((s) => s.can)
-  const [rules, setRules] = useState<RateLimitRule[]>([])
-  const [loading, setLoading] = useState(false)
-
-  const fetch = useCallback(async () => {
-    setLoading(true)
-    try {
+  const { data: rules = [], isFetching, refetch } = useQuery({
+    queryKey: ['rate-limit-rules'],
+    queryFn: async () => {
       const r = await http.get<{
         code: number
         data: RateLimitRule[]
         message?: string
       }>('/admin/rate-limit/rules')
       assertApiSuccess(r, '加载限流规则失败')
-      setRules(r.data || [])
-    } catch {
-      /* ignore */
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void fetch()
-  }, [fetch])
+      return r.data || []
+    },
+  })
 
   if (!can('general-setting', 'read')) return null
 
@@ -56,9 +45,9 @@ export function RateLimitRulesCard() {
       extra={
         <Button
           size="small"
-          loading={loading}
+          loading={isFetching}
           icon={<ReloadOutlined />}
-          onClick={() => void fetch()}
+          onClick={() => void refetch()}
         >
           刷新
         </Button>

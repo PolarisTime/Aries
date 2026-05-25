@@ -45,7 +45,13 @@ export function AppSideNavigationHeader({
 
   return (
     <div className="app-header-bar">
-      <span className="app-trigger" onClick={onToggleCollapsed}>
+      <span
+        className="app-trigger"
+        role="button"
+        tabIndex={0}
+        onClick={onToggleCollapsed}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onToggleCollapsed() }}
+      >
         {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
       </span>
 

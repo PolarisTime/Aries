@@ -30,31 +30,20 @@ interface Props {
   onReset: () => void
 }
 
-export function ModuleFilterToolbar({
-  config,
+function ModuleFilterField({
+  field,
   filters,
   onUpdateFilter,
   onSearch,
-  onReset,
-}: Props) {
-  const { t } = useTranslation()
+}: {
+  field: ModuleFilterDefinition
+  filters: SearchParams
+  onUpdateFilter: (key: string, value: unknown) => void
+  onSearch: () => void
+}) {
+  const fieldId = buildFormControlId('module-filter', field.key)
 
-  const getFilterFieldId = (field: ModuleFilterDefinition) =>
-    buildFormControlId('module-filter', field.key)
-
-  const getFilterFieldLabelTargetId = (field: ModuleFilterDefinition) => {
-    const fieldId = getFilterFieldId(field)
-    return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
-  }
-
-  const hasConfigKeywordFilter = config.filters.some(
-    (field) => field.key === 'keyword',
-  )
-  const visibleFilters = config.filters.toSorted(
-    (left, right) => (left.row || 1) - (right.row || 1),
-  )
-
-  const resolveOptions = (field: ModuleFilterDefinition) => {
+  const resolveOptions = () => {
     const rawOptions =
       typeof field.options === 'function'
         ? field.options(filters)
@@ -80,68 +69,86 @@ export function ModuleFilterToolbar({
     })
   }
 
-  const renderFilterField = (field: ModuleFilterDefinition) => {
-    const fieldId = getFilterFieldId(field)
-
-    if (field.type === 'select') {
-      return (
-        <Select
-          id={fieldId}
-          aria-label={field.label}
-          allowClear
-          placeholder={field.placeholder || `请选择${field.label}`}
-          value={
-            typeof filters[field.key] === 'string'
-              ? asString(filters[field.key])
-              : undefined
-          }
-          onChange={(value) => onUpdateFilter(field.key, value)}
-          options={resolveOptions(field)}
-        />
-      )
-    }
-
-    if (field.type === 'dateRange') {
-      const value = filters[field.key]
-      const rangeValue =
-        Array.isArray(value) && value.length === 2
-          ? ([dayjs(String(value[0])), dayjs(String(value[1]))] as [
-              Dayjs,
-              Dayjs,
-            ])
-          : undefined
-
-      return (
-        <DatePicker.RangePicker
-          id={{
-            start: `${fieldId}-start`,
-            end: `${fieldId}-end`,
-          }}
-          aria-label={field.label}
-          value={rangeValue}
-          className="w-full"
-          onChange={(_, dateStrings) =>
-            onUpdateFilter(
-              field.key,
-              dateStrings[0] && dateStrings[1] ? dateStrings : undefined,
-            )
-          }
-        />
-      )
-    }
-
+  if (field.type === 'select') {
     return (
-      <Input
+      <Select
         id={fieldId}
-        name={field.key}
+        aria-label={field.label}
         allowClear
-        placeholder={field.placeholder || `请输入${field.label}`}
-        value={asString(filters[field.key])}
-        onChange={(event) => onUpdateFilter(field.key, event.target.value)}
-        onPressEnter={onSearch}
+        placeholder={field.placeholder || `请选择${field.label}`}
+        value={
+          typeof filters[field.key] === 'string'
+            ? asString(filters[field.key])
+            : undefined
+        }
+        onChange={(value) => onUpdateFilter(field.key, value)}
+        options={resolveOptions()}
       />
     )
   }
+
+  if (field.type === 'dateRange') {
+    const value = filters[field.key]
+    const rangeValue =
+      Array.isArray(value) && value.length === 2
+        ? ([dayjs(String(value[0])), dayjs(String(value[1]))] as [
+            Dayjs,
+            Dayjs,
+          ])
+        : undefined
+
+    return (
+      <DatePicker.RangePicker
+        id={{
+          start: `${fieldId}-start`,
+          end: `${fieldId}-end`,
+        }}
+        aria-label={field.label}
+        value={rangeValue}
+        className="w-full"
+        onChange={(_, dateStrings) =>
+          onUpdateFilter(
+            field.key,
+            dateStrings[0] && dateStrings[1] ? dateStrings : undefined,
+          )
+        }
+      />
+    )
+  }
+
+  return (
+    <Input
+      id={fieldId}
+      name={field.key}
+      allowClear
+      placeholder={field.placeholder || `请输入${field.label}`}
+      value={asString(filters[field.key])}
+      onChange={(event) => onUpdateFilter(field.key, event.target.value)}
+      onPressEnter={onSearch}
+    />
+  )
+}
+
+export function ModuleFilterToolbar({
+  config,
+  filters,
+  onUpdateFilter,
+  onSearch,
+  onReset,
+}: Props) {
+  const { t } = useTranslation()
+
+  const getFilterFieldLabelTargetId = (field: ModuleFilterDefinition) => {
+    const fieldId = buildFormControlId('module-filter', field.key)
+    return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
+  }
+
+  const hasConfigKeywordFilter = config.filters.some(
+    (field) => field.key === 'keyword',
+  )
+  const visibleFilters = config.filters.toSorted(
+    (left, right) => (left.row || 1) - (right.row || 1),
+  )
 
   return (
     <Form onFinish={onSearch} colon={false} className="mb-4">
@@ -178,7 +185,12 @@ export function ModuleFilterToolbar({
               })}
               className="module-filter-item"
             >
-              {renderFilterField(field)}
+              <ModuleFilterField
+                field={field}
+                filters={filters}
+                onUpdateFilter={onUpdateFilter}
+                onSearch={onSearch}
+              />
             </Form.Item>
           </Col>
         ))}

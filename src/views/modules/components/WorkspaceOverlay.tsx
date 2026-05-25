@@ -54,7 +54,13 @@ export function WorkspaceOverlay({
       className={`workspace-overlay workspace-overlay--${variant}`}
       style={zIndex ? { zIndex } : undefined}
     >
-      <div className="workspace-overlay-mask" onClick={onClose} />
+      <div
+        className="workspace-overlay-mask"
+        role="button"
+        tabIndex={-1}
+        onClick={onClose}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose() }}
+      />
       <section
         className={`workspace-overlay-panel workspace-overlay-panel--${variant}${className ? ` ${className}` : ''}`}
         style={panelStyle}

@@ -1,4 +1,5 @@
 import { ReloadOutlined } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
@@ -6,7 +7,6 @@ import Progress from 'antd/es/progress'
 import Row from 'antd/es/row'
 import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
-import { useCallback, useEffect, useState } from 'react'
 import { getPgMonitoring, type PgMonitoring } from '@/api/database-admin'
 
 interface Props {
@@ -14,23 +14,11 @@ interface Props {
 }
 
 export function DatabaseMonitoringPanel({ visible }: Props) {
-  const [data, setData] = useState<PgMonitoring | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  const fetch = useCallback(async () => {
-    setLoading(true)
-    try {
-      setData(await getPgMonitoring())
-    } catch {
-      /* ignore */
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (visible && !data) void fetch()
-  }, [visible, data, fetch])
+  const { data, isFetching, refetch } = useQuery<PgMonitoring>({
+    queryKey: ['pg-monitoring'],
+    queryFn: getPgMonitoring,
+    enabled: visible,
+  })
 
   if (!visible) return null
 
@@ -45,9 +33,9 @@ export function DatabaseMonitoringPanel({ visible }: Props) {
         </Typography.Title>
         <Button
           size="small"
-          loading={loading}
+          loading={isFetching}
           icon={<ReloadOutlined />}
-          onClick={() => void fetch()}
+          onClick={() => void refetch()}
         >
           刷新
         </Button>

@@ -79,6 +79,7 @@ export function AccessControlView() {
 
   const searchParams = useMemo(
     () => new URLSearchParams(location.searchStr),
+    // react-doctor: TanStack Router useLocation() returns reactive state that triggers re-renders on navigation
     [location.searchStr],
   )
   const requestedTab = parseTabKey(searchParams.get('tab'))

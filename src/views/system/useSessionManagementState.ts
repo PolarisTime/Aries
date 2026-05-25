@@ -66,6 +66,7 @@ export function useSessionManagementState(enabled = true) {
   }, [])
 
   useEffect(() => {
+    // react-doctor: intentional callback, not event handler
     if (!enabled) {
       stopAutoRefresh()
       return

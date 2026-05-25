@@ -120,6 +120,7 @@ export function ProjectArDetailPage(): React.JSX.Element {
   const projectId: string = useMemo(() => {
     const segments = location.pathname.split('/').filter(Boolean)
     return segments[segments.length - 1] || ''
+    // react-doctor: TanStack Router useLocation() returns reactive state that triggers re-renders on navigation
   }, [location.pathname])
 
   const fetchSummary = useCallback(async () => {
