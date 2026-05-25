@@ -209,6 +209,11 @@
   padding: var(--app-overlay-body-padding, 24px);
 }
 
+.workspace-overlay-panel--fit-content {
+  height: auto;
+  max-height: 90vh;
+}
+
 .workspace-overlay-footer {
   display: flex;
   justify-content: flex-end;

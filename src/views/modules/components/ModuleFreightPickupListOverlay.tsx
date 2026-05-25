@@ -1,6 +1,10 @@
+import { useQuery } from '@tanstack/react-query'
 import Card from 'antd/es/card'
+import Spin from 'antd/es/spin'
 import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
+import { getBusinessModuleDetail } from '@/api/business'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import type { ModuleRecord } from '@/types/module-page'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
@@ -67,6 +71,21 @@ function DetailCard({ record }: { record: ModuleRecord }) {
 }
 
 export function ModuleFreightPickupListOverlay({ open, moduleKey, records, onClose }: Props) {
+  const recordIds = records.map((r) => String(r.id))
+
+  const { data: fullRecords, isLoading } = useQuery({
+    queryKey: [...QUERY_KEYS.freightPickup(moduleKey), ...recordIds],
+    queryFn: async () => {
+      const results = await Promise.all(
+        recordIds.map((id) => getBusinessModuleDetail(moduleKey, id)),
+      )
+      return results.map((r) => r.data)
+    },
+    enabled: open && recordIds.length > 0,
+  })
+
+  const displayRecords = fullRecords ?? records
+
   return (
     <WorkspaceOverlay
       title={`提货清单 — 物流单（${records.length} 条）`}
@@ -74,14 +93,14 @@ export function ModuleFreightPickupListOverlay({ open, moduleKey, records, onClo
       onClose={onClose}
       variant="workspace"
       width="min(94vw, 1120px)"
-      height="min(84vh, 780px)"
+      className="workspace-overlay-panel--fit-content"
       zIndex={1050}
     >
-      <div style={{ overflow: 'auto', flex: 1 }}>
-        {records.map((record) => (
+      <Spin spinning={isLoading}>
+        {displayRecords.map((record) => (
           <DetailCard key={record.id as string | number} record={record} />
         ))}
-      </div>
+      </Spin>
     </WorkspaceOverlay>
   )
 }
