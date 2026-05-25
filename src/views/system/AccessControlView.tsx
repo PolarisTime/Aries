@@ -48,7 +48,7 @@ export function AccessControlView() {
   const permissionStore = usePermissionStore()
 
   const canViewUsers = permissionStore.can('user-account', 'read')
-  const canViewRoles = permissionStore.can('role', 'manage_permissions')
+  const canViewRoles = permissionStore.can('role', 'read')
   const canViewPermissions = permissionStore.can('permission', 'read')
 
   const tabItems = useMemo(() => {
@@ -83,9 +83,9 @@ export function AccessControlView() {
   )
   const requestedTab = parseTabKey(searchParams.get('tab'))
   const activeTab = useMemo(() => {
-    if (tabItems.length === 0) return 'users'
+    if (tabItems.length === 0) return null as unknown as TabKey
     const keys = tabItems.map((item) => item.key)
-    return keys.includes(requestedTab) ? requestedTab : keys[0]
+    return keys.includes(requestedTab) ? requestedTab : (keys[0] as TabKey)
   }, [requestedTab, tabItems])
 
   const handleTabChange = useCallback(
