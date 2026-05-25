@@ -65,7 +65,7 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       label: '采购过磅',
       type: 'select',
       defaultValue: false,
-      row: 1,
+      row: 2,
       colSpan: 4,
       options: [
         { label: '需要', value: true },
