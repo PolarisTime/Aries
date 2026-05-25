@@ -309,7 +309,15 @@ export function ModuleParentSelectorOverlay({
     placeholderData: keepPreviousData,
   })
 
-  const records = data?.data?.rows || []
+  const records = (data?.data?.rows || []).filter((record) => {
+    if (parentModuleKey === 'purchase-order') {
+      return asString(record.status) !== '完成采购'
+    }
+    if (parentModuleKey === 'sales-order') {
+      return asString(record.status) !== '完成销售'
+    }
+    return true
+  })
   const total = Number(data?.data?.total || 0)
 
   const columns = useMemo<ColumnsType<ModuleRecord>>(
