@@ -73,6 +73,9 @@ export function useBusinessGridPrintActions({
       const template = await pickPrintTemplate(moduleKey, t)
 
       try {
+        // 确保 CLodop 脚本已加载（main.tsx 预加载 + 此处兜底）
+        await loadCLodop()
+
         const selectedDetails = await Promise.all(
           selectedRowKeys.map((id) => getBusinessModuleDetail(moduleKey, id)),
         )
@@ -82,9 +85,6 @@ export function useBusinessGridPrintActions({
           message.warning('未找到可打印的选中记录')
           return
         }
-
-        // 确保 CLodop 脚本已加载（main.tsx 预加载 + 此处兜底）
-        await loadCLodop()
 
         if (template?.templateHtml?.trim()) {
           // 传 recordId，后端从 DB 加载数据生成脚本（防前端篡改）

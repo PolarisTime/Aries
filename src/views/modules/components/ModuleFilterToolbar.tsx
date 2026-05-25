@@ -50,7 +50,7 @@ export function ModuleFilterToolbar({
   const hasConfigKeywordFilter = config.filters.some(
     (field) => field.key === 'keyword',
   )
-  const visibleFilters = [...config.filters].sort(
+  const visibleFilters = config.filters.toSorted(
     (left, right) => (left.row || 1) - (right.row || 1),
   )
 

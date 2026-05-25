@@ -2,7 +2,7 @@ import { DownOutlined } from '@ant-design/icons'
 import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import {
   LazyAppHeaderSearch,
   type LazyAppHeaderSearchProps,
@@ -37,6 +37,11 @@ export function AppTopNavigationHeader({
   topMenuItems,
   userMenuItems,
 }: Props) {
+  const [devTimeString, setDevTimeString] = useState('')
+  useEffect(() => {
+    setDevTimeString(new Date().toLocaleTimeString())
+  }, [])
+
   return (
     <div className="app-header-bar app-header-bar-top">
       <div className="app-top-nav-left">
@@ -64,7 +69,7 @@ export function AppTopNavigationHeader({
           <button
             type="button"
             className="app-dev-refresh-btn"
-            title={new Date().toLocaleTimeString()}
+            title={devTimeString}
             onClick={() => {
               if ('caches' in window) {
                 void caches.keys().then((keys) => {

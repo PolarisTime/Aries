@@ -198,11 +198,12 @@ export function useBusinessGridTable({
               selectedRowKeys,
               onChange: (keys: React.Key[], rows: ModuleRecord[]) => {
                 const normalizedKeys = keys.map(String)
+                const normalizedKeysSet = new Set(normalizedKeys)
                 setSelectedRowKeys(normalizedKeys)
                 setSelectedRowMap((prev) => {
                   const next = { ...prev }
                   for (const key of Object.keys(next)) {
-                    if (!normalizedKeys.includes(key)) {
+                    if (!normalizedKeysSet.has(key)) {
                       delete next[key]
                     }
                   }

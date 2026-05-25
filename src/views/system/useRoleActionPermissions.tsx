@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { TableColumnsType } from 'antd'
 import Checkbox from 'antd/es/checkbox'
 import { useCallback, useMemo, useState } from 'react'
@@ -36,6 +36,7 @@ export function useRoleActionPermissions({
 }: UseRoleActionPermissionsOptions) {
   const { t } = useTranslation()
   const { showError } = useRequestError()
+  const queryClient = useQueryClient()
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null)
   const [selectedActions, setSelectedActions] = useState<Set<string>>(new Set())
   const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list')
@@ -187,6 +188,9 @@ export function useRoleActionPermissions({
     },
     onSuccess: () => {
       message.success(t('common.saveSuccess'))
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.rolePermissionOptions,
+      })
     },
     onError: (error: Error) => showError(error, '保存失败'),
   })
@@ -201,8 +205,9 @@ export function useRoleActionPermissions({
       },
     ]
 
+    const allMenuActionsSet = new Set(flatMenus.flatMap((m) => m.actions))
     for (const action of ALL_ROLE_ACTIONS) {
-      if (!flatMenus.some((menu) => menu.actions.includes(action))) {
+      if (!allMenuActionsSet.has(action)) {
         continue
       }
       columns.push({
@@ -211,7 +216,7 @@ export function useRoleActionPermissions({
         width: 70,
         align: 'center',
         render: (checked: unknown, record: RoleMatrixRow) => {
-          const supported = asArray<string>(record.actions).includes(action)
+          const supported = new Set(asArray<string>(record.actions)).has(action)
           if (!supported) {
             return <span className="text-disabled">-</span>
           }

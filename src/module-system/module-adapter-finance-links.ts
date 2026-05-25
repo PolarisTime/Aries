@@ -77,15 +77,16 @@ export function buildCustomerStatementOptions(
   const projectName = normalizeText(args.projectName)
 
   return [...statements]
-    .filter((record) =>
-      keepCurrentOrOpenBalance(
-        record,
-        'closingAmount',
-        args.currentStatementId,
-      ),
+    .filter(
+      (record) =>
+        keepCurrentOrOpenBalance(
+          record,
+          'closingAmount',
+          args.currentStatementId,
+        ) &&
+        matchesFilter(record.customerName, customerName) &&
+        matchesFilter(record.projectName, projectName),
     )
-    .filter((record) => matchesFilter(record.customerName, customerName))
-    .filter((record) => matchesFilter(record.projectName, projectName))
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
       value: String(record.id || ''),
@@ -100,14 +101,14 @@ function buildSupplierStatementOptions(
   const counterpartyName = normalizeText(args.counterpartyName)
 
   return [...statements]
-    .filter((record) =>
-      keepCurrentOrOpenBalance(
-        record,
-        'closingAmount',
-        args.currentStatementId,
-      ),
+    .filter(
+      (record) =>
+        keepCurrentOrOpenBalance(
+          record,
+          'closingAmount',
+          args.currentStatementId,
+        ) && matchesFilter(record.supplierName, counterpartyName),
     )
-    .filter((record) => matchesFilter(record.supplierName, counterpartyName))
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
       value: String(record.id || ''),
@@ -122,10 +123,11 @@ function buildFreightStatementOptions(
   const counterpartyName = normalizeText(args.counterpartyName)
 
   return [...statements]
-    .filter((record) =>
-      keepCurrentOrOpenBalance(record, 'unpaidAmount', args.currentStatementId),
+    .filter(
+      (record) =>
+        keepCurrentOrOpenBalance(record, 'unpaidAmount', args.currentStatementId) &&
+        matchesFilter(record.carrierName, counterpartyName),
     )
-    .filter((record) => matchesFilter(record.carrierName, counterpartyName))
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
       value: String(record.id || ''),

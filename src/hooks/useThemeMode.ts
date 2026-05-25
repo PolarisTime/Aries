@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   getPersonalSettings,
   setPersonalSettings,
@@ -24,10 +24,8 @@ export function useThemeMode() {
   const [themeMode, setThemeModeState] = useState<ThemeMode>(initial)
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(getSystemTheme)
 
-  const resolvedTheme = useMemo<ResolvedTheme>(
-    () => (themeMode === 'system' ? systemTheme : themeMode),
-    [themeMode, systemTheme],
-  )
+  const resolvedTheme: ResolvedTheme =
+    themeMode === 'system' ? systemTheme : themeMode
 
   // Apply data-theme attribute whenever resolved theme changes
   useEffect(() => {

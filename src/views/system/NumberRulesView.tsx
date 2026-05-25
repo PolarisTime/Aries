@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import Form from 'antd/es/form'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   listSystemSettings,
@@ -36,7 +36,7 @@ export function NumberRulesView() {
   const [editorOpen, setEditorOpen] = useState(false)
   const [editorKind, setEditorKind] =
     useState<NumberRuleEditorKind>('number-rule')
-  const [editingRecord, setEditingRecord] = useState<ModuleRecord | null>(null)
+  const editingRecord = useRef<ModuleRecord | null>(null)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
 
@@ -73,7 +73,7 @@ export function NumberRulesView() {
         message.warning('暂无编辑权限')
         return
       }
-      setEditingRecord(record)
+      editingRecord.current = record
       setEditorKind('number-rule')
       form.setFieldsValue({
         settingCode: record.settingCode,
@@ -97,7 +97,7 @@ export function NumberRulesView() {
         message.warning('暂无编辑权限')
         return
       }
-      setEditingRecord(record)
+      editingRecord.current = record
       setEditorKind('upload-rule')
       form.setFieldsValue({
         moduleKey: record.moduleKey,
@@ -114,13 +114,13 @@ export function NumberRulesView() {
   )
 
   const handleSave = useCallback(async () => {
-    if (!editingRecord) return
+    if (!editingRecord.current) return
     setSaving(true)
     try {
       const values = await form.validateFields()
       if (editorKind === 'number-rule') {
         await saveSystemSetting({
-          id: editingRecord.id,
+          id: editingRecord.current.id,
           settingCode: values.settingCode,
           settingName: values.settingName,
           billName: values.billName,

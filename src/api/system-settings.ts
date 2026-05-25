@@ -35,8 +35,10 @@ export async function listDisplaySwitches() {
 }
 
 export async function listClientSettings() {
-  const { ENDPOINTS } = await import('@/constants/endpoints')
-  const { assertApiSuccess, http } = await import('@/api/client')
+  const [{ ENDPOINTS }, { assertApiSuccess, http }] = await Promise.all([
+    import('@/constants/endpoints'),
+    import('@/api/client'),
+  ])
   const response = assertApiSuccess(
     await http.get<{
       code?: number

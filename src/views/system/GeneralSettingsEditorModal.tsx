@@ -106,7 +106,7 @@ export function GeneralSettingsEditorModal({
                       <Typography.Text code className="text-xs">
                         {'{date}'}
                       </Typography.Text>{' '}
-                      — 前端渲染时自动替换
+                      ： 前端渲染时自动替换
                     </Typography.Text>
                   </>
                 )}

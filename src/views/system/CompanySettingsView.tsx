@@ -124,6 +124,37 @@ export function CompanySettingsView() {
       message.warning('暂无保存权限')
       return
     }
+
+    // Sync validation before async form validation
+    if (!settlementAccounts.length) {
+      message.warning('请至少维护一个结算账户')
+      return
+    }
+    for (let i = 0; i < settlementAccounts.length; i++) {
+      const account = settlementAccounts[i]
+      if (!account.accountName?.trim()) {
+        message.warning(`请输入第 ${i + 1} 个结算账户的账户名称`)
+        return
+      }
+      if (!account.bankName?.trim()) {
+        message.warning(`请输入第 ${i + 1} 个结算账户的开户银行`)
+        return
+      }
+      if (!account.bankAccount?.trim()) {
+        message.warning(`请输入第 ${i + 1} 个结算账户的银行账号`)
+        return
+      }
+    }
+    const usedBankAccounts = new Set<string>()
+    for (const account of settlementAccounts) {
+      const bankAccount = account.bankAccount.trim()
+      if (usedBankAccounts.has(bankAccount)) {
+        message.warning(`银行账号重复：${bankAccount}`)
+        return
+      }
+      usedBankAccounts.add(bankAccount)
+    }
+
     try {
       const values = await validateForm<CompanySettingFormValues>(form, [
         'companyName',
@@ -131,34 +162,6 @@ export function CompanySettingsView() {
         'status',
         'remark',
       ])
-      if (!settlementAccounts.length) {
-        message.warning('请至少维护一个结算账户')
-        return
-      }
-      for (let i = 0; i < settlementAccounts.length; i++) {
-        const account = settlementAccounts[i]
-        if (!account.accountName?.trim()) {
-          message.warning(`请输入第 ${i + 1} 个结算账户的账户名称`)
-          return
-        }
-        if (!account.bankName?.trim()) {
-          message.warning(`请输入第 ${i + 1} 个结算账户的开户银行`)
-          return
-        }
-        if (!account.bankAccount?.trim()) {
-          message.warning(`请输入第 ${i + 1} 个结算账户的银行账号`)
-          return
-        }
-      }
-      const usedBankAccounts = new Set<string>()
-      for (const account of settlementAccounts) {
-        const bankAccount = account.bankAccount.trim()
-        if (usedBankAccounts.has(bankAccount)) {
-          message.warning(`银行账号重复：${bankAccount}`)
-          return
-        }
-        usedBankAccounts.add(bankAccount)
-      }
       saveMutation.mutate({
         companyName: values.companyName.trim(),
         taxNo: values.taxNo.trim(),

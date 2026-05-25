@@ -133,7 +133,7 @@ export function useApiKeyManagementState(enabled = true) {
     mutationFn: revokeApiKey,
     onSuccess: () => {
       message.success('已禁用')
-      refreshApiKeys()
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.apiKeys })
     },
     onError: (error: Error) => showError(error, '禁用失败'),
   })
@@ -193,7 +193,7 @@ export function useApiKeyManagementState(enabled = true) {
         setGeneratedKey(response.data?.rawKey || null)
         setTotpModalOpen(false)
         message.success(response.message || 'API Key 已生成')
-        refreshApiKeys()
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.apiKeys })
       } catch (error) {
         showError(error, '生成失败')
         throw error
@@ -201,7 +201,7 @@ export function useApiKeyManagementState(enabled = true) {
         setTotpLoading(false)
       }
     },
-    [form, refreshApiKeys, showError],
+    [form, queryClient, showError],
   )
 
   const handleRevoke = useCallback(
