@@ -7,3 +7,7 @@ export function isDatabaseTaskRunning(status: string) {
 export function formatTaskTime(value: string | undefined): string {
   return value || '--'
 }
+
+export function formatDatabaseDateTime(value: string | undefined | null): string {
+  return value || '--'
+}
