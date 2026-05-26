@@ -54,7 +54,7 @@ export function InitialSetupAdminForm({
         rules={[
           {
             required: true,
-            min: 6,
+            min: 8,
             message: t('auth.initialsetup.admin.passwordRequired'),
           },
         ]}
