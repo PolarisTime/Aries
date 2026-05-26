@@ -5,6 +5,7 @@ import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
+import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateDropdown'
 import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
@@ -107,6 +108,18 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           state.setCurrentPage(page)
         }}
         selectedCount={state.selectedRowKeys.length}
+        printDropdown={
+          state.canUseBulkPrintActions ? (
+            <PrintTemplateDropdown
+              moduleKey={moduleKey}
+              disabled={!state.selectedRowKeys.length}
+              loading={false}
+              onPrint={(preview, templateId) => {
+                void state.handlePrintSelectedRecords(preview, templateId)
+              }}
+            />
+          ) : undefined
+        }
       />
 
       <BusinessGridOverlays

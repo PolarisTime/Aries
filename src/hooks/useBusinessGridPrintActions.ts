@@ -64,13 +64,15 @@ export function useBusinessGridPrintActions({
 }: Props) {
   const { t } = useTranslation()
   const handlePrintSelectedRecords = useCallback(
-    async (preview: boolean) => {
+    async (preview: boolean, templateId?: string) => {
       if (!selectedRowKeys.length) {
         message.warning(t('common.pleaseSelect'))
         return
       }
 
-      const template = await pickPrintTemplate(moduleKey, t)
+      const template = templateId
+        ? { id: templateId, templateName: '', billType: moduleKey }
+        : await pickPrintTemplate(moduleKey, t)
 
       try {
         // 确保 CLodop 脚本已加载（main.tsx 预加载 + 此处兜底）
