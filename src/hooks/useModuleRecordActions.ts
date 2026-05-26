@@ -1,14 +1,9 @@
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { deleteBusinessModule } from '@/api/business'
 import type { ActionItem } from '@/components/TableActions'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
-import { message } from '@/utils/antd-app'
-import {
-  isDeleteBlockedByStatus,
-  isEditBlockedByStatus,
-} from '@/module-system/module-behavior-registry'
+import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
 
 interface Props {
   moduleKey: string
@@ -59,20 +54,15 @@ export function useModuleRecordActions({
         })
       }
       if (can(resource, 'audit')) {
-        items.push({
-          key: 'audit',
-          label: '审核',
-          disabled: record.status !== '草稿',
-          onClick: () => onEdit(record),
-        })
-      }
-      if (can(resource, 'audit')) {
-        items.push({
-          key: 'reverseAudit',
-          label: '反审核',
-          disabled: record.status !== '已审核',
-          onClick: () => onEdit(record),
-        })
+        const isDraft = record.status === '草稿'
+        const isAudited = record.status === '已审核'
+        if (isDraft || isAudited) {
+          items.push({
+            key: 'audit',
+            label: isDraft ? '审核' : '反审核',
+            onClick: () => onEdit(record),
+          })
+        }
       }
       return items
     },
