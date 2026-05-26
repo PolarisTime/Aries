@@ -7,16 +7,19 @@ import type { ModuleRecord } from '@/types/module-page'
 import { formatWeight } from '@/utils/formatters'
 
 const ITEM_WEIGHT_COLUMNS = [
-  { title: '商品编码', dataIndex: 'materialCode', width: 160, ellipsis: true },
+  { title: '商品编码', dataIndex: 'materialCode', width: 180, ellipsis: true },
+  { title: '品牌', dataIndex: 'brand', width: 64, ellipsis: true },
   { title: '材质', dataIndex: 'material', width: 72, ellipsis: true },
   { title: '规格', dataIndex: 'spec', width: 72, ellipsis: true },
-  { title: '长度', dataIndex: 'length', width: 64, ellipsis: true },
-  { title: '件重(吨)', dataIndex: 'pieceWeightTon', align: 'center' as const,
+  { title: '长度', dataIndex: 'length', width: 58, ellipsis: true },
+  { title: '件重(吨)', dataIndex: 'pieceWeightTon', width: 88, align: 'center' as const,
     render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-') },
-  { title: '数量', dataIndex: 'quantity', align: 'center' as const },
-  { title: '总重(吨)', dataIndex: 'weightTon', align: 'center' as const,
+  { title: '数量', dataIndex: 'quantity', width: 64, align: 'center' as const },
+  { title: '总重(吨)', dataIndex: 'weightTon', width: 96, align: 'center' as const,
     render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-') },
 ]
+
+const POPOVER_TABLE_WIDTH = 694
 
 interface Props {
   value: unknown
@@ -50,7 +53,7 @@ export function WeightCellPopover({ value, record, moduleKey }: Props) {
       title="每件重量明细"
       destroyTooltipOnHide
       content={
-        <div style={{ minWidth: 520, maxWidth: 600 }}>
+        <div style={{ width: POPOVER_TABLE_WIDTH }}>
           <Table
             rowKey="id"
             size="small"
@@ -58,7 +61,6 @@ export function WeightCellPopover({ value, record, moduleKey }: Props) {
             pagination={false}
             dataSource={items}
             columns={ITEM_WEIGHT_COLUMNS}
-            scroll={{ x: 520 }}
           />
         </div>
       }
