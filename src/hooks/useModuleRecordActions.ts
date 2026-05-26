@@ -30,7 +30,6 @@ export function useModuleRecordActions({
     (record: ModuleRecord): ActionItem[] => {
       const items: ActionItem[] = []
       const editBlocked = isEditBlockedByStatus(record.status)
-      const deleteBlocked = isDeleteBlockedByStatus(record.status)
       if (onDetail && can(resource, 'read')) {
         items.push({
           key: 'detail',
