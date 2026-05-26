@@ -187,7 +187,7 @@ function parseInitCall(code: string) {
  */
 function executeLodopCalls(lodop: CLodopInstance, code: string) {
   const SAFE_METHOD =
-    /^LODOP\.(SET_|ADD_|NEWPAGE|NewPage|SET_PRINT|SELECT_|DELETE_|PRINT_INIT|PRINT\b|PREVIEW|PRINT_DESIGN|PRINT_SETUP)\s*\(/i
+    /^LODOP\.(SET_|ADD_|NEWPAGE|NewPage|SET_PRINT|SELECT_|DELETE_|PRINT_INIT|PRINT\b|PREVIEW|PRINT_DESIGN|PRINT_SETUP)[A-Za-z_]*\s*\(/i
   const lines = code.split(/;\r?\n?/)
   for (const line of lines) {
     const trimmed = line.trim()
