@@ -58,27 +58,20 @@ export function useModuleRecordActions({
           onClick: () => onAttach(record),
         })
       }
-      if (can(resource, 'delete')) {
+      if (can(resource, 'audit')) {
         items.push({
-          key: 'delete',
-          label: '删除',
-          danger: true,
-          disabled: deleteBlocked,
-          confirm: '确认删除该记录？',
-          onClick: () => {
-            try {
-              void deleteBusinessModule(moduleKey, String(record.id))
-                .then(async () => {
-                  message.success(t('common.deleteSuccess'))
-                  await onRefresh()
-                })
-                .catch((err: unknown) => {
-                  message.error(err instanceof Error ? err.message : '删除失败')
-                })
-            } catch (err) {
-              message.error(err instanceof Error ? err.message : '删除失败')
-            }
-          },
+          key: 'audit',
+          label: '审核',
+          disabled: record.status !== '草稿',
+          onClick: () => onEdit(record),
+        })
+      }
+      if (can(resource, 'audit')) {
+        items.push({
+          key: 'reverseAudit',
+          label: '反审核',
+          disabled: record.status !== '已审核',
+          onClick: () => onEdit(record),
         })
       }
       return items
