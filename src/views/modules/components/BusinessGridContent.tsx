@@ -47,6 +47,7 @@ interface Props {
   onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
   onPageChange: (page: number, pageSize: number) => void
   selectedCount: number
+  printDropdown?: React.ReactNode
 }
 
 export function BusinessGridContent({
@@ -82,6 +83,7 @@ export function BusinessGridContent({
   onSortingChange,
   onPageChange,
   selectedCount,
+  printDropdown,
 }: Props) {
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
@@ -116,7 +118,9 @@ export function BusinessGridContent({
         toolbarActions={toolbarActions}
         onAction={onAction}
         extra={
-          <ColumnSettingsPopover
+          <>
+            {printDropdown}
+            <ColumnSettingsPopover
             columns={config.columns}
             orderedKeys={columnOrder}
             visibleKeys={columnVisibleKeys}
@@ -125,6 +129,7 @@ export function BusinessGridContent({
             open={columnSettingsOpen}
             onOpenChange={setColumnSettingsOpen}
           />
+          </>
         }
       />
 

@@ -20,7 +20,7 @@ const BULK_DIRECT_PRINT_LABEL = '直接打印'
 interface Handlers {
   exportMaterialRows: () => Promise<void>
   exportRows: (mode: 'selected' | 'page' | 'filtered') => Promise<void>
-  handlePrintSelectedRecords: (preview: boolean) => Promise<void>
+  handlePrintSelectedRecords: (preview: boolean, templateId?: string) => Promise<void>
   handleSelectedAuditRecords: () => void
   handleSelectedDeleteRecords: () => void
   handleSelectedReverseAuditRecords: () => void
@@ -101,22 +101,6 @@ export function useModuleToolbarActions({
       actions.push(
         { label: BULK_AUDIT_LABEL, type: 'default', disabled },
         { label: BULK_REVERSE_AUDIT_LABEL, type: 'default', disabled },
-      )
-    }
-    if (canUseBulkPrintActions) {
-      actions.push(
-        {
-          label: BULK_PRINT_PREVIEW_LABEL,
-          type: 'default',
-          disabled,
-          loading: detailPrintLoading,
-        },
-        {
-          label: BULK_DIRECT_PRINT_LABEL,
-          type: 'default',
-          disabled,
-          loading: detailPrintLoading,
-        },
       )
     }
     return actions
