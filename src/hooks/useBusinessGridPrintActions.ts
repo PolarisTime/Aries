@@ -89,12 +89,12 @@ export function useBusinessGridPrintActions({
         }
 
         if (template?.templateHtml?.trim()) {
-          // 传 recordId，后端从 DB 加载数据生成脚本（防前端篡改）
+          // 传 recordId，后端从 DB 加载数据生成脚本/HTML（防前端篡改）
           const results = await Promise.all(
             selectedRecords.map((record) =>
               http.post<{
                 code: number
-                data: { script: string }
+                data: { type: string; script?: string; html?: string }
                 message?: string
               }>('/print/record', {
                 templateId: template.id,
@@ -106,23 +106,37 @@ export function useBusinessGridPrintActions({
           for (const r of results) {
             assertApiSuccess(r, '打印脚本生成失败')
           }
-          const scripts = results
-            .map((r) => r.data?.script)
-            .filter((s): s is string => Boolean(s))
 
-          if (!scripts.length) {
-            message.warning('未生成打印脚本')
-            return
+          // COORD 模板 → execPrintCode; HTML 模板 → printHtml
+          const coordResults = results.filter((r) => r.data?.type === 'COORD')
+          const htmlResults = results.filter((r) => r.data?.type === 'HTML')
+
+          for (const r of coordResults) {
+            const script = r.data?.script
+            if (!script) continue
+            const success = execPrintCode(script, {
+              preview,
+              title: template.templateName || config.title,
+            })
+            if (!success) throw new Error('打印服务不可用，请检查 CLodop 或打印模板配置')
           }
 
-          const joinedScript = scripts.join('\nLODOP.NEWPAGEA();\n')
-          const success = execPrintCode(joinedScript, {
-            preview,
-            title: template.templateName || config.title,
-          })
+          if (htmlResults.length) {
+            const htmlContents = htmlResults
+              .map((r) => r.data?.html)
+              .filter((h): h is string => Boolean(h))
+            if (htmlContents.length) {
+              const joinedHtml = htmlContents.join('<div class="print-page"></div>')
+              const success = printHtml(joinedHtml, {
+                preview,
+                title: template.templateName || config.title,
+              })
+              if (!success) throw new Error('打印服务不可用，请检查 CLodop 环境')
+            }
+          }
 
-          if (!success) {
-            throw new Error('打印服务不可用，请检查 CLodop 或打印模板配置')
+          if (!coordResults.length && !htmlResults.length) {
+            message.warning('未生成打印内容')
           }
 
           return
