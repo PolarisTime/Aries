@@ -1,9 +1,11 @@
+import { createElement } from 'react'
 import {
   buildValueOptions,
   getSupplierOptions,
   isPurchaseWeighRequiredCategory,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { WeightCellPopover } from '@/views/modules/components/WeightCellPopover'
 import {
   BILL_STATUS_LABEL,
   INBOUND_NO_FILTER_LABEL,
@@ -57,6 +59,12 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       width: 100,
       align: 'right',
       type: 'weight',
+      render: (value, record) =>
+        createElement(WeightCellPopover, {
+          value,
+          record,
+          moduleKey: 'purchase-inbound',
+        }),
     },
     {
       title: '过磅总重（吨）',

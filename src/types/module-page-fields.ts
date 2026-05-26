@@ -1,4 +1,5 @@
-import type { ModuleRecordInput } from '@/types/module-page'
+import type { ReactNode } from 'react'
+import type { ModuleRecord, ModuleRecordInput } from '@/types/module-page'
 
 export type ModuleColumnType =
   | 'text'
@@ -76,6 +77,7 @@ export interface ModuleColumnDefinition {
   align?: 'left' | 'center' | 'right'
   type?: ModuleColumnType
   required?: boolean
+  render?: (value: unknown, record: ModuleRecord) => ReactNode
 }
 
 export interface ModuleDetailField {

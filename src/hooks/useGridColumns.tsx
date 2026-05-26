@@ -61,6 +61,9 @@ export function useGridColumns({
           align: colDef.align || 'center',
           renderCell: (record: ModuleRecord) => {
             const value = record[colDef.dataIndex]
+            if (colDef.render) {
+              return colDef.render(value, record)
+            }
             if (colDef.type === 'status' && config.statusMap) {
               const statusStr = asString(value)
               return (
@@ -70,8 +73,11 @@ export function useGridColumns({
             return <span>{formatCellValue(value, colDef.type)}</span>
           },
         },
-        cell: ({ getValue }) => {
+        cell: ({ getValue, row }) => {
           const value = getValue()
+          if (colDef.render) {
+            return colDef.render(value, row.original)
+          }
           if (colDef.type === 'status' && config.statusMap) {
             const statusStr = asString(value)
             return <StatusTag status={statusStr} statusMap={config.statusMap} />
