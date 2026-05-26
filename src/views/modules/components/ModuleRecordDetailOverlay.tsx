@@ -13,6 +13,7 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { padLabel } from '@/utils/label-utils'
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
@@ -56,9 +57,13 @@ export function ModuleRecordDetailOverlay({
             ? (value: unknown, record: ModuleLineItem) => (
                 <PieceWeightPopover
                   itemId={record.id}
-                  weightTon={value as string | number}
-                  category={record.category as string | undefined}
-                  sourceSalesOrderItemId={record.sourceSalesOrderItemId as string | number | undefined}
+                  weightTon={asString(value)}
+                  category={typeof record.category === 'string' ? record.category : undefined}
+                  sourceSalesOrderItemId={
+                    typeof record.sourceSalesOrderItemId === 'string' || typeof record.sourceSalesOrderItemId === 'number'
+                      ? record.sourceSalesOrderItemId
+                      : undefined
+                  }
                 />
               )
             : (value: unknown) => formatCellValue(value, column.type),

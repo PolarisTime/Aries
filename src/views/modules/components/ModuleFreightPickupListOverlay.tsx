@@ -6,6 +6,7 @@ import Typography from 'antd/es/typography'
 import { getBusinessModuleDetail } from '@/api/business'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { ModuleRecord } from '@/types/module-page'
+import { asId } from '@/utils/type-narrowing'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -32,16 +33,16 @@ function DetailCard({ record }: { record: ModuleRecord }) {
   const items = (Array.isArray(record.items) ? record.items : []) as ModuleRecord[]
 
   return (
-    <Card size="small" style={{ marginBottom: 12 }}>
-      <div style={{ marginBottom: items.length > 0 ? 12 : 0 }}>
-        <div style={{ marginBottom: 4 }}>
+    <Card size="small" className="mb-3">
+      <div className={items.length > 0 ? 'mb-3' : ''}>
+        <div className="mb-1">
           <Typography.Text type="secondary">运单号：</Typography.Text>
           <Typography.Text strong>{String(record.billNo ?? '-')}</Typography.Text>
         </div>
-        <div style={{ marginBottom: 4 }}>
+        <div className="mb-1">
           <Typography.Text type="secondary">客户：</Typography.Text>
           <Typography.Text strong>{String(record.customerName ?? '-')}</Typography.Text>
-          <span style={{ marginLeft: 24 }}>
+          <span className="ml-6">
             <Typography.Text type="secondary">项目：</Typography.Text>
             <Typography.Text strong>{String(record.projectName ?? '-')}</Typography.Text>
           </span>
@@ -49,17 +50,17 @@ function DetailCard({ record }: { record: ModuleRecord }) {
         <div>
           <Typography.Text type="secondary">物流方：</Typography.Text>
           <Typography.Text strong>{String(record.carrierName ?? '-')}</Typography.Text>
-          <span style={{ marginLeft: 24 }}>
+          <span className="ml-6">
             <Typography.Text type="secondary">车牌号：</Typography.Text>
             <Typography.Text strong>{String(record.vehiclePlate ?? '-')}</Typography.Text>
           </span>
-          <span style={{ marginLeft: 24 }}>
+          <span className="ml-6">
             <Typography.Text type="secondary">总重(吨)：</Typography.Text>
             <Typography.Text strong>
               {record.totalWeight != null ? Number(record.totalWeight).toFixed(3) : '-'}
             </Typography.Text>
           </span>
-          <span style={{ marginLeft: 24 }}>
+          <span className="ml-6">
             <Typography.Text type="secondary">总运费：</Typography.Text>
             <Typography.Text strong>
               {record.totalFreight != null ? Number(record.totalFreight).toFixed(2) : '-'}
@@ -102,7 +103,7 @@ export function ModuleFreightPickupListOverlay({ open, moduleKey, records, onClo
     >
       <Spin spinning={isLoading}>
         {displayRecords.map((record) => (
-          <DetailCard key={record.id as string | number} record={record} />
+          <DetailCard key={asId(record.id)} record={record} />
         ))}
       </Spin>
     </WorkspaceOverlay>

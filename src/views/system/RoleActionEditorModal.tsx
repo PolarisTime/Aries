@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { RoleRecord } from '@/api/role-actions'
 import { FormModal } from '@/components/FormModal'
 import { roleDataScopeValues, roleTypeValues } from '@/constants/module-options'
+import { asString } from '@/utils/type-narrowing'
 
 interface Props {
   open: boolean
@@ -66,7 +67,7 @@ export function RoleActionEditorModal({
                 value: t.name,
               }))}
               onChange={(name) => {
-                if (name && onApplyTemplate) onApplyTemplate(name as string)
+                if (name && onApplyTemplate) onApplyTemplate(asString(name))
               }}
             />
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
