@@ -53,12 +53,12 @@ export function useModuleRecordActions({
         })
       }
       if (can(resource, 'audit')) {
-        const isDraft = record.status === '草稿'
-        const isAudited = record.status === '已审核'
-        if (isDraft || isAudited) {
+        const canAudit = record.status === '草稿' || record.status === '待完善'
+        const canReverse = record.status === '已审核'
+        if (canAudit || canReverse) {
           items.push({
             key: 'audit',
-            label: isDraft ? '审核' : '反审核',
+            label: canAudit ? '审核' : '反审核',
             onClick: () => onEdit(record),
           })
         }
