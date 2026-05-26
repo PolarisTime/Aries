@@ -14,17 +14,24 @@ interface Props {
   itemId: string | number
   weightTon: string | number
   category?: string
+  sourceSalesOrderItemId?: string | number
 }
 
-export function PieceWeightPopover({ itemId, weightTon, category }: Props) {
+export function PieceWeightPopover({ itemId, weightTon, category, sourceSalesOrderItemId }: Props) {
   const [open, setOpen] = useState(false)
 
+  const apiPath = sourceSalesOrderItemId
+    ? `/purchase-orders/items/piece-weights/by-sales-order-item?salesOrderItemId=${sourceSalesOrderItemId}`
+    : `/purchase-orders/items/${itemId}/piece-weights`
+
+  const queryKey = sourceSalesOrderItemId
+    ? ['piece-weights', 'sales-order-item', sourceSalesOrderItemId]
+    : ['piece-weights', itemId]
+
   const { data = [], isFetching } = useQuery({
-    queryKey: ['piece-weights', itemId],
+    queryKey,
     queryFn: async () => {
-      const r = await http.get<{ code: number; data: PieceWeight[] }>(
-        `/purchase-orders/items/${itemId}/piece-weights`,
-      )
+      const r = await http.get<{ code: number; data: PieceWeight[] }>(apiPath)
       assertApiSuccess(r, '加载逐件重量失败')
       return r.data || []
     },
