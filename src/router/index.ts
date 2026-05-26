@@ -24,7 +24,6 @@ import {
 import { asString } from '@/utils/type-narrowing'
 import { LazyLoginView } from '@/views/auth/LazyLoginView'
 import { LazyDashboardView } from '@/views/dashboard/LazyDashboardView'
-import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
 
 const rootRoute = createRootRoute({ component: Outlet })
 
@@ -124,17 +123,6 @@ const viewLoaders: Record<
 
 const moduleRoutes = appPageDefinitions.map((def) => {
   const path = `/${getPageRoutePath(def)}`
-  const usesPageSkeleton =
-    def.view === 'business-grid' ||
-    def.view === 'number-rules' ||
-    def.view === 'general-setting' ||
-    def.view === 'company-setting' ||
-    def.view === 'print-template' ||
-    def.view === 'access-control' ||
-    def.view === 'session' ||
-    def.view === 'api-key' ||
-    def.view === 'security-key'
-
   return createRoute({
     getParentRoute: () => authenticatedLayoutRoute,
     path,
@@ -142,8 +130,6 @@ const moduleRoutes = appPageDefinitions.map((def) => {
       def.view === 'dashboard'
         ? LazyDashboardView
         : lazy(viewLoaders[def.view]),
-    pendingComponent: usesPageSkeleton ? BusinessGridPageSkeleton : undefined,
-    pendingMinMs: usesPageSkeleton ? 50 : undefined,
     loader:
       def.view === 'business-grid' && def.moduleKey
         ? async () => {
@@ -245,6 +231,12 @@ export const router = createRouter({
   routeTree,
   history: createBrowserHistory(),
   defaultPreload: 'intent',
+  defaultPendingComponent: lazy(() =>
+    import('@/views/modules/components/BusinessGridPageSkeleton').then((m) => ({
+      default: m.BusinessGridPageSkeleton,
+    })),
+  ),
+  defaultPendingMs: 100,
   defaultErrorComponent: lazy(() =>
     import('@/views/error/ErrorView').then((m) => ({
       default: m.ErrorView,
