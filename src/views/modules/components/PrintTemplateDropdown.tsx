@@ -24,7 +24,8 @@ export function PrintTemplateDropdown({ moduleKey, disabled, loading, onPrint }:
     queryKey: ['print-templates', moduleKey],
     queryFn: async () => {
       const response = await listPrintTemplates(moduleKey)
-      return (response as PrintTemplate[]) || []
+      const data = (response as { data?: PrintTemplate[] })?.data
+      return Array.isArray(data) ? data : []
     },
     staleTime: 5 * 60 * 1000,
   })
