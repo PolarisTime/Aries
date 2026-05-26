@@ -1,4 +1,4 @@
-import { ReloadOutlined } from '@ant-design/icons'
+import { SearchOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import { useRouter } from '@tanstack/react-router'
 import Col from 'antd/es/col'
@@ -209,9 +209,6 @@ export function ModuleFilterToolbar({
               </Button>
               <Button icon={resolveModuleActionIcon('重置')} onClick={onReset}>
                 {t('common.reset')}
-              </Button>
-              <Button icon={<ReloadOutlined />} onClick={() => router.invalidate()}>
-                重载
               </Button>
             </Space>
           </Form.Item>

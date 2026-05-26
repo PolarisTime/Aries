@@ -68,8 +68,7 @@ export const ENDPOINTS = {
 
   // Database (business entity → plural)
   DATABASE_STATUS: '/system/databases/status',
-  DATABASE_EXPORT_TASKS: '/system/databases/export-tasks',
-  DATABASE_IMPORT: '/system/databases/import',
+  DATABASE_MONITORING: '/system/databases/monitoring',
 
   // Security keys (business entity → plural)
   SECURITY_KEYS: '/system/security-keys',

@@ -1,7 +1,6 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { getApiMessage } from '@/utils/api-messages'
-import { asNumber, asString } from '@/utils/type-narrowing'
 
 export interface PostgresStatus {
   host: string
@@ -35,18 +34,6 @@ export interface DatabaseStatus {
   postgres: PostgresStatus
   redis: RedisStatus
 }
-export interface DatabaseExportTask {
-  id: string
-  taskNo: string
-  status: string
-  fileName?: string
-  fileSize?: number
-  failureReason?: string
-  createdAt?: string
-  finishedAt?: string
-  expiresAt?: string
-  downloadUrl?: string
-}
 
 interface DatabaseResponse<T> {
   code: number
@@ -54,69 +41,130 @@ interface DatabaseResponse<T> {
   data: T
 }
 
-type RawDatabaseExportTask = {
-  id?: string | number
-  taskNo?: string
-  status?: string
-  fileName?: string
-  fileSize?: number
-  failureReason?: string
-  createdAt?: string
-  finishedAt?: string
-  expiresAt?: string
-  downloadUrl?: string
-}
+export type ApiNumeric = number | string
 
-function totpHeaders(totpCode: string) {
-  return { 'X-TOTP-Code': totpCode.trim() }
+export interface PostgresOverview {
+  totalConnections: ApiNumeric
+  activeConnections: ApiNumeric
+  idleInTransactionConnections: ApiNumeric
+  lockWaitSessions: ApiNumeric
+  blockedSessions: ApiNumeric
+  longTransactions: ApiNumeric
+  longestTransactionSeconds: ApiNumeric
+  longestQuerySeconds: ApiNumeric
+  xactCommit: ApiNumeric
+  xactRollback: ApiNumeric
+  deadlocks: ApiNumeric
+  tempFiles: ApiNumeric
+  tempBytes: ApiNumeric
+  cacheHitRate: number
+  databaseSize: string
+  uptimeSeconds: ApiNumeric
 }
-
-function normalizeTask(raw: RawDatabaseExportTask): DatabaseExportTask {
-  return {
-    id: asString(raw.id),
-    taskNo: asString(raw.taskNo),
-    status: asString(raw.status),
-    fileName: raw.fileName ? asString(raw.fileName) : undefined,
-    fileSize: raw.fileSize ? asNumber(raw.fileSize) : undefined,
-    failureReason: raw.failureReason ? asString(raw.failureReason) : undefined,
-    createdAt: raw.createdAt ? asString(raw.createdAt) : undefined,
-    finishedAt: raw.finishedAt ? asString(raw.finishedAt) : undefined,
-    expiresAt: raw.expiresAt ? asString(raw.expiresAt) : undefined,
-    downloadUrl: raw.downloadUrl ? asString(raw.downloadUrl) : undefined,
-  }
+export interface PostgresActivity {
+  activeSessions: ApiNumeric
+  idleInTransactionSessions: ApiNumeric
+  lockWaitSessions: ApiNumeric
+  blockedSessions: ApiNumeric
+  longTransactions: ApiNumeric
+  longestTransactionSeconds: ApiNumeric
+  longestQuerySeconds: ApiNumeric
 }
-
-interface SlowQueryItem {
-  queryPreview: string
-  calls: number
-  avgMs: number
-  pctTotal: number
-  cacheHitPct: number
-}
-interface CacheItem {
+export interface TableHealthItem {
   tableName: string
-  heapCachePct: number
-  idxCachePct: number
-  hotUpdatePct: number
-}
-interface BloatItem {
-  tableName: string
-  liveRows: number
-  deadRows: number
+  liveRows: ApiNumeric
+  deadRows: ApiNumeric
   deadPct: number
+  seqScan: ApiNumeric
+  idxScan: ApiNumeric
+  nModSinceAnalyze: ApiNumeric
+  heapCachePct: number
+  vacuumTriggerRows: ApiNumeric
+  analyzeTriggerRows: ApiNumeric
+  lastAutovacuumAgeSeconds: ApiNumeric | null
+  lastAutoanalyzeAgeSeconds: ApiNumeric | null
+  autovacuumStatus: string
+  autovacuumAdvice: string
+  lastVacuum: string | null
   lastAutovacuum: string | null
+  lastAnalyze: string | null
+  lastAutoanalyze: string | null
 }
-interface UnusedIndexItem {
+export interface IndexHealthItem {
   indexName: string
   tableName: string
   size: string
-  scans: number
+  sizeBytes: ApiNumeric
+  scans: ApiNumeric
+  tuplesRead: ApiNumeric
+  tuplesFetched: ApiNumeric
+  valid: boolean
+  unique: boolean
+  primary: boolean
 }
-export interface PgMonitoring {
-  topSlowQueries: SlowQueryItem[]
-  cacheEfficiency: CacheItem[]
-  tableBloat: BloatItem[]
-  unusedIndexes: UnusedIndexItem[]
+export interface QueryStatsItem {
+  queryId: string
+  queryPreview: string
+  calls: ApiNumeric
+  totalMs: number
+  avgMs: number
+  rows: ApiNumeric
+  cacheHitPct: number
+}
+export interface QueryStats {
+  available: boolean
+  status: string
+  items: QueryStatsItem[]
+}
+interface RedisMemoryItem {
+  usedMemory: ApiNumeric
+  usedMemoryPeak: ApiNumeric
+  maxMemory: ApiNumeric
+  fragmentationRatio: number
+  evictedKeys: ApiNumeric
+  expiredKeys: ApiNumeric
+}
+interface RedisClientItem {
+  connectedClients: ApiNumeric
+  blockedClients: ApiNumeric
+  rejectedConnections: ApiNumeric
+}
+interface RedisThroughputItem {
+  totalCommandsProcessed: ApiNumeric
+  instantaneousOpsPerSec: ApiNumeric
+  keyspaceHits: ApiNumeric
+  keyspaceMisses: ApiNumeric
+  hitRate: number
+}
+interface RedisKeyspaceItem {
+  database: number
+  keys: ApiNumeric
+  expires: ApiNumeric
+  avgTtlMs: ApiNumeric
+}
+interface RedisPersistenceItem {
+  rdbLastSaveTime: ApiNumeric
+  rdbLastBgsaveStatus: string
+  aofEnabled: boolean
+  aofLastBgrewriteStatus: string
+}
+export interface RedisMonitoring {
+  memory: RedisMemoryItem
+  clients: RedisClientItem
+  throughput: RedisThroughputItem
+  keyspace: RedisKeyspaceItem
+  persistence: RedisPersistenceItem
+  status: string
+}
+export interface DatabaseMonitoring {
+  available: boolean
+  status: string
+  overview: PostgresOverview
+  activity: PostgresActivity
+  tableHealth: TableHealthItem[]
+  indexHealth: IndexHealthItem[]
+  queryStats: QueryStats
+  redis: RedisMonitoring
 }
 
 export async function getDatabaseStatus() {
@@ -127,66 +175,12 @@ export async function getDatabaseStatus() {
   return r.data
 }
 
-export async function getPgMonitoring() {
+export async function getDatabaseMonitoring() {
   const r = assertApiSuccess(
-    await http.get<DatabaseResponse<PgMonitoring>>('/system/databases/monitoring'),
-    '获取 PG 监控数据失败',
+    await http.get<DatabaseResponse<DatabaseMonitoring>>(
+      ENDPOINTS.DATABASE_MONITORING,
+    ),
+    '获取数据库监控数据失败',
   )
   return r.data
-}
-
-export async function createDatabaseExportTask(totpCode: string) {
-  const r = assertApiSuccess(
-    await http.post<DatabaseResponse<RawDatabaseExportTask>>(
-      ENDPOINTS.DATABASE_EXPORT_TASKS,
-      null,
-      { headers: totpHeaders(totpCode) },
-    ),
-    getApiMessage('submitDatabaseExportTaskFailed'),
-  )
-  return normalizeTask(r.data || {})
-}
-
-export async function listDatabaseExportTasks() {
-  const r = assertApiSuccess(
-    await http.get<DatabaseResponse<RawDatabaseExportTask[]>>(
-      ENDPOINTS.DATABASE_EXPORT_TASKS,
-    ),
-    getApiMessage('loadDatabaseExportTaskFailed'),
-  )
-  return Array.isArray(r.data) ? r.data.map(normalizeTask) : []
-}
-
-export async function generateDatabaseExportDownloadLink(taskId: string) {
-  const r = assertApiSuccess(
-    await http.post<DatabaseResponse<RawDatabaseExportTask>>(
-      `${ENDPOINTS.DATABASE_EXPORT_TASKS}/${encodeURIComponent(taskId)}/download-link`,
-    ),
-    getApiMessage('generateDownloadLinkFailed'),
-  )
-  return {
-    downloadUrl: asString(r.data?.downloadUrl),
-    expiresAt: r.data?.expiresAt ? asString(r.data.expiresAt) : undefined,
-  }
-}
-
-export async function importDatabaseBackup(
-  file: File,
-  totpCode: string,
-  databaseUsername: string,
-  databasePassword: string,
-) {
-  const fd = new FormData()
-  fd.append('file', file)
-  fd.append('databaseUsername', databaseUsername.trim())
-  fd.append('databasePassword', databasePassword)
-  return assertApiSuccess(
-    await http.post<DatabaseResponse<null>>(ENDPOINTS.DATABASE_IMPORT, fd, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        ...totpHeaders(totpCode),
-      },
-    }),
-    getApiMessage('importDatabaseBackupFailed'),
-  )
 }

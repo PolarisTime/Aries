@@ -1,5 +1,4 @@
-import { DatabaseOutlined, ReloadOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
+import { CloudServerOutlined, DatabaseOutlined } from '@ant-design/icons'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
 import Descriptions from 'antd/es/descriptions'
@@ -16,6 +15,7 @@ import {
 
 interface ServiceCardProps {
   accent: string
+  icon: React.ReactNode
   title: string
   version: string
   status: string
@@ -25,45 +25,46 @@ interface ServiceCardProps {
 
 function DatabaseServiceCard({
   accent,
+  icon,
   title,
   version,
   status,
   summary,
   details,
 }: ServiceCardProps) {
+  const isHealthy = status === '正常' || status.toUpperCase() === 'UP'
+
   return (
-    <Card size="small" className="bg-secondary">
-      <div className="flex items-center gap-12 mb-20">
-        <div
-          className="flex items-center justify-center text-2xl size-48 rounded-xl text-white"
-          style={{ background: accent }}
+    <Card size="small" className="database-service-card">
+      <div className="database-service-card-header">
+        <div className="database-service-icon" style={{ background: accent }}>
+          {icon}
+        </div>
+        <div className="database-service-title">
+          <div className="database-service-name">{title}</div>
+          <div className="database-service-version">{version}</div>
+        </div>
+        <Tag
+          color={isHealthy ? 'green' : 'red'}
+          className="database-status-tag"
         >
-          <DatabaseOutlined />
-        </div>
-        <div>
-          <div className="text-xl font-semibold">{title}</div>
-          <div className="text-xs text-secondary">{version}</div>
-        </div>
-        <Tag color={status === '正常' ? 'green' : 'red'} className="ml-auto">
           {status}
         </Tag>
       </div>
-      <Row
-        gutter={16}
-        className="mb-20 pb-20"
-        style={{ borderBottom: '1px solid var(--theme-card-border)' }}
-      >
+
+      <div className="database-service-metrics">
         {summary.map((item) => (
-          <Col key={item.title} span={8}>
-            <Statistic
-              title={item.title}
-              value={item.value}
-              styles={{ content: { fontSize: 20 } }}
-            />
-          </Col>
+          <Statistic
+            key={item.title}
+            title={item.title}
+            value={item.value}
+            className="database-service-metric"
+            styles={{ content: { fontSize: 20 } }}
+          />
         ))}
-      </Row>
-      <Descriptions size="small" column={1}>
+      </div>
+
+      <Descriptions size="small" column={1} className="database-service-detail">
         {details.map((item) => (
           <Descriptions.Item key={item.label} label={item.label}>
             {item.value}
@@ -77,35 +78,36 @@ function DatabaseServiceCard({
 interface Props {
   dbStatus?: DatabaseStatus
   loading: boolean
-  onRefresh: () => void
 }
 
-export function DatabaseStatusOverview({
-  dbStatus,
-  loading,
-  onRefresh,
-}: Props) {
+export function DatabaseStatusOverview({ dbStatus, loading }: Props) {
+  if (loading && !dbStatus) {
+    return (
+      <div className="database-status-section">
+        <Skeleton active paragraph={{ rows: 8 }} />
+      </div>
+    )
+  }
+
   return (
-    <div className="bg-default rounded p-24 mb-16">
-      <div className="flex justify-between mb-20">
-        <Typography.Title level={5} className="m-0">
-          数据库状态
-        </Typography.Title>
-        <Button
-          size="small"
-          loading={loading}
-          icon={<ReloadOutlined />}
-          onClick={onRefresh}
-        >
-          刷新
-        </Button>
+    <div className="database-status-section">
+      <div className="database-section-heading">
+        <div>
+          <Typography.Title level={5} className="database-section-title">
+            服务概览
+          </Typography.Title>
+          <Typography.Text type="secondary">
+            当前数据库组件在线状态与关键容量指标
+          </Typography.Text>
+        </div>
       </div>
 
       {dbStatus ? (
-        <Row gutter={20}>
-          <Col span={12}>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} xl={12}>
             <DatabaseServiceCard
               accent="var(--theme-primary)"
+              icon={<DatabaseOutlined />}
               title="PostgreSQL"
               version={dbStatus.postgres.version}
               status={dbStatus.postgres.status}
@@ -136,9 +138,10 @@ export function DatabaseStatusOverview({
               ]}
             />
           </Col>
-          <Col span={12}>
+          <Col xs={24} xl={12}>
             <DatabaseServiceCard
               accent="var(--theme-error)"
+              icon={<CloudServerOutlined />}
               title="Redis"
               version={dbStatus.redis.version}
               status={dbStatus.redis.status}
@@ -165,7 +168,7 @@ export function DatabaseStatusOverview({
           </Col>
         </Row>
       ) : (
-        <Skeleton active />
+        <Skeleton active paragraph={{ rows: 8 }} />
       )}
     </div>
   )

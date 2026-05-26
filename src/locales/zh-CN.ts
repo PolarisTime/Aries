@@ -159,7 +159,8 @@ export const zhCN: MessageSchema = {
     logisticsChain: '物流协同',
     logisticsChainDesc: '物流相关单据可独立流转，也能嵌入采购和销售业务链路。',
     pleaseSelectWith: '请先选择{{label}}',
-    importParentSuccess: '已导入 {{parentCount}} 张上级单据，共 {{itemCount}} 条明细',
+    importParentSuccess:
+      '已导入 {{parentCount}} 张上级单据，共 {{itemCount}} 条明细',
     importParentSuccessSimple: '已导入 {{itemCount}} 条明细',
     disabled: '已禁用',
     batchDelete: '批量删除',
@@ -487,10 +488,6 @@ export const zhCN: MessageSchema = {
     companyInitFailed: '公司主体初始化失败',
     importResponseValidationFailed: '导入响应数据校验失败',
     loadDatabaseStatusFailed: '加载数据库状态失败',
-    submitDatabaseExportTaskFailed: '提交数据库导出任务失败',
-    loadDatabaseExportTaskFailed: '加载数据库导出任务失败',
-    generateDownloadLinkFailed: '生成下载链接失败',
-    importDatabaseBackupFailed: '导入数据库备份失败',
     queryStatementCandidatesFailed: '查询对账候选单据失败',
     loginExpiring: '登录即将过期',
     loginExpiringDescription:
