@@ -1,17 +1,9 @@
-import { formatBytes, formatDateTime } from '@/utils/formatters'
+import type { DatabaseExportTask } from '@/api/database-admin'
 
 export function isDatabaseTaskRunning(status: string) {
-  return status === '排队中' || status === '执行中'
+  return status === 'RUNNING' || status === 'PENDING'
 }
 
-export {
-  formatBytes as formatDatabaseMemory,
-  formatDateTime as formatDatabaseDateTime,
-}
-
-export function formatDatabaseTaskStatusColor(status: string) {
-  if (status === '已完成') return 'success'
-  if (status === '失败' || status === '已过期') return 'error'
-  if (status === '执行中') return 'processing'
-  return 'default'
+export function formatTaskTime(value: string | undefined): string {
+  return value || '--'
 }
