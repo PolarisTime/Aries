@@ -177,14 +177,17 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     transformItems: (parentRecord) =>
       cloneLineItems(
         Array.isArray(parentRecord.items)
-          ? parentRecord.items.map((item) => ({
-              ...item,
-              sourcePurchaseOrderItemId: item.id,
-              _sourcePieceWeightTon: item.pieceWeightTon,
-              settlementMode: isPurchaseWeighRequiredCategory(item.category)
-                ? '过磅'
-                : '理算',
-            }))
+          ? parentRecord.items
+              .filter((item) => (item.remainingQuantity ?? item.quantity) > 0)
+              .map((item) => ({
+                ...item,
+                quantity: item.remainingQuantity ?? item.quantity,
+                sourcePurchaseOrderItemId: item.id,
+                _sourcePieceWeightTon: item.pieceWeightTon,
+                settlementMode: isPurchaseWeighRequiredCategory(item.category)
+                  ? '过磅'
+                  : '理算',
+              }))
           : [],
         'purchase-inbound-item',
       ),
