@@ -13,6 +13,10 @@
 .module-table-shell .ant-table-fixed-left .ant-table-tbody .sticky-actions-col {
   background: var(--theme-card-bg) !important;
 }
+.module-table-shell .ant-table-tbody .ant-table-row-selected .sticky-actions-col,
+.module-table-shell .ant-table-tbody .ant-table-row:hover .sticky-actions-col {
+  background: transparent !important;
+}
 
 .module-table-shell .ant-table-tbody > tr > td,
 .module-table-shell .ant-table-tbody > tr > th,
