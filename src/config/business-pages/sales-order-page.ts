@@ -1,11 +1,9 @@
-import { createElement } from 'react'
 import {
   buildValueOptions,
   getCustomerOptions,
   getCustomerProjectOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { WeightCellPopover } from '@/views/modules/components/WeightCellPopover'
 import {
   BILL_STATUS_LABEL,
   CUSTOMER_NAME_LABEL,
@@ -87,12 +85,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       width: 116,
       align: 'right',
       type: 'weight',
-      render: (value, record) =>
-        createElement(WeightCellPopover, {
-          value,
-          record,
-          moduleKey: 'sales-order',
-        }),
     },
     {
       title: '总金额',

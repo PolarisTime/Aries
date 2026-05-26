@@ -1,10 +1,8 @@
-import { createElement } from 'react'
 import {
   buildValueOptions,
   getSupplierOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { WeightCellPopover } from '@/views/modules/components/WeightCellPopover'
 import {
   BILL_STATUS_LABEL,
   ORDER_NO_FILTER_LABEL,
@@ -58,12 +56,6 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       width: 116,
       align: 'right',
       type: 'weight',
-      render: (value, record) =>
-        createElement(WeightCellPopover, {
-          value,
-          record,
-          moduleKey: 'purchase-order',
-        }),
     },
     {
       title: '总金额',
