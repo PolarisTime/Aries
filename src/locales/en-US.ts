@@ -136,7 +136,8 @@ export const enUS: MessageSchema = {
     deleteConfirm: 'Confirm Delete?',
     columnSettings: 'Column Settings',
     saveAndAudit: 'Save & Audit',
-    auditConfirm: 'After audit, the document will be locked and cannot be edited. Continue?',
+    auditConfirm:
+      'After audit, the document will be locked and cannot be edited. Continue?',
     confirmLogoutContent: 'Are you sure you want to sign out?',
     displaySettingsSaved: 'Display settings saved',
     brandSubtitle: 'Steel Trading Business Platform',
@@ -147,9 +148,12 @@ export const enUS: MessageSchema = {
     masterData: 'Master Data',
     purchaseChain: 'Procurement',
     salesChain: 'Sales',
-    masterDataDesc: 'Maintain business master data first, which can be referenced in subsequent documents.',
-    purchaseChainDesc: 'From contracts and orders, through inbound and reconciliation, to payment.',
-    salesChainDesc: 'From contracts and orders, through outbound and reconciliation, to receipt.',
+    masterDataDesc:
+      'Maintain business master data first, which can be referenced in subsequent documents.',
+    purchaseChainDesc:
+      'From contracts and orders, through inbound and reconciliation, to payment.',
+    salesChainDesc:
+      'From contracts and orders, through outbound and reconciliation, to receipt.',
     prevPage: 'Previous',
     nextPage: 'Next',
     preallocateNoFailed: 'Failed to pre-allocate system document number',
@@ -158,9 +162,11 @@ export const enUS: MessageSchema = {
     noPermission: 'No permission',
     importParentFailed: 'Failed to import parent document',
     logisticsChain: 'Logistics',
-    logisticsChainDesc: 'Logistics documents can flow independently or be embedded in procurement and sales chains.',
+    logisticsChainDesc:
+      'Logistics documents can flow independently or be embedded in procurement and sales chains.',
     pleaseSelectWith: 'Please select {{label}} first',
-    importParentSuccess: 'Imported {{parentCount}} parent document(s), {{itemCount}} line item(s)',
+    importParentSuccess:
+      'Imported {{parentCount}} parent document(s), {{itemCount}} line item(s)',
     importParentSuccessSimple: 'Imported {{itemCount}} line item(s)',
     disabled: 'Disabled',
     batchDelete: 'Batch Delete',
@@ -497,10 +503,6 @@ export const enUS: MessageSchema = {
     companyInitFailed: 'Company initialization failed',
     importResponseValidationFailed: 'Import response validation failed',
     loadDatabaseStatusFailed: 'Failed to load database status',
-    submitDatabaseExportTaskFailed: 'Failed to submit database export task',
-    loadDatabaseExportTaskFailed: 'Failed to load database export task',
-    generateDownloadLinkFailed: 'Failed to generate download link',
-    importDatabaseBackupFailed: 'Failed to import database backup',
     queryStatementCandidatesFailed: 'Failed to query statement candidates',
     loginExpiring: 'Login expiring',
     loginExpiringDescription:

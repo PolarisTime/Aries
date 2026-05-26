@@ -14,8 +14,10 @@ export const QUERY_KEYS = {
 
   // Business grid
   businessGrid: (moduleKey: string) => ['business-grid', moduleKey] as const,
-  businessGridAll: (moduleKey: string) => ['business-grid-all', moduleKey] as const,
-  businessGridPage: (moduleKey: string) => ['business-grid', moduleKey, {}, 1, 20, '', ''] as const,
+  businessGridAll: (moduleKey: string) =>
+    ['business-grid-all', moduleKey] as const,
+  businessGridPage: (moduleKey: string) =>
+    ['business-grid', moduleKey, {}, 1, 20, '', ''] as const,
   businessGridList: (
     moduleKey: string,
     filters: Record<string, unknown>,
@@ -23,12 +25,21 @@ export const QUERY_KEYS = {
     sortDirection: string,
     page: number,
     pageSize: number,
-  ) => ['business-grid', moduleKey, filters, sortBy, sortDirection, page, pageSize] as const,
-  businessPageConfig: (moduleKey: string) => ['business-page-config', moduleKey] as const,
+  ) =>
+    [
+      'business-grid',
+      moduleKey,
+      filters,
+      sortBy,
+      sortDirection,
+      page,
+      pageSize,
+    ] as const,
+  businessPageConfig: (moduleKey: string) =>
+    ['business-page-config', moduleKey] as const,
 
   // Database
   databaseStatus: ['database-status'] as const,
-  databaseExportTasks: ['database-export-tasks'] as const,
 
   // Master data
   masterOptions: {
@@ -53,8 +64,12 @@ export const QUERY_KEYS = {
   apiKeyActionOptions: ['api-key-action-options'] as const,
   apiKeyResourceOptions: ['api-key-resource-options'] as const,
   apiKeyUserOptions: ['api-key-user-options'] as const,
-  userAccount: (page: number, size: number, keyword: string, statusFilter: string | undefined) =>
-    ['user-account', page, size, keyword, statusFilter] as const,
+  userAccount: (
+    page: number,
+    size: number,
+    keyword: string,
+    statusFilter: string | undefined,
+  ) => ['user-account', page, size, keyword, statusFilter] as const,
   userAccountBase: ['user-account'] as const,
   roleOptions: ['role-options'] as const,
   roleSettings: ['role-settings'] as const,
@@ -68,14 +83,17 @@ export const QUERY_KEYS = {
   refreshTokensSummary: ['refresh-tokens-summary'] as const,
 
   // Statements
-  statementLinkOptions: (type: string) => ['statement-link-options', type] as const,
+  statementLinkOptions: (type: string) =>
+    ['statement-link-options', type] as const,
 
   // Print
   printTemplate: ['print-template'] as const,
-  printTemplateByType: (billType: string) => ['print-template', billType] as const,
+  printTemplateByType: (billType: string) =>
+    ['print-template', billType] as const,
 
   // Parent selector
-  parentSelectorConfig: (moduleKey: string) => ['parent-selector-config', moduleKey] as const,
+  parentSelectorConfig: (moduleKey: string) =>
+    ['parent-selector-config', moduleKey] as const,
   parentSelectorList: (
     moduleKey: string,
     filters: Record<string, unknown>,

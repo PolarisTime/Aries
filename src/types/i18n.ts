@@ -472,10 +472,6 @@ export interface MessageSchema {
     companyInitFailed: string
     importResponseValidationFailed: string
     loadDatabaseStatusFailed: string
-    submitDatabaseExportTaskFailed: string
-    loadDatabaseExportTaskFailed: string
-    generateDownloadLinkFailed: string
-    importDatabaseBackupFailed: string
     queryStatementCandidatesFailed: string
     loginExpiring: string
     loginExpiringDescription: string
