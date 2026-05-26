@@ -58,6 +58,7 @@ export function ModuleRecordDetailOverlay({
                   itemId={record.id}
                   weightTon={value as string | number}
                   category={record.category as string | undefined}
+                  sourceSalesOrderItemId={record.sourceSalesOrderItemId as string | number | undefined}
                 />
               )
             : (value: unknown) => formatCellValue(value, column.type),

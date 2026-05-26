@@ -31,19 +31,30 @@ export function WeightCellPopover({ value, record, moduleKey }: Props) {
   const [items, setItems] = useState<ModuleRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
+  const [error, setError] = useState('')
 
   const handleOpen = useCallback(async () => {
     setOpen(true)
     if (items.length === 0) {
       setLoading(true)
+      setError('')
       try {
         const result = await getBusinessModuleDetail(moduleKey, String(record.id))
-        setItems(Array.isArray(result.data?.items) ? result.data.items : [])
+        const rawItems = result?.data?.items
+        if (Array.isArray(rawItems) && rawItems.length > 0) {
+          setItems(rawItems)
+        } else {
+          setError('当前单据无明细数据')
+        }
+      } catch {
+        setError('加载明细失败')
       } finally {
         setLoading(false)
       }
     }
   }, [items.length, moduleKey, record.id])
+
+  const emptyText = error || '暂无数据'
 
   return (
     <Popover
@@ -61,6 +72,7 @@ export function WeightCellPopover({ value, record, moduleKey }: Props) {
             pagination={false}
             dataSource={items}
             columns={ITEM_WEIGHT_COLUMNS}
+            locale={{ emptyText }}
           />
         </div>
       }
