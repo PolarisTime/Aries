@@ -3,9 +3,7 @@ import { ENDPOINTS } from '@/constants/endpoints'
 import { getApiMessage } from '@/utils/api-messages'
 import { asNumber, asString } from '@/utils/type-narrowing'
 
-// ── 类型（数据库管理专用，暂保留手动定义 — 后续迁移至 shared/schemas） ──
-
-interface PostgresStatus {
+export interface PostgresStatus {
   host: string
   port: number
   database: string
@@ -18,7 +16,7 @@ interface PostgresStatus {
   serverStartTime: string | null
   status: string
 }
-interface RedisStatus {
+export interface RedisStatus {
   host: string
   port: number
   database: number
@@ -49,8 +47,6 @@ export interface DatabaseExportTask {
   expiresAt?: string
   downloadUrl?: string
 }
-
-// ── 内部 ────────────────────────────────────────────────
 
 interface DatabaseResponse<T> {
   code: number
@@ -89,8 +85,6 @@ function normalizeTask(raw: RawDatabaseExportTask): DatabaseExportTask {
     downloadUrl: raw.downloadUrl ? asString(raw.downloadUrl) : undefined,
   }
 }
-
-// ── 公开 API ────────────────────────────────────────────
 
 interface SlowQueryItem {
   queryPreview: string
@@ -135,9 +129,7 @@ export async function getDatabaseStatus() {
 
 export async function getPgMonitoring() {
   const r = assertApiSuccess(
-    await http.get<DatabaseResponse<PgMonitoring>>(
-      '/system/databases/monitoring',
-    ),
+    await http.get<DatabaseResponse<PgMonitoring>>('/system/databases/monitoring'),
     '获取 PG 监控数据失败',
   )
   return r.data
@@ -148,9 +140,7 @@ export async function createDatabaseExportTask(totpCode: string) {
     await http.post<DatabaseResponse<RawDatabaseExportTask>>(
       ENDPOINTS.DATABASE_EXPORT_TASKS,
       null,
-      {
-        headers: totpHeaders(totpCode),
-      },
+      { headers: totpHeaders(totpCode) },
     ),
     getApiMessage('submitDatabaseExportTaskFailed'),
   )

@@ -3,85 +3,65 @@ import Alert from 'antd/es/alert'
 import Button from 'antd/es/button'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
+import Modal from 'antd/es/modal'
 import Upload from 'antd/es/upload'
-import { FormModal } from '@/components/FormModal'
+import { useState } from 'react'
 
 interface Props {
   open: boolean
-  loading: boolean
-  totpDisabled: boolean
-  form: FormInstance
-  selectedFile: File | null
-  onSelectFile: (file: File) => void
-  onSubmit: () => void
-  onCancel: () => void
+  onClose: () => void
+  onImport: (file: File, dbUser: string, dbPass: string) => Promise<void>
 }
 
-export function DatabaseImportBackupModal({
-  open,
-  loading,
-  totpDisabled,
-  form,
-  selectedFile,
-  onSelectFile,
-  onSubmit,
-  onCancel,
-}: Props) {
+export function DatabaseImportBackupModal({ open, onClose, onImport }: Props) {
+  const [form] = Form.useForm()
+  const [loading, setLoading] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+
+  const handleOk = async () => {
+    if (!file) return
+    const values = await form.validateFields()
+    setLoading(true)
+    try {
+      await onImport(file, values.dbUser || '', values.dbPass || '')
+      form.resetFields()
+      setFile(null)
+      onClose()
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <FormModal
+    <Modal
       title="导入数据库备份"
       open={open}
-      onClose={onCancel}
-      onSave={onSubmit}
+      onOk={() => { void handleOk() }}
+      onCancel={onClose}
       confirmLoading={loading}
-      okText="验证并导入"
+      okText="开始导入"
       cancelText="取消"
-      width={480}
+      destroyOnClose
     >
-      <Alert
-        type="warning"
-        showIcon
-        className="mb-4"
-        title="导入前会自动备份当前数据库"
-        description="请选择 .sql 格式的备份文件，并填写当前 PostgreSQL 账号密码。导入操作会覆盖当前数据，请谨慎操作。"
-      />
+      <Alert message="导入将覆盖当前数据库，请谨慎操作" type="warning" showIcon className="mb-16" />
       <Form form={form} layout="vertical">
-        <Form.Item name="databaseUsername" label="数据库用户名" required>
-          <Input
-            disabled={loading || totpDisabled}
-            placeholder="输入 PostgreSQL 用户名"
-          />
-        </Form.Item>
-        <Form.Item name="databasePassword" label="数据库密码" required>
-          <Input.Password
-            disabled={loading || totpDisabled}
-            placeholder="输入 PostgreSQL 密码"
-          />
-        </Form.Item>
-        <Form.Item label="备份文件" required>
+        <Form.Item name="file" label="备份文件" rules={[{ required: true, message: '请选择备份文件' }]}>
           <Upload
-            name="database-backup-file"
-            beforeUpload={(file) => {
-              onSelectFile(file)
-              return false
-            }}
-            showUploadList={false}
-            accept=".sql"
+            accept=".sql,.gz,.dump"
+            maxCount={1}
+            beforeUpload={(f) => { setFile(f); return false }}
+            onRemove={() => setFile(null)}
           >
-            <Button
-              loading={loading}
-              disabled={totpDisabled}
-              type="primary"
-              danger
-            >
-              选择备份文件
-            </Button>
+            <Button>选择文件</Button>
           </Upload>
-          <div className="mt-8 text-secondary">
-            {selectedFile?.name || '未选择文件'}
-          </div>
+        </Form.Item>
+        <Form.Item name="dbUser" label="数据库用户名">
+          <Input placeholder="数据库用户名" />
+        </Form.Item>
+        <Form.Item name="dbPass" label="数据库密码">
+          <Input.Password placeholder="数据库密码" />
         </Form.Item>
       </Form>
-    </FormModal>
+    </Modal>
   )
 }
