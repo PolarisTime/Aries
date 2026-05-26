@@ -4,6 +4,7 @@ export const printTemplateRecordSchema = z.object({
   id: z.string(),
   templateName: z.string(),
   templateHtml: z.string(),
+  templateType: z.string().optional(),
   isDefault: z.string(),
   source: z.enum(['db', 'file']).optional(),
   fileName: z.string().optional(),
