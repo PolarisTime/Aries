@@ -117,7 +117,7 @@ export function ModuleEditorWorkspace({
     autoInsertBlankItemOnCreate:
       Boolean(config.itemColumns?.length) && canAddManualItems,
   })
-  const canSaveAndAuditInEditor = canSaveAndAuditCurrentEditor && !isEdit
+  const canSaveAndAuditInEditor = canSaveAndAuditCurrentEditor
   const {
     clearSelectedItems,
     handleDragOver,
