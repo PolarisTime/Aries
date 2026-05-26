@@ -19,3 +19,8 @@ export type InitialSetupAdminSubmitPayload = {
 }
 
 export type InitialSetupResult = InitialSetupStatus
+
+export interface InitialSetupSubmitResponse {
+  adminLoginName: string
+  companyName: string
+}
