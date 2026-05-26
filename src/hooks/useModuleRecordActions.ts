@@ -53,7 +53,7 @@ export function useModuleRecordActions({
         })
       }
       if (can(resource, 'audit')) {
-        const canAudit = record.status === '草稿' || record.status === '待完善'
+        const canAudit = record.status === '草稿'
         const canReverse = record.status === '已审核'
         if (canAudit || canReverse) {
           items.push({
