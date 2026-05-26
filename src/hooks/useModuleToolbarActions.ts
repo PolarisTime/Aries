@@ -103,6 +103,12 @@ export function useModuleToolbarActions({
         { label: BULK_REVERSE_AUDIT_LABEL, type: 'default', disabled },
       )
     }
+    if (canUseBulkPrintActions) {
+      actions.push(
+        { label: BULK_PRINT_PREVIEW_LABEL, type: 'default', disabled, loading: detailPrintLoading },
+        { label: BULK_DIRECT_PRINT_LABEL, type: 'default', disabled, loading: detailPrintLoading },
+      )
+    }
     return actions
   }, [
     canUseBulkAuditActions,
