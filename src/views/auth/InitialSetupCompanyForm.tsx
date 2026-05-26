@@ -90,6 +90,7 @@ export function InitialSetupCompanyForm({
       <Form.Item
         name="taxRate"
         label={t('auth.initialsetup.company.taxRateLabel')}
+        rules={[{ required: true, message: t('auth.initialsetup.company.taxRateRequired') }]}
       >
         <InputNumber min={0} max={1} step={0.01} className="w-full" />
       </Form.Item>

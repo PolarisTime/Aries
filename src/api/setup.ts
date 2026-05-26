@@ -3,8 +3,8 @@ import type { ApiResponse } from '@/types/api'
 import type {
   InitialSetupAdminSubmitPayload,
   InitialSetupCompanyPayload,
-  InitialSetupResult,
   InitialSetupStatus,
+  InitialSetupSubmitResponse,
   InitialSetupTotpPayload,
   InitialSetupTotpResult,
 } from '@/types/setup'
@@ -30,7 +30,7 @@ export async function setupInitialAdmin2fa(payload: InitialSetupTotpPayload) {
 export async function submitInitialAdmin(
   payload: InitialSetupAdminSubmitPayload,
 ) {
-  const response = await http.post<ApiResponse<InitialSetupResult>>(
+  const response = await http.post<ApiResponse<InitialSetupSubmitResponse>>(
     ENDPOINTS.SETUP_ADMIN,
     payload,
   )
@@ -40,7 +40,7 @@ export async function submitInitialAdmin(
 export async function submitInitialCompany(
   payload: InitialSetupCompanyPayload,
 ) {
-  const response = await http.post<ApiResponse<InitialSetupResult>>(
+  const response = await http.post<ApiResponse<InitialSetupSubmitResponse>>(
     ENDPOINTS.SETUP_COMPANY,
     payload,
   )
