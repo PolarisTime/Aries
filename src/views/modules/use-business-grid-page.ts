@@ -394,5 +394,6 @@ export function useBusinessGridPage({
     warningMessage,
     getRowClassName,
     closeEditor,
+    canUseBulkPrintActions,
   }
 }
