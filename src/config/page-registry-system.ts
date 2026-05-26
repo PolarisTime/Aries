@@ -103,5 +103,6 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     icon: 'DatabaseOutlined',
     menuParent: 'system',
     resourceKey: 'database',
+    accessResources: ['general-setting'],
   },
 ]
