@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 import { appPageDefinitions } from '@/config/page-registry'
 import { appTitle } from '@/utils/env'
 
@@ -18,7 +19,7 @@ function normalizePath(pathname: string) {
   return normalized || '/'
 }
 
-export function resolveRoutePageContext(pathname: string): RoutePageContext {
+export function resolveRoutePageContext(pathname: string, t: TFunction): RoutePageContext {
   const normalizedPath = normalizePath(pathname)
   const matchedDefinition = pageDefinitionByPath.get(normalizedPath)
   if (matchedDefinition) {
@@ -32,7 +33,7 @@ export function resolveRoutePageContext(pathname: string): RoutePageContext {
 
   if (normalizedPath.startsWith('/api-key/')) {
     return {
-      title: 'API Key 详情',
+      title: t('layouts.routePage.apiKeyDetail'),
       activeMenuKey: '/api-key',
       openPageKey: '/api-key',
     }

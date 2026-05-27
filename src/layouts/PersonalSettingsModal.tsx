@@ -1,6 +1,7 @@
 import Modal from 'antd/es/modal'
 import Tabs from 'antd/es/tabs'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PersonalSettingsDisplayTab } from '@/layouts/PersonalSettingsDisplayTab'
 import { PersonalSettingsSecurityTab } from '@/layouts/PersonalSettingsSecurityTab'
 import { usePersonalSecuritySettings } from '@/layouts/usePersonalSecuritySettings'
@@ -33,6 +34,7 @@ export function PersonalSettingsModal({
   themeMode,
   onThemeModeChange,
 }: Props) {
+  const { t } = useTranslation()
   const [tab, setTab] = useState('display')
   const user = useAuthStore((state) => state.user)
   const {
@@ -51,7 +53,7 @@ export function PersonalSettingsModal({
   return (
     <Modal
       key={String(open)}
-      title="个人设置"
+      title={t('layouts.personalSettings.title')}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -62,8 +64,8 @@ export function PersonalSettingsModal({
         activeKey={tab}
         onChange={setTab}
         items={[
-          { key: 'display', label: '显示偏好' },
-          { key: 'security', label: '账户安全' },
+          { key: 'display', label: t('layouts.personalSettings.displayTab') },
+          { key: 'security', label: t('layouts.personalSettings.securityTab') },
         ]}
       />
 

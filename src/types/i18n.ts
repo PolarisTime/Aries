@@ -628,6 +628,10 @@ export interface MessageSchema {
       warehouseName: string
       sourceNo: string
     }
+    units: {
+      ton: string
+      yuan: string
+    }
     nextModule: {
       createPurchaseInbound: string
       createSalesOutbound: string

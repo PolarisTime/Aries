@@ -4,6 +4,7 @@ import Button from 'antd/es/button'
 import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
 import { useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { listPrintTemplates } from '@/api/print-template'
 
 interface Props {
@@ -20,6 +21,7 @@ interface PrintTemplate {
 }
 
 export function PrintTemplateDropdown({ moduleKey, disabled, loading, onPrint }: Props) {
+  const { t } = useTranslation()
   const { data: templates = [] } = useQuery<PrintTemplate[]>({
     queryKey: ['print-templates', moduleKey],
     queryFn: async () => {
@@ -32,12 +34,12 @@ export function PrintTemplateDropdown({ moduleKey, disabled, loading, onPrint }:
 
   const menuItems = useMemo<MenuProps['items']>(() => {
     if (!templates.length) {
-      return [{ key: 'no-template', label: '无可用模板', disabled: true }]
+      return [{ key: 'no-template', label: t('modules.print.noTemplate'), disabled: true }]
     }
     return templates.flatMap((tpl) => [
       { type: 'group' as const, label: tpl.templateName, children: [
-        { key: `preview:${tpl.id}`, label: '打印预览', icon: <PrinterOutlined /> },
-        { key: `direct:${tpl.id}`, label: '直接打印', icon: <PrinterOutlined /> },
+        { key: `preview:${tpl.id}`, label: t('modules.print.preview'), icon: <PrinterOutlined /> },
+        { key: `direct:${tpl.id}`, label: t('modules.print.directPrint'), icon: <PrinterOutlined /> },
       ]},
     ])
   }, [templates])
@@ -57,7 +59,7 @@ export function PrintTemplateDropdown({ moduleKey, disabled, loading, onPrint }:
       trigger={['click']}
     >
       <Button icon={<PrinterOutlined />} loading={loading}>
-        打印
+        {t('modules.print.print')}
       </Button>
     </Dropdown>
   )

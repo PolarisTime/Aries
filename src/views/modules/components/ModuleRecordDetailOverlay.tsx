@@ -6,6 +6,7 @@ import Flex from 'antd/es/flex'
 import Row from 'antd/es/row'
 import Spin from 'antd/es/spin'
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import type {
@@ -38,6 +39,7 @@ export function ModuleRecordDetailOverlay({
   canPrint = false,
   onClose,
 }: Props) {
+  const { t } = useTranslation()
   const { formatCellValue } = useModuleDisplaySupport()
   const { getPrimaryNo } = useModuleRecordHelpers({
     moduleKey: config.key,
@@ -80,7 +82,7 @@ export function ModuleRecordDetailOverlay({
     <WorkspaceOverlay
       open={open}
       title={
-        record ? `${config.title}详情 - ${getPrimaryNo(record)}` : '记录详情'
+        record ? `${config.title}${t('modules.detail.titleSuffix')} - ${getPrimaryNo(record)}` : t('modules.detail.recordDetail')
       }
       onClose={onClose}
     >
@@ -89,7 +91,7 @@ export function ModuleRecordDetailOverlay({
           <Spin />
         </Flex>
       ) : !record ? (
-        <Empty description="暂无数据" />
+        <Empty description={t('modules.detail.noData')} />
       ) : (
         <>
           <Row gutter={[12, 12]}>
@@ -131,14 +133,14 @@ export function ModuleRecordDetailOverlay({
                     icon={resolveModuleActionIcon('关闭')}
                     onClick={onClose}
                   >
-                    关闭
+                    {t('modules.detail.close')}
                   </Button>
                   {canPrint ? (
                     <Button
                       className="overlay-action-button"
                       icon={resolveModuleActionIcon('打印')}
                     >
-                      打印
+                      {t('modules.detail.print')}
                     </Button>
                   ) : null}
                 </>
@@ -147,7 +149,7 @@ export function ModuleRecordDetailOverlay({
               <ModuleItemsTable
                 columns={detailTableColumns}
                 dataSource={record.items || []}
-                emptyText="暂无明细数据"
+                emptyText={t('modules.detail.noDetailItems')}
               />
             </ModuleItemsPanel>
           ) : (
@@ -157,14 +159,14 @@ export function ModuleRecordDetailOverlay({
                 icon={resolveModuleActionIcon('关闭')}
                 onClick={onClose}
               >
-                关闭
+                {t('modules.detail.close')}
               </Button>
               {canPrint && (
                 <Button
                   className="overlay-action-button ml-8"
                   icon={resolveModuleActionIcon('打印')}
                 >
-                  打印
+                  {t('modules.detail.print')}
                 </Button>
               )}
             </div>

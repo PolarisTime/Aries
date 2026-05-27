@@ -1,5 +1,6 @@
 import { useLocation } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
+import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
+  const { t } = useTranslation()
   const location = useLocation()
   const moduleKey = asString(pageDef.moduleKey)
   const state = useBusinessGridPage({ moduleKey, pageDef, initialConfig })
@@ -33,7 +35,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
 
   if (!state.config) {
     return (
-      <Empty description={`模块配置未找到: ${moduleKey}`} className="mt-96" />
+      <Empty description={`${t('modules.page.moduleConfigNotFound')}: ${moduleKey}`} className="mt-96" />
     )
   }
 

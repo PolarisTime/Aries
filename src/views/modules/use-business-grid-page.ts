@@ -395,5 +395,6 @@ export function useBusinessGridPage({
     getRowClassName,
     closeEditor,
     canUseBulkPrintActions,
+    handlePrintSelectedRecords,
   }
 }

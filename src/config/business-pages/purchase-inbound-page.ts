@@ -170,10 +170,10 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       cloneLineItems(
         Array.isArray(parentRecord.items)
           ? parentRecord.items
-              .filter((item) => (item.remainingQuantity ?? item.quantity) > 0)
+              .filter((item) => Number(item.remainingQuantity ?? item.quantity) > 0)
               .map((item) => ({
                 ...item,
-                quantity: item.remainingQuantity ?? item.quantity,
+                quantity: Number(item.remainingQuantity ?? item.quantity),
                 sourcePurchaseOrderItemId: item.id,
                 _sourcePieceWeightTon: item.pieceWeightTon,
                 settlementMode: isPurchaseWeighRequiredCategory(item.category)

@@ -16,6 +16,7 @@ import Spin from 'antd/es/spin'
 import Typography from 'antd/es/typography'
 import Upload from 'antd/es/upload'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   type AttachmentRecord,
   getAttachmentBindings,
@@ -41,6 +42,7 @@ export function ModuleAttachmentModal({
   recordId,
   onClose,
 }: Props) {
+  const { t } = useTranslation()
   const can = usePermissionStore((state) => state.can)
   const resolvedResource = resourceKey || moduleKey
   const [attachments, setAttachments] = useState<AttachmentRecord[]>([])
@@ -88,13 +90,13 @@ export function ModuleAttachmentModal({
         const uploadRes = await uploadAttachment(file, moduleKey)
         const attachmentId = asString(uploadRes.data?.id).trim()
         if (!attachmentId) {
-          throw new Error('上传成功但未返回附件标识')
+          throw new Error(t('modules.attachment.uploadNoId'))
         }
         await bindAttachment(attachmentId)
-        message.success('上传并绑定成功')
+        message.success(t('modules.attachment.uploadBindSuccess'))
         await fetchAttachments()
       } catch (err) {
-        message.error(err instanceof Error ? err.message : '上传失败')
+        message.error(err instanceof Error ? err.message : t('modules.attachment.uploadFailed'))
       } finally {
         setUploading(false)
       }
@@ -130,7 +132,7 @@ export function ModuleAttachmentModal({
   const openImagePreview = useCallback((attachment: AttachmentRecord) => {
     const src = attachment.previewUrl || attachment.downloadUrl || ''
     if (!src) {
-      message.warning('当前附件暂无预览地址')
+      message.warning(t('modules.attachment.noPreviewUrl'))
       return
     }
     setPreviewSource(src)
@@ -140,7 +142,7 @@ export function ModuleAttachmentModal({
   const openPdfPreview = useCallback((attachment: AttachmentRecord) => {
     const src = attachment.previewUrl || attachment.downloadUrl || ''
     if (!src) {
-      message.warning('当前附件暂无预览地址')
+      message.warning(t('modules.attachment.noPreviewUrl'))
       return
     }
     setPdfPreviewUrl(src)
@@ -154,7 +156,7 @@ export function ModuleAttachmentModal({
 
   const handleDownload = (attachment: AttachmentRecord) => {
     if (!attachment.downloadUrl) {
-      message.warning('当前附件暂无下载地址')
+      message.warning(t('modules.attachment.noDownloadUrl'))
       return
     }
     window.open(attachment.downloadUrl, '_blank', 'noopener,noreferrer')
@@ -169,10 +171,10 @@ export function ModuleAttachmentModal({
           String(item.id) !== id ? [item.id] : [],
         ),
       )
-      message.success('解除绑定成功')
+      message.success(t('modules.attachment.unbindSuccess'))
       await fetchAttachments()
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '删除失败')
+      message.error(err instanceof Error ? err.message : t('modules.attachment.deleteFailed'))
     }
   }
 
@@ -210,7 +212,7 @@ export function ModuleAttachmentModal({
 
   return (
     <Modal
-      title="附件管理"
+      title={t('modules.attachment.title')}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -229,7 +231,7 @@ export function ModuleAttachmentModal({
             showUploadList={false}
           >
             <Button icon={<UploadOutlined />} loading={uploading}>
-              上传附件
+              {t('modules.attachment.upload')}
             </Button>
           </Upload>
         ) : null}
@@ -238,8 +240,8 @@ export function ModuleAttachmentModal({
           className="module-attachment-upload-hint"
         >
           {canCreateAttachment
-            ? '支持点击上传，也支持在此区域内直接粘贴图片或文件'
-            : '当前账号无附件新增权限，可查看和下载已有附件'}
+            ? t('modules.attachment.uploadHint')
+            : t('modules.attachment.noPermissionHint')}
         </Typography.Text>
       </div>
       <Spin spinning={loading}>
@@ -323,7 +325,7 @@ export function ModuleAttachmentModal({
             ))}
           </Flex>
         ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无附件" />
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('modules.attachment.noAttachments')} />
         )}
       </Spin>
       {imageAttachments.length ? (
@@ -355,7 +357,7 @@ export function ModuleAttachmentModal({
         </Image.PreviewGroup>
       ) : null}
       <Modal
-        title="PDF 预览"
+        title={t('modules.attachment.pdfPreview')}
         open={pdfPreviewOpen}
         onCancel={() => setPdfPreviewOpen(false)}
         footer={null}
