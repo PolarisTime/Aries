@@ -959,6 +959,7 @@ export const enUS: MessageSchema = {
       addBank: 'Add Bank',
       settlementAccount: 'Settlement Account',
       accountName: 'Account Name',
+      accountNamePlaceholder: 'e.g. Basic Account / Collection Account',
       usageType: 'Usage Type',
       usageGeneral: 'General',
       usageReceive: 'Receive',

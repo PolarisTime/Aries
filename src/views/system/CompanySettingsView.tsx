@@ -90,7 +90,7 @@ export function CompanySettingsView() {
       message.success(t('common.saveSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.companySetting })
     },
-    onError: (err: Error) => showError(err, '保存公司信息失败'),
+    onError: (err: Error) => showError(err, t('api.saveCompanyInfoFailed')),
   })
 
   const addSettlementAccount = useCallback(() => {
@@ -100,7 +100,7 @@ export function CompanySettingsView() {
   const removeSettlementAccount = useCallback(
     (index: number) => {
       if (settlementAccounts.length <= 1) {
-        message.warning('至少需要保留一个结算账户')
+        message.warning(t('system.company.atLeastOneSettlementAccount'))
         return
       }
       setSettlementAccounts((prev) => prev.filter((_, i) => i !== index))
@@ -121,27 +121,33 @@ export function CompanySettingsView() {
 
   const handleSave = useCallback(async () => {
     if (!canSave) {
-      message.warning('暂无保存权限')
+      message.warning(t('common.noPermission'))
       return
     }
 
     // Sync validation before async form validation
     if (!settlementAccounts.length) {
-      message.warning('请至少维护一个结算账户')
+      message.warning(t('system.company.atLeastOneSettlementAccount'))
       return
     }
     for (let i = 0; i < settlementAccounts.length; i++) {
       const account = settlementAccounts[i]
       if (!account.accountName?.trim()) {
-        message.warning(`请输入第 ${i + 1} 个结算账户的账户名称`)
+        message.warning(
+          t('system.company.inputAccountName', { index: i + 1 }),
+        )
         return
       }
       if (!account.bankName?.trim()) {
-        message.warning(`请输入第 ${i + 1} 个结算账户的开户银行`)
+        message.warning(
+          t('system.company.inputBankName', { index: i + 1 }),
+        )
         return
       }
       if (!account.bankAccount?.trim()) {
-        message.warning(`请输入第 ${i + 1} 个结算账户的银行账号`)
+        message.warning(
+          t('system.company.inputBankAccount', { index: i + 1 }),
+        )
         return
       }
     }
@@ -149,7 +155,9 @@ export function CompanySettingsView() {
     for (const account of settlementAccounts) {
       const bankAccount = account.bankAccount.trim()
       if (usedBankAccounts.has(bankAccount)) {
-        message.warning(`银行账号重复：${bankAccount}`)
+        message.warning(
+          t('system.company.duplicateBankAccount', { account: bankAccount }),
+        )
         return
       }
       usedBankAccounts.add(bankAccount)
@@ -187,12 +195,20 @@ export function CompanySettingsView() {
 
   const overviewItems = useMemo(
     () => [
-      { label: '企业模式', value: '单企业' },
       {
-        label: '主体状态',
+        label: t('system.company.enterpriseMode'),
+        value: t('system.company.singleEnterprise'),
+      },
+      {
+        label: t('system.company.subjectStatus'),
         value: asString(getFormString(form, 'status')) || '--',
       },
-      { label: '结算银行', value: `${settlementAccounts.length} 个` },
+      {
+        label: t('system.company.settlementBanks'),
+        value: t('system.company.countUnit', {
+          count: settlementAccounts.length,
+        }),
+      },
     ],
     [form, settlementAccounts],
   )
@@ -220,18 +236,16 @@ export function CompanySettingsView() {
           type="info"
           showIcon
           className="mb-24"
-          title="公司主体信息"
-          description={
-            '公司名称和税号由 OOBE 脚本初始化后锁定；默认税率已迁移到"通用设置"，本页只维护公司主体和结算银行信息。'
-          }
+          title={t('system.company.title')}
+          description={t('system.company.lockedByOobe')}
         />
         {!canView && (
           <Alert
             type="warning"
             showIcon
             className="mb-24"
-            title="暂无查看权限"
-            description="当前账号没有公司信息查看权限。"
+            title={t('common.noPermission')}
+            description={t('system.company.noViewPermission')}
           />
         )}
         {isLoading && !initialized ? (
@@ -259,13 +273,13 @@ export function CompanySettingsView() {
             <Card
               size="small"
               className="mt-16 bg-secondary rounded-lg"
-              title="补充说明"
+              title={t('system.company.supplementNote')}
             >
-              <Form.Item name="remark" label="备注">
+              <Form.Item name="remark" label={t('common.remark')}>
                 <Input.TextArea
                   disabled={!canSave}
                   rows={4}
-                  placeholder="补充主体抬头、结算习惯或财务说明"
+                  placeholder={t('system.company.subjectRemarkPlaceholder')}
                 />
               </Form.Item>
             </Card>

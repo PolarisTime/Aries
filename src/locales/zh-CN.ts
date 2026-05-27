@@ -923,6 +923,7 @@ export const zhCN: MessageSchema = {
       addBank: '新增银行',
       settlementAccount: '结算账户',
       accountName: '账户名称',
+      accountNamePlaceholder: '如：基本户 / 收款户',
       usageType: '用途',
       usageGeneral: '通用',
       usageReceive: '收款',

@@ -893,6 +893,7 @@ export interface MessageSchema {
       addBank: string
       settlementAccount: string
       accountName: string
+      accountNamePlaceholder: string
       usageType: string
       usageGeneral: string
       usageReceive: string

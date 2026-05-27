@@ -13,6 +13,7 @@ import Space from 'antd/es/space'
 import type { TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
+import { useTranslation } from 'react-i18next'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { getPrintTemplateBillTypeLabel } from '@/views/system/print-template-view-utils'
@@ -52,9 +53,10 @@ export function PrintTemplateTableCard({
   onDelete,
   onActiveChange,
 }: Props) {
+  const { t } = useTranslation()
   const columns: TableProps<PrintTemplateRecord>['columns'] = [
     {
-      title: '操作',
+      title: t('common.operation'),
       key: 'action',
       width: 280,
       fixed: 'left',
@@ -66,7 +68,7 @@ export function PrintTemplateTableCard({
             icon={<EyeOutlined />}
             onClick={() => onPreview(record)}
           >
-            预览
+            {t('system.printTemplate.preview')}
           </Button>
           {canEdit && (
             <Button
@@ -75,7 +77,7 @@ export function PrintTemplateTableCard({
               icon={<EditOutlined />}
               onClick={() => onEdit(record)}
             >
-              编辑
+              {t('common.edit')}
             </Button>
           )}
           {canCreate && (
@@ -85,7 +87,7 @@ export function PrintTemplateTableCard({
               icon={<CopyOutlined />}
               onClick={() => onCopy(record)}
             >
-              复制
+              {t('system.printTemplate.copy')}
             </Button>
           )}
           {canDelete && (
@@ -96,30 +98,38 @@ export function PrintTemplateTableCard({
               icon={<DeleteOutlined />}
               onClick={() => onDelete(record)}
             >
-              删除
+              {t('common.delete')}
             </Button>
           )}
         </Space>
       ),
     },
-    { dataIndex: 'templateName', title: '模板名称', width: 200 },
+    {
+      dataIndex: 'templateName',
+      title: t('system.printTemplate.templateName'),
+      width: 200,
+    },
     {
       dataIndex: 'billType',
-      title: '单据类型',
+      title: t('system.printTemplate.billType'),
       width: 150,
       render: (value: string) => getPrintTemplateBillTypeLabel(value),
     },
     {
       dataIndex: 'isDefault',
-      title: '默认',
+      title: t('system.printTemplate.isDefault'),
       width: 80,
       align: 'center',
       render: (value: boolean) =>
-        value ? <Tag color="green">是</Tag> : <Tag>否</Tag>,
+        value ? (
+          <Tag color="green">{t('common.yes')}</Tag>
+        ) : (
+          <Tag>{t('common.no')}</Tag>
+        ),
     },
     {
       dataIndex: 'updateTime',
-      title: '更新时间',
+      title: t('common.updatedAt'),
       width: 180,
       render: (value: string) => value || '--',
     },
@@ -127,7 +137,7 @@ export function PrintTemplateTableCard({
 
   return (
     <Card
-      title="打印模板"
+      title={t('system.printTemplate.title')}
       extra={
         <Space>
           <Select
@@ -137,11 +147,11 @@ export function PrintTemplateTableCard({
             options={printTemplateTargetOptions}
           />
           <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-            刷新
+            {t('common.refresh')}
           </Button>
           {canCreate && (
             <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-              新建模板
+              {t('system.printTemplate.newTemplate')}
             </Button>
           )}
         </Space>
