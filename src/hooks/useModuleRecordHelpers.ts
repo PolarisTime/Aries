@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import { useCallback } from 'react'
+import i18next from 'i18next'
 import { generateBusinessPrimaryNo } from '@/api/business'
 import type {
   ModuleLineItem,
@@ -21,7 +22,7 @@ interface Props {
 export function useModuleRecordHelpers({ moduleKey, config }: Props) {
   const getCurrentOperatorName = useCallback(() => {
     const user = getStoredUser()
-    return String(user?.userName || user?.loginName || '当前用户')
+    return String(user?.userName || user?.loginName || i18next.t('hooks.recordHelpers.currentUser'))
   }, [])
 
   const generatePrimaryNo = useCallback(() => {

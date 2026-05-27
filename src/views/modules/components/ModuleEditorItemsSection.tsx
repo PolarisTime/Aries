@@ -2,6 +2,7 @@ import { DeleteOutlined, ImportOutlined, PlusOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
 import Button from 'antd/es/button'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type {
   ModuleLineItem,
   ModulePageConfig,
@@ -64,6 +65,7 @@ export function ModuleEditorItemsSection({
   onToggleItemColumn,
   onRowDragOver,
 }: Props) {
+  const { t } = useTranslation()
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
   if (!config.itemColumns?.length) {
@@ -84,7 +86,7 @@ export function ModuleEditorItemsSection({
                   icon={<PlusOutlined />}
                   onClick={onAddItem}
                 >
-                  新增明细
+                  {t('modules.itemsSection.addItem')}
                 </Button>
               )}
               {canImportParentItems && (
@@ -95,7 +97,7 @@ export function ModuleEditorItemsSection({
                   onClick={onOpenParentSelector}
                 >
                   {config.parentImport?.buttonText ||
-                    `导入${config.parentImport?.label || '上级单据'}明细`}
+                    t('modules.itemsSection.importItems', { label: config.parentImport?.label || t('modules.itemsSection.parentDoc') })}
                 </Button>
               )}
               <ColumnSettingsPopover
@@ -114,7 +116,7 @@ export function ModuleEditorItemsSection({
                   icon={<DeleteOutlined />}
                   onClick={onRemoveSelectedItems}
                 >
-                  删除选中 ({selectedItemIds.length})
+                  {t('modules.itemsSection.deleteSelected')} ({selectedItemIds.length})
                 </Button>
               )}
               <EditorFooterActions
@@ -132,8 +134,8 @@ export function ModuleEditorItemsSection({
             dataSource={items}
             emptyText={
               config.parentImport
-                ? '当前没有明细，可手动新增或从上级单据导入'
-                : '当前没有明细，可手动新增'
+                ? t('modules.itemsSection.emptyTextWithImport')
+                : t('modules.itemsSection.emptyText')
             }
             rowClassName={(record) =>
               selectedItemIds.includes(record.id)
@@ -154,7 +156,7 @@ export function ModuleEditorItemsSection({
           parentModuleKey={config.parentImport.parentModuleKey}
           parentDisplayFieldKey={config.parentImport.parentDisplayFieldKey}
           allowMultipleSelection={config.parentImport.allowMultipleSelection}
-          title={`选择${config.parentImport.label || '上级单据'}`}
+          title={t('modules.itemsSection.selectParent', { label: config.parentImport.label || t('modules.itemsSection.parentDoc') })}
           onSelect={onImportParentRecord}
           onClose={onCloseParentSelector}
         />

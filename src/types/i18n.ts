@@ -626,6 +626,7 @@ export interface MessageSchema {
       unitPrice: string
       amount: string
       warehouseName: string
+      sourceNo: string
     }
     nextModule: {
       createPurchaseInbound: string
@@ -732,6 +733,25 @@ export interface MessageSchema {
       configNotFound: string
       moduleConfigNotFound: string
     }
+    itemsSection: {
+      addItem: string
+      importItems: string
+      deleteSelected: string
+      emptyTextWithImport: string
+      emptyText: string
+      parentDoc: string
+      selectParent: string
+    }
+    freightPickup: {
+      title: string
+      billNo: string
+      customer: string
+      project: string
+      carrier: string
+      vehiclePlate: string
+      totalWeight: string
+      totalFreight: string
+    }
   }
   hooks: {
     batchActions: {
@@ -821,6 +841,12 @@ export interface MessageSchema {
     }
     columnSettings: {
       syncRetryLater: string
+    }
+    statement: {
+      noCandidateDocuments: string
+    }
+    recordHelpers: {
+      currentUser: string
     }
   }
   layouts: {

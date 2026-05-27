@@ -643,6 +643,7 @@ export const zhCN: MessageSchema = {
       unitPrice: '单价',
       amount: '金额',
       warehouseName: '码头',
+      sourceNo: '出库单号',
     },
     units: {
       ton: '吨',
@@ -753,6 +754,25 @@ export const zhCN: MessageSchema = {
       configNotFound: '页面配置未找到',
       moduleConfigNotFound: '模块配置未找到',
     },
+    itemsSection: {
+      addItem: '新增明细',
+      importItems: '导入{{label}}明细',
+      deleteSelected: '删除选中',
+      emptyTextWithImport: '当前没有明细，可手动新增或从上级单据导入',
+      emptyText: '当前没有明细，可手动新增',
+      parentDoc: '上级单据',
+      selectParent: '选择{{label}}',
+    },
+    freightPickup: {
+      title: '提货清单 — 物流单（{{count}} 条）',
+      billNo: '运单号',
+      customer: '客户',
+      project: '项目',
+      carrier: '物流方',
+      vehiclePlate: '车牌号',
+      totalWeight: '总重(吨)',
+      totalFreight: '总运费',
+    },
   },
   hooks: {
     batchActions: {
@@ -850,6 +870,12 @@ export const zhCN: MessageSchema = {
     },
     columnSettings: {
       syncRetryLater: '列设置已保存到本地，云同步稍后重试',
+    },
+    statement: {
+      noCandidateDocuments: '当前筛选条件下没有可生成的候选单据',
+    },
+    recordHelpers: {
+      currentUser: '当前用户',
     },
   },
   layouts: {

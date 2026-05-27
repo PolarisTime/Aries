@@ -38,6 +38,28 @@ interface Props {
   onSaved: () => void
 }
 
+const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
+  'purchase-order': { labelKey: 'modules.nextModule.createPurchaseInbound', path: '/purchase-inbound' },
+  'sales-order': { labelKey: 'modules.nextModule.createSalesOutbound', path: '/sales-outbound' },
+  'sales-outbound': { labelKey: 'modules.nextModule.createFreightBill', path: '/freight-bill' },
+}
+
+function isFinanceOrTradeModule(key: string) {
+  return (
+    key === 'purchase-order' ||
+    key === 'purchase-inbound' ||
+    key === 'sales-order' ||
+    key === 'sales-outbound' ||
+    key === 'receipt' ||
+    key === 'payment' ||
+    key === 'invoice-issue' ||
+    key === 'invoice-receipt' ||
+    key === 'customer-statement' ||
+    key === 'supplier-statement' ||
+    key === 'freight-statement'
+  )
+}
+
 export function ModuleEditorWorkspace({
   open,
   config,
@@ -229,22 +251,6 @@ interface SaveResultOverlayProps {
   onClear: () => void
 }
 
-function isFinanceOrTradeModule(key: string) {
-  return (
-    key === 'purchase-order' ||
-    key === 'purchase-inbound' ||
-    key === 'sales-order' ||
-    key === 'sales-outbound' ||
-    key === 'receipt' ||
-    key === 'payment' ||
-    key === 'invoice-issue' ||
-    key === 'invoice-receipt' ||
-    key === 'customer-statement' ||
-    key === 'supplier-statement' ||
-    key === 'freight-statement'
-  )
-}
-
 function SaveResultOverlay({
   saveResult,
   config,
@@ -275,11 +281,12 @@ function SaveResultOverlay({
       />
     )
 
-  const NEXT_MODULE: Record<string, { label: string; path: string }> = {
-    'purchase-order': { label: t('modules.nextModule.createPurchaseInbound'), path: '/purchase-inbound' },
-    'sales-order': { label: t('modules.nextModule.createSalesOutbound'), path: '/sales-outbound' },
-    'sales-outbound': { label: t('modules.nextModule.createFreightBill'), path: '/freight-bill' },
-  }
+  const NEXT_MODULE: Record<string, { label: string; path: string }> = Object.fromEntries(
+    Object.entries(NEXT_MODULE_PATHS).map(([key, { labelKey, path }]) => [
+      key,
+      { label: t(labelKey), path },
+    ]),
+  )
 
   const nextModule = isSuccess ? NEXT_MODULE[moduleKey] : null
 
