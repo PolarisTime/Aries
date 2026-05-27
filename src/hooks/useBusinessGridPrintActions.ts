@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail } from '@/api/business'
 import { assertApiSuccess, http } from '@/api/client'
 import { listPrintTemplates } from '@/api/print-template'
-import { PrintTemplateSelector } from '@/hooks/PrintTemplateSelector'
+import { PrintTemplateSelector } from '@/components/PrintTemplateSelector'
 import type { ModulePageConfig } from '@/types/module-page'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
@@ -34,7 +34,7 @@ async function pickPrintTemplate(
     if (defaultTemplate) selectedId = defaultTemplate.id
 
     modal.confirm({
-      title: '选择打印模板',
+      title: t('hooks.printActions.selectPrintTemplate'),
       width: 480,
       icon: null,
       okText: t('common.ok'),
@@ -84,7 +84,7 @@ export function useBusinessGridPrintActions({
         const selectedRecords = selectedDetails.map((detail) => detail.data)
 
         if (!selectedRecords.length) {
-          message.warning('未找到可打印的选中记录')
+          message.warning(t('hooks.printActions.noPrintableRecords'))
           return
         }
 
@@ -104,7 +104,7 @@ export function useBusinessGridPrintActions({
             ),
           )
           for (const r of results) {
-            assertApiSuccess(r, '打印脚本生成失败')
+            assertApiSuccess(r, t('hooks.printActions.printScriptGenerationFailed'))
           }
 
           // COORD 模板 → execPrintCode; HTML 模板 → printHtml
@@ -118,7 +118,7 @@ export function useBusinessGridPrintActions({
               preview,
               title: template.templateName || config.title,
             })
-            if (!success) throw new Error('打印服务不可用，请检查 CLodop 或打印模板配置')
+            if (!success) throw new Error(t('hooks.printActions.printServiceUnavailable'))
           }
 
           if (htmlResults.length) {
@@ -131,12 +131,12 @@ export function useBusinessGridPrintActions({
                 preview,
                 title: template.templateName || config.title,
               })
-              if (!success) throw new Error('打印服务不可用，请检查 CLodop 环境')
+              if (!success) throw new Error(t('hooks.printActions.printServiceUnavailable'))
             }
           }
 
           if (!coordResults.length && !htmlResults.length) {
-            message.warning('未生成打印内容')
+            message.warning(t('hooks.printActions.noPrintContent'))
           }
 
           return
@@ -177,10 +177,10 @@ export function useBusinessGridPrintActions({
         })
 
         if (!success) {
-          throw new Error('打印服务不可用，请检查 CLodop 环境')
+          throw new Error(t('hooks.printActions.printServiceUnavailable'))
         }
       } catch (err) {
-        message.error(err instanceof Error ? err.message : '打印失败')
+        message.error(err instanceof Error ? err.message : t('hooks.printActions.printFailed'))
       }
     },
     [config, formatCellValue, moduleKey, selectedRowKeys, t],

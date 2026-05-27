@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type {
   ModuleActionDefinition,
   ModuleFormFieldDefinition,
@@ -10,12 +11,6 @@ import {
   resolveModuleActionKind,
   resolveModuleActionPermissionCodes,
 } from '@/module-system/module-adapter-actions'
-
-const BULK_DELETE_LABEL = '删除'
-const BULK_AUDIT_LABEL = '审核'
-const BULK_REVERSE_AUDIT_LABEL = '反审核'
-const BULK_PRINT_PREVIEW_LABEL = '打印预览'
-const BULK_DIRECT_PRINT_LABEL = '直接打印'
 
 interface Handlers {
   exportMaterialRows: () => Promise<void>
@@ -69,6 +64,8 @@ export function useModuleToolbarActions({
   hasAnyModuleAction,
   handlers,
 }: Props) {
+  const { t } = useTranslation()
+
   const canUseAction = useCallback(
     (action: ModuleActionDefinition) =>
       hasAnyModuleAction(
@@ -85,13 +82,13 @@ export function useModuleToolbarActions({
     () =>
       canUseBulkDeleteActions
         ? {
-            label: BULK_DELETE_LABEL,
+            label: t('hooks.toolbarActions.delete'),
             type: 'default',
             danger: true,
             disabled: selectedRowCount === 0,
           }
         : null,
-    [canUseBulkDeleteActions, selectedRowCount],
+    [canUseBulkDeleteActions, selectedRowCount, t],
   )
 
   const bulkToolbarActions = useMemo<ModuleActionDefinition[]>(() => {
@@ -99,14 +96,14 @@ export function useModuleToolbarActions({
     const actions: ModuleActionDefinition[] = []
     if (canUseBulkAuditActions) {
       actions.push(
-        { label: BULK_AUDIT_LABEL, type: 'default', disabled },
-        { label: BULK_REVERSE_AUDIT_LABEL, type: 'default', disabled },
+        { label: t('hooks.toolbarActions.audit'), type: 'default', disabled },
+        { label: t('hooks.toolbarActions.reverseAudit'), type: 'default', disabled },
       )
     }
     if (canUseBulkPrintActions) {
       actions.push(
-        { label: BULK_PRINT_PREVIEW_LABEL, type: 'default', disabled, loading: detailPrintLoading },
-        { label: BULK_DIRECT_PRINT_LABEL, type: 'default', disabled, loading: detailPrintLoading },
+        { label: t('hooks.toolbarActions.printPreview'), type: 'default', disabled, loading: detailPrintLoading },
+        { label: t('hooks.toolbarActions.directPrint'), type: 'default', disabled, loading: detailPrintLoading },
       )
     }
     return actions
@@ -115,6 +112,7 @@ export function useModuleToolbarActions({
     canUseBulkPrintActions,
     selectedRowCount,
     detailPrintLoading,
+    t,
   ])
 
   const visibleToolbarActions = useMemo<ModuleActionDefinition[]>(() => {
@@ -141,27 +139,33 @@ export function useModuleToolbarActions({
   const handleAction = useCallback(
     async (action: ModuleActionDefinition) => {
       if (!canUseAction(action)) {
-        message.warning(`暂无${action.label}权限`)
+        message.warning(t('hooks.toolbarActions.noPermission', { label: action.label }))
         return
       }
 
-      if (action.label === BULK_AUDIT_LABEL) {
+      const auditLabel = t('hooks.toolbarActions.audit')
+      const reverseAuditLabel = t('hooks.toolbarActions.reverseAudit')
+      const printPreviewLabel = t('hooks.toolbarActions.printPreview')
+      const directPrintLabel = t('hooks.toolbarActions.directPrint')
+      const deleteLabel = t('hooks.toolbarActions.delete')
+
+      if (action.label === auditLabel) {
         handlers.handleSelectedAuditRecords()
         return
       }
-      if (action.label === BULK_REVERSE_AUDIT_LABEL) {
+      if (action.label === reverseAuditLabel) {
         handlers.handleSelectedReverseAuditRecords()
         return
       }
-      if (action.label === BULK_PRINT_PREVIEW_LABEL) {
+      if (action.label === printPreviewLabel) {
         await handlers.handlePrintSelectedRecords(true)
         return
       }
-      if (action.label === BULK_DIRECT_PRINT_LABEL) {
+      if (action.label === directPrintLabel) {
         await handlers.handlePrintSelectedRecords(false)
         return
       }
-      if (action.label === BULK_DELETE_LABEL) {
+      if (action.label === deleteLabel) {
         handlers.handleSelectedDeleteRecords()
         return
       }
@@ -206,10 +210,10 @@ export function useModuleToolbarActions({
           handlers.navigateToRoleActionEditor()
           return
         default:
-          message.info(`${action.label} 当前没有额外处理逻辑。`)
+          message.info(t('hooks.toolbarActions.noExtraLogic', { label: action.label }))
       }
     },
-    [canUseAction, formFields, handlers, isMaterialModule, moduleKey],
+    [canUseAction, formFields, handlers, isMaterialModule, moduleKey, t],
   )
 
   return {

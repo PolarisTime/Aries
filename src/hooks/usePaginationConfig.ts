@@ -4,6 +4,7 @@ interface PaginationParams {
   total: number
   onChange: (page: number, pageSize: number) => void
   pageSizeOptions?: string[]
+  t: (key: string, options?: Record<string, unknown>) => string
 }
 
 export function createPaginationConfig({
@@ -12,6 +13,7 @@ export function createPaginationConfig({
   total,
   onChange,
   pageSizeOptions = ['10', '20', '50', '100'],
+  t,
 }: PaginationParams) {
   return {
     current,
@@ -19,7 +21,7 @@ export function createPaginationConfig({
     total,
     showSizeChanger: true,
     pageSizeOptions,
-    showTotal: (t: number) => `共 ${t} 条`,
+    showTotal: (count: number) => t('hooks.pagination.total', { count }),
     onChange,
   }
 }

@@ -90,8 +90,8 @@ export function AppLayout() {
 
   const { pages, closePage } = useOpenPages(
     '/dashboard',
-    '未命名页面',
-    '工作台',
+    t('hooks.openPages.unnamedPage'),
+    t('hooks.openPages.workbench'),
     resolveOpenPage,
   )
 

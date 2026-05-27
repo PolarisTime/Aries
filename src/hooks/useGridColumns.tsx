@@ -1,5 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import { type ReactNode, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import { type ActionItem, TableActions } from '@/components/TableActions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
@@ -31,6 +32,7 @@ export function useGridColumns({
   showActions,
 }: Props) {
   const { formatCellValue } = useModuleDisplaySupport()
+  const { t } = useTranslation()
 
   const columns = useMemo((): ColumnDef<ModuleRecord>[] => {
     const cols: ColumnDef<ModuleRecord>[] = []
@@ -38,7 +40,7 @@ export function useGridColumns({
     if (canUpdate || showActions) {
       cols.push({
         id: 'actions',
-        header: '操作',
+        header: t('hooks.gridColumns.actions'),
         meta: {
           width: '240px',
           align: 'center',
@@ -88,7 +90,7 @@ export function useGridColumns({
     }
 
     return cols
-  }, [config, rowActions, canUpdate, formatCellValue, showActions])
+  }, [config, rowActions, canUpdate, formatCellValue, showActions, t])
 
   return { columns }
 }

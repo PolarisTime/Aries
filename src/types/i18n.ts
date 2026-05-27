@@ -523,4 +523,94 @@ export interface MessageSchema {
     refreshLoginStatusFailed: string
     loginStatusExpired: string
   }
+  hooks: {
+    batchActions: {
+      pleaseSelectRecords: string
+      noBatchAuditStatus: string
+      auditNotSupported: string
+      batchAudit: string
+      batchAuditConfirm: string
+      skippedPart: string
+      auditFailed: string
+      auditCompletedWithFailures: string
+      skippedCount: string
+      auditSuccess: string
+      deleteNotSupported: string
+      batchDelete: string
+      batchDeleteConfirm: string
+      deleteFailed: string
+      deleteCompletedWithFailures: string
+      deleteSuccess: string
+      noBatchReverseAuditStatus: string
+      reverseAuditNotSupported: string
+      batchReverseAudit: string
+      batchReverseAuditConfirm: string
+      reverseAuditFailed: string
+      reverseAuditCompletedWithFailures: string
+      reverseAuditSuccess: string
+      pleaseSelectFreight: string
+      batchMarkDelivered: string
+      batchMarkDeliveredConfirm: string
+      markDeliveredFailed: string
+      markDeliveredCompletedWithFailures: string
+      markDeliveredSuccess: string
+    }
+    printActions: {
+      selectPrintTemplate: string
+      noPrintableRecords: string
+      printScriptGenerationFailed: string
+      printServiceUnavailable: string
+      noPrintContent: string
+      printFailed: string
+    }
+    freightActions: {
+      noFreightData: string
+      freightSummaryTitle: string
+      documentCount: string
+      totalWeight: string
+      totalFreight: string
+      paidAmount: string
+      unpaidAmount: string
+    }
+    toolbarActions: {
+      delete: string
+      audit: string
+      reverseAudit: string
+      printPreview: string
+      directPrint: string
+      noPermission: string
+      noExtraLogic: string
+    }
+    recordActions: {
+      view: string
+      edit: string
+      attachment: string
+      audit: string
+      reverseAudit: string
+    }
+    requestError: {
+      requestFailed: string
+    }
+    pagination: {
+      total: string
+    }
+    displaySupport: {
+      yes: string
+      no: string
+    }
+    excelExport: {
+      exportSuccess: string
+      exportFailed: string
+    }
+    openPages: {
+      unnamedPage: string
+      workbench: string
+    }
+    gridColumns: {
+      actions: string
+    }
+    columnSettings: {
+      syncRetryLater: string
+    }
+  }
 }

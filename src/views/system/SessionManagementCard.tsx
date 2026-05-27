@@ -6,6 +6,7 @@ import Row from 'antd/es/row'
 import Statistic from 'antd/es/statistic'
 import type { ColumnsType } from 'antd/es/table'
 import Table from 'antd/es/table'
+import { useTranslation } from 'react-i18next'
 import type {
   RefreshTokenRecord,
   RefreshTokenSummaryData,
@@ -46,6 +47,7 @@ export function SessionManagementCard({
   onRevokeAll,
   onPageChange,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <Card
       title="会话管理"
@@ -89,6 +91,7 @@ export function SessionManagementCard({
           pageSize,
           total: totalElements,
           onChange: onPageChange,
+          t,
         })}
       />
     </Card>

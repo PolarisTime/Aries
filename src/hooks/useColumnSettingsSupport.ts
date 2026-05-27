@@ -5,6 +5,7 @@ import type {
   VisibilityState,
 } from '@tanstack/react-table'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getUserColumnSettings,
   saveUserColumnSettings,
@@ -100,6 +101,7 @@ export function useColumnSettingsSupport(
   defaultHiddenKeys?: string[],
   totalColumnCount = 10,
 ) {
+  const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const userKey = String(user?.id || user?.loginName || 'anonymous').trim()
   const initialSettings = resolveInitialSettings(
@@ -244,10 +246,10 @@ export function useColumnSettingsSupport(
       logger.warn('Failed to save roaming column settings', lastError)
       if (!syncWarningShownRef.current) {
         syncWarningShownRef.current = true
-        message.warning('列设置已保存到本地，云同步稍后重试')
+        message.warning(t('hooks.columnSettings.syncRetryLater'))
       }
     },
-    [pageKey, userKey],
+    [pageKey, userKey, t],
   )
 
   useEffect(() => {
