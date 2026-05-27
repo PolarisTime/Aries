@@ -823,4 +823,264 @@ export interface MessageSchema {
       syncRetryLater: string
     }
   }
+  layouts: {
+    userMenu: {
+      personalSettings: string
+      logout: string
+    }
+    personalSettings: {
+      title: string
+      displayTab: string
+      securityTab: string
+    }
+    settings: {
+      systemFont: string
+      systemFontDefault: string
+      fontSize: string
+      navLayout: string
+      themeMode: string
+      resetDefault: string
+      saveDisplay: string
+      theme: {
+        light: string
+        dark: string
+        system: string
+      }
+      layout: {
+        sider: string
+        top: string
+        siderDesc: string
+        topDesc: string
+      }
+    }
+    topNav: {
+      serverTime: string
+    }
+    sideNav: {
+      breadcrumbPrefix: string
+      apiOnline: string
+      apiOffline: string
+    }
+    headerSearch: {
+      placeholder: string
+    }
+    userInfo: {
+      notLoggedIn: string
+      currentAccount: string
+    }
+    routePage: {
+      apiKeyDetail: string
+    }
+  }
+  system: {
+    company: {
+      title: string
+      saveSuccess: string
+      enterpriseMode: string
+      singleEnterprise: string
+      subjectStatus: string
+      settlementBanks: string
+      supplementNote: string
+      atLeastOneSettlementAccount: string
+      inputAccountName: string
+      inputBankName: string
+      inputBankAccount: string
+      duplicateBankAccount: string
+      countUnit: string
+      lockedByOobe: string
+      noViewPermission: string
+      settlementInfo: string
+      addBank: string
+      settlementAccount: string
+      accountName: string
+      usageType: string
+      usageGeneral: string
+      usageReceive: string
+      usagePay: string
+      bankName: string
+      bankNamePlaceholder: string
+      bankAccount: string
+      bankAccountPlaceholder: string
+      statusNormal: string
+      statusDisabled: string
+      remarkPlaceholder: string
+      subjectRemarkPlaceholder: string
+    }
+    session: {
+      title: string
+      searchPlaceholder: string
+      revokeAll: string
+      valid: string
+      disabled: string
+      offline: string
+      online: string
+      disable: string
+      loginIp: string
+      deviceInfo: string
+      lastActive: string
+      expiresAt: string
+      onlineStatus: string
+      disableConfirm: string
+      revokeAllConfirm: string
+      revoked: string
+    }
+    printTemplate: {
+      title: string
+      newTemplate: string
+      editTemplate: string
+      deleteTemplate: string
+      preview: string
+      copy: string
+      templateName: string
+      billType: string
+      isDefault: string
+      deleteContent: string
+      inputTemplateContent: string
+    }
+    numberRules: {
+      title: string
+      searchPlaceholder: string
+      documentRules: string
+      uploadRules: string
+      disabledUploadRules: string
+      billName: string
+      settingName: string
+      prefix: string
+      dateRule: string
+      serialLength: string
+      resetRule: string
+      sampleNo: string
+      moduleName: string
+      renamePattern: string
+      sampleFileName: string
+      allStatus: string
+      editNumberRule: string
+      editUploadRule: string
+      settingCode: string
+      billNameLabel: string
+      prefixPlaceholder: string
+      sampleNoPrefix: string
+      moduleCode: string
+      ruleCode: string
+      ruleName: string
+      renamePatternPlaceholder: string
+      sampleFileNamePrefix: string
+    }
+    userAccount: {
+      title: string
+      searchPlaceholder: string
+      createButton: string
+      loginName: string
+      userName: string
+      department: string
+      mobile: string
+      roleNames: string
+      dataScope: string
+      twoFactorStatus: string
+      lastLogin: string
+      enabled: string
+      notEnabled: string
+      createSuccess: string
+      account: string
+      copyAccount: string
+      initialPassword: string
+      copyPassword: string
+      savePasswordHint: string
+      deleteTitle: string
+      deleteContent: string
+      copied: string
+      copyFailed: string
+    }
+    apiKey: {
+      title: string
+      totpRequiredHint: string
+      verifyTotpTitle: string
+      generateTitle: string
+      userId: string
+      keyName: string
+      keyNamePlaceholder: string
+      usageScope: string
+      allowedResources: string
+      allowedResourcesPlaceholder: string
+      allowedActions: string
+      allowedActionsPlaceholder: string
+      expireDays: string
+      expireDaysPlaceholder: string
+      generate: string
+      copyKeyHint: string
+      searchPlaceholder: string
+      filterUserPlaceholder: string
+      allStatus: string
+      allScope: string
+      generateButton: string
+    }
+    generalSettings: {
+      title: string
+      searchPlaceholder: string
+      basicParams: string
+      systemSwitches: string
+      currentEnabled: string
+      enabled: string
+      closed: string
+      statusNormal: string
+      statusDisabled: string
+    }
+    database: {
+      title: string
+      description: string
+      refreshStatus: string
+    }
+    twoFactor: {
+      title: string
+      enabled: string
+      notEnabled: string
+      step1: string
+      step2: string
+      generateQr: string
+      confirmEnable: string
+      disable: string
+      currentStatus: string
+    }
+    securityKey: {
+      title: string
+      jwtRotated: string
+      totpRotated: string
+    }
+  }
+  finance: {
+    projectArDetail: {
+      title: string
+      projectOverview: string
+      projectName: string
+      projectNameAbbr: string
+      customerCode: string
+      customerName: string
+      projectAddress: string
+      projectStatus: string
+      projectManager: string
+      contactPerson: string
+      completedSalesAmount: string
+      prepaymentBalance: string
+      unreceivedAmount: string
+      netUnreceivedAmount: string
+      unreconciledTab: string
+      reconciledTab: string
+      sourceDocumentNo: string
+      documentType: string
+      businessDate: string
+      amount: string
+      writtenOffAmount: string
+      unwrittenOffAmount: string
+      reconciliationStatus: string
+      receiptStatus: string
+      operatorName: string
+    }
+  }
+  print: {
+    defaultTitle: string
+    clodopLicenseInjectFailed: string
+    clodopTemplatePrintFailed: string
+    clodopPrintFailed: string
+    printTimeLabel: string
+  }
 }

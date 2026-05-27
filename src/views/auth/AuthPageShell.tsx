@@ -2,6 +2,7 @@ import Flex from 'antd/es/flex'
 import Layout from 'antd/es/layout'
 import Typography from 'antd/es/typography'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { appTitle } from '@/utils/env'
 
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function AuthPageShell({ children, hero }: Props) {
+  const { t } = useTranslation()
   return (
     <AppAntdProvider>
       <Layout className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -28,7 +30,7 @@ export function AuthPageShell({ children, hero }: Props) {
               <Typography.Title level={3} className="!mb-1">
                 {appTitle}
               </Typography.Title>
-              <Typography.Text type="secondary">钢贸业务中台</Typography.Text>
+              <Typography.Text type="secondary">{t('common.brandSubtitle')}</Typography.Text>
             </div>
           )}
           {children}

@@ -16,6 +16,7 @@ export interface ModulePrintDocument {
   rows?: string[][]
 }
 
+import { t } from 'i18next'
 import { escapeHtml } from '@/utils/escape-html'
 
 function formatPrintTime() {
@@ -88,6 +89,6 @@ export function buildModulePrintHtml(document: ModulePrintDocument) {
       <tbody>${renderFieldRows(document.fields)}</tbody>
     </table>
     ${renderItemsTable(document.columns || [], document.rows || [])}
-    <div class="print-footnote">打印时间：${escapeHtml(formatPrintTime())}</div>
+    <div class="print-footnote">${t('print.printTimeLabel')}${escapeHtml(formatPrintTime())}</div>
   `
 }

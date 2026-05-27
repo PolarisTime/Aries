@@ -9,6 +9,7 @@ import Table, { type ColumnsType } from 'antd/es/table'
 import Tabs from 'antd/es/tabs'
 import Typography from 'antd/es/typography'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { http } from '@/api/http'
 
 const { Title } = Typography
@@ -52,9 +53,9 @@ interface PageResponse<T> {
   pageSize: number
 }
 
-function formatAmount(value: number | undefined | null): string {
+function formatAmount(value: number | undefined | null, locale: string): string {
   if (value == null) return '-'
-  return value.toLocaleString('zh-CN', {
+  return value.toLocaleString(locale === 'zh-CN' ? 'zh-CN' : 'en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
@@ -65,45 +66,51 @@ function formatDate(value: string | undefined | null): string {
   return value
 }
 
-const detailColumns: ColumnsType<ProjectArDetailRow> = [
-  { title: '来源单据号', dataIndex: 'sourceDocumentNo', width: 160 },
-  { title: '单据类型', dataIndex: 'documentType', width: 100 },
-  {
-    title: '业务日期',
-    dataIndex: 'businessDate',
-    width: 120,
-    render: (v: string) => formatDate(v),
-  },
-  { title: '客户编码', dataIndex: 'customerCode', width: 110 },
-  { title: '客户名称', dataIndex: 'customerName', width: 140 },
-  {
-    title: '金额',
-    dataIndex: 'amount',
-    width: 120,
-    align: 'right',
-    render: (v: number) => formatAmount(v),
-  },
-  {
-    title: '已核销金额',
-    dataIndex: 'writtenOffAmount',
-    width: 120,
-    align: 'right',
-    render: (v: number) => formatAmount(v),
-  },
-  {
-    title: '未核销金额',
-    dataIndex: 'unwrittenOffAmount',
-    width: 120,
-    align: 'right',
-    render: (v: number) => formatAmount(v),
-  },
-  { title: '对账状态', dataIndex: 'reconciliationStatus', width: 120 },
-  { title: '收款状态', dataIndex: 'receiptStatus', width: 100 },
-  { title: '经办人', dataIndex: 'operatorName', width: 100 },
-  { title: '备注', dataIndex: 'remark', width: 150 },
-]
+function useDetailColumns(locale: string): ColumnsType<ProjectArDetailRow> {
+  const { t } = useTranslation()
+  return useMemo(() => [
+    { title: t('finance.projectArDetail.sourceDocumentNo'), dataIndex: 'sourceDocumentNo', width: 160 },
+    { title: t('finance.projectArDetail.documentType'), dataIndex: 'documentType', width: 100 },
+    {
+      title: t('finance.projectArDetail.businessDate'),
+      dataIndex: 'businessDate',
+      width: 120,
+      render: (v: string) => formatDate(v),
+    },
+    { title: t('finance.projectArDetail.customerCode'), dataIndex: 'customerCode', width: 110 },
+    { title: t('finance.projectArDetail.customerName'), dataIndex: 'customerName', width: 140 },
+    {
+      title: t('finance.projectArDetail.amount'),
+      dataIndex: 'amount',
+      width: 120,
+      align: 'right',
+      render: (v: number) => formatAmount(v, locale),
+    },
+    {
+      title: t('finance.projectArDetail.writtenOffAmount'),
+      dataIndex: 'writtenOffAmount',
+      width: 120,
+      align: 'right',
+      render: (v: number) => formatAmount(v, locale),
+    },
+    {
+      title: t('finance.projectArDetail.unwrittenOffAmount'),
+      dataIndex: 'unwrittenOffAmount',
+      width: 120,
+      align: 'right',
+      render: (v: number) => formatAmount(v, locale),
+    },
+    { title: t('finance.projectArDetail.reconciliationStatus'), dataIndex: 'reconciliationStatus', width: 120 },
+    { title: t('finance.projectArDetail.receiptStatus'), dataIndex: 'receiptStatus', width: 100 },
+    { title: t('finance.projectArDetail.operatorName'), dataIndex: 'operatorName', width: 100 },
+    { title: t('common.remark'), dataIndex: 'remark', width: 150 },
+  ], [t, locale])
+}
 
 export function ProjectArDetailPage(): React.JSX.Element {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language
+  const detailColumns = useDetailColumns(locale)
   const location = useLocation()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -195,56 +202,56 @@ export function ProjectArDetailPage(): React.JSX.Element {
     <Flex vertical gap="middle" className="pb-6">
       <Flex align="center" gap="small">
         <Button icon={<ArrowLeftOutlined />} onClick={handleBack}>
-          返回
+          {t('common.back')}
         </Button>
         <Title level={4} className="!mb-0">
-          项目应收明细
+          {t('finance.projectArDetail.title')}
         </Title>
       </Flex>
 
       {summary && (
-        <Card title="项目总览" size="small">
+        <Card title={t('finance.projectArDetail.projectOverview')} size="small">
           <Descriptions column={4} size="small" bordered>
-            <Descriptions.Item label="项目名称">
+            <Descriptions.Item label={t('finance.projectArDetail.projectName')}>
               {summary.projectName}
             </Descriptions.Item>
-            <Descriptions.Item label="项目简称">
+            <Descriptions.Item label={t('finance.projectArDetail.projectNameAbbr')}>
               {summary.projectNameAbbr || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="客户编码">
+            <Descriptions.Item label={t('finance.projectArDetail.customerCode')}>
               {summary.customerCode}
             </Descriptions.Item>
-            <Descriptions.Item label="客户名称">
+            <Descriptions.Item label={t('finance.projectArDetail.customerName')}>
               {summary.customerName}
             </Descriptions.Item>
-            <Descriptions.Item label="项目地址">
+            <Descriptions.Item label={t('finance.projectArDetail.projectAddress')}>
               {summary.projectAddress || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="项目状态">
+            <Descriptions.Item label={t('finance.projectArDetail.projectStatus')}>
               {summary.projectStatus || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="项目负责人">
+            <Descriptions.Item label={t('finance.projectArDetail.projectManager')}>
               {summary.projectManager || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="联系人">{'-'}</Descriptions.Item>
-            <Descriptions.Item label="完成销售总额">
+            <Descriptions.Item label={t('finance.projectArDetail.contactPerson')}>{'-'}</Descriptions.Item>
+            <Descriptions.Item label={t('finance.projectArDetail.completedSalesAmount')}>
               <Text strong className="text-base">
-                {formatAmount(summary.completedSalesAmount)}
+                {formatAmount(summary.completedSalesAmount, locale)}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label="项目预收余额">
+            <Descriptions.Item label={t('finance.projectArDetail.prepaymentBalance')}>
               <Text className="text-base">
-                {formatAmount(summary.prepaymentBalance)}
+                {formatAmount(summary.prepaymentBalance, locale)}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label="应收未收金额">
+            <Descriptions.Item label={t('finance.projectArDetail.unreceivedAmount')}>
               <Text color="danger" className="text-base">
-                {formatAmount(summary.unreceivedAmount)}
+                {formatAmount(summary.unreceivedAmount, locale)}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label="净未收敞口">
+            <Descriptions.Item label={t('finance.projectArDetail.netUnreceivedAmount')}>
               <Text color="danger" strong className="text-base">
-                {formatAmount(summary.netUnreceivedAmount)}
+                {formatAmount(summary.netUnreceivedAmount, locale)}
               </Text>
             </Descriptions.Item>
           </Descriptions>
@@ -257,7 +264,7 @@ export function ProjectArDetailPage(): React.JSX.Element {
         items={[
           {
             key: 'unreconciled',
-            label: `未对账单据 (${unreconciledTotal})`,
+            label: t('finance.projectArDetail.unreconciledTab', { count: unreconciledTotal }),
             children: (
               <Table
                 rowKey="sourceDocumentNo"
@@ -272,7 +279,7 @@ export function ProjectArDetailPage(): React.JSX.Element {
           },
           {
             key: 'reconciled',
-            label: `已对账单据 (${reconciledTotal})`,
+            label: t('finance.projectArDetail.reconciledTab', { count: reconciledTotal }),
             children: (
               <Table
                 rowKey="sourceDocumentNo"
