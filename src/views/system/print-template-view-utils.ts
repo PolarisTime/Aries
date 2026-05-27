@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/types/print-template'
 
@@ -7,5 +8,5 @@ export function getPrintTemplateBillTypeLabel(value?: string) {
 }
 
 export function buildPrintTemplateCopyName(record: PrintTemplateRecord) {
-  return `${record.templateName} (副本)`
+  return `${record.templateName} ${i18next.t('system.printTemplateUtils.copySuffix')}`
 }

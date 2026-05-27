@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
+import i18next from 'i18next'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -132,19 +133,19 @@ export function useApiKeyManagementState(enabled = true) {
   const revokeMutation = useMutation({
     mutationFn: revokeApiKey,
     onSuccess: () => {
-      message.success('已禁用')
+      message.success(i18next.t('system.apiKeyState.disabledSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.apiKeys })
     },
-    onError: (error: Error) => showError(error, '禁用失败'),
+    onError: (error: Error) => showError(error, i18next.t('system.apiKeyState.disableFailed')),
   })
 
   const openGenerateModal = useCallback(() => {
     if (!canCreate) {
-      message.warning('暂无 API Key 创建权限')
+      message.warning(i18next.t('system.apiKeyState.noCreatePermission'))
       return
     }
     if (isCurrentUserTotpDisabled) {
-      message.warning('当前账号未启用 2FA，禁止生成 API Key')
+      message.warning(i18next.t('system.apiKeyState.totpRequired'))
       return
     }
 
@@ -161,11 +162,11 @@ export function useApiKeyManagementState(enabled = true) {
     try {
       const values = await form.validateFields()
       if (!values.userId || !values.keyName?.trim() || !values.usageScope) {
-        message.warning('请选择用户、使用范围并填写密钥名称')
+        message.warning(i18next.t('system.apiKeyState.fillRequired'))
         return
       }
       if (!values.allowedActions?.length) {
-        message.warning('请至少选择一个允许动作')
+        message.warning(i18next.t('system.apiKeyState.selectOneAction'))
         return
       }
       setTotpModalOpen(true)
@@ -192,10 +193,10 @@ export function useApiKeyManagementState(enabled = true) {
         )
         setGeneratedKey(response.data?.rawKey || null)
         setTotpModalOpen(false)
-        message.success(response.message || 'API Key 已生成')
+        message.success(response.message || i18next.t('system.apiKeyState.generatedSuccess'))
         void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.apiKeys })
       } catch (error) {
-        showError(error, '生成失败')
+        showError(error, i18next.t('system.apiKeyState.generateFailed'))
         throw error
       } finally {
         setTotpLoading(false)
@@ -207,12 +208,12 @@ export function useApiKeyManagementState(enabled = true) {
   const handleRevoke = useCallback(
     (record: ApiKeyRecord) => {
       if (!canEdit) {
-        message.warning('暂无 API Key 管理权限')
+        message.warning(i18next.t('system.apiKeyState.noManagePermission'))
         return
       }
       modal.confirm({
-        title: '禁用 API Key',
-        content: `确定禁用密钥「${record.keyName}」吗？禁用后使用该密钥的调用将失败。`,
+        title: i18next.t('system.apiKeyState.disableConfirmTitle'),
+        content: i18next.t('system.apiKeyState.disableConfirmContent', { keyName: record.keyName }),
         okText: t('common.ok'),
         cancelText: t('common.cancel'),
         okButtonProps: { danger: true },
