@@ -114,7 +114,7 @@ export function AppLayout() {
       setSearchOpen(false)
       const targetPage = getPageDefinition(result.moduleKey)
       if (!targetPage) {
-        message.warning('未找到对应业务页面')
+        message.warning(t('layouts.routePage.businessPageNotFound'))
         return
       }
       const query = new URLSearchParams({

@@ -956,6 +956,7 @@ export const enUS: MessageSchema = {
     },
     routePage: {
       apiKeyDetail: 'API Key Detail',
+      businessPageNotFound: 'Business page not found',
     },
   },
   system: {
@@ -1032,6 +1033,7 @@ export const enUS: MessageSchema = {
       isDefault: 'Default',
       deleteContent: 'Delete template "{{name}}"?',
       inputTemplateContent: 'Please enter template content',
+      defaultTag: '(Default)',
     },
     numberRules: {
       title: 'Number Rules',

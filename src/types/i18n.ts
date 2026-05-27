@@ -900,6 +900,7 @@ export interface MessageSchema {
     }
     routePage: {
       apiKeyDetail: string
+      businessPageNotFound: string
     }
   }
   system: {
@@ -967,6 +968,7 @@ export interface MessageSchema {
       isDefault: string
       deleteContent: string
       inputTemplateContent: string
+      defaultTag: string
     }
     numberRules: {
       title: string
