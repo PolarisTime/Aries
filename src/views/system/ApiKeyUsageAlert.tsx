@@ -1,40 +1,38 @@
 import Alert from 'antd/es/alert'
+import { useTranslation } from 'react-i18next'
 
 export function ApiKeyUsageAlert() {
+  const { t } = useTranslation()
   return (
     <Alert
       type="info"
       showIcon
       className="mb-4"
-      title="API Key 使用说明"
+      title={t('system.apiKeyUsage.title')}
       description={
         <div className="grid gap-4 leading-relaxed">
           <div>
-            1. 生成后会返回完整密钥，仅显示一次，关闭弹窗后无法再次查看。
+            1. {t('system.apiKeyUsage.item1')}
           </div>
           <div>
-            2. 调用接口时请在请求头中传入 <code>X-API-Key</code>，值为完整 API
-            Key。
+            2. {t('system.apiKeyUsage.item2')}
           </div>
           <div>
-            3. 使用范围说明：只读接口仅允许 GET / HEAD /
-            OPTIONS，请求写接口会被拒绝。
+            3. {t('system.apiKeyUsage.item3')}
           </div>
           <div>
-            4. 业务接口仅允许访问业务数据接口，不允许访问系统管理类接口。
+            4. {t('system.apiKeyUsage.item4')}
           </div>
           <div>
-            5.
-            允许访问资源留空时，按使用范围放行；选择资源后，只允许访问白名单资源接口。
+            5. {t('system.apiKeyUsage.item5')}
           </div>
           <div>
-            6. 仅允许为已启用 2FA 的账号生成 API
-            Key，且生成时需要验证当前操作人的 2FA。
+            6. {t('system.apiKeyUsage.item6')}
           </div>
           <div>
-            7. 建议按用途分开创建，例如订单同步、报表读取，便于后续排查和禁用。
+            7. {t('system.apiKeyUsage.item7')}
           </div>
-          <div>8. 禁用后立即失效，已过期或已禁用的密钥无法继续调用接口。</div>
+          <div>8. {t('system.apiKeyUsage.item8')}</div>
         </div>
       }
     />

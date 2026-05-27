@@ -5,6 +5,7 @@ import Card from 'antd/es/card'
 import Descriptions from 'antd/es/descriptions'
 import Space from 'antd/es/space'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getSecurityKeyOverview,
   rotateJwtSecurityKey,
@@ -19,6 +20,7 @@ const SECURITY_KEY_QUERY_KEY = ['security-key'] as const
 type RotateType = 'jwt' | 'totp'
 
 export function SecurityKeyManagementView(): React.JSX.Element {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [totpOpen, setTotpOpen] = useState(false)
   const [rotateType, setRotateType] = useState<RotateType>('jwt')
@@ -42,32 +44,32 @@ export function SecurityKeyManagementView(): React.JSX.Element {
       } else {
         await rotateTotpSecurityKey(code)
       }
-      message.success(`${rotateType.toUpperCase()} 密钥已轮换`)
+      message.success(t('system.securityKey.rotateSuccess', { type: rotateType.toUpperCase() }))
       setTotpOpen(false)
       void queryClient.invalidateQueries({ queryKey: SECURITY_KEY_QUERY_KEY })
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '轮换失败')
+      message.error(err instanceof Error ? err.message : t('system.securityKey.rotateFailed'))
       throw err
     }
   }
 
   return (
     <div className="page-stack">
-      <Card title="安全密钥管理" loading={isLoading}>
+      <Card title={t('system.securityKey.title')} loading={isLoading}>
         <Descriptions column={1} bordered size="small">
-          <Descriptions.Item label="JWT 密钥最后轮换">
+          <Descriptions.Item label={t('system.securityKey.jwtLastRotation')}>
             {keys?.data.jwt.activatedAt || '--'}
           </Descriptions.Item>
-          <Descriptions.Item label="TOTP 密钥最后轮换">
+          <Descriptions.Item label={t('system.securityKey.totpLastRotation')}>
             {keys?.data.totp.activatedAt || '--'}
           </Descriptions.Item>
         </Descriptions>
         <Space className="mt-4">
           <Button icon={<RedoOutlined />} onClick={() => handleRotate('jwt')}>
-            轮换 JWT 密钥
+            {t('system.securityKey.rotateJwt')}
           </Button>
           <Button icon={<RedoOutlined />} onClick={() => handleRotate('totp')}>
-            轮换 TOTP 密钥
+            {t('system.securityKey.rotateTotp')}
           </Button>
         </Space>
       </Card>
@@ -76,7 +78,7 @@ export function SecurityKeyManagementView(): React.JSX.Element {
           open={totpOpen}
           onConfirm={handleRotateConfirm}
           onCancel={() => setTotpOpen(false)}
-          title={`确认轮换 ${rotateType.toUpperCase()} 密钥`}
+          title={t('system.securityKey.confirmRotation', { type: rotateType.toUpperCase() })}
         />
       ) : null}
     </div>

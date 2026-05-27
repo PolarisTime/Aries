@@ -9,6 +9,7 @@ import Spin from 'antd/es/spin'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   type ApiKeyActionOption,
   type ApiKeyRecord,
@@ -39,6 +40,7 @@ function formatAllowedCodes(
 }
 
 export function ApiKeyDetailView() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [record, setRecord] = useState<ApiKeyRecord | null>(null)
@@ -88,12 +90,12 @@ export function ApiKeyDetailView() {
   const allowedResourceText = formatAllowedCodes(
     record?.allowedResources,
     resourceOptions,
-    '未限制',
+    t('system.apiKeyDetail.fallbackUnlimited'),
   )
   const allowedActionText = formatAllowedCodes(
     record?.allowedActions,
     actionOptions,
-    '未设置',
+    t('system.apiKeyDetail.fallbackUnset'),
   )
 
   return (
@@ -107,10 +109,10 @@ export function ApiKeyDetailView() {
               void navigate({ to: '/api-key' as '/' })
             }}
           >
-            返回
+            {t('system.apiKeyDetail.back')}
           </Button>
           <Typography.Title level={5} className="m-0">
-            API Key 详情
+            {t('system.apiKeyDetail.title')}
           </Typography.Title>
         </Flex>
       </Card>
@@ -119,45 +121,45 @@ export function ApiKeyDetailView() {
         {record ? (
           <Card>
             <Descriptions bordered column={2} size="small">
-              <Descriptions.Item label="密钥名称">
+              <Descriptions.Item label={t('system.apiKeyDetail.keyName')}>
                 {record.keyName}
               </Descriptions.Item>
-              <Descriptions.Item label="使用范围">
+              <Descriptions.Item label={t('system.apiKeyDetail.usageScope')}>
                 {record.usageScope}
               </Descriptions.Item>
-              <Descriptions.Item label="允许资源">
+              <Descriptions.Item label={t('system.apiKeyDetail.allowedResources')}>
                 {allowedResourceText}
               </Descriptions.Item>
-              <Descriptions.Item label="允许动作">
+              <Descriptions.Item label={t('system.apiKeyDetail.allowedActions')}>
                 {allowedActionText}
               </Descriptions.Item>
-              <Descriptions.Item label="所属用户">
+              <Descriptions.Item label={t('system.apiKeyDetail.ownerUser')}>
                 {record.userName || record.loginName}（{record.loginName}）
               </Descriptions.Item>
-              <Descriptions.Item label="用户 ID">
+              <Descriptions.Item label={t('system.apiKeyDetail.userId')}>
                 {record.userId}
               </Descriptions.Item>
-              <Descriptions.Item label="密钥前缀">
+              <Descriptions.Item label={t('system.apiKeyDetail.keyPrefix')}>
                 <Typography.Paragraph copyable code className="mb-0">
                   {record.keyPrefix}
                 </Typography.Paragraph>
               </Descriptions.Item>
-              <Descriptions.Item label="状态">
+              <Descriptions.Item label={t('system.apiKeyDetail.status')}>
                 <Tag color={getStatusColor(record.status)}>{record.status}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="创建时间">
+              <Descriptions.Item label={t('system.apiKeyDetail.createdAt')}>
                 {record.createdAt}
               </Descriptions.Item>
-              <Descriptions.Item label="过期时间">
-                {record.expiresAt || '永不过期'}
+              <Descriptions.Item label={t('system.apiKeyDetail.expiresAt')}>
+                {record.expiresAt || t('system.apiKeyDetail.neverExpires')}
               </Descriptions.Item>
-              <Descriptions.Item label="最后使用">
+              <Descriptions.Item label={t('system.apiKeyDetail.lastUsed')}>
                 {record.lastUsedAt || '--'}
               </Descriptions.Item>
             </Descriptions>
           </Card>
         ) : (
-          <Empty description="未找到该 API Key" />
+          <Empty description={t('system.apiKeyDetail.notFound')} />
         )}
       </Spin>
     </div>

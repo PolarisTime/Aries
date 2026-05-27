@@ -5,6 +5,7 @@ import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import { getFormString } from '@/lib/antd-form'
 
 interface Props {
@@ -17,23 +18,24 @@ export function CompanySubjectCard({
   canSave,
   settlementAccountCount,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <Card size="small" className="bg-secondary rounded-lg">
       <Typography.Title level={5}>
-        <EditOutlined /> 基础主体
+        <EditOutlined /> {t('system.companySubject.sectionTitle')}
       </Typography.Title>
-      <Form.Item name="companyName" label="公司名称" required>
-        <Input disabled placeholder="由 OOBE 初始化写入" />
+      <Form.Item name="companyName" label={t('system.companySubject.companyName')} required>
+        <Input disabled placeholder={t('system.companySubject.companyNamePlaceholder')} />
       </Form.Item>
-      <Form.Item name="taxNo" label="税号" required>
-        <Input disabled placeholder="由 OOBE 初始化写入" />
+      <Form.Item name="taxNo" label={t('system.companySubject.taxNo')} required>
+        <Input disabled placeholder={t('system.companySubject.companyNamePlaceholder')} />
       </Form.Item>
-      <Form.Item name="status" label="状态" required>
+      <Form.Item name="status" label={t('system.companySubject.status')} required>
         <Select
           disabled={!canSave}
           options={[
-            { label: '正常', value: '正常' },
-            { label: '禁用', value: '禁用' },
+            { label: t('system.companySubject.statusNormal'), value: '正常' },
+            { label: t('system.companySubject.statusDisabled'), value: '禁用' },
           ]}
         />
       </Form.Item>
@@ -47,11 +49,11 @@ export function CompanySubjectCard({
         </div>
         <div>
           <div className="font-semibold">
-            {getFormString(form, 'companyName') || '公司主体待配置'}
+            {getFormString(form, 'companyName') || t('system.companySubject.pendingCompany')}
           </div>
           <div className="text-xs text-secondary">
-            {getFormString(form, 'taxNo') || '税号待配置'} / 结算银行{' '}
-            {settlementAccountCount} 个
+            {getFormString(form, 'taxNo') || t('system.companySubject.pendingTaxNo')} / {t('system.companySubject.settlementBanks')}{' '}
+            {settlementAccountCount} {t('system.companySubject.unitSuffix')}
           </div>
         </div>
       </div>
