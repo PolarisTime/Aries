@@ -38,18 +38,10 @@ export function CompanySubjectCard({
         />
       </Form.Item>
       <div
-        className="flex items-center gap-12 p-16 rounded-lg"
-        style={{ background: 'var(--theme-highlight-bg)' }}
+        className="flex items-center gap-12 p-16 rounded-lg bg-[var(--theme-highlight-bg)]"
       >
         <div
-          className="flex items-center justify-center text-xl"
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            background: 'var(--theme-primary)',
-            color: '#fff',
-          }}
+          className="flex items-center justify-center text-xl w-[44px] h-[44px] rounded-xl bg-[var(--theme-primary)] text-white"
         >
           <IdcardOutlined />
         </div>

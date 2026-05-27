@@ -44,11 +44,11 @@ export function RoleActionRoleListCard({
       {roles.map((role) => (
         <div
           key={role.id}
-          className="rounded cursor-pointer mb-4"
+          className="rounded cursor-pointer mb-4 py-3 px-4"
           role="button"
           tabIndex={0}
+          /* 条件样式：选中态边框和背景色由 selectedRoleId 动态决定 */
           style={{
-            padding: '12px 16px',
             border:
               selectedRoleId === role.id
                 ? '1px solid var(--theme-highlight-border)'

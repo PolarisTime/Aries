@@ -53,6 +53,7 @@ export function DashboardFlowCard({ navigate, summary }: Props) {
                     >
                       <span
                         className="dashboard-flow-node-icon"
+                        /* 动态背景色：node.tone 由业务数据决定 */
                         style={{ background: node.tone }}
                       >
                         <Icon />

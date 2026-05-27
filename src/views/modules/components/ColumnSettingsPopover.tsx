@@ -60,6 +60,7 @@ function SortableColumnRow({
     <div
       ref={setNodeRef}
       className="flex items-center gap-8"
+      /* DnD 动态样式：transform/transition/opacity 由拖拽状态实时计算 */
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
@@ -129,7 +130,7 @@ export function ColumnSettingsPopover({
     <Space
       orientation="vertical"
       size="small"
-      style={{ minWidth: 200, maxWidth: 280 }}
+      className="min-w-[200px] max-w-[280px]"
     >
       <Typography.Text strong>{t('common.columnSettings')}</Typography.Text>
       <Divider className="my-4 mb-8" />
@@ -155,7 +156,7 @@ export function ColumnSettingsPopover({
                   columnId={column.dataIndex}
                   checked={visibleKeys.includes(column.dataIndex)}
                   onToggle={() => onToggle(column.dataIndex)}
-                  label={<span style={{ fontSize: 12 }}>{column.title}</span>}
+                  label={<span className="text-xs">{column.title}</span>}
                 />
               )
             })}

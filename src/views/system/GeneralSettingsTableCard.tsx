@@ -97,6 +97,7 @@ export function GeneralSettingsTableCard({
             />
             <span
               className="text-xs"
+              /* 条件颜色：根据 enabled 状态动态切换 */
               style={{
                 color: enabled
                   ? 'var(--theme-success)'

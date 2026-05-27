@@ -70,7 +70,7 @@ export function RoleActionEditorModal({
                 if (name && onApplyTemplate) onApplyTemplate(asString(name))
               }}
             />
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text type="secondary" className="text-xs">
               选择模板后自动填充角色名称、编码和权限配置
             </Typography.Text>
           </Form.Item>

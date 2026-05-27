@@ -96,13 +96,7 @@ export function RoleActionPermissionCard({
               </Button>
             )}
             {canEditPermissions && (
-              <span
-                className="inline-block"
-                style={{
-                  borderLeft: '1px solid var(--theme-card-border)',
-                  height: 20,
-                }}
-              />
+              <span className="inline-block border-l border-l-[var(--theme-card-border)] h-5" />
             )}
             <Radio.Group
               size="small"
@@ -117,13 +111,7 @@ export function RoleActionPermissionCard({
                 <AppstoreOutlined /> 矩阵
               </Radio.Button>
             </Radio.Group>
-            <span
-              className="inline-block"
-              style={{
-                borderLeft: '1px solid var(--theme-card-border)',
-                height: 20,
-              }}
-            />
+            <span className="inline-block border-l border-l-[var(--theme-card-border)] h-5" />
             {canEditPermissions && (
               <Button
                 type="primary"
@@ -153,11 +141,7 @@ export function RoleActionPermissionCard({
                 <div key={group.menuCode} className="mb-4">
                   {group.children.length > 0 && (
                     <div
-                      className="mb-8"
-                      style={{
-                        padding: '8px 0',
-                        borderBottom: '1px solid var(--theme-card-border)',
-                      }}
+                      className="mb-8 py-2 border-b border-b-[var(--theme-card-border)]"
                     >
                       <Typography.Text strong>{group.menuName}</Typography.Text>
                     </div>
@@ -170,8 +154,7 @@ export function RoleActionPermissionCard({
                       ? [
                           <div
                             key={child.menuCode}
-                            className="flex items-center"
-                            style={{ padding: '6px 0 6px 16px' }}
+                            className="flex items-center py-1.5 pl-4"
                           >
                             <div className="w-160 flex-shrink-0">
                               <Checkbox

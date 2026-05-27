@@ -53,8 +53,7 @@ export function CompanySettlementAccountsCard({
         {settlementAccounts.map((account, index) => (
           <div
             key={account.localKey}
-            className="p-16 rounded-lg bg-default"
-            style={{ border: '1px solid var(--theme-card-border)' }}
+            className="p-16 rounded-lg bg-default border border-[var(--theme-card-border)]"
           >
             <div className="flex justify-between mb-12">
               <Typography.Text strong>结算账户 {index + 1}</Typography.Text>
