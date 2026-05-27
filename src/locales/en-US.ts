@@ -1,6 +1,45 @@
 import type { MessageSchema } from '@/types/i18n'
 
 export const enUS: MessageSchema = {
+  errorBoundary: {
+    retry: 'Retry',
+    noPermission: 'Sorry, you do not have permission to access this page',
+    serverBusy: 'Server is busy, please try again later',
+    networkError: 'Network connection error',
+    timeout: 'Request timed out',
+    serverError: 'Server response error, please try again later',
+  },
+  result: {
+    '403': {
+      subTitle: 'Sorry, you do not have permission to access this page',
+    },
+    '404': {
+      subTitle: 'Sorry, the page you visited does not exist',
+    },
+    '500': {
+      subTitle: 'Sorry, the server encountered an error',
+    },
+    success: {
+      title: 'Operation Successful',
+    },
+    error: {
+      title: 'Operation Failed',
+      subTitle: 'Please try again later',
+    },
+    info: {
+      title: 'Info',
+    },
+    warning: {
+      title: 'Warning',
+    },
+    homeButton: 'Back to Home',
+    backButton: 'Go Back',
+  },
+  toolbar: {
+    searchPlaceholder: 'Search...',
+    refresh: 'Refresh',
+    create: 'Create',
+  },
   validation: {
     default: 'Validation failed',
     required: 'Please enter {label}',
@@ -408,6 +447,12 @@ export const enUS: MessageSchema = {
       notFound: 'API endpoint not found',
       serverError: 'Service temporarily unavailable, please try again later',
       generic: 'Request failed, please try again later',
+      loginFailed: 'Login failed',
+      missing2faToken: 'Login response missing 2FA token',
+      missingTokenOrUser: 'Login response missing token or user info',
+      verify2faFailed: 'Two-factor verification failed',
+      missing2faResponseTokenOrUser: '2FA response missing token or user info',
+      sessionRestoreFailed: 'Session restore failed',
     },
   },
   table: {

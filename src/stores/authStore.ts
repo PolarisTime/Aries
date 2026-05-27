@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import i18next from 'i18next'
 import { ERROR_CODE } from '@/constants/error-codes'
 import type {
   Login2faPayload,
@@ -85,15 +86,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { login } = await loadAuthApi()
     const response = await login(payload)
     if (response.code !== ERROR_CODE.SUCCESS) {
-      throw new Error(response.message || '登录失败')
+      throw new Error(response.message || i18next.t('auth.error.loginFailed'))
     }
     const data = response.data as LoginResult
     if (isStep2(data)) {
-      if (!data.tempToken) throw new Error('登录响应缺少二次验证令牌')
+      if (!data.tempToken) throw new Error(i18next.t('auth.error.missing2faToken'))
       return { requires2fa: true, tempToken: data.tempToken }
     }
     if (!data.accessToken || !data.user) {
-      throw new Error('登录响应缺少 token 或用户信息')
+      throw new Error(i18next.t('auth.error.missingTokenOrUser'))
     }
     persistSession(
       data.user,
@@ -119,11 +120,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { login2fa } = await loadAuthApi()
     const response = await login2fa(payload)
     if (response.code !== ERROR_CODE.SUCCESS) {
-      throw new Error(response.message || '二次验证失败')
+      throw new Error(response.message || i18next.t('auth.error.verify2faFailed'))
     }
     const data = response.data
     if (!data.accessToken || !data.user) {
-      throw new Error('二次验证响应缺少 token 或用户信息')
+      throw new Error(i18next.t('auth.error.missing2faResponseTokenOrUser'))
     }
     persistSession(
       data.user,
@@ -164,7 +165,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const { refreshSession } = await loadAuthApi()
       const data = await refreshSession()
-      if (!data.accessToken || !data.user) throw new Error('Session 恢复失败')
+      if (!data.accessToken || !data.user) throw new Error(i18next.t('auth.error.sessionRestoreFailed'))
       persistSession(
         data.user,
         data.accessToken,

@@ -1,6 +1,7 @@
 import Button from 'antd/es/button'
 import type { ErrorInfo, ReactNode } from 'react'
 import { Component } from 'react'
+import i18next from 'i18next'
 import { AppResult } from '@/components/AppResult'
 
 interface Props {
@@ -46,7 +47,7 @@ export class AppErrorBoundary extends Component<Props, State> {
           subTitle={traceId ? `${message} (Trace: ${traceId})` : message}
           showHomeButton
           showBackButton
-          extra={<Button onClick={this.handleReset}>重试</Button>}
+          extra={<Button onClick={this.handleReset}>{i18next.t('errorBoundary.retry')}</Button>}
         />
       )
     }
@@ -75,12 +76,12 @@ function getStatus(error: Error): '403' | '500' | 'error' {
 }
 
 function getMessage(error: Error, status: string): string {
-  if (status === '403') return '抱歉，您没有权限访问此页面'
-  if (status === '500') return '服务器繁忙，请稍后重试'
+  if (status === '403') return i18next.t('errorBoundary.noPermission')
+  if (status === '500') return i18next.t('errorBoundary.serverBusy')
   const msg = error.message
   if (msg.includes('Failed to fetch') || msg.includes('NetworkError'))
-    return '网络连接异常'
-  if (msg.includes('timeout')) return '请求超时'
+    return i18next.t('errorBoundary.networkError')
+  if (msg.includes('timeout')) return i18next.t('errorBoundary.timeout')
   if (msg.length < 100) return msg
-  return '服务器响应异常，请稍后重试'
+  return i18next.t('errorBoundary.serverError')
 }

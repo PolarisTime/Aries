@@ -2,6 +2,7 @@ import Button from 'antd/es/button'
 import Divider from 'antd/es/divider'
 import Popconfirm from 'antd/es/popconfirm'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 
 export interface ActionItem {
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function TableActions({ items, maxVisible }: Props) {
+  const { t } = useTranslation()
   const visible = items.filter((item) => item.visible !== false)
   if (visible.length === 0) {
     return <span className="table-action-empty">--</span>
@@ -37,8 +39,8 @@ export function TableActions({ items, maxVisible }: Props) {
             <Popconfirm
               title={item.confirm}
               onConfirm={item.onClick}
-              okText="确定"
-              cancelText="取消"
+              okText={t('common.ok')}
+              cancelText={t('common.cancel')}
             >
               <Button
                 type="link"

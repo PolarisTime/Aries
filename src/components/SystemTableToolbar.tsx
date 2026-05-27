@@ -3,6 +3,7 @@ import Button from 'antd/es/button'
 import Input from 'antd/es/input'
 import Space from 'antd/es/space'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   keyword: string
@@ -17,7 +18,7 @@ interface Props {
 
 export function SystemTableToolbar({
   keyword,
-  keywordPlaceholder = '搜索...',
+  keywordPlaceholder,
   keywordWidth = 320,
   onKeywordChange,
   onSearch,
@@ -25,10 +26,12 @@ export function SystemTableToolbar({
   onCreate,
   children,
 }: Props) {
+  const { t } = useTranslation()
+
   return (
     <Space>
       <Input.Search
-        placeholder={keywordPlaceholder}
+        placeholder={keywordPlaceholder ?? t('toolbar.searchPlaceholder')}
         style={{ width: keywordWidth }}
         allowClear
         value={keyword}
@@ -37,11 +40,11 @@ export function SystemTableToolbar({
       />
       {children}
       <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-        刷新
+        {t('toolbar.refresh')}
       </Button>
       {onCreate && (
         <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-          新建
+          {t('toolbar.create')}
         </Button>
       )}
     </Space>
