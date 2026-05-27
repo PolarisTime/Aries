@@ -2,16 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import Button from 'antd/es/button'
 import type { ResultProps } from 'antd/es/result'
 import Result from 'antd/es/result'
-
-const PRESET_COPY: Record<string, { title: string; subTitle: string }> = {
-  '403': { title: '403', subTitle: '抱歉，您没有权限访问此页面' },
-  '404': { title: '404', subTitle: '抱歉，您访问的页面不存在' },
-  '500': { title: '500', subTitle: '抱歉，服务器出错了' },
-  success: { title: '操作成功', subTitle: '' },
-  error: { title: '操作失败', subTitle: '请稍后重试' },
-  info: { title: '提示', subTitle: '' },
-  warning: { title: '警告', subTitle: '' },
-}
+import { useTranslation } from 'react-i18next'
 
 interface AppResultProps extends Omit<ResultProps, 'extra'> {
   title?: ResultProps['title']
@@ -30,21 +21,36 @@ export function AppResult({
   extra,
   showHomeButton,
   showBackButton,
-  homeButtonText = '返回首页',
-  backButtonText = '返回上页',
+  homeButtonText,
+  backButtonText,
   ...rest
 }: AppResultProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
+
+  const PRESET_COPY: Record<string, { title: string; subTitle: string }> = {
+    '403': { title: '403', subTitle: t('result.403.subTitle') },
+    '404': { title: '404', subTitle: t('result.404.subTitle') },
+    '500': { title: '500', subTitle: t('result.500.subTitle') },
+    success: { title: t('result.success.title'), subTitle: '' },
+    error: { title: t('result.error.title'), subTitle: t('result.error.subTitle') },
+    info: { title: t('result.info.title'), subTitle: '' },
+    warning: { title: t('result.warning.title'), subTitle: '' },
+  }
+
   const preset = PRESET_COPY[String(status)]
 
   const resolvedTitle = title ?? preset?.title ?? String(status)
   const resolvedSubTitle = subTitle ?? preset?.subTitle
 
+  const resolvedHomeButtonText = homeButtonText ?? t('result.homeButton')
+  const resolvedBackButtonText = backButtonText ?? t('result.backButton')
+
   const actions = (
     <>
       {extra}
       {showBackButton ? (
-        <Button onClick={() => window.history.back()}>{backButtonText}</Button>
+        <Button onClick={() => window.history.back()}>{resolvedBackButtonText}</Button>
       ) : null}
       {showHomeButton ? (
         <Button
@@ -53,7 +59,7 @@ export function AppResult({
             void navigate({ to: '/dashboard' as '/' })
           }}
         >
-          {homeButtonText}
+          {resolvedHomeButtonText}
         </Button>
       ) : null}
     </>

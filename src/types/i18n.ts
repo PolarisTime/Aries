@@ -1,4 +1,43 @@
 export interface MessageSchema {
+  errorBoundary: {
+    retry: string
+    noPermission: string
+    serverBusy: string
+    networkError: string
+    timeout: string
+    serverError: string
+  }
+  result: {
+    '403': {
+      subTitle: string
+    }
+    '404': {
+      subTitle: string
+    }
+    '500': {
+      subTitle: string
+    }
+    success: {
+      title: string
+    }
+    error: {
+      title: string
+      subTitle: string
+    }
+    info: {
+      title: string
+    }
+    warning: {
+      title: string
+    }
+    homeButton: string
+    backButton: string
+  }
+  toolbar: {
+    searchPlaceholder: string
+    refresh: string
+    create: string
+  }
   validation: {
     default: string
     required: string
@@ -378,6 +417,12 @@ export interface MessageSchema {
       notFound: string
       serverError: string
       generic: string
+      loginFailed: string
+      missing2faToken: string
+      missingTokenOrUser: string
+      verify2faFailed: string
+      missing2faResponseTokenOrUser: string
+      sessionRestoreFailed: string
     }
   }
   table: {

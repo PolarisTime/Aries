@@ -1,6 +1,45 @@
 import type { MessageSchema } from '@/types/i18n'
 
 export const zhCN: MessageSchema = {
+  errorBoundary: {
+    retry: '重试',
+    noPermission: '抱歉，您没有权限访问此页面',
+    serverBusy: '服务器繁忙，请稍后重试',
+    networkError: '网络连接异常',
+    timeout: '请求超时',
+    serverError: '服务器响应异常，请稍后重试',
+  },
+  result: {
+    '403': {
+      subTitle: '抱歉，您没有权限访问此页面',
+    },
+    '404': {
+      subTitle: '抱歉，您访问的页面不存在',
+    },
+    '500': {
+      subTitle: '抱歉，服务器出错了',
+    },
+    success: {
+      title: '操作成功',
+    },
+    error: {
+      title: '操作失败',
+      subTitle: '请稍后重试',
+    },
+    info: {
+      title: '提示',
+    },
+    warning: {
+      title: '警告',
+    },
+    homeButton: '返回首页',
+    backButton: '返回上页',
+  },
+  toolbar: {
+    searchPlaceholder: '搜索...',
+    refresh: '刷新',
+    create: '新建',
+  },
   validation: {
     default: '字段校验失败',
     required: '请填写{label}',
@@ -393,6 +432,12 @@ export const zhCN: MessageSchema = {
       notFound: '请求的接口不存在',
       serverError: '服务暂时不可用，请稍后重试',
       generic: '请求失败，请稍后重试',
+      loginFailed: '登录失败',
+      missing2faToken: '登录响应缺少二次验证令牌',
+      missingTokenOrUser: '登录响应缺少 token 或用户信息',
+      verify2faFailed: '二次验证失败',
+      missing2faResponseTokenOrUser: '二次验证响应缺少 token 或用户信息',
+      sessionRestoreFailed: 'Session 恢复失败',
     },
   },
   table: {
