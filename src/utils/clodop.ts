@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { t } from 'i18next'
 import { logger } from '@/utils/logger'
 
 let loadPromise: Promise<boolean> | null = null
@@ -100,7 +101,7 @@ function applyLicense(lodop: CLodopInstance) {
       config.licenseB || '',
     )
   } catch (error) {
-    logger.warn('CLodop 注册信息注入失败', error)
+    logger.warn(t('print.clodopLicenseInjectFailed'), error)
   }
 }
 
@@ -280,7 +281,7 @@ export function execPrintCode(code: string, options: PrintHtmlOptions = {}) {
     return false
   }
 
-  const { preview = true, printer, title = '打印' } = options
+  const { preview = true, printer, title = t('print.defaultTitle') } = options
 
   try {
     const parsed = parseInitCall(code)
@@ -296,7 +297,7 @@ export function execPrintCode(code: string, options: PrintHtmlOptions = {}) {
     }
     return true
   } catch (error) {
-    logger.error('CLodop 模板打印失败', error)
+    logger.error(t('print.clodopTemplatePrintFailed'), error)
     return false
   }
 }
@@ -311,7 +312,7 @@ export function printHtml(
   }
 
   const {
-    title = '打印',
+    title = t('print.defaultTitle'),
     printer,
     copies = 1,
     pageSize = 'A4',
@@ -335,7 +336,7 @@ export function printHtml(
     }
     return true
   } catch (error) {
-    logger.error('CLodop 打印失败', error)
+    logger.error(t('print.clodopPrintFailed'), error)
     return false
   }
 }
