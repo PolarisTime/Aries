@@ -15,6 +15,7 @@ import Radio from 'antd/es/radio'
 import Space from 'antd/es/space'
 import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type { MenuNode, RoleRecord } from '@/api/role-actions'
 import type { ModuleRecord } from '@/types/module-page'
 
@@ -59,6 +60,7 @@ export function RoleActionPermissionCard({
   onToggleAction,
   actionLabels,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <Card
       size="small"
@@ -69,8 +71,8 @@ export function RoleActionPermissionCard({
           <SafetyCertificateOutlined />
           <span>
             {selectedRoleInfo
-              ? `${selectedRoleInfo.roleName} - 权限配置`
-              : '请选择角色'}
+              ? `${selectedRoleInfo.roleName} - ${t('system.rolePermission.permConfig')}`
+              : t('system.rolePermission.selectRole')}
           </span>
         </Space>
       }
@@ -83,7 +85,7 @@ export function RoleActionPermissionCard({
                 icon={<CheckSquareOutlined />}
                 onClick={onSelectAll}
               >
-                全选
+                {t('system.rolePermission.selectAll')}
               </Button>
             )}
             {canEditPermissions && (
@@ -92,7 +94,7 @@ export function RoleActionPermissionCard({
                 icon={<BorderOutlined />}
                 onClick={onDeselectAll}
               >
-                全不选
+                {t('system.rolePermission.deselectAll')}
               </Button>
             )}
             {canEditPermissions && (
@@ -105,10 +107,10 @@ export function RoleActionPermissionCard({
               buttonStyle="solid"
             >
               <Radio.Button value="list">
-                <UnorderedListOutlined /> 列表
+                <UnorderedListOutlined /> {t('system.rolePermission.listView')}
               </Radio.Button>
               <Radio.Button value="matrix">
-                <AppstoreOutlined /> 矩阵
+                <AppstoreOutlined /> {t('system.rolePermission.matrixView')}
               </Radio.Button>
             </Radio.Group>
             <span className="inline-block border-l border-l-[var(--theme-card-border)] h-5" />
@@ -119,7 +121,7 @@ export function RoleActionPermissionCard({
                 loading={saveLoading}
                 onClick={onSave}
               >
-                保存权限
+                {t('system.rolePermission.savePerm')}
               </Button>
             )}
           </Space>
@@ -132,8 +134,8 @@ export function RoleActionPermissionCard({
             type="info"
             showIcon
             className="mb-4"
-            message="附件权限说明"
-            description="附件不单独配置权限，默认跟随对应模块权限：有查看权限可查看和下载附件，有编辑权限可上传附件，有删除权限可删除附件。"
+            message={t('system.rolePermission.attachmentPermTitle')}
+            description={t('system.rolePermission.attachmentPermDesc')}
           />
           {viewMode === 'list' ? (
             <div>
@@ -206,7 +208,7 @@ export function RoleActionPermissionCard({
         </div>
       ) : (
         <Empty
-          description="请从左侧选择一个角色来配置权限"
+          description={t('system.rolePermission.selectRoleHint')}
           className="mt-120"
         />
       )}

@@ -4,6 +4,7 @@ import Input from 'antd/es/input'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import type { RoleRecord } from '@/api/role-actions'
 import { FormModal } from '@/components/FormModal'
 import { roleDataScopeValues, roleTypeValues } from '@/constants/module-options'
@@ -33,6 +34,7 @@ export function RoleActionEditorModal({
   onClose,
   onApplyTemplate,
 }: Props) {
+  const { t } = useTranslation()
   const { data: templates = [] } = useQuery<RoleTemplate[]>({
     queryKey: ['role-templates'],
     queryFn: async () => {
@@ -48,19 +50,19 @@ export function RoleActionEditorModal({
 
   return (
     <FormModal
-      title={editingRole ? '编辑角色' : '新增角色'}
+      title={editingRole ? t('system.roleEditor.editTitle') : t('system.roleEditor.createTitle')}
       open={open}
       onClose={onClose}
       onSave={onSave}
       confirmLoading={saving}
-      okText="保存"
-      cancelText="取消"
+      okText={t('system.roleEditor.save')}
+      cancelText={t('system.roleEditor.cancel')}
     >
       <Form form={form} layout="vertical">
         {!editingRole && templates.length > 0 ? (
-          <Form.Item label="权限模板">
+          <Form.Item label={t('system.roleEditor.permTemplate')}>
             <Select
-              placeholder="选择模板一键填充权限（可选）"
+              placeholder={t('system.roleEditor.templatePlaceholder')}
               allowClear
               options={templates.map((t) => ({
                 label: `${t.name} — ${t.description}`,
@@ -71,26 +73,26 @@ export function RoleActionEditorModal({
               }}
             />
             <Typography.Text type="secondary" className="text-xs">
-              选择模板后自动填充角色名称、编码和权限配置
+              {t('system.roleEditor.templateHint')}
             </Typography.Text>
           </Form.Item>
         ) : null}
-        <Form.Item name="roleName" label="角色名称" required>
-          <Input placeholder="例如：采购主管" maxLength={64} />
+        <Form.Item name="roleName" label={t('system.roleEditor.roleName')} required>
+          <Input placeholder={t('system.roleEditor.roleNamePlaceholder')} maxLength={64} />
         </Form.Item>
-        <Form.Item name="roleCode" label="角色编码" required>
+        <Form.Item name="roleCode" label={t('system.roleEditor.roleCode')} required>
           <Input
-            placeholder="例如：PURCHASER"
+            placeholder={t('system.roleEditor.roleCodePlaceholder')}
             maxLength={64}
             disabled={!!editingRole}
           />
         </Form.Item>
-        <Form.Item name="roleType" label="角色类型">
+        <Form.Item name="roleType" label={t('system.roleEditor.roleType')}>
           <Select
             options={roleTypeValues.map((value) => ({ label: value, value }))}
           />
         </Form.Item>
-        <Form.Item name="dataScope" label="数据范围">
+        <Form.Item name="dataScope" label={t('system.roleEditor.dataScope')}>
           <Select
             options={roleDataScopeValues.map((value) => ({
               label: value,
@@ -98,8 +100,8 @@ export function RoleActionEditorModal({
             }))}
           />
         </Form.Item>
-        <Form.Item name="remark" label="备注">
-          <Input.TextArea placeholder="角色描述" rows={3} />
+        <Form.Item name="remark" label={t('system.roleEditor.remark')}>
+          <Input.TextArea placeholder={t('system.roleEditor.remarkPlaceholder')} rows={3} />
         </Form.Item>
       </Form>
     </FormModal>

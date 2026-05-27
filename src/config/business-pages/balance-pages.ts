@@ -2,34 +2,35 @@ import { buildValueOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from './filter-labels'
 import { formatAmount, formatInteger, statusMap, sumBy } from './shared'
+import i18next from 'i18next'
 
 export const balancePageConfigs: Record<string, ModulePageConfig> = {
   'receivable-payable': {
     key: 'receivable-payable',
-    title: '应收应付',
+    title: i18next.t('modules.pages.balance.receivablePayable'),
     kicker: 'Finance',
     description:
-      '应收应付页面先按客户、供应商、物流商统一展示余额结果，后续再叠加核销和账龄分析。',
+      i18next.t('modules.pages.balance.balanceDesc'),
     readOnly: true,
-    actions: [{ key: 'export_balance', label: '导出余额表', type: 'primary' }],
+    actions: [{ key: 'export_balance', label: i18next.t('modules.pages.balance.exportBalance'), type: 'primary' }],
     filters: [
       {
         key: 'direction',
-        label: '方向',
+        label: i18next.t('modules.pages.balance.direction'),
         type: 'select',
         options: [
-          { label: '应收', value: '应收' },
-          { label: '应付', value: '应付' },
+          { label: i18next.t('modules.pages.balance.receivable'), value: '应收' },
+          { label: i18next.t('modules.pages.balance.payable'), value: '应付' },
         ],
       },
       {
         key: 'counterpartyType',
-        label: '往来类型',
+        label: i18next.t('modules.pages.balance.counterpartyType'),
         type: 'select',
         options: [
-          { label: '客户', value: '客户' },
-          { label: '供应商', value: '供应商' },
-          { label: '物流商', value: '物流商' },
+          { label: i18next.t('modules.pages.balance.customer'), value: '客户' },
+          { label: i18next.t('modules.pages.balance.supplier'), value: '供应商' },
+          { label: i18next.t('modules.pages.balance.carrier'), value: '物流商' },
         ],
       },
       {
@@ -40,39 +41,39 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
       },
     ],
     columns: [
-      { title: '方向', dataIndex: 'direction', width: 100 },
-      { title: '往来类型', dataIndex: 'counterpartyType', width: 110 },
-      { title: '往来单位', dataIndex: 'counterpartyName', width: 160 },
+      { title: i18next.t('modules.pages.balance.direction'), dataIndex: 'direction', width: 100 },
+      { title: i18next.t('modules.pages.balance.counterpartyType'), dataIndex: 'counterpartyType', width: 110 },
+      { title: i18next.t('modules.pages.balance.counterparty'), dataIndex: 'counterpartyName', width: 160 },
       {
-        title: '期初余额',
+        title: i18next.t('modules.pages.balance.openingBalance'),
         dataIndex: 'openingAmount',
         width: 110,
         align: 'right',
         type: 'amount',
       },
       {
-        title: '本期发生',
+        title: i18next.t('modules.pages.balance.currentTransactions'),
         dataIndex: 'currentAmount',
         width: 110,
         align: 'right',
         type: 'amount',
       },
       {
-        title: '本期结算',
+        title: i18next.t('modules.pages.balance.currentSettlement'),
         dataIndex: 'settledAmount',
         width: 110,
         align: 'right',
         type: 'amount',
       },
       {
-        title: '期末余额',
+        title: i18next.t('modules.pages.balance.closingBalance'),
         dataIndex: 'balanceAmount',
         width: 110,
         align: 'right',
         type: 'amount',
       },
       {
-        title: '状态',
+        title: i18next.t('modules.pages.balance.status'),
         dataIndex: 'status',
         width: 110,
         type: 'status',
@@ -80,21 +81,21 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
       },
     ],
     detailFields: [
-      { label: '方向', key: 'direction' },
-      { label: '往来类型', key: 'counterpartyType' },
-      { label: '往来单位', key: 'counterpartyName' },
-      { label: '期初余额', key: 'openingAmount', type: 'amount' },
-      { label: '本期发生', key: 'currentAmount', type: 'amount' },
-      { label: '本期结算', key: 'settledAmount', type: 'amount' },
-      { label: '期末余额', key: 'balanceAmount', type: 'amount' },
-      { label: '状态', key: 'status', type: 'status' },
-      { label: '备注', key: 'remark' },
+      { label: i18next.t('modules.pages.balance.direction'), key: 'direction' },
+      { label: i18next.t('modules.pages.balance.counterpartyType'), key: 'counterpartyType' },
+      { label: i18next.t('modules.pages.balance.counterparty'), key: 'counterpartyName' },
+      { label: i18next.t('modules.pages.balance.openingBalance'), key: 'openingAmount', type: 'amount' },
+      { label: i18next.t('modules.pages.balance.currentTransactions'), key: 'currentAmount', type: 'amount' },
+      { label: i18next.t('modules.pages.balance.currentSettlement'), key: 'settledAmount', type: 'amount' },
+      { label: i18next.t('modules.pages.balance.closingBalance'), key: 'balanceAmount', type: 'amount' },
+      { label: i18next.t('modules.pages.balance.status'), key: 'status', type: 'status' },
+      { label: i18next.t('modules.pages.balance.remark'), key: 'remark' },
     ],
     data: [],
     buildOverview: (rows) => [
-      { label: '往来单位数', value: formatInteger(rows.length) },
+      { label: i18next.t('modules.pages.balance.counterpartyCount'), value: formatInteger(rows.length) },
       {
-        label: '应收余额',
+        label: i18next.t('modules.pages.balance.receivableBalance'),
         value: formatAmount(
           sumBy(
             rows.filter((row) => row.direction === '应收'),
@@ -103,7 +104,7 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         ),
       },
       {
-        label: '应付余额',
+        label: i18next.t('modules.pages.balance.payableBalance'),
         value: formatAmount(
           sumBy(
             rows.filter((row) => row.direction === '应付'),

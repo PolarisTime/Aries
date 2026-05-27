@@ -2,6 +2,7 @@ import { useNavigate, useRouter } from '@tanstack/react-router'
 import Button from 'antd/es/button'
 import Typography from 'antd/es/typography'
 import { useCallback, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
 
 function extractBackendTraceId(error: unknown): string | undefined {
@@ -23,10 +24,11 @@ function stripTraceSuffix(message: string): string {
 export function ErrorView() {
   const router = useRouter()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const error = (router.state as unknown as Record<string, unknown>).error
 
   const status = getErrorStatus(error)
-  const rawMessage = getErrorMessage(error, status)
+  const rawMessage = getErrorMessage(error, status, t)
   const subTitle = stripTraceSuffix(rawMessage)
   const traceId = useMemo(() => extractBackendTraceId(error), [error])
 
@@ -61,7 +63,7 @@ export function ErrorView() {
       }
       showHomeButton
       showBackButton
-      extra={<Button onClick={handleRetry}>重试</Button>}
+      extra={<Button onClick={handleRetry}>{t('error.retry')}</Button>}
     />
   )
 }
@@ -81,16 +83,16 @@ function getErrorStatus(error: unknown): '403' | '500' | 'error' {
   return 'error'
 }
 
-function getErrorMessage(error: unknown, status: string): string {
-  if (status === '403') return '抱歉，您没有权限访问此页面'
-  if (status === '500') return '服务器繁忙，请稍后重试'
+function getErrorMessage(error: unknown, status: string, t: (key: string) => string): string {
+  if (status === '403') return t('error.noPermission')
+  if (status === '500') return t('error.serverBusy')
   if (error instanceof Error) {
     const msg = error.message
     if (msg.includes('Failed to fetch') || msg.includes('NetworkError'))
-      return '网络连接异常，请检查网络后重试'
-    if (msg.includes('timeout')) return '请求超时，请稍后重试'
+      return t('error.networkError')
+    if (msg.includes('timeout')) return t('error.requestTimeout')
     if (msg.length < 100) return msg
-    return '服务器响应异常，请稍后重试'
+    return t('error.serverResponseError')
   }
-  return '发生了未知错误，请点击重试按钮'
+  return t('error.unknownError')
 }

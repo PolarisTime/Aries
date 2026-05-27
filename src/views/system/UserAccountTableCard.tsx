@@ -67,7 +67,7 @@ export function UserAccountTableCard({
   const { t } = useTranslation()
   const columns = [
     {
-      title: '操作',
+      title: t('system.userAccountTable.colOperation'),
       key: 'action',
       width: 260,
       fixed: 'left' as const,
@@ -79,7 +79,7 @@ export function UserAccountTableCard({
             icon={<EyeOutlined />}
             onClick={() => onView(record)}
           >
-            查看
+            {t('system.userAccountTable.view')}
           </Button>
           {canEdit && (
             <Button
@@ -88,7 +88,7 @@ export function UserAccountTableCard({
               icon={<EditOutlined />}
               onClick={() => onEdit(record)}
             >
-              编辑
+              {t('system.userAccountTable.edit')}
             </Button>
           )}
           {canEdit && (
@@ -109,51 +109,51 @@ export function UserAccountTableCard({
               icon={<DeleteOutlined />}
               onClick={() => onDelete(record)}
             >
-              删除
+              {t('system.userAccountTable.delete')}
             </Button>
           )}
         </Space>
       ),
     },
-    { dataIndex: 'loginName', title: '登录账号', width: 140 },
-    { dataIndex: 'userName', title: '用户姓名', width: 140 },
+    { dataIndex: 'loginName', title: t('system.userAccountTable.colLoginName'), width: 140 },
+    { dataIndex: 'userName', title: t('system.userAccountTable.colUserName'), width: 140 },
     {
       dataIndex: 'departmentName',
-      title: '所属部门',
+      title: t('system.userAccountTable.colDepartment'),
       width: 140,
       render: (value: string) => value || '--',
     },
     {
       dataIndex: 'mobile',
-      title: '手机号',
+      title: t('system.userAccountTable.colMobile'),
       width: 140,
       render: (value: string) => value || '--',
     },
     {
       dataIndex: 'roleNames',
-      title: '所属角色',
+      title: t('system.userAccountTable.colRoles'),
       width: 220,
       render: (names: string[]) =>
         Array.isArray(names) ? names.join('、') : '--',
     },
     {
       dataIndex: 'dataScope',
-      title: '数据范围',
+      title: t('system.userAccountTable.colDataScope'),
       width: 120,
       render: (value: string) => value || '--',
     },
     {
       dataIndex: 'totpEnabled',
-      title: '2FA 状态',
+      title: t('system.userAccountTable.colTotpStatus'),
       width: 110,
       align: 'center' as const,
       render: (value: boolean) => (
-        <Tag color={getTotpColor(!!value)}>{value ? '已启用' : '未启用'}</Tag>
+        <Tag color={getTotpColor(!!value)}>{value ? t('system.userAccountTable.totpEnabled') : t('system.userAccountTable.totpDisabled')}</Tag>
       ),
     },
     {
       dataIndex: 'status',
-      title: '状态',
+      title: t('system.userAccountTable.colStatus'),
       width: 100,
       align: 'center' as const,
       render: (value: string) => (
@@ -162,18 +162,18 @@ export function UserAccountTableCard({
     },
     {
       dataIndex: 'lastLoginDate',
-      title: '最近登录',
+      title: t('system.userAccountTable.colLastLogin'),
       width: 180,
       render: (value: string) => value || '--',
     },
   ]
   return (
     <Card
-      title="用户账户管理"
+      title={t('system.userAccountTable.title')}
       extra={
         <SystemTableToolbar
           keyword={keyword}
-          keywordPlaceholder="搜索登录账号 / 用户姓名 / 手机号"
+          keywordPlaceholder={t('system.userAccountTable.searchPlaceholder')}
           onKeywordChange={onKeywordChange}
           onSearch={onSearch}
           onRefresh={onRefresh}
@@ -181,7 +181,7 @@ export function UserAccountTableCard({
         >
           <Select
             allowClear
-            placeholder="全部状态"
+            placeholder={t('system.userAccountTable.allStatus')}
             className="w-140"
             value={statusFilter}
             onChange={onStatusFilterChange}

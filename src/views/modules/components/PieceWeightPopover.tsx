@@ -34,7 +34,7 @@ export function PieceWeightPopover({ itemId, weightTon, category, sourceSalesOrd
     queryKey,
     queryFn: async () => {
       const r = await http.get<{ code: number; data: PieceWeight[] }>(apiPath)
-      assertApiSuccess(r, '加载逐件重量失败')
+      assertApiSuccess(r, t('modules.pieceWeight.loadFailed'))
       return r.data || []
     },
     enabled: open,

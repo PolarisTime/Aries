@@ -1,11 +1,13 @@
-export const BILL_STATUS_LABEL = '单据状态'
-export const AUDIT_STATUS_LABEL = '审核状态'
-export const SIGN_STATUS_LABEL = '签署状态'
-export const CUSTOMER_NAME_LABEL = '客户名称'
-export const SUPPLIER_NAME_LABEL = '供应商名称'
-export const CARRIER_NAME_LABEL = '物流商名称'
-export const ORDER_NO_FILTER_LABEL = '订单编号'
-export const CONTRACT_NO_FILTER_LABEL = '合同编号'
-export const OUTBOUND_NO_FILTER_LABEL = '出库单号'
-export const INBOUND_NO_FILTER_LABEL = '入库单号'
-export const FREIGHT_NO_FILTER_LABEL = '物流单号'
+import i18next from 'i18next'
+
+export const BILL_STATUS_LABEL = i18next.t('modules.filter.billStatus')
+export const AUDIT_STATUS_LABEL = i18next.t('modules.filter.auditStatus')
+export const SIGN_STATUS_LABEL = i18next.t('modules.filter.signStatus')
+export const CUSTOMER_NAME_LABEL = i18next.t('modules.filter.customerName')
+export const SUPPLIER_NAME_LABEL = i18next.t('modules.filter.supplierName')
+export const CARRIER_NAME_LABEL = i18next.t('modules.filter.carrierName')
+export const ORDER_NO_FILTER_LABEL = i18next.t('modules.filter.orderNo')
+export const CONTRACT_NO_FILTER_LABEL = i18next.t('modules.filter.contractNo')
+export const OUTBOUND_NO_FILTER_LABEL = i18next.t('modules.filter.outboundNo')
+export const INBOUND_NO_FILTER_LABEL = i18next.t('modules.filter.inboundNo')
+export const FREIGHT_NO_FILTER_LABEL = i18next.t('modules.filter.freightNo')

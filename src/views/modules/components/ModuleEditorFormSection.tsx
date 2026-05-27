@@ -3,6 +3,7 @@ import Col from 'antd/es/col'
 import Form from 'antd/es/form'
 import Row from 'antd/es/row'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type {
   ModuleFormFieldDefinition,
   ModulePageConfig,
@@ -37,6 +38,7 @@ export function ModuleEditorFormSection({
   onCancel,
   onSave,
 }: Props) {
+  const { t } = useTranslation()
   const form = Form.useFormInstance()
   const formValues = Form.useWatch([], form) || {}
   const formFieldRows = groupFieldsByRow(config.formFields || [])
@@ -71,7 +73,7 @@ export function ModuleEditorFormSection({
       <div className="editor-form-head">
         <div className="editor-form-title-block">
           <Typography.Title level={5} className="m-0">
-            单据信息
+            {t('modules.editorForm.documentInfo')}
           </Typography.Title>
         </div>
         {showActions ? (

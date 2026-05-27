@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
 import type { ModuleRecord } from '@/types/module-page'
 
@@ -44,6 +45,7 @@ export function BusinessGridTable({
   fetchNextPage: _fetchNextPage,
   isFetchingNextPage: _isFetchingNextPage,
 }: Props) {
+  const { t } = useTranslation()
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
   const visibleColumns = useDeferredColumns(columns)
@@ -136,7 +138,7 @@ export function BusinessGridTable({
   )
 
   const emptyText = useMemo(
-    () => <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" />,
+    () => <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('modules.table.noData')} />,
     [],
   )
   const locale = useMemo(() => ({ emptyText }), [emptyText])

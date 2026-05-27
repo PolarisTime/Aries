@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import type { ModuleOverviewItem, ModuleRecord } from '@/types/module-page'
 import { formatAmount, formatInteger, formatWeight } from '@/utils/formatters'
 
@@ -13,9 +14,9 @@ export function buildAmountWeightOverview(
   weightKey = 'totalWeight',
 ): ModuleOverviewItem[] {
   return [
-    { label: '记录数', value: formatInteger(rows.length) },
-    { label: '总重量合计（吨）', value: formatWeight(sumBy(rows, weightKey)) },
-    { label: '金额合计', value: formatAmount(sumBy(rows, amountKey)) },
+    { label: i18next.t('modules.overview.recordCount'), value: formatInteger(rows.length) },
+    { label: i18next.t('modules.overview.totalWeight'), value: formatWeight(sumBy(rows, weightKey)) },
+    { label: i18next.t('modules.overview.totalAmount'), value: formatAmount(sumBy(rows, amountKey)) },
   ]
 }
 
@@ -24,8 +25,8 @@ export function buildWeightOverview(
   weightKey = 'totalWeight',
 ): ModuleOverviewItem[] {
   return [
-    { label: '记录数', value: formatInteger(rows.length) },
-    { label: '总重量合计（吨）', value: formatWeight(sumBy(rows, weightKey)) },
+    { label: i18next.t('modules.overview.recordCount'), value: formatInteger(rows.length) },
+    { label: i18next.t('modules.overview.totalWeight'), value: formatWeight(sumBy(rows, weightKey)) },
   ]
 }
 
@@ -36,10 +37,10 @@ export function buildStatementOverview(
   balanceKey: string,
 ): ModuleOverviewItem[] {
   return [
-    { label: '对账单数', value: formatInteger(rows.length) },
-    { label: '本期金额', value: formatAmount(sumBy(rows, businessKey)) },
-    { label: '已结金额', value: formatAmount(sumBy(rows, paidKey)) },
-    { label: '余额', value: formatAmount(sumBy(rows, balanceKey)) },
+    { label: i18next.t('modules.overview.statementCount'), value: formatInteger(rows.length) },
+    { label: i18next.t('modules.overview.currentAmount'), value: formatAmount(sumBy(rows, businessKey)) },
+    { label: i18next.t('modules.overview.settledAmount'), value: formatAmount(sumBy(rows, paidKey)) },
+    { label: i18next.t('modules.overview.balance'), value: formatAmount(sumBy(rows, balanceKey)) },
   ]
 }
 
@@ -48,8 +49,8 @@ export function buildFinanceOverview(
   amountKey: string,
 ): ModuleOverviewItem[] {
   return [
-    { label: '单据数', value: formatInteger(rows.length) },
-    { label: '金额合计', value: formatAmount(sumBy(rows, amountKey)) },
+    { label: i18next.t('modules.overview.documentCount'), value: formatInteger(rows.length) },
+    { label: i18next.t('modules.overview.totalAmount'), value: formatAmount(sumBy(rows, amountKey)) },
   ]
 }
 
@@ -59,9 +60,9 @@ export function buildMasterOverview(
   activeValue = '正常',
 ): ModuleOverviewItem[] {
   return [
-    { label: '主数据数', value: formatInteger(rows.length) },
+    { label: i18next.t('modules.overview.masterDataCount'), value: formatInteger(rows.length) },
     {
-      label: '正常数',
+      label: i18next.t('modules.overview.normalCount'),
       value: formatInteger(
         rows.filter((row) => row[activeKey] === activeValue).length,
       ),
