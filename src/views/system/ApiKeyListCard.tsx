@@ -79,7 +79,7 @@ export function ApiKeyListCard({
 
   return (
     <Card
-      title="API Key 管理"
+      title={t('system.apiKeyList.title')}
       extra={
         <ApiKeyListToolbar
           keyword={keyword}

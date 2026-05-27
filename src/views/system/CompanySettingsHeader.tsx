@@ -4,6 +4,7 @@ import Col from 'antd/es/col'
 import Row from 'antd/es/row'
 import Space from 'antd/es/space'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 
 interface OverviewItem {
   label: string
@@ -27,16 +28,16 @@ export function CompanySettingsHeader({
   onRefresh,
   onSave,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <div className="bg-default rounded p-24 mb-16">
       <div className="flex justify-between mb-20">
         <div>
           <Typography.Title level={4} className="m-0">
-            公司信息
+            {t('system.companyHeader.title')}
           </Typography.Title>
           <Typography.Text type="secondary">
-            本系统按单企业模式运行，公司名称和税号由 OOBE
-            初始化写入；本页集中维护多个结算银行、状态和补充说明。
+            {t('system.companyHeader.description')}
           </Typography.Text>
         </div>
         <Space>
@@ -46,7 +47,7 @@ export function CompanySettingsHeader({
             icon={<ReloadOutlined />}
             onClick={onRefresh}
           >
-            刷新
+            {t('system.companyHeader.refresh')}
           </Button>
           {canSave && (
             <Button
@@ -56,7 +57,7 @@ export function CompanySettingsHeader({
               icon={<SaveOutlined />}
               onClick={onSave}
             >
-              保存
+              {t('system.companyHeader.save')}
             </Button>
           )}
         </Space>

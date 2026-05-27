@@ -50,18 +50,18 @@ export function SessionManagementCard({
   const { t } = useTranslation()
   return (
     <Card
-      title="会话管理"
+      title={t('system.session.title')}
       extra={
         <SystemTableToolbar
           keyword={keyword}
-          keywordPlaceholder="搜索 Token ID / IP / 设备信息"
+          keywordPlaceholder={t('system.session.searchPlaceholder')}
           onKeywordChange={onKeywordChange}
           onSearch={onSearch}
           onRefresh={onRefresh}
         >
           {canEdit && (
             <Button danger icon={<DeleteOutlined />} onClick={onRevokeAll}>
-              清除全部
+              {t('system.session.clearAll')}
             </Button>
           )}
         </SystemTableToolbar>
@@ -69,13 +69,13 @@ export function SessionManagementCard({
     >
       <Row gutter={16} className="mb-4">
         <Col span={8}>
-          <Statistic title="在线人数" value={summary?.onlineUsers ?? 0} />
+          <Statistic title={t('system.session.onlineUsers')} value={summary?.onlineUsers ?? 0} />
         </Col>
         <Col span={8}>
-          <Statistic title="在线设备" value={summary?.onlineSessions ?? 0} />
+          <Statistic title={t('system.session.onlineDevices')} value={summary?.onlineSessions ?? 0} />
         </Col>
         <Col span={8}>
-          <Statistic title="有效会话" value={summary?.activeSessions ?? 0} />
+          <Statistic title={t('system.session.activeSessions')} value={summary?.activeSessions ?? 0} />
         </Col>
       </Row>
 

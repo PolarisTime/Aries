@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
 import Tabs from 'antd/es/tabs'
 import { lazy, Suspense, useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
@@ -11,17 +12,6 @@ type TabKey = 'users' | 'roles' | 'permissions'
 function parseTabKey(raw: string | null): TabKey {
   if (raw === 'roles' || raw === 'permissions') return raw
   return 'users'
-}
-
-const permPageDef: AppPageDefinition = {
-  key: 'permission',
-  title: '权限管理',
-  menuKey: '/permission',
-  view: 'business-grid',
-  icon: 'TeamOutlined',
-  menuParent: 'system',
-  moduleKey: 'permission',
-  resourceKey: 'permission',
 }
 
 const LazyPermissionGridPage = lazy(() =>
@@ -43,9 +33,21 @@ const LazyUserAccountManagementView = lazy(() =>
 )
 
 export function AccessControlView() {
+  const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
   const permissionStore = usePermissionStore()
+
+  const permPageDef: AppPageDefinition = {
+    key: 'permission',
+    title: t('system.accessControl.title'),
+    menuKey: '/permission',
+    view: 'business-grid',
+    icon: 'TeamOutlined',
+    menuParent: 'system',
+    moduleKey: 'permission',
+    resourceKey: 'permission',
+  }
 
   const canViewUsers = permissionStore.can('user-account', 'read')
   const canViewRoles = permissionStore.can('role', 'read')
@@ -59,19 +61,19 @@ export function AccessControlView() {
     if (canViewUsers) {
       items.push({
         key: 'users',
-        label: '用户账户',
+        label: t('system.accessControl.tabUsers'),
       })
     }
     if (canViewRoles) {
       items.push({
         key: 'roles',
-        label: '角色权限',
+        label: t('system.accessControl.tabRoles'),
       })
     }
     if (canViewPermissions) {
       items.push({
         key: 'permissions',
-        label: '权限目录',
+        label: t('system.accessControl.tabPermissions'),
       })
     }
     return items
@@ -99,7 +101,7 @@ export function AccessControlView() {
     return (
       <div className="page-stack">
         <Empty
-          description="暂无可用模块，请联系管理员分配权限"
+          description={t('system.accessControl.noModules')}
           className="mt-120"
         />
       </div>
