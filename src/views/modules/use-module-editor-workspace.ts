@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
+import i18next from 'i18next'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -181,11 +182,11 @@ function buildPreallocatedIdWarning(args: {
 
   if (!expectedPreallocatedId) {
     return {
-      title: '单据已保存，系统已重新生成单号',
+      title: i18next.t('modules.editorWorkspace.preallocatedNoMismatchTitle'),
       content:
         actualPrimaryNo || actualId
-          ? `这张单据已经保存成功，但系统未使用当前页面显示的预生成单号，已自动改为实际单号：${actualPrimaryNo || actualId}。请以实际保存后的单号为准。`
-          : '这张单据已经保存成功，但系统未使用当前页面显示的预生成单号，已自动改为新的实际单号。请以保存结果为准。',
+          ? i18next.t('modules.editorWorkspace.preallocatedNoMismatchContent', { primaryNo: actualPrimaryNo || actualId })
+          : i18next.t('modules.editorWorkspace.preallocatedNoMismatchContentNoNo'),
     }
   }
 
@@ -200,8 +201,8 @@ function buildPreallocatedIdWarning(args: {
   }
 
   return {
-    title: '单据已保存，实际单号已更新',
-    content: `当前页面预生成的单号是 ${expectedIdentityNo}，但系统最终保存的实际单号是 ${actualPrimaryNo || actualId || '未知'}。请以实际保存后的单号为准。`,
+    title: i18next.t('modules.editorWorkspace.preallocatedNoUpdatedTitle'),
+    content: i18next.t('modules.editorWorkspace.preallocatedNoUpdatedContent', { expected: expectedIdentityNo, actual: actualPrimaryNo || actualId || '未知' }),
   }
 }
 
@@ -252,9 +253,9 @@ export function useModuleEditorWorkspace({
   const getCurrentOperatorName = useCallback(() => {
     const user = getStoredUser()
     if (user) {
-      return String(user.userName || user.loginName || '当前用户')
+      return String(user.userName || user.loginName || i18next.t('modules.editorWorkspace.currentUserFallback'))
     }
-    return '当前用户'
+    return i18next.t('modules.editorWorkspace.currentUserFallback')
   }, [])
 
   useEffect(() => {

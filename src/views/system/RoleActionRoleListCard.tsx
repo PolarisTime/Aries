@@ -4,6 +4,7 @@ import Card from 'antd/es/card'
 import Empty from 'antd/es/empty'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type { RoleRecord } from '@/api/role-actions'
 import { enabledStatusValues } from '@/constants/module-options'
 
@@ -22,9 +23,10 @@ export function RoleActionRoleListCard({
   onCreate,
   onSelectRole,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <Card
-      title="角色列表"
+      title={t('system.roleList.title')}
       size="small"
       className="h-full flex flex-col"
       styles={{ body: { flex: 1, overflow: 'auto', padding: 8 } }}
@@ -36,7 +38,7 @@ export function RoleActionRoleListCard({
             icon={<PlusOutlined />}
             onClick={onCreate}
           >
-            新增
+            {t('system.roleList.create')}
           </Button>
         )
       }
@@ -73,11 +75,11 @@ export function RoleActionRoleListCard({
           <div className="flex gap-8 text-xs text-secondary">
             <span>{role.roleCode}</span>
             <span>{role.roleType}</span>
-            <span>{role.userCount} 用户</span>
+            <span>{role.userCount} {t('system.roleList.userCount')}</span>
           </div>
         </div>
       ))}
-      {roles.length === 0 && <Empty description="暂无角色" />}
+      {roles.length === 0 && <Empty description={t('system.roleList.noRoles')} />}
     </Card>
   )
 }

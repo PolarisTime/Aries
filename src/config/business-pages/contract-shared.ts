@@ -1,6 +1,8 @@
+import i18next from 'i18next'
+
 export const contractStatusOptions = [
-  { label: '草稿', value: '草稿' },
-  { label: '执行中', value: '执行中' },
-  { label: '已签署', value: '已签署' },
-  { label: '已归档', value: '已归档' },
+  { label: i18next.t('modules.status.draft'), value: '草稿' },
+  { label: i18next.t('modules.status.executing'), value: '执行中' },
+  { label: i18next.t('modules.status.signed'), value: '已签署' },
+  { label: i18next.t('modules.status.archived'), value: '已归档' },
 ]

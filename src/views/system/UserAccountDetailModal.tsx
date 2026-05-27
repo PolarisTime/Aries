@@ -2,6 +2,7 @@ import Descriptions from 'antd/es/descriptions'
 import Modal from 'antd/es/modal'
 import Spin from 'antd/es/spin'
 import Tag from 'antd/es/tag'
+import { useTranslation } from 'react-i18next'
 import type { UserAccountRecord } from '@/types/user-account'
 
 interface Props {
@@ -21,9 +22,10 @@ export function UserAccountDetailModal({
   getTotpColor,
   onClose,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <Modal
-      title="用户详情"
+      title={t('system.userAccountDetail.title')}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -32,39 +34,39 @@ export function UserAccountDetailModal({
       <Spin spinning={loading}>
         {record && (
           <Descriptions column={2} bordered size="small">
-            <Descriptions.Item label="登录账号">
+            <Descriptions.Item label={t('system.userAccountDetail.loginName')}>
               {record.loginName}
             </Descriptions.Item>
-            <Descriptions.Item label="用户姓名">
+            <Descriptions.Item label={t('system.userAccountDetail.userName')}>
               {record.userName}
             </Descriptions.Item>
-            <Descriptions.Item label="手机号">
+            <Descriptions.Item label={t('system.userAccountDetail.mobile')}>
               {record.mobile || '--'}
             </Descriptions.Item>
-            <Descriptions.Item label="所属部门">
+            <Descriptions.Item label={t('system.userAccountDetail.department')}>
               {record.departmentName || '--'}
             </Descriptions.Item>
-            <Descriptions.Item label="数据范围">
+            <Descriptions.Item label={t('system.userAccountDetail.dataScope')}>
               {record.dataScope || '--'}
             </Descriptions.Item>
-            <Descriptions.Item label="所属角色" span={2}>
+            <Descriptions.Item label={t('system.userAccountDetail.roles')} span={2}>
               {record.roleNames?.length ? record.roleNames.join('、') : '--'}
             </Descriptions.Item>
-            <Descriptions.Item label="权限摘要" span={2}>
+            <Descriptions.Item label={t('system.userAccountDetail.permSummary')} span={2}>
               {record.permissionSummary || '--'}
             </Descriptions.Item>
-            <Descriptions.Item label="状态">
+            <Descriptions.Item label={t('system.userAccountDetail.status')}>
               <Tag color={getStatusColor(record.status)}>{record.status}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="2FA 状态">
+            <Descriptions.Item label={t('system.userAccountDetail.totpStatus')}>
               <Tag color={getTotpColor(record.totpEnabled)}>
-                {record.totpEnabled ? '已启用' : '未启用'}
+                {record.totpEnabled ? t('system.userAccountDetail.totpEnabled') : t('system.userAccountDetail.totpDisabled')}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="最近登录" span={2}>
+            <Descriptions.Item label={t('system.userAccountDetail.lastLogin')} span={2}>
               {record.lastLoginDate || '--'}
             </Descriptions.Item>
-            <Descriptions.Item label="备注" span={2}>
+            <Descriptions.Item label={t('system.userAccountDetail.remark')} span={2}>
               {record.remark || '--'}
             </Descriptions.Item>
           </Descriptions>

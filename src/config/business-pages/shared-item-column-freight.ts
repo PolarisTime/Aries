@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import type { ModuleColumnDefinition } from '@/types/module-page'
 import { applyCompactItemLayout } from './shared-item-column-utils'
 
@@ -21,47 +22,47 @@ const compactFreightItemWidthMap: Record<string, number> = {
 }
 
 export const freightItemColumns: ModuleColumnDefinition[] = [
-  { title: '出库单号', dataIndex: 'sourceNo', width: 140 },
-  { title: '商品编码', dataIndex: 'materialCode', width: 148 },
-  { title: '商品名称', dataIndex: 'materialName', width: 156 },
-  { title: '规格', dataIndex: 'spec', width: 128 },
-  { title: '材质', dataIndex: 'material', width: 92 },
-  { title: '客户名称', dataIndex: 'customerName', width: 136 },
-  { title: '项目名称', dataIndex: 'projectName', width: 156 },
-  { title: '品牌', dataIndex: 'brand', width: 92 },
-  { title: '类别', dataIndex: 'category', width: 84 },
-  { title: '长度', dataIndex: 'length', width: 70 },
+  { title: i18next.t('modules.columns.outboundNo'), dataIndex: 'sourceNo', width: 140 },
+  { title: i18next.t('modules.columns.materialCode'), dataIndex: 'materialCode', width: 148 },
+  { title: i18next.t('modules.columns.materialName'), dataIndex: 'materialName', width: 156 },
+  { title: i18next.t('modules.columns.spec'), dataIndex: 'spec', width: 128 },
+  { title: i18next.t('modules.columns.material'), dataIndex: 'material', width: 92 },
+  { title: i18next.t('modules.columns.customerName'), dataIndex: 'customerName', width: 136 },
+  { title: i18next.t('modules.columns.projectName'), dataIndex: 'projectName', width: 156 },
+  { title: i18next.t('modules.columns.brand'), dataIndex: 'brand', width: 92 },
+  { title: i18next.t('modules.columns.category'), dataIndex: 'category', width: 84 },
+  { title: i18next.t('modules.columns.length'), dataIndex: 'length', width: 70 },
   {
-    title: '数量',
+    title: i18next.t('modules.columns.quantity'),
     dataIndex: 'quantity',
     width: 76,
     align: 'center',
     type: 'count',
   },
-  { title: '数量单位', dataIndex: 'quantityUnit', width: 64, align: 'center' },
+  { title: i18next.t('modules.columns.quantityUnit'), dataIndex: 'quantityUnit', width: 64, align: 'center' },
   {
-    title: '件重/吨',
+    title: i18next.t('modules.columns.pieceWeightTon'),
     dataIndex: 'pieceWeightTon',
     width: 90,
     align: 'center',
     type: 'weight',
   },
   {
-    title: '每件支数',
+    title: i18next.t('modules.columns.piecesPerBundle'),
     dataIndex: 'piecesPerBundle',
     width: 76,
     align: 'center',
     type: 'count',
   },
-  { title: '批号', dataIndex: 'batchNo', width: 130 },
+  { title: i18next.t('modules.columns.batchNo'), dataIndex: 'batchNo', width: 130 },
   {
-    title: '总重量（吨）',
+    title: i18next.t('modules.columns.weightTon'),
     dataIndex: 'weightTon',
     width: 108,
     align: 'center',
     type: 'weight',
   },
-  { title: '仓库', dataIndex: 'warehouseName', width: 132 },
+  { title: i18next.t('modules.columns.warehouse'), dataIndex: 'warehouseName', width: 132 },
 ]
 
 export const compactFreightItemColumns = applyCompactItemLayout(

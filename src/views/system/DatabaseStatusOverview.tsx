@@ -7,6 +7,7 @@ import Skeleton from 'antd/es/skeleton'
 import Statistic from 'antd/es/statistic'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type { DatabaseStatus } from '@/api/database-admin'
 import {
   formatDatabaseDateTime,

@@ -8,6 +8,7 @@ import Space from 'antd/es/space'
 import Spin from 'antd/es/spin'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
 import {
   enabledStatusOptions,
@@ -60,6 +61,7 @@ export function UserAccountEditorModal({
   onSave,
   onClose,
 }: Props) {
+  const { t } = useTranslation()
   const isCreate = mode === 'create'
   const roleDataScopeId = buildFormControlId(
     'user-account-editor',
@@ -67,7 +69,7 @@ export function UserAccountEditorModal({
   )
   return (
     <FormModal
-      title={isCreate ? '新增用户账户' : '编辑用户账户'}
+      title={isCreate ? t('system.userAccountEditor.createTitle') : t('system.userAccountEditor.editTitle')}
       open={open}
       onClose={onClose}
       onSave={onSave}
@@ -77,12 +79,12 @@ export function UserAccountEditorModal({
       <Spin spinning={loading}>
         <Form form={form} layout="vertical" className="user-account-form">
           <div className="form-section">
-            <div className="form-section-title">账户信息</div>
+            <div className="form-section-title">{t('system.userAccountEditor.accountInfo')}</div>
             <Row gutter={24}>
               <Col span={12}>
                 <Form.Item
                   name="loginName"
-                  label="登录账号"
+                  label={t('system.userAccountEditor.loginName')}
                   required
                   hasFeedback
                   validateStatus={
@@ -94,12 +96,12 @@ export function UserAccountEditorModal({
                   }
                   help={
                     loginNameChecking
-                      ? '正在检查登录账号...'
+                      ? t('system.userAccountEditor.checkingLoginName')
                       : loginNameValidationMessage || undefined
                   }
                 >
                   <Input
-                    placeholder="请输入登录账号"
+                    placeholder={t('system.userAccountEditor.loginNamePlaceholder')}
                     maxLength={64}
                     onBlur={() => {
                       const loginName = getFormString(form, 'loginName')
@@ -116,35 +118,35 @@ export function UserAccountEditorModal({
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item name="userName" label="用户姓名" required>
-                  <Input placeholder="请输入用户姓名" maxLength={64} />
+                <Form.Item name="userName" label={t('system.userAccountEditor.userName')} required>
+                  <Input placeholder={t('system.userAccountEditor.userNamePlaceholder')} maxLength={64} />
                 </Form.Item>
               </Col>
             </Row>
             <Row gutter={24}>
               <Col span={12}>
-                <Form.Item name="mobile" label="手机号">
-                  <Input placeholder="请输入手机号" maxLength={32} />
+                <Form.Item name="mobile" label={t('system.userAccountEditor.mobile')}>
+                  <Input placeholder={t('system.userAccountEditor.mobilePlaceholder')} maxLength={32} />
                 </Form.Item>
               </Col>
               {isCreate ? (
                 <Col span={12}>
                   <Form.Item
                     name="password"
-                    label="初始密码"
-                    extra="留空时系统会自动生成 8 位随机密码。"
+                    label={t('system.userAccountEditor.initialPassword')}
+                    extra={t('system.userAccountEditor.passwordHint')}
                   >
                     <Input.Password
-                      placeholder="请输入初始密码"
+                      placeholder={t('system.userAccountEditor.passwordPlaceholder')}
                       maxLength={128}
                     />
                   </Form.Item>
                 </Col>
               ) : (
                 <Col span={12}>
-                  <Form.Item name="status" label="状态">
+                  <Form.Item name="status" label={t('system.userAccountEditor.status')}>
                     <Select
-                      placeholder="请选择状态"
+                      placeholder={t('system.userAccountEditor.statusPlaceholder')}
                       options={enabledStatusOptions}
                     />
                   </Form.Item>
@@ -153,11 +155,11 @@ export function UserAccountEditorModal({
             </Row>
             <Row gutter={24}>
               <Col span={12}>
-                <Form.Item name="departmentId" label="所属部门" required>
+                <Form.Item name="departmentId" label={t('system.userAccountEditor.department')} required>
                   <Select
                     showSearch
                     optionFilterProp="label"
-                    placeholder="请选择部门"
+                    placeholder={t('system.userAccountEditor.departmentPlaceholder')}
                     options={departmentOptions.map((department) => ({
                       label: department.departmentName,
                       value: String(department.id || ''),
@@ -168,15 +170,15 @@ export function UserAccountEditorModal({
             </Row>
           </div>
           <div className="form-section">
-            <div className="form-section-title">权限配置</div>
+            <div className="form-section-title">{t('system.userAccountEditor.permConfig')}</div>
             <Row gutter={24}>
               <Col span={isCreate ? 16 : 14}>
-                <Form.Item name="roleIds" label="所属角色" required
+                <Form.Item name="roleIds" label={t('system.userAccountEditor.roles')} required
                   getValueFromEvent={(ids: (string | number)[]) => ids?.map(Number)}
                 >
                   <Select
                     mode="multiple"
-                    placeholder="请选择角色"
+                    placeholder={t('system.userAccountEditor.rolesPlaceholder')}
                     maxTagCount={5}
                     options={roleOptions.map((role) => {
                       const roleId = Number(role.id)
@@ -188,7 +190,7 @@ export function UserAccountEditorModal({
                       )
                       return {
                         label: conflictWith != null
-                          ? `${role.roleName} (与已选角色互斥)`
+                          ? `${role.roleName} ${t('system.userAccountEditor.roleConflict')}`
                           : role.roleName,
                         value: role.id,
                         disabled: isDisabled || conflictWith != null,
@@ -200,7 +202,7 @@ export function UserAccountEditorModal({
               <Col span={isCreate ? 8 : 5}>
                 <Form.Item
                   {...buildLabeledFormItemProps({
-                    label: '角色数据范围',
+                    label: t('system.userAccountEditor.roleDataScope'),
                     htmlFor: roleDataScopeId,
                   })}
                 >
@@ -214,16 +216,16 @@ export function UserAccountEditorModal({
               </Col>
               {isCreate && (
                 <Col span={8}>
-                  <Form.Item name="status" label="状态">
+                  <Form.Item name="status" label={t('system.userAccountEditor.status2')}>
                     <Select
-                      placeholder="请选择状态"
+                      placeholder={t('system.userAccountEditor.statusPlaceholder2')}
                       options={enabledStatusOptions}
                     />
                   </Form.Item>
                 </Col>
               )}
             </Row>
-            <Form.Item label="权限摘要">
+            <Form.Item label={t('system.userAccountEditor.permSummary')}>
               {selectedRoleSummaries.length > 0 ? (
                 <Space wrap>
                   {selectedRoleSummaries.map((summary) => (
@@ -234,15 +236,15 @@ export function UserAccountEditorModal({
                 </Space>
               ) : (
                 <Typography.Text type="secondary">
-                  选择角色后自动汇总
+                  {t('system.userAccountEditor.permSummaryHint')}
                 </Typography.Text>
               )}
             </Form.Item>
           </div>
           <div className="form-section">
-            <div className="form-section-title">补充信息</div>
-            <Form.Item name="remark" label="备注">
-              <Input.TextArea rows={2} placeholder="请输入备注" />
+            <div className="form-section-title">{t('system.userAccountEditor.supplementInfo')}</div>
+            <Form.Item name="remark" label={t('system.userAccountEditor.remark')}>
+              <Input.TextArea rows={2} placeholder={t('system.userAccountEditor.remarkPlaceholder')} />
             </Form.Item>
           </div>
         </Form>
