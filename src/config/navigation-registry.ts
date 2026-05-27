@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
 
 export type AppIconKey =
@@ -59,23 +60,23 @@ export const menuGroupOrder: MenuGroupKey[] = [
 ]
 
 export const menuGroupDefinitions: Record<MenuGroupKey, MenuGroupDefinition> = {
-  master: { key: 'master', title: '基础数据', icon: 'AppstoreOutlined' },
+  master: { key: 'master', title: i18next.t('navigation.master'), icon: 'AppstoreOutlined' },
   purchase: {
     key: 'purchase',
-    title: '采购',
+    title: i18next.t('navigation.purchase'),
     icon: 'ShoppingCartOutlined',
   },
-  sales: { key: 'sales', title: '销售', icon: 'ShopOutlined' },
-  freight: { key: 'freight', title: '物流', icon: 'CarOutlined' },
-  contracts: { key: 'contracts', title: '合同', icon: 'FileTextOutlined' },
-  reports: { key: 'reports', title: '报表', icon: 'TableOutlined' },
+  sales: { key: 'sales', title: i18next.t('navigation.sales'), icon: 'ShopOutlined' },
+  freight: { key: 'freight', title: i18next.t('navigation.freight'), icon: 'CarOutlined' },
+  contracts: { key: 'contracts', title: i18next.t('navigation.contracts'), icon: 'FileTextOutlined' },
+  reports: { key: 'reports', title: i18next.t('navigation.reports'), icon: 'TableOutlined' },
   statements: {
     key: 'statements',
-    title: '对账',
+    title: i18next.t('navigation.statements'),
     icon: 'FileTextOutlined',
   },
-  finance: { key: 'finance', title: '财务', icon: 'WalletOutlined' },
-  system: { key: 'system', title: '设置', icon: 'PrinterOutlined' },
+  finance: { key: 'finance', title: i18next.t('navigation.finance'), icon: 'WalletOutlined' },
+  system: { key: 'system', title: i18next.t('navigation.system'), icon: 'PrinterOutlined' },
 }
 
 export function buildMenuEntriesByGroup(
