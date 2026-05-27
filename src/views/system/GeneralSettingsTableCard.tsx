@@ -98,13 +98,7 @@ export function GeneralSettingsTableCard({
               onChange={() => onToggle(record)}
             />
             <span
-              className="text-xs"
-              /* 条件颜色：根据 enabled 状态动态切换 */
-              style={{
-                color: enabled
-                  ? 'var(--theme-success)'
-                  : 'var(--theme-disabled)',
-              }}
+              className={`text-xs ${enabled ? 'text-[var(--theme-success)]' : 'text-[var(--theme-disabled)]'}`}
             >
               {enabled ? t('system.generalSettingsTable.enabled') : t('system.generalSettingsTable.disabled')}
             </span>

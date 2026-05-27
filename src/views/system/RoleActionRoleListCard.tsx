@@ -46,20 +46,13 @@ export function RoleActionRoleListCard({
       {roles.map((role) => (
         <div
           key={role.id}
-          className="rounded cursor-pointer mb-4 py-3 px-4"
+          className={`rounded cursor-pointer mb-4 py-3 px-4 border ${
+            selectedRoleId === role.id
+              ? 'border-[var(--theme-highlight-border)] bg-[var(--theme-highlight-bg)]'
+              : 'border-transparent'
+          }`}
           role="button"
           tabIndex={0}
-          /* 条件样式：选中态边框和背景色由 selectedRoleId 动态决定 */
-          style={{
-            border:
-              selectedRoleId === role.id
-                ? '1px solid var(--theme-highlight-border)'
-                : '1px solid transparent',
-            background:
-              selectedRoleId === role.id
-                ? 'var(--theme-highlight-bg)'
-                : undefined,
-          }}
           onClick={() => onSelectRole(role)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectRole(role) }}
         >
