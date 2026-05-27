@@ -70,7 +70,7 @@ export function NumberRulesView() {
   const openNumberRuleEditor = useCallback(
     (record: ModuleRecord) => {
       if (!canEdit) {
-        message.warning('暂无编辑权限')
+        message.warning(t('system.numberRules.noEditPermission'))
         return
       }
       editingRecord.current = record
@@ -94,7 +94,7 @@ export function NumberRulesView() {
   const openUploadRuleEditor = useCallback(
     (record: ModuleRecord) => {
       if (!canEdit) {
-        message.warning('暂无编辑权限')
+        message.warning(t('system.numberRules.noEditPermission'))
         return
       }
       editingRecord.current = record
@@ -142,7 +142,7 @@ export function NumberRulesView() {
       refresh()
       setEditorOpen(false)
     } catch (error) {
-      showError(error, '保存失败')
+      showError(error, t('system.numberRules.saveFailed'))
     } finally {
       setSaving(false)
     }

@@ -83,6 +83,7 @@ interface Props {
 }
 
 export function DatabaseStatusOverview({ dbStatus, loading }: Props) {
+  const { t } = useTranslation()
   if (loading && !dbStatus) {
     return (
       <div className="database-status-section">
@@ -96,10 +97,10 @@ export function DatabaseStatusOverview({ dbStatus, loading }: Props) {
       <div className="database-section-heading">
         <div>
           <Typography.Title level={5} className="database-section-title">
-            服务概览
+            {t('system.databaseStatus.serviceOverview')}
           </Typography.Title>
           <Typography.Text type="secondary">
-            当前数据库组件在线状态与关键容量指标
+            {t('system.databaseStatus.serviceOverviewDesc')}
           </Typography.Text>
         </div>
       </div>
@@ -114,23 +115,23 @@ export function DatabaseStatusOverview({ dbStatus, loading }: Props) {
               version={dbStatus.postgres.version}
               status={dbStatus.postgres.status}
               summary={[
-                { title: '数据库大小', value: dbStatus.postgres.databaseSize },
-                { title: '表数量', value: dbStatus.postgres.tableCount },
+                { title: t('system.databaseStatus.dbSize'), value: dbStatus.postgres.databaseSize },
+                { title: t('system.databaseStatus.tableCount'), value: dbStatus.postgres.tableCount },
                 {
-                  title: '活跃连接',
+                  title: t('system.databaseStatus.activeConnections'),
                   value: `${dbStatus.postgres.activeConnections}/${dbStatus.postgres.maxConnections}`,
                 },
               ]}
               details={[
                 {
-                  label: '地址',
+                  label: t('system.databaseStatus.address'),
                   value: `${dbStatus.postgres.host}:${dbStatus.postgres.port}`,
                 },
-                { label: '数据库', value: dbStatus.postgres.database },
+                { label: t('system.databaseStatus.database'), value: dbStatus.postgres.database },
                 ...(dbStatus.postgres.serverStartTime
                   ? [
                       {
-                        label: '启动时间',
+                        label: t('system.databaseStatus.startTime'),
                         value: formatDatabaseDateTime(
                           dbStatus.postgres.serverStartTime,
                         ),
@@ -149,21 +150,21 @@ export function DatabaseStatusOverview({ dbStatus, loading }: Props) {
               status={dbStatus.redis.status}
               summary={[
                 {
-                  title: '内存占用',
+                  title: t('system.databaseStatus.memUsage'),
                   value: formatDatabaseMemory(dbStatus.redis.usedMemory),
                 },
-                { title: '键数量', value: dbStatus.redis.totalKeys },
-                { title: '命中率', value: `${dbStatus.redis.hitRate}%` },
+                { title: t('system.databaseStatus.keyCount'), value: dbStatus.redis.totalKeys },
+                { title: t('system.databaseStatus.hitRate'), value: `${dbStatus.redis.hitRate}%` },
               ]}
               details={[
                 {
-                  label: '地址',
+                  label: t('system.databaseStatus.address'),
                   value: `${dbStatus.redis.host}:${dbStatus.redis.port}`,
                 },
-                { label: '运行时间', value: dbStatus.redis.uptime },
+                { label: t('system.databaseStatus.uptime'), value: dbStatus.redis.uptime },
                 {
-                  label: '客户端',
-                  value: `${dbStatus.redis.connectedClients} 个连接`,
+                  label: t('system.databaseStatus.clientConnections'),
+                  value: `${dbStatus.redis.connectedClients} ${t('system.databaseStatus.connectionCount')}`,
                 },
               ]}
             />
