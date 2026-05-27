@@ -925,6 +925,7 @@ export const zhCN: MessageSchema = {
     },
     routePage: {
       apiKeyDetail: 'API Key 详情',
+      businessPageNotFound: '未找到对应业务页面',
     },
   },
   system: {
@@ -993,6 +994,7 @@ export const zhCN: MessageSchema = {
       isDefault: '默认',
       deleteContent: '确定删除模板「{{name}}」吗？',
       inputTemplateContent: '请输入模板内容',
+      defaultTag: '（默认）',
     },
     numberRules: {
       title: '编号规则',
