@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { TableColumnsType } from 'antd'
 import Checkbox from 'antd/es/checkbox'
+import i18next from 'i18next'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -77,7 +78,7 @@ export function useRoleActionPermissions({
         setSelectedActions(actions)
       } catch (error) {
         setSelectedActions(new Set())
-        showError(error, '加载角色权限失败')
+        showError(error, i18next.t('system.rolePermissions.loadFailed'))
       }
     },
     [showError],
@@ -113,7 +114,7 @@ export function useRoleActionPermissions({
   const toggleAction = useCallback(
     (menuCode: string, action: string) => {
       if (!canEditPermissions) {
-        message.warning('暂无权限配置编辑权限')
+        message.warning(i18next.t('system.rolePermissions.noEditPermission'))
         return
       }
       const resource = menuResourceLookup.get(menuCode) || menuCode
@@ -137,7 +138,7 @@ export function useRoleActionPermissions({
   const toggleAllMenuActions = useCallback(
     (menu: MenuNode) => {
       if (!canEditPermissions) {
-        message.warning('暂无权限配置编辑权限')
+        message.warning(i18next.t('system.rolePermissions.noEditPermission'))
         return
       }
       const next = new Set(selectedActions)
@@ -157,7 +158,7 @@ export function useRoleActionPermissions({
 
   const selectAll = useCallback(() => {
     if (!canEditPermissions) {
-      message.warning('暂无权限配置编辑权限')
+      message.warning(i18next.t('system.rolePermissions.noEditPermission'))
       return
     }
     const next = new Set<string>()
@@ -171,7 +172,7 @@ export function useRoleActionPermissions({
 
   const deselectAll = useCallback(() => {
     if (!canEditPermissions) {
-      message.warning('暂无权限配置编辑权限')
+      message.warning(i18next.t('system.rolePermissions.noEditPermission'))
       return
     }
     setSelectedActions(new Set())
@@ -192,14 +193,14 @@ export function useRoleActionPermissions({
         queryKey: QUERY_KEYS.rolePermissionOptions,
       })
     },
-    onError: (error: Error) => showError(error, '保存失败'),
+    onError: (error: Error) => showError(error, i18next.t('system.rolePermissions.saveFailed')),
   })
 
   const matrixColumns = useMemo<TableColumnsType<RoleMatrixRow>>(() => {
     const columns: TableColumnsType<RoleMatrixRow> = [
       {
         dataIndex: 'menuName',
-        title: '菜单名称',
+        title: i18next.t('system.rolePermissions.colMenuName'),
         width: 160,
         fixed: 'left',
       },
@@ -233,7 +234,7 @@ export function useRoleActionPermissions({
 
     columns.push({
       dataIndex: '_count',
-      title: '已授权',
+      title: i18next.t('system.rolePermissions.colAuthorized'),
       width: 70,
       align: 'center',
     })

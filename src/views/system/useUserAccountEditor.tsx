@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
+import i18next from 'i18next'
 import { useCallback, useState } from 'react'
 import {
   checkUserAccountLoginName,
@@ -71,7 +72,7 @@ export function useUserAccountEditor({
         setCreateResultOpen(true)
       } else {
         message.success(
-          (response as { message?: string }).message || '保存成功',
+          (response as { message?: string }).message || i18next.t('system.userAccountEditorHook.saveSuccess'),
         )
       }
       setEditorOpen(false)
@@ -79,10 +80,10 @@ export function useUserAccountEditor({
     },
     onError: (error: Error) => {
       if (error.message.includes('登录账号已存在')) {
-        setLoginNameValidationMessage('登录账号已存在')
+        setLoginNameValidationMessage(i18next.t('system.userAccountEditorHook.loginNameExists'))
         return
       }
-      showError(error, '保存失败')
+      showError(error, i18next.t('system.userAccountEditorHook.saveFailed'))
     },
   })
 
@@ -131,11 +132,11 @@ export function useUserAccountEditor({
         const result = await checkUserAccountLoginName(loginName, excludeUserId)
         const validationMessage = result.available
           ? ''
-          : result.message || '登录账号已存在'
+          : result.message || i18next.t('system.userAccountEditorHook.loginNameExists')
         setLoginNameValidationMessage(validationMessage)
         return { available: result.available, message: validationMessage }
       } catch (error) {
-        showError(error, '检查登录账号失败')
+        showError(error, i18next.t('system.userAccountEditorHook.checkLoginNameFailed'))
         return {
           available: true,
           message: '',
@@ -162,7 +163,7 @@ export function useUserAccountEditor({
         const detail = await getUserAccountDetail(record.id)
         fillEditorForm(detail)
       } catch (error) {
-        showError(error, '加载用户详情失败')
+        showError(error, i18next.t('system.userAccountEditorHook.loadDetailFailed'))
         setEditorOpen(false)
       } finally {
         setEditorLoading(false)
@@ -179,7 +180,7 @@ export function useUserAccountEditor({
         editorMode === 'edit' ? (editingId ?? undefined) : undefined,
       )
       if (!validationResult.available) {
-        message.warning(validationResult.message || '登录账号已存在')
+        message.warning(validationResult.message || i18next.t('system.userAccountEditorHook.loginNameExists'))
         return
       }
       const payload: UserAccountFormPayload = {

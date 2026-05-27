@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import type {
   ApiKeyActionOption,
   ApiKeyResourceOption,
@@ -23,7 +24,7 @@ export function getApiKeyAllowedResourceText(
   allowedResources: string[],
   resourceOptions: ApiKeyResourceOption[],
 ) {
-  if (!allowedResources?.length) return '未限制'
+  if (!allowedResources?.length) return i18next.t('system.apiKeyUtils.unlimited')
   const titleByCode = new Map(
     resourceOptions.map((item) => [item.code, item.title]),
   )
@@ -36,7 +37,7 @@ export function getApiKeyAllowedActionText(
   allowedActions: string[],
   actionOptions: ApiKeyActionOption[],
 ) {
-  if (!allowedActions?.length) return '未设置'
+  if (!allowedActions?.length) return i18next.t('system.apiKeyUtils.unset')
   const titleByCode = new Map(
     actionOptions.map((item) => [item.code, item.title]),
   )

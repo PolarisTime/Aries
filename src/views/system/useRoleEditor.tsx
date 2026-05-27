@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
+import i18next from 'i18next'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createRole, type RoleRecord, updateRole } from '@/api/role-actions'
@@ -94,9 +95,9 @@ export function useRoleEditor({
         message.success(t('common.addSuccess'))
         modal.confirm({
           title: t('common.addSuccess'),
-          content: '角色已创建完成，是否立即为此角色配置权限？',
-          okText: '去配置',
-          cancelText: '稍后配置',
+          content: i18next.t('system.roleEditorHook.createConfirmContent'),
+          okText: i18next.t('system.roleEditorHook.goConfigure'),
+          cancelText: i18next.t('system.roleEditorHook.configureLater'),
           onOk: () => {
             onCreatedRoleSelect(result.data)
           },
@@ -112,7 +113,7 @@ export function useRoleEditor({
   const handleSaveRole = useCallback(async () => {
     const rawValues = roleForm.getFieldsValue()
     if (!rawValues.roleName?.trim() || !rawValues.roleCode?.trim()) {
-      message.warning('请填写角色名称和编码')
+      message.warning(i18next.t('system.roleEditorHook.fillNameAndCode'))
       return
     }
     try {

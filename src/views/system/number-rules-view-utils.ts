@@ -1,23 +1,24 @@
+import i18next from 'i18next'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
 export type NumberRuleEditorKind = 'number-rule' | 'upload-rule'
 
 export const DATE_RULE_OPTIONS = [
-  { label: '按年（yyyy）', value: 'yyyy' },
-  { label: '按月（yyyyMM）', value: 'yyyyMM' },
-  { label: '无日期', value: 'NONE' },
+  { label: i18next.t('system.numberRulesUtils.dateRuleYear'), value: 'yyyy' },
+  { label: i18next.t('system.numberRulesUtils.dateRuleMonth'), value: 'yyyyMM' },
+  { label: i18next.t('system.numberRulesUtils.dateRuleNone'), value: 'NONE' },
 ]
 
 export const RESET_RULE_OPTIONS = [
-  { label: '按年重置', value: 'YEARLY' },
-  { label: '按月重置', value: 'MONTHLY' },
-  { label: '永不重置', value: 'NEVER' },
+  { label: i18next.t('system.numberRulesUtils.resetRuleYearly'), value: 'YEARLY' },
+  { label: i18next.t('system.numberRulesUtils.resetRuleMonthly'), value: 'MONTHLY' },
+  { label: i18next.t('system.numberRulesUtils.resetRuleNever'), value: 'NEVER' },
 ]
 
 export const NUMBER_RULE_STATUS_OPTIONS = [
-  { label: '正常', value: '正常' },
-  { label: '禁用', value: '禁用' },
+  { label: i18next.t('system.numberRulesUtils.statusNormal'), value: '正常' },
+  { label: i18next.t('system.numberRulesUtils.statusDisabled'), value: '禁用' },
 ]
 
 export function isUploadRule(record: ModuleRecord) {
@@ -52,22 +53,22 @@ export function matchesNumberRuleKeyword(
 }
 
 export function formatDateRuleLabel(value?: string) {
-  if (value === 'yyyy') return '按年（yyyy）'
-  if (value === 'yyyyMM') return '按月（yyyyMM）'
-  if (value === 'NONE') return '无日期'
+  if (value === 'yyyy') return i18next.t('system.numberRulesUtils.dateRuleYear')
+  if (value === 'yyyyMM') return i18next.t('system.numberRulesUtils.dateRuleMonth')
+  if (value === 'NONE') return i18next.t('system.numberRulesUtils.dateRuleNone')
   return value || '--'
 }
 
 export function formatResetRuleLabel(value?: string) {
-  if (value === 'YEARLY') return '按年重置'
-  if (value === 'MONTHLY') return '按月重置'
-  if (value === 'NEVER') return '永不重置'
+  if (value === 'YEARLY') return i18next.t('system.numberRulesUtils.resetRuleYearly')
+  if (value === 'MONTHLY') return i18next.t('system.numberRulesUtils.resetRuleMonthly')
+  if (value === 'NEVER') return i18next.t('system.numberRulesUtils.resetRuleNever')
   return value || '--'
 }
 
 export function formatNumberRuleStatusText(value?: string) {
-  if (value === '正常') return '正常'
-  if (value === '禁用') return '禁用'
+  if (value === '正常') return i18next.t('system.numberRulesUtils.statusNormal')
+  if (value === '禁用') return i18next.t('system.numberRulesUtils.statusDisabled')
   return value || '--'
 }
 
@@ -98,6 +99,6 @@ export function buildUploadRulePreview(pattern: string) {
     .replace('{yyyyMMddHHmmss}', '20260101120000')
     .replace('{timestamp}', String(Date.now()))
     .replace('{random8}', 'abcd1234')
-    .replace('{originName}', '原始文件名')
+    .replace('{originName}', i18next.t('system.numberRulesUtils.originalFileName'))
     .replace('{ext}', '.pdf')
 }
