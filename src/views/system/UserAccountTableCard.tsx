@@ -10,6 +10,7 @@ import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
+import { useTranslation } from 'react-i18next'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { enabledStatusOptions } from '@/constants/module-options'
 import { createPaginationConfig } from '@/hooks/usePaginationConfig'
@@ -63,6 +64,7 @@ export function UserAccountTableCard({
   onDelete,
   onPageChange,
 }: Props) {
+  const { t } = useTranslation()
   const columns = [
     {
       title: '操作',
@@ -200,6 +202,7 @@ export function UserAccountTableCard({
           pageSize,
           total: totalElements,
           onChange: onPageChange,
+          t,
         })}
       />
     </Card>

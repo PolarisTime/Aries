@@ -540,4 +540,102 @@ export const zhCN: MessageSchema = {
     refreshLoginStatusFailed: '刷新登录状态失败',
     loginStatusExpired: '登录状态已失效，请重新登录',
   },
+  hooks: {
+    batchActions: {
+      pleaseSelectRecords: '请先选择记录',
+      noBatchAuditStatus: '当前模块未配置批量审核状态',
+      auditNotSupported: '勾选单据当前状态不支持审核',
+      batchAudit: '批量审核',
+      batchAuditConfirm:
+        '确定审核选中的 {{count}} 条记录吗？{{skippedPart}}',
+      skippedPart: '另有 {{count}} 条因状态不支持将跳过。',
+      auditFailed: '审核失败',
+      auditCompletedWithFailures:
+        '审核完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',
+      skippedCount: '，跳过 {{count}} 条',
+      auditSuccess: '审核成功 {{successCount}} 条{{skippedPart}}',
+      deleteNotSupported: '勾选单据当前状态不支持删除',
+      batchDelete: '批量删除',
+      batchDeleteConfirm:
+        '确定删除选中的 {{count}} 条记录吗？此操作不可恢复。{{skippedPart}}',
+      deleteFailed: '删除失败',
+      deleteCompletedWithFailures:
+        '删除完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',
+      deleteSuccess: '删除成功 {{successCount}} 条{{skippedPart}}',
+      noBatchReverseAuditStatus: '当前模块未配置批量反审核状态',
+      reverseAuditNotSupported: '勾选单据当前状态不支持反审核',
+      batchReverseAudit: '批量反审核',
+      batchReverseAuditConfirm:
+        '确定反审核选中的 {{count}} 条记录吗？{{skippedPart}}',
+      reverseAuditFailed: '反审核失败',
+      reverseAuditCompletedWithFailures:
+        '反审核完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',
+      reverseAuditSuccess: '反审核成功 {{successCount}} 条{{skippedPart}}',
+      pleaseSelectFreight: '请先选择物流单',
+      batchMarkDelivered: '批量标记送达',
+      batchMarkDeliveredConfirm:
+        '确定将选中的 {{count}} 条物流单标记为已送达吗？',
+      markDeliveredFailed: '标记送达失败',
+      markDeliveredCompletedWithFailures:
+        '标记送达完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{errorPart}}',
+      markDeliveredSuccess: '标记送达成功 {{successCount}} 条',
+    },
+    printActions: {
+      selectPrintTemplate: '选择打印模板',
+      noPrintableRecords: '未找到可打印的选中记录',
+      printScriptGenerationFailed: '打印脚本生成失败',
+      printServiceUnavailable: '打印服务不可用，请检查 CLodop 或打印模板配置',
+      noPrintContent: '未生成打印内容',
+      printFailed: '打印失败',
+    },
+    freightActions: {
+      noFreightData: '当前列表暂无物流对账单数据',
+      freightSummaryTitle: '运费对账汇总',
+      documentCount: '当前列表单据数：{{count}}',
+      totalWeight: '总重量（吨）：',
+      totalFreight: '总运费：',
+      paidAmount: '已付金额：',
+      unpaidAmount: '未付金额：',
+    },
+    toolbarActions: {
+      delete: '删除',
+      audit: '审核',
+      reverseAudit: '反审核',
+      printPreview: '打印预览',
+      directPrint: '直接打印',
+      noPermission: '暂无{{label}}权限',
+      noExtraLogic: '{{label}} 当前没有额外处理逻辑。',
+    },
+    recordActions: {
+      view: '查看',
+      edit: '编辑',
+      attachment: '附件',
+      audit: '审核',
+      reverseAudit: '反审核',
+    },
+    requestError: {
+      requestFailed: '请求失败',
+    },
+    pagination: {
+      total: '共 {{count}} 条',
+    },
+    displaySupport: {
+      yes: '是',
+      no: '否',
+    },
+    excelExport: {
+      exportSuccess: '导出完成',
+      exportFailed: '导出失败',
+    },
+    openPages: {
+      unnamedPage: '未命名页面',
+      workbench: '工作台',
+    },
+    gridColumns: {
+      actions: '操作',
+    },
+    columnSettings: {
+      syncRetryLater: '列设置已保存到本地，云同步稍后重试',
+    },
+  },
 }

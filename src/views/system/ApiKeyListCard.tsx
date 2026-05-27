@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import Card from 'antd/es/card'
 import Table from 'antd/es/table'
+import { useTranslation } from 'react-i18next'
 import type {
   ApiKeyActionOption,
   ApiKeyRecord,
@@ -64,6 +65,7 @@ export function ApiKeyListCard({
   onRevoke,
   onPageChange,
 }: Props) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const columns = buildApiKeyListColumns({
     canEdit,
@@ -109,6 +111,7 @@ export function ApiKeyListCard({
           pageSize,
           total: totalElements,
           onChange: onPageChange,
+          t,
         })}
       />
     </Card>

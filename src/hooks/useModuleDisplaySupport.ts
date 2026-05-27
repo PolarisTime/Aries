@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import { useTranslation } from 'react-i18next'
 import { asString } from '@/utils/type-narrowing'
 
 function asDateInput(value: unknown): string | number {
@@ -6,6 +7,8 @@ function asDateInput(value: unknown): string | number {
 }
 
 export function useModuleDisplaySupport() {
+  const { t } = useTranslation()
+
   const formatCellValue = (value: unknown, columnType?: string): string => {
     if (value === null || value === undefined) return '--'
     if (columnType === 'amount' || columnType === 'number') {
@@ -39,7 +42,7 @@ export function useModuleDisplaySupport() {
         : asString(value)
     }
     if (columnType === 'boolean') {
-      return value ? '是' : '否'
+      return value ? t('hooks.displaySupport.yes') : t('hooks.displaySupport.no')
     }
     return asString(value)
   }

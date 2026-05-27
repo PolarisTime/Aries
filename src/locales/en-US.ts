@@ -555,4 +555,113 @@ export const enUS: MessageSchema = {
     refreshLoginStatusFailed: 'Failed to refresh login status',
     loginStatusExpired: 'Login status expired, please log in again',
   },
+  hooks: {
+    batchActions: {
+      pleaseSelectRecords: 'Please select records first',
+      noBatchAuditStatus:
+        'Batch audit status is not configured for this module',
+      auditNotSupported:
+        'Selected records are in a status that does not support audit',
+      batchAudit: 'Batch Audit',
+      batchAuditConfirm:
+        'Confirm audit for {{count}} selected record(s)?{{skippedPart}}',
+      skippedPart:
+        ' {{count}} record(s) will be skipped due to unsupported status.',
+      auditFailed: 'Audit failed',
+      auditCompletedWithFailures:
+        'Audit completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
+      skippedCount: ', {{count}} skipped',
+      auditSuccess: 'Audit succeeded for {{successCount}} record(s){{skippedPart}}',
+      deleteNotSupported:
+        'Selected records are in a status that does not support deletion',
+      batchDelete: 'Batch Delete',
+      batchDeleteConfirm:
+        'Confirm deletion of {{count}} selected record(s)? This action cannot be undone.{{skippedPart}}',
+      deleteFailed: 'Deletion failed',
+      deleteCompletedWithFailures:
+        'Deletion completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
+      deleteSuccess:
+        'Deletion succeeded for {{successCount}} record(s){{skippedPart}}',
+      noBatchReverseAuditStatus:
+        'Batch reverse audit status is not configured for this module',
+      reverseAuditNotSupported:
+        'Selected records are in a status that does not support reverse audit',
+      batchReverseAudit: 'Batch Reverse Audit',
+      batchReverseAuditConfirm:
+        'Confirm reverse audit for {{count}} selected record(s)?{{skippedPart}}',
+      reverseAuditFailed: 'Reverse audit failed',
+      reverseAuditCompletedWithFailures:
+        'Reverse audit completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
+      reverseAuditSuccess:
+        'Reverse audit succeeded for {{successCount}} record(s){{skippedPart}}',
+      pleaseSelectFreight: 'Please select freight bills first',
+      batchMarkDelivered: 'Batch Mark Delivered',
+      batchMarkDeliveredConfirm:
+        'Mark {{count}} selected freight bill(s) as delivered?',
+      markDeliveredFailed: 'Failed to mark as delivered',
+      markDeliveredCompletedWithFailures:
+        'Mark delivered completed: {{successCount}} succeeded, {{failedCount}} failed{{errorPart}}',
+      markDeliveredSuccess:
+        'Marked {{successCount}} record(s) as delivered',
+    },
+    printActions: {
+      selectPrintTemplate: 'Select Print Template',
+      noPrintableRecords: 'No printable records found in selection',
+      printScriptGenerationFailed: 'Print script generation failed',
+      printServiceUnavailable:
+        'Print service unavailable. Please check CLodop or print template configuration',
+      noPrintContent: 'No print content generated',
+      printFailed: 'Print failed',
+    },
+    freightActions: {
+      noFreightData: 'No freight statement data in the current list',
+      freightSummaryTitle: 'Freight Reconciliation Summary',
+      documentCount: 'Documents in list: {{count}}',
+      totalWeight: 'Total weight (tons): ',
+      totalFreight: 'Total freight: ',
+      paidAmount: 'Paid amount: ',
+      unpaidAmount: 'Unpaid amount: ',
+    },
+    toolbarActions: {
+      delete: 'Delete',
+      audit: 'Audit',
+      reverseAudit: 'Reverse Audit',
+      printPreview: 'Print Preview',
+      directPrint: 'Direct Print',
+      noPermission: 'No permission for {{label}}',
+      noExtraLogic: '{{label}} has no additional handling logic.',
+    },
+    recordActions: {
+      view: 'View',
+      edit: 'Edit',
+      attachment: 'Attachments',
+      audit: 'Audit',
+      reverseAudit: 'Reverse Audit',
+    },
+    requestError: {
+      requestFailed: 'Request failed',
+    },
+    pagination: {
+      total: '{{count}} total',
+    },
+    displaySupport: {
+      yes: 'Yes',
+      no: 'No',
+    },
+    excelExport: {
+      exportSuccess: 'Export completed',
+      exportFailed: 'Export failed',
+    },
+    openPages: {
+      unnamedPage: 'Unnamed Page',
+      workbench: 'Workbench',
+    },
+    gridColumns: {
+      actions: 'Actions',
+    },
+    columnSettings: {
+      syncRetryLater:
+        'Column settings saved locally. Cloud sync will retry later.',
+    },
+  },
 }

@@ -1,5 +1,6 @@
 import { useLocation } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export interface OpenPage {
   key: string
@@ -23,13 +24,17 @@ function resolveOpenPageKey(
 
 export function useOpenPages(
   defaultPath = '/dashboard',
-  defaultTitle = '未命名页面',
-  homeTitle = '工作台',
+  defaultTitle?: string,
+  homeTitle?: string,
   resolvePage?: (pathname: string) => OpenPageDescriptor,
 ) {
+  const { t } = useTranslation()
+  const resolvedDefaultTitle = defaultTitle ?? t('hooks.openPages.unnamedPage')
+  const resolvedHomeTitle = homeTitle ?? t('hooks.openPages.workbench')
+
   const location = useLocation()
   const [pages, setPages] = useState<OpenPage[]>([
-    { key: defaultPath, path: defaultPath, title: homeTitle, closable: false },
+    { key: defaultPath, path: defaultPath, title: resolvedHomeTitle, closable: false },
   ])
 
   useEffect(() => {
@@ -40,7 +45,7 @@ export function useOpenPages(
           key: resolveOpenPageKey(location.pathname),
           // react-doctor: intentional callback, not event handler
           path: location.pathname,
-          title: defaultTitle,
+          title: resolvedDefaultTitle,
         }
     const nextPage: OpenPage = {
       key: currentPage.key,
@@ -56,7 +61,7 @@ export function useOpenPages(
           key: defaultPath,
           // react-doctor: intentional callback, not event handler
           path: defaultPath,
-          title: homeTitle,
+          title: resolvedHomeTitle,
           closable: false,
         },
         ...prev.filter((item) => item.key !== defaultPath),
@@ -69,7 +74,7 @@ export function useOpenPages(
       }
       return [...normalizedPages, nextPage]
     })
-  }, [defaultPath, defaultTitle, homeTitle, location.pathname, resolvePage])
+  }, [defaultPath, resolvedDefaultTitle, resolvedHomeTitle, location.pathname, resolvePage])
 
   const closePage = useCallback(
     (key: string, navigate: (path: string) => void) => {

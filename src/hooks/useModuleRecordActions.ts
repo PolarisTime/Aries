@@ -33,14 +33,14 @@ export function useModuleRecordActions({
       if (onDetail && can(resource, 'read')) {
         items.push({
           key: 'detail',
-          label: '查看',
+          label: t('hooks.recordActions.view'),
           onClick: () => onDetail(record),
         })
       }
       if (can(resource, 'update')) {
         items.push({
           key: 'edit',
-          label: '编辑',
+          label: t('hooks.recordActions.edit'),
           disabled: editBlocked,
           onClick: () => onEdit(record),
         })
@@ -48,7 +48,7 @@ export function useModuleRecordActions({
       if (can(resource, 'read') || can(resource, 'update')) {
         items.push({
           key: 'attach',
-          label: '附件',
+          label: t('hooks.recordActions.attachment'),
           onClick: () => onAttach(record),
         })
       }
@@ -58,14 +58,14 @@ export function useModuleRecordActions({
         if (canAudit || canReverse) {
           items.push({
             key: 'audit',
-            label: canAudit ? '审核' : '反审核',
+            label: canAudit ? t('hooks.recordActions.audit') : t('hooks.recordActions.reverseAudit'),
             onClick: () => onEdit(record),
           })
         }
       }
       return items
     },
-    [can, resource, moduleKey, onEdit, onAttach, onRefresh, onDetail],
+    [can, resource, moduleKey, onEdit, onAttach, onRefresh, onDetail, t],
   )
 
   return { buildActions }
