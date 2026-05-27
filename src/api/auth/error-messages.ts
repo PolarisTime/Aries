@@ -1,36 +1,35 @@
 /**
  * Maps Axios/network error patterns to user-facing messages.
  *
- * The default messages are Chinese because the backend already returns Chinese
- * error messages. These defaults handle only infrastructure-level errors
+ * These defaults handle only infrastructure-level errors
  * (network, timeout, HTTP status) and English validation messages from the
  * server that need translation.
  *
- * For i18n-aware consumers, ERROR_MESSAGE_KEYS maps each pattern to a
- * MessageSchema key under 'auth' that can be resolved via vue-i18n.
+ * Uses i18next for i18n-aware message resolution.
  */
 
+import i18next from 'i18next'
 
-const DEFAULT_MESSAGES: Record<string, string> = {
-  "'' is required": '必填项不能为空',
-  'network error': '网络连接失败，请检查服务是否可用',
-  'failed to fetch': '网络连接失败，请检查服务是否可用',
-  timeout: '请求超时，请稍后重试',
-  ECONNABORTED: '请求超时，请稍后重试',
-  'status code 401': '登录状态已失效，请重新登录',
-  'status code 403': '无操作权限',
-  'status code 404': '请求的接口不存在',
+const DEFAULT_MESSAGE_KEYS: Record<string, string> = {
+  "'' is required": 'api.errorMessages.requiredEmpty',
+  'network error': 'api.errorMessages.networkError',
+  'failed to fetch': 'api.errorMessages.networkError',
+  timeout: 'api.errorMessages.timeout',
+  ECONNABORTED: 'api.errorMessages.timeout',
+  'status code 401': 'api.errorMessages.sessionExpired',
+  'status code 403': 'api.errorMessages.forbidden',
+  'status code 404': 'api.errorMessages.notFound',
 }
 
 export function normalizeErrorMessage(rawMessage: unknown, status?: number) {
   const description =
     typeof rawMessage === 'string' && rawMessage.trim()
       ? rawMessage.trim()
-      : '请求失败，请稍后重试'
+      : i18next.t('api.errorMessages.requestFailed')
 
-  for (const [pattern, message] of Object.entries(DEFAULT_MESSAGES)) {
+  for (const [pattern, key] of Object.entries(DEFAULT_MESSAGE_KEYS)) {
     if (description.toLowerCase().includes(pattern.toLowerCase())) {
-      return message
+      return i18next.t(key)
     }
   }
 
@@ -39,14 +38,16 @@ export function normalizeErrorMessage(rawMessage: unknown, status?: number) {
   )
   if (requiredFieldMatch) {
     const fieldName = requiredFieldMatch[1]?.trim()
-    return fieldName ? `缺少必填字段：${fieldName}` : '必填项不能为空'
+    return fieldName
+      ? i18next.t('api.errorMessages.missingRequiredField', { fieldName })
+      : i18next.t('api.errorMessages.requiredEmpty')
   }
 
   if (
     /request failed with status code 5\d{2}/i.test(description) ||
     (status && status >= 500)
   ) {
-    return '服务暂时不可用，请稍后重试'
+    return i18next.t('api.errorMessages.serviceUnavailable')
   }
 
   return description

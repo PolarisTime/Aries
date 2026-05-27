@@ -626,6 +626,17 @@ export const zhCN: MessageSchema = {
       '您的登录状态将在明天过期，请及时保存工作并重新登录',
     refreshLoginStatusFailed: '刷新登录状态失败',
     loginStatusExpired: '登录状态已失效，请重新登录',
+    errorMessages: {
+      requiredEmpty: '必填项不能为空',
+      networkError: '网络连接失败，请检查服务是否可用',
+      timeout: '请求超时，请稍后重试',
+      sessionExpired: '登录状态已失效，请重新登录',
+      forbidden: '无操作权限',
+      notFound: '请求的接口不存在',
+      requestFailed: '请求失败，请稍后重试',
+      missingRequiredField: '缺少必填字段：{{fieldName}}',
+      serviceUnavailable: '服务暂时不可用，请稍后重试',
+    },
   },
   modules: {
     editor: {
@@ -737,6 +748,7 @@ export const zhCN: MessageSchema = {
       noData: '暂无数据',
       ton: '吨',
       relatedOrderNo: '关联单号',
+      loadFailed: '加载逐件重量失败',
     },
     print: {
       noTemplate: '无可用模板',
@@ -856,6 +868,16 @@ export const zhCN: MessageSchema = {
       preallocatedNoUpdatedTitle: '单据已保存，实际单号已更新',
       preallocatedNoUpdatedContent: '当前页面预生成的单号是 {{expected}}，但系统最终保存的实际单号是 {{actual}}。请以实际保存后的单号为准。',
       currentUserFallback: '当前用户',
+    },
+    validation: {
+      maxImportExceeded: '第{{row}}行可关联数量不能超过{{max}}件',
+      weighRequired: '第{{row}}行商品类别需按过磅入库，请将本行结算方式改为过磅',
+      weighWeightRequired: '请填写第{{row}}行过磅重量',
+      lineItemRequired: '请填写第{{row}}行{{label}}',
+      fieldRequired: '请填写{{label}}',
+      minOneItem: '请至少填写一条明细',
+      parentRelationOccupied: '{{parentLabel}}{{parentNo}}已被{{occupiedNo}}关联',
+      errorSummarySuffix: '等共{{count}}个问题',
     },
   },
   hooks: {
@@ -1642,5 +1664,16 @@ export const zhCN: MessageSchema = {
     requestTimeout: '请求超时，请稍后重试',
     serverResponseError: '服务器响应异常，请稍后重试',
     unknownError: '发生了未知错误，请点击重试按钮',
+  },
+  navigation: {
+    master: '基础数据',
+    purchase: '采购',
+    sales: '销售',
+    freight: '物流',
+    contracts: '合同',
+    reports: '报表',
+    statements: '对账',
+    finance: '财务',
+    system: '设置',
   },
 }

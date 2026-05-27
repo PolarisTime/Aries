@@ -609,6 +609,17 @@ export interface MessageSchema {
     loginExpiringDescription: string
     refreshLoginStatusFailed: string
     loginStatusExpired: string
+    errorMessages: {
+      requiredEmpty: string
+      networkError: string
+      timeout: string
+      sessionExpired: string
+      forbidden: string
+      notFound: string
+      requestFailed: string
+      missingRequiredField: string
+      serviceUnavailable: string
+    }
   }
   modules: {
     editor: {
@@ -720,6 +731,7 @@ export interface MessageSchema {
       noData: string
       ton: string
       relatedOrderNo: string
+      loadFailed: string
     }
     print: {
       noTemplate: string
@@ -755,6 +767,100 @@ export interface MessageSchema {
       vehiclePlate: string
       totalWeight: string
       totalFreight: string
+    }
+    table: {
+      noData: string
+    }
+    editorFooter: {
+      cancel: string
+      save: string
+      saveAndAudit: string
+    }
+    itemsSummary: {
+      rowCount: string
+      quantity: string
+      weight: string
+      amount: string
+    }
+    editorForm: {
+      documentInfo: string
+    }
+    parentSelector: {
+      title: string
+      selectedCount: string
+      cancel: string
+      confirmImport: string
+      selectedDocuments: string
+      selectedDocumentsCount: string
+      clearSelected: string
+      removeAriaLabel: string
+      noSelectionHint: string
+      paginationTotal: string
+      status: {
+        draft: string
+        unaudited: string
+        audited: string
+        invoiceReceived: string
+        invoiceIssued: string
+        purchaseComplete: string
+        salesComplete: string
+        inboundComplete: string
+      }
+      column: {
+        orderNo: string
+        supplierName: string
+        buyerName: string
+        orderDate: string
+        totalWeight: string
+        totalAmount: string
+        status: string
+        relatedPurchaseOrder: string
+        customerName: string
+        projectName: string
+        deliveryDate: string
+        outboundNo: string
+        relatedOrder: string
+        outboundDate: string
+        inboundNo: string
+        inboundDate: string
+        docNo: string
+      }
+      filter: {
+        keyword: string
+        keywordPlaceholder: string
+      }
+      summary: {
+        supplierName: string
+        buyerName: string
+        orderDate: string
+        relatedOrder: string
+        inboundDate: string
+        customerName: string
+        projectName: string
+        deliveryDate: string
+        outboundDate: string
+        carrierName: string
+        relatedOutbound: string
+        billTime: string
+      }
+    }
+    editorWorkspace: {
+      preallocatedNoMismatchTitle: string
+      preallocatedNoMismatchContent: string
+      preallocatedNoMismatchContentNoNo: string
+      preallocatedNoUpdatedTitle: string
+      preallocatedNoUpdatedContent: string
+      currentUserFallback: string
+    }
+    validation: {
+      maxImportExceeded: string
+      weighRequired: string
+      weighWeightRequired: string
+      lineItemRequired: string
+      fieldRequired: string
+      minOneItem: string
+      parentRelationOccupied: string
+      errorSummarySuffix: string
     }
   }
   hooks: {
@@ -998,6 +1104,8 @@ export interface MessageSchema {
       ruleName: string
       renamePatternPlaceholder: string
       sampleFileNamePrefix: string
+      noEditPermission: string
+      saveFailed: string
     }
     userAccount: {
       title: string
@@ -1078,6 +1186,410 @@ export interface MessageSchema {
       title: string
       jwtRotated: string
       totpRotated: string
+      rotateSuccess: string
+      rotateFailed: string
+      jwtLastRotation: string
+      totpLastRotation: string
+      rotateJwt: string
+      rotateTotp: string
+      confirmRotation: string
+    }
+    accessControl: {
+      title: string
+      tabUsers: string
+      tabRoles: string
+      tabPermissions: string
+      noModules: string
+    }
+    apiKeyDetail: {
+      fallbackUnlimited: string
+      fallbackUnset: string
+      back: string
+      title: string
+      keyName: string
+      usageScope: string
+      allowedResources: string
+      allowedActions: string
+      ownerUser: string
+      userId: string
+      keyPrefix: string
+      status: string
+      createdAt: string
+      expiresAt: string
+      neverExpires: string
+      lastUsed: string
+      notFound: string
+    }
+    apiKeyList: {
+      title: string
+    }
+    apiKeyUsage: {
+      title: string
+      item1: string
+      item2: string
+      item3: string
+      item4: string
+      item5: string
+      item6: string
+      item7: string
+      item8: string
+    }
+    companyHeader: {
+      title: string
+      description: string
+      refresh: string
+      save: string
+    }
+    companySubject: {
+      sectionTitle: string
+      companyName: string
+      companyNamePlaceholder: string
+      taxNo: string
+      taxNoPlaceholder: string
+      status: string
+      statusNormal: string
+      statusDisabled: string
+      pendingCompany: string
+      pendingTaxNo: string
+      settlementBanks: string
+      unitSuffix: string
+    }
+    databaseMonitor: {
+      noData: string
+      sectionTitle: string
+      sectionDesc: string
+      refresh: string
+      pgDiagnostics: string
+      pgUnavailable: string
+      unknown: string
+      pgStatNotEnabled: string
+      metricConnection: string
+      metricActiveRatio: string
+      metricLockWait: string
+      metricBlockedSessions: string
+      metricLongTx: string
+      metricLongest: string
+      metricCacheHit: string
+      metricTxRollback: string
+      metricRollbackRate: string
+      metricDeadlock: string
+      metricTempFiles: string
+      metricTempWrite: string
+      metricFromPgStat: string
+      metricUptime: string
+      metricLongestQuery: string
+      healthSummary: string
+      activeSessions: string
+      idleInTxSessions: string
+      lockWait: string
+      blocked: string
+      longTx: string
+      longest: string
+      currentActivity: string
+      tableHealth: string
+      colTable: string
+      colDeadTupleRate: string
+      colDeadTuples: string
+      colAutovacuum: string
+      unknownStatus: string
+      colVacuumThreshold: string
+      colPendingAnalyze: string
+      colSeqScan: string
+      colCache: string
+      colLastVacuum: string
+      colVacuumInterval: string
+      colAdvice: string
+      noTableHealth: string
+      indexHealth: string
+      colIndex: string
+      colSize: string
+      colScans: string
+      colStatus: string
+      valid: string
+      invalid: string
+      noIndexHealth: string
+      slowSqlSummary: string
+      colCalls: string
+      colTotalMs: string
+      colAvgMs: string
+      colRows: string
+      colCacheHitPct: string
+      noSlowSql: string
+      redisMemUsage: string
+      peak: string
+      redisMemLimit: string
+      notSet: string
+      fragRatio: string
+      realtimeOps: string
+      totalCommands: string
+      hitRate: string
+      clients: string
+      blockedClients: string
+      rejectedConn: string
+      keyExpired: string
+      evicted: string
+      expired: string
+      persistence: string
+      aofNotEnabled: string
+      redisMonitor: string
+    }
+    databaseStatus: {
+      serviceOverview: string
+      serviceOverviewDesc: string
+      dbSize: string
+      tableCount: string
+      activeConnections: string
+      address: string
+      database: string
+      startTime: string
+      memUsage: string
+      keyCount: string
+      hitRate: string
+      uptime: string
+      clientConnections: string
+      connectionCount: string
+    }
+    generalSettingsEditor: {
+      editTitle: string
+      defaultTitle: string
+      settingCode: string
+      settingName: string
+      billScope: string
+      watermarkColor: string
+      watermarkContent: string
+      maxChars: string
+      magicVars: string
+      autoReplace: string
+      watermarkFontSize: string
+      watermarkDensity: string
+      currentValue: string
+      enabledStatus: string
+      switchEnabled: string
+      switchDisabled: string
+      recordedActions: string
+      hiddenStatuses: string
+      remark: string
+    }
+    generalSettingsTable: {
+      colOperation: string
+      edit: string
+      colParamName: string
+      colCurrentValue: string
+      colRemark: string
+      colSwitchName: string
+      colStatusAction: string
+      switchEnabled: string
+      switchDisabled: string
+      enabled: string
+      disabled: string
+      title: string
+      searchPlaceholder: string
+      allStatus: string
+      basicParams: string
+      systemSwitches: string
+      currentEnabled: string
+      basicParamsTitle: string
+      systemSwitchesTitle: string
+    }
+    printTemplateEditor: {
+      editTitle: string
+      createTitle: string
+      billType: string
+      templateName: string
+      templateNamePlaceholder: string
+      isDefault: string
+      yes: string
+      no: string
+      templateContent: string
+      templateContentPlaceholder: string
+      htmlHint: string
+    }
+    printTemplatePreview: {
+      title: string
+      billType: string
+      emptyTemplate: string
+    }
+    rateLimit: {
+      typeGlobal: string
+      typeMethod: string
+      typeApiKey: string
+      loadFailed: string
+      title: string
+      refresh: string
+      colRuleKey: string
+      colType: string
+      colRate: string
+      colBurst: string
+      colCost: string
+      colPriority: string
+      colStatus: string
+      statusOn: string
+      statusOff: string
+      colOperation: string
+      noRules: string
+      editTitle: string
+      save: string
+      cancel: string
+      rateLabel: string
+      burstCapacity: string
+      tokensPerRequest: string
+      enabled: string
+    }
+    rolePermission: {
+      permConfig: string
+      selectRole: string
+      selectAll: string
+      deselectAll: string
+      listView: string
+      matrixView: string
+      savePerm: string
+      attachmentPermTitle: string
+      attachmentPermDesc: string
+      selectRoleHint: string
+    }
+    roleList: {
+      title: string
+      create: string
+      userCount: string
+      noRoles: string
+    }
+    userAccountDetail: {
+      title: string
+      loginName: string
+      userName: string
+      mobile: string
+      department: string
+      dataScope: string
+      roles: string
+      permSummary: string
+      status: string
+      totpStatus: string
+      totpEnabled: string
+      totpDisabled: string
+      lastLogin: string
+      remark: string
+    }
+    apiKeyForm: {
+      statusValid: string
+      statusExpired: string
+      statusRevoked: string
+      scopeAll: string
+      scopeReadonly: string
+      scopeBusiness: string
+    }
+    apiKeyColumns: {
+      colOperation: string
+      view: string
+      disable: string
+      colKeyName: string
+      colUsageScope: string
+      colAllowedResources: string
+      colAllowedActions: string
+      colOwnerUser: string
+      colPrefix: string
+      colCreatedAt: string
+      colExpiresAt: string
+      neverExpires: string
+      colLastUsed: string
+      colStatus: string
+    }
+    apiKeyUtils: {
+      unlimited: string
+      unset: string
+    }
+    generalSettingsUtils: {
+      helpDefaultTaxRate: string
+      helpMaxConcurrentSessions: string
+      helpWeightOnlyPurchase: string
+      helpWeightOnlySales: string
+      helpCustomerStatementZero: string
+      helpSupplierStatementFull: string
+      helpOperationLogAllWrite: string
+      helpOperationLogDetailed: string
+      helpOperationLogAuth: string
+      helpForceTotpOnFirstLogin: string
+      helpBatchNoAutoGenerate: string
+      helpHideAuditedRecords: string
+      helpShowSnowflakeId: string
+      helpUseSnowflakeAsBusinessNo: string
+      helpLoginCaptcha: string
+      helpAttachmentWatermark: string
+      actionQuery: string
+      actionDetail: string
+      actionCreate: string
+      actionEdit: string
+      actionDelete: string
+      actionAudit: string
+      actionExport: string
+      actionPrint: string
+      statusAudited: string
+      statusCompleted: string
+      statusPurchaseDone: string
+      statusInboundDone: string
+      statusSalesDone: string
+      statusPaid: string
+      statusReceived: string
+      statusSigned: string
+      statusDelivered: string
+      settingStatusEnabled: string
+      settingStatusClosed: string
+    }
+    numberRulesUtils: {
+      dateRuleYear: string
+      dateRuleMonth: string
+      dateRuleNone: string
+      resetRuleYearly: string
+      resetRuleMonthly: string
+      resetRuleNever: string
+      statusNormal: string
+      statusDisabled: string
+      originalFileName: string
+    }
+    printTemplateUtils: {
+      copySuffix: string
+    }
+    roleActionUtils: {
+      actionRead: string
+      actionCreate: string
+      actionUpdate: string
+      actionDelete: string
+      actionAudit: string
+      actionExport: string
+      actionPrint: string
+      actionManagePermissions: string
+    }
+    apiKeyState: {
+      disabledSuccess: string
+      disableFailed: string
+      noCreatePermission: string
+      totpRequired: string
+      fillRequired: string
+      selectOneAction: string
+      generatedSuccess: string
+      generateFailed: string
+      noManagePermission: string
+      disableConfirmTitle: string
+      disableConfirmContent: string
+    }
+    rolePermissions: {
+      loadFailed: string
+      noEditPermission: string
+      saveFailed: string
+      colMenuName: string
+      colAuthorized: string
+    }
+    roleEditorHook: {
+      createConfirmContent: string
+      goConfigure: string
+      configureLater: string
+      fillNameAndCode: string
+    }
+    userAccountEditorHook: {
+      saveSuccess: string
+      loginNameExists: string
+      saveFailed: string
+      checkLoginNameFailed: string
+      loadDetailFailed: string
     }
   }
   finance: {
@@ -1115,5 +1627,25 @@ export interface MessageSchema {
     clodopTemplatePrintFailed: string
     clodopPrintFailed: string
     printTimeLabel: string
+  }
+  error: {
+    retry: string
+    noPermission: string
+    serverBusy: string
+    networkError: string
+    requestTimeout: string
+    serverResponseError: string
+    unknownError: string
+  }
+  navigation: {
+    master: string
+    purchase: string
+    sales: string
+    freight: string
+    contracts: string
+    reports: string
+    statements: string
+    finance: string
+    system: string
   }
 }

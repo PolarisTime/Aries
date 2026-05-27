@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
 import type {
   ModuleColumnDefinition,
@@ -24,7 +25,7 @@ function getLineItemValidationMessages(
       Number.isFinite(maxImportQuantity) &&
       Number(item.quantity || 0) > maxImportQuantity
     ) {
-      messages.push(`第${index + 1}行可关联数量不能超过${maxImportQuantity}件`)
+      messages.push(i18next.t('modules.validation.maxImportExceeded', { row: index + 1, max: maxImportQuantity }))
     }
     if (moduleKey === 'purchase-inbound') {
       const isWeighSettlement = asString(item.settlementMode).trim() === '过磅'
@@ -33,7 +34,7 @@ function getLineItemValidationMessages(
         !isWeighSettlement
       ) {
         messages.push(
-          `第${index + 1}行商品类别需按过磅入库，请将本行结算方式改为过磅`,
+          i18next.t('modules.validation.weighRequired', { row: index + 1 }),
         )
       }
       if (
@@ -41,12 +42,12 @@ function getLineItemValidationMessages(
         (!hasEditorValue(item.weighWeightTon) ||
           Number(item.weighWeightTon || 0) <= 0)
       ) {
-        messages.push(`请填写第${index + 1}行过磅重量`)
+        messages.push(i18next.t('modules.validation.weighWeightRequired', { row: index + 1 }))
       }
     }
     for (const column of requiredColumns) {
       if (!hasEditorValue(item[column.dataIndex])) {
-        messages.push(`请填写第${index + 1}行${column.title}`)
+        messages.push(i18next.t('modules.validation.lineItemRequired', { row: index + 1, label: column.title }))
       }
     }
   }
@@ -90,14 +91,14 @@ export function getEditorValidationMessage(options: {
       continue
     }
     if (field.required && !hasEditorValue(editorForm[field.key])) {
-      if (!collectAll) return `请填写${field.label}`
-      allErrors.push(`请填写${field.label}`)
+      if (!collectAll) return i18next.t('modules.validation.fieldRequired', { label: field.label })
+      allErrors.push(i18next.t('modules.validation.fieldRequired', { label: field.label }))
     }
   }
 
   if (hasItemColumns && itemCount === 0) {
-    if (!collectAll) return '请至少填写一条明细'
-    allErrors.push('请至少填写一条明细')
+    if (!collectAll) return i18next.t('modules.validation.minOneItem')
+    allErrors.push(i18next.t('modules.validation.minOneItem'))
   }
 
   if (hasItemColumns) {
@@ -119,7 +120,7 @@ export function getEditorValidationMessage(options: {
     for (const parentNo of parentNos) {
       if (occupiedParentMap[parentNo]) {
         const occupiedPrimaryNo = getPrimaryNo(occupiedParentMap[parentNo])
-        const msg = `${parentImportConfig.label}${parentNo}已被${occupiedPrimaryNo}关联`
+        const msg = i18next.t('modules.validation.parentRelationOccupied', { parentLabel: parentImportConfig.label, parentNo, occupiedNo: occupiedPrimaryNo })
         if (!collectAll) return msg
         allErrors.push(msg)
       }
@@ -129,7 +130,7 @@ export function getEditorValidationMessage(options: {
   if (allErrors.length) {
     return (
       allErrors.slice(0, 5).join('；') +
-      (allErrors.length > 5 ? ` 等共${allErrors.length}个问题` : '')
+      (allErrors.length > 5 ? ` ${i18next.t('modules.validation.errorSummarySuffix', { count: allErrors.length })}` : '')
     )
   }
 

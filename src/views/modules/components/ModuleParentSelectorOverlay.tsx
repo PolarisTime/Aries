@@ -4,6 +4,8 @@ import Button from 'antd/es/button'
 import type { ColumnsType } from 'antd/es/table'
 import Table from 'antd/es/table'
 import { useEffect, useMemo, useState } from 'react'
+import i18next from 'i18next'
+import { useTranslation } from 'react-i18next'
 import { listBusinessModule } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
 import { StatusTag } from '@/components/StatusTag'
@@ -49,89 +51,93 @@ type SelectedSummaryField = {
 
 const DEFAULT_PAGE_SIZE = 15
 
-const overlayStatusMap = {
-  草稿: { color: 'default', text: '草稿' },
-  未审核: { color: 'default', text: '未审核' },
-  已审核: { color: 'processing', text: '已审核' },
-  已收票: { color: 'success', text: '已收票' },
-  已开票: { color: 'success', text: '已开票' },
-  完成采购: { color: 'success', text: '完成采购' },
-  完成销售: { color: 'success', text: '完成销售' },
-  完成入库: { color: 'success', text: '完成入库' },
+function getOverlayStatusMap() {
+  return {
+    草稿: { color: 'default', text: i18next.t('modules.parentSelector.status.draft') },
+    未审核: { color: 'default', text: i18next.t('modules.parentSelector.status.unaudited') },
+    已审核: { color: 'processing', text: i18next.t('modules.parentSelector.status.audited') },
+    已收票: { color: 'success', text: i18next.t('modules.parentSelector.status.invoiceReceived') },
+    已开票: { color: 'success', text: i18next.t('modules.parentSelector.status.invoiceIssued') },
+    完成采购: { color: 'success', text: i18next.t('modules.parentSelector.status.purchaseComplete') },
+    完成销售: { color: 'success', text: i18next.t('modules.parentSelector.status.salesComplete') },
+    完成入库: { color: 'success', text: i18next.t('modules.parentSelector.status.inboundComplete') },
+  }
 }
 
-const parentSelectorColumnMap: Record<string, OverlayColumn[]> = {
-  'purchase-order': [
-    { dataIndex: 'orderNo', title: '订单编号', width: 160 },
-    { dataIndex: 'supplierName', title: '供应商', width: 180 },
-    { dataIndex: 'buyerName', title: '采购员', width: 120 },
-    { dataIndex: 'orderDate', title: '订单日期', width: 130, type: 'date' },
-    {
-      dataIndex: 'totalWeight',
-      title: '总重量（吨）',
-      width: 130,
-      type: 'weight',
-    },
-    { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
-    { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
-  ],
-  'sales-order': [
-    { dataIndex: 'orderNo', title: '订单编号', width: 160 },
-    { dataIndex: 'purchaseOrderNo', title: '关联采购订单', width: 180 },
-    { dataIndex: 'customerName', title: '客户名称', width: 160 },
-    { dataIndex: 'projectName', title: '项目名称', width: 180 },
-    { dataIndex: 'deliveryDate', title: '送货日期', width: 130, type: 'date' },
-    {
-      dataIndex: 'totalWeight',
-      title: '总重量（吨）',
-      width: 130,
-      type: 'weight',
-    },
-    { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
-    { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
-  ],
-  'sales-outbound': [
-    { dataIndex: 'outboundNo', title: '出库单号', width: 160 },
-    { dataIndex: 'salesOrderNo', title: '关联订单', width: 160 },
-    { dataIndex: 'customerName', title: '客户名称', width: 160 },
-    { dataIndex: 'projectName', title: '项目名称', width: 180 },
-    { dataIndex: 'outboundDate', title: '出库日期', width: 130, type: 'date' },
-    {
-      dataIndex: 'totalWeight',
-      title: '总重量（吨）',
-      width: 130,
-      type: 'weight',
-    },
-    { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
-    { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
-  ],
-  'purchase-inbound': [
-    { dataIndex: 'inboundNo', title: '入库单号', width: 160 },
-    { dataIndex: 'purchaseOrderNo', title: '关联订单', width: 160 },
-    { dataIndex: 'supplierName', title: '供应商', width: 180 },
-    { dataIndex: 'inboundDate', title: '入库日期', width: 130, type: 'date' },
-    {
-      dataIndex: 'totalWeight',
-      title: '总重量（吨）',
-      width: 130,
-      type: 'weight',
-    },
-    { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
-    { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
-  ],
+function getParentSelectorColumnMap(): Record<string, OverlayColumn[]> {
+  return {
+    'purchase-order': [
+      { dataIndex: 'orderNo', title: i18next.t('modules.parentSelector.column.orderNo'), width: 160 },
+      { dataIndex: 'supplierName', title: i18next.t('modules.parentSelector.column.supplierName'), width: 180 },
+      { dataIndex: 'buyerName', title: i18next.t('modules.parentSelector.column.buyerName'), width: 120 },
+      { dataIndex: 'orderDate', title: i18next.t('modules.parentSelector.column.orderDate'), width: 130, type: 'date' },
+      {
+        dataIndex: 'totalWeight',
+        title: i18next.t('modules.parentSelector.column.totalWeight'),
+        width: 130,
+        type: 'weight',
+      },
+      { dataIndex: 'totalAmount', title: i18next.t('modules.parentSelector.column.totalAmount'), width: 120, type: 'amount' },
+      { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
+    ],
+    'sales-order': [
+      { dataIndex: 'orderNo', title: i18next.t('modules.parentSelector.column.orderNo'), width: 160 },
+      { dataIndex: 'purchaseOrderNo', title: i18next.t('modules.parentSelector.column.relatedPurchaseOrder'), width: 180 },
+      { dataIndex: 'customerName', title: i18next.t('modules.parentSelector.column.customerName'), width: 160 },
+      { dataIndex: 'projectName', title: i18next.t('modules.parentSelector.column.projectName'), width: 180 },
+      { dataIndex: 'deliveryDate', title: i18next.t('modules.parentSelector.column.deliveryDate'), width: 130, type: 'date' },
+      {
+        dataIndex: 'totalWeight',
+        title: i18next.t('modules.parentSelector.column.totalWeight'),
+        width: 130,
+        type: 'weight',
+      },
+      { dataIndex: 'totalAmount', title: i18next.t('modules.parentSelector.column.totalAmount'), width: 120, type: 'amount' },
+      { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
+    ],
+    'sales-outbound': [
+      { dataIndex: 'outboundNo', title: i18next.t('modules.parentSelector.column.outboundNo'), width: 160 },
+      { dataIndex: 'salesOrderNo', title: i18next.t('modules.parentSelector.column.relatedOrder'), width: 160 },
+      { dataIndex: 'customerName', title: i18next.t('modules.parentSelector.column.customerName'), width: 160 },
+      { dataIndex: 'projectName', title: i18next.t('modules.parentSelector.column.projectName'), width: 180 },
+      { dataIndex: 'outboundDate', title: i18next.t('modules.parentSelector.column.outboundDate'), width: 130, type: 'date' },
+      {
+        dataIndex: 'totalWeight',
+        title: i18next.t('modules.parentSelector.column.totalWeight'),
+        width: 130,
+        type: 'weight',
+      },
+      { dataIndex: 'totalAmount', title: i18next.t('modules.parentSelector.column.totalAmount'), width: 120, type: 'amount' },
+      { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
+    ],
+    'purchase-inbound': [
+      { dataIndex: 'inboundNo', title: i18next.t('modules.parentSelector.column.inboundNo'), width: 160 },
+      { dataIndex: 'purchaseOrderNo', title: i18next.t('modules.parentSelector.column.relatedOrder'), width: 160 },
+      { dataIndex: 'supplierName', title: i18next.t('modules.parentSelector.column.supplierName'), width: 180 },
+      { dataIndex: 'inboundDate', title: i18next.t('modules.parentSelector.column.inboundDate'), width: 130, type: 'date' },
+      {
+        dataIndex: 'totalWeight',
+        title: i18next.t('modules.parentSelector.column.totalWeight'),
+        width: 130,
+        type: 'weight',
+      },
+      { dataIndex: 'totalAmount', title: i18next.t('modules.parentSelector.column.totalAmount'), width: 120, type: 'amount' },
+      { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
+    ],
+  }
 }
 
 function resolveParentSelectorColumns(
   parentModuleKey: string,
   displayFieldKey: string,
 ): OverlayColumn[] {
-  const configuredColumns = parentSelectorColumnMap[parentModuleKey]
+  const configuredColumns = getParentSelectorColumnMap()[parentModuleKey]
   if (configuredColumns?.length) {
     return configuredColumns
   }
   return [
-    { dataIndex: displayFieldKey, title: '单据号', width: 180 },
-    { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
+    { dataIndex: displayFieldKey, title: i18next.t('modules.parentSelector.column.docNo'), width: 180 },
+    { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
   ]
 }
 
@@ -164,9 +170,9 @@ function buildOverlayFilterConfig(
   if (!supportedFilters.some((filter) => filter.key === 'keyword')) {
     supportedFilters.unshift({
       key: 'keyword',
-      label: '关键字',
+      label: i18next.t('modules.parentSelector.filter.keyword'),
       type: 'input',
-      placeholder: '输入单据号或关键词',
+      placeholder: i18next.t('modules.parentSelector.filter.keywordPlaceholder'),
     })
   }
 
@@ -176,32 +182,34 @@ function buildOverlayFilterConfig(
   }
 }
 
-const selectedRecordSummaryFieldMap: Record<string, SelectedSummaryField[]> = {
-  'purchase-order': [
-    { key: 'supplierName', label: '供应商' },
-    { key: 'buyerName', label: '采购员' },
-    { key: 'orderDate', label: '订单日期', type: 'date' },
-  ],
-  'purchase-inbound': [
-    { key: 'supplierName', label: '供应商' },
-    { key: 'purchaseOrderNo', label: '关联订单' },
-    { key: 'inboundDate', label: '入库日期', type: 'date' },
-  ],
-  'sales-order': [
-    { key: 'customerName', label: '客户名称' },
-    { key: 'projectName', label: '项目名称' },
-    { key: 'deliveryDate', label: '送货日期', type: 'date' },
-  ],
-  'sales-outbound': [
-    { key: 'customerName', label: '客户名称' },
-    { key: 'projectName', label: '项目名称' },
-    { key: 'outboundDate', label: '出库日期', type: 'date' },
-  ],
-  'freight-bill': [
-    { key: 'carrierName', label: '物流商' },
-    { key: 'outboundNo', label: '关联出库单' },
-    { key: 'billTime', label: '单据日期', type: 'date' },
-  ],
+function getSelectedRecordSummaryFieldMap(): Record<string, SelectedSummaryField[]> {
+  return {
+    'purchase-order': [
+      { key: 'supplierName', label: i18next.t('modules.parentSelector.summary.supplierName') },
+      { key: 'buyerName', label: i18next.t('modules.parentSelector.summary.buyerName') },
+      { key: 'orderDate', label: i18next.t('modules.parentSelector.summary.orderDate'), type: 'date' },
+    ],
+    'purchase-inbound': [
+      { key: 'supplierName', label: i18next.t('modules.parentSelector.summary.supplierName') },
+      { key: 'purchaseOrderNo', label: i18next.t('modules.parentSelector.summary.relatedOrder') },
+      { key: 'inboundDate', label: i18next.t('modules.parentSelector.summary.inboundDate'), type: 'date' },
+    ],
+    'sales-order': [
+      { key: 'customerName', label: i18next.t('modules.parentSelector.summary.customerName') },
+      { key: 'projectName', label: i18next.t('modules.parentSelector.summary.projectName') },
+      { key: 'deliveryDate', label: i18next.t('modules.parentSelector.summary.deliveryDate'), type: 'date' },
+    ],
+    'sales-outbound': [
+      { key: 'customerName', label: i18next.t('modules.parentSelector.summary.customerName') },
+      { key: 'projectName', label: i18next.t('modules.parentSelector.summary.projectName') },
+      { key: 'outboundDate', label: i18next.t('modules.parentSelector.summary.outboundDate'), type: 'date' },
+    ],
+    'freight-bill': [
+      { key: 'carrierName', label: i18next.t('modules.parentSelector.summary.carrierName') },
+      { key: 'outboundNo', label: i18next.t('modules.parentSelector.summary.relatedOutbound') },
+      { key: 'billTime', label: i18next.t('modules.parentSelector.summary.billTime'), type: 'date' },
+    ],
+  }
 }
 
 function buildSelectedRecordSummary(
@@ -214,7 +222,7 @@ function buildSelectedRecordSummary(
   ) => string,
 ) {
   const primary = asString(record[displayFieldKey] || record.id)
-  const meta = (selectedRecordSummaryFieldMap[parentModuleKey] || []).flatMap(
+  const meta = (getSelectedRecordSummaryFieldMap()[parentModuleKey] || []).flatMap(
     (field) => {
       const rawValue =
         field.type != null
@@ -237,10 +245,12 @@ export function ModuleParentSelectorOverlay({
   parentModuleKey,
   parentDisplayFieldKey,
   allowMultipleSelection = false,
-  title = '选择父单据',
+  title,
   onSelect,
   onClose,
 }: Props) {
+  const { t } = useTranslation()
+  const effectiveTitle = title ?? t('modules.parentSelector.title')
   const { formatCellValue } = useModuleDisplaySupport()
   const [draftFilters, setDraftFilters] = useState<SearchParams>({})
   const [submittedFilters, setSubmittedFilters] = useState<SearchParams>({})
@@ -333,7 +343,7 @@ export function ModuleParentSelectorOverlay({
               return (
                 <StatusTag
                   status={asString(value)}
-                  statusMap={overlayStatusMap}
+                  statusMap={getOverlayStatusMap()}
                   fallback={asString(value)}
                 />
               )
@@ -440,7 +450,7 @@ export function ModuleParentSelectorOverlay({
 
   return (
     <WorkspaceOverlay
-      title={title}
+      title={effectiveTitle}
       open={open}
       onClose={onClose}
       className="workspace-overlay-panel--parent-selector"
@@ -448,10 +458,10 @@ export function ModuleParentSelectorOverlay({
         allowMultipleSelection ? (
           <div className="flex justify-between items-center gap-12">
             <span className="text-secondary">
-              已选择 {selectedRows.length} 条
+              {t('modules.parentSelector.selectedCount', { count: selectedRows.length })}
             </span>
             <div className="flex gap-8">
-              <Button onClick={onClose}>取消</Button>
+              <Button onClick={onClose}>{t('modules.parentSelector.cancel')}</Button>
               <Button
                 type="primary"
                 icon={<CheckOutlined />}
@@ -461,7 +471,7 @@ export function ModuleParentSelectorOverlay({
                   onClose()
                 }}
               >
-                确认导入
+                {t('modules.parentSelector.confirmImport')}
               </Button>
             </div>
           </div>
@@ -486,18 +496,18 @@ export function ModuleParentSelectorOverlay({
           <div className="parent-selector-selected-panel">
             <div className="parent-selector-selected-header">
               <span className="parent-selector-selected-title">
-                已选单据
+                {t('modules.parentSelector.selectedDocuments')}
                 <span className="parent-selector-selected-count">
                   {selectedRows.length
-                    ? `（${selectedRows.length} 条）`
-                    : '（0 条）'}
+                    ? t('modules.parentSelector.selectedDocumentsCount', { count: selectedRows.length })
+                    : t('modules.parentSelector.selectedDocumentsCount', { count: 0 })}
                 </span>
               </span>
               <Button
                 disabled={!selectedRows.length}
                 onClick={handleClearSelectedRecords}
               >
-                清空已选
+                {t('modules.parentSelector.clearSelected')}
               </Button>
             </div>
             {selectedRows.length ? (
@@ -524,7 +534,7 @@ export function ModuleParentSelectorOverlay({
                           {summary.status ? (
                             <StatusTag
                               status={summary.status}
-                              statusMap={overlayStatusMap}
+                              statusMap={getOverlayStatusMap()}
                               fallback={summary.status}
                             />
                           ) : null}
@@ -542,7 +552,7 @@ export function ModuleParentSelectorOverlay({
                           </div>
                         ) : (
                           <span className="parent-selector-selected-chip-desc">
-                            已选单据
+                            {t('modules.parentSelector.selectedDocuments')}
                           </span>
                         )}
                       </div>
@@ -550,7 +560,7 @@ export function ModuleParentSelectorOverlay({
                         type="button"
                         className="parent-selector-selected-chip-remove"
                         onClick={() => removeSelectedRecord(recordId)}
-                        aria-label={`移除 ${summary.primary}`}
+                        aria-label={t('modules.parentSelector.removeAriaLabel', { name: summary.primary })}
                       >
                         <CloseOutlined />
                       </button>
@@ -560,7 +570,7 @@ export function ModuleParentSelectorOverlay({
               </div>
             ) : (
               <div className="parent-selector-selected-empty">
-                暂未选择单据，勾选后会固定显示在这里。
+                {t('modules.parentSelector.noSelectionHint')}
               </div>
             )}
           </div>
@@ -619,7 +629,7 @@ export function ModuleParentSelectorOverlay({
           total,
           showSizeChanger: true,
           pageSizeOptions: ['15', '30', '50'],
-          showTotal: (count) => `共 ${count} 条`,
+          showTotal: (count) => t('modules.parentSelector.paginationTotal', { count }),
           onChange: (nextPage, nextPageSize) => {
             setPage(nextPage)
             if (nextPageSize !== pageSize) {
