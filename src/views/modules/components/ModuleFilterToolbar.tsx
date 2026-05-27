@@ -1,6 +1,4 @@
-import { SearchOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
-import { useRouter } from '@tanstack/react-router'
 import Col from 'antd/es/col'
 import DatePicker from 'antd/es/date-picker'
 import Form from 'antd/es/form'
@@ -43,6 +41,7 @@ function ModuleFilterField({
   onUpdateFilter: (key: string, value: unknown) => void
   onSearch: () => void
 }) {
+  const { t } = useTranslation()
   const fieldId = buildFormControlId('module-filter', field.key)
 
   const resolveOptions = () => {
@@ -77,7 +76,7 @@ function ModuleFilterField({
         id={fieldId}
         aria-label={field.label}
         allowClear
-        placeholder={field.placeholder || `请选择${field.label}`}
+        placeholder={field.placeholder || t('modules.filter.selectPlaceholder', { label: field.label })}
         value={
           typeof filters[field.key] === 'string'
             ? asString(filters[field.key])
@@ -123,7 +122,7 @@ function ModuleFilterField({
       id={fieldId}
       name={field.key}
       allowClear
-      placeholder={field.placeholder || `请输入${field.label}`}
+      placeholder={field.placeholder || t('modules.filter.inputPlaceholder', { label: field.label })}
       value={asString(filters[field.key])}
       onChange={(event) => onUpdateFilter(field.key, event.target.value)}
       onPressEnter={onSearch}
@@ -139,7 +138,6 @@ export function ModuleFilterToolbar({
   onReset,
 }: Props) {
   const { t } = useTranslation()
-  const router = useRouter()
 
   const getFilterFieldLabelTargetId = (field: ModuleFilterDefinition) => {
     const fieldId = buildFormControlId('module-filter', field.key)

@@ -7,8 +7,6 @@ import { getBusinessModuleDetail } from '@/api/business'
 import type { ModuleRecord } from '@/types/module-page'
 import { formatWeight } from '@/utils/formatters'
 
-const POPOVER_TABLE_WIDTH = 694
-
 interface Props {
   value: unknown
   record: ModuleRecord
@@ -48,7 +46,10 @@ export function WeightCellPopover({ value, record, moduleKey }: Props) {
   return (
     <Popover
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen)
+        if (nextOpen) void handleOpen()
+      }}
       trigger="click"
       title={t('modules.weightCell.popoverTitle')}
       destroyTooltipOnHide
@@ -78,7 +79,7 @@ export function WeightCellPopover({ value, record, moduleKey }: Props) {
       }
     >
       <Typography.Link>
-        {value != null ? formatWeight(value) : '-'}
+        {value != null ? formatWeight(Number(value)) : '-'}
       </Typography.Link>
     </Popover>
   )

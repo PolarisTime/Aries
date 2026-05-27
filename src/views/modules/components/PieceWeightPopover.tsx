@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import Popover from 'antd/es/popover'
 import Table from 'antd/es/table'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
 
 interface PieceWeight {
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function PieceWeightPopover({ itemId, weightTon, category, sourceSalesOrderItemId }: Props) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
 
   const apiPath = sourceSalesOrderItemId
@@ -51,13 +53,13 @@ export function PieceWeightPopover({ itemId, weightTon, category, sourceSalesOrd
       open={open}
       onOpenChange={setOpen}
       trigger="click"
-      title={data.length > 0 ? `${data.length}件 / ${total.toFixed(3)}吨` : '逐件明细'}
+      title={data.length > 0 ? t('modules.pieceWeight.detailTitle', { count: data.length, weight: total.toFixed(3) }) : t('modules.pieceWeight.detailTitleFallback')}
       overlayStyle={{ maxWidth: 260 }}
       content={
         isFetching ? (
-          <div className="py-8 text-center">加载中...</div>
+          <div className="py-8 text-center">{t('modules.pieceWeight.loading')}</div>
         ) : data.length === 0 ? (
-          <div className="py-8 text-center text-gray-400">暂无数据</div>
+          <div className="py-8 text-center text-gray-400">{t('modules.pieceWeight.noData')}</div>
         ) : (
           <Table
             rowKey="pieceNo"
@@ -67,13 +69,13 @@ export function PieceWeightPopover({ itemId, weightTon, category, sourceSalesOrd
             columns={[
               { title: '#', dataIndex: 'pieceNo', width: 40, align: 'center' as const },
               {
-                title: '吨',
+                title: t('modules.pieceWeight.ton'),
                 dataIndex: 'weightTon',
                 width: 70,
                 align: 'right' as const,
                 render: (v: number) => v.toFixed(3),
               },
-              { title: '关联单号', dataIndex: 'salesOrderNo', width: 140, ellipsis: true },
+              { title: t('modules.pieceWeight.relatedOrderNo'), dataIndex: 'salesOrderNo', width: 140, ellipsis: true },
             ]}
           />
         )

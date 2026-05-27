@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import type { TFunction } from 'i18next'
 import { appTitle } from '@/utils/env'
 
 interface BuildAppLayoutStylesOptions {
@@ -22,14 +23,15 @@ export interface AppLayoutUserInfo {
 }
 
 export function buildAppLayoutUserInfo(
+  t: TFunction,
   user?: {
     userName?: string
     loginName?: string
   } | null,
 ): AppLayoutUserInfo {
   return {
-    currentUserName: user?.userName || user?.loginName || '未登录',
-    currentUserLoginName: user?.loginName || '当前账号',
+    currentUserName: user?.userName || user?.loginName || t('layouts.userInfo.notLoggedIn'),
+    currentUserLoginName: user?.loginName || t('layouts.userInfo.currentAccount'),
   }
 }
 

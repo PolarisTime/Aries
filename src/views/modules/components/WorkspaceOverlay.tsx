@@ -1,5 +1,6 @@
 import { CloseOutlined } from '@ant-design/icons'
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import '@/styles/workspace-overlay.css'
 
 interface Props {
@@ -27,6 +28,7 @@ export function WorkspaceOverlay({
   zIndex,
   className,
 }: Props) {
+  const { t } = useTranslation()
   const handleKeyDownRef = useRef<((e: KeyboardEvent) => void) | null>(null)
   handleKeyDownRef.current = (e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose()
@@ -58,7 +60,7 @@ export function WorkspaceOverlay({
         className="workspace-overlay-mask"
         role="button"
         tabIndex={-1}
-        aria-label="关闭工作区"
+        aria-label={t('modules.workspace.closeAria')}
         onClick={onClose}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose() }}
       />

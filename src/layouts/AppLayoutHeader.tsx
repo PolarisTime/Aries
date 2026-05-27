@@ -1,6 +1,8 @@
 import { LogoutOutlined, SettingOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd/es/menu'
 import type { CSSProperties } from 'react'
+import type { TFunction } from 'i18next'
+import { useTranslation } from 'react-i18next'
 import type { AppHeaderSearchProps } from '@/layouts/AppHeaderSearch'
 import { AppSideNavigationHeader } from '@/layouts/AppSideNavigationHeader'
 import { AppTopNavigationHeader } from '@/layouts/AppTopNavigationHeader'
@@ -38,6 +40,7 @@ interface SideNavigationHeaderProps extends SharedHeaderProps {
 type AppLayoutHeaderProps = TopNavigationHeaderProps | SideNavigationHeaderProps
 
 function buildUserMenuItems(
+  t: TFunction,
   onOpenPersonalSettings: () => void,
   onSignOut: () => void,
 ): NonNullable<MenuProps['items']> {
@@ -45,13 +48,13 @@ function buildUserMenuItems(
     {
       key: 'settings',
       icon: <SettingOutlined />,
-      label: '个人设置',
+      label: t('layouts.userMenu.personalSettings'),
       onClick: onOpenPersonalSettings,
     },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: '退出登录',
+      label: t('layouts.userMenu.logout'),
       danger: true,
       onClick: onSignOut,
     },
@@ -59,7 +62,9 @@ function buildUserMenuItems(
 }
 
 export function AppLayoutHeader(props: AppLayoutHeaderProps) {
+  const { t } = useTranslation()
   const userMenuItems = buildUserMenuItems(
+    t,
     props.onOpenPersonalSettings,
     props.onSignOut,
   )

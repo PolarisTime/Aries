@@ -4,14 +4,15 @@ import Space from 'antd/es/space'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AppResultModal } from '@/components/AppResultModal'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
-const TYPE_LABEL: Record<string, string> = {
-  supplier: '供应商',
-  customer: '客户',
-  freight: '物流',
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  supplier: 'modules.statement.supplier',
+  customer: 'modules.statement.customer',
+  freight: 'modules.statement.freight',
 }
 
 const DATE_FIELD: Record<string, keyof ModuleRecord> = {
@@ -26,7 +27,7 @@ const NAME_FIELD: Record<string, keyof ModuleRecord> = {
   freight: 'carrierName',
 }
 
-function extractCounterparty(rows: ModuleRecord[], type: string): string {
+function extractCounterparty(rows: ModuleRecord[], type: string, t: (key: string) => string): string {
   const nameField = NAME_FIELD[type]
   const names = new Set(
     rows.flatMap((r) => {
@@ -34,15 +35,16 @@ function extractCounterparty(rows: ModuleRecord[], type: string): string {
       return v ? [v] : []
     }),
   )
-  if (names.size === 0) throw new Error('未找到对方单位信息')
+  if (names.size === 0) throw new Error(t('modules.statement.counterpartyNotFound'))
   if (names.size > 1)
-    throw new Error('选中的单据包含多个对方单位，请只勾选同一单位的单据')
+    throw new Error(t('modules.statement.multipleCounterparties'))
   return [...names][0]
 }
 
 function extractDateRange(
   rows: ModuleRecord[],
   type: string,
+  t: (key: string) => string,
 ): { start: string; end: string } {
   const dateField = DATE_FIELD[type]
   const dates = rows
@@ -51,7 +53,7 @@ function extractDateRange(
       return v ? [v] : []
     })
     .sort()
-  if (dates.length === 0) throw new Error('选中的单据缺少日期信息')
+  if (dates.length === 0) throw new Error(t('modules.statement.dateMissing'))
   return { start: dates[0], end: dates[dates.length - 1] }
 }
 
@@ -74,6 +76,7 @@ export function ModuleStatementGenerator({
   onClose,
   onGenerate,
 }: Props) {
+  const { t } = useTranslation()
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState<{
     status: 'success' | 'error'
@@ -83,41 +86,41 @@ export function ModuleStatementGenerator({
   const summary = useMemo(() => {
     if (!selectedRows.length) return null
     try {
-      const counterparty = extractCounterparty(selectedRows, statementType)
-      const { start, end } = extractDateRange(selectedRows, statementType)
+      const counterparty = extractCounterparty(selectedRows, statementType, t)
+      const { start, end } = extractDateRange(selectedRows, statementType, t)
       return { counterparty, start, end }
     } catch {
       return null
     }
-  }, [selectedRows, statementType])
+  }, [selectedRows, statementType, t])
 
   const handleGenerate = async () => {
     if (!summary) return
     try {
       setGenerating(true)
       await onGenerate(summary.counterparty, summary.start, summary.end)
-      setResult({ status: 'success', message: '对账单已生成' })
+      setResult({ status: 'success', message: t('modules.statement.generated') })
     } catch (err) {
       setResult({
         status: 'error',
-        message: err instanceof Error ? err.message : '生成失败，请稍后重试',
+        message: err instanceof Error ? err.message : t('modules.statement.generateFailed'),
       })
     } finally {
       setGenerating(false)
     }
   }
 
-  const typeLabel = TYPE_LABEL[statementType] || ''
+  const typeLabel = t(TYPE_LABEL_KEYS[statementType] || '')
 
   return (
     <>
       <Modal
-        title={`生成${typeLabel}对账单`}
+        title={t('modules.statement.generateTitle', { type: typeLabel })}
         open={open}
         onCancel={onClose}
         footer={
           <Space>
-            <Button onClick={onClose}>取消</Button>
+            <Button onClick={onClose}>{t('common.cancel')}</Button>
             <Button
               type="primary"
               loading={generating}
@@ -126,7 +129,7 @@ export function ModuleStatementGenerator({
                 void handleGenerate()
               }}
             >
-              生成对账单
+              {t('modules.statement.generateButton')}
             </Button>
           </Space>
         }
@@ -135,27 +138,27 @@ export function ModuleStatementGenerator({
       >
         {selectedRows.length === 0 ? (
           <Typography.Text type="secondary">
-            请先在列表中勾选需要生成对账单的单据
+            {t('modules.statement.selectHint')}
           </Typography.Text>
         ) : !summary ? (
           <Typography.Text type="danger">
-            无法从选中的单据中提取对账信息，请检查数据完整性
+            {t('modules.statement.extractError')}
           </Typography.Text>
         ) : (
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-gray-500">对方单位：</span>
+              <span className="text-gray-500">{t('modules.statement.counterpartyUnit')}</span>
               <Tag color="blue">{summary.counterparty}</Tag>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-gray-500">对账期间：</span>
+              <span className="text-gray-500">{t('modules.statement.period')}</span>
               <span className="font-medium">
                 {summary.start} ~ {summary.end}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-gray-500">单据数量：</span>
-              <span className="font-medium">{selectedRows.length} 笔</span>
+              <span className="text-gray-500">{t('modules.statement.documentCount')}</span>
+              <span className="font-medium">{selectedRows.length} {t('modules.statement.documentCountUnit')}</span>
             </div>
           </div>
         )}
@@ -173,7 +176,7 @@ export function ModuleStatementGenerator({
               if (result?.status === 'success') onClose()
             }}
           >
-            知道了
+            {t('modules.statement.gotIt')}
           </Button>
         }
         onClose={() => {

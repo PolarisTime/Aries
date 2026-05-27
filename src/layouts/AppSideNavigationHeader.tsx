@@ -9,6 +9,7 @@ import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
 import Tag from 'antd/es/tag'
 import { useEffect, useState, type CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   LazyAppHeaderSearch,
   type LazyAppHeaderSearchProps,
@@ -39,6 +40,7 @@ export function AppSideNavigationHeader({
   title,
   userMenuItems,
 }: Props) {
+  const { t } = useTranslation()
   const [devTimeString, setDevTimeString] = useState('')
   useEffect(() => {
     setDevTimeString(new Date().toLocaleTimeString())
@@ -58,7 +60,7 @@ export function AppSideNavigationHeader({
 
       <div className="header-page-meta">
         <div className="header-page-title">{title}</div>
-        <div className="header-page-desc">业务中心 / {title}</div>
+        <div className="header-page-desc">{t('layouts.sideNav.breadcrumbPrefix')}{title}</div>
       </div>
 
       <LazyAppHeaderSearch className="header-global-search" {...search} />
@@ -66,7 +68,7 @@ export function AppSideNavigationHeader({
       <div className="user-wrapper" style={shellFontStyle}>
         <span className="action action-tag">
           <Tag color={backendOnline ? 'green' : 'red'}>
-            {backendOnline ? 'API 正常' : 'API 离线'}
+            {backendOnline ? t('layouts.sideNav.apiOnline') : t('layouts.sideNav.apiOffline')}
           </Tag>
           <Tag color="default">{clockText}</Tag>
         </span>
@@ -94,7 +96,7 @@ export function AppSideNavigationHeader({
               window.location.reload()
             }}
           >
-            <ReloadOutlined />刷新
+            <ReloadOutlined />{t('common.refresh')}
           </button>
         ) : null}
       </div>

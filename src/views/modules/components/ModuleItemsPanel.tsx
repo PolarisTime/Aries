@@ -1,4 +1,5 @@
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type { ModuleRecord } from '@/types/module-page'
 import { EditorItemsSummary } from './EditorItemsSummary'
 
@@ -11,12 +12,14 @@ interface Props {
 }
 
 export function ModuleItemsPanel({
-  title = '明细列表',
+  title,
   actions,
   items,
   className,
   children,
 }: Props) {
+  const { t } = useTranslation()
+  const resolvedTitle = title ?? t('modules.itemsPanel.defaultTitle')
   const hasSummary = Array.isArray(items)
 
   return (
@@ -28,7 +31,7 @@ export function ModuleItemsPanel({
       <div className="editor-items-head">
         <div className="editor-items-title-block editor-items-title-row">
           <Typography.Title level={5} className="detail-section-title">
-            {title}
+            {resolvedTitle}
           </Typography.Title>
           {actions ? (
             <div className="editor-items-actions">{actions}</div>

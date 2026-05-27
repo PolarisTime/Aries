@@ -3,6 +3,7 @@ import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
 import { useEffect, useState, type CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   LazyAppHeaderSearch,
   type LazyAppHeaderSearchProps,
@@ -37,6 +38,7 @@ export function AppTopNavigationHeader({
   topMenuItems,
   userMenuItems,
 }: Props) {
+  const { t } = useTranslation()
   const [devTimeString, setDevTimeString] = useState('')
   useEffect(() => {
     setDevTimeString(new Date().toLocaleTimeString())
@@ -79,7 +81,7 @@ export function AppTopNavigationHeader({
               window.location.reload()
             }}
           >
-            <ReloadOutlined />刷新
+            <ReloadOutlined />{t('common.refresh')}
           </button>
         ) : null}
         <LazyAppHeaderSearch
@@ -89,7 +91,7 @@ export function AppTopNavigationHeader({
 
         <div className="user-wrapper user-wrapper-top" style={shellFontStyle}>
           <div className="app-top-header-meta">
-            <span className="app-top-header-meta-label">服务器时间</span>
+            <span className="app-top-header-meta-label">{t('layouts.topNav.serverTime')}</span>
             <strong>{clockText}</strong>
           </div>
           <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>

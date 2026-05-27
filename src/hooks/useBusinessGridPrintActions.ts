@@ -71,7 +71,7 @@ export function useBusinessGridPrintActions({
       }
 
       const template = templateId
-        ? { id: templateId, templateName: '', billType: moduleKey }
+        ? { id: templateId, templateName: '', billType: moduleKey, templateHtml: '' }
         : await pickPrintTemplate(moduleKey, t)
 
       try {
