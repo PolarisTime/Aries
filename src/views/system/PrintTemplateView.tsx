@@ -55,7 +55,7 @@ export function PrintTemplateView() {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
       setEditorOpen(false)
     },
-    onError: (error: Error) => showError(error, '保存失败'),
+    onError: (error: Error) => showError(error, t('api.saveFailed')),
   })
 
   const deleteMutation = useMutation({
@@ -64,14 +64,14 @@ export function PrintTemplateView() {
       message.success(t('common.deleteSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
     },
-    onError: (error: Error) => showError(error, '删除失败'),
+    onError: (error: Error) => showError(error, t('api.deleteFailed')),
   })
 
   const refresh = useRefreshQuery('print-template')
 
   const openCreate = useCallback(() => {
     if (!canCreate) {
-      message.warning('暂无创建权限')
+      message.warning(t('common.noPermission'))
       return
     }
     form.resetFields()
@@ -88,7 +88,7 @@ export function PrintTemplateView() {
   const openEdit = useCallback(
     (record: PrintTemplateRecord) => {
       if (!canEdit) {
-        message.warning('暂无编辑权限')
+        message.warning(t('common.noPermission'))
         return
       }
       form.setFieldsValue({
@@ -112,7 +112,7 @@ export function PrintTemplateView() {
   const handleCopy = useCallback(
     (record: PrintTemplateRecord) => {
       if (!canCreate) {
-        message.warning('暂无创建权限')
+        message.warning(t('common.noPermission'))
         return
       }
       form.setFieldsValue({
@@ -134,9 +134,11 @@ export function PrintTemplateView() {
         return
       }
       modal.confirm({
-        title: '删除打印模板',
-        content: `确定删除模板「${record.templateName}」吗？`,
-        okText: t('common.deleteConfirm'),
+        title: t('system.printTemplate.deleteTemplate'),
+        content: t('system.printTemplate.deleteContent', {
+          name: record.templateName,
+        }),
+        okText: t('common.confirm'),
         cancelText: t('common.cancel'),
         okButtonProps: { danger: true },
         onOk: () => deleteMutation.mutateAsync(record.id),
@@ -147,7 +149,7 @@ export function PrintTemplateView() {
 
   const handleSave = useCallback(async () => {
     if (!templateHtml.trim()) {
-      message.warning('请输入模板内容')
+      message.warning(t('system.printTemplate.inputTemplateContent'))
       return
     }
     try {

@@ -2,6 +2,7 @@ import { ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Button from 'antd/es/button'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import { getDatabaseStatus } from '@/api/database-admin'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePermissionStore } from '@/stores/permissionStore'
@@ -9,6 +10,7 @@ import { DatabaseMonitoringPanel } from '@/views/system/DatabaseMonitoringPanel'
 import { DatabaseStatusOverview } from '@/views/system/DatabaseStatusOverview'
 
 export function DatabaseBackupView() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const permissionStore = usePermissionStore()
   const canViewMonitoring = permissionStore.can('database', 'read')
@@ -28,10 +30,10 @@ export function DatabaseBackupView() {
       <div className="database-status-header">
         <div>
           <Typography.Title level={4} className="database-status-title">
-            数据库运行状态
+            {t('system.database.title')}
           </Typography.Title>
           <Typography.Text type="secondary">
-            PostgreSQL 与 Redis 服务健康、容量和性能指标
+            {t('system.database.description')}
           </Typography.Text>
         </div>
         <Button
@@ -40,7 +42,7 @@ export function DatabaseBackupView() {
           loading={statusLoading}
           onClick={refreshStatus}
         >
-          刷新状态
+          {t('system.database.refreshStatus')}
         </Button>
       </div>
 

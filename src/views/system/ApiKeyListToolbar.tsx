@@ -3,6 +3,7 @@ import Button from 'antd/es/button'
 import Input from 'antd/es/input'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
+import { useTranslation } from 'react-i18next'
 import type { ApiKeyUserOption } from '@/api/api-keys'
 import {
   apiKeyStatusOptions,
@@ -43,10 +44,11 @@ export function ApiKeyListToolbar({
   onRefresh,
   onCreate,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <Space>
       <Input.Search
-        placeholder="搜索密钥名称 / 前缀"
+        placeholder={t('system.apiKey.searchPlaceholder')}
         className="w-280"
         allowClear
         value={keyword}
@@ -56,7 +58,7 @@ export function ApiKeyListToolbar({
       <Select
         showSearch
         allowClear
-        placeholder="筛选所属用户"
+        placeholder={t('system.apiKey.filterUserPlaceholder')}
         className="w-260"
         value={filterUserId}
         onChange={onFilterUserChange}
@@ -72,7 +74,7 @@ export function ApiKeyListToolbar({
       />
       <Select
         allowClear
-        placeholder="全部状态"
+        placeholder={t('system.apiKey.allStatus')}
         className="w-140"
         value={statusFilter}
         onChange={onStatusFilterChange}
@@ -80,14 +82,14 @@ export function ApiKeyListToolbar({
       />
       <Select
         allowClear
-        placeholder="全部范围"
+        placeholder={t('system.apiKey.allScope')}
         className="w-150"
         value={usageScopeFilter}
         onChange={onUsageScopeFilterChange}
         options={apiKeyUsageScopeOptions}
       />
       <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-        刷新
+        {t('common.refresh')}
       </Button>
       {canCreate && (
         <Button
@@ -96,7 +98,7 @@ export function ApiKeyListToolbar({
           disabled={totpDisabled}
           onClick={onCreate}
         >
-          生成 API Key
+          {t('system.apiKey.generateButton')}
         </Button>
       )}
     </Space>

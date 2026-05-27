@@ -7,6 +7,7 @@ import InputNumber from 'antd/es/input-number'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type {
   ApiKeyActionOption,
   ApiKeyResourceOption,
@@ -41,14 +42,24 @@ export function ApiKeyCreateModal({
   onGenerate,
   onClose,
 }: Props) {
+  const { t } = useTranslation()
   return (
-    <FormModal title="生成 API Key" open={open} onClose={onClose} footer={null}>
+    <FormModal
+      title={t('system.apiKey.generateTitle')}
+      open={open}
+      onClose={onClose}
+      footer={null}
+    >
       {!generatedKey ? (
         <Form form={form} layout="vertical">
-          <Form.Item name="userId" label="所属用户" required>
+          <Form.Item
+            name="userId"
+            label={t('system.apiKey.userId')}
+            required
+          >
             <Select
               showSearch
-              placeholder="搜索账号 / 用户姓名 / 手机号"
+              placeholder={t('system.userAccount.searchPlaceholder')}
               options={userOptions.map((item) => ({
                 label: `${getApiKeyUserDisplayName(item)}${item.mobile ? ` / ${item.mobile}` : ''}`,
                 value: String(item.id || ''),
@@ -60,17 +71,31 @@ export function ApiKeyCreateModal({
               }
             />
           </Form.Item>
-          <Form.Item name="keyName" label="密钥名称" required>
-            <Input placeholder="例如：订单同步密钥" maxLength={64} />
+          <Form.Item
+            name="keyName"
+            label={t('system.apiKey.keyName')}
+            required
+          >
+            <Input
+              placeholder={t('system.apiKey.keyNamePlaceholder')}
+              maxLength={64}
+            />
           </Form.Item>
-          <Form.Item name="usageScope" label="使用范围" required>
+          <Form.Item
+            name="usageScope"
+            label={t('system.apiKey.usageScope')}
+            required
+          >
             <Select options={apiKeyUsageScopeOptions} />
           </Form.Item>
-          <Form.Item name="allowedResources" label="允许访问资源">
+          <Form.Item
+            name="allowedResources"
+            label={t('system.apiKey.allowedResources')}
+          >
             <Select
               mode="multiple"
               allowClear
-              placeholder="不选则按使用范围放行"
+              placeholder={t('system.apiKey.allowedResourcesPlaceholder')}
               maxTagCount={4}
               options={resourceOptions.map((item) => ({
                 label: `${item.group} / ${item.title}`,
@@ -78,10 +103,14 @@ export function ApiKeyCreateModal({
               }))}
             />
           </Form.Item>
-          <Form.Item name="allowedActions" label="允许动作" required>
+          <Form.Item
+            name="allowedActions"
+            label={t('system.apiKey.allowedActions')}
+            required
+          >
             <Select
               mode="multiple"
-              placeholder="请选择允许动作"
+              placeholder={t('system.apiKey.allowedActionsPlaceholder')}
               maxTagCount={5}
               options={actionOptions.map((item) => ({
                 label: item.title,
@@ -89,9 +118,12 @@ export function ApiKeyCreateModal({
               }))}
             />
           </Form.Item>
-          <Form.Item name="expireDays" label="有效期（天）">
+          <Form.Item
+            name="expireDays"
+            label={t('system.apiKey.expireDays')}
+          >
             <InputNumber
-              placeholder="留空则永不过期"
+              placeholder={t('system.apiKey.expireDaysPlaceholder')}
               className="w-full"
               min={1}
               max={3650}
@@ -99,14 +131,14 @@ export function ApiKeyCreateModal({
           </Form.Item>
           <div className="text-right">
             <Space>
-              <Button onClick={onClose}>取消</Button>
+              <Button onClick={onClose}>{t('common.cancel')}</Button>
               <Button
                 type="primary"
                 loading={generating}
                 disabled={totpDisabled}
                 onClick={onGenerate}
               >
-                生成
+                {t('system.apiKey.generate')}
               </Button>
             </Space>
           </div>
@@ -117,7 +149,7 @@ export function ApiKeyCreateModal({
             type="warning"
             showIcon
             className="mb-4"
-            title="请立即复制保存，此密钥仅显示一次"
+            title={t('system.apiKey.copyKeyHint')}
           />
           <div className="p-16 rounded bg-gray-100 border border-gray-300">
             <Typography.Paragraph copyable code className="m-0 break-all">
@@ -126,7 +158,7 @@ export function ApiKeyCreateModal({
           </div>
           <div className="text-right mt-16">
             <Button type="primary" onClick={onClose}>
-              关闭
+              {t('common.close')}
             </Button>
           </div>
         </>

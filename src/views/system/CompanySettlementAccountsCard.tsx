@@ -6,6 +6,7 @@ import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type { SettlementAccountFormRow } from '@/views/system/company-settings-view-utils'
 
 interface Props {
@@ -27,6 +28,7 @@ export function CompanySettlementAccountsCard({
   onRemove,
   onUpdate,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <Card
       size="small"
@@ -34,7 +36,7 @@ export function CompanySettlementAccountsCard({
       title={
         <div className="flex items-center justify-between">
           <span>
-            <BankOutlined /> 结算信息
+            <BankOutlined /> {t('system.company.settlementInfo')}
           </span>
           {canSave && (
             <Button
@@ -43,7 +45,7 @@ export function CompanySettlementAccountsCard({
               icon={<PlusOutlined />}
               onClick={onAdd}
             >
-              新增银行
+              {t('system.company.addBank')}
             </Button>
           )}
         </div>
@@ -56,7 +58,9 @@ export function CompanySettlementAccountsCard({
             className="p-16 rounded-lg bg-default border border-[var(--theme-card-border)]"
           >
             <div className="flex justify-between mb-12">
-              <Typography.Text strong>结算账户 {index + 1}</Typography.Text>
+              <Typography.Text strong>
+                {t('system.company.settlementAccount')} {index + 1}
+              </Typography.Text>
               {canSave && (
                 <Button
                   type="text"
@@ -65,7 +69,7 @@ export function CompanySettlementAccountsCard({
                   icon={<DeleteOutlined />}
                   onClick={() => onRemove(index)}
                 >
-                  删除
+                  {t('common.delete')}
                 </Button>
               )}
             </div>
@@ -73,13 +77,14 @@ export function CompanySettlementAccountsCard({
               <Col span={8}>
                 <div className="mb-8">
                   <Typography.Text type="secondary">
-                    账户名称 <span className="text-error">*</span>
+                    {t('system.company.accountName')}{' '}
+                    <span className="text-error">*</span>
                   </Typography.Text>
                 </div>
                 <Input
                   value={account.accountName}
                   disabled={!canSave}
-                  placeholder="如：基本户 / 收款户"
+                  placeholder={t('system.company.accountNamePlaceholder')}
                   onChange={(event) =>
                     onUpdate(index, 'accountName', event.target.value)
                   }
@@ -88,7 +93,8 @@ export function CompanySettlementAccountsCard({
               <Col span={8}>
                 <div className="mb-8">
                   <Typography.Text type="secondary">
-                    用途 <span className="text-error">*</span>
+                    {t('system.company.usageType')}{' '}
+                    <span className="text-error">*</span>
                   </Typography.Text>
                 </div>
                 <Select
@@ -97,22 +103,32 @@ export function CompanySettlementAccountsCard({
                   className="w-full"
                   onChange={(value) => onUpdate(index, 'usageType', value)}
                   options={[
-                    { label: '通用', value: '通用' },
-                    { label: '收款', value: '收款' },
-                    { label: '付款', value: '付款' },
+                    {
+                      label: t('system.company.usageGeneral'),
+                      value: '通用',
+                    },
+                    {
+                      label: t('system.company.usageReceive'),
+                      value: '收款',
+                    },
+                    {
+                      label: t('system.company.usagePay'),
+                      value: '付款',
+                    },
                   ]}
                 />
               </Col>
               <Col span={8}>
                 <div className="mb-8">
                   <Typography.Text type="secondary">
-                    开户银行 <span className="text-error">*</span>
+                    {t('system.company.bankName')}{' '}
+                    <span className="text-error">*</span>
                   </Typography.Text>
                 </div>
                 <Input
                   value={account.bankName}
                   disabled={!canSave}
-                  placeholder="输入开户银行"
+                  placeholder={t('system.company.bankNamePlaceholder')}
                   onChange={(event) =>
                     onUpdate(index, 'bankName', event.target.value)
                   }
@@ -123,13 +139,14 @@ export function CompanySettlementAccountsCard({
               <Col span={8}>
                 <div className="mb-8">
                   <Typography.Text type="secondary">
-                    银行账号 <span className="text-error">*</span>
+                    {t('system.company.bankAccount')}{' '}
+                    <span className="text-error">*</span>
                   </Typography.Text>
                 </div>
                 <Input
                   value={account.bankAccount}
                   disabled={!canSave}
-                  placeholder="输入银行账号"
+                  placeholder={t('system.company.bankAccountPlaceholder')}
                   onChange={(event) =>
                     onUpdate(index, 'bankAccount', event.target.value)
                   }
@@ -138,7 +155,8 @@ export function CompanySettlementAccountsCard({
               <Col span={8}>
                 <div className="mb-8">
                   <Typography.Text type="secondary">
-                    状态 <span className="text-error">*</span>
+                    {t('common.status')}{' '}
+                    <span className="text-error">*</span>
                   </Typography.Text>
                 </div>
                 <Select
@@ -147,19 +165,27 @@ export function CompanySettlementAccountsCard({
                   className="w-full"
                   onChange={(value) => onUpdate(index, 'status', value)}
                   options={[
-                    { label: '正常', value: '正常' },
-                    { label: '禁用', value: '禁用' },
+                    {
+                      label: t('system.company.statusNormal'),
+                      value: '正常',
+                    },
+                    {
+                      label: t('system.company.statusDisabled'),
+                      value: '禁用',
+                    },
                   ]}
                 />
               </Col>
               <Col span={8}>
                 <div className="mb-8">
-                  <Typography.Text type="secondary">备注</Typography.Text>
+                  <Typography.Text type="secondary">
+                    {t('common.remark')}
+                  </Typography.Text>
                 </div>
                 <Input
                   value={account.remark}
                   disabled={!canSave}
-                  placeholder="补充账户用途或说明"
+                  placeholder={t('system.company.remarkPlaceholder')}
                   onChange={(event) =>
                     onUpdate(index, 'remark', event.target.value)
                   }

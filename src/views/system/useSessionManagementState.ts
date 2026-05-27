@@ -83,9 +83,9 @@ export function useSessionManagementState(enabled = true) {
       }
 
       modal.confirm({
-        title: '禁用令牌',
-        content: '确定禁用该会话令牌吗？禁用后对应设备需要重新登录。',
-        okText: '确认禁用',
+        title: t('system.session.disable'),
+        content: t('system.session.disableConfirm'),
+        okText: t('common.confirm'),
         cancelText: t('common.cancel'),
         okButtonProps: { danger: true },
         onOk: async () => {
@@ -94,7 +94,7 @@ export function useSessionManagementState(enabled = true) {
             message.success(t('common.disabled'))
             refreshSessionData()
           } catch (error) {
-            showError(error, '禁用失败')
+            showError(error, t('api.disableSessionFailed'))
           }
         },
       })
@@ -109,26 +109,26 @@ export function useSessionManagementState(enabled = true) {
     }
 
     modal.confirm({
-      title: t('common.batchDelete'),
-      content: '确定禁用所有有效的会话令牌吗？所有设备将需要重新登录。',
-      okText: '确认清除',
+      title: t('system.session.revokeAll'),
+      content: t('system.session.revokeAllConfirm'),
+      okText: t('common.confirm'),
       cancelText: t('common.cancel'),
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
           const response = await revokeAllRefreshTokens()
-          message.success(response.message || '已清除')
+          message.success(response.message || t('system.session.revoked'))
           refreshSessionData()
         } catch (error) {
-          showError(error, '清除失败')
+          showError(error, t('api.clearAllSessionsFailed'))
         }
       },
     })
   }, [canEdit, refreshSessionData, showError])
 
   const columns = useMemo(
-    () => buildSessionTableColumns({ canEdit, onRevoke: handleRevoke }),
-    [canEdit, handleRevoke],
+    () => buildSessionTableColumns({ canEdit, onRevoke: handleRevoke, t }),
+    [canEdit, handleRevoke, t],
   )
 
   return {

@@ -116,31 +116,36 @@ export function UserAccountManagementView({
       message.success(t('common.deleteSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.userAccountBase })
     },
-    onError: (error: Error) => showError(error, '删除失败'),
+    onError: (error: Error) => showError(error, t('api.deleteFailed')),
   })
 
   const handleDelete = useCallback(
     (record: UserAccountRecord) => {
       modal.confirm({
-        title: '删除用户账户',
-        content: `确定删除账号「${record.loginName}」吗？删除后该用户将无法继续登录。`,
-        okText: t('common.deleteConfirm'),
+        title: t('system.userAccount.deleteTitle'),
+        content: t('system.userAccount.deleteContent', {
+          loginName: record.loginName,
+        }),
+        okText: t('common.confirm'),
         cancelText: t('common.cancel'),
         okButtonProps: { danger: true },
         onOk: () => deleteMutation.mutateAsync(record.id),
       })
     },
-    [deleteMutation],
+    [deleteMutation, t],
   )
 
-  const copyText = useCallback(async (value: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(value)
-      message.success(`${label}已复制`)
-    } catch {
-      message.error(`${label}复制失败`)
-    }
-  }, [])
+  const copyText = useCallback(
+    async (value: string, label: string) => {
+      try {
+        await navigator.clipboard.writeText(value)
+        message.success(t('system.userAccount.copied', { label }))
+      } catch {
+        message.error(t('system.userAccount.copyFailed', { label }))
+      }
+    },
+    [t],
+  )
 
   return (
     <div className="page-stack">

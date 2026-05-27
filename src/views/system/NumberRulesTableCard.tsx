@@ -9,6 +9,7 @@ import type { TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -48,9 +49,10 @@ export function NumberRulesTableCard({
   onEditNumberRule,
   onEditUploadRule,
 }: Props) {
+  const { t } = useTranslation()
   const numberRuleColumns: TableProps<ModuleRecord>['columns'] = [
     {
-      title: '操作',
+      title: t('common.operation'),
       key: 'action',
       width: 90,
       align: 'center',
@@ -62,36 +64,52 @@ export function NumberRulesTableCard({
           disabled={!canEdit}
           onClick={() => onEditNumberRule(record)}
         >
-          编辑
+          {t('common.edit')}
         </Button>
       ),
     },
-    { dataIndex: 'billName', title: '单据', width: 140 },
-    { dataIndex: 'settingName', title: '规则名称', width: 180 },
-    { dataIndex: 'prefix', title: '规则模板', width: 240 },
     {
-      title: '日期规则',
+      dataIndex: 'billName',
+      title: t('system.numberRules.billName'),
+      width: 140,
+    },
+    {
+      dataIndex: 'settingName',
+      title: t('system.numberRules.settingName'),
+      width: 180,
+    },
+    {
+      dataIndex: 'prefix',
+      title: t('system.numberRules.prefix'),
+      width: 240,
+    },
+    {
+      title: t('system.numberRules.dateRule'),
       key: 'dateRule',
       width: 150,
       render: (_value, record) => formatDateRuleLabel(String(record.dateRule)),
     },
     {
       dataIndex: 'serialLength',
-      title: '流水位数',
+      title: t('system.numberRules.serialLength'),
       width: 100,
       align: 'right',
     },
     {
-      title: '重置规则',
+      title: t('system.numberRules.resetRule'),
       key: 'resetRule',
       width: 120,
       render: (_value, record) =>
         formatResetRuleLabel(String(record.resetRule)),
     },
-    { dataIndex: 'sampleNo', title: '示例单号', width: 180 },
+    {
+      dataIndex: 'sampleNo',
+      title: t('system.numberRules.sampleNo'),
+      width: 180,
+    },
     {
       dataIndex: 'status',
-      title: '状态',
+      title: t('common.status'),
       width: 100,
       align: 'center',
       render: (value: string) => (
@@ -103,7 +121,7 @@ export function NumberRulesTableCard({
   ]
   const uploadRuleColumns: TableProps<ModuleRecord>['columns'] = [
     {
-      title: '操作',
+      title: t('common.operation'),
       key: 'action',
       width: 90,
       align: 'center',
@@ -115,17 +133,33 @@ export function NumberRulesTableCard({
           disabled={!canEdit}
           onClick={() => onEditUploadRule(record)}
         >
-          编辑
+          {t('common.edit')}
         </Button>
       ),
     },
-    { dataIndex: 'billName', title: '模块', width: 140 },
-    { dataIndex: 'settingName', title: '规则名称', width: 180 },
-    { dataIndex: 'prefix', title: '重命名模板', width: 240 },
-    { dataIndex: 'sampleNo', title: '示例文件名', width: 200 },
+    {
+      dataIndex: 'billName',
+      title: t('system.numberRules.moduleName'),
+      width: 140,
+    },
+    {
+      dataIndex: 'settingName',
+      title: t('system.numberRules.settingName'),
+      width: 180,
+    },
+    {
+      dataIndex: 'prefix',
+      title: t('system.numberRules.renamePattern'),
+      width: 240,
+    },
+    {
+      dataIndex: 'sampleNo',
+      title: t('system.numberRules.sampleFileName'),
+      width: 200,
+    },
     {
       dataIndex: 'status',
-      title: '状态',
+      title: t('common.status'),
       width: 100,
       align: 'center',
       render: (value: string) => (
@@ -137,18 +171,18 @@ export function NumberRulesTableCard({
   ]
   return (
     <Card
-      title="编号规则"
+      title={t('system.numberRules.title')}
       extra={
         <SystemTableToolbar
           keyword={keyword}
-          keywordPlaceholder="搜索规则项"
+          keywordPlaceholder={t('system.numberRules.searchPlaceholder')}
           keywordWidth={280}
           onKeywordChange={onKeywordChange}
           onRefresh={onRefresh}
         >
           <Select
             allowClear
-            placeholder="全部状态"
+            placeholder={t('system.numberRules.allStatus')}
             className="w-140"
             value={statusFilter}
             onChange={onStatusFilterChange}
@@ -159,14 +193,20 @@ export function NumberRulesTableCard({
     >
       <Row gutter={16} className="mb-4">
         <Col span={8}>
-          <Statistic title="单号规则" value={numberRuleRows.length} />
-        </Col>
-        <Col span={8}>
-          <Statistic title="上传规则" value={uploadRuleRows.length} />
+          <Statistic
+            title={t('system.numberRules.documentRules')}
+            value={numberRuleRows.length}
+          />
         </Col>
         <Col span={8}>
           <Statistic
-            title="禁用上传规则"
+            title={t('system.numberRules.uploadRules')}
+            value={uploadRuleRows.length}
+          />
+        </Col>
+        <Col span={8}>
+          <Statistic
+            title={t('system.numberRules.disabledUploadRules')}
             value={
               rows.filter(
                 (row) =>
@@ -177,7 +217,9 @@ export function NumberRulesTableCard({
           />
         </Col>
       </Row>
-      <Typography.Title level={5}>单号规则</Typography.Title>
+      <Typography.Title level={5}>
+        {t('system.numberRules.documentRules')}
+      </Typography.Title>
       <Table
         rowKey="id"
         columns={numberRuleColumns}
@@ -187,7 +229,9 @@ export function NumberRulesTableCard({
         pagination={false}
         className="mb-6"
       />
-      <Typography.Title level={5}>上传规则</Typography.Title>
+      <Typography.Title level={5}>
+        {t('system.numberRules.uploadRules')}
+      </Typography.Title>
       <Table
         rowKey="id"
         columns={uploadRuleColumns}

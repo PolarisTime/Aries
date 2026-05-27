@@ -69,7 +69,7 @@ export function GeneralSettingsView() {
   const openEditor = useCallback(
     (record: ModuleRecord) => {
       if (!canEdit) {
-        message.warning('暂无编辑权限')
+        message.warning(t('common.noPermission'))
         return
       }
       setEditingRecord(record)
@@ -109,15 +109,19 @@ export function GeneralSettingsView() {
           status: nextStatus,
           remark: record.remark,
         })
-        message.success(nextStatus === '正常' ? '已启用' : '已关闭')
+        message.success(
+          nextStatus === '正常'
+            ? t('system.generalSettings.enabled')
+            : t('system.generalSettings.closed'),
+        )
         refresh()
       } catch (error) {
-        showError(error, '操作失败')
+        showError(error, t('table.operationFailed'))
       } finally {
         setToggling(false)
       }
     },
-    [refresh, showError],
+    [refresh, showError, t],
   )
 
   const handleSave = useCallback(async () => {
@@ -150,7 +154,7 @@ export function GeneralSettingsView() {
       refresh()
       setEditorOpen(false)
     } catch (error) {
-      showError(error, '保存失败')
+      showError(error, t('api.saveFailed'))
     } finally {
       setSaving(false)
     }
