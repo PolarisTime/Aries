@@ -10,6 +10,7 @@ import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
 import { usePermissionStore } from '@/stores/permissionStore'
 
@@ -36,12 +37,6 @@ interface RateLimitRule {
   enabled: boolean
 }
 
-const TYPE_LABEL: Record<string, string> = {
-  GLOBAL: '全局',
-  METHOD: '方法',
-  API_KEY: 'API密钥',
-}
-
 const TYPE_COLOR: Record<string, string> = {
   GLOBAL: 'blue',
   METHOD: 'green',
@@ -49,6 +44,12 @@ const TYPE_COLOR: Record<string, string> = {
 }
 
 export function RateLimitRulesCard() {
+  const { t } = useTranslation()
+  const TYPE_LABEL: Record<string, string> = {
+    GLOBAL: t('system.rateLimit.typeGlobal'),
+    METHOD: t('system.rateLimit.typeMethod'),
+    API_KEY: t('system.rateLimit.typeApiKey'),
+  }
   const can = usePermissionStore((s) => s.can)
   const queryClient = useQueryClient()
   const [editingRule, setEditingRule] = useState<RateLimitRule | null>(null)
@@ -63,7 +64,7 @@ export function RateLimitRulesCard() {
         data: RawRateLimitRule[]
         message?: string
       }>('/admin/rate-limit/rules')
-      assertApiSuccess(r, '加载限流规则失败')
+      assertApiSuccess(r, t('system.rateLimit.loadFailed'))
       return (r.data || []).map((item): RateLimitRule => ({
         id: item.id,
         ruleKey: item.rule_key,
@@ -104,7 +105,7 @@ export function RateLimitRulesCard() {
 
   return (
     <Card
-      title="限流规则"
+      title={t('system.rateLimit.title')}
       extra={
         <Button
           size="small"
@@ -112,7 +113,7 @@ export function RateLimitRulesCard() {
           icon={<ReloadOutlined />}
           onClick={() => void refetch()}
         >
-          刷新
+          {t('system.rateLimit.refresh')}
         </Button>
       }
       className="mb-16"
@@ -125,13 +126,13 @@ export function RateLimitRulesCard() {
           columns={[
             {
               dataIndex: 'ruleKey',
-              title: '规则键',
+              title: t('system.rateLimit.colRuleKey'),
               width: 200,
               ellipsis: true,
             },
             {
               dataIndex: 'ruleType',
-              title: '类型',
+              title: t('system.rateLimit.colType'),
               width: 80,
               render: (v: string) => (
                 <Tag color={TYPE_COLOR[v] || 'default'}>{TYPE_LABEL[v] || v}</Tag>
@@ -139,39 +140,39 @@ export function RateLimitRulesCard() {
             },
             {
               dataIndex: 'rate',
-              title: '令牌/s',
+              title: t('system.rateLimit.colRate'),
               width: 80,
               align: 'right',
               render: (v: number) => v.toFixed(2),
             },
             {
               dataIndex: 'capacity',
-              title: '突发',
+              title: t('system.rateLimit.colBurst'),
               width: 55,
               align: 'right',
             },
             {
               dataIndex: 'tokensPerRequest',
-              title: '消耗',
+              title: t('system.rateLimit.colCost'),
               width: 55,
               align: 'right',
             },
             {
               dataIndex: 'priority',
-              title: '优先级',
+              title: t('system.rateLimit.colPriority'),
               width: 55,
               align: 'right',
             },
             {
               dataIndex: 'enabled',
-              title: '状态',
+              title: t('system.rateLimit.colStatus'),
               width: 50,
               render: (v: boolean) => (
-                <Tag color={v ? 'success' : 'default'}>{v ? '开' : '关'}</Tag>
+                <Tag color={v ? 'success' : 'default'}>{v ? t('system.rateLimit.statusOn') : t('system.rateLimit.statusOff')}</Tag>
               ),
             },
             {
-              title: '操作',
+              title: t('system.rateLimit.colOperation'),
               width: 50,
               align: 'center',
               render: (_: unknown, record: RateLimitRule) => (
@@ -189,31 +190,31 @@ export function RateLimitRulesCard() {
         />
       ) : (
         <Typography.Text type="secondary">
-          暂无限流规则，使用默认值
+          {t('system.rateLimit.noRules')}
         </Typography.Text>
       )}
 
       <Modal
-        title={`编辑规则 — ${editingRule?.ruleKey || ''}`}
+        title={`${t('system.rateLimit.editTitle')} — ${editingRule?.ruleKey || ''}`}
         open={!!editingRule}
         onOk={() => void handleSave()}
         onCancel={() => setEditingRule(null)}
         confirmLoading={saving}
-        okText="保存"
-        cancelText="取消"
+        okText={t('system.rateLimit.save')}
+        cancelText={t('system.rateLimit.cancel')}
         destroyOnClose
       >
         <Form form={form} layout="vertical" className="mt-16">
-          <Form.Item name="rate" label="令牌/s">
+          <Form.Item name="rate" label={t('system.rateLimit.rateLabel')}>
             <InputNumber min={0.01} step={0.1} className="w-full" />
           </Form.Item>
-          <Form.Item name="capacity" label="突发容量">
+          <Form.Item name="capacity" label={t('system.rateLimit.burstCapacity')}>
             <InputNumber min={1} step={1} className="w-full" />
           </Form.Item>
-          <Form.Item name="tokensPerRequest" label="每次消耗令牌数">
+          <Form.Item name="tokensPerRequest" label={t('system.rateLimit.tokensPerRequest')}>
             <InputNumber min={1} step={1} className="w-full" />
           </Form.Item>
-          <Form.Item name="enabled" label="启用" valuePropName="checked">
+          <Form.Item name="enabled" label={t('system.rateLimit.enabled')} valuePropName="checked">
             <Switch />
           </Form.Item>
         </Form>

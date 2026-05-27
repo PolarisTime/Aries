@@ -5,6 +5,7 @@ import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
@@ -31,6 +32,7 @@ export function PrintTemplateEditorModal({
   onSave,
   onClose,
 }: Props) {
+  const { t } = useTranslation()
   const templateHtmlId = buildFormControlId(
     'print-template-editor',
     'template-html',
@@ -38,7 +40,7 @@ export function PrintTemplateEditorModal({
 
   return (
     <FormModal
-      title={editing ? '编辑模板' : '新建模板'}
+      title={editing ? t('system.printTemplateEditor.editTitle') : t('system.printTemplateEditor.createTitle')}
       open={open}
       onClose={onClose}
       onSave={onSave}
@@ -48,21 +50,21 @@ export function PrintTemplateEditorModal({
       <Form form={form} layout="vertical">
         <Row gutter={16}>
           <Col span={8}>
-            <Form.Item name="billType" label="单据类型" required>
+            <Form.Item name="billType" label={t('system.printTemplateEditor.billType')} required>
               <Select options={printTemplateTargetOptions} />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item name="templateName" label="模板名称" required>
-              <Input placeholder="请输入模板名称" maxLength={64} />
+            <Form.Item name="templateName" label={t('system.printTemplateEditor.templateName')} required>
+              <Input placeholder={t('system.printTemplateEditor.templateNamePlaceholder')} maxLength={64} />
             </Form.Item>
           </Col>
           <Col span={4}>
-            <Form.Item name="isDefault" label="默认模板">
+            <Form.Item name="isDefault" label={t('system.printTemplateEditor.isDefault')}>
               <Select
                 options={[
-                  { label: '是', value: true },
-                  { label: '否', value: false },
+                  { label: t('system.printTemplateEditor.yes'), value: true },
+                  { label: t('system.printTemplateEditor.no'), value: false },
                 ]}
               />
             </Form.Item>
@@ -70,7 +72,7 @@ export function PrintTemplateEditorModal({
         </Row>
         <Form.Item
           {...buildLabeledFormItemProps({
-            label: '模板内容',
+            label: t('system.printTemplateEditor.templateContent'),
             htmlFor: templateHtmlId,
           })}
           required
@@ -81,12 +83,12 @@ export function PrintTemplateEditorModal({
             value={templateHtml}
             onChange={(event) => onTemplateHtmlChange(event.target.value)}
             rows={16}
-            placeholder="请输入 HTML 模板内容"
+            placeholder={t('system.printTemplateEditor.templateContentPlaceholder')}
             className="text-xs font-mono"
           />
         </Form.Item>
         <Typography.Text type="secondary">
-          支持 HTML 模板和 LODOP 指令。使用 {'{{字段名}}'} 语法插入动态数据。
+          {t('system.printTemplateEditor.htmlHint')}
         </Typography.Text>
       </Form>
     </FormModal>

@@ -6,6 +6,7 @@ import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Switch from 'antd/es/switch'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -40,9 +41,10 @@ export function GeneralSettingsEditorModal({
   onSave,
   onClose,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <FormModal
-      title={`编辑 ${asString(record?.settingName) || '设置'}`}
+      title={`${t('system.generalSettingsEditor.editTitle')} ${asString(record?.settingName) || t('system.generalSettingsEditor.defaultTitle')}`}
       open={open}
       onClose={onClose}
       onSave={onSave}
@@ -51,13 +53,13 @@ export function GeneralSettingsEditorModal({
     >
       {record && (
         <Form form={form} layout="vertical">
-          <Form.Item name="settingCode" label="设置编码">
+          <Form.Item name="settingCode" label={t('system.generalSettingsEditor.settingCode')}>
             <Input disabled />
           </Form.Item>
-          <Form.Item name="settingName" label="设置名称">
+          <Form.Item name="settingName" label={t('system.generalSettingsEditor.settingName')}>
             <Input disabled />
           </Form.Item>
-          <Form.Item name="billName" label="适用范围">
+          <Form.Item name="billName" label={t('system.generalSettingsEditor.billScope')}>
             <Input disabled />
           </Form.Item>
           {isNumericSetting(record) ? (
@@ -66,8 +68,8 @@ export function GeneralSettingsEditorModal({
                 name="numericValue"
                 label={
                   asString(record.settingCode) === WATERMARK_COLOR_CODE
-                    ? '水印颜色'
-                    : '水印内容'
+                    ? t('system.generalSettingsEditor.watermarkColor')
+                    : t('system.generalSettingsEditor.watermarkContent')
                 }
                 rules={[
                   {
@@ -75,7 +77,7 @@ export function GeneralSettingsEditorModal({
                       asString(record.settingCode) === WATERMARK_COLOR_CODE
                         ? 50
                         : 64,
-                    message: `最多${asString(record.settingCode) === WATERMARK_COLOR_CODE ? 50 : 64}个字符`,
+                    message: t('system.generalSettingsEditor.maxChars', { count: asString(record.settingCode) === WATERMARK_COLOR_CODE ? 50 : 64 }),
                   },
                 ]}
               >
@@ -96,7 +98,7 @@ export function GeneralSettingsEditorModal({
                       type="secondary"
                       className="mt-1 block text-xs"
                     >
-                      魔法变量：{' '}
+                      {t('system.generalSettingsEditor.magicVars')}{' '}
                       <Typography.Text code className="text-xs">
                         {'{username}'}
                       </Typography.Text>{' '}
@@ -106,7 +108,7 @@ export function GeneralSettingsEditorModal({
                       <Typography.Text code className="text-xs">
                         {'{date}'}
                       </Typography.Text>{' '}
-                      ： 前端渲染时自动替换
+                      {t('system.generalSettingsEditor.autoReplace')}
                     </Typography.Text>
                   </>
                 )}
@@ -116,10 +118,10 @@ export function GeneralSettingsEditorModal({
                 name="numericValue"
                 label={
                   asString(record.settingCode) === WATERMARK_FONT_SIZE_CODE
-                    ? '水印字号'
+                    ? t('system.generalSettingsEditor.watermarkFontSize')
                     : asString(record.settingCode) === WATERMARK_DENSITY_CODE
-                      ? '水印密度'
-                      : '当前值'
+                      ? t('system.generalSettingsEditor.watermarkDensity')
+                      : t('system.generalSettingsEditor.currentValue')
                 }
                 required
               >
@@ -169,14 +171,14 @@ export function GeneralSettingsEditorModal({
             <>
               <Form.Item
                 name="enabled"
-                label="启用状态"
+                label={t('system.generalSettingsEditor.enabledStatus')}
                 valuePropName="checked"
               >
-                <Switch checkedChildren="启用" unCheckedChildren="关闭" />
+                <Switch checkedChildren={t('system.generalSettingsEditor.switchEnabled')} unCheckedChildren={t('system.generalSettingsEditor.switchDisabled')} />
               </Form.Item>
               {asString(record.settingCode) ===
                 'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS' && (
-                <Form.Item name="selectedActions" label="记录的操作">
+                <Form.Item name="selectedActions" label={t('system.generalSettingsEditor.recordedActions')}>
                   <Select
                     mode="multiple"
                     options={DETAILED_OPERATION_ACTION_OPTIONS}
@@ -185,7 +187,7 @@ export function GeneralSettingsEditorModal({
               )}
               {asString(record.settingCode) ===
                 'UI_HIDE_AUDITED_LIST_RECORDS' && (
-                <Form.Item name="selectedActions" label="隐藏的状态">
+                <Form.Item name="selectedActions" label={t('system.generalSettingsEditor.hiddenStatuses')}>
                   <Select
                     mode="multiple"
                     options={HIDE_AUDITED_STATUS_OPTIONS}
@@ -194,7 +196,7 @@ export function GeneralSettingsEditorModal({
               )}
             </>
           )}
-          <Form.Item name="remark" label="说明">
+          <Form.Item name="remark" label={t('system.generalSettingsEditor.remark')}>
             <Input.TextArea rows={2} disabled />
           </Form.Item>
           {SYSTEM_SWITCH_HELP_TEXT[asString(record.settingCode)] && (
