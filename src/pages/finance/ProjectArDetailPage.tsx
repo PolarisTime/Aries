@@ -10,7 +10,7 @@ import Tabs from 'antd/es/tabs'
 import Typography from 'antd/es/typography'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { http } from '@/api/http'
+import { assertApiSuccess, http } from '@/api/client'
 
 const { Title } = Typography
 const { Text } = Typography
@@ -136,11 +136,12 @@ export function ProjectArDetailPage(): React.JSX.Element {
         code: number
         data: PageResponse<ProjectArSummary>
       }>(`/project-ar/summary?projectId=${projectId}&page=0&size=1`)
-      if (res.code === 0 && res.data?.content?.length > 0) {
+      assertApiSuccess(res)
+      if (res.data?.content?.length > 0) {
         setSummary(res.data.content[0])
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error('[ProjectArDetailPage] fetchSummary failed:', e)
     }
   }, [projectId])
 
@@ -153,17 +154,16 @@ export function ProjectArDetailPage(): React.JSX.Element {
           code: number
           data: PageResponse<ProjectArDetailRow>
         }>(`/project-ar/${projectId}/${tab}?page=0&size=100`)
-        if (res.code === 0 && res.data) {
-          if (tab === 'unreconciled') {
-            setUnreconciledData(res.data.content)
-            setUnreconciledTotal(res.data.totalElements)
-          } else {
-            setReconciledData(res.data.content)
-            setReconciledTotal(res.data.totalElements)
-          }
+        assertApiSuccess(res)
+        if (tab === 'unreconciled') {
+          setUnreconciledData(res.data.content)
+          setUnreconciledTotal(res.data.totalElements)
+        } else {
+          setReconciledData(res.data.content)
+          setReconciledTotal(res.data.totalElements)
         }
-      } catch {
-        // ignore
+      } catch (e) {
+        console.error(`[ProjectArDetailPage] fetchTabData(${tab}) failed:`, e)
       } finally {
         setTabLoading(false)
       }
