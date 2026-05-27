@@ -88,6 +88,93 @@ export interface MessageSchema {
   dashboard: {
     title: string
     subtitle: string
+    flow: {
+      material: {
+        title: string
+        hint: string
+        metric: string
+      }
+      supplier: {
+        title: string
+        hint: string
+        metric: string
+      }
+      customer: {
+        title: string
+        hint: string
+        metric: string
+      }
+      warehouse: {
+        title: string
+        hint: string
+      }
+      purchaseContract: {
+        title: string
+        hint: string
+      }
+      purchaseOrder: {
+        title: string
+        hint: string
+      }
+      purchaseInbound: {
+        title: string
+        hint: string
+      }
+      supplierStatement: {
+        title: string
+        hint: string
+      }
+      payment: {
+        title: string
+        hint: string
+      }
+      salesContract: {
+        title: string
+        hint: string
+      }
+      salesOrder: {
+        title: string
+        hint: string
+      }
+      salesOutbound: {
+        title: string
+        hint: string
+      }
+      customerStatement: {
+        title: string
+        hint: string
+      }
+      receipt: {
+        title: string
+        hint: string
+      }
+      carrier: {
+        title: string
+        hint: string
+      }
+      freightBill: {
+        title: string
+        hint: string
+      }
+      freightStatement: {
+        title: string
+        hint: string
+      }
+      loadingDescription: string
+    }
+    info: {
+      userName: string
+      loginName: string
+      roleName: string
+      unassigned: string
+      companyName: string
+      mfaStatus: string
+      lastLogin: string
+      accountInfo: string
+      systemOverview: string
+      activeSessions: string
+      actionPermissions: string
+    }
     cards: {
       currentUser: string
       modules: string
@@ -522,6 +609,129 @@ export interface MessageSchema {
     loginExpiringDescription: string
     refreshLoginStatusFailed: string
     loginStatusExpired: string
+  }
+  modules: {
+    editor: {
+      edit: string
+      create: string
+      title: string
+    }
+    itemColumns: {
+      brand: string
+      material: string
+      spec: string
+      length: string
+      quantity: string
+      weightTon: string
+      unitPrice: string
+      amount: string
+      warehouseName: string
+    }
+    nextModule: {
+      createPurchaseInbound: string
+      createSalesOutbound: string
+      createFreightBill: string
+    }
+    saveResult: {
+      success: string
+      error: string
+      backToEdit: string
+      close: string
+    }
+    statement: {
+      supplier: string
+      customer: string
+      freight: string
+      counterpartyNotFound: string
+      multipleCounterparties: string
+      dateMissing: string
+      generateTitle: string
+      selectHint: string
+      extractError: string
+      counterpartyUnit: string
+      period: string
+      documentCount: string
+      documentCountUnit: string
+      generated: string
+      generateFailed: string
+      generateButton: string
+      gotIt: string
+    }
+    weightCell: {
+      materialCode: string
+      brand: string
+      material: string
+      spec: string
+      length: string
+      pieceWeightTon: string
+      quantity: string
+      weightTon: string
+      popoverTitle: string
+      noLineItems: string
+      loadDetailFailed: string
+    }
+    detail: {
+      titleSuffix: string
+      recordDetail: string
+      noData: string
+      close: string
+      print: string
+      noDetailItems: string
+    }
+    attachment: {
+      title: string
+      upload: string
+      uploadHint: string
+      noPermissionHint: string
+      noPreviewUrl: string
+      noDownloadUrl: string
+      uploadBindSuccess: string
+      uploadFailed: string
+      uploadNoId: string
+      unbindSuccess: string
+      deleteFailed: string
+      noAttachments: string
+      pdfPreview: string
+    }
+    filter: {
+      selectPlaceholder: string
+      inputPlaceholder: string
+    }
+    formField: {
+      inputPlaceholder: string
+      selectPlaceholder: string
+      inputRequired: string
+      selectRequired: string
+    }
+    pieceWeight: {
+      brand: string
+      material: string
+      spec: string
+      length: string
+      quantity: string
+      detailTitle: string
+      detailTitleFallback: string
+      loading: string
+      noData: string
+      ton: string
+      relatedOrderNo: string
+    }
+    print: {
+      noTemplate: string
+      preview: string
+      directPrint: string
+      print: string
+    }
+    itemsPanel: {
+      defaultTitle: string
+    }
+    workspace: {
+      closeAria: string
+    }
+    page: {
+      configNotFound: string
+      moduleConfigNotFound: string
+    }
   }
   hooks: {
     batchActions: {
