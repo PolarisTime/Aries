@@ -9,6 +9,7 @@ import Row from 'antd/es/row'
 import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import {
   type ApiNumeric,
   type DatabaseMonitoring,
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function DatabaseMonitoringPanel({ visible }: Props) {
+  const { t } = useTranslation()
   const { data, isFetching, refetch } = useQuery<DatabaseMonitoring>({
     queryKey: ['database-monitoring', 'readonly-v2'],
     queryFn: getDatabaseMonitoring,
@@ -44,7 +46,7 @@ export function DatabaseMonitoringPanel({ visible }: Props) {
         />
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="暂无监控数据"
+          description={t('system.databaseMonitor.noData')}
         />
       </div>
     )
@@ -66,7 +68,7 @@ export function DatabaseMonitoringPanel({ visible }: Props) {
         <Card className="database-monitor-card">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="暂无监控数据"
+            description={t('system.databaseMonitor.noData')}
           />
         </Card>
       )}
@@ -83,14 +85,15 @@ function DatabaseMonitoringHeader({
   isFetching,
   onRefresh,
 }: DatabaseMonitoringHeaderProps) {
+  const { t } = useTranslation()
   return (
     <div className="database-section-heading">
       <div>
         <Typography.Title level={5} className="database-section-title">
-          数据库只读诊断
+          {t('system.databaseMonitor.sectionTitle')}
         </Typography.Title>
         <Typography.Text type="secondary">
-          PostgreSQL 内置统计视图、可选慢 SQL 摘要与 Redis 只读指标
+          {t('system.databaseMonitor.sectionDesc')}
         </Typography.Text>
       </div>
       <Button
@@ -99,7 +102,7 @@ function DatabaseMonitoringHeader({
         icon={<ReloadOutlined />}
         onClick={onRefresh}
       >
-        刷新
+        {t('system.databaseMonitor.refresh')}
       </Button>
     </div>
   )
@@ -110,6 +113,7 @@ interface PostgresDiagnosticProps {
 }
 
 function PostgresDiagnostic({ monitoring }: PostgresDiagnosticProps) {
+  const { t } = useTranslation()
   const isHealthy = monitoring.status === '正常'
   const overview = monitoring.overview ?? EMPTY_POSTGRES_OVERVIEW
   const activity = monitoring.activity ?? EMPTY_POSTGRES_ACTIVITY
@@ -117,7 +121,7 @@ function PostgresDiagnostic({ monitoring }: PostgresDiagnosticProps) {
   return (
     <div className="database-monitor-subsection">
       <div className="database-monitor-subsection-heading">
-        <div className="database-monitor-subsection-title">PostgreSQL 诊断</div>
+        <div className="database-monitor-subsection-title">{t('system.databaseMonitor.pgDiagnostics')}</div>
         <Tag color={isHealthy ? 'green' : 'red'}>{monitoring.status}</Tag>
       </div>
       {monitoring.available ? (
@@ -136,7 +140,7 @@ function PostgresDiagnostic({ monitoring }: PostgresDiagnosticProps) {
         <Card className="database-monitor-card">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={monitoring.status || 'PostgreSQL 监控不可用'}
+            description={monitoring.status || t('system.databaseMonitor.pgUnavailable')}
           />
         </Card>
       )}
@@ -184,6 +188,7 @@ interface PostgresOverviewCardsProps {
 }
 
 function PostgresOverviewCards({ overview }: PostgresOverviewCardsProps) {
+  const { t } = useTranslation()
   const activeConnections = toFiniteNumber(overview.activeConnections)
   const totalConnections = toFiniteNumber(overview.totalConnections)
   const xactCommit = toFiniteNumber(overview.xactCommit)
@@ -197,50 +202,50 @@ function PostgresOverviewCards({ overview }: PostgresOverviewCardsProps) {
 
   const metrics = [
     {
-      label: '连接使用',
+      label: t('system.databaseMonitor.metricConnection'),
       value: `${formatInteger(overview.activeConnections)} / ${formatInteger(overview.totalConnections)}`,
-      extra: `活跃占比 ${formatPercent(connectionRate)}`,
+      extra: `${t('system.databaseMonitor.metricActiveRatio')} ${formatPercent(connectionRate)}`,
     },
     {
-      label: '锁等待',
+      label: t('system.databaseMonitor.metricLockWait'),
       value: formatInteger(overview.lockWaitSessions),
-      extra: `阻塞会话 ${formatInteger(overview.blockedSessions)}`,
+      extra: `${t('system.databaseMonitor.blockedSessions')} ${formatInteger(overview.blockedSessions)}`,
     },
     {
-      label: '长事务',
+      label: t('system.databaseMonitor.metricLongTx'),
       value: formatInteger(overview.longTransactions),
-      extra: `最长 ${formatDuration(overview.longestTransactionSeconds)}`,
+      extra: `${t('system.databaseMonitor.longest')} ${formatDuration(overview.longestTransactionSeconds)}`,
     },
     {
-      label: '缓存命中',
+      label: t('system.databaseMonitor.metricCacheHit'),
       value: formatPercent(overview.cacheHitRate),
       extra: `DB ${overview.databaseSize || '--'}`,
     },
     {
-      label: '事务回滚',
+      label: t('system.databaseMonitor.metricTxRollback'),
       value: formatInteger(overview.xactRollback),
-      extra: `回滚率 ${formatPercent(rollbackRate)}`,
+      extra: `${t('system.databaseMonitor.metricRollbackRate')} ${formatPercent(rollbackRate)}`,
     },
     {
-      label: '死锁',
+      label: t('system.databaseMonitor.metricDeadlock'),
       value: formatInteger(overview.deadlocks),
-      extra: `临时文件 ${formatInteger(overview.tempFiles)}`,
+      extra: `${t('system.databaseMonitor.metricTempFiles')} ${formatInteger(overview.tempFiles)}`,
     },
     {
-      label: '临时写入',
+      label: t('system.databaseMonitor.metricTempWrite'),
       value: formatDatabaseMemory(overview.tempBytes),
-      extra: '来自 pg_stat_database',
+      extra: t('system.databaseMonitor.metricFromPgStat'),
     },
     {
-      label: '运行时间',
+      label: t('system.databaseMonitor.metricUptime'),
       value: formatDuration(overview.uptimeSeconds),
-      extra: `最长查询 ${formatDuration(overview.longestQuerySeconds)}`,
+      extra: `${t('system.databaseMonitor.metricLongestQuery')} ${formatDuration(overview.longestQuerySeconds)}`,
     },
   ]
 
   return (
     <div className="database-monitor-subsection">
-      <div className="database-monitor-subsection-title">健康摘要</div>
+      <div className="database-monitor-subsection-title">{t('system.databaseMonitor.healthSummary')}</div>
       <Card
         size="small"
         className="database-monitor-card database-redis-monitor-card"
@@ -256,32 +261,33 @@ interface PostgresActivityCardsProps {
 }
 
 function PostgresActivityCards({ activity }: PostgresActivityCardsProps) {
+  const { t } = useTranslation()
   const metrics = [
     {
       label: 'Active',
       value: formatInteger(activity.activeSessions),
-      extra: '当前执行中的会话',
+      extra: t('system.databaseMonitor.activeSessions'),
     },
     {
       label: 'Idle in tx',
       value: formatInteger(activity.idleInTransactionSessions),
-      extra: '空闲未提交事务',
+      extra: t('system.databaseMonitor.idleInTxSessions'),
     },
     {
-      label: '锁等待',
+      label: t('system.databaseMonitor.lockWait'),
       value: formatInteger(activity.lockWaitSessions),
-      extra: `阻塞 ${formatInteger(activity.blockedSessions)}`,
+      extra: `${t('system.databaseMonitor.blocked')} ${formatInteger(activity.blockedSessions)}`,
     },
     {
-      label: '长事务',
+      label: t('system.databaseMonitor.longTx'),
       value: formatInteger(activity.longTransactions),
-      extra: `最长 ${formatDuration(activity.longestTransactionSeconds)}`,
+      extra: `${t('system.databaseMonitor.longest')} ${formatDuration(activity.longestTransactionSeconds)}`,
     },
   ]
 
   return (
     <div className="database-monitor-subsection">
-      <div className="database-monitor-subsection-title">当前活动</div>
+      <div className="database-monitor-subsection-title">{t('system.databaseMonitor.currentActivity')}</div>
       <Card
         size="small"
         className="database-monitor-card database-redis-monitor-card"
@@ -301,10 +307,11 @@ function PostgresHealthTables({
   tableHealth,
   indexHealth,
 }: PostgresHealthTablesProps) {
+  const { t } = useTranslation()
   return (
     <Row gutter={[16, 16]}>
       <Col xs={24} xl={12}>
-        <Card size="small" title="表健康" className="database-monitor-card">
+        <Card size="small" title={t('system.databaseMonitor.tableHealth')} className="database-monitor-card">
           <Table
             rowKey="tableName"
             dataSource={tableHealth}
@@ -312,13 +319,13 @@ function PostgresHealthTables({
             columns={[
               {
                 dataIndex: 'tableName',
-                title: '表',
+                title: t('system.databaseMonitor.colTable'),
                 width: 220,
                 ellipsis: true,
               },
               {
                 dataIndex: 'deadPct',
-                title: '死元组率',
+                title: t('system.databaseMonitor.colDeadTupleRate'),
                 width: 110,
                 align: 'right',
                 render: (v: number) => (
@@ -332,76 +339,76 @@ function PostgresHealthTables({
               },
               {
                 dataIndex: 'deadRows',
-                title: '死元组',
+                title: t('system.databaseMonitor.colDeadTuples'),
                 width: 90,
                 align: 'right',
                 render: formatInteger,
               },
               {
                 dataIndex: 'autovacuumStatus',
-                title: 'AutoVacuum',
+                title: t('system.databaseMonitor.colAutovacuum'),
                 width: 110,
                 render: (status: string) => (
                   <Tag color={autovacuumStatusColor(status)}>
-                    {status || '未知'}
+                    {status || t('system.databaseMonitor.unknownStatus')}
                   </Tag>
                 ),
               },
               {
                 dataIndex: 'vacuumTriggerRows',
-                title: '触发阈值',
+                title: t('system.databaseMonitor.colVacuumThreshold'),
                 width: 90,
                 align: 'right',
                 render: formatInteger,
               },
               {
                 dataIndex: 'nModSinceAnalyze',
-                title: '待分析',
+                title: t('system.databaseMonitor.colPendingAnalyze'),
                 width: 80,
                 align: 'right',
                 render: formatInteger,
               },
               {
                 dataIndex: 'seqScan',
-                title: '顺扫',
+                title: t('system.databaseMonitor.colSeqScan'),
                 width: 80,
                 align: 'right',
                 render: formatInteger,
               },
               {
                 dataIndex: 'heapCachePct',
-                title: '缓存',
+                title: t('system.databaseMonitor.colCache'),
                 width: 80,
                 align: 'right',
                 render: formatPercent,
               },
               {
                 dataIndex: 'lastAutovacuum',
-                title: '上次清理',
+                title: t('system.databaseMonitor.colLastVacuum'),
                 width: 120,
                 render: formatNullableDateTime,
               },
               {
                 dataIndex: 'lastAutovacuumAgeSeconds',
-                title: '清理间隔',
+                title: t('system.databaseMonitor.colVacuumInterval'),
                 width: 90,
                 render: formatDurationNullable,
               },
               {
                 dataIndex: 'autovacuumAdvice',
-                title: '建议',
+                title: t('system.databaseMonitor.colAdvice'),
                 width: 260,
                 ellipsis: true,
               },
             ]}
             size="small"
             pagination={false}
-            locale={{ emptyText: '暂无表健康数据' }}
+            locale={{ emptyText: t('system.databaseMonitor.noTableHealth') }}
           />
         </Card>
       </Col>
       <Col xs={24} xl={12}>
-        <Card size="small" title="索引健康" className="database-monitor-card">
+        <Card size="small" title={t('system.databaseMonitor.indexHealth')} className="database-monitor-card">
           <Table
             rowKey="indexName"
             dataSource={indexHealth}
@@ -409,43 +416,43 @@ function PostgresHealthTables({
             columns={[
               {
                 dataIndex: 'indexName',
-                title: '索引',
+                title: t('system.databaseMonitor.colIndex'),
                 width: 260,
                 ellipsis: true,
               },
               {
                 dataIndex: 'tableName',
-                title: '表',
+                title: t('system.databaseMonitor.colTable'),
                 width: 160,
                 ellipsis: true,
               },
               {
                 dataIndex: 'size',
-                title: '大小',
+                title: t('system.databaseMonitor.colSize'),
                 width: 80,
                 align: 'right',
               },
               {
                 dataIndex: 'scans',
-                title: '扫描',
+                title: t('system.databaseMonitor.colScans'),
                 width: 80,
                 align: 'right',
                 render: formatInteger,
               },
               {
                 dataIndex: 'valid',
-                title: '状态',
+                title: t('system.databaseMonitor.colStatus'),
                 width: 80,
                 render: (valid: boolean) => (
                   <Tag color={valid ? 'green' : 'red'}>
-                    {valid ? '有效' : '无效'}
+                    {valid ? t('system.databaseMonitor.valid') : t('system.databaseMonitor.invalid')}
                   </Tag>
                 ),
               },
             ]}
             size="small"
             pagination={false}
-            locale={{ emptyText: '暂无索引健康数据' }}
+            locale={{ emptyText: t('system.databaseMonitor.noIndexHealth') }}
           />
         </Card>
       </Col>
@@ -458,10 +465,11 @@ interface PostgresQueryStatsProps {
 }
 
 function PostgresQueryStats({ queryStats }: PostgresQueryStatsProps) {
+  const { t } = useTranslation()
   return (
     <div className="database-monitor-subsection">
       <div className="database-monitor-subsection-heading">
-        <div className="database-monitor-subsection-title">慢 SQL 摘要</div>
+        <div className="database-monitor-subsection-title">{t('system.databaseMonitor.slowSqlSummary')}</div>
         <Tag color={queryStats.available ? 'green' : 'default'}>
           {queryStats.status}
         </Tag>
@@ -481,35 +489,35 @@ function PostgresQueryStats({ queryStats }: PostgresQueryStatsProps) {
               },
               {
                 dataIndex: 'calls',
-                title: '次数',
+                title: t('system.databaseMonitor.colCalls'),
                 width: 80,
                 align: 'right',
                 render: formatInteger,
               },
               {
                 dataIndex: 'totalMs',
-                title: '总耗时ms',
+                title: t('system.databaseMonitor.colTotalMs'),
                 width: 100,
                 align: 'right',
                 render: formatNumber,
               },
               {
                 dataIndex: 'avgMs',
-                title: '平均ms',
+                title: t('system.databaseMonitor.colAvgMs'),
                 width: 90,
                 align: 'right',
                 render: formatNumber,
               },
               {
                 dataIndex: 'rows',
-                title: '行数',
+                title: t('system.databaseMonitor.colRows'),
                 width: 80,
                 align: 'right',
                 render: formatInteger,
               },
               {
                 dataIndex: 'cacheHitPct',
-                title: '缓存命中',
+                title: t('system.databaseMonitor.colCacheHitPct'),
                 width: 90,
                 align: 'right',
                 render: formatPercent,
@@ -517,14 +525,14 @@ function PostgresQueryStats({ queryStats }: PostgresQueryStatsProps) {
             ]}
             size="small"
             pagination={false}
-            locale={{ emptyText: '暂无慢 SQL 摘要' }}
+            locale={{ emptyText: t('system.databaseMonitor.noSlowSql') }}
           />
         </Card>
       ) : (
         <Card className="database-monitor-card">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={queryStats.status || '未启用 pg_stat_statements'}
+            description={queryStats.status || t('system.databaseMonitor.pgStatNotEnabled')}
           />
         </Card>
       )}
@@ -537,58 +545,59 @@ interface RedisMonitoringSummaryProps {
 }
 
 function RedisMonitoringSummary({ redis }: RedisMonitoringSummaryProps) {
+  const { t } = useTranslation()
   const isHealthy =
     redis.status === '正常' || redis.status.toUpperCase() === 'UP'
   const metrics = [
     {
-      label: '内存占用',
+      label: t('system.databaseMonitor.redisMemUsage'),
       value: formatDatabaseMemory(redis.memory.usedMemory),
-      extra: `峰值 ${formatDatabaseMemory(redis.memory.usedMemoryPeak)}`,
+      extra: `${t('system.databaseMonitor.peak')} ${formatDatabaseMemory(redis.memory.usedMemoryPeak)}`,
     },
     {
-      label: '内存上限',
+      label: t('system.databaseMonitor.redisMemLimit'),
       value:
         toFiniteNumber(redis.memory.maxMemory) > 0
           ? formatDatabaseMemory(redis.memory.maxMemory)
-          : '未设置',
-      extra: `碎片率 ${formatRatio(redis.memory.fragmentationRatio)}`,
+          : t('system.databaseMonitor.notSet'),
+      extra: `${t('system.databaseMonitor.fragRatio')} ${formatRatio(redis.memory.fragmentationRatio)}`,
     },
     {
-      label: '实时 OPS',
+      label: t('system.databaseMonitor.realtimeOps'),
       value: formatInteger(redis.throughput.instantaneousOpsPerSec),
-      extra: `累计命令 ${formatInteger(redis.throughput.totalCommandsProcessed)}`,
+      extra: `${t('system.databaseMonitor.totalCommands')} ${formatInteger(redis.throughput.totalCommandsProcessed)}`,
     },
     {
-      label: '命中率',
+      label: t('system.databaseMonitor.hitRate'),
       value: formatPercent(redis.throughput.hitRate),
       extra: `${formatInteger(redis.throughput.keyspaceHits)} / ${formatInteger(redis.throughput.keyspaceMisses)}`,
     },
     {
-      label: '客户端',
+      label: t('system.databaseMonitor.clients'),
       value: formatInteger(redis.clients.connectedClients),
-      extra: `阻塞 ${formatInteger(redis.clients.blockedClients)} / 拒绝 ${formatInteger(redis.clients.rejectedConnections)}`,
+      extra: `${t('system.databaseMonitor.blockedClients')} ${formatInteger(redis.clients.blockedClients)} / ${t('system.databaseMonitor.rejectedConn')} ${formatInteger(redis.clients.rejectedConnections)}`,
     },
     {
       label: `DB ${redis.keyspace.database}`,
       value: `${formatInteger(redis.keyspace.keys)} keys`,
-      extra: `过期 ${formatInteger(redis.keyspace.expires)} / TTL ${formatTtl(redis.keyspace.avgTtlMs)}`,
+      extra: `${t('system.databaseMonitor.keyExpired')} ${formatInteger(redis.keyspace.expires)} / TTL ${formatTtl(redis.keyspace.avgTtlMs)}`,
     },
     {
-      label: 'Key 变化',
-      value: `${formatInteger(redis.memory.evictedKeys)} 淘汰`,
-      extra: `${formatInteger(redis.memory.expiredKeys)} 已过期`,
+      label: 'Key',
+      value: `${formatInteger(redis.memory.evictedKeys)} ${t('system.databaseMonitor.evicted')}`,
+      extra: `${formatInteger(redis.memory.expiredKeys)} ${t('system.databaseMonitor.expired')}`,
     },
     {
-      label: '持久化',
-      value: redis.persistence.rdbLastBgsaveStatus || '未知',
-      extra: `AOF ${redis.persistence.aofEnabled ? redis.persistence.aofLastBgrewriteStatus : '未开启'} / RDB ${formatUnixSeconds(redis.persistence.rdbLastSaveTime)}`,
+      label: t('system.databaseMonitor.persistence'),
+      value: redis.persistence.rdbLastBgsaveStatus || t('system.databaseMonitor.unknown'),
+      extra: `AOF ${redis.persistence.aofEnabled ? redis.persistence.aofLastBgrewriteStatus : t('system.databaseMonitor.aofNotEnabled')} / RDB ${formatUnixSeconds(redis.persistence.rdbLastSaveTime)}`,
     },
   ]
 
   return (
     <div className="database-monitor-subsection">
       <div className="database-monitor-subsection-heading">
-        <div className="database-monitor-subsection-title">Redis 运行监控</div>
+        <div className="database-monitor-subsection-title">{t('system.databaseMonitor.redisMonitor')}</div>
         <Tag color={isHealthy ? 'green' : 'red'}>{redis.status}</Tag>
       </div>
       <Card
