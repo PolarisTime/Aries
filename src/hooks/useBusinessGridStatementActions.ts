@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
+import i18next from 'i18next'
 import {
   generateBusinessPrimaryNo,
   getBusinessModuleDetail,
@@ -104,7 +105,7 @@ export function useBusinessGridStatementActions({
       })
 
       if (!filteredCandidates.length) {
-        throw new Error('当前筛选条件下没有可生成的候选单据')
+        throw new Error(i18next.t('hooks.statement.noCandidateDocuments'))
       }
 
       const detailedRecords = await Promise.all(

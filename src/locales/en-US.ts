@@ -658,6 +658,7 @@ export const enUS: MessageSchema = {
       unitPrice: 'Unit Price',
       amount: 'Amount',
       warehouseName: 'Warehouse',
+      sourceNo: 'Outbound No',
     },
     units: {
       ton: 'ton',
@@ -771,6 +772,25 @@ export const enUS: MessageSchema = {
       configNotFound: 'Page configuration not found',
       moduleConfigNotFound: 'Module configuration not found',
     },
+    itemsSection: {
+      addItem: 'Add Item',
+      importItems: 'Import {{label}} Items',
+      deleteSelected: 'Delete Selected',
+      emptyTextWithImport: 'No items yet. Add manually or import from parent document.',
+      emptyText: 'No items yet. Add manually.',
+      parentDoc: 'Parent Document',
+      selectParent: 'Select {{label}}',
+    },
+    freightPickup: {
+      title: 'Pickup List — Freight Bill ({{count}})',
+      billNo: 'Waybill No',
+      customer: 'Customer',
+      project: 'Project',
+      carrier: 'Carrier',
+      vehiclePlate: 'Plate No',
+      totalWeight: 'Weight(ton)',
+      totalFreight: 'Total Freight',
+    },
   },
   hooks: {
     batchActions: {
@@ -879,6 +899,12 @@ export const enUS: MessageSchema = {
     columnSettings: {
       syncRetryLater:
         'Column settings saved locally. Cloud sync will retry later.',
+    },
+    statement: {
+      noCandidateDocuments: 'No candidate documents available for generation with current filters',
+    },
+    recordHelpers: {
+      currentUser: 'Current User',
     },
   },
   layouts: {
