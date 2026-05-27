@@ -12,6 +12,7 @@ import Space from 'antd/es/space'
 import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
@@ -49,6 +50,7 @@ export function ModuleEditorWorkspace({
   onClose,
   onSaved,
 }: Props) {
+  const { t } = useTranslation()
   const [form] = Form.useForm()
   const formFields = useMemo(() => config.formFields || [], [config.formFields])
   const formOptionRequirements = useMemo(
@@ -142,7 +144,7 @@ export function ModuleEditorWorkspace({
     <>
       <WorkspaceOverlay
         open={open}
-        title={`${isEdit ? '编辑' : '新建'} — ${config.title}`}
+        title={t('modules.editor.title', { mode: isEdit ? t('modules.editor.edit') : t('modules.editor.create'), title: config.title })}
         onClose={onClose}
       >
         <Form
@@ -227,53 +229,6 @@ interface SaveResultOverlayProps {
   onClear: () => void
 }
 
-const BASE_ITEM_COLUMNS = [
-  {
-    title: '品牌',
-    dataIndex: 'brand',
-    ellipsis: true,
-    align: 'center' as const,
-  },
-  {
-    title: '材质',
-    dataIndex: 'material',
-    ellipsis: true,
-    align: 'center' as const,
-  },
-  {
-    title: '规格',
-    dataIndex: 'spec',
-    ellipsis: true,
-    align: 'center' as const,
-  },
-  {
-    title: '长度',
-    dataIndex: 'length',
-    ellipsis: true,
-    align: 'center' as const,
-  },
-  { title: '数量', dataIndex: 'quantity', align: 'center' as const },
-  {
-    title: '总重(吨)',
-    dataIndex: 'weightTon',
-    align: 'center' as const,
-    render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-'),
-  },
-]
-const FINANCE_ITEM_COLUMNS = [
-  {
-    title: '单价',
-    dataIndex: 'unitPrice',
-    align: 'right' as const,
-    render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-'),
-  },
-  {
-    title: '金额',
-    dataIndex: 'amount',
-    align: 'right' as const,
-    render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-'),
-  },
-]
 function isFinanceOrTradeModule(key: string) {
   return (
     key === 'purchase-order' ||
@@ -289,26 +244,6 @@ function isFinanceOrTradeModule(key: string) {
     key === 'freight-statement'
   )
 }
-const FREIGHT_ITEM_COLUMNS = [
-  { title: '码头', dataIndex: 'warehouseName', ellipsis: true },
-  { title: '品牌', dataIndex: 'brand', ellipsis: true },
-  { title: '材质', dataIndex: 'material', ellipsis: true },
-  { title: '规格', dataIndex: 'spec', ellipsis: true },
-  { title: '长度', dataIndex: 'length', ellipsis: true },
-  { title: '数量', dataIndex: 'quantity', align: 'center' as const },
-  {
-    title: '总重(吨)',
-    dataIndex: 'weightTon',
-    align: 'center' as const,
-    render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-'),
-  },
-]
-function buildItemColumns(moduleKey: string) {
-  if (moduleKey === 'freight-bill') return FREIGHT_ITEM_COLUMNS
-  return isFinanceOrTradeModule(moduleKey)
-    ? [...BASE_ITEM_COLUMNS, ...FINANCE_ITEM_COLUMNS]
-    : BASE_ITEM_COLUMNS
-}
 
 function SaveResultOverlay({
   saveResult,
@@ -316,6 +251,7 @@ function SaveResultOverlay({
   moduleKey,
   onClear,
 }: SaveResultOverlayProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const items: ModuleRecord[] = Array.isArray(saveResult.record?.items)
     ? saveResult.record.items
@@ -327,25 +263,22 @@ function SaveResultOverlay({
   const statusIcon =
     saveResult.status === 'success' ? (
       <CheckCircleFilled
-        className="text-4xl"
-        style={{ color: 'var(--ant-color-success, #52c41a)' }}
+        className="text-4xl text-[var(--ant-color-success,#52c41a)]"
       />
     ) : saveResult.status === 'warning' ? (
       <WarningFilled
-        className="text-4xl"
-        style={{ color: 'var(--ant-color-warning, #faad14)' }}
+        className="text-4xl text-[var(--ant-color-warning,#faad14)]"
       />
     ) : (
       <CloseCircleFilled
-        className="text-4xl"
-        style={{ color: 'var(--ant-color-error, #ff4d4f)' }}
+        className="text-4xl text-[var(--ant-color-error,#ff4d4f)]"
       />
     )
 
   const NEXT_MODULE: Record<string, { label: string; path: string }> = {
-    'purchase-order': { label: '创建采购入库', path: '/purchase-inbound' },
-    'sales-order': { label: '创建销售出库', path: '/sales-outbound' },
-    'sales-outbound': { label: '创建物流单', path: '/freight-bill' },
+    'purchase-order': { label: t('modules.nextModule.createPurchaseInbound'), path: '/purchase-inbound' },
+    'sales-order': { label: t('modules.nextModule.createSalesOutbound'), path: '/sales-outbound' },
+    'sales-outbound': { label: t('modules.nextModule.createFreightBill'), path: '/freight-bill' },
   }
 
   const nextModule = isSuccess ? NEXT_MODULE[moduleKey] : null
@@ -375,9 +308,36 @@ function SaveResultOverlay({
   const headerTitle = (
     <span className="flex items-center gap-8">
       {statusIcon}
-      <span>{isSuccess ? '保存成功' : '保存失败'}</span>
+      <span>{isSuccess ? t('modules.saveResult.success') : t('modules.saveResult.error')}</span>
     </span>
   )
+
+  const baseItemColumns = [
+    { title: t('modules.itemColumns.brand'), dataIndex: 'brand', ellipsis: true, align: 'center' as const },
+    { title: t('modules.itemColumns.material'), dataIndex: 'material', ellipsis: true, align: 'center' as const },
+    { title: t('modules.itemColumns.spec'), dataIndex: 'spec', ellipsis: true, align: 'center' as const },
+    { title: t('modules.itemColumns.length'), dataIndex: 'length', ellipsis: true, align: 'center' as const },
+    { title: t('modules.itemColumns.quantity'), dataIndex: 'quantity', align: 'center' as const },
+    { title: t('modules.itemColumns.weightTon'), dataIndex: 'weightTon', align: 'center' as const, render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-') },
+  ]
+  const financeItemColumns = [
+    { title: t('modules.itemColumns.unitPrice'), dataIndex: 'unitPrice', align: 'right' as const, render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-') },
+    { title: t('modules.itemColumns.amount'), dataIndex: 'amount', align: 'right' as const, render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-') },
+  ]
+  const freightItemColumns = [
+    { title: t('modules.itemColumns.warehouseName'), dataIndex: 'warehouseName', ellipsis: true },
+    { title: t('modules.itemColumns.brand'), dataIndex: 'brand', ellipsis: true },
+    { title: t('modules.itemColumns.material'), dataIndex: 'material', ellipsis: true },
+    { title: t('modules.itemColumns.spec'), dataIndex: 'spec', ellipsis: true },
+    { title: t('modules.itemColumns.length'), dataIndex: 'length', ellipsis: true },
+    { title: t('modules.itemColumns.quantity'), dataIndex: 'quantity', align: 'center' as const },
+    { title: t('modules.itemColumns.weightTon'), dataIndex: 'weightTon', align: 'center' as const, render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-') },
+  ]
+  const itemColumns = moduleKey === 'freight-bill'
+    ? freightItemColumns
+    : isFinanceOrTradeModule(moduleKey)
+      ? [...baseItemColumns, ...financeItemColumns]
+      : baseItemColumns
 
   return (
     <WorkspaceOverlay
@@ -388,7 +348,7 @@ function SaveResultOverlay({
         <div className="flex justify-end gap-8">
           {quickActions}
           <Button type="primary" onClick={onClear}>
-            {saveResult.status === 'error' ? '返回编辑' : '关闭'}
+            {saveResult.status === 'error' ? t('modules.saveResult.backToEdit') : t('modules.saveResult.close')}
           </Button>
         </div>
       }
@@ -401,10 +361,10 @@ function SaveResultOverlay({
               if (val == null || val === '') return null
               const suffix =
                 (field as unknown as Record<string, unknown>).type === 'weight'
-                  ? ' 吨'
+                  ? ` ${t('modules.itemColumns.weightTon').replace(/\(.*\)/, '')}`
                   : (field as unknown as Record<string, unknown>).type ===
                       'amount'
-                    ? ' 元'
+                    ? ` ${t('modules.itemColumns.amount')}`
                     : ''
               return (
                 <div key={field.key}>
@@ -427,7 +387,7 @@ function SaveResultOverlay({
           <Table
             rowKey={(_, i) => String(i)}
             dataSource={items}
-            columns={buildItemColumns(moduleKey)}
+            columns={itemColumns}
             size="small"
             pagination={false}
           />

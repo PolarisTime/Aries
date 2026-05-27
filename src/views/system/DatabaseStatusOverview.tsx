@@ -37,7 +37,9 @@ function DatabaseServiceCard({
   return (
     <Card size="small" className="database-service-card">
       <div className="database-service-card-header">
-        <div className="database-service-icon" style={{ background: accent }}>
+        <div className="database-service-icon"
+          /* 动态背景色：accent 由父组件传入，对应不同服务类型 */
+          style={{ background: accent }}>
           {icon}
         </div>
         <div className="database-service-title">

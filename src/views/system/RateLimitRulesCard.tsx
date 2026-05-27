@@ -205,13 +205,13 @@ export function RateLimitRulesCard() {
       >
         <Form form={form} layout="vertical" className="mt-16">
           <Form.Item name="rate" label="令牌/s">
-            <InputNumber min={0.01} step={0.1} style={{ width: '100%' }} />
+            <InputNumber min={0.01} step={0.1} className="w-full" />
           </Form.Item>
           <Form.Item name="capacity" label="突发容量">
-            <InputNumber min={1} step={1} style={{ width: '100%' }} />
+            <InputNumber min={1} step={1} className="w-full" />
           </Form.Item>
           <Form.Item name="tokensPerRequest" label="每次消耗令牌数">
-            <InputNumber min={1} step={1} style={{ width: '100%' }} />
+            <InputNumber min={1} step={1} className="w-full" />
           </Form.Item>
           <Form.Item name="enabled" label="启用" valuePropName="checked">
             <Switch />

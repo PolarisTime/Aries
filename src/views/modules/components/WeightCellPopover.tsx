@@ -1,23 +1,11 @@
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Popover from 'antd/es/popover'
 import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
 import { getBusinessModuleDetail } from '@/api/business'
 import type { ModuleRecord } from '@/types/module-page'
 import { formatWeight } from '@/utils/formatters'
-
-const ITEM_WEIGHT_COLUMNS = [
-  { title: '商品编码', dataIndex: 'materialCode', width: 180, ellipsis: true },
-  { title: '品牌', dataIndex: 'brand', width: 64, ellipsis: true },
-  { title: '材质', dataIndex: 'material', width: 72, ellipsis: true },
-  { title: '规格', dataIndex: 'spec', width: 72, ellipsis: true },
-  { title: '长度', dataIndex: 'length', width: 58, ellipsis: true },
-  { title: '件重(吨)', dataIndex: 'pieceWeightTon', width: 88, align: 'center' as const,
-    render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-') },
-  { title: '数量', dataIndex: 'quantity', width: 64, align: 'center' as const },
-  { title: '总重(吨)', dataIndex: 'weightTon', width: 96, align: 'center' as const,
-    render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-') },
-]
 
 const POPOVER_TABLE_WIDTH = 694
 
@@ -28,6 +16,7 @@ interface Props {
 }
 
 export function WeightCellPopover({ value, record, moduleKey }: Props) {
+  const { t } = useTranslation()
   const [items, setItems] = useState<ModuleRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
@@ -44,34 +33,45 @@ export function WeightCellPopover({ value, record, moduleKey }: Props) {
         if (Array.isArray(rawItems) && rawItems.length > 0) {
           setItems(rawItems)
         } else {
-          setError('当前单据无明细数据')
+          setError(t('modules.weightCell.noLineItems'))
         }
       } catch {
-        setError('加载明细失败')
+        setError(t('modules.weightCell.loadDetailFailed'))
       } finally {
         setLoading(false)
       }
     }
-  }, [items.length, moduleKey, record.id])
+  }, [items.length, moduleKey, record.id, t])
 
-  const emptyText = error || '暂无数据'
+  const emptyText = error || t('common.noData')
 
   return (
     <Popover
       open={open}
       onOpenChange={setOpen}
       trigger="click"
-      title="每件重量明细"
+      title={t('modules.weightCell.popoverTitle')}
       destroyTooltipOnHide
       content={
-        <div style={{ width: POPOVER_TABLE_WIDTH }}>
+        <div className="w-[694px]">
           <Table
             rowKey="id"
             size="small"
             loading={loading}
             pagination={false}
             dataSource={items}
-            columns={ITEM_WEIGHT_COLUMNS}
+            columns={[
+              { title: t('modules.weightCell.materialCode'), dataIndex: 'materialCode', width: 180, ellipsis: true },
+              { title: t('modules.weightCell.brand'), dataIndex: 'brand', width: 64, ellipsis: true },
+              { title: t('modules.weightCell.material'), dataIndex: 'material', width: 72, ellipsis: true },
+              { title: t('modules.weightCell.spec'), dataIndex: 'spec', width: 72, ellipsis: true },
+              { title: t('modules.weightCell.length'), dataIndex: 'length', width: 58, ellipsis: true },
+              { title: t('modules.weightCell.pieceWeightTon'), dataIndex: 'pieceWeightTon', width: 88, align: 'center' as const,
+                render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-') },
+              { title: t('modules.weightCell.quantity'), dataIndex: 'quantity', width: 64, align: 'center' as const },
+              { title: t('modules.weightCell.weightTon'), dataIndex: 'weightTon', width: 96, align: 'center' as const,
+                render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-') },
+            ]}
             locale={{ emptyText }}
           />
         </div>

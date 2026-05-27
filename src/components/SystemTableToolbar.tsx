@@ -32,6 +32,7 @@ export function SystemTableToolbar({
     <Space>
       <Input.Search
         placeholder={keywordPlaceholder ?? t('toolbar.searchPlaceholder')}
+        /* 动态宽度：keywordWidth 由父组件传入，无法映射为固定 Tailwind 类 */
         style={{ width: keywordWidth }}
         allowClear
         value={keyword}

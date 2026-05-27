@@ -55,8 +55,8 @@ export function AppLayout() {
   const clock = useAppLayoutClock()
 
   const routePageContext = useMemo(
-    () => resolveRoutePageContext(location.pathname),
-    [location],
+    () => resolveRoutePageContext(location.pathname, t),
+    [location, t],
   )
   const { backendOnline } = useBackendStatus(token)
 
@@ -80,13 +80,13 @@ export function AppLayout() {
   const isTopNavigationLayout = appliedLayoutMode === 'top'
 
   const resolveOpenPage = useCallback((pathname: string) => {
-    const context = resolveRoutePageContext(pathname)
+    const context = resolveRoutePageContext(pathname, t)
     return {
       key: context.openPageKey,
       path: pathname,
       title: context.title,
     }
-  }, [])
+  }, [t])
 
   const { pages, closePage } = useOpenPages(
     '/dashboard',
@@ -201,8 +201,8 @@ export function AppLayout() {
   }, [savePersonalSettings, t])
 
   const { currentUserLoginName, currentUserName } = useMemo(
-    () => buildAppLayoutUserInfo(user),
-    [user],
+    () => buildAppLayoutUserInfo(t, user),
+    [t, user],
   )
   const clockText = useMemo(() => buildClockText(clock), [clock])
   const {
@@ -231,7 +231,7 @@ export function AppLayout() {
         font={{ fontSize: wm.fontSize, color: wm.color }}
         rotate={wm.rotate}
         gap={[wm.density, wm.density]}
-        style={{ minHeight: '100dvh' }}
+        className="min-h-[100dvh]"
       >
         <Layout className={rootClassName} style={shellFontStyle}>
           <div className="leo-page-loader" />
