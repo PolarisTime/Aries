@@ -20,7 +20,6 @@ export function savePrintTemplate(payload: SavePrintTemplatePayload) {
     billType: payload.billType,
     templateName: payload.templateName,
     templateHtml: payload.templateHtml,
-    isDefault: payload.isDefault,
   }
 
   return payload.id

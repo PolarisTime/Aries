@@ -78,7 +78,6 @@ export function PrintTemplateView() {
     form.setFieldsValue({
       billType: selectedBillType,
       templateName: '',
-      isDefault: false,
     })
     setTemplateHtml('')
     setActiveTemplateId(undefined)
@@ -95,7 +94,6 @@ export function PrintTemplateView() {
         id: record.id,
         billType: record.billType || selectedBillType,
         templateName: record.templateName,
-        isDefault: record.isDefault ?? false,
       })
       setTemplateHtml(record.templateHtml || '')
       setActiveTemplateId(record.id)
@@ -118,7 +116,6 @@ export function PrintTemplateView() {
       form.setFieldsValue({
         billType: record.billType || selectedBillType,
         templateName: buildPrintTemplateCopyName(record),
-        isDefault: false,
       })
       setTemplateHtml(record.templateHtml || '')
       setActiveTemplateId(undefined)
@@ -159,7 +156,6 @@ export function PrintTemplateView() {
         billType: values.billType,
         templateName: values.templateName.trim(),
         templateHtml: templateHtml.trim(),
-        isDefault: values.isDefault ?? false,
       })
     } catch {
       // validation failed

@@ -12,7 +12,6 @@ import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import type { TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
-import Tag from 'antd/es/tag'
 import { useTranslation } from 'react-i18next'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/types/print-template'
@@ -114,18 +113,6 @@ export function PrintTemplateTableCard({
       title: t('system.printTemplate.billType'),
       width: 150,
       render: (value: string) => getPrintTemplateBillTypeLabel(value),
-    },
-    {
-      dataIndex: 'isDefault',
-      title: t('system.printTemplate.isDefault'),
-      width: 80,
-      align: 'center',
-      render: (value: boolean) =>
-        value ? (
-          <Tag color="green">{t('common.yes')}</Tag>
-        ) : (
-          <Tag>{t('common.no')}</Tag>
-        ),
     },
     {
       dataIndex: 'updateTime',

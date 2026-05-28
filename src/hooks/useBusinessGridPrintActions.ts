@@ -9,6 +9,7 @@ import type { PrintTemplateRecord } from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
 import { execPrintCode, loadCLodop, printHtml } from '@/utils/clodop'
 import { buildModulePrintHtml } from '@/utils/module-print'
+import { renderPrintTemplate } from '@/utils/print-template-renderer'
 import { asString } from '@/utils/type-narrowing'
 
 interface Props {
@@ -30,8 +31,6 @@ async function pickPrintTemplate(
 
   return new Promise<PrintTemplateRecord | null>((resolve) => {
     let selectedId = templates[0].id
-    const defaultTemplate = templates.find((t) => t.isDefault === '1')
-    if (defaultTemplate) selectedId = defaultTemplate.id
 
     modal.confirm({
       title: t('hooks.printActions.selectPrintTemplate'),
@@ -89,12 +88,17 @@ export function useBusinessGridPrintActions({
         }
 
         if (template?.templateHtml?.trim()) {
-          // 传 recordId，后端从 DB 加载数据生成脚本/HTML（防前端篡改）
+          // 从后端获取原始模版 + 数据，前端渲染
           const results = await Promise.all(
             selectedRecords.map((record) =>
               http.post<{
                 code: number
-                data: { type: string; script?: string; html?: string }
+                data: {
+                  templateHtml: string
+                  templateType: string
+                  data: Record<string, string>
+                  items: Record<string, string>[]
+                }
                 message?: string
               }>('/print/record', {
                 templateId: template.id,
@@ -107,14 +111,27 @@ export function useBusinessGridPrintActions({
             assertApiSuccess(r, t('hooks.printActions.printScriptGenerationFailed'))
           }
 
-          // COORD 模板 → execPrintCode; HTML 模板 → printHtml
-          const coordResults = results.filter((r) => r.data?.type === 'COORD')
-          const htmlResults = results.filter((r) => r.data?.type === 'HTML')
+          // 前端渲染模版
+          const rendered = results
+            .map((r) => {
+              const d = r.data
+              if (!d?.templateHtml) return null
+              return renderPrintTemplate(
+                d.templateHtml,
+                d.templateType || 'HTML',
+                d.data || {},
+                d.items || [],
+                moduleKey,
+              )
+            })
+            .filter(Boolean)
+
+          const coordResults = rendered.filter((r) => r!.type === 'COORD')
+          const htmlResults = rendered.filter((r) => r!.type === 'HTML')
 
           for (const r of coordResults) {
-            const script = r.data?.script
-            if (!script) continue
-            const success = execPrintCode(script, {
+            if (!r?.script) continue
+            const success = execPrintCode(r.script, {
               preview,
               title: template.templateName || config.title,
             })
@@ -123,7 +140,7 @@ export function useBusinessGridPrintActions({
 
           if (htmlResults.length) {
             const htmlContents = htmlResults
-              .map((r) => r.data?.html)
+              .map((r) => r?.html)
               .filter((h): h is string => Boolean(h))
             if (htmlContents.length) {
               const joinedHtml = htmlContents.join('<div class="print-page"></div>')

@@ -22,6 +22,7 @@ interface Props {
   onClose: () => void
 }
 
+
 export function PrintTemplateEditorModal({
   open,
   editing,
@@ -54,19 +55,9 @@ export function PrintTemplateEditorModal({
               <Select options={printTemplateTargetOptions} />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col span={16}>
             <Form.Item name="templateName" label={t('system.printTemplateEditor.templateName')} required>
               <Input placeholder={t('system.printTemplateEditor.templateNamePlaceholder')} maxLength={64} />
-            </Form.Item>
-          </Col>
-          <Col span={4}>
-            <Form.Item name="isDefault" label={t('system.printTemplateEditor.isDefault')}>
-              <Select
-                options={[
-                  { label: t('system.printTemplateEditor.yes'), value: true },
-                  { label: t('system.printTemplateEditor.no'), value: false },
-                ]}
-              />
             </Form.Item>
           </Col>
         </Row>
