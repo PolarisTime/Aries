@@ -622,6 +622,54 @@ export interface MessageSchema {
     }
   }
   modules: {
+    actions: {
+      create: string
+      export: string
+    }
+    overview: {
+      recordCount: string
+      totalWeight: string
+      totalAmount: string
+      documentCount: string
+      masterDataCount: string
+      normalCount: string
+      currentAmount: string
+      settledAmount: string
+      statementCount: string
+      balance: string
+    }
+    status: {
+      draft: string
+      unaudited: string
+      audited: string
+      executing: string
+      signed: string
+      unsigned: string
+      archived: string
+      completed: string
+      completedPurchase: string
+      completedSales: string
+      completedInbound: string
+      confirmed: string
+      pendingConfirm: string
+      pendingAudit: string
+      pendingApproval: string
+      approved: string
+      delivered: string
+      undelivered: string
+      paid: string
+      received: string
+      invoiceReceived: string
+      invoiceIssued: string
+      invoiceNotReceived: string
+      partialInbound: string
+      partialOutbound: string
+      partialSettled: string
+      normal: string
+      disabled: string
+      success: string
+      failed: string
+    }
     editor: {
       edit: string
       create: string
@@ -1106,6 +1154,139 @@ export interface MessageSchema {
         parentSalesOutbound: string
         importParentSalesOutbound: string
         freightBillDesc: string
+      }
+      carrier: {
+        title: string
+        description: string
+        placeholderKeyword: string
+        colCarrierCode: string
+        colCarrierName: string
+        colContactName: string
+        colContactPhone: string
+        colVehicleType: string
+        colPriceMode: string
+        colVehiclePlate: string
+        colVehicleContact: string
+        colVehiclePhone: string
+        colVehicleRemark: string
+        colVehiclePlate2: string
+        colVehicleContact2: string
+        colVehiclePhone2: string
+        colVehicleRemark2: string
+        colVehiclePlate3: string
+        colVehicleContact3: string
+        colVehiclePhone3: string
+        colVehicleRemark3: string
+        formVehiclePlate: string
+        formVehicleContact: string
+        formVehiclePhone: string
+        formVehicleRemark: string
+        formVehiclePlate2: string
+        formVehicleContact2: string
+        formVehiclePhone2: string
+        formVehicleRemark2: string
+        formVehiclePlate3: string
+        formVehicleContact3: string
+        formVehiclePhone3: string
+        formVehicleRemark3: string
+      }
+      customer: {
+        title: string
+        description: string
+        placeholderKeyword: string
+        colCustomerCode: string
+        colCustomerName: string
+        colProjectName: string
+        colProjectNameAbbr: string
+        colProjectAddress: string
+        colContactName: string
+        colContactPhone: string
+        colCity: string
+        colSettlementMode: string
+        settlementCash: string
+        settlementMonthly: string
+        settlementCredit: string
+      }
+      purchaseOrder: {
+        title: string
+        description: string
+        placeholderOrderNo: string
+        filterOrderDate: string
+        colOrderNo: string
+        colSupplier: string
+        colBuyer: string
+        colOrderDate: string
+        formTotalWeight: string
+        formTotalAmount: string
+      }
+      salesOrder: {
+        title: string
+        description: string
+        placeholderOrderNo: string
+        placeholderProductKeyword: string
+        placeholderPurchaseOrderNo: string
+        filterProductKeyword: string
+        filterDeliveryDate: string
+        filterProjectName: string
+        colPurchaseOrderNo: string
+        colOrderNo: string
+        colCustomerName: string
+        colProjectName: string
+        colSalesName: string
+        colDeliveryDate: string
+        parentImportLabel: string
+        parentImportButton: string
+      }
+      purchaseInbound: {
+        title: string
+        description: string
+        placeholderInboundNo: string
+        placeholderParentImport: string
+        filterInboundDate: string
+        colInboundNo: string
+        colPurchaseOrderNo: string
+        colSupplier: string
+        colInboundDate: string
+        colTotalWeighWeight: string
+        colWeightAdjustment: string
+        formOrderNo: string
+        formInboundDate: string
+        formBuyer: string
+        formTotalWeight: string
+        formTotalAmount: string
+        parentImportLabel: string
+        parentImportButton: string
+      }
+      salesOutbound: {
+        title: string
+        description: string
+        placeholderOutboundNo: string
+        placeholderParentImport: string
+        placeholderProductKeyword: string
+        filterOutboundDate: string
+        filterProductKeyword: string
+        filterProjectName: string
+        colOutboundNo: string
+        colSalesOrderNo: string
+        colCustomerName: string
+        colProjectName: string
+        colOutboundDate: string
+        parentImportLabel: string
+        parentImportButton: string
+      }
+      supplier: {
+        title: string
+        description: string
+        placeholderKeyword: string
+        colSupplierCode: string
+        colSupplierName: string
+        colContactName: string
+        colContactPhone: string
+        colCity: string
+        colSettlementMode: string
+        settlementCash: string
+        settlementMonthly: string
+        settlementCredit: string
       }
       invoiceIssue: {
         invoiceIssue: string
@@ -1656,10 +1837,8 @@ export interface MessageSchema {
       copy: string
       templateName: string
       billType: string
-      isDefault: string
       deleteContent: string
       inputTemplateContent: string
-      defaultTag: string
     }
     numberRules: {
       title: string
@@ -1982,9 +2161,6 @@ export interface MessageSchema {
       billType: string
       templateName: string
       templateNamePlaceholder: string
-      isDefault: string
-      yes: string
-      no: string
       templateContent: string
       templateContentPlaceholder: string
       htmlHint: string
