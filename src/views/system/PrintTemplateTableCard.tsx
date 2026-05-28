@@ -60,7 +60,7 @@ export function PrintTemplateTableCard({
       width: 280,
       fixed: 'left',
       render: (_value, record) => (
-        <Space size={0}>
+        <Space size={0} onClick={(e) => e.stopPropagation()}>
           <Button
             type="link"
             size="small"
