@@ -1,13 +1,7 @@
 import { flexRender } from '@tanstack/react-table'
 import type { TableColumnsType, TableProps } from 'antd'
 import type { ColumnType } from 'antd/es/table'
-import {
-  type Dispatch,
-  type SetStateAction,
-  useCallback,
-  useMemo,
-  useState,
-} from 'react'
+import { type Dispatch, type SetStateAction, useState } from 'react'
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import type {
@@ -76,13 +70,13 @@ export function useBusinessGridTable({
     config?.defaultHiddenColumnKeys,
     totalColumnCount,
   )
-  const rowSelectionState: RowSelectionState = useMemo(() => {
+  const rowSelectionState: RowSelectionState = (() => {
     const state: RowSelectionState = {}
     for (const id of selectedRowKeys) {
       state[id] = true
     }
     return state
-  }, [selectedRowKeys])
+  })()
   const { columns: columnDefs } = useGridColumns({
     config: config ?? {
       key: '',
@@ -99,33 +93,25 @@ export function useBusinessGridTable({
     canUpdate: Boolean(config) && (canUpdateRecord || Boolean(showActions)),
     showActions,
   })
-  const allColumnIds = useMemo(
-    () =>
-      columnDefs.map(
-        (c) =>
-          (c as ColumnDef<ModuleRecord, unknown> & { id: string }).id || '',
-      ),
-    [columnDefs],
+  const allColumnIds = columnDefs.map(
+    (c) => (c as ColumnDef<ModuleRecord, unknown> & { id: string }).id || '',
   )
-  const columnOrder = useMemo(
-    () => mergeColumnOrder(allColumnIds, savedOrder),
-    [allColumnIds, savedOrder],
-  )
-  const handleAntdSortingChange = useCallback(
-    (columnKey?: string | number, order?: 'ascend' | 'descend' | null) => {
-      if (!columnKey || !order) {
-        onSortingChange([])
-        return
-      }
-      onSortingChange([
-        {
-          id: String(columnKey),
-          desc: order === 'descend',
-        },
-      ])
-    },
-    [onSortingChange],
-  )
+  const columnOrder = mergeColumnOrder(allColumnIds, savedOrder)
+  const handleAntdSortingChange = (
+    columnKey?: string | number,
+    order?: 'ascend' | 'descend' | null,
+  ) => {
+    if (!columnKey || !order) {
+      onSortingChange([])
+      return
+    }
+    onSortingChange([
+      {
+        id: String(columnKey),
+        desc: order === 'descend',
+      },
+    ])
+  }
   const { table } = useDataTable<ModuleRecord>({
     data: records,
     columns: columnDefs,
@@ -147,47 +133,40 @@ export function useBusinessGridTable({
     sorting,
   })
   const headerGroup = table.getHeaderGroups()[0]
-  const computedColumns: TableColumnsType<ModuleRecord> = useMemo(
-    () =>
-      headerGroup
-        ? headerGroup.headers.map((header) => ({
-            title: flexRender(
-              header.column.columnDef.header,
-              header.getContext(),
-            ),
-            dataIndex: header.column.id,
-            key: header.column.id,
-            fixed: header.column.columnDef.meta
-              ?.fixed as ColumnType<ModuleRecord>['fixed'],
-            className:
-              header.column.id === 'actions' ? 'sticky-actions-col' : undefined,
-            onCell:
-              header.column.id === 'actions'
-                ? () => ({ className: 'sticky-actions-col' })
-                : undefined,
-            onHeaderCell:
-              header.column.id === 'actions'
-                ? () => ({ className: 'sticky-actions-col' })
-                : undefined,
-            width: header.column.columnDef.meta?.width,
-            align: (header.column.columnDef.meta?.align ??
-              'center') as ColumnType<ModuleRecord>['align'],
-            ellipsis: true,
-            sorter: header.column.getCanSort(),
-            sortOrder:
-              header.column.getIsSorted() === 'asc'
-                ? 'ascend'
-                : header.column.getIsSorted() === 'desc'
-                  ? 'descend'
-                  : null,
-            render: (_: unknown, record: ModuleRecord) => {
-              const meta = header.column.columnDef.meta
-              return meta?.renderCell?.(record) ?? null
-            },
-          }))
-        : [],
-    [headerGroup],
-  )
+  const computedColumns: TableColumnsType<ModuleRecord> = headerGroup
+    ? headerGroup.headers.map((header) => ({
+        title: flexRender(header.column.columnDef.header, header.getContext()),
+        dataIndex: header.column.id,
+        key: header.column.id,
+        fixed: header.column.columnDef.meta
+          ?.fixed as ColumnType<ModuleRecord>['fixed'],
+        className:
+          header.column.id === 'actions' ? 'sticky-actions-col' : undefined,
+        onCell:
+          header.column.id === 'actions'
+            ? () => ({ className: 'sticky-actions-col' })
+            : undefined,
+        onHeaderCell:
+          header.column.id === 'actions'
+            ? () => ({ className: 'sticky-actions-col' })
+            : undefined,
+        width: header.column.columnDef.meta?.width,
+        align: (header.column.columnDef.meta?.align ??
+          'center') as ColumnType<ModuleRecord>['align'],
+        ellipsis: true,
+        sorter: header.column.getCanSort(),
+        sortOrder:
+          header.column.getIsSorted() === 'asc'
+            ? 'ascend'
+            : header.column.getIsSorted() === 'desc'
+              ? 'descend'
+              : null,
+        render: (_: unknown, record: ModuleRecord) => {
+          const meta = header.column.columnDef.meta
+          return meta?.renderCell?.(record) ?? null
+        },
+      }))
+    : []
   // 保留上一次有效的列定义，避免 config 短暂为 undefined 时表格只显示勾选框
   const [lastNonEmptyColumns, setLastNonEmptyColumns] = useState<
     TableColumnsType<ModuleRecord>
@@ -196,47 +175,39 @@ export function useBusinessGridTable({
     setLastNonEmptyColumns(computedColumns)
   }
   const antdColumns = computedColumns.length > 0 ? computedColumns : lastNonEmptyColumns
-  const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined =
-    useMemo(
-      () => ({
-        selectedRowKeys,
-        onChange: (keys: React.Key[], rows: ModuleRecord[]) => {
-          const normalizedKeys = keys.map(String)
-          const normalizedKeysSet = new Set(normalizedKeys)
-          setSelectedRowKeys(normalizedKeys)
-          setSelectedRowMap((prev) => {
-            const next = { ...prev }
-            for (const key of Object.keys(next)) {
-              if (!normalizedKeysSet.has(key)) {
-                delete next[key]
-              }
-            }
-            for (const row of rows) {
-              next[String(row.id)] = row
-            }
-            return next
-          })
-        },
-        preserveSelectedRowKeys: true,
-      }),
-      [selectedRowKeys, setSelectedRowKeys, setSelectedRowMap],
-    )
-  const columnVisibleKeys = useMemo(
-    () => allColumnIds.filter((id) => columnVisibility[id] !== false),
-    [allColumnIds, columnVisibility],
-  )
-  const toggleColumn = useCallback(
-    (key: string) => {
-      const next = { ...columnVisibility }
-      if (next[key] === false) {
-        delete next[key]
-      } else {
-        next[key] = false
-      }
-      handleColumnVisibilityChange(next)
+  const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined = {
+    selectedRowKeys,
+    onChange: (keys: React.Key[], rows: ModuleRecord[]) => {
+      const normalizedKeys = keys.map(String)
+      const normalizedKeysSet = new Set(normalizedKeys)
+      setSelectedRowKeys(normalizedKeys)
+      setSelectedRowMap((prev) => {
+        const next = { ...prev }
+        for (const key of Object.keys(next)) {
+          if (!normalizedKeysSet.has(key)) {
+            delete next[key]
+          }
+        }
+        for (const row of rows) {
+          next[String(row.id)] = row
+        }
+        return next
+      })
     },
-    [columnVisibility, handleColumnVisibilityChange],
+    preserveSelectedRowKeys: true,
+  }
+  const columnVisibleKeys = allColumnIds.filter(
+    (id) => columnVisibility[id] !== false,
   )
+  const toggleColumn = (key: string) => {
+    const next = { ...columnVisibility }
+    if (next[key] === false) {
+      delete next[key]
+    } else {
+      next[key] = false
+    }
+    handleColumnVisibilityChange(next)
+  }
   return {
     table,
     antdColumns,
