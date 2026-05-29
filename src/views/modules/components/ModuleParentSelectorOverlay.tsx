@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import Button from 'antd/es/button'
 import type { ColumnsType } from 'antd/es/table'
 import Table from 'antd/es/table'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import i18next from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { listBusinessModule } from '@/api/business'
@@ -15,6 +15,10 @@ import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
+import {
+  filterImportableParentRecords,
+  resolveSelectedParentRows,
+} from './module-parent-selector-utils'
 import { ModuleFilterToolbar } from './ModuleFilterToolbar'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
@@ -50,35 +54,6 @@ type SelectedSummaryField = {
 }
 
 const DEFAULT_PAGE_SIZE = 15
-const AUDITED_STATUS = '已审核'
-
-function hasPositiveQuantity(value: unknown) {
-  const quantity = Number(value)
-  return Number.isFinite(quantity) && quantity > 0
-}
-
-function hasImportableQuantity(parentModuleKey: string, record: ModuleRecord) {
-  const items = Array.isArray(record.items) ? record.items : []
-  if (items.length === 0) {
-    return false
-  }
-
-  if (parentModuleKey === 'purchase-order') {
-    return items.some((item) =>
-      hasPositiveQuantity(
-        item.salesRemainingQuantity ?? item.remainingQuantity ?? item.quantity,
-      ),
-    )
-  }
-
-  if (parentModuleKey === 'sales-order') {
-    return items.some((item) =>
-      hasPositiveQuantity(item.remainingQuantity ?? item.quantity),
-    )
-  }
-
-  return true
-}
 
 function getOverlayStatusMap() {
   return {
@@ -269,6 +244,8 @@ function buildSelectedRecordSummary(
   }
 }
 
+type ParentSelectorContentProps = Omit<Props, 'open'>
+
 export function ModuleParentSelectorOverlay({
   open,
   parentModuleKey,
@@ -278,6 +255,29 @@ export function ModuleParentSelectorOverlay({
   onSelect,
   onClose,
 }: Props) {
+  if (!open) return null
+
+  return (
+    <ModuleParentSelectorOverlayContent
+      key={`${parentModuleKey}:${parentDisplayFieldKey || ''}:${allowMultipleSelection ? 'multi' : 'single'}`}
+      parentModuleKey={parentModuleKey}
+      parentDisplayFieldKey={parentDisplayFieldKey}
+      allowMultipleSelection={allowMultipleSelection}
+      title={title}
+      onSelect={onSelect}
+      onClose={onClose}
+    />
+  )
+}
+
+function ModuleParentSelectorOverlayContent({
+  parentModuleKey,
+  parentDisplayFieldKey,
+  allowMultipleSelection = false,
+  title,
+  onSelect,
+  onClose,
+}: ParentSelectorContentProps) {
   const { t } = useTranslation()
   const effectiveTitle = title ?? t('modules.parentSelector.title')
   const { formatCellValue } = useModuleDisplaySupport()
@@ -294,28 +294,10 @@ export function ModuleParentSelectorOverlay({
     parentDisplayFieldFallbackMap[parentModuleKey] ||
     'id'
 
-  useEffect(() => {
-    if (!open) {
-      setDraftFilters({})
-      setSubmittedFilters({})
-      setPage(1)
-      setPageSize(DEFAULT_PAGE_SIZE)
-      setSelectedRowKeys([])
-      setSelectedRecordMap({})
-      return
-    }
-    setDraftFilters({})
-    setSubmittedFilters({})
-    setPage(1)
-    setPageSize(DEFAULT_PAGE_SIZE)
-    setSelectedRowKeys([])
-    setSelectedRecordMap({})
-  }, [open])
-
   const { data: parentPageConfig, isLoading: isConfigLoading } = useQuery({
     queryKey: QUERY_KEYS.parentSelectorConfig(parentModuleKey),
     queryFn: () => loadBusinessPageConfig(parentModuleKey),
-    enabled: open && !!parentModuleKey,
+    enabled: !!parentModuleKey,
     staleTime: Infinity,
   })
 
@@ -344,25 +326,14 @@ export function ModuleParentSelectorOverlay({
         },
         { signal },
       ),
-    enabled: open && !!parentModuleKey,
+    enabled: !!parentModuleKey,
     placeholderData: keepPreviousData,
   })
 
-  const records = (data?.data?.rows || []).filter((record) => {
-    if (parentModuleKey === 'purchase-order') {
-      return (
-        asString(record.status) === AUDITED_STATUS &&
-        hasImportableQuantity(parentModuleKey, record)
-      )
-    }
-    if (parentModuleKey === 'sales-order') {
-      return (
-        asString(record.status) === AUDITED_STATUS &&
-        hasImportableQuantity(parentModuleKey, record)
-      )
-    }
-    return true
-  })
+  const records = filterImportableParentRecords(
+    parentModuleKey,
+    data?.data?.rows || [],
+  )
   const total = Number(data?.data?.total || 0)
 
   const columns = useMemo<ColumnsType<ModuleRecord>>(
@@ -389,33 +360,11 @@ export function ModuleParentSelectorOverlay({
       ),
     [displayFieldKey, formatCellValue, parentModuleKey],
   )
-  const selectedRows = useMemo(
-    () =>
-      selectedRowKeys.flatMap((key) => {
-        const record = selectedRecordMap[String(key)]
-        return record ? [record] : []
-      }),
-    [selectedRecordMap, selectedRowKeys],
+  const selectedRows = resolveSelectedParentRows(
+    selectedRowKeys,
+    selectedRecordMap,
+    records,
   )
-
-  useEffect(() => {
-    if (!records?.length || !allowMultipleSelection) {
-      return
-    }
-    setSelectedRecordMap((prev) => {
-      let changed = false
-      const next = { ...prev }
-      records.forEach((record) => {
-        const key = String(record.id)
-        // react-doctor: intentional callback, not event handler
-        if (selectedRowKeys.includes(key) && next[key] !== record) {
-          next[key] = record
-          changed = true
-        }
-      })
-      return changed ? next : prev
-    })
-  }, [allowMultipleSelection, records, selectedRowKeys])
 
   const toggleRecordSelection = (record: ModuleRecord) => {
     const recordKey = String(record.id)
@@ -486,7 +435,7 @@ export function ModuleParentSelectorOverlay({
   return (
     <WorkspaceOverlay
       title={effectiveTitle}
-      open={open}
+      open
       onClose={onClose}
       className="workspace-overlay-panel--parent-selector"
       footer={
