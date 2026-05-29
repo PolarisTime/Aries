@@ -185,15 +185,17 @@ export function ModuleEditorWorkspace({
           config={config}
           items={items}
           selectedItemIds={selectedItemIds}
-          canAddManualItems={canAddManualItems}
-          canImportParentItems={canImportParentItems}
           parentImporting={parentImporting}
           parentSelectorOpen={parentSelectorOpen}
           itemColumns={itemColumns}
           itemColumnOrder={itemColumnOrder}
           visibleItemColumnKeys={visibleItemColumnKeys}
-          canSave={canSave}
-          canAudit={canSaveAndAuditInEditor}
+          permissions={{
+            addManualItems: canAddManualItems,
+            importParentItems: canImportParentItems,
+            save: canSave,
+            audit: canSaveAndAuditInEditor,
+          }}
           saving={saving}
           onAddItem={addItem}
           onCancel={onClose}

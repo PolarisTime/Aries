@@ -81,12 +81,14 @@ export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
         <Col span={18}>
           <RoleActionPermissionCard
             selectedRoleInfo={selectedRoleInfo}
-            canEditPermissions={canEditPermissions}
             viewMode={viewMode}
             menuTree={menuTree}
             matrixColumns={matrixColumns}
             matrixData={matrixData}
-            saveLoading={savePending}
+            permissionActions={{
+              editable: canEditPermissions,
+              saving: savePending,
+            }}
             onSelectAll={selectAll}
             onDeselectAll={deselectAll}
             onViewModeChange={setViewMode}

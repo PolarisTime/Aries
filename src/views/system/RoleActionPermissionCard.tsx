@@ -23,12 +23,14 @@ type MatrixRow = ModuleRecord
 
 interface Props {
   selectedRoleInfo?: RoleRecord
-  canEditPermissions: boolean
   viewMode: 'list' | 'matrix'
   menuTree: MenuNode[]
   matrixColumns: TableColumnsType<MatrixRow>
   matrixData: MatrixRow[]
-  saveLoading: boolean
+  permissionActions: {
+    editable: boolean
+    saving: boolean
+  }
   onSelectAll: () => void
   onDeselectAll: () => void
   onViewModeChange: (value: 'list' | 'matrix') => void
@@ -43,12 +45,11 @@ interface Props {
 
 export function RoleActionPermissionCard({
   selectedRoleInfo,
-  canEditPermissions,
   viewMode,
   menuTree,
   matrixColumns,
   matrixData,
-  saveLoading,
+  permissionActions,
   onSelectAll,
   onDeselectAll,
   onViewModeChange,
@@ -79,7 +80,7 @@ export function RoleActionPermissionCard({
       extra={
         selectedRoleInfo && (
           <Space size="small">
-            {canEditPermissions && (
+            {permissionActions.editable && (
               <Button
                 size="small"
                 icon={<CheckSquareOutlined />}
@@ -88,7 +89,7 @@ export function RoleActionPermissionCard({
                 {t('system.rolePermission.selectAll')}
               </Button>
             )}
-            {canEditPermissions && (
+            {permissionActions.editable && (
               <Button
                 size="small"
                 icon={<BorderOutlined />}
@@ -97,7 +98,7 @@ export function RoleActionPermissionCard({
                 {t('system.rolePermission.deselectAll')}
               </Button>
             )}
-            {canEditPermissions && (
+            {permissionActions.editable && (
               <span className="inline-block border-l border-l-[var(--theme-card-border)] h-5" />
             )}
             <Radio.Group
@@ -114,11 +115,11 @@ export function RoleActionPermissionCard({
               </Radio.Button>
             </Radio.Group>
             <span className="inline-block border-l border-l-[var(--theme-card-border)] h-5" />
-            {canEditPermissions && (
+            {permissionActions.editable && (
               <Button
                 type="primary"
                 size="small"
-                loading={saveLoading}
+                loading={permissionActions.saving}
                 onClick={onSave}
               >
                 {t('system.rolePermission.savePerm')}
@@ -162,7 +163,7 @@ export function RoleActionPermissionCard({
                               <Checkbox
                                 checked={isMenuChecked(child.menuCode)}
                                 indeterminate={isMenuPartiallyChecked(child)}
-                                disabled={!canEditPermissions}
+                                disabled={!permissionActions.editable}
                                 onChange={() => onToggleAllMenuActions(child)}
                               >
                                 <Typography.Text strong>
@@ -178,7 +179,7 @@ export function RoleActionPermissionCard({
                                     child.menuCode,
                                     action,
                                   )}
-                                  disabled={!canEditPermissions}
+                                  disabled={!permissionActions.editable}
                                   onChange={() =>
                                     onToggleAction(child.menuCode, action)
                                   }
