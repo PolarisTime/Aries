@@ -15,7 +15,10 @@
 .workspace-overlay-mask {
   position: absolute;
   inset: 0;
+  padding: 0;
+  border: 0;
   background: rgba(0, 0, 0, 0.32);
+  cursor: default;
 }
 
 .workspace-overlay-panel {

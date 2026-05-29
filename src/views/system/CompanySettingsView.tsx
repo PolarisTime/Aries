@@ -105,7 +105,7 @@ export function CompanySettingsView() {
       }
       setSettlementAccounts((prev) => prev.filter((_, i) => i !== index))
     },
-    [settlementAccounts.length],
+    [settlementAccounts.length, t],
   )
 
   const updateSettlementAccount = useCallback(
@@ -191,7 +191,7 @@ export function CompanySettingsView() {
     } catch {
       /* validation failed */
     }
-  }, [canSave, form, settlementAccounts, saveMutation])
+  }, [canSave, form, settlementAccounts, saveMutation, t])
 
   const overviewItems = useMemo(
     () => [
@@ -210,7 +210,7 @@ export function CompanySettingsView() {
         }),
       },
     ],
-    [form, settlementAccounts],
+    [form, settlementAccounts, t],
   )
 
   return (

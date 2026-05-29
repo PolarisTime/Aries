@@ -44,17 +44,15 @@ export function RoleActionRoleListCard({
       }
     >
       {roles.map((role) => (
-        <div
+        <button
+          type="button"
           key={role.id}
-          className={`rounded cursor-pointer mb-4 py-3 px-4 border ${
+          className={`block w-full text-left bg-transparent rounded cursor-pointer mb-4 py-3 px-4 border ${
             selectedRoleId === role.id
               ? 'border-[var(--theme-highlight-border)] bg-[var(--theme-highlight-bg)]'
               : 'border-transparent'
           }`}
-          role="button"
-          tabIndex={0}
           onClick={() => onSelectRole(role)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectRole(role) }}
         >
           <div className="flex justify-between mb-4">
             <Typography.Text strong>{role.roleName}</Typography.Text>
@@ -70,7 +68,7 @@ export function RoleActionRoleListCard({
             <span>{role.roleType}</span>
             <span>{role.userCount} {t('system.roleList.userCount')}</span>
           </div>
-        </div>
+        </button>
       ))}
       {roles.length === 0 && <Empty description={t('system.roleList.noRoles')} />}
     </Card>

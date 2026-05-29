@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
+const EMPTY_FREIGHT_PICKUP_RECORDS: ModuleRecord[] = []
+
 const ModuleAttachmentModal = lazy(() =>
   import('@/views/modules/components/ModuleAttachmentModal').then((module) => ({
     default: module.ModuleAttachmentModal,
@@ -94,7 +96,7 @@ export function BusinessGridOverlays({
   customerStatementOpen,
   freightStatementOpen,
   freightPickupOpen,
-  freightPickupRecords = [],
+  freightPickupRecords = EMPTY_FREIGHT_PICKUP_RECORDS,
   selectedRows,
   canSave,
   canAudit,

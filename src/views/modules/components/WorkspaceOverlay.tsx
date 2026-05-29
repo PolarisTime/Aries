@@ -1,5 +1,5 @@
 import { CloseOutlined } from '@ant-design/icons'
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import '@/styles/workspace-overlay.css'
 
@@ -29,14 +29,13 @@ export function WorkspaceOverlay({
   className,
 }: Props) {
   const { t } = useTranslation()
-  const handleKeyDownRef = useRef<((e: KeyboardEvent) => void) | null>(null)
-  handleKeyDownRef.current = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') onClose()
-  }
+  const handleClose = useEffectEvent(onClose)
 
   useEffect(() => {
     if (open) {
-      const handler = (e: KeyboardEvent) => handleKeyDownRef.current?.(e)
+      const handler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') handleClose()
+      }
       document.addEventListener('keydown', handler)
       return () => {
         document.removeEventListener('keydown', handler)
@@ -56,13 +55,11 @@ export function WorkspaceOverlay({
       className={`workspace-overlay workspace-overlay--${variant}`}
       style={zIndex ? { zIndex } : undefined}
     >
-      <div
+      <button
+        type="button"
         className="workspace-overlay-mask"
-        role="button"
-        tabIndex={-1}
         aria-label={t('modules.workspace.closeAria')}
         onClick={onClose}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose() }}
       />
       <section
         className={`workspace-overlay-panel workspace-overlay-panel--${variant}${className ? ` ${className}` : ''}`}

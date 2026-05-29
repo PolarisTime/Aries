@@ -77,7 +77,7 @@ export function AccessControlView() {
       })
     }
     return items
-  }, [canViewUsers, canViewRoles, canViewPermissions])
+  }, [canViewUsers, canViewRoles, canViewPermissions, t])
 
   const searchParams = useMemo(
     () => new URLSearchParams(location.searchStr),

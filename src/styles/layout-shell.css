@@ -431,9 +431,13 @@
   justify-content: center;
   width: 52px;
   height: var(--app-header-height);
+  padding: 0;
   cursor: pointer;
   color: var(--theme-header-text);
+  font: inherit;
   font-size: calc(var(--app-font-size) + 6px);
+  background: transparent;
+  border: 0;
 }
 
 .app-trigger:hover {

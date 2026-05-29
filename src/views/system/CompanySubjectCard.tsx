@@ -43,7 +43,7 @@ export function CompanySubjectCard({
         className="flex items-center gap-12 p-16 rounded-lg bg-[var(--theme-highlight-bg)]"
       >
         <div
-          className="flex items-center justify-center text-xl w-[44px] h-[44px] rounded-xl bg-[var(--theme-primary)] text-white"
+          className="flex items-center justify-center text-xl size-[44px] rounded-xl bg-[var(--theme-primary)] text-white"
         >
           <IdcardOutlined />
         </div>

@@ -83,7 +83,7 @@ export function PrintTemplateView() {
     setTemplateHtml('')
     setActiveTemplateId(undefined)
     setEditorOpen(true)
-  }, [canCreate, form, selectedBillType])
+  }, [canCreate, form, selectedBillType, t])
 
   const openEdit = useCallback(
     (record: PrintTemplateRecord) => {
@@ -101,7 +101,7 @@ export function PrintTemplateView() {
       setActiveTemplateId(record.id)
       setEditorOpen(true)
     },
-    [canEdit, form, selectedBillType],
+    [canEdit, form, selectedBillType, t],
   )
 
   const openPreview = useCallback((record: PrintTemplateRecord) => {
@@ -124,7 +124,7 @@ export function PrintTemplateView() {
       setActiveTemplateId(undefined)
       setEditorOpen(true)
     },
-    [canCreate, form, selectedBillType],
+    [canCreate, form, selectedBillType, t],
   )
 
   const handleDelete = useCallback(
@@ -144,7 +144,7 @@ export function PrintTemplateView() {
         onOk: () => deleteMutation.mutateAsync(record.id),
       })
     },
-    [canDelete, deleteMutation],
+    [canDelete, deleteMutation, t],
   )
 
   const handleSave = useCallback(async () => {
@@ -164,7 +164,7 @@ export function PrintTemplateView() {
     } catch {
       // validation failed
     }
-  }, [activeTemplateId, form, saveMutation, templateHtml])
+  }, [activeTemplateId, form, saveMutation, templateHtml, t])
 
   return (
     <div className="page-stack">

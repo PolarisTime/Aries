@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import BorderBeam from 'antd/es/border-beam'
 import Card from 'antd/es/card'
 import Form from 'antd/es/form'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRequestError } from '@/hooks/useRequestError'
 import { useAuthStore } from '@/stores/authStore'
@@ -42,7 +42,7 @@ export function LoginView() {
   const [pendingLoginName, setPendingLoginName] = useState(
     savedSession?.loginName || '',
   )
-  const [pendingRemember, setPendingRemember] = useState(true)
+  const pendingRememberRef = useRef(true)
   useEffect(() => {
     // react-doctor: intentional callback, not event handler
     if (loginStep === 'password' && flipped) {
@@ -53,7 +53,7 @@ export function LoginView() {
     async (values: LoginPayload) => {
       setLoading(true)
       setPendingLoginName(values.loginName)
-      setPendingRemember(values.remember !== false)
+      pendingRememberRef.current = values.remember !== false
       try {
         const result = await signIn(values)
         if (result.requires2fa) {
@@ -96,7 +96,7 @@ export function LoginView() {
       const result = await verify2fa({
         tempToken,
         totpCode: totpCode.trim(),
-        remember: pendingRemember,
+        remember: pendingRememberRef.current,
       })
       clearTotpSession()
       message.success(t('auth.loginSuccess'))
@@ -108,7 +108,6 @@ export function LoginView() {
     }
   }, [
     navigate,
-    pendingRemember,
     reset2faStep,
     showError,
     stepDeadline,

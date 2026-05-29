@@ -88,7 +88,7 @@ export function GeneralSettingsView() {
       })
       setEditorOpen(true)
     },
-    [canEdit, form],
+    [canEdit, form, t],
   )
 
   const handleToggle = useCallback(
@@ -158,7 +158,7 @@ export function GeneralSettingsView() {
     } finally {
       setSaving(false)
     }
-  }, [editingRecord, form, refresh, showError])
+  }, [editingRecord, form, refresh, showError, t])
 
   return (
     <div className="page-stack">

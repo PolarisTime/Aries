@@ -6,7 +6,7 @@ import {
   type SetStateAction,
   useCallback,
   useMemo,
-  useRef,
+  useState,
 } from 'react'
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
@@ -189,14 +189,13 @@ export function useBusinessGridTable({
     [headerGroup],
   )
   // 保留上一次有效的列定义，避免 config 短暂为 undefined 时表格只显示勾选框
-  const prevColumnsRef = useRef<TableColumnsType<ModuleRecord>>([])
-  const antdColumns = useMemo(() => {
-    if (computedColumns.length > 0) {
-      prevColumnsRef.current = computedColumns
-      return computedColumns
-    }
-    return prevColumnsRef.current
-  }, [computedColumns])
+  const [lastNonEmptyColumns, setLastNonEmptyColumns] = useState<
+    TableColumnsType<ModuleRecord>
+  >([])
+  if (computedColumns.length > 0 && lastNonEmptyColumns !== computedColumns) {
+    setLastNonEmptyColumns(computedColumns)
+  }
+  const antdColumns = computedColumns.length > 0 ? computedColumns : lastNonEmptyColumns
   const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined =
     useMemo(
       () => ({
