@@ -114,3 +114,27 @@ export async function deleteBusinessModule(moduleKey: string, id: string) {
     `${endpointConfig.path}/${encodeURIComponent(id)}`,
   )
 }
+
+export async function updateBusinessModuleStatus(
+  moduleKey: string,
+  id: string,
+  status: string,
+) {
+  const endpointConfig = getModuleConfig(moduleKey)
+  if (endpointConfig.readOnly) {
+    throw new Error('当前模块不支持状态变更')
+  }
+
+  const response = assertApiSuccess(
+    await http.patch<ApiResponse<RawApiRecord>>(
+      `${endpointConfig.path}/${encodeURIComponent(id)}/status`,
+      { status },
+    ),
+  )
+
+  return {
+    code: response.code,
+    message: response.message,
+    data: response.data ? normalizeRecord(response.data) : undefined,
+  }
+}

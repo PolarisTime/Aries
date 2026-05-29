@@ -29,6 +29,7 @@ interface UseDataTableOptions<TData> {
   enableExpanding?: boolean
   enableColumnVisibility?: boolean
   getRowCanExpand?: (row: TData) => boolean
+  getRowId?: (row: TData, index: number) => string
   initialPageSize?: number
   onPaginationChange?: (pagination: PaginationState) => void
   onSortingChange?: (sorting: SortingState) => void
@@ -55,6 +56,7 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
     enableRowSelection = false,
     enableExpanding = false,
     getRowCanExpand = undefined,
+    getRowId,
     initialPageSize = 20,
     onPaginationChange,
     onSortingChange,
@@ -110,6 +112,7 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
     getRowCanExpand: getRowCanExpand as unknown as
       | ((row: Row<TData>) => boolean)
       | undefined,
+    getRowId,
     state: {
       pagination,
       sorting: resolvedSorting,
