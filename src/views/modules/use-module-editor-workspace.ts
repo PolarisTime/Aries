@@ -1,7 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import i18next from 'i18next'
-import { useEffect, useState } from 'react'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useReducer,
+  useState,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import {
@@ -45,9 +51,17 @@ import {
 } from '@/module-system/module-adapter-shared'
 import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view-utils'
 
+const SNOWFLAKE_BUSINESS_NO_SWITCH_CODE =
+  DISPLAY_SWITCH_CODES.useSnowflakeBusinessNo
+
 interface AuditTarget {
   key: string
   value: string
+}
+
+interface EditorWorkspaceState {
+  items: ModuleLineItem[]
+  primaryNoLoading: boolean
 }
 
 interface WorkspaceFormApi {
@@ -113,6 +127,13 @@ function normalizeOptionalString(value: unknown) {
   return asString(value).trim()
 }
 
+function editorWorkspaceReducer(
+  state: EditorWorkspaceState,
+  patch: Partial<EditorWorkspaceState>,
+): EditorWorkspaceState {
+  return { ...state, ...patch }
+}
+
 function syncEditorFormValues(args: {
   config: ModulePageConfig
   form: WorkspaceFormApi
@@ -152,20 +173,20 @@ function syncEditorFormValues(args: {
 
 function buildPreallocatedIdWarning(args: {
   isEdit: boolean
-  useSnowflakeBusinessNo: boolean
+  snowflakeBusinessNoEnabled: boolean
   primaryNoKey?: string
   draftRecord: ModuleRecord
   savedRecord?: ModuleRecord
 }) {
   const {
     isEdit,
-    useSnowflakeBusinessNo,
+    snowflakeBusinessNoEnabled,
     primaryNoKey,
     draftRecord,
     savedRecord,
   } = args
 
-  if (isEdit || !useSnowflakeBusinessNo || !primaryNoKey) {
+  if (isEdit || !snowflakeBusinessNoEnabled || !primaryNoKey) {
     return null
   }
 
@@ -224,10 +245,18 @@ export function useModuleEditorWorkspace({
   autoInsertBlankItemOnCreate,
 }: Props) {
   const [saving, setSaving] = useState(false)
-  const [primaryNoLoading, setPrimaryNoLoading] = useState(false)
-  const [parentSelectorOpen, setParentSelectorOpen] = useState(false)
+  const [parentSelectorSessionKey, setParentSelectorSessionKey] = useState<
+    string | null
+  >(null)
   const [parentImporting, setParentImporting] = useState(false)
-  const [items, setItems] = useState<ModuleLineItem[]>([])
+  const [workspaceState, setWorkspaceState] = useReducer(
+    editorWorkspaceReducer,
+    {
+      items: [],
+      primaryNoLoading: false,
+    },
+  )
+  const { items, primaryNoLoading } = workspaceState
   const { t } = useTranslation()
   const [saveResult, setSaveResult] = useState<{
     status: 'success' | 'error' | 'warning'
@@ -237,6 +266,8 @@ export function useModuleEditorWorkspace({
   } | null>(null)
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const isEdit = !!record
+  const editorSessionKey = `${moduleKey}:${String(record?.id || 'new')}:${String(open)}`
+  const parentSelectorOpen = parentSelectorSessionKey === editorSessionKey
   const { data: systemSettings = [] } = useQuery({
     queryKey: QUERY_KEYS.generalSetting,
     queryFn: listSystemSettings,
@@ -246,9 +277,9 @@ export function useModuleEditorWorkspace({
     queryFn: listClientSettings,
     staleTime: 30_000,
   })
-  const useSnowflakeBusinessNo = isDisplaySwitchEnabled(
+  const snowflakeBusinessNoEnabled = isDisplaySwitchEnabled(
     clientSettings,
-    DISPLAY_SWITCH_CODES.useSnowflakeBusinessNo,
+    SNOWFLAKE_BUSINESS_NO_SWITCH_CODE,
   )
 
   const sumLineItemsBy = (nextItems: ModuleLineItem[], key: string) =>
@@ -275,8 +306,10 @@ export function useModuleEditorWorkspace({
 
     if (record) {
       form.setFieldsValue(normalizeRecordForEditor(config, record))
-      setItems((record.items as ModuleLineItem[]) || [])
-      setPrimaryNoLoading(false)
+      setWorkspaceState({
+        items: (record.items as ModuleLineItem[]) || [],
+        primaryNoLoading: false,
+      })
     } else {
       form.resetFields()
       const defaultDraft: ModuleRecord = {} as ModuleRecord
@@ -286,14 +319,12 @@ export function useModuleEditorWorkspace({
         getCurrentOperatorName(),
       )
       form.setFieldsValue(defaultDraft)
-      setItems(
-        autoInsertBlankItemOnCreate
-          ? [buildDefaultEditorLineItem(undefined, moduleKey)]
-          : [],
-      )
+      const draftItems = autoInsertBlankItemOnCreate
+        ? [buildDefaultEditorLineItem(undefined, moduleKey)]
+        : []
       if (config.primaryNoKey) {
-        setPrimaryNoLoading(true)
-        if (useSnowflakeBusinessNo) {
+        setWorkspaceState({ items: draftItems, primaryNoLoading: true })
+        if (snowflakeBusinessNoEnabled) {
           void allocateBusinessPrimaryNo(moduleKey)
             .then(({ generatedNo, generatedId }) => {
               if (!active) {
@@ -317,7 +348,7 @@ export function useModuleEditorWorkspace({
             })
             .finally(() => {
               if (active) {
-                setPrimaryNoLoading(false)
+                setWorkspaceState({ primaryNoLoading: false })
               }
             })
         } else {
@@ -343,16 +374,14 @@ export function useModuleEditorWorkspace({
             })
             .finally(() => {
               if (active) {
-                setPrimaryNoLoading(false)
+                setWorkspaceState({ primaryNoLoading: false })
               }
             })
         }
       } else {
-        setPrimaryNoLoading(false)
+        setWorkspaceState({ items: draftItems, primaryNoLoading: false })
       }
     }
-    setParentSelectorOpen(false)
-
     return () => {
       active = false
     }
@@ -364,22 +393,8 @@ export function useModuleEditorWorkspace({
     moduleKey,
     open,
     record,
-    useSnowflakeBusinessNo,
+    snowflakeBusinessNoEnabled,
   ])
-
-  useEffect(() => {
-    if (!open || !config.itemColumns?.length) {
-      return
-    }
-    syncEditorFormValues({
-      config,
-      form,
-      moduleKey,
-      items,
-      sumLineItemsBy,
-      systemSettings,
-    })
-  }, [config, form, items, moduleKey, open, sumLineItemsBy, systemSettings])
 
   const handleFormValuesChange = (changedValues: FormChangedValues) => {
     if (!open) {
@@ -432,7 +447,7 @@ export function useModuleEditorWorkspace({
         items: trimmedItems,
         itemCount: trimmedItems.length,
         skipRequiredFieldKeys:
-          useSnowflakeBusinessNo && config.primaryNoKey
+          snowflakeBusinessNoEnabled && config.primaryNoKey
             ? [config.primaryNoKey]
             : [],
         parentImportConfig: config.parentImport,
@@ -465,7 +480,7 @@ export function useModuleEditorWorkspace({
         ...values,
         id: record?.id || '',
         _preallocatedId:
-          !record && useSnowflakeBusinessNo
+          !record && snowflakeBusinessNoEnabled
             ? asString(values._preallocatedId)
             : undefined,
         items: trimmedItems,
@@ -487,7 +502,7 @@ export function useModuleEditorWorkspace({
       const savedResult = await saveBusinessModule(moduleKey, draftRecord)
       const preallocatedIdWarning = buildPreallocatedIdWarning({
         isEdit,
-        useSnowflakeBusinessNo,
+        snowflakeBusinessNoEnabled,
         primaryNoKey: config.primaryNoKey,
         draftRecord,
         savedRecord: savedResult.data,
@@ -604,8 +619,8 @@ export function useModuleEditorWorkspace({
         changedValues: nextValues,
         systemSettings,
       })
-      setItems(nextItems)
-      setParentSelectorOpen(false)
+      setWorkspaceState({ items: nextItems })
+      setParentSelectorSessionKey(null)
       message.success(
         importedParentCount > 1
           ? t('common.importParentSuccess', {
@@ -637,17 +652,46 @@ export function useModuleEditorWorkspace({
       message.warning(validationError)
       return
     }
-    setParentSelectorOpen(true)
+    setParentSelectorSessionKey(editorSessionKey)
   }
 
   const addItem = () => {
     const newItem = buildDefaultEditorLineItem(undefined, moduleKey)
-    setItems((prev) => [...prev, newItem])
+    const nextItems = [...items, newItem]
+    setWorkspaceState({ items: nextItems })
+    if (open && config.itemColumns?.length) {
+      syncEditorFormValues({
+        config,
+        form,
+        moduleKey,
+        items: nextItems,
+        sumLineItemsBy,
+        systemSettings,
+      })
+    }
+  }
+
+  const updateItems: Dispatch<SetStateAction<ModuleLineItem[]>> = (
+    nextItems,
+  ) => {
+    const resolvedItems =
+      typeof nextItems === 'function' ? nextItems(items) : nextItems
+    setWorkspaceState({ items: resolvedItems })
+    if (open && config.itemColumns?.length) {
+      syncEditorFormValues({
+        config,
+        form,
+        moduleKey,
+        items: resolvedItems,
+        sumLineItemsBy,
+        systemSettings,
+      })
+    }
   }
 
   return {
     addItem,
-    closeParentSelector: () => setParentSelectorOpen(false),
+    closeParentSelector: () => setParentSelectorSessionKey(null),
     handleImportParentRecord,
     handleSave,
     isEdit,
@@ -659,7 +703,7 @@ export function useModuleEditorWorkspace({
     saveResult,
     clearSaveResult: () => setSaveResult(null),
     saving,
-    setItems,
+    setItems: updateItems,
     handleFormValuesChange,
   }
 }

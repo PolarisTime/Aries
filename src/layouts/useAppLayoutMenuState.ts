@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { MenuNode } from '@/api/system-menus'
 import { isKnownAppIconKey } from '@/config/app-icons'
 import {
@@ -48,8 +48,7 @@ interface Options {
 }
 
 export function useAppLayoutMenuState(options: Options) {
-  const [siderOpenKeys, setSiderOpenKeys] = useState<string[]>([])
-
+  const [manualSiderOpenKeys, setManualSiderOpenKeys] = useState<string[]>([])
   const visibleMenuEntries = buildVisibleLayoutMenuEntries({
     appPageDefinitions,
     defaultIcon: 'AppstoreOutlined',
@@ -70,14 +69,9 @@ export function useAppLayoutMenuState(options: Options) {
 
   const resolvedSiderOpenKeys =
     findMenuParentKeys(visibleMenuEntries, options.activeMenuKey) || []
-
-  useEffect(() => {
-    if (options.collapsed) {
-      setSiderOpenKeys([])
-      return
-    }
-    setSiderOpenKeys(resolvedSiderOpenKeys)
-  }, [options.collapsed, resolvedSiderOpenKeys])
+  const mergedSiderOpenKeys = Array.from(
+    new Set([...resolvedSiderOpenKeys, ...manualSiderOpenKeys]),
+  )
 
   const sideMenuItems = buildSideMenuItems(visibleMenuEntries)
 
@@ -88,9 +82,9 @@ export function useAppLayoutMenuState(options: Options) {
   return {
     resolvedSiderOpenKeys,
     sideMenuItems,
-    siderOpenKeys,
+    siderOpenKeys: options.collapsed ? [] : mergedSiderOpenKeys,
     selectedKeys,
-    setSiderOpenKeys,
+    setSiderOpenKeys: setManualSiderOpenKeys,
     topMenuItems,
     visibleMenuEntries,
     resolveMenuPath,

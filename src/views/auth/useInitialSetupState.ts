@@ -75,10 +75,11 @@ export function useInitialSetupState() {
     }
   }
 
-  // mount-time data fetch — setState is unavoidable for async init
   useEffect(() => {
-    void loadStatus()
-  }, [loadStatus])
+    void (async () => {
+      await loadStatus()
+    })()
+  }, [])
 
   const handleGenerateTotp = async () => {
     const loginName = asString(form.getFieldValue('adminLoginName')).trim()
