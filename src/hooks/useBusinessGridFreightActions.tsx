@@ -1,6 +1,5 @@
 import Flex from 'antd/es/flex'
 import Typography from 'antd/es/typography'
-import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listAllBusinessModuleRows } from '@/api/business'
 import type { SearchParams } from '@/types/api-raw'
@@ -17,7 +16,7 @@ export function useBusinessGridFreightActions({
 }: Props) {
   const { t } = useTranslation()
 
-  const openFreightSummary = useCallback(async () => {
+  const openFreightSummary = async () => {
     const rows = await listAllBusinessModuleRows(
       'freight-statement',
       submittedFilters,
@@ -71,7 +70,7 @@ export function useBusinessGridFreightActions({
         </Flex>
       ),
     })
-  }, [formatCellValue, submittedFilters, t])
+  }
 
   return { openFreightSummary }
 }

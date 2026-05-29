@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import Button from 'antd/es/button'
 import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
-import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listPrintTemplates } from '@/api/print-template'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
@@ -35,7 +34,7 @@ export function PrintTemplateDropdown({ moduleKey, disabled, loading, onPrint }:
     enabled: supportsPrintTemplate,
   })
 
-  const menuItems = useMemo<MenuProps['items']>(() => {
+  const menuItems: MenuProps['items'] = (() => {
     if (!templates.length) {
       return [{ key: 'no-template', label: t('modules.print.noTemplate'), disabled: true }]
     }
@@ -45,15 +44,12 @@ export function PrintTemplateDropdown({ moduleKey, disabled, loading, onPrint }:
         { key: `direct:${tpl.id}`, label: t('modules.print.directPrint'), icon: <PrinterOutlined /> },
       ]},
     ])
-  }, [templates, t])
+  })()
 
-  const handleClick = useCallback(
-    ({ key }: { key: string }) => {
-      const [mode, templateId] = key.split(':')
-      onPrint(mode === 'preview', templateId || undefined)
-    },
-    [onPrint],
-  )
+  const handleClick = ({ key }: { key: string }) => {
+    const [mode, templateId] = key.split(':')
+    onPrint(mode === 'preview', templateId || undefined)
+  }
 
   return (
     <Dropdown

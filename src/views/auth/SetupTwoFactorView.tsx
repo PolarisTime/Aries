@@ -3,7 +3,6 @@ import Flex from 'antd/es/flex'
 import Space from 'antd/es/space'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
-import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/authStore'
 import { appTitle } from '@/utils/env'
@@ -17,10 +16,7 @@ export function SetupTwoFactorView(): React.JSX.Element {
   const user = useAuthStore((s) => s.user)
   const { enabling, fetchTotpSetup, form, handleEnable, loading, totpData } =
     useSetupTwoFactorState()
-  const setupSecurityHighlights = useMemo(
-    () => buildSetupSecurityHighlights(t),
-    [t],
-  )
+  const setupSecurityHighlights = buildSetupSecurityHighlights(t)
 
   const currentUserName =
     user?.userName || user?.loginName || t('auth.setup2fa.currentUserFallback')

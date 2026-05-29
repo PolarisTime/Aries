@@ -13,7 +13,6 @@ import Space from 'antd/es/space'
 import Spin from 'antd/es/spin'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
-import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toDataImageUrl } from '@/utils/data-url'
 import { buildSetupTwoFactorSteps } from '@/views/auth/setup-two-factor-constants'
@@ -38,7 +37,7 @@ export function SetupTwoFactorContent({
   onEnable,
 }: Props) {
   const { t } = useTranslation()
-  const setupTwoFactorSteps = useMemo(() => buildSetupTwoFactorSteps(t), [t])
+  const setupTwoFactorSteps = buildSetupTwoFactorSteps(t)
 
   return (
     <Spin spinning={loading}>

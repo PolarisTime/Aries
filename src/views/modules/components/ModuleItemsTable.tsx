@@ -1,5 +1,4 @@
 import { Table, type TableColumnsType, type TableProps } from 'antd'
-import { useMemo } from 'react'
 
 type BaseRecord = {
   id: string
@@ -22,7 +21,7 @@ export function ModuleItemsTable<RecordType extends BaseRecord>({
   onRow,
   className,
 }: Props<RecordType>) {
-  const scrollX = useMemo(() => {
+  const scrollX = (() => {
     let total = 0
     for (const col of columns) {
       const w = (col as Record<string, unknown>).width
@@ -33,7 +32,7 @@ export function ModuleItemsTable<RecordType extends BaseRecord>({
       } else total += 128
     }
     return total || undefined
-  }, [columns])
+  })()
 
   return (
     <Table<RecordType>
