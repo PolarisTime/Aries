@@ -41,9 +41,9 @@ export function useDetailSupport({ moduleKey, config }: Options) {
     try {
       const record = await getBusinessModuleDetail(moduleKey, recordId)
       setDetailRecord(record.data)
+      setDetailLoading(false)
     } catch {
       setDetailRecord(fallbackRecord)
-    } finally {
       setDetailLoading(false)
     }
   }

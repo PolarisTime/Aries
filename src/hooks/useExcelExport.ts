@@ -13,13 +13,13 @@ export function useExcelExport(module: string) {
     try {
       await exportModuleData(module, params)
       message.success(t('hooks.excelExport.exportSuccess'))
+      setExporting(false)
     } catch (err) {
       message.error(
         err instanceof Error
           ? err.message
           : t('hooks.excelExport.exportFailed'),
       )
-    } finally {
       setExporting(false)
     }
   }

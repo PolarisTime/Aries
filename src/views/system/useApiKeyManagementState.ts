@@ -185,11 +185,11 @@ export function useApiKeyManagementState(enabled = true) {
         response.message || i18next.t('system.apiKeyState.generatedSuccess'),
       )
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.apiKeys })
+      setTotpLoading(false)
     } catch (error) {
       showError(error, i18next.t('system.apiKeyState.generateFailed'))
-      throw error
-    } finally {
       setTotpLoading(false)
+      throw error
     }
   }
 

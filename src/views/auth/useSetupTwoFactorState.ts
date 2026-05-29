@@ -46,13 +46,13 @@ export function useSetupTwoFactorState(): UseSetupTwoFactorStateResult {
     setLoading(true)
     try {
       setTotpData((await setupOwn2fa()).data)
+      setLoading(false)
     } catch (error) {
       message.error(
         error instanceof Error
           ? error.message
           : t('auth.setup2fa.content.loadFailed'),
       )
-    } finally {
       setLoading(false)
     }
   }
@@ -70,13 +70,13 @@ export function useSetupTwoFactorState(): UseSetupTwoFactorStateResult {
       setTimeout(() => {
         void navigate({ to: resolveRedirectTarget() as '/' })
       }, 300)
+      setEnabling(false)
     } catch (error) {
       message.error(
         error instanceof Error
           ? error.message
           : t('auth.personalsecurity.enableFailed'),
       )
-    } finally {
       setEnabling(false)
     }
   }

@@ -152,7 +152,9 @@ export function useColumnSettingsSupport(
 
       try {
         const remote = await getUserColumnSettings()
-        if (cancelled) return
+        if (cancelled) {
+          return
+        }
 
         remotePagesRef.current = remote?.pages || {}
         const remoteSettings = remote?.pages?.[pageKey] || null
@@ -175,9 +177,12 @@ export function useColumnSettingsSupport(
             }
           }
         }
+        if (!cancelled) {
+          remoteLoadedRef.current = true
+          setLoaded(true)
+        }
       } catch (error) {
         logger.warn('Failed to load roaming column settings', error)
-      } finally {
         if (!cancelled) {
           remoteLoadedRef.current = true
           setLoaded(true)
@@ -223,24 +228,34 @@ export function useColumnSettingsSupport(
       },
     }
 
+    const attempts = Array.from(
+      { length: PERSIST_MAX_RETRIES + 1 },
+      (_, attempt) => attempt,
+    )
     let lastError: unknown
-    for (let attempt = 0; attempt <= PERSIST_MAX_RETRIES; attempt++) {
-      try {
-        await saveUserColumnSettings(payload)
+    for (const attempt of attempts) {
+      const saveSucceeded = await saveUserColumnSettings(payload)
+        .then(() => true)
+        .catch(async (error: unknown) => {
+          lastError = error
+          if (isNetworkError(error) && attempt < PERSIST_MAX_RETRIES) {
+            await new Promise<void>((resolve) => {
+              retryTimerRef.current = setTimeout(
+                resolve,
+                PERSIST_BASE_DELAY_MS * 2 ** attempt,
+              )
+            })
+          }
+          return false
+        })
+
+      if (saveSucceeded) {
         remotePagesRef.current = payload.pages
         syncWarningShownRef.current = false
         return
-      } catch (error) {
-        lastError = error
-        if (isNetworkError(error) && attempt < PERSIST_MAX_RETRIES) {
-          await new Promise<void>((resolve) => {
-            retryTimerRef.current = setTimeout(
-              resolve,
-              PERSIST_BASE_DELAY_MS * 2 ** attempt,
-            )
-          })
-          continue
-        }
+      }
+
+      if (!(isNetworkError(lastError) && attempt < PERSIST_MAX_RETRIES)) {
         break
       }
     }
