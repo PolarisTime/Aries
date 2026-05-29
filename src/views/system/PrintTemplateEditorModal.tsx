@@ -55,9 +55,19 @@ export function PrintTemplateEditorModal({
               <Select options={printTemplateTargetOptions} />
             </Form.Item>
           </Col>
-          <Col span={16}>
+          <Col span={8}>
             <Form.Item name="templateName" label={t('system.printTemplateEditor.templateName')} required>
               <Input placeholder={t('system.printTemplateEditor.templateNamePlaceholder')} maxLength={64} />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="templateType" label={t('system.printTemplateEditor.templateType')} required>
+              <Select
+                options={[
+                  { value: 'HTML', label: t('system.printTemplateEditor.templateTypeHtml') },
+                  { value: 'COORD', label: t('system.printTemplateEditor.templateTypeCoord') },
+                ]}
+              />
             </Form.Item>
           </Col>
         </Row>

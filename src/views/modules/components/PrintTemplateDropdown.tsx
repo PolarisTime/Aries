@@ -6,6 +6,7 @@ import type { MenuProps } from 'antd/es/menu'
 import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listPrintTemplates } from '@/api/print-template'
+import { printTemplateTargetMap } from '@/config/print-template-targets'
 
 interface Props {
   moduleKey: string
@@ -22,6 +23,7 @@ interface PrintTemplate {
 
 export function PrintTemplateDropdown({ moduleKey, disabled, loading, onPrint }: Props) {
   const { t } = useTranslation()
+  const supportsPrintTemplate = moduleKey in printTemplateTargetMap
   const { data: templates = [] } = useQuery<PrintTemplate[]>({
     queryKey: ['print-templates', moduleKey],
     queryFn: async () => {
@@ -30,6 +32,7 @@ export function PrintTemplateDropdown({ moduleKey, disabled, loading, onPrint }:
       return Array.isArray(data) ? data : []
     },
     staleTime: 5 * 60 * 1000,
+    enabled: supportsPrintTemplate,
   })
 
   const menuItems = useMemo<MenuProps['items']>(() => {

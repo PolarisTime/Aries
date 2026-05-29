@@ -189,6 +189,14 @@ function parseInitCall(code: string) {
 function executeLodopCalls(lodop: CLodopInstance, code: string) {
   const SAFE_METHOD =
     /^LODOP\.(SET_|ADD_|NEWPAGE|NewPage|SET_PRINT|SELECT_|DELETE_|PRINT_INIT|PRINT\b|PREVIEW|PRINT_DESIGN|PRINT_SETUP)[A-Za-z_]*\s*\(/i
+  const CONTROL_METHODS = new Set([
+    'PRINT_INIT',
+    'PRINT_INITA',
+    'PREVIEW',
+    'PRINT',
+    'PRINT_DESIGN',
+    'PRINT_SETUP',
+  ])
   const lines = code.split(/;\r?\n?/)
   for (const line of lines) {
     const trimmed = line.trim()
@@ -198,12 +206,13 @@ function executeLodopCalls(lodop: CLodopInstance, code: string) {
     try {
       const openParen = trimmed.indexOf('(')
       const methodName = trimmed.substring(6, openParen)
+      if (CONTROL_METHODS.has(methodName.toUpperCase())) continue
       const argsStr = trimmed.substring(openParen + 1, trimmed.lastIndexOf(')'))
       const args = parseArgs(argsStr)
       const fn = (
         lodop as unknown as Record<string, (...a: unknown[]) => void>
       )[methodName]
-      if (typeof fn === 'function') fn(...args)
+      if (typeof fn === 'function') fn.apply(lodop, args)
     } catch {
       // skip broken lines
     }
