@@ -1,7 +1,6 @@
-import { flexRender } from '@tanstack/react-table'
 import type { TableColumnsType, TableProps } from 'antd'
 import type { ColumnType } from 'antd/es/table'
-import { type Dispatch, type SetStateAction, useState } from 'react'
+import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import type {
@@ -46,6 +45,63 @@ function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
   return merged
 }
 
+function buildAntdColumns({
+  columnDefs,
+  columnOrder,
+  columnVisibility,
+  sorting,
+}: {
+  columnDefs: ColumnDef<ModuleRecord, unknown>[]
+  columnOrder: string[]
+  columnVisibility: Record<string, boolean>
+  sorting: SortingState
+}): TableColumnsType<ModuleRecord> {
+  const columnMap = new Map(
+    columnDefs.map((column) => [
+      (column as ColumnDef<ModuleRecord, unknown> & { id: string }).id,
+      column,
+    ]),
+  )
+  return columnOrder.flatMap((columnId) => {
+    if (columnVisibility[columnId] === false) {
+      return []
+    }
+    const columnDef = columnMap.get(columnId)
+    if (!columnDef) {
+      return []
+    }
+    const title: ReactNode =
+      typeof columnDef.header === 'function' ? '' : columnDef.header
+    const sorted = sorting.find((item) => item.id === columnId)
+    return [
+      {
+        title,
+        dataIndex: columnId,
+        key: columnId,
+        fixed: columnDef.meta?.fixed as ColumnType<ModuleRecord>['fixed'],
+        className: columnId === 'actions' ? 'sticky-actions-col' : undefined,
+        onCell:
+          columnId === 'actions'
+            ? () => ({ className: 'sticky-actions-col' })
+            : undefined,
+        onHeaderCell:
+          columnId === 'actions'
+            ? () => ({ className: 'sticky-actions-col' })
+            : undefined,
+        width: columnDef.meta?.width,
+        align: (columnDef.meta?.align ??
+          'center') as ColumnType<ModuleRecord>['align'],
+        ellipsis: true,
+        sorter: columnId !== 'actions',
+        sortOrder: sorted ? (sorted.desc ? 'descend' : 'ascend') : null,
+        render: (_: unknown, record: ModuleRecord) => {
+          return columnDef.meta?.renderCell?.(record) ?? null
+        },
+      },
+    ]
+  })
+}
+
 export function useBusinessGridTable({
   moduleKey,
   config,
@@ -77,21 +133,22 @@ export function useBusinessGridTable({
     }
     return state
   })()
+  const fallbackConfig: ModulePageConfig = {
+    key: moduleKey,
+    title: '',
+    kicker: '',
+    description: '',
+    filters: [],
+    columns: [],
+    detailFields: [],
+    data: [],
+    buildOverview: () => [],
+  }
   const { columns: columnDefs } = useGridColumns({
-    config: config ?? {
-      key: '',
-      title: '',
-      kicker: '',
-      description: '',
-      filters: [],
-      columns: [],
-      detailFields: [],
-      data: [],
-      buildOverview: () => [],
-    },
+    config: config ?? fallbackConfig,
     rowActions: buildActions,
     canUpdate: Boolean(config) && (canUpdateRecord || Boolean(showActions)),
-    showActions,
+    showActions: Boolean(config) && showActions,
   })
   const allColumnIds = columnDefs.map(
     (c) => (c as ColumnDef<ModuleRecord, unknown> & { id: string }).id || '',
@@ -132,49 +189,13 @@ export function useBusinessGridTable({
     onColumnOrderChange: handleColumnOrderChange,
     sorting,
   })
-  const headerGroup = table.getHeaderGroups()[0]
-  const computedColumns: TableColumnsType<ModuleRecord> = headerGroup
-    ? headerGroup.headers.map((header) => ({
-        title: flexRender(header.column.columnDef.header, header.getContext()),
-        dataIndex: header.column.id,
-        key: header.column.id,
-        fixed: header.column.columnDef.meta
-          ?.fixed as ColumnType<ModuleRecord>['fixed'],
-        className:
-          header.column.id === 'actions' ? 'sticky-actions-col' : undefined,
-        onCell:
-          header.column.id === 'actions'
-            ? () => ({ className: 'sticky-actions-col' })
-            : undefined,
-        onHeaderCell:
-          header.column.id === 'actions'
-            ? () => ({ className: 'sticky-actions-col' })
-            : undefined,
-        width: header.column.columnDef.meta?.width,
-        align: (header.column.columnDef.meta?.align ??
-          'center') as ColumnType<ModuleRecord>['align'],
-        ellipsis: true,
-        sorter: header.column.getCanSort(),
-        sortOrder:
-          header.column.getIsSorted() === 'asc'
-            ? 'ascend'
-            : header.column.getIsSorted() === 'desc'
-              ? 'descend'
-              : null,
-        render: (_: unknown, record: ModuleRecord) => {
-          const meta = header.column.columnDef.meta
-          return meta?.renderCell?.(record) ?? null
-        },
-      }))
-    : []
-  // 保留上一次有效的列定义，避免 config 短暂为 undefined 时表格只显示勾选框
-  const [lastNonEmptyColumns, setLastNonEmptyColumns] = useState<
-    TableColumnsType<ModuleRecord>
-  >([])
-  if (computedColumns.length > 0 && lastNonEmptyColumns !== computedColumns) {
-    setLastNonEmptyColumns(computedColumns)
-  }
-  const antdColumns = computedColumns.length > 0 ? computedColumns : lastNonEmptyColumns
+  const computedColumns = buildAntdColumns({
+    columnDefs,
+    columnOrder,
+    columnVisibility,
+    sorting,
+  })
+  const antdColumns = computedColumns
   const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined = {
     selectedRowKeys,
     onChange: (keys: React.Key[], rows: ModuleRecord[]) => {
