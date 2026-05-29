@@ -6,15 +6,16 @@ import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Skeleton from 'antd/es/skeleton'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  type CompanySettingProfile,
   getCompanySettingProfile,
   saveCompanySettingProfile,
 } from '@/api/company-settings'
 import { useRequestError } from '@/hooks/useRequestError'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { getFormString, validateForm } from '@/lib/antd-form'
+import { validateForm } from '@/lib/antd-form'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
@@ -35,57 +36,48 @@ type CompanySettingFormValues = {
   [key: string]: unknown
 }
 
-export function CompanySettingsView() {
+function buildCompanySettingFormValues(
+  profile: CompanySettingProfile | null,
+): CompanySettingFormValues {
+  return {
+    id: profile?.id,
+    companyName: profile?.companyName ?? '',
+    taxNo: profile?.taxNo ?? '',
+    status: profile?.status || '正常',
+    remark: profile?.remark || '',
+  }
+}
+
+interface CompanySettingsFormProps {
+  canView: boolean
+  canSave: boolean
+  isLoading: boolean
+  profile: CompanySettingProfile | null
+  onRefresh: () => void
+}
+
+function CompanySettingsForm({
+  canView,
+  canSave,
+  isLoading,
+  profile,
+  onRefresh,
+}: CompanySettingsFormProps) {
   const queryClient = useQueryClient()
   const { t } = useTranslation()
   const { showError } = useRequestError()
-  const permissionStore = usePermissionStore()
-
-  const canView = permissionStore.can('company-setting', 'read')
-  const canSave = permissionStore.can('company-setting', 'update')
-
   const [form] = Form.useForm()
+  const initialValues = buildCompanySettingFormValues(profile)
+  const statusValue = Form.useWatch('status', form)
   const [settlementAccounts, setSettlementAccounts] = useState<
     SettlementAccountFormRow[]
-  >([createEmptySettlementAccount()])
-  const [initialized, setInitialized] = useState(false)
-
-  const { data: profile, isLoading } = useQuery({
-    queryKey: QUERY_KEYS.companySetting,
-    queryFn: getCompanySettingProfile,
-    enabled: canView,
-  })
-
-  useEffect(() => {
-    if (profile) {
-      form.setFieldsValue({
-        id: profile.id,
-        companyName: profile.companyName,
-        taxNo: profile.taxNo,
-        status: profile.status || '正常',
-        remark: profile.remark || '',
-      })
-      setSettlementAccounts(
-        normalizeSettlementAccounts(profile.settlementAccounts),
-      )
-      setInitialized(true)
-    }
-  }, [profile, form])
+  >(() => normalizeSettlementAccounts(profile?.settlementAccounts))
 
   const saveMutation = useMutation({
     mutationFn: saveCompanySettingProfile,
     onSuccess: (data) => {
       if (data) {
-        form.setFieldsValue({
-          id: data.id,
-          companyName: data.companyName,
-          taxNo: data.taxNo,
-          status: data.status,
-          remark: data.remark || '',
-        })
-        setSettlementAccounts(
-          normalizeSettlementAccounts(data.settlementAccounts),
-        )
+        queryClient.setQueryData(QUERY_KEYS.companySetting, data)
       }
       message.success(t('common.saveSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.companySetting })
@@ -93,33 +85,31 @@ export function CompanySettingsView() {
     onError: (err: Error) => showError(err, t('api.saveCompanyInfoFailed')),
   })
 
-  const addSettlementAccount = useCallback(() => {
+  const addSettlementAccount = () => {
     setSettlementAccounts((prev) => [...prev, createEmptySettlementAccount()])
-  }, [])
+  }
 
-  const removeSettlementAccount = useCallback(
-    (index: number) => {
-      if (settlementAccounts.length <= 1) {
-        message.warning(t('system.company.atLeastOneSettlementAccount'))
-        return
-      }
-      setSettlementAccounts((prev) => prev.filter((_, i) => i !== index))
-    },
-    [settlementAccounts.length, t],
-  )
+  const removeSettlementAccount = (index: number) => {
+    if (settlementAccounts.length <= 1) {
+      message.warning(t('system.company.atLeastOneSettlementAccount'))
+      return
+    }
+    setSettlementAccounts((prev) => prev.filter((_, i) => i !== index))
+  }
 
-  const updateSettlementAccount = useCallback(
-    (index: number, field: keyof SettlementAccountFormRow, value: string) => {
-      setSettlementAccounts((prev) =>
-        prev.map((item, i) =>
-          i === index ? { ...item, [field]: value } : item,
-        ),
-      )
-    },
-    [],
-  )
+  const updateSettlementAccount = (
+    index: number,
+    field: keyof SettlementAccountFormRow,
+    value: string,
+  ) => {
+    setSettlementAccounts((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item,
+      ),
+    )
+  }
 
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
     if (!canSave) {
       message.warning(t('common.noPermission'))
       return
@@ -191,27 +181,24 @@ export function CompanySettingsView() {
     } catch {
       /* validation failed */
     }
-  }, [canSave, form, settlementAccounts, saveMutation, t])
+  }
 
-  const overviewItems = useMemo(
-    () => [
-      {
-        label: t('system.company.enterpriseMode'),
-        value: t('system.company.singleEnterprise'),
-      },
-      {
-        label: t('system.company.subjectStatus'),
-        value: asString(getFormString(form, 'status')) || '--',
-      },
-      {
-        label: t('system.company.settlementBanks'),
-        value: t('system.company.countUnit', {
-          count: settlementAccounts.length,
-        }),
-      },
-    ],
-    [form, settlementAccounts, t],
-  )
+  const overviewItems = [
+    {
+      label: t('system.company.enterpriseMode'),
+      value: t('system.company.singleEnterprise'),
+    },
+    {
+      label: t('system.company.subjectStatus'),
+      value: asString(statusValue ?? initialValues.status) || '--',
+    },
+    {
+      label: t('system.company.settlementBanks'),
+      value: t('system.company.countUnit', {
+        count: settlementAccounts.length,
+      }),
+    },
+  ]
 
   return (
     <div className="page-stack">
@@ -220,12 +207,7 @@ export function CompanySettingsView() {
         canSave={canSave}
         saving={saveMutation.isPending}
         overviewItems={overviewItems}
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
-        onRefresh={() =>
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.companySetting,
-          })
-        }
+        onRefresh={onRefresh}
         onSave={() => {
           void handleSave()
         }}
@@ -248,10 +230,10 @@ export function CompanySettingsView() {
             description={t('system.company.noViewPermission')}
           />
         )}
-        {isLoading && !initialized ? (
+        {isLoading ? (
           <Skeleton active />
         ) : (
-          <Form form={form} layout="vertical">
+          <Form form={form} layout="vertical" initialValues={initialValues}>
             <Row gutter={16}>
               <Col span={8}>
                 <CompanySubjectCard
@@ -287,5 +269,35 @@ export function CompanySettingsView() {
         )}
       </Card>
     </div>
+  )
+}
+
+export function CompanySettingsView() {
+  const queryClient = useQueryClient()
+  const permissionStore = usePermissionStore()
+  const canView = permissionStore.can('company-setting', 'read')
+  const canSave = permissionStore.can('company-setting', 'update')
+
+  const profileQuery = useQuery({
+    queryKey: QUERY_KEYS.companySetting,
+    queryFn: getCompanySettingProfile,
+    enabled: canView,
+  })
+
+  const profileVersion = canView ? profileQuery.dataUpdatedAt : 'no-view'
+
+  return (
+    <CompanySettingsForm
+      key={profileVersion}
+      canView={canView}
+      canSave={canSave}
+      isLoading={profileQuery.isLoading}
+      profile={profileQuery.data ?? null}
+      onRefresh={() => {
+        void queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.companySetting,
+        })
+      }}
+    />
   )
 }
