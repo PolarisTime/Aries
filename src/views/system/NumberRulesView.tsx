@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import Form from 'antd/es/form'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   listSystemSettings,
@@ -45,75 +45,59 @@ export function NumberRulesView() {
     queryFn: () => listSystemSettings(),
   })
 
-  const filteredRows = useMemo(
-    () =>
-      rows.filter((record) => {
-        if (statusFilter && asString(record.status) !== statusFilter) {
-          return false
-        }
-        return matchesNumberRuleKeyword(record, keyword)
-      }),
-    [rows, keyword, statusFilter],
-  )
+  const filteredRows = rows.filter((record) => {
+    if (statusFilter && asString(record.status) !== statusFilter) {
+      return false
+    }
+    return matchesNumberRuleKeyword(record, keyword)
+  })
 
-  const numberRuleRows = useMemo(
-    () => filteredRows.filter(isNumberRule),
-    [filteredRows],
-  )
-  const uploadRuleRows = useMemo(
-    () => filteredRows.filter(isUploadRule),
-    [filteredRows],
-  )
+  const numberRuleRows = filteredRows.filter(isNumberRule)
+  const uploadRuleRows = filteredRows.filter(isUploadRule)
 
   const refresh = useRefreshQuery('number-rules')
 
-  const openNumberRuleEditor = useCallback(
-    (record: ModuleRecord) => {
-      if (!canEdit) {
-        message.warning(t('system.numberRules.noEditPermission'))
-        return
-      }
-      editingRecord.current = record
-      setEditorKind('number-rule')
-      form.setFieldsValue({
-        settingCode: record.settingCode,
-        settingName: record.settingName,
-        billName: record.billName,
-        prefix: record.prefix || '',
-        dateRule: record.dateRule || 'yyyy',
-        serialLength: record.serialLength || 6,
-        resetRule: record.resetRule || 'YEARLY',
-        status: record.status || '正常',
-        remark: record.remark || '',
-      })
-      setEditorOpen(true)
-    },
-    [canEdit, form, t],
-  )
+  const openNumberRuleEditor = (record: ModuleRecord) => {
+    if (!canEdit) {
+      message.warning(t('system.numberRules.noEditPermission'))
+      return
+    }
+    editingRecord.current = record
+    setEditorKind('number-rule')
+    form.setFieldsValue({
+      settingCode: record.settingCode,
+      settingName: record.settingName,
+      billName: record.billName,
+      prefix: record.prefix || '',
+      dateRule: record.dateRule || 'yyyy',
+      serialLength: record.serialLength || 6,
+      resetRule: record.resetRule || 'YEARLY',
+      status: record.status || '正常',
+      remark: record.remark || '',
+    })
+    setEditorOpen(true)
+  }
 
-  const openUploadRuleEditor = useCallback(
-    (record: ModuleRecord) => {
-      if (!canEdit) {
-        message.warning(t('system.numberRules.noEditPermission'))
-        return
-      }
-      editingRecord.current = record
-      setEditorKind('upload-rule')
-      form.setFieldsValue({
-        moduleKey: record.moduleKey,
-        moduleName: record.moduleName || record.billName,
-        ruleCode: record.ruleCode || record.settingCode,
-        ruleName: record.ruleName || record.settingName,
-        renamePattern: record.renamePattern || record.prefix || '',
-        status: record.status || '正常',
-        remark: record.remark || '',
-      })
-      setEditorOpen(true)
-    },
-    [canEdit, form, t],
-  )
+  const openUploadRuleEditor = (record: ModuleRecord) => {
+    if (!canEdit) {
+      message.warning(t('system.numberRules.noEditPermission'))
+      return
+    }
+    editingRecord.current = record
+    setEditorKind('upload-rule')
+    form.setFieldsValue({
+      moduleKey: record.moduleKey,
+      moduleName: record.moduleName || record.billName,
+      ruleCode: record.ruleCode || record.settingCode,
+      ruleName: record.ruleName || record.settingName,
+      renamePattern: record.renamePattern || record.prefix || '',
+      status: record.status || '正常',
+      remark: record.remark || '',
+    })
+    setEditorOpen(true)
+  }
 
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
     if (!editingRecord.current) return
     setSaving(true)
     try {
@@ -146,7 +130,7 @@ export function NumberRulesView() {
       showError(error, t('system.numberRules.saveFailed'))
       setSaving(false)
     }
-  }, [editingRecord, editorKind, form, refresh, showError, t])
+  }
 
   return (
     <div className="page-stack">

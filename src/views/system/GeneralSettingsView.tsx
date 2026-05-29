@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import Form from 'antd/es/form'
-import { useCallback, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listSystemSettings, saveSystemSetting } from '@/api/system-settings'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
@@ -44,87 +44,70 @@ export function GeneralSettingsView() {
     queryFn: () => listSystemSettings(),
   })
 
-  const filteredRows = useMemo(
-    () =>
-      rows.filter((record) => {
-        if (!isSystemSwitch(record)) return false
-        if (statusFilter && asString(record.status) !== statusFilter)
-          return false
-        return matchesGeneralSettingKeyword(record, keyword)
-      }),
-    [rows, keyword, statusFilter],
-  )
+  const filteredRows = rows.filter((record) => {
+    if (!isSystemSwitch(record)) return false
+    if (statusFilter && asString(record.status) !== statusFilter) return false
+    return matchesGeneralSettingKeyword(record, keyword)
+  })
 
-  const basicSettingRows = useMemo(
-    () => filteredRows.filter(isNumericSetting),
-    [filteredRows],
-  )
-  const switchRows = useMemo(
-    () => filteredRows.filter(isToggleSetting),
-    [filteredRows],
-  )
+  const basicSettingRows = filteredRows.filter(isNumericSetting)
+  const switchRows = filteredRows.filter(isToggleSetting)
 
   const refresh = useRefreshQuery('general-setting')
 
-  const openEditor = useCallback(
-    (record: ModuleRecord) => {
-      if (!canEdit) {
-        message.warning(t('common.noPermission'))
-        return
-      }
-      setEditingRecord(record)
-      form.setFieldsValue({
+  const openEditor = (record: ModuleRecord) => {
+    if (!canEdit) {
+      message.warning(t('common.noPermission'))
+      return
+    }
+    setEditingRecord(record)
+    form.setFieldsValue({
+      settingCode: record.settingCode,
+      settingName: record.settingName,
+      billName: record.billName,
+      remark: record.remark,
+      enabled: asString(record.status) === '正常',
+      numericValue: isWatermarkContentSetting(record)
+        ? asString(record.sampleNo)
+        : isWatermarkPropSetting(record) || isDefaultTaxRateSetting(record)
+          ? Number(record.sampleNo || 0.13)
+          : Number(record.sampleNo || 0),
+      selectedActions: asString(record.sampleNo).split(',').filter(Boolean),
+    })
+    setEditorOpen(true)
+  }
+
+  const handleToggle = async (record: ModuleRecord) => {
+    setToggling(true)
+    const nextStatus = asString(record.status) === '正常' ? '禁用' : '正常'
+    try {
+      await saveSystemSetting({
+        id: record.id,
         settingCode: record.settingCode,
         settingName: record.settingName,
         billName: record.billName,
+        prefix: 'SYS',
+        dateRule: 'NONE',
+        serialLength: 6,
+        resetRule: 'NEVER',
+        sampleNo: record.sampleNo || 'ON',
+        status: nextStatus,
         remark: record.remark,
-        enabled: asString(record.status) === '正常',
-        numericValue: isWatermarkContentSetting(record)
-          ? asString(record.sampleNo)
-          : isWatermarkPropSetting(record) || isDefaultTaxRateSetting(record)
-            ? Number(record.sampleNo || 0.13)
-            : Number(record.sampleNo || 0),
-        selectedActions: asString(record.sampleNo).split(',').filter(Boolean),
       })
-      setEditorOpen(true)
-    },
-    [canEdit, form, t],
-  )
+      message.success(
+        nextStatus === '正常'
+          ? t('system.generalSettings.enabled')
+          : t('system.generalSettings.closed'),
+      )
+      refresh()
+      setToggling(false)
+    } catch (error) {
+      showError(error, t('table.operationFailed'))
+      setToggling(false)
+    }
+  }
 
-  const handleToggle = useCallback(
-    async (record: ModuleRecord) => {
-      setToggling(true)
-      const nextStatus = asString(record.status) === '正常' ? '禁用' : '正常'
-      try {
-        await saveSystemSetting({
-          id: record.id,
-          settingCode: record.settingCode,
-          settingName: record.settingName,
-          billName: record.billName,
-          prefix: 'SYS',
-          dateRule: 'NONE',
-          serialLength: 6,
-          resetRule: 'NEVER',
-          sampleNo: record.sampleNo || 'ON',
-          status: nextStatus,
-          remark: record.remark,
-        })
-        message.success(
-          nextStatus === '正常'
-            ? t('system.generalSettings.enabled')
-            : t('system.generalSettings.closed'),
-        )
-        refresh()
-        setToggling(false)
-      } catch (error) {
-        showError(error, t('table.operationFailed'))
-        setToggling(false)
-      }
-    },
-    [refresh, showError, t],
-  )
-
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
     if (!editingRecord) return
     setSaving(true)
     try {
@@ -158,7 +141,7 @@ export function GeneralSettingsView() {
       showError(error, t('api.saveFailed'))
       setSaving(false)
     }
-  }, [editingRecord, form, refresh, showError, t])
+  }
 
   return (
     <div className="page-stack">

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   deletePrintTemplate,
@@ -69,7 +69,7 @@ export function PrintTemplateView() {
 
   const refresh = useRefreshQuery('print-template')
 
-  const openCreate = useCallback(() => {
+  const openCreate = () => {
     if (!canCreate) {
       message.warning(t('common.noPermission'))
       return
@@ -83,71 +83,62 @@ export function PrintTemplateView() {
     setTemplateHtml('')
     setActiveTemplateId(undefined)
     setEditorOpen(true)
-  }, [canCreate, form, selectedBillType, t])
+  }
 
-  const openEdit = useCallback(
-    (record: PrintTemplateRecord) => {
-      if (!canEdit) {
-        message.warning(t('common.noPermission'))
-        return
-      }
-      form.setFieldsValue({
-        id: record.id,
-        billType: record.billType || selectedBillType,
-        templateName: record.templateName,
-        templateType: record.templateType || 'HTML',
-      })
-      setTemplateHtml(record.templateHtml || '')
-      setActiveTemplateId(record.id)
-      setEditorOpen(true)
-    },
-    [canEdit, form, selectedBillType, t],
-  )
+  const openEdit = (record: PrintTemplateRecord) => {
+    if (!canEdit) {
+      message.warning(t('common.noPermission'))
+      return
+    }
+    form.setFieldsValue({
+      id: record.id,
+      billType: record.billType || selectedBillType,
+      templateName: record.templateName,
+      templateType: record.templateType || 'HTML',
+    })
+    setTemplateHtml(record.templateHtml || '')
+    setActiveTemplateId(record.id)
+    setEditorOpen(true)
+  }
 
-  const openPreview = useCallback((record: PrintTemplateRecord) => {
+  const openPreview = (record: PrintTemplateRecord) => {
     setPreviewTemplate(record)
     setPreviewOpen(true)
-  }, [])
+  }
 
-  const handleCopy = useCallback(
-    (record: PrintTemplateRecord) => {
-      if (!canCreate) {
-        message.warning(t('common.noPermission'))
-        return
-      }
-      form.setFieldsValue({
-        billType: record.billType || selectedBillType,
-        templateName: buildPrintTemplateCopyName(record),
-        templateType: record.templateType || 'HTML',
-      })
-      setTemplateHtml(record.templateHtml || '')
-      setActiveTemplateId(undefined)
-      setEditorOpen(true)
-    },
-    [canCreate, form, selectedBillType, t],
-  )
+  const handleCopy = (record: PrintTemplateRecord) => {
+    if (!canCreate) {
+      message.warning(t('common.noPermission'))
+      return
+    }
+    form.setFieldsValue({
+      billType: record.billType || selectedBillType,
+      templateName: buildPrintTemplateCopyName(record),
+      templateType: record.templateType || 'HTML',
+    })
+    setTemplateHtml(record.templateHtml || '')
+    setActiveTemplateId(undefined)
+    setEditorOpen(true)
+  }
 
-  const handleDelete = useCallback(
-    (record: PrintTemplateRecord) => {
-      if (!canDelete) {
-        message.warning(t('common.noPermission'))
-        return
-      }
-      modal.confirm({
-        title: t('system.printTemplate.deleteTemplate'),
-        content: t('system.printTemplate.deleteContent', {
-          name: record.templateName,
-        }),
-        okText: t('common.confirm'),
-        cancelText: t('common.cancel'),
-        okButtonProps: { danger: true },
-        onOk: () => deleteMutation.mutateAsync(record.id),
-      })
-    },
-    [canDelete, deleteMutation, t],
-  )
+  const handleDelete = (record: PrintTemplateRecord) => {
+    if (!canDelete) {
+      message.warning(t('common.noPermission'))
+      return
+    }
+    modal.confirm({
+      title: t('system.printTemplate.deleteTemplate'),
+      content: t('system.printTemplate.deleteContent', {
+        name: record.templateName,
+      }),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: () => deleteMutation.mutateAsync(record.id),
+    })
+  }
 
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
     if (!templateHtml.trim()) {
       message.warning(t('system.printTemplate.inputTemplateContent'))
       return
@@ -164,7 +155,7 @@ export function PrintTemplateView() {
     } catch {
       // validation failed
     }
-  }, [activeTemplateId, form, saveMutation, templateHtml, t])
+  }
 
   return (
     <div className="page-stack">
