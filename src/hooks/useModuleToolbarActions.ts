@@ -130,14 +130,15 @@ export function useModuleToolbarActions({
       orderedActions.push(bulkDeleteAction)
     }
     orderedActions.push(...bulkToolbarActions, ...remainingActions)
-    return orderedActions
-      .filter((action) => canUseAction(action))
-      .map((action) => {
-        if (action.key === 'generate_pickup_list' && selectedRowCount === 0) {
-          return { ...action, disabled: true }
-        }
-        return action
-      })
+    return orderedActions.flatMap((action) => {
+      if (!canUseAction(action)) {
+        return []
+      }
+      if (action.key === 'generate_pickup_list' && selectedRowCount === 0) {
+        return [{ ...action, disabled: true }]
+      }
+      return [action]
+    })
   })() satisfies ModuleActionDefinition[]
 
   const handleAction = async (action: ModuleActionDefinition) => {
