@@ -86,6 +86,12 @@ export const QUERY_KEYS = {
   statementLinkOptions: (type: string) =>
     ['statement-link-options', type] as const,
 
+  // Finance
+  projectArSummary: (projectId: string) =>
+    ['project-ar', 'summary', projectId] as const,
+  projectArDetail: (projectId: string, tab: string) =>
+    ['project-ar', 'detail', projectId, tab] as const,
+
   // Print
   printTemplate: ['print-template'] as const,
   printTemplateByType: (billType: string) =>
