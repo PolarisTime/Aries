@@ -9,7 +9,7 @@ import Spin from 'antd/es/spin'
 import Table, { type ColumnsType } from 'antd/es/table'
 import Tabs from 'antd/es/tabs'
 import Typography from 'antd/es/typography'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -88,7 +88,7 @@ async function fetchProjectArDetail(projectId: string, tab: string) {
 
 function useDetailColumns(locale: string): ColumnsType<ProjectArDetailRow> {
   const { t } = useTranslation()
-  return useMemo(() => [
+  return [
     { title: t('finance.projectArDetail.sourceDocumentNo'), dataIndex: 'sourceDocumentNo', width: 160 },
     { title: t('finance.projectArDetail.documentType'), dataIndex: 'documentType', width: 100 },
     {
@@ -124,7 +124,7 @@ function useDetailColumns(locale: string): ColumnsType<ProjectArDetailRow> {
     { title: t('finance.projectArDetail.receiptStatus'), dataIndex: 'receiptStatus', width: 100 },
     { title: t('finance.projectArDetail.operatorName'), dataIndex: 'operatorName', width: 100 },
     { title: t('common.remark'), dataIndex: 'remark', width: 150 },
-  ], [t, locale])
+  ]
 }
 
 export function ProjectArDetailPage(): React.JSX.Element {
@@ -135,10 +135,10 @@ export function ProjectArDetailPage(): React.JSX.Element {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('unreconciled')
 
-  const projectId: string = useMemo(() => {
+  const projectId: string = (() => {
     const segments = location.pathname.split('/').filter(Boolean)
     return segments[segments.length - 1] || ''
-  }, [location])
+  })()
 
   const summaryQuery = useQuery({
     queryKey: QUERY_KEYS.projectArSummary(projectId),
