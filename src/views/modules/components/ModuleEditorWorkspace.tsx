@@ -11,7 +11,6 @@ import Form from 'antd/es/form'
 import Space from 'antd/es/space'
 import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
-import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   resolveMasterOptionRequirements,
@@ -74,23 +73,13 @@ export function ModuleEditorWorkspace({
 }: Props) {
   const { t } = useTranslation()
   const [form] = Form.useForm()
-  const formFields = useMemo(() => config.formFields || [], [config.formFields])
-  const formOptionRequirements = useMemo(
-    () => resolveMasterOptionRequirements(formFields),
-    [formFields],
-  )
+  const formFields = config.formFields || []
+  const formOptionRequirements = resolveMasterOptionRequirements(formFields)
   useMasterOptions(formOptionRequirements, open)
-  const statusField = useMemo(
-    () => formFields.find((field) => field.key === 'status'),
-    [formFields],
-  )
-  const statusOptions = useMemo(
-    () =>
-      Array.isArray(statusField?.options)
-        ? statusField.options.map((option) => String(option.value))
-        : [],
-    [statusField],
-  )
+  const statusField = formFields.find((field) => field.key === 'status')
+  const statusOptions = Array.isArray(statusField?.options)
+    ? statusField.options.map((option) => String(option.value))
+    : []
   const canEditLineItems = Boolean(config.itemColumns?.length)
   const {
     canAddManualEditorItems,

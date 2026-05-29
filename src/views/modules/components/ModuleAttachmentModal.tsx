@@ -15,7 +15,7 @@ import Space from 'antd/es/space'
 import Spin from 'antd/es/spin'
 import Typography from 'antd/es/typography'
 import Upload from 'antd/es/upload'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   type AttachmentRecord,
@@ -33,6 +33,11 @@ interface Props {
   resourceKey?: string
   recordId: string
   onClose: () => void
+}
+
+async function fetchAttachmentList(moduleKey: string, recordId: string) {
+  const res = await getAttachmentBindings(moduleKey, recordId)
+  return res.data?.attachments || []
 }
 
 export function ModuleAttachmentModal({
@@ -56,58 +61,51 @@ export function ModuleAttachmentModal({
   const canCreateAttachment = can(resolvedResource, 'update')
   const canDeleteAttachment = can(resolvedResource, 'delete')
 
-  const fetchAttachments = useCallback(async () => {
+  const fetchAttachments = async () => {
     if (!recordId) return
     setLoading(true)
     try {
-      const res = await getAttachmentBindings(moduleKey, recordId)
-      setAttachments(res.data?.attachments || [])
+      setAttachments(await fetchAttachmentList(moduleKey, recordId))
       setLoading(false)
     } catch {
       /* ignore */
       setLoading(false)
     }
-  }, [moduleKey, recordId])
+  }
 
-  const bindAttachment = useCallback(
-    async (attachmentId: string) => {
-      const latestBindings = await getAttachmentBindings(moduleKey, recordId)
-      const latestAttachmentIds = (latestBindings.data?.attachments || []).map(
-        (item) => item.id,
-      )
-      await updateAttachmentBindings(moduleKey, recordId, [
-        ...latestAttachmentIds,
-        attachmentId,
-      ])
-    },
-    [moduleKey, recordId],
-  )
+  const bindAttachment = async (attachmentId: string) => {
+    const latestBindings = await getAttachmentBindings(moduleKey, recordId)
+    const latestAttachmentIds = (latestBindings.data?.attachments || []).map(
+      (item) => item.id,
+    )
+    await updateAttachmentBindings(moduleKey, recordId, [
+      ...latestAttachmentIds,
+      attachmentId,
+    ])
+  }
 
-  const handleUpload = useCallback(
-    async (file: File) => {
-      setUploading(true)
-      try {
-        const uploadRes = await uploadAttachment(file, moduleKey)
-        const attachmentId = asString(uploadRes.data?.id).trim()
-        if (!attachmentId) {
-          message.error(t('modules.attachment.uploadNoId'))
-          setUploading(false)
-          return false
-        }
-        await bindAttachment(attachmentId)
-        message.success(t('modules.attachment.uploadBindSuccess'))
-        await fetchAttachments()
+  const handleUpload = async (file: File) => {
+    setUploading(true)
+    try {
+      const uploadRes = await uploadAttachment(file, moduleKey)
+      const attachmentId = asString(uploadRes.data?.id).trim()
+      if (!attachmentId) {
+        message.error(t('modules.attachment.uploadNoId'))
         setUploading(false)
-      } catch (err) {
-        message.error(err instanceof Error ? err.message : t('modules.attachment.uploadFailed'))
-        setUploading(false)
+        return false
       }
-      return false
-    },
-    [bindAttachment, fetchAttachments, moduleKey, t],
-  )
+      await bindAttachment(attachmentId)
+      message.success(t('modules.attachment.uploadBindSuccess'))
+      await fetchAttachments()
+      setUploading(false)
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : t('modules.attachment.uploadFailed'))
+      setUploading(false)
+    }
+    return false
+  }
 
-  const isImageAttachment = useCallback((attachment: AttachmentRecord) => {
+  const isImageAttachment = (attachment: AttachmentRecord) => {
     if (attachment.previewType === 'image') return true
     if (attachment.contentType?.startsWith('image/')) return true
     const fileName = String(
@@ -117,9 +115,9 @@ export function ModuleAttachmentModal({
         '',
     ).toLowerCase()
     return /\.(png|jpe?g|gif|bmp|webp|svg)$/.test(fileName)
-  }, [])
+  }
 
-  const isPdfAttachment = useCallback((attachment: AttachmentRecord) => {
+  const isPdfAttachment = (attachment: AttachmentRecord) => {
     if (attachment.previewType === 'pdf') return true
     if (attachment.contentType === 'application/pdf') return true
     const fileName = String(
@@ -129,9 +127,9 @@ export function ModuleAttachmentModal({
         '',
     ).toLowerCase()
     return fileName.endsWith('.pdf')
-  }, [])
+  }
 
-  const openImagePreview = useCallback((attachment: AttachmentRecord) => {
+  const openImagePreview = (attachment: AttachmentRecord) => {
     const src = attachment.previewUrl || attachment.downloadUrl || ''
     if (!src) {
       message.warning(t('modules.attachment.noPreviewUrl'))
@@ -139,9 +137,9 @@ export function ModuleAttachmentModal({
     }
     setPreviewSource(src)
     setPreviewOpen(true)
-  }, [t])
+  }
 
-  const openPdfPreview = useCallback((attachment: AttachmentRecord) => {
+  const openPdfPreview = (attachment: AttachmentRecord) => {
     const src = attachment.previewUrl || attachment.downloadUrl || ''
     if (!src) {
       message.warning(t('modules.attachment.noPreviewUrl'))
@@ -149,12 +147,9 @@ export function ModuleAttachmentModal({
     }
     setPdfPreviewUrl(src)
     setPdfPreviewOpen(true)
-  }, [t])
+  }
 
-  const imageAttachments = useMemo(
-    () => attachments.filter(isImageAttachment),
-    [attachments, isImageAttachment],
-  )
+  const imageAttachments = attachments.filter(isImageAttachment)
 
   const handleDownload = (attachment: AttachmentRecord) => {
     if (!attachment.downloadUrl) {
@@ -185,6 +180,33 @@ export function ModuleAttachmentModal({
       return
     }
 
+    const uploadPastedFile = async (file: File) => {
+      setUploading(true)
+      try {
+        const uploadRes = await uploadAttachment(file, moduleKey)
+        const attachmentId = asString(uploadRes.data?.id).trim()
+        if (!attachmentId) {
+          message.error(t('modules.attachment.uploadNoId'))
+          setUploading(false)
+          return
+        }
+        const latestBindings = await getAttachmentBindings(moduleKey, recordId)
+        const latestAttachmentIds = (
+          latestBindings.data?.attachments || []
+        ).map((item) => item.id)
+        await updateAttachmentBindings(moduleKey, recordId, [
+          ...latestAttachmentIds,
+          attachmentId,
+        ])
+        message.success(t('modules.attachment.uploadBindSuccess'))
+        setAttachments(await fetchAttachmentList(moduleKey, recordId))
+        setUploading(false)
+      } catch (err) {
+        message.error(err instanceof Error ? err.message : t('modules.attachment.uploadFailed'))
+        setUploading(false)
+      }
+    }
+
     const handlePaste = (event: ClipboardEvent) => {
       const target = event.target as HTMLElement | null
       if (!pasteZoneRef.current?.contains(target)) {
@@ -202,7 +224,7 @@ export function ModuleAttachmentModal({
 
       event.preventDefault()
       void (async () => {
-        await Promise.allSettled(files.map((file) => handleUpload(file)))
+        await Promise.allSettled(files.map((file) => uploadPastedFile(file)))
       })()
     }
 
@@ -210,7 +232,7 @@ export function ModuleAttachmentModal({
     return () => {
       window.removeEventListener('paste', handlePaste)
     }
-  }, [canCreateAttachment, handleUpload, open])
+  }, [canCreateAttachment, moduleKey, open, recordId, t])
 
   return (
     <Modal

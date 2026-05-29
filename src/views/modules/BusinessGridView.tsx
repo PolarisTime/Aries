@@ -1,6 +1,6 @@
 import { useLoaderData, useLocation } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { primeBusinessPageConfig } from '@/config/business-page-loader'
 import { getPageDefinition } from '@/config/page-registry'
@@ -14,20 +14,12 @@ export function BusinessGridView() {
   const loaderConfig = useLoaderData({
     strict: false,
   })
-  const pageDef = useMemo(() => {
-    return getPageDefinition(location.pathname)
-  }, [location])
-  const initialConfig = useMemo(
-    () =>
-      resolveBusinessGridInitialConfig(
-        pageDef,
-        loaderConfig &&
-          typeof loaderConfig === 'object' &&
-          'key' in loaderConfig
-          ? (loaderConfig as ModulePageConfig)
-          : undefined,
-      ),
-    [loaderConfig, pageDef],
+  const pageDef = getPageDefinition(location.pathname)
+  const initialConfig = resolveBusinessGridInitialConfig(
+    pageDef,
+    loaderConfig && typeof loaderConfig === 'object' && 'key' in loaderConfig
+      ? (loaderConfig as ModulePageConfig)
+      : undefined,
   )
 
   useEffect(() => {
