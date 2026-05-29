@@ -15,29 +15,55 @@ interface Props {
   itemId: string | number
   weightTon: string | number
   category?: string
-  sourceSalesOrderItemId?: string | number
+  inboundItemId?: string | number
+  purchaseOrderItemId?: string | number
+  salesOrderItemId?: string | number
 }
 
-export function PieceWeightPopover({ itemId, weightTon, category, sourceSalesOrderItemId }: Props) {
+function normalizeLookupId(value: string | number | undefined) {
+  return typeof value === 'number' || typeof value === 'string'
+    ? String(value).trim()
+    : ''
+}
+
+export function PieceWeightPopover({
+  itemId,
+  weightTon,
+  category,
+  inboundItemId,
+  purchaseOrderItemId,
+  salesOrderItemId,
+}: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
 
-  const apiPath = sourceSalesOrderItemId
-    ? `/purchase-orders/items/piece-weights/by-sales-order-item?salesOrderItemId=${sourceSalesOrderItemId}`
-    : `/purchase-orders/items/${itemId}/piece-weights`
+  const normalizedSalesOrderItemId = normalizeLookupId(salesOrderItemId)
+  const normalizedInboundItemId = normalizeLookupId(inboundItemId)
+  const normalizedPurchaseOrderItemId =
+    normalizeLookupId(purchaseOrderItemId) || normalizeLookupId(itemId)
+  const hasSalesOrderItemLookup = Boolean(normalizedSalesOrderItemId)
+  const hasInboundItemLookup = Boolean(normalizedInboundItemId)
 
-  const queryKey = sourceSalesOrderItemId
-    ? ['piece-weights', 'sales-order-item', sourceSalesOrderItemId]
-    : ['piece-weights', itemId]
+  const apiPath = hasSalesOrderItemLookup
+    ? `/purchase-orders/items/piece-weights/by-sales-order-item?salesOrderItemId=${encodeURIComponent(normalizedSalesOrderItemId)}`
+    : hasInboundItemLookup
+      ? `/purchase-inbounds/items/${encodeURIComponent(normalizedInboundItemId)}/piece-weights`
+      : `/purchase-orders/items/${encodeURIComponent(normalizedPurchaseOrderItemId)}/piece-weights`
 
-  const { data = [], isFetching } = useQuery({
+  const queryKey = hasSalesOrderItemLookup
+    ? ['piece-weights', 'sales-order-item', normalizedSalesOrderItemId]
+    : hasInboundItemLookup
+      ? ['piece-weights', 'purchase-inbound-item', normalizedInboundItemId]
+      : ['piece-weights', 'purchase-order-item', normalizedPurchaseOrderItemId]
+
+  const { data = [], isError, isFetching } = useQuery({
     queryKey,
     queryFn: async () => {
       const r = await http.get<{ code: number; data: PieceWeight[] }>(apiPath)
       assertApiSuccess(r, t('modules.pieceWeight.loadFailed'))
       return r.data || []
     },
-    enabled: open,
+    enabled: open && (hasSalesOrderItemLookup || hasInboundItemLookup || Boolean(normalizedPurchaseOrderItemId)),
   })
 
   const isWeighCategory = category === '盘螺' || category === '线材'
@@ -58,6 +84,8 @@ export function PieceWeightPopover({ itemId, weightTon, category, sourceSalesOrd
       content={
         isFetching ? (
           <div className="py-8 text-center">{t('modules.pieceWeight.loading')}</div>
+        ) : isError ? (
+          <div className="py-8 text-center text-gray-400">{t('modules.pieceWeight.loadFailed')}</div>
         ) : data.length === 0 ? (
           <div className="py-8 text-center text-gray-400">{t('modules.pieceWeight.noData')}</div>
         ) : (

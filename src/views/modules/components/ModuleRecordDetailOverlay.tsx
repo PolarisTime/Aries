@@ -20,6 +20,7 @@ import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { PieceWeightPopover } from './PieceWeightPopover'
+import { resolvePieceWeightLookupSource } from './piece-weight-source'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -56,21 +57,25 @@ export function ModuleRecordDetailOverlay({
         align: column.align,
         render:
           column.dataIndex === 'weightTon'
-            ? (value: unknown, record: ModuleLineItem) => (
+            ? (value: unknown, record: ModuleLineItem) => {
+                const lookupSource = resolvePieceWeightLookupSource(
+                  config.key,
+                  record,
+                )
+                return (
                 <PieceWeightPopover
                   itemId={record.id}
                   weightTon={asString(value)}
                   category={typeof record.category === 'string' ? record.category : undefined}
-                  sourceSalesOrderItemId={
-                    typeof record.sourceSalesOrderItemId === 'string' || typeof record.sourceSalesOrderItemId === 'number'
-                      ? record.sourceSalesOrderItemId
-                      : undefined
-                  }
+                  inboundItemId={lookupSource.inboundItemId}
+                  purchaseOrderItemId={lookupSource.purchaseOrderItemId}
+                  salesOrderItemId={lookupSource.salesOrderItemId}
                 />
-              )
+                )
+              }
             : (value: unknown) => formatCellValue(value, column.type),
       })),
-    [detailItemColumns, formatCellValue],
+    [config.key, detailItemColumns, formatCellValue],
   )
   const detailFields = config.detailFields || []
   const colSpan = Math.max(
