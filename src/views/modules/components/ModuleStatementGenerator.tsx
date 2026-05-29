@@ -3,7 +3,7 @@ import Modal from 'antd/es/modal'
 import Space from 'antd/es/space'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResultModal } from '@/components/AppResultModal'
 import type { ModuleRecord } from '@/types/module-page'
@@ -83,7 +83,7 @@ export function ModuleStatementGenerator({
     message: string
   } | null>(null)
 
-  const summary = useMemo(() => {
+  const summary = (() => {
     if (!selectedRows.length) return null
     try {
       const counterparty = extractCounterparty(selectedRows, statementType, t)
@@ -92,7 +92,7 @@ export function ModuleStatementGenerator({
     } catch {
       return null
     }
-  }, [selectedRows, statementType, t])
+  })()
 
   const handleGenerate = async () => {
     if (!summary) return
