@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Popover from 'antd/es/popover'
 import Table from 'antd/es/table'
@@ -20,7 +20,7 @@ export function WeightCellPopover({ value, record, moduleKey }: Props) {
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
 
-  const handleOpen = useCallback(async () => {
+  const handleOpen = async () => {
     setOpen(true)
     if (items.length === 0) {
       setLoading(true)
@@ -39,7 +39,7 @@ export function WeightCellPopover({ value, record, moduleKey }: Props) {
         setLoading(false)
       }
     }
-  }, [items.length, moduleKey, record.id, t])
+  }
 
   const emptyText = error || t('common.noData')
 

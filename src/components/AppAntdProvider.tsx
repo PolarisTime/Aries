@@ -1,7 +1,7 @@
 import AntdApp from 'antd/es/app'
 import ConfigProvider from 'antd/es/config-provider'
 import type { ReactNode } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { appAntdLocale } from '@/config/antd-locale'
 import { useThemeMode } from '@/hooks/useThemeMode'
 import { buildAntdTheme } from '@/styles/antd-theme'
@@ -45,16 +45,12 @@ export function AppAntdProvider({ children }: Props) {
       )
   }, [])
 
-  const themeConfig = useMemo(
-    () =>
-      buildAntdTheme({
-        borderRadius: 8,
-        cssVarKey: 'ant',
-        fontSize,
-        darkMode: resolvedTheme === 'dark',
-      }),
-    [fontSize, resolvedTheme],
-  )
+  const themeConfig = buildAntdTheme({
+    borderRadius: 8,
+    cssVarKey: 'ant',
+    fontSize,
+    darkMode: resolvedTheme === 'dark',
+  })
 
   return (
     <ConfigProvider locale={appAntdLocale} theme={themeConfig}>

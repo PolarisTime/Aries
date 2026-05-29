@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import Alert from 'antd/es/alert'
-import { lazy, Suspense, useMemo } from 'react'
+import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getDashboardSummary } from '@/api/dashboard'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -30,7 +30,7 @@ export function DashboardView() {
 
   const summary = summaryQuery.data
   const animatedServerTime = useDashboardServerTime(summary?.serverTime)
-  const infoItems = useMemo(() => buildDashboardInfoItems(t, summary), [t, summary])
+  const infoItems = buildDashboardInfoItems(t, summary)
 
   return (
     <div className="page-stack dashboard-root">

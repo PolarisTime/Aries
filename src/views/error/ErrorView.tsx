@@ -1,7 +1,7 @@
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import Button from 'antd/es/button'
 import Typography from 'antd/es/typography'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
 
@@ -30,7 +30,7 @@ export function ErrorView() {
   const status = getErrorStatus(error)
   const rawMessage = getErrorMessage(error, status, t)
   const subTitle = stripTraceSuffix(rawMessage)
-  const traceId = useMemo(() => extractBackendTraceId(error), [error])
+  const traceId = extractBackendTraceId(error)
 
   useEffect(() => {
     if (error)
@@ -40,9 +40,9 @@ export function ErrorView() {
       )
   }, [error, traceId])
 
-  const handleRetry = useCallback(() => {
+  const handleRetry = () => {
     void navigate({ to: router.state.location.pathname as '/' })
-  }, [navigate, router.state.location.pathname])
+  }
 
   return (
     <AppResult

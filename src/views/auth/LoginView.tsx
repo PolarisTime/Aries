@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import BorderBeam from 'antd/es/border-beam'
 import Card from 'antd/es/card'
 import Form from 'antd/es/form'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRequestError } from '@/hooks/useRequestError'
 import { useAuthStore } from '@/stores/authStore'
@@ -43,34 +43,31 @@ export function LoginView() {
     savedSession?.loginName || '',
   )
   const pendingRememberRef = useRef(true)
-  const handleLogin = useCallback(
-    async (values: LoginPayload) => {
-      setLoading(true)
-      setPendingLoginName(values.loginName)
-      pendingRememberRef.current = values.remember !== false
-      try {
-        const result = await signIn(values)
-        if (result.requires2fa) {
-          start2faStep(result.tempToken, values.loginName)
-          setLoading(false)
-          return
-        }
-        clearTotpSession()
-        message.success(
-          requiresForcedTotpSetup(result.user)
-            ? t('auth.loginview.forceTotpSetupSuccess')
-            : t('auth.loginSuccess'),
-        )
-        await navigate({ to: buildPostLoginTarget(result.user) as '/' })
+  const handleLogin = async (values: LoginPayload) => {
+    setLoading(true)
+    setPendingLoginName(values.loginName)
+    pendingRememberRef.current = values.remember !== false
+    try {
+      const result = await signIn(values)
+      if (result.requires2fa) {
+        start2faStep(result.tempToken, values.loginName)
         setLoading(false)
-      } catch (err) {
-        showError(err, t('auth.loginFailed'))
-        setLoading(false)
+        return
       }
-    },
-    [navigate, showError, signIn, start2faStep, t],
-  )
-  const handleTotpVerify = useCallback(async () => {
+      clearTotpSession()
+      message.success(
+        requiresForcedTotpSetup(result.user)
+          ? t('auth.loginview.forceTotpSetupSuccess')
+          : t('auth.loginSuccess'),
+      )
+      await navigate({ to: buildPostLoginTarget(result.user) as '/' })
+      setLoading(false)
+    } catch (err) {
+      showError(err, t('auth.loginFailed'))
+      setLoading(false)
+    }
+  }
+  const handleTotpVerify = async () => {
     if (!/^\d{6}$/.test(totpCode.trim())) {
       message.error(t('auth.loginview.codeInvalid'))
       return
@@ -98,26 +95,17 @@ export function LoginView() {
       showError(err, t('auth.twofactormodal.verifyFailed'))
       setTotpLoading(false)
     }
-  }, [
-    navigate,
-    reset2faStep,
-    showError,
-    stepDeadline,
-    t,
-    tempToken,
-    totpCode,
-    verify2fa,
-  ])
-  const handleBackToPassword = useCallback(() => {
+  }
+  const handleBackToPassword = () => {
     reset2faStep(false)
-  }, [reset2faStep])
+  }
   const isExpired = stepDeadline > 0 && totpNow >= stepDeadline
   const isExpiring =
     !isExpired && stepDeadline > 0 && stepDeadline - totpNow < 60000
   const activeLoginName =
     String(pendingLoginName || savedSession?.loginName || '').trim() ||
     t('auth.setup2fa.currentUserFallback')
-  const countdownText = useMemo(() => {
+  const countdownText = (() => {
     if (stepDeadline > 0) {
       const remaining = Math.max(0, Math.ceil((stepDeadline - totpNow) / 1000))
       const m = Math.floor(remaining / 60)
@@ -125,7 +113,7 @@ export function LoginView() {
       return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
     }
     return '00:00'
-  }, [stepDeadline, totpNow])
+  })()
   return (
     <AuthPageShell>
       <BorderBeam>
