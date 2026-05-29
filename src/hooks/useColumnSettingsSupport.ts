@@ -124,7 +124,7 @@ export function useColumnSettingsSupport(
   )
   const remoteLoadedRef = useRef(false)
   const userChangedRef = useRef(false)
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const retryTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
 
   useEffect(() => {
     defaultSettingsRef.current = buildDefaultSettings(defaultHiddenKeys)
@@ -224,51 +224,48 @@ export function useColumnSettingsSupport(
       },
     }
 
-    const attempts = Array.from(
-      { length: PERSIST_MAX_RETRIES + 1 },
-      (_, attempt) => attempt,
-    )
-    let lastError: unknown
-    for (const attempt of attempts) {
-      const saveSucceeded = await saveUserColumnSettings(payload)
-        .then(() => true)
-        .catch(async (error: unknown) => {
-          lastError = error
-          if (isNetworkError(error) && attempt < PERSIST_MAX_RETRIES) {
-            await new Promise<void>((resolve) => {
-              retryTimerRef.current = setTimeout(
-                resolve,
-                PERSIST_BASE_DELAY_MS * 2 ** attempt,
-              )
-            })
-          }
-          return false
-        })
+    const waitForRetry = (delay: number) =>
+      new Promise<void>((resolve) => {
+        const retryTimer = setTimeout(() => {
+          retryTimersRef.current.delete(retryTimer)
+          resolve()
+        }, delay)
+        retryTimersRef.current.add(retryTimer)
+      })
 
-      if (saveSucceeded) {
+    const persistWithRetry = async (attempt: number): Promise<void> => {
+      try {
+        await saveUserColumnSettings(payload)
         remotePagesRef.current = payload.pages
         syncWarningShownRef.current = false
         return
-      }
-
-      if (!(isNetworkError(lastError) && attempt < PERSIST_MAX_RETRIES)) {
-        break
+      } catch (error) {
+        if (isNetworkError(error) && attempt < PERSIST_MAX_RETRIES) {
+          await waitForRetry(PERSIST_BASE_DELAY_MS * 2 ** attempt)
+          return persistWithRetry(attempt + 1)
+        }
+        throw error
       }
     }
 
-    logger.warn('Failed to save roaming column settings', lastError)
-    if (!syncWarningShownRef.current) {
-      syncWarningShownRef.current = true
-      message.warning(t('hooks.columnSettings.syncRetryLater'))
+    try {
+      await persistWithRetry(0)
+    } catch (error) {
+      logger.warn('Failed to save roaming column settings', error)
+      if (!syncWarningShownRef.current) {
+        syncWarningShownRef.current = true
+        message.warning(t('hooks.columnSettings.syncRetryLater'))
+      }
     }
   }
 
   useEffect(() => {
+    const retryTimers = retryTimersRef.current
     return () => {
-      const retryTimer = retryTimerRef.current
-      if (retryTimer) {
+      for (const retryTimer of retryTimers) {
         clearTimeout(retryTimer)
       }
+      retryTimers.clear()
     }
   }, [])
 

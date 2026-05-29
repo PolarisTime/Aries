@@ -58,39 +58,7 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
     abortControllerRef.current = controller
     setLoading(true)
 
-    try {
-      const moduleKeys = options.moduleKeys || getSearchableModuleKeys()
-      const accessibleModuleKeys = moduleKeys.filter(options.canAccessModule)
-      const merged =
-        options.searchModule || options.lookupRecordById
-          ? await searchAccessibleModules({
-              keyword: normalizedKeyword,
-              moduleKeys,
-              pageConfigs: options.pageConfigs || modulePageMetaMap,
-              canAccessModule: options.canAccessModule,
-              searchModule:
-                options.searchModule ||
-                (() => Promise.resolve({ data: { rows: [] } })),
-              lookupRecordById: options.lookupRecordById,
-              buildSummary: options.buildSummary || buildGlobalSearchSummary,
-            })
-          : await searchGlobalDocuments(
-              normalizedKeyword,
-              accessibleModuleKeys,
-              controller.signal,
-            )
-
-      if (currentRequestId !== requestIdRef.current) {
-        return []
-      }
-
-      abortControllerRef.current = null
-      setResults(merged)
-      if (currentRequestId === requestIdRef.current) {
-        setLoading(false)
-      }
-      return merged
-    } catch (error) {
+    const handleSearchError = (error: unknown) => {
       if (controller.signal.aborted) {
         if (currentRequestId === requestIdRef.current) {
           setLoading(false)
@@ -101,6 +69,42 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
         setLoading(false)
       }
       throw error
+    }
+
+    try {
+      const moduleKeys = options.moduleKeys || getSearchableModuleKeys()
+      const accessibleModuleKeys = moduleKeys.filter(options.canAccessModule)
+      const searchTask =
+        options.searchModule || options.lookupRecordById
+          ? searchAccessibleModules({
+              keyword: normalizedKeyword,
+              moduleKeys,
+              pageConfigs: options.pageConfigs || modulePageMetaMap,
+              canAccessModule: options.canAccessModule,
+              searchModule:
+                options.searchModule ||
+                (() => Promise.resolve({ data: { rows: [] } })),
+              lookupRecordById: options.lookupRecordById,
+              buildSummary: options.buildSummary || buildGlobalSearchSummary,
+            })
+          : searchGlobalDocuments(
+              normalizedKeyword,
+              accessibleModuleKeys,
+              controller.signal,
+            )
+
+      return searchTask.then((merged) => {
+        if (currentRequestId !== requestIdRef.current) {
+          return []
+        }
+
+        abortControllerRef.current = null
+        setResults(merged)
+        setLoading(false)
+        return merged
+      }, handleSearchError)
+    } catch (error) {
+      return handleSearchError(error)
     }
   }
 

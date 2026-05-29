@@ -30,10 +30,12 @@ export function useUserAccountEditorRoleState({ form, roleOptions }: Props) {
   )
 
   useEffect(() => {
+    // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- Antd Form 是外部状态容器，需要把角色推导的数据权限写回提交字段。
     form.setFieldValue('dataScope', selectedRoleDataScope)
   }, [selectedRoleDataScope, form])
 
   useEffect(() => {
+    // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- Antd Form 是外部状态容器，需要把角色说明写回只读提交字段。
     form.setFieldValue('permissionSummary', selectedRoleSummaries.join('；'))
   }, [selectedRoleSummaries, form])
 

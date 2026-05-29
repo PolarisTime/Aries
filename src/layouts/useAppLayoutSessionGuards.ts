@@ -19,7 +19,7 @@ export function useAppLayoutSessionGuards(options: Options) {
     if (!options.authReady) {
       return
     }
-    // react-doctor: intentional callback, not event handler
+    // react-doctor-disable-next-line react-doctor/no-event-handler -- 登录态守卫必须响应 authReady/token/location 的外部状态变化。
     if (!options.token && options.locationPathname !== '/login') {
       void options.navigate({ to: '/login' })
     }

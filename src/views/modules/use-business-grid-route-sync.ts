@@ -99,21 +99,27 @@ export function useBusinessGridRouteSync({
   openDetail,
 }: Props) {
   const autoOpenedRouteKeyRef = useRef('')
+  // react-doctor-disable-next-line react-doctor/no-event-handler -- URL 查询串是模块列表的外部入口，变化时需要同步列表过滤条件。
   const rawSearchStr = getRawSearchString(location.searchStr)
   const routeParams = parseRouteParams(rawSearchStr)
 
+  // react-doctor-disable-next-line react-doctor/no-cascading-set-state -- 路由入口变化需要同时重置分页、选中行和过滤条件。
   useEffect(() => {
     setPage(1)
     clearSelection()
     autoOpenedRouteKeyRef.current = ''
 
     if (!routeParams.routeKeyword) {
+      // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 过滤状态由父级列表持有，这里只同步路由入口。
       updateFilter('keyword', '')
+      // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 同步已提交过滤条件，保证详情跳转后的列表立即收敛到目标单据。
       setSubmittedFilters({})
       return
     }
 
+    // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 过滤状态由父级列表持有，这里只同步路由入口。
     updateFilter('keyword', routeParams.routeKeyword)
+    // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 同步已提交过滤条件，保证详情跳转后的列表立即收敛到目标单据。
     setSubmittedFilters({ keyword: routeParams.routeKeyword })
   }, [
     clearSelection,

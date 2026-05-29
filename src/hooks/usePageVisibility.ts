@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 
 function getPageVisibleState() {
   if (typeof document === 'undefined') {
@@ -7,25 +7,24 @@ function getPageVisibleState() {
   return document.visibilityState !== 'hidden'
 }
 
+function subscribePageVisibility(syncVisibility: () => void) {
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    return () => undefined
+  }
+  document.addEventListener('visibilitychange', syncVisibility)
+  window.addEventListener('focus', syncVisibility)
+  window.addEventListener('blur', syncVisibility)
+  return () => {
+    document.removeEventListener('visibilitychange', syncVisibility)
+    window.removeEventListener('focus', syncVisibility)
+    window.removeEventListener('blur', syncVisibility)
+  }
+}
+
 export function usePageVisibility() {
-  const [isPageVisible, setIsPageVisible] = useState(getPageVisibleState)
-
-  useEffect(() => {
-    const syncVisibility = () => {
-      setIsPageVisible(getPageVisibleState())
-    }
-
-    syncVisibility()
-    document.addEventListener('visibilitychange', syncVisibility)
-    window.addEventListener('focus', syncVisibility)
-    window.addEventListener('blur', syncVisibility)
-
-    return () => {
-      document.removeEventListener('visibilitychange', syncVisibility)
-      window.removeEventListener('focus', syncVisibility)
-      window.removeEventListener('blur', syncVisibility)
-    }
-  }, [])
-
-  return isPageVisible
+  return useSyncExternalStore(
+    subscribePageVisibility,
+    getPageVisibleState,
+    () => true,
+  )
 }
