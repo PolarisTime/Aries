@@ -15,7 +15,7 @@ import Space from 'antd/es/space'
 import Spin from 'antd/es/spin'
 import Typography from 'antd/es/typography'
 import Upload from 'antd/es/upload'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useReducer, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   type AttachmentRecord,
@@ -40,6 +40,26 @@ async function fetchAttachmentList(moduleKey: string, recordId: string) {
   return res.data?.attachments || []
 }
 
+interface AttachmentModalState {
+  attachments: AttachmentRecord[]
+  loading: boolean
+  uploading: boolean
+  previewOpen: boolean
+  previewSource: string
+  pdfPreviewUrl: string
+  pdfPreviewOpen: boolean
+}
+
+const attachmentModalInitialState: AttachmentModalState = {
+  attachments: [],
+  loading: false,
+  uploading: false,
+  previewOpen: false,
+  previewSource: '',
+  pdfPreviewUrl: '',
+  pdfPreviewOpen: false,
+}
+
 export function ModuleAttachmentModal({
   open,
   moduleKey,
@@ -50,26 +70,37 @@ export function ModuleAttachmentModal({
   const { t } = useTranslation()
   const can = usePermissionStore((state) => state.can)
   const resolvedResource = resourceKey || moduleKey
-  const [attachments, setAttachments] = useState<AttachmentRecord[]>([])
-  const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [previewOpen, setPreviewOpen] = useState(false)
-  const [previewSource, setPreviewSource] = useState('')
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState('')
-  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false)
+  const [state, setState] = useReducer(
+    (prev: AttachmentModalState, patch: Partial<AttachmentModalState>) => ({
+      ...prev,
+      ...patch,
+    }),
+    attachmentModalInitialState,
+  )
+  const {
+    attachments,
+    loading,
+    uploading,
+    previewOpen,
+    previewSource,
+    pdfPreviewUrl,
+    pdfPreviewOpen,
+  } = state
   const pasteZoneRef = useRef<HTMLDivElement | null>(null)
   const canCreateAttachment = can(resolvedResource, 'update')
   const canDeleteAttachment = can(resolvedResource, 'delete')
 
   const fetchAttachments = async () => {
     if (!recordId) return
-    setLoading(true)
+    setState({ loading: true })
     try {
-      setAttachments(await fetchAttachmentList(moduleKey, recordId))
-      setLoading(false)
+      setState({
+        attachments: await fetchAttachmentList(moduleKey, recordId),
+        loading: false,
+      })
     } catch {
       /* ignore */
-      setLoading(false)
+      setState({ loading: false })
     }
   }
 
@@ -85,22 +116,22 @@ export function ModuleAttachmentModal({
   }
 
   const handleUpload = async (file: File) => {
-    setUploading(true)
+    setState({ uploading: true })
     try {
       const uploadRes = await uploadAttachment(file, moduleKey)
       const attachmentId = asString(uploadRes.data?.id).trim()
       if (!attachmentId) {
         message.error(t('modules.attachment.uploadNoId'))
-        setUploading(false)
+        setState({ uploading: false })
         return false
       }
       await bindAttachment(attachmentId)
       message.success(t('modules.attachment.uploadBindSuccess'))
       await fetchAttachments()
-      setUploading(false)
+      setState({ uploading: false })
     } catch (err) {
       message.error(err instanceof Error ? err.message : t('modules.attachment.uploadFailed'))
-      setUploading(false)
+      setState({ uploading: false })
     }
     return false
   }
@@ -135,8 +166,7 @@ export function ModuleAttachmentModal({
       message.warning(t('modules.attachment.noPreviewUrl'))
       return
     }
-    setPreviewSource(src)
-    setPreviewOpen(true)
+    setState({ previewSource: src, previewOpen: true })
   }
 
   const openPdfPreview = (attachment: AttachmentRecord) => {
@@ -145,8 +175,7 @@ export function ModuleAttachmentModal({
       message.warning(t('modules.attachment.noPreviewUrl'))
       return
     }
-    setPdfPreviewUrl(src)
-    setPdfPreviewOpen(true)
+    setState({ pdfPreviewUrl: src, pdfPreviewOpen: true })
   }
 
   const imageAttachments = attachments.filter(isImageAttachment)
@@ -181,13 +210,13 @@ export function ModuleAttachmentModal({
     }
 
     const uploadPastedFile = async (file: File) => {
-      setUploading(true)
+      setState({ uploading: true })
       try {
         const uploadRes = await uploadAttachment(file, moduleKey)
         const attachmentId = asString(uploadRes.data?.id).trim()
         if (!attachmentId) {
           message.error(t('modules.attachment.uploadNoId'))
-          setUploading(false)
+          setState({ uploading: false })
           return
         }
         const latestBindings = await getAttachmentBindings(moduleKey, recordId)
@@ -199,11 +228,13 @@ export function ModuleAttachmentModal({
           attachmentId,
         ])
         message.success(t('modules.attachment.uploadBindSuccess'))
-        setAttachments(await fetchAttachmentList(moduleKey, recordId))
-        setUploading(false)
+        setState({
+          attachments: await fetchAttachmentList(moduleKey, recordId),
+          uploading: false,
+        })
       } catch (err) {
         message.error(err instanceof Error ? err.message : t('modules.attachment.uploadFailed'))
-        setUploading(false)
+        setState({ uploading: false })
       }
     }
 
@@ -364,8 +395,10 @@ export function ModuleAttachmentModal({
               0,
             ),
             onVisibleChange: (visible) => {
-              setPreviewOpen(visible)
-              if (!visible) setPreviewSource('')
+              setState({
+                previewOpen: visible,
+                previewSource: visible ? previewSource : '',
+              })
             },
           }}
         >
@@ -383,7 +416,7 @@ export function ModuleAttachmentModal({
       <Modal
         title={t('modules.attachment.pdfPreview')}
         open={pdfPreviewOpen}
-        onCancel={() => setPdfPreviewOpen(false)}
+        onCancel={() => setState({ pdfPreviewOpen: false })}
         footer={null}
         width="90%"
         className="modal-top-20"

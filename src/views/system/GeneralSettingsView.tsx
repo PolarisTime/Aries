@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import Form from 'antd/es/form'
-import { useState } from 'react'
+import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listSystemSettings, saveSystemSetting } from '@/api/system-settings'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
@@ -23,20 +23,39 @@ import {
 import { isSystemSwitch } from '@/views/system/number-rules-view-utils'
 import { RateLimitRulesCard } from '@/views/system/RateLimitRulesCard'
 
+interface GeneralSettingsState {
+  keyword: string
+  statusFilter: string | undefined
+  editorOpen: boolean
+  editingRecord: ModuleRecord | null
+  saving: boolean
+  toggling: boolean
+}
+
+const generalSettingsInitialState: GeneralSettingsState = {
+  keyword: '',
+  statusFilter: undefined,
+  editorOpen: false,
+  editingRecord: null,
+  saving: false,
+  toggling: false,
+}
+
 export function GeneralSettingsView() {
   const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
   const canEdit = permissionStore.can('general-setting', 'update')
 
-  const [keyword, setKeyword] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(
-    undefined,
+  const [state, setState] = useReducer(
+    (prev: GeneralSettingsState, patch: Partial<GeneralSettingsState>) => ({
+      ...prev,
+      ...patch,
+    }),
+    generalSettingsInitialState,
   )
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [editingRecord, setEditingRecord] = useState<ModuleRecord | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [toggling, setToggling] = useState(false)
+  const { keyword, statusFilter, editorOpen, editingRecord, saving, toggling } =
+    state
   const [form] = Form.useForm()
 
   const { data: rows = [], isLoading } = useQuery<ModuleRecord[]>({
@@ -60,7 +79,7 @@ export function GeneralSettingsView() {
       message.warning(t('common.noPermission'))
       return
     }
-    setEditingRecord(record)
+    setState({ editingRecord: record })
     form.setFieldsValue({
       settingCode: record.settingCode,
       settingName: record.settingName,
@@ -74,11 +93,11 @@ export function GeneralSettingsView() {
           : Number(record.sampleNo || 0),
       selectedActions: asString(record.sampleNo).split(',').filter(Boolean),
     })
-    setEditorOpen(true)
+    setState({ editorOpen: true })
   }
 
   const handleToggle = async (record: ModuleRecord) => {
-    setToggling(true)
+    setState({ toggling: true })
     const nextStatus = asString(record.status) === '正常' ? '禁用' : '正常'
     try {
       await saveSystemSetting({
@@ -100,16 +119,16 @@ export function GeneralSettingsView() {
           : t('system.generalSettings.closed'),
       )
       refresh()
-      setToggling(false)
+      setState({ toggling: false })
     } catch (error) {
       showError(error, t('table.operationFailed'))
-      setToggling(false)
+      setState({ toggling: false })
     }
   }
 
   const handleSave = async () => {
     if (!editingRecord) return
-    setSaving(true)
+    setState({ saving: true })
     try {
       const values = await form.validateFields()
       let sampleNo = ''
@@ -135,11 +154,10 @@ export function GeneralSettingsView() {
       })
       message.success(t('common.saveSuccess'))
       refresh()
-      setEditorOpen(false)
-      setSaving(false)
+      setState({ editorOpen: false, saving: false })
     } catch (error) {
       showError(error, t('api.saveFailed'))
-      setSaving(false)
+      setState({ saving: false })
     }
   }
 
@@ -154,8 +172,8 @@ export function GeneralSettingsView() {
         loading={isLoading}
         canEdit={canEdit}
         toggling={toggling}
-        onKeywordChange={setKeyword}
-        onStatusFilterChange={setStatusFilter}
+        onKeywordChange={(value) => setState({ keyword: value })}
+        onStatusFilterChange={(value) => setState({ statusFilter: value })}
         onRefresh={refresh}
         onEdit={openEditor}
         onToggle={(record) => {
@@ -174,7 +192,7 @@ export function GeneralSettingsView() {
           onSave={() => {
             void handleSave()
           }}
-          onClose={() => setEditorOpen(false)}
+          onClose={() => setState({ editorOpen: false })}
         />
       ) : null}
     </div>

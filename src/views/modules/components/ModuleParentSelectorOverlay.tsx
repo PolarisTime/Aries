@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import Button from 'antd/es/button'
 import type { ColumnsType } from 'antd/es/table'
 import Table from 'antd/es/table'
-import { useState } from 'react'
+import { useReducer } from 'react'
 import i18next from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { listBusinessModule } from '@/api/business'
@@ -246,6 +246,24 @@ function buildSelectedRecordSummary(
 
 type ParentSelectorContentProps = Omit<Props, 'open'>
 
+interface ParentSelectorState {
+  draftFilters: SearchParams
+  submittedFilters: SearchParams
+  page: number
+  pageSize: number
+  selectedRowKeys: string[]
+  selectedRecordMap: Record<string, ModuleRecord>
+}
+
+const parentSelectorInitialState: ParentSelectorState = {
+  draftFilters: {},
+  submittedFilters: {},
+  page: 1,
+  pageSize: DEFAULT_PAGE_SIZE,
+  selectedRowKeys: [],
+  selectedRecordMap: {},
+}
+
 export function ModuleParentSelectorOverlay({
   open,
   parentModuleKey,
@@ -281,14 +299,21 @@ function ModuleParentSelectorOverlayContent({
   const { t } = useTranslation()
   const effectiveTitle = title ?? t('modules.parentSelector.title')
   const { formatCellValue } = useModuleDisplaySupport()
-  const [draftFilters, setDraftFilters] = useState<SearchParams>({})
-  const [submittedFilters, setSubmittedFilters] = useState<SearchParams>({})
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
-  const [selectedRecordMap, setSelectedRecordMap] = useState<
-    Record<string, ModuleRecord>
-  >({})
+  const [state, setState] = useReducer(
+    (prev: ParentSelectorState, patch: Partial<ParentSelectorState>) => ({
+      ...prev,
+      ...patch,
+    }),
+    parentSelectorInitialState,
+  )
+  const {
+    draftFilters,
+    submittedFilters,
+    page,
+    pageSize,
+    selectedRowKeys,
+    selectedRecordMap,
+  } = state
   const displayFieldKey =
     parentDisplayFieldKey ||
     parentDisplayFieldFallbackMap[parentModuleKey] ||
@@ -361,68 +386,98 @@ function ModuleParentSelectorOverlayContent({
 
   const toggleRecordSelection = (record: ModuleRecord) => {
     const recordKey = String(record.id)
-    setSelectedRowKeys((prev) => {
-      const isSelected = prev.includes(recordKey)
-      setSelectedRecordMap((prevMap) => {
-        if (isSelected) {
-          const next = { ...prevMap }
-          delete next[recordKey]
-          return next
-        }
-        return {
-          ...prevMap,
-          [recordKey]: record,
-        }
-      })
-      return isSelected
-        ? prev.filter((key) => key !== recordKey)
-        : [...prev, recordKey]
+    const isSelected = selectedRowKeys.includes(recordKey)
+    const nextSelectedRecordMap = { ...selectedRecordMap }
+    if (isSelected) {
+      delete nextSelectedRecordMap[recordKey]
+    } else {
+      nextSelectedRecordMap[recordKey] = record
+    }
+    setState({
+      selectedRowKeys: isSelected
+        ? selectedRowKeys.filter((key) => key !== recordKey)
+        : [...selectedRowKeys, recordKey],
+      selectedRecordMap: nextSelectedRecordMap,
     })
   }
 
   const updateFilter = (key: string, value: unknown) => {
-    setDraftFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }))
+    setState({
+      draftFilters: {
+        ...draftFilters,
+        [key]: value,
+      },
+    })
   }
 
-  const submitFilters = () => {
-    setPage(1)
-    setSubmittedFilters(
-      Object.fromEntries(
-        Object.entries(normalizeFilterValues(draftFilters)).filter(
-          ([, value]) => {
-            if (value === undefined || value === null) return false
-            if (typeof value === 'string') return value.length > 0
-            return true
-          },
-        ),
+  const buildSubmittedFilters = () =>
+    Object.fromEntries(
+      Object.entries(normalizeFilterValues(draftFilters)).filter(
+        ([, value]) => {
+          if (value === undefined || value === null) return false
+          if (typeof value === 'string') return value.length > 0
+          return true
+        },
       ),
     )
+
+  const submitFilters = () => {
+    setState({
+      page: 1,
+      submittedFilters: buildSubmittedFilters(),
+    })
   }
 
   const resetFilters = () => {
-    setDraftFilters({})
-    setSubmittedFilters({})
-    setPage(1)
+    setState({
+      draftFilters: {},
+      submittedFilters: {},
+      page: 1,
+    })
   }
 
   const removeSelectedRecord = (recordId: string) => {
-    setSelectedRowKeys((prev) => prev.filter((key) => key !== recordId))
-    setSelectedRecordMap((prev) => {
-      if (!prev[recordId]) {
-        return prev
-      }
-      const next = { ...prev }
-      delete next[recordId]
-      return next
+    if (!selectedRecordMap[recordId]) {
+      setState({
+        selectedRowKeys: selectedRowKeys.filter((key) => key !== recordId),
+      })
+      return
+    }
+    const nextSelectedRecordMap = { ...selectedRecordMap }
+    delete nextSelectedRecordMap[recordId]
+    setState({
+      selectedRowKeys: selectedRowKeys.filter((key) => key !== recordId),
+      selectedRecordMap: nextSelectedRecordMap,
     })
   }
 
   const handleClearSelectedRecords = () => {
-    setSelectedRowKeys([])
-    setSelectedRecordMap({})
+    setState({ selectedRowKeys: [], selectedRecordMap: {} })
+  }
+
+  const handleSelectedRowsChange = (
+    keys: React.Key[],
+    rows: ModuleRecord[],
+  ) => {
+    const normalizedKeys = keys.map((key) => String(key))
+    setState({
+      selectedRowKeys: normalizedKeys,
+      selectedRecordMap: Object.fromEntries(
+        normalizedKeys.map((normalizedKey) => {
+          const matchedRow = rows.find(
+            (row) => String(row.id) === normalizedKey,
+          )
+          return [normalizedKey, matchedRow || selectedRecordMap[normalizedKey]]
+        }),
+      ),
+    })
+  }
+
+  const handlePageChange = (nextPage: number, nextPageSize: number) => {
+    setState({
+      page: nextPage,
+      pageSize: nextPageSize !== pageSize ? nextPageSize : pageSize,
+    })
   }
 
   return (
@@ -564,20 +619,7 @@ function ModuleParentSelectorOverlayContent({
             ? {
                 preserveSelectedRowKeys: true,
                 selectedRowKeys,
-                onChange: (keys, rows) => {
-                  const normalizedKeys = keys.map((key) => String(key))
-                  setSelectedRowKeys(normalizedKeys)
-                  setSelectedRecordMap((prev) => {
-                    const next: Record<string, ModuleRecord> = {}
-                    normalizedKeys.forEach((normalizedKey) => {
-                      const matchedRow = rows.find(
-                        (row) => String(row.id) === normalizedKey,
-                      )
-                      next[normalizedKey] = matchedRow || prev[normalizedKey]
-                    })
-                    return next
-                  })
-                },
+                onChange: handleSelectedRowsChange,
               }
             : undefined
         }
@@ -607,12 +649,7 @@ function ModuleParentSelectorOverlayContent({
           showSizeChanger: true,
           pageSizeOptions: ['15', '30', '50'],
           showTotal: (count) => t('modules.parentSelector.paginationTotal', { count }),
-          onChange: (nextPage, nextPageSize) => {
-            setPage(nextPage)
-            if (nextPageSize !== pageSize) {
-              setPageSize(nextPageSize)
-            }
-          },
+          onChange: handlePageChange,
         }}
       />
     </WorkspaceOverlay>

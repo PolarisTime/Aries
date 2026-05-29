@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import Form from 'antd/es/form'
-import { useRef, useState } from 'react'
+import { useReducer, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   listSystemSettings,
@@ -23,21 +23,37 @@ import {
   type NumberRuleEditorKind,
 } from '@/views/system/number-rules-view-utils'
 
+interface NumberRulesState {
+  keyword: string
+  statusFilter: string | undefined
+  editorOpen: boolean
+  editorKind: NumberRuleEditorKind
+  saving: boolean
+}
+
+const numberRulesInitialState: NumberRulesState = {
+  keyword: '',
+  statusFilter: undefined,
+  editorOpen: false,
+  editorKind: 'number-rule',
+  saving: false,
+}
+
 export function NumberRulesView() {
   const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
   const canEdit = permissionStore.can('general-setting', 'update')
 
-  const [keyword, setKeyword] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(
-    undefined,
+  const [state, setState] = useReducer(
+    (prev: NumberRulesState, patch: Partial<NumberRulesState>) => ({
+      ...prev,
+      ...patch,
+    }),
+    numberRulesInitialState,
   )
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [editorKind, setEditorKind] =
-    useState<NumberRuleEditorKind>('number-rule')
+  const { keyword, statusFilter, editorOpen, editorKind, saving } = state
   const editingRecord = useRef<ModuleRecord | null>(null)
-  const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
 
   const { data: rows = [], isLoading } = useQuery<ModuleRecord[]>({
@@ -63,7 +79,7 @@ export function NumberRulesView() {
       return
     }
     editingRecord.current = record
-    setEditorKind('number-rule')
+    setState({ editorKind: 'number-rule' })
     form.setFieldsValue({
       settingCode: record.settingCode,
       settingName: record.settingName,
@@ -75,7 +91,7 @@ export function NumberRulesView() {
       status: record.status || '正常',
       remark: record.remark || '',
     })
-    setEditorOpen(true)
+    setState({ editorOpen: true })
   }
 
   const openUploadRuleEditor = (record: ModuleRecord) => {
@@ -84,7 +100,7 @@ export function NumberRulesView() {
       return
     }
     editingRecord.current = record
-    setEditorKind('upload-rule')
+    setState({ editorKind: 'upload-rule' })
     form.setFieldsValue({
       moduleKey: record.moduleKey,
       moduleName: record.moduleName || record.billName,
@@ -94,12 +110,12 @@ export function NumberRulesView() {
       status: record.status || '正常',
       remark: record.remark || '',
     })
-    setEditorOpen(true)
+    setState({ editorOpen: true })
   }
 
   const handleSave = async () => {
     if (!editingRecord.current) return
-    setSaving(true)
+    setState({ saving: true })
     try {
       const values = await form.validateFields()
       if (editorKind === 'number-rule') {
@@ -124,11 +140,10 @@ export function NumberRulesView() {
       }
       message.success(t('common.saveSuccess'))
       refresh()
-      setEditorOpen(false)
-      setSaving(false)
+      setState({ editorOpen: false, saving: false })
     } catch (error) {
       showError(error, t('system.numberRules.saveFailed'))
-      setSaving(false)
+      setState({ saving: false })
     }
   }
 
@@ -142,8 +157,8 @@ export function NumberRulesView() {
         uploadRuleRows={uploadRuleRows}
         loading={isLoading}
         canEdit={canEdit}
-        onKeywordChange={setKeyword}
-        onStatusFilterChange={setStatusFilter}
+        onKeywordChange={(value) => setState({ keyword: value })}
+        onStatusFilterChange={(value) => setState({ statusFilter: value })}
         onRefresh={refresh}
         onEditNumberRule={openNumberRuleEditor}
         onEditUploadRule={openUploadRuleEditor}
@@ -158,7 +173,7 @@ export function NumberRulesView() {
           onSave={() => {
             void handleSave()
           }}
-          onClose={() => setEditorOpen(false)}
+          onClose={() => setState({ editorOpen: false })}
         />
       ) : null}
     </div>

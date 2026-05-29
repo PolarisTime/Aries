@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
-import { useState } from 'react'
+import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   deletePrintTemplate,
@@ -19,6 +19,24 @@ import { PrintTemplatePreviewModal } from '@/views/system/PrintTemplatePreviewMo
 import { PrintTemplateTableCard } from '@/views/system/PrintTemplateTableCard'
 import { buildPrintTemplateCopyName } from '@/views/system/print-template-view-utils'
 
+interface PrintTemplateState {
+  selectedBillType: string
+  activeTemplateId: string | undefined
+  editorOpen: boolean
+  previewOpen: boolean
+  previewTemplate: PrintTemplateRecord | null
+  templateHtml: string
+}
+
+const printTemplateInitialState: PrintTemplateState = {
+  selectedBillType: printTemplateTargetOptions[0]?.value || 'purchase-order',
+  activeTemplateId: undefined,
+  editorOpen: false,
+  previewOpen: false,
+  previewTemplate: null,
+  templateHtml: '',
+}
+
 export function PrintTemplateView() {
   const queryClient = useQueryClient()
   const { t } = useTranslation()
@@ -29,17 +47,21 @@ export function PrintTemplateView() {
   const canEdit = permissionStore.can('print-template', 'update')
   const canDelete = permissionStore.can('print-template', 'delete')
 
-  const [selectedBillType, setSelectedBillType] = useState(
-    printTemplateTargetOptions[0]?.value || 'purchase-order',
+  const [state, setState] = useReducer(
+    (prev: PrintTemplateState, patch: Partial<PrintTemplateState>) => ({
+      ...prev,
+      ...patch,
+    }),
+    printTemplateInitialState,
   )
-  const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>(
-    undefined,
-  )
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [previewOpen, setPreviewOpen] = useState(false)
-  const [previewTemplate, setPreviewTemplate] =
-    useState<PrintTemplateRecord | null>(null)
-  const [templateHtml, setTemplateHtml] = useState('')
+  const {
+    selectedBillType,
+    activeTemplateId,
+    editorOpen,
+    previewOpen,
+    previewTemplate,
+    templateHtml,
+  } = state
   const [form] = Form.useForm()
 
   const { data: templatesResponse, isLoading } = useQuery({
@@ -53,7 +75,7 @@ export function PrintTemplateView() {
     onSuccess: () => {
       message.success(t('common.saveSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
-      setEditorOpen(false)
+      setState({ editorOpen: false })
     },
     onError: (error: Error) => showError(error, t('api.saveFailed')),
   })
@@ -80,9 +102,11 @@ export function PrintTemplateView() {
       templateName: '',
       templateType: 'HTML',
     })
-    setTemplateHtml('')
-    setActiveTemplateId(undefined)
-    setEditorOpen(true)
+    setState({
+      templateHtml: '',
+      activeTemplateId: undefined,
+      editorOpen: true,
+    })
   }
 
   const openEdit = (record: PrintTemplateRecord) => {
@@ -96,14 +120,15 @@ export function PrintTemplateView() {
       templateName: record.templateName,
       templateType: record.templateType || 'HTML',
     })
-    setTemplateHtml(record.templateHtml || '')
-    setActiveTemplateId(record.id)
-    setEditorOpen(true)
+    setState({
+      templateHtml: record.templateHtml || '',
+      activeTemplateId: record.id,
+      editorOpen: true,
+    })
   }
 
   const openPreview = (record: PrintTemplateRecord) => {
-    setPreviewTemplate(record)
-    setPreviewOpen(true)
+    setState({ previewTemplate: record, previewOpen: true })
   }
 
   const handleCopy = (record: PrintTemplateRecord) => {
@@ -116,9 +141,11 @@ export function PrintTemplateView() {
       templateName: buildPrintTemplateCopyName(record),
       templateType: record.templateType || 'HTML',
     })
-    setTemplateHtml(record.templateHtml || '')
-    setActiveTemplateId(undefined)
-    setEditorOpen(true)
+    setState({
+      templateHtml: record.templateHtml || '',
+      activeTemplateId: undefined,
+      editorOpen: true,
+    })
   }
 
   const handleDelete = (record: PrintTemplateRecord) => {
@@ -167,14 +194,14 @@ export function PrintTemplateView() {
         canCreate={canCreate}
         canEdit={canEdit}
         canDelete={canDelete}
-        onBillTypeChange={setSelectedBillType}
+        onBillTypeChange={(value) => setState({ selectedBillType: value })}
         onRefresh={refresh}
         onCreate={openCreate}
         onPreview={openPreview}
         onEdit={openEdit}
         onCopy={handleCopy}
         onDelete={handleDelete}
-        onActiveChange={setActiveTemplateId}
+        onActiveChange={(value) => setState({ activeTemplateId: value })}
       />
 
       {editorOpen ? (
@@ -184,11 +211,11 @@ export function PrintTemplateView() {
           form={form}
           templateHtml={templateHtml}
           saving={saveMutation.isPending}
-          onTemplateHtmlChange={setTemplateHtml}
+          onTemplateHtmlChange={(value) => setState({ templateHtml: value })}
           onSave={() => {
             void handleSave()
           }}
-          onClose={() => setEditorOpen(false)}
+          onClose={() => setState({ editorOpen: false })}
         />
       ) : null}
 
@@ -196,7 +223,7 @@ export function PrintTemplateView() {
         <PrintTemplatePreviewModal
           open={previewOpen}
           template={previewTemplate}
-          onClose={() => setPreviewOpen(false)}
+          onClose={() => setState({ previewOpen: false })}
         />
       ) : null}
     </div>
