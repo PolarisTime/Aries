@@ -32,6 +32,13 @@ function createApiClient(instance: AxiosInstance) {
     ): Promise<T> {
       return instance.put(url, data, config)
     },
+    patch<T = unknown>(
+      url: string,
+      data?: unknown,
+      config?: AxiosRequestConfig,
+    ): Promise<T> {
+      return instance.patch(url, data, config)
+    },
     delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
       return instance.delete(url, config)
     },

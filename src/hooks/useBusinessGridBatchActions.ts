@@ -4,14 +4,15 @@ import {
   deleteBusinessModule,
   getBusinessModuleDetail,
   saveBusinessModule,
+  updateBusinessModuleStatus,
 } from '@/api/business'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
-import { asString } from '@/utils/type-narrowing'
 import {
-  isDeleteBlockedByStatus,
-  isEditBlockedByStatus,
-} from '@/module-system/module-behavior-registry'
+  canAuditFromStatus,
+  canReverseAuditFromStatus,
+} from '@/module-system/module-adapter-actions'
+import { isDeleteBlockedByStatus } from '@/module-system/module-behavior-registry'
 
 export interface AuditTarget {
   key: string
@@ -48,13 +49,13 @@ export function useBusinessGridBatchActions({
     }
 
     const selected = selectedRows
-    const auditStatus = String(listAuditTarget.value ?? '').trim()
-    const eligible = selected.filter((r) => {
-      const status = asString(r.status).trim()
-      if (!status) return true
-      if (status === auditStatus) return false
-      return !isEditBlockedByStatus(status)
-    })
+    const eligible = selected.filter((record) =>
+      canAuditFromStatus(
+        record.status,
+        listAuditTarget,
+        listReverseAuditTarget,
+      ),
+    )
     const skippedCount = selected.length - eligible.length
 
     if (!eligible.length) {
@@ -74,12 +75,10 @@ export function useBusinessGridBatchActions({
       onOk: async () => {
         const auditResults = await Promise.allSettled(
           eligible.map((record) =>
-            getBusinessModuleDetail(moduleKey, String(record.id)).then(
-              (detail) =>
-                saveBusinessModule(moduleKey, {
-                  ...detail.data,
-                  [listAuditTarget.key]: listAuditTarget.value,
-                }),
+            updateBusinessModuleStatus(
+              moduleKey,
+              String(record.id),
+              listAuditTarget.value,
             ),
           ),
         )
@@ -128,6 +127,7 @@ export function useBusinessGridBatchActions({
     })
   }, [
     listAuditTarget,
+    listReverseAuditTarget,
     moduleKey,
     refreshAndClearSelection,
     selectedRowKeys,
@@ -222,11 +222,13 @@ export function useBusinessGridBatchActions({
     }
 
     const selected = selectedRows
-    const auditStatus = String(listAuditTarget?.value ?? '').trim()
-    const eligible = selected.filter((r) => {
-      const status = asString(r.status).trim()
-      return Boolean(auditStatus && status === auditStatus)
-    })
+    const eligible = selected.filter((record) =>
+      canReverseAuditFromStatus(
+        record.status,
+        listAuditTarget,
+        listReverseAuditTarget,
+      ),
+    )
     const skippedCount = selected.length - eligible.length
 
     if (!eligible.length) {
@@ -246,12 +248,10 @@ export function useBusinessGridBatchActions({
       onOk: async () => {
         const reverseAuditResults = await Promise.allSettled(
           eligible.map((record) =>
-            getBusinessModuleDetail(moduleKey, String(record.id)).then(
-              (detail) =>
-                saveBusinessModule(moduleKey, {
-                  ...detail.data,
-                  [listReverseAuditTarget.key]: listReverseAuditTarget.value,
-                }),
+            updateBusinessModuleStatus(
+              moduleKey,
+              String(record.id),
+              listReverseAuditTarget.value,
             ),
           ),
         )

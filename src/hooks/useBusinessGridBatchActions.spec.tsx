@@ -5,15 +5,13 @@ const {
   confirmMock,
   warningMock,
   successMock,
-  getBusinessModuleDetailMock,
-  saveBusinessModuleMock,
+  updateBusinessModuleStatusMock,
   deleteBusinessModuleMock,
 } = vi.hoisted(() => ({
   confirmMock: vi.fn(),
   warningMock: vi.fn(),
   successMock: vi.fn(),
-  getBusinessModuleDetailMock: vi.fn(),
-  saveBusinessModuleMock: vi.fn(),
+  updateBusinessModuleStatusMock: vi.fn(),
   deleteBusinessModuleMock: vi.fn(),
 }))
 
@@ -29,13 +27,13 @@ vi.mock('@/utils/antd-app', () => ({
 
 vi.mock('@/api/business', () => ({
   deleteBusinessModule: deleteBusinessModuleMock,
-  getBusinessModuleDetail: getBusinessModuleDetailMock,
-  saveBusinessModule: saveBusinessModuleMock,
+  getBusinessModuleDetail: vi.fn(),
+  saveBusinessModule: vi.fn(),
+  updateBusinessModuleStatus: updateBusinessModuleStatusMock,
 }))
 
 vi.mock('@/module-system/module-behavior-registry', () => ({
   isDeleteBlockedByStatus: (status: unknown) => status === '已审核',
-  isEditBlockedByStatus: (status: unknown) => status === '已完成',
 }))
 
 import { useBusinessGridBatchActions } from './useBusinessGridBatchActions'
@@ -45,16 +43,12 @@ describe('useBusinessGridBatchActions', () => {
     confirmMock.mockReset()
     warningMock.mockReset()
     successMock.mockReset()
-    getBusinessModuleDetailMock.mockReset()
-    saveBusinessModuleMock.mockReset()
+    updateBusinessModuleStatusMock.mockReset()
     deleteBusinessModuleMock.mockReset()
   })
 
   it('uses selected rows from preserved cross-page selection for audit', async () => {
-    getBusinessModuleDetailMock.mockImplementation(async (_moduleKey, id) => ({
-      data: { id, status: '待审核' },
-    }))
-    saveBusinessModuleMock.mockResolvedValue(undefined)
+    updateBusinessModuleStatusMock.mockResolvedValue(undefined)
 
     const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
 
@@ -63,11 +57,11 @@ describe('useBusinessGridBatchActions', () => {
         moduleKey: 'purchase-order',
         selectedRowKeys: ['101', '202'],
         selectedRows: [
-          { id: '101', status: '待审核' },
-          { id: '202', status: '待审核' },
+          { id: '101', status: '草稿' },
+          { id: '202', status: '草稿' },
         ],
         listAuditTarget: { key: 'status', value: '已审核' },
-        listReverseAuditTarget: { key: 'status', value: '待审核' },
+        listReverseAuditTarget: { key: 'status', value: '草稿' },
         refreshAndClearSelection,
       }),
     )
@@ -78,25 +72,50 @@ describe('useBusinessGridBatchActions', () => {
 
     expect(confirmMock).toHaveBeenCalledTimes(1)
     const confirmArg = confirmMock.mock.calls[0]?.[0]
-    expect(confirmArg.content).toContain('2 条记录')
+    expect(confirmArg.title).toBe('hooks.batchActions.batchAudit')
 
     await act(async () => {
       await confirmArg.onOk()
     })
 
-    expect(getBusinessModuleDetailMock).toHaveBeenCalledTimes(2)
-    expect(getBusinessModuleDetailMock).toHaveBeenNthCalledWith(
+    expect(updateBusinessModuleStatusMock).toHaveBeenCalledTimes(2)
+    expect(updateBusinessModuleStatusMock).toHaveBeenNthCalledWith(
       1,
       'purchase-order',
       '101',
+      '已审核',
     )
-    expect(getBusinessModuleDetailMock).toHaveBeenNthCalledWith(
+    expect(updateBusinessModuleStatusMock).toHaveBeenNthCalledWith(
       2,
       'purchase-order',
       '202',
+      '已审核',
     )
-    expect(saveBusinessModuleMock).toHaveBeenCalledTimes(2)
     expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips completed rows for reverse audit', () => {
+    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridBatchActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['101'],
+        selectedRows: [{ id: '101', status: '完成销售' }],
+        listAuditTarget: { key: 'status', value: '已审核' },
+        listReverseAuditTarget: { key: 'status', value: '草稿' },
+        refreshAndClearSelection,
+      }),
+    )
+
+    act(() => {
+      result.current.handleSelectedReverseAuditRecords()
+    })
+
+    expect(confirmMock).not.toHaveBeenCalled()
+    expect(warningMock).toHaveBeenCalledWith(
+      'hooks.batchActions.reverseAuditNotSupported',
+    )
   })
 
   it('skips blocked rows when deleting preserved selected rows', async () => {
@@ -123,8 +142,7 @@ describe('useBusinessGridBatchActions', () => {
 
     expect(confirmMock).toHaveBeenCalledTimes(1)
     const confirmArg = confirmMock.mock.calls[0]?.[0]
-    expect(confirmArg.content).toContain('删除选中的 1 条记录')
-    expect(confirmArg.content).toContain('跳过')
+    expect(confirmArg.title).toBe('hooks.batchActions.batchDelete')
 
     await act(async () => {
       await confirmArg.onOk()

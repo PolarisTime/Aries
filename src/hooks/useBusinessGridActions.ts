@@ -7,11 +7,10 @@ import { useBusinessGridFreightActions } from '@/hooks/useBusinessGridFreightAct
 import { useBusinessGridPrintActions } from '@/hooks/useBusinessGridPrintActions'
 import { useBusinessGridStatementActions } from '@/hooks/useBusinessGridStatementActions'
 import type { SearchParams } from '@/types/api-raw'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type { ModuleRecord } from '@/types/module-page'
 
 interface Props {
   moduleKey: string
-  config: ModulePageConfig
   selectedRowKeys: string[]
   selectedRows: ModuleRecord[]
   submittedFilters: SearchParams
@@ -24,7 +23,6 @@ interface Props {
 
 export function useBusinessGridActions({
   moduleKey,
-  config,
   selectedRowKeys,
   selectedRows,
   submittedFilters,
@@ -41,9 +39,7 @@ export function useBusinessGridActions({
 
   const { handlePrintSelectedRecords } = useBusinessGridPrintActions({
     moduleKey,
-    config,
     selectedRowKeys,
-    formatCellValue,
   })
 
   const {
