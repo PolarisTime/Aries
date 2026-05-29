@@ -45,6 +45,8 @@ interface UseDataTableOptions<TData> {
 }
 
 export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
+  'use no memo'
+  // TanStack Table returns a mutable table instance that React Compiler should not memoize.
   const {
     data,
     columns,
@@ -98,6 +100,7 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
     onSortingChange?.(next)
   }
 
+  // react-doctor-disable-next-line react-hooks-js/incompatible-library -- TanStack Table returns a mutable table instance; keep this wrapper as the third-party boundary.
   const table = useReactTable<TData>({
     data,
     columns,

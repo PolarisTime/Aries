@@ -58,8 +58,10 @@ export function useSetupTwoFactorState(): UseSetupTwoFactorStateResult {
   }
 
   useEffect(() => {
-    void fetchTotpSetup()
-  }, [fetchTotpSetup])
+    void (async () => {
+      await fetchTotpSetup()
+    })()
+  }, [])
 
   const handleEnable = async (values: TotpCodeFormValues): Promise<void> => {
     try {

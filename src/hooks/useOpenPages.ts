@@ -1,5 +1,5 @@
 import { useLocation } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 export interface OpenPage {
@@ -33,7 +33,7 @@ export function useOpenPages(
   const resolvedHomeTitle = homeTitle ?? t('hooks.openPages.workbench')
 
   const location = useLocation()
-  const [pages, setPages] = useState<OpenPage[]>([
+  const [storedPages, setStoredPages] = useState<OpenPage[]>([
     {
       key: defaultPath,
       path: defaultPath,
@@ -42,53 +42,58 @@ export function useOpenPages(
     },
   ])
 
-  useEffect(() => {
-    // react-doctor: intentional callback, not event handler
-    const currentPage = resolvePage
-      ? resolvePage(location.pathname)
-      : {
-          key: resolveOpenPageKey(location.pathname),
-          // react-doctor: intentional callback, not event handler
-          path: location.pathname,
-          title: resolvedDefaultTitle,
-        }
-    const nextPage: OpenPage = {
-      key: currentPage.key,
-      path: currentPage.path,
-      title: currentPage.title,
-      closable: currentPage.key !== defaultPath,
-    }
-
-    setPages((prev) => {
-      const normalizedPages = [
-        {
-          // react-doctor: intentional callback, not event handler
-          key: defaultPath,
-          // react-doctor: intentional callback, not event handler
-          path: defaultPath,
-          title: resolvedHomeTitle,
-          closable: false,
-        },
-        ...prev.filter((item) => item.key !== defaultPath),
-      ]
-
-      if (normalizedPages.some((item) => item.key === currentPage.key)) {
-        return normalizedPages.map((item) =>
-          item.key === currentPage.key ? nextPage : item,
-        )
+  const currentPage = resolvePage
+    ? resolvePage(location.pathname)
+    : {
+        key: resolveOpenPageKey(location.pathname),
+        path: location.pathname,
+        title: resolvedDefaultTitle,
       }
-      return [...normalizedPages, nextPage]
-    })
-  }, [
-    defaultPath,
-    resolvedDefaultTitle,
-    resolvedHomeTitle,
-    location.pathname,
-    resolvePage,
-  ])
+  const currentOpenPage: OpenPage = {
+    key: currentPage.key,
+    path: currentPage.path,
+    title: currentPage.title,
+    closable: currentPage.key !== defaultPath,
+  }
+  const pages = (() => {
+    const normalizedPages = [
+      {
+        key: defaultPath,
+        path: defaultPath,
+        title: resolvedHomeTitle,
+        closable: false,
+      },
+      ...storedPages.filter((item) => item.key !== defaultPath),
+    ]
+
+    if (normalizedPages.some((item) => item.key === currentOpenPage.key)) {
+      return normalizedPages.map((item) =>
+        item.key === currentOpenPage.key ? currentOpenPage : item,
+      )
+    }
+    return [...normalizedPages, currentOpenPage]
+  })()
+
+  if (pages !== storedPages) {
+    const samePages =
+      pages.length === storedPages.length &&
+      pages.every((page, index) => {
+        const stored = storedPages[index]
+        return (
+          stored &&
+          stored.key === page.key &&
+          stored.path === page.path &&
+          stored.title === page.title &&
+          stored.closable === page.closable
+        )
+      })
+    if (!samePages) {
+      setStoredPages(pages)
+    }
+  }
 
   const closePage = (key: string, navigate: (path: string) => void) => {
-    setPages((prev) => {
+    setStoredPages((prev) => {
       const index = prev.findIndex((item) => item.key === key)
       if (index < 0) return prev
       if (key === defaultPath || prev[index]?.closable === false) return prev
@@ -113,7 +118,9 @@ export function useOpenPages(
   }
 
   const updatePageTitle = (key: string, title: string) => {
-    setPages((prev) => prev.map((p) => (p.key === key ? { ...p, title } : p)))
+    setStoredPages((prev) =>
+      prev.map((p) => (p.key === key ? { ...p, title } : p)),
+    )
   }
 
   return { pages, closePage, updatePageTitle }

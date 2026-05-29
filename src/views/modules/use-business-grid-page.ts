@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import type { SortingState } from '@/hooks/useDataTable'
@@ -81,12 +81,6 @@ export function useBusinessGridPage({
 
   useMasterOptions(listOptionRequirements)
 
-  useEffect(() => {
-    setSelectedRowKeys([])
-    setSelectedRowMap({})
-    setSorting([])
-  }, [])
-
   const {
     filters,
     submittedFilters,
@@ -136,41 +130,6 @@ export function useBusinessGridPage({
     setSelectedRowKeys([])
     setSelectedRowMap({})
   }
-
-  useEffect(() => {
-    const currentPageIds = new Set(records.map((r) => String(r.id)))
-    const selectedRowKeysSet = new Set(selectedRowKeys)
-
-    setSelectedRowMap((prev) => {
-      const next: Record<string, ModuleRecord> = {}
-      // react-doctor: intentional callback, not event handler
-      for (const key of Object.keys(prev)) {
-        if (!currentPageIds.has(key) && selectedRowKeysSet.has(key)) {
-          next[key] = prev[key]
-        }
-      }
-      for (const record of records) {
-        const id = String(record.id)
-        if (selectedRowKeysSet.has(id)) {
-          next[id] = record
-        }
-      }
-
-      const prevKeys = Object.keys(prev)
-      const nextKeys = Object.keys(next)
-      if (prevKeys.length !== nextKeys.length) {
-        return next
-      }
-
-      for (const key of nextKeys) {
-        if (prev[key] !== next[key]) {
-          return next
-        }
-      }
-
-      return prev
-    })
-  }, [records, selectedRowKeys])
 
   const navigate = useNavigate()
   const detailRoutePath = getBehaviorValue(moduleKey, 'detailRoutePath')

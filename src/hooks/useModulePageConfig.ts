@@ -1,5 +1,4 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
 import { listAllBusinessModuleRows } from '@/api/business'
 import {
   DISPLAY_SWITCH_CODES,
@@ -106,20 +105,14 @@ function decorateStatementLinkConfig(
 }
 
 export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
-  const previousModuleKeyRef = useRef(moduleKey)
   const switchCode = WEIGHT_ONLY_VIEW_SETTING_CODES[moduleKey]
   const needsStatementLinkCatalog =
     moduleKey === 'receipt' || moduleKey === 'payment'
-  const canReusePreviousConfig = previousModuleKeyRef.current === moduleKey
 
   const moduleConfigQuery = useQuery({
     queryKey: QUERY_KEYS.businessPageConfig(moduleKey),
     queryFn: () => loadBusinessPageConfig(moduleKey),
-    placeholderData: initialConfig
-      ? () => initialConfig
-      : canReusePreviousConfig
-        ? keepPreviousData
-        : undefined,
+    placeholderData: initialConfig ? () => initialConfig : keepPreviousData,
     staleTime: 5 * 60_000,
   })
 
@@ -169,10 +162,6 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
   )
 
   const supportsInvoiceAssist = INVOICE_ASSIST_MODULE_KEYS.has(moduleKey)
-
-  useEffect(() => {
-    previousModuleKeyRef.current = moduleKey
-  }, [moduleKey])
 
   return {
     config,
