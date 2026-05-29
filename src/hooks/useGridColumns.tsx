@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { type ReactNode, useMemo } from 'react'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import { type ActionItem, TableActions } from '@/components/TableActions'
@@ -34,51 +34,36 @@ export function useGridColumns({
   const { formatCellValue } = useModuleDisplaySupport()
   const { t } = useTranslation()
 
-  const columns = useMemo((): ColumnDef<ModuleRecord>[] => {
-    const cols: ColumnDef<ModuleRecord>[] = []
+  const columns: ColumnDef<ModuleRecord>[] = []
 
-    if (canUpdate || showActions) {
-      cols.push({
-        id: 'actions',
-        header: t('hooks.gridColumns.actions'),
-        meta: {
-          width: '240px',
-          align: 'center',
-          fixed: 'left',
-          renderCell: (record: ModuleRecord) => (
-            <TableActions items={rowActions(record)} />
-          ),
-        },
-        cell: ({ row }) => <TableActions items={rowActions(row.original)} />,
-      })
-    }
+  if (canUpdate || showActions) {
+    columns.push({
+      id: 'actions',
+      header: t('hooks.gridColumns.actions'),
+      meta: {
+        width: '240px',
+        align: 'center',
+        fixed: 'left',
+        renderCell: (record: ModuleRecord) => (
+          <TableActions items={rowActions(record)} />
+        ),
+      },
+      cell: ({ row }) => <TableActions items={rowActions(row.original)} />,
+    })
+  }
 
-    for (const colDef of config.columns) {
-      cols.push({
-        id: colDef.dataIndex,
-        header: colDef.title,
-        accessorKey: colDef.dataIndex,
-        meta: {
-          width: colDef.width ? `${colDef.width}px` : '120px',
-          align: colDef.align || 'center',
-          renderCell: (record: ModuleRecord) => {
-            const value = record[colDef.dataIndex]
-            if (colDef.render) {
-              return colDef.render(value, record)
-            }
-            if (colDef.type === 'status' && config.statusMap) {
-              const statusStr = asString(value)
-              return (
-                <StatusTag status={statusStr} statusMap={config.statusMap} />
-              )
-            }
-            return <span>{formatCellValue(value, colDef.type)}</span>
-          },
-        },
-        cell: ({ getValue, row }) => {
-          const value = getValue()
+  for (const colDef of config.columns) {
+    columns.push({
+      id: colDef.dataIndex,
+      header: colDef.title,
+      accessorKey: colDef.dataIndex,
+      meta: {
+        width: colDef.width ? `${colDef.width}px` : '120px',
+        align: colDef.align || 'center',
+        renderCell: (record: ModuleRecord) => {
+          const value = record[colDef.dataIndex]
           if (colDef.render) {
-            return colDef.render(value, row.original)
+            return colDef.render(value, record)
           }
           if (colDef.type === 'status' && config.statusMap) {
             const statusStr = asString(value)
@@ -86,11 +71,20 @@ export function useGridColumns({
           }
           return <span>{formatCellValue(value, colDef.type)}</span>
         },
-      })
-    }
-
-    return cols
-  }, [config, rowActions, canUpdate, formatCellValue, showActions, t])
+      },
+      cell: ({ getValue, row }) => {
+        const value = getValue()
+        if (colDef.render) {
+          return colDef.render(value, row.original)
+        }
+        if (colDef.type === 'status' && config.statusMap) {
+          const statusStr = asString(value)
+          return <StatusTag status={statusStr} statusMap={config.statusMap} />
+        }
+        return <span>{formatCellValue(value, colDef.type)}</span>
+      },
+    })
+  }
 
   return { columns }
 }

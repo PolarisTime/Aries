@@ -2,14 +2,7 @@ import Empty from 'antd/es/empty'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
-import {
-  type MouseEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { type MouseEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
 import type { ModuleRecord } from '@/types/module-page'
@@ -80,14 +73,13 @@ export function BusinessGridTable({
     }
   }, [])
 
-  const selection = useMemo(
-    () => (rowSelection ? { ...rowSelection, columnWidth: 40 } : undefined),
-    [rowSelection],
-  )
+  const selection = rowSelection
+    ? { ...rowSelection, columnWidth: 40 }
+    : undefined
 
   const isVirtual = dataSource.length > 100
 
-  const scrollX = useMemo(() => {
+  const scrollX = (() => {
     let totalWidth = 0
     for (const col of visibleColumns) {
       const raw = col.width
@@ -98,59 +90,59 @@ export function BusinessGridTable({
       } else totalWidth += 120
     }
     return totalWidth + 40
-  }, [visibleColumns])
+  })()
 
-  const scroll = useMemo(() => ({ x: scrollX, y: scrollY }), [scrollX, scrollY])
+  const scroll = { x: scrollX, y: scrollY }
 
   const doubleClickCooldownRef = useRef(0)
 
-  const onRow = useCallback(
-    (record: ModuleRecord) => ({
-      onClick: (event: MouseEvent<HTMLElement>) => {
-        const target = event.target as HTMLElement | null
-        if (
-          target?.closest(
-            'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
-          )
+  const onRow = (record: ModuleRecord) => ({
+    onClick: (event: MouseEvent<HTMLElement>) => {
+      const target = event.target as HTMLElement | null
+      if (
+        target?.closest(
+          'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
         )
-          return
-        onRowClick(record)
-      },
-      onDoubleClick: (event: MouseEvent<HTMLElement>) => {
-        const target = event.target as HTMLElement | null
-        if (
-          target?.closest(
-            'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
-          )
-        )
-          return
-        const now = Date.now()
-        if (now - doubleClickCooldownRef.current < 500) return
-        doubleClickCooldownRef.current = now
-        onRowDoubleClick(record)
-      },
-    }),
-    [onRowClick, onRowDoubleClick],
-  )
-
-  const emptyText = useMemo(
-    () => <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('modules.table.noData')} />,
-    [t],
-  )
-  const locale = useMemo(() => ({ emptyText }), [emptyText])
-
-  const onChange = useCallback(
-    (_pagination: unknown, _filters: unknown, sorter: unknown) => {
-      const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter
-      const columnKey = (activeSorter as { columnKey?: string | number })
-        ?.columnKey
-      onSortingChange(
-        typeof columnKey === 'bigint' ? String(columnKey) : columnKey,
-        (activeSorter as { order?: SortOrder })?.order,
       )
+        return
+      onRowClick(record)
     },
-    [onSortingChange],
+    onDoubleClick: (event: MouseEvent<HTMLElement>) => {
+      const target = event.target as HTMLElement | null
+      if (
+        target?.closest(
+          'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
+        )
+      )
+        return
+      const now = Date.now()
+      if (now - doubleClickCooldownRef.current < 500) return
+      doubleClickCooldownRef.current = now
+      onRowDoubleClick(record)
+    },
+  })
+
+  const emptyText = (
+    <Empty
+      image={Empty.PRESENTED_IMAGE_SIMPLE}
+      description={t('modules.table.noData')}
+    />
   )
+  const locale = { emptyText }
+
+  const onChange = (
+    _pagination: unknown,
+    _filters: unknown,
+    sorter: unknown,
+  ) => {
+    const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter
+    const columnKey = (activeSorter as { columnKey?: string | number })
+      ?.columnKey
+    onSortingChange(
+      typeof columnKey === 'bigint' ? String(columnKey) : columnKey,
+      (activeSorter as { order?: SortOrder })?.order,
+    )
+  }
 
   return (
     <div ref={shellRef} className="module-table-shell">
