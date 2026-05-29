@@ -264,6 +264,113 @@ const parentSelectorInitialState: ParentSelectorState = {
   selectedRecordMap: {},
 }
 
+interface ParentSelectorSelectedPanelProps {
+  displayFieldKey: string
+  formatCellValue: (
+    value: unknown,
+    type?: 'date' | 'amount' | 'weight' | 'status',
+  ) => string
+  onClear: () => void
+  onRemove: (recordId: string) => void
+  parentModuleKey: string
+  selectedRows: ModuleRecord[]
+  t: (key: string, options?: Record<string, unknown>) => string
+}
+
+function ParentSelectorSelectedPanel({
+  displayFieldKey,
+  formatCellValue,
+  onClear,
+  onRemove,
+  parentModuleKey,
+  selectedRows,
+  t,
+}: ParentSelectorSelectedPanelProps) {
+  return (
+    <div className="parent-selector-selected-panel">
+      <div className="parent-selector-selected-header">
+        <span className="parent-selector-selected-title">
+          {t('modules.parentSelector.selectedDocuments')}
+          <span className="parent-selector-selected-count">
+            {selectedRows.length
+              ? t('modules.parentSelector.selectedDocumentsCount', {
+                  count: selectedRows.length,
+                })
+              : t('modules.parentSelector.selectedDocumentsCount', {
+                  count: 0,
+                })}
+          </span>
+        </span>
+        <Button disabled={!selectedRows.length} onClick={onClear}>
+          {t('modules.parentSelector.clearSelected')}
+        </Button>
+      </div>
+      {selectedRows.length ? (
+        <div className="parent-selector-selected-list">
+          {selectedRows.map((record) => {
+            const recordId = String(record.id)
+            const summary = buildSelectedRecordSummary(
+              record,
+              parentModuleKey,
+              displayFieldKey,
+              formatCellValue,
+            )
+
+            return (
+              <div key={recordId} className="parent-selector-selected-chip">
+                <div className="parent-selector-selected-chip-main">
+                  <div className="parent-selector-selected-chip-top">
+                    <span className="parent-selector-selected-chip-title">
+                      {summary.primary}
+                    </span>
+                    {summary.status ? (
+                      <StatusTag
+                        status={summary.status}
+                        statusMap={getOverlayStatusMap()}
+                        fallback={summary.status}
+                      />
+                    ) : null}
+                  </div>
+                  {summary.meta.length ? (
+                    <div className="parent-selector-selected-chip-meta">
+                      {summary.meta.map((item) => (
+                        <span
+                          key={`${recordId}-${item}`}
+                          className="parent-selector-selected-chip-desc"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="parent-selector-selected-chip-desc">
+                      {t('modules.parentSelector.selectedDocuments')}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="parent-selector-selected-chip-remove"
+                  onClick={() => onRemove(recordId)}
+                  aria-label={t('modules.parentSelector.removeAriaLabel', {
+                    name: summary.primary,
+                  })}
+                >
+                  <CloseOutlined />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="parent-selector-selected-empty">
+          {t('modules.parentSelector.noSelectionHint')}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ModuleParentSelectorOverlay({
   open,
   parentModuleKey,
@@ -525,87 +632,15 @@ function ModuleParentSelectorOverlayContent({
           />
         ) : null}
         {allowMultipleSelection ? (
-          <div className="parent-selector-selected-panel">
-            <div className="parent-selector-selected-header">
-              <span className="parent-selector-selected-title">
-                {t('modules.parentSelector.selectedDocuments')}
-                <span className="parent-selector-selected-count">
-                  {selectedRows.length
-                    ? t('modules.parentSelector.selectedDocumentsCount', { count: selectedRows.length })
-                    : t('modules.parentSelector.selectedDocumentsCount', { count: 0 })}
-                </span>
-              </span>
-              <Button
-                disabled={!selectedRows.length}
-                onClick={handleClearSelectedRecords}
-              >
-                {t('modules.parentSelector.clearSelected')}
-              </Button>
-            </div>
-            {selectedRows.length ? (
-              <div className="parent-selector-selected-list">
-                {selectedRows.map((record) => {
-                  const recordId = String(record.id)
-                  const summary = buildSelectedRecordSummary(
-                    record,
-                    parentModuleKey,
-                    displayFieldKey,
-                    formatCellValue,
-                  )
-
-                  return (
-                    <div
-                      key={recordId}
-                      className="parent-selector-selected-chip"
-                    >
-                      <div className="parent-selector-selected-chip-main">
-                        <div className="parent-selector-selected-chip-top">
-                          <span className="parent-selector-selected-chip-title">
-                            {summary.primary}
-                          </span>
-                          {summary.status ? (
-                            <StatusTag
-                              status={summary.status}
-                              statusMap={getOverlayStatusMap()}
-                              fallback={summary.status}
-                            />
-                          ) : null}
-                        </div>
-                        {summary.meta.length ? (
-                          <div className="parent-selector-selected-chip-meta">
-                            {summary.meta.map((item) => (
-                              <span
-                                key={`${recordId}-${item}`}
-                                className="parent-selector-selected-chip-desc"
-                              >
-                                {item}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="parent-selector-selected-chip-desc">
-                            {t('modules.parentSelector.selectedDocuments')}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        className="parent-selector-selected-chip-remove"
-                        onClick={() => removeSelectedRecord(recordId)}
-                        aria-label={t('modules.parentSelector.removeAriaLabel', { name: summary.primary })}
-                      >
-                        <CloseOutlined />
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="parent-selector-selected-empty">
-                {t('modules.parentSelector.noSelectionHint')}
-              </div>
-            )}
-          </div>
+          <ParentSelectorSelectedPanel
+            displayFieldKey={displayFieldKey}
+            formatCellValue={formatCellValue}
+            onClear={handleClearSelectedRecords}
+            onRemove={removeSelectedRecord}
+            parentModuleKey={parentModuleKey}
+            selectedRows={selectedRows}
+            t={t}
+          />
         ) : null}
       </div>
       <Table

@@ -15,7 +15,7 @@ import Space from 'antd/es/space'
 import Spin from 'antd/es/spin'
 import Typography from 'antd/es/typography'
 import Upload from 'antd/es/upload'
-import { useEffect, useReducer, useRef } from 'react'
+import { type RefObject, useEffect, useReducer, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   type AttachmentRecord,
@@ -58,6 +58,230 @@ const attachmentModalInitialState: AttachmentModalState = {
   previewSource: '',
   pdfPreviewUrl: '',
   pdfPreviewOpen: false,
+}
+
+interface AttachmentUploadZoneProps {
+  canCreateAttachment: boolean
+  uploading: boolean
+  pasteZoneRef: RefObject<HTMLDivElement | null>
+  onUpload: (file: File) => Promise<boolean>
+  t: (key: string) => string
+}
+
+function AttachmentUploadZone({
+  canCreateAttachment,
+  uploading,
+  pasteZoneRef,
+  onUpload,
+  t,
+}: AttachmentUploadZoneProps) {
+  return (
+    <div ref={pasteZoneRef} className="module-attachment-upload-shell">
+      {canCreateAttachment ? (
+        <Upload
+          beforeUpload={(f) => {
+            void onUpload(f)
+            return false
+          }}
+          showUploadList={false}
+        >
+          <Button icon={<UploadOutlined />} loading={uploading}>
+            {t('modules.attachment.upload')}
+          </Button>
+        </Upload>
+      ) : null}
+      <Typography.Text
+        type="secondary"
+        className="module-attachment-upload-hint"
+      >
+        {canCreateAttachment
+          ? t('modules.attachment.uploadHint')
+          : t('modules.attachment.noPermissionHint')}
+      </Typography.Text>
+    </div>
+  )
+}
+
+interface AttachmentListProps {
+  attachments: AttachmentRecord[]
+  canDeleteAttachment: boolean
+  isImageAttachment: (attachment: AttachmentRecord) => boolean
+  isPdfAttachment: (attachment: AttachmentRecord) => boolean
+  onDelete: (id: string) => void
+  onDownload: (attachment: AttachmentRecord) => void
+  onOpenImagePreview: (attachment: AttachmentRecord) => void
+  onOpenPdfPreview: (attachment: AttachmentRecord) => void
+  t: (key: string) => string
+}
+
+function AttachmentList({
+  attachments,
+  canDeleteAttachment,
+  isImageAttachment,
+  isPdfAttachment,
+  onDelete,
+  onDownload,
+  onOpenImagePreview,
+  onOpenPdfPreview,
+  t,
+}: AttachmentListProps) {
+  if (!attachments.length) {
+    return (
+      <Empty
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+        description={t('modules.attachment.noAttachments')}
+      />
+    )
+  }
+
+  return (
+    <Flex vertical gap={12}>
+      {attachments.map((item) => (
+        <Card key={item.id} size="small">
+          <Flex align="center" justify="space-between" gap={16}>
+            <Space align="start" size={12} className="flex-1 min-w-0">
+              {isImageAttachment(item) ? (
+                <button
+                  type="button"
+                  className="module-attachment-preview-thumb"
+                  onClick={() => onOpenImagePreview(item)}
+                >
+                  <Image
+                    preview={false}
+                    src={item.previewUrl || item.downloadUrl}
+                    alt={item.originalFileName || item.fileName || item.name}
+                    width={56}
+                    height={56}
+                  />
+                </button>
+              ) : isPdfAttachment(item) ? (
+                <button
+                  type="button"
+                  className="module-attachment-preview-thumb"
+                  onClick={() => onOpenPdfPreview(item)}
+                >
+                  <span className="module-attachment-pdf-icon">PDF</span>
+                </button>
+              ) : (
+                <span className="module-attachment-file-icon">
+                  <PaperClipOutlined />
+                </span>
+              )}
+              <Space orientation="vertical" size={0} className="min-w-0">
+                <Typography.Text strong ellipsis>
+                  {item.originalFileName || item.fileName || item.name}
+                </Typography.Text>
+                <Typography.Text type="secondary">
+                  {((item.fileSize || 0) / 1024).toFixed(1)} KB ·{' '}
+                  {String(item.uploadTime || '')}
+                </Typography.Text>
+              </Space>
+            </Space>
+            <Space size={0}>
+              {isImageAttachment(item) || isPdfAttachment(item) ? (
+                <Button
+                  key="preview"
+                  type="link"
+                  icon={<EyeOutlined />}
+                  onClick={() => {
+                    if (isPdfAttachment(item)) onOpenPdfPreview(item)
+                    else onOpenImagePreview(item)
+                  }}
+                />
+              ) : null}
+              <Button
+                key="download"
+                type="link"
+                icon={<DownloadOutlined />}
+                onClick={() => onDownload(item)}
+              />
+              {canDeleteAttachment ? (
+                <Button
+                  key="delete"
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    onDelete(item.id)
+                  }}
+                />
+              ) : null}
+            </Space>
+          </Flex>
+        </Card>
+      ))}
+    </Flex>
+  )
+}
+
+interface AttachmentPreviewLayersProps {
+  imageAttachments: AttachmentRecord[]
+  pdfPreviewOpen: boolean
+  pdfPreviewUrl: string
+  previewOpen: boolean
+  previewSource: string
+  onPdfPreviewOpenChange: (visible: boolean) => void
+  onImagePreviewChange: (visible: boolean) => void
+  t: (key: string) => string
+}
+
+function AttachmentPreviewLayers({
+  imageAttachments,
+  pdfPreviewOpen,
+  pdfPreviewUrl,
+  previewOpen,
+  previewSource,
+  onPdfPreviewOpenChange,
+  onImagePreviewChange,
+  t,
+}: AttachmentPreviewLayersProps) {
+  return (
+    <>
+      {imageAttachments.length ? (
+        <Image.PreviewGroup
+          preview={{
+            visible: previewOpen,
+            current: Math.max(
+              imageAttachments.findIndex(
+                (item) =>
+                  (item.previewUrl || item.downloadUrl || '') === previewSource,
+              ),
+              0,
+            ),
+            onVisibleChange: onImagePreviewChange,
+          }}
+        >
+          <div className="hidden">
+            {imageAttachments.map((item) => (
+              <Image
+                key={item.id}
+                src={item.previewUrl || item.downloadUrl}
+                alt={item.originalFileName || item.fileName || item.name}
+              />
+            ))}
+          </div>
+        </Image.PreviewGroup>
+      ) : null}
+      <Modal
+        title={t('modules.attachment.pdfPreview')}
+        open={pdfPreviewOpen}
+        onCancel={() => onPdfPreviewOpenChange(false)}
+        footer={null}
+        width="90%"
+        className="modal-top-20"
+        destroyOnClose
+      >
+        {pdfPreviewUrl ? (
+          <iframe
+            src={pdfPreviewUrl}
+            className="w-full border-none pdf-preview-iframe"
+            title="PDF Preview"
+            sandbox="allow-same-origin"
+          />
+        ) : null}
+      </Modal>
+    </>
+  )
 }
 
 export function ModuleAttachmentModal({
@@ -276,161 +500,45 @@ export function ModuleAttachmentModal({
         if (visible) void fetchAttachments()
       }}
     >
-      <div ref={pasteZoneRef} className="module-attachment-upload-shell">
-        {canCreateAttachment ? (
-          <Upload
-            beforeUpload={(f) => {
-              void handleUpload(f)
-              return false
-            }}
-            showUploadList={false}
-          >
-            <Button icon={<UploadOutlined />} loading={uploading}>
-              {t('modules.attachment.upload')}
-            </Button>
-          </Upload>
-        ) : null}
-        <Typography.Text
-          type="secondary"
-          className="module-attachment-upload-hint"
-        >
-          {canCreateAttachment
-            ? t('modules.attachment.uploadHint')
-            : t('modules.attachment.noPermissionHint')}
-        </Typography.Text>
-      </div>
+      <AttachmentUploadZone
+        canCreateAttachment={canCreateAttachment}
+        uploading={uploading}
+        pasteZoneRef={pasteZoneRef}
+        onUpload={handleUpload}
+        t={t}
+      />
       <Spin spinning={loading}>
-        {attachments.length > 0 ? (
-          <Flex vertical gap={12}>
-            {attachments.map((item) => (
-              <Card key={item.id} size="small">
-                <Flex align="center" justify="space-between" gap={16}>
-                  <Space align="start" size={12} className="flex-1 min-w-0">
-                    {isImageAttachment(item) ? (
-                      <button
-                        type="button"
-                        className="module-attachment-preview-thumb"
-                        onClick={() => openImagePreview(item)}
-                      >
-                        <Image
-                          preview={false}
-                          src={item.previewUrl || item.downloadUrl}
-                          alt={
-                            item.originalFileName || item.fileName || item.name
-                          }
-                          width={56}
-                          height={56}
-                        />
-                      </button>
-                    ) : isPdfAttachment(item) ? (
-                      <button
-                        type="button"
-                        className="module-attachment-preview-thumb"
-                        onClick={() => openPdfPreview(item)}
-                      >
-                        <span className="module-attachment-pdf-icon">PDF</span>
-                      </button>
-                    ) : (
-                      <span className="module-attachment-file-icon">
-                        <PaperClipOutlined />
-                      </span>
-                    )}
-                    <Space orientation="vertical" size={0} className="min-w-0">
-                      <Typography.Text strong ellipsis>
-                        {item.originalFileName || item.fileName || item.name}
-                      </Typography.Text>
-                      <Typography.Text type="secondary">
-                        {((item.fileSize || 0) / 1024).toFixed(1)} KB ·{' '}
-                        {String(item.uploadTime || '')}
-                      </Typography.Text>
-                    </Space>
-                  </Space>
-                  <Space size={0}>
-                    {isImageAttachment(item) || isPdfAttachment(item) ? (
-                      <Button
-                        key="preview"
-                        type="link"
-                        icon={<EyeOutlined />}
-                        onClick={() => {
-                          if (isPdfAttachment(item)) openPdfPreview(item)
-                          else openImagePreview(item)
-                        }}
-                      />
-                    ) : null}
-                    <Button
-                      key="download"
-                      type="link"
-                      icon={<DownloadOutlined />}
-                      onClick={() => handleDownload(item)}
-                    />
-                    {canDeleteAttachment ? (
-                      <Button
-                        key="delete"
-                        type="link"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => {
-                          void handleDelete(item.id)
-                        }}
-                      />
-                    ) : null}
-                  </Space>
-                </Flex>
-              </Card>
-            ))}
-          </Flex>
-        ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('modules.attachment.noAttachments')} />
-        )}
-      </Spin>
-      {imageAttachments.length ? (
-        <Image.PreviewGroup
-          preview={{
-            visible: previewOpen,
-            current: Math.max(
-              imageAttachments.findIndex(
-                (item) =>
-                  (item.previewUrl || item.downloadUrl || '') === previewSource,
-              ),
-              0,
-            ),
-            onVisibleChange: (visible) => {
-              setState({
-                previewOpen: visible,
-                previewSource: visible ? previewSource : '',
-              })
-            },
+        <AttachmentList
+          attachments={attachments}
+          canDeleteAttachment={canDeleteAttachment}
+          isImageAttachment={isImageAttachment}
+          isPdfAttachment={isPdfAttachment}
+          onDelete={(id) => {
+            void handleDelete(id)
           }}
-        >
-          <div className="hidden">
-            {imageAttachments.map((item) => (
-              <Image
-                key={item.id}
-                src={item.previewUrl || item.downloadUrl}
-                alt={item.originalFileName || item.fileName || item.name}
-              />
-            ))}
-          </div>
-        </Image.PreviewGroup>
-      ) : null}
-      <Modal
-        title={t('modules.attachment.pdfPreview')}
-        open={pdfPreviewOpen}
-        onCancel={() => setState({ pdfPreviewOpen: false })}
-        footer={null}
-        width="90%"
-        className="modal-top-20"
-        destroyOnClose
-      >
-        {pdfPreviewUrl ? (
-          <iframe
-            src={pdfPreviewUrl}
-            className="w-full border-none pdf-preview-iframe"
-            title="PDF Preview"
-            sandbox="allow-same-origin"
-          />
-        ) : null}
-      </Modal>
+          onDownload={handleDownload}
+          onOpenImagePreview={openImagePreview}
+          onOpenPdfPreview={openPdfPreview}
+          t={t}
+        />
+      </Spin>
+      <AttachmentPreviewLayers
+        imageAttachments={imageAttachments}
+        pdfPreviewOpen={pdfPreviewOpen}
+        pdfPreviewUrl={pdfPreviewUrl}
+        previewOpen={previewOpen}
+        previewSource={previewSource}
+        onPdfPreviewOpenChange={(visible) =>
+          setState({ pdfPreviewOpen: visible })
+        }
+        onImagePreviewChange={(visible) => {
+          setState({
+            previewOpen: visible,
+            previewSource: visible ? previewSource : '',
+          })
+        }}
+        t={t}
+      />
     </Modal>
   )
 }

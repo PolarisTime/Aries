@@ -28,14 +28,129 @@ import { useAppLayoutSessionGuards } from '@/layouts/useAppLayoutSessionGuards'
 import { useAppWatermark } from '@/layouts/useAppWatermark'
 import { useBackendStatus } from '@/layouts/useBackendStatus'
 import { useGlobalSearchSupport } from '@/layouts/useGlobalSearchSupport'
-import { usePersonalSettings } from '@/layouts/usePersonalSettings'
+import {
+  type LayoutMode,
+  usePersonalSettings,
+} from '@/layouts/usePersonalSettings'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { useSystemMenuStore } from '@/stores/systemMenuStore'
 import { message, modal } from '@/utils/antd-app'
 import { appTitle } from '@/utils/env'
+import type { ThemeMode } from '@/utils/storage'
 
 const { Header, Sider, Content } = Layout
+
+type SideNavigationProps = {
+  collapsed: boolean
+  onCollapse: (collapsed: boolean) => void
+  onMenuClick: MenuProps['onClick']
+  onOpenChange: (keys: string[]) => void
+  openKeys: string[]
+  selectedKeys: string[]
+  sideMenuItems: MenuProps['items']
+  t: (key: string) => string
+}
+
+function SideNavigation({
+  collapsed,
+  onCollapse,
+  onMenuClick,
+  onOpenChange,
+  openKeys,
+  selectedKeys,
+  sideMenuItems,
+  t,
+}: SideNavigationProps) {
+  return (
+    <Sider
+      collapsible
+      collapsed={collapsed}
+      onCollapse={onCollapse}
+      trigger={null}
+      width={180}
+      collapsedWidth={60}
+      className="leo-sider"
+    >
+      <div className="leo-brand">
+        <div className="leo-brand-mark">{collapsed ? 'L' : 'LEO'}</div>
+        {!collapsed ? (
+          <div className="leo-brand-copy">
+            <strong>{appTitle}</strong>
+            <span>{t('common.brandSubtitle')}</span>
+          </div>
+        ) : null}
+      </div>
+
+      <Menu
+        mode="inline"
+        selectedKeys={selectedKeys}
+        openKeys={collapsed ? [] : openKeys}
+        onOpenChange={onOpenChange}
+        items={sideMenuItems}
+        onClick={onMenuClick}
+        className="leo-menu"
+      />
+    </Sider>
+  )
+}
+
+type AppContentOutletProps = {
+  openPageKey: string
+}
+
+function AppContentOutlet({ openPageKey }: AppContentOutletProps) {
+  return (
+    <Content className="leo-content">
+      <div className="leo-content-inner">
+        <AppErrorBoundary>
+          <Outlet key={openPageKey} />
+        </AppErrorBoundary>
+      </div>
+    </Content>
+  )
+}
+
+type PersonalSettingsHostProps = {
+  fontSize: number
+  layoutMode: LayoutMode
+  onClose: () => void
+  onFontSizeChange: (value: number) => void
+  onLayoutModeChange: (value: LayoutMode) => void
+  onResetDisplay: () => void
+  onSaveDisplay: () => void
+  onThemeModeChange: (value: ThemeMode) => void
+  open: boolean
+  themeMode: ThemeMode
+}
+
+function PersonalSettingsHost({
+  fontSize,
+  layoutMode,
+  onClose,
+  onFontSizeChange,
+  onLayoutModeChange,
+  onResetDisplay,
+  onSaveDisplay,
+  onThemeModeChange,
+  open,
+  themeMode,
+}: PersonalSettingsHostProps) {
+  return (
+    <LazyPersonalSettingsModal
+      open={open}
+      onClose={onClose}
+      onSaveDisplay={onSaveDisplay}
+      onResetDisplay={onResetDisplay}
+      fontSize={fontSize}
+      onFontSizeChange={onFontSizeChange}
+      layoutMode={layoutMode}
+      onLayoutModeChange={onLayoutModeChange}
+      themeMode={themeMode}
+      onThemeModeChange={onThemeModeChange}
+    />
+  )
+}
 
 export function AppLayout() {
   useAuthAppSync()
@@ -227,35 +342,16 @@ export function AppLayout() {
           <div className="leo-page-loader" />
 
           {!isTopNavigationLayout ? (
-            <Sider
-              collapsible
+            <SideNavigation
               collapsed={collapsed}
               onCollapse={setCollapsed}
-              trigger={null}
-              width={180}
-              collapsedWidth={60}
-              className="leo-sider"
-            >
-              <div className="leo-brand">
-                <div className="leo-brand-mark">{collapsed ? 'L' : 'LEO'}</div>
-                {!collapsed ? (
-                  <div className="leo-brand-copy">
-                    <strong>{appTitle}</strong>
-                    <span>{t('common.brandSubtitle')}</span>
-                  </div>
-                ) : null}
-              </div>
-
-              <Menu
-                mode="inline"
-                selectedKeys={selectedKeys}
-                openKeys={collapsed ? [] : siderOpenKeys}
-                onOpenChange={setSiderOpenKeys}
-                items={sideMenuItems}
-                onClick={handleMenuClick}
-                className="leo-menu"
-              />
-            </Sider>
+              onMenuClick={handleMenuClick}
+              onOpenChange={setSiderOpenKeys}
+              openKeys={siderOpenKeys}
+              selectedKeys={selectedKeys}
+              sideMenuItems={sideMenuItems}
+              t={t}
+            />
           ) : null}
 
           <Layout
@@ -331,16 +427,10 @@ export function AppLayout() {
               onNavigateToPath={(path) => navigate({ to: path as '/' })}
             />
 
-            <Content className="leo-content">
-              <div className="leo-content-inner">
-                <AppErrorBoundary>
-                  <Outlet key={routePageContext.openPageKey} />
-                </AppErrorBoundary>
-              </div>
-            </Content>
+            <AppContentOutlet openPageKey={routePageContext.openPageKey} />
           </Layout>
 
-          <LazyPersonalSettingsModal
+          <PersonalSettingsHost
             open={personalSettingsOpen}
             onClose={closePersonalSettings}
             onSaveDisplay={handleSavePersonalSettings}
