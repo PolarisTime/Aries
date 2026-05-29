@@ -4,7 +4,7 @@ import Layout from 'antd/es/layout'
 import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
 import Watermark from 'antd/es/watermark'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
@@ -54,10 +54,7 @@ export function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false)
   const clock = useAppLayoutClock()
 
-  const routePageContext = useMemo(
-    () => resolveRoutePageContext(location.pathname, t),
-    [location, t],
-  )
+  const routePageContext = resolveRoutePageContext(location.pathname, t)
   const { backendOnline } = useBackendStatus(token)
 
   const {
@@ -79,14 +76,14 @@ export function AppLayout() {
 
   const isTopNavigationLayout = appliedLayoutMode === 'top'
 
-  const resolveOpenPage = useCallback((pathname: string) => {
+  const resolveOpenPage = (pathname: string) => {
     const context = resolveRoutePageContext(pathname, t)
     return {
       key: context.openPageKey,
       path: pathname,
       title: context.title,
     }
-  }, [t])
+  }
 
   const { pages, closePage } = useOpenPages(
     '/dashboard',
@@ -109,27 +106,24 @@ export function AppLayout() {
     menus,
   })
 
-  const handleJumpToSearchResult = useCallback(
-    (result: GlobalSearchResult) => {
-      setSearchOpen(false)
-      const targetPage = getPageDefinition(result.moduleKey)
-      if (!targetPage) {
-        message.warning(t('layouts.routePage.businessPageNotFound'))
-        return
-      }
-      const query = new URLSearchParams({
-        docNo: result.primaryNo,
-        openDetail: '1',
-      })
-      if (result.trackId) {
-        query.set('trackId', result.trackId)
-      }
-      void navigate({
-        to: `/${getPageRoutePath(targetPage)}?${query.toString()}` as '/',
-      })
-    },
-    [navigate, t],
-  )
+  const handleJumpToSearchResult = (result: GlobalSearchResult) => {
+    setSearchOpen(false)
+    const targetPage = getPageDefinition(result.moduleKey)
+    if (!targetPage) {
+      message.warning(t('layouts.routePage.businessPageNotFound'))
+      return
+    }
+    const query = new URLSearchParams({
+      docNo: result.primaryNo,
+      openDetail: '1',
+    })
+    if (result.trackId) {
+      query.set('trackId', result.trackId)
+    }
+    void navigate({
+      to: `/${getPageRoutePath(targetPage)}?${query.toString()}` as '/',
+    })
+  }
 
   const {
     keyword: globalSearchKeyword,
@@ -156,9 +150,9 @@ export function AppLayout() {
 
   useAuthHeartbeat()
 
-  const handleRefreshSession = useCallback(() => {
+  const handleRefreshSession = () => {
     void useAuthStore.getState().restoreSession()
-  }, [])
+  }
   useAuthRefreshTimer(handleRefreshSession)
   useAppLayoutSessionGuards({
     locationPathname: location.pathname,
@@ -190,21 +184,21 @@ export function AppLayout() {
     })
   }
 
-  const handleOpenPersonalSettings = useCallback(() => {
+  const handleOpenPersonalSettings = () => {
     loadPersonalSettings()
     openPersonalSettings()
-  }, [loadPersonalSettings, openPersonalSettings])
+  }
 
-  const handleSavePersonalSettings = useCallback(() => {
+  const handleSavePersonalSettings = () => {
     savePersonalSettings()
     message.success(t('common.displaySettingsSaved'))
-  }, [savePersonalSettings, t])
+  }
 
-  const { currentUserLoginName, currentUserName } = useMemo(
-    () => buildAppLayoutUserInfo(t, user),
-    [t, user],
+  const { currentUserLoginName, currentUserName } = buildAppLayoutUserInfo(
+    t,
+    user,
   )
-  const clockText = useMemo(() => buildClockText(clock), [clock])
+  const clockText = buildClockText(clock)
   const {
     fixedWidthStyle,
     headerClassName,
@@ -212,15 +206,11 @@ export function AppLayout() {
     rootClassName,
     shellFontStyle,
     topBrandMark,
-  } = useMemo(
-    () =>
-      buildAppLayoutStyles({
-        appliedFontSize,
-        collapsed,
-        isTopNavigationLayout,
-      }),
-    [appliedFontSize, collapsed, isTopNavigationLayout],
-  )
+  } = buildAppLayoutStyles({
+    appliedFontSize,
+    collapsed,
+    isTopNavigationLayout,
+  })
 
   const wm = useAppWatermark(currentUserLoginName)
 

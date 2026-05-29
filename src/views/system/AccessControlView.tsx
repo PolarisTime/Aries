@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
 import Tabs from 'antd/es/tabs'
-import { lazy, Suspense, useCallback, useMemo } from 'react'
+import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { usePermissionStore } from '@/stores/permissionStore'
@@ -53,49 +53,40 @@ export function AccessControlView() {
   const canViewRoles = permissionStore.can('role', 'read')
   const canViewPermissions = permissionStore.can('permission', 'read')
 
-  const tabItems = useMemo(() => {
-    const items: Array<{
-      key: TabKey
-      label: string
-    }> = []
-    if (canViewUsers) {
-      items.push({
-        key: 'users',
-        label: t('system.accessControl.tabUsers'),
-      })
-    }
-    if (canViewRoles) {
-      items.push({
-        key: 'roles',
-        label: t('system.accessControl.tabRoles'),
-      })
-    }
-    if (canViewPermissions) {
-      items.push({
-        key: 'permissions',
-        label: t('system.accessControl.tabPermissions'),
-      })
-    }
-    return items
-  }, [canViewUsers, canViewRoles, canViewPermissions, t])
+  const tabItems: Array<{
+    key: TabKey
+    label: string
+  }> = []
+  if (canViewUsers) {
+    tabItems.push({
+      key: 'users',
+      label: t('system.accessControl.tabUsers'),
+    })
+  }
+  if (canViewRoles) {
+    tabItems.push({
+      key: 'roles',
+      label: t('system.accessControl.tabRoles'),
+    })
+  }
+  if (canViewPermissions) {
+    tabItems.push({
+      key: 'permissions',
+      label: t('system.accessControl.tabPermissions'),
+    })
+  }
 
-  const searchParams = useMemo(
-    () => new URLSearchParams(location.searchStr),
-    [location],
-  )
+  const searchParams = new URLSearchParams(location.searchStr)
   const requestedTab = parseTabKey(searchParams.get('tab'))
-  const activeTab = useMemo(() => {
+  const activeTab = (() => {
     if (tabItems.length === 0) return null as unknown as TabKey
     const keys = tabItems.map((item) => item.key)
     return keys.includes(requestedTab) ? requestedTab : keys[0]
-  }, [requestedTab, tabItems])
+  })()
 
-  const handleTabChange = useCallback(
-    (key: string) => {
-      void navigate({ to: `/access-control?tab=${key}` as '/' })
-    },
-    [navigate],
-  )
+  const handleTabChange = (key: string) => {
+    void navigate({ to: `/access-control?tab=${key}` as '/' })
+  }
 
   if (tabItems.length === 0) {
     return (
