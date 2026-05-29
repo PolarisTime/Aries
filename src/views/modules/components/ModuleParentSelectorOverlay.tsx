@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import Button from 'antd/es/button'
 import type { ColumnsType } from 'antd/es/table'
 import Table from 'antd/es/table'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import i18next from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { listBusinessModule } from '@/api/business'
@@ -301,13 +301,9 @@ function ModuleParentSelectorOverlayContent({
     staleTime: Infinity,
   })
 
-  const overlayFilterConfig = useMemo(
-    () =>
-      parentPageConfig
-        ? buildOverlayFilterConfig(parentModuleKey, parentPageConfig)
-        : undefined,
-    [parentModuleKey, parentPageConfig],
-  )
+  const overlayFilterConfig = parentPageConfig
+    ? buildOverlayFilterConfig(parentModuleKey, parentPageConfig)
+    : undefined
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: QUERY_KEYS.parentSelectorList(
@@ -336,30 +332,27 @@ function ModuleParentSelectorOverlayContent({
   )
   const total = Number(data?.data?.total || 0)
 
-  const columns = useMemo<ColumnsType<ModuleRecord>>(
-    () =>
-      resolveParentSelectorColumns(parentModuleKey, displayFieldKey).map(
-        (column) => ({
-          dataIndex: column.dataIndex,
-          title: column.title,
-          width: column.width,
-          ellipsis: true,
-          render: (value: unknown) => {
-            if (column.type === 'status') {
-              return (
-                <StatusTag
-                  status={asString(value)}
-                  statusMap={getOverlayStatusMap()}
-                  fallback={asString(value)}
-                />
-              )
-            }
-            return formatCellValue(value, column.type)
-          },
-        }),
-      ),
-    [displayFieldKey, formatCellValue, parentModuleKey],
-  )
+  const columns: ColumnsType<ModuleRecord> = resolveParentSelectorColumns(
+    parentModuleKey,
+    displayFieldKey,
+  ).map((column) => ({
+    dataIndex: column.dataIndex,
+    title: column.title,
+    width: column.width,
+    ellipsis: true,
+    render: (value: unknown) => {
+      if (column.type === 'status') {
+        return (
+          <StatusTag
+            status={asString(value)}
+            statusMap={getOverlayStatusMap()}
+            fallback={asString(value)}
+          />
+        )
+      }
+      return formatCellValue(value, column.type)
+    },
+  }))
   const selectedRows = resolveSelectedParentRows(
     selectedRowKeys,
     selectedRecordMap,
