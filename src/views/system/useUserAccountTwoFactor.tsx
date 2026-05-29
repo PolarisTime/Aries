@@ -51,10 +51,10 @@ export function useUserAccountTwoFactor() {
       setTwoFaCode('')
       try {
         setTwoFaRecord(await getUserAccountDetail(record.id))
+        setTwoFaLoading(false)
       } catch (error) {
         showError(error, t('auth.user2fa.loadFailed'))
         setTwoFaOpen(false)
-      } finally {
         setTwoFaLoading(false)
       }
     },
@@ -69,9 +69,9 @@ export function useUserAccountTwoFactor() {
       setTwoFaSetup(response.data)
       setTwoFaCode('')
       message.success(response.message || t('auth.user2fa.generateSuccess'))
+      setTwoFaSetupLoading(false)
     } catch (error) {
       showError(error, t('auth.user2fa.generateFailed'))
-    } finally {
       setTwoFaSetupLoading(false)
     }
   }, [showError, t, twoFaRecord])
@@ -95,9 +95,9 @@ export function useUserAccountTwoFactor() {
       message.success(response.message || t('auth.user2fa.enableSuccess'))
       setTwoFaOpen(false)
       refreshUsers()
+      setTwoFaEnableLoading(false)
     } catch (error) {
       showError(error, t('auth.user2fa.enableFailed'))
-    } finally {
       setTwoFaEnableLoading(false)
     }
   }, [
@@ -130,9 +130,9 @@ export function useUserAccountTwoFactor() {
           message.success(response.message || t('auth.user2fa.disableSuccess'))
           setTwoFaOpen(false)
           refreshUsers()
+          setTwoFaDisableLoading(false)
         } catch (error) {
           showError(error, t('auth.user2fa.disableFailed'))
-        } finally {
           setTwoFaDisableLoading(false)
         }
       },

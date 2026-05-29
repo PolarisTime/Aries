@@ -115,9 +115,9 @@ export function GeneralSettingsView() {
             : t('system.generalSettings.closed'),
         )
         refresh()
+        setToggling(false)
       } catch (error) {
         showError(error, t('table.operationFailed'))
-      } finally {
         setToggling(false)
       }
     },
@@ -153,9 +153,9 @@ export function GeneralSettingsView() {
       message.success(t('common.saveSuccess'))
       refresh()
       setEditorOpen(false)
+      setSaving(false)
     } catch (error) {
       showError(error, t('api.saveFailed'))
-    } finally {
       setSaving(false)
     }
   }, [editingRecord, form, refresh, showError, t])

@@ -5,6 +5,7 @@ import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { http } from '@/api/client'
 import type { RoleRecord } from '@/api/role-actions'
 import { FormModal } from '@/components/FormModal'
 import { roleDataScopeValues, roleTypeValues } from '@/constants/module-options'
@@ -38,7 +39,6 @@ export function RoleActionEditorModal({
   const { data: templates = [] } = useQuery<RoleTemplate[]>({
     queryKey: ['role-templates'],
     queryFn: async () => {
-      const { http } = await import('@/api/client')
       const resp = await http.get<{ data?: RoleTemplate[] } | RoleTemplate[]>(
         '/role-settings/templates',
       )

@@ -73,10 +73,14 @@ export function ApiKeyDetailView() {
         setRecord(detail)
         setResourceOptions(resources)
         setActionOptions(actions)
-      } finally {
         if (!cancelled) {
           setLoading(false)
         }
+      } catch (error) {
+        if (!cancelled) {
+          setLoading(false)
+        }
+        throw error
       }
     }
 

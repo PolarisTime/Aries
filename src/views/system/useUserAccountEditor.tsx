@@ -134,15 +134,15 @@ export function useUserAccountEditor({
           ? ''
           : result.message || i18next.t('system.userAccountEditorHook.loginNameExists')
         setLoginNameValidationMessage(validationMessage)
+        setLoginNameChecking(false)
         return { available: result.available, message: validationMessage }
       } catch (error) {
         showError(error, i18next.t('system.userAccountEditorHook.checkLoginNameFailed'))
+        setLoginNameChecking(false)
         return {
           available: true,
           message: '',
         } satisfies LoginNameValidationResult
-      } finally {
-        setLoginNameChecking(false)
       }
     },
     [showError],
@@ -162,10 +162,10 @@ export function useUserAccountEditor({
       try {
         const detail = await getUserAccountDetail(record.id)
         fillEditorForm(detail)
+        setEditorLoading(false)
       } catch (error) {
         showError(error, i18next.t('system.userAccountEditorHook.loadDetailFailed'))
         setEditorOpen(false)
-      } finally {
         setEditorLoading(false)
       }
     },

@@ -33,13 +33,13 @@ export function TwoFactorConfirmModal({
     try {
       await onConfirm(code)
       setCode('')
+      setLoading(false)
     } catch (err) {
       message.error(
         err instanceof Error
           ? err.message
           : t('auth.twofactormodal.verifyFailed'),
       )
-    } finally {
       setLoading(false)
     }
   }

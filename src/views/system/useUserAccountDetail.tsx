@@ -19,10 +19,10 @@ export function useUserAccountDetail() {
       setDetailLoading(true)
       try {
         setDetailRecord(await getUserAccountDetail(record.id))
+        setDetailLoading(false)
       } catch (error) {
         showError(error, t('api.loadUserDetailFailed'))
         setDetailOpen(false)
-      } finally {
         setDetailLoading(false)
       }
     },
