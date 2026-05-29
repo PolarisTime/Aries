@@ -1,5 +1,6 @@
 import { useLocation } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
+import { type Dispatch, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
@@ -14,6 +15,16 @@ import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-rout
 interface Props {
   pageDef: AppPageDefinition
   initialConfig?: ModulePageConfig
+}
+
+function toggleSelectedKey(
+  setSelectedRowKeys: Dispatch<SetStateAction<string[]>>,
+  recordId: string,
+) {
+  setSelectedRowKeys((prev) => {
+    if (prev.includes(recordId)) return prev.filter((key) => key !== recordId)
+    return [...prev, recordId]
+  })
 }
 
 export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
@@ -74,10 +85,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         onColumnOrderChange={state.onColumnOrderChange}
         onRowClick={(record) => {
           const id = String(record.id)
-          state.setSelectedRowKeys((prev) => {
-            if (prev.includes(id)) return prev.filter((k) => k !== id)
-            return [...prev, id]
-          })
+          toggleSelectedKey(state.setSelectedRowKeys, id)
           state.setSelectedRowMap((prev) => {
             if (prev[id]) {
               const next = { ...prev }

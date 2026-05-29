@@ -36,8 +36,9 @@ const draftStatusModules: Record<string, string> = {
   'sales-order': '草稿',
   'sales-outbound': '草稿',
   'freight-bill': '未审核',
-  receipts: '草稿',
-  payments: '草稿',
+  'freight-statement': '待审核',
+  receipt: '草稿',
+  payment: '草稿',
   'invoice-receipt': '草稿',
   'invoice-issue': '草稿',
 }
@@ -52,13 +53,17 @@ const approvedStatusModules = [
   'sales-order',
   'sales-outbound',
   'freight-bill',
+  'freight-statement',
 ]
 
 for (const key of approvedStatusModules) {
   registerModuleBehavior(key, { auditStatus: '已审核' })
 }
 
-registerModuleBehavior('sales-order', { lockedAuditStatus: '完成销售' })
+registerModuleBehavior('receipt', { auditStatus: '已收款' })
+registerModuleBehavior('payment', { auditStatus: '已付款' })
+registerModuleBehavior('invoice-receipt', { auditStatus: '已收票' })
+registerModuleBehavior('invoice-issue', { auditStatus: '已开票' })
 
 export const protectedEditStatuses = new Set([
   '已审核',

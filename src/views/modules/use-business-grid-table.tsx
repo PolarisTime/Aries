@@ -1,7 +1,13 @@
 import { flexRender } from '@tanstack/react-table'
 import type { TableColumnsType, TableProps } from 'antd'
 import type { ColumnType } from 'antd/es/table'
-import { useCallback, useMemo, useRef } from 'react'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react'
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import type {
@@ -19,7 +25,7 @@ interface Props {
   records: ModuleRecord[]
   canUpdateRecord: boolean
   selectedRowKeys: string[]
-  setSelectedRowKeys: (keys: string[]) => void
+  setSelectedRowKeys: Dispatch<SetStateAction<string[]>>
   setSelectedRowMap: (
     updater: (
       prev: Record<string, ModuleRecord>,
@@ -90,7 +96,7 @@ export function useBusinessGridTable({
       buildOverview: () => [],
     },
     rowActions: buildActions,
-    canUpdate: Boolean(config) && canUpdateRecord,
+    canUpdate: Boolean(config) && (canUpdateRecord || Boolean(showActions)),
     showActions,
   })
   const allColumnIds = useMemo(
@@ -125,7 +131,8 @@ export function useBusinessGridTable({
     columns: columnDefs,
     manualSorting: true,
     enableSorting: true,
-    enableRowSelection: canUpdateRecord,
+    enableRowSelection: true,
+    getRowId: (row) => String(row.id),
     onSortingChange,
     rowSelection: rowSelectionState,
     onRowSelectionChange: (updater) => {
@@ -192,31 +199,28 @@ export function useBusinessGridTable({
   }, [computedColumns])
   const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined =
     useMemo(
-      () =>
-        canUpdateRecord
-          ? {
-              selectedRowKeys,
-              onChange: (keys: React.Key[], rows: ModuleRecord[]) => {
-                const normalizedKeys = keys.map(String)
-                const normalizedKeysSet = new Set(normalizedKeys)
-                setSelectedRowKeys(normalizedKeys)
-                setSelectedRowMap((prev) => {
-                  const next = { ...prev }
-                  for (const key of Object.keys(next)) {
-                    if (!normalizedKeysSet.has(key)) {
-                      delete next[key]
-                    }
-                  }
-                  for (const row of rows) {
-                    next[String(row.id)] = row
-                  }
-                  return next
-                })
-              },
-              preserveSelectedRowKeys: true,
+      () => ({
+        selectedRowKeys,
+        onChange: (keys: React.Key[], rows: ModuleRecord[]) => {
+          const normalizedKeys = keys.map(String)
+          const normalizedKeysSet = new Set(normalizedKeys)
+          setSelectedRowKeys(normalizedKeys)
+          setSelectedRowMap((prev) => {
+            const next = { ...prev }
+            for (const key of Object.keys(next)) {
+              if (!normalizedKeysSet.has(key)) {
+                delete next[key]
+              }
             }
-          : undefined,
-      [canUpdateRecord, selectedRowKeys, setSelectedRowKeys, setSelectedRowMap],
+            for (const row of rows) {
+              next[String(row.id)] = row
+            }
+            return next
+          })
+        },
+        preserveSelectedRowKeys: true,
+      }),
+      [selectedRowKeys, setSelectedRowKeys, setSelectedRowMap],
     )
   const columnVisibleKeys = useMemo(
     () => allColumnIds.filter((id) => columnVisibility[id] !== false),
