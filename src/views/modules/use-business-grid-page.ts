@@ -22,6 +22,7 @@ import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import { useModuleToolbarActions } from '@/hooks/useModuleToolbarActions'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
+import { resolveStatusOptions } from '@/module-system/module-adapter-actions'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overlays'
@@ -195,15 +196,6 @@ export function useBusinessGridPage({
     [detailRoutePath, navigate],
   )
 
-  const { buildActions } = useModuleRecordActions({
-    moduleKey,
-    resourceKey: pageDef.resourceKey,
-    onEdit: handleEdit,
-    onAttach: overlays.openAttachment,
-    onRefresh: refreshModuleQueries,
-    onDetail: detailRoutePath ? handleDetail : undefined,
-  })
-
   const lockedLineItemsNotice = useMemo(
     () => String(getBehaviorValue(moduleKey, 'lockedLineItemsNotice') || ''),
     [moduleKey],
@@ -212,6 +204,10 @@ export function useBusinessGridPage({
   const formFields = useMemo(
     () => config?.formFields || [],
     [config?.formFields],
+  )
+  const statusFields = useMemo(
+    () => [...formFields, ...(config?.filters || [])],
+    [config?.filters, formFields],
   )
   const {
     canUseBulkAuditActions,
@@ -223,6 +219,7 @@ export function useBusinessGridPage({
   } = useModuleEditorCapabilities({
     moduleKey,
     formFields,
+    listStatusFields: statusFields,
     lineItemLockRelatedRows: editorLockRelatedRows,
     currentStatus: editRecord?.status ? asString(editRecord.status) : undefined,
     canEditLineItems: canUpdateRecord,
@@ -233,11 +230,19 @@ export function useBusinessGridPage({
     isReadOnly: Boolean(config?.readOnly),
     resolveModuleStatusOptions: (statusField) => {
       if (!Array.isArray(statusField?.options)) return []
-      return statusField.options.flatMap((option) => {
-        const v = 'value' in option ? asString(option.value) : ''
-        return v ? [v] : []
-      })
+      return resolveStatusOptions({ fields: [statusField] })
     },
+  })
+
+  const { buildActions } = useModuleRecordActions({
+    moduleKey,
+    resourceKey: pageDef.resourceKey,
+    listAuditTarget,
+    listReverseAuditTarget,
+    onEdit: handleEdit,
+    onAttach: overlays.openAttachment,
+    onRefresh: refreshModuleQueries,
+    onDetail: detailRoutePath ? handleDetail : undefined,
   })
 
   const {
@@ -250,7 +255,6 @@ export function useBusinessGridPage({
     handleStatementGenerate,
   } = useBusinessGridActions({
     moduleKey,
-    config: resolvedConfig,
     selectedRowKeys,
     selectedRows: Object.values(selectedRowMap),
     submittedFilters,
@@ -336,7 +340,7 @@ export function useBusinessGridPage({
     setSelectedRowKeys,
     setSelectedRowMap,
     buildActions,
-    showActions: Boolean(detailRoutePath),
+    showActions: true,
     sorting,
     onSortingChange: setSorting,
   })

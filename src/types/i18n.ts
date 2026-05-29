@@ -1663,6 +1663,7 @@ export interface MessageSchema {
     }
     printActions: {
       selectPrintTemplate: string
+      noPrintTemplateConfigured: string
       noPrintableRecords: string
       printScriptGenerationFailed: string
       printServiceUnavailable: string
@@ -1837,6 +1838,7 @@ export interface MessageSchema {
       copy: string
       templateName: string
       billType: string
+      templateType: string
       deleteContent: string
       inputTemplateContent: string
     }
@@ -2161,6 +2163,9 @@ export interface MessageSchema {
       billType: string
       templateName: string
       templateNamePlaceholder: string
+      templateType: string
+      templateTypeHtml: string
+      templateTypeCoord: string
       templateContent: string
       templateContentPlaceholder: string
       htmlHint: string

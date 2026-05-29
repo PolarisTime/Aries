@@ -1715,6 +1715,7 @@ export const enUS: MessageSchema = {
     },
     printActions: {
       selectPrintTemplate: 'Select Print Template',
+      noPrintTemplateConfigured: 'No print template configured for this document',
       noPrintableRecords: 'No printable records found in selection',
       printScriptGenerationFailed: 'Print script generation failed',
       printServiceUnavailable:
@@ -1902,6 +1903,7 @@ export const enUS: MessageSchema = {
       copy: 'Copy',
       templateName: 'Template Name',
       billType: 'Bill Type',
+      templateType: 'Template Type',
       deleteContent: 'Delete template "{{name}}"?',
       inputTemplateContent: 'Please enter template content',
     },
@@ -2231,6 +2233,9 @@ export const enUS: MessageSchema = {
       billType: 'Bill Type',
       templateName: 'Template Name',
       templateNamePlaceholder: 'Enter template name',
+      templateType: 'Template Type',
+      templateTypeHtml: 'HTML Template',
+      templateTypeCoord: 'Coordinate Overlay',
       templateContent: 'Template Content',
       templateContentPlaceholder: 'Enter HTML template content',
       htmlHint: 'Supports HTML templates and LODOP instructions. Use {{fieldName}} syntax to insert dynamic data.',

@@ -1,12 +1,14 @@
 import { useMemo } from 'react'
 import type {
+  ModuleFilterDefinition,
   ModuleFormFieldDefinition,
   ModuleRecord,
 } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import {
+  buildListAuditTargets,
   buildEditorAuditTarget,
-  buildReverseAuditTarget,
+  resolveStatusOptions,
 } from '@/module-system/module-adapter-actions'
 import {
   canManageEditorLineItems,
@@ -17,6 +19,7 @@ import { getBehaviorValue } from '@/module-system/module-behavior-registry'
 interface Props {
   moduleKey: string
   formFields: ModuleFormFieldDefinition[]
+  listStatusFields?: Array<ModuleFormFieldDefinition | ModuleFilterDefinition>
   lineItemLockRelatedRows: ModuleRecord[]
   lineItemsLockedOverride?: boolean
   currentStatus?: string
@@ -34,6 +37,7 @@ interface Props {
 export function useModuleEditorCapabilities({
   moduleKey,
   formFields,
+  listStatusFields,
   lineItemLockRelatedRows,
   lineItemsLockedOverride,
   currentStatus,
@@ -61,37 +65,42 @@ export function useModuleEditorCapabilities({
     return buildEditorAuditTarget(
       moduleKey,
       resolveModuleStatusOptions(statusField),
-      lineItemsLocked,
       currentStatus,
     )
   }, [
     moduleKey,
     formFields,
-    lineItemsLocked,
     currentStatus,
     resolveModuleStatusOptions,
   ])
 
+  const effectiveListStatusFields = useMemo(
+    () => listStatusFields || formFields,
+    [formFields, listStatusFields],
+  )
   const listStatusField = useMemo(
-    () => formFields.find((field) => field.key === 'status'),
-    [formFields],
+    () => effectiveListStatusFields.find((field) => field.key === 'status'),
+    [effectiveListStatusFields],
   )
   const listStatusOptions = useMemo(
-    () => resolveModuleStatusOptions(listStatusField),
-    [listStatusField, resolveModuleStatusOptions],
+    () => resolveStatusOptions({ fields: effectiveListStatusFields }),
+    [effectiveListStatusFields],
   )
-  const listAuditTarget = useMemo(
-    () => buildEditorAuditTarget(moduleKey, listStatusOptions, false),
-    [moduleKey, listStatusOptions],
-  )
-  const listReverseAuditTarget = useMemo(
+  const listPreferredStatus =
+    listStatusField && 'defaultValue' in listStatusField
+      ? listStatusField.defaultValue
+      : undefined
+  const {
+    auditTarget: listAuditTarget,
+    reverseAuditTarget: listReverseAuditTarget,
+  } = useMemo(
     () =>
-      buildReverseAuditTarget(
+      buildListAuditTargets({
         moduleKey,
-        listStatusOptions,
-        listStatusField?.defaultValue,
-      ),
-    [moduleKey, listStatusOptions, listStatusField],
+        statusOptions: listStatusOptions,
+        preferredStatus: listPreferredStatus,
+      }),
+    [moduleKey, listPreferredStatus, listStatusOptions],
   )
 
   const canUseBulkAuditActions =

@@ -1,5 +1,11 @@
 import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
+import type {
+  ModuleFilterDefinition,
+  ModuleFilterOptionEntry,
+  ModuleFormFieldDefinition,
+  ModuleFormFieldOption,
+} from '@/types/module-page'
 
 export type ModuleActionKind =
   | 'openSupplierStatementGenerator'
@@ -143,15 +149,8 @@ export function resolveModuleActionPermissionCodes(options: {
 export function buildEditorAuditTarget(
   moduleKey: string,
   statusOptions: string[],
-  lineItemsLocked: boolean,
   currentStatus?: string,
 ) {
-  const lockedAuditStatus = getBehaviorValue(moduleKey, 'lockedAuditStatus')
-  if (lineItemsLocked && typeof lockedAuditStatus === 'string') {
-    if (currentStatus === lockedAuditStatus) return null
-    return { key: 'status', value: lockedAuditStatus }
-  }
-
   const auditStatus = getBehaviorValue(moduleKey, 'auditStatus')
   if (typeof auditStatus === 'string') {
     if (currentStatus === auditStatus) return null
@@ -181,10 +180,10 @@ export function buildReverseAuditTarget(
   }
 
   const defaultStatus = getBehaviorValue(moduleKey, 'defaultStatus')
-  if (
-    typeof defaultStatus === 'string' &&
-    statusOptions.includes(defaultStatus)
-  ) {
+  if (typeof defaultStatus === 'string' && defaultStatus.trim()) {
+    if (statusOptions.length > 0 && !statusOptions.includes(defaultStatus)) {
+      return null
+    }
     return { key: 'status', value: defaultStatus }
   }
 
@@ -193,4 +192,87 @@ export function buildReverseAuditTarget(
     statusOptions.includes(status),
   )
   return fallback ? { key: 'status', value: fallback } : null
+}
+
+function normalizeOptions(values: unknown[]) {
+  return Array.from(
+    new Set(
+      values.flatMap((value) => {
+        const normalized = asString(value).trim()
+        return normalized ? [normalized] : []
+      }),
+    ),
+  )
+}
+
+function extractFilterOptionValues(options: ModuleFilterOptionEntry[]) {
+  return normalizeOptions(
+    options.flatMap((option) =>
+      'options' in option
+        ? option.options.map((entry) => entry.value)
+        : option.value,
+    ),
+  )
+}
+
+function extractFormOptionValues(options: ModuleFormFieldOption[]) {
+  return normalizeOptions(options.map((option) => option.value))
+}
+
+export function resolveStatusOptions(options: {
+  fields?: Array<ModuleFormFieldDefinition | ModuleFilterDefinition>
+}) {
+  const statusField = options.fields?.find((field) => field.key === 'status')
+  if (!statusField || !Array.isArray(statusField.options)) return []
+  if (statusField.type === 'select') {
+    const entries = statusField.options
+    if (entries.some((option) => 'options' in option)) {
+      return extractFilterOptionValues(entries as ModuleFilterOptionEntry[])
+    }
+    return extractFormOptionValues(entries as ModuleFormFieldOption[])
+  }
+  return []
+}
+
+export function buildListAuditTargets(options: {
+  moduleKey: string
+  statusOptions: string[]
+  preferredStatus?: unknown
+}) {
+  const { moduleKey, statusOptions, preferredStatus } = options
+  return {
+    auditTarget: buildEditorAuditTarget(moduleKey, statusOptions),
+    reverseAuditTarget: buildReverseAuditTarget(
+      moduleKey,
+      statusOptions,
+      preferredStatus,
+    ),
+  }
+}
+
+export function canAuditFromStatus(
+  currentStatus: unknown,
+  auditTarget?: { value: string } | null,
+  reverseAuditTarget?: { value: string } | null,
+) {
+  const status = asString(currentStatus).trim()
+  const auditStatus = asString(auditTarget?.value).trim()
+  const reverseStatus = asString(reverseAuditTarget?.value).trim()
+  return Boolean(
+    auditStatus &&
+      reverseStatus &&
+      status !== auditStatus &&
+      status === reverseStatus,
+  )
+}
+
+export function canReverseAuditFromStatus(
+  currentStatus: unknown,
+  auditTarget?: { value: string } | null,
+  reverseAuditTarget?: { value: string } | null,
+) {
+  const status = asString(currentStatus).trim()
+  const auditStatus = asString(auditTarget?.value).trim()
+  const reverseStatus = asString(reverseAuditTarget?.value).trim()
+  return Boolean(auditStatus && reverseStatus && status === auditStatus)
 }

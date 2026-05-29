@@ -19,7 +19,6 @@ interface SyncEditorFormContext {
 export interface ModuleBehaviorConfig {
   defaultStatus?: string
   auditStatus?: string
-  lockedAuditStatus?: string
   protectedEditStatuses?: string[]
   protectedDeleteStatuses?: string[]
   actionKindsByLabel?: Record<string, string>
