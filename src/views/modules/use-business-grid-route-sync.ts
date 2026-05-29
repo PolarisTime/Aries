@@ -1,5 +1,5 @@
 import type { ParsedLocation } from '@tanstack/react-router'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -99,15 +99,8 @@ export function useBusinessGridRouteSync({
   openDetail,
 }: Props) {
   const autoOpenedRouteKeyRef = useRef('')
-  const rawSearchStr = useMemo(
-    // react-doctor: intentional callback, not event handler
-    () => getRawSearchString(location.searchStr),
-    [location.searchStr],
-  )
-  const routeParams = useMemo(
-    () => parseRouteParams(rawSearchStr),
-    [rawSearchStr],
-  )
+  const rawSearchStr = getRawSearchString(location.searchStr)
+  const routeParams = parseRouteParams(rawSearchStr)
 
   useEffect(() => {
     setPage(1)

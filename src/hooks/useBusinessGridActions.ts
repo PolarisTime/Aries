@@ -1,4 +1,3 @@
-import { useCallback } from 'react'
 import {
   type AuditTarget,
   useBusinessGridBatchActions,
@@ -32,10 +31,10 @@ export function useBusinessGridActions({
   clearSelection,
   formatCellValue,
 }: Props) {
-  const refreshAndClearSelection = useCallback(async () => {
+  const refreshAndClearSelection = async () => {
     clearSelection()
     await refreshModuleQueries()
-  }, [clearSelection, refreshModuleQueries])
+  }
 
   const { handlePrintSelectedRecords } = useBusinessGridPrintActions({
     moduleKey,

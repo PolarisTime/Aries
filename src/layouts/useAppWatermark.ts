@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+
 import { listSystemSettings } from '@/api/system-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
 
@@ -56,7 +56,7 @@ export function useAppWatermark(currentUserLoginName: string): WatermarkConfig {
       )?.sampleNo,
     ) || 200
 
-  const text = useMemo(() => {
+  const text = (() => {
     if (!enabled) return undefined
     const raw = String(contentSetting?.sampleNo || '').trim()
     const template = raw && raw !== 'ON' ? raw : '{username}  {time}'
@@ -65,7 +65,7 @@ export function useAppWatermark(currentUserLoginName: string): WatermarkConfig {
       .replace(/\{username\}/g, currentUserLoginName)
       .replace(/\{time\}/g, now.toLocaleString('zh-CN', { hour12: false }))
       .replace(/\{date\}/g, now.toLocaleDateString('zh-CN'))
-  }, [enabled, contentSetting?.sampleNo, currentUserLoginName])
+  })()
 
   return { enabled, text, fontSize, color, rotate, density }
 }

@@ -1,4 +1,4 @@
-import { createElement, useCallback } from 'react'
+import { createElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
 import { listPrintTemplates } from '@/api/print-template'
@@ -64,92 +64,106 @@ export function useBusinessGridPrintActions({
   selectedRowKeys,
 }: Props) {
   const { t } = useTranslation()
-  const handlePrintSelectedRecords = useCallback(
-    async (preview: boolean, templateId?: string) => {
-      if (!selectedRowKeys.length) {
-        message.warning(t('common.pleaseSelect'))
-        return
+  const handlePrintSelectedRecords = async (
+    preview: boolean,
+    templateId?: string,
+  ) => {
+    if (!selectedRowKeys.length) {
+      message.warning(t('common.pleaseSelect'))
+      return
+    }
+
+    const template = templateId
+      ? {
+          id: templateId,
+          templateName: '',
+          billType: moduleKey,
+          templateHtml: '',
+        }
+      : await pickPrintTemplate(moduleKey, t)
+
+    if (!template) {
+      message.warning(t('hooks.printActions.noPrintTemplateConfigured'))
+      return
+    }
+
+    try {
+      // 确保 CLodop 脚本已加载（main.tsx 预加载 + 此处兜底）
+      await loadCLodop()
+
+      const results = await Promise.all(
+        selectedRowKeys.map((recordId) =>
+          http.post<{
+            code: number
+            data: PrintRecordResponse
+            message?: string
+          }>('/print/record', {
+            templateId: template.id,
+            moduleKey,
+            recordId,
+          }),
+        ),
+      )
+      for (const r of results) {
+        assertApiSuccess(r, t('hooks.printActions.printScriptGenerationFailed'))
       }
 
-      const template = templateId
-        ? { id: templateId, templateName: '', billType: moduleKey, templateHtml: '' }
-        : await pickPrintTemplate(moduleKey, t)
-
-      if (!template) {
-        message.warning(t('hooks.printActions.noPrintTemplateConfigured'))
-        return
-      }
-
-      try {
-        // 确保 CLodop 脚本已加载（main.tsx 预加载 + 此处兜底）
-        await loadCLodop()
-
-        const results = await Promise.all(
-          selectedRowKeys.map((recordId) =>
-            http.post<{
-              code: number
-              data: PrintRecordResponse
-              message?: string
-            }>('/print/record', {
-              templateId: template.id,
+      const rendered = results
+        .map((r) => {
+          const d = r.data
+          if (!d?.templateHtml) return null
+          return {
+            title: d.templateName || template.templateName,
+            result: renderPrintTemplate(
+              d.templateHtml,
+              d.templateType || 'HTML',
+              d.data || {},
+              d.items || [],
               moduleKey,
-              recordId,
-            }),
-          ),
-        )
-        for (const r of results) {
-          assertApiSuccess(r, t('hooks.printActions.printScriptGenerationFailed'))
-        }
+            ),
+          }
+        })
+        .filter((r): r is NonNullable<typeof r> => Boolean(r))
 
-        const rendered = results
-          .map((r) => {
-            const d = r.data
-            if (!d?.templateHtml) return null
-            return {
-              title: d.templateName || template.templateName,
-              result: renderPrintTemplate(
-                d.templateHtml,
-                d.templateType || 'HTML',
-                d.data || {},
-                d.items || [],
-                moduleKey,
-              ),
-            }
-          })
-          .filter((r): r is NonNullable<typeof r> => Boolean(r))
+      const coordResults = rendered.filter((r) => r.result.type === 'COORD')
+      const htmlResults = rendered.filter((r) => r.result.type === 'HTML')
 
-        const coordResults = rendered.filter((r) => r.result.type === 'COORD')
-        const htmlResults = rendered.filter((r) => r.result.type === 'HTML')
+      for (const r of coordResults) {
+        if (!r.result.script) continue
+        const success = execPrintCode(r.result.script, {
+          preview,
+          title: r.title,
+        })
+        if (!success)
+          throw new Error(t('hooks.printActions.printServiceUnavailable'))
+      }
 
-        for (const r of coordResults) {
-          if (!r.result.script) continue
-          const success = execPrintCode(r.result.script, {
-            preview,
-            title: r.title,
-          })
-          if (!success) throw new Error(t('hooks.printActions.printServiceUnavailable'))
-        }
-
-        const htmlContents = htmlResults
-          .map((r) => r.result.html)
-          .filter((html): html is string => Boolean(html))
-        if (htmlContents.length) {
-          const success = printHtml(htmlContents.join('<div class="print-page"></div>'), {
+      const htmlContents = htmlResults
+        .map((r) => r.result.html)
+        .filter((html): html is string => Boolean(html))
+      if (htmlContents.length) {
+        const success = printHtml(
+          htmlContents.join('<div class="print-page"></div>'),
+          {
             preview,
             title: htmlResults[0]?.title,
-          })
-          if (!success) throw new Error(t('hooks.printActions.printServiceUnavailable'))
-        }
-
-        if (!coordResults.length && !htmlResults.length) {
-          message.warning(t('hooks.printActions.noPrintContent'))
-        }
-      } catch (err) {
-        message.error(err instanceof Error ? err.message : t('hooks.printActions.printFailed'))
+          },
+        )
+        if (!success)
+          throw new Error(t('hooks.printActions.printServiceUnavailable'))
       }
-    },
-    [moduleKey, selectedRowKeys, t],
-  )
+
+      if (!coordResults.length && !htmlResults.length) {
+        message.warning(t('hooks.printActions.noPrintContent'))
+      }
+    } catch (err) {
+      message.error(
+        err instanceof Error
+          ? err.message
+          : t('hooks.printActions.printFailed'),
+      )
+    }
+  }
 
   return { handlePrintSelectedRecords }
 }

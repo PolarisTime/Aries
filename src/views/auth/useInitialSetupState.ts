@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import Form from 'antd/es/form'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getInitialSetupStatus,
@@ -50,7 +50,7 @@ export function useInitialSetupState() {
   const [loadingCompany, setLoadingCompany] = useState(false)
   const [form] = Form.useForm()
 
-  const loadStatus = useCallback(async () => {
+  const loadStatus = async () => {
     try {
       const res = await getInitialSetupStatus()
       const s = res.data
@@ -73,14 +73,14 @@ export function useInitialSetupState() {
     } finally {
       setChecking(false)
     }
-  }, [navigate, t])
+  }
 
   // mount-time data fetch — setState is unavoidable for async init
   useEffect(() => {
     void loadStatus()
   }, [loadStatus])
 
-  const handleGenerateTotp = useCallback(async () => {
+  const handleGenerateTotp = async () => {
     const loginName = asString(form.getFieldValue('adminLoginName')).trim()
     if (!loginName) {
       message.error(t('auth.initialsetup.inputAdminLoginFirst'))
@@ -98,9 +98,9 @@ export function useInitialSetupState() {
     } finally {
       setLoadingTotp(false)
     }
-  }, [form, t])
+  }
 
-  const handleSubmitAdmin = useCallback(async () => {
+  const handleSubmitAdmin = async () => {
     try {
       const values = (await form.validateFields([
         'adminLoginName',
@@ -141,9 +141,9 @@ export function useInitialSetupState() {
     } finally {
       setLoadingAdmin(false)
     }
-  }, [form, loadStatus, t, totpSetup])
+  }
 
-  const handleSubmitCompany = useCallback(async () => {
+  const handleSubmitCompany = async () => {
     try {
       const values = (await form.validateFields([
         'companyName',
@@ -172,7 +172,7 @@ export function useInitialSetupState() {
     } finally {
       setLoadingCompany(false)
     }
-  }, [form, navigate, t])
+  }
 
   return {
     adminCompleted,

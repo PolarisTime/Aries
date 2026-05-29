@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getRefreshTokenSummary,
@@ -26,10 +26,14 @@ export function useSessionManagementState(enabled = true) {
   const [pageSize, setPageSize] = useState(20)
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const refreshSessionData = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.refreshTokensBase })
-    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.refreshTokensSummary })
-  }, [queryClient])
+  const refreshSessionData = () => {
+    void queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.refreshTokensBase,
+    })
+    void queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.refreshTokensSummary,
+    })
+  }
 
   const { data: tokensData, isLoading } = useQuery({
     queryKey: QUERY_KEYS.refreshTokens(currentPage, pageSize, keyword),
@@ -51,19 +55,19 @@ export function useSessionManagementState(enabled = true) {
   const tokens = tokensData?.records || []
   const totalElements = Number(tokensData?.totalElements) || 0
 
-  const startAutoRefresh = useCallback(() => {
+  const startAutoRefresh = () => {
     refreshTimerRef.current = setInterval(() => {
       refreshSessionData()
     }, 30000)
-  }, [refreshSessionData])
+  }
 
-  const stopAutoRefresh = useCallback(() => {
+  const stopAutoRefresh = () => {
     if (!refreshTimerRef.current) {
       return
     }
     clearInterval(refreshTimerRef.current)
     refreshTimerRef.current = null
-  }, [])
+  }
 
   useEffect(() => {
     // react-doctor: intentional callback, not event handler
@@ -75,34 +79,31 @@ export function useSessionManagementState(enabled = true) {
     return stopAutoRefresh
   }, [enabled, startAutoRefresh, stopAutoRefresh])
 
-  const handleRevoke = useCallback(
-    (record: RefreshTokenRecord) => {
-      if (!canEdit) {
-        message.warning(t('common.noPermission'))
-        return
-      }
+  const handleRevoke = (record: RefreshTokenRecord) => {
+    if (!canEdit) {
+      message.warning(t('common.noPermission'))
+      return
+    }
 
-      modal.confirm({
-        title: t('system.session.disable'),
-        content: t('system.session.disableConfirm'),
-        okText: t('common.confirm'),
-        cancelText: t('common.cancel'),
-        okButtonProps: { danger: true },
-        onOk: async () => {
-          try {
-            await revokeRefreshToken(record.id)
-            message.success(t('common.disabled'))
-            refreshSessionData()
-          } catch (error) {
-            showError(error, t('api.disableSessionFailed'))
-          }
-        },
-      })
-    },
-    [canEdit, refreshSessionData, showError],
-  )
+    modal.confirm({
+      title: t('system.session.disable'),
+      content: t('system.session.disableConfirm'),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          await revokeRefreshToken(record.id)
+          message.success(t('common.disabled'))
+          refreshSessionData()
+        } catch (error) {
+          showError(error, t('api.disableSessionFailed'))
+        }
+      },
+    })
+  }
 
-  const handleRevokeAll = useCallback(() => {
+  const handleRevokeAll = () => {
     if (!canEdit) {
       message.warning(t('common.noPermission'))
       return
@@ -124,12 +125,13 @@ export function useSessionManagementState(enabled = true) {
         }
       },
     })
-  }, [canEdit, refreshSessionData, showError])
+  }
 
-  const columns = useMemo(
-    () => buildSessionTableColumns({ canEdit, onRevoke: handleRevoke, t }),
-    [canEdit, handleRevoke, t],
-  )
+  const columns = buildSessionTableColumns({
+    canEdit,
+    onRevoke: handleRevoke,
+    t,
+  })
 
   return {
     canEdit,

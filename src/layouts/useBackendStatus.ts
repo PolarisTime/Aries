@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchBackendHealth } from '@/api/auth'
 
 const HEALTH_CHECK_INTERVAL_MS = 30_000
@@ -11,7 +11,7 @@ export function useBackendStatus(token: string): { backendOnline: boolean } {
   const healthTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const healthRetriesRef = useRef(0)
 
-  const checkBackendHealth = useCallback(async (): Promise<void> => {
+  const checkBackendHealth = async (): Promise<void> => {
     try {
       const body = await fetchBackendHealth()
       setBackendOnline(body.status === 'UP')
@@ -27,7 +27,7 @@ export function useBackendStatus(token: string): { backendOnline: boolean } {
         window.setTimeout(checkBackendHealth, delay)
       }
     }
-  }, [])
+  }
 
   useEffect(() => {
     if (!token) {

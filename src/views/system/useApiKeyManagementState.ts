@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
 import i18next from 'i18next'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   type ApiKeyRecord,
@@ -35,18 +35,9 @@ export function useApiKeyManagementState(enabled = true) {
   const permissionStore = usePermissionStore()
   const authStore = useAuthStore()
 
-  const canCreate = useMemo(
-    () => permissionStore.can('api-key', 'create'),
-    [permissionStore],
-  )
-  const canEdit = useMemo(
-    () => permissionStore.can('api-key', 'update'),
-    [permissionStore],
-  )
-  const isCurrentUserTotpDisabled = useMemo(
-    () => authStore.user?.totpEnabled === false,
-    [authStore],
-  )
+  const canCreate = permissionStore.can('api-key', 'create')
+  const canEdit = permissionStore.can('api-key', 'update')
+  const isCurrentUserTotpDisabled = authStore.user?.totpEnabled === false
 
   const [keyword, setKeyword] = useState('')
   const [filterUserId, setFilterUserId] = useState<string | undefined>(
@@ -88,11 +79,8 @@ export function useApiKeyManagementState(enabled = true) {
     enabled,
   })
 
-  const keys = useMemo(() => keysData?.records || [], [keysData])
-  const totalElements = useMemo(
-    () => Number(keysData?.totalElements) || 0,
-    [keysData],
-  )
+  const keys = keysData?.records || []
+  const totalElements = Number(keysData?.totalElements) || 0
 
   const { data: userOptions = [] } = useQuery({
     queryKey: QUERY_KEYS.apiKeyUserOptions,
@@ -126,9 +114,9 @@ export function useApiKeyManagementState(enabled = true) {
     )
   }, [actionOptions, form, generateModalOpen])
 
-  const refreshApiKeys = useCallback(() => {
+  const refreshApiKeys = () => {
     void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.apiKeys })
-  }, [queryClient])
+  }
 
   const revokeMutation = useMutation({
     mutationFn: revokeApiKey,
@@ -136,10 +124,11 @@ export function useApiKeyManagementState(enabled = true) {
       message.success(i18next.t('system.apiKeyState.disabledSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.apiKeys })
     },
-    onError: (error: Error) => showError(error, i18next.t('system.apiKeyState.disableFailed')),
+    onError: (error: Error) =>
+      showError(error, i18next.t('system.apiKeyState.disableFailed')),
   })
 
-  const openGenerateModal = useCallback(() => {
+  const openGenerateModal = () => {
     if (!canCreate) {
       message.warning(i18next.t('system.apiKeyState.noCreatePermission'))
       return
@@ -156,9 +145,9 @@ export function useApiKeyManagementState(enabled = true) {
       allowedActions: actionOptions.map((item) => item.code),
     })
     setGenerateModalOpen(true)
-  }, [actionOptions, canCreate, form, isCurrentUserTotpDisabled])
+  }
 
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = async () => {
     try {
       const values = await form.validateFields()
       if (!values.userId || !values.keyName?.trim() || !values.usageScope) {
@@ -173,55 +162,53 @@ export function useApiKeyManagementState(enabled = true) {
     } catch {
       /* validation failed */
     }
-  }, [form])
+  }
 
-  const handleGenerateWithTotp = useCallback(
-    async (totpCode: string) => {
-      const values = form.getFieldsValue()
-      setTotpLoading(true)
-      try {
-        const response = await createApiKey(
-          asString(values.userId),
-          {
-            keyName: values.keyName?.trim() || '',
-            usageScope: values.usageScope || '',
-            allowedResources: values.allowedResources || [],
-            allowedActions: values.allowedActions || [],
-            expireDays: values.expireDays ?? null,
-          },
-          totpCode,
-        )
-        setGeneratedKey(response.data?.rawKey || null)
-        setTotpModalOpen(false)
-        message.success(response.message || i18next.t('system.apiKeyState.generatedSuccess'))
-        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.apiKeys })
-      } catch (error) {
-        showError(error, i18next.t('system.apiKeyState.generateFailed'))
-        throw error
-      } finally {
-        setTotpLoading(false)
-      }
-    },
-    [form, queryClient, showError],
-  )
+  const handleGenerateWithTotp = async (totpCode: string) => {
+    const values = form.getFieldsValue()
+    setTotpLoading(true)
+    try {
+      const response = await createApiKey(
+        asString(values.userId),
+        {
+          keyName: values.keyName?.trim() || '',
+          usageScope: values.usageScope || '',
+          allowedResources: values.allowedResources || [],
+          allowedActions: values.allowedActions || [],
+          expireDays: values.expireDays ?? null,
+        },
+        totpCode,
+      )
+      setGeneratedKey(response.data?.rawKey || null)
+      setTotpModalOpen(false)
+      message.success(
+        response.message || i18next.t('system.apiKeyState.generatedSuccess'),
+      )
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.apiKeys })
+    } catch (error) {
+      showError(error, i18next.t('system.apiKeyState.generateFailed'))
+      throw error
+    } finally {
+      setTotpLoading(false)
+    }
+  }
 
-  const handleRevoke = useCallback(
-    (record: ApiKeyRecord) => {
-      if (!canEdit) {
-        message.warning(i18next.t('system.apiKeyState.noManagePermission'))
-        return
-      }
-      modal.confirm({
-        title: i18next.t('system.apiKeyState.disableConfirmTitle'),
-        content: i18next.t('system.apiKeyState.disableConfirmContent', { keyName: record.keyName }),
-        okText: t('common.ok'),
-        cancelText: t('common.cancel'),
-        okButtonProps: { danger: true },
-        onOk: () => revokeMutation.mutateAsync(record.id),
-      })
-    },
-    [canEdit, revokeMutation],
-  )
+  const handleRevoke = (record: ApiKeyRecord) => {
+    if (!canEdit) {
+      message.warning(i18next.t('system.apiKeyState.noManagePermission'))
+      return
+    }
+    modal.confirm({
+      title: i18next.t('system.apiKeyState.disableConfirmTitle'),
+      content: i18next.t('system.apiKeyState.disableConfirmContent', {
+        keyName: record.keyName,
+      }),
+      okText: t('common.ok'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: () => revokeMutation.mutateAsync(record.id),
+    })
+  }
 
   return {
     actionOptions,

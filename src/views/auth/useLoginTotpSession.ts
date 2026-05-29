@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { message } from '@/utils/antd-app'
 import {
@@ -18,20 +18,17 @@ export function useLoginTotpSession() {
   const [stepDeadline, setStepDeadline] = useState(savedSession?.deadline || 0)
   const [now, setNow] = useState(() => Date.now())
 
-  const reset2faStep = useCallback(
-    (showMessage = false) => {
-      clearTotpSession()
-      setLoginStep('password')
-      setTempToken('')
-      setTotpCode('')
-      setStepDeadline(0)
-      setNow(Date.now())
-      if (showMessage) {
-        message.warning(t('auth.totppanel.expired'))
-      }
-    },
-    [t],
-  )
+  const reset2faStep = (showMessage = false) => {
+    clearTotpSession()
+    setLoginStep('password')
+    setTempToken('')
+    setTotpCode('')
+    setStepDeadline(0)
+    setNow(Date.now())
+    if (showMessage) {
+      message.warning(t('auth.totppanel.expired'))
+    }
+  }
 
   useEffect(() => {
     if (loginStep !== 'totp' || !stepDeadline) {
@@ -52,14 +49,14 @@ export function useLoginTotpSession() {
     }
   }, [loginStep, reset2faStep, stepDeadline])
 
-  const start2faStep = useCallback((token: string, loginName: string) => {
+  const start2faStep = (token: string, loginName: string) => {
     const deadline = Date.now() + 5 * 60 * 1000
     setTempToken(token)
     setLoginStep('totp')
     setStepDeadline(deadline)
     setNow(Date.now())
     saveTotpSession(token, deadline, loginName)
-  }, [])
+  }
 
   return {
     loginStep,

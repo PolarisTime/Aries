@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   listUserAccounts,
   type UserAccountListParams,
@@ -34,28 +34,25 @@ export function useUserAccountListState(enabled = true) {
     enabled,
   })
 
-  const users = useMemo(() => usersData?.records || [], [usersData])
-  const totalElements = useMemo(
-    () => Number(usersData?.totalElements) || 0,
-    [usersData],
-  )
+  const users = usersData?.records || []
+  const totalElements = Number(usersData?.totalElements) || 0
 
   const refresh = useRefreshQuery('user-account')
 
-  const handleSearch = useCallback(() => {
+  const handleSearch = () => {
     setCurrentPage(1)
     refresh()
-  }, [refresh])
+  }
 
-  const handleStatusFilterChange = useCallback((value?: string) => {
+  const handleStatusFilterChange = (value?: string) => {
     setStatusFilter(value)
     setCurrentPage(1)
-  }, [])
+  }
 
-  const handlePageChange = useCallback((page: number, size: number) => {
+  const handlePageChange = (page: number, size: number) => {
     setCurrentPage(page)
     setPageSize(size)
-  }, [])
+  }
 
   return {
     keyword,

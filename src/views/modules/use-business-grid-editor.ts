@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   getBusinessModuleDetail,
   listAllBusinessModuleRows,
@@ -22,105 +22,89 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
   const [editorLockLoading, setEditorLockLoading] = useState(false)
   const openVersionRef = useRef(0)
 
-  const lineItemLockSourceModule = useMemo(
-    () => String(getBehaviorValue(moduleKey, 'lineItemLockSourceModule') || ''),
-    [moduleKey],
+  const lineItemLockSourceModule = String(
+    getBehaviorValue(moduleKey, 'lineItemLockSourceModule') || '',
   )
-  const lineItemLockSourceField = useMemo(
-    () => String(getBehaviorValue(moduleKey, 'lineItemLockSourceField') || ''),
-    [moduleKey],
+  const lineItemLockSourceField = String(
+    getBehaviorValue(moduleKey, 'lineItemLockSourceField') || '',
   )
-  const lineItemLockTargetField = useMemo(
-    () => String(getBehaviorValue(moduleKey, 'lineItemLockTargetField') || ''),
-    [moduleKey],
+  const lineItemLockTargetField = String(
+    getBehaviorValue(moduleKey, 'lineItemLockTargetField') || '',
   )
   const requiresDetailFetch = Boolean(config.itemColumns?.length)
 
-  const resolveEditorLockRelatedRows = useCallback(
-    async (record: ModuleRecord | null) => {
-      if (
-        !record ||
-        !lineItemLockSourceModule ||
-        !lineItemLockSourceField ||
-        !lineItemLockTargetField
-      ) {
-        return []
-      }
-      const targetValue = asString(record[lineItemLockTargetField]).trim()
-      if (!targetValue) {
-        return []
-      }
-      return listAllBusinessModuleRows(lineItemLockSourceModule, {
-        [lineItemLockSourceField]: targetValue,
-      })
-    },
-    [
-      lineItemLockSourceField,
-      lineItemLockSourceModule,
-      lineItemLockTargetField,
-    ],
-  )
+  const resolveEditorLockRelatedRows = async (record: ModuleRecord | null) => {
+    if (
+      !record ||
+      !lineItemLockSourceModule ||
+      !lineItemLockSourceField ||
+      !lineItemLockTargetField
+    ) {
+      return []
+    }
+    const targetValue = asString(record[lineItemLockTargetField]).trim()
+    if (!targetValue) {
+      return []
+    }
+    return listAllBusinessModuleRows(lineItemLockSourceModule, {
+      [lineItemLockSourceField]: targetValue,
+    })
+  }
 
-  const resolveEditorRecord = useCallback(
-    async (record: ModuleRecord | null) => {
-      if (!record) {
-        return null
+  const resolveEditorRecord = async (record: ModuleRecord | null) => {
+    if (!record) {
+      return null
+    }
+
+    const endpointConfig = getModuleConfig(moduleKey)
+    if (endpointConfig.readOnly) {
+      return record
+    }
+
+    if (
+      !requiresDetailFetch ||
+      (Array.isArray(record.items) && record.items.length > 0)
+    ) {
+      return record
+    }
+
+    const recordId = String(record.id || '')
+    if (!recordId) {
+      return record
+    }
+
+    const detail = await getBusinessModuleDetail(moduleKey, recordId)
+    return detail.data
+  }
+
+  const openEditor = async (record: ModuleRecord | null) => {
+    const version = ++openVersionRef.current
+    setEditorLockLoading(true)
+    try {
+      const [lockRelatedRows, resolvedRecord] = await Promise.all([
+        resolveEditorLockRelatedRows(record),
+        resolveEditorRecord(record),
+      ])
+      if (version !== openVersionRef.current) return
+      setEditorLockRelatedRows(lockRelatedRows)
+      setEditRecord(resolvedRecord)
+      setEditorOpen(true)
+    } finally {
+      if (version === openVersionRef.current) {
+        setEditorLockLoading(false)
       }
+    }
+  }
 
-      const endpointConfig = getModuleConfig(moduleKey)
-      if (endpointConfig.readOnly) {
-        return record
-      }
-
-      if (
-        !requiresDetailFetch ||
-        (Array.isArray(record.items) && record.items.length > 0)
-      ) {
-        return record
-      }
-
-      const recordId = String(record.id || '')
-      if (!recordId) {
-        return record
-      }
-
-      const detail = await getBusinessModuleDetail(moduleKey, recordId)
-      return detail.data
-    },
-    [moduleKey, requiresDetailFetch],
-  )
-
-  const openEditor = useCallback(
-    async (record: ModuleRecord | null) => {
-      const version = ++openVersionRef.current
-      setEditorLockLoading(true)
-      try {
-        const [lockRelatedRows, resolvedRecord] = await Promise.all([
-          resolveEditorLockRelatedRows(record),
-          resolveEditorRecord(record),
-        ])
-        if (version !== openVersionRef.current) return
-        setEditorLockRelatedRows(lockRelatedRows)
-        setEditRecord(resolvedRecord)
-        setEditorOpen(true)
-      } finally {
-        if (version === openVersionRef.current) {
-          setEditorLockLoading(false)
-        }
-      }
-    },
-    [resolveEditorLockRelatedRows, resolveEditorRecord],
-  )
-
-  const closeEditor = useCallback(() => {
+  const closeEditor = () => {
     setEditorOpen(false)
     setEditRecord(null)
     setEditorLockRelatedRows([])
-  }, [])
+  }
 
-  const handleSaved = useCallback(() => {
+  const handleSaved = () => {
     setEditorLockRelatedRows([])
-  }, [])
+  }
 
   return {
     editRecord,

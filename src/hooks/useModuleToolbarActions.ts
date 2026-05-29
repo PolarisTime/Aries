@@ -1,4 +1,3 @@
-import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
   ModuleActionDefinition,
@@ -15,7 +14,10 @@ import {
 interface Handlers {
   exportMaterialRows: () => Promise<void>
   exportRows: (mode: 'selected' | 'page' | 'filtered') => Promise<void>
-  handlePrintSelectedRecords: (preview: boolean, templateId?: string) => Promise<void>
+  handlePrintSelectedRecords: (
+    preview: boolean,
+    templateId?: string,
+  ) => Promise<void>
   handleSelectedAuditRecords: () => void
   handleSelectedDeleteRecords: () => void
   handleSelectedReverseAuditRecords: () => void
@@ -66,56 +68,58 @@ export function useModuleToolbarActions({
 }: Props) {
   const { t } = useTranslation()
 
-  const canUseAction = useCallback(
-    (action: ModuleActionDefinition) =>
-      hasAnyModuleAction(
-        resolveModuleActionPermissionCodes({
-          moduleKey,
-          actionKey: action.key,
-          actionLabel: action.label,
-        }),
-      ),
-    [hasAnyModuleAction, moduleKey],
-  )
+  const canUseAction = (action: ModuleActionDefinition) =>
+    hasAnyModuleAction(
+      resolveModuleActionPermissionCodes({
+        moduleKey,
+        actionKey: action.key,
+        actionLabel: action.label,
+      }),
+    )
 
-  const bulkDeleteAction = useMemo<ModuleActionDefinition | null>(
-    () =>
-      canUseBulkDeleteActions
-        ? {
-            label: t('hooks.toolbarActions.delete'),
-            type: 'default',
-            danger: true,
-            disabled: selectedRowCount === 0,
-          }
-        : null,
-    [canUseBulkDeleteActions, selectedRowCount, t],
-  )
+  const bulkDeleteAction: ModuleActionDefinition | null =
+    canUseBulkDeleteActions
+      ? {
+          label: t('hooks.toolbarActions.delete'),
+          type: 'default',
+          danger: true,
+          disabled: selectedRowCount === 0,
+        }
+      : null
 
-  const bulkToolbarActions = useMemo<ModuleActionDefinition[]>(() => {
+  const bulkToolbarActions = (() => {
     const disabled = selectedRowCount === 0
     const actions: ModuleActionDefinition[] = []
     if (canUseBulkAuditActions) {
       actions.push(
         { label: t('hooks.toolbarActions.audit'), type: 'default', disabled },
-        { label: t('hooks.toolbarActions.reverseAudit'), type: 'default', disabled },
+        {
+          label: t('hooks.toolbarActions.reverseAudit'),
+          type: 'default',
+          disabled,
+        },
       )
     }
     if (canUseBulkPrintActions) {
       actions.push(
-        { label: t('hooks.toolbarActions.printPreview'), type: 'default', disabled, loading: detailPrintLoading },
-        { label: t('hooks.toolbarActions.directPrint'), type: 'default', disabled, loading: detailPrintLoading },
+        {
+          label: t('hooks.toolbarActions.printPreview'),
+          type: 'default',
+          disabled,
+          loading: detailPrintLoading,
+        },
+        {
+          label: t('hooks.toolbarActions.directPrint'),
+          type: 'default',
+          disabled,
+          loading: detailPrintLoading,
+        },
       )
     }
     return actions
-  }, [
-    canUseBulkAuditActions,
-    canUseBulkPrintActions,
-    selectedRowCount,
-    detailPrintLoading,
-    t,
-  ])
+  })() satisfies ModuleActionDefinition[]
 
-  const visibleToolbarActions = useMemo<ModuleActionDefinition[]>(() => {
+  const visibleToolbarActions = (() => {
     const remainingActions = [...(config.actions || [])]
     const createActionIndex = remainingActions.findIndex(isCreateToolbarAction)
     const orderedActions: ModuleActionDefinition[] = []
@@ -134,87 +138,88 @@ export function useModuleToolbarActions({
         }
         return action
       })
-  }, [config.actions, bulkDeleteAction, bulkToolbarActions, canUseAction, selectedRowCount])
+  })() satisfies ModuleActionDefinition[]
 
-  const handleAction = useCallback(
-    async (action: ModuleActionDefinition) => {
-      if (!canUseAction(action)) {
-        message.warning(t('hooks.toolbarActions.noPermission', { label: action.label }))
-        return
-      }
+  const handleAction = async (action: ModuleActionDefinition) => {
+    if (!canUseAction(action)) {
+      message.warning(
+        t('hooks.toolbarActions.noPermission', { label: action.label }),
+      )
+      return
+    }
 
-      const auditLabel = t('hooks.toolbarActions.audit')
-      const reverseAuditLabel = t('hooks.toolbarActions.reverseAudit')
-      const printPreviewLabel = t('hooks.toolbarActions.printPreview')
-      const directPrintLabel = t('hooks.toolbarActions.directPrint')
-      const deleteLabel = t('hooks.toolbarActions.delete')
+    const auditLabel = t('hooks.toolbarActions.audit')
+    const reverseAuditLabel = t('hooks.toolbarActions.reverseAudit')
+    const printPreviewLabel = t('hooks.toolbarActions.printPreview')
+    const directPrintLabel = t('hooks.toolbarActions.directPrint')
+    const deleteLabel = t('hooks.toolbarActions.delete')
 
-      if (action.label === auditLabel) {
-        handlers.handleSelectedAuditRecords()
-        return
-      }
-      if (action.label === reverseAuditLabel) {
-        handlers.handleSelectedReverseAuditRecords()
-        return
-      }
-      if (action.label === printPreviewLabel) {
-        await handlers.handlePrintSelectedRecords(true)
-        return
-      }
-      if (action.label === directPrintLabel) {
-        await handlers.handlePrintSelectedRecords(false)
-        return
-      }
-      if (action.label === deleteLabel) {
-        handlers.handleSelectedDeleteRecords()
-        return
-      }
+    if (action.label === auditLabel) {
+      handlers.handleSelectedAuditRecords()
+      return
+    }
+    if (action.label === reverseAuditLabel) {
+      handlers.handleSelectedReverseAuditRecords()
+      return
+    }
+    if (action.label === printPreviewLabel) {
+      await handlers.handlePrintSelectedRecords(true)
+      return
+    }
+    if (action.label === directPrintLabel) {
+      await handlers.handlePrintSelectedRecords(false)
+      return
+    }
+    if (action.label === deleteLabel) {
+      handlers.handleSelectedDeleteRecords()
+      return
+    }
 
-      switch (
-        resolveModuleActionKind({
-          moduleKey,
-          actionKey: action.key,
-          actionLabel: action.label,
-          hasFormFields: formFields.length > 0,
-          isMaterialModule,
-        })
-      ) {
-        case 'openSupplierStatementGenerator':
-          handlers.openSupplierStatementGenerator()
-          return
-        case 'openCustomerStatementGenerator':
-          handlers.openCustomerStatementGenerator()
-          return
-        case 'openFreightStatementGenerator':
-          handlers.openFreightStatementGenerator()
-          return
-        case 'openCreateEditor':
-          await handlers.openCreateEditor()
-          return
-        case 'exportMaterialRows':
-          await handlers.exportMaterialRows()
-          return
-        case 'exportRows':
-          await handlers.exportRows('filtered')
-          return
-        case 'openFreightPickupList':
-          handlers.openFreightPickupList()
-          return
-        case 'markSelectedFreightDelivered':
-          handlers.markSelectedFreightDelivered()
-          return
-        case 'openFreightSummary':
-          await handlers.openFreightSummary()
-          return
-        case 'navigateToRoleActionEditor':
-          handlers.navigateToRoleActionEditor()
-          return
-        default:
-          message.info(t('hooks.toolbarActions.noExtraLogic', { label: action.label }))
-      }
-    },
-    [canUseAction, formFields, handlers, isMaterialModule, moduleKey, t],
-  )
+    switch (
+      resolveModuleActionKind({
+        moduleKey,
+        actionKey: action.key,
+        actionLabel: action.label,
+        hasFormFields: formFields.length > 0,
+        isMaterialModule,
+      })
+    ) {
+      case 'openSupplierStatementGenerator':
+        handlers.openSupplierStatementGenerator()
+        return
+      case 'openCustomerStatementGenerator':
+        handlers.openCustomerStatementGenerator()
+        return
+      case 'openFreightStatementGenerator':
+        handlers.openFreightStatementGenerator()
+        return
+      case 'openCreateEditor':
+        await handlers.openCreateEditor()
+        return
+      case 'exportMaterialRows':
+        await handlers.exportMaterialRows()
+        return
+      case 'exportRows':
+        await handlers.exportRows('filtered')
+        return
+      case 'openFreightPickupList':
+        handlers.openFreightPickupList()
+        return
+      case 'markSelectedFreightDelivered':
+        handlers.markSelectedFreightDelivered()
+        return
+      case 'openFreightSummary':
+        await handlers.openFreightSummary()
+        return
+      case 'navigateToRoleActionEditor':
+        handlers.navigateToRoleActionEditor()
+        return
+      default:
+        message.info(
+          t('hooks.toolbarActions.noExtraLogic', { label: action.label }),
+        )
+    }
+  }
 
   return {
     canUseAction,
