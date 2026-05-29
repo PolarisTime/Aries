@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   getPersonalSettings,
   type PersonalSettings,
@@ -90,56 +90,53 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     initialSettings.themeMode,
   )
 
-  const applySettings = useCallback(
-    (settings: PersonalSettings | null | undefined) => {
-      const normalized = normalizePersonalSettings(
-        settings,
-        defaultFontSize,
-        defaultLayoutMode,
-      )
-      setFontSize(normalized.fontSize)
-      setAppliedFontSize(normalized.fontSize)
-      setLayoutMode(normalized.layoutMode)
-      setAppliedLayoutMode(normalized.layoutMode)
-      setThemeMode(normalized.themeMode)
-      setAppliedThemeMode(normalized.themeMode)
-    },
-    [defaultFontSize, defaultLayoutMode],
-  )
+  const applySettings = (settings: PersonalSettings | null | undefined) => {
+    const normalized = normalizePersonalSettings(
+      settings,
+      defaultFontSize,
+      defaultLayoutMode,
+    )
+    setFontSize(normalized.fontSize)
+    setAppliedFontSize(normalized.fontSize)
+    setLayoutMode(normalized.layoutMode)
+    setAppliedLayoutMode(normalized.layoutMode)
+    setThemeMode(normalized.themeMode)
+    setAppliedThemeMode(normalized.themeMode)
+  }
 
-  const load = useCallback(() => {
+  const load = () => {
     applySettings(getPersonalSettings())
-  }, [applySettings])
+  }
 
   useEffect(() => {
     applyPersonalFontSize(appliedFontSize, fontSizeCssVar)
   }, [appliedFontSize, fontSizeCssVar])
 
-  const open = useCallback(() => {
+  const open = () => {
     setVisible(true)
-  }, [])
+  }
 
-  const close = useCallback(() => {
+  const close = () => {
     setFontSize(appliedFontSize)
     setLayoutMode(appliedLayoutMode)
     setThemeMode(appliedThemeMode)
     setVisible(false)
-  }, [appliedFontSize, appliedLayoutMode, appliedThemeMode])
+  }
 
-  const reset = useCallback(() => {
+  const reset = () => {
     setFontSize(defaultFontSize)
     setLayoutMode(defaultLayoutMode)
     setThemeMode('system')
-  }, [defaultFontSize, defaultLayoutMode])
+  }
 
-  const save = useCallback(() => {
+  const save = () => {
     setAppliedFontSize(fontSize)
     setAppliedLayoutMode(layoutMode)
     setAppliedThemeMode(themeMode)
     setPersonalSettings({ fontSize, layoutMode, themeMode })
     window.dispatchEvent(new CustomEvent('personal-settings-changed'))
     setVisible(false)
-  }, [fontSize, layoutMode, themeMode])
+  }
 
   return {
     visible,

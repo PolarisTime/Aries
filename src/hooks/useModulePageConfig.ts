@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { listAllBusinessModuleRows } from '@/api/business'
 import {
   DISPLAY_SWITCH_CODES,
@@ -74,18 +74,11 @@ function useStatementLinkCatalog(enabled: boolean) {
     gcTime: 5 * 60_000,
   })
 
-  return useMemo<StatementLinkCatalog>(
-    () => ({
-      customerStatements: customerStatementsQuery.data || [],
-      supplierStatements: supplierStatementsQuery.data || [],
-      freightStatements: freightStatementsQuery.data || [],
-    }),
-    [
-      customerStatementsQuery.data,
-      supplierStatementsQuery.data,
-      freightStatementsQuery.data,
-    ],
-  )
+  return {
+    customerStatements: customerStatementsQuery.data || [],
+    supplierStatements: supplierStatementsQuery.data || [],
+    freightStatements: freightStatementsQuery.data || [],
+  } satisfies StatementLinkCatalog
 }
 
 function decorateStatementLinkConfig(
@@ -148,7 +141,7 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
     needsStatementLinkCatalog,
   )
 
-  const config = useMemo<ModulePageConfig | undefined>(() => {
+  const config = (() => {
     const found = moduleConfigQuery.data
     if (!found || found.key !== moduleKey) {
       return initialConfig
@@ -168,28 +161,14 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
       moduleKey,
       statementLinkCatalog,
     )
-  }, [
-    moduleKey,
-    moduleConfigQuery.data,
+  })() satisfies ModulePageConfig | undefined
+
+  const showSnowflakeId = isDisplaySwitchEnabled(
     displaySwitchesQuery.data,
-    statementLinkCatalog,
-    switchCode,
-    initialConfig,
-  ])
-
-  const showSnowflakeId = useMemo(
-    () =>
-      isDisplaySwitchEnabled(
-        displaySwitchesQuery.data,
-        DISPLAY_SWITCH_CODES.showSnowflakeId,
-      ),
-    [displaySwitchesQuery.data],
+    DISPLAY_SWITCH_CODES.showSnowflakeId,
   )
 
-  const supportsInvoiceAssist = useMemo(
-    () => INVOICE_ASSIST_MODULE_KEYS.has(moduleKey),
-    [moduleKey],
-  )
+  const supportsInvoiceAssist = INVOICE_ASSIST_MODULE_KEYS.has(moduleKey)
 
   useEffect(() => {
     previousModuleKeyRef.current = moduleKey

@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import type {
   ModuleFilterDefinition,
   ModuleFormFieldDefinition,
@@ -49,43 +48,30 @@ export function useModuleEditorCapabilities({
   isReadOnly,
   resolveModuleStatusOptions,
 }: Props) {
-  const lineItemsLocked = useMemo(
-    () =>
-      typeof lineItemsLockedOverride === 'boolean'
-        ? lineItemsLockedOverride
-        : isModuleLineItemsLocked(
-            moduleKey,
-            lineItemLockRelatedRows.map((record) => asString(record.status)),
-          ),
-    [lineItemsLockedOverride, moduleKey, lineItemLockRelatedRows],
-  )
+  const lineItemsLocked =
+    typeof lineItemsLockedOverride === 'boolean'
+      ? lineItemsLockedOverride
+      : isModuleLineItemsLocked(
+          moduleKey,
+          lineItemLockRelatedRows.map((record) => asString(record.status)),
+        )
 
-  const editorAuditTarget = useMemo(() => {
+  const editorAuditTarget = (() => {
     const statusField = formFields.find((field) => field.key === 'status')
     return buildEditorAuditTarget(
       moduleKey,
       resolveModuleStatusOptions(statusField),
       currentStatus,
     )
-  }, [
-    moduleKey,
-    formFields,
-    currentStatus,
-    resolveModuleStatusOptions,
-  ])
+  })()
 
-  const effectiveListStatusFields = useMemo(
-    () => listStatusFields || formFields,
-    [formFields, listStatusFields],
+  const effectiveListStatusFields = listStatusFields || formFields
+  const listStatusField = effectiveListStatusFields.find(
+    (field) => field.key === 'status',
   )
-  const listStatusField = useMemo(
-    () => effectiveListStatusFields.find((field) => field.key === 'status'),
-    [effectiveListStatusFields],
-  )
-  const listStatusOptions = useMemo(
-    () => resolveStatusOptions({ fields: effectiveListStatusFields }),
-    [effectiveListStatusFields],
-  )
+  const listStatusOptions = resolveStatusOptions({
+    fields: effectiveListStatusFields,
+  })
   const listPreferredStatus =
     listStatusField && 'defaultValue' in listStatusField
       ? listStatusField.defaultValue
@@ -93,15 +79,11 @@ export function useModuleEditorCapabilities({
   const {
     auditTarget: listAuditTarget,
     reverseAuditTarget: listReverseAuditTarget,
-  } = useMemo(
-    () =>
-      buildListAuditTargets({
-        moduleKey,
-        statusOptions: listStatusOptions,
-        preferredStatus: listPreferredStatus,
-      }),
-    [moduleKey, listPreferredStatus, listStatusOptions],
-  )
+  } = buildListAuditTargets({
+    moduleKey,
+    statusOptions: listStatusOptions,
+    preferredStatus: listPreferredStatus,
+  })
 
   const canUseBulkAuditActions =
     !isReadOnly &&
@@ -113,29 +95,18 @@ export function useModuleEditorCapabilities({
   const canSaveAndAuditCurrentEditor =
     canSaveCurrentEditor && canAuditRecords && canAuditEditor
 
-  const canManageEditorItems = useMemo(
-    () =>
-      canManageEditorLineItems(
-        moduleKey,
-        canEditLineItems,
-        canSaveCurrentEditor,
-        lineItemsLocked,
-      ),
-    [moduleKey, canEditLineItems, canSaveCurrentEditor, lineItemsLocked],
+  const canManageEditorItems = canManageEditorLineItems(
+    moduleKey,
+    canEditLineItems,
+    canSaveCurrentEditor,
+    lineItemsLocked,
   )
-  const canAddManualEditorItems = useMemo(
-    () =>
-      canManageEditorItems &&
-      getBehaviorValue(moduleKey, 'allowsManualLineItems') !== false,
-    [canManageEditorItems, moduleKey],
-  )
-  const lockedLineItemsNotice = useMemo(
-    () =>
-      lineItemsLocked
-        ? String(getBehaviorValue(moduleKey, 'lockedLineItemsNotice') || '')
-        : '',
-    [lineItemsLocked, moduleKey],
-  )
+  const canAddManualEditorItems =
+    canManageEditorItems &&
+    getBehaviorValue(moduleKey, 'allowsManualLineItems') !== false
+  const lockedLineItemsNotice = lineItemsLocked
+    ? String(getBehaviorValue(moduleKey, 'lockedLineItemsNotice') || '')
+    : ''
 
   return {
     canAddManualEditorItems,

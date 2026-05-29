@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+
 import { type CarrierOption, fetchCarrierOptions } from '@/api/carrier-options'
 import {
   type CustomerOption,
@@ -123,24 +123,14 @@ export function useMasterOptions(
   enabled = true,
 ) {
   const token = useAuthStore((s) => s.token)
-  const normalizedRequirements = useMemo(
-    () => ({
-      suppliers: Boolean(requirements.suppliers),
-      customers: Boolean(requirements.customers),
-      carriers: Boolean(requirements.carriers),
-      warehouses: Boolean(requirements.warehouses),
-      materialCategories: Boolean(requirements.materialCategories),
-      materials: Boolean(requirements.materials),
-    }),
-    [
-      requirements.carriers,
-      requirements.customers,
-      requirements.materialCategories,
-      requirements.materials,
-      requirements.suppliers,
-      requirements.warehouses,
-    ],
-  )
+  const normalizedRequirements = {
+    suppliers: Boolean(requirements.suppliers),
+    customers: Boolean(requirements.customers),
+    carriers: Boolean(requirements.carriers),
+    warehouses: Boolean(requirements.warehouses),
+    materialCategories: Boolean(requirements.materialCategories),
+    materials: Boolean(requirements.materials),
+  }
 
   const queryEnabled = enabled && !!token
 

@@ -4,7 +4,7 @@ import type {
   Updater,
   VisibilityState,
 } from '@tanstack/react-table'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getUserColumnSettings,
@@ -130,10 +130,10 @@ export function useColumnSettingsSupport(
     defaultSettingsRef.current = buildDefaultSettings(defaultHiddenKeys)
   }, [defaultHiddenKeys])
 
-  const applySettings = useCallback((settings: ListColumnSettings | null) => {
+  const applySettings = (settings: ListColumnSettings | null) => {
     setColumnOrder(toColumnOrderState(settings))
     setColumnVisibility(toVisibilityState(settings))
-  }, [])
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -192,65 +192,65 @@ export function useColumnSettingsSupport(
     }
   }, [applySettings, pageKey, userKey, totalColumnCount])
 
-  const persist = useCallback(
-    async (order: ColumnOrderState, visibility: VisibilityState) => {
-      const orderedKeys = order.length > 0 ? order : undefined
-      const hiddenKeys = Object.entries(visibility).flatMap(([k, v]) =>
-        !v ? [k] : [],
-      )
-      const settings: ListColumnSettings = {
-        orderedKeys: orderedKeys || [],
-        hiddenKeys,
-      }
+  const persist = async (
+    order: ColumnOrderState,
+    visibility: VisibilityState,
+  ) => {
+    const orderedKeys = order.length > 0 ? order : undefined
+    const hiddenKeys = Object.entries(visibility).flatMap(([k, v]) =>
+      !v ? [k] : [],
+    )
+    const settings: ListColumnSettings = {
+      orderedKeys: orderedKeys || [],
+      hiddenKeys,
+    }
 
-      setListColumnSettings(pageKey, settings, userKey)
-      userChangedRef.current = true
+    setListColumnSettings(pageKey, settings, userKey)
+    userChangedRef.current = true
 
-      if (!userKey || userKey === 'anonymous') {
+    if (!userKey || userKey === 'anonymous') {
+      return
+    }
+
+    if (!remoteLoadedRef.current) {
+      return
+    }
+
+    const payload: UserColumnSettingsPayload = {
+      pages: {
+        ...remotePagesRef.current,
+        [pageKey]: settings,
+      },
+    }
+
+    let lastError: unknown
+    for (let attempt = 0; attempt <= PERSIST_MAX_RETRIES; attempt++) {
+      try {
+        await saveUserColumnSettings(payload)
+        remotePagesRef.current = payload.pages
+        syncWarningShownRef.current = false
         return
-      }
-
-      if (!remoteLoadedRef.current) {
-        return
-      }
-
-      const payload: UserColumnSettingsPayload = {
-        pages: {
-          ...remotePagesRef.current,
-          [pageKey]: settings,
-        },
-      }
-
-      let lastError: unknown
-      for (let attempt = 0; attempt <= PERSIST_MAX_RETRIES; attempt++) {
-        try {
-          await saveUserColumnSettings(payload)
-          remotePagesRef.current = payload.pages
-          syncWarningShownRef.current = false
-          return
-        } catch (error) {
-          lastError = error
-          if (isNetworkError(error) && attempt < PERSIST_MAX_RETRIES) {
-            await new Promise<void>((resolve) => {
-              retryTimerRef.current = setTimeout(
-                resolve,
-                PERSIST_BASE_DELAY_MS * 2 ** attempt,
-              )
-            })
-            continue
-          }
-          break
+      } catch (error) {
+        lastError = error
+        if (isNetworkError(error) && attempt < PERSIST_MAX_RETRIES) {
+          await new Promise<void>((resolve) => {
+            retryTimerRef.current = setTimeout(
+              resolve,
+              PERSIST_BASE_DELAY_MS * 2 ** attempt,
+            )
+          })
+          continue
         }
+        break
       }
+    }
 
-      logger.warn('Failed to save roaming column settings', lastError)
-      if (!syncWarningShownRef.current) {
-        syncWarningShownRef.current = true
-        message.warning(t('hooks.columnSettings.syncRetryLater'))
-      }
-    },
-    [pageKey, userKey, t],
-  )
+    logger.warn('Failed to save roaming column settings', lastError)
+    if (!syncWarningShownRef.current) {
+      syncWarningShownRef.current = true
+      message.warning(t('hooks.columnSettings.syncRetryLater'))
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -260,27 +260,23 @@ export function useColumnSettingsSupport(
     }
   }, [])
 
-  const handleColumnOrderChange = useCallback<OnChangeFn<ColumnOrderState>>(
-    (updater) => {
-      setColumnOrder((current) => {
-        const next = resolveUpdater(updater, current)
-        void persist(next, columnVisibility)
-        return next
-      })
-    },
-    [columnVisibility, persist],
-  )
+  const handleColumnOrderChange: OnChangeFn<ColumnOrderState> = (updater) => {
+    setColumnOrder((current) => {
+      const next = resolveUpdater(updater, current)
+      void persist(next, columnVisibility)
+      return next
+    })
+  }
 
-  const handleColumnVisibilityChange = useCallback<OnChangeFn<VisibilityState>>(
-    (updater) => {
-      setColumnVisibility((current) => {
-        const next = resolveUpdater(updater, current)
-        void persist(columnOrder, next)
-        return next
-      })
-    },
-    [columnOrder, persist],
-  )
+  const handleColumnVisibilityChange: OnChangeFn<VisibilityState> = (
+    updater,
+  ) => {
+    setColumnVisibility((current) => {
+      const next = resolveUpdater(updater, current)
+      void persist(columnOrder, next)
+      return next
+    })
+  }
 
   return {
     columnOrder,

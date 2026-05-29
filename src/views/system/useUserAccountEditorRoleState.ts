@@ -1,5 +1,5 @@
 import Form from 'antd/es/form'
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import type { RoleOptionRecord } from '@/types/user-account'
 import type { UserAccountEditorFormValues } from '@/views/system/user-account-editor-types'
 import {
@@ -14,24 +14,19 @@ interface Props {
 
 export function useUserAccountEditorRoleState({ form, roleOptions }: Props) {
   const watchedRoleIds = Form.useWatch('roleIds', form)
-  const selectedRoleIds = useMemo(
-    () => (Array.isArray(watchedRoleIds) ? watchedRoleIds.map(Number) : []),
-    [watchedRoleIds],
+  const selectedRoleIds = Array.isArray(watchedRoleIds)
+    ? watchedRoleIds.map(Number)
+    : []
+
+  const selectedRoleDataScope = buildSelectedRoleDataScope(
+    selectedRoleIds,
+    roleOptions,
+    form.getFieldValue('dataScope'),
   )
 
-  const selectedRoleDataScope = useMemo(
-    () =>
-      buildSelectedRoleDataScope(
-        selectedRoleIds,
-        roleOptions,
-        form.getFieldValue('dataScope'),
-      ),
-    [selectedRoleIds, roleOptions, form],
-  )
-
-  const selectedRoleSummaries = useMemo(
-    () => buildSelectedRoleSummaries(selectedRoleIds, roleOptions),
-    [selectedRoleIds, roleOptions],
+  const selectedRoleSummaries = buildSelectedRoleSummaries(
+    selectedRoleIds,
+    roleOptions,
   )
 
   useEffect(() => {

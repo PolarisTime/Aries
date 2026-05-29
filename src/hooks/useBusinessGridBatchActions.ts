@@ -1,4 +1,3 @@
-import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   deleteBusinessModule,
@@ -38,7 +37,7 @@ export function useBusinessGridBatchActions({
 }: Props) {
   const { t } = useTranslation()
 
-  const handleSelectedAuditRecords = useCallback(() => {
+  const handleSelectedAuditRecords = () => {
     if (!selectedRowKeys.length) {
       message.warning(t('hooks.batchActions.pleaseSelectRecords'))
       return
@@ -106,7 +105,9 @@ export function useBusinessGridBatchActions({
               failedCount,
               skippedPart:
                 skippedCount > 0
-                  ? t('hooks.batchActions.skippedCount', { count: skippedCount })
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
                   : '',
               errorPart: firstError ? `；${firstError}` : '',
             }),
@@ -117,7 +118,9 @@ export function useBusinessGridBatchActions({
               successCount,
               skippedPart:
                 skippedCount > 0
-                  ? t('hooks.batchActions.skippedCount', { count: skippedCount })
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
                   : '',
             }),
           )
@@ -125,17 +128,9 @@ export function useBusinessGridBatchActions({
         await refreshAndClearSelection()
       },
     })
-  }, [
-    listAuditTarget,
-    listReverseAuditTarget,
-    moduleKey,
-    refreshAndClearSelection,
-    selectedRowKeys,
-    selectedRows,
-    t,
-  ])
+  }
 
-  const handleSelectedDeleteRecords = useCallback(() => {
+  const handleSelectedDeleteRecords = () => {
     if (!selectedRowKeys.length) {
       message.warning(t('hooks.batchActions.pleaseSelectRecords'))
       return
@@ -190,7 +185,9 @@ export function useBusinessGridBatchActions({
               failedCount,
               skippedPart:
                 skippedCount > 0
-                  ? t('hooks.batchActions.skippedCount', { count: skippedCount })
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
                   : '',
               errorPart: firstError ? `；${firstError}` : '',
             }),
@@ -201,7 +198,9 @@ export function useBusinessGridBatchActions({
               successCount,
               skippedPart:
                 skippedCount > 0
-                  ? t('hooks.batchActions.skippedCount', { count: skippedCount })
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
                   : '',
             }),
           )
@@ -209,9 +208,9 @@ export function useBusinessGridBatchActions({
         await refreshAndClearSelection()
       },
     })
-  }, [moduleKey, refreshAndClearSelection, selectedRowKeys, selectedRows, t])
+  }
 
-  const handleSelectedReverseAuditRecords = useCallback(() => {
+  const handleSelectedReverseAuditRecords = () => {
     if (!selectedRowKeys.length) {
       message.warning(t('hooks.batchActions.pleaseSelectRecords'))
       return
@@ -279,7 +278,9 @@ export function useBusinessGridBatchActions({
               failedCount,
               skippedPart:
                 skippedCount > 0
-                  ? t('hooks.batchActions.skippedCount', { count: skippedCount })
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
                   : '',
               errorPart: firstError ? `；${firstError}` : '',
             }),
@@ -290,7 +291,9 @@ export function useBusinessGridBatchActions({
               successCount,
               skippedPart:
                 skippedCount > 0
-                  ? t('hooks.batchActions.skippedCount', { count: skippedCount })
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
                   : '',
             }),
           )
@@ -298,17 +301,9 @@ export function useBusinessGridBatchActions({
         await refreshAndClearSelection()
       },
     })
-  }, [
-    listAuditTarget,
-    listReverseAuditTarget,
-    moduleKey,
-    refreshAndClearSelection,
-    selectedRowKeys,
-    selectedRows,
-    t,
-  ])
+  }
 
-  const markSelectedFreightDelivered = useCallback(() => {
+  const markSelectedFreightDelivered = () => {
     if (!selectedRowKeys.length) {
       message.warning(t('hooks.batchActions.pleaseSelectFreight'))
       return
@@ -363,7 +358,7 @@ export function useBusinessGridBatchActions({
         await refreshAndClearSelection()
       },
     })
-  }, [refreshAndClearSelection, selectedRowKeys, t])
+  }
 
   return {
     handleSelectedAuditRecords,

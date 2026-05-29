@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import type { SortingState } from '@/hooks/useDataTable'
@@ -63,7 +63,7 @@ export function useBusinessGridPage({
     canPrintRecord,
     can,
     resolvedResource,
-  // react-doctor: intentional callback, not event handler
+    // react-doctor: intentional callback, not event handler
   } = useModulePermissions({ moduleKey, resourceKey: pageDef.resourceKey })
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
@@ -75,9 +75,8 @@ export function useBusinessGridPage({
   const defaultPageSize = useDefaultPageSize()
   const [pageSize, setPageSize] = useState(defaultPageSize)
   const { formatCellValue } = useModuleDisplaySupport()
-  const listOptionRequirements = useMemo(
-    () => resolveMasterOptionRequirements(config?.filters || []),
-    [config?.filters],
+  const listOptionRequirements = resolveMasterOptionRequirements(
+    config?.filters || [],
   )
 
   useMasterOptions(listOptionRequirements)
@@ -133,10 +132,10 @@ export function useBusinessGridPage({
     config: resolvedConfig,
   })
 
-  const clearSelection = useCallback(() => {
+  const clearSelection = () => {
     setSelectedRowKeys([])
     setSelectedRowMap({})
-  }, [])
+  }
 
   useEffect(() => {
     const currentPageIds = new Set(records.map((r) => String(r.id)))
@@ -176,39 +175,26 @@ export function useBusinessGridPage({
   const navigate = useNavigate()
   const detailRoutePath = getBehaviorValue(moduleKey, 'detailRoutePath')
 
-  const handleEdit = useCallback(
-    (record: ModuleRecord) => {
-      void openEditor(record)
-    },
-    [openEditor],
+  const handleEdit = (record: ModuleRecord) => {
+    void openEditor(record)
+  }
+
+  const handleDetail = (record: ModuleRecord) => {
+    if (detailRoutePath) {
+      const path = detailRoutePath.replace(
+        ':projectId',
+        String(record.projectId),
+      )
+      void navigate({ to: path as never })
+    }
+  }
+
+  const lockedLineItemsNotice = String(
+    getBehaviorValue(moduleKey, 'lockedLineItemsNotice') || '',
   )
 
-  const handleDetail = useCallback(
-    (record: ModuleRecord) => {
-      if (detailRoutePath) {
-        const path = detailRoutePath.replace(
-          ':projectId',
-          String(record.projectId),
-        )
-        void navigate({ to: path as never })
-      }
-    },
-    [detailRoutePath, navigate],
-  )
-
-  const lockedLineItemsNotice = useMemo(
-    () => String(getBehaviorValue(moduleKey, 'lockedLineItemsNotice') || ''),
-    [moduleKey],
-  )
-
-  const formFields = useMemo(
-    () => config?.formFields || [],
-    [config?.formFields],
-  )
-  const statusFields = useMemo(
-    () => [...formFields, ...(config?.filters || [])],
-    [config?.filters, formFields],
-  )
+  const formFields = config?.formFields || []
+  const statusFields = [...formFields, ...(config?.filters || [])]
   const {
     canUseBulkAuditActions,
     canUseBulkDeleteActions,
@@ -310,7 +296,9 @@ export function useBusinessGridPage({
         overlays.openCustomerStatement()
       },
       openFreightPickupList: () => {
-        const selected = records.filter((r) => selectedRowKeys.includes(String(r.id)))
+        const selected = records.filter((r) =>
+          selectedRowKeys.includes(String(r.id)),
+        )
         overlays.openFreightPickup(selected)
       },
       openFreightStatementGenerator: () => {

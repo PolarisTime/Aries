@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   getPersonalSettings,
   setPersonalSettings,
@@ -53,11 +53,11 @@ export function useThemeMode() {
     return () => window.removeEventListener('storage', onStorage)
   }, [])
 
-  const setThemeMode = useCallback((mode: ThemeMode) => {
+  const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode)
     const current = getPersonalSettings() ?? {}
     setPersonalSettings({ ...current, themeMode: mode })
-  }, [])
+  }
 
   return { themeMode, resolvedTheme, setThemeMode }
 }

@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import Form from 'antd/es/form'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { enableOwn2fa, setupOwn2fa } from '@/api/account-security'
 import { syncCurrentUserTotpState } from '@/stores/auth-user-sync'
@@ -28,7 +28,7 @@ export function useSetupTwoFactorState(): UseSetupTwoFactorStateResult {
   const [totpData, setTotpData] = useState<TotpSetupResponse | null>(null)
   const [form] = Form.useForm<TotpCodeFormValues>()
 
-  const resolveRedirectTarget = useCallback((): string => {
+  const resolveRedirectTarget = (): string => {
     if (typeof window === 'undefined') {
       return '/dashboard'
     }
@@ -40,9 +40,9 @@ export function useSetupTwoFactorState(): UseSetupTwoFactorStateResult {
       return '/dashboard'
     }
     return redirect
-  }, [])
+  }
 
-  const fetchTotpSetup = useCallback(async (): Promise<void> => {
+  const fetchTotpSetup = async (): Promise<void> => {
     setLoading(true)
     try {
       setTotpData((await setupOwn2fa()).data)
@@ -55,34 +55,31 @@ export function useSetupTwoFactorState(): UseSetupTwoFactorStateResult {
     } finally {
       setLoading(false)
     }
-  }, [t])
+  }
 
   useEffect(() => {
     void fetchTotpSetup()
   }, [fetchTotpSetup])
 
-  const handleEnable = useCallback(
-    async (values: TotpCodeFormValues): Promise<void> => {
-      try {
-        setEnabling(true)
-        await enableOwn2fa(values.totpCode)
-        syncCurrentUserTotpState(true)
-        message.success(t('auth.personalsecurity.enableSuccess'))
-        setTimeout(() => {
-          void navigate({ to: resolveRedirectTarget() as '/' })
-        }, 300)
-      } catch (error) {
-        message.error(
-          error instanceof Error
-            ? error.message
-            : t('auth.personalsecurity.enableFailed'),
-        )
-      } finally {
-        setEnabling(false)
-      }
-    },
-    [navigate, resolveRedirectTarget, t],
-  )
+  const handleEnable = async (values: TotpCodeFormValues): Promise<void> => {
+    try {
+      setEnabling(true)
+      await enableOwn2fa(values.totpCode)
+      syncCurrentUserTotpState(true)
+      message.success(t('auth.personalsecurity.enableSuccess'))
+      setTimeout(() => {
+        void navigate({ to: resolveRedirectTarget() as '/' })
+      }, 300)
+    } catch (error) {
+      message.error(
+        error instanceof Error
+          ? error.message
+          : t('auth.personalsecurity.enableFailed'),
+      )
+    } finally {
+      setEnabling(false)
+    }
+  }
 
   return {
     enabling,

@@ -1,5 +1,5 @@
 import Form from 'antd/es/form'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   changeOwnPassword,
@@ -53,35 +53,34 @@ export function usePersonalSecuritySettings({
     pwForm.resetFields()
   }, [open, pwForm, tab])
 
-  const resetSecurityState = useCallback((): void => {
+  const resetSecurityState = (): void => {
     setTotpSetup(null)
     setTotpCode('')
-  }, [])
+  }
 
-  const handleChangePassword = useCallback(
-    async (values: PasswordFormValues): Promise<void> => {
-      setPwSaving(true)
-      try {
-        await changeOwnPassword({
-          currentPassword: values.oldPassword,
-          newPassword: values.newPassword,
-        })
-        message.success(t('auth.personalsecurity.passwordSuccess'))
-        pwForm.resetFields()
-      } catch (error) {
-        message.error(
-          error instanceof Error
-            ? error.message
-            : t('auth.personalsecurity.passwordFailed'),
-        )
-      } finally {
-        setPwSaving(false)
-      }
-    },
-    [pwForm, t],
-  )
+  const handleChangePassword = async (
+    values: PasswordFormValues,
+  ): Promise<void> => {
+    setPwSaving(true)
+    try {
+      await changeOwnPassword({
+        currentPassword: values.oldPassword,
+        newPassword: values.newPassword,
+      })
+      message.success(t('auth.personalsecurity.passwordSuccess'))
+      pwForm.resetFields()
+    } catch (error) {
+      message.error(
+        error instanceof Error
+          ? error.message
+          : t('auth.personalsecurity.passwordFailed'),
+      )
+    } finally {
+      setPwSaving(false)
+    }
+  }
 
-  const handleSetupTotp = useCallback(async (): Promise<void> => {
+  const handleSetupTotp = async (): Promise<void> => {
     setTotpLoading(true)
     try {
       setTotpSetup((await setupOwn2fa()).data)
@@ -94,9 +93,9 @@ export function usePersonalSecuritySettings({
     } finally {
       setTotpLoading(false)
     }
-  }, [t])
+  }
 
-  const handleEnableTotp = useCallback(async (): Promise<void> => {
+  const handleEnableTotp = async (): Promise<void> => {
     if (!/^\d{6}$/.test(totpCode.trim())) {
       message.error(t('auth.personalsecurity.codeInvalid'))
       return
@@ -117,7 +116,7 @@ export function usePersonalSecuritySettings({
     } finally {
       setTotpEnabling(false)
     }
-  }, [resetSecurityState, t, totpCode])
+  }
 
   return {
     handleChangePassword,

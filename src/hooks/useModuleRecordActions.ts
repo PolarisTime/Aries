@@ -1,4 +1,3 @@
-import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { updateBusinessModuleStatus } from '@/api/business'
 import type { ActionItem } from '@/components/TableActions'
@@ -40,108 +39,91 @@ export function useModuleRecordActions({
   const { t } = useTranslation()
   const can = usePermissionStore((s) => s.can)
   const resource = resourceKey || moduleKey
-  const handleStatusChange = useCallback(
-    async (
-      record: ModuleRecord,
-      target: AuditTarget,
-      successKey: 'auditSuccess' | 'reverseAuditSuccess',
-      failedKey: 'auditFailed' | 'reverseAuditFailed',
-    ) => {
-      try {
-        await updateBusinessModuleStatus(
-          moduleKey,
-          String(record.id),
-          target.value,
-        )
-        message.success(
-          t(`hooks.batchActions.${successKey}`, {
-            successCount: 1,
-            skippedPart: '',
-          }),
-        )
-        await onRefresh()
-      } catch (err) {
-        message.error(
-          err instanceof Error
-            ? err.message
-            : t(`hooks.batchActions.${failedKey}`),
-        )
-      }
-    },
-    [moduleKey, onRefresh, t],
-  )
+  const handleStatusChange = async (
+    record: ModuleRecord,
+    target: AuditTarget,
+    successKey: 'auditSuccess' | 'reverseAuditSuccess',
+    failedKey: 'auditFailed' | 'reverseAuditFailed',
+  ) => {
+    try {
+      await updateBusinessModuleStatus(
+        moduleKey,
+        String(record.id),
+        target.value,
+      )
+      message.success(
+        t(`hooks.batchActions.${successKey}`, {
+          successCount: 1,
+          skippedPart: '',
+        }),
+      )
+      await onRefresh()
+    } catch (err) {
+      message.error(
+        err instanceof Error
+          ? err.message
+          : t(`hooks.batchActions.${failedKey}`),
+      )
+    }
+  }
 
-  const buildActions = useCallback(
-    (record: ModuleRecord): ActionItem[] => {
-      const items: ActionItem[] = []
-      const editBlocked = isEditBlockedByStatus(record.status, moduleKey)
-      if (onDetail && can(resource, 'read')) {
+  const buildActions = (record: ModuleRecord): ActionItem[] => {
+    const items: ActionItem[] = []
+    const editBlocked = isEditBlockedByStatus(record.status, moduleKey)
+    if (onDetail && can(resource, 'read')) {
+      items.push({
+        key: 'detail',
+        label: t('hooks.recordActions.view'),
+        onClick: () => onDetail(record),
+      })
+    }
+    if (can(resource, 'update')) {
+      items.push({
+        key: 'edit',
+        label: t('hooks.recordActions.edit'),
+        disabled: editBlocked,
+        onClick: () => onEdit(record),
+      })
+    }
+    if (can(resource, 'read') || can(resource, 'update')) {
+      items.push({
+        key: 'attach',
+        label: t('hooks.recordActions.attachment'),
+        onClick: () => onAttach(record),
+      })
+    }
+    if (can(resource, 'audit')) {
+      const canAudit = canAuditFromStatus(
+        record.status,
+        listAuditTarget,
+        listReverseAuditTarget,
+      )
+      const canReverse = canReverseAuditFromStatus(
+        record.status,
+        listAuditTarget,
+        listReverseAuditTarget,
+      )
+      if (canAudit || canReverse) {
+        const target = canReverse ? listReverseAuditTarget : listAuditTarget
         items.push({
-          key: 'detail',
-          label: t('hooks.recordActions.view'),
-          onClick: () => onDetail(record),
+          key: canReverse ? 'reverseAudit' : 'audit',
+          label: canAudit
+            ? t('hooks.recordActions.audit')
+            : t('hooks.recordActions.reverseAudit'),
+          onClick: () => {
+            if (!target) return
+            void handleStatusChange(
+              record,
+              target,
+              canReverse ? 'reverseAuditSuccess' : 'auditSuccess',
+              canReverse ? 'reverseAuditFailed' : 'auditFailed',
+            )
+          },
         })
       }
-      if (can(resource, 'update')) {
-        items.push({
-          key: 'edit',
-          label: t('hooks.recordActions.edit'),
-          disabled: editBlocked,
-          onClick: () => onEdit(record),
-        })
-      }
-      if (can(resource, 'read') || can(resource, 'update')) {
-        items.push({
-          key: 'attach',
-          label: t('hooks.recordActions.attachment'),
-          onClick: () => onAttach(record),
-        })
-      }
-      if (can(resource, 'audit')) {
-        const canAudit = canAuditFromStatus(
-          record.status,
-          listAuditTarget,
-          listReverseAuditTarget,
-        )
-        const canReverse = canReverseAuditFromStatus(
-          record.status,
-          listAuditTarget,
-          listReverseAuditTarget,
-        )
-        if (canAudit || canReverse) {
-          const target = canReverse ? listReverseAuditTarget : listAuditTarget
-          items.push({
-            key: canReverse ? 'reverseAudit' : 'audit',
-            label: canAudit
-              ? t('hooks.recordActions.audit')
-              : t('hooks.recordActions.reverseAudit'),
-            onClick: () => {
-              if (!target) return
-              void handleStatusChange(
-                record,
-                target,
-                canReverse ? 'reverseAuditSuccess' : 'auditSuccess',
-                canReverse ? 'reverseAuditFailed' : 'auditFailed',
-              )
-            },
-          })
-        }
-      }
-      return items
-    },
-    [
-      can,
-      resource,
-      listAuditTarget,
-      listReverseAuditTarget,
-      moduleKey,
-      onDetail,
-      onAttach,
-      t,
-      handleStatusChange,
-      onEdit,
-    ],
-  )
+    }
+    return items
+  }
 
   return { buildActions }
 }

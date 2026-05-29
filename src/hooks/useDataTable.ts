@@ -15,7 +15,7 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 
 interface UseDataTableOptions<TData> {
   data: TData[]
@@ -79,26 +79,24 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const resolvedSorting = controlledSorting ?? sorting
 
-  const handlePaginationChange: OnChangeFn<PaginationState> = useCallback(
-    (updater: Updater<PaginationState>) => {
-      const next = typeof updater === 'function' ? updater(pagination) : updater
-      setPagination(next)
-      onPaginationChange?.(next)
-    },
-    [pagination, onPaginationChange],
-  )
+  const handlePaginationChange: OnChangeFn<PaginationState> = (
+    updater: Updater<PaginationState>,
+  ) => {
+    const next = typeof updater === 'function' ? updater(pagination) : updater
+    setPagination(next)
+    onPaginationChange?.(next)
+  }
 
-  const handleSortingChange: OnChangeFn<SortingState> = useCallback(
-    (updater: Updater<SortingState>) => {
-      const next =
-        typeof updater === 'function' ? updater(resolvedSorting) : updater
-      if (controlledSorting === undefined) {
-        setSorting(next)
-      }
-      onSortingChange?.(next)
-    },
-    [controlledSorting, onSortingChange, resolvedSorting],
-  )
+  const handleSortingChange: OnChangeFn<SortingState> = (
+    updater: Updater<SortingState>,
+  ) => {
+    const next =
+      typeof updater === 'function' ? updater(resolvedSorting) : updater
+    if (controlledSorting === undefined) {
+      setSorting(next)
+    }
+    onSortingChange?.(next)
+  }
 
   const table = useReactTable<TData>({
     data,
@@ -138,16 +136,13 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
   const currentPage = pagination.pageIndex + 1
   const pageSize = pagination.pageSize
 
-  const setCurrentPage = useCallback(
-    (page: number) => {
-      const index = Math.max(0, page - 1)
-      handlePaginationChange({
-        pageIndex: index,
-        pageSize: pagination.pageSize,
-      })
-    },
-    [pagination.pageSize, handlePaginationChange],
-  )
+  const setCurrentPage = (page: number) => {
+    const index = Math.max(0, page - 1)
+    handlePaginationChange({
+      pageIndex: index,
+      pageSize: pagination.pageSize,
+    })
+  }
 
   return {
     table,

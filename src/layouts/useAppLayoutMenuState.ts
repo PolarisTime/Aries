@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { MenuNode } from '@/api/system-menus'
 import { isKnownAppIconKey } from '@/config/app-icons'
 import {
@@ -50,37 +50,26 @@ interface Options {
 export function useAppLayoutMenuState(options: Options) {
   const [siderOpenKeys, setSiderOpenKeys] = useState<string[]>([])
 
-  const visibleMenuEntries = useMemo(() => {
-    return buildVisibleLayoutMenuEntries({
-      appPageDefinitions,
-      defaultIcon: 'AppstoreOutlined',
-      getMenuEntriesByGroup: (groupKey) =>
-        menuEntriesByGroup.get(groupKey) || [],
-      getPageDefinition,
-      isKnownIconKey: isKnownAppIconKey,
-      menuGroupDefinitions,
-      menuGroupOrder,
-      systemMenuTree: options.menus,
-      userCanAccessEntry: (entry) => resolveEntryAccess(entry),
-      userCanAccessMenuCode: (resourceCode, menuCode) =>
-        options.can(resourceCode || menuCode, 'read'),
-    })
-  }, [options.can, options.menus])
+  const visibleMenuEntries = buildVisibleLayoutMenuEntries({
+    appPageDefinitions,
+    defaultIcon: 'AppstoreOutlined',
+    getMenuEntriesByGroup: (groupKey) => menuEntriesByGroup.get(groupKey) || [],
+    getPageDefinition,
+    isKnownIconKey: isKnownAppIconKey,
+    menuGroupDefinitions,
+    menuGroupOrder,
+    systemMenuTree: options.menus,
+    userCanAccessEntry: (entry) => resolveEntryAccess(entry),
+    userCanAccessMenuCode: (resourceCode, menuCode) =>
+      options.can(resourceCode || menuCode, 'read'),
+  })
 
-  const menuPathByKey = useMemo(
-    () => buildMenuPathMap(visibleMenuEntries),
-    [visibleMenuEntries],
-  )
+  const menuPathByKey = buildMenuPathMap(visibleMenuEntries)
 
-  const selectedKeys = useMemo(
-    () => [options.activeMenuKey],
-    [options.activeMenuKey],
-  )
+  const selectedKeys = [options.activeMenuKey]
 
-  const resolvedSiderOpenKeys = useMemo(
-    () => findMenuParentKeys(visibleMenuEntries, options.activeMenuKey) || [],
-    [options.activeMenuKey, visibleMenuEntries],
-  )
+  const resolvedSiderOpenKeys =
+    findMenuParentKeys(visibleMenuEntries, options.activeMenuKey) || []
 
   useEffect(() => {
     if (options.collapsed) {
@@ -90,20 +79,11 @@ export function useAppLayoutMenuState(options: Options) {
     setSiderOpenKeys(resolvedSiderOpenKeys)
   }, [options.collapsed, resolvedSiderOpenKeys])
 
-  const sideMenuItems = useMemo(
-    () => buildSideMenuItems(visibleMenuEntries),
-    [visibleMenuEntries],
-  )
+  const sideMenuItems = buildSideMenuItems(visibleMenuEntries)
 
-  const topMenuItems = useMemo(
-    () => buildTopMenuItems(visibleMenuEntries),
-    [visibleMenuEntries],
-  )
+  const topMenuItems = buildTopMenuItems(visibleMenuEntries)
 
-  const resolveMenuPath = useCallback(
-    (key: string) => menuPathByKey[key],
-    [menuPathByKey],
-  )
+  const resolveMenuPath = (key: string) => menuPathByKey[key]
 
   return {
     resolvedSiderOpenKeys,
