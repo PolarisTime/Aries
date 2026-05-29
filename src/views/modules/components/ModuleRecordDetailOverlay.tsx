@@ -5,7 +5,6 @@ import Empty from 'antd/es/empty'
 import Flex from 'antd/es/flex'
 import Row from 'antd/es/row'
 import Spin from 'antd/es/spin'
-import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
@@ -47,9 +46,7 @@ export function ModuleRecordDetailOverlay({
     config,
   })
   const detailItemColumns = config.detailItemColumns || config.itemColumns || []
-  const detailTableColumns = useMemo<TableColumnsType<ModuleLineItem>>(
-    () =>
-      detailItemColumns.map((column) => ({
+  const detailTableColumns: TableColumnsType<ModuleLineItem> = detailItemColumns.map((column) => ({
         title: column.title,
         dataIndex: column.dataIndex,
         key: column.dataIndex,
@@ -74,9 +71,7 @@ export function ModuleRecordDetailOverlay({
                 )
               }
             : (value: unknown) => formatCellValue(value, column.type),
-      })),
-    [config.key, detailItemColumns, formatCellValue],
-  )
+      }))
   const detailFields = config.detailFields || []
   const colSpan = Math.max(
     6,
