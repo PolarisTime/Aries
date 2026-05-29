@@ -100,12 +100,12 @@ export function ModuleStatementGenerator({
       setGenerating(true)
       await onGenerate(summary.counterparty, summary.start, summary.end)
       setResult({ status: 'success', message: t('modules.statement.generated') })
+      setGenerating(false)
     } catch (err) {
       setResult({
         status: 'error',
         message: err instanceof Error ? err.message : t('modules.statement.generateFailed'),
       })
-    } finally {
       setGenerating(false)
     }
   }

@@ -98,8 +98,10 @@ export function RateLimitRulesCard() {
       })
       await queryClient.invalidateQueries({ queryKey: ['rate-limit-rules'] })
       setEditingRule(null)
-    } finally {
       setSaving(false)
+    } catch (error) {
+      setSaving(false)
+      throw error
     }
   }
 

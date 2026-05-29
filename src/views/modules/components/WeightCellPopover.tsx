@@ -33,9 +33,9 @@ export function WeightCellPopover({ value, record, moduleKey }: Props) {
         } else {
           setError(t('modules.weightCell.noLineItems'))
         }
+        setLoading(false)
       } catch {
         setError(t('modules.weightCell.loadDetailFailed'))
-      } finally {
         setLoading(false)
       }
     }

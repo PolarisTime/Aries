@@ -62,9 +62,9 @@ export function ModuleAttachmentModal({
     try {
       const res = await getAttachmentBindings(moduleKey, recordId)
       setAttachments(res.data?.attachments || [])
+      setLoading(false)
     } catch {
       /* ignore */
-    } finally {
       setLoading(false)
     }
   }, [moduleKey, recordId])
@@ -90,14 +90,16 @@ export function ModuleAttachmentModal({
         const uploadRes = await uploadAttachment(file, moduleKey)
         const attachmentId = asString(uploadRes.data?.id).trim()
         if (!attachmentId) {
-          throw new Error(t('modules.attachment.uploadNoId'))
+          message.error(t('modules.attachment.uploadNoId'))
+          setUploading(false)
+          return false
         }
         await bindAttachment(attachmentId)
         message.success(t('modules.attachment.uploadBindSuccess'))
         await fetchAttachments()
+        setUploading(false)
       } catch (err) {
         message.error(err instanceof Error ? err.message : t('modules.attachment.uploadFailed'))
-      } finally {
         setUploading(false)
       }
       return false

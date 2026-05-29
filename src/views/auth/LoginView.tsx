@@ -52,6 +52,7 @@ export function LoginView() {
         const result = await signIn(values)
         if (result.requires2fa) {
           start2faStep(result.tempToken, values.loginName)
+          setLoading(false)
           return
         }
         clearTotpSession()
@@ -61,9 +62,9 @@ export function LoginView() {
             : t('auth.loginSuccess'),
         )
         await navigate({ to: buildPostLoginTarget(result.user) as '/' })
+        setLoading(false)
       } catch (err) {
         showError(err, t('auth.loginFailed'))
-      } finally {
         setLoading(false)
       }
     },
@@ -92,9 +93,9 @@ export function LoginView() {
       clearTotpSession()
       message.success(t('auth.loginSuccess'))
       await navigate({ to: buildPostLoginTarget(result.user) as '/' })
+      setTotpLoading(false)
     } catch (err) {
       showError(err, t('auth.twofactormodal.verifyFailed'))
-    } finally {
       setTotpLoading(false)
     }
   }, [

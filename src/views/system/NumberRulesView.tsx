@@ -141,9 +141,9 @@ export function NumberRulesView() {
       message.success(t('common.saveSuccess'))
       refresh()
       setEditorOpen(false)
+      setSaving(false)
     } catch (error) {
       showError(error, t('system.numberRules.saveFailed'))
-    } finally {
       setSaving(false)
     }
   }, [editingRecord, editorKind, form, refresh, showError, t])
