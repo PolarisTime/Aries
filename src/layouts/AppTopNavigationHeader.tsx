@@ -2,7 +2,7 @@ import { DownOutlined, ReloadOutlined } from '@ant-design/icons'
 import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
-import { useEffect, useState, type CSSProperties } from 'react'
+import { type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   LazyAppHeaderSearch,
@@ -39,10 +39,7 @@ export function AppTopNavigationHeader({
   userMenuItems,
 }: Props) {
   const { t } = useTranslation()
-  const [devTimeString, setDevTimeString] = useState('')
-  useEffect(() => {
-    setDevTimeString(new Date().toLocaleTimeString())
-  }, [])
+  const devTimeString = new Date().toLocaleTimeString()
 
   return (
     <div className="app-header-bar app-header-bar-top">

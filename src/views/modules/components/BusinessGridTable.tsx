@@ -103,10 +103,6 @@ export function BusinessGridTable({
   const scroll = useMemo(() => ({ x: scrollX, y: scrollY }), [scrollX, scrollY])
 
   const doubleClickCooldownRef = useRef(0)
-  const onRowClickRef = useRef(onRowClick)
-  const onRowDoubleClickRef = useRef(onRowDoubleClick)
-  onRowClickRef.current = onRowClick
-  onRowDoubleClickRef.current = onRowDoubleClick
 
   const onRow = useCallback(
     (record: ModuleRecord) => ({
@@ -118,7 +114,7 @@ export function BusinessGridTable({
           )
         )
           return
-        onRowClickRef.current(record)
+        onRowClick(record)
       },
       onDoubleClick: (event: MouseEvent<HTMLElement>) => {
         const target = event.target as HTMLElement | null
@@ -131,15 +127,15 @@ export function BusinessGridTable({
         const now = Date.now()
         if (now - doubleClickCooldownRef.current < 500) return
         doubleClickCooldownRef.current = now
-        onRowDoubleClickRef.current(record)
+        onRowDoubleClick(record)
       },
     }),
-    [],
+    [onRowClick, onRowDoubleClick],
   )
 
   const emptyText = useMemo(
     () => <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('modules.table.noData')} />,
-    [],
+    [t],
   )
   const locale = useMemo(() => ({ emptyText }), [emptyText])
 

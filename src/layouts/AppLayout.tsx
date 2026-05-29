@@ -128,7 +128,7 @@ export function AppLayout() {
         to: `/${getPageRoutePath(targetPage)}?${query.toString()}` as '/',
       })
     },
-    [navigate],
+    [navigate, t],
   )
 
   const {

@@ -23,6 +23,8 @@ import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 
 type EditorMode = 'create' | 'edit'
+const EMPTY_ROLE_CONFLICTS: Record<number, number[]> = {}
+
 interface Props {
   open: boolean
   mode: EditorMode
@@ -54,7 +56,7 @@ export function UserAccountEditorModal({
   departmentOptions,
   roleOptions,
   selectedRoleIds,
-  roleConflicts = {},
+  roleConflicts = EMPTY_ROLE_CONFLICTS,
   selectedRoleDataScope,
   selectedRoleSummaries,
   onCheckLoginName,

@@ -68,7 +68,7 @@ export function useRoleEditor({
       }
       setRoleModalOpen(true)
     },
-    [canCreateRole, canEditRole, roleForm],
+    [canCreateRole, canEditRole, roleForm, t],
   )
 
   const saveRoleMutation = useMutation({
@@ -89,9 +89,9 @@ export function useRoleEditor({
     },
     onSuccess: async (result) => {
       setRoleModalOpen(false)
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleSettings })
 
       if (result.mode === 'create' && result.data) {
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleSettings })
         message.success(t('common.addSuccess'))
         modal.confirm({
           title: t('common.addSuccess'),
@@ -105,6 +105,7 @@ export function useRoleEditor({
         return
       }
 
+      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleSettings })
       message.success(t('common.editSuccess'))
     },
     onError: (error: Error) => showError(error, t('common.saveFailed')),

@@ -8,7 +8,7 @@ import Button from 'antd/es/button'
 import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
 import Tag from 'antd/es/tag'
-import { useEffect, useState, type CSSProperties } from 'react'
+import { type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   LazyAppHeaderSearch,
@@ -41,22 +41,17 @@ export function AppSideNavigationHeader({
   userMenuItems,
 }: Props) {
   const { t } = useTranslation()
-  const [devTimeString, setDevTimeString] = useState('')
-  useEffect(() => {
-    setDevTimeString(new Date().toLocaleTimeString())
-  }, [])
+  const devTimeString = new Date().toLocaleTimeString()
 
   return (
     <div className="app-header-bar">
-      <span
+      <button
+        type="button"
         className="app-trigger"
-        role="button"
-        tabIndex={0}
         onClick={onToggleCollapsed}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onToggleCollapsed() }}
       >
         {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-      </span>
+      </button>
 
       <div className="header-page-meta">
         <div className="header-page-title">{title}</div>

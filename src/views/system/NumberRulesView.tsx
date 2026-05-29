@@ -88,7 +88,7 @@ export function NumberRulesView() {
       })
       setEditorOpen(true)
     },
-    [canEdit, form],
+    [canEdit, form, t],
   )
 
   const openUploadRuleEditor = useCallback(
@@ -110,7 +110,7 @@ export function NumberRulesView() {
       })
       setEditorOpen(true)
     },
-    [canEdit, form],
+    [canEdit, form, t],
   )
 
   const handleSave = useCallback(async () => {
@@ -146,7 +146,7 @@ export function NumberRulesView() {
     } finally {
       setSaving(false)
     }
-  }, [editingRecord, editorKind, form, refresh, showError])
+  }, [editingRecord, editorKind, form, refresh, showError, t])
 
   return (
     <div className="page-stack">

@@ -45,7 +45,7 @@ export function PrintTemplateDropdown({ moduleKey, disabled, loading, onPrint }:
         { key: `direct:${tpl.id}`, label: t('modules.print.directPrint'), icon: <PrinterOutlined /> },
       ]},
     ])
-  }, [templates])
+  }, [templates, t])
 
   const handleClick = useCallback(
     ({ key }: { key: string }) => {

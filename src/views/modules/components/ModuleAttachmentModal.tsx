@@ -102,7 +102,7 @@ export function ModuleAttachmentModal({
       }
       return false
     },
-    [bindAttachment, fetchAttachments, moduleKey],
+    [bindAttachment, fetchAttachments, moduleKey, t],
   )
 
   const isImageAttachment = useCallback((attachment: AttachmentRecord) => {
@@ -137,7 +137,7 @@ export function ModuleAttachmentModal({
     }
     setPreviewSource(src)
     setPreviewOpen(true)
-  }, [])
+  }, [t])
 
   const openPdfPreview = useCallback((attachment: AttachmentRecord) => {
     const src = attachment.previewUrl || attachment.downloadUrl || ''
@@ -147,7 +147,7 @@ export function ModuleAttachmentModal({
     }
     setPdfPreviewUrl(src)
     setPdfPreviewOpen(true)
-  }, [])
+  }, [t])
 
   const imageAttachments = useMemo(
     () => attachments.filter(isImageAttachment),
