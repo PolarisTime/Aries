@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   disableUserAccount2fa,
@@ -30,38 +30,32 @@ export function useUserAccountTwoFactor() {
   const [twoFaEnableLoading, setTwoFaEnableLoading] = useState(false)
   const [twoFaDisableLoading, setTwoFaDisableLoading] = useState(false)
 
-  const syncCurrentUserTotpState = useCallback(
-    (record: UserAccountRecord | null) => {
-      if (!record || !currentUser) return
-      if (String(currentUser.id) !== String(record.id)) return
-      syncCurrentUserTotpStateById(record.id, record.totpEnabled)
-    },
-    [currentUser],
-  )
+  const syncCurrentUserTotpState = (record: UserAccountRecord | null) => {
+    if (!record || !currentUser) return
+    if (String(currentUser.id) !== String(record.id)) return
+    syncCurrentUserTotpStateById(record.id, record.totpEnabled)
+  }
 
-  const refreshUsers = useCallback(() => {
+  const refreshUsers = () => {
     void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.userAccountBase })
-  }, [queryClient])
+  }
 
-  const open2faModal = useCallback(
-    async (record: UserAccountRecord) => {
-      setTwoFaOpen(true)
-      setTwoFaLoading(true)
-      setTwoFaSetup(null)
-      setTwoFaCode('')
-      try {
-        setTwoFaRecord(await getUserAccountDetail(record.id))
-        setTwoFaLoading(false)
-      } catch (error) {
-        showError(error, t('auth.user2fa.loadFailed'))
-        setTwoFaOpen(false)
-        setTwoFaLoading(false)
-      }
-    },
-    [showError, t],
-  )
+  const open2faModal = async (record: UserAccountRecord) => {
+    setTwoFaOpen(true)
+    setTwoFaLoading(true)
+    setTwoFaSetup(null)
+    setTwoFaCode('')
+    try {
+      setTwoFaRecord(await getUserAccountDetail(record.id))
+      setTwoFaLoading(false)
+    } catch (error) {
+      showError(error, t('auth.user2fa.loadFailed'))
+      setTwoFaOpen(false)
+      setTwoFaLoading(false)
+    }
+  }
 
-  const handleGenerate2fa = useCallback(async () => {
+  const handleGenerate2fa = async () => {
     if (!twoFaRecord) return
     setTwoFaSetupLoading(true)
     try {
@@ -74,9 +68,9 @@ export function useUserAccountTwoFactor() {
       showError(error, t('auth.user2fa.generateFailed'))
       setTwoFaSetupLoading(false)
     }
-  }, [showError, t, twoFaRecord])
+  }
 
-  const handleEnable2fa = useCallback(async () => {
+  const handleEnable2fa = async () => {
     if (!twoFaRecord) return
     if (!/^\d{6}$/.test(twoFaCode.trim())) {
       message.warning(t('auth.user2fa.codeInvalid'))
@@ -100,16 +94,9 @@ export function useUserAccountTwoFactor() {
       showError(error, t('auth.user2fa.enableFailed'))
       setTwoFaEnableLoading(false)
     }
-  }, [
-    refreshUsers,
-    showError,
-    syncCurrentUserTotpState,
-    t,
-    twoFaCode,
-    twoFaRecord,
-  ])
+  }
 
-  const handleDisable2fa = useCallback(() => {
+  const handleDisable2fa = () => {
     if (!twoFaRecord) return
     modal.confirm({
       title: t('auth.user2fa.disableTitle'),
@@ -137,14 +124,14 @@ export function useUserAccountTwoFactor() {
         }
       },
     })
-  }, [refreshUsers, showError, syncCurrentUserTotpState, t, twoFaRecord])
+  }
 
-  const close2faModal = useCallback(() => {
+  const close2faModal = () => {
     setTwoFaOpen(false)
     setTwoFaRecord(null)
     setTwoFaSetup(null)
     setTwoFaCode('')
-  }, [])
+  }
 
   return {
     twoFaOpen,

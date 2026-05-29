@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { TableColumnsType } from 'antd'
 import Checkbox from 'antd/es/checkbox'
 import i18next from 'i18next'
-import { useCallback, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getRoleActions,
@@ -48,115 +48,86 @@ export function useRoleActionPermissions({
     enabled: enabled && canEditPermissions,
   })
 
-  const selectedRoleInfo = useMemo(
-    () => roles.find((role) => role.id === selectedRoleId),
-    [roles, selectedRoleId],
-  )
+  const selectedRoleInfo = roles.find((role) => role.id === selectedRoleId)
 
-  const flatMenus = useMemo(() => flattenRoleActionMenus(menuTree), [menuTree])
+  const flatMenus = flattenRoleActionMenus(menuTree)
 
-  const menuResourceLookup = useMemo(() => {
+  const menuResourceLookup = (() => {
     const map = new Map<string, string>()
     for (const menu of flatMenus) {
       map.set(menu.menuCode, menu.resource)
     }
     return map
-  }, [flatMenus])
+  })()
 
-  const matrixData = useMemo(
-    () => buildRoleMatrixData(flatMenus, selectedActions),
-    [flatMenus, selectedActions],
-  )
+  const matrixData = buildRoleMatrixData(flatMenus, selectedActions)
 
-  const selectRole = useCallback(
-    async (role: RoleRecord) => {
-      setSelectedRoleId(role.id)
-      try {
-        const actions = buildNormalizedRoleActionSet(
-          await getRoleActions(role.id),
-        )
-        setSelectedActions(actions)
-      } catch (error) {
-        setSelectedActions(new Set())
-        showError(error, i18next.t('system.rolePermissions.loadFailed'))
-      }
-    },
-    [showError],
-  )
+  const selectRole = async (role: RoleRecord) => {
+    setSelectedRoleId(role.id)
+    try {
+      const actions = buildNormalizedRoleActionSet(await getRoleActions(role.id))
+      setSelectedActions(actions)
+    } catch (error) {
+      setSelectedActions(new Set())
+      showError(error, i18next.t('system.rolePermissions.loadFailed'))
+    }
+  }
 
-  const isMenuChecked = useCallback(
-    (menuCode: string) => {
-      const resource = menuResourceLookup.get(menuCode) || menuCode
-      for (const key of selectedActions) {
-        if (key.startsWith(`${resource}:`)) return true
-      }
-      return false
-    },
-    [selectedActions, menuResourceLookup],
-  )
+  const isMenuChecked = (menuCode: string) => {
+    const resource = menuResourceLookup.get(menuCode) || menuCode
+    for (const key of selectedActions) {
+      if (key.startsWith(`${resource}:`)) return true
+    }
+    return false
+  }
 
-  const isMenuFullyChecked = useCallback(
-    (menu: MenuNode) => {
-      const resource = menu.resourceCode || menu.menuCode
-      return menu.actions.every((action) =>
-        selectedActions.has(`${resource}:${action}`),
-      )
-    },
-    [selectedActions],
-  )
+  const isMenuFullyChecked = (menu: MenuNode) => {
+    const resource = menu.resourceCode || menu.menuCode
+    return menu.actions.every((action) =>
+      selectedActions.has(`${resource}:${action}`),
+    )
+  }
 
-  const isMenuPartiallyChecked = useCallback(
-    (menu: MenuNode) =>
-      isMenuChecked(menu.menuCode) && !isMenuFullyChecked(menu),
-    [isMenuChecked, isMenuFullyChecked],
-  )
+  const isMenuPartiallyChecked = (menu: MenuNode) =>
+    isMenuChecked(menu.menuCode) && !isMenuFullyChecked(menu)
 
-  const toggleAction = useCallback(
-    (menuCode: string, action: string) => {
-      if (!canEditPermissions) {
-        message.warning(i18next.t('system.rolePermissions.noEditPermission'))
-        return
-      }
-      const resource = menuResourceLookup.get(menuCode) || menuCode
+  const toggleAction = (menuCode: string, action: string) => {
+    if (!canEditPermissions) {
+      message.warning(i18next.t('system.rolePermissions.noEditPermission'))
+      return
+    }
+    const resource = menuResourceLookup.get(menuCode) || menuCode
+    const key = `${resource}:${action}`
+    const next = new Set(selectedActions)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    setSelectedActions(next)
+  }
+
+  const isActionSelected = (menuCode: string, action: string) => {
+    const resource = menuResourceLookup.get(menuCode) || menuCode
+    return selectedActions.has(`${resource}:${action}`)
+  }
+
+  const toggleAllMenuActions = (menu: MenuNode) => {
+    if (!canEditPermissions) {
+      message.warning(i18next.t('system.rolePermissions.noEditPermission'))
+      return
+    }
+    const next = new Set(selectedActions)
+    const resource = menu.resourceCode || menu.menuCode
+    const allChecked = menu.actions.every((action) =>
+      next.has(`${resource}:${action}`),
+    )
+    for (const action of menu.actions) {
       const key = `${resource}:${action}`
-      const next = new Set(selectedActions)
-      if (next.has(key)) next.delete(key)
+      if (allChecked) next.delete(key)
       else next.add(key)
-      setSelectedActions(next)
-    },
-    [canEditPermissions, selectedActions, menuResourceLookup],
-  )
+    }
+    setSelectedActions(next)
+  }
 
-  const isActionSelected = useCallback(
-    (menuCode: string, action: string) => {
-      const resource = menuResourceLookup.get(menuCode) || menuCode
-      return selectedActions.has(`${resource}:${action}`)
-    },
-    [selectedActions, menuResourceLookup],
-  )
-
-  const toggleAllMenuActions = useCallback(
-    (menu: MenuNode) => {
-      if (!canEditPermissions) {
-        message.warning(i18next.t('system.rolePermissions.noEditPermission'))
-        return
-      }
-      const next = new Set(selectedActions)
-      const resource = menu.resourceCode || menu.menuCode
-      const allChecked = menu.actions.every((action) =>
-        next.has(`${resource}:${action}`),
-      )
-      for (const action of menu.actions) {
-        const key = `${resource}:${action}`
-        if (allChecked) next.delete(key)
-        else next.add(key)
-      }
-      setSelectedActions(next)
-    },
-    [canEditPermissions, selectedActions],
-  )
-
-  const selectAll = useCallback(() => {
+  const selectAll = () => {
     if (!canEditPermissions) {
       message.warning(i18next.t('system.rolePermissions.noEditPermission'))
       return
@@ -168,15 +139,15 @@ export function useRoleActionPermissions({
       }
     }
     setSelectedActions(next)
-  }, [canEditPermissions, flatMenus])
+  }
 
-  const deselectAll = useCallback(() => {
+  const deselectAll = () => {
     if (!canEditPermissions) {
       message.warning(i18next.t('system.rolePermissions.noEditPermission'))
       return
     }
     setSelectedActions(new Set())
-  }, [canEditPermissions])
+  }
 
   const saveRoleActionsMutation = useMutation({
     mutationFn: async () => {
@@ -196,7 +167,7 @@ export function useRoleActionPermissions({
     onError: (error: Error) => showError(error, i18next.t('system.rolePermissions.saveFailed')),
   })
 
-  const matrixColumns = useMemo<TableColumnsType<RoleMatrixRow>>(() => {
+  const matrixColumns: TableColumnsType<RoleMatrixRow> = (() => {
     const columns: TableColumnsType<RoleMatrixRow> = [
       {
         dataIndex: 'menuName',
@@ -240,7 +211,7 @@ export function useRoleActionPermissions({
     })
 
     return columns
-  }, [canEditPermissions, flatMenus, toggleAction])
+  })()
 
   return {
     selectedRoleId,

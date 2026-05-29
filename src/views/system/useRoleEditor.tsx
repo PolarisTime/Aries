@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
 import i18next from 'i18next'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createRole, type RoleRecord, updateRole } from '@/api/role-actions'
 import {
@@ -39,37 +39,34 @@ export function useRoleEditor({
   const [editingRole, setEditingRole] = useState<RoleRecord | null>(null)
   const [roleForm] = Form.useForm()
 
-  const openRoleForm = useCallback(
-    (mode: 'create' | 'edit', role?: RoleRecord) => {
-      if (mode === 'edit' && role) {
-        if (!canEditRole) {
-          message.warning(t('common.noPermission'))
-          return
-        }
-        setEditingRole(role)
-        roleForm.setFieldsValue({
-          roleName: role.roleName,
-          roleCode: role.roleCode,
-          roleType: role.roleType,
-          dataScope: role.dataScope,
-          remark: role.remark || '',
-        })
-      } else {
-        if (!canCreateRole) {
-          message.warning(t('common.noPermission'))
-          return
-        }
-        setEditingRole(null)
-        roleForm.resetFields()
-        roleForm.setFieldsValue({
-          roleType: roleTypeValues[1],
-          dataScope: roleDataScopeValues[0],
-        })
+  const openRoleForm = (mode: 'create' | 'edit', role?: RoleRecord) => {
+    if (mode === 'edit' && role) {
+      if (!canEditRole) {
+        message.warning(t('common.noPermission'))
+        return
       }
-      setRoleModalOpen(true)
-    },
-    [canCreateRole, canEditRole, roleForm, t],
-  )
+      setEditingRole(role)
+      roleForm.setFieldsValue({
+        roleName: role.roleName,
+        roleCode: role.roleCode,
+        roleType: role.roleType,
+        dataScope: role.dataScope,
+        remark: role.remark || '',
+      })
+    } else {
+      if (!canCreateRole) {
+        message.warning(t('common.noPermission'))
+        return
+      }
+      setEditingRole(null)
+      roleForm.resetFields()
+      roleForm.setFieldsValue({
+        roleType: roleTypeValues[1],
+        dataScope: roleDataScopeValues[0],
+      })
+    }
+    setRoleModalOpen(true)
+  }
 
   const saveRoleMutation = useMutation({
     mutationFn: async (
@@ -111,7 +108,7 @@ export function useRoleEditor({
     onError: (error: Error) => showError(error, t('common.saveFailed')),
   })
 
-  const handleSaveRole = useCallback(async () => {
+  const handleSaveRole = async () => {
     const rawValues = roleForm.getFieldsValue()
     if (!rawValues.roleName?.trim() || !rawValues.roleCode?.trim()) {
       message.warning(i18next.t('system.roleEditorHook.fillNameAndCode'))
@@ -123,7 +120,7 @@ export function useRoleEditor({
     } catch {
       // validation failed
     }
-  }, [roleForm, saveRoleMutation])
+  }
 
   return {
     roleModalOpen,

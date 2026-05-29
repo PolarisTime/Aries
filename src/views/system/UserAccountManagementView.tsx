@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { deleteUserAccount } from '@/api/user-accounts'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
@@ -119,33 +118,27 @@ export function UserAccountManagementView({
     onError: (error: Error) => showError(error, t('api.deleteFailed')),
   })
 
-  const handleDelete = useCallback(
-    (record: UserAccountRecord) => {
-      modal.confirm({
-        title: t('system.userAccount.deleteTitle'),
-        content: t('system.userAccount.deleteContent', {
-          loginName: record.loginName,
-        }),
-        okText: t('common.confirm'),
-        cancelText: t('common.cancel'),
-        okButtonProps: { danger: true },
-        onOk: () => deleteMutation.mutateAsync(record.id),
-      })
-    },
-    [deleteMutation, t],
-  )
+  const handleDelete = (record: UserAccountRecord) => {
+    modal.confirm({
+      title: t('system.userAccount.deleteTitle'),
+      content: t('system.userAccount.deleteContent', {
+        loginName: record.loginName,
+      }),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: () => deleteMutation.mutateAsync(record.id),
+    })
+  }
 
-  const copyText = useCallback(
-    async (value: string, label: string) => {
-      try {
-        await navigator.clipboard.writeText(value)
-        message.success(t('system.userAccount.copied', { label }))
-      } catch {
-        message.error(t('system.userAccount.copyFailed', { label }))
-      }
-    },
-    [t],
-  )
+  const copyText = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value)
+      message.success(t('system.userAccount.copied', { label }))
+    } catch {
+      message.error(t('system.userAccount.copyFailed', { label }))
+    }
+  }
 
   return (
     <div className="page-stack">
