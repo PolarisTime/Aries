@@ -22,6 +22,12 @@ interface PrintRecordResponse {
   items: Record<string, string>[]
 }
 
+function requirePrintService(success: boolean, message: string) {
+  if (!success) {
+    throw new Error(message)
+  }
+}
+
 async function pickPrintTemplate(
   moduleKey: string,
   t: (key: string) => string,
@@ -134,8 +140,10 @@ export function useBusinessGridPrintActions({
           preview,
           title: r.title,
         })
-        if (!success)
-          throw new Error(t('hooks.printActions.printServiceUnavailable'))
+        requirePrintService(
+          success,
+          t('hooks.printActions.printServiceUnavailable'),
+        )
       }
 
       const htmlContents = htmlResults
@@ -150,7 +158,10 @@ export function useBusinessGridPrintActions({
           },
         )
         if (!success)
-          throw new Error(t('hooks.printActions.printServiceUnavailable'))
+          requirePrintService(
+            success,
+            t('hooks.printActions.printServiceUnavailable'),
+          )
       }
 
       if (!coordResults.length && !htmlResults.length) {

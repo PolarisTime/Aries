@@ -507,6 +507,7 @@ export function useModuleEditorWorkspace({
           record: savedResult.data,
         })
       }
+      setSaving(false)
     } catch (err) {
       if (isAntdFormValidationError(err)) {
         // Form 已内联展示校验错误，不重复提示
@@ -520,7 +521,6 @@ export function useModuleEditorWorkspace({
       } else {
         setSaveResult({ status: 'error', message: t('common.saveFailedRetry') })
       }
-    } finally {
       setSaving(false)
     }
   }
@@ -552,6 +552,7 @@ export function useModuleEditorWorkspace({
       let nextItems = items
       let importedParentCount = 0
       let importedItemCount = 0
+      let importValidationError = ''
 
       for (const parentDetail of parentDetails) {
         const parentRecord = parentDetail.data
@@ -565,7 +566,8 @@ export function useModuleEditorWorkspace({
           parentRecord,
         })
         if (validationError) {
-          throw new Error(validationError)
+          importValidationError = validationError
+          break
         }
         const importState = buildParentImportState({
           parentImportConfig,
@@ -585,6 +587,12 @@ export function useModuleEditorWorkspace({
         nextItems = importState.nextItems
         importedParentCount += importState.hasImportedCurrentParent ? 0 : 1
         importedItemCount += importState.importedItemCount
+      }
+
+      if (importValidationError) {
+        message.error(importValidationError)
+        setParentImporting(false)
+        return
       }
 
       syncEditorFormValues({
@@ -608,11 +616,11 @@ export function useModuleEditorWorkspace({
               itemCount: importedItemCount,
             }),
       )
+      setParentImporting(false)
     } catch (err) {
       message.error(
         err instanceof Error ? err.message : t('common.importParentFailed'),
       )
-    } finally {
       setParentImporting(false)
     }
   }

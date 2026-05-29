@@ -69,13 +69,13 @@ export function usePersonalSecuritySettings({
       })
       message.success(t('auth.personalsecurity.passwordSuccess'))
       pwForm.resetFields()
+      setPwSaving(false)
     } catch (error) {
       message.error(
         error instanceof Error
           ? error.message
           : t('auth.personalsecurity.passwordFailed'),
       )
-    } finally {
       setPwSaving(false)
     }
   }
@@ -84,13 +84,13 @@ export function usePersonalSecuritySettings({
     setTotpLoading(true)
     try {
       setTotpSetup((await setupOwn2fa()).data)
+      setTotpLoading(false)
     } catch (error) {
       message.error(
         error instanceof Error
           ? error.message
           : t('auth.personalsecurity.setupFailed'),
       )
-    } finally {
       setTotpLoading(false)
     }
   }
@@ -107,13 +107,13 @@ export function usePersonalSecuritySettings({
       syncCurrentUserTotpState(true)
       message.success(t('auth.personalsecurity.enableSuccess'))
       resetSecurityState()
+      setTotpEnabling(false)
     } catch (error) {
       message.error(
         error instanceof Error
           ? error.message
           : t('auth.personalsecurity.enableFailed'),
       )
-    } finally {
       setTotpEnabling(false)
     }
   }

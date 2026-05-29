@@ -47,7 +47,11 @@ export function useBusinessGridStatementActions({
   )
   const buildDraftLineItemId = (prefix: string) => {
     let index = 0
-    return () => `${prefix}-${Date.now()}-${index++}`
+    return () => {
+      const currentIndex = index
+      index += 1
+      return `${prefix}-${Date.now()}-${currentIndex}`
+    }
   }
 
   const handleStatementGenerate = async (

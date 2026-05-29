@@ -68,9 +68,9 @@ export function useInitialSetupState() {
           void navigate({ to: '/login' })
         }, 1500)
       }
+      setChecking(false)
     } catch {
       message.error(t('auth.initialsetup.loadStatusFailed'))
-    } finally {
       setChecking(false)
     }
   }
@@ -91,11 +91,11 @@ export function useInitialSetupState() {
       const res = await setupInitialAdmin2fa({ loginName })
       setTotpSetup(res.data)
       message.success(t('auth.initialsetup.totpGenerated'))
+      setLoadingTotp(false)
     } catch (error) {
       message.error(
         getErrorMessage(error, t('auth.initialsetup.operationFailed')),
       )
-    } finally {
       setLoadingTotp(false)
     }
   }
@@ -134,11 +134,11 @@ export function useInitialSetupState() {
       setAdminCompleted(true)
       setCurrentStep('company')
       void loadStatus()
+      setLoadingAdmin(false)
     } catch (error) {
       message.error(
         getErrorMessage(error, t('auth.initialsetup.operationFailed')),
       )
-    } finally {
       setLoadingAdmin(false)
     }
   }
@@ -165,11 +165,11 @@ export function useInitialSetupState() {
         res.message || t('auth.initialsetup.companyCreateSuccess'),
       )
       void navigate({ to: '/login' })
+      setLoadingCompany(false)
     } catch (error) {
       message.error(
         getErrorMessage(error, t('auth.initialsetup.operationFailed')),
       )
-    } finally {
       setLoadingCompany(false)
     }
   }

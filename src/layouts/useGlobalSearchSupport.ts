@@ -86,16 +86,21 @@ export function useGlobalSearchSupport(options: UseGlobalSearchSupportOptions) {
 
       abortControllerRef.current = null
       setResults(merged)
-      return merged
-    } catch (error) {
-      if (controller.signal.aborted) {
-        return []
-      }
-      throw error
-    } finally {
       if (currentRequestId === requestIdRef.current) {
         setLoading(false)
       }
+      return merged
+    } catch (error) {
+      if (controller.signal.aborted) {
+        if (currentRequestId === requestIdRef.current) {
+          setLoading(false)
+        }
+        return []
+      }
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false)
+      }
+      throw error
     }
   }
 
