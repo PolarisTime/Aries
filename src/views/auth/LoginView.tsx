@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import BorderBeam from 'antd/es/border-beam'
 import Card from 'antd/es/card'
 import Form from 'antd/es/form'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRequestError } from '@/hooks/useRequestError'
 import { useAuthStore } from '@/stores/authStore'
@@ -38,17 +38,11 @@ export function LoginView() {
   const [loading, setLoading] = useState(false)
   const [totpLoading, setTotpLoading] = useState(false)
   const [form] = Form.useForm()
-  const [flipped, setFlipped] = useState(!!savedSession)
+  const flipped = loginStep === 'totp'
   const [pendingLoginName, setPendingLoginName] = useState(
     savedSession?.loginName || '',
   )
   const pendingRememberRef = useRef(true)
-  useEffect(() => {
-    // react-doctor: intentional callback, not event handler
-    if (loginStep === 'password' && flipped) {
-      setFlipped(false)
-    }
-  }, [loginStep, flipped])
   const handleLogin = useCallback(
     async (values: LoginPayload) => {
       setLoading(true)
@@ -58,7 +52,6 @@ export function LoginView() {
         const result = await signIn(values)
         if (result.requires2fa) {
           start2faStep(result.tempToken, values.loginName)
-          setFlipped(true)
           return
         }
         clearTotpSession()
@@ -83,12 +76,10 @@ export function LoginView() {
     }
     if (!tempToken) {
       reset2faStep(true)
-      setFlipped(false)
       return
     }
     if (stepDeadline > 0 && Date.now() >= stepDeadline) {
       reset2faStep(true)
-      setFlipped(false)
       return
     }
     setTotpLoading(true)
@@ -118,16 +109,8 @@ export function LoginView() {
   ])
   const handleBackToPassword = useCallback(() => {
     reset2faStep(false)
-    setFlipped(false)
   }, [reset2faStep])
   const isExpired = stepDeadline > 0 && totpNow >= stepDeadline
-  useEffect(() => {
-    // react-doctor: intentional callback, not event handler
-    if (isExpired && flipped) {
-      reset2faStep(true)
-      setFlipped(false)
-    }
-  }, [isExpired, flipped, reset2faStep])
   const isExpiring =
     !isExpired && stepDeadline > 0 && stepDeadline - totpNow < 60000
   const activeLoginName =
