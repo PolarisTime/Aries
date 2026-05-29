@@ -50,6 +50,35 @@ type SelectedSummaryField = {
 }
 
 const DEFAULT_PAGE_SIZE = 15
+const AUDITED_STATUS = '已审核'
+
+function hasPositiveQuantity(value: unknown) {
+  const quantity = Number(value)
+  return Number.isFinite(quantity) && quantity > 0
+}
+
+function hasImportableQuantity(parentModuleKey: string, record: ModuleRecord) {
+  const items = Array.isArray(record.items) ? record.items : []
+  if (items.length === 0) {
+    return false
+  }
+
+  if (parentModuleKey === 'purchase-order') {
+    return items.some((item) =>
+      hasPositiveQuantity(
+        item.salesRemainingQuantity ?? item.remainingQuantity ?? item.quantity,
+      ),
+    )
+  }
+
+  if (parentModuleKey === 'sales-order') {
+    return items.some((item) =>
+      hasPositiveQuantity(item.remainingQuantity ?? item.quantity),
+    )
+  }
+
+  return true
+}
 
 function getOverlayStatusMap() {
   return {
@@ -321,10 +350,16 @@ export function ModuleParentSelectorOverlay({
 
   const records = (data?.data?.rows || []).filter((record) => {
     if (parentModuleKey === 'purchase-order') {
-      return asString(record.status) !== '完成采购'
+      return (
+        asString(record.status) === AUDITED_STATUS &&
+        hasImportableQuantity(parentModuleKey, record)
+      )
     }
     if (parentModuleKey === 'sales-order') {
-      return asString(record.status) !== '完成销售'
+      return (
+        asString(record.status) === AUDITED_STATUS &&
+        hasImportableQuantity(parentModuleKey, record)
+      )
     }
     return true
   })
