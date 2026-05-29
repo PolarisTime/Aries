@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
 import i18next from 'i18next'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import {
   checkUserAccountLoginName,
   createUserAccount,
@@ -87,92 +87,86 @@ export function useUserAccountEditor({
     },
   })
 
-  const resetEditorForm = useCallback(() => {
+  const resetEditorForm = () => {
     setEditingId(null)
     form.resetFields()
     form.setFieldsValue(buildDefaultUserAccountFormValues())
     setLoginNameValidationMessage('')
     setLoginNameChecking(false)
-  }, [form])
+  }
 
   const defaultValues = buildDefaultUserAccountFormValues()
 
-  const fillEditorForm = useCallback(
-    (record: UserAccountRecord) => {
-      setEditingId(record.id)
-      form.setFieldsValue({
-        loginName: record.loginName || '',
-        password: '',
-        userName: record.userName || '',
-        mobile: record.mobile || '',
-        departmentId: record.departmentId ?? null,
-        roleNames: [...(record.roleNames || [])],
-        dataScope: record.dataScope || defaultValues.dataScope,
-        permissionSummary: record.permissionSummary || '',
-        status: record.status || defaultValues.status,
-        remark: record.remark || '',
-      })
+  const fillEditorForm = (record: UserAccountRecord) => {
+    setEditingId(record.id)
+    form.setFieldsValue({
+      loginName: record.loginName || '',
+      password: '',
+      userName: record.userName || '',
+      mobile: record.mobile || '',
+      departmentId: record.departmentId ?? null,
+      roleNames: [...(record.roleNames || [])],
+      dataScope: record.dataScope || defaultValues.dataScope,
+      permissionSummary: record.permissionSummary || '',
+      status: record.status || defaultValues.status,
+      remark: record.remark || '',
+    })
+    setLoginNameValidationMessage('')
+    setLoginNameChecking(false)
+  }
+
+  const runLoginNameCheck = async (
+    loginName: string,
+    excludeUserId?: string,
+  ) => {
+    if (!loginName.trim()) {
       setLoginNameValidationMessage('')
+      return {
+        available: true,
+        message: '',
+      } satisfies LoginNameValidationResult
+    }
+    setLoginNameChecking(true)
+    try {
+      const result = await checkUserAccountLoginName(loginName, excludeUserId)
+      const validationMessage = result.available
+        ? ''
+        : result.message || i18next.t('system.userAccountEditorHook.loginNameExists')
+      setLoginNameValidationMessage(validationMessage)
       setLoginNameChecking(false)
-    },
-    [defaultValues.dataScope, defaultValues.status, form],
-  )
+      return { available: result.available, message: validationMessage }
+    } catch (error) {
+      showError(error, i18next.t('system.userAccountEditorHook.checkLoginNameFailed'))
+      setLoginNameChecking(false)
+      return {
+        available: true,
+        message: '',
+      } satisfies LoginNameValidationResult
+    }
+  }
 
-  const runLoginNameCheck = useCallback(
-    async (loginName: string, excludeUserId?: string) => {
-      if (!loginName.trim()) {
-        setLoginNameValidationMessage('')
-        return {
-          available: true,
-          message: '',
-        } satisfies LoginNameValidationResult
-      }
-      setLoginNameChecking(true)
-      try {
-        const result = await checkUserAccountLoginName(loginName, excludeUserId)
-        const validationMessage = result.available
-          ? ''
-          : result.message || i18next.t('system.userAccountEditorHook.loginNameExists')
-        setLoginNameValidationMessage(validationMessage)
-        setLoginNameChecking(false)
-        return { available: result.available, message: validationMessage }
-      } catch (error) {
-        showError(error, i18next.t('system.userAccountEditorHook.checkLoginNameFailed'))
-        setLoginNameChecking(false)
-        return {
-          available: true,
-          message: '',
-        } satisfies LoginNameValidationResult
-      }
-    },
-    [showError],
-  )
-
-  const openCreateModal = useCallback(() => {
+  const openCreateModal = () => {
     setEditorMode('create')
     resetEditorForm()
     setEditorOpen(true)
-  }, [resetEditorForm])
+  }
 
-  const openEditModal = useCallback(
-    async (record: UserAccountRecord) => {
-      setEditorMode('edit')
-      setEditorOpen(true)
-      setEditorLoading(true)
-      try {
-        const detail = await getUserAccountDetail(record.id)
-        fillEditorForm(detail)
-        setEditorLoading(false)
-      } catch (error) {
-        showError(error, i18next.t('system.userAccountEditorHook.loadDetailFailed'))
-        setEditorOpen(false)
-        setEditorLoading(false)
-      }
-    },
-    [fillEditorForm, showError],
-  )
+  const openEditModal = async (record: UserAccountRecord) => {
+    setEditorMode('edit')
+    setEditorOpen(true)
+    setEditorLoading(true)
+    try {
+      const detail = await getUserAccountDetail(record.id)
+      fillEditorForm(detail)
+      setEditorLoading(false)
+    } catch (error) {
+      showError(error, i18next.t('system.userAccountEditorHook.loadDetailFailed'))
+      setEditorOpen(false)
+      setEditorLoading(false)
+    }
+  }
 
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
     try {
       const values = await form.validateFields()
       const validationResult = await runLoginNameCheck(
@@ -201,23 +195,16 @@ export function useUserAccountEditor({
     } catch {
       // validation failed
     }
-  }, [
-    editingId,
-    editorMode,
-    form,
-    runLoginNameCheck,
-    saveMutation,
-    selectedRoleDataScope,
-  ])
+  }
 
-  const closeEditor = useCallback(() => {
+  const closeEditor = () => {
     setEditorOpen(false)
-  }, [])
+  }
 
-  const closeCreateResult = useCallback(() => {
+  const closeCreateResult = () => {
     setCreateResultOpen(false)
     setCreateResult(null)
-  }, [])
+  }
 
   return {
     form,
