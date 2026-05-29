@@ -30,7 +30,9 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       key: 'keyword',
       label: INBOUND_NO_FILTER_LABEL,
       type: 'input',
-      placeholder: i18next.t('modules.pages.purchaseInbound.placeholderInboundNo'),
+      placeholder: i18next.t(
+        'modules.pages.purchaseInbound.placeholderInboundNo',
+      ),
     },
     {
       key: 'supplierName',
@@ -44,13 +46,34 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       type: 'select',
       options: buildValueOptions('草稿', '已审核', '完成入库'),
     },
-    { key: 'inboundDate', label: i18next.t('modules.pages.purchaseInbound.filterInboundDate'), type: 'dateRange' },
+    {
+      key: 'inboundDate',
+      label: i18next.t('modules.pages.purchaseInbound.filterInboundDate'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: i18next.t('modules.pages.purchaseInbound.colInboundNo'), dataIndex: 'inboundNo', width: 160 },
-    { title: i18next.t('modules.pages.purchaseInbound.colPurchaseOrderNo'), dataIndex: 'purchaseOrderNo', width: 160 },
-    { title: i18next.t('modules.pages.purchaseInbound.colSupplier'), dataIndex: 'supplierName', width: 140 },
-    { title: i18next.t('modules.pages.purchaseInbound.colInboundDate'), dataIndex: 'inboundDate', width: 120, type: 'date' },
+    {
+      title: i18next.t('modules.pages.purchaseInbound.colInboundNo'),
+      dataIndex: 'inboundNo',
+      width: 160,
+    },
+    {
+      title: i18next.t('modules.pages.purchaseInbound.colPurchaseOrderNo'),
+      dataIndex: 'purchaseOrderNo',
+      width: 160,
+    },
+    {
+      title: i18next.t('modules.pages.purchaseInbound.colSupplier'),
+      dataIndex: 'supplierName',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.purchaseInbound.colInboundDate'),
+      dataIndex: 'inboundDate',
+      width: 120,
+      type: 'date',
+    },
     {
       title: i18next.t('modules.columns.totalWeight'),
       dataIndex: 'totalWeight',
@@ -86,19 +109,65 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
-    { title: i18next.t('modules.columns.remark'), dataIndex: 'remark', width: 180 },
+    {
+      title: i18next.t('modules.columns.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
   defaultHiddenColumnKeys: ['remark'],
   detailFields: [
-    { label: i18next.t('modules.pages.purchaseInbound.colInboundNo'), key: 'inboundNo', row: 1 },
-    { label: i18next.t('modules.pages.purchaseInbound.colPurchaseOrderNo'), key: 'purchaseOrderNo', row: 1 },
-    { label: i18next.t('modules.pages.purchaseInbound.colSupplier'), key: 'supplierName', row: 1 },
-    { label: i18next.t('modules.pages.purchaseInbound.colInboundDate'), key: 'inboundDate', type: 'date', row: 1 },
-    { label: i18next.t('modules.columns.totalWeight'), key: 'totalWeight', type: 'weight', row: 2 },
-    { label: i18next.t('modules.pages.purchaseInbound.colTotalWeighWeight'), key: 'totalWeighWeightTon', type: 'weight', row: 3 },
-    { label: i18next.t('modules.pages.purchaseInbound.colWeightAdjustment'), key: 'totalWeightAdjustmentTon', type: 'weight', row: 3 },
-    { label: i18next.t('modules.columns.totalAmount'), key: 'totalAmount', type: 'amount', row: 2 },
-    { label: i18next.t('modules.columns.status'), key: 'status', type: 'status', row: 2 },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colInboundNo'),
+      key: 'inboundNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colPurchaseOrderNo'),
+      key: 'purchaseOrderNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colSupplier'),
+      key: 'supplierName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colInboundDate'),
+      key: 'inboundDate',
+      type: 'date',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.columns.totalWeight'),
+      key: 'totalWeight',
+      type: 'weight',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colTotalWeighWeight'),
+      key: 'totalWeighWeightTon',
+      type: 'weight',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colWeightAdjustment'),
+      key: 'totalWeightAdjustmentTon',
+      type: 'weight',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.columns.totalAmount'),
+      key: 'totalAmount',
+      type: 'amount',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.columns.status'),
+      key: 'status',
+      type: 'status',
+      row: 2,
+    },
     { label: i18next.t('modules.columns.remark'), key: 'remark', row: 2 },
   ],
   formFields: [
@@ -114,7 +183,9 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.purchaseInbound.colPurchaseOrderNo'),
       type: 'input',
       disabled: true,
-      placeholder: i18next.t('modules.pages.purchaseInbound.placeholderParentImport'),
+      placeholder: i18next.t(
+        'modules.pages.purchaseInbound.placeholderParentImport',
+      ),
       row: 1,
     },
     {
@@ -154,7 +225,13 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       disabled: true,
       row: 2,
     },
-    { key: 'remark', label: i18next.t('modules.columns.remark'), type: 'input', row: 2, colSpan: 6 },
+    {
+      key: 'remark',
+      label: i18next.t('modules.columns.remark'),
+      type: 'input',
+      row: 2,
+      colSpan: 6,
+    },
   ],
   parentImport: {
     parentModuleKey: 'purchase-order',
@@ -169,17 +246,23 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     transformItems: (parentRecord) =>
       cloneLineItems(
         Array.isArray(parentRecord.items)
-          ? parentRecord.items
-              .filter((item) => Number(item.remainingQuantity ?? item.quantity) > 0)
-              .map((item) => ({
-                ...item,
-                quantity: Number(item.remainingQuantity ?? item.quantity),
-                sourcePurchaseOrderItemId: item.id,
-                _sourcePieceWeightTon: item.pieceWeightTon,
-                settlementMode: isPurchaseWeighRequiredCategory(item.category)
-                  ? '过磅'
-                  : '理算',
-              }))
+          ? parentRecord.items.flatMap((item) =>
+              Number(item.remainingQuantity ?? item.quantity) > 0
+                ? [
+                    {
+                      ...item,
+                      quantity: Number(item.remainingQuantity ?? item.quantity),
+                      sourcePurchaseOrderItemId: item.id,
+                      _sourcePieceWeightTon: item.pieceWeightTon,
+                      settlementMode: isPurchaseWeighRequiredCategory(
+                        item.category,
+                      )
+                        ? '过磅'
+                        : '理算',
+                    },
+                  ]
+                : [],
+            )
           : [],
         'purchase-inbound-item',
       ),

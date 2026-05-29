@@ -15,27 +15,27 @@ export function useBackendStatus(token: string): { backendOnline: boolean } {
   const healthTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const healthRetriesRef = useRef(0)
 
-  const checkBackendHealth = async (): Promise<void> => {
-    try {
-      const body = await fetchBackendHealth()
-      setHealthState({ backendOnline: body.status === 'UP', token })
-      healthRetriesRef.current = 0
-    } catch {
-      setHealthState({ backendOnline: false, token })
-      healthRetriesRef.current += 1
-      if (healthRetriesRef.current <= HEALTH_CHECK_MAX_RETRIES) {
-        const delay = Math.min(
-          1000 * 2 ** healthRetriesRef.current,
-          HEALTH_CHECK_MAX_BACKOFF_MS,
-        )
-        window.setTimeout(checkBackendHealth, delay)
-      }
-    }
-  }
-
   useEffect(() => {
     if (!token) {
       return
+    }
+
+    const checkBackendHealth = async (): Promise<void> => {
+      try {
+        const body = await fetchBackendHealth()
+        setHealthState({ backendOnline: body.status === 'UP', token })
+        healthRetriesRef.current = 0
+      } catch {
+        setHealthState({ backendOnline: false, token })
+        healthRetriesRef.current += 1
+        if (healthRetriesRef.current <= HEALTH_CHECK_MAX_RETRIES) {
+          const delay = Math.min(
+            1000 * 2 ** healthRetriesRef.current,
+            HEALTH_CHECK_MAX_BACKOFF_MS,
+          )
+          window.setTimeout(checkBackendHealth, delay)
+        }
+      }
     }
 
     const timer = window.setTimeout(() => {
@@ -49,11 +49,12 @@ export function useBackendStatus(token: string): { backendOnline: boolean } {
 
     return () => {
       window.clearTimeout(timer)
-      if (healthTimerRef.current) {
-        clearInterval(healthTimerRef.current)
+      const healthTimer = healthTimerRef.current
+      if (healthTimer) {
+        clearInterval(healthTimer)
       }
     }
-  }, [checkBackendHealth, token])
+  }, [token])
 
   return {
     backendOnline,

@@ -130,11 +130,6 @@ export function useColumnSettingsSupport(
     defaultSettingsRef.current = buildDefaultSettings(defaultHiddenKeys)
   }, [defaultHiddenKeys])
 
-  const applySettings = (settings: ListColumnSettings | null) => {
-    setColumnOrder(toColumnOrderState(settings))
-    setColumnVisibility(toVisibilityState(settings))
-  }
-
   useEffect(() => {
     let cancelled = false
 
@@ -173,7 +168,8 @@ export function useColumnSettingsSupport(
           } else {
             setListColumnSettings(pageKey, remoteSettings, userKey)
             if (!userChangedRef.current) {
-              applySettings(remoteSettings)
+              setColumnOrder(toColumnOrderState(remoteSettings))
+              setColumnVisibility(toVisibilityState(remoteSettings))
             }
           }
         }
@@ -195,7 +191,7 @@ export function useColumnSettingsSupport(
     return () => {
       cancelled = true
     }
-  }, [applySettings, pageKey, userKey, totalColumnCount])
+  }, [pageKey, userKey, totalColumnCount])
 
   const persist = async (
     order: ColumnOrderState,
@@ -269,8 +265,9 @@ export function useColumnSettingsSupport(
 
   useEffect(() => {
     return () => {
-      if (retryTimerRef.current) {
-        clearTimeout(retryTimerRef.current)
+      const retryTimer = retryTimerRef.current
+      if (retryTimer) {
+        clearTimeout(retryTimer)
       }
     }
   }, [])

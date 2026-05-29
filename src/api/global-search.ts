@@ -42,18 +42,22 @@ export async function searchGlobalDocuments(
   signal?: AbortSignal,
 ): Promise<GlobalSearchResult[]> {
   const response = assertApiSuccess(
-    await http.get<ApiResponse<GlobalSearchResponse[]>>(ENDPOINTS.GLOBAL_SEARCH, {
-      signal,
-      params: {
-        keyword,
-        limit: 20,
-        moduleKeys: moduleKeys.join(','),
+    await http.get<ApiResponse<GlobalSearchResponse[]>>(
+      ENDPOINTS.GLOBAL_SEARCH,
+      {
+        signal,
+        params: {
+          keyword,
+          limit: 20,
+          moduleKeys: moduleKeys.join(','),
+        },
       },
-    }),
+    ),
     '全局搜索失败',
   )
 
-  return (response.data || [])
-    .map(toGlobalSearchResult)
-    .filter((item) => item.moduleKey && (item.trackId || item.primaryNo))
+  return (response.data || []).flatMap((rawItem) => {
+    const item = toGlobalSearchResult(rawItem)
+    return item.moduleKey && (item.trackId || item.primaryNo) ? [item] : []
+  })
 }
