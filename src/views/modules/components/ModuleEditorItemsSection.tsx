@@ -18,15 +18,17 @@ interface Props {
   config: ModulePageConfig
   items: ModuleLineItem[]
   selectedItemIds: string[]
-  canAddManualItems: boolean
-  canImportParentItems: boolean
   parentImporting: boolean
   parentSelectorOpen: boolean
   itemColumns: TableColumnsType<ModuleLineItem>
   itemColumnOrder: string[]
   visibleItemColumnKeys: string[]
-  canSave: boolean
-  canAudit: boolean
+  permissions: {
+    addManualItems: boolean
+    importParentItems: boolean
+    save: boolean
+    audit: boolean
+  }
   saving: boolean
   onAddItem: () => void
   onCancel: () => void
@@ -44,15 +46,12 @@ export function ModuleEditorItemsSection({
   config,
   items,
   selectedItemIds,
-  canAddManualItems,
-  canImportParentItems,
   parentImporting,
   parentSelectorOpen,
   itemColumns,
   itemColumnOrder,
   visibleItemColumnKeys,
-  canSave,
-  canAudit,
+  permissions,
   saving,
   onAddItem,
   onCancel,
@@ -79,7 +78,7 @@ export function ModuleEditorItemsSection({
           items={items}
           actions={
             <>
-              {canAddManualItems && (
+              {permissions.addManualItems && (
                 <Button
                   type="primary"
                   className="overlay-action-button"
@@ -89,7 +88,7 @@ export function ModuleEditorItemsSection({
                   {t('modules.itemsSection.addItem')}
                 </Button>
               )}
-              {canImportParentItems && (
+              {permissions.importParentItems && (
                 <Button
                   className="overlay-action-button"
                   icon={<ImportOutlined />}
@@ -120,8 +119,8 @@ export function ModuleEditorItemsSection({
                 </Button>
               )}
               <EditorFooterActions
-                canSave={canSave}
-                canAudit={canAudit}
+                canSave={permissions.save}
+                canAudit={permissions.audit}
                 saving={saving}
                 onCancel={onCancel}
                 onSave={onSave}
