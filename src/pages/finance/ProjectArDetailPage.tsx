@@ -1,4 +1,5 @@
 import { ArrowLeftOutlined } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
@@ -8,9 +9,10 @@ import Spin from 'antd/es/spin'
 import Table, { type ColumnsType } from 'antd/es/table'
 import Tabs from 'antd/es/tabs'
 import Typography from 'antd/es/typography'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
+import { QUERY_KEYS } from '@/constants/query-keys'
 
 const { Title } = Typography
 const { Text } = Typography
@@ -66,6 +68,24 @@ function formatDate(value: string | undefined | null): string {
   return value
 }
 
+async function fetchProjectArSummary(projectId: string) {
+  const res = await http.get<{
+    code: number
+    data: PageResponse<ProjectArSummary>
+  }>(`/project-ar/summary?projectId=${projectId}&page=0&size=1`)
+  assertApiSuccess(res)
+  return res.data?.content?.[0] ?? null
+}
+
+async function fetchProjectArDetail(projectId: string, tab: string) {
+  const res = await http.get<{
+    code: number
+    data: PageResponse<ProjectArDetailRow>
+  }>(`/project-ar/${projectId}/${tab}?page=0&size=100`)
+  assertApiSuccess(res)
+  return res.data
+}
+
 function useDetailColumns(locale: string): ColumnsType<ProjectArDetailRow> {
   const { t } = useTranslation()
   return useMemo(() => [
@@ -113,77 +133,50 @@ export function ProjectArDetailPage(): React.JSX.Element {
   const detailColumns = useDetailColumns(locale)
   const location = useLocation()
   const navigate = useNavigate()
-  const [loading, setLoading] = useState(true)
-  const [summary, setSummary] = useState<ProjectArSummary | null>(null)
   const [activeTab, setActiveTab] = useState('unreconciled')
-  const [unreconciledData, setUnreconciledData] = useState<
-    ProjectArDetailRow[]
-  >([])
-  const [reconciledData, setReconciledData] = useState<ProjectArDetailRow[]>([])
-  const [unreconciledTotal, setUnreconciledTotal] = useState(0)
-  const [reconciledTotal, setReconciledTotal] = useState(0)
-  const [tabLoading, setTabLoading] = useState(false)
 
   const projectId: string = useMemo(() => {
     const segments = location.pathname.split('/').filter(Boolean)
     return segments[segments.length - 1] || ''
   }, [location])
 
-  const fetchSummary = useCallback(async () => {
-    if (!projectId) return
-    try {
-      const res = await http.get<{
-        code: number
-        data: PageResponse<ProjectArSummary>
-      }>(`/project-ar/summary?projectId=${projectId}&page=0&size=1`)
-      assertApiSuccess(res)
-      if (res.data?.content?.length > 0) {
-        setSummary(res.data.content[0])
-      }
-    } catch (e) {
-      console.error('[ProjectArDetailPage] fetchSummary failed:', e)
-    }
-  }, [projectId])
+  const summaryQuery = useQuery({
+    queryKey: QUERY_KEYS.projectArSummary(projectId),
+    queryFn: () => fetchProjectArSummary(projectId),
+    enabled: !!projectId,
+  })
+  const unreconciledQuery = useQuery({
+    queryKey: QUERY_KEYS.projectArDetail(projectId, 'unreconciled'),
+    queryFn: () => fetchProjectArDetail(projectId, 'unreconciled'),
+    enabled: !!projectId,
+  })
+  const reconciledQuery = useQuery({
+    queryKey: QUERY_KEYS.projectArDetail(projectId, 'reconciled'),
+    queryFn: () => fetchProjectArDetail(projectId, 'reconciled'),
+    enabled: !!projectId,
+  })
 
-  const fetchTabData = useCallback(
-    async (tab: string) => {
-      if (!projectId) return
-      setTabLoading(true)
-      try {
-        const res = await http.get<{
-          code: number
-          data: PageResponse<ProjectArDetailRow>
-        }>(`/project-ar/${projectId}/${tab}?page=0&size=100`)
-        assertApiSuccess(res)
-        if (tab === 'unreconciled') {
-          setUnreconciledData(res.data.content)
-          setUnreconciledTotal(res.data.totalElements)
-        } else {
-          setReconciledData(res.data.content)
-          setReconciledTotal(res.data.totalElements)
-        }
-      } catch (e) {
-        console.error(`[ProjectArDetailPage] fetchTabData(${tab}) failed:`, e)
-      } finally {
-        setTabLoading(false)
-      }
-    },
-    [projectId],
-  )
-
-  useEffect(() => {
-    if (!projectId) return
-    setLoading(true)
-    void Promise.all([
-      fetchSummary(),
-      fetchTabData('unreconciled'),
-      fetchTabData('reconciled'),
-    ]).finally(() => setLoading(false))
-  }, [projectId, fetchSummary, fetchTabData])
+  const summary = summaryQuery.data ?? null
+  const unreconciledData = unreconciledQuery.data?.content ?? []
+  const reconciledData = reconciledQuery.data?.content ?? []
+  const unreconciledTotal = unreconciledQuery.data?.totalElements ?? 0
+  const reconciledTotal = reconciledQuery.data?.totalElements ?? 0
+  const activeTabLoading =
+    activeTab === 'reconciled'
+      ? reconciledQuery.isFetching
+      : unreconciledQuery.isFetching
+  const loading =
+    summaryQuery.isLoading ||
+    unreconciledQuery.isLoading ||
+    reconciledQuery.isLoading
 
   const handleTabChange = (key: string) => {
     setActiveTab(key)
-    void fetchTabData(key)
+    if (key === 'reconciled') {
+      void reconciledQuery.refetch()
+      return
+    }
+    void unreconciledQuery.refetch()
   }
 
   const handleBack = () => {
@@ -270,7 +263,7 @@ export function ProjectArDetailPage(): React.JSX.Element {
                 rowKey="sourceDocumentNo"
                 columns={detailColumns}
                 dataSource={unreconciledData}
-                loading={tabLoading}
+                loading={activeTabLoading}
                 pagination={false}
                 size="small"
                 scroll={{ x: 1600 }}
@@ -285,7 +278,7 @@ export function ProjectArDetailPage(): React.JSX.Element {
                 rowKey="sourceDocumentNo"
                 columns={detailColumns}
                 dataSource={reconciledData}
-                loading={tabLoading}
+                loading={activeTabLoading}
                 pagination={false}
                 size="small"
                 scroll={{ x: 1600 }}
