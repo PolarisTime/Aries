@@ -18,6 +18,7 @@ export const savePrintTemplatePayloadSchema = z.object({
   billType: z.string(),
   templateName: z.string().min(1),
   templateHtml: z.string().min(1),
+  templateType: z.enum(['HTML', 'COORD']).optional(),
 })
 export type SavePrintTemplatePayload = z.infer<
   typeof savePrintTemplatePayloadSchema

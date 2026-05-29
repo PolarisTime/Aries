@@ -15,9 +15,19 @@ interface CoordLayout {
   rowH: number
   maxRows: number
   pageH: number
+  sumTop?: number
+  limitToMaxRows?: boolean
 }
 
 const COORD_LAYOUTS: Record<string, CoordLayout> = {
+  'sales-order': {
+    tableTop: 161,
+    rowH: 41,
+    maxRows: 8,
+    pageH: 0,
+    sumTop: 453,
+    limitToMaxRows: true,
+  },
   'sales-outbound': { tableTop: 138, rowH: 24, maxRows: 10, pageH: 0 },
   'freight-bill': { tableTop: 164, rowH: 20, maxRows: 50, pageH: 0 },
   'freight-statement': { tableTop: 130, rowH: 20, maxRows: 50, pageH: 0 },
@@ -158,17 +168,31 @@ function enrichTopLevel(data: PrintDataRow): void {
   }
 
   const outboundNo = data.outboundNo || data.outbound_no || ''
+  const orderNo = data.orderNo || data.order_no || ''
+  const billNo = outboundNo || orderNo || data.billNo || data.bill_no || ''
   if (!data._billNoLabel) {
-    data._billNoLabel = outboundNo ? `单据号:${outboundNo}` : '单据号：'
+    data._billNoLabel = billNo ? `单据号:${billNo}` : '单据号：'
   }
   if (!data.outboundNoLabel) {
     data.outboundNoLabel = outboundNo
   }
+  if (!data.orderNoLabel) {
+    data.orderNoLabel = orderNo
+  }
 
   // 日期解析（A5 用）
-  const outboundDate = data.outboundDate || data.outbound_date || ''
-  if (outboundDate && !data._dateYear) {
-    const m = outboundDate.match(/(\d{4})[年/-](\d{1,2})[月/-](\d{1,2})/)
+  const billDate =
+    data.deliveryDate ||
+    data.delivery_date ||
+    data.outboundDate ||
+    data.outbound_date ||
+    data.orderDate ||
+    data.order_date ||
+    data.billTime ||
+    data.bill_time ||
+    ''
+  if (billDate && !data._dateYear) {
+    const m = billDate.match(/(\d{4})[年/-](\d{1,2})[月/-](\d{1,2})/)
     if (m) {
       data._dateYear = m[1]
       data._dateMonth = m[2].padStart(2, '0')
@@ -216,6 +240,10 @@ function enrichItems(
     flatItems = [...rawItems]
   }
 
+  if (layout.limitToMaxRows && !needsGrouping) {
+    flatItems = flatItems.slice(0, layout.maxRows)
+  }
+
   let seq = 1
   let rowTop = layout.tableTop
   let prevBillNo: string | null = null
@@ -233,16 +261,12 @@ function enrichItems(
       const weightTon = enrichedItem.weightTon || ''
       const unitPrice = enrichedItem.unitPrice || ''
 
-      // 件重显示
+      // 件重显示（从明细行 piece_weight_ton 提取，盘螺/线材显示 -）
       const category = item.category || ''
       const isCoil = COIL_CATEGORIES.has(category)
       let pieceWeightDisplay = '-'
       if (!isCoil) {
-        const w = safeDecimal(weightTon)
-        const q = safeDecimal(item.quantity)
-        if (w > 0 && q > 0) {
-          pieceWeightDisplay = (w / q).toFixed(WEIGHT_SCALE)
-        }
+        pieceWeightDisplay = formatDecimal(enrichedItem.pieceWeightTon, WEIGHT_SCALE)
       }
       enrichedItem.pieceWeightDisplay = pieceWeightDisplay
 
@@ -290,9 +314,11 @@ function enrichItems(
 
   const itemCount = flatItems.filter((i) => i._isSeparator !== 'true').length
   const actualItemCount = needsGrouping ? flatItems.length : Math.min(itemCount, layout.maxRows)
-  const sumTop = needsGrouping
-    ? layout.tableTop + actualItemCount * layout.rowH
-    : layout.tableTop + layout.maxRows * layout.rowH
+  const sumTop =
+    layout.sumTop ??
+    (needsGrouping
+      ? layout.tableTop + actualItemCount * layout.rowH
+      : layout.tableTop + layout.maxRows * layout.rowH)
   data._sumTop = String(sumTop)
   data._sumTop2 = String(sumTop + 2)
 

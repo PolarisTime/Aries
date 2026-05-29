@@ -115,6 +115,12 @@ export function PrintTemplateTableCard({
       render: (value: string) => getPrintTemplateBillTypeLabel(value),
     },
     {
+      dataIndex: 'templateType',
+      title: t('system.printTemplate.templateType'),
+      width: 120,
+      render: (value: string) => value || 'HTML',
+    },
+    {
       dataIndex: 'updateTime',
       title: t('common.updatedAt'),
       width: 180,
