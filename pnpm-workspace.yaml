@@ -1,2 +1,6 @@
 minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - deslop-js
+  - oxlint-plugin-react-doctor
+  - react-doctor
 trustPolicy: no-downgrade

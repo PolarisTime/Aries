@@ -9,7 +9,6 @@ import {
   useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
-import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   allocateBusinessPrimaryNo,
   generateBusinessPrimaryNo,
@@ -23,16 +22,8 @@ import {
   listClientSettings,
   listSystemSettings,
 } from '@/api/system-settings'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
-import type {
-  ModuleLineItem,
-  ModulePageConfig,
-  ModuleRecord,
-} from '@/types/module-page'
-import { message, modal } from '@/utils/antd-app'
-import { cloneLineItems } from '@/utils/clone-utils'
-import { getStoredUser } from '@/utils/storage'
-import { asString } from '@/utils/type-narrowing'
 import {
   applyModuleDefaultEditorDraft,
   buildDefaultEditorLineItem,
@@ -49,6 +40,15 @@ import {
   getModuleRecordPrimaryNo,
   parseParentRelationNos,
 } from '@/module-system/module-adapter-shared'
+import type {
+  ModuleLineItem,
+  ModulePageConfig,
+  ModuleRecord,
+} from '@/types/module-page'
+import { message, modal } from '@/utils/antd-app'
+import { cloneLineItems } from '@/utils/clone-utils'
+import { getStoredUser } from '@/utils/storage'
+import { asString } from '@/utils/type-narrowing'
 import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view-utils'
 
 const SNOWFLAKE_BUSINESS_NO_SWITCH_CODE =
@@ -121,6 +121,18 @@ function isAntdFormValidationError(err: unknown): boolean {
     typeof obj.values === 'object' &&
     obj.values !== null
   )
+}
+
+function getCurrentOperatorName() {
+  const user = getStoredUser()
+  if (user) {
+    return String(
+      user.userName ||
+        user.loginName ||
+        i18next.t('modules.editorWorkspace.currentUserFallback'),
+    )
+  }
+  return i18next.t('modules.editorWorkspace.currentUserFallback')
 }
 
 function normalizeOptionalString(value: unknown) {
@@ -285,18 +297,6 @@ export function useModuleEditorWorkspace({
   const sumLineItemsBy = (nextItems: ModuleLineItem[], key: string) =>
     nextItems.reduce((sum, item) => sum + Number(item[key] || 0), 0)
 
-  const getCurrentOperatorName = () => {
-    const user = getStoredUser()
-    if (user) {
-      return String(
-        user.userName ||
-          user.loginName ||
-          i18next.t('modules.editorWorkspace.currentUserFallback'),
-      )
-    }
-    return i18next.t('modules.editorWorkspace.currentUserFallback')
-  }
-
   useEffect(() => {
     if (!open) {
       return
@@ -389,11 +389,11 @@ export function useModuleEditorWorkspace({
     autoInsertBlankItemOnCreate,
     config,
     form,
-    getCurrentOperatorName,
     moduleKey,
     open,
     record,
     snowflakeBusinessNoEnabled,
+    t,
   ])
 
   const handleFormValuesChange = (changedValues: FormChangedValues) => {

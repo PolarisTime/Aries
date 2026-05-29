@@ -1,12 +1,12 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { getTokenExpiresAt } from '@/utils/storage'
 
 const PRE_REFRESH_ADVANCE_MS = 5 * 60 * 1000
 
 export function useAuthRefreshTimer(onRefresh: () => void) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null
+
     const schedule = () => {
       const expiresAt = getTokenExpiresAt()
       if (!expiresAt) return
@@ -18,7 +18,7 @@ export function useAuthRefreshTimer(onRefresh: () => void) {
         return
       }
 
-      timerRef.current = setTimeout(
+      timer = setTimeout(
         () => {
           onRefresh()
         },
@@ -29,7 +29,6 @@ export function useAuthRefreshTimer(onRefresh: () => void) {
     schedule()
 
     return () => {
-      const timer = timerRef.current
       if (timer) clearTimeout(timer)
     }
   }, [onRefresh])

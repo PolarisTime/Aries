@@ -76,10 +76,51 @@ export function useInitialSetupState() {
   }
 
   useEffect(() => {
-    void (async () => {
-      await loadStatus()
-    })()
-  }, [])
+    let active = true
+    let redirectTimer: ReturnType<typeof setTimeout> | null = null
+
+    const loadInitialStatus = async () => {
+      try {
+        const res = await getInitialSetupStatus()
+        if (!active) {
+          return
+        }
+        const s = res.data
+        setStatus(s)
+        if (s.adminConfigured && !s.companyConfigured) {
+          setAdminCompleted(true)
+          setCurrentStep('company')
+        } else if (!s.adminConfigured) {
+          setAdminCompleted(false)
+          setCurrentStep('admin')
+        }
+        if (!s.setupRequired) {
+          message.info(t('auth.initialsetup.alreadyCompletedRedirect'))
+          redirectTimer = setTimeout(() => {
+            if (active) {
+              void navigate({ to: '/login' })
+            }
+          }, 1500)
+        }
+        setChecking(false)
+      } catch {
+        if (!active) {
+          return
+        }
+        message.error(t('auth.initialsetup.loadStatusFailed'))
+        setChecking(false)
+      }
+    }
+
+    void loadInitialStatus()
+
+    return () => {
+      active = false
+      if (redirectTimer) {
+        clearTimeout(redirectTimer)
+      }
+    }
+  }, [navigate, t])
 
   const handleGenerateTotp = async () => {
     const loginName = asString(form.getFieldValue('adminLoginName')).trim()

@@ -58,10 +58,36 @@ export function useSetupTwoFactorState(): UseSetupTwoFactorStateResult {
   }
 
   useEffect(() => {
-    void (async () => {
-      await fetchTotpSetup()
-    })()
-  }, [])
+    let active = true
+
+    const loadTotpSetup = async (): Promise<void> => {
+      setLoading(true)
+      try {
+        const response = await setupOwn2fa()
+        if (!active) {
+          return
+        }
+        setTotpData(response.data)
+        setLoading(false)
+      } catch (error) {
+        if (!active) {
+          return
+        }
+        message.error(
+          error instanceof Error
+            ? error.message
+            : t('auth.setup2fa.content.loadFailed'),
+        )
+        setLoading(false)
+      }
+    }
+
+    void loadTotpSetup()
+
+    return () => {
+      active = false
+    }
+  }, [t])
 
   const handleEnable = async (values: TotpCodeFormValues): Promise<void> => {
     try {

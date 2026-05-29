@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getRefreshTokenSummary,
@@ -8,8 +8,8 @@ import {
   revokeAllRefreshTokens,
   revokeRefreshToken,
 } from '@/api/session-management'
-import { useRequestError } from '@/hooks/useRequestError'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message, modal } from '@/utils/antd-app'
 import { buildSessionTableColumns } from '@/views/system/session-management-view-utils'
@@ -24,7 +24,6 @@ export function useSessionManagementState(enabled = true) {
   const [keyword, setKeyword] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const refreshSessionData = () => {
     void queryClient.invalidateQueries({
@@ -55,29 +54,26 @@ export function useSessionManagementState(enabled = true) {
   const tokens = tokensData?.records || []
   const totalElements = Number(tokensData?.totalElements) || 0
 
-  const startAutoRefresh = () => {
-    refreshTimerRef.current = setInterval(() => {
+  useEffect(() => {
+    const refreshSessionData = () => {
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.refreshTokensBase,
+      })
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.refreshTokensSummary,
+      })
+    }
+
+    if (!enabled) {
+      return
+    }
+    const refreshTimer = setInterval(() => {
       refreshSessionData()
     }, 30000)
-  }
-
-  const stopAutoRefresh = () => {
-    if (!refreshTimerRef.current) {
-      return
+    return () => {
+      clearInterval(refreshTimer)
     }
-    clearInterval(refreshTimerRef.current)
-    refreshTimerRef.current = null
-  }
-
-  useEffect(() => {
-    // react-doctor: intentional callback, not event handler
-    if (!enabled) {
-      stopAutoRefresh()
-      return
-    }
-    startAutoRefresh()
-    return stopAutoRefresh
-  }, [enabled, startAutoRefresh, stopAutoRefresh])
+  }, [enabled, queryClient])
 
   const handleRevoke = (record: RefreshTokenRecord) => {
     if (!canEdit) {
