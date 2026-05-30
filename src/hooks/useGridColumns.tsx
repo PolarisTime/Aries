@@ -41,7 +41,7 @@ export function useGridColumns({
       id: 'actions',
       header: t('hooks.gridColumns.actions'),
       meta: {
-        width: '240px',
+        width: '150px',
         align: 'center',
         fixed: 'left',
         renderCell: (record: ModuleRecord) => (

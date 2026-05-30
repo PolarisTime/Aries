@@ -14,6 +14,7 @@ import {
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { message } from '@/utils/antd-app'
+import { formatDateTime } from '@/utils/formatters'
 
 const SECURITY_KEY_QUERY_KEY = ['security-key'] as const
 
@@ -58,10 +59,10 @@ export function SecurityKeyManagementView(): React.JSX.Element {
       <Card title={t('system.securityKey.title')} loading={isLoading}>
         <Descriptions column={1} bordered size="small">
           <Descriptions.Item label={t('system.securityKey.jwtLastRotation')}>
-            {keys?.data.jwt.activatedAt || '--'}
+            {formatDateTime(keys?.data.jwt.activatedAt, '--')}
           </Descriptions.Item>
           <Descriptions.Item label={t('system.securityKey.totpLastRotation')}>
-            {keys?.data.totp.activatedAt || '--'}
+            {formatDateTime(keys?.data.totp.activatedAt, '--')}
           </Descriptions.Item>
         </Descriptions>
         <Space className="mt-4">

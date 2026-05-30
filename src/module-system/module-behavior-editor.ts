@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import { parseDateTimeValue } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 
@@ -63,8 +64,8 @@ registerModuleBehavior('purchase-contract', {
     const signDateValue = editorForm.signDate
     const signDate = dayjs.isDayjs(signDateValue)
       ? signDateValue
-      : dayjs(asString(signDateValue))
-    if (!signDate.isValid()) {
+      : parseDateTimeValue(signDateValue)
+    if (!signDate?.isValid()) {
       return
     }
 
@@ -75,11 +76,11 @@ registerModuleBehavior('purchase-contract', {
     const effectiveDateValue = editorForm.effectiveDate
     const effectiveDate = dayjs.isDayjs(effectiveDateValue)
       ? effectiveDateValue
-      : dayjs(asString(effectiveDateValue))
+      : parseDateTimeValue(effectiveDateValue)
     if (
       shouldFollowSignDate ||
       !effectiveDateValue ||
-      !effectiveDate.isValid()
+      !effectiveDate?.isValid()
     ) {
       editorForm.effectiveDate = signDate
     }
@@ -87,8 +88,8 @@ registerModuleBehavior('purchase-contract', {
     const expireDateValue = editorForm.expireDate
     const expireDate = dayjs.isDayjs(expireDateValue)
       ? expireDateValue
-      : dayjs(asString(expireDateValue))
-    if (shouldFollowSignDate || !expireDateValue || !expireDate.isValid()) {
+      : parseDateTimeValue(expireDateValue)
+    if (shouldFollowSignDate || !expireDateValue || !expireDate?.isValid()) {
       editorForm.expireDate = addOneYear(signDate)
     }
   },

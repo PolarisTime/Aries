@@ -93,12 +93,17 @@ export function buildRuleSampleNo(
 export function buildUploadRulePreview(pattern: string) {
   if (!pattern) return ''
   return pattern
-    .replace('{yyyy}', '2026')
-    .replace('{yyyyMMdd}', '20260101')
-    .replace('{HHmmss}', '120000')
-    .replace('{yyyyMMddHHmmss}', '20260101120000')
-    .replace('{timestamp}', String(Date.now()))
-    .replace('{random8}', 'abcd1234')
-    .replace('{originName}', i18next.t('system.numberRulesUtils.originalFileName'))
-    .replace('{ext}', '.pdf')
+    .replaceAll('{yyyy}', '2026')
+    .replaceAll('{年月日}', '20260101')
+    .replaceAll('{yyyyMMdd}', '20260101')
+    .replaceAll('{HHmmss}', '120000')
+    .replaceAll('{年月日时分秒}', '20260101120000')
+    .replaceAll('{yyyyMMddHHmmss}', '20260101120000')
+    .replaceAll('{timestamp}', String(Date.now()))
+    .replaceAll('{random8}', 'abcd1234')
+    .replaceAll(
+      '{originName}',
+      i18next.t('system.numberRulesUtils.originalFileName'),
+    )
+    .replaceAll('{ext}', '.pdf')
 }

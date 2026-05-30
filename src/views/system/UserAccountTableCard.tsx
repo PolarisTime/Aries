@@ -15,6 +15,7 @@ import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { enabledStatusOptions } from '@/constants/module-options'
 import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import type { UserAccountRecord } from '@/types/user-account'
+import { formatDateTime } from '@/utils/formatters'
 
 interface Props {
   keyword: string
@@ -164,7 +165,7 @@ export function UserAccountTableCard({
       dataIndex: 'lastLoginDate',
       title: t('system.userAccountTable.colLastLogin'),
       width: 180,
-      render: (value: string) => value || '--',
+      render: (value: unknown) => formatDateTime(value, '--'),
     },
   ]
   return (

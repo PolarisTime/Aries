@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const loginPayloadSchema = z.object({
+export const loginPayloadSchema = z.object({
   loginName: z.string().min(1),
   password: z.string().min(1),
   remember: z.boolean().optional(),
@@ -9,14 +9,14 @@ const loginPayloadSchema = z.object({
 })
 export type LoginPayload = z.infer<typeof loginPayloadSchema>
 
-const captchaDataSchema = z.object({
+export const captchaDataSchema = z.object({
   captchaId: z.string(),
   captchaImage: z.string(),
   required: z.boolean(),
 })
 export type CaptchaData = z.infer<typeof captchaDataSchema>
 
-const login2faPayloadSchema = z.object({
+export const login2faPayloadSchema = z.object({
   tempToken: z.string(),
   totpCode: z.string().length(6),
   remember: z.boolean().optional(),
@@ -29,7 +29,7 @@ const resourcePermissionSchema = z.object({
 })
 export type ResourcePermission = z.infer<typeof resourcePermissionSchema>
 
-const dataScopeSchema = z.enum(['all', 'department', 'self', 'custom'])
+export const dataScopeSchema = z.enum(['all', 'department', 'self', 'custom'])
 export type DataScope = z.infer<typeof dataScopeSchema>
 
 const loginUserSchema = z.object({
@@ -44,7 +44,7 @@ const loginUserSchema = z.object({
 })
 export type LoginUser = z.infer<typeof loginUserSchema>
 
-const loginResponseDataSchema = z.object({
+export const loginResponseDataSchema = z.object({
   accessToken: z.string(),
   tokenType: z.string(),
   expiresIn: z.number(),
@@ -53,13 +53,13 @@ const loginResponseDataSchema = z.object({
 })
 export type LoginResponseData = z.infer<typeof loginResponseDataSchema>
 
-const loginStep1ResponseSchema = z.object({
+export const loginStep1ResponseSchema = z.object({
   requires2fa: z.boolean(),
   tempToken: z.string(),
 })
 export type LoginStep1Response = z.infer<typeof loginStep1ResponseSchema>
 
-const totpSetupResponseSchema = z.object({
+export const totpSetupResponseSchema = z.object({
   qrCodeBase64: z.string(),
   secret: z.string(),
 })

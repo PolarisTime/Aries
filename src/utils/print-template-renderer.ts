@@ -353,9 +353,20 @@ const ITEM_SNAKE_TO_CAMEL: Array<[string, string]> = [
 
 const PLACEHOLDER_RE = /\{\{(\w+)\}\}/g
 const EACH_BLOCK_RE = /\{\{#each\s+(\w+)\}\}([\s\S]*?)\{\{\/each\}\}/g
-const IF_BLOCK_RE = /\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g
-const JS_LINE_RE =
-  /^\s*(var\s|let\s|const\s|for\s*\(|if\s*\(|while\s*\(|function\s|=>|\})\s*$/i
+const IF_BLOCK_RE =
+  /\{\{#if\s+(\w+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/g
+
+function isTruthyTemplateValue(value: string | undefined): boolean {
+  return Boolean(value && value !== 'false' && value !== '0')
+}
+
+function expandIfBlocksForRow(source: string, row: PrintDataRow): string {
+  return source.replace(
+    IF_BLOCK_RE,
+    (_match, field: string, truthyInner: string, falsyInner: string = '') =>
+      isTruthyTemplateValue(row[field]) ? truthyInner : falsyInner,
+  )
+}
 
 function expandEachBlocks(
   source: string,
@@ -365,8 +376,9 @@ function expandEachBlocks(
   return source.replace(EACH_BLOCK_RE, (_match, _field: string, inner: string) => {
     let expanded = ''
     for (const item of items) {
-      expanded += inner.replace(PLACEHOLDER_RE, (_m, key: string) =>
-        escapeJs(item[key] || ''),
+      expanded += expandIfBlocksForRow(inner, item).replace(
+        PLACEHOLDER_RE,
+        (_m, key: string) => escapeJs(item[key] || ''),
       )
     }
     return expanded
@@ -374,30 +386,12 @@ function expandEachBlocks(
 }
 
 function expandIfBlocks(source: string, data: PrintDataRow): string {
-  return source.replace(IF_BLOCK_RE, (_match, field: string, inner: string) => {
-    const value = data[field] || ''
-    const isTruthy = value !== '' && value !== 'false' && value !== '0'
-    return isTruthy ? inner : ''
-  })
-}
-
-function removeJsLines(source: string): string {
-  return source
-    .split(/\r?\n/)
-    .filter((line) => {
-      const trimmed = line.trim()
-      if (!trimmed) return true
-      if (
-        trimmed.startsWith('LODOP.') ||
-        trimmed.startsWith('{{') ||
-        trimmed.startsWith('<!--')
-      ) {
-        return true
-      }
-      return !JS_LINE_RE.test(trimmed)
-    })
-    .join('\n')
-    .trim()
+  return source.replace(
+    IF_BLOCK_RE,
+    (_match, field: string, truthyInner: string, falsyInner: string = '') => {
+      return isTruthyTemplateValue(data[field]) ? truthyInner : falsyInner
+    },
+  )
 }
 
 // ─── HTML 模版渲染 ────────────────────────────────────
@@ -460,7 +454,6 @@ function renderCoordTemplate(
   source = source.replace(PLACEHOLDER_RE, (_match, key: string) =>
     escapeJs(data[key] || ''),
   )
-  source = removeJsLines(source)
 
   return source
 }

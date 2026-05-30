@@ -1,22 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { http } from '@/api/client'
 import { searchGlobalDocuments } from '@/api/global-search'
 import { ENDPOINTS } from '@/constants/endpoints'
+
+const { httpGetMock } = vi.hoisted(() => ({
+  httpGetMock: vi.fn(),
+}))
 
 vi.mock('@/api/client', () => ({
   assertApiSuccess: <T extends { code?: number }>(response: T) => response,
   http: {
-    get: vi.fn(),
+    get: httpGetMock,
   },
 }))
 
 describe('searchGlobalDocuments', () => {
   beforeEach(() => {
-    vi.mocked(http.get).mockReset()
+    httpGetMock.mockReset()
   })
 
   it('maps aggregate search results to stable option values with string track ids', async () => {
-    vi.mocked(http.get).mockResolvedValue({
+    httpGetMock.mockResolvedValue({
       code: 0,
       data: [
         {
@@ -34,7 +37,7 @@ describe('searchGlobalDocuments', () => {
       'purchase-order',
     ])
 
-    expect(http.get).toHaveBeenCalledWith(ENDPOINTS.GLOBAL_SEARCH, {
+    expect(httpGetMock).toHaveBeenCalledWith(ENDPOINTS.GLOBAL_SEARCH, {
       signal: undefined,
       params: {
         keyword: 'PO2026000032',

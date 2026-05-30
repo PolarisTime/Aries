@@ -30,7 +30,7 @@ export type LineItem = z.infer<typeof lineItemSchema>
 // ── 模块记录 Schema ────────────────────────────────────
 
 /** 模块记录通用字段 */
-const moduleRecordSchema = z
+export const moduleRecordSchema = z
   .object({
     id: z.string(),
     status: z.string().optional(),
@@ -59,14 +59,14 @@ const purchaseOrderItemSchema = lineItemSchema.extend({
 export type PurchaseOrderItem = z.infer<typeof purchaseOrderItemSchema>
 
 /** 销售订单行项目 */
-const salesOrderItemSchema = purchaseOrderItemSchema.extend({
+export const salesOrderItemSchema = purchaseOrderItemSchema.extend({
   sourceInboundItemId: z.number().optional(),
   sourcePurchaseOrderItemId: z.number().optional(),
 })
 export type SalesOrderItem = z.infer<typeof salesOrderItemSchema>
 
 /** 采购入库行项目 */
-const purchaseInboundItemSchema = lineItemSchema.extend({
+export const purchaseInboundItemSchema = lineItemSchema.extend({
   sourcePurchaseOrderItemId: z.number().optional(),
   settlementMode: z.string().optional(),
   weighWeightTon: z.number().optional(),
@@ -79,7 +79,7 @@ const purchaseInboundItemSchema = lineItemSchema.extend({
 export type PurchaseInboundItem = z.infer<typeof purchaseInboundItemSchema>
 
 /** 销售出库行项目 */
-const salesOutboundItemSchema = lineItemSchema.extend({
+export const salesOutboundItemSchema = lineItemSchema.extend({
   sourceNo: z.string().optional(),
   sourceSalesOrderItemId: z.number().optional(),
   quantity: z.number(),

@@ -47,6 +47,7 @@ import type {
 } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
 import { cloneLineItems } from '@/utils/clone-utils'
+import { parseDateTimeValue } from '@/utils/formatters'
 import { getStoredUser } from '@/utils/storage'
 import { asString } from '@/utils/type-narrowing'
 import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view-utils'
@@ -106,8 +107,8 @@ function normalizeRecordForEditor(
       continue
     }
 
-    const parsed = dayjs(asString(rawValue))
-    normalized[field.key] = parsed.isValid() ? parsed : undefined
+    const parsed = parseDateTimeValue(rawValue)
+    normalized[field.key] = parsed ?? undefined
   }
 
   return normalized
@@ -307,7 +308,7 @@ export function useModuleEditorWorkspace({
     if (record) {
       form.setFieldsValue(normalizeRecordForEditor(config, record))
       setWorkspaceState({
-        items: (record.items as ModuleLineItem[]) || [],
+        items: record.items || [],
         primaryNoLoading: false,
       })
     } else {

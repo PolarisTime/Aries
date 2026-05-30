@@ -7,7 +7,7 @@ const materialImportFailureSchema = z.object({
 })
 export type MaterialImportFailure = z.infer<typeof materialImportFailureSchema>
 
-const materialImportResultSchema = z.object({
+export const materialImportResultSchema = z.object({
   totalRows: z.number(),
   successCount: z.number(),
   createdCount: z.number(),

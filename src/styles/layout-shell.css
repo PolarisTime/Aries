@@ -805,6 +805,66 @@
   overscroll-behavior: contain;
 }
 
+.page-workspace-stack {
+  --page-workspace-padding-x: 16px;
+  --page-workspace-padding-y: 16px;
+
+  gap: 0;
+}
+
+.page-workspace-stack > .ant-tabs {
+  flex: 0 0 auto;
+}
+
+.page-workspace-stack > .ant-tabs > .ant-tabs-nav .ant-tabs-nav-wrap {
+  padding: 0 var(--page-workspace-padding-x);
+}
+
+.page-workspace {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--page-workspace-padding-y) var(--page-workspace-padding-x);
+  overflow: hidden;
+  background: var(--theme-card-bg);
+  border: 1px solid var(--theme-card-border);
+  border-radius: 8px;
+}
+
+.page-workspace > .page-stack {
+  flex: 1 1 auto;
+}
+
+.page-workspace-tabs {
+  --page-workspace-padding-x: 16px;
+  --page-workspace-padding-y: 16px;
+
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.page-workspace-tabs > .ant-tabs-nav {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+
+.page-workspace-tabs > .ant-tabs-nav .ant-tabs-nav-wrap {
+  padding: 0 var(--page-workspace-padding-x);
+}
+
+.page-workspace-tabs > .ant-tabs-content-holder {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--page-workspace-padding-y) var(--page-workspace-padding-x);
+  overflow: auto;
+  background: var(--theme-card-bg);
+  border: 1px solid var(--theme-card-border);
+  border-radius: 8px;
+}
+
 .module-page-stack {
   display: flex;
   flex: 1 1 auto;

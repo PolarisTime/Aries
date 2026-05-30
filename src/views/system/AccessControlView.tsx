@@ -125,7 +125,7 @@ export function AccessControlView() {
   })()
 
   return (
-    <div className="page-stack">
+    <div className="page-stack page-workspace-stack">
       <Tabs
         activeKey={activeTab}
         onChange={handleTabChange}
@@ -133,7 +133,7 @@ export function AccessControlView() {
         size="large"
         tabBarStyle={{ marginBottom: 0 }}
       />
-      {activeContent}
+      <div className="page-workspace">{activeContent}</div>
     </div>
   )
 }

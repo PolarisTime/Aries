@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table'
 import Tag from 'antd/es/tag'
 import type { TFunction } from 'i18next'
 import type { RefreshTokenRecord } from '@/api/session-management'
+import { formatDateTime } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 
 function getSessionStatusColor(status: string) {
@@ -90,17 +91,19 @@ export function buildSessionTableColumns({
       dataIndex: 'createdAt',
       title: t('common.createdAt'),
       width: 170,
+      render: (value: unknown) => formatDateTime(value, '--'),
     },
     {
       dataIndex: 'lastActiveAt',
       title: t('system.session.lastActive'),
       width: 170,
-      render: (value: string) => value || '--',
+      render: (value: unknown) => formatDateTime(value, '--'),
     },
     {
       dataIndex: 'expiresAt',
       title: t('system.session.expiresAt'),
       width: 170,
+      render: (value: unknown) => formatDateTime(value, '--'),
     },
     {
       title: t('system.session.onlineStatus'),

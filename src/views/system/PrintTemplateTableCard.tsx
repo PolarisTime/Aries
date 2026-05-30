@@ -15,6 +15,7 @@ import Table from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/types/print-template'
+import { formatDateTime } from '@/utils/formatters'
 import { getPrintTemplateBillTypeLabel } from '@/views/system/print-template-view-utils'
 
 interface Props {
@@ -124,7 +125,7 @@ export function PrintTemplateTableCard({
       dataIndex: 'updateTime',
       title: t('common.updatedAt'),
       width: 180,
-      render: (value: string) => value || '--',
+      render: (value: unknown) => formatDateTime(value, '--'),
     },
   ]
 
