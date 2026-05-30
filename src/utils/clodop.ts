@@ -263,6 +263,89 @@ function coerceValue(v: string): unknown {
   return v
 }
 
+const SCRIPT_METHOD_RE = /\bLODOP\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(/g
+const BLOCKED_SCRIPT_RE =
+  /\b(?:window|document|globalThis|localStorage|sessionStorage|fetch|XMLHttpRequest|WebSocket|Function|eval|import|constructor|prototype|__proto__)\b/
+const CONTROL_PRINT_RE =
+  /\bLODOP\s*\.\s*(?:PREVIEW|PRINT|PRINTA|PRINT_DESIGN|PRINT_SETUP)\s*\([^)]*\)\s*;?/gi
+const ALLOWED_SCRIPT_METHODS = new Set([
+  'ADD_PRINT_BARCODE',
+  'ADD_PRINT_CHART',
+  'ADD_PRINT_ELLIPSE',
+  'ADD_PRINT_HTM',
+  'ADD_PRINT_HTML',
+  'ADD_PRINT_IMAGE',
+  'ADD_PRINT_LINE',
+  'ADD_PRINT_RECT',
+  'ADD_PRINT_SHAPE',
+  'ADD_PRINT_TABLE',
+  'ADD_PRINT_TEXT',
+  'ADD_PRINT_URL',
+  'NEWPAGE',
+  'NewPage',
+  'PRINT_INIT',
+  'PRINT_INITA',
+  'SELECT_PRINTER',
+  'SET_PREVIEW_WINDOW',
+  'SET_PRINT_COPIES',
+  'SET_PRINT_MODE',
+  'SET_PRINT_PAGESIZE',
+  'SET_PRINT_STYLE',
+  'SET_PRINT_STYLEA',
+  'SET_PRINTER_INDEX',
+])
+
+function hasScriptControlFlow(code: string) {
+  return /^\s*(?:var|let|const|for\s*\(|if\s*\(|while\s*\(|switch\s*\()/m.test(
+    code,
+  )
+}
+
+function sanitizeExecutableLodopScript(code: string, printer?: string) {
+  if (BLOCKED_SCRIPT_RE.test(code)) {
+    throw new Error(t('print.clodopTemplatePrintFailed'))
+  }
+
+  const withoutControlPrint = code.replace(CONTROL_PRINT_RE, '')
+  const unknownMethods = new Set<string>()
+  for (const match of withoutControlPrint.matchAll(SCRIPT_METHOD_RE)) {
+    const method = match[1]
+    if (!ALLOWED_SCRIPT_METHODS.has(method)) {
+      unknownMethods.add(method)
+    }
+  }
+  if (unknownMethods.size > 0) {
+    throw new Error(
+      `${t('print.clodopTemplatePrintFailed')}: ${Array.from(unknownMethods).join(', ')}`,
+    )
+  }
+
+  if (!printer) {
+    return withoutControlPrint
+  }
+
+  return `${withoutControlPrint}\nLODOP.SET_PRINTER_INDEX(${JSON.stringify(printer)});`
+}
+
+function executeLodopScript(
+  lodop: CLodopInstance,
+  code: string,
+  options: Pick<PrintHtmlOptions, 'printer'>,
+) {
+  const script = sanitizeExecutableLodopScript(code, options.printer)
+  const fn = new Function(
+    'LODOP',
+    'parseFloat',
+    'parseInt',
+    'isNaN',
+    'String',
+    'Number',
+    'Math',
+    script,
+  )
+  fn(lodop, parseFloat, parseInt, isNaN, String, Number, Math)
+}
+
 function callInit(
   lodop: CLodopInstance,
   title: string,
@@ -293,12 +376,16 @@ export function execPrintCode(code: string, options: PrintHtmlOptions = {}) {
   const { preview = true, printer, title = t('print.defaultTitle') } = options
 
   try {
-    const parsed = parseInitCall(code)
-    callInit(lodop, parsed.title || title, parsed.inita)
-    if (printer) {
-      lodop.SET_PRINTER_INDEX(printer)
+    if (hasScriptControlFlow(code)) {
+      executeLodopScript(lodop, code, { printer })
+    } else {
+      const parsed = parseInitCall(code)
+      callInit(lodop, parsed.title || title, parsed.inita)
+      if (printer) {
+        lodop.SET_PRINTER_INDEX(printer)
+      }
+      executeLodopCalls(lodop, code)
     }
-    executeLodopCalls(lodop, code)
     if (preview) {
       lodop.PREVIEW()
     } else {

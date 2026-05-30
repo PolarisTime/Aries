@@ -3,7 +3,7 @@ import { z } from 'zod'
 // ── API 响应 Schema（工厂函数，类型附在旁边便于泛型引用） ──
 
 /** 统一 API 响应 */
-const businessNoResultSchema = z.object({})
+export const businessNoResultSchema = z.object({})
 export type BusinessNoResult = z.infer<typeof businessNoResultSchema>
 
 // ── 可复用字段 Schema（Zod 对象，可 .extend() / .merge()） ──
@@ -33,7 +33,7 @@ export const weightPriceSchema = z.object({
 // ── 枚举 / 常量 Schema ──────────────────────────────────
 
 /** 单据状态枚举 */
-const documentStatusSchema = z.enum([
+export const documentStatusSchema = z.enum([
   '草稿',
   '已审核',
   '未审核',
@@ -64,5 +64,5 @@ const documentStatusSchema = z.enum([
 export type DocumentStatus = z.infer<typeof documentStatusSchema>
 
 /** 启用/禁用状态 */
-const enabledStatusSchema = z.enum(['正常', '禁用'])
+export const enabledStatusSchema = z.enum(['正常', '禁用'])
 export type EnabledStatus = z.infer<typeof enabledStatusSchema>

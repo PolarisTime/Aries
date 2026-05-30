@@ -59,11 +59,6 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       width: 160,
     },
     {
-      title: i18next.t('modules.pages.purchaseInbound.colPurchaseOrderNo'),
-      dataIndex: 'purchaseOrderNo',
-      width: 160,
-    },
-    {
       title: i18next.t('modules.pages.purchaseInbound.colSupplier'),
       dataIndex: 'supplierName',
       width: 140,

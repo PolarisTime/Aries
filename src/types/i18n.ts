@@ -926,6 +926,7 @@ export interface MessageSchema {
     columns: {
       materialCode: string
       brand: string
+      category: string
       material: string
       spec: string
       length: string
@@ -1898,6 +1899,26 @@ export interface MessageSchema {
       copied: string
       copyFailed: string
     }
+    userAccountTable: {
+      title: string
+      searchPlaceholder: string
+      allStatus: string
+      colOperation: string
+      view: string
+      edit: string
+      delete: string
+      colLoginName: string
+      colUserName: string
+      colDepartment: string
+      colMobile: string
+      colRoles: string
+      colDataScope: string
+      colTotpStatus: string
+      totpEnabled: string
+      totpDisabled: string
+      colStatus: string
+      colLastLogin: string
+    }
     apiKey: {
       title: string
       totpRequiredHint: string
@@ -2234,6 +2255,37 @@ export interface MessageSchema {
       totpDisabled: string
       lastLogin: string
       remark: string
+    }
+    userAccountEditor: {
+      createTitle: string
+      editTitle: string
+      accountInfo: string
+      loginName: string
+      checkingLoginName: string
+      loginNamePlaceholder: string
+      userName: string
+      userNamePlaceholder: string
+      mobile: string
+      mobilePlaceholder: string
+      initialPassword: string
+      passwordHint: string
+      passwordPlaceholder: string
+      status: string
+      statusPlaceholder: string
+      department: string
+      departmentPlaceholder: string
+      permConfig: string
+      roles: string
+      rolesPlaceholder: string
+      roleConflict: string
+      roleDataScope: string
+      status2: string
+      statusPlaceholder2: string
+      permSummary: string
+      permSummaryHint: string
+      supplementInfo: string
+      remark: string
+      remarkPlaceholder: string
     }
     apiKeyForm: {
       statusValid: string

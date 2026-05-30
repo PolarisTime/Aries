@@ -14,10 +14,6 @@ import {
 interface Handlers {
   exportMaterialRows: () => Promise<void>
   exportRows: (mode: 'selected' | 'page' | 'filtered') => Promise<void>
-  handlePrintSelectedRecords: (
-    preview: boolean,
-    templateId?: string,
-  ) => Promise<void>
   handleSelectedAuditRecords: () => void
   handleSelectedDeleteRecords: () => void
   handleSelectedReverseAuditRecords: () => void
@@ -39,8 +35,6 @@ interface Props {
   selectedRowCount: number
   canUseBulkAuditActions: boolean
   canUseBulkDeleteActions: boolean
-  canUseBulkPrintActions: boolean
-  detailPrintLoading: boolean
   hasAnyModuleAction: (actionCodes: PermissionActionCode[]) => boolean
   handlers: Handlers
 }
@@ -61,8 +55,6 @@ export function useModuleToolbarActions({
   selectedRowCount,
   canUseBulkAuditActions,
   canUseBulkDeleteActions,
-  canUseBulkPrintActions,
-  detailPrintLoading,
   hasAnyModuleAction,
   handlers,
 }: Props) {
@@ -97,22 +89,6 @@ export function useModuleToolbarActions({
           label: t('hooks.toolbarActions.reverseAudit'),
           type: 'default',
           disabled,
-        },
-      )
-    }
-    if (canUseBulkPrintActions) {
-      actions.push(
-        {
-          label: t('hooks.toolbarActions.printPreview'),
-          type: 'default',
-          disabled,
-          loading: detailPrintLoading,
-        },
-        {
-          label: t('hooks.toolbarActions.directPrint'),
-          type: 'default',
-          disabled,
-          loading: detailPrintLoading,
         },
       )
     }
@@ -151,8 +127,6 @@ export function useModuleToolbarActions({
 
     const auditLabel = t('hooks.toolbarActions.audit')
     const reverseAuditLabel = t('hooks.toolbarActions.reverseAudit')
-    const printPreviewLabel = t('hooks.toolbarActions.printPreview')
-    const directPrintLabel = t('hooks.toolbarActions.directPrint')
     const deleteLabel = t('hooks.toolbarActions.delete')
 
     if (action.label === auditLabel) {
@@ -161,14 +135,6 @@ export function useModuleToolbarActions({
     }
     if (action.label === reverseAuditLabel) {
       handlers.handleSelectedReverseAuditRecords()
-      return
-    }
-    if (action.label === printPreviewLabel) {
-      await handlers.handlePrintSelectedRecords(true)
-      return
-    }
-    if (action.label === directPrintLabel) {
-      await handlers.handlePrintSelectedRecords(false)
       return
     }
     if (action.label === deleteLabel) {

@@ -76,7 +76,7 @@ describe('ModuleParentSelectorOverlay importable record filtering', () => {
       hasImportableQuantity('sales-order', {
         id: 'so-1',
         items: [{ id: 'soi-1', quantity: 1 }],
-      } as ModuleRecord),
+      }),
     ).toBe(true)
   })
 })

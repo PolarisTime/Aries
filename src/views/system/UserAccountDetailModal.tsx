@@ -4,6 +4,7 @@ import Spin from 'antd/es/spin'
 import Tag from 'antd/es/tag'
 import { useTranslation } from 'react-i18next'
 import type { UserAccountRecord } from '@/types/user-account'
+import { formatDateTime } from '@/utils/formatters'
 
 interface Props {
   open: boolean
@@ -64,7 +65,7 @@ export function UserAccountDetailModal({
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label={t('system.userAccountDetail.lastLogin')} span={2}>
-              {record.lastLoginDate || '--'}
+              {formatDateTime(record.lastLoginDate, '--')}
             </Descriptions.Item>
             <Descriptions.Item label={t('system.userAccountDetail.remark')} span={2}>
               {record.remark || '--'}

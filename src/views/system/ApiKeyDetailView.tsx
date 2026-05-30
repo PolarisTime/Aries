@@ -18,6 +18,7 @@ import {
   listApiKeyActionOptions,
   listApiKeyResourceOptions,
 } from '@/api/api-keys'
+import { formatDateTime } from '@/utils/formatters'
 
 function getStatusColor(status: string) {
   if (status === '有效' || status === 'active') return 'green'
@@ -49,7 +50,7 @@ export function ApiKeyDetailView() {
   >([])
   const [actionOptions, setActionOptions] = useState<ApiKeyActionOption[]>([])
 
-  const params = useParams({ strict: false }) as { id?: string }
+  const params = useParams({ strict: false })
   const id = params.id ?? ''
 
   useEffect(() => {
@@ -152,13 +153,15 @@ export function ApiKeyDetailView() {
                 <Tag color={getStatusColor(record.status)}>{record.status}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label={t('system.apiKeyDetail.createdAt')}>
-                {record.createdAt}
+                {formatDateTime(record.createdAt, '--')}
               </Descriptions.Item>
               <Descriptions.Item label={t('system.apiKeyDetail.expiresAt')}>
-                {record.expiresAt || t('system.apiKeyDetail.neverExpires')}
+                {record.expiresAt == null || record.expiresAt === ''
+                  ? t('system.apiKeyDetail.neverExpires')
+                  : formatDateTime(record.expiresAt, '--')}
               </Descriptions.Item>
               <Descriptions.Item label={t('system.apiKeyDetail.lastUsed')}>
-                {record.lastUsedAt || '--'}
+                {formatDateTime(record.lastUsedAt, '--')}
               </Descriptions.Item>
             </Descriptions>
           </Card>

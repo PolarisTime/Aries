@@ -9,6 +9,7 @@ import type {
   ApiKeyRecord,
   ApiKeyResourceOption,
 } from '@/api/api-keys'
+import { formatDateTime } from '@/utils/formatters'
 import {
   getApiKeyAllowedActionText,
   getApiKeyAllowedResourceText,
@@ -94,18 +95,26 @@ export function buildApiKeyListColumns({
       ),
     },
     { dataIndex: 'keyPrefix', title: i18next.t('system.apiKeyColumns.colPrefix'), width: 110 },
-    { dataIndex: 'createdAt', title: i18next.t('system.apiKeyColumns.colCreatedAt'), width: 180 },
+    {
+      dataIndex: 'createdAt',
+      title: i18next.t('system.apiKeyColumns.colCreatedAt'),
+      width: 180,
+      render: (value: unknown) => formatDateTime(value, '--'),
+    },
     {
       dataIndex: 'expiresAt',
       title: i18next.t('system.apiKeyColumns.colExpiresAt'),
       width: 180,
-      render: (value: string) => value || i18next.t('system.apiKeyColumns.neverExpires'),
+      render: (value: unknown) =>
+        value == null || value === ''
+          ? i18next.t('system.apiKeyColumns.neverExpires')
+          : formatDateTime(value, '--'),
     },
     {
       dataIndex: 'lastUsedAt',
       title: i18next.t('system.apiKeyColumns.colLastUsed'),
       width: 180,
-      render: (value: string) => value || '--',
+      render: (value: unknown) => formatDateTime(value, '--'),
     },
     {
       dataIndex: 'status',

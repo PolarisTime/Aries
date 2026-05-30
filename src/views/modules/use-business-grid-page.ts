@@ -182,11 +182,8 @@ export function useBusinessGridPage({
   const { buildActions } = useModuleRecordActions({
     moduleKey,
     resourceKey: pageDef.resourceKey,
-    listAuditTarget,
-    listReverseAuditTarget,
     onEdit: handleEdit,
     onAttach: overlays.openAttachment,
-    onRefresh: refreshModuleQueries,
     onDetail: detailRoutePath ? handleDetail : undefined,
   })
 
@@ -218,8 +215,6 @@ export function useBusinessGridPage({
     selectedRowCount: selectedRowKeys.length,
     canUseBulkAuditActions,
     canUseBulkDeleteActions,
-    canUseBulkPrintActions,
-    detailPrintLoading: false,
     hasAnyModuleAction: (codes) =>
       codes.some((code) => {
         if (code === 'create') return canCreateRecord
@@ -240,7 +235,6 @@ export function useBusinessGridPage({
       exportRows: async () => {
         await handleExport()
       },
-      handlePrintSelectedRecords,
       handleSelectedAuditRecords,
       handleSelectedDeleteRecords,
       handleSelectedReverseAuditRecords,

@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { formatDate } from '@/utils/formatters'
 
 const { Title } = Typography
 const { Text } = Typography
@@ -63,11 +64,6 @@ function formatAmount(value: number | undefined | null, locale: string): string 
   })
 }
 
-function formatDate(value: string | undefined | null): string {
-  if (!value) return '-'
-  return value
-}
-
 async function fetchProjectArSummary(projectId: string) {
   const res = await http.get<{
     code: number
@@ -95,7 +91,7 @@ function useDetailColumns(locale: string): ColumnsType<ProjectArDetailRow> {
       title: t('finance.projectArDetail.businessDate'),
       dataIndex: 'businessDate',
       width: 120,
-      render: (v: string) => formatDate(v),
+      render: (value: unknown) => formatDate(value, '-'),
     },
     { title: t('finance.projectArDetail.customerCode'), dataIndex: 'customerCode', width: 110 },
     { title: t('finance.projectArDetail.customerName'), dataIndex: 'customerName', width: 140 },
@@ -192,7 +188,7 @@ export function ProjectArDetailPage(): React.JSX.Element {
   }
 
   return (
-    <Flex vertical gap="middle" className="pb-6">
+    <div className="page-stack">
       <Flex align="center" gap="small">
         <Button icon={<ArrowLeftOutlined />} onClick={handleBack}>
           {t('common.back')}
@@ -252,6 +248,7 @@ export function ProjectArDetailPage(): React.JSX.Element {
       )}
 
       <Tabs
+        className="page-workspace-tabs"
         activeKey={activeTab}
         onChange={handleTabChange}
         items={[
@@ -287,6 +284,6 @@ export function ProjectArDetailPage(): React.JSX.Element {
           },
         ]}
       />
-    </Flex>
+    </div>
   )
 }

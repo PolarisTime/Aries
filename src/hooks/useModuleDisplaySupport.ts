@@ -1,10 +1,6 @@
-import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
+import { formatDate, formatDateTime } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
-
-function asDateInput(value: unknown): string | number {
-  return typeof value === 'number' ? value : asString(value)
-}
 
 export function useModuleDisplaySupport() {
   const { t } = useTranslation()
@@ -34,12 +30,9 @@ export function useModuleDisplaySupport() {
       return Number.isNaN(num) ? asString(value) : num.toLocaleString('zh-CN')
     }
     if (columnType === 'date' || columnType === 'datetime') {
-      const d = dayjs(asDateInput(value))
-      return d.isValid()
-        ? d.format(
-            columnType === 'datetime' ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD',
-          )
-        : asString(value)
+      return columnType === 'datetime'
+        ? formatDateTime(value, asString(value))
+        : formatDate(value, asString(value))
     }
     if (columnType === 'boolean') {
       return value ? t('hooks.displaySupport.yes') : t('hooks.displaySupport.no')

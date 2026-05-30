@@ -25,6 +25,7 @@ import {
 } from '@/api/business'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
+import { formatDateTime } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 
 interface Props {
@@ -173,7 +174,7 @@ function AttachmentList({
                 </Typography.Text>
                 <Typography.Text type="secondary">
                   {((item.fileSize || 0) / 1024).toFixed(1)} KB ·{' '}
-                  {String(item.uploadTime || '')}
+                  {formatDateTime(item.uploadTime, '--')}
                 </Typography.Text>
               </Space>
             </Space>

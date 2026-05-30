@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const printTemplateRecordSchema = z.object({
+export const printTemplateRecordSchema = z.object({
   id: z.string(),
   templateName: z.string(),
   templateHtml: z.string(),
@@ -13,7 +13,7 @@ const printTemplateRecordSchema = z.object({
 })
 export type PrintTemplateRecord = z.infer<typeof printTemplateRecordSchema>
 
-const savePrintTemplatePayloadSchema = z.object({
+export const savePrintTemplatePayloadSchema = z.object({
   id: z.string().optional(),
   billType: z.string(),
   templateName: z.string().min(1),
