@@ -2187,9 +2187,16 @@ export interface MessageSchema {
       templateType: string
       templateTypeHtml: string
       templateTypeCoord: string
+      templateTypePdfForm: string
       templateContent: string
       templateContentPlaceholder: string
       htmlHint: string
+      helpTitle: string
+      unifiedPrintApi: string
+      syntaxHint: string
+      commonFields: string
+      detailFields: string
+      layoutFields: string
     }
     printTemplatePreview: {
       title: string

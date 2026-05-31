@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { renderPrintTemplate } from './print-template-renderer'
+import { renderPrintTemplate } from './renderer'
 
 describe('renderPrintTemplate', () => {
   it('keeps executable LODOP script logic for coordinate templates', () => {
@@ -26,7 +26,6 @@ describe('renderPrintTemplate', () => {
         { quantity: '2', weightTon: '1.230' },
         { quantity: '3', weightTon: '2.345' },
       ],
-      'sales-outbound',
     )
 
     expect(result.type).toBe('COORD')
@@ -36,12 +35,12 @@ describe('renderPrintTemplate', () => {
     expect(result.script).toContain('{piece:"3",weight:"2.345"},')
   })
 
-  it('renders coordinate if else blocks', () => {
+  it('renders coordinate if else blocks from backend-provided items', () => {
     const result = renderPrintTemplate(
       [
         '{{#each details}}',
-        '{{#if _isSeparator}}',
-        'LODOP.ADD_PRINT_TEXT(0,0,100,20,"{{_groupName}}");',
+        '{{#if isSeparator}}',
+        'LODOP.ADD_PRINT_TEXT(0,0,100,20,"{{groupName}}");',
         '{{else}}',
         'LODOP.ADD_PRINT_TEXT(0,0,100,20,"{{sourceNo}}");',
         '{{/if}}',
@@ -51,13 +50,23 @@ describe('renderPrintTemplate', () => {
       {},
       [
         { sourceNo: 'SOO-001' },
-        { _isSeparator: 'true', _groupName: '项目A' },
+        { isSeparator: 'true', groupName: '项目A' },
       ],
-      'freight-bill',
     )
 
     expect(result.script).toContain('"SOO-001"')
     expect(result.script).toContain('"项目A"')
     expect(result.script).not.toContain('{{else}}')
+  })
+
+  it('does not derive backend print fields in the renderer', () => {
+    const result = renderPrintTemplate(
+      'LODOP.ADD_PRINT_TEXT({{rowTop}},10,80,16,"{{pieceWeightTon}}");',
+      'COORD',
+      {},
+      [{ brand: '抚顺新钢' }],
+    )
+
+    expect(result.script).toContain('LODOP.ADD_PRINT_TEXT(,10,80,16,"");')
   })
 })

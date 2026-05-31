@@ -2215,9 +2215,18 @@ export const zhCN: MessageSchema = {
       templateType: '模板类型',
       templateTypeHtml: 'HTML 模板',
       templateTypeCoord: '坐标套打',
+      templateTypePdfForm: 'PDF 表单',
       templateContent: '模板内容',
-      templateContentPlaceholder: '请输入 HTML 模板内容',
-      htmlHint: '支持 HTML 模板和 LODOP 指令。使用 {{字段名}} 语法插入动态数据。',
+      templateContentPlaceholder: '请输入模板内容',
+      htmlHint: '支持 HTML、LODOP 指令和 PDF 表单配置。使用 {{字段名}} 语法插入动态数据。',
+      helpTitle: '打印模板说明',
+      unifiedPrintApi:
+        '所有模板统一调用 POST /print/record。HTML/COORD 返回模板和数据，PDF_FORM 返回 PDF 内容；前端只负责渲染、预览和打印。',
+      syntaxHint:
+        '字段使用 {{fieldName}}，明细使用 {{#each details}}...{{/each}}，条件块使用 {{#if fieldName}}...{{else}}...{{/if}}。',
+      commonFields: '主表字段',
+      detailFields: '明细字段',
+      layoutFields: '后端生成字段',
     },
     printTemplatePreview: {
       title: '模板预览',

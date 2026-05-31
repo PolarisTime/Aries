@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { createElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
@@ -7,7 +8,7 @@ import { printTemplateTargetMap } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
 import { execPrintCode, loadCLodop, printHtml } from '@/utils/clodop'
-import { renderPrintTemplate } from '@/utils/print-template-renderer'
+import { renderPrintTemplate } from '@/utils/print-template'
 
 interface Props {
   moduleKey: string
@@ -16,16 +17,86 @@ interface Props {
 
 interface PrintRecordResponse {
   templateName?: string
-  templateHtml: string
+  templateHtml?: string
   templateType: string
-  data: Record<string, string>
-  items: Record<string, string>[]
+  data?: Record<string, string>
+  items?: Record<string, string>[]
+  contentType?: string
+  fileName?: string
+  pdfBase64?: string
 }
 
 function requirePrintService(success: boolean, message: string) {
   if (!success) {
     throw new Error(message)
   }
+}
+
+function openPdfBlob(blob: Blob) {
+  const url = URL.createObjectURL(blob)
+  window.open(url, '_blank', 'noopener,noreferrer')
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
+
+function blobFromBase64(base64: string, contentType = 'application/pdf') {
+  const binary = window.atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return new Blob([bytes], { type: contentType })
+}
+
+function printPdfBlob(blob: Blob) {
+  const url = URL.createObjectURL(blob)
+  const frame = document.createElement('iframe')
+  frame.src = url
+  frame.style.position = 'fixed'
+  frame.style.right = '0'
+  frame.style.bottom = '0'
+  frame.style.width = '0'
+  frame.style.height = '0'
+  frame.style.border = '0'
+  frame.addEventListener(
+    'load',
+    () => {
+      frame.contentWindow?.focus()
+      frame.contentWindow?.print()
+    },
+    { once: true },
+  )
+  document.body.appendChild(frame)
+  window.setTimeout(() => {
+    frame.remove()
+    URL.revokeObjectURL(url)
+  }, 60_000)
+}
+
+function handlePdfBlob(blob: Blob, preview: boolean) {
+  if (preview) {
+    openPdfBlob(blob)
+    return
+  }
+  printPdfBlob(blob)
+}
+
+async function normalizePdfError(err: unknown, fallbackMessage: string) {
+  if (!axios.isAxiosError(err)) {
+    return err instanceof Error ? err.message : fallbackMessage
+  }
+
+  const data = err.response?.data
+  if (data instanceof Blob) {
+    try {
+      const text = await data.text()
+      const parsed = JSON.parse(text) as { message?: string }
+      if (parsed.message) return parsed.message
+    } catch {
+      // fall through to axios message
+    }
+  }
+
+  return err.message || fallbackMessage
 }
 
 async function pickPrintTemplate(
@@ -72,21 +143,14 @@ export function useBusinessGridPrintActions({
   const { t } = useTranslation()
   const handlePrintSelectedRecords = async (
     preview: boolean,
-    templateId?: string,
+    selectedTemplate?: PrintTemplateRecord,
   ) => {
     if (!selectedRowKeys.length) {
       message.warning(t('common.pleaseSelect'))
       return
     }
 
-    const template = templateId
-      ? {
-          id: templateId,
-          templateName: '',
-          billType: moduleKey,
-          templateHtml: '',
-        }
-      : await pickPrintTemplate(moduleKey, t)
+    const template = selectedTemplate || (await pickPrintTemplate(moduleKey, t))
 
     if (!template) {
       message.warning(t('hooks.printActions.noPrintTemplateConfigured'))
@@ -95,7 +159,9 @@ export function useBusinessGridPrintActions({
 
     try {
       // 确保 CLodop 脚本已加载（main.tsx 预加载 + 此处兜底）
-      await loadCLodop()
+      if (template.templateType !== 'PDF_FORM') {
+        await loadCLodop()
+      }
 
       const results = await Promise.all(
         selectedRowKeys.map((recordId) =>
@@ -114,9 +180,20 @@ export function useBusinessGridPrintActions({
         assertApiSuccess(r, t('hooks.printActions.printScriptGenerationFailed'))
       }
 
+      const pdfResults = results
+        .map((r) => r.data)
+        .filter(
+          (d): d is PrintRecordResponse =>
+            d?.templateType === 'PDF_FORM' && Boolean(d.pdfBase64),
+        )
+      for (const d of pdfResults) {
+        handlePdfBlob(blobFromBase64(d.pdfBase64 || '', d.contentType), preview)
+      }
+
       const rendered = results
         .map((r) => {
           const d = r.data
+          if (d?.templateType === 'PDF_FORM') return null
           if (!d?.templateHtml) return null
           return {
             title: d.templateName || template.templateName,
@@ -125,7 +202,6 @@ export function useBusinessGridPrintActions({
               d.templateType || 'HTML',
               d.data || {},
               d.items || [],
-              moduleKey,
             ),
           }
         })
@@ -169,9 +245,7 @@ export function useBusinessGridPrintActions({
       }
     } catch (err) {
       message.error(
-        err instanceof Error
-          ? err.message
-          : t('hooks.printActions.printFailed'),
+        await normalizePdfError(err, t('hooks.printActions.printFailed')),
       )
     }
   }
