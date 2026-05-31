@@ -270,7 +270,7 @@ function AttachmentPreviewLayers({
         footer={null}
         width="90%"
         className="modal-top-20"
-        destroyOnClose
+        destroyOnHidden
       >
         {pdfPreviewUrl ? (
           <iframe

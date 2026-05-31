@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Alert from 'antd/es/alert'
-import Card from 'antd/es/card'
 import Col from 'antd/es/col'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Skeleton from 'antd/es/skeleton'
+import Typography from 'antd/es/typography'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -213,7 +213,7 @@ function CompanySettingsForm({
         }}
       />
 
-      <Card>
+      <div className="rounded bg-default p-24">
         <Alert
           type="info"
           showIcon
@@ -234,15 +234,15 @@ function CompanySettingsForm({
           <Skeleton active />
         ) : (
           <Form form={form} layout="vertical" initialValues={initialValues}>
-            <Row gutter={16}>
-              <Col span={8}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={8}>
                 <CompanySubjectCard
                   form={form}
                   canSave={canSave}
                   settlementAccountCount={settlementAccounts.length}
                 />
               </Col>
-              <Col span={16}>
+              <Col xs={24} lg={16}>
                 <CompanySettlementAccountsCard
                   canSave={canSave}
                   settlementAccounts={settlementAccounts}
@@ -252,11 +252,10 @@ function CompanySettingsForm({
                 />
               </Col>
             </Row>
-            <Card
-              size="small"
-              className="mt-16 bg-secondary rounded-lg"
-              title={t('system.company.supplementNote')}
-            >
+            <div className="mt-16 rounded-lg bg-secondary p-16">
+              <Typography.Title level={5}>
+                {t('system.company.supplementNote')}
+              </Typography.Title>
               <Form.Item name="remark" label={t('common.remark')}>
                 <Input.TextArea
                   disabled={!canSave}
@@ -264,10 +263,10 @@ function CompanySettingsForm({
                   placeholder={t('system.company.subjectRemarkPlaceholder')}
                 />
               </Form.Item>
-            </Card>
+            </div>
           </Form>
         )}
-      </Card>
+      </div>
     </div>
   )
 }

@@ -34,7 +34,7 @@ export function CompanySettlementAccountsCard({
       size="small"
       className="bg-secondary rounded-lg"
       title={
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-8">
           <span>
             <BankOutlined /> {t('system.company.settlementInfo')}
           </span>
@@ -57,7 +57,7 @@ export function CompanySettlementAccountsCard({
             key={account.localKey}
             className="p-16 rounded-lg bg-default border border-[var(--theme-card-border)]"
           >
-            <div className="flex justify-between mb-12">
+            <div className="flex flex-wrap items-center justify-between gap-8 mb-12">
               <Typography.Text strong>
                 {t('system.company.settlementAccount')} {index + 1}
               </Typography.Text>
@@ -73,8 +73,8 @@ export function CompanySettlementAccountsCard({
                 </Button>
               )}
             </div>
-            <Row gutter={12}>
-              <Col span={8}>
+            <Row gutter={[12, 12]}>
+              <Col xs={24} md={8}>
                 <div className="mb-8">
                   <Typography.Text type="secondary">
                     {t('system.company.accountName')}{' '}
@@ -90,7 +90,7 @@ export function CompanySettlementAccountsCard({
                   }
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} md={8}>
                 <div className="mb-8">
                   <Typography.Text type="secondary">
                     {t('system.company.usageType')}{' '}
@@ -118,7 +118,7 @@ export function CompanySettlementAccountsCard({
                   ]}
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} md={8}>
                 <div className="mb-8">
                   <Typography.Text type="secondary">
                     {t('system.company.bankName')}{' '}
@@ -135,8 +135,8 @@ export function CompanySettlementAccountsCard({
                 />
               </Col>
             </Row>
-            <Row gutter={12} className="mt-8">
-              <Col span={8}>
+            <Row gutter={[12, 12]} className="mt-8">
+              <Col xs={24} md={8}>
                 <div className="mb-8">
                   <Typography.Text type="secondary">
                     {t('system.company.bankAccount')}{' '}
@@ -152,7 +152,7 @@ export function CompanySettlementAccountsCard({
                   }
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} md={8}>
                 <div className="mb-8">
                   <Typography.Text type="secondary">
                     {t('common.status')}{' '}
@@ -176,7 +176,7 @@ export function CompanySettlementAccountsCard({
                   ]}
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} md={8}>
                 <div className="mb-8">
                   <Typography.Text type="secondary">
                     {t('common.remark')}

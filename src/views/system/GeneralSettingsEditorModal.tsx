@@ -33,6 +33,30 @@ interface Props {
   onClose: () => void
 }
 
+function WatermarkColorInput({
+  value,
+  onChange,
+}: {
+  value?: string
+  onChange?: (value: string) => void
+}) {
+  return (
+    <Space.Compact className="w-full">
+      <ColorPicker
+        format="rgb"
+        value={value || undefined}
+        onChange={(_, hex) => onChange?.(hex)}
+      />
+      <Input
+        value={value ?? ''}
+        onChange={(event) => onChange?.(event.target.value)}
+        placeholder="rgba(0,0,0,0.08)"
+        maxLength={50}
+      />
+    </Space.Compact>
+  )
+}
+
 export function GeneralSettingsEditorModal({
   open,
   record,
@@ -80,24 +104,9 @@ export function GeneralSettingsEditorModal({
                     message: t('system.generalSettingsEditor.maxChars', { count: asString(record.settingCode) === WATERMARK_COLOR_CODE ? 50 : 64 }),
                   },
                 ]}
-              >
-                {asString(record.settingCode) === WATERMARK_COLOR_CODE ? (
-                  <Space.Compact className="w-full">
-                    <ColorPicker
-                      format="rgb"
-                      onChange={(_, hex) =>
-                        form.setFieldValue('numericValue', hex)
-                      }
-                    />
-                    <Input placeholder="rgba(0,0,0,0.08)" maxLength={50} />
-                  </Space.Compact>
-                ) : (
-                  <>
-                    <Input.TextArea rows={3} maxLength={64} showCount />
-                    <Typography.Text
-                      type="secondary"
-                      className="mt-1 block text-xs"
-                    >
+                extra={
+                  asString(record.settingCode) === WATERMARK_COLOR_CODE ? null : (
+                    <Typography.Text type="secondary" className="text-xs">
                       {t('system.generalSettingsEditor.magicVars')}{' '}
                       <Typography.Text code className="text-xs">
                         {'{username}'}
@@ -110,7 +119,13 @@ export function GeneralSettingsEditorModal({
                       </Typography.Text>{' '}
                       {t('system.generalSettingsEditor.autoReplace')}
                     </Typography.Text>
-                  </>
+                  )
+                }
+              >
+                {asString(record.settingCode) === WATERMARK_COLOR_CODE ? (
+                  <WatermarkColorInput />
+                ) : (
+                  <Input.TextArea rows={3} maxLength={64} showCount />
                 )}
               </Form.Item>
             ) : (

@@ -72,6 +72,11 @@ export interface ModuleParentImportDefinition {
   buttonText?: string
   enforceUniqueRelation?: boolean
   allowMultipleSelection?: boolean
+  candidateStatementModuleKey?:
+    | 'supplier-statement'
+    | 'customer-statement'
+    | 'freight-statement'
+  buildParentFilters?: (currentRecord: ModuleRecord) => Record<string, unknown>
   validateBeforeOpen?: (currentRecord: ModuleRecord) => string | null
   remainingQuantityKey?: string
   mapParentToDraft?: (parentRecord: ModuleRecord) => Partial<ModuleRecord>

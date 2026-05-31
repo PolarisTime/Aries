@@ -4,10 +4,19 @@ import { BILL_STATUS_LABEL } from './filter-labels'
 import { formatAmount, formatInteger, statusMap, sumBy } from './shared'
 import i18next from 'i18next'
 
+const balanceStatusMap = {
+  ...statusMap,
+  有效: {
+    text: i18next.t('modules.pages.balance.effective'),
+    color: 'success' as const,
+  },
+}
+
 export const balancePageConfigs: Record<string, ModulePageConfig> = {
   'receivable-payable': {
     key: 'receivable-payable',
     title: i18next.t('modules.pages.balance.receivablePayable'),
+    primaryNoKey: 'counterpartyName',
     kicker: 'Finance',
     description:
       i18next.t('modules.pages.balance.balanceDesc'),
@@ -37,7 +46,7 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         key: 'status',
         label: BILL_STATUS_LABEL,
         type: 'select',
-        options: buildValueOptions('待确认', '已确认', '待审核', '已审核'),
+        options: buildValueOptions('已确认', '已审核'),
       },
     ],
     columns: [
@@ -73,6 +82,13 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         type: 'amount',
       },
       {
+        title: i18next.t('modules.pages.balance.documentCount'),
+        dataIndex: 'documentCount',
+        width: 110,
+        align: 'right',
+        type: 'count',
+      },
+      {
         title: i18next.t('modules.pages.balance.status'),
         dataIndex: 'status',
         width: 110,
@@ -88,8 +104,46 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
       { label: i18next.t('modules.pages.balance.currentTransactions'), key: 'currentAmount', type: 'amount' },
       { label: i18next.t('modules.pages.balance.currentSettlement'), key: 'settledAmount', type: 'amount' },
       { label: i18next.t('modules.pages.balance.closingBalance'), key: 'balanceAmount', type: 'amount' },
+      { label: i18next.t('modules.pages.balance.documentCount'), key: 'documentCount', type: 'count' },
       { label: i18next.t('modules.pages.balance.status'), key: 'status', type: 'status' },
       { label: i18next.t('modules.pages.balance.remark'), key: 'remark' },
+    ],
+    detailItemColumns: [
+      { title: i18next.t('modules.pages.balance.sourceNo'), dataIndex: 'sourceNo', width: 160 },
+      { title: i18next.t('modules.pages.balance.statementNo'), dataIndex: 'statementNo', width: 170 },
+      { title: i18next.t('modules.pages.balance.project'), dataIndex: 'projectName', width: 160 },
+      { title: i18next.t('modules.pages.balance.businessDate'), dataIndex: 'businessDate', width: 120, type: 'date' },
+      { title: i18next.t('modules.pages.balance.periodStart'), dataIndex: 'periodStart', width: 120, type: 'date' },
+      { title: i18next.t('modules.pages.balance.periodEnd'), dataIndex: 'periodEnd', width: 120, type: 'date' },
+      {
+        title: i18next.t('modules.pages.balance.currentTransactions'),
+        dataIndex: 'currentAmount',
+        width: 120,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: i18next.t('modules.pages.balance.statementSettlement'),
+        dataIndex: 'statementSettledAmount',
+        width: 130,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: i18next.t('modules.pages.balance.statementBalance'),
+        dataIndex: 'statementBalanceAmount',
+        width: 120,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: i18next.t('modules.pages.balance.status'),
+        dataIndex: 'status',
+        width: 100,
+        type: 'status',
+        align: 'center',
+      },
+      { title: i18next.t('modules.pages.balance.remark'), dataIndex: 'remark', width: 180 },
     ],
     data: [],
     buildOverview: (rows) => [
@@ -113,7 +167,7 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         ),
       },
     ],
-    statusMap,
+    statusMap: balanceStatusMap,
     rowHighlightStatuses: ['待确认', '待审核'],
   },
 }

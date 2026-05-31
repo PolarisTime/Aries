@@ -191,20 +191,20 @@ export function NumberRulesTableCard({
         </SystemTableToolbar>
       }
     >
-      <Row gutter={16} className="mb-4">
-        <Col span={8}>
+      <Row gutter={[16, 16]} className="mb-4">
+        <Col xs={24} sm={8}>
           <Statistic
             title={t('system.numberRules.documentRules')}
             value={numberRuleRows.length}
           />
         </Col>
-        <Col span={8}>
+        <Col xs={24} sm={8}>
           <Statistic
             title={t('system.numberRules.uploadRules')}
             value={uploadRuleRows.length}
           />
         </Col>
-        <Col span={8}>
+        <Col xs={24} sm={8}>
           <Statistic
             title={t('system.numberRules.disabledUploadRules')}
             value={
@@ -227,6 +227,7 @@ export function NumberRulesTableCard({
         loading={loading}
         size="small"
         pagination={false}
+        scroll={{ x: 1300 }}
         className="mb-6"
       />
       <Typography.Title level={5}>
@@ -239,6 +240,7 @@ export function NumberRulesTableCard({
         loading={loading}
         size="small"
         pagination={false}
+        scroll={{ x: 970 }}
       />
     </Card>
   )

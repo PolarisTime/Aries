@@ -68,7 +68,7 @@ export function RoleActionPermissionCard({
       className="h-full flex flex-col"
       styles={{ body: { flex: 1, overflow: 'auto' } }}
       title={
-        <Space>
+        <Space wrap>
           <SafetyCertificateOutlined />
           <span>
             {selectedRoleInfo
@@ -79,7 +79,7 @@ export function RoleActionPermissionCard({
       }
       extra={
         selectedRoleInfo && (
-          <Space size="small">
+          <Space size="small" wrap>
             {permissionActions.editable && (
               <Button
                 size="small"

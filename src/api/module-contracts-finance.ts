@@ -101,6 +101,7 @@ export const financeModuleEndpointContracts: Record<
   'receivable-payable': {
     path: '/receivable-payables',
     readOnly: true,
+    supportsDetail: true,
     sortDirectionParam: 'sortDirection',
     nativeFilterKeys: ['keyword', 'direction', 'counterpartyType', 'status'],
   },

@@ -133,7 +133,7 @@ export function PrintTemplateTableCard({
     <Card
       title={t('system.printTemplate.title')}
       extra={
-        <Space>
+        <Space wrap>
           <Select
             value={selectedBillType}
             onChange={onBillTypeChange}

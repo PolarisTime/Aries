@@ -1,8 +1,8 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { getModuleConfig } from '@/api/module-contracts'
 import { pageContent, pageTotalElements } from '@/api/page-contract'
-import type { ApiResponse } from '@/types/api'
-import type { RawApiRecord, RawPagePayload } from '@/types/api-raw'
+import type { ApiResponse, TableResponse } from '@/types/api'
+import type { RawApiRecord, RawPagePayload, SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 import { getApiMessage } from '@/utils/api-messages'
 import { asId, asString } from '@/utils/type-narrowing'
@@ -28,12 +28,13 @@ async function listStatementCandidates(
   keyword = '',
   page = 0,
   size = 200,
+  filters: SearchParams = {},
 ) {
   const endpointConfig = getModuleConfig(statementModuleKey)
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
-      `${endpointConfig.path}/candidates`,
-      { params: { keyword: keyword.trim(), page, size } },
+      `${endpointConfig.path}/candidate`,
+      { params: { ...filters, keyword: keyword.trim(), page, size } },
     ),
     getApiMessage('queryStatementCandidatesFailed'),
   )
@@ -48,6 +49,7 @@ export async function listAllStatementCandidates(
   statementModuleKey: StatementModuleKey,
   keyword = '',
   pageSize = 200,
+  filters: SearchParams = {},
 ) {
   const rows: ModuleRecord[] = []
   let page = 0
@@ -58,6 +60,7 @@ export async function listAllStatementCandidates(
       keyword,
       page,
       pageSize,
+      filters,
     )
     if (page === 0) total = current.total
     rows.push(...current.rows)
@@ -65,4 +68,26 @@ export async function listAllStatementCandidates(
     page += 1
   }
   return rows
+}
+
+export async function listStatementCandidatePage(
+  statementModuleKey: StatementModuleKey,
+  filters: SearchParams,
+  page: number,
+  size: number,
+): Promise<TableResponse<ModuleRecord>> {
+  const current = await listStatementCandidates(
+    statementModuleKey,
+    asString(filters.keyword).trim(),
+    page,
+    size,
+    filters,
+  )
+  return {
+    code: 0,
+    data: {
+      rows: current.rows,
+      total: current.total,
+    },
+  }
 }

@@ -125,7 +125,7 @@ export function ApiKeyDetailView() {
       <Spin spinning={loading}>
         {record ? (
           <Card>
-            <Descriptions bordered column={2} size="small">
+            <Descriptions bordered column={{ xs: 1, md: 2 }} size="small">
               <Descriptions.Item label={t('system.apiKeyDetail.keyName')}>
                 {record.keyName}
               </Descriptions.Item>

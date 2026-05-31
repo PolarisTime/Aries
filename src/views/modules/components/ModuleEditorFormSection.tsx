@@ -67,7 +67,7 @@ export function ModuleEditorFormSection({
           className="mb-12"
         />
       ) : null}
-      <Form.Item name="_preallocatedId" hidden>
+      <Form.Item name="_preallocatedId" hidden initialValue="">
         <input aria-label="Preallocated ID" />
       </Form.Item>
       <div className="editor-form-head">

@@ -1348,7 +1348,17 @@ export interface MessageSchema {
         currentSettlement: string
         closingBalance: string
         status: string
+        effective: string
         remark: string
+        documentCount: string
+        sourceNo: string
+        statementNo: string
+        project: string
+        businessDate: string
+        periodStart: string
+        periodEnd: string
+        statementSettlement: string
+        statementBalance: string
         counterpartyCount: string
         receivableBalance: string
         payableBalance: string

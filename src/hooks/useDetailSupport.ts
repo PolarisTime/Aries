@@ -18,12 +18,14 @@ export function useDetailSupport({ moduleKey, config }: Options) {
     const recordId =
       typeof target === 'string' ? target : String(target.id || '')
     const endpointConfig = getModuleConfig(moduleKey)
-    const requiresDetailFetch = Boolean(config?.itemColumns?.length)
+    const requiresDetailFetch = Boolean(
+      config?.detailItemColumns?.length || config?.itemColumns?.length,
+    )
 
     setDetailOpen(true)
     setDetailRecord(fallbackRecord)
 
-    if (!recordId || endpointConfig.readOnly) {
+    if (!recordId || (endpointConfig.readOnly && !endpointConfig.supportsDetail)) {
       setDetailLoading(false)
       return
     }

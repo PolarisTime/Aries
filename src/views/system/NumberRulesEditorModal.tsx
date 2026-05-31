@@ -87,8 +87,8 @@ export function NumberRulesEditorModal({
             >
               <Input placeholder={t('system.numberRules.prefixPlaceholder')} />
             </Form.Item>
-            <Row gutter={16}>
-              <Col span={8}>
+            <Row gutter={[16, 0]}>
+              <Col xs={24} sm={8}>
                 <Form.Item
                   name="dateRule"
                   label={t('system.numberRules.dateRule')}
@@ -96,7 +96,7 @@ export function NumberRulesEditorModal({
                   <Select options={DATE_RULE_OPTIONS} />
                 </Form.Item>
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={8}>
                 <Form.Item
                   name="serialLength"
                   label={t('system.numberRules.serialLength')}
@@ -104,7 +104,7 @@ export function NumberRulesEditorModal({
                   <Input type="number" min={1} max={10} />
                 </Form.Item>
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={8}>
                 <Form.Item
                   name="resetRule"
                   label={t('system.numberRules.resetRule')}

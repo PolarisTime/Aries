@@ -10,6 +10,7 @@ import {
   statusMap,
 } from './shared'
 import i18next from 'i18next'
+import { asString } from '@/utils/type-narrowing'
 
 export const supplierStatementPageConfig: ModulePageConfig = {
   key: 'supplier-statement',
@@ -172,6 +173,55 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       'unitPrice',
       'amount',
     ],
+  },
+  parentImport: {
+    parentModuleKey: 'purchase-inbound',
+    label: '采购入库单',
+    parentFieldKey: 'sourceInboundNos',
+    parentDisplayFieldKey: 'inboundNo',
+    candidateStatementModuleKey: 'supplier-statement',
+    buttonText: '选择采购入库单生成明细',
+    enforceUniqueRelation: true,
+    allowMultipleSelection: true,
+    buildParentFilters: (currentRecord) => ({
+      supplierName: asString(currentRecord.supplierName).trim(),
+      status: '完成采购',
+    }),
+    validateBeforeOpen: (currentRecord) =>
+      asString(currentRecord.supplierName).trim()
+        ? null
+        : '请先选择供应商，再选择采购入库单',
+    mapParentToDraft: (parentRecord) => ({
+      supplierName: parentRecord.supplierName || '',
+      startDate: parentRecord.inboundDate || '',
+      endDate: parentRecord.inboundDate || '',
+      paymentAmount: 0,
+      status: '待确认',
+    }),
+    validateParentImport: ({ currentRecord, parentRecord }) => {
+      if (asString(parentRecord.status).trim() !== '完成采购') {
+        return '只能选择完成采购的采购入库单生成供应商对账单'
+      }
+      if (
+        asString(currentRecord.supplierName).trim() !==
+        asString(parentRecord.supplierName).trim()
+      ) {
+        return '只能选择同一供应商的采购入库单生成供应商对账单'
+      }
+      return null
+    },
+    transformItems: (parentRecord) => {
+      const sourceNo = asString(parentRecord.inboundNo).trim()
+      return (Array.isArray(parentRecord.items) ? parentRecord.items : []).map(
+        (item, index) => ({
+          ...item,
+          id: `${sourceNo || 'purchase-inbound'}-${String(item.id || index)}`,
+          sourceNo,
+          sourceInboundItemId: item.id,
+          _parentBillTime: parentRecord.inboundDate || '',
+        }),
+      )
+    },
   },
   itemColumns: compactBatchSupplierStatementItemColumns,
   data: [],

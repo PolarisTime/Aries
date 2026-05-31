@@ -1,7 +1,6 @@
 import Alert from 'antd/es/alert'
 import Card from 'antd/es/card'
 import type { ColumnsType, TableProps } from 'antd/es/table'
-import type { SortOrder } from 'antd/es/table/interface'
 import { useState } from 'react'
 import type { SearchParams } from '@/types/api-raw'
 import type {
@@ -44,7 +43,6 @@ interface Props {
   canExport: boolean
   toolbarActions: ModuleActionDefinition[]
   onAction: (action: ModuleActionDefinition) => void
-  onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
   onPageChange: (page: number, pageSize: number) => void
   selectedCount: number
   printDropdown?: React.ReactNode
@@ -80,7 +78,6 @@ export function BusinessGridContent({
   canExport,
   toolbarActions,
   onAction,
-  onSortingChange,
   onPageChange,
   selectedCount,
   printDropdown,
@@ -121,14 +118,14 @@ export function BusinessGridContent({
           <>
             {printDropdown}
             <ColumnSettingsPopover
-            columns={config.columns}
-            orderedKeys={columnOrder}
-            visibleKeys={columnVisibleKeys}
-            onToggle={onToggleColumn}
-            onOrderChange={onColumnOrderChange}
-            open={columnSettingsOpen}
-            onOpenChange={setColumnSettingsOpen}
-          />
+              columns={config.columns}
+              orderedKeys={columnOrder}
+              visibleKeys={columnVisibleKeys}
+              onToggle={onToggleColumn}
+              onOrderChange={onColumnOrderChange}
+              open={columnSettingsOpen}
+              onOpenChange={setColumnSettingsOpen}
+            />
           </>
         }
       />
@@ -152,7 +149,6 @@ export function BusinessGridContent({
         rowClassName={rowClassName}
         onRowClick={onRowClick}
         onRowDoubleClick={onRowDoubleClick}
-        onSortingChange={onSortingChange}
       />
     </Card>
   )

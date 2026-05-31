@@ -24,22 +24,6 @@ const config = {
   buildOverview: () => [],
 } satisfies ModulePageConfig
 
-function resolveSortingState(
-  columnKey?: string | number,
-  order?: 'ascend' | 'descend' | null,
-) {
-  if (!columnKey || !order) {
-    return []
-  }
-
-  return [
-    {
-      id: String(columnKey),
-      desc: order === 'descend',
-    },
-  ]
-}
-
 function useTestBusinessGridTable(currentConfig: ModulePageConfig | undefined) {
   return useBusinessGridTable({
     moduleKey: 'sales-order',
@@ -51,29 +35,8 @@ function useTestBusinessGridTable(currentConfig: ModulePageConfig | undefined) {
     setSelectedRowMap: vi.fn(),
     buildActions: () => [],
     showActions: true,
-    sorting: [],
-    onSortingChange: vi.fn(),
   })
 }
-
-describe('use-business-grid-table sorting bridge', () => {
-  it('maps antd ascend sorter to tanstack sorting state', () => {
-    expect(resolveSortingState('orderDate', 'ascend')).toEqual([
-      { id: 'orderDate', desc: false },
-    ])
-  })
-
-  it('maps antd descend sorter to tanstack sorting state', () => {
-    expect(resolveSortingState('weightTon', 'descend')).toEqual([
-      { id: 'weightTon', desc: true },
-    ])
-  })
-
-  it('clears sorting when sorter is removed', () => {
-    expect(resolveSortingState('orderDate', null)).toEqual([])
-    expect(resolveSortingState(undefined, 'ascend')).toEqual([])
-  })
-})
 
 describe('useBusinessGridTable', () => {
   beforeEach(() => {
@@ -117,6 +80,22 @@ describe('useBusinessGridTable', () => {
       'actions',
       'customerName',
       'orderNo',
+    ])
+  })
+
+  it('does not expose clickable header sorting on business grid columns', () => {
+    const { result } = renderHook(() => useTestBusinessGridTable(config))
+
+    expect(
+      result.current.antdColumns.map((column) => ({
+        key: column.key,
+        sorter: 'sorter' in column ? column.sorter : undefined,
+        sortOrder: 'sortOrder' in column ? column.sortOrder : undefined,
+      })),
+    ).toEqual([
+      { key: 'actions', sorter: undefined, sortOrder: undefined },
+      { key: 'orderNo', sorter: undefined, sortOrder: undefined },
+      { key: 'customerName', sorter: undefined, sortOrder: undefined },
     ])
   })
 })

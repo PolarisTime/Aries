@@ -208,7 +208,14 @@ async function serializeBusinessRecordForSaveAsync(
   if (import.meta.env.DEV) {
     const scalarFieldSet = new Set(scalarFields)
     for (const key of Object.keys(record)) {
-      if (key === 'id' || key === 'items' || key === 'attachmentIds') continue
+      if (
+        key === 'id' ||
+        key === 'items' ||
+        key === 'attachmentIds' ||
+        key === '_preallocatedId'
+      ) {
+        continue
+      }
       if (record[key] !== undefined && !scalarFieldSet.has(key)) {
         logger.warn(
           `[save-payload] ${moduleKey}: field "${key}" not in save schema, will be silently dropped`,

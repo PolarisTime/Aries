@@ -29,11 +29,11 @@ export function SystemTableToolbar({
   const { t } = useTranslation()
 
   return (
-    <Space>
+    <Space wrap>
       <Input.Search
         placeholder={keywordPlaceholder ?? t('toolbar.searchPlaceholder')}
         /* 动态宽度：keywordWidth 由父组件传入，无法映射为固定 Tailwind 类 */
-        style={{ width: keywordWidth }}
+        style={{ width: keywordWidth, maxWidth: '100%' }}
         allowClear
         value={keyword}
         onChange={(event) => onKeywordChange(event.target.value)}

@@ -1,14 +1,14 @@
 import { useLocation } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
-import { type Dispatch, type SetStateAction } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
+import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
 import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateDropdown'
-import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
 
@@ -46,7 +46,10 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
 
   if (!state.config) {
     return (
-      <Empty description={`${t('modules.page.moduleConfigNotFound')}: ${moduleKey}`} className="mt-96" />
+      <Empty
+        description={`${t('modules.page.moduleConfigNotFound')}: ${moduleKey}`}
+        className="mt-96"
+      />
     )
   }
 
@@ -96,6 +99,12 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           })
         }}
         onRowDoubleClick={(record) => {
+          if (state.config?.readOnly) {
+            if (state.canViewRecords) {
+              void state.openDetail(record)
+            }
+            return
+          }
           if (state.canUpdateRecord && !isEditBlockedByStatus(record.status)) {
             void state.openEditor(record)
             return
@@ -104,13 +113,17 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
             void state.openDetail(record)
           }
         }}
-        canCreate={state.canCreateRecord}
+        canCreate={
+          state.canCreateRecord &&
+          moduleKey !== 'supplier-statement' &&
+          moduleKey !== 'customer-statement' &&
+          moduleKey !== 'freight-statement'
+        }
         canExport={state.canExportData}
         toolbarActions={state.visibleToolbarActions}
         onAction={(action) => {
           void state.handleAction(action)
         }}
-        onSortingChange={state.onSortingChange}
         onPageChange={(page, ps) => {
           if (ps !== state.pageSize) {
             state.setPageSize(ps)
@@ -124,8 +137,8 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
               moduleKey={moduleKey}
               disabled={!state.selectedRowKeys.length}
               loading={false}
-              onPrint={(preview, templateId) => {
-                void state.handlePrintSelectedRecords(preview, templateId)
+              onPrint={(preview, template) => {
+                void state.handlePrintSelectedRecords(preview, template)
               }}
             />
           ) : undefined

@@ -10,6 +10,7 @@ import {
   statusMap,
 } from './shared'
 import i18next from 'i18next'
+import { asString } from '@/utils/type-narrowing'
 
 export const customerStatementPageConfig: ModulePageConfig = {
   key: 'customer-statement',
@@ -179,6 +180,75 @@ export const customerStatementPageConfig: ModulePageConfig = {
       'unitPrice',
       'amount',
     ],
+  },
+  parentImport: {
+    parentModuleKey: 'sales-order',
+    label: '销售订单',
+    parentFieldKey: 'sourceOrderNos',
+    parentDisplayFieldKey: 'orderNo',
+    candidateStatementModuleKey: 'customer-statement',
+    buttonText: '选择销售订单生成明细',
+    enforceUniqueRelation: true,
+    allowMultipleSelection: true,
+    buildParentFilters: (currentRecord) => ({
+      customerName: asString(currentRecord.customerName).trim(),
+      projectName: asString(currentRecord.projectName).trim(),
+      status: '完成销售',
+    }),
+    validateBeforeOpen: (currentRecord) =>
+      asString(currentRecord.customerName).trim()
+        ? null
+        : '请先选择客户，再选择销售订单',
+    mapParentToDraft: (parentRecord) => ({
+      customerName: parentRecord.customerName || '',
+      projectName: parentRecord.projectName || '',
+      startDate: parentRecord.deliveryDate || '',
+      endDate: parentRecord.deliveryDate || '',
+      receiptAmount: 0,
+      status: '待确认',
+    }),
+    validateParentImport: ({ currentRecord, currentItems, parentRecord }) => {
+      if (asString(parentRecord.status).trim() !== '完成销售') {
+        return '只能选择完成销售的销售订单生成客户对账单'
+      }
+      if (
+        asString(currentRecord.customerName).trim() !==
+        asString(parentRecord.customerName).trim()
+      ) {
+        return '只能选择同一客户的销售订单生成客户对账单'
+      }
+      const existingProjectNames = Array.from(
+        new Set(
+          [
+            currentRecord.projectName,
+            ...currentItems.map((item) => item.projectName),
+          ]
+            .map((value) => asString(value).trim())
+            .filter(Boolean),
+        ),
+      )
+      const nextProjectName = asString(parentRecord.projectName).trim()
+      if (
+        existingProjectNames.length &&
+        nextProjectName &&
+        !existingProjectNames.includes(nextProjectName)
+      ) {
+        return '只能选择同一项目的销售订单生成客户对账单'
+      }
+      return null
+    },
+    transformItems: (parentRecord) => {
+      const sourceNo = asString(parentRecord.orderNo).trim()
+      return (Array.isArray(parentRecord.items) ? parentRecord.items : []).map(
+        (item, index) => ({
+          ...item,
+          id: `${sourceNo || 'sales-order'}-${String(item.id || index)}`,
+          sourceNo,
+          sourceSalesOrderItemId: item.id,
+          _parentBillTime: parentRecord.deliveryDate || '',
+        }),
+      )
+    },
   },
   itemColumns: compactBatchCustomerStatementItemColumns,
   data: [],

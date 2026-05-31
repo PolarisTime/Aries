@@ -114,6 +114,7 @@ export function ModuleEditorWorkspace({
     items,
     openParentSelector,
     parentImporting,
+    parentSelectorFilters,
     parentSelectorOpen,
     saveResult,
     saving,
@@ -186,6 +187,7 @@ export function ModuleEditorWorkspace({
           items={items}
           selectedItemIds={selectedItemIds}
           parentImporting={parentImporting}
+          parentSelectorFilters={parentSelectorFilters}
           parentSelectorOpen={parentSelectorOpen}
           itemColumns={itemColumns}
           itemColumnOrder={itemColumnOrder}

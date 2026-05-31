@@ -68,7 +68,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     },
   ],
   columns: [
-    { title: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'), dataIndex: 'purchaseOrderNo', width: 180 },
     { title: i18next.t('modules.pages.salesOrder.colOrderNo'), dataIndex: 'orderNo', width: 160 },
     { title: i18next.t('modules.pages.salesOrder.colProjectName'), dataIndex: 'projectName', width: 180 },
     { title: i18next.t('modules.pages.salesOrder.colCustomerName'), dataIndex: 'customerName', width: 140 },

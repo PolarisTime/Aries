@@ -45,6 +45,7 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import type { SearchParams } from '@/types/api-raw'
 import { message, modal } from '@/utils/antd-app'
 import { cloneLineItems } from '@/utils/clone-utils'
 import { parseDateTimeValue } from '@/utils/formatters'
@@ -261,6 +262,8 @@ export function useModuleEditorWorkspace({
   const [parentSelectorSessionKey, setParentSelectorSessionKey] = useState<
     string | null
   >(null)
+  const [parentSelectorFilters, setParentSelectorFilters] =
+    useState<SearchParams>({})
   const [parentImporting, setParentImporting] = useState(false)
   const [workspaceState, setWorkspaceState] = useReducer(
     editorWorkspaceReducer,
@@ -653,6 +656,9 @@ export function useModuleEditorWorkspace({
       message.warning(validationError)
       return
     }
+    const nextParentFilters =
+      parentImportConfig.buildParentFilters?.(currentValues) || {}
+    setParentSelectorFilters(nextParentFilters)
     setParentSelectorSessionKey(editorSessionKey)
   }
 
@@ -699,6 +705,7 @@ export function useModuleEditorWorkspace({
     items,
     openParentSelector,
     parentImporting,
+    parentSelectorFilters,
     parentSelectorOpen,
     primaryNoLoading,
     saveResult,
