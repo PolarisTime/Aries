@@ -2,6 +2,8 @@ import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
 const AUDITED_STATUS = '已审核'
+const PURCHASE_COMPLETED_STATUS = '完成采购'
+const SALES_COMPLETED_STATUS = '完成销售'
 
 function hasPositiveQuantity(value: unknown) {
   const quantity = Number(value)
@@ -37,13 +39,38 @@ export function hasImportableQuantity(
 export function filterImportableParentRecords(
   parentModuleKey: string,
   records: ModuleRecord[],
+  candidateStatementModuleKey?: string,
 ) {
   return records.filter((record) => {
-    if (parentModuleKey === 'purchase-order' || parentModuleKey === 'sales-order') {
+    if (
+      candidateStatementModuleKey === 'supplier-statement' &&
+      parentModuleKey === 'purchase-inbound'
+    ) {
+      return asString(record.status) === PURCHASE_COMPLETED_STATUS
+    }
+    if (
+      candidateStatementModuleKey === 'customer-statement' &&
+      parentModuleKey === 'sales-order'
+    ) {
+      return asString(record.status) === SALES_COMPLETED_STATUS
+    }
+    if (
+      candidateStatementModuleKey === 'freight-statement' &&
+      parentModuleKey === 'freight-bill'
+    ) {
+      return asString(record.status) === AUDITED_STATUS
+    }
+    if (
+      parentModuleKey === 'purchase-order' ||
+      parentModuleKey === 'sales-order'
+    ) {
       return (
         asString(record.status) === AUDITED_STATUS &&
         hasImportableQuantity(parentModuleKey, record)
       )
+    }
+    if (parentModuleKey === 'freight-bill') {
+      return asString(record.status) === AUDITED_STATUS
     }
     return true
   })

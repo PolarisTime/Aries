@@ -130,14 +130,14 @@ export function GeneralSettingsTableCard({
         </SystemTableToolbar>
       }
     >
-      <Row gutter={16} className="mb-4">
-        <Col span={8}>
+      <Row gutter={[16, 16]} className="mb-4">
+        <Col xs={24} sm={8}>
           <Statistic title={t('system.generalSettingsTable.basicParams')} value={basicSettingRows.length} />
         </Col>
-        <Col span={8}>
+        <Col xs={24} sm={8}>
           <Statistic title={t('system.generalSettingsTable.systemSwitches')} value={switchRows.length} />
         </Col>
-        <Col span={8}>
+        <Col xs={24} sm={8}>
           <Statistic
             title={t('system.generalSettingsTable.currentEnabled')}
             value={
@@ -155,6 +155,7 @@ export function GeneralSettingsTableCard({
         loading={loading}
         size="small"
         pagination={false}
+        scroll={{ x: 890 }}
         className="mb-6"
       />
       <Typography.Title level={5}>{t('system.generalSettingsTable.systemSwitchesTitle')}</Typography.Title>
@@ -165,6 +166,7 @@ export function GeneralSettingsTableCard({
         loading={loading}
         size="small"
         pagination={false}
+        scroll={{ x: 820 }}
       />
     </Card>
   )

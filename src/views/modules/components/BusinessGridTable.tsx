@@ -1,7 +1,6 @@
 import Empty from 'antd/es/empty'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
-import type { SortOrder } from 'antd/es/table/interface'
 import { type MouseEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
@@ -18,7 +17,6 @@ interface Props {
   rowClassName: (record: ModuleRecord) => string
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
-  onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
   hasNextPage?: boolean
   fetchNextPage?: () => void
   isFetchingNextPage?: boolean
@@ -33,7 +31,6 @@ export function BusinessGridTable({
   rowClassName,
   onRowClick,
   onRowDoubleClick,
-  onSortingChange,
   hasNextPage: _hasNextPage,
   fetchNextPage: _fetchNextPage,
   isFetchingNextPage: _isFetchingNextPage,
@@ -130,20 +127,6 @@ export function BusinessGridTable({
   )
   const locale = { emptyText }
 
-  const onChange = (
-    _pagination: unknown,
-    _filters: unknown,
-    sorter: unknown,
-  ) => {
-    const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter
-    const columnKey = (activeSorter as { columnKey?: string | number })
-      ?.columnKey
-    onSortingChange(
-      typeof columnKey === 'bigint' ? String(columnKey) : columnKey,
-      (activeSorter as { order?: SortOrder })?.order,
-    )
-  }
-
   return (
     <div ref={shellRef} className="module-table-shell">
       <Table
@@ -162,7 +145,6 @@ export function BusinessGridTable({
         rowClassName={rowClassName}
         onRow={onRow}
         locale={locale}
-        onChange={onChange}
       />
     </div>
   )

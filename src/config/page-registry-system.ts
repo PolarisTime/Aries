@@ -12,7 +12,7 @@ export const systemPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'number-rules',
-    title: '单号规则',
+    title: '编号规则',
     menuKey: '/number-rules',
     view: 'number-rules',
     icon: 'ProfileOutlined',
@@ -103,6 +103,5 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     icon: 'DatabaseOutlined',
     menuParent: 'system',
     resourceKey: 'database',
-    accessResources: ['general-setting'],
   },
 ]

@@ -3,11 +3,8 @@ import type { ColumnType } from 'antd/es/table'
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
-import type {
-  ColumnDef,
-  RowSelectionState,
-  SortingState,
-} from '@/hooks/useDataTable'
+import type { ColumnDef, RowSelectionState } from '@/hooks/useDataTable'
+import { ACTION_COLUMN_WIDTH } from '@/hooks/useGridColumns'
 import { useDataTable } from '@/hooks/useDataTable'
 import { useGridColumns } from '@/hooks/useGridColumns'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
@@ -26,8 +23,6 @@ interface Props {
   ) => void
   buildActions: (record: ModuleRecord) => ActionItem[]
   showActions?: boolean
-  sorting: SortingState
-  onSortingChange: (sorting: SortingState) => void
 }
 
 function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
@@ -49,12 +44,10 @@ function buildAntdColumns({
   columnDefs,
   columnOrder,
   columnVisibility,
-  sorting,
 }: {
   columnDefs: ColumnDef<ModuleRecord, unknown>[]
   columnOrder: string[]
   columnVisibility: Record<string, boolean>
-  sorting: SortingState
 }): TableColumnsType<ModuleRecord> {
   const columnMap = new Map(
     columnDefs.map((column) => [
@@ -72,7 +65,6 @@ function buildAntdColumns({
     }
     const title: ReactNode =
       typeof columnDef.header === 'function' ? '' : columnDef.header
-    const sorted = sorting.find((item) => item.id === columnId)
     return [
       {
         title,
@@ -88,12 +80,13 @@ function buildAntdColumns({
           columnId === 'actions'
             ? () => ({ className: 'sticky-actions-col' })
             : undefined,
-        width: columnDef.meta?.width,
+        width:
+          columnId === 'actions'
+            ? ACTION_COLUMN_WIDTH
+            : columnDef.meta?.width,
         align: (columnDef.meta?.align ??
           'center') as ColumnType<ModuleRecord>['align'],
         ellipsis: true,
-        sorter: columnId !== 'actions',
-        sortOrder: sorted ? (sorted.desc ? 'descend' : 'ascend') : null,
         render: (_: unknown, record: ModuleRecord) => {
           return columnDef.meta?.renderCell?.(record) ?? null
         },
@@ -112,8 +105,6 @@ export function useBusinessGridTable({
   setSelectedRowMap,
   buildActions,
   showActions,
-  sorting,
-  onSortingChange,
 }: Props) {
   const totalColumnCount = config?.columns?.length ?? 0
   const {
@@ -154,29 +145,13 @@ export function useBusinessGridTable({
     (c) => (c as ColumnDef<ModuleRecord, unknown> & { id: string }).id || '',
   )
   const columnOrder = mergeColumnOrder(allColumnIds, savedOrder)
-  const handleAntdSortingChange = (
-    columnKey?: string | number,
-    order?: 'ascend' | 'descend' | null,
-  ) => {
-    if (!columnKey || !order) {
-      onSortingChange([])
-      return
-    }
-    onSortingChange([
-      {
-        id: String(columnKey),
-        desc: order === 'descend',
-      },
-    ])
-  }
   const { table } = useDataTable<ModuleRecord>({
     data: records,
     columns: columnDefs,
     manualSorting: true,
-    enableSorting: true,
+    enableSorting: false,
     enableRowSelection: true,
     getRowId: (row) => String(row.id),
-    onSortingChange,
     rowSelection: rowSelectionState,
     onRowSelectionChange: (updater) => {
       const next =
@@ -187,13 +162,11 @@ export function useBusinessGridTable({
     onColumnVisibilityChange: handleColumnVisibilityChange,
     columnOrder,
     onColumnOrderChange: handleColumnOrderChange,
-    sorting,
   })
   const computedColumns = buildAntdColumns({
     columnDefs,
     columnOrder,
     columnVisibility,
-    sorting,
   })
   const antdColumns = computedColumns
   const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined = {
@@ -237,6 +210,5 @@ export function useBusinessGridTable({
     toggleColumn,
     rowSelection,
     onColumnOrderChange: handleColumnOrderChange,
-    onSortingChange: handleAntdSortingChange,
   }
 }

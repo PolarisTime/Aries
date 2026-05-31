@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { listSystemSettings } from '@/api/system-settings'
+import { listClientSettings } from '@/api/system-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
 
 interface WatermarkConfig {
@@ -14,10 +14,10 @@ interface WatermarkConfig {
 
 export function useAppWatermark(currentUserLoginName: string): WatermarkConfig {
   const { data: systemSettings = [] } = useQuery({
-    queryKey: QUERY_KEYS.generalSetting,
+    queryKey: QUERY_KEYS.clientSettings,
     queryFn: async () => {
       try {
-        return await listSystemSettings()
+        return await listClientSettings()
       } catch {
         return []
       }

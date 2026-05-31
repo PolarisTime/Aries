@@ -21,8 +21,6 @@ export const QUERY_KEYS = {
   businessGridList: (
     moduleKey: string,
     filters: Record<string, unknown>,
-    sortBy: string,
-    sortDirection: string,
     page: number,
     pageSize: number,
   ) =>
@@ -30,8 +28,6 @@ export const QUERY_KEYS = {
       'business-grid',
       moduleKey,
       filters,
-      sortBy,
-      sortDirection,
       page,
       pageSize,
     ] as const,

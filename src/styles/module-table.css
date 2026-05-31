@@ -1,6 +1,8 @@
 /* 操作列宽度固定 + 背景色（fixed 定位由 antd 处理） */
 .module-table-shell .sticky-actions-col,
-.module-table-shell .ant-table-fixed-left .sticky-actions-col {
+.module-table-shell col.sticky-actions-col,
+.module-table-shell .ant-table-fixed-left .sticky-actions-col,
+.module-table-shell .ant-table-fixed-left col.sticky-actions-col {
   width: 150px !important;
   min-width: 150px !important;
   max-width: 150px !important;

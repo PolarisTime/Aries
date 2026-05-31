@@ -204,7 +204,7 @@ export function RateLimitRulesCard() {
         confirmLoading={saving}
         okText={t('system.rateLimit.save')}
         cancelText={t('system.rateLimit.cancel')}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" className="mt-16">
           <Form.Item name="rate" label={t('system.rateLimit.rateLabel')}>

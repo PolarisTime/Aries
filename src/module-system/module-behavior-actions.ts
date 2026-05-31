@@ -1,22 +1,22 @@
 import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 
 registerModuleBehavior('supplier-statement', {
-  actionKindsByKey: { generate_statement: 'openSupplierStatementGenerator' },
-  actionKindsByLabel: { 生成对账单: 'openSupplierStatementGenerator' },
+  actionKindsByKey: { generate_statement: 'openCreateEditor' },
+  actionKindsByLabel: { 生成对账单: 'openCreateEditor' },
 })
 
 registerModuleBehavior('customer-statement', {
-  actionKindsByKey: { generate_statement: 'openCustomerStatementGenerator' },
-  actionKindsByLabel: { 生成对账单: 'openCustomerStatementGenerator' },
+  actionKindsByKey: { generate_statement: 'openCreateEditor' },
+  actionKindsByLabel: { 生成对账单: 'openCreateEditor' },
 })
 
 registerModuleBehavior('freight-statement', {
   actionKindsByKey: {
-    generate_freight_statement: 'openFreightStatementGenerator',
+    generate_freight_statement: 'openCreateEditor',
     view_freight_summary: 'openFreightSummary',
   },
   actionKindsByLabel: {
-    生成物流对账单: 'openFreightStatementGenerator',
+    生成物流对账单: 'openCreateEditor',
     查看运费对账汇总: 'openFreightSummary',
   },
 })

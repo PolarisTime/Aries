@@ -1,5 +1,6 @@
 import { getCarrierOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   AUDIT_STATUS_LABEL,
   CARRIER_NAME_LABEL,
@@ -212,6 +213,56 @@ export const freightStatementPageConfig: ModulePageConfig = {
       'weightTon',
       'warehouseName',
     ],
+  },
+  parentImport: {
+    parentModuleKey: 'freight-bill',
+    label: '物流单',
+    parentFieldKey: 'sourceBillNos',
+    parentDisplayFieldKey: 'billNo',
+    candidateStatementModuleKey: 'freight-statement',
+    buttonText: '选择物流单生成明细',
+    enforceUniqueRelation: true,
+    allowMultipleSelection: true,
+    buildParentFilters: (currentRecord) => ({
+      carrierName: asString(currentRecord.carrierName).trim(),
+      status: '已审核',
+    }),
+    validateBeforeOpen: (currentRecord) =>
+      asString(currentRecord.carrierName).trim()
+        ? null
+        : '请先选择物流商，再选择物流单',
+    mapParentToDraft: (parentRecord) => ({
+      carrierName: parentRecord.carrierName || '',
+      startDate: parentRecord.billTime || '',
+      endDate: parentRecord.billTime || '',
+      paidAmount: 0,
+      status: '待审核',
+      signStatus: '未签署',
+    }),
+    validateParentImport: ({ currentRecord, parentRecord }) => {
+      if (asString(parentRecord.status).trim() !== '已审核') {
+        return '只能选择已审核的物流单生成物流对账单'
+      }
+      if (
+        asString(currentRecord.carrierName).trim() !==
+        asString(parentRecord.carrierName).trim()
+      ) {
+        return '只能选择同一物流商的物流单生成物流对账单'
+      }
+      return null
+    },
+    transformItems: (parentRecord) => {
+      const sourceNo = asString(parentRecord.billNo).trim()
+      return (Array.isArray(parentRecord.items) ? parentRecord.items : []).map(
+        (item, index) => ({
+          ...item,
+          id: `${sourceNo || 'freight-bill'}-${String(item.id || index)}`,
+          sourceNo,
+          _parentBillTime: parentRecord.billTime || '',
+          _parentTotalFreight: Number(parentRecord.totalFreight || 0),
+        }),
+      )
+    },
   },
   itemColumns: freightItemColumns,
   data: [],

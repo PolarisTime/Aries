@@ -10,8 +10,6 @@ interface Props {
   enabled: boolean
   currentPage: number
   pageSize: number
-  sortBy?: string
-  sortDirection?: 'asc' | 'desc'
 }
 
 export function useInfiniteBusinessItems({
@@ -20,15 +18,11 @@ export function useInfiniteBusinessItems({
   enabled,
   currentPage,
   pageSize,
-  sortBy,
-  sortDirection,
 }: Props) {
   const query = useQuery({
     queryKey: QUERY_KEYS.businessGridList(
       moduleKey,
       filters,
-      sortBy || '',
-      sortDirection || '',
       currentPage,
       pageSize,
     ),
@@ -39,8 +33,6 @@ export function useInfiniteBusinessItems({
         {
           currentPage,
           pageSize,
-          sortBy,
-          sortDirection,
         },
         { signal },
       ),

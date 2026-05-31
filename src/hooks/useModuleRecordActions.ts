@@ -7,6 +7,7 @@ import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
 interface Props {
   moduleKey: string
   resourceKey?: string
+  isReadOnly?: boolean
   onEdit: (record: ModuleRecord) => void
   onAttach: (record: ModuleRecord) => void
   onDetail?: (record: ModuleRecord) => void
@@ -15,6 +16,7 @@ interface Props {
 export function useModuleRecordActions({
   moduleKey,
   resourceKey,
+  isReadOnly = false,
   onEdit,
   onAttach,
   onDetail,
@@ -32,6 +34,9 @@ export function useModuleRecordActions({
         label: t('hooks.recordActions.view'),
         onClick: () => onDetail(record),
       })
+    }
+    if (isReadOnly) {
+      return items
     }
     if (can(resource, 'update')) {
       items.push({

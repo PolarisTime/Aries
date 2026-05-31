@@ -46,7 +46,7 @@ export function ApiKeyListToolbar({
 }: Props) {
   const { t } = useTranslation()
   return (
-    <Space>
+    <Space wrap>
       <Input.Search
         placeholder={t('system.apiKey.searchPlaceholder')}
         className="w-280"

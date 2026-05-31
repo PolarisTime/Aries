@@ -34,7 +34,7 @@ export function UserAccountDetailModal({
     >
       <Spin spinning={loading}>
         {record && (
-          <Descriptions column={2} bordered size="small">
+          <Descriptions column={{ xs: 1, md: 2 }} bordered size="small">
             <Descriptions.Item label={t('system.userAccountDetail.loginName')}>
               {record.loginName}
             </Descriptions.Item>
@@ -50,10 +50,10 @@ export function UserAccountDetailModal({
             <Descriptions.Item label={t('system.userAccountDetail.dataScope')}>
               {record.dataScope || '--'}
             </Descriptions.Item>
-            <Descriptions.Item label={t('system.userAccountDetail.roles')} span={2}>
+            <Descriptions.Item label={t('system.userAccountDetail.roles')} span="filled">
               {record.roleNames?.length ? record.roleNames.join('、') : '--'}
             </Descriptions.Item>
-            <Descriptions.Item label={t('system.userAccountDetail.permSummary')} span={2}>
+            <Descriptions.Item label={t('system.userAccountDetail.permSummary')} span="filled">
               {record.permissionSummary || '--'}
             </Descriptions.Item>
             <Descriptions.Item label={t('system.userAccountDetail.status')}>
@@ -64,10 +64,10 @@ export function UserAccountDetailModal({
                 {record.totpEnabled ? t('system.userAccountDetail.totpEnabled') : t('system.userAccountDetail.totpDisabled')}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label={t('system.userAccountDetail.lastLogin')} span={2}>
+            <Descriptions.Item label={t('system.userAccountDetail.lastLogin')} span="filled">
               {formatDateTime(record.lastLoginDate, '--')}
             </Descriptions.Item>
-            <Descriptions.Item label={t('system.userAccountDetail.remark')} span={2}>
+            <Descriptions.Item label={t('system.userAccountDetail.remark')} span="filled">
               {record.remark || '--'}
             </Descriptions.Item>
           </Descriptions>

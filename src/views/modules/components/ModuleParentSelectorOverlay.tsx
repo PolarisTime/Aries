@@ -7,7 +7,9 @@ import { useReducer } from 'react'
 import i18next from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { listBusinessModule } from '@/api/business'
+import { buildFilterParams } from '@/api/business-listing-filtering'
 import { getModuleConfig } from '@/api/module-contracts'
+import { listStatementCandidatePage } from '@/api/statements'
 import { StatusTag } from '@/components/StatusTag'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
@@ -27,6 +29,11 @@ interface Props {
   parentModuleKey: string
   parentDisplayFieldKey?: string
   allowMultipleSelection?: boolean
+  candidateStatementModuleKey?:
+    | 'supplier-statement'
+    | 'customer-statement'
+    | 'freight-statement'
+  fixedFilters?: SearchParams
   title?: string
   onSelect: (records: ModuleRecord[]) => void
   onClose: () => void
@@ -114,6 +121,16 @@ function getParentSelectorColumnMap(): Record<string, OverlayColumn[]> {
       { dataIndex: 'totalAmount', title: i18next.t('modules.parentSelector.column.totalAmount'), width: 120, type: 'amount' },
       { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
     ],
+    'freight-bill': [
+      { dataIndex: 'billNo', title: i18next.t('modules.filter.freightNo'), width: 160 },
+      { dataIndex: 'carrierName', title: i18next.t('modules.filter.carrierName'), width: 150 },
+      { dataIndex: 'customerName', title: i18next.t('modules.parentSelector.column.customerName'), width: 160 },
+      { dataIndex: 'projectName', title: i18next.t('modules.parentSelector.column.projectName'), width: 180 },
+      { dataIndex: 'billTime', title: i18next.t('modules.parentSelector.summary.billTime'), width: 130, type: 'date' },
+      { dataIndex: 'totalWeight', title: i18next.t('modules.parentSelector.column.totalWeight'), width: 130, type: 'weight' },
+      { dataIndex: 'totalFreight', title: i18next.t('modules.pages.freightStatement.totalFreight'), width: 120, type: 'amount' },
+      { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
+    ],
     'purchase-inbound': [
       { dataIndex: 'inboundNo', title: i18next.t('modules.parentSelector.column.inboundNo'), width: 160 },
       { dataIndex: 'purchaseOrderNo', title: i18next.t('modules.parentSelector.column.relatedOrder'), width: 160 },
@@ -154,17 +171,35 @@ function normalizeFilterValues(filters: SearchParams) {
   )
 }
 
+function resolveParentSelectorSourceModule(
+  parentModuleKey: string,
+  candidateStatementModuleKey?: string,
+) {
+  return candidateStatementModuleKey || parentModuleKey
+}
+
 function buildOverlayFilterConfig(
   parentModuleKey: string,
   pageConfig: ModulePageConfig,
+  fixedFilters: SearchParams,
 ): ModulePageConfig {
   const endpointConfig = getModuleConfig(parentModuleKey)
   const nativeFilterKeys = new Set(endpointConfig.nativeFilterKeys || [])
   const dateRangeKeys = new Set(
     Object.keys(endpointConfig.dateRangeMapping || {}),
   )
+  const fixedFilterKeys = new Set(
+    Object.entries(fixedFilters).flatMap(([key, value]) => {
+      if (value === undefined || value === null) return []
+      if (typeof value === 'string' && !value.trim()) return []
+      return [key]
+    }),
+  )
 
   const supportedFilters = pageConfig.filters.filter((filter) => {
+    if (fixedFilterKeys.has(filter.key)) {
+      return false
+    }
     if (filter.type === 'dateRange') {
       return dateRangeKeys.has(filter.key)
     }
@@ -376,6 +411,8 @@ export function ModuleParentSelectorOverlay({
   parentModuleKey,
   parentDisplayFieldKey,
   allowMultipleSelection = false,
+  candidateStatementModuleKey,
+  fixedFilters = {},
   title,
   onSelect,
   onClose,
@@ -388,6 +425,8 @@ export function ModuleParentSelectorOverlay({
       parentModuleKey={parentModuleKey}
       parentDisplayFieldKey={parentDisplayFieldKey}
       allowMultipleSelection={allowMultipleSelection}
+      candidateStatementModuleKey={candidateStatementModuleKey}
+      fixedFilters={fixedFilters}
       title={title}
       onSelect={onSelect}
       onClose={onClose}
@@ -399,6 +438,8 @@ function ModuleParentSelectorOverlayContent({
   parentModuleKey,
   parentDisplayFieldKey,
   allowMultipleSelection = false,
+  candidateStatementModuleKey,
+  fixedFilters = {},
   title,
   onSelect,
   onClose,
@@ -425,6 +466,10 @@ function ModuleParentSelectorOverlayContent({
     parentDisplayFieldKey ||
     parentDisplayFieldFallbackMap[parentModuleKey] ||
     'id'
+  const effectiveSubmittedFilters = {
+    ...submittedFilters,
+    ...fixedFilters,
+  }
 
   const { data: parentPageConfig, isLoading: isConfigLoading } = useQuery({
     queryKey: QUERY_KEYS.parentSelectorConfig(parentModuleKey),
@@ -434,26 +479,38 @@ function ModuleParentSelectorOverlayContent({
   })
 
   const overlayFilterConfig = parentPageConfig
-    ? buildOverlayFilterConfig(parentModuleKey, parentPageConfig)
+    ? buildOverlayFilterConfig(parentModuleKey, parentPageConfig, fixedFilters)
     : undefined
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: QUERY_KEYS.parentSelectorList(
-      parentModuleKey,
-      submittedFilters,
+      resolveParentSelectorSourceModule(
+        parentModuleKey,
+        candidateStatementModuleKey,
+      ),
+      effectiveSubmittedFilters,
       page,
       pageSize,
     ),
-    queryFn: ({ signal }) =>
-      listBusinessModule(
+    queryFn: ({ signal }) => {
+      if (candidateStatementModuleKey) {
+        return listStatementCandidatePage(
+          candidateStatementModuleKey,
+          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          Math.max(page - 1, 0),
+          pageSize,
+        )
+      }
+      return listBusinessModule(
         parentModuleKey,
-        submittedFilters,
+        effectiveSubmittedFilters,
         {
           currentPage: page,
           pageSize,
         },
         { signal },
-      ),
+      )
+    },
     enabled: !!parentModuleKey,
     placeholderData: keepPreviousData,
   })
@@ -461,6 +518,7 @@ function ModuleParentSelectorOverlayContent({
   const records = filterImportableParentRecords(
     parentModuleKey,
     data?.data?.rows || [],
+    candidateStatementModuleKey,
   )
   const total = Number(data?.data?.total || 0)
 

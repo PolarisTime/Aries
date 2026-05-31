@@ -41,6 +41,26 @@ const generalSettingsInitialState: GeneralSettingsState = {
   toggling: false,
 }
 
+export function buildSystemSettingPayload(
+  record: ModuleRecord,
+  patch: Partial<ModuleRecord>,
+): ModuleRecord {
+  return {
+    id: record.id,
+    settingCode: record.settingCode,
+    settingName: record.settingName,
+    billName: record.billName,
+    prefix: record.prefix || 'SYS',
+    dateRule: record.dateRule || 'NONE',
+    serialLength: record.serialLength || 1,
+    resetRule: record.resetRule || 'NEVER',
+    sampleNo: record.sampleNo || 'ON',
+    status: asString(record.status) || '正常',
+    remark: record.remark,
+    ...patch,
+  }
+}
+
 export function GeneralSettingsView() {
   const { t } = useTranslation()
   const { showError } = useRequestError()
@@ -100,19 +120,10 @@ export function GeneralSettingsView() {
     setState({ toggling: true })
     const nextStatus = asString(record.status) === '正常' ? '禁用' : '正常'
     try {
-      await saveSystemSetting({
-        id: record.id,
-        settingCode: record.settingCode,
-        settingName: record.settingName,
-        billName: record.billName,
-        prefix: 'SYS',
-        dateRule: 'NONE',
-        serialLength: 6,
-        resetRule: 'NEVER',
+      await saveSystemSetting(buildSystemSettingPayload(record, {
         sampleNo: record.sampleNo || 'ON',
         status: nextStatus,
-        remark: record.remark,
-      })
+      }))
       message.success(
         nextStatus === '正常'
           ? t('system.generalSettings.enabled')
@@ -131,27 +142,27 @@ export function GeneralSettingsView() {
     setState({ saving: true })
     try {
       const values = await form.validateFields()
+      const isToggle = isToggleSetting(editingRecord)
       let sampleNo = ''
       if (isWatermarkContentSetting(editingRecord)) {
-        sampleNo = String(values.numericValue || 'ON')
+        sampleNo = String(values.numericValue || '').trim()
       } else if (isNumericSetting(editingRecord)) {
         sampleNo = String(values.numericValue || 0)
-      } else if (isToggleSetting(editingRecord)) {
+      } else if (isToggle) {
         sampleNo = values.selectedActions?.join(',') || ''
       }
-      await saveSystemSetting({
-        id: editingRecord.id,
+      await saveSystemSetting(buildSystemSettingPayload(editingRecord, {
         settingCode: values.settingCode,
         settingName: values.settingName,
         billName: values.billName,
-        prefix: 'SYS',
-        dateRule: 'NONE',
-        serialLength: 6,
-        resetRule: 'NEVER',
         remark: values.remark,
-        status: values.enabled ? '正常' : '禁用',
+        status: isToggle
+          ? values.enabled
+            ? '正常'
+            : '禁用'
+          : asString(editingRecord.status) || '正常',
         sampleNo: sampleNo || 'ON',
-      })
+      }))
       message.success(t('common.saveSuccess'))
       refresh()
       setState({ editorOpen: false, saving: false })

@@ -82,8 +82,8 @@ export function UserAccountEditorModal({
         <Form form={form} layout="vertical" className="user-account-form">
           <div className="form-section">
             <div className="form-section-title">{t('system.userAccountEditor.accountInfo')}</div>
-            <Row gutter={24}>
-              <Col span={12}>
+            <Row gutter={[24, 0]}>
+              <Col xs={24} sm={12}>
                 <Form.Item
                   name="loginName"
                   label={t('system.userAccountEditor.loginName')}
@@ -119,20 +119,20 @@ export function UserAccountEditorModal({
                   />
                 </Form.Item>
               </Col>
-              <Col span={12}>
+              <Col xs={24} sm={12}>
                 <Form.Item name="userName" label={t('system.userAccountEditor.userName')} required>
                   <Input placeholder={t('system.userAccountEditor.userNamePlaceholder')} maxLength={64} />
                 </Form.Item>
               </Col>
             </Row>
-            <Row gutter={24}>
-              <Col span={12}>
+            <Row gutter={[24, 0]}>
+              <Col xs={24} sm={12}>
                 <Form.Item name="mobile" label={t('system.userAccountEditor.mobile')}>
                   <Input placeholder={t('system.userAccountEditor.mobilePlaceholder')} maxLength={32} />
                 </Form.Item>
               </Col>
               {isCreate ? (
-                <Col span={12}>
+                <Col xs={24} sm={12}>
                   <Form.Item
                     name="password"
                     label={t('system.userAccountEditor.initialPassword')}
@@ -145,7 +145,7 @@ export function UserAccountEditorModal({
                   </Form.Item>
                 </Col>
               ) : (
-                <Col span={12}>
+                <Col xs={24} sm={12}>
                   <Form.Item name="status" label={t('system.userAccountEditor.status')}>
                     <Select
                       placeholder={t('system.userAccountEditor.statusPlaceholder')}
@@ -155,8 +155,8 @@ export function UserAccountEditorModal({
                 </Col>
               )}
             </Row>
-            <Row gutter={24}>
-              <Col span={12}>
+            <Row gutter={[24, 0]}>
+              <Col xs={24} sm={12}>
                 <Form.Item name="departmentId" label={t('system.userAccountEditor.department')} required>
                   <Select
                     showSearch
@@ -173,8 +173,8 @@ export function UserAccountEditorModal({
           </div>
           <div className="form-section">
             <div className="form-section-title">{t('system.userAccountEditor.permConfig')}</div>
-            <Row gutter={24}>
-              <Col span={isCreate ? 16 : 14}>
+            <Row gutter={[24, 0]}>
+              <Col xs={24} md={isCreate ? 12 : 16}>
                 <Form.Item name="roleIds" label={t('system.userAccountEditor.roles')} required
                   getValueFromEvent={(ids: (string | number)[]) => ids?.map(Number)}
                 >
@@ -201,7 +201,7 @@ export function UserAccountEditorModal({
                   />
                 </Form.Item>
               </Col>
-              <Col span={isCreate ? 8 : 5}>
+              <Col xs={24} md={isCreate ? 6 : 8}>
                 <Form.Item
                   {...buildLabeledFormItemProps({
                     label: t('system.userAccountEditor.roleDataScope'),
@@ -217,7 +217,7 @@ export function UserAccountEditorModal({
                 </Form.Item>
               </Col>
               {isCreate && (
-                <Col span={8}>
+                <Col xs={24} md={6}>
                   <Form.Item name="status" label={t('system.userAccountEditor.status2')}>
                     <Select
                       placeholder={t('system.userAccountEditor.statusPlaceholder2')}

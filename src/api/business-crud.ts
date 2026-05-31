@@ -46,7 +46,7 @@ export async function allocateBusinessPrimaryNo(moduleKey: string) {
 
 export async function getBusinessModuleDetail(moduleKey: string, id: string) {
   const endpointConfig = getModuleConfig(moduleKey)
-  if (endpointConfig.readOnly) {
+  if (endpointConfig.readOnly && !endpointConfig.supportsDetail) {
     throw new Error('当前模块不支持详情接口')
   }
 
@@ -90,6 +90,7 @@ export async function saveBusinessModule(
           preallocatedId
             ? {
                 headers: {
+                  'X-Business-Module-Key': moduleKey,
                   'X-Preallocated-Id': preallocatedId,
                 },
               }

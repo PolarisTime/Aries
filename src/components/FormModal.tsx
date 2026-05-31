@@ -42,7 +42,7 @@ export function FormModal({
       okText={okText ?? t('common.save')}
       cancelText={cancelText ?? t('common.cancel')}
       okButtonProps={danger ? { danger: true } : undefined}
-      maskClosable={false}
+      mask={{ closable: false }}
       forceRender
       footer={footer}
     >

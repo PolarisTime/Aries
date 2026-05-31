@@ -123,6 +123,18 @@ registerModuleBehavior('freight-bill', {
   allowsManualLineItems: false,
   readonlyLineItems: true,
 })
+registerModuleBehavior('freight-statement', {
+  allowsManualLineItems: false,
+  readonlyLineItems: true,
+})
+registerModuleBehavior('supplier-statement', {
+  allowsManualLineItems: false,
+  readonlyLineItems: true,
+})
+registerModuleBehavior('customer-statement', {
+  allowsManualLineItems: false,
+  readonlyLineItems: true,
+})
 
 registerModuleBehavior('purchase-inbound', {
   supportsStatements: true,

@@ -76,7 +76,7 @@ export const menuGroupDefinitions: Record<MenuGroupKey, MenuGroupDefinition> = {
     icon: 'FileTextOutlined',
   },
   finance: { key: 'finance', title: i18next.t('navigation.finance'), icon: 'WalletOutlined' },
-  system: { key: 'system', title: i18next.t('navigation.system'), icon: 'PrinterOutlined' },
+  system: { key: 'system', title: i18next.t('navigation.system'), icon: 'SettingOutlined' },
 }
 
 export function buildMenuEntriesByGroup(

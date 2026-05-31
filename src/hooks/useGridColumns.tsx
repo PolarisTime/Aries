@@ -7,10 +7,12 @@ import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
+export const ACTION_COLUMN_WIDTH = 150
+
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
-    width?: string
+    width?: number | string
     align?: string
     fixed?: string
     ellipsis?: string
@@ -41,7 +43,7 @@ export function useGridColumns({
       id: 'actions',
       header: t('hooks.gridColumns.actions'),
       meta: {
-        width: '150px',
+        width: ACTION_COLUMN_WIDTH,
         align: 'center',
         fixed: 'left',
         renderCell: (record: ModuleRecord) => (

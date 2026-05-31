@@ -79,6 +79,33 @@ describe('ModuleParentSelectorOverlay importable record filtering', () => {
       }),
     ).toBe(true)
   })
+
+  it('keeps only audited freight bills', () => {
+    const records = [
+      { id: 'fb-1', status: '已审核' },
+      { id: 'fb-2', status: '未审核' },
+      { id: 'fb-3', status: '草稿' },
+    ] as ModuleRecord[]
+
+    expect(
+      filterImportableParentRecords('freight-bill', records).map((r) => r.id),
+    ).toEqual(['fb-1'])
+  })
+
+  it('keeps completed sales orders for customer statement candidates', () => {
+    const records = [
+      { id: 'so-1', status: '完成销售' },
+      { id: 'so-2', status: '已审核' },
+    ] as ModuleRecord[]
+
+    expect(
+      filterImportableParentRecords(
+        'sales-order',
+        records,
+        'customer-statement',
+      ).map((r) => r.id),
+    ).toEqual(['so-1'])
+  })
 })
 
 describe('resolveSelectedParentRows', () => {

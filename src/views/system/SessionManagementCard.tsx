@@ -67,14 +67,14 @@ export function SessionManagementCard({
         </SystemTableToolbar>
       }
     >
-      <Row gutter={16} className="mb-4">
-        <Col span={8}>
+      <Row gutter={[16, 16]} className="mb-4">
+        <Col xs={24} sm={8}>
           <Statistic title={t('system.session.onlineUsers')} value={summary?.onlineUsers ?? 0} />
         </Col>
-        <Col span={8}>
+        <Col xs={24} sm={8}>
           <Statistic title={t('system.session.onlineDevices')} value={summary?.onlineSessions ?? 0} />
         </Col>
-        <Col span={8}>
+        <Col xs={24} sm={8}>
           <Statistic title={t('system.session.activeSessions')} value={summary?.activeSessions ?? 0} />
         </Col>
       </Row>

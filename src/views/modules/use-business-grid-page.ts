@@ -2,7 +2,6 @@ import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
-import type { SortingState } from '@/hooks/useDataTable'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useDetailSupport } from '@/hooks/useDetailSupport'
 import { useExcelExport } from '@/hooks/useExcelExport'
@@ -70,7 +69,6 @@ export function useBusinessGridPage({
   const [selectedRowMap, setSelectedRowMap] = useState<
     Record<string, ModuleRecord>
   >({})
-  const [sorting, setSorting] = useState<SortingState>([])
   const [currentPage, setCurrentPage] = useState(1)
   const defaultPageSize = useDefaultPageSize()
   const [pageSize, setPageSize] = useState(defaultPageSize)
@@ -103,12 +101,13 @@ export function useBusinessGridPage({
       currentPage,
       // react-doctor: intentional callback, not event handler
       pageSize,
-      sortBy: sorting[0]?.id,
-      sortDirection: sorting[0]?.desc ? 'desc' : sorting[0] ? 'asc' : undefined,
     })
 
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
-  const { exporting, handleExport } = useExcelExport(moduleKey)
+  const { exporting, handleExport: exportModuleRows } = useExcelExport(moduleKey)
+  const handleExport = async () => {
+    await exportModuleRows(submittedFilters)
+  }
   const { detailOpen, detailRecord, detailLoading, openDetail, closeDetail } =
     useDetailSupport({ moduleKey, config: resolvedConfig })
   const {
@@ -182,9 +181,15 @@ export function useBusinessGridPage({
   const { buildActions } = useModuleRecordActions({
     moduleKey,
     resourceKey: pageDef.resourceKey,
+    isReadOnly: Boolean(config?.readOnly),
     onEdit: handleEdit,
     onAttach: overlays.openAttachment,
-    onDetail: detailRoutePath ? handleDetail : undefined,
+    onDetail:
+      detailRoutePath || moduleKey === 'receivable-payable'
+        ? detailRoutePath
+          ? handleDetail
+          : openDetail
+        : undefined,
   })
 
   const {
@@ -271,7 +276,6 @@ export function useBusinessGridPage({
     toggleColumn,
     rowSelection,
     onColumnOrderChange,
-    onSortingChange,
   } = useBusinessGridTable({
     moduleKey,
     config,
@@ -282,8 +286,6 @@ export function useBusinessGridPage({
     setSelectedRowMap,
     buildActions,
     showActions: true,
-    sorting,
-    onSortingChange: setSorting,
   })
 
   return {
@@ -297,7 +299,6 @@ export function useBusinessGridPage({
     columnVisibleKeys,
     columnOrder,
     onColumnOrderChange,
-    onSortingChange,
     config,
     currentPage,
     detailLoading,

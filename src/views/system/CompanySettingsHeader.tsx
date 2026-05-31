@@ -31,7 +31,7 @@ export function CompanySettingsHeader({
   const { t } = useTranslation()
   return (
     <div className="bg-default rounded p-24 mb-16">
-      <div className="flex justify-between mb-20">
+      <div className="flex flex-wrap items-start justify-between gap-16 mb-20">
         <div>
           <Typography.Title level={4} className="m-0">
             {t('system.companyHeader.title')}
@@ -40,7 +40,7 @@ export function CompanySettingsHeader({
             {t('system.companyHeader.description')}
           </Typography.Text>
         </div>
-        <Space>
+        <Space wrap>
           <Button
             size="small"
             loading={loading}
@@ -62,9 +62,9 @@ export function CompanySettingsHeader({
           )}
         </Space>
       </div>
-      <Row gutter={16}>
+      <Row gutter={[16, 16]}>
         {overviewItems.map((item) => (
-          <Col span={8} key={item.label}>
+          <Col xs={24} sm={8} key={item.label}>
             <div className="rounded-lg border border-gray-200 px-[20px] py-[18px] bg-gradient-to-b from-gray-50 to-white">
               <div className="text-sm text-secondary">{item.label}</div>
               <div className="mt-10 text-2xl font-semibold">{item.value}</div>

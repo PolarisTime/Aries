@@ -8,6 +8,7 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import type { SearchParams } from '@/types/api-raw'
 import { ColumnSettingsPopover } from './ColumnSettingsPopover'
 import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
@@ -19,6 +20,7 @@ interface Props {
   items: ModuleLineItem[]
   selectedItemIds: string[]
   parentImporting: boolean
+  parentSelectorFilters: SearchParams
   parentSelectorOpen: boolean
   itemColumns: TableColumnsType<ModuleLineItem>
   itemColumnOrder: string[]
@@ -47,6 +49,7 @@ export function ModuleEditorItemsSection({
   items,
   selectedItemIds,
   parentImporting,
+  parentSelectorFilters,
   parentSelectorOpen,
   itemColumns,
   itemColumnOrder,
@@ -155,6 +158,10 @@ export function ModuleEditorItemsSection({
           parentModuleKey={config.parentImport.parentModuleKey}
           parentDisplayFieldKey={config.parentImport.parentDisplayFieldKey}
           allowMultipleSelection={config.parentImport.allowMultipleSelection}
+          candidateStatementModuleKey={
+            config.parentImport.candidateStatementModuleKey
+          }
+          fixedFilters={parentSelectorFilters}
           title={t('modules.itemsSection.selectParent', { label: config.parentImport.label || t('modules.itemsSection.parentDoc') })}
           onSelect={onImportParentRecord}
           onClose={onCloseParentSelector}
