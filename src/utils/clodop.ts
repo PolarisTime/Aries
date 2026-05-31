@@ -260,7 +260,56 @@ function coerceValue(v: string): unknown {
   if (v === 'false') return false
   const num = Number(v)
   if (!Number.isNaN(num) && v !== '') return num
+  const expressionValue = evaluateNumericExpression(v)
+  if (expressionValue !== null) return expressionValue
   return v
+}
+
+function evaluateNumericExpression(expression: string): number | null {
+  const tokens = expression
+    .replace(/\s+/g, '')
+    .match(/[+\-*/]|(?:\d+(?:\.\d*)?|\.\d+)/g)
+
+  if (!tokens?.length || tokens.join('') !== expression.replace(/\s+/g, '')) {
+    return null
+  }
+  if (tokens.length % 2 === 0) {
+    return null
+  }
+  if (
+    tokens.some((token, index) => index % 2 === 0 && Number.isNaN(Number(token)))
+  ) {
+    return null
+  }
+  if (
+    tokens.some(
+      (token, index) => index % 2 === 1 && !['+', '-', '*', '/'].includes(token),
+    )
+  ) {
+    return null
+  }
+
+  const values: number[] = [Number(tokens[0])]
+  const operators: string[] = []
+
+  for (let i = 1; i < tokens.length; i += 2) {
+    const operator = tokens[i]
+    const nextValue = Number(tokens[i + 1])
+    if (operator === '*') {
+      values[values.length - 1] *= nextValue
+    } else if (operator === '/') {
+      values[values.length - 1] /= nextValue
+    } else {
+      operators.push(operator)
+      values.push(nextValue)
+    }
+  }
+
+  const result = values.reduce((total, value, index) => {
+    if (index === 0) return value
+    return operators[index - 1] === '-' ? total - value : total + value
+  }, 0)
+  return Number.isFinite(result) ? result : null
 }
 
 const SCRIPT_METHOD_RE = /\bLODOP\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(/g

@@ -2257,9 +2257,18 @@ export const enUS: MessageSchema = {
       templateType: 'Template Type',
       templateTypeHtml: 'HTML Template',
       templateTypeCoord: 'Coordinate Overlay',
+      templateTypePdfForm: 'PDF Form',
       templateContent: 'Template Content',
-      templateContentPlaceholder: 'Enter HTML template content',
-      htmlHint: 'Supports HTML templates and LODOP instructions. Use {{fieldName}} syntax to insert dynamic data.',
+      templateContentPlaceholder: 'Enter template content',
+      htmlHint: 'Supports HTML templates, LODOP instructions, and PDF form config. Use {{fieldName}} syntax to insert dynamic data.',
+      helpTitle: 'Print Template Guide',
+      unifiedPrintApi:
+        'All templates use POST /print/record. HTML/COORD returns template data, PDF_FORM returns PDF content. The frontend only renders, previews, and prints.',
+      syntaxHint:
+        'Use {{fieldName}} for fields, {{#each details}}...{{/each}} for detail rows, and {{#if fieldName}}...{{else}}...{{/if}} for conditional blocks.',
+      commonFields: 'Header fields',
+      detailFields: 'Detail fields',
+      layoutFields: 'Backend-generated fields',
     },
     printTemplatePreview: {
       title: 'Template Preview',
