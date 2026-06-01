@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router'
 import { lazy } from 'react'
 import { listBusinessModule } from '@/api/business-listing'
+import { getInitialSetupStatus } from '@/api/setup'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import {
   appPageDefinitions,
@@ -25,7 +26,35 @@ import { asString } from '@/utils/type-narrowing'
 import { LazyLoginView } from '@/views/auth/LazyLoginView'
 import { LazyDashboardView } from '@/views/dashboard/LazyDashboardView'
 
-const rootRoute = createRootRoute({ component: Outlet })
+const SETUP_ROUTE_PATH = '/setup'
+
+const rootRoute = createRootRoute({
+  component: Outlet,
+  beforeLoad: async ({ location }) => {
+    const pathname = location.pathname
+    const isSetupPage = pathname === SETUP_ROUTE_PATH
+
+    try {
+      const response = await getInitialSetupStatus()
+      if (response.data.setupRequired && !isSetupPage) {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw redirect({ to: SETUP_ROUTE_PATH })
+      }
+      if (!response.data.setupRequired && isSetupPage) {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw redirect({ to: '/login' })
+      }
+    } catch (error) {
+      if (error && typeof error === 'object' && 'to' in error) {
+        throw error
+      }
+      if (!isSetupPage) {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw redirect({ to: SETUP_ROUTE_PATH })
+      }
+    }
+  },
+})
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
