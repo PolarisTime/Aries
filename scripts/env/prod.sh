@@ -7,8 +7,8 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
 export ARIES_RUNTIME_ENV=prod
 export VITE_APP_TITLE="${VITE_APP_TITLE:-Leo ERP}"
-export VITE_API_BASE_URL="${VITE_PROD_API_BASE_URL:-${VITE_API_BASE_URL:-http://127.0.0.1:11211/api}}"
-export VITE_PROXY_TARGET="${VITE_PROXY_TARGET:-}"
+export VITE_API_BASE_URL="${VITE_PROD_API_BASE_URL:-${VITE_API_BASE_URL:-/api}}"
+export VITE_PROXY_TARGET="${VITE_PROXY_TARGET:-http://127.0.0.1:11211}"
 
 write_frontend_env_file "$ARIES_DIR/.env.production.local"
 
