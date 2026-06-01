@@ -17,6 +17,12 @@ const primaryNoFallbackKeys = [
   'receiveNo',
   'issueNo',
   'materialCode',
+  'categoryCode',
+  'supplierCode',
+  'customerCode',
+  'carrierCode',
+  'warehouseCode',
+  'departmentCode',
 ]
 
 export function parseParentRelationNos(value: unknown) {
@@ -48,7 +54,26 @@ export function generatePrimaryNo(
   moduleKey: string,
   year: string,
   serial: string,
+  fullDate = year,
 ) {
+  const masterPrefixMap: Record<string, string> = {
+    material: 'MAT',
+    'material-categories': 'MC',
+    supplier: 'SUP',
+    customer: 'CUS',
+    carrier: 'CAR',
+    warehouse: 'WH',
+  }
+
+  const masterPrefix = masterPrefixMap[moduleKey]
+  if (masterPrefix) {
+    return `${masterPrefix}${serial.slice(-4)}`
+  }
+
+  if (moduleKey === 'department') {
+    return `${fullDate}-${serial.slice(-4)}`
+  }
+
   const prefixMap: Record<string, string> = {
     'purchase-order': 'CG',
     'purchase-inbound': 'RK',
@@ -68,7 +93,3 @@ export function generatePrimaryNo(
 
   return `${year}${prefixMap[moduleKey] || 'NO'}${serial}`
 }
-
-
-
-

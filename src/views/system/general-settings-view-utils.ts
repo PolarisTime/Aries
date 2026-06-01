@@ -37,6 +37,8 @@ export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
     i18next.t('system.generalSettingsUtils.helpForceTotpOnFirstLogin'),
   SYS_BATCH_NO_AUTO_GENERATE:
     i18next.t('system.generalSettingsUtils.helpBatchNoAutoGenerate'),
+  SYS_FORCE_BATCH_MANAGEMENT:
+    i18next.t('system.generalSettingsUtils.helpForceBatchManagement'),
   UI_HIDE_AUDITED_LIST_RECORDS:
     i18next.t('system.generalSettingsUtils.helpHideAuditedRecords'),
   UI_SHOW_SNOWFLAKE_ID:

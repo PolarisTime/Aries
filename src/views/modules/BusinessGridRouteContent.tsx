@@ -8,6 +8,7 @@ import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
+import { MaterialImportActions } from '@/views/modules/components/MaterialImportActions'
 import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateDropdown'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
@@ -132,16 +133,25 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         }}
         selectedCount={state.selectedRowKeys.length}
         printDropdown={
-          state.canUseBulkPrintActions ? (
-            <PrintTemplateDropdown
-              moduleKey={moduleKey}
-              disabled={!state.selectedRowKeys.length}
-              loading={false}
-              onPrint={(preview, template) => {
-                void state.handlePrintSelectedRecords(preview, template)
-              }}
-            />
-          ) : undefined
+          <>
+            {moduleKey === 'material' && (
+              <MaterialImportActions
+                canDownloadTemplate={state.canExportData}
+                canImport={state.canUpdateRecord}
+                onImported={state.refreshModuleQueries}
+              />
+            )}
+            {state.canUseBulkPrintActions ? (
+              <PrintTemplateDropdown
+                moduleKey={moduleKey}
+                disabled={!state.selectedRowKeys.length}
+                loading={false}
+                onPrint={(preview, template) => {
+                  void state.handlePrintSelectedRecords(preview, template)
+                }}
+              />
+            ) : null}
+          </>
         }
       />
 

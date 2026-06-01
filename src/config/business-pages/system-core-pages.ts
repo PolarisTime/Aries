@@ -155,7 +155,6 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
     kicker: 'System',
     description:
       i18next.t('modules.pages.systemCore.companyInfoDesc'),
-    primaryNoKey: 'companyName',
     actions: [...actionSet],
     filters: [
       {

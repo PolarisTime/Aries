@@ -3,9 +3,9 @@
 .module-table-shell col.sticky-actions-col,
 .module-table-shell .ant-table-fixed-left .sticky-actions-col,
 .module-table-shell .ant-table-fixed-left col.sticky-actions-col {
-  width: 150px !important;
-  min-width: 150px !important;
-  max-width: 150px !important;
+  width: 155px !important;
+  min-width: 155px !important;
+  max-width: 155px !important;
 }
 .module-table-shell .ant-table-thead .sticky-actions-col,
 .module-table-shell .ant-table-fixed-left .ant-table-thead .sticky-actions-col {

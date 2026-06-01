@@ -1,12 +1,26 @@
 import Empty from 'antd/es/empty'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
-import { type MouseEvent, useEffect, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  type MouseEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDeferredColumns } from '@/hooks/useDeferredColumns'
 import type { ModuleRecord } from '@/types/module-page'
+import {
+  buildTableScrollConfig,
+  computeTableAvailableHeight,
+  computeTableBodyScrollY,
+  computeTableScrollX,
+} from '@/views/modules/components/business-grid-table-utils'
 
 const MIN_TABLE_BODY_SCROLL_Y = 240
+const SELECTION_COLUMN_WIDTH = 40
+const TABLE_BOTTOM_INSET = 16
 
 interface Props {
   moduleKey: string
@@ -38,6 +52,7 @@ export function BusinessGridTable({
   const { t } = useTranslation()
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [scrollY, setScrollY] = useState<number>(MIN_TABLE_BODY_SCROLL_Y)
+  const [shellWidth, setShellWidth] = useState(0)
   const visibleColumns = useDeferredColumns(columns)
 
   useEffect(() => {
@@ -46,16 +61,27 @@ export function BusinessGridTable({
 
     let frameId = 0
     const measure = () => {
-      const containerHeight = shell.clientHeight
-      if (containerHeight <= 0) return
+      const shellRect = shell.getBoundingClientRect()
+      const availableHeight = computeTableAvailableHeight({
+        containerHeight: shell.clientHeight,
+        viewportHeight: window.innerHeight,
+        containerTop: shellRect.top,
+        bottomInset: TABLE_BOTTOM_INSET,
+      })
+      if (availableHeight <= 0) return
       const headerHeight =
         shell.querySelector('.ant-table-thead')?.getBoundingClientRect()
           .height || 0
-      const nextScrollY = Math.max(
-        MIN_TABLE_BODY_SCROLL_Y,
-        containerHeight - headerHeight,
+      const nextScrollY = computeTableBodyScrollY(
+        availableHeight,
+        headerHeight,
+        0,
       )
       setScrollY((prev) => (prev === nextScrollY ? prev : nextScrollY))
+      const nextShellWidth = shell.clientWidth
+      setShellWidth((prev) =>
+        prev === nextShellWidth ? prev : nextShellWidth,
+      )
     }
     const scheduleMeasure = () => {
       cancelAnimationFrame(frameId)
@@ -71,25 +97,27 @@ export function BusinessGridTable({
   }, [])
 
   const selection = rowSelection
-    ? { ...rowSelection, columnWidth: 40 }
+    ? { ...rowSelection, columnWidth: SELECTION_COLUMN_WIDTH }
     : undefined
 
   const isVirtual = dataSource.length > 100
 
-  const scrollX = (() => {
-    let totalWidth = 0
-    for (const col of visibleColumns) {
-      const raw = col.width
-      if (typeof raw === 'number') totalWidth += raw
-      else if (typeof raw === 'string') {
-        const parsed = Number.parseInt(raw, 10)
-        totalWidth += Number.isFinite(parsed) ? parsed : 120
-      } else totalWidth += 120
-    }
-    return totalWidth + 40
-  })()
+  const scrollX = computeTableScrollX({
+    columnWidths: visibleColumns.map((col) => col.width),
+    containerWidth: shellWidth,
+    selectionColumnWidth: rowSelection ? SELECTION_COLUMN_WIDTH : 0,
+  })
 
-  const scroll = { x: scrollX, y: scrollY }
+  const scroll = buildTableScrollConfig({
+    dataLength: dataSource.length,
+    isVirtual,
+    scrollX,
+    scrollY,
+    shellWidth,
+  })
+  const shellStyle = {
+    '--module-table-body-height': `${scrollY}px`,
+  } as CSSProperties
 
   const doubleClickCooldownRef = useRef(0)
 
@@ -128,7 +156,7 @@ export function BusinessGridTable({
   const locale = { emptyText }
 
   return (
-    <div ref={shellRef} className="module-table-shell">
+    <div ref={shellRef} className="module-table-shell" style={shellStyle}>
       <Table
         key={moduleKey}
         rowKey="id"

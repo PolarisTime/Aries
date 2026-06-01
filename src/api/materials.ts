@@ -1,7 +1,8 @@
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
 import type { ModuleRecord } from '@/types/module-page'
-import { http } from './client'
+import { downloadBlob } from '@/utils/download'
+import { assertApiSuccess, http } from './client'
 
 type MaterialSearchResponse = ModuleRecord & {
   materialCode?: string
@@ -19,7 +20,21 @@ type MaterialSearchResponse = ModuleRecord & {
   remark?: string
 }
 
+export interface MaterialImportError {
+  row: number
+  field: string
+  message: string
+}
 
+export interface MaterialImportResult {
+  totalRows: number
+  successCount: number
+  createdCount: number
+  updatedCount: number
+  failCount: number
+  errors: MaterialImportError[]
+  successRows?: unknown[]
+}
 
 export async function fetchMaterialSearch(keyword = '', limit = 200) {
   const response = await http.get<ApiResponse<MaterialSearchResponse[]>>(
@@ -36,5 +51,25 @@ export async function fetchMaterialSearch(keyword = '', limit = 200) {
     return [] as MaterialSearchResponse[]
   }
 
+  return response.data
+}
+
+export async function downloadMaterialImportTemplate() {
+  const blob = await http.get<Blob>(ENDPOINTS.MATERIALS_TEMPLATE, {
+    responseType: 'blob',
+  })
+  downloadBlob(blob, '商品资料导入模板.xlsx')
+}
+
+export async function importMaterialFile(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await http.post<ApiResponse<MaterialImportResult>>(
+    ENDPOINTS.MATERIALS_IMPORT,
+    formData,
+  )
+
+  assertApiSuccess(response)
   return response.data
 }

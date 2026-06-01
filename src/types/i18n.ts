@@ -982,6 +982,10 @@ export interface MessageSchema {
         calculated: string
         weighed: string
         materialDesc: string
+        downloadTemplate: string
+        templateDownloadFailed: string
+        importFailed: string
+        importSuccessSummary: string
       }
       materialCategories: {
         materialCategory: string
@@ -1981,10 +1985,27 @@ export interface MessageSchema {
     }
     securityKey: {
       title: string
+      description: string
       jwtRotated: string
       totpRotated: string
       rotateSuccess: string
       rotateFailed: string
+      refresh: string
+      riskTitle: string
+      riskDescription: string
+      configuredKeys: string
+      protectedRecords: string
+      retiredVersions: string
+      jwtName: string
+      totpName: string
+      keyCode: string
+      activeVersion: string
+      activeFingerprint: string
+      activatedAt: string
+      retiredVersionCount: string
+      protectedRecordCount: string
+      remark: string
+      unknown: string
       jwtLastRotation: string
       totpLastRotation: string
       rotateJwt: string
@@ -2344,6 +2365,7 @@ export interface MessageSchema {
       helpOperationLogAuth: string
       helpForceTotpOnFirstLogin: string
       helpBatchNoAutoGenerate: string
+      helpForceBatchManagement: string
       helpHideAuditedRecords: string
       helpShowSnowflakeId: string
       helpUseSnowflakeAsBusinessNo: string

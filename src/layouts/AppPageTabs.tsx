@@ -1,5 +1,5 @@
 import Tabs from 'antd/es/tabs'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, MouseEvent } from 'react'
 import type { OpenPage } from '@/hooks/useOpenPages'
 
 interface AppPageTabsProps {
@@ -19,14 +19,23 @@ export function AppPageTabs({
   shellFontStyle,
   closePage,
 }: AppPageTabsProps) {
+  const handleTabDoubleClick = (
+    event: MouseEvent<HTMLSpanElement>,
+    page: OpenPage,
+  ) => {
+    event.stopPropagation()
+    if (!page.closable) {
+      return
+    }
+    closePage(page.key, onNavigateToPath)
+  }
+
   const tabItems = pages.map((page) => ({
     key: page.key,
     label: (
       <span
-        onDoubleClick={(e) => {
-          e.stopPropagation()
-          closePage(page.key, onNavigateToPath)
-        }}
+        className="app-page-tab-label"
+        onDoubleClick={(event) => handleTabDoubleClick(event, page)}
       >
         {page.title}
       </span>
