@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# shellcheck disable=SC1091
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
+
+export ARIES_RUNTIME_ENV=prod
+export VITE_APP_TITLE="${VITE_APP_TITLE:-Leo ERP}"
+export VITE_API_BASE_URL="${VITE_PROD_API_BASE_URL:-${VITE_API_BASE_URL:-http://127.0.0.1:11211/api}}"
+export VITE_PROXY_TARGET="${VITE_PROXY_TARGET:-}"
+
+write_frontend_env_file "$ARIES_DIR/.env.production.local"
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  echo "已生成前端生产预览环境文件: $ARIES_DIR/.env.production.local"
+fi

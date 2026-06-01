@@ -24,10 +24,10 @@ Aries 是 Leo ERP 的 React 前端工作台，基于 `Vite 8 + React 19 + TypeSc
 pnpm install
 ```
 
-生成本地环境文件：
+生成开发环境文件：
 
 ```bash
-bash scripts/env-local.sh
+bash scripts/env/dev.sh
 ```
 
 启动开发服务器：
@@ -36,12 +36,18 @@ bash scripts/env-local.sh
 pnpm dev --host 0.0.0.0
 ```
 
+也可以使用分层后的启动入口：
+
+```bash
+bash scripts/frontend/start-dev.sh
+```
+
 默认通过 `.env.local` 中的 `VITE_PROXY_TARGET` 代理 Leo 后端。
 
 如果需要同时启动前后端，优先在工作区根目录执行：
 
 ```bash
-bash scripts/start-local.sh
+bash ../leo/scripts/dev.sh start
 ```
 
 ## 常用命令
