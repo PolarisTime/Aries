@@ -113,6 +113,18 @@ export default defineConfig(({ mode }) => {
           }
         : undefined,
     },
+    preview: {
+      host: '0.0.0.0',
+      port: 3100,
+      proxy: env.VITE_PROXY_TARGET
+        ? {
+            '^/api(?:/|$)': {
+              target: env.VITE_PROXY_TARGET,
+              changeOrigin: true,
+            },
+          }
+        : undefined,
+    },
     build: {
       target: 'esnext',
       cssMinify: 'lightningcss',
