@@ -791,6 +791,7 @@
 }
 
 .leo-content-inner > * {
+  flex: 1 1 auto;
   min-height: 0;
 }
 
@@ -868,15 +869,17 @@
 .module-page-stack {
   display: flex;
   flex: 1 1 auto;
+  height: 100%;
   min-height: 0;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 .module-grid-card {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  height: 100%;
   min-height: 0;
 }
 
@@ -884,6 +887,7 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  height: 100%;
   min-height: 0;
   padding-bottom: 0;
 }
@@ -1396,6 +1400,21 @@
 .module-table-shell .ant-table-wrapper .ant-table-body,
 .module-table-shell .ant-table-wrapper .ant-table-content {
   overflow: auto;
+}
+
+.module-table-shell .ant-table-wrapper .ant-table-body {
+  height: var(--module-table-body-height, 240px);
+}
+
+.module-table-shell .ant-table-placeholder > .ant-table-cell {
+  height: var(--module-table-body-height, 240px);
+}
+
+.module-table-shell .ant-table-placeholder .ant-empty {
+  min-height: calc(var(--module-table-body-height, 240px) - 56px);
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .module-table-shell .ant-pagination,

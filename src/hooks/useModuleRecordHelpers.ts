@@ -32,7 +32,7 @@ export function useModuleRecordHelpers({ moduleKey, config }: Props) {
   const generatePrimaryNo = () => {
     const serial = String(Date.now()).slice(-6)
     const year = dayjs().format('YYYY')
-    return buildModulePrimaryNo(moduleKey, year, serial)
+    return buildModulePrimaryNo(moduleKey, year, serial, dayjs().format('YYYYMMDD'))
   }
 
   const generatePrimaryNoAsync = async () => {

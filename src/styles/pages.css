@@ -111,6 +111,102 @@
   padding: 8px;
 }
 
+.security-key-page {
+  gap: 16px;
+}
+
+.security-key-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--theme-card-bg);
+  border: 1px solid var(--theme-card-border);
+  border-radius: 8px;
+}
+
+.security-key-title {
+  margin: 0 !important;
+}
+
+.security-key-alert {
+  border-radius: 8px;
+}
+
+.security-key-summary-card,
+.security-key-card {
+  height: 100%;
+  border-color: var(--theme-card-border);
+}
+
+.security-key-card .ant-card-head {
+  align-items: center;
+}
+
+.security-key-card-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+}
+
+.security-key-card-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  color: var(--theme-primary);
+  font-size: 20px;
+  background: var(--theme-sider-surface);
+  border: 1px solid var(--theme-card-border);
+  border-radius: 8px;
+}
+
+.security-key-card-title-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.security-key-card-name {
+  color: var(--theme-text);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.security-key-card-subtitle {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.security-key-descriptions .ant-descriptions-item-label {
+  width: 132px;
+  color: var(--text-secondary);
+}
+
+.security-key-fingerprint {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.security-key-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px dashed var(--theme-card-border);
+}
+
 .database-status-page {
   gap: 16px;
 }
@@ -293,6 +389,11 @@
 }
 
 @media (max-width: 768px) {
+  .security-key-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .database-status-header,
   .database-section-heading {
     align-items: stretch;

@@ -7,7 +7,7 @@ import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
-export const ACTION_COLUMN_WIDTH = 150
+export const ACTION_COLUMN_WIDTH = 155
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

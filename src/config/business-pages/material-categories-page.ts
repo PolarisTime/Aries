@@ -1,6 +1,6 @@
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { actionSet, formatInteger } from './shared'
+import { actionSet, formatInteger, statusMap } from './shared'
 import { masterStatusFilter } from './shared-filters'
 import i18next from 'i18next'
 
@@ -30,7 +30,13 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       width: 100,
       type: 'boolean',
     },
-    { title: i18next.t('modules.pages.materialCategories.status'), dataIndex: 'status', width: 90 },
+    {
+      title: i18next.t('modules.pages.materialCategories.status'),
+      dataIndex: 'status',
+      width: 100,
+      type: 'status',
+      align: 'center',
+    },
     { title: i18next.t('modules.pages.materialCategories.remark'), dataIndex: 'remark', width: 200 },
   ],
   detailFields: [
@@ -38,7 +44,7 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
     { label: i18next.t('modules.pages.materialCategories.categoryName'), key: 'categoryName' },
     { label: i18next.t('modules.pages.materialCategories.sortOrder'), key: 'sortOrder' },
     { label: i18next.t('modules.pages.materialCategories.purchaseWeigh'), key: 'purchaseWeighRequired' },
-    { label: i18next.t('modules.pages.materialCategories.status'), key: 'status' },
+    { label: i18next.t('modules.pages.materialCategories.status'), key: 'status', type: 'status' },
     { label: i18next.t('modules.pages.materialCategories.remark'), key: 'remark' },
   ],
   formFields: [
@@ -90,6 +96,8 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
     { key: 'remark', label: i18next.t('modules.pages.materialCategories.remark'), type: 'textarea', row: 3, fullRow: true },
   ],
   data: [],
+  statusMap,
+  rowHighlightStatuses: ['禁用'],
   buildOverview: (rows) => [
     { label: i18next.t('modules.pages.materialCategories.categoryCount'), value: formatInteger(rows.length) },
     {
