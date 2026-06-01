@@ -1,8 +1,9 @@
-import { AxiosHeaders } from 'axios'
+import axios, { AxiosHeaders, type AxiosResponse } from 'axios'
 import { authHttp } from '@/api/http'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { ERROR_CODE } from '@/constants/error-codes'
+import { HTTP_STATUS } from '@/constants/http-status'
 import type { ApiResponse } from '@/types/api'
 import type { LoginResponseData } from '@/types/auth'
 import { message } from '@/utils/antd-app'
@@ -24,8 +25,26 @@ let authFailureHandled = false
 const PRE_REFRESH_ADVANCE_MS = 5 * 60 * 1000
 const REFRESH_EXPIRES_AT_KEY = 'aries-refresh-expires-at'
 const REFRESH_WARNED_KEY = 'aries-refresh-warned'
+const REFRESH_REUSE_RETRY_DELAY_MS = 250
 
 let preRefreshTimer: ReturnType<typeof setTimeout> | null = null
+
+export function isRefreshTokenReuseConflict(error: unknown) {
+  if (!axios.isAxiosError(error)) {
+    return false
+  }
+  return (
+    error.response?.status === HTTP_STATUS.CONFLICT &&
+    Number(error.response?.data?.code) ===
+      ERROR_CODE.REFRESH_TOKEN_REUSE_CONFLICT
+  )
+}
+
+export function waitForRefreshTokenReuseRetry() {
+  return new Promise((resolve) => {
+    setTimeout(resolve, REFRESH_REUSE_RETRY_DELAY_MS)
+  })
+}
 
 function notifyAuthStateChanged() {
   if (typeof window !== 'undefined') {
@@ -153,10 +172,22 @@ async function executePreRefresh() {
 let refreshPromise: Promise<void> | null = null
 
 export async function refreshAccessToken() {
-  const response = await authHttp.post<ApiResponse<LoginResponseData>>(
-    ENDPOINTS.AUTH_REFRESH,
-    {},
-  )
+  let response: AxiosResponse<ApiResponse<LoginResponseData>>
+  try {
+    response = await authHttp.post<ApiResponse<LoginResponseData>>(
+      ENDPOINTS.AUTH_REFRESH,
+      {},
+    )
+  } catch (error) {
+    if (!isRefreshTokenReuseConflict(error)) {
+      throw error
+    }
+    await waitForRefreshTokenReuseRetry()
+    response = await authHttp.post<ApiResponse<LoginResponseData>>(
+      ENDPOINTS.AUTH_REFRESH,
+      {},
+    )
+  }
   const payload = response.data
 
   if (payload.code !== ERROR_CODE.SUCCESS) {
