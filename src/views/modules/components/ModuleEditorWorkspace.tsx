@@ -305,10 +305,25 @@ function SaveResultOverlay({
     </Button>
   ) : null
 
+  const resultTitle = isSuccess
+    ? t('modules.saveResult.pageSuccess', { title: config.title })
+    : t('modules.saveResult.error')
+
+  const actionBar = (
+    <div className="mt-16 flex flex-wrap justify-center gap-8">
+      {quickActions}
+      <Button type="primary" onClick={onClear}>
+        {saveResult.status === 'error'
+          ? t('modules.saveResult.backToEdit')
+          : t('modules.saveResult.close')}
+      </Button>
+    </div>
+  )
+
   const headerTitle = (
     <span className="flex items-center gap-8">
       {statusIcon}
-      <span>{isSuccess ? t('modules.saveResult.success') : t('modules.saveResult.error')}</span>
+      <span>{resultTitle}</span>
     </span>
   )
 
@@ -344,15 +359,19 @@ function SaveResultOverlay({
       open
       title={headerTitle}
       onClose={onClear}
-      footer={
-        <div className="flex justify-end gap-8">
-          {quickActions}
-          <Button type="primary" onClick={onClear}>
-            {saveResult.status === 'error' ? t('modules.saveResult.backToEdit') : t('modules.saveResult.close')}
-          </Button>
-        </div>
-      }
     >
+      {saveResult.status === 'error' && saveResult.traceId ? (
+        <Card size="small" className="mb-16">
+          <Typography.Text
+            type="secondary"
+            copyable={{ text: saveResult.traceId }}
+            className="font-mono text-[11px]"
+          >
+            Trace ID: {saveResult.traceId}
+          </Typography.Text>
+        </Card>
+      ) : null}
+
       {saveResult.record ? (
         <Card size="small" className="mb-16">
           <Space direction="vertical" size={4}>
@@ -382,8 +401,10 @@ function SaveResultOverlay({
         </Card>
       ) : null}
 
+      {actionBar}
+
       {items.length > 0 ? (
-        <div className="flex justify-center">
+        <div className="mt-16 flex justify-center">
           <Table
             rowKey={(_, i) => String(i)}
             dataSource={items}

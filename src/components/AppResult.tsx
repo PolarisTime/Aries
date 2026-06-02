@@ -2,6 +2,8 @@ import { useNavigate } from '@tanstack/react-router'
 import Button from 'antd/es/button'
 import type { ResultProps } from 'antd/es/result'
 import Result from 'antd/es/result'
+import Typography from 'antd/es/typography'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 interface AppResultProps extends Omit<ResultProps, 'extra'> {
@@ -12,6 +14,7 @@ interface AppResultProps extends Omit<ResultProps, 'extra'> {
   showBackButton?: boolean
   homeButtonText?: string
   backButtonText?: string
+  traceId?: string
 }
 
 export function AppResult({
@@ -23,6 +26,7 @@ export function AppResult({
   showBackButton,
   homeButtonText,
   backButtonText,
+  traceId,
   ...rest
 }: AppResultProps) {
   const { t } = useTranslation()
@@ -42,6 +46,7 @@ export function AppResult({
 
   const resolvedTitle = title ?? preset?.title ?? String(status)
   const resolvedSubTitle = subTitle ?? preset?.subTitle
+  const resolvedTraceId = typeof traceId === 'string' ? traceId.trim() : ''
 
   const resolvedHomeButtonText = homeButtonText ?? t('result.homeButton')
   const resolvedBackButtonText = backButtonText ?? t('result.backButton')
@@ -65,11 +70,26 @@ export function AppResult({
     </>
   )
 
+  const subtitleNode: ReactNode = resolvedTraceId ? (
+    <>
+      {resolvedSubTitle ? <div>{resolvedSubTitle}</div> : null}
+      <Typography.Text
+        type="secondary"
+        copyable={{ text: resolvedTraceId }}
+        className="font-mono text-[11px]"
+      >
+        Trace ID: {resolvedTraceId}
+      </Typography.Text>
+    </>
+  ) : (
+    resolvedSubTitle
+  )
+
   return (
     <Result
       status={status}
       title={resolvedTitle}
-      subTitle={resolvedSubTitle}
+      subTitle={subtitleNode}
       extra={actions}
       {...rest}
     />

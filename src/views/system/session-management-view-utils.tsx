@@ -7,22 +7,45 @@ import type { RefreshTokenRecord } from '@/api/session-management'
 import { formatDateTime } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 
-function getSessionStatusColor(status: string) {
-  if (status === '有效') return 'green'
-  if (status === '已禁用') return 'red'
+type SessionStatus = 'valid' | 'disabled' | 'unknown'
+
+function normalizeSessionStatus(status: unknown): SessionStatus {
+  const normalized = asString(status).trim().toLowerCase()
+  if (['有效', 'valid', 'active'].includes(normalized)) return 'valid'
+  if (
+    ['已禁用', 'disabled', 'revoked', 'inactive', 'invalid'].includes(
+      normalized,
+    )
+  )
+    return 'disabled'
+  return 'unknown'
+}
+
+function isSessionValidStatus(status: unknown) {
+  return normalizeSessionStatus(status) === 'valid'
+}
+
+function getSessionStatusColor(status: unknown) {
+  const normalizedStatus = normalizeSessionStatus(status)
+  if (normalizedStatus === 'valid') return 'green'
+  if (normalizedStatus === 'disabled') return 'red'
   return 'default'
 }
 
 function getSessionOnlineColor(record: RefreshTokenRecord) {
-  if (record.status !== '有效') return 'default'
+  if (!isSessionValidStatus(record.status)) return 'default'
   return record.online ? 'green' : 'orange'
 }
 
-function getSessionOnlineLabel(
-  record: RefreshTokenRecord,
-  t: TFunction,
-) {
-  if (record.status !== '有效') return t('system.session.offline')
+function getSessionStatusLabel(status: unknown, t: TFunction) {
+  const normalizedStatus = normalizeSessionStatus(status)
+  if (normalizedStatus === 'valid') return t('system.session.valid')
+  if (normalizedStatus === 'disabled') return t('system.session.disabled')
+  return asString(status) || '--'
+}
+
+function getSessionOnlineLabel(record: RefreshTokenRecord, t: TFunction) {
+  if (!isSessionValidStatus(record.status)) return t('system.session.offline')
   return record.online
     ? t('system.session.online')
     : t('system.session.offline')
@@ -52,7 +75,7 @@ export function buildSessionTableColumns({
       width: 100,
       align: 'center',
       render: (_: unknown, record) =>
-        canEdit && record.status === '有效' ? (
+        canEdit && isSessionValidStatus(record.status) ? (
           <Button
             type="link"
             size="small"
@@ -64,7 +87,12 @@ export function buildSessionTableColumns({
           </Button>
         ) : null,
     },
-    { dataIndex: 'tokenId', title: 'Token ID', width: 200, ellipsis: true },
+    {
+      dataIndex: 'tokenId',
+      title: t('system.session.tokenId'),
+      width: 200,
+      ellipsis: true,
+    },
     {
       dataIndex: 'loginName',
       title: t('system.userAccount.loginName'),
@@ -121,8 +149,10 @@ export function buildSessionTableColumns({
       title: t('common.status'),
       width: 100,
       align: 'center',
-      render: (value: string) => (
-        <Tag color={getSessionStatusColor(value)}>{value}</Tag>
+      render: (value: unknown) => (
+        <Tag color={getSessionStatusColor(value)}>
+          {getSessionStatusLabel(value, t)}
+        </Tag>
       ),
     },
   ]

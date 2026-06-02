@@ -1,7 +1,7 @@
 import { ReloadOutlined, SaveOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
-import Col from 'antd/es/col'
-import Row from 'antd/es/row'
+import Card from 'antd/es/card'
+import Descriptions from 'antd/es/descriptions'
 import Space from 'antd/es/space'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
@@ -30,48 +30,49 @@ export function CompanySettingsHeader({
 }: Props) {
   const { t } = useTranslation()
   return (
-    <div className="bg-default rounded p-24 mb-16">
-      <div className="flex flex-wrap items-start justify-between gap-16 mb-20">
-        <div>
-          <Typography.Title level={4} className="m-0">
-            {t('system.companyHeader.title')}
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            {t('system.companyHeader.description')}
-          </Typography.Text>
-        </div>
-        <Space wrap>
-          <Button
-            size="small"
-            loading={loading}
-            icon={<ReloadOutlined />}
-            onClick={onRefresh}
-          >
-            {t('system.companyHeader.refresh')}
-          </Button>
-          {canSave && (
+    <Card
+      className="mb-16"
+      title={
+        <div className="flex flex-wrap items-start justify-between gap-12 py-4">
+          <div className="min-w-0 flex-1">
+            <Typography.Title level={4} className="m-0">
+              {t('system.companyHeader.title')}
+            </Typography.Title>
+            <Typography.Text type="secondary">
+              {t('system.companyHeader.description')}
+            </Typography.Text>
+          </div>
+          <Space wrap>
             <Button
-              type="primary"
               size="small"
-              loading={saving}
-              icon={<SaveOutlined />}
-              onClick={onSave}
+              loading={loading}
+              icon={<ReloadOutlined />}
+              onClick={onRefresh}
             >
-              {t('system.companyHeader.save')}
+              {t('system.companyHeader.refresh')}
             </Button>
-          )}
-        </Space>
-      </div>
-      <Row gutter={[16, 16]}>
+            {canSave && (
+              <Button
+                type="primary"
+                size="small"
+                loading={saving}
+                icon={<SaveOutlined />}
+                onClick={onSave}
+              >
+                {t('system.companyHeader.save')}
+              </Button>
+            )}
+          </Space>
+        </div>
+      }
+    >
+      <Descriptions size="small" column={{ xs: 1, sm: 3 }}>
         {overviewItems.map((item) => (
-          <Col xs={24} sm={8} key={item.label}>
-            <div className="rounded-lg border border-gray-200 px-[20px] py-[18px] bg-gradient-to-b from-gray-50 to-white">
-              <div className="text-sm text-secondary">{item.label}</div>
-              <div className="mt-10 text-2xl font-semibold">{item.value}</div>
-            </div>
-          </Col>
+          <Descriptions.Item key={item.label} label={item.label}>
+            {item.value}
+          </Descriptions.Item>
         ))}
-      </Row>
-    </div>
+      </Descriptions>
+    </Card>
   )
 }

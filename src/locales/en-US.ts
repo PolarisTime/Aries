@@ -730,6 +730,7 @@ export const enUS: MessageSchema = {
     },
     saveResult: {
       success: 'Saved Successfully',
+      pageSuccess: '{{title}} saved successfully',
       error: 'Save Failed',
       backToEdit: 'Back to Edit',
       close: 'Close',
@@ -1894,6 +1895,10 @@ export const enUS: MessageSchema = {
       title: 'Session Management',
       searchPlaceholder: 'Search Token ID / IP / Device Info',
       revokeAll: 'Clear All',
+      tokenId: 'Token ID',
+      onlineUsers: 'Online Users',
+      onlineDevices: 'Online Devices',
+      activeSessions: 'Active Sessions',
       valid: 'Valid',
       disabled: 'Disabled',
       offline: 'Offline',
@@ -1908,6 +1913,7 @@ export const enUS: MessageSchema = {
         'Disable this session token? The device will need to sign in again.',
       revokeAllConfirm:
         'Disable all valid session tokens? All devices will need to sign in again.',
+      disabledSuccess: 'Session disabled',
       revoked: 'Cleared',
     },
     printTemplate: {
@@ -2249,6 +2255,7 @@ export const enUS: MessageSchema = {
       maxChars: 'Max {{count}} characters',
       magicVars: 'Magic Variables:',
       autoReplace: ': auto-replaced during frontend rendering',
+      watermarkNewlineHint: '; each line is rendered as a separate watermark line.',
       watermarkFontSize: 'Watermark Font Size',
       watermarkDensity: 'Watermark Density',
       currentValue: 'Current Value',
@@ -2256,6 +2263,8 @@ export const enUS: MessageSchema = {
       switchEnabled: 'Enabled',
       switchDisabled: 'Disabled',
       recordedActions: 'Recorded Actions',
+      selectActionRequired:
+        'Select at least one action for detailed page operation logs',
       hiddenStatuses: 'Hidden Statuses',
       remark: 'Remark',
     },

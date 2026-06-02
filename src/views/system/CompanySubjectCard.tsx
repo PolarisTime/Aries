@@ -1,6 +1,7 @@
 import { EditOutlined, IdcardOutlined } from '@ant-design/icons'
 import type { FormInstance } from 'antd'
 import Card from 'antd/es/card'
+import Descriptions from 'antd/es/descriptions'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Select from 'antd/es/select'
@@ -20,10 +21,14 @@ export function CompanySubjectCard({
 }: Props) {
   const { t } = useTranslation()
   return (
-    <Card size="small" className="bg-secondary rounded-lg">
-      <Typography.Title level={5}>
-        <EditOutlined /> {t('system.companySubject.sectionTitle')}
-      </Typography.Title>
+    <Card
+      size="small"
+      title={
+        <span>
+          <EditOutlined /> {t('system.companySubject.sectionTitle')}
+        </span>
+      }
+    >
       <Form.Item name="companyName" label={t('system.companySubject.companyName')} required>
         <Input disabled placeholder={t('system.companySubject.companyNamePlaceholder')} />
       </Form.Item>
@@ -39,24 +44,27 @@ export function CompanySubjectCard({
           ]}
         />
       </Form.Item>
-      <div
-        className="flex items-center gap-12 p-16 rounded-lg bg-[var(--theme-highlight-bg)]"
+      <Descriptions
+        size="small"
+        column={1}
+        title={
+          <Typography.Text>
+            <IdcardOutlined /> {t('system.companySubject.sectionTitle')}
+          </Typography.Text>
+        }
       >
-        <div
-          className="flex items-center justify-center text-xl size-[44px] rounded-xl bg-[var(--theme-primary)] text-white"
-        >
-          <IdcardOutlined />
-        </div>
-        <div>
-          <div className="font-semibold">
-            {getFormString(form, 'companyName') || t('system.companySubject.pendingCompany')}
-          </div>
-          <div className="text-xs text-secondary">
-            {getFormString(form, 'taxNo') || t('system.companySubject.pendingTaxNo')} / {t('system.companySubject.settlementBanks')}{' '}
-            {settlementAccountCount} {t('system.companySubject.unitSuffix')}
-          </div>
-        </div>
-      </div>
+        <Descriptions.Item label={t('system.companySubject.companyName')}>
+          {getFormString(form, 'companyName') ||
+            t('system.companySubject.pendingCompany')}
+        </Descriptions.Item>
+        <Descriptions.Item label={t('system.companySubject.taxNo')}>
+          {getFormString(form, 'taxNo') ||
+            t('system.companySubject.pendingTaxNo')}
+        </Descriptions.Item>
+        <Descriptions.Item label={t('system.companySubject.settlementBanks')}>
+          {settlementAccountCount} {t('system.companySubject.unitSuffix')}
+        </Descriptions.Item>
+      </Descriptions>
     </Card>
   )
 }

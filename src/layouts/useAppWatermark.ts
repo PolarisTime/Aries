@@ -5,11 +5,24 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 
 interface WatermarkConfig {
   enabled: boolean
-  text: string | undefined
+  text: string | string[] | undefined
   fontSize: number
   color: string
   rotate: number
   density: number
+}
+
+export function buildWatermarkContent(
+  template: string,
+  currentUserLoginName: string,
+  now = new Date(),
+): string | string[] {
+  const rendered = template
+    .replace(/\{username\}/g, currentUserLoginName)
+    .replace(/\{time\}/g, now.toLocaleString('zh-CN', { hour12: false }))
+    .replace(/\{date\}/g, now.toLocaleDateString('zh-CN'))
+  const lines = rendered.split(/\r\n|\r|\n/)
+  return lines.length > 1 ? lines : rendered
 }
 
 export function useAppWatermark(currentUserLoginName: string): WatermarkConfig {
@@ -60,11 +73,7 @@ export function useAppWatermark(currentUserLoginName: string): WatermarkConfig {
     if (!enabled) return undefined
     const raw = String(contentSetting?.sampleNo || '').trim()
     const template = raw && raw !== 'ON' ? raw : '{username}  {time}'
-    const now = new Date()
-    return template
-      .replace(/\{username\}/g, currentUserLoginName)
-      .replace(/\{time\}/g, now.toLocaleString('zh-CN', { hour12: false }))
-      .replace(/\{date\}/g, now.toLocaleDateString('zh-CN'))
+    return buildWatermarkContent(template, currentUserLoginName)
   })()
 
   return { enabled, text, fontSize, color, rotate, density }

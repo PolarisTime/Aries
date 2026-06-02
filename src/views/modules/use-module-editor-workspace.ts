@@ -25,6 +25,7 @@ import {
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import {
+  applyFormFieldDefaultDraftValues,
   applyModuleDefaultEditorDraft,
   buildDefaultEditorLineItem,
   getEditorValidationMessage,
@@ -317,6 +318,7 @@ export function useModuleEditorWorkspace({
     } else {
       form.resetFields()
       const defaultDraft: ModuleRecord = {} as ModuleRecord
+      applyFormFieldDefaultDraftValues(defaultDraft, config.formFields)
       applyModuleDefaultEditorDraft(
         moduleKey,
         defaultDraft,
@@ -497,6 +499,7 @@ export function useModuleEditorWorkspace({
         primaryNoKey: config.primaryNoKey,
         currentOperatorName: getCurrentOperatorName(),
         sumLineItemsBy,
+        formFields: config.formFields,
       })
 
       if (audit && editorAuditTarget) {

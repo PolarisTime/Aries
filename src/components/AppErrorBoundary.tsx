@@ -44,7 +44,8 @@ export class AppErrorBoundary extends Component<Props, State> {
       return (
         <AppResult
           status={status}
-          subTitle={traceId ? `${message} (Trace: ${traceId})` : message}
+          subTitle={message}
+          traceId={traceId}
           showHomeButton
           showBackButton
           extra={<Button onClick={this.handleReset}>{i18next.t('errorBoundary.retry')}</Button>}

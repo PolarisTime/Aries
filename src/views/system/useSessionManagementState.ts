@@ -90,7 +90,7 @@ export function useSessionManagementState(enabled = true) {
       onOk: async () => {
         try {
           await revokeRefreshToken(record.id)
-          message.success(t('common.disabled'))
+          message.success(t('system.session.disabledSuccess'))
           refreshSessionData()
         } catch (error) {
           showError(error, t('api.disableSessionFailed'))

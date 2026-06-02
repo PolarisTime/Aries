@@ -9,6 +9,7 @@ interface AppResultModalProps {
   title?: ResultProps['title']
   subTitle?: ResultProps['subTitle']
   icon?: ResultProps['icon']
+  traceId?: string
   footer?: React.ReactNode
 }
 
@@ -19,6 +20,7 @@ export function AppResultModal({
   title,
   subTitle,
   icon,
+  traceId,
   footer,
 }: AppResultModalProps) {
   return (
@@ -35,6 +37,7 @@ export function AppResultModal({
         title={title}
         subTitle={subTitle}
         icon={icon}
+        traceId={traceId}
       />
     </Modal>
   )

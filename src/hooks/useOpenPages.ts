@@ -1,5 +1,5 @@
 import { useLocation } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 export interface OpenPage {
@@ -13,6 +13,10 @@ export interface OpenPageDescriptor {
   key: string
   path: string
   title: string
+}
+
+export interface ClosePageOptions {
+  fallbackPath?: string
 }
 
 function resolveOpenPageKey(
@@ -33,6 +37,7 @@ export function useOpenPages(
   const resolvedHomeTitle = homeTitle ?? t('hooks.openPages.workbench')
 
   const location = useLocation()
+  const closingPageKeyRef = useRef<string | null>(null)
   const [storedPages, setStoredPages] = useState<OpenPage[]>([
     {
       key: defaultPath,
@@ -65,14 +70,30 @@ export function useOpenPages(
       },
       ...storedPages.filter((item) => item.key !== defaultPath),
     ]
+    const visiblePages = closingPageKeyRef.current
+      ? normalizedPages.filter((item) => item.key !== closingPageKeyRef.current)
+      : normalizedPages
 
-    if (normalizedPages.some((item) => item.key === currentOpenPage.key)) {
-      return normalizedPages.map((item) =>
+    if (closingPageKeyRef.current === currentOpenPage.key) {
+      return visiblePages
+    }
+
+    if (visiblePages.some((item) => item.key === currentOpenPage.key)) {
+      return visiblePages.map((item) =>
         item.key === currentOpenPage.key ? currentOpenPage : item,
       )
     }
-    return [...normalizedPages, currentOpenPage]
+    return [...visiblePages, currentOpenPage]
   })()
+
+  useEffect(() => {
+    if (
+      closingPageKeyRef.current &&
+      closingPageKeyRef.current !== currentOpenPage.key
+    ) {
+      closingPageKeyRef.current = null
+    }
+  }, [currentOpenPage.key])
 
   if (pages !== storedPages) {
     const samePages =
@@ -92,25 +113,27 @@ export function useOpenPages(
     }
   }
 
-  const closePage = (key: string, navigate: (path: string) => void) => {
+  const closePage = (
+    key: string,
+    navigate: (path: string) => void,
+    options: ClosePageOptions = {},
+  ) => {
     setStoredPages((prev) => {
       const index = prev.findIndex((item) => item.key === key)
       if (index < 0) return prev
       if (key === defaultPath || prev[index]?.closable === false) return prev
 
+      closingPageKeyRef.current = key
       const nextPages = prev.filter((item) => item.key !== key)
       const currentKey = resolvePage
         ? resolvePage(location.pathname).key
         : resolveOpenPageKey(location.pathname)
 
-      if (currentKey === key) {
+      if (currentKey === key || options.fallbackPath) {
         const fallback = nextPages[Math.max(index - 1, 0)] || nextPages[0]
-        if (fallback?.path) {
-          // Use setTimeout to avoid state update during render
-          setTimeout(() => navigate(fallback.path), 0)
-        } else {
-          setTimeout(() => navigate(defaultPath), 0)
-        }
+        const fallbackPath = options.fallbackPath || fallback?.path || defaultPath
+        // Use setTimeout to avoid state update during render
+        setTimeout(() => navigate(fallbackPath), 0)
       }
 
       return nextPages

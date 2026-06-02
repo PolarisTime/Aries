@@ -50,16 +50,6 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     resourceKey: 'operation-log',
   },
   {
-    key: 'department',
-    title: '部门管理',
-    menuKey: '/department',
-    view: 'business-grid',
-    icon: 'ApartmentOutlined',
-    menuParent: 'system',
-    moduleKey: 'department',
-    resourceKey: 'department',
-  },
-  {
     key: 'access-control',
     title: '访问控制',
     menuKey: '/access-control',
