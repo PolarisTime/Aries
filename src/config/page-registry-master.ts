@@ -56,4 +56,14 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     menuParent: 'master',
     moduleKey: 'warehouse',
   },
+  {
+    key: 'department',
+    title: '部门管理',
+    menuKey: '/department',
+    view: 'business-grid',
+    icon: 'ApartmentOutlined',
+    menuParent: 'master',
+    moduleKey: 'department',
+    resourceKey: 'department',
+  },
 ]

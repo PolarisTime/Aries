@@ -1,6 +1,5 @@
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import Button from 'antd/es/button'
-import Typography from 'antd/es/typography'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
@@ -47,20 +46,8 @@ export function ErrorView() {
   return (
     <AppResult
       status={status}
-      subTitle={
-        <>
-          <div>{subTitle}</div>
-          {traceId ? (
-            <Typography.Text
-              type="secondary"
-              copyable={{ text: traceId }}
-              className="font-mono text-[11px]"
-            >
-              Trace ID: {traceId}
-            </Typography.Text>
-          ) : null}
-        </>
-      }
+      subTitle={subTitle}
+      traceId={traceId}
       showHomeButton
       showBackButton
       extra={<Button onClick={handleRetry}>{t('error.retry')}</Button>}

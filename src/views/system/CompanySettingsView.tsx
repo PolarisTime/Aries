@@ -1,12 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Alert from 'antd/es/alert'
+import Card from 'antd/es/card'
 import Col from 'antd/es/col'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Skeleton from 'antd/es/skeleton'
-import Typography from 'antd/es/typography'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   type CompanySettingProfile,
@@ -23,7 +22,6 @@ import { CompanySettingsHeader } from '@/views/system/CompanySettingsHeader'
 import { CompanySettlementAccountsCard } from '@/views/system/CompanySettlementAccountsCard'
 import { CompanySubjectCard } from '@/views/system/CompanySubjectCard'
 import {
-  createEmptySettlementAccount,
   normalizeSettlementAccounts,
   type SettlementAccountFormRow,
 } from '@/views/system/company-settings-view-utils'
@@ -33,6 +31,7 @@ type CompanySettingFormValues = {
   taxNo: string
   status: string
   remark?: string
+  settlementAccounts: SettlementAccountFormRow[]
   [key: string]: unknown
 }
 
@@ -45,6 +44,7 @@ function buildCompanySettingFormValues(
     taxNo: profile?.taxNo ?? '',
     status: profile?.status || '正常',
     remark: profile?.remark || '',
+    settlementAccounts: normalizeSettlementAccounts(profile?.settlementAccounts),
   }
 }
 
@@ -66,12 +66,13 @@ function CompanySettingsForm({
   const queryClient = useQueryClient()
   const { t } = useTranslation()
   const { showError } = useRequestError()
-  const [form] = Form.useForm()
+  const [form] = Form.useForm<CompanySettingFormValues>()
   const initialValues = buildCompanySettingFormValues(profile)
   const statusValue = Form.useWatch('status', form)
-  const [settlementAccounts, setSettlementAccounts] = useState<
-    SettlementAccountFormRow[]
-  >(() => normalizeSettlementAccounts(profile?.settlementAccounts))
+  const watchedSettlementAccounts = Form.useWatch('settlementAccounts', form)
+  const settlementAccountCount = Array.isArray(watchedSettlementAccounts)
+    ? watchedSettlementAccounts.length
+    : initialValues.settlementAccounts.length
 
   const saveMutation = useMutation({
     mutationFn: saveCompanySettingProfile,
@@ -85,81 +86,26 @@ function CompanySettingsForm({
     onError: (err: Error) => showError(err, t('api.saveCompanyInfoFailed')),
   })
 
-  const addSettlementAccount = () => {
-    setSettlementAccounts((prev) => [...prev, createEmptySettlementAccount()])
-  }
-
-  const removeSettlementAccount = (index: number) => {
-    if (settlementAccounts.length <= 1) {
-      message.warning(t('system.company.atLeastOneSettlementAccount'))
-      return
-    }
-    setSettlementAccounts((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const updateSettlementAccount = (
-    index: number,
-    field: keyof SettlementAccountFormRow,
-    value: string,
-  ) => {
-    setSettlementAccounts((prev) =>
-      prev.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item,
-      ),
-    )
-  }
-
   const handleSave = async () => {
     if (!canSave) {
       message.warning(t('common.noPermission'))
       return
     }
 
-    // Sync validation before async form validation
-    if (!settlementAccounts.length) {
-      message.warning(t('system.company.atLeastOneSettlementAccount'))
-      return
-    }
-    for (let i = 0; i < settlementAccounts.length; i++) {
-      const account = settlementAccounts[i]
-      if (!account.accountName?.trim()) {
-        message.warning(
-          t('system.company.inputAccountName', { index: i + 1 }),
-        )
-        return
-      }
-      if (!account.bankName?.trim()) {
-        message.warning(
-          t('system.company.inputBankName', { index: i + 1 }),
-        )
-        return
-      }
-      if (!account.bankAccount?.trim()) {
-        message.warning(
-          t('system.company.inputBankAccount', { index: i + 1 }),
-        )
-        return
-      }
-    }
-    const usedBankAccounts = new Set<string>()
-    for (const account of settlementAccounts) {
-      const bankAccount = account.bankAccount.trim()
-      if (usedBankAccounts.has(bankAccount)) {
-        message.warning(
-          t('system.company.duplicateBankAccount', { account: bankAccount }),
-        )
-        return
-      }
-      usedBankAccounts.add(bankAccount)
-    }
-
     try {
-      const values = await validateForm<CompanySettingFormValues>(form, [
-        'companyName',
-        'taxNo',
-        'status',
-        'remark',
-      ])
+      const values = await validateForm<CompanySettingFormValues>(form)
+      const settlementAccounts = values.settlementAccounts || []
+      const usedBankAccounts = new Set<string>()
+      for (const account of settlementAccounts) {
+        const bankAccount = account.bankAccount.trim()
+        if (usedBankAccounts.has(bankAccount)) {
+          message.warning(
+            t('system.company.duplicateBankAccount', { account: bankAccount }),
+          )
+          return
+        }
+        usedBankAccounts.add(bankAccount)
+      }
       saveMutation.mutate({
         companyName: values.companyName.trim(),
         taxNo: values.taxNo.trim(),
@@ -195,7 +141,7 @@ function CompanySettingsForm({
     {
       label: t('system.company.settlementBanks'),
       value: t('system.company.countUnit', {
-        count: settlementAccounts.length,
+        count: settlementAccountCount,
       }),
     },
   ]
@@ -213,60 +159,53 @@ function CompanySettingsForm({
         }}
       />
 
-      <div className="rounded bg-default p-24">
+      <Alert
+        type="info"
+        showIcon
+        title={t('system.company.title')}
+        description={t('system.company.lockedByOobe')}
+      />
+      {!canView && (
         <Alert
-          type="info"
+          type="warning"
           showIcon
-          className="mb-24"
-          title={t('system.company.title')}
-          description={t('system.company.lockedByOobe')}
+          title={t('common.noPermission')}
+          description={t('system.company.noViewPermission')}
         />
-        {!canView && (
-          <Alert
-            type="warning"
-            showIcon
-            className="mb-24"
-            title={t('common.noPermission')}
-            description={t('system.company.noViewPermission')}
-          />
-        )}
-        {isLoading ? (
+      )}
+      {isLoading ? (
+        <Card>
           <Skeleton active />
-        ) : (
-          <Form form={form} layout="vertical" initialValues={initialValues}>
-            <Row gutter={[16, 16]}>
-              <Col xs={24} lg={8}>
-                <CompanySubjectCard
-                  form={form}
-                  canSave={canSave}
-                  settlementAccountCount={settlementAccounts.length}
-                />
-              </Col>
-              <Col xs={24} lg={16}>
-                <CompanySettlementAccountsCard
-                  canSave={canSave}
-                  settlementAccounts={settlementAccounts}
-                  onAdd={addSettlementAccount}
-                  onRemove={removeSettlementAccount}
-                  onUpdate={updateSettlementAccount}
-                />
-              </Col>
-            </Row>
-            <div className="mt-16 rounded-lg bg-secondary p-16">
-              <Typography.Title level={5}>
-                {t('system.company.supplementNote')}
-              </Typography.Title>
-              <Form.Item name="remark" label={t('common.remark')}>
-                <Input.TextArea
-                  disabled={!canSave}
-                  rows={4}
-                  placeholder={t('system.company.subjectRemarkPlaceholder')}
-                />
-              </Form.Item>
-            </div>
-          </Form>
-        )}
-      </div>
+        </Card>
+      ) : (
+        <Form form={form} layout="vertical" initialValues={initialValues}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={8}>
+              <CompanySubjectCard
+                form={form}
+                canSave={canSave}
+                settlementAccountCount={settlementAccountCount}
+              />
+            </Col>
+            <Col xs={24} lg={16}>
+              <CompanySettlementAccountsCard canSave={canSave} />
+            </Col>
+          </Row>
+          <Card
+            size="small"
+            className="mt-16"
+            title={t('system.company.supplementNote')}
+          >
+            <Form.Item name="remark" label={t('common.remark')}>
+              <Input.TextArea
+                disabled={!canSave}
+                rows={4}
+                placeholder={t('system.company.subjectRemarkPlaceholder')}
+              />
+            </Form.Item>
+          </Card>
+        </Form>
+      )}
     </div>
   )
 }

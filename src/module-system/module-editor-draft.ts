@@ -1,6 +1,9 @@
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
-import { applyModuleDefaultEditorDraft } from './module-editor-access'
+import {
+  applyFormFieldDefaultDraftValues,
+  applyModuleDefaultEditorDraft,
+} from './module-editor-access'
 
 export function normalizeDraftRecordForModule(options: {
   moduleKey: string
@@ -9,6 +12,7 @@ export function normalizeDraftRecordForModule(options: {
   primaryNoKey?: string
   currentOperatorName: string
   sumLineItemsBy: (items: ModuleLineItem[], key: string) => number
+  formFields?: Parameters<typeof applyFormFieldDefaultDraftValues>[1]
 }) {
   const {
     moduleKey,
@@ -19,6 +23,7 @@ export function normalizeDraftRecordForModule(options: {
     sumLineItemsBy,
   } = options
 
+  applyFormFieldDefaultDraftValues(record, options.formFields)
   applyModuleDefaultEditorDraft(moduleKey, record, currentOperatorName)
 
   if (hasBehavior(moduleKey, 'computesAmounts')) {

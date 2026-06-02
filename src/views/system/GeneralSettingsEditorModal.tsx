@@ -118,6 +118,7 @@ export function GeneralSettingsEditorModal({
                         {'{date}'}
                       </Typography.Text>{' '}
                       {t('system.generalSettingsEditor.autoReplace')}
+                      {t('system.generalSettingsEditor.watermarkNewlineHint')}
                     </Typography.Text>
                   )
                 }
@@ -125,7 +126,7 @@ export function GeneralSettingsEditorModal({
                 {asString(record.settingCode) === WATERMARK_COLOR_CODE ? (
                   <WatermarkColorInput />
                 ) : (
-                  <Input.TextArea rows={3} maxLength={64} showCount />
+                  <Input.TextArea rows={4} maxLength={64} showCount />
                 )}
               </Form.Item>
             ) : (

@@ -2,199 +2,209 @@ import { BankOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
+import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
-import type { SettlementAccountFormRow } from '@/views/system/company-settings-view-utils'
+import { createEmptySettlementAccount } from '@/views/system/company-settings-view-utils'
 
 interface Props {
   canSave: boolean
-  settlementAccounts: SettlementAccountFormRow[]
-  onAdd: () => void
-  onRemove: (index: number) => void
-  onUpdate: (
-    index: number,
-    field: keyof SettlementAccountFormRow,
-    value: string,
-  ) => void
 }
 
-export function CompanySettlementAccountsCard({
-  canSave,
-  settlementAccounts,
-  onAdd,
-  onRemove,
-  onUpdate,
-}: Props) {
+export function CompanySettlementAccountsCard({ canSave }: Props) {
   const { t } = useTranslation()
   return (
-    <Card
-      size="small"
-      className="bg-secondary rounded-lg"
-      title={
-        <div className="flex flex-wrap items-center justify-between gap-8">
-          <span>
-            <BankOutlined /> {t('system.company.settlementInfo')}
-          </span>
-          {canSave && (
-            <Button
-              type="default"
-              size="small"
-              icon={<PlusOutlined />}
-              onClick={onAdd}
-            >
-              {t('system.company.addBank')}
-            </Button>
-          )}
-        </div>
-      }
+    <Form.List
+      name="settlementAccounts"
+      rules={[
+        {
+          validator: async (_, value: unknown[]) => {
+            if (!value?.length) {
+              throw new Error(t('system.company.atLeastOneSettlementAccount'))
+            }
+          },
+        },
+      ]}
     >
-      <div className="flex flex-col gap-12">
-        {settlementAccounts.map((account, index) => (
-          <div
-            key={account.localKey}
-            className="p-16 rounded-lg bg-default border border-[var(--theme-card-border)]"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-8 mb-12">
-              <Typography.Text strong>
-                {t('system.company.settlementAccount')} {index + 1}
-              </Typography.Text>
-              {canSave && (
+      {(fields, { add, remove }, { errors }) => (
+        <Card
+          size="small"
+          title={
+            <div className="flex flex-wrap items-center justify-between gap-8">
+              <span>
+                <BankOutlined /> {t('system.company.settlementInfo')}
+              </span>
+              {canSave ? (
                 <Button
-                  type="text"
-                  danger
+                  type="default"
                   size="small"
-                  icon={<DeleteOutlined />}
-                  onClick={() => onRemove(index)}
+                  icon={<PlusOutlined />}
+                  onClick={() => add(createEmptySettlementAccount())}
                 >
-                  {t('common.delete')}
+                  {t('system.company.addBank')}
                 </Button>
-              )}
+              ) : null}
             </div>
-            <Row gutter={[12, 12]}>
-              <Col xs={24} md={8}>
-                <div className="mb-8">
-                  <Typography.Text type="secondary">
-                    {t('system.company.accountName')}{' '}
-                    <span className="text-error">*</span>
+          }
+        >
+          <div className="flex flex-col gap-12">
+            {fields.map((field, index) => (
+              <div
+                key={field.key}
+                className="rounded border border-[var(--theme-card-border)] bg-default p-16"
+              >
+                <div className="mb-12 flex flex-wrap items-center justify-between gap-8">
+                  <Typography.Text strong>
+                    {t('system.company.settlementAccount')} {index + 1}
                   </Typography.Text>
+                  {canSave && fields.length > 1 ? (
+                    <Button
+                      type="text"
+                      danger
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={() => remove(field.name)}
+                    >
+                      {t('common.delete')}
+                    </Button>
+                  ) : null}
                 </div>
-                <Input
-                  value={account.accountName}
-                  disabled={!canSave}
-                  placeholder={t('system.company.accountNamePlaceholder')}
-                  onChange={(event) =>
-                    onUpdate(index, 'accountName', event.target.value)
-                  }
-                />
-              </Col>
-              <Col xs={24} md={8}>
-                <div className="mb-8">
-                  <Typography.Text type="secondary">
-                    {t('system.company.usageType')}{' '}
-                    <span className="text-error">*</span>
-                  </Typography.Text>
-                </div>
-                <Select
-                  value={account.usageType}
-                  disabled={!canSave}
-                  className="w-full"
-                  onChange={(value) => onUpdate(index, 'usageType', value)}
-                  options={[
-                    {
-                      label: t('system.company.usageGeneral'),
-                      value: '通用',
-                    },
-                    {
-                      label: t('system.company.usageReceive'),
-                      value: '收款',
-                    },
-                    {
-                      label: t('system.company.usagePay'),
-                      value: '付款',
-                    },
-                  ]}
-                />
-              </Col>
-              <Col xs={24} md={8}>
-                <div className="mb-8">
-                  <Typography.Text type="secondary">
-                    {t('system.company.bankName')}{' '}
-                    <span className="text-error">*</span>
-                  </Typography.Text>
-                </div>
-                <Input
-                  value={account.bankName}
-                  disabled={!canSave}
-                  placeholder={t('system.company.bankNamePlaceholder')}
-                  onChange={(event) =>
-                    onUpdate(index, 'bankName', event.target.value)
-                  }
-                />
-              </Col>
-            </Row>
-            <Row gutter={[12, 12]} className="mt-8">
-              <Col xs={24} md={8}>
-                <div className="mb-8">
-                  <Typography.Text type="secondary">
-                    {t('system.company.bankAccount')}{' '}
-                    <span className="text-error">*</span>
-                  </Typography.Text>
-                </div>
-                <Input
-                  value={account.bankAccount}
-                  disabled={!canSave}
-                  placeholder={t('system.company.bankAccountPlaceholder')}
-                  onChange={(event) =>
-                    onUpdate(index, 'bankAccount', event.target.value)
-                  }
-                />
-              </Col>
-              <Col xs={24} md={8}>
-                <div className="mb-8">
-                  <Typography.Text type="secondary">
-                    {t('common.status')}{' '}
-                    <span className="text-error">*</span>
-                  </Typography.Text>
-                </div>
-                <Select
-                  value={account.status}
-                  disabled={!canSave}
-                  className="w-full"
-                  onChange={(value) => onUpdate(index, 'status', value)}
-                  options={[
-                    {
-                      label: t('system.company.statusNormal'),
-                      value: '正常',
-                    },
-                    {
-                      label: t('system.company.statusDisabled'),
-                      value: '禁用',
-                    },
-                  ]}
-                />
-              </Col>
-              <Col xs={24} md={8}>
-                <div className="mb-8">
-                  <Typography.Text type="secondary">
-                    {t('common.remark')}
-                  </Typography.Text>
-                </div>
-                <Input
-                  value={account.remark}
-                  disabled={!canSave}
-                  placeholder={t('system.company.remarkPlaceholder')}
-                  onChange={(event) =>
-                    onUpdate(index, 'remark', event.target.value)
-                  }
-                />
-              </Col>
-            </Row>
+
+                <Form.Item name={[field.name, 'id']} hidden>
+                  <Input />
+                </Form.Item>
+
+                <Row gutter={[12, 0]}>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      name={[field.name, 'accountName']}
+                      label={t('system.company.accountName')}
+                      rules={[
+                        {
+                          required: true,
+                          whitespace: true,
+                          message: t('system.company.inputAccountName', {
+                            index: index + 1,
+                          }),
+                        },
+                      ]}
+                    >
+                      <Input
+                        disabled={!canSave}
+                        placeholder={t('system.company.accountNamePlaceholder')}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      name={[field.name, 'usageType']}
+                      label={t('system.company.usageType')}
+                      rules={[{ required: true }]}
+                    >
+                      <Select
+                        disabled={!canSave}
+                        options={[
+                          {
+                            label: t('system.company.usageGeneral'),
+                            value: '通用',
+                          },
+                          {
+                            label: t('system.company.usageReceive'),
+                            value: '收款',
+                          },
+                          {
+                            label: t('system.company.usagePay'),
+                            value: '付款',
+                          },
+                        ]}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      name={[field.name, 'bankName']}
+                      label={t('system.company.bankName')}
+                      rules={[
+                        {
+                          required: true,
+                          whitespace: true,
+                          message: t('system.company.inputBankName', {
+                            index: index + 1,
+                          }),
+                        },
+                      ]}
+                    >
+                      <Input
+                        disabled={!canSave}
+                        placeholder={t('system.company.bankNamePlaceholder')}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Row gutter={[12, 0]}>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      name={[field.name, 'bankAccount']}
+                      label={t('system.company.bankAccount')}
+                      rules={[
+                        {
+                          required: true,
+                          whitespace: true,
+                          message: t('system.company.inputBankAccount', {
+                            index: index + 1,
+                          }),
+                        },
+                      ]}
+                    >
+                      <Input
+                        disabled={!canSave}
+                        placeholder={t('system.company.bankAccountPlaceholder')}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      name={[field.name, 'status']}
+                      label={t('common.status')}
+                      rules={[{ required: true }]}
+                    >
+                      <Select
+                        disabled={!canSave}
+                        options={[
+                          {
+                            label: t('system.company.statusNormal'),
+                            value: '正常',
+                          },
+                          {
+                            label: t('system.company.statusDisabled'),
+                            value: '禁用',
+                          },
+                        ]}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item
+                      name={[field.name, 'remark']}
+                      label={t('common.remark')}
+                    >
+                      <Input
+                        disabled={!canSave}
+                        placeholder={t('system.company.remarkPlaceholder')}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
+            ))}
+            <Form.ErrorList errors={errors} />
           </div>
-        ))}
-      </div>
-    </Card>
+        </Card>
+      )}
+    </Form.List>
   )
 }

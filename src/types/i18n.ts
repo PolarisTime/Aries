@@ -698,6 +698,7 @@ export interface MessageSchema {
     }
     saveResult: {
       success: string
+      pageSuccess: string
       error: string
       backToEdit: string
       close: string
@@ -1830,6 +1831,10 @@ export interface MessageSchema {
       title: string
       searchPlaceholder: string
       revokeAll: string
+      tokenId: string
+      onlineUsers: string
+      onlineDevices: string
+      activeSessions: string
       valid: string
       disabled: string
       offline: string
@@ -1842,6 +1847,7 @@ export interface MessageSchema {
       onlineStatus: string
       disableConfirm: string
       revokeAllConfirm: string
+      disabledSuccess: string
       revoked: string
     }
     printTemplate: {
@@ -2178,6 +2184,7 @@ export interface MessageSchema {
       maxChars: string
       magicVars: string
       autoReplace: string
+      watermarkNewlineHint: string
       watermarkFontSize: string
       watermarkDensity: string
       currentValue: string
@@ -2185,6 +2192,7 @@ export interface MessageSchema {
       switchEnabled: string
       switchDisabled: string
       recordedActions: string
+      selectActionRequired: string
       hiddenStatuses: string
       remark: string
     }

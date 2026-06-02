@@ -15,6 +15,12 @@ const pages = [
     title: '商品资料',
     closable: true,
   },
+  {
+    key: '/customer',
+    path: '/customer',
+    title: '客户资料',
+    closable: true,
+  },
 ]
 
 beforeAll(() => {
@@ -43,7 +49,31 @@ describe('AppPageTabs', () => {
 
     fireEvent.doubleClick(screen.getByText('商品资料'))
 
-    expect(closePage).toHaveBeenCalledWith('/material', navigate)
+    expect(closePage).toHaveBeenCalledWith('/material', navigate, {
+      fallbackPath: '/dashboard',
+    })
+  })
+
+  it('keeps current tab active after double clicking another tab to close it', () => {
+    const closePage = vi.fn()
+    const navigate = vi.fn()
+
+    render(
+      <AppPageTabs
+        activeKey="/customer"
+        closePage={closePage}
+        isTopNavigationLayout={false}
+        onNavigateToPath={navigate}
+        pages={pages}
+        shellFontStyle={{}}
+      />,
+    )
+
+    fireEvent.doubleClick(screen.getByText('商品资料'))
+
+    expect(closePage).toHaveBeenCalledWith('/material', navigate, {
+      fallbackPath: '/customer',
+    })
   })
 
   it('keeps the home tab open on double click', () => {

@@ -3,7 +3,10 @@ import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { listClientSettings } from '@/api/system-settings'
-import { useAppWatermark } from '@/layouts/useAppWatermark'
+import {
+  buildWatermarkContent,
+  useAppWatermark,
+} from '@/layouts/useAppWatermark'
 
 vi.mock('@/api/system-settings', () => ({
   listClientSettings: vi.fn(),
@@ -52,5 +55,13 @@ describe('useAppWatermark', () => {
       expect(result.current.text).toBe('内部专用 zhangsan')
     })
     expect(listClientSettings).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps watermark content lines for antd watermark rendering', () => {
+    const fixedDate = new Date('2026-06-02T08:30:00+08:00')
+
+    expect(
+      buildWatermarkContent('内部专用\n{username}\n{date}', 'zhangsan', fixedDate),
+    ).toEqual(['内部专用', 'zhangsan', '2026/6/2'])
   })
 })

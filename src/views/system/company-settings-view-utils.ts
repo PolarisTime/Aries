@@ -1,19 +1,9 @@
 import type { CompanySettlementAccount } from '@/api/company-settings'
 
-export type SettlementAccountFormRow = CompanySettlementAccount & {
-  localKey: string
-}
-
-let accountRowSeed = 0
-
-function nextLocalKey() {
-  accountRowSeed += 1
-  return `settlement-account-${accountRowSeed}`
-}
+export type SettlementAccountFormRow = CompanySettlementAccount
 
 export function createEmptySettlementAccount(): SettlementAccountFormRow {
   return {
-    localKey: nextLocalKey(),
     accountName: '',
     bankName: '',
     bankAccount: '',
@@ -36,6 +26,5 @@ export function normalizeSettlementAccounts(
     usageType: String(account.usageType || '通用'),
     status: String(account.status || '正常'),
     remark: String(account.remark || ''),
-    localKey: nextLocalKey(),
   }))
 }

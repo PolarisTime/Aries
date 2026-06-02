@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { ModuleRecord } from '@/types/module-page'
 import { buildSystemSettingPayload } from '@/views/system/GeneralSettingsView'
+import {
+  DETAILED_OPERATION_ACTION_VALUES,
+  resolveDetailedOperationActionValues,
+} from '@/views/system/general-settings-view-utils'
 
 describe('buildSystemSettingPayload', () => {
   it('preserves general setting metadata when saving a value patch', () => {
@@ -30,5 +34,18 @@ describe('buildSystemSettingPayload', () => {
         status: '正常',
       }),
     )
+  })
+
+  it('treats legacy detailed operation log ON value as all actions selected', () => {
+    expect(resolveDetailedOperationActionValues('ON')).toEqual(
+      DETAILED_OPERATION_ACTION_VALUES,
+    )
+  })
+
+  it('filters detailed operation log actions to supported values', () => {
+    expect(resolveDetailedOperationActionValues('QUERY,ON,PRINT')).toEqual([
+      'QUERY',
+      'PRINT',
+    ])
   })
 })

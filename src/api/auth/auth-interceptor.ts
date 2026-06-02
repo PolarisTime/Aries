@@ -22,9 +22,31 @@ import { normalizeErrorMessage } from './error-messages'
 import type { RetryableRequestConfig } from './types'
 
 function extractBackendTraceId(error: {
-  response?: { data?: { traceId?: string } }
+  response?: {
+    data?: { traceId?: string }
+    headers?: Record<string, unknown> & {
+      get?: (name: string) => unknown
+    }
+  }
 }): string | undefined {
-  return error.response?.data?.traceId
+  const bodyTraceId = error.response?.data?.traceId
+  if (bodyTraceId) {
+    return bodyTraceId
+  }
+
+  const headers = error.response?.headers
+  const headerTraceId =
+    headers?.get?.('x-trace-id') ??
+    headers?.get?.('X-Trace-Id') ??
+    headers?.get?.('traceId') ??
+    headers?.get?.('traceid') ??
+    headers?.['x-trace-id'] ??
+    headers?.['X-Trace-Id'] ??
+    headers?.traceId ??
+    headers?.traceid
+  return typeof headerTraceId === 'string' && headerTraceId.length > 0
+    ? headerTraceId
+    : undefined
 }
 
 function attachTraceIdToError(err: Error, traceId: string | undefined) {

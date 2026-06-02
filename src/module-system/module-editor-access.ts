@@ -1,4 +1,4 @@
-import type { ModuleRecord } from '@/types/module-page'
+import type { ModuleFormFieldDefinition, ModuleRecord } from '@/types/module-page'
 import { getBehaviorValue } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'
 
@@ -46,6 +46,23 @@ export function applyModuleDefaultEditorDraft(
   )
   if (typeof defaultOperatorField === 'string') {
     draft[defaultOperatorField] = currentOperatorName
+  }
+
+  return draft
+}
+
+export function applyFormFieldDefaultDraftValues(
+  draft: ModuleRecord,
+  fields: ModuleFormFieldDefinition[] = [],
+) {
+  for (const field of fields) {
+    if (
+      !Object.hasOwn(field, 'defaultValue') ||
+      draft[field.key] !== undefined
+    ) {
+      continue
+    }
+    draft[field.key] = field.defaultValue
   }
 
   return draft

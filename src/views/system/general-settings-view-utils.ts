@@ -1,4 +1,6 @@
 import i18next from 'i18next'
+import { createElement } from 'react'
+import Typography from 'antd/es/typography'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   DEFAULT_LIST_PAGE_SIZE_SETTING_CODE,
@@ -13,6 +15,9 @@ export const WATERMARK_FONT_SIZE_CODE = 'SYS_WATERMARK_FONT_SIZE'
 const WATERMARK_ROTATE_CODE = 'SYS_WATERMARK_ROTATE'
 export const WATERMARK_COLOR_CODE = 'SYS_WATERMARK_COLOR'
 export const WATERMARK_DENSITY_CODE = 'SYS_WATERMARK_DENSITY'
+export const DETAILED_OPERATION_LOG_SETTING_CODE =
+  'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS'
+const HIDE_AUDITED_LIST_RECORDS_SETTING_CODE = 'UI_HIDE_AUDITED_LIST_RECORDS'
 
 export const SYSTEM_SWITCH_HELP_TEXT: Record<string, string> = {
   SYS_DEFAULT_TAX_RATE:
@@ -60,6 +65,8 @@ export const DETAILED_OPERATION_ACTION_OPTIONS = [
   { label: i18next.t('system.generalSettingsUtils.actionExport'), value: 'EXPORT' },
   { label: i18next.t('system.generalSettingsUtils.actionPrint'), value: 'PRINT' },
 ]
+export const DETAILED_OPERATION_ACTION_VALUES =
+  DETAILED_OPERATION_ACTION_OPTIONS.map((option) => option.value)
 
 export const HIDE_AUDITED_STATUS_OPTIONS = [
   { label: i18next.t('system.generalSettingsUtils.statusAudited'), value: '已审核' },
@@ -72,6 +79,9 @@ export const HIDE_AUDITED_STATUS_OPTIONS = [
   { label: i18next.t('system.generalSettingsUtils.statusSigned'), value: '已签署' },
   { label: i18next.t('system.generalSettingsUtils.statusDelivered'), value: '已送达' },
 ]
+export const HIDE_AUDITED_STATUS_VALUES = HIDE_AUDITED_STATUS_OPTIONS.map(
+  (option) => option.value,
+)
 
 export const GENERAL_SETTING_STATUS_OPTIONS = [
   { label: i18next.t('system.generalSettingsUtils.settingStatusEnabled'), value: '正常' },
@@ -103,6 +113,19 @@ export function isWatermarkPropSetting(record: ModuleRecord) {
     code === WATERMARK_FONT_SIZE_CODE ||
     code === WATERMARK_ROTATE_CODE ||
     code === WATERMARK_DENSITY_CODE
+  )
+}
+
+export function isDetailedOperationLogSetting(record: ModuleRecord) {
+  return (
+    asString(record.settingCode).trim() ===
+    DETAILED_OPERATION_LOG_SETTING_CODE
+  )
+}
+
+export function isHideAuditedListRecordsSetting(record: ModuleRecord) {
+  return (
+    asString(record.settingCode).trim() === HIDE_AUDITED_LIST_RECORDS_SETTING_CODE
   )
 }
 
@@ -141,7 +164,32 @@ export function formatSettingValue(record: ModuleRecord) {
   if (isMaxConcurrentSetting(record)) {
     return asString(record.sampleNo)
   }
+  if (asString(record.settingCode).trim() === WATERMARK_CONTENT_CODE) {
+    return createElement(
+      Typography.Text,
+      { className: 'whitespace-pre-line' },
+      asString(record.sampleNo),
+    )
+  }
   return asString(record.sampleNo)
+}
+
+export function resolveDetailedOperationActionValues(sampleNo: unknown) {
+  const selected = resolveOptionValues(sampleNo, DETAILED_OPERATION_ACTION_VALUES)
+  return selected.length > 0 ? selected : DETAILED_OPERATION_ACTION_VALUES
+}
+
+export function resolveHideAuditedStatusValues(sampleNo: unknown) {
+  const selected = resolveOptionValues(sampleNo, HIDE_AUDITED_STATUS_VALUES)
+  return selected.length > 0 ? selected : ['已审核']
+}
+
+function resolveOptionValues(sampleNo: unknown, allowedValues: string[]) {
+  const allowed = new Set(allowedValues)
+  return asString(sampleNo)
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => allowed.has(item))
 }
 
 export function resolveDefaultTaxRateValue(rows: ModuleRecord[] | undefined) {

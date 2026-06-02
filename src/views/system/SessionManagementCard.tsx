@@ -61,7 +61,7 @@ export function SessionManagementCard({
         >
           {canEdit && (
             <Button danger icon={<DeleteOutlined />} onClick={onRevokeAll}>
-              {t('system.session.clearAll')}
+              {t('system.session.revokeAll')}
             </Button>
           )}
         </SystemTableToolbar>
@@ -69,13 +69,22 @@ export function SessionManagementCard({
     >
       <Row gutter={[16, 16]} className="mb-4">
         <Col xs={24} sm={8}>
-          <Statistic title={t('system.session.onlineUsers')} value={summary?.onlineUsers ?? 0} />
+          <Statistic
+            title={t('system.session.onlineUsers')}
+            value={summary?.onlineUsers ?? 0}
+          />
         </Col>
         <Col xs={24} sm={8}>
-          <Statistic title={t('system.session.onlineDevices')} value={summary?.onlineSessions ?? 0} />
+          <Statistic
+            title={t('system.session.onlineDevices')}
+            value={summary?.onlineSessions ?? 0}
+          />
         </Col>
         <Col xs={24} sm={8}>
-          <Statistic title={t('system.session.activeSessions')} value={summary?.activeSessions ?? 0} />
+          <Statistic
+            title={t('system.session.activeSessions')}
+            value={summary?.activeSessions ?? 0}
+          />
         </Col>
       </Row>
 

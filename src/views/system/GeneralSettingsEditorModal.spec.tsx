@@ -68,4 +68,32 @@ describe('GeneralSettingsEditorModal', () => {
       )
     })
   })
+
+  it('keeps newlines in watermark content textarea', async () => {
+    const record = {
+      id: '221',
+      settingCode: 'SYS_WATERMARK_CONTENT',
+      settingName: '页面水印内容',
+      billName: '界面显示',
+      sampleNo: '{username}  {time}',
+      status: '正常',
+      remark: '支持变量',
+    } satisfies ModuleRecord
+
+    const onValidated = vi.fn()
+    render(<EditorHarness record={record} onValidated={onValidated} />)
+
+    const textarea = screen.getByLabelText('水印内容')
+    fireEvent.change(textarea, {
+      target: { value: '内部专用\n{username}\n{date}' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /保\s*存/ }))
+
+    await waitFor(() => {
+      expect(onValidated).toHaveBeenCalledWith(
+        expect.objectContaining({ numericValue: '内部专用\n{username}\n{date}' }),
+      )
+    })
+  })
 })

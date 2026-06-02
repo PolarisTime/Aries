@@ -81,6 +81,7 @@ export function ModuleStatementGenerator({
   const [result, setResult] = useState<{
     status: 'success' | 'error'
     message: string
+    traceId?: string
   } | null>(null)
 
   const summary = (() => {
@@ -105,6 +106,10 @@ export function ModuleStatementGenerator({
       setResult({
         status: 'error',
         message: err instanceof Error ? err.message : t('modules.statement.generateFailed'),
+        traceId:
+          err instanceof Error
+            ? (err as Error & { traceId?: string }).traceId
+            : undefined,
       })
       setGenerating(false)
     }
@@ -168,6 +173,7 @@ export function ModuleStatementGenerator({
         open={!!result}
         status={result?.status ?? 'success'}
         subTitle={result?.message}
+        traceId={result?.traceId}
         footer={
           <Button
             type="primary"

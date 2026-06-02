@@ -13,12 +13,18 @@ import { asString } from '@/utils/type-narrowing'
 import { GeneralSettingsEditorModal } from '@/views/system/GeneralSettingsEditorModal'
 import { GeneralSettingsTableCard } from '@/views/system/GeneralSettingsTableCard'
 import {
+  DETAILED_OPERATION_ACTION_VALUES,
+  HIDE_AUDITED_STATUS_VALUES,
   isDefaultTaxRateSetting,
+  isDetailedOperationLogSetting,
+  isHideAuditedListRecordsSetting,
   isNumericSetting,
   isToggleSetting,
   isWatermarkContentSetting,
   isWatermarkPropSetting,
   matchesGeneralSettingKeyword,
+  resolveDetailedOperationActionValues,
+  resolveHideAuditedStatusValues,
 } from '@/views/system/general-settings-view-utils'
 import { isSystemSwitch } from '@/views/system/number-rules-view-utils'
 import { RateLimitRulesCard } from '@/views/system/RateLimitRulesCard'
@@ -111,7 +117,11 @@ export function GeneralSettingsView() {
         : isWatermarkPropSetting(record) || isDefaultTaxRateSetting(record)
           ? Number(record.sampleNo || 0.13)
           : Number(record.sampleNo || 0),
-      selectedActions: asString(record.sampleNo).split(',').filter(Boolean),
+      selectedActions: isDetailedOperationLogSetting(record)
+        ? resolveDetailedOperationActionValues(record.sampleNo)
+        : isHideAuditedListRecordsSetting(record)
+          ? resolveHideAuditedStatusValues(record.sampleNo)
+          : asString(record.sampleNo).split(',').filter(Boolean),
     })
     setState({ editorOpen: true })
   }
@@ -149,7 +159,30 @@ export function GeneralSettingsView() {
       } else if (isNumericSetting(editingRecord)) {
         sampleNo = String(values.numericValue || 0)
       } else if (isToggle) {
-        sampleNo = values.selectedActions?.join(',') || ''
+        const selectedActions = Array.isArray(values.selectedActions)
+          ? values.selectedActions
+          : []
+        if (
+          isDetailedOperationLogSetting(editingRecord) &&
+          selectedActions.length === 0
+        ) {
+          message.warning(t('system.generalSettingsEditor.selectActionRequired'))
+          setState({ saving: false })
+          return
+        }
+        if (
+          isDetailedOperationLogSetting(editingRecord) &&
+          selectedActions.length === DETAILED_OPERATION_ACTION_VALUES.length
+        ) {
+          sampleNo = DETAILED_OPERATION_ACTION_VALUES.join(',')
+        } else if (
+          isHideAuditedListRecordsSetting(editingRecord) &&
+          selectedActions.length === HIDE_AUDITED_STATUS_VALUES.length
+        ) {
+          sampleNo = HIDE_AUDITED_STATUS_VALUES.join(',')
+        } else {
+          sampleNo = selectedActions.join(',')
+        }
       }
       await saveSystemSetting(buildSystemSettingPayload(editingRecord, {
         settingCode: values.settingCode,

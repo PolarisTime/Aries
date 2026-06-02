@@ -8,7 +8,7 @@ export const systemOrganizationPageConfigs: Record<string, ModulePageConfig> = {
   department: {
     key: 'department',
     title: i18next.t('modules.pages.systemOrganization.department'),
-    kicker: 'System',
+    kicker: 'Master Data',
     description:
       i18next.t('modules.pages.systemOrganization.deptDesc'),
     primaryNoKey: 'departmentCode',
