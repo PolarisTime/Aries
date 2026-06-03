@@ -15,14 +15,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  frontend:
-    name: Frontend / aries
+  lint-typecheck:
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
-
     defaults:
       run:
         shell: bash
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,8 +50,94 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit tests
-        run: pnpm test:unit
+  unit-tests:
+    name: Test / ${{ matrix.batch }}
+    needs: lint-typecheck
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        batch:
+          - api-types       # ~73 files
+          - config-module   # ~97 files
+          - hooks-utils     # ~71 files
+          - views-core      # ~86 files
+          - views-other     # ~89 files
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm via corepack
+        run: corepack enable
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests (api-types)
+        if: matrix.batch == 'api-types'
+        run: pnpm vitest run src/api src/constants src/types
+
+      - name: Run tests (config-module)
+        if: matrix.batch == 'config-module'
+        run: pnpm vitest run src/config src/module-system
+
+      - name: Run tests (hooks-utils)
+        if: matrix.batch == 'hooks-utils'
+        run: pnpm vitest run src/hooks src/stores src/utils src/lib src/i18n src/locales
+
+      - name: Run tests (views-core)
+        if: matrix.batch == 'views-core'
+        run: pnpm vitest run src/views/system src/views/auth src/views/dashboard
+
+      - name: Run tests (views-other)
+        if: matrix.batch == 'views-other'
+        run: pnpm vitest run src/views/modules src/views/error src/components src/layouts src/shared src/pages src/router src/styles src/main.spec.ts src/main.spec.tsx
+
+  build:
+    name: Build & Artifact
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm via corepack
+        run: corepack enable
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build frontend
         run: pnpm build
