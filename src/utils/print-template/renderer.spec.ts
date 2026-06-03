@@ -69,4 +69,120 @@ describe('renderPrintTemplate', () => {
 
     expect(result.script).toContain('LODOP.ADD_PRINT_TEXT(,10,80,16,"");')
   })
+
+  it('renders HTML template with detail row blocks', () => {
+    const result = renderPrintTemplate(
+      [
+        '<h1>{{title}}</h1>',
+        '<table>',
+        '<!--DETAIL_ROW_START-->',
+        '<tr><td>{{detail.materialName}}</td><td>{{detail.quantity}}</td></tr>',
+        '<!--DETAIL_ROW_END-->',
+        '</table>',
+      ].join('\n'),
+      'HTML',
+      { title: '打印测试' },
+      [
+        { materialName: '盘螺', quantity: '10' },
+        { materialName: '螺纹钢', quantity: '5' },
+      ],
+    )
+
+    expect(result.type).toBe('HTML')
+    expect(result.html).toContain('<h1>打印测试</h1>')
+    expect(result.html).toContain('<tr><td>盘螺</td><td>10</td></tr>')
+    expect(result.html).toContain('<tr><td>螺纹钢</td><td>5</td></tr>')
+    expect(result.html).not.toContain('<!--DETAIL_ROW_START-->')
+    expect(result.html).not.toContain('{{title}}')
+  })
+
+  it('renders HTML template without detail rows', () => {
+    const result = renderPrintTemplate(
+      '<p>{{message}}</p>',
+      'HTML',
+      { message: 'Hello' },
+      [],
+    )
+
+    expect(result.type).toBe('HTML')
+    expect(result.html).toBe('<p>Hello</p>')
+  })
+
+  it('renders HTML template with detail rows containing multiple fields', () => {
+    const result = renderPrintTemplate(
+      [
+        '<!--DETAIL_ROW_START-->',
+        '<tr><td>{{detail.code}}</td><td>{{detail.name}}</td><td>{{detail.qty}}</td></tr>',
+        '<!--DETAIL_ROW_END-->',
+      ].join('\n'),
+      'HTML',
+      {},
+      [
+        { code: 'A01', name: 'Item1', qty: '10' },
+        { code: 'A02', name: 'Item2', qty: '20' },
+      ],
+    )
+
+    expect(result.type).toBe('HTML')
+    expect(result.html).toContain('<tr><td>A01</td><td>Item1</td><td>10</td></tr>')
+    expect(result.html).toContain('<tr><td>A02</td><td>Item2</td><td>20</td></tr>')
+    expect(result.html).not.toContain('<!--DETAIL_ROW_START-->')
+  })
+
+  it('renders HTML template with empty detail items', () => {
+    const result = renderPrintTemplate(
+      [
+        '<!--DETAIL_ROW_START-->',
+        '<tr><td>{{detail.name}}</td></tr>',
+        '<!--DETAIL_ROW_END-->',
+      ].join('\n'),
+      'HTML',
+      {},
+      [],
+    )
+
+    expect(result.type).toBe('HTML')
+    expect(result.html).not.toContain('<!--DETAIL_ROW_START-->')
+    expect(result.html).not.toContain('{{detail.name}}')
+  })
+
+  it('escapes special characters in HTML detail values', () => {
+    const result = renderPrintTemplate(
+      [
+        '<!--DETAIL_ROW_START-->',
+        '<td>{{detail.text}}</td>',
+        '<!--DETAIL_ROW_END-->',
+      ].join('\n'),
+      'HTML',
+      {},
+      [{ text: 'test"quote' }],
+    )
+
+    expect(result.html).toContain('test\\"quote')
+  })
+
+  it('renders COORD template with if/else blocks and data placeholders', () => {
+    const result = renderPrintTemplate(
+      '{{#if showHeader}}LODOP.ADD_PRINT_TEXT(10,10,200,20,"{{title}}");{{/if}}',
+      'COORD',
+      { showHeader: 'true', title: '报表标题' },
+      [],
+    )
+
+    expect(result.type).toBe('COORD')
+    expect(result.script).toContain('LODOP.ADD_PRINT_TEXT(10,10,200,20,"报表标题")')
+  })
+
+  it('renders COORD template with falsy if block', () => {
+    const result = renderPrintTemplate(
+      '{{#if showHeader}}LODOP.ADD_PRINT_TEXT(10,10,200,20,"header");{{else}}LODOP.ADD_PRINT_TEXT(10,10,200,20,"no header");{{/if}}',
+      'COORD',
+      { showHeader: '' },
+      [],
+    )
+
+    expect(result.type).toBe('COORD')
+    expect(result.script).toContain('no header')
+    expect(result.script).not.toContain('"header"')
+  })
 })

@@ -1,0 +1,115 @@
+import { render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}))
+
+vi.mock('@ant-design/icons', () => ({
+  DeleteOutlined: () => <span>DeleteOutlined</span>,
+  ImportOutlined: () => <span>ImportOutlined</span>,
+  PlusOutlined: () => <span>PlusOutlined</span>,
+}))
+
+vi.mock('antd/es/button', () => ({
+  default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+}))
+
+vi.mock('./ColumnSettingsPopover', () => ({
+  ColumnSettingsPopover: () => <div data-testid="column-settings" />,
+}))
+
+vi.mock('./EditorFooterActions', () => ({
+  EditorFooterActions: () => <div data-testid="footer-actions" />,
+}))
+
+vi.mock('./ModuleItemsPanel', () => ({
+  ModuleItemsPanel: ({ children, actions, ...props }: any) => (
+    <div data-testid="items-panel">
+      <div>{actions}</div>
+      {children}
+    </div>
+  ),
+}))
+
+vi.mock('./ModuleItemsTable', () => ({
+  ModuleItemsTable: () => <div data-testid="items-table" />,
+}))
+
+vi.mock('./ModuleParentSelectorOverlay', () => ({
+  ModuleParentSelectorOverlay: () => <div data-testid="parent-selector" />,
+}))
+
+import { ModuleEditorItemsSection } from '@/views/modules/components/ModuleEditorItemsSection'
+
+describe('ModuleEditorItemsSection', () => {
+  const defaultProps = {
+    config: {
+      key: 'test',
+      title: 'Test',
+      kicker: '',
+      description: '',
+      filters: [],
+      columns: [],
+      detailFields: [],
+      data: [],
+      buildOverview: () => [],
+      itemColumns: [{ title: 'Item', dataIndex: 'name' }],
+    },
+    items: [],
+    selectedItemIds: [],
+    parentImporting: false,
+    parentSelectorFilters: {},
+    parentSelectorOpen: false,
+    itemColumns: [],
+    itemColumnOrder: [],
+    visibleItemColumnKeys: [],
+    permissions: {
+      addManualItems: true,
+      importParentItems: false,
+      save: true,
+      audit: false,
+    },
+    saving: false,
+    onAddItem: vi.fn(),
+    onCancel: vi.fn(),
+    onSave: vi.fn(),
+    onOpenParentSelector: vi.fn(),
+    onCloseParentSelector: vi.fn(),
+    onRemoveSelectedItems: vi.fn(),
+    onImportParentRecord: vi.fn(),
+    onItemColumnOrderChange: vi.fn(),
+    onToggleItemColumn: vi.fn(),
+    onRowDragOver: vi.fn(),
+  }
+
+  it('renders items panel', () => {
+    render(<ModuleEditorItemsSection {...defaultProps} />)
+    expect(screen.getByTestId('items-panel')).toBeTruthy()
+  })
+
+  it('renders add button when addManualItems is true', () => {
+    render(<ModuleEditorItemsSection {...defaultProps} />)
+    expect(screen.getByText('modules.itemsSection.addItem')).toBeTruthy()
+  })
+
+  it('hides add button when addManualItems is false', () => {
+    render(
+      <ModuleEditorItemsSection
+        {...defaultProps}
+        permissions={{ ...defaultProps.permissions, addManualItems: false }}
+      />,
+    )
+    expect(screen.queryByText('modules.itemsSection.addItem')).toBeNull()
+  })
+
+  it('renders null when no itemColumns in config', () => {
+    const config = { ...defaultProps.config, itemColumns: [] }
+    const { container } = render(
+      <ModuleEditorItemsSection {...defaultProps} config={config} />,
+    )
+    expect(container.textContent).toBe('')
+  })
+})
