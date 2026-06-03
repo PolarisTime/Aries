@@ -5,7 +5,7 @@ import { zhCN } from '@/locales/zh-CN'
 
 const LOCALE_STORAGE_KEY = 'leo-locale'
 
-function detectLocale(): string {
+export function detectLocale(): string {
   const stored =
     typeof window !== 'undefined'
       ? localStorage.getItem(LOCALE_STORAGE_KEY)

@@ -70,6 +70,25 @@ export interface PostgresActivity {
   longestTransactionSeconds: ApiNumeric
   longestQuerySeconds: ApiNumeric
 }
+export interface PostgresTuningSettings {
+  maxConnections: ApiNumeric
+  totalConnections: ApiNumeric
+  activeConnections: ApiNumeric
+  hikariMaximumPoolSize: ApiNumeric
+  hikariMinimumIdle: ApiNumeric
+  hikariLeakDetectionThresholdMs: ApiNumeric
+  statementTimeout: string
+  idleInTransactionSessionTimeout: string
+  lockTimeout: string
+  trackIoTiming: string
+  sharedBuffers: string
+  effectiveCacheSize: string
+  workMem: string
+  maintenanceWorkMem: string
+  maxWalSize: string
+  checkpointTimeout: string
+  pgStatStatementsTrack: string
+}
 export interface TableHealthItem {
   tableName: string
   liveRows: ApiNumeric
@@ -161,6 +180,7 @@ export interface DatabaseMonitoring {
   status: string
   overview: PostgresOverview
   activity: PostgresActivity
+  tuning: PostgresTuningSettings
   tableHealth: TableHealthItem[]
   indexHealth: IndexHealthItem[]
   queryStats: QueryStats

@@ -4,7 +4,7 @@ import type { ApiResponse } from '@/types/api'
 import type { GlobalSearchResult } from '@/layouts/global-search'
 import { asString } from '@/utils/type-narrowing'
 
-interface GlobalSearchResponse {
+export interface GlobalSearchResponse {
   moduleKey?: string
   title?: string
   trackId?: string | number
@@ -13,7 +13,7 @@ interface GlobalSearchResponse {
   matchedByTrackId?: boolean
 }
 
-function toGlobalSearchResult(item: GlobalSearchResponse): GlobalSearchResult {
+export function toGlobalSearchResult(item: GlobalSearchResponse): GlobalSearchResult {
   const moduleKey = asString(item.moduleKey)
   const trackId = asString(item.trackId)
   const primaryNo = asString(item.primaryNo || item.trackId)

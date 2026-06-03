@@ -10,7 +10,7 @@ export type CarrierOption = {
   vehiclePlates?: string[]
 }
 
-function normalizeCarrierOptions(options: CarrierOption[]): CarrierOption[] {
+export function normalizeCarrierOptions(options: CarrierOption[]): CarrierOption[] {
   return options.map((option) => ({
     ...option,
     id: option.id == null ? undefined : String(option.id),
@@ -37,7 +37,7 @@ export function getCarrierOptions(): CarrierOption[] {
   return cached.get()
 }
 
-function findCarrierOption(
+export function findCarrierOption(
   carrierName: unknown,
 ): CarrierOption | undefined {
   const normalizedCarrierName = asString(carrierName).trim()

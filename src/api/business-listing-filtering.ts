@@ -10,7 +10,7 @@ import type { ListQueryOptions } from '@/utils/list'
 import { asString, safe } from '@/utils/type-narrowing'
 import { FULL_SCAN_PAGE_SIZE } from './business-listing-constants'
 
-function hasValue(value: unknown) {
+export function hasValue(value: unknown) {
   if (value == null) {
     return false
   }
@@ -23,7 +23,7 @@ function hasValue(value: unknown) {
   return true
 }
 
-function isServerFilterKey(
+export function isServerFilterKey(
   endpointConfig: ModuleEndpointConfig,
   key: string,
 ) {
@@ -98,7 +98,7 @@ export function buildQueryParams(
   return params
 }
 
-function applyFilterDefinition(
+export function applyFilterDefinition(
   record: ModuleRecord,
   filter: ModuleFilterDefinition,
   rawValue: unknown,

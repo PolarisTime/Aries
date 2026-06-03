@@ -7,7 +7,7 @@ import type { ModuleRecord } from '@/types/module-page'
 import { getApiMessage } from '@/utils/api-messages'
 import { asId, asString } from '@/utils/type-narrowing'
 
-function normalizeRecord(raw: RawApiRecord): ModuleRecord {
+export function normalizeRecord(raw: RawApiRecord): ModuleRecord {
   const id = asId(raw.id) || asString(raw.id)
   const items = Array.isArray(raw.items)
     ? raw.items.map((item) => ({

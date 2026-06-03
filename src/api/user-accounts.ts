@@ -33,7 +33,7 @@ export interface UserAccountListParams {
   status?: string
 }
 
-function buildUserAccountUrl(id?: string) {
+export function buildUserAccountUrl(id?: string) {
   return id != null
     ? `${ENDPOINTS.USER_ACCOUNTS}/${id}`
     : ENDPOINTS.USER_ACCOUNTS
