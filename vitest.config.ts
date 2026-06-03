@@ -13,11 +13,6 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
     testTimeout: 10000,
     include: ['src/**/*.spec.ts', 'src/**/*.spec.tsx'],
     exclude: ['tests/**', 'src/mock/**', 'node_modules/**', 'dist/**'],
