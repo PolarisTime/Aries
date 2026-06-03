@@ -3,12 +3,12 @@ import type { TableColumnsType } from 'antd'
 import Button from 'antd/es/button'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleLineItem,
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
-import type { SearchParams } from '@/types/api-raw'
 import { ColumnSettingsPopover } from './ColumnSettingsPopover'
 import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
@@ -99,7 +99,11 @@ export function ModuleEditorItemsSection({
                   onClick={onOpenParentSelector}
                 >
                   {config.parentImport?.buttonText ||
-                    t('modules.itemsSection.importItems', { label: config.parentImport?.label || t('modules.itemsSection.parentDoc') })}
+                    t('modules.itemsSection.importItems', {
+                      label:
+                        config.parentImport?.label ||
+                        t('modules.itemsSection.parentDoc'),
+                    })}
                 </Button>
               )}
               <ColumnSettingsPopover
@@ -118,7 +122,8 @@ export function ModuleEditorItemsSection({
                   icon={<DeleteOutlined />}
                   onClick={onRemoveSelectedItems}
                 >
-                  {t('modules.itemsSection.deleteSelected')} ({selectedItemIds.length})
+                  {t('modules.itemsSection.deleteSelected')} (
+                  {selectedItemIds.length})
                 </Button>
               )}
               <EditorFooterActions
@@ -162,7 +167,10 @@ export function ModuleEditorItemsSection({
             config.parentImport.candidateStatementModuleKey
           }
           fixedFilters={parentSelectorFilters}
-          title={t('modules.itemsSection.selectParent', { label: config.parentImport.label || t('modules.itemsSection.parentDoc') })}
+          title={t('modules.itemsSection.selectParent', {
+            label:
+              config.parentImport.label || t('modules.itemsSection.parentDoc'),
+          })}
           onSelect={onImportParentRecord}
           onClose={onCloseParentSelector}
         />

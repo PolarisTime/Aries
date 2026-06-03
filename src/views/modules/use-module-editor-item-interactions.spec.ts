@@ -1,17 +1,19 @@
+import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
 
 vi.mock('@/module-system/module-adapter-editor', () => ({
-  moveEditorLineItemByDrag: vi.fn((items: any[], sourceId: string, targetId: string, position: string) => {
-    const sourceIndex = items.findIndex((i: any) => i.id === sourceId)
-    const targetIndex = items.findIndex((i: any) => i.id === targetId)
-    if (sourceIndex === -1 || targetIndex === -1) return items
-    const result = [...items]
-    const [moved] = result.splice(sourceIndex, 1)
-    const insertIndex = position === 'after' ? targetIndex : targetIndex
-    result.splice(insertIndex, 0, moved)
-    return result
-  }),
+  moveEditorLineItemByDrag: vi.fn(
+    (items: any[], sourceId: string, targetId: string, position: string) => {
+      const sourceIndex = items.findIndex((i: any) => i.id === sourceId)
+      const targetIndex = items.findIndex((i: any) => i.id === targetId)
+      if (sourceIndex === -1 || targetIndex === -1) return items
+      const result = [...items]
+      const [moved] = result.splice(sourceIndex, 1)
+      const insertIndex = position === 'after' ? targetIndex : targetIndex
+      result.splice(insertIndex, 0, moved)
+      return result
+    },
+  ),
 }))
 
 import { useModuleEditorItemInteractions } from '@/views/modules/use-module-editor-item-interactions'
@@ -23,7 +25,8 @@ function createItems(ids: string[]) {
 function setupHook(items = createItems(['a', 'b', 'c'])) {
   let currentItems = items
   const setItems = vi.fn((updater: any) => {
-    currentItems = typeof updater === 'function' ? updater(currentItems) : updater
+    currentItems =
+      typeof updater === 'function' ? updater(currentItems) : updater
   })
   const { result, rerender } = renderHook(() =>
     useModuleEditorItemInteractions({ items: currentItems, setItems }),
@@ -143,7 +146,10 @@ describe('useModuleEditorItemInteractions', () => {
       result.current.handleDragStart('a', mockEvent as any)
     })
     expect(mockEvent.dataTransfer.effectAllowed).toBe('move')
-    expect(mockEvent.dataTransfer.setData).toHaveBeenCalledWith('text/plain', 'a')
+    expect(mockEvent.dataTransfer.setData).toHaveBeenCalledWith(
+      'text/plain',
+      'a',
+    )
   })
 
   it('handleDragOver prevents default and sets drop effect', () => {
@@ -157,7 +163,9 @@ describe('useModuleEditorItemInteractions', () => {
       clientY: 30,
     }
     act(() => {
-      result.current.handleDragStart('a', { dataTransfer: { effectAllowed: '', setData: vi.fn() } } as any)
+      result.current.handleDragStart('a', {
+        dataTransfer: { effectAllowed: '', setData: vi.fn() },
+      } as any)
     })
     act(() => {
       result.current.handleDragOver('b', mockEvent as any)
@@ -177,7 +185,9 @@ describe('useModuleEditorItemInteractions', () => {
       clientY: 30, // below midpoint of 50
     }
     act(() => {
-      result.current.handleDragStart('a', { dataTransfer: { effectAllowed: '', setData: vi.fn() } } as any)
+      result.current.handleDragStart('a', {
+        dataTransfer: { effectAllowed: '', setData: vi.fn() },
+      } as any)
     })
     act(() => {
       result.current.handleDragOver('b', mockEvent as any)
@@ -200,7 +210,9 @@ describe('useModuleEditorItemInteractions', () => {
   it('handleDragOver does nothing when dragging over same item', () => {
     const { result } = setupHook()
     act(() => {
-      result.current.handleDragStart('a', { dataTransfer: { effectAllowed: '', setData: vi.fn() } } as any)
+      result.current.handleDragStart('a', {
+        dataTransfer: { effectAllowed: '', setData: vi.fn() },
+      } as any)
     })
     act(() => {
       result.current.handleDragOver('a', {
@@ -213,13 +225,17 @@ describe('useModuleEditorItemInteractions', () => {
   it('handleDragEnd moves items when source and target are different', () => {
     const { result, setItems } = setupHook(createItems(['a', 'b', 'c']))
     act(() => {
-      result.current.handleDragStart('a', { dataTransfer: { effectAllowed: '', setData: vi.fn() } } as any)
+      result.current.handleDragStart('a', {
+        dataTransfer: { effectAllowed: '', setData: vi.fn() },
+      } as any)
     })
     act(() => {
       result.current.handleDragOver('c', {
         preventDefault: vi.fn(),
         dataTransfer: { dropEffect: '' },
-        currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 100 }) },
+        currentTarget: {
+          getBoundingClientRect: () => ({ top: 0, height: 100 }),
+        },
         clientY: 30,
       } as any)
     })
@@ -232,7 +248,9 @@ describe('useModuleEditorItemInteractions', () => {
   it('handleDragEnd does nothing when source and target are same', () => {
     const { result, setItems } = setupHook(createItems(['a', 'b', 'c']))
     act(() => {
-      result.current.handleDragStart('a', { dataTransfer: { effectAllowed: '', setData: vi.fn() } } as any)
+      result.current.handleDragStart('a', {
+        dataTransfer: { effectAllowed: '', setData: vi.fn() },
+      } as any)
     })
     act(() => {
       result.current.handleDragEnd()
@@ -245,13 +263,17 @@ describe('useModuleEditorItemInteractions', () => {
     const { result } = setupHook()
     const preventDefault = vi.fn()
     act(() => {
-      result.current.handleDragStart('a', { dataTransfer: { effectAllowed: '', setData: vi.fn() } } as any)
+      result.current.handleDragStart('a', {
+        dataTransfer: { effectAllowed: '', setData: vi.fn() },
+      } as any)
     })
     act(() => {
       result.current.handleDragOver('a', {
         preventDefault,
         dataTransfer: { dropEffect: '' },
-        currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 100 }) },
+        currentTarget: {
+          getBoundingClientRect: () => ({ top: 0, height: 100 }),
+        },
         clientY: 30,
       } as any)
     })

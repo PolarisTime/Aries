@@ -51,7 +51,11 @@ export const compactPurchaseInboundItemColumns = applyCompactItemLayout(
 
 export const compactBatchCustomerStatementItemColumns = applyCompactItemLayout(
   [
-    { title: i18next.t('modules.columns.orderNo'), dataIndex: 'sourceNo', width: 160 },
+    {
+      title: i18next.t('modules.columns.orderNo'),
+      dataIndex: 'sourceNo',
+      width: 160,
+    },
     ...batchOrderItemColumns,
   ],
   compactTradeItemWidthMap,
@@ -60,7 +64,11 @@ export const compactBatchCustomerStatementItemColumns = applyCompactItemLayout(
 
 export const compactBatchSupplierStatementItemColumns = applyCompactItemLayout(
   [
-    { title: i18next.t('modules.columns.inboundNo'), dataIndex: 'sourceNo', width: 160 },
+    {
+      title: i18next.t('modules.columns.inboundNo'),
+      dataIndex: 'sourceNo',
+      width: 160,
+    },
     ...batchSupplierStatementItemColumns,
   ],
   compactTradeItemWidthMap,
@@ -69,7 +77,11 @@ export const compactBatchSupplierStatementItemColumns = applyCompactItemLayout(
 
 export const compactInvoiceReceiptItemColumns = applyCompactItemLayout(
   [
-    { title: i18next.t('modules.columns.purchaseOrderNo'), dataIndex: 'sourceNo', width: 160 },
+    {
+      title: i18next.t('modules.columns.purchaseOrderNo'),
+      dataIndex: 'sourceNo',
+      width: 160,
+    },
     ...purchaseItemColumns,
   ],
   compactTradeItemWidthMap,
@@ -78,7 +90,11 @@ export const compactInvoiceReceiptItemColumns = applyCompactItemLayout(
 
 export const compactInvoiceIssueItemColumns = applyCompactItemLayout(
   [
-    { title: i18next.t('modules.columns.salesOrderNo'), dataIndex: 'sourceNo', width: 160 },
+    {
+      title: i18next.t('modules.columns.salesOrderNo'),
+      dataIndex: 'sourceNo',
+      width: 160,
+    },
     ...purchaseItemColumns,
   ],
   compactTradeItemWidthMap,

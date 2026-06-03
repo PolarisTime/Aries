@@ -79,9 +79,7 @@ export function BusinessGridTable({
       )
       setScrollY((prev) => (prev === nextScrollY ? prev : nextScrollY))
       const nextShellWidth = shell.clientWidth
-      setShellWidth((prev) =>
-        prev === nextShellWidth ? prev : nextShellWidth,
-      )
+      setShellWidth((prev) => (prev === nextShellWidth ? prev : nextShellWidth))
     }
     const scheduleMeasure = () => {
       cancelAnimationFrame(frameId)

@@ -1,17 +1,22 @@
+import i18next from 'i18next'
 import { customerOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from './filter-labels'
 import { buildFinanceOverview, statusMap } from './shared'
-import i18next from 'i18next'
 
 export const receiptsPageConfig: ModulePageConfig = {
   key: 'receipt',
   title: i18next.t('modules.pages.receipt.receipt'),
   kicker: 'Finance',
-  description:
-    i18next.t('modules.pages.receipt.receiptDesc'),
+  description: i18next.t('modules.pages.receipt.receiptDesc'),
   primaryNoKey: 'receiptNo',
-  actions: [{ key: 'create_receipt', label: i18next.t('modules.pages.receipt.createReceipt'), type: 'primary' }],
+  actions: [
+    {
+      key: 'create_receipt',
+      label: i18next.t('modules.pages.receipt.createReceipt'),
+      type: 'primary',
+    },
+  ],
   filters: [
     {
       key: 'customerName',
@@ -28,14 +33,39 @@ export const receiptsPageConfig: ModulePageConfig = {
         { label: i18next.t('modules.pages.receipt.received'), value: '已收款' },
       ],
     },
-    { key: 'receiptDate', label: i18next.t('modules.pages.receipt.receiptDate'), type: 'dateRange' },
+    {
+      key: 'receiptDate',
+      label: i18next.t('modules.pages.receipt.receiptDate'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: i18next.t('modules.pages.receipt.receiptNo'), dataIndex: 'receiptNo', width: 170 },
-    { title: i18next.t('modules.pages.receipt.customer'), dataIndex: 'customerName', width: 140 },
-    { title: i18next.t('modules.pages.receipt.project'), dataIndex: 'projectName', width: 180 },
-    { title: i18next.t('modules.pages.receipt.receiptDate'), dataIndex: 'receiptDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.receipt.receiptMethod'), dataIndex: 'payType', width: 120 },
+    {
+      title: i18next.t('modules.pages.receipt.receiptNo'),
+      dataIndex: 'receiptNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.receipt.customer'),
+      dataIndex: 'customerName',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.receipt.project'),
+      dataIndex: 'projectName',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.receipt.receiptDate'),
+      dataIndex: 'receiptDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.receipt.receiptMethod'),
+      dataIndex: 'payType',
+      width: 120,
+    },
     {
       title: i18next.t('modules.pages.receipt.amount'),
       dataIndex: 'amount',
@@ -53,16 +83,60 @@ export const receiptsPageConfig: ModulePageConfig = {
   ],
   defaultHiddenColumnKeys: ['projectName', 'payType'],
   detailFields: [
-    { label: i18next.t('modules.pages.receipt.receiptNo'), key: 'receiptNo', row: 1 },
-    { label: i18next.t('modules.pages.receipt.customer'), key: 'customerName', row: 1 },
-    { label: i18next.t('modules.pages.receipt.project'), key: 'projectName', row: 1 },
-    { label: i18next.t('modules.pages.receipt.relatedStatement'), key: 'sourceStatementId', row: 1 },
-    { label: i18next.t('modules.pages.receipt.receiptDate'), key: 'receiptDate', type: 'date', row: 2 },
-    { label: i18next.t('modules.pages.receipt.receiptMethod'), key: 'payType', row: 2 },
-    { label: i18next.t('modules.pages.receipt.amount'), key: 'amount', type: 'amount', row: 2 },
-    { label: i18next.t('modules.pages.receipt.status'), key: 'status', type: 'status', row: 2 },
-    { label: i18next.t('modules.pages.receipt.operator'), key: 'operatorName', row: 3 },
-    { label: i18next.t('modules.pages.receipt.remark'), key: 'remark', row: 4, fullRow: true },
+    {
+      label: i18next.t('modules.pages.receipt.receiptNo'),
+      key: 'receiptNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.receipt.customer'),
+      key: 'customerName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.receipt.project'),
+      key: 'projectName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.receipt.relatedStatement'),
+      key: 'sourceStatementId',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.receipt.receiptDate'),
+      key: 'receiptDate',
+      type: 'date',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.receipt.receiptMethod'),
+      key: 'payType',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.receipt.amount'),
+      key: 'amount',
+      type: 'amount',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.receipt.status'),
+      key: 'status',
+      type: 'status',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.receipt.operator'),
+      key: 'operatorName',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.receipt.remark'),
+      key: 'remark',
+      row: 4,
+      fullRow: true,
+    },
   ],
   formFields: [
     {
@@ -107,9 +181,18 @@ export const receiptsPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: [
-        { label: i18next.t('modules.pages.receipt.bankTransfer'), value: '银行转账' },
-        { label: i18next.t('modules.pages.receipt.bankAcceptance'), value: '银行承兑' },
-        { label: i18next.t('modules.pages.receipt.acceptanceBill'), value: '承兑汇票' },
+        {
+          label: i18next.t('modules.pages.receipt.bankTransfer'),
+          value: '银行转账',
+        },
+        {
+          label: i18next.t('modules.pages.receipt.bankAcceptance'),
+          value: '银行承兑',
+        },
+        {
+          label: i18next.t('modules.pages.receipt.acceptanceBill'),
+          value: '承兑汇票',
+        },
         { label: i18next.t('modules.pages.receipt.cash'), value: '现金' },
       ],
       row: 2,
@@ -142,7 +225,13 @@ export const receiptsPageConfig: ModulePageConfig = {
       required: true,
       row: 3,
     },
-    { key: 'remark', label: i18next.t('modules.pages.receipt.remark'), type: 'textarea', row: 4, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.receipt.remark'),
+      type: 'textarea',
+      row: 4,
+      fullRow: true,
+    },
   ],
   saveFields: {
     scalar: [

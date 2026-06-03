@@ -37,7 +37,10 @@ export function AppResult({
     '404': { title: '404', subTitle: t('result.404.subTitle') },
     '500': { title: '500', subTitle: t('result.500.subTitle') },
     success: { title: t('result.success.title'), subTitle: '' },
-    error: { title: t('result.error.title'), subTitle: t('result.error.subTitle') },
+    error: {
+      title: t('result.error.title'),
+      subTitle: t('result.error.subTitle'),
+    },
     info: { title: t('result.info.title'), subTitle: '' },
     warning: { title: t('result.warning.title'), subTitle: '' },
   }
@@ -55,7 +58,9 @@ export function AppResult({
     <>
       {extra}
       {showBackButton ? (
-        <Button onClick={() => window.history.back()}>{resolvedBackButtonText}</Button>
+        <Button onClick={() => window.history.back()}>
+          {resolvedBackButtonText}
+        </Button>
       ) : null}
       {showHomeButton ? (
         <Button

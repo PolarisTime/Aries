@@ -31,9 +31,9 @@ vi.mock('@/api/api-keys', () => ({
     lastUsedAt: null,
   }),
   listApiKeyResourceOptions: vi.fn().mockResolvedValue([]),
-  listApiKeyActionOptions: vi.fn().mockResolvedValue([
-    { code: 'read', title: '读取' },
-  ]),
+  listApiKeyActionOptions: vi
+    .fn()
+    .mockResolvedValue([{ code: 'read', title: '读取' }]),
 }))
 
 import { ApiKeyDetailView } from '@/views/system/ApiKeyDetailView'

@@ -34,9 +34,24 @@ describe('user-account-view-utils', () => {
 
   describe('buildSelectedRoleDataScope', () => {
     const roleOptions: RoleOptionRecord[] = [
-      { id: 1, roleName: '管理员', dataScope: '全部数据', permissionSummary: '全部权限' },
-      { id: 2, roleName: '普通用户', dataScope: '本人', permissionSummary: '部分权限' },
-      { id: 3, roleName: '部门经理', dataScope: '本部门', permissionSummary: '部门权限' },
+      {
+        id: 1,
+        roleName: '管理员',
+        dataScope: '全部数据',
+        permissionSummary: '全部权限',
+      },
+      {
+        id: 2,
+        roleName: '普通用户',
+        dataScope: '本人',
+        permissionSummary: '部分权限',
+      },
+      {
+        id: 3,
+        roleName: '部门经理',
+        dataScope: '本部门',
+        permissionSummary: '部门权限',
+      },
     ] as never
 
     it('returns "本人" when no selected roles', () => {
@@ -44,7 +59,9 @@ describe('user-account-view-utils', () => {
     })
 
     it('returns currentDataScope when selected roles not found in options', () => {
-      expect(buildSelectedRoleDataScope([999], roleOptions, '全部数据')).toBe('全部数据')
+      expect(buildSelectedRoleDataScope([999], roleOptions, '全部数据')).toBe(
+        '全部数据',
+      )
     })
 
     it('returns "本人" when selected roles not found and no currentDataScope', () => {
@@ -59,7 +76,9 @@ describe('user-account-view-utils', () => {
 
     it('returns highest scope when multiple roles selected', () => {
       expect(buildSelectedRoleDataScope([2, 3], roleOptions)).toBe('本部门')
-      expect(buildSelectedRoleDataScope([1, 2, 3], roleOptions)).toBe('全部数据')
+      expect(buildSelectedRoleDataScope([1, 2, 3], roleOptions)).toBe(
+        '全部数据',
+      )
     })
   })
 

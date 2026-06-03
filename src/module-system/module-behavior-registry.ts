@@ -17,10 +17,7 @@ import '@/module-system/module-behavior-normalizers'
 import '@/module-system/module-behavior-save'
 import '@/module-system/module-behavior-statuses'
 
-export type {
-  ModuleBehaviorConfig,
-} from '@/module-system/module-behavior-types'
-
+export type { ModuleBehaviorConfig } from '@/module-system/module-behavior-types'
 
 export function hasBehavior(
   moduleKey: string,

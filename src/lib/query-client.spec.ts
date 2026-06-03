@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 const mockQueryClient = vi.hoisted(() => {
-  return vi.fn().mockImplementation(function (this: Record<string, unknown>, config: Record<string, unknown>) {
+  return vi.fn().mockImplementation(function (
+    this: Record<string, unknown>,
+    config: Record<string, unknown>,
+  ) {
     this.config = config
     this.defaultOptions = config.defaultOptions
   })

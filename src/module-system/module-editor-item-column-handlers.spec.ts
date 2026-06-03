@@ -1,9 +1,12 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useModuleEditorItemColumnHandlers } from './module-editor-item-column-handlers'
 
 vi.mock('./module-adapter-editor', () => ({
-  recalculateEditorLineItem: vi.fn((item, key) => ({ ...item, recalculated: key })),
+  recalculateEditorLineItem: vi.fn((item, key) => ({
+    ...item,
+    recalculated: key,
+  })),
 }))
 
 describe('useModuleEditorItemColumnHandlers', () => {
@@ -22,7 +25,9 @@ describe('useModuleEditorItemColumnHandlers', () => {
   })
 
   it('returns all handler functions', () => {
-    const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+    const { result } = renderHook(() =>
+      useModuleEditorItemColumnHandlers({ setItems }),
+    )
     expect(result.current.handleItemNumberChange).toBeInstanceOf(Function)
     expect(result.current.handleItemInputChange).toBeInstanceOf(Function)
     expect(result.current.handleMaterialSelect).toBeInstanceOf(Function)
@@ -32,8 +37,13 @@ describe('useModuleEditorItemColumnHandlers', () => {
 
   describe('handleItemNumberChange', () => {
     it('updates item number value', () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
-      items = [{ id: '1', quantity: 10 }, { id: '2', quantity: 20 }]
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [
+        { id: '1', quantity: 10 },
+        { id: '2', quantity: 20 },
+      ]
 
       act(() => {
         result.current.handleItemNumberChange('1', 'quantity', 15)
@@ -45,7 +55,9 @@ describe('useModuleEditorItemColumnHandlers', () => {
     })
 
     it('converts null to 0', () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', quantity: 10 }]
 
       act(() => {
@@ -56,7 +68,9 @@ describe('useModuleEditorItemColumnHandlers', () => {
     })
 
     it('converts undefined to 0', () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', quantity: 10 }]
 
       act(() => {
@@ -67,8 +81,13 @@ describe('useModuleEditorItemColumnHandlers', () => {
     })
 
     it('does not update other items', () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
-      items = [{ id: '1', quantity: 10 }, { id: '2', quantity: 20 }]
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [
+        { id: '1', quantity: 10 },
+        { id: '2', quantity: 20 },
+      ]
 
       act(() => {
         result.current.handleItemNumberChange('2', 'quantity', 30)
@@ -81,7 +100,9 @@ describe('useModuleEditorItemColumnHandlers', () => {
 
   describe('handleItemInputChange', () => {
     it('updates item input value', () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', name: 'test' }]
 
       act(() => {
@@ -92,8 +113,13 @@ describe('useModuleEditorItemColumnHandlers', () => {
     })
 
     it('does not update other items', () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
-      items = [{ id: '1', name: 'test1' }, { id: '2', name: 'test2' }]
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [
+        { id: '1', name: 'test1' },
+        { id: '2', name: 'test2' },
+      ]
 
       act(() => {
         result.current.handleItemInputChange('2', 'name', 'new value')
@@ -106,7 +132,9 @@ describe('useModuleEditorItemColumnHandlers', () => {
 
   describe('handleMaterialSelect', () => {
     it('updates material code', () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', materialCode: 'old' }]
 
       act(() => {
@@ -117,13 +145,20 @@ describe('useModuleEditorItemColumnHandlers', () => {
     })
 
     it('applies material when applyMaterial provided', () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', materialCode: 'old' }]
       const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
       const materialRecord = { name: 'Material A' }
 
       act(() => {
-        result.current.handleMaterialSelect('1', 'new-code', materialRecord, applyMaterial)
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          materialRecord,
+          applyMaterial,
+        )
       })
 
       expect(applyMaterial).toHaveBeenCalled()
@@ -131,69 +166,115 @@ describe('useModuleEditorItemColumnHandlers', () => {
     })
 
     it('resolves material when resolveMaterial provided', async () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', materialCode: 'new-code' }]
       const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
-      const resolveMaterial = vi.fn().mockResolvedValue({ name: 'Resolved Material' })
+      const resolveMaterial = vi
+        .fn()
+        .mockResolvedValue({ name: 'Resolved Material' })
 
       await act(async () => {
-        result.current.handleMaterialSelect('1', 'new-code', null, applyMaterial, resolveMaterial)
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          null,
+          applyMaterial,
+          resolveMaterial,
+        )
       })
 
       expect(resolveMaterial).toHaveBeenCalledWith('new-code')
     })
 
     it('does not call resolveMaterial when resolveMaterial returns null', async () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', materialCode: 'new-code' }]
       const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
       const resolveMaterial = vi.fn().mockResolvedValue(null)
 
       await act(async () => {
-        result.current.handleMaterialSelect('1', 'new-code', null, applyMaterial, resolveMaterial)
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          null,
+          applyMaterial,
+          resolveMaterial,
+        )
       })
 
       expect(resolveMaterial).toHaveBeenCalledWith('new-code')
     })
 
     it('does not apply resolved material when materialCode changed before resolution', async () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', materialCode: 'new-code' }]
-      const applyMaterial = vi.fn((item, mat) => mat ? { ...item, resolvedApplied: true } : item)
+      const applyMaterial = vi.fn((item, mat) =>
+        mat ? { ...item, resolvedApplied: true } : item,
+      )
       const resolveMaterial = vi.fn().mockImplementation(async () => {
         items[0] = { ...items[0], materialCode: 'different-code' }
         return { name: 'Resolved Material' }
       })
 
       await act(async () => {
-        result.current.handleMaterialSelect('1', 'new-code', null, applyMaterial, resolveMaterial)
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          null,
+          applyMaterial,
+          resolveMaterial,
+        )
       })
 
       expect(items[0].resolvedApplied).toBeUndefined()
     })
 
     it('applies resolved material when materialCode matches', async () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', materialCode: 'new-code' }]
       const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
-      const resolveMaterial = vi.fn().mockResolvedValue({ name: 'Resolved Material' })
+      const resolveMaterial = vi
+        .fn()
+        .mockResolvedValue({ name: 'Resolved Material' })
 
       await act(async () => {
-        result.current.handleMaterialSelect('1', 'new-code', null, applyMaterial, resolveMaterial)
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          null,
+          applyMaterial,
+          resolveMaterial,
+        )
       })
 
       expect(items[0].applied).toBe(true)
     })
 
     it('does not call resolveMaterial when materialRecord is provided', () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', materialCode: 'old' }]
       const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
       const resolveMaterial = vi.fn()
       const materialRecord = { name: 'Material A' }
 
       act(() => {
-        result.current.handleMaterialSelect('1', 'new-code', materialRecord, applyMaterial, resolveMaterial)
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          materialRecord,
+          applyMaterial,
+          resolveMaterial,
+        )
       })
 
       expect(resolveMaterial).not.toHaveBeenCalled()
@@ -202,7 +283,9 @@ describe('useModuleEditorItemColumnHandlers', () => {
 
   describe('handleWarehouseSelect', () => {
     it('updates warehouse name', () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', warehouseName: 'old' }]
 
       act(() => {
@@ -215,7 +298,9 @@ describe('useModuleEditorItemColumnHandlers', () => {
 
   describe('handleSettlementModeChange', () => {
     it('updates settlement mode', () => {
-      const { result } = renderHook(() => useModuleEditorItemColumnHandlers({ setItems }))
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
       items = [{ id: '1', settlementMode: 'old' }]
 
       act(() => {

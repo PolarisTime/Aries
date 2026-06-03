@@ -36,14 +36,18 @@ describe('RoleActionPermissionCard', () => {
 
   it('renders empty state when no role selected', () => {
     render(<RoleActionPermissionCard {...defaultProps} />)
-    expect(screen.getByText('system.rolePermission.selectRoleHint')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.rolePermission.selectRoleHint'),
+    ).toBeInTheDocument()
   })
 
   it('renders role info when role is selected', () => {
     render(
       <RoleActionPermissionCard
         {...defaultProps}
-        selectedRoleInfo={{ id: '1', roleName: 'Admin', roleCode: 'admin' } as never}
+        selectedRoleInfo={
+          { id: '1', roleName: 'Admin', roleCode: 'admin' } as never
+        }
       />,
     )
     expect(screen.getByText(/Admin/)).toBeInTheDocument()
@@ -57,7 +61,9 @@ describe('RoleActionPermissionCard', () => {
         permissionActions={{ editable: true, saving: false }}
       />,
     )
-    expect(screen.getByText('system.rolePermission.selectAll')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.rolePermission.selectAll'),
+    ).toBeInTheDocument()
   })
 
   it('renders deselect all button when editable', () => {
@@ -68,7 +74,9 @@ describe('RoleActionPermissionCard', () => {
         permissionActions={{ editable: true, saving: false }}
       />,
     )
-    expect(screen.getByText('system.rolePermission.deselectAll')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.rolePermission.deselectAll'),
+    ).toBeInTheDocument()
   })
 
   it('renders save button when editable', () => {
@@ -79,7 +87,9 @@ describe('RoleActionPermissionCard', () => {
         permissionActions={{ editable: true, saving: false }}
       />,
     )
-    expect(screen.getByText('system.rolePermission.savePerm')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.rolePermission.savePerm'),
+    ).toBeInTheDocument()
   })
 
   it('renders list view mode toggle', () => {
@@ -89,8 +99,12 @@ describe('RoleActionPermissionCard', () => {
         selectedRoleInfo={{ id: '1', roleName: 'Admin' } as never}
       />,
     )
-    expect(screen.getByText('system.rolePermission.listView')).toBeInTheDocument()
-    expect(screen.getByText('system.rolePermission.matrixView')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.rolePermission.listView'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.rolePermission.matrixView'),
+    ).toBeInTheDocument()
   })
 
   it('renders permission alert', () => {
@@ -100,7 +114,9 @@ describe('RoleActionPermissionCard', () => {
         selectedRoleInfo={{ id: '1', roleName: 'Admin' } as never}
       />,
     )
-    expect(screen.getByText('system.rolePermission.attachmentPermTitle')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.rolePermission.attachmentPermTitle'),
+    ).toBeInTheDocument()
   })
 
   it('renders menu tree items', () => {

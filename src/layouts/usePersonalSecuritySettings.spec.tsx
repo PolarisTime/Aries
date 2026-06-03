@@ -2,8 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { usePersonalSecuritySettings } from '@/layouts/usePersonalSecuritySettings'
 import * as accountSecurity from '@/api/account-security'
+import { usePersonalSecuritySettings } from '@/layouts/usePersonalSecuritySettings'
 import * as authUserSync from '@/stores/auth-user-sync'
 import * as antdApp from '@/utils/antd-app'
 
@@ -29,7 +29,9 @@ function createWrapper() {
     defaultOptions: { queries: { retry: false } },
   })
   return function Wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    )
   }
 }
 
@@ -56,7 +58,9 @@ describe('usePersonalSecuritySettings', () => {
   })
 
   it('calls changeOwnPassword on success', async () => {
-    vi.mocked(accountSecurity.changeOwnPassword).mockResolvedValue(undefined as any)
+    vi.mocked(accountSecurity.changeOwnPassword).mockResolvedValue(
+      undefined as any,
+    )
 
     const { result } = renderHook(
       () => usePersonalSecuritySettings({ open: false, tab: 'security' }),

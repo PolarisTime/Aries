@@ -35,7 +35,9 @@ export function useModuleDisplaySupport() {
         : formatDate(value, asString(value))
     }
     if (columnType === 'boolean') {
-      return value ? t('hooks.displaySupport.yes') : t('hooks.displaySupport.no')
+      return value
+        ? t('hooks.displaySupport.yes')
+        : t('hooks.displaySupport.no')
     }
     return asString(value)
   }

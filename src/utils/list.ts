@@ -4,5 +4,3 @@ export interface ListQueryOptions {
   sortBy?: string
   sortDirection?: 'asc' | 'desc'
 }
-
-

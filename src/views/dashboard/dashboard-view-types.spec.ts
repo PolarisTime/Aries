@@ -1,9 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
-import type { ComponentType, CSSProperties } from 'react'
+import { describe, expect, it } from 'vitest'
 
 import type {
-  WorkflowSection,
   DashboardInfoItem,
+  WorkflowSection,
 } from '@/views/dashboard/dashboard-view-types'
 
 describe('dashboard-view-types', () => {

@@ -8,7 +8,15 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/components/FormModal', () => ({
-  FormModal: ({ children, title, open }: { children: React.ReactNode; title: string; open: boolean }) =>
+  FormModal: ({
+    children,
+    title,
+    open,
+  }: {
+    children: React.ReactNode
+    title: string
+    open: boolean
+  }) =>
     open ? (
       <div data-testid="form-modal">
         <div>{title}</div>
@@ -18,8 +26,16 @@ vi.mock('@/components/FormModal', () => ({
 }))
 
 vi.mock('antd/es/form', () => {
-  const Form = ({ children }: { children: React.ReactNode }) => <div>{children}</div>
-  Form.Item = ({ children, label }: { children: React.ReactNode; label: string }) => (
+  const Form = ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  )
+  Form.Item = ({
+    children,
+    label,
+  }: {
+    children: React.ReactNode
+    label: string
+  }) => (
     <div>
       {label && <span>{label}</span>}
       {children}
@@ -48,14 +64,18 @@ vi.mock('antd/es/color-picker', () => ({
 }))
 
 vi.mock('antd/es/space', () => {
-  const Space = ({ children }: { children: React.ReactNode }) => <div>{children}</div>
+  const Space = ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  )
   Space.Compact = Space
   return { default: Space }
 })
 
 vi.mock('antd/es/typography', () => ({
   default: {
-    Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    Text: ({ children }: { children: React.ReactNode }) => (
+      <span>{children}</span>
+    ),
   },
 }))
 
@@ -115,9 +135,15 @@ describe('GeneralSettingsEditorModal', () => {
 
   it('renders form fields', () => {
     render(<GeneralSettingsEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.generalSettingsEditor.settingCode')).toBeInTheDocument()
-    expect(screen.getByText('system.generalSettingsEditor.settingName')).toBeInTheDocument()
-    expect(screen.getByText('system.generalSettingsEditor.remark')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.generalSettingsEditor.settingCode'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.generalSettingsEditor.settingName'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.generalSettingsEditor.remark'),
+    ).toBeInTheDocument()
   })
 
   it('renders null record gracefully', () => {
@@ -130,8 +156,12 @@ describe('GeneralSettingsEditorModal', () => {
       ...defaultProps.record,
       settingCode: 'SYS_BATCH_NO_AUTO_GENERATE',
     }
-    render(<GeneralSettingsEditorModal {...defaultProps} record={toggleRecord} />)
-    expect(screen.getByText('system.generalSettingsEditor.enabledStatus')).toBeInTheDocument()
+    render(
+      <GeneralSettingsEditorModal {...defaultProps} record={toggleRecord} />,
+    )
+    expect(
+      screen.getByText('system.generalSettingsEditor.enabledStatus'),
+    ).toBeInTheDocument()
   })
 
   it('renders watermark content for watermark setting', () => {
@@ -139,7 +169,11 @@ describe('GeneralSettingsEditorModal', () => {
       ...defaultProps.record,
       settingCode: 'SYS_WATERMARK_CONTENT',
     }
-    render(<GeneralSettingsEditorModal {...defaultProps} record={watermarkRecord} />)
-    expect(screen.getByText('system.generalSettingsEditor.watermarkContent')).toBeInTheDocument()
+    render(
+      <GeneralSettingsEditorModal {...defaultProps} record={watermarkRecord} />,
+    )
+    expect(
+      screen.getByText('system.generalSettingsEditor.watermarkContent'),
+    ).toBeInTheDocument()
   })
 })

@@ -4,17 +4,17 @@ import Checkbox from 'antd/es/checkbox'
 import Input from 'antd/es/input'
 import InputNumber from 'antd/es/input-number'
 import Select from 'antd/es/select'
+import {
+  getEditorItemMin,
+  getEditorItemPrecision,
+  isNumberEditorColumn,
+} from '@/module-system/module-adapter-editor'
 import type {
   ModuleColumnDefinition,
   ModuleLineItem,
   ModulePageConfig,
 } from '@/types/module-page'
 import { asNumber, asString } from '@/utils/type-narrowing'
-import {
-  getEditorItemMin,
-  getEditorItemPrecision,
-  isNumberEditorColumn,
-} from '@/module-system/module-adapter-editor'
 
 interface MaterialOption {
   label: string
@@ -141,10 +141,7 @@ function buildEditableColumnRender({
         )
       }
 
-      if (
-        key === 'weighWeightTon' &&
-        config.key === 'purchase-inbound'
-      ) {
+      if (key === 'weighWeightTon' && config.key === 'purchase-inbound') {
         const isWeigh = asString(record.settlementMode) === '过磅'
         const displayValue = isWeigh
           ? asNumber(value)

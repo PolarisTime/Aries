@@ -64,15 +64,23 @@ describe('number-rules-view-utils', () => {
 
   describe('isSystemSwitch', () => {
     it('returns true for UI_ prefix', () => {
-      expect(isSystemSwitch(makeRecord({ settingCode: 'UI_SOMETHING' }))).toBe(true)
+      expect(isSystemSwitch(makeRecord({ settingCode: 'UI_SOMETHING' }))).toBe(
+        true,
+      )
     })
 
     it('returns true for SYS_ prefix', () => {
-      expect(isSystemSwitch(makeRecord({ settingCode: 'SYS_SOMETHING' }))).toBe(true)
+      expect(isSystemSwitch(makeRecord({ settingCode: 'SYS_SOMETHING' }))).toBe(
+        true,
+      )
     })
 
     it('returns false for upload rule', () => {
-      expect(isSystemSwitch(makeRecord({ ruleType: 'UPLOAD_RULE', settingCode: 'UI_SOMETHING' }))).toBe(false)
+      expect(
+        isSystemSwitch(
+          makeRecord({ ruleType: 'UPLOAD_RULE', settingCode: 'UI_SOMETHING' }),
+        ),
+      ).toBe(false)
     })
 
     it('returns false for other codes', () => {
@@ -82,7 +90,9 @@ describe('number-rules-view-utils', () => {
 
   describe('isNumberRule', () => {
     it('returns true for non-upload, non-switch record', () => {
-      expect(isNumberRule(makeRecord({ settingCode: 'BILL_NO', ruleType: '' }))).toBe(true)
+      expect(
+        isNumberRule(makeRecord({ settingCode: 'BILL_NO', ruleType: '' })),
+      ).toBe(true)
     })
 
     it('returns false for upload rule', () => {
@@ -90,7 +100,9 @@ describe('number-rules-view-utils', () => {
     })
 
     it('returns false for system switch', () => {
-      expect(isNumberRule(makeRecord({ settingCode: 'SYS_SOMETHING' }))).toBe(false)
+      expect(isNumberRule(makeRecord({ settingCode: 'SYS_SOMETHING' }))).toBe(
+        false,
+      )
     })
   })
 

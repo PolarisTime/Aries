@@ -52,7 +52,10 @@ describe('freightOperationsPageConfigs', () => {
   })
 
   it('parentImport mapParentToDraft returns default values', () => {
-    const draft = config.parentImport?.mapParentToDraft?.({ customerName: '客户A', projectName: '项目X' })
+    const draft = config.parentImport?.mapParentToDraft?.({
+      customerName: '客户A',
+      projectName: '项目X',
+    })
     expect(draft?.customerName).toBe('客户A')
     expect(draft?.projectName).toBe('项目X')
   })

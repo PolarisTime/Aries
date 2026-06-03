@@ -10,7 +10,8 @@ vi.mock('@/constants/module-options', () => ({
   customerOptions: [],
   getSupplierOptions: [],
   enabledStatusOptions: [],
-  buildValueOptions: (...args: string[]) => args.map((v) => ({ label: v, value: v })),
+  buildValueOptions: (...args: string[]) =>
+    args.map((v) => ({ label: v, value: v })),
   userAccountDataScopeOptions: [],
 }))
 

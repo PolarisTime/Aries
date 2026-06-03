@@ -38,7 +38,9 @@ vi.mock('@dnd-kit/utilities', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/checkbox', () => ({

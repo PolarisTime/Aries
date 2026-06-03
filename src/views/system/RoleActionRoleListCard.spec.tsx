@@ -15,8 +15,22 @@ import { RoleActionRoleListCard } from '@/views/system/RoleActionRoleListCard'
 
 describe('RoleActionRoleListCard', () => {
   const mockRoles = [
-    { id: '1', roleName: 'Admin', roleCode: 'admin', roleType: '系统', status: '正常', userCount: 5 },
-    { id: '2', roleName: 'User', roleCode: 'user', roleType: '自定义', status: '正常', userCount: 10 },
+    {
+      id: '1',
+      roleName: 'Admin',
+      roleCode: 'admin',
+      roleType: '系统',
+      status: '正常',
+      userCount: 5,
+    },
+    {
+      id: '2',
+      roleName: 'User',
+      roleCode: 'user',
+      roleType: '自定义',
+      status: '正常',
+      userCount: 10,
+    },
   ]
 
   const defaultProps = {
@@ -72,7 +86,9 @@ describe('RoleActionRoleListCard', () => {
 
   it('calls onSelectRole when role clicked', () => {
     const onSelectRole = vi.fn()
-    render(<RoleActionRoleListCard {...defaultProps} onSelectRole={onSelectRole} />)
+    render(
+      <RoleActionRoleListCard {...defaultProps} onSelectRole={onSelectRole} />,
+    )
     fireEvent.click(screen.getByText('Admin'))
     expect(onSelectRole).toHaveBeenCalledWith(mockRoles[0])
   })

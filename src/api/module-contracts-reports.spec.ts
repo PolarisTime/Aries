@@ -9,7 +9,8 @@ describe('module-contracts-reports', () => {
   })
 
   it('contains pending-invoice-receipt-report config', () => {
-    const config = reportModuleEndpointContracts['pending-invoice-receipt-report']
+    const config =
+      reportModuleEndpointContracts['pending-invoice-receipt-report']
     expect(config).toBeDefined()
     expect(config.path).toBe('/pending-invoice-receipt-report')
     expect(config.readOnly).toBe(true)

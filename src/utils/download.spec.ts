@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { downloadBlob } from './download'
 
 describe('downloadBlob', () => {
@@ -48,7 +48,9 @@ describe('downloadBlob', () => {
       download: '',
       click: mockClick,
     }
-    vi.spyOn(document, 'createElement').mockReturnValue(anchor as unknown as HTMLAnchorElement)
+    vi.spyOn(document, 'createElement').mockReturnValue(
+      anchor as unknown as HTMLAnchorElement,
+    )
     downloadBlob(blob, 'test.txt')
     expect(anchor.href).toBe('blob:mock-url')
     expect(anchor.download).toBe('test.txt')

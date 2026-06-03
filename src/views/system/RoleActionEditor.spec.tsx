@@ -20,7 +20,14 @@ vi.mock('@/hooks/usePageVisibility', () => ({
 vi.mock('@/views/system/useRoleSettingsList', () => ({
   useRoleSettingsList: () => ({
     roles: [
-      { id: '1', roleName: 'Admin', roleCode: 'admin', roleType: '系统', status: '正常', userCount: 5 },
+      {
+        id: '1',
+        roleName: 'Admin',
+        roleCode: 'admin',
+        roleType: '系统',
+        status: '正常',
+        userCount: 5,
+      },
     ],
   }),
 }))
@@ -65,11 +72,15 @@ vi.mock('@/views/system/RoleActionRoleListCard', () => ({
 }))
 
 vi.mock('@/views/system/RoleActionPermissionCard', () => ({
-  RoleActionPermissionCard: () => <div data-testid="permission-card">PermissionCard</div>,
+  RoleActionPermissionCard: () => (
+    <div data-testid="permission-card">PermissionCard</div>
+  ),
 }))
 
 vi.mock('@/views/system/RoleActionEditorModal', () => ({
-  RoleActionEditorModal: () => <div data-testid="editor-modal">EditorModal</div>,
+  RoleActionEditorModal: () => (
+    <div data-testid="editor-modal">EditorModal</div>
+  ),
 }))
 
 import { RoleActionEditor } from '@/views/system/RoleActionEditor'

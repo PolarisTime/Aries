@@ -93,76 +93,76 @@ export const zhCN: MessageSchema = {
       '{{appTitle}} 业务前端，当前界面基于实时接口汇总展示当前账号和系统接入状态。',
     flow: {
       material: {
-      title: '商品资料',
-      hint: '维护品名、规格、品牌',
-      metric: '{{count}} 项',
-    },
+        title: '商品资料',
+        hint: '维护品名、规格、品牌',
+        metric: '{{count}} 项',
+      },
       supplier: {
-      title: '供应商资料',
-      hint: '采购往来主体建档',
-      metric: '{{count}} 家',
-    },
+        title: '供应商资料',
+        hint: '采购往来主体建档',
+        metric: '{{count}} 家',
+      },
       customer: {
-      title: '客户资料',
-      hint: '销售往来主体建档',
-      metric: '{{count}} 家',
-    },
+        title: '客户资料',
+        hint: '销售往来主体建档',
+        metric: '{{count}} 家',
+      },
       warehouse: {
-      title: '仓库资料',
-      hint: '维护仓库与库位能力',
-    },
+        title: '仓库资料',
+        hint: '维护仓库与库位能力',
+      },
       purchaseContract: {
-      title: '采购合同',
-      hint: '锁定采购条款',
-    },
+        title: '采购合同',
+        hint: '锁定采购条款',
+      },
       purchaseOrder: {
-      title: '采购订单',
-      hint: '生成采购执行单',
-    },
+        title: '采购订单',
+        hint: '生成采购执行单',
+      },
       purchaseInbound: {
-      title: '采购入库',
-      hint: '确认入库数量重量',
-    },
+        title: '采购入库',
+        hint: '确认入库数量重量',
+      },
       supplierStatement: {
-      title: '供应商对账单',
-      hint: '汇总采购应付',
-    },
+        title: '供应商对账单',
+        hint: '汇总采购应付',
+      },
       payment: {
-      title: '付款单',
-      hint: '完成付款登记',
-    },
+        title: '付款单',
+        hint: '完成付款登记',
+      },
       salesContract: {
-      title: '销售合同',
-      hint: '锁定销售条款',
-    },
+        title: '销售合同',
+        hint: '锁定销售条款',
+      },
       salesOrder: {
-      title: '销售订单',
-      hint: '下达客户订单',
-    },
+        title: '销售订单',
+        hint: '下达客户订单',
+      },
       salesOutbound: {
-      title: '销售出库',
-      hint: '确认发货与出库',
-    },
+        title: '销售出库',
+        hint: '确认发货与出库',
+      },
       customerStatement: {
-      title: '客户对账单',
-      hint: '汇总销售应收',
-    },
+        title: '客户对账单',
+        hint: '汇总销售应收',
+      },
       receipt: {
-      title: '收款单',
-      hint: '完成收款登记',
-    },
+        title: '收款单',
+        hint: '完成收款登记',
+      },
       carrier: {
-      title: '物流方资料',
-      hint: '维护承运主体',
-    },
+        title: '物流方资料',
+        hint: '维护承运主体',
+      },
       freightBill: {
-      title: '物流单',
-      hint: '记录运输过程',
-    },
+        title: '物流单',
+        hint: '记录运输过程',
+      },
       freightStatement: {
-      title: '物流对账单',
-      hint: '汇总运费结算',
-    },
+        title: '物流对账单',
+        hint: '汇总运费结算',
+      },
       loadingDescription: '正在加载业务流程说明...',
     },
     info: {
@@ -352,41 +352,41 @@ export const zhCN: MessageSchema = {
       heroDescription:
         '当前账户登录后仍需补齐安全绑定。认证入口统一改成 Ant Design 组件结构，用更标准的卡片、列表和表单完成 2FA 接入。',
       highlights: {
-      scanTitle: '扫码绑定',
-      scanDescription:
+        scanTitle: '扫码绑定',
+        scanDescription:
           '使用 Microsoft Authenticator、Google Authenticator 或兼容应用扫描二维码。',
-      secretTitle: '密钥备份',
-      secretDescription: '二维码无法识别时，可直接录入密钥完成绑定。',
-      effectiveTitle: '绑定即生效',
-      effectiveDescription:
+        secretTitle: '密钥备份',
+        secretDescription: '二维码无法识别时，可直接录入密钥完成绑定。',
+        effectiveTitle: '绑定即生效',
+        effectiveDescription:
           '提交 6 位动态码后，当前账户会立即启用强制二次验证。',
-    },
+      },
       steps: {
-      scanTitle: '步骤 1',
-      scanDescription: '打开手机上的 Authenticator 应用，扫描左侧二维码。',
-      secretTitle: '步骤 2',
-      secretDescription:
+        scanTitle: '步骤 1',
+        scanDescription: '打开手机上的 Authenticator 应用，扫描左侧二维码。',
+        secretTitle: '步骤 2',
+        secretDescription:
           '如果无法扫码，可使用下方密钥手动添加账户并生成验证码。',
-      verifyTitle: '步骤 3',
-      verifyDescription:
+        verifyTitle: '步骤 3',
+        verifyDescription:
           '输入当前 6 位动态码，验证成功后本账户立即启用 2FA。',
-    },
+      },
       content: {
-      tag: 'TOTP 设置',
-      title: '设置二次验证',
-      description:
+        tag: 'TOTP 设置',
+        title: '设置二次验证',
+        description:
           '{{userName}}，请按下面步骤完成 Authenticator 绑定并启用动态验证码登录。',
-      regenerate: '重新生成二维码',
-      secretLabel: '绑定密钥',
-      backupHint:
+        regenerate: '重新生成二维码',
+        secretLabel: '绑定密钥',
+        backupHint:
           '建议先保存密钥，再提交验证码。更换手机时可用该密钥重新恢复账户。',
-      codeLabel: '动态验证码',
-      codeRequired: '请输入6位验证码',
-      codePlaceholder: '请输入 6 位 TOTP 验证码',
-      submit: '验证并启用',
-      loadFailed: '二维码生成失败，请重新获取后再继续绑定。',
-      retry: '重新获取二维码',
-    },
+        codeLabel: '动态验证码',
+        codeRequired: '请输入6位验证码',
+        codePlaceholder: '请输入 6 位 TOTP 验证码',
+        submit: '验证并启用',
+        loadFailed: '二维码生成失败，请重新获取后再继续绑定。',
+        retry: '重新获取二维码',
+      },
     },
     twofactormodal: {
       title: '二次验证确认',
@@ -469,44 +469,44 @@ export const zhCN: MessageSchema = {
       adminCreateSuccess: '管理员创建成功',
       companyCreateSuccess: '公司信息初始化完成',
       admin: {
-      loginNameLabel: '管理员登录名',
-      loginNameRequired: '请输入登录名',
-      loginNamePlaceholder: '管理员登录名',
-      passwordLabel: '密码',
-      passwordRequired: '密码至少6位',
-      passwordPlaceholder: '至少6位',
-      confirmPasswordLabel: '确认密码',
-      confirmPasswordRequired: '请确认密码',
-      confirmPasswordPlaceholder: '再次输入密码',
-      userNameLabel: '管理员姓名',
-      userNamePlaceholder: '系统管理员',
-      generateTotp: '生成 TOTP 密钥',
-      regenerateTotp: '重新生成 TOTP 密钥',
-      secretLabel: '密钥',
-      totpCodeLabel: 'TOTP验证码',
-      totpCodeRequired: '请输入6位验证码',
-      totpCodePlaceholder: '6位TOTP验证码',
-      submit: '创建管理员并继续',
-    },
+        loginNameLabel: '管理员登录名',
+        loginNameRequired: '请输入登录名',
+        loginNamePlaceholder: '管理员登录名',
+        passwordLabel: '密码',
+        passwordRequired: '密码至少6位',
+        passwordPlaceholder: '至少6位',
+        confirmPasswordLabel: '确认密码',
+        confirmPasswordRequired: '请确认密码',
+        confirmPasswordPlaceholder: '再次输入密码',
+        userNameLabel: '管理员姓名',
+        userNamePlaceholder: '系统管理员',
+        generateTotp: '生成 TOTP 密钥',
+        regenerateTotp: '重新生成 TOTP 密钥',
+        secretLabel: '密钥',
+        totpCodeLabel: 'TOTP验证码',
+        totpCodeRequired: '请输入6位验证码',
+        totpCodePlaceholder: '6位TOTP验证码',
+        submit: '创建管理员并继续',
+      },
       company: {
-      adminCreated: '管理员账户已创建成功',
-      companyNameLabel: '公司名称',
-      companyNameRequired: '请输入公司名称',
-      companyNamePlaceholder: '公司名称',
-      taxNoLabel: '税号',
-      taxNoRequired: '请输入税号',
-      taxNoPlaceholder: '税号',
-      bankNameLabel: '开户银行',
-      bankNameRequired: '请输入开户银行',
-      bankNamePlaceholder: '开户银行',
-      bankAccountLabel: '银行账号',
-      bankAccountRequired: '请输入银行账号',
-      bankAccountPlaceholder: '银行账号',
-      taxRateLabel: '税率',
-      remarkLabel: '备注',
-      back: '上一步',
-      submit: '完成初始化',
-    },
+        adminCreated: '管理员账户已创建成功',
+        companyNameLabel: '公司名称',
+        companyNameRequired: '请输入公司名称',
+        companyNamePlaceholder: '公司名称',
+        taxNoLabel: '税号',
+        taxNoRequired: '请输入税号',
+        taxNoPlaceholder: '税号',
+        bankNameLabel: '开户银行',
+        bankNameRequired: '请输入开户银行',
+        bankNamePlaceholder: '开户银行',
+        bankAccountLabel: '银行账号',
+        bankAccountRequired: '请输入银行账号',
+        bankAccountPlaceholder: '银行账号',
+        taxRateLabel: '税率',
+        remarkLabel: '备注',
+        back: '上一步',
+        submit: '完成初始化',
+      },
     },
     validation: {
       required: '必填项不能为空',
@@ -641,7 +641,7 @@ export const zhCN: MessageSchema = {
   modules: {
     actions: {
       create: '新增',
-      export: '导出'
+      export: '导出',
     },
     overview: {
       recordCount: '记录数',
@@ -653,7 +653,7 @@ export const zhCN: MessageSchema = {
       currentAmount: '本期金额',
       settledAmount: '已结算金额',
       statementCount: '对账单数',
-      balance: '余额'
+      balance: '余额',
     },
     status: {
       draft: '草稿',
@@ -685,7 +685,7 @@ export const zhCN: MessageSchema = {
       normal: '正常',
       disabled: '已禁用',
       success: '成功',
-      failed: '失败'
+      failed: '失败',
     },
     editor: {
       edit: '编辑',
@@ -725,7 +725,8 @@ export const zhCN: MessageSchema = {
       customer: '客户',
       freight: '物流',
       counterpartyNotFound: '未找到对方单位信息',
-      multipleCounterparties: '选中的单据包含多个对方单位，请只勾选同一单位的单据',
+      multipleCounterparties:
+        '选中的单据包含多个对方单位，请只勾选同一单位的单据',
       dateMissing: '选中的单据缺少日期信息',
       generateTitle: '生成{{type}}对账单',
       selectHint: '请先在列表中勾选需要生成对账单的单据',
@@ -876,69 +877,74 @@ export const zhCN: MessageSchema = {
       noSelectionHint: '暂未选择单据，勾选后会固定显示在这里。',
       paginationTotal: '共 {{count}} 条',
       status: {
-      draft: '草稿',
-      unaudited: '未审核',
-      audited: '已审核',
-      invoiceReceived: '已收票',
-      invoiceIssued: '已开票',
-      purchaseComplete: '完成采购',
-      salesComplete: '完成销售',
-      inboundComplete: '完成入库',
-    },
+        draft: '草稿',
+        unaudited: '未审核',
+        audited: '已审核',
+        invoiceReceived: '已收票',
+        invoiceIssued: '已开票',
+        purchaseComplete: '完成采购',
+        salesComplete: '完成销售',
+        inboundComplete: '完成入库',
+      },
       column: {
-      orderNo: '订单编号',
-      supplierName: '供应商',
-      buyerName: '采购员',
-      orderDate: '订单日期',
-      totalWeight: '总重量（吨）',
-      totalAmount: '总金额',
-      status: '状态',
-      relatedPurchaseOrder: '关联采购订单',
-      customerName: '客户名称',
-      projectName: '项目名称',
-      deliveryDate: '送货日期',
-      outboundNo: '出库单号',
-      relatedOrder: '关联订单',
-      outboundDate: '出库日期',
-      inboundNo: '入库单号',
-      inboundDate: '入库日期',
-      docNo: '单据号',
-    },
+        orderNo: '订单编号',
+        supplierName: '供应商',
+        buyerName: '采购员',
+        orderDate: '订单日期',
+        totalWeight: '总重量（吨）',
+        totalAmount: '总金额',
+        status: '状态',
+        relatedPurchaseOrder: '关联采购订单',
+        customerName: '客户名称',
+        projectName: '项目名称',
+        deliveryDate: '送货日期',
+        outboundNo: '出库单号',
+        relatedOrder: '关联订单',
+        outboundDate: '出库日期',
+        inboundNo: '入库单号',
+        inboundDate: '入库日期',
+        docNo: '单据号',
+      },
       filter: {
-      keyword: '关键字',
-      keywordPlaceholder: '输入单据号或关键词',
-    },
+        keyword: '关键字',
+        keywordPlaceholder: '输入单据号或关键词',
+      },
       summary: {
-      supplierName: '供应商',
-      buyerName: '采购员',
-      orderDate: '订单日期',
-      relatedOrder: '关联订单',
-      inboundDate: '入库日期',
-      customerName: '客户名称',
-      projectName: '项目名称',
-      deliveryDate: '送货日期',
-      outboundDate: '出库日期',
-      carrierName: '物流商',
-      relatedOutbound: '关联出库单',
-      billTime: '单据日期',
-    },
+        supplierName: '供应商',
+        buyerName: '采购员',
+        orderDate: '订单日期',
+        relatedOrder: '关联订单',
+        inboundDate: '入库日期',
+        customerName: '客户名称',
+        projectName: '项目名称',
+        deliveryDate: '送货日期',
+        outboundDate: '出库日期',
+        carrierName: '物流商',
+        relatedOutbound: '关联出库单',
+        billTime: '单据日期',
+      },
     },
     editorWorkspace: {
       preallocatedNoMismatchTitle: '单据已保存，系统已重新生成单号',
-      preallocatedNoMismatchContent: '这张单据已经保存成功，但系统未使用当前页面显示的预生成单号，已自动改为实际单号：{{primaryNo}}。请以实际保存后的单号为准。',
-      preallocatedNoMismatchContentNoNo: '这张单据已经保存成功，但系统未使用当前页面显示的预生成单号，已自动改为新的实际单号。请以保存结果为准。',
+      preallocatedNoMismatchContent:
+        '这张单据已经保存成功，但系统未使用当前页面显示的预生成单号，已自动改为实际单号：{{primaryNo}}。请以实际保存后的单号为准。',
+      preallocatedNoMismatchContentNoNo:
+        '这张单据已经保存成功，但系统未使用当前页面显示的预生成单号，已自动改为新的实际单号。请以保存结果为准。',
       preallocatedNoUpdatedTitle: '单据已保存，实际单号已更新',
-      preallocatedNoUpdatedContent: '当前页面预生成的单号是 {{expected}}，但系统最终保存的实际单号是 {{actual}}。请以实际保存后的单号为准。',
+      preallocatedNoUpdatedContent:
+        '当前页面预生成的单号是 {{expected}}，但系统最终保存的实际单号是 {{actual}}。请以实际保存后的单号为准。',
       currentUserFallback: '当前用户',
     },
     validation: {
       maxImportExceeded: '第{{row}}行可关联数量不能超过{{max}}件',
-      weighRequired: '第{{row}}行商品类别需按过磅入库，请将本行结算方式改为过磅',
+      weighRequired:
+        '第{{row}}行商品类别需按过磅入库，请将本行结算方式改为过磅',
       weighWeightRequired: '请填写第{{row}}行过磅重量',
       lineItemRequired: '请填写第{{row}}行{{label}}',
       fieldRequired: '请填写{{label}}',
       minOneItem: '请至少填写一条明细',
-      parentRelationOccupied: '{{parentLabel}}{{parentNo}}已被{{occupiedNo}}关联',
+      parentRelationOccupied:
+        '{{parentLabel}}{{parentNo}}已被{{occupiedNo}}关联',
       errorSummarySuffix: '等共{{count}}个问题',
     },
     columns: {
@@ -999,13 +1005,14 @@ export const zhCN: MessageSchema = {
         materialCount: '商品数',
         calculated: '理算品类',
         weighed: '过磅品类',
-        materialDesc: '根据既定商品字段维护主数据页面，支持按编码、品牌、规格和材质统一管理，便于直接对接真实商品接口。',
+        materialDesc:
+          '根据既定商品字段维护主数据页面，支持按编码、品牌、规格和材质统一管理，便于直接对接真实商品接口。',
         downloadTemplate: '下载模板',
         templateDownloadFailed: '商品资料模板下载失败',
         importFailed: '商品资料导入失败',
         importSuccessSummary:
-          '导入完成：总行数 {{totalRows}}，成功 {{successCount}}，新增 {{createdCount}}，更新 {{updatedCount}}，失败 {{failedCount}}'
-    },
+          '导入完成：总行数 {{totalRows}}，成功 {{successCount}}，新增 {{createdCount}}，更新 {{updatedCount}}，失败 {{failedCount}}',
+      },
       materialCategories: {
         materialCategory: '商品类别',
         categoryDesc: '管理商品类别字典，支持按编码和名称增删改查。',
@@ -1020,8 +1027,8 @@ export const zhCN: MessageSchema = {
         required: '需要',
         notRequired: '不需要',
         categoryCount: '类别数',
-        enabled: '启用'
-    },
+        enabled: '启用',
+      },
       purchaseContract: {
         purchaseContract: '采购合同',
         purchaseContractPlaceholder: '输入采购合同号',
@@ -1039,8 +1046,9 @@ export const zhCN: MessageSchema = {
         importFromParent: '通过上级单据导入',
         purchaseOrder: '采购订单',
         importPurchaseOrderItems: '导入采购订单明细',
-        purchaseContractDesc: '采购合同按供应商、签约日期、执行周期和商品明细统一管理，沿用通用单据页风格并支持后续直接接入真实合同接口。'
-    },
+        purchaseContractDesc:
+          '采购合同按供应商、签约日期、执行周期和商品明细统一管理，沿用通用单据页风格并支持后续直接接入真实合同接口。',
+      },
       salesContract: {
         salesContract: '销售合同',
         salesContractPlaceholder: '输入销售合同号',
@@ -1055,8 +1063,9 @@ export const zhCN: MessageSchema = {
         totalAmount: '总金额',
         status: '状态',
         remark: '备注',
-        salesContractDesc: '销售合同围绕客户、项目、签约周期和商品明细管理，沿用通用业务页样式，方便后续继续接订单关联或打印。'
-    },
+        salesContractDesc:
+          '销售合同围绕客户、项目、签约周期和商品明细管理，沿用通用业务页样式，方便后续继续接订单关联或打印。',
+      },
       payment: {
         payment: '付款单',
         createPayment: '新增付款单',
@@ -1077,8 +1086,9 @@ export const zhCN: MessageSchema = {
         bankTransfer: '银行转账',
         bankAcceptance: '银行承兑',
         cash: '现金',
-        paymentDesc: '付款单统一承接供应商付款和物流付款，页面先以业务类型、往来单位、金额和状态为主。'
-    },
+        paymentDesc:
+          '付款单统一承接供应商付款和物流付款，页面先以业务类型、往来单位、金额和状态为主。',
+      },
       receipt: {
         receipt: '收款单',
         createReceipt: '新增收款单',
@@ -1098,8 +1108,9 @@ export const zhCN: MessageSchema = {
         bankAcceptance: '银行承兑',
         acceptanceBill: '承兑汇票',
         cash: '现金',
-        receiptDesc: '收款单页面用于承接客户回款，当前重点确认单据字段、状态和列表交互，不先接核销明细。'
-    },
+        receiptDesc:
+          '收款单页面用于承接客户回款，当前重点确认单据字段、状态和列表交互，不先接核销明细。',
+      },
       customerStatement: {
         customerStatement: '客户对账单',
         generateStatement: '生成对账单',
@@ -1114,8 +1125,9 @@ export const zhCN: MessageSchema = {
         closingBalance: '期末余额',
         status: '状态',
         remark: '备注',
-        customerStatementDesc: '客户对账单按已完成销售的销售订单明细口径组织，生成后保留来源订单行，便于逐项核对销售数量、单价和金额。'
-    },
+        customerStatementDesc:
+          '客户对账单按已完成销售的销售订单明细口径组织，生成后保留来源订单行，便于逐项核对销售数量、单价和金额。',
+      },
       supplierStatement: {
         supplierStatement: '供应商对账单',
         generateStatement: '生成对账单',
@@ -1129,8 +1141,9 @@ export const zhCN: MessageSchema = {
         closingBalance: '期末余额',
         status: '状态',
         remark: '备注',
-        supplierStatementDesc: '供应商对账单按已审核采购入库明细口径组织，生成后保留来源入库行，便于逐项核对采购数量、单价和金额。'
-    },
+        supplierStatementDesc:
+          '供应商对账单按已审核采购入库明细口径组织，生成后保留来源入库行，便于逐项核对采购数量、单价和金额。',
+      },
       freightStatement: {
         freightStatement: '物流对账单',
         generateFreightStatement: '生成物流对账单',
@@ -1151,8 +1164,9 @@ export const zhCN: MessageSchema = {
         signStatus: '签署状态',
         attachment: '附件',
         remark: '备注',
-        freightStatementDesc: '物流对账单和运费对账汇总拆开处理，这里展示正式物流对账单列表，用于审核、签署、附件和付款累计。'
-    },
+        freightStatementDesc:
+          '物流对账单和运费对账汇总拆开处理，这里展示正式物流对账单列表，用于审核、签署、附件和付款累计。',
+      },
       freightOperations: {
         freightBill: '物流单',
         createFreightBill: '新增物流单',
@@ -1177,11 +1191,13 @@ export const zhCN: MessageSchema = {
         importFromParent: '通过上级单据导入',
         parentSalesOutbound: '上级销售出库单',
         importParentSalesOutbound: '导入上级销售出库单',
-        freightBillDesc: '物流单页面按现版逻辑建立在销售出库之上，支持关联出库单、自动计算总重量和总运费，并继续流向物流对账。'
-    },
+        freightBillDesc:
+          '物流单页面按现版逻辑建立在销售出库之上，支持关联出库单、自动计算总重量和总运费，并继续流向物流对账。',
+      },
       carrier: {
         title: '物流方资料',
-        description: '物流方资料管理承运主体信息，包括联系方式、车辆信息和计价模式，支持多车辆录入。',
+        description:
+          '物流方资料管理承运主体信息，包括联系方式、车辆信息和计价模式，支持多车辆录入。',
         placeholderKeyword: '物流商编码 / 名称 / 联系人',
         colCarrierCode: '物流商编码',
         colCarrierName: '物流商名称',
@@ -1212,11 +1228,12 @@ export const zhCN: MessageSchema = {
         formVehiclePlate3: '车牌号 3',
         formVehicleContact3: '驾驶员 3',
         formVehiclePhone3: '驾驶员电话 3',
-        formVehicleRemark3: '备注 3'
-    },
+        formVehicleRemark3: '备注 3',
+      },
       customer: {
         title: '客户资料',
-        description: '客户资料管理客户主数据，包括项目信息、联系方式和结算模式，支持按客户编码和名称统一管理。',
+        description:
+          '客户资料管理客户主数据，包括项目信息、联系方式和结算模式，支持按客户编码和名称统一管理。',
         placeholderKeyword: '客户编码 / 名称 / 项目名称',
         colCustomerCode: '客户编码',
         colCustomerName: '客户名称',
@@ -1229,11 +1246,12 @@ export const zhCN: MessageSchema = {
         colSettlementMode: '结算方式',
         settlementCash: '现结',
         settlementMonthly: '月结',
-        settlementCredit: '授信'
-    },
+        settlementCredit: '授信',
+      },
       purchaseOrder: {
         title: '采购订单',
-        description: '采购订单按供应商、订单日期和商品明细管理，支持从采购合同导入并自动汇总重量和金额。',
+        description:
+          '采购订单按供应商、订单日期和商品明细管理，支持从采购合同导入并自动汇总重量和金额。',
         placeholderOrderNo: '输入采购订单号',
         filterOrderDate: '订单日期',
         colOrderNo: '订单编号',
@@ -1241,11 +1259,12 @@ export const zhCN: MessageSchema = {
         colBuyer: '采购员',
         colOrderDate: '订单日期',
         formTotalWeight: '总重量（吨）',
-        formTotalAmount: '总金额'
-    },
+        formTotalAmount: '总金额',
+      },
       salesOrder: {
         title: '销售订单',
-        description: '销售订单围绕客户、项目、交货日期和商品明细管理，支持从采购订单导入并自动汇总重量和金额。',
+        description:
+          '销售订单围绕客户、项目、交货日期和商品明细管理，支持从采购订单导入并自动汇总重量和金额。',
         placeholderOrderNo: '输入销售订单号',
         placeholderProductKeyword: '商品编码 / 品牌 / 规格',
         placeholderPurchaseOrderNo: '系统自动生成',
@@ -1259,11 +1278,12 @@ export const zhCN: MessageSchema = {
         colSalesName: '销售员',
         colDeliveryDate: '交货日期',
         parentImportLabel: '采购订单',
-        parentImportButton: '导入采购订单明细'
-    },
+        parentImportButton: '导入采购订单明细',
+      },
       purchaseInbound: {
         title: '采购入库',
-        description: '采购入库管理采购到货和入库确认，支持从采购订单导入并自动汇总重量和金额。',
+        description:
+          '采购入库管理采购到货和入库确认，支持从采购订单导入并自动汇总重量和金额。',
         placeholderInboundNo: '输入入库单号',
         placeholderParentImport: '输入采购订单号',
         filterInboundDate: '入库日期',
@@ -1279,11 +1299,12 @@ export const zhCN: MessageSchema = {
         formTotalWeight: '总重量（吨）',
         formTotalAmount: '总金额',
         parentImportLabel: '采购订单',
-        parentImportButton: '导入采购订单明细'
-    },
+        parentImportButton: '导入采购订单明细',
+      },
       salesOutbound: {
         title: '销售出库',
-        description: '销售出库管理发货和出库确认，支持从销售订单导入并自动汇总重量和金额。',
+        description:
+          '销售出库管理发货和出库确认，支持从销售订单导入并自动汇总重量和金额。',
         placeholderOutboundNo: '输入出库单号',
         placeholderParentImport: '输入销售订单号',
         placeholderProductKeyword: '商品编码 / 品牌 / 规格',
@@ -1296,11 +1317,12 @@ export const zhCN: MessageSchema = {
         colProjectName: '项目名称',
         colOutboundDate: '出库日期',
         parentImportLabel: '销售订单',
-        parentImportButton: '导入销售订单明细'
-    },
+        parentImportButton: '导入销售订单明细',
+      },
       supplier: {
         title: '供应商资料',
-        description: '供应商资料管理供应商主数据，包括联系方式和结算信息，支持按供应商编码和名称统一管理。',
+        description:
+          '供应商资料管理供应商主数据，包括联系方式和结算信息，支持按供应商编码和名称统一管理。',
         placeholderKeyword: '供应商编码 / 名称 / 联系人',
         colSupplierCode: '供应商编码',
         colSupplierName: '供应商名称',
@@ -1310,8 +1332,8 @@ export const zhCN: MessageSchema = {
         colSettlementMode: '结算方式',
         settlementCash: '现结',
         settlementMonthly: '月结',
-        settlementCredit: '授信'
-    },
+        settlementCredit: '授信',
+      },
       invoiceIssue: {
         invoiceIssue: '开票单',
         createInvoiceIssue: '新增开票单',
@@ -1332,8 +1354,9 @@ export const zhCN: MessageSchema = {
         taxRate: '税率',
         parentSalesOrder: '上级销售订单',
         importSalesOrderItems: '导入销售订单明细',
-        invoiceIssueDesc: '开票单用于登记客户开票记录，表头由用户填写，明细支持按销售订单勾选导入并自动汇总开票金额。'
-    },
+        invoiceIssueDesc:
+          '开票单用于登记客户开票记录，表头由用户填写，明细支持按销售订单勾选导入并自动汇总开票金额。',
+      },
       invoiceReceipt: {
         invoiceReceipt: '收票单',
         createInvoiceReceipt: '新增收票单',
@@ -1353,8 +1376,9 @@ export const zhCN: MessageSchema = {
         taxRate: '税率',
         parentPurchaseOrder: '上级采购订单',
         importPurchaseOrderItems: '导入采购订单明细',
-        invoiceReceiptDesc: '收票单用于登记供应商发票到票情况，表头维护票号与税额，明细支持从采购订单勾选导入并逐行核对金额。'
-    },
+        invoiceReceiptDesc:
+          '收票单用于登记供应商发票到票情况，表头维护票号与税额，明细支持从采购订单勾选导入并逐行核对金额。',
+      },
       balance: {
         receivablePayable: '应收应付',
         exportBalance: '导出余额表',
@@ -1385,8 +1409,9 @@ export const zhCN: MessageSchema = {
         counterpartyCount: '往来单位数',
         receivableBalance: '应收余额',
         payableBalance: '应付余额',
-        balanceDesc: '应收应付页面先按客户、供应商、物流商统一展示余额结果，后续再叠加核销和账龄分析。'
-    },
+        balanceDesc:
+          '应收应付页面先按客户、供应商、物流商统一展示余额结果，后续再叠加核销和账龄分析。',
+      },
       ioReport: {
         ioReport: '出入库报表',
         export: '导出',
@@ -1407,8 +1432,9 @@ export const zhCN: MessageSchema = {
         outboundWeight: '出库重量（吨）',
         remark: '备注',
         transactionCount: '流水数',
-        ioReportDesc: '出入库报表用于查看业务流水，统一展示查询区、流水表格和明细字段，方便继续接库存与追溯链路。'
-    },
+        ioReportDesc:
+          '出入库报表用于查看业务流水，统一展示查询区、流水表格和明细字段，方便继续接库存与追溯链路。',
+      },
       inventoryReport: {
         inventoryReport: '商品库存报表',
         export: '导出',
@@ -1428,8 +1454,9 @@ export const zhCN: MessageSchema = {
         pieceWeight: '每件件重（吨）',
         unit: '单位',
         stockRecordCount: '库存记录',
-        inventoryReportDesc: '库存报表按商品编码、材质、类别、规格、长度、仓库、批号展示结存结果，便于先确认前端字段和查询交互。'
-    },
+        inventoryReportDesc:
+          '库存报表按商品编码、材质、类别、规格、长度、仓库、批号展示结存结果，便于先确认前端字段和查询交互。',
+      },
       pendingInvoiceReceiptReport: {
         pendingInvoiceReceiptReport: '未收票报表',
         export: '导出',
@@ -1456,8 +1483,9 @@ export const zhCN: MessageSchema = {
         pendingAmount: '未收票金额',
         status: '状态',
         pendingItemCount: '待跟进明细',
-        pendingInvoiceDesc: '未收票报表按采购订单明细对比已收票明细，展示尚未收票的剩余重量（吨）与金额，供采购和财务快速追踪到票进度。'
-    },
+        pendingInvoiceDesc:
+          '未收票报表按采购订单明细对比已收票明细，展示尚未收票的剩余重量（吨）与金额，供采购和财务快速追踪到票进度。',
+      },
       operationLog: {
         operationLog: '操作日志',
         export: '导出',
@@ -1483,8 +1511,9 @@ export const zhCN: MessageSchema = {
         logCount: '日志数',
         successCount: '成功数',
         failedCount: '失败数',
-        operationLogDesc: '操作日志用于审计整个系统的写操作，记录操作人、模块、动作、对象、请求路径和结果状态，便于问题追踪与合规检查。'
-    },
+        operationLogDesc:
+          '操作日志用于审计整个系统的写操作，记录操作人、模块、动作、对象、请求路径和结果状态，便于问题追踪与合规检查。',
+      },
       operationLogOptions: {
         query: '查询',
         view: '查看',
@@ -1548,8 +1577,8 @@ export const zhCN: MessageSchema = {
         invoiceIssue: '开票单',
         pendingInvoiceReceiptReport: '未收票报表',
         ioReport: '出入库报表',
-        inventoryReport: '库存报表'
-    },
+        inventoryReport: '库存报表',
+      },
       systemCore: {
         generalSettings: '通用设置',
         keyword: '关键字',
@@ -1574,9 +1603,11 @@ export const zhCN: MessageSchema = {
         companyPlaceholder: '公司名称 / 税号 / 银行 / 账号',
         companyName: '公司名称',
         taxNo: '税号',
-        generalSettingDesc: '通用设置集中维护默认税率和系统开关，用于控制页面行为、草稿默认值和附件命名策略。',
-        companyInfoDesc: '公司信息集中维护公司名称、税号与多个结算银行信息，供打印模板、结算抬头和财务页面统一引用。'
-    },
+        generalSettingDesc:
+          '通用设置集中维护默认税率和系统开关，用于控制页面行为、草稿默认值和附件命名策略。',
+        companyInfoDesc:
+          '公司信息集中维护公司名称、税号与多个结算银行信息，供打印模板、结算抬头和财务页面统一引用。',
+      },
       systemPermissionManagement: {
         accessControl: '权限管理',
         export: '导出',
@@ -1601,8 +1632,9 @@ export const zhCN: MessageSchema = {
         audit: '审核',
         print: '打印',
         customScope: '自定义范围',
-        accessControlDesc: '权限管理页面展示系统菜单和操作权限定义，权限分配请通过「角色权限配置」页面操作。'
-    },
+        accessControlDesc:
+          '权限管理页面展示系统菜单和操作权限定义，权限分配请通过「角色权限配置」页面操作。',
+      },
       systemOrganization: {
         department: '部门管理',
         keyword: '关键字',
@@ -1616,8 +1648,9 @@ export const zhCN: MessageSchema = {
         status: '状态',
         remark: '备注',
         selectParentDept: '请选择上级部门',
-        deptDesc: '部门管理维护组织部门、负责人、联系电话和启用状态，为用户账户的数据范围控制提供基础归属。'
-    },
+        deptDesc:
+          '部门管理维护组织部门、负责人、联系电话和启用状态，为用户账户的数据范围控制提供基础归属。',
+      },
       masterWarehouse: {
         warehouseMaster: '仓库资料',
         keyword: '关键字',
@@ -1634,8 +1667,9 @@ export const zhCN: MessageSchema = {
         address: '仓库地址',
         status: '状态',
         remark: '备注',
-        warehouseDesc: '仓库主数据统一维护仓库编码、仓库名称、仓库类型、联系人和启用状态，供采购入库、销售出库和物流单页面复用。'
-    },
+        warehouseDesc:
+          '仓库主数据统一维护仓库编码、仓库名称、仓库类型、联系人和启用状态，供采购入库、销售出库和物流单页面复用。',
+      },
       projectAr: {
         projectReceivable: '项目应收',
         projectArDesc: '按项目维度展示应收汇总，支持下钻到项目明细。',
@@ -1659,8 +1693,8 @@ export const zhCN: MessageSchema = {
         totalCompletedSales: '完成销售总额',
         totalNetUnreceived: '净未收总额',
         YYYY: 'YYYY',
-        YYYYMM: 'YYYYMM'
-        }
+        YYYYMM: 'YYYYMM',
+      },
     },
   },
   hooks: {
@@ -1669,8 +1703,7 @@ export const zhCN: MessageSchema = {
       noBatchAuditStatus: '当前模块未配置批量审核状态',
       auditNotSupported: '勾选单据当前状态不支持审核',
       batchAudit: '批量审核',
-      batchAuditConfirm:
-        '确定审核选中的 {{count}} 条记录吗？{{skippedPart}}',
+      batchAuditConfirm: '确定审核选中的 {{count}} 条记录吗？{{skippedPart}}',
       skippedPart: '另有 {{count}} 条因状态不支持将跳过。',
       auditFailed: '审核失败',
       auditCompletedWithFailures:
@@ -1787,16 +1820,16 @@ export const zhCN: MessageSchema = {
       resetDefault: '恢复默认',
       saveDisplay: '保存显示设置',
       theme: {
-      light: '亮色',
-      dark: '暗色',
-      system: '跟随系统',
-    },
+        light: '亮色',
+        dark: '暗色',
+        system: '跟随系统',
+      },
       layout: {
-      sider: '左侧导航',
-      top: '顶部导航',
-      siderDesc: '保留侧边菜单，更适合高频表格录入和多模块切换。',
-      topDesc: '采用顶部菜单栏，整体风格与当前 Vue 版保持一致。',
-    },
+        sider: '左侧导航',
+        top: '顶部导航',
+        siderDesc: '保留侧边菜单，更适合高频表格录入和多模块切换。',
+        topDesc: '采用顶部菜单栏，整体风格与当前 Vue 版保持一致。',
+      },
     },
     topNav: {
       serverTime: '服务器时间',
@@ -1873,7 +1906,8 @@ export const zhCN: MessageSchema = {
       expiresAt: '过期时间',
       onlineStatus: '在线状态',
       disableConfirm: '确定禁用该会话令牌吗？禁用后对应设备需要重新登录。',
-      revokeAllConfirm: '确定禁用所有有效的会话令牌吗？所有设备将需要重新登录。',
+      revokeAllConfirm:
+        '确定禁用所有有效的会话令牌吗？所有设备将需要重新登录。',
       disabledSuccess: '会话已禁用',
       revoked: '已清除',
     },
@@ -2020,14 +2054,16 @@ export const zhCN: MessageSchema = {
     },
     securityKey: {
       title: '安全密钥管理',
-      description: '集中查看 JWT 与 2FA 主密钥状态，轮换操作需要通过当前账号的 2FA 校验。',
+      description:
+        '集中查看 JWT 与 2FA 主密钥状态，轮换操作需要通过当前账号的 2FA 校验。',
       jwtRotated: 'JWT 主密钥轮转成功',
       totpRotated: '2FA 主密钥轮转成功',
       rotateSuccess: '{{type}} 密钥已轮换',
       rotateFailed: '轮换失败',
       refresh: '刷新状态',
       riskTitle: '密钥轮换属于高风险维护操作',
-      riskDescription: '轮换 JWT 密钥会影响令牌验签，轮换 TOTP 密钥会影响二次验证密钥解密。执行前请确认当前系统运行正常，并保留必要的回滚和备份方案。',
+      riskDescription:
+        '轮换 JWT 密钥会影响令牌验签，轮换 TOTP 密钥会影响二次验证密钥解密。执行前请确认当前系统运行正常，并保留必要的回滚和备份方案。',
       configuredKeys: '已配置密钥',
       protectedRecords: '受保护记录',
       retiredVersions: '历史版本',
@@ -2080,16 +2116,20 @@ export const zhCN: MessageSchema = {
       title: 'API Key 使用说明',
       item1: '生成后会返回完整密钥，仅显示一次，关闭弹窗后无法再次查看。',
       item2: '调用接口时请在请求头中传入 X-API-Key，值为完整 API Key。',
-      item3: '使用范围说明：只读接口仅允许 GET / HEAD / OPTIONS，请求写接口会被拒绝。',
+      item3:
+        '使用范围说明：只读接口仅允许 GET / HEAD / OPTIONS，请求写接口会被拒绝。',
       item4: '业务接口仅允许访问业务数据接口，不允许访问系统管理类接口。',
-      item5: '允许访问资源留空时，按使用范围放行；选择资源后，只允许访问白名单资源接口。',
-      item6: '仅允许为已启用 2FA 的账号生成 API Key，且生成时需要验证当前操作人的 2FA。',
+      item5:
+        '允许访问资源留空时，按使用范围放行；选择资源后，只允许访问白名单资源接口。',
+      item6:
+        '仅允许为已启用 2FA 的账号生成 API Key，且生成时需要验证当前操作人的 2FA。',
       item7: '建议按用途分开创建，例如订单同步、报表读取，便于后续排查和禁用。',
       item8: '禁用后立即失效，已过期或已禁用的密钥无法继续调用接口。',
     },
     companyHeader: {
       title: '公司信息',
-      description: '本系统按单企业模式运行，公司名称和税号由 OOBE 初始化写入；本页集中维护多个结算银行、状态和补充说明。',
+      description:
+        '本系统按单企业模式运行，公司名称和税号由 OOBE 初始化写入；本页集中维护多个结算银行、状态和补充说明。',
       refresh: '刷新',
       save: '保存',
     },
@@ -2274,7 +2314,8 @@ export const zhCN: MessageSchema = {
       templateTypePdfForm: 'PDF 表单',
       templateContent: '模板内容',
       templateContentPlaceholder: '请输入模板内容',
-      htmlHint: '支持 HTML、LODOP 指令和 PDF 表单配置。使用 {{字段名}} 语法插入动态数据。',
+      htmlHint:
+        '支持 HTML、LODOP 指令和 PDF 表单配置。使用 {{字段名}} 语法插入动态数据。',
       helpTitle: '打印模板说明',
       unifiedPrintApi:
         '所有模板统一调用 POST /print/record。HTML/COORD 返回模板和数据，PDF_FORM 返回 PDF 内容；前端只负责渲染、预览和打印。',
@@ -2324,7 +2365,8 @@ export const zhCN: MessageSchema = {
       matrixView: '矩阵',
       savePerm: '保存权限',
       attachmentPermTitle: '附件权限说明',
-      attachmentPermDesc: '附件不单独配置权限，默认跟随对应模块权限：有查看权限可查看和下载附件，有编辑权限可上传附件，有删除权限可删除附件。',
+      attachmentPermDesc:
+        '附件不单独配置权限，默认跟随对应模块权限：有查看权限可查看和下载附件，有编辑权限可上传附件，有删除权限可删除附件。',
       selectRoleHint: '请从左侧选择一个角色来配置权限',
     },
     roleList: {
@@ -2409,23 +2451,38 @@ export const zhCN: MessageSchema = {
       unset: '未设置',
     },
     generalSettingsUtils: {
-      helpDefaultTaxRate: '用于发票默认税率与税额自动计算，修改后新开票草稿会使用该值。',
-      helpMaxConcurrentSessions: '限制同一用户同时保持的有效会话数量，超出后最早的会话将被自动清理。设为 0 表示不限制，留空将使用系统默认值 3。',
-      helpWeightOnlyPurchase: '启用后，采购入库页面切换到重量视图，隐藏金额和单价字段。',
-      helpWeightOnlySales: '启用后，销售出库页面切换到重量视图，隐藏金额和单价字段。',
-      helpCustomerStatementZero: '启用后，生成客户对账单草稿时默认收款金额为 0，期末余额等于所选销售订单总金额。',
-      helpSupplierStatementFull: '启用后，生成供应商对账单草稿时默认付款金额等于所选采购单据总金额。',
-      helpOperationLogAllWrite: '启用后，普通写操作会按新增、编辑、删除、审核、导出、打印自动记录。',
+      helpDefaultTaxRate:
+        '用于发票默认税率与税额自动计算，修改后新开票草稿会使用该值。',
+      helpMaxConcurrentSessions:
+        '限制同一用户同时保持的有效会话数量，超出后最早的会话将被自动清理。设为 0 表示不限制，留空将使用系统默认值 3。',
+      helpWeightOnlyPurchase:
+        '启用后，采购入库页面切换到重量视图，隐藏金额和单价字段。',
+      helpWeightOnlySales:
+        '启用后，销售出库页面切换到重量视图，隐藏金额和单价字段。',
+      helpCustomerStatementZero:
+        '启用后，生成客户对账单草稿时默认收款金额为 0，期末余额等于所选销售订单总金额。',
+      helpSupplierStatementFull:
+        '启用后，生成供应商对账单草稿时默认付款金额等于所选采购单据总金额。',
+      helpOperationLogAllWrite:
+        '启用后，普通写操作会按新增、编辑、删除、审核、导出、打印自动记录。',
       helpOperationLogDetailed: '启用后，会按照下方勾选项自动记录页面层操作。',
-      helpOperationLogAuth: '启用后，登录成功、登录失败、2FA 验证失败和退出登录会写入操作日志。',
-      helpForceTotpOnFirstLogin: '启用后，管理员新增的账号首次使用密码登录时，会先进入专用安全引导页。',
-      helpBatchNoAutoGenerate: '启用后，批号管理商品在明细未填写批号时，系统按单号规则中的批号生成规则自动补齐。',
-      helpForceBatchManagement: '启用后，所有出入库明细都按批号管理处理，会覆盖商品资料中的批号启用开关；未填写批号时将按批号自动生成开关决定是否补齐。',
-      helpHideAuditedRecords: '启用后，业务列表分页查询默认不显示下方多选中所勾选状态的单据。',
-      helpShowSnowflakeId: '启用后，业务列表显示系统雪花 ID 列，便于排查数据问题。',
-      helpUseSnowflakeAsBusinessNo: '启用后，新建业务单据时会预分配真实雪花ID，并直接以该雪花ID作为单据号。',
+      helpOperationLogAuth:
+        '启用后，登录成功、登录失败、2FA 验证失败和退出登录会写入操作日志。',
+      helpForceTotpOnFirstLogin:
+        '启用后，管理员新增的账号首次使用密码登录时，会先进入专用安全引导页。',
+      helpBatchNoAutoGenerate:
+        '启用后，批号管理商品在明细未填写批号时，系统按单号规则中的批号生成规则自动补齐。',
+      helpForceBatchManagement:
+        '启用后，所有出入库明细都按批号管理处理，会覆盖商品资料中的批号启用开关；未填写批号时将按批号自动生成开关决定是否补齐。',
+      helpHideAuditedRecords:
+        '启用后，业务列表分页查询默认不显示下方多选中所勾选状态的单据。',
+      helpShowSnowflakeId:
+        '启用后，业务列表显示系统雪花 ID 列，便于排查数据问题。',
+      helpUseSnowflakeAsBusinessNo:
+        '启用后，新建业务单据时会预分配真实雪花ID，并直接以该雪花ID作为单据号。',
       helpLoginCaptcha: '启用后，登录时需输入图形验证码，增加暴力破解防护。',
-      helpAttachmentWatermark: '启用后，非管理员用户下载或预览图片/PDF 附件时自动添加平铺水印（用户名+时间），管理员不受限。',
+      helpAttachmentWatermark:
+        '启用后，非管理员用户下载或预览图片/PDF 附件时自动添加平铺水印（用户名+时间），管理员不受限。',
       actionQuery: '查询',
       actionDetail: '查看',
       actionCreate: '新增',
@@ -2481,7 +2538,8 @@ export const zhCN: MessageSchema = {
       generateFailed: '生成失败',
       noManagePermission: '暂无 API Key 管理权限',
       disableConfirmTitle: '禁用 API Key',
-      disableConfirmContent: '确定禁用密钥「{{keyName}}」吗？禁用后使用该密钥的调用将失败。',
+      disableConfirmContent:
+        '确定禁用密钥「{{keyName}}」吗？禁用后使用该密钥的调用将失败。',
     },
     rolePermissions: {
       loadFailed: '加载角色权限失败',

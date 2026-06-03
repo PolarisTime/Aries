@@ -12,7 +12,9 @@ import { pendingInvoiceReceiptReportPageConfig } from './pending-invoice-receipt
 
 describe('pendingInvoiceReceiptReportPageConfig', () => {
   it('has correct key', () => {
-    expect(pendingInvoiceReceiptReportPageConfig.key).toBe('pending-invoice-receipt-report')
+    expect(pendingInvoiceReceiptReportPageConfig.key).toBe(
+      'pending-invoice-receipt-report',
+    )
   })
 
   it('is readOnly', () => {
@@ -21,12 +23,16 @@ describe('pendingInvoiceReceiptReportPageConfig', () => {
 
   it('has filters', () => {
     expect(pendingInvoiceReceiptReportPageConfig.filters).toBeDefined()
-    expect(pendingInvoiceReceiptReportPageConfig.filters!.length).toBeGreaterThanOrEqual(3)
+    expect(
+      pendingInvoiceReceiptReportPageConfig.filters!.length,
+    ).toBeGreaterThanOrEqual(3)
   })
 
   it('has columns', () => {
     expect(pendingInvoiceReceiptReportPageConfig.columns).toBeDefined()
-    expect(pendingInvoiceReceiptReportPageConfig.columns.length).toBeGreaterThan(0)
+    expect(
+      pendingInvoiceReceiptReportPageConfig.columns.length,
+    ).toBeGreaterThan(0)
   })
 
   it('buildOverview returns result', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { transformFreightItems, cloneLineItems } from './shared-line-items'
+import { cloneLineItems, transformFreightItems } from './shared-line-items'
 
 describe('transformFreightItems', () => {
   it('transforms parent record items to freight line items', () => {

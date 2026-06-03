@@ -5,7 +5,8 @@ vi.mock('i18next', () => ({
 }))
 
 vi.mock('@/constants/module-options', () => ({
-  buildValueOptions: (...args: string[]) => args.map((v) => ({ label: v, value: v })),
+  buildValueOptions: (...args: string[]) =>
+    args.map((v) => ({ label: v, value: v })),
   getCustomerOptions: [],
   getCustomerProjectOptions: [],
 }))
@@ -33,7 +34,9 @@ describe('salesOrdersPageConfig', () => {
 
   it('has parentImport config', () => {
     expect(salesOrdersPageConfig.parentImport).toBeDefined()
-    expect(salesOrdersPageConfig.parentImport!.parentModuleKey).toBe('purchase-order')
+    expect(salesOrdersPageConfig.parentImport!.parentModuleKey).toBe(
+      'purchase-order',
+    )
   })
 
   it('buildOverview returns result', () => {

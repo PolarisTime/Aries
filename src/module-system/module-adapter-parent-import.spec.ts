@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { buildParentImportState, buildOccupiedParentMap } from './module-adapter-parent-import'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import {
+  buildOccupiedParentMap,
+  buildParentImportState,
+} from './module-adapter-parent-import'
 
-const cloneLineItems = (value: unknown) => structuredClone(value) as ModuleLineItem[]
+const cloneLineItems = (value: unknown) =>
+  structuredClone(value) as ModuleLineItem[]
 
 function makeItem(overrides: Partial<ModuleLineItem> = {}): ModuleLineItem {
   return {
@@ -47,8 +51,20 @@ describe('buildParentImportState', () => {
     customerName: '客户A',
     projectName: '项目X',
     items: [
-      { id: 'p-item-1', materialCode: 'M001', quantity: 10, weightTon: 5, amount: 500 },
-      { id: 'p-item-2', materialCode: 'M002', quantity: 5, weightTon: 3, amount: 300 },
+      {
+        id: 'p-item-1',
+        materialCode: 'M001',
+        quantity: 10,
+        weightTon: 5,
+        amount: 500,
+      },
+      {
+        id: 'p-item-2',
+        materialCode: 'M002',
+        quantity: 5,
+        weightTon: 3,
+        amount: 300,
+      },
     ],
   } as any
 
@@ -56,8 +72,7 @@ describe('buildParentImportState', () => {
     const result = buildParentImportState({
       parentImportConfig: {
         ...parentImportConfig,
-        transformItems: (parent: ModuleRecord) =>
-          cloneLineItems(parent.items!),
+        transformItems: (parent: ModuleRecord) => cloneLineItems(parent.items!),
       } as any,
       parentRecord,
       currentParentNos: [],
@@ -81,13 +96,18 @@ describe('buildParentImportState', () => {
     const result = buildParentImportState({
       parentImportConfig: {
         ...parentImportConfig,
-        transformItems: (parent: ModuleRecord) =>
-          cloneLineItems(parent.items!),
+        transformItems: (parent: ModuleRecord) => cloneLineItems(parent.items!),
       } as any,
       parentRecord,
       currentParentNos: ['SO001'],
       currentItems: [
-        makeItem({ id: 'existing-1', materialCode: 'M001', _parentRelationNo: 'SO001', sourceNo: 'SO001', quantity: 10 }),
+        makeItem({
+          id: 'existing-1',
+          materialCode: 'M001',
+          _parentRelationNo: 'SO001',
+          sourceNo: 'SO001',
+          quantity: 10,
+        }),
       ],
       cloneLineItems,
     })
@@ -100,8 +120,7 @@ describe('buildParentImportState', () => {
     const result = buildParentImportState({
       parentImportConfig: {
         ...parentImportConfig,
-        transformItems: (parent: ModuleRecord) =>
-          cloneLineItems(parent.items!),
+        transformItems: (parent: ModuleRecord) => cloneLineItems(parent.items!),
       } as any,
       parentRecord,
       currentParentNos: ['SO002'],

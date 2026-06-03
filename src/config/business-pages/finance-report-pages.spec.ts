@@ -15,7 +15,9 @@ import { financeReportPageConfigs } from './finance-report-pages'
 describe('financeReportPageConfigs', () => {
   it('contains inventory-report config', () => {
     expect(financeReportPageConfigs['inventory-report']).toBeDefined()
-    expect(financeReportPageConfigs['inventory-report'].key).toBe('inventory-report')
+    expect(financeReportPageConfigs['inventory-report'].key).toBe(
+      'inventory-report',
+    )
   })
 
   it('contains io-report config', () => {
@@ -24,7 +26,9 @@ describe('financeReportPageConfigs', () => {
   })
 
   it('contains pending-invoice-receipt-report config', () => {
-    expect(financeReportPageConfigs['pending-invoice-receipt-report']).toBeDefined()
+    expect(
+      financeReportPageConfigs['pending-invoice-receipt-report'],
+    ).toBeDefined()
   })
 
   it('has exactly 3 entries', () => {

@@ -29,7 +29,9 @@ export function BusinessGridView() {
   }, [initialConfig, pageDef?.moduleKey])
 
   if (!pageDef?.moduleKey) {
-    return <Empty description={t('modules.page.configNotFound')} className="mt-96" />
+    return (
+      <Empty description={t('modules.page.configNotFound')} className="mt-96" />
+    )
   }
 
   return (

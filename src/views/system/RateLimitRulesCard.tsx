@@ -56,7 +56,11 @@ export function RateLimitRulesCard() {
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
 
-  const { data: rules = [], isFetching, refetch } = useQuery({
+  const {
+    data: rules = [],
+    isFetching,
+    refetch,
+  } = useQuery({
     queryKey: ['rate-limit-rules'],
     queryFn: async () => {
       const r = await http.get<{
@@ -65,16 +69,18 @@ export function RateLimitRulesCard() {
         message?: string
       }>('/admin/rate-limit/rules')
       assertApiSuccess(r, t('system.rateLimit.loadFailed'))
-      return (r.data || []).map((item): RateLimitRule => ({
-        id: item.id,
-        ruleKey: item.rule_key,
-        ruleType: item.rule_type,
-        rate: item.rate,
-        capacity: item.capacity,
-        tokensPerRequest: item.tokens_per_request,
-        priority: item.priority,
-        enabled: item.enabled,
-      }))
+      return (r.data || []).map(
+        (item): RateLimitRule => ({
+          id: item.id,
+          ruleKey: item.rule_key,
+          ruleType: item.rule_type,
+          rate: item.rate,
+          capacity: item.capacity,
+          tokensPerRequest: item.tokens_per_request,
+          priority: item.priority,
+          enabled: item.enabled,
+        }),
+      )
     },
   })
 
@@ -137,7 +143,9 @@ export function RateLimitRulesCard() {
               title: t('system.rateLimit.colType'),
               width: 80,
               render: (v: string) => (
-                <Tag color={TYPE_COLOR[v] || 'default'}>{TYPE_LABEL[v] || v}</Tag>
+                <Tag color={TYPE_COLOR[v] || 'default'}>
+                  {TYPE_LABEL[v] || v}
+                </Tag>
               ),
             },
             {
@@ -170,7 +178,11 @@ export function RateLimitRulesCard() {
               title: t('system.rateLimit.colStatus'),
               width: 50,
               render: (v: boolean) => (
-                <Tag color={v ? 'success' : 'default'}>{v ? t('system.rateLimit.statusOn') : t('system.rateLimit.statusOff')}</Tag>
+                <Tag color={v ? 'success' : 'default'}>
+                  {v
+                    ? t('system.rateLimit.statusOn')
+                    : t('system.rateLimit.statusOff')}
+                </Tag>
               ),
             },
             {
@@ -210,13 +222,23 @@ export function RateLimitRulesCard() {
           <Form.Item name="rate" label={t('system.rateLimit.rateLabel')}>
             <InputNumber min={0.01} step={0.1} className="w-full" />
           </Form.Item>
-          <Form.Item name="capacity" label={t('system.rateLimit.burstCapacity')}>
+          <Form.Item
+            name="capacity"
+            label={t('system.rateLimit.burstCapacity')}
+          >
             <InputNumber min={1} step={1} className="w-full" />
           </Form.Item>
-          <Form.Item name="tokensPerRequest" label={t('system.rateLimit.tokensPerRequest')}>
+          <Form.Item
+            name="tokensPerRequest"
+            label={t('system.rateLimit.tokensPerRequest')}
+          >
             <InputNumber min={1} step={1} className="w-full" />
           </Form.Item>
-          <Form.Item name="enabled" label={t('system.rateLimit.enabled')} valuePropName="checked">
+          <Form.Item
+            name="enabled"
+            label={t('system.rateLimit.enabled')}
+            valuePropName="checked"
+          >
             <Switch />
           </Form.Item>
         </Form>

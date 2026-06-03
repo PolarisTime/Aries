@@ -8,7 +8,15 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/components/FormModal', () => ({
-  FormModal: ({ children, title, open }: { children: React.ReactNode; title: string; open: boolean }) =>
+  FormModal: ({
+    children,
+    title,
+    open,
+  }: {
+    children: React.ReactNode
+    title: string
+    open: boolean
+  }) =>
     open ? (
       <div data-testid="form-modal">
         <div>{title}</div>
@@ -18,8 +26,16 @@ vi.mock('@/components/FormModal', () => ({
 }))
 
 vi.mock('antd/es/form', () => {
-  const Form = ({ children }: { children: React.ReactNode }) => <div>{children}</div>
-  Form.Item = ({ children, label }: { children: React.ReactNode; label: string }) => (
+  const Form = ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  )
+  Form.Item = ({
+    children,
+    label,
+  }: {
+    children: React.ReactNode
+    label: string
+  }) => (
     <div>
       {label && <span>{label}</span>}
       {children}
@@ -44,19 +60,27 @@ vi.mock('antd/es/input-number', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: Record<string, unknown>) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: Record<string, unknown>) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/space', () => {
-  const Space = ({ children }: { children: React.ReactNode }) => <div>{children}</div>
+  const Space = ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  )
   Space.Compact = Space
   return { default: Space }
 })
 
 vi.mock('antd/es/typography', () => ({
   default: {
-    Paragraph: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
-    Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    Paragraph: ({ children }: { children: React.ReactNode }) => (
+      <p>{children}</p>
+    ),
+    Text: ({ children }: { children: React.ReactNode }) => (
+      <span>{children}</span>
+    ),
   },
 }))
 
@@ -85,12 +109,8 @@ describe('ApiKeyCreateModal', () => {
     userOptions: [
       { id: '1', userName: 'Admin', loginName: 'admin', mobile: '13800138000' },
     ],
-    resourceOptions: [
-      { code: 'order', title: '订单管理', group: '业务' },
-    ],
-    actionOptions: [
-      { code: 'read', title: '读取' },
-    ],
+    resourceOptions: [{ code: 'order', title: '订单管理', group: '业务' }],
+    actionOptions: [{ code: 'read', title: '读取' }],
     onGenerate: vi.fn(),
     onClose: vi.fn(),
   }
@@ -127,24 +147,24 @@ describe('ApiKeyCreateModal', () => {
   })
 
   it('renders generated key view when key is set', () => {
-    render(
-      <ApiKeyCreateModal {...defaultProps} generatedKey="sk-abc123" />,
-    )
+    render(<ApiKeyCreateModal {...defaultProps} generatedKey="sk-abc123" />)
     expect(screen.getByText('system.apiKey.copyKeyHint')).toBeInTheDocument()
     expect(screen.getByText('sk-abc123')).toBeInTheDocument()
   })
 
   it('renders close button when key is generated', () => {
-    render(
-      <ApiKeyCreateModal {...defaultProps} generatedKey="sk-abc123" />,
-    )
+    render(<ApiKeyCreateModal {...defaultProps} generatedKey="sk-abc123" />)
     expect(screen.getByText('common.close')).toBeInTheDocument()
   })
 
   it('calls onClose when close button clicked', () => {
     const onClose = vi.fn()
     render(
-      <ApiKeyCreateModal {...defaultProps} generatedKey="sk-abc123" onClose={onClose} />,
+      <ApiKeyCreateModal
+        {...defaultProps}
+        generatedKey="sk-abc123"
+        onClose={onClose}
+      />,
     )
     fireEvent.click(screen.getByText('common.close'))
     expect(onClose).toHaveBeenCalledTimes(1)

@@ -1,14 +1,8 @@
 import { act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuthStore } from '@/stores/authStore'
-import {
-  clearToken,
-  getStoredUser,
-  getToken,
-  setStoredUser,
-  setAuthSession,
-} from '@/utils/storage'
 import { ERROR_CODE } from '@/constants/error-codes'
+import { useAuthStore } from '@/stores/authStore'
+import { clearToken, setAuthSession, setStoredUser } from '@/utils/storage'
 
 const mockUser = {
   id: 1,

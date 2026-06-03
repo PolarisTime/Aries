@@ -43,15 +43,15 @@ export function buildValueOptions(...values: string[]) {
 // All existing imports from '@/constants/module-options' continue to work.
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- intentional barrel for backward compat
 export {
-  materialCategoryOptions,
-  getMaterialCategoryOptions,
-  materialGradeOptions,
-  getSupplierOptions,
   customerOptions,
-  getCustomerOptions,
-  getCustomerProjectOptions,
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
+  getCustomerOptions,
+  getCustomerProjectOptions,
+  getMaterialCategoryOptions,
+  getSupplierOptions,
   getWarehouseOptions,
   isPurchaseWeighRequiredCategory,
+  materialCategoryOptions,
+  materialGradeOptions,
 } from '@/api/option-resolvers'

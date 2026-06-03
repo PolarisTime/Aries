@@ -24,11 +24,13 @@ export function PrintTemplatePreviewModal({ open, template, onClose }: Props) {
         <div>
           <Typography.Title level={5}>{template.templateName}</Typography.Title>
           <Typography.Paragraph type="secondary">
-            {t('system.printTemplatePreview.billType')}{getPrintTemplateBillTypeLabel(template.billType)}
+            {t('system.printTemplatePreview.billType')}
+            {getPrintTemplateBillTypeLabel(template.billType)}
           </Typography.Paragraph>
           <div className="p-16 rounded overflow-auto bg-gray-100 border border-gray-300 max-h-400">
             <pre className="m-0 text-xs whitespace-pre-wrap break-all">
-              {template.templateHtml || t('system.printTemplatePreview.emptyTemplate')}
+              {template.templateHtml ||
+                t('system.printTemplatePreview.emptyTemplate')}
             </pre>
           </div>
         </div>

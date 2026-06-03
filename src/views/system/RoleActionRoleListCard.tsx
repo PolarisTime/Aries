@@ -66,11 +66,15 @@ export function RoleActionRoleListCard({
           <div className="flex gap-8 text-xs text-secondary">
             <span>{role.roleCode}</span>
             <span>{role.roleType}</span>
-            <span>{role.userCount} {t('system.roleList.userCount')}</span>
+            <span>
+              {role.userCount} {t('system.roleList.userCount')}
+            </span>
           </div>
         </button>
       ))}
-      {roles.length === 0 && <Empty description={t('system.roleList.noRoles')} />}
+      {roles.length === 0 && (
+        <Empty description={t('system.roleList.noRoles')} />
+      )}
     </Card>
   )
 }

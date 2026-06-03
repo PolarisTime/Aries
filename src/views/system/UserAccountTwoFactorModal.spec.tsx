@@ -8,7 +8,15 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/components/FormModal', () => ({
-  FormModal: ({ children, title, open }: { children: React.ReactNode; title: string; open: boolean }) =>
+  FormModal: ({
+    children,
+    title,
+    open,
+  }: {
+    children: React.ReactNode
+    title: string
+    open: boolean
+  }) =>
     open ? (
       <div data-testid="form-modal">
         <div>{title}</div>
@@ -18,8 +26,16 @@ vi.mock('@/components/FormModal', () => ({
 }))
 
 vi.mock('antd/es/form', () => {
-  const Form = ({ children }: { children: React.ReactNode }) => <div>{children}</div>
-  Form.Item = ({ children, label }: { children: React.ReactNode; label: string }) => (
+  const Form = ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  )
+  Form.Item = ({
+    children,
+    label,
+  }: {
+    children: React.ReactNode
+    label: string
+  }) => (
     <div>
       {label && <span>{label}</span>}
       {children}
@@ -33,7 +49,9 @@ vi.mock('antd/es/input', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: Record<string, unknown>) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: Record<string, unknown>) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/image', () => ({
@@ -41,18 +59,26 @@ vi.mock('antd/es/image', () => ({
 }))
 
 vi.mock('antd/es/spin', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }))
 
 vi.mock('antd/es/tag', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
+  ),
 }))
 
 vi.mock('antd/es/typography', () => ({
   default: {
     Title: ({ children }: { children: React.ReactNode }) => <h5>{children}</h5>,
-    Paragraph: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
-    Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    Paragraph: ({ children }: { children: React.ReactNode }) => (
+      <p>{children}</p>
+    ),
+    Text: ({ children }: { children: React.ReactNode }) => (
+      <span>{children}</span>
+    ),
   },
 }))
 
@@ -124,7 +150,9 @@ describe('UserAccountTwoFactorModal', () => {
 
   it('renders user label', () => {
     render(<UserAccountTwoFactorModal {...defaultProps} />)
-    expect(screen.getByText('auth.user2fa.userLabel', { exact: false })).toBeInTheDocument()
+    expect(
+      screen.getByText('auth.user2fa.userLabel', { exact: false }),
+    ).toBeInTheDocument()
   })
 
   it('renders setup title when TOTP disabled', () => {

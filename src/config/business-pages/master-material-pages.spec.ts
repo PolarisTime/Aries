@@ -21,7 +21,9 @@ describe('masterMaterialPageConfigs', () => {
 
   it('contains material-categories config', () => {
     expect(masterMaterialPageConfigs['material-categories']).toBeDefined()
-    expect(masterMaterialPageConfigs['material-categories'].key).toBe('material-categories')
+    expect(masterMaterialPageConfigs['material-categories'].key).toBe(
+      'material-categories',
+    )
   })
 
   it('has exactly 2 entries', () => {

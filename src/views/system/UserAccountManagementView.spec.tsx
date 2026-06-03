@@ -120,7 +120,9 @@ vi.mock('@/views/system/UserAccountDetailModal', () => ({
 }))
 
 vi.mock('@/views/system/UserAccountCreateResultModal', () => ({
-  UserAccountCreateResultModal: () => <div data-testid="result-modal">Result</div>,
+  UserAccountCreateResultModal: () => (
+    <div data-testid="result-modal">Result</div>
+  ),
 }))
 
 vi.mock('@/views/system/UserAccountTwoFactorModal', () => ({

@@ -15,7 +15,9 @@ describe('resolveBusinessGridInitialConfig', () => {
   it('returns undefined when loaderConfig key does not match moduleKey', () => {
     const pageDef = { moduleKey: 'module-a' } as any
     const loaderConfig = { key: 'module-b' } as any
-    expect(resolveBusinessGridInitialConfig(pageDef, loaderConfig)).toBeUndefined()
+    expect(
+      resolveBusinessGridInitialConfig(pageDef, loaderConfig),
+    ).toBeUndefined()
   })
 
   it('returns loaderConfig when keys match', () => {

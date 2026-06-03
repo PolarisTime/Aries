@@ -1,5 +1,5 @@
+import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
 
 vi.mock('@tanstack/react-query', () => ({
@@ -25,11 +25,17 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/api/business', () => ({
-  allocateBusinessPrimaryNo: vi.fn().mockResolvedValue({ generatedNo: 'PRE-001', generatedId: 'pre-id-1' }),
+  allocateBusinessPrimaryNo: vi
+    .fn()
+    .mockResolvedValue({ generatedNo: 'PRE-001', generatedId: 'pre-id-1' }),
   generateBusinessPrimaryNo: vi.fn().mockResolvedValue('GEN-001'),
-  getBusinessModuleDetail: vi.fn().mockResolvedValue({ data: { id: '1', items: [] } }),
+  getBusinessModuleDetail: vi
+    .fn()
+    .mockResolvedValue({ data: { id: '1', items: [] } }),
   listAllBusinessModuleRows: vi.fn().mockResolvedValue([]),
-  saveBusinessModule: vi.fn().mockResolvedValue({ data: { id: 'saved-1', orderNo: 'ORD-001' } }),
+  saveBusinessModule: vi
+    .fn()
+    .mockResolvedValue({ data: { id: 'saved-1', orderNo: 'ORD-001' } }),
 }))
 
 vi.mock('@/api/system-settings', () => ({
@@ -109,10 +115,19 @@ vi.mock('@/hooks/useModuleDisplaySupport', () => ({
 
 function cfg(overrides: Record<string, unknown> = {}) {
   return {
-    key: 'test-module', title: 'Test', kicker: '', description: '',
-    filters: [], columns: [], detailFields: [], data: [],
-    buildOverview: () => [], formFields: [], itemColumns: [],
-    primaryNoKey: 'orderNo', ...overrides,
+    key: 'test-module',
+    title: 'Test',
+    kicker: '',
+    description: '',
+    filters: [],
+    columns: [],
+    detailFields: [],
+    data: [],
+    buildOverview: () => [],
+    formFields: [],
+    itemColumns: [],
+    primaryNoKey: 'orderNo',
+    ...overrides,
   }
 }
 
@@ -127,9 +142,16 @@ function frm() {
 
 function props(overrides: Record<string, unknown> = {}) {
   return {
-    open: true, config: cfg(), record: null, moduleKey: 'test-module',
-    editorAuditTarget: null, form: frm(), onClose: vi.fn(), onSaved: vi.fn(),
-    autoInsertBlankItemOnCreate: false, ...overrides,
+    open: true,
+    config: cfg(),
+    record: null,
+    moduleKey: 'test-module',
+    editorAuditTarget: null,
+    form: frm(),
+    onClose: vi.fn(),
+    onSaved: vi.fn(),
+    autoInsertBlankItemOnCreate: false,
+    ...overrides,
   }
 }
 
@@ -144,7 +166,9 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('returns expected properties when open is false', () => {
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ open: false })))
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ open: false })),
+    )
     expect(result.current.saving).toBe(false)
     expect(result.current.parentSelectorOpen).toBe(false)
     expect(result.current.parentImporting).toBe(false)
@@ -155,66 +179,114 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('has all expected return properties', () => {
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ open: false })))
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ open: false })),
+    )
     const keys = [
-      'addItem', 'closeParentSelector', 'handleImportParentRecord', 'handleSave',
-      'isEdit', 'items', 'openParentSelector', 'parentImporting', 'parentSelectorFilters',
-      'parentSelectorOpen', 'primaryNoLoading', 'saveResult', 'clearSaveResult',
-      'saving', 'setItems', 'handleFormValuesChange',
+      'addItem',
+      'closeParentSelector',
+      'handleImportParentRecord',
+      'handleSave',
+      'isEdit',
+      'items',
+      'openParentSelector',
+      'parentImporting',
+      'parentSelectorFilters',
+      'parentSelectorOpen',
+      'primaryNoLoading',
+      'saveResult',
+      'clearSaveResult',
+      'saving',
+      'setItems',
+      'handleFormValuesChange',
     ]
     for (const k of keys) expect(result.current).toHaveProperty(k)
   })
 
   it('starts with empty items in create mode without autoInsert', () => {
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ open: false })))
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ open: false })),
+    )
     expect(result.current.items).toEqual([])
     expect(result.current.isEdit).toBe(false)
   })
 
   it('clearSaveResult resets save result', () => {
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ open: false })))
-    act(() => { result.current.clearSaveResult() })
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ open: false })),
+    )
+    act(() => {
+      result.current.clearSaveResult()
+    })
     expect(result.current.saveResult).toBeNull()
   })
 
   it('handleFormValuesChange is callable when not open', () => {
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ open: false })))
-    act(() => { result.current.handleFormValuesChange({ orderNo: 'X' }) })
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ open: false })),
+    )
+    act(() => {
+      result.current.handleFormValuesChange({ orderNo: 'X' })
+    })
   })
 
   it('openParentSelector is no-op without parentImport config', () => {
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ open: false })))
-    act(() => { result.current.openParentSelector() })
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ open: false })),
+    )
+    act(() => {
+      result.current.openParentSelector()
+    })
     expect(result.current.parentSelectorOpen).toBe(false)
   })
 
   it('closeParentSelector resets session', () => {
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ open: false })))
-    act(() => { result.current.closeParentSelector() })
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ open: false })),
+    )
+    act(() => {
+      result.current.closeParentSelector()
+    })
     expect(result.current.parentSelectorOpen).toBe(false)
   })
 
   it('setItems with array works', () => {
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ open: false })))
-    act(() => { result.current.setItems([{ id: 'a' }]) })
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ open: false })),
+    )
+    act(() => {
+      result.current.setItems([{ id: 'a' }])
+    })
     expect(result.current.items).toEqual([{ id: 'a' }])
   })
 
   it('setItems with function updater works', () => {
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ open: false })))
-    act(() => { result.current.setItems([]) })
-    act(() => { result.current.setItems((prev: any[]) => [...prev, { id: 'b' }]) })
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ open: false })),
+    )
+    act(() => {
+      result.current.setItems([])
+    })
+    act(() => {
+      result.current.setItems((prev: any[]) => [...prev, { id: 'b' }])
+    })
     expect(result.current.items).toEqual([{ id: 'b' }])
   })
 
   it('handleImportParentRecord no-op without parentImport config', () => {
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ open: false })))
-    act(() => { result.current.handleImportParentRecord([{ id: 'po-1' }]) })
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ open: false })),
+    )
+    act(() => {
+      result.current.handleImportParentRecord([{ id: 'po-1' }])
+    })
   })
 })
 
 describe('useModuleEditorWorkspace effect initialization', () => {
-  beforeEach(() => { vi.clearAllMocks() })
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
 
   it('initializes in create mode with autoInsert', async () => {
     const { result } = renderHook(() =>
@@ -227,7 +299,9 @@ describe('useModuleEditorWorkspace effect initialization', () => {
 
   it('initializes in edit mode', async () => {
     const record = { id: 'rec-1', orderNo: 'ORD-001', items: [{ id: 'i1' }] }
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ record })))
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ record })),
+    )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
     expect(result.current.isEdit).toBe(true)
     expect(result.current.items).toEqual([{ id: 'i1' }])
@@ -249,45 +323,67 @@ describe('useModuleEditorWorkspace effect initialization', () => {
 
   it('skips primary number when no primaryNoKey', async () => {
     const { generateBusinessPrimaryNo } = await import('@/api/business')
-    renderHook(() => useModuleEditorWorkspace(props({ config: cfg({ primaryNoKey: undefined }) })))
-    await new Promise(r => setTimeout(r, 50))
+    renderHook(() =>
+      useModuleEditorWorkspace(
+        props({ config: cfg({ primaryNoKey: undefined }) }),
+      ),
+    )
+    await new Promise((r) => setTimeout(r, 50))
     expect(generateBusinessPrimaryNo).not.toHaveBeenCalled()
   })
 
   it('opens parent selector with config', async () => {
-    const parentImport = { parentModuleKey: 'po', parentFieldKey: 'poNo', label: 'PO' }
+    const parentImport = {
+      parentModuleKey: 'po',
+      parentFieldKey: 'poNo',
+      label: 'PO',
+    }
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ config: cfg({ parentImport }) })),
     )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    act(() => { result.current.openParentSelector() })
+    act(() => {
+      result.current.openParentSelector()
+    })
     expect(result.current.parentSelectorOpen).toBe(true)
-    act(() => { result.current.closeParentSelector() })
+    act(() => {
+      result.current.closeParentSelector()
+    })
     expect(result.current.parentSelectorOpen).toBe(false)
   })
 
   it('shows warning on parent selector validation failure', async () => {
     const parentImport = {
-      parentModuleKey: 'po', parentFieldKey: 'poNo', label: 'PO',
+      parentModuleKey: 'po',
+      parentFieldKey: 'poNo',
+      label: 'PO',
       validateBeforeOpen: () => 'Fill required fields',
     }
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ config: cfg({ parentImport }) })),
     )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    act(() => { result.current.openParentSelector() })
+    act(() => {
+      result.current.openParentSelector()
+    })
     expect(result.current.parentSelectorOpen).toBe(false)
   })
 })
 
 describe('useModuleEditorWorkspace save', () => {
-  beforeEach(() => { vi.clearAllMocks() })
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
 
   it('saves successfully in create mode', async () => {
     const onSaved = vi.fn()
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ onSaved })))
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ onSaved })),
+    )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleSave() })
+    await act(async () => {
+      await result.current.handleSave()
+    })
     expect(result.current.saving).toBe(false)
     expect(result.current.saveResult?.status).toBe('success')
     expect(onSaved).toHaveBeenCalled()
@@ -296,9 +392,13 @@ describe('useModuleEditorWorkspace save', () => {
   it('saves successfully in edit mode', async () => {
     const onSaved = vi.fn()
     const record = { id: 'rec-1', items: [] }
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ record, onSaved })))
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ record, onSaved })),
+    )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleSave() })
+    await act(async () => {
+      await result.current.handleSave()
+    })
     expect(result.current.saveResult?.status).toBe('success')
   })
 
@@ -307,7 +407,9 @@ describe('useModuleEditorWorkspace save', () => {
     vi.mocked(saveBusinessModule).mockRejectedValue(new Error('Network error'))
     const { result } = renderHook(() => useModuleEditorWorkspace(props()))
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleSave() })
+    await act(async () => {
+      await result.current.handleSave()
+    })
     expect(result.current.saveResult?.status).toBe('error')
     expect(result.current.saveResult?.message).toBe('Network error')
   })
@@ -317,7 +419,9 @@ describe('useModuleEditorWorkspace save', () => {
     vi.mocked(saveBusinessModule).mockRejectedValue('string error')
     const { result } = renderHook(() => useModuleEditorWorkspace(props()))
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleSave() })
+    await act(async () => {
+      await result.current.handleSave()
+    })
     expect(result.current.saveResult?.status).toBe('error')
   })
 
@@ -328,25 +432,39 @@ describe('useModuleEditorWorkspace save', () => {
     vi.mocked(saveBusinessModule).mockRejectedValue(error)
     const { result } = renderHook(() => useModuleEditorWorkspace(props()))
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleSave() })
+    await act(async () => {
+      await result.current.handleSave()
+    })
     expect(result.current.saveResult?.traceId).toBe('trace-123')
   })
 
   it('skips save when validation fails', async () => {
-    const { getEditorValidationMessage } = await import('@/module-system/module-adapter-editor')
-    vi.mocked(getEditorValidationMessage).mockReturnValue('Required field missing')
+    const { getEditorValidationMessage } = await import(
+      '@/module-system/module-adapter-editor'
+    )
+    vi.mocked(getEditorValidationMessage).mockReturnValue(
+      'Required field missing',
+    )
     const { result } = renderHook(() => useModuleEditorWorkspace(props()))
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleSave() })
+    await act(async () => {
+      await result.current.handleSave()
+    })
     expect(result.current.saveResult).toBeNull()
   })
 
   it('handles form validation error object', async () => {
     const f = frm()
-    f.validateFields = vi.fn().mockRejectedValue({ errorFields: [{ errors: ['x'] }], values: {} })
-    const { result } = renderHook(() => useModuleEditorWorkspace(props({ form: f })))
+    f.validateFields = vi
+      .fn()
+      .mockRejectedValue({ errorFields: [{ errors: ['x'] }], values: {} })
+    const { result } = renderHook(() =>
+      useModuleEditorWorkspace(props({ form: f })),
+    )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleSave() })
+    await act(async () => {
+      await result.current.handleSave()
+    })
     expect(result.current.saveResult).toBeNull()
     expect(result.current.saving).toBe(false)
   })
@@ -354,12 +472,16 @@ describe('useModuleEditorWorkspace save', () => {
   it('saves with audit when confirmed', async () => {
     const auditTarget = { key: 'status', value: '已审核' }
     const { modal } = await import('@/utils/antd-app')
-    vi.mocked(modal.confirm).mockImplementation(({ onOk }: any) => { onOk?.() })
+    vi.mocked(modal.confirm).mockImplementation(({ onOk }: any) => {
+      onOk?.()
+    })
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ editorAuditTarget: auditTarget })),
     )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleSave(true) })
+    await act(async () => {
+      await result.current.handleSave(true)
+    })
     expect(modal.confirm).toHaveBeenCalled()
     expect(result.current.saveResult?.status).toBe('success')
   })
@@ -367,69 +489,101 @@ describe('useModuleEditorWorkspace save', () => {
   it('cancels audit save when cancelled', async () => {
     const auditTarget = { key: 'status', value: '已审核' }
     const { modal } = await import('@/utils/antd-app')
-    vi.mocked(modal.confirm).mockImplementation(({ onCancel }: any) => { onCancel?.() })
+    vi.mocked(modal.confirm).mockImplementation(({ onCancel }: any) => {
+      onCancel?.()
+    })
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ editorAuditTarget: auditTarget })),
     )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleSave(true) })
+    await act(async () => {
+      await result.current.handleSave(true)
+    })
     expect(result.current.saveResult).toBeNull()
   })
 })
 
 describe('useModuleEditorWorkspace parent import', () => {
-  beforeEach(() => { vi.clearAllMocks() })
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
 
   it('imports parent records successfully', async () => {
-    const parentImport = { parentModuleKey: 'po', parentFieldKey: 'poNo', label: 'PO' }
+    const parentImport = {
+      parentModuleKey: 'po',
+      parentFieldKey: 'poNo',
+      label: 'PO',
+    }
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ config: cfg({ parentImport }) })),
     )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleImportParentRecord([{ id: 'po-1' }]) })
+    await act(async () => {
+      await result.current.handleImportParentRecord([{ id: 'po-1' }])
+    })
     expect(result.current.parentImporting).toBe(false)
     expect(result.current.parentSelectorOpen).toBe(false)
   })
 
   it('warns when no records selected for import', async () => {
-    const parentImport = { parentModuleKey: 'po', parentFieldKey: 'poNo', label: 'PO' }
+    const parentImport = {
+      parentModuleKey: 'po',
+      parentFieldKey: 'poNo',
+      label: 'PO',
+    }
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ config: cfg({ parentImport }) })),
     )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleImportParentRecord([]) })
+    await act(async () => {
+      await result.current.handleImportParentRecord([])
+    })
     expect(result.current.parentImporting).toBe(false)
   })
 
   it('handles import API error', async () => {
-    const parentImport = { parentModuleKey: 'po', parentFieldKey: 'poNo', label: 'PO' }
+    const parentImport = {
+      parentModuleKey: 'po',
+      parentFieldKey: 'poNo',
+      label: 'PO',
+    }
     const { getBusinessModuleDetail } = await import('@/api/business')
-    vi.mocked(getBusinessModuleDetail).mockRejectedValue(new Error('Import failed'))
+    vi.mocked(getBusinessModuleDetail).mockRejectedValue(
+      new Error('Import failed'),
+    )
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ config: cfg({ parentImport }) })),
     )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleImportParentRecord([{ id: 'po-1' }]) })
+    await act(async () => {
+      await result.current.handleImportParentRecord([{ id: 'po-1' }])
+    })
     expect(result.current.parentImporting).toBe(false)
   })
 
   it('handles import with validation error from config', async () => {
     const parentImport = {
-      parentModuleKey: 'po', parentFieldKey: 'poNo', label: 'PO',
+      parentModuleKey: 'po',
+      parentFieldKey: 'poNo',
+      label: 'PO',
       validateParentImport: () => 'Duplicate parent',
     }
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ config: cfg({ parentImport }) })),
     )
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleImportParentRecord([{ id: 'po-1' }]) })
+    await act(async () => {
+      await result.current.handleImportParentRecord([{ id: 'po-1' }])
+    })
     expect(result.current.parentImporting).toBe(false)
   })
 
   it('is no-op when no parentImport config', async () => {
     const { result } = renderHook(() => useModuleEditorWorkspace(props()))
     await vi.waitFor(() => expect(result.current.primaryNoLoading).toBe(false))
-    await act(async () => { await result.current.handleImportParentRecord([{ id: 'x' }]) })
+    await act(async () => {
+      await result.current.handleImportParentRecord([{ id: 'x' }])
+    })
     expect(result.current.parentImporting).toBe(false)
   })
 })

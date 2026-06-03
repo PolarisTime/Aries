@@ -37,7 +37,9 @@ describe('zh-CN/system.json', () => {
   it('has no empty string values in leaf nodes', () => {
     const leaves = getLeaves(system as Record<string, unknown>)
     for (const path of leaves) {
-      const val = path.split('.').reduce((o: unknown, k) => (o as Record<string, unknown>)?.[k], system)
+      const val = path
+        .split('.')
+        .reduce((o: unknown, k) => (o as Record<string, unknown>)?.[k], system)
       expect(typeof val).toBe('string')
       expect((val as string).trim().length).toBeGreaterThan(0)
     }

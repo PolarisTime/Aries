@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import {
   buildValueOptions,
   getSupplierOptions,
@@ -9,17 +10,19 @@ import {
   compactInvoiceReceiptItemColumns,
   statusMap,
 } from './shared'
-import i18next from 'i18next'
 
 export const invoiceReceiptPageConfig: ModulePageConfig = {
   key: 'invoice-receipt',
   title: i18next.t('modules.pages.invoiceReceipt.invoiceReceipt'),
   kicker: 'Finance',
-  description:
-    i18next.t('modules.pages.invoiceReceipt.invoiceReceiptDesc'),
+  description: i18next.t('modules.pages.invoiceReceipt.invoiceReceiptDesc'),
   primaryNoKey: 'receiveNo',
   actions: [
-    { key: 'create_invoice_receipt', label: i18next.t('modules.pages.invoiceReceipt.createInvoiceReceipt'), type: 'primary' },
+    {
+      key: 'create_invoice_receipt',
+      label: i18next.t('modules.pages.invoiceReceipt.createInvoiceReceipt'),
+      type: 'primary',
+    },
   ],
   filters: [
     {
@@ -34,20 +37,49 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       type: 'select',
       options: buildValueOptions('草稿', '已收票'),
     },
-    { key: 'invoiceDate', label: i18next.t('modules.pages.invoiceReceipt.invoiceDate'), type: 'dateRange' },
+    {
+      key: 'invoiceDate',
+      label: i18next.t('modules.pages.invoiceReceipt.invoiceDate'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: i18next.t('modules.pages.invoiceReceipt.receiveNo'), dataIndex: 'receiveNo', width: 170 },
+    {
+      title: i18next.t('modules.pages.invoiceReceipt.receiveNo'),
+      dataIndex: 'receiveNo',
+      width: 170,
+    },
     {
       title: i18next.t('modules.pages.invoiceReceipt.relatedPurchaseOrder'),
       dataIndex: 'sourcePurchaseOrderNos',
       width: 180,
     },
-    { title: i18next.t('modules.pages.invoiceReceipt.invoiceNo'), dataIndex: 'invoiceNo', width: 150 },
-    { title: i18next.t('modules.pages.invoiceReceipt.supplier'), dataIndex: 'supplierName', width: 150 },
-    { title: i18next.t('modules.pages.invoiceReceipt.invoiceTitle'), dataIndex: 'invoiceTitle', width: 170 },
-    { title: i18next.t('modules.pages.invoiceReceipt.invoiceDate'), dataIndex: 'invoiceDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.invoiceReceipt.invoiceType'), dataIndex: 'invoiceType', width: 120 },
+    {
+      title: i18next.t('modules.pages.invoiceReceipt.invoiceNo'),
+      dataIndex: 'invoiceNo',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceReceipt.supplier'),
+      dataIndex: 'supplierName',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceReceipt.invoiceTitle'),
+      dataIndex: 'invoiceTitle',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceReceipt.invoiceDate'),
+      dataIndex: 'invoiceDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.invoiceReceipt.invoiceType'),
+      dataIndex: 'invoiceType',
+      width: 120,
+    },
     {
       title: i18next.t('modules.pages.invoiceReceipt.amount'),
       dataIndex: 'amount',
@@ -76,17 +108,54 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
     'taxAmount',
   ],
   detailFields: [
-    { label: i18next.t('modules.pages.invoiceReceipt.receiveNo'), key: 'receiveNo' },
-    { label: i18next.t('modules.pages.invoiceReceipt.relatedPurchaseOrder'), key: 'sourcePurchaseOrderNos' },
-    { label: i18next.t('modules.pages.invoiceReceipt.invoiceNo'), key: 'invoiceNo' },
-    { label: i18next.t('modules.pages.invoiceReceipt.supplier'), key: 'supplierName' },
-    { label: i18next.t('modules.pages.invoiceReceipt.invoiceTitle'), key: 'invoiceTitle' },
-    { label: i18next.t('modules.pages.invoiceReceipt.invoiceDate'), key: 'invoiceDate', type: 'date' },
-    { label: i18next.t('modules.pages.invoiceReceipt.invoiceType'), key: 'invoiceType' },
-    { label: i18next.t('modules.pages.invoiceReceipt.amount'), key: 'amount', type: 'amount' },
-    { label: i18next.t('modules.pages.invoiceReceipt.taxAmount'), key: 'taxAmount', type: 'amount' },
-    { label: i18next.t('modules.pages.invoiceReceipt.status'), key: 'status', type: 'status' },
-    { label: i18next.t('modules.pages.invoiceReceipt.operator'), key: 'operatorName' },
+    {
+      label: i18next.t('modules.pages.invoiceReceipt.receiveNo'),
+      key: 'receiveNo',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceReceipt.relatedPurchaseOrder'),
+      key: 'sourcePurchaseOrderNos',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceReceipt.invoiceNo'),
+      key: 'invoiceNo',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceReceipt.supplier'),
+      key: 'supplierName',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceReceipt.invoiceTitle'),
+      key: 'invoiceTitle',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceReceipt.invoiceDate'),
+      key: 'invoiceDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceReceipt.invoiceType'),
+      key: 'invoiceType',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceReceipt.amount'),
+      key: 'amount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceReceipt.taxAmount'),
+      key: 'taxAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceReceipt.status'),
+      key: 'status',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceReceipt.operator'),
+      key: 'operatorName',
+    },
     { label: i18next.t('modules.pages.invoiceReceipt.remark'), key: 'remark' },
   ],
   formFields: [
@@ -102,7 +171,9 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.invoiceReceipt.relatedPurchaseOrder'),
       type: 'input',
       disabled: true,
-      placeholder: i18next.t('modules.pages.invoiceReceipt.importFromPurchaseOrders'),
+      placeholder: i18next.t(
+        'modules.pages.invoiceReceipt.importFromPurchaseOrders',
+      ),
       row: 1,
     },
     {
@@ -189,14 +260,22 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       required: true,
       row: 3,
     },
-    { key: 'remark', label: i18next.t('modules.pages.invoiceReceipt.remark'), type: 'textarea', row: 4, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.invoiceReceipt.remark'),
+      type: 'textarea',
+      row: 4,
+      fullRow: true,
+    },
   ],
   parentImport: {
     parentModuleKey: 'purchase-order',
     label: i18next.t('modules.pages.invoiceReceipt.parentPurchaseOrder'),
     parentFieldKey: 'sourcePurchaseOrderNos',
     parentDisplayFieldKey: 'orderNo',
-    buttonText: i18next.t('modules.pages.invoiceReceipt.importPurchaseOrderItems'),
+    buttonText: i18next.t(
+      'modules.pages.invoiceReceipt.importPurchaseOrderItems',
+    ),
     mapParentToDraft: (parentRecord) => ({
       supplierName: parentRecord.supplierName || '',
       invoiceTitle: parentRecord.supplierName || '',

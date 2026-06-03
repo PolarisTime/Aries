@@ -17,7 +17,7 @@ vi.mock('@/utils/type-narrowing', () => ({
   asString: (v: unknown) => String(v ?? ''),
 }))
 
-import { renderHook, act } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 
 describe('useBusinessGridEditor', () => {

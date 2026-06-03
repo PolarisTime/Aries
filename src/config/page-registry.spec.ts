@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  getPageRoutePath,
   getPageDefinition,
+  getPageRoutePath,
   getSearchableModuleKeys,
 } from './page-registry'
 

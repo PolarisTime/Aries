@@ -7,10 +7,12 @@
       "!!**/coverage",
       "!!**/playwright-report",
       "!!**/test-results",
+      "!!**/coverage-report",
+      "!!**/.playwright",
       "!!**/src/components.d.ts",
       "!!**/.git",
       "!!**/node_modules",
-      "!!debug-height-chain.js"
+      "!!**/debug-height-chain.js"
     ]
   },
   "formatter": {
@@ -54,11 +56,37 @@
   },
   "overrides": [
     {
-      "includes": ["src/config/antd-locale.ts"],
+      "includes": [
+        "src/config/antd-locale.ts",
+        "src/config/antd-locale.spec.ts"
+      ],
       "linter": {
         "rules": {
           "suspicious": {
             "noTemplateCurlyInString": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.spec.ts", "**/*.spec.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off",
+            "noArrayIndexKey": "off"
+          },
+          "complexity": {
+            "noBannedTypes": "off"
+          },
+          "correctness": {
+            "noUnusedFunctionParameters": "off",
+            "noUnusedVariables": "off",
+            "noPrecisionLoss": "off"
+          },
+          "a11y": {
+            "useButtonType": "off",
+            "useAltText": "off"
           }
         }
       }

@@ -8,14 +8,14 @@ import Spin from 'antd/es/spin'
 import { useTranslation } from 'react-i18next'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
+import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import type {
   ModuleLineItem,
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 import { padLabel } from '@/utils/label-utils'
-import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
+import { asString } from '@/utils/type-narrowing'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { PieceWeightPopover } from './PieceWeightPopover'
@@ -46,32 +46,37 @@ export function ModuleRecordDetailOverlay({
     config,
   })
   const detailItemColumns = config.detailItemColumns || config.itemColumns || []
-  const detailTableColumns: TableColumnsType<ModuleLineItem> = detailItemColumns.map((column) => ({
-        title: column.title,
-        dataIndex: column.dataIndex,
-        key: column.dataIndex,
-        width: column.width,
-        align: column.align,
-        render:
-          column.dataIndex === 'weightTon'
-            ? (value: unknown, record: ModuleLineItem) => {
-                const lookupSource = resolvePieceWeightLookupSource(
-                  config.key,
-                  record,
-                )
-                return (
+  const detailTableColumns: TableColumnsType<ModuleLineItem> =
+    detailItemColumns.map((column) => ({
+      title: column.title,
+      dataIndex: column.dataIndex,
+      key: column.dataIndex,
+      width: column.width,
+      align: column.align,
+      render:
+        column.dataIndex === 'weightTon'
+          ? (value: unknown, record: ModuleLineItem) => {
+              const lookupSource = resolvePieceWeightLookupSource(
+                config.key,
+                record,
+              )
+              return (
                 <PieceWeightPopover
                   itemId={record.id}
                   weightTon={asString(value)}
-                  category={typeof record.category === 'string' ? record.category : undefined}
+                  category={
+                    typeof record.category === 'string'
+                      ? record.category
+                      : undefined
+                  }
                   inboundItemId={lookupSource.inboundItemId}
                   purchaseOrderItemId={lookupSource.purchaseOrderItemId}
                   salesOrderItemId={lookupSource.salesOrderItemId}
                 />
-                )
-              }
-            : (value: unknown) => formatCellValue(value, column.type),
-      }))
+              )
+            }
+          : (value: unknown) => formatCellValue(value, column.type),
+    }))
   const detailFields = config.detailFields || []
   const colSpan = Math.max(
     6,
@@ -82,7 +87,9 @@ export function ModuleRecordDetailOverlay({
     <WorkspaceOverlay
       open={open}
       title={
-        record ? `${config.title}${t('modules.detail.titleSuffix')} - ${getPrimaryNo(record)}` : t('modules.detail.recordDetail')
+        record
+          ? `${config.title}${t('modules.detail.titleSuffix')} - ${getPrimaryNo(record)}`
+          : t('modules.detail.recordDetail')
       }
       onClose={onClose}
     >

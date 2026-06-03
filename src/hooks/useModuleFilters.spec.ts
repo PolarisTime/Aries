@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useModuleFilters } from './useModuleFilters'
@@ -28,13 +28,16 @@ describe('useModuleFilters', () => {
       result.current.updateFilter('status', 'pending')
       result.current.updateFilter('keyword', 'test')
     })
-    expect(result.current.filters).toEqual({ status: 'pending', keyword: 'test' })
+    expect(result.current.filters).toEqual({
+      status: 'pending',
+      keyword: 'test',
+    })
   })
 
   it('submits filters and resets page to 1', () => {
     const setCurrentPage = vi.fn()
     const { result } = renderHook(() => useModuleFilters({ setCurrentPage }))
-    
+
     act(() => {
       result.current.updateFilter('status', 'pending')
     })
@@ -49,7 +52,7 @@ describe('useModuleFilters', () => {
   it('resets filters and page', () => {
     const setCurrentPage = vi.fn()
     const { result } = renderHook(() => useModuleFilters({ setCurrentPage }))
-    
+
     act(() => {
       result.current.updateFilter('status', 'pending')
       result.current.updateFilter('keyword', 'test')
@@ -84,7 +87,7 @@ describe('useModuleFilters', () => {
 
   it('creates a copy of filters when submitting', () => {
     const { result } = renderHook(() => useModuleFilters(defaultProps))
-    
+
     act(() => {
       result.current.updateFilter('status', 'pending')
     })

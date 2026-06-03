@@ -8,7 +8,9 @@ describe('page-registry-dashboard', () => {
   })
 
   it('defines dashboard page', () => {
-    const dashboard = dashboardPageDefinitions.find((d) => d.key === 'dashboard')
+    const dashboard = dashboardPageDefinitions.find(
+      (d) => d.key === 'dashboard',
+    )
     expect(dashboard).toBeDefined()
     expect(dashboard!.title).toBe('工作台')
     expect(dashboard!.view).toBe('dashboard')

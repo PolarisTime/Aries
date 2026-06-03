@@ -68,7 +68,11 @@ export function GeneralSettingsTableCard({
         </Button>
       ),
     },
-    { dataIndex: 'settingName', title: t('system.generalSettingsTable.colParamName'), width: 240 },
+    {
+      dataIndex: 'settingName',
+      title: t('system.generalSettingsTable.colParamName'),
+      width: 240,
+    },
     {
       title: t('system.generalSettingsTable.colCurrentValue'),
       key: 'value',
@@ -76,10 +80,18 @@ export function GeneralSettingsTableCard({
       align: 'right',
       render: (_value, record) => formatSettingValue(record),
     },
-    { dataIndex: 'remark', title: t('system.generalSettingsTable.colRemark'), width: 420 },
+    {
+      dataIndex: 'remark',
+      title: t('system.generalSettingsTable.colRemark'),
+      width: 420,
+    },
   ]
   const switchColumns: TableProps<ModuleRecord>['columns'] = [
-    { dataIndex: 'settingName', title: t('system.generalSettingsTable.colSwitchName'), width: 240 },
+    {
+      dataIndex: 'settingName',
+      title: t('system.generalSettingsTable.colSwitchName'),
+      width: 240,
+    },
     {
       title: t('system.generalSettingsTable.colStatusAction'),
       key: 'state',
@@ -94,19 +106,27 @@ export function GeneralSettingsTableCard({
               loading={toggling}
               disabled={!canEdit}
               checkedChildren={t('system.generalSettingsTable.switchEnabled')}
-              unCheckedChildren={t('system.generalSettingsTable.switchDisabled')}
+              unCheckedChildren={t(
+                'system.generalSettingsTable.switchDisabled',
+              )}
               onChange={() => onToggle(record)}
             />
             <span
               className={`text-xs ${enabled ? 'text-[var(--theme-success)]' : 'text-[var(--theme-disabled)]'}`}
             >
-              {enabled ? t('system.generalSettingsTable.enabled') : t('system.generalSettingsTable.disabled')}
+              {enabled
+                ? t('system.generalSettingsTable.enabled')
+                : t('system.generalSettingsTable.disabled')}
             </span>
           </Space>
         )
       },
     },
-    { dataIndex: 'remark', title: t('system.generalSettingsTable.colRemark'), width: 420 },
+    {
+      dataIndex: 'remark',
+      title: t('system.generalSettingsTable.colRemark'),
+      width: 420,
+    },
   ]
   return (
     <Card
@@ -114,7 +134,9 @@ export function GeneralSettingsTableCard({
       extra={
         <SystemTableToolbar
           keyword={keyword}
-          keywordPlaceholder={t('system.generalSettingsTable.searchPlaceholder')}
+          keywordPlaceholder={t(
+            'system.generalSettingsTable.searchPlaceholder',
+          )}
           keywordWidth={280}
           onKeywordChange={onKeywordChange}
           onRefresh={onRefresh}
@@ -132,10 +154,16 @@ export function GeneralSettingsTableCard({
     >
       <Row gutter={[16, 16]} className="mb-4">
         <Col xs={24} sm={8}>
-          <Statistic title={t('system.generalSettingsTable.basicParams')} value={basicSettingRows.length} />
+          <Statistic
+            title={t('system.generalSettingsTable.basicParams')}
+            value={basicSettingRows.length}
+          />
         </Col>
         <Col xs={24} sm={8}>
-          <Statistic title={t('system.generalSettingsTable.systemSwitches')} value={switchRows.length} />
+          <Statistic
+            title={t('system.generalSettingsTable.systemSwitches')}
+            value={switchRows.length}
+          />
         </Col>
         <Col xs={24} sm={8}>
           <Statistic
@@ -147,7 +175,9 @@ export function GeneralSettingsTableCard({
           />
         </Col>
       </Row>
-      <Typography.Title level={5}>{t('system.generalSettingsTable.basicParamsTitle')}</Typography.Title>
+      <Typography.Title level={5}>
+        {t('system.generalSettingsTable.basicParamsTitle')}
+      </Typography.Title>
       <Table
         rowKey="id"
         columns={basicSettingColumns}
@@ -158,7 +188,9 @@ export function GeneralSettingsTableCard({
         scroll={{ x: 890 }}
         className="mb-6"
       />
-      <Typography.Title level={5}>{t('system.generalSettingsTable.systemSwitchesTitle')}</Typography.Title>
+      <Typography.Title level={5}>
+        {t('system.generalSettingsTable.systemSwitchesTitle')}
+      </Typography.Title>
       <Table
         rowKey="id"
         columns={switchColumns}

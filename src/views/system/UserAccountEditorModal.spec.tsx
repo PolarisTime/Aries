@@ -8,7 +8,15 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/components/FormModal', () => ({
-  FormModal: ({ children, title, open }: { children: React.ReactNode; title: string; open: boolean }) =>
+  FormModal: ({
+    children,
+    title,
+    open,
+  }: {
+    children: React.ReactNode
+    title: string
+    open: boolean
+  }) =>
     open ? (
       <div data-testid="form-modal">
         <div>{title}</div>
@@ -18,8 +26,16 @@ vi.mock('@/components/FormModal', () => ({
 }))
 
 vi.mock('antd/es/form', () => {
-  const Form = ({ children }: { children: React.ReactNode }) => <div>{children}</div>
-  Form.Item = ({ children, label }: { children: React.ReactNode; label: string }) => (
+  const Form = ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  )
+  Form.Item = ({
+    children,
+    label,
+  }: {
+    children: React.ReactNode
+    label: string
+  }) => (
     <div>
       {label && <span>{label}</span>}
       {children}
@@ -30,7 +46,9 @@ vi.mock('antd/es/form', () => {
 
 vi.mock('antd/es/input', () => {
   const Input = (props: Record<string, unknown>) => <input {...props} />
-  Input.Password = (props: Record<string, unknown>) => <input type="password" {...props} />
+  Input.Password = (props: Record<string, unknown>) => (
+    <input type="password" {...props} />
+  )
   Input.TextArea = (props: Record<string, unknown>) => <textarea {...props} />
   return { default: Input }
 })
@@ -40,29 +58,41 @@ vi.mock('antd/es/select', () => ({
 }))
 
 vi.mock('antd/es/spin', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }))
 
 vi.mock('antd/es/tag', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
+  ),
 }))
 
 vi.mock('antd/es/typography', () => ({
   default: {
-    Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    Text: ({ children }: { children: React.ReactNode }) => (
+      <span>{children}</span>
+    ),
   },
 }))
 
 vi.mock('antd/es/space', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }))
 
 vi.mock('antd/es/row', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }))
 
 vi.mock('antd/es/col', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }))
 
 vi.mock('@/constants/module-options', () => ({
@@ -134,77 +164,107 @@ describe('UserAccountEditorModal', () => {
 
   it('renders create title in create mode', () => {
     render(<UserAccountEditorModal {...defaultProps} mode="create" />)
-    expect(screen.getByText('system.userAccountEditor.createTitle')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.createTitle'),
+    ).toBeInTheDocument()
   })
 
   it('renders edit title in edit mode', () => {
     render(<UserAccountEditorModal {...defaultProps} mode="edit" />)
-    expect(screen.getByText('system.userAccountEditor.editTitle')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.editTitle'),
+    ).toBeInTheDocument()
   })
 
   it('renders account info section', () => {
     render(<UserAccountEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountEditor.accountInfo')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.accountInfo'),
+    ).toBeInTheDocument()
   })
 
   it('renders login name field', () => {
     render(<UserAccountEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountEditor.loginName')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.loginName'),
+    ).toBeInTheDocument()
   })
 
   it('renders user name field', () => {
     render(<UserAccountEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountEditor.userName')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.userName'),
+    ).toBeInTheDocument()
   })
 
   it('renders mobile field', () => {
     render(<UserAccountEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountEditor.mobile')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.mobile'),
+    ).toBeInTheDocument()
   })
 
   it('renders permission config section', () => {
     render(<UserAccountEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountEditor.permConfig')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.permConfig'),
+    ).toBeInTheDocument()
   })
 
   it('renders roles field', () => {
     render(<UserAccountEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountEditor.roles')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.roles'),
+    ).toBeInTheDocument()
   })
 
   it('renders supplement info section', () => {
     render(<UserAccountEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountEditor.supplementInfo')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.supplementInfo'),
+    ).toBeInTheDocument()
   })
 
   it('renders remark field', () => {
     render(<UserAccountEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountEditor.remark')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.remark'),
+    ).toBeInTheDocument()
   })
 
   it('renders password field in create mode', () => {
     render(<UserAccountEditorModal {...defaultProps} mode="create" />)
-    expect(screen.getByText('system.userAccountEditor.initialPassword')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.initialPassword'),
+    ).toBeInTheDocument()
   })
 
   it('does not render password field in edit mode', () => {
     render(<UserAccountEditorModal {...defaultProps} mode="edit" />)
-    expect(screen.queryByText('system.userAccountEditor.initialPassword')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.userAccountEditor.initialPassword'),
+    ).not.toBeInTheDocument()
   })
 
   it('renders department options', () => {
     render(<UserAccountEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountEditor.department')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.department'),
+    ).toBeInTheDocument()
   })
 
   it('renders data scope field', () => {
     render(<UserAccountEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountEditor.roleDataScope')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.roleDataScope'),
+    ).toBeInTheDocument()
   })
 
   it('renders permission summary field', () => {
     render(<UserAccountEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountEditor.permSummary')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountEditor.permSummary'),
+    ).toBeInTheDocument()
   })
 
   it('does not render when closed', () => {

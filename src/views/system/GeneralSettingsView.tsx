@@ -3,9 +3,9 @@ import Form from 'antd/es/form'
 import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listSystemSettings, saveSystemSetting } from '@/api/system-settings'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
-import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
@@ -130,10 +130,12 @@ export function GeneralSettingsView() {
     setState({ toggling: true })
     const nextStatus = asString(record.status) === '正常' ? '禁用' : '正常'
     try {
-      await saveSystemSetting(buildSystemSettingPayload(record, {
-        sampleNo: record.sampleNo || 'ON',
-        status: nextStatus,
-      }))
+      await saveSystemSetting(
+        buildSystemSettingPayload(record, {
+          sampleNo: record.sampleNo || 'ON',
+          status: nextStatus,
+        }),
+      )
       message.success(
         nextStatus === '正常'
           ? t('system.generalSettings.enabled')
@@ -166,7 +168,9 @@ export function GeneralSettingsView() {
           isDetailedOperationLogSetting(editingRecord) &&
           selectedActions.length === 0
         ) {
-          message.warning(t('system.generalSettingsEditor.selectActionRequired'))
+          message.warning(
+            t('system.generalSettingsEditor.selectActionRequired'),
+          )
           setState({ saving: false })
           return
         }
@@ -184,18 +188,20 @@ export function GeneralSettingsView() {
           sampleNo = selectedActions.join(',')
         }
       }
-      await saveSystemSetting(buildSystemSettingPayload(editingRecord, {
-        settingCode: values.settingCode,
-        settingName: values.settingName,
-        billName: values.billName,
-        remark: values.remark,
-        status: isToggle
-          ? values.enabled
-            ? '正常'
-            : '禁用'
-          : asString(editingRecord.status) || '正常',
-        sampleNo: sampleNo || 'ON',
-      }))
+      await saveSystemSetting(
+        buildSystemSettingPayload(editingRecord, {
+          settingCode: values.settingCode,
+          settingName: values.settingName,
+          billName: values.billName,
+          remark: values.remark,
+          status: isToggle
+            ? values.enabled
+              ? '正常'
+              : '禁用'
+            : asString(editingRecord.status) || '正常',
+          sampleNo: sampleNo || 'ON',
+        }),
+      )
       message.success(t('common.saveSuccess'))
       refresh()
       setState({ editorOpen: false, saving: false })

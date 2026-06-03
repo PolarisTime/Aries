@@ -5,9 +5,11 @@ import { useModuleRecordActions } from './useModuleRecordActions'
 
 describe('useModuleRecordActions', () => {
   beforeEach(() => {
-    usePermissionStore.getState().setPermissions([
-      { resource: 'sales-order', actions: ['read', 'update', 'audit'] },
-    ])
+    usePermissionStore
+      .getState()
+      .setPermissions([
+        { resource: 'sales-order', actions: ['read', 'update', 'audit'] },
+      ])
   })
 
   it('keeps audit and reverse audit out of row actions', () => {
@@ -73,9 +75,9 @@ describe('useModuleRecordActions', () => {
   })
 
   it('returns only view action when user lacks update permission', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: 'sales-order', actions: ['read'] },
-    ])
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: 'sales-order', actions: ['read'] }])
 
     const { result } = renderHook(() =>
       useModuleRecordActions({
@@ -93,9 +95,9 @@ describe('useModuleRecordActions', () => {
   })
 
   it('returns only detail when user has read-only and onDetail provided', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: 'sales-order', actions: ['read'] },
-    ])
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: 'sales-order', actions: ['read'] }])
 
     const { result } = renderHook(() =>
       useModuleRecordActions({
@@ -147,9 +149,9 @@ describe('useModuleRecordActions', () => {
   })
 
   it('uses resourceKey when provided', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: 'order', actions: ['read', 'update'] },
-    ])
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: 'order', actions: ['read', 'update'] }])
 
     const { result } = renderHook(() =>
       useModuleRecordActions({
@@ -168,9 +170,9 @@ describe('useModuleRecordActions', () => {
   })
 
   it('returns only attach action when user has read but not update', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: 'sales-order', actions: ['read'] },
-    ])
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: 'sales-order', actions: ['read'] }])
 
     const { result } = renderHook(() =>
       useModuleRecordActions({
@@ -206,9 +208,9 @@ describe('useModuleRecordActions', () => {
   })
 
   it('isReadOnly returns only detail when onDetail is provided', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: 'sales-order', actions: ['read'] },
-    ])
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: 'sales-order', actions: ['read'] }])
 
     const { result } = renderHook(() =>
       useModuleRecordActions({

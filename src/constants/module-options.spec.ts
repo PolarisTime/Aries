@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
-  enabledStatusValues,
+  buildValueOptions,
   enabledStatusOptions,
-  statementStatusOptions,
-  userAccountDataScopeOptions,
+  enabledStatusValues,
   roleDataScopeValues,
   roleTypeValues,
-  buildValueOptions,
+  statementStatusOptions,
+  userAccountDataScopeOptions,
 } from './module-options'
 
 describe('module-options constants', () => {
@@ -42,13 +42,23 @@ describe('module-options constants', () => {
 
   describe('roleDataScopeValues', () => {
     it('equals userAccountDataScopeValues', () => {
-      expect(roleDataScopeValues).toEqual(['全部数据', '全部', '本部门', '本人'])
+      expect(roleDataScopeValues).toEqual([
+        '全部数据',
+        '全部',
+        '本部门',
+        '本人',
+      ])
     })
   })
 
   describe('roleTypeValues', () => {
     it('has four role types', () => {
-      expect(roleTypeValues).toEqual(['平台角色', '系统角色', '业务角色', '财务角色'])
+      expect(roleTypeValues).toEqual([
+        '平台角色',
+        '系统角色',
+        '业务角色',
+        '财务角色',
+      ])
     })
   })
 

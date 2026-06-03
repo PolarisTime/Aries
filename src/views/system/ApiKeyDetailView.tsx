@@ -132,10 +132,14 @@ export function ApiKeyDetailView() {
               <Descriptions.Item label={t('system.apiKeyDetail.usageScope')}>
                 {record.usageScope}
               </Descriptions.Item>
-              <Descriptions.Item label={t('system.apiKeyDetail.allowedResources')}>
+              <Descriptions.Item
+                label={t('system.apiKeyDetail.allowedResources')}
+              >
                 {allowedResourceText}
               </Descriptions.Item>
-              <Descriptions.Item label={t('system.apiKeyDetail.allowedActions')}>
+              <Descriptions.Item
+                label={t('system.apiKeyDetail.allowedActions')}
+              >
                 {allowedActionText}
               </Descriptions.Item>
               <Descriptions.Item label={t('system.apiKeyDetail.ownerUser')}>

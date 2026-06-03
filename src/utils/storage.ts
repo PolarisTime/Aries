@@ -10,7 +10,6 @@ export interface PersonalSettings {
   themeMode?: ThemeMode
 }
 
-
 export type AuthPersistenceMode = 'local' | 'session'
 
 let accessToken = ''
@@ -110,7 +109,6 @@ function readStoredToken() {
 export function getToken() {
   return accessToken || readStoredToken()
 }
-
 
 export function clearToken() {
   accessToken = ''
@@ -239,11 +237,6 @@ export function setListColumnSettings(
     JSON.stringify(settings),
   )
 }
-
-
-
-
-
 
 export function getTokenExpiresAt(): number | null {
   if (typeof window === 'undefined') return null

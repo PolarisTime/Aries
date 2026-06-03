@@ -14,7 +14,15 @@ vi.mock('@tanstack/react-query', () => ({
 }))
 
 vi.mock('@/components/FormModal', () => ({
-  FormModal: ({ children, title, open }: { children: React.ReactNode; title: string; open: boolean }) =>
+  FormModal: ({
+    children,
+    title,
+    open,
+  }: {
+    children: React.ReactNode
+    title: string
+    open: boolean
+  }) =>
     open ? (
       <div data-testid="form-modal">
         <div>{title}</div>
@@ -24,8 +32,16 @@ vi.mock('@/components/FormModal', () => ({
 }))
 
 vi.mock('antd/es/form', () => {
-  const Form = ({ children }: { children: React.ReactNode }) => <div>{children}</div>
-  Form.Item = ({ children, label }: { children: React.ReactNode; label: string }) => (
+  const Form = ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  )
+  Form.Item = ({
+    children,
+    label,
+  }: {
+    children: React.ReactNode
+    label: string
+  }) => (
     <div>
       {label && <span>{label}</span>}
       {children}
@@ -46,7 +62,9 @@ vi.mock('antd/es/select', () => ({
 
 vi.mock('antd/es/typography', () => ({
   default: {
-    Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    Text: ({ children }: { children: React.ReactNode }) => (
+      <span>{children}</span>
+    ),
   },
 }))
 
@@ -101,7 +119,9 @@ describe('RoleActionEditorModal', () => {
         onClose={vi.fn()}
       />,
     )
-    expect(screen.getByText('system.roleEditor.createTitle')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.roleEditor.createTitle'),
+    ).toBeInTheDocument()
   })
 
   it('renders edit title when editing role', () => {

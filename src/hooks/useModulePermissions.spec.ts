@@ -1,14 +1,16 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { canMock } = vi.hoisted(() => ({
   canMock: vi.fn(),
 }))
 
 vi.mock('@/stores/permissionStore', () => ({
-  usePermissionStore: vi.fn((selector: (state: any) => any) => selector({
-    can: canMock,
-  })),
+  usePermissionStore: vi.fn((selector: (state: any) => any) =>
+    selector({
+      can: canMock,
+    }),
+  ),
 }))
 
 import { useModulePermissions } from './useModulePermissions'
@@ -21,7 +23,7 @@ describe('useModulePermissions', () => {
 
   it('returns permission flags', () => {
     const { result } = renderHook(() =>
-      useModulePermissions({ moduleKey: 'sales-order' })
+      useModulePermissions({ moduleKey: 'sales-order' }),
     )
 
     expect(result.current.canViewRecords).toBeDefined()
@@ -47,7 +49,7 @@ describe('useModulePermissions', () => {
 
   it('uses resourceKey when provided', () => {
     renderHook(() =>
-      useModulePermissions({ moduleKey: 'sales-order', resourceKey: 'order' })
+      useModulePermissions({ moduleKey: 'sales-order', resourceKey: 'order' }),
     )
 
     expect(canMock).toHaveBeenCalledWith('order', 'read')
@@ -55,12 +57,12 @@ describe('useModulePermissions', () => {
   })
 
   it('returns true for permissions user has', () => {
-    canMock.mockImplementation((resource: string, action: string) => {
+    canMock.mockImplementation((_resource: string, action: string) => {
       return action === 'read' || action === 'create'
     })
 
     const { result } = renderHook(() =>
-      useModulePermissions({ moduleKey: 'sales-order' })
+      useModulePermissions({ moduleKey: 'sales-order' }),
     )
 
     expect(result.current.canViewRecords).toBe(true)
@@ -73,7 +75,7 @@ describe('useModulePermissions', () => {
     canMock.mockReturnValue(false)
 
     const { result } = renderHook(() =>
-      useModulePermissions({ moduleKey: 'sales-order' })
+      useModulePermissions({ moduleKey: 'sales-order' }),
     )
 
     expect(result.current.canViewRecords).toBe(false)
@@ -89,7 +91,7 @@ describe('useModulePermissions', () => {
     canMock.mockReturnValue(true)
 
     const { result } = renderHook(() =>
-      useModulePermissions({ moduleKey: 'sales-order' })
+      useModulePermissions({ moduleKey: 'sales-order' }),
     )
 
     expect(result.current.canViewRecords).toBe(true)
@@ -103,7 +105,7 @@ describe('useModulePermissions', () => {
 
   it('exposes can function', () => {
     const { result } = renderHook(() =>
-      useModulePermissions({ moduleKey: 'sales-order' })
+      useModulePermissions({ moduleKey: 'sales-order' }),
     )
 
     expect(result.current.can).toBe(canMock)
@@ -111,7 +113,7 @@ describe('useModulePermissions', () => {
 
   it('exposes resolvedResource', () => {
     const { result } = renderHook(() =>
-      useModulePermissions({ moduleKey: 'sales-order', resourceKey: 'order' })
+      useModulePermissions({ moduleKey: 'sales-order', resourceKey: 'order' }),
     )
 
     expect(result.current.resolvedResource).toBe('order')
@@ -119,7 +121,7 @@ describe('useModulePermissions', () => {
 
   it('uses moduleKey as resolvedResource when resourceKey is not provided', () => {
     const { result } = renderHook(() =>
-      useModulePermissions({ moduleKey: 'sales-order' })
+      useModulePermissions({ moduleKey: 'sales-order' }),
     )
 
     expect(result.current.resolvedResource).toBe('sales-order')

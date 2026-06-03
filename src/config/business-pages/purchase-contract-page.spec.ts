@@ -21,7 +21,9 @@ describe('purchaseContractsPageConfig', () => {
 
   it('has filters', () => {
     expect(purchaseContractsPageConfig.filters).toBeDefined()
-    expect(purchaseContractsPageConfig.filters!.length).toBeGreaterThanOrEqual(4)
+    expect(purchaseContractsPageConfig.filters!.length).toBeGreaterThanOrEqual(
+      4,
+    )
   })
 
   it('has columns', () => {
@@ -35,7 +37,9 @@ describe('purchaseContractsPageConfig', () => {
 
   it('has parentImport config', () => {
     expect(purchaseContractsPageConfig.parentImport).toBeDefined()
-    expect(purchaseContractsPageConfig.parentImport!.parentModuleKey).toBe('purchase-order')
+    expect(purchaseContractsPageConfig.parentImport!.parentModuleKey).toBe(
+      'purchase-order',
+    )
   })
 
   it('has itemColumns', () => {

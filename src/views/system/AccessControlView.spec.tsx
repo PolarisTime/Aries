@@ -40,23 +40,31 @@ describe('AccessControlView', () => {
 
   it('renders tabs when user has permissions', () => {
     render(<AccessControlView />)
-    expect(screen.getByText('system.accessControl.tabUsers')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.accessControl.tabUsers'),
+    ).toBeInTheDocument()
   })
 
   it('renders roles tab when user has role permission', () => {
     render(<AccessControlView />)
-    expect(screen.getByText('system.accessControl.tabRoles')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.accessControl.tabRoles'),
+    ).toBeInTheDocument()
   })
 
   it('renders permissions tab when user has permission', () => {
     render(<AccessControlView />)
-    expect(screen.getByText('system.accessControl.tabPermissions')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.accessControl.tabPermissions'),
+    ).toBeInTheDocument()
   })
 
   it('renders empty when user has no permissions', () => {
     mockCan.mockReturnValue(false)
     render(<AccessControlView />)
-    expect(screen.getByText('system.accessControl.noModules')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.accessControl.noModules'),
+    ).toBeInTheDocument()
   })
 
   it('hides tabs user lacks permission for', () => {
@@ -64,8 +72,14 @@ describe('AccessControlView', () => {
       return resource === 'user-account' && action === 'read'
     })
     render(<AccessControlView />)
-    expect(screen.getByText('system.accessControl.tabUsers')).toBeInTheDocument()
-    expect(screen.queryByText('system.accessControl.tabRoles')).not.toBeInTheDocument()
-    expect(screen.queryByText('system.accessControl.tabPermissions')).not.toBeInTheDocument()
+    expect(
+      screen.getByText('system.accessControl.tabUsers'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('system.accessControl.tabRoles'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.accessControl.tabPermissions'),
+    ).not.toBeInTheDocument()
   })
 })

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockOnLCP = vi.fn()
 const mockOnCLS = vi.fn()
@@ -26,9 +26,15 @@ describe('web-vitals', () => {
     it('registers LCP, CLS, and INP listeners', async () => {
       const { initWebVitals } = await import('./web-vitals')
       initWebVitals()
-      expect(mockOnLCP).toHaveBeenCalledWith(expect.any(Function), { reportAllChanges: false })
-      expect(mockOnCLS).toHaveBeenCalledWith(expect.any(Function), { reportAllChanges: false })
-      expect(mockOnINP).toHaveBeenCalledWith(expect.any(Function), { reportAllChanges: false })
+      expect(mockOnLCP).toHaveBeenCalledWith(expect.any(Function), {
+        reportAllChanges: false,
+      })
+      expect(mockOnCLS).toHaveBeenCalledWith(expect.any(Function), {
+        reportAllChanges: false,
+      })
+      expect(mockOnINP).toHaveBeenCalledWith(expect.any(Function), {
+        reportAllChanges: false,
+      })
     })
 
     it('reports good metrics with console.info', async () => {
@@ -39,7 +45,7 @@ describe('web-vitals', () => {
       expect(console.info).toHaveBeenCalledWith(
         '[Web Vitals] LCP',
         '1000.0ms',
-        { id: 'test-id', rating: 'good' }
+        { id: 'test-id', rating: 'good' },
       )
     })
 
@@ -47,12 +53,16 @@ describe('web-vitals', () => {
       const { initWebVitals } = await import('./web-vitals')
       initWebVitals()
       const reportFn = mockOnCLS.mock.calls[0][0]
-      reportFn({ name: 'CLS', value: 0.2, rating: 'needs-improvement', id: 'test-id' })
-      expect(console.warn).toHaveBeenCalledWith(
-        '[Web Vitals] CLS',
-        '0.2ms',
-        { id: 'test-id', rating: 'needs-improvement' }
-      )
+      reportFn({
+        name: 'CLS',
+        value: 0.2,
+        rating: 'needs-improvement',
+        id: 'test-id',
+      })
+      expect(console.warn).toHaveBeenCalledWith('[Web Vitals] CLS', '0.2ms', {
+        id: 'test-id',
+        rating: 'needs-improvement',
+      })
     })
 
     it('reports poor metrics with console.error', async () => {
@@ -63,7 +73,7 @@ describe('web-vitals', () => {
       expect(console.error).toHaveBeenCalledWith(
         '[Web Vitals] INP',
         '500.0ms',
-        { id: 'test-id', rating: 'poor' }
+        { id: 'test-id', rating: 'poor' },
       )
     })
   })

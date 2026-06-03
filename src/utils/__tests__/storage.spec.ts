@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { STORAGE_KEYS } from '@/constants/storage'
 import {
+  clearStoredUser,
   clearToken,
   clearTokenExpiresAt,
-  clearStoredUser,
   getAuthPersistenceMode,
   getListColumnSettings,
   getPersonalSettings,
@@ -14,7 +15,6 @@ import {
   setPersonalSettings,
   setStoredUser,
 } from '../storage'
-import { STORAGE_KEYS } from '@/constants/storage'
 
 const mockUser = { id: 1, loginName: 'admin', userName: 'Admin' }
 const mockSettings = { fontSize: 14, layoutMode: 'sider' as const }

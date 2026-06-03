@@ -4,9 +4,8 @@ import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import type { ColumnDef, RowSelectionState } from '@/hooks/useDataTable'
-import { ACTION_COLUMN_WIDTH } from '@/hooks/useGridColumns'
 import { useDataTable } from '@/hooks/useDataTable'
-import { useGridColumns } from '@/hooks/useGridColumns'
+import { ACTION_COLUMN_WIDTH, useGridColumns } from '@/hooks/useGridColumns'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
 interface Props {
@@ -81,9 +80,7 @@ function buildAntdColumns({
             ? () => ({ className: 'sticky-actions-col' })
             : undefined,
         width:
-          columnId === 'actions'
-            ? ACTION_COLUMN_WIDTH
-            : columnDef.meta?.width,
+          columnId === 'actions' ? ACTION_COLUMN_WIDTH : columnDef.meta?.width,
         align: (columnDef.meta?.align ??
           'center') as ColumnType<ModuleRecord>['align'],
         ellipsis: true,

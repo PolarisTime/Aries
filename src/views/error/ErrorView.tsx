@@ -70,7 +70,11 @@ function getErrorStatus(error: unknown): '403' | '500' | 'error' {
   return 'error'
 }
 
-function getErrorMessage(error: unknown, status: string, t: (key: string) => string): string {
+function getErrorMessage(
+  error: unknown,
+  status: string,
+  t: (key: string) => string,
+): string {
   if (status === '403') return t('error.noPermission')
   if (status === '500') return t('error.serverBusy')
   if (error instanceof Error) {

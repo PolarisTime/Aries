@@ -54,18 +54,24 @@ export function useBusinessGridFreightActions({
       width: 720,
       content: (
         <Flex vertical gap={12} className="mt-12">
-          <Typography.Text>{t('hooks.freightActions.documentCount', { count: rows.length })}</Typography.Text>
           <Typography.Text>
-            {t('hooks.freightActions.totalWeight')}{formatCellValue(totalWeight, 'weight')}
+            {t('hooks.freightActions.documentCount', { count: rows.length })}
           </Typography.Text>
           <Typography.Text>
-            {t('hooks.freightActions.totalFreight')}{formatCellValue(totalFreight, 'amount')}
+            {t('hooks.freightActions.totalWeight')}
+            {formatCellValue(totalWeight, 'weight')}
           </Typography.Text>
           <Typography.Text>
-            {t('hooks.freightActions.paidAmount')}{formatCellValue(paidAmount, 'amount')}
+            {t('hooks.freightActions.totalFreight')}
+            {formatCellValue(totalFreight, 'amount')}
           </Typography.Text>
           <Typography.Text>
-            {t('hooks.freightActions.unpaidAmount')}{formatCellValue(unpaidAmount, 'amount')}
+            {t('hooks.freightActions.paidAmount')}
+            {formatCellValue(paidAmount, 'amount')}
+          </Typography.Text>
+          <Typography.Text>
+            {t('hooks.freightActions.unpaidAmount')}
+            {formatCellValue(unpaidAmount, 'amount')}
           </Typography.Text>
         </Flex>
       ),

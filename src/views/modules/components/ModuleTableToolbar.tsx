@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import type { ModuleActionDefinition } from '@/types/module-page'
 
 const EMPTY_TOOLBAR_ACTIONS: never[] = []
+
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 
 interface Props {
@@ -113,8 +114,10 @@ export function ModuleTableToolbar({
           }
           onChange={onPageChange}
           itemRender={(_, type, originalElement) => {
-            if (type === 'prev') return <button type="button">{t('common.prevPage')}</button>
-            if (type === 'next') return <button type="button">{t('common.nextPage')}</button>
+            if (type === 'prev')
+              return <button type="button">{t('common.prevPage')}</button>
+            if (type === 'next')
+              return <button type="button">{t('common.nextPage')}</button>
             return originalElement
           }}
         />

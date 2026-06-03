@@ -38,11 +38,17 @@ export function PersonalSettingsDisplayTab({
   return (
     <div className="personal-setting-panel">
       <div className="personal-setting-row">
-        <span className="personal-setting-label">{t('layouts.settings.systemFont')}</span>
-        <span className="personal-setting-value">{t('layouts.settings.systemFontDefault')}</span>
+        <span className="personal-setting-label">
+          {t('layouts.settings.systemFont')}
+        </span>
+        <span className="personal-setting-value">
+          {t('layouts.settings.systemFontDefault')}
+        </span>
       </div>
       <div className="personal-setting-row">
-        <span className="personal-setting-label">{t('layouts.settings.fontSize')}</span>
+        <span className="personal-setting-label">
+          {t('layouts.settings.fontSize')}
+        </span>
         <Select
           value={fontSize}
           className="w-160"
@@ -55,7 +61,9 @@ export function PersonalSettingsDisplayTab({
         />
       </div>
       <div className="personal-setting-row personal-setting-layout-row">
-        <span className="personal-setting-label">{t('layouts.settings.navLayout')}</span>
+        <span className="personal-setting-label">
+          {t('layouts.settings.navLayout')}
+        </span>
         <Radio.Group
           className="personal-layout-mode-group"
           optionType="button"
@@ -79,7 +87,9 @@ export function PersonalSettingsDisplayTab({
         }
       </div>
       <div className="personal-setting-row">
-        <span className="personal-setting-label">{t('layouts.settings.themeMode')}</span>
+        <span className="personal-setting-label">
+          {t('layouts.settings.themeMode')}
+        </span>
         <Radio.Group
           optionType="button"
           buttonStyle="solid"
@@ -96,7 +106,9 @@ export function PersonalSettingsDisplayTab({
         </Radio.Group>
       </div>
       <div className="personal-setting-actions">
-        <Button onClick={onResetDisplay}>{t('layouts.settings.resetDefault')}</Button>
+        <Button onClick={onResetDisplay}>
+          {t('layouts.settings.resetDefault')}
+        </Button>
         <Button type="primary" onClick={onSaveDisplay}>
           {t('layouts.settings.saveDisplay')}
         </Button>

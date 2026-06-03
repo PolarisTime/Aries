@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveAppIcon, isKnownAppIconKey } from './app-icons'
+import { isKnownAppIconKey, resolveAppIcon } from './app-icons'
 
 describe('app-icons', () => {
   describe('resolveAppIcon', () => {

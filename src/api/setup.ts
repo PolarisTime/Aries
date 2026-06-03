@@ -18,7 +18,6 @@ export async function getInitialSetupStatus() {
   return assertApiSuccess(response, getApiMessage('getInitStatusFailed'))
 }
 
-
 export async function setupInitialAdmin2fa(payload: InitialSetupTotpPayload) {
   const response = await http.post<ApiResponse<InitialSetupTotpResult>>(
     ENDPOINTS.SETUP_ADMIN_2FA,

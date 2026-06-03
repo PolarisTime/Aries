@@ -59,7 +59,9 @@ describe('CompanySettingsHeader', () => {
 
   it('does not render save button when canSave is false', () => {
     render(<CompanySettingsHeader {...defaultProps} canSave={false} />)
-    expect(screen.queryByText('system.companyHeader.save')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.companyHeader.save'),
+    ).not.toBeInTheDocument()
   })
 
   it('calls onSave when save button clicked', () => {

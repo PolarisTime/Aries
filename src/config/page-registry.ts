@@ -19,7 +19,6 @@ export const appPageDefinitions: AppPageDefinition[] = [
   ...systemPageDefinitions,
 ]
 
-
 const appPageDefinitionMap = new Map<string, AppPageDefinition>()
 for (const entry of appPageDefinitions) {
   appPageDefinitionMap.set(entry.key, entry)

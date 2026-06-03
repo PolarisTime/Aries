@@ -1,26 +1,31 @@
+import i18next from 'i18next'
 import {
   customerOptions,
   statementStatusOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from './filter-labels'
 import {
   buildStatementOverview,
   compactBatchCustomerStatementItemColumns,
   statusMap,
 } from './shared'
-import i18next from 'i18next'
-import { asString } from '@/utils/type-narrowing'
 
 export const customerStatementPageConfig: ModulePageConfig = {
   key: 'customer-statement',
   title: i18next.t('modules.pages.customerStatement.customerStatement'),
   kicker: 'Statements',
-  description:
-    i18next.t('modules.pages.customerStatement.customerStatementDesc'),
+  description: i18next.t(
+    'modules.pages.customerStatement.customerStatementDesc',
+  ),
   primaryNoKey: 'statementNo',
   actions: [
-    { key: 'generate_statement', label: i18next.t('modules.pages.customerStatement.generateStatement'), type: 'primary' },
+    {
+      key: 'generate_statement',
+      label: i18next.t('modules.pages.customerStatement.generateStatement'),
+      type: 'primary',
+    },
   ],
   filters: [
     {
@@ -35,14 +40,40 @@ export const customerStatementPageConfig: ModulePageConfig = {
       type: 'select',
       options: statementStatusOptions,
     },
-    { key: 'endDate', label: i18next.t('modules.pages.customerStatement.period'), type: 'dateRange' },
+    {
+      key: 'endDate',
+      label: i18next.t('modules.pages.customerStatement.period'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: i18next.t('modules.pages.customerStatement.statementNo'), dataIndex: 'statementNo', width: 170 },
-    { title: i18next.t('modules.pages.customerStatement.customer'), dataIndex: 'customerName', width: 140 },
-    { title: i18next.t('modules.pages.customerStatement.project'), dataIndex: 'projectName', width: 180 },
-    { title: i18next.t('modules.pages.customerStatement.startDate'), dataIndex: 'startDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.customerStatement.endDate'), dataIndex: 'endDate', width: 120, type: 'date' },
+    {
+      title: i18next.t('modules.pages.customerStatement.statementNo'),
+      dataIndex: 'statementNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.customerStatement.customer'),
+      dataIndex: 'customerName',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.customerStatement.project'),
+      dataIndex: 'projectName',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.customerStatement.startDate'),
+      dataIndex: 'startDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.customerStatement.endDate'),
+      dataIndex: 'endDate',
+      width: 120,
+      type: 'date',
+    },
     {
       title: i18next.t('modules.pages.customerStatement.salesAmount'),
       dataIndex: 'salesAmount',
@@ -74,16 +105,52 @@ export const customerStatementPageConfig: ModulePageConfig = {
   ],
   defaultHiddenColumnKeys: ['projectName', 'receiptAmount'],
   detailFields: [
-    { label: i18next.t('modules.pages.customerStatement.statementNo'), key: 'statementNo' },
-    { label: i18next.t('modules.pages.customerStatement.customer'), key: 'customerName' },
-    { label: i18next.t('modules.pages.customerStatement.project'), key: 'projectName' },
-    { label: i18next.t('modules.pages.customerStatement.startDate'), key: 'startDate', type: 'date' },
-    { label: i18next.t('modules.pages.customerStatement.endDate'), key: 'endDate', type: 'date' },
-    { label: i18next.t('modules.pages.customerStatement.salesAmount'), key: 'salesAmount', type: 'amount' },
-    { label: i18next.t('modules.pages.customerStatement.receiptAmount'), key: 'receiptAmount', type: 'amount' },
-    { label: i18next.t('modules.pages.customerStatement.closingBalance'), key: 'closingAmount', type: 'amount' },
-    { label: i18next.t('modules.pages.customerStatement.status'), key: 'status', type: 'status' },
-    { label: i18next.t('modules.pages.customerStatement.remark'), key: 'remark' },
+    {
+      label: i18next.t('modules.pages.customerStatement.statementNo'),
+      key: 'statementNo',
+    },
+    {
+      label: i18next.t('modules.pages.customerStatement.customer'),
+      key: 'customerName',
+    },
+    {
+      label: i18next.t('modules.pages.customerStatement.project'),
+      key: 'projectName',
+    },
+    {
+      label: i18next.t('modules.pages.customerStatement.startDate'),
+      key: 'startDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.customerStatement.endDate'),
+      key: 'endDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.customerStatement.salesAmount'),
+      key: 'salesAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.customerStatement.receiptAmount'),
+      key: 'receiptAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.customerStatement.closingBalance'),
+      key: 'closingAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.customerStatement.status'),
+      key: 'status',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.customerStatement.remark'),
+      key: 'remark',
+    },
   ],
   formFields: [
     {
@@ -115,7 +182,13 @@ export const customerStatementPageConfig: ModulePageConfig = {
       required: true,
       row: 1,
     },
-    { key: 'endDate', label: i18next.t('modules.pages.customerStatement.endDate'), type: 'date', required: true, row: 2 },
+    {
+      key: 'endDate',
+      label: i18next.t('modules.pages.customerStatement.endDate'),
+      type: 'date',
+      required: true,
+      row: 2,
+    },
     {
       key: 'salesAmount',
       label: i18next.t('modules.pages.customerStatement.salesAmount'),
@@ -146,7 +219,13 @@ export const customerStatementPageConfig: ModulePageConfig = {
       options: statementStatusOptions,
       row: 2,
     },
-    { key: 'remark', label: i18next.t('modules.pages.customerStatement.remark'), type: 'textarea', row: 3, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.customerStatement.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
   ],
   saveFields: {
     scalar: [

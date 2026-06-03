@@ -95,7 +95,11 @@ describe('piece-weight-source', () => {
     })
 
     it('prioritizes sourceSalesOrderItemId over sourcePurchaseOrderItemId', () => {
-      const item = { id: '1', sourceSalesOrderItemId: 'so-1', sourcePurchaseOrderItemId: 'po-1' }
+      const item = {
+        id: '1',
+        sourceSalesOrderItemId: 'so-1',
+        sourcePurchaseOrderItemId: 'po-1',
+      }
       const result = resolvePieceWeightLookupSource('other-module', item)
       expect(result).toEqual({ salesOrderItemId: 'so-1' })
     })

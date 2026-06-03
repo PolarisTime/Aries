@@ -17,9 +17,7 @@ describe('ApiKeyListToolbar', () => {
     usageScopeFilter: undefined,
     canCreate: true,
     totpDisabled: false,
-    userOptions: [
-      { id: '1', userName: 'Admin', loginName: 'admin' },
-    ],
+    userOptions: [{ id: '1', userName: 'Admin', loginName: 'admin' }],
     onKeywordChange: vi.fn(),
     onSearch: vi.fn(),
     onFilterUserChange: vi.fn(),
@@ -36,7 +34,9 @@ describe('ApiKeyListToolbar', () => {
 
   it('renders search input', () => {
     render(<ApiKeyListToolbar {...defaultProps} />)
-    expect(screen.getByPlaceholderText('system.apiKey.searchPlaceholder')).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText('system.apiKey.searchPlaceholder'),
+    ).toBeInTheDocument()
   })
 
   it('renders refresh button', () => {
@@ -51,7 +51,9 @@ describe('ApiKeyListToolbar', () => {
 
   it('does not render create button when canCreate is false', () => {
     render(<ApiKeyListToolbar {...defaultProps} canCreate={false} />)
-    expect(screen.queryByText('system.apiKey.generateButton')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.apiKey.generateButton'),
+    ).not.toBeInTheDocument()
   })
 
   it('calls onRefresh when refresh button clicked', () => {

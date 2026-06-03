@@ -12,8 +12,8 @@ import {
   getCompanySettingProfile,
   saveCompanySettingProfile,
 } from '@/api/company-settings'
-import { useRequestError } from '@/hooks/useRequestError'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useRequestError } from '@/hooks/useRequestError'
 import { validateForm } from '@/lib/antd-form'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
@@ -44,7 +44,9 @@ function buildCompanySettingFormValues(
     taxNo: profile?.taxNo ?? '',
     status: profile?.status || '正常',
     remark: profile?.remark || '',
-    settlementAccounts: normalizeSettlementAccounts(profile?.settlementAccounts),
+    settlementAccounts: normalizeSettlementAccounts(
+      profile?.settlementAccounts,
+    ),
   }
 }
 
@@ -81,7 +83,9 @@ function CompanySettingsForm({
         queryClient.setQueryData(QUERY_KEYS.companySetting, data)
       }
       message.success(t('common.saveSuccess'))
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.companySetting })
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.companySetting,
+      })
     },
     onError: (err: Error) => showError(err, t('api.saveCompanyInfoFailed')),
   })

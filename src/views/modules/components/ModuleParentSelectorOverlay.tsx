@@ -3,25 +3,25 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import Button from 'antd/es/button'
 import type { ColumnsType } from 'antd/es/table'
 import Table from 'antd/es/table'
-import { useReducer } from 'react'
 import i18next from 'i18next'
+import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listBusinessModule } from '@/api/business'
 import { buildFilterParams } from '@/api/business-listing-filtering'
 import { getModuleConfig } from '@/api/module-contracts'
 import { listStatementCandidatePage } from '@/api/statements'
 import { StatusTag } from '@/components/StatusTag'
-import { QUERY_KEYS } from '@/constants/query-keys'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { SearchParams } from '@/types/api-raw'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
+import { ModuleFilterToolbar } from './ModuleFilterToolbar'
 import {
   filterImportableParentRecords,
   resolveSelectedParentRows,
 } from './module-parent-selector-utils'
-import { ModuleFilterToolbar } from './ModuleFilterToolbar'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -64,86 +64,262 @@ const DEFAULT_PAGE_SIZE = 15
 
 function getOverlayStatusMap() {
   return {
-    草稿: { color: 'default', text: i18next.t('modules.parentSelector.status.draft') },
-    未审核: { color: 'default', text: i18next.t('modules.parentSelector.status.unaudited') },
-    已审核: { color: 'processing', text: i18next.t('modules.parentSelector.status.audited') },
-    已收票: { color: 'success', text: i18next.t('modules.parentSelector.status.invoiceReceived') },
-    已开票: { color: 'success', text: i18next.t('modules.parentSelector.status.invoiceIssued') },
-    完成采购: { color: 'success', text: i18next.t('modules.parentSelector.status.purchaseComplete') },
-    完成销售: { color: 'success', text: i18next.t('modules.parentSelector.status.salesComplete') },
-    完成入库: { color: 'success', text: i18next.t('modules.parentSelector.status.inboundComplete') },
+    草稿: {
+      color: 'default',
+      text: i18next.t('modules.parentSelector.status.draft'),
+    },
+    未审核: {
+      color: 'default',
+      text: i18next.t('modules.parentSelector.status.unaudited'),
+    },
+    已审核: {
+      color: 'processing',
+      text: i18next.t('modules.parentSelector.status.audited'),
+    },
+    已收票: {
+      color: 'success',
+      text: i18next.t('modules.parentSelector.status.invoiceReceived'),
+    },
+    已开票: {
+      color: 'success',
+      text: i18next.t('modules.parentSelector.status.invoiceIssued'),
+    },
+    完成采购: {
+      color: 'success',
+      text: i18next.t('modules.parentSelector.status.purchaseComplete'),
+    },
+    完成销售: {
+      color: 'success',
+      text: i18next.t('modules.parentSelector.status.salesComplete'),
+    },
+    完成入库: {
+      color: 'success',
+      text: i18next.t('modules.parentSelector.status.inboundComplete'),
+    },
   }
 }
 
 function getParentSelectorColumnMap(): Record<string, OverlayColumn[]> {
   return {
     'purchase-order': [
-      { dataIndex: 'orderNo', title: i18next.t('modules.parentSelector.column.orderNo'), width: 160 },
-      { dataIndex: 'supplierName', title: i18next.t('modules.parentSelector.column.supplierName'), width: 180 },
-      { dataIndex: 'buyerName', title: i18next.t('modules.parentSelector.column.buyerName'), width: 120 },
-      { dataIndex: 'orderDate', title: i18next.t('modules.parentSelector.column.orderDate'), width: 130, type: 'date' },
+      {
+        dataIndex: 'orderNo',
+        title: i18next.t('modules.parentSelector.column.orderNo'),
+        width: 160,
+      },
+      {
+        dataIndex: 'supplierName',
+        title: i18next.t('modules.parentSelector.column.supplierName'),
+        width: 180,
+      },
+      {
+        dataIndex: 'buyerName',
+        title: i18next.t('modules.parentSelector.column.buyerName'),
+        width: 120,
+      },
+      {
+        dataIndex: 'orderDate',
+        title: i18next.t('modules.parentSelector.column.orderDate'),
+        width: 130,
+        type: 'date',
+      },
       {
         dataIndex: 'totalWeight',
         title: i18next.t('modules.parentSelector.column.totalWeight'),
         width: 130,
         type: 'weight',
       },
-      { dataIndex: 'totalAmount', title: i18next.t('modules.parentSelector.column.totalAmount'), width: 120, type: 'amount' },
-      { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
+      {
+        dataIndex: 'totalAmount',
+        title: i18next.t('modules.parentSelector.column.totalAmount'),
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
     ],
     'sales-order': [
-      { dataIndex: 'orderNo', title: i18next.t('modules.parentSelector.column.orderNo'), width: 160 },
-      { dataIndex: 'purchaseOrderNo', title: i18next.t('modules.parentSelector.column.relatedPurchaseOrder'), width: 180 },
-      { dataIndex: 'customerName', title: i18next.t('modules.parentSelector.column.customerName'), width: 160 },
-      { dataIndex: 'projectName', title: i18next.t('modules.parentSelector.column.projectName'), width: 180 },
-      { dataIndex: 'deliveryDate', title: i18next.t('modules.parentSelector.column.deliveryDate'), width: 130, type: 'date' },
+      {
+        dataIndex: 'orderNo',
+        title: i18next.t('modules.parentSelector.column.orderNo'),
+        width: 160,
+      },
+      {
+        dataIndex: 'purchaseOrderNo',
+        title: i18next.t('modules.parentSelector.column.relatedPurchaseOrder'),
+        width: 180,
+      },
+      {
+        dataIndex: 'customerName',
+        title: i18next.t('modules.parentSelector.column.customerName'),
+        width: 160,
+      },
+      {
+        dataIndex: 'projectName',
+        title: i18next.t('modules.parentSelector.column.projectName'),
+        width: 180,
+      },
+      {
+        dataIndex: 'deliveryDate',
+        title: i18next.t('modules.parentSelector.column.deliveryDate'),
+        width: 130,
+        type: 'date',
+      },
       {
         dataIndex: 'totalWeight',
         title: i18next.t('modules.parentSelector.column.totalWeight'),
         width: 130,
         type: 'weight',
       },
-      { dataIndex: 'totalAmount', title: i18next.t('modules.parentSelector.column.totalAmount'), width: 120, type: 'amount' },
-      { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
+      {
+        dataIndex: 'totalAmount',
+        title: i18next.t('modules.parentSelector.column.totalAmount'),
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
     ],
     'sales-outbound': [
-      { dataIndex: 'outboundNo', title: i18next.t('modules.parentSelector.column.outboundNo'), width: 160 },
-      { dataIndex: 'salesOrderNo', title: i18next.t('modules.parentSelector.column.relatedOrder'), width: 160 },
-      { dataIndex: 'customerName', title: i18next.t('modules.parentSelector.column.customerName'), width: 160 },
-      { dataIndex: 'projectName', title: i18next.t('modules.parentSelector.column.projectName'), width: 180 },
-      { dataIndex: 'outboundDate', title: i18next.t('modules.parentSelector.column.outboundDate'), width: 130, type: 'date' },
+      {
+        dataIndex: 'outboundNo',
+        title: i18next.t('modules.parentSelector.column.outboundNo'),
+        width: 160,
+      },
+      {
+        dataIndex: 'salesOrderNo',
+        title: i18next.t('modules.parentSelector.column.relatedOrder'),
+        width: 160,
+      },
+      {
+        dataIndex: 'customerName',
+        title: i18next.t('modules.parentSelector.column.customerName'),
+        width: 160,
+      },
+      {
+        dataIndex: 'projectName',
+        title: i18next.t('modules.parentSelector.column.projectName'),
+        width: 180,
+      },
+      {
+        dataIndex: 'outboundDate',
+        title: i18next.t('modules.parentSelector.column.outboundDate'),
+        width: 130,
+        type: 'date',
+      },
       {
         dataIndex: 'totalWeight',
         title: i18next.t('modules.parentSelector.column.totalWeight'),
         width: 130,
         type: 'weight',
       },
-      { dataIndex: 'totalAmount', title: i18next.t('modules.parentSelector.column.totalAmount'), width: 120, type: 'amount' },
-      { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
+      {
+        dataIndex: 'totalAmount',
+        title: i18next.t('modules.parentSelector.column.totalAmount'),
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
     ],
     'freight-bill': [
-      { dataIndex: 'billNo', title: i18next.t('modules.filter.freightNo'), width: 160 },
-      { dataIndex: 'carrierName', title: i18next.t('modules.filter.carrierName'), width: 150 },
-      { dataIndex: 'customerName', title: i18next.t('modules.parentSelector.column.customerName'), width: 160 },
-      { dataIndex: 'projectName', title: i18next.t('modules.parentSelector.column.projectName'), width: 180 },
-      { dataIndex: 'billTime', title: i18next.t('modules.parentSelector.summary.billTime'), width: 130, type: 'date' },
-      { dataIndex: 'totalWeight', title: i18next.t('modules.parentSelector.column.totalWeight'), width: 130, type: 'weight' },
-      { dataIndex: 'totalFreight', title: i18next.t('modules.pages.freightStatement.totalFreight'), width: 120, type: 'amount' },
-      { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
-    ],
-    'purchase-inbound': [
-      { dataIndex: 'inboundNo', title: i18next.t('modules.parentSelector.column.inboundNo'), width: 160 },
-      { dataIndex: 'purchaseOrderNo', title: i18next.t('modules.parentSelector.column.relatedOrder'), width: 160 },
-      { dataIndex: 'supplierName', title: i18next.t('modules.parentSelector.column.supplierName'), width: 180 },
-      { dataIndex: 'inboundDate', title: i18next.t('modules.parentSelector.column.inboundDate'), width: 130, type: 'date' },
+      {
+        dataIndex: 'billNo',
+        title: i18next.t('modules.filter.freightNo'),
+        width: 160,
+      },
+      {
+        dataIndex: 'carrierName',
+        title: i18next.t('modules.filter.carrierName'),
+        width: 150,
+      },
+      {
+        dataIndex: 'customerName',
+        title: i18next.t('modules.parentSelector.column.customerName'),
+        width: 160,
+      },
+      {
+        dataIndex: 'projectName',
+        title: i18next.t('modules.parentSelector.column.projectName'),
+        width: 180,
+      },
+      {
+        dataIndex: 'billTime',
+        title: i18next.t('modules.parentSelector.summary.billTime'),
+        width: 130,
+        type: 'date',
+      },
       {
         dataIndex: 'totalWeight',
         title: i18next.t('modules.parentSelector.column.totalWeight'),
         width: 130,
         type: 'weight',
       },
-      { dataIndex: 'totalAmount', title: i18next.t('modules.parentSelector.column.totalAmount'), width: 120, type: 'amount' },
-      { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
+      {
+        dataIndex: 'totalFreight',
+        title: i18next.t('modules.pages.freightStatement.totalFreight'),
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
+    ],
+    'purchase-inbound': [
+      {
+        dataIndex: 'inboundNo',
+        title: i18next.t('modules.parentSelector.column.inboundNo'),
+        width: 160,
+      },
+      {
+        dataIndex: 'purchaseOrderNo',
+        title: i18next.t('modules.parentSelector.column.relatedOrder'),
+        width: 160,
+      },
+      {
+        dataIndex: 'supplierName',
+        title: i18next.t('modules.parentSelector.column.supplierName'),
+        width: 180,
+      },
+      {
+        dataIndex: 'inboundDate',
+        title: i18next.t('modules.parentSelector.column.inboundDate'),
+        width: 130,
+        type: 'date',
+      },
+      {
+        dataIndex: 'totalWeight',
+        title: i18next.t('modules.parentSelector.column.totalWeight'),
+        width: 130,
+        type: 'weight',
+      },
+      {
+        dataIndex: 'totalAmount',
+        title: i18next.t('modules.parentSelector.column.totalAmount'),
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
     ],
   }
 }
@@ -157,8 +333,17 @@ function resolveParentSelectorColumns(
     return configuredColumns
   }
   return [
-    { dataIndex: displayFieldKey, title: i18next.t('modules.parentSelector.column.docNo'), width: 180 },
-    { dataIndex: 'status', title: i18next.t('modules.parentSelector.column.status'), width: 110, type: 'status' },
+    {
+      dataIndex: displayFieldKey,
+      title: i18next.t('modules.parentSelector.column.docNo'),
+      width: 180,
+    },
+    {
+      dataIndex: 'status',
+      title: i18next.t('modules.parentSelector.column.status'),
+      width: 110,
+      type: 'status',
+    },
   ]
 }
 
@@ -211,7 +396,9 @@ function buildOverlayFilterConfig(
       key: 'keyword',
       label: i18next.t('modules.parentSelector.filter.keyword'),
       type: 'input',
-      placeholder: i18next.t('modules.parentSelector.filter.keywordPlaceholder'),
+      placeholder: i18next.t(
+        'modules.parentSelector.filter.keywordPlaceholder',
+      ),
     })
   }
 
@@ -221,32 +408,85 @@ function buildOverlayFilterConfig(
   }
 }
 
-function getSelectedRecordSummaryFieldMap(): Record<string, SelectedSummaryField[]> {
+function getSelectedRecordSummaryFieldMap(): Record<
+  string,
+  SelectedSummaryField[]
+> {
   return {
     'purchase-order': [
-      { key: 'supplierName', label: i18next.t('modules.parentSelector.summary.supplierName') },
-      { key: 'buyerName', label: i18next.t('modules.parentSelector.summary.buyerName') },
-      { key: 'orderDate', label: i18next.t('modules.parentSelector.summary.orderDate'), type: 'date' },
+      {
+        key: 'supplierName',
+        label: i18next.t('modules.parentSelector.summary.supplierName'),
+      },
+      {
+        key: 'buyerName',
+        label: i18next.t('modules.parentSelector.summary.buyerName'),
+      },
+      {
+        key: 'orderDate',
+        label: i18next.t('modules.parentSelector.summary.orderDate'),
+        type: 'date',
+      },
     ],
     'purchase-inbound': [
-      { key: 'supplierName', label: i18next.t('modules.parentSelector.summary.supplierName') },
-      { key: 'purchaseOrderNo', label: i18next.t('modules.parentSelector.summary.relatedOrder') },
-      { key: 'inboundDate', label: i18next.t('modules.parentSelector.summary.inboundDate'), type: 'date' },
+      {
+        key: 'supplierName',
+        label: i18next.t('modules.parentSelector.summary.supplierName'),
+      },
+      {
+        key: 'purchaseOrderNo',
+        label: i18next.t('modules.parentSelector.summary.relatedOrder'),
+      },
+      {
+        key: 'inboundDate',
+        label: i18next.t('modules.parentSelector.summary.inboundDate'),
+        type: 'date',
+      },
     ],
     'sales-order': [
-      { key: 'customerName', label: i18next.t('modules.parentSelector.summary.customerName') },
-      { key: 'projectName', label: i18next.t('modules.parentSelector.summary.projectName') },
-      { key: 'deliveryDate', label: i18next.t('modules.parentSelector.summary.deliveryDate'), type: 'date' },
+      {
+        key: 'customerName',
+        label: i18next.t('modules.parentSelector.summary.customerName'),
+      },
+      {
+        key: 'projectName',
+        label: i18next.t('modules.parentSelector.summary.projectName'),
+      },
+      {
+        key: 'deliveryDate',
+        label: i18next.t('modules.parentSelector.summary.deliveryDate'),
+        type: 'date',
+      },
     ],
     'sales-outbound': [
-      { key: 'customerName', label: i18next.t('modules.parentSelector.summary.customerName') },
-      { key: 'projectName', label: i18next.t('modules.parentSelector.summary.projectName') },
-      { key: 'outboundDate', label: i18next.t('modules.parentSelector.summary.outboundDate'), type: 'date' },
+      {
+        key: 'customerName',
+        label: i18next.t('modules.parentSelector.summary.customerName'),
+      },
+      {
+        key: 'projectName',
+        label: i18next.t('modules.parentSelector.summary.projectName'),
+      },
+      {
+        key: 'outboundDate',
+        label: i18next.t('modules.parentSelector.summary.outboundDate'),
+        type: 'date',
+      },
     ],
     'freight-bill': [
-      { key: 'carrierName', label: i18next.t('modules.parentSelector.summary.carrierName') },
-      { key: 'outboundNo', label: i18next.t('modules.parentSelector.summary.relatedOutbound') },
-      { key: 'billTime', label: i18next.t('modules.parentSelector.summary.billTime'), type: 'date' },
+      {
+        key: 'carrierName',
+        label: i18next.t('modules.parentSelector.summary.carrierName'),
+      },
+      {
+        key: 'outboundNo',
+        label: i18next.t('modules.parentSelector.summary.relatedOutbound'),
+      },
+      {
+        key: 'billTime',
+        label: i18next.t('modules.parentSelector.summary.billTime'),
+        type: 'date',
+      },
     ],
   }
 }
@@ -261,16 +501,16 @@ function buildSelectedRecordSummary(
   ) => string,
 ) {
   const primary = asString(record[displayFieldKey] || record.id)
-  const meta = (getSelectedRecordSummaryFieldMap()[parentModuleKey] || []).flatMap(
-    (field) => {
-      const rawValue =
-        field.type != null
-          ? formatValue(record[field.key], field.type)
-          : asString(record[field.key]).trim()
-      const value = String(rawValue || '').trim()
-      return value ? [`${field.label}：${value}`] : []
-    },
-  )
+  const meta = (
+    getSelectedRecordSummaryFieldMap()[parentModuleKey] || []
+  ).flatMap((field) => {
+    const rawValue =
+      field.type != null
+        ? formatValue(record[field.key], field.type)
+        : asString(record[field.key]).trim()
+    const value = String(rawValue || '').trim()
+    return value ? [`${field.label}：${value}`] : []
+  })
 
   return {
     primary,
@@ -655,10 +895,14 @@ function ModuleParentSelectorOverlayContent({
         allowMultipleSelection ? (
           <div className="flex justify-between items-center gap-12">
             <span className="text-secondary">
-              {t('modules.parentSelector.selectedCount', { count: selectedRows.length })}
+              {t('modules.parentSelector.selectedCount', {
+                count: selectedRows.length,
+              })}
             </span>
             <div className="flex gap-8">
-              <Button onClick={onClose}>{t('modules.parentSelector.cancel')}</Button>
+              <Button onClick={onClose}>
+                {t('modules.parentSelector.cancel')}
+              </Button>
               <Button
                 type="primary"
                 icon={<CheckOutlined />}
@@ -741,7 +985,8 @@ function ModuleParentSelectorOverlayContent({
           total,
           showSizeChanger: true,
           pageSizeOptions: ['15', '30', '50'],
-          showTotal: (count) => t('modules.parentSelector.paginationTotal', { count }),
+          showTotal: (count) =>
+            t('modules.parentSelector.paginationTotal', { count }),
           onChange: handlePageChange,
         }}
       />

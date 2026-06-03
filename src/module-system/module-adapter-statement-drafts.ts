@@ -1,11 +1,11 @@
-import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 import type {
   CustomerStatementDraftOptions,
   FreightStatementDraftOptions,
   StatementPeriod,
   SupplierStatementDraftOptions,
 } from '@/module-system/module-adapter-statement-types'
+import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
 function resolveStatementPeriod(
   statementPeriod: StatementPeriod | undefined,

@@ -1,15 +1,15 @@
 import { useTranslation } from 'react-i18next'
+import {
+  type PermissionActionCode,
+  resolveModuleActionKind,
+  resolveModuleActionPermissionCodes,
+} from '@/module-system/module-adapter-actions'
 import type {
   ModuleActionDefinition,
   ModuleFormFieldDefinition,
   ModulePageConfig,
 } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
-import {
-  type PermissionActionCode,
-  resolveModuleActionKind,
-  resolveModuleActionPermissionCodes,
-} from '@/module-system/module-adapter-actions'
 
 interface Handlers {
   exportMaterialRows: () => Promise<void>

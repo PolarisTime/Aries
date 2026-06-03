@@ -75,7 +75,9 @@ vi.mock('./WorkspaceOverlay', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/col', () => ({
@@ -83,7 +85,9 @@ vi.mock('antd/es/col', () => ({
 }))
 
 vi.mock('antd/es/empty', () => ({
-  default: ({ description, ...props }: any) => <div {...props}>{description}</div>,
+  default: ({ description, ...props }: any) => (
+    <div {...props}>{description}</div>
+  ),
 }))
 
 vi.mock('antd/es/flex', () => ({
@@ -95,7 +99,11 @@ vi.mock('antd/es/row', () => ({
 }))
 
 vi.mock('antd/es/spin', () => ({
-  default: (props: any) => <div data-testid="spin" {...props}>Loading</div>,
+  default: (props: any) => (
+    <div data-testid="spin" {...props}>
+      Loading
+    </div>
+  ),
 }))
 
 import { ModuleRecordDetailOverlay } from '@/views/modules/components/ModuleRecordDetailOverlay'
@@ -111,9 +119,24 @@ describe('ModuleRecordDetailOverlay', () => {
       filters: [],
       columns: [
         { dataIndex: 'orderNo', title: 'Order No', width: 100 },
-        { dataIndex: 'totalWeight', title: 'Weight', type: 'weight' as const, width: 100 },
-        { dataIndex: 'totalAmount', title: 'Amount', type: 'amount' as const, width: 100 },
-        { dataIndex: 'status', title: 'Status', type: 'status' as const, width: 100 },
+        {
+          dataIndex: 'totalWeight',
+          title: 'Weight',
+          type: 'weight' as const,
+          width: 100,
+        },
+        {
+          dataIndex: 'totalAmount',
+          title: 'Amount',
+          type: 'amount' as const,
+          width: 100,
+        },
+        {
+          dataIndex: 'status',
+          title: 'Status',
+          type: 'status' as const,
+          width: 100,
+        },
       ],
       detailFields: [],
       detailItemColumns: [],
@@ -187,9 +210,7 @@ describe('ModuleRecordDetailOverlay', () => {
     const record = {
       id: '1',
       billNo: 'BILL-001',
-      items: [
-        { id: 'i1', brand: 'Brand A', quantity: 5 },
-      ],
+      items: [{ id: 'i1', brand: 'Brand A', quantity: 5 }],
     }
     render(
       <ModuleRecordDetailOverlay
@@ -204,9 +225,7 @@ describe('ModuleRecordDetailOverlay', () => {
   it('renders record with empty items', () => {
     const configWithItemColumns = {
       ...defaultProps.config,
-      detailItemColumns: [
-        { dataIndex: 'brand', title: 'Brand', width: 100 },
-      ],
+      detailItemColumns: [{ dataIndex: 'brand', title: 'Brand', width: 100 }],
     }
     const record = { id: '1', billNo: 'BILL-001', items: [] }
     render(
@@ -249,7 +268,13 @@ describe('ModuleRecordDetailOverlay', () => {
   it('calls onClose when close button clicked', () => {
     const onClose = vi.fn()
     const record = { id: '1', billNo: 'BILL-001', items: [] }
-    render(<ModuleRecordDetailOverlay {...defaultProps} record={record} onClose={onClose} />)
+    render(
+      <ModuleRecordDetailOverlay
+        {...defaultProps}
+        record={record}
+        onClose={onClose}
+      />,
+    )
     fireEvent.click(screen.getByText('modules.detail.close'))
     expect(onClose).toHaveBeenCalled()
   })
@@ -279,9 +304,7 @@ describe('ModuleRecordDetailOverlay', () => {
   it('renders record with fullRow detail fields', () => {
     const configWithFullRow = {
       ...defaultProps.config,
-      detailFields: [
-        { key: 'notes', label: 'Notes', fullRow: true },
-      ],
+      detailFields: [{ key: 'notes', label: 'Notes', fullRow: true }],
     }
     const record = {
       id: '1',
@@ -303,9 +326,7 @@ describe('ModuleRecordDetailOverlay', () => {
     const configWithFallback = {
       ...defaultProps.config,
       detailItemColumns: undefined,
-      itemColumns: [
-        { dataIndex: 'brand', title: 'Brand', width: 100 },
-      ],
+      itemColumns: [{ dataIndex: 'brand', title: 'Brand', width: 100 }],
     }
     const record = {
       id: '1',

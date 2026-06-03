@@ -7,8 +7,8 @@ import {
   getUserAccountDetail,
   setupUserAccount2fa,
 } from '@/api/user-accounts'
-import { useRequestError } from '@/hooks/useRequestError'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useRequestError } from '@/hooks/useRequestError'
 import { syncCurrentUserTotpStateById } from '@/stores/auth-user-sync'
 import { useAuthStore } from '@/stores/authStore'
 import type { TotpSetupResponse } from '@/types/auth'

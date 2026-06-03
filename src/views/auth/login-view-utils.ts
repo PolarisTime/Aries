@@ -8,8 +8,6 @@ export interface SavedTotpSession {
   loginName: string
 }
 
-
-
 export function saveTotpSession(
   token: string,
   deadline: number,
@@ -80,4 +78,3 @@ export function buildPostLoginTarget(
   }
   return redirect
 }
-

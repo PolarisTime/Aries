@@ -143,9 +143,7 @@ export function RoleActionPermissionCard({
               {menuTree.map((group) => (
                 <div key={group.menuCode} className="mb-4">
                   {group.children.length > 0 && (
-                    <div
-                      className="mb-8 py-2 border-b border-b-[var(--theme-card-border)]"
-                    >
+                    <div className="mb-8 py-2 border-b border-b-[var(--theme-card-border)]">
                       <Typography.Text strong>{group.menuName}</Typography.Text>
                     </div>
                   )}

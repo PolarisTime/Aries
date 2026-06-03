@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockSessionStorage = {
   getItem: vi.fn(),
@@ -30,7 +30,9 @@ describe('login-view-utils', () => {
   it('clearTotpSession removes from sessionStorage', async () => {
     const { clearTotpSession } = await import('@/views/auth/login-view-utils')
     clearTotpSession()
-    expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('aries-totp-session')
+    expect(mockSessionStorage.removeItem).toHaveBeenCalledWith(
+      'aries-totp-session',
+    )
   })
 
   it('restoreTotpSession returns null when no session', async () => {
@@ -78,31 +80,47 @@ describe('login-view-utils', () => {
   })
 
   it('requiresForcedTotpSetup returns true when forceTotpSetup is true and totpEnabled is false', async () => {
-    const { requiresForcedTotpSetup } = await import('@/views/auth/login-view-utils')
+    const { requiresForcedTotpSetup } = await import(
+      '@/views/auth/login-view-utils'
+    )
     expect(
-      requiresForcedTotpSetup({ forceTotpSetup: true, totpEnabled: false } as never),
+      requiresForcedTotpSetup({
+        forceTotpSetup: true,
+        totpEnabled: false,
+      } as never),
     ).toBe(true)
   })
 
   it('requiresForcedTotpSetup returns false when totpEnabled is true', async () => {
-    const { requiresForcedTotpSetup } = await import('@/views/auth/login-view-utils')
+    const { requiresForcedTotpSetup } = await import(
+      '@/views/auth/login-view-utils'
+    )
     expect(
-      requiresForcedTotpSetup({ forceTotpSetup: true, totpEnabled: true } as never),
+      requiresForcedTotpSetup({
+        forceTotpSetup: true,
+        totpEnabled: true,
+      } as never),
     ).toBe(false)
   })
 
   it('requiresForcedTotpSetup returns false for null user', async () => {
-    const { requiresForcedTotpSetup } = await import('@/views/auth/login-view-utils')
+    const { requiresForcedTotpSetup } = await import(
+      '@/views/auth/login-view-utils'
+    )
     expect(requiresForcedTotpSetup(null)).toBe(false)
   })
 
   it('buildPostLoginTarget returns redirect path for normal user', async () => {
-    const { buildPostLoginTarget } = await import('@/views/auth/login-view-utils')
+    const { buildPostLoginTarget } = await import(
+      '@/views/auth/login-view-utils'
+    )
     expect(buildPostLoginTarget(null)).toBe('/dashboard')
   })
 
   it('buildPostLoginTarget returns setup-2fa path when forced', async () => {
-    const { buildPostLoginTarget } = await import('@/views/auth/login-view-utils')
+    const { buildPostLoginTarget } = await import(
+      '@/views/auth/login-view-utils'
+    )
     const result = buildPostLoginTarget({
       forceTotpSetup: true,
       totpEnabled: false,

@@ -5,22 +5,22 @@
 // This file was extracted from constants/module-options.ts to decouple
 // constants (pure data) from API dependencies and mutable runtime state.
 
-import type { MaterialCategoryOption } from '@/api/material-categories'
-import type { ModuleRecordInput } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
-
-import { fetchMaterialCategories } from '@/api/material-categories'
-import { fetchMaterialGrades } from '@/api/material-grades'
-import { getSupplierOptions as apiGetSupplierOptions } from '@/api/supplier-options'
-import {
-  getCustomerOptions as apiGetCustomerOptions,
-  getCustomerProjectOptions as apiGetCustomerProjectOptions,
-} from '@/api/customer-options'
 import {
   getCarrierOptions as apiGetCarrierOptions,
   getCarrierVehiclePlateOptions as apiGetCarrierVehiclePlateOptions,
 } from '@/api/carrier-options'
+import {
+  getCustomerOptions as apiGetCustomerOptions,
+  getCustomerProjectOptions as apiGetCustomerProjectOptions,
+} from '@/api/customer-options'
+import type { MaterialCategoryOption } from '@/api/material-categories'
+
+import { fetchMaterialCategories } from '@/api/material-categories'
+import { fetchMaterialGrades } from '@/api/material-grades'
+import { getSupplierOptions as apiGetSupplierOptions } from '@/api/supplier-options'
 import { getWarehouseOptions as apiGetWarehouseOptions } from '@/api/warehouse-options'
+import type { ModuleRecordInput } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
 function createOptionList(values: readonly string[]) {
   return values.map((value) => ({ label: value, value }))

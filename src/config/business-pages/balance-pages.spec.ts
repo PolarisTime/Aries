@@ -5,7 +5,8 @@ vi.mock('i18next', () => ({
 }))
 
 vi.mock('@/constants/module-options', () => ({
-  buildValueOptions: (...args: string[]) => args.map((v) => ({ label: v, value: v })),
+  buildValueOptions: (...args: string[]) =>
+    args.map((v) => ({ label: v, value: v })),
 }))
 
 import { balancePageConfigs } from './balance-pages'
@@ -13,7 +14,9 @@ import { balancePageConfigs } from './balance-pages'
 describe('balancePageConfigs', () => {
   it('contains receivable-payable config', () => {
     expect(balancePageConfigs['receivable-payable']).toBeDefined()
-    expect(balancePageConfigs['receivable-payable'].key).toBe('receivable-payable')
+    expect(balancePageConfigs['receivable-payable'].key).toBe(
+      'receivable-payable',
+    )
   })
 
   it('is readOnly', () => {
@@ -22,12 +25,16 @@ describe('balancePageConfigs', () => {
 
   it('has filters', () => {
     expect(balancePageConfigs['receivable-payable'].filters).toBeDefined()
-    expect(balancePageConfigs['receivable-payable'].filters!.length).toBeGreaterThanOrEqual(3)
+    expect(
+      balancePageConfigs['receivable-payable'].filters!.length,
+    ).toBeGreaterThanOrEqual(3)
   })
 
   it('has columns', () => {
     expect(balancePageConfigs['receivable-payable'].columns).toBeDefined()
-    expect(balancePageConfigs['receivable-payable'].columns.length).toBeGreaterThan(0)
+    expect(
+      balancePageConfigs['receivable-payable'].columns.length,
+    ).toBeGreaterThan(0)
   })
 
   it('has detailFields', () => {
@@ -35,8 +42,12 @@ describe('balancePageConfigs', () => {
   })
 
   it('has detailItemColumns', () => {
-    expect(balancePageConfigs['receivable-payable'].detailItemColumns).toBeDefined()
-    expect(balancePageConfigs['receivable-payable'].detailItemColumns!.length).toBeGreaterThan(0)
+    expect(
+      balancePageConfigs['receivable-payable'].detailItemColumns,
+    ).toBeDefined()
+    expect(
+      balancePageConfigs['receivable-payable'].detailItemColumns!.length,
+    ).toBeGreaterThan(0)
   })
 
   it('buildOverview returns result', () => {
@@ -51,7 +62,9 @@ describe('balancePageConfigs', () => {
       { direction: '应付', balanceAmount: 50 },
       { direction: '应收', balanceAmount: 200 },
     ]
-    const result = balancePageConfigs['receivable-payable'].buildOverview!(rows as any)
+    const result = balancePageConfigs['receivable-payable'].buildOverview!(
+      rows as any,
+    )
     expect(result).toHaveLength(3)
   })
 })

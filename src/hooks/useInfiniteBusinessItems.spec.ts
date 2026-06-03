@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { useQueryMock, listBusinessModuleMock } = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
@@ -17,8 +17,14 @@ vi.mock('@/api/business-listing', () => ({
 
 vi.mock('@/constants/query-keys', () => ({
   QUERY_KEYS: {
-    businessGridList: vi.fn((moduleKey: string, filters: any, page: number, size: number) => 
-      ['businessGridList', moduleKey, filters, page, size]
+    businessGridList: vi.fn(
+      (moduleKey: string, filters: any, page: number, size: number) => [
+        'businessGridList',
+        moduleKey,
+        filters,
+        page,
+        size,
+      ],
     ),
   },
 }))
@@ -95,25 +101,35 @@ describe('useInfiniteBusinessItems', () => {
 
     expect(useQueryMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ['businessGridList', 'sales-order', { status: 'pending' }, 1, 20],
+        queryKey: [
+          'businessGridList',
+          'sales-order',
+          { status: 'pending' },
+          1,
+          20,
+        ],
         enabled: true,
         staleTime: 5_000,
         placeholderData: 'keepPreviousData',
-      })
+      }),
     )
   })
 
   it('disables query when enabled is false', () => {
-    renderHook(() => useInfiniteBusinessItems({ ...defaultProps, enabled: false }))
+    renderHook(() =>
+      useInfiniteBusinessItems({ ...defaultProps, enabled: false }),
+    )
     expect(useQueryMock).toHaveBeenCalledWith(
-      expect.objectContaining({ enabled: false })
+      expect.objectContaining({ enabled: false }),
     )
   })
 
   it('disables query when moduleKey is empty', () => {
-    renderHook(() => useInfiniteBusinessItems({ ...defaultProps, moduleKey: '' }))
+    renderHook(() =>
+      useInfiniteBusinessItems({ ...defaultProps, moduleKey: '' }),
+    )
     expect(useQueryMock).toHaveBeenCalledWith(
-      expect.objectContaining({ enabled: false })
+      expect.objectContaining({ enabled: false }),
     )
   })
 

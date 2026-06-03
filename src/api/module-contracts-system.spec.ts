@@ -40,7 +40,7 @@ describe('module-contracts-system', () => {
   })
 
   it('contains permission config as read-only', () => {
-    const config = systemModuleEndpointContracts['permission']
+    const config = systemModuleEndpointContracts.permission
     expect(config).toBeDefined()
     expect(config.path).toBe('/permissions')
     expect(config.readOnly).toBe(true)
@@ -48,14 +48,14 @@ describe('module-contracts-system', () => {
   })
 
   it('contains department config', () => {
-    const config = systemModuleEndpointContracts['department']
+    const config = systemModuleEndpointContracts.department
     expect(config).toBeDefined()
     expect(config.path).toBe('/departments')
     expect(config.readOnly).toBeUndefined()
   })
 
   it('contains departments config (alias)', () => {
-    const config = systemModuleEndpointContracts['departments']
+    const config = systemModuleEndpointContracts.departments
     expect(config).toBeDefined()
     expect(config.path).toBe('/departments')
   })

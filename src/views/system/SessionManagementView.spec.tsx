@@ -14,11 +14,14 @@ vi.mock('@/hooks/usePageVisibility', () => ({
 }))
 
 vi.mock('@/views/system/useSessionManagementState', () => ({
-  useSessionManagementState: (...args: unknown[]) => mockUseSessionManagementState(...args),
+  useSessionManagementState: (...args: unknown[]) =>
+    mockUseSessionManagementState(...args),
 }))
 
 vi.mock('@/views/system/SessionManagementCard', () => ({
-  SessionManagementCard: () => <div data-testid="session-card">SessionCard</div>,
+  SessionManagementCard: () => (
+    <div data-testid="session-card">SessionCard</div>
+  ),
 }))
 
 import { SessionManagementView } from '@/views/system/SessionManagementView'

@@ -54,9 +54,9 @@ vi.mock('@/utils/api-messages', () => ({
 }))
 
 import {
+  listAllBusinessModuleRows,
   listBusinessModule,
   searchBusinessModule,
-  listAllBusinessModuleRows,
 } from './business-listing'
 
 describe('business-listing', () => {

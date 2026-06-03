@@ -38,7 +38,9 @@ describe('freightStatementPageConfig', () => {
     })
 
     it('validateBeforeOpen returns null when carrierName is present', () => {
-      expect(pi.validateBeforeOpen!({ carrierName: '承运商A' } as any)).toBeNull()
+      expect(
+        pi.validateBeforeOpen!({ carrierName: '承运商A' } as any),
+      ).toBeNull()
     })
 
     it('validateBeforeOpen returns error when carrierName is empty', () => {

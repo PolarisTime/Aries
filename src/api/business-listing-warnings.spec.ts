@@ -40,7 +40,9 @@ describe('business-listing-warnings', () => {
       getUnsupportedFilterKeysMock.mockReturnValue(['customField'])
       reportClientFilterFallback('purchase-order', { customField: 'value' })
       expect(loggerWarnMock).toHaveBeenCalledWith(
-        expect.stringContaining('purchase-order fell back to client-side filtering'),
+        expect.stringContaining(
+          'purchase-order fell back to client-side filtering',
+        ),
         expect.any(String),
       )
     })
@@ -99,7 +101,9 @@ describe('business-listing-warnings', () => {
     it('logs error with max rows detail', () => {
       reportClientFilterTruncation('purchase-order', 2000)
       expect(loggerErrorMock).toHaveBeenCalledWith(
-        expect.stringContaining('purchase-order client-filter hit the hard limit of 2000 rows'),
+        expect.stringContaining(
+          'purchase-order client-filter hit the hard limit of 2000 rows',
+        ),
       )
     })
   })
@@ -113,7 +117,9 @@ describe('business-listing-warnings', () => {
     it('warns when row count exceeds threshold', () => {
       reportUnpaginatedRowFetch('test', 6000)
       expect(loggerWarnMock).toHaveBeenCalledWith(
-        expect.stringContaining('listAllBusinessModuleRows fetched 6000 rows without pagination'),
+        expect.stringContaining(
+          'listAllBusinessModuleRows fetched 6000 rows without pagination',
+        ),
       )
     })
 

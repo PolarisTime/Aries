@@ -18,9 +18,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   getSecurityKeyOverview,
-  type SecurityKeyOverview,
   rotateJwtSecurityKey,
   rotateTotpSecurityKey,
+  type SecurityKeyOverview,
 } from '@/api/security-keys'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
@@ -40,13 +40,16 @@ interface SecurityKeyCardProps {
 }
 
 function formatCount(value: number | undefined): string {
-  return typeof value === 'number' && Number.isFinite(value) ? String(value) : '--'
+  return typeof value === 'number' && Number.isFinite(value)
+    ? String(value)
+    : '--'
 }
 
 function securityKeySourceColor(source: string | undefined): string {
   if (!source) return 'default'
   const normalized = source.toUpperCase()
-  if (normalized.includes('DB') || normalized.includes('DATABASE')) return 'green'
+  if (normalized.includes('DB') || normalized.includes('DATABASE'))
+    return 'green'
   if (normalized.includes('CONFIG') || normalized.includes('ENV')) return 'blue'
   return 'default'
 }
@@ -72,7 +75,9 @@ function SecurityKeyCard({
           </span>
           <span className="security-key-card-title-text">
             <span className="security-key-card-name">
-              {isJwt ? t('system.securityKey.jwtName') : t('system.securityKey.totpName')}
+              {isJwt
+                ? t('system.securityKey.jwtName')
+                : t('system.securityKey.totpName')}
             </span>
             <span className="security-key-card-subtitle">
               {item?.keyName || '--'}
@@ -100,7 +105,9 @@ function SecurityKeyCard({
         <Descriptions.Item label={t('system.securityKey.activeFingerprint')}>
           <Typography.Text
             code
-            copyable={item?.activeFingerprint ? { text: item.activeFingerprint } : false}
+            copyable={
+              item?.activeFingerprint ? { text: item.activeFingerprint } : false
+            }
             className="security-key-fingerprint"
           >
             {item?.activeFingerprint || '--'}
@@ -127,7 +134,9 @@ function SecurityKeyCard({
           disabled={!item}
           onClick={() => onRotate(type)}
         >
-          {isJwt ? t('system.securityKey.rotateJwt') : t('system.securityKey.rotateTotp')}
+          {isJwt
+            ? t('system.securityKey.rotateJwt')
+            : t('system.securityKey.rotateTotp')}
         </Button>
       </div>
     </Card>
@@ -141,13 +150,20 @@ export function SecurityKeyManagementView(): React.JSX.Element {
   const [rotateType, setRotateType] = useState<RotateType>('jwt')
   const isPageVisible = usePageVisibility()
 
-  const { data: keys, isFetching, isLoading, refetch } = useQuery({
+  const {
+    data: keys,
+    isFetching,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: SECURITY_KEY_QUERY_KEY,
     queryFn: getSecurityKeyOverview,
     enabled: isPageVisible,
   })
   const overview = keys?.data
-  const keyItems = [overview?.jwt, overview?.totp].filter(Boolean) as SecurityKeyItem[]
+  const keyItems = [overview?.jwt, overview?.totp].filter(
+    Boolean,
+  ) as SecurityKeyItem[]
   const protectedRecordCount = keyItems.reduce(
     (sum, item) => sum + (item.protectedRecordCount || 0),
     0,
@@ -169,11 +185,19 @@ export function SecurityKeyManagementView(): React.JSX.Element {
       } else {
         await rotateTotpSecurityKey(code)
       }
-      message.success(t('system.securityKey.rotateSuccess', { type: rotateType.toUpperCase() }))
+      message.success(
+        t('system.securityKey.rotateSuccess', {
+          type: rotateType.toUpperCase(),
+        }),
+      )
       setTotpOpen(false)
       void queryClient.invalidateQueries({ queryKey: SECURITY_KEY_QUERY_KEY })
     } catch (err) {
-      message.error(err instanceof Error ? err.message : t('system.securityKey.rotateFailed'))
+      message.error(
+        err instanceof Error
+          ? err.message
+          : t('system.securityKey.rotateFailed'),
+      )
       throw err
     }
   }
@@ -260,7 +284,9 @@ export function SecurityKeyManagementView(): React.JSX.Element {
           open={totpOpen}
           onConfirm={handleRotateConfirm}
           onCancel={() => setTotpOpen(false)}
-          title={t('system.securityKey.confirmRotation', { type: rotateType.toUpperCase() })}
+          title={t('system.securityKey.confirmRotation', {
+            type: rotateType.toUpperCase(),
+          })}
         />
       ) : null}
     </div>

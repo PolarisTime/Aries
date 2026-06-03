@@ -48,19 +48,29 @@ describe('GeneralSettingsTableCard', () => {
 
   it('renders basic params section title', () => {
     render(<GeneralSettingsTableCard {...defaultProps} />)
-    expect(screen.getByText('system.generalSettingsTable.basicParamsTitle')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.generalSettingsTable.basicParamsTitle'),
+    ).toBeInTheDocument()
   })
 
   it('renders system switches section title', () => {
     render(<GeneralSettingsTableCard {...defaultProps} />)
-    expect(screen.getByText('system.generalSettingsTable.systemSwitchesTitle')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.generalSettingsTable.systemSwitchesTitle'),
+    ).toBeInTheDocument()
   })
 
   it('renders statistics', () => {
     render(<GeneralSettingsTableCard {...defaultProps} />)
-    expect(screen.getByText('system.generalSettingsTable.basicParams')).toBeInTheDocument()
-    expect(screen.getByText('system.generalSettingsTable.systemSwitches')).toBeInTheDocument()
-    expect(screen.getByText('system.generalSettingsTable.currentEnabled')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.generalSettingsTable.basicParams'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.generalSettingsTable.systemSwitches'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.generalSettingsTable.currentEnabled'),
+    ).toBeInTheDocument()
   })
 
   it('displays counts from props', () => {

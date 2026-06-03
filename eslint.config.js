@@ -81,7 +81,8 @@ export default tseslint.config(
           patterns: [
             {
               group: ['@/views/*', '@/hooks/*', '@/stores/*', '@/components/*'],
-              message: 'api/ 层禁止导入 views/hooks/stores/components，应保持底层纯净',
+              message:
+                'api/ 层禁止导入 views/hooks/stores/components，应保持底层纯净',
             },
           ],
         },
@@ -129,7 +130,8 @@ export default tseslint.config(
           patterns: [
             {
               group: ['@/views/*', '@/hooks/*', '@/components/*'],
-              message: 'stores/ 层禁止导入 views/hooks/components，应保持底层纯净',
+              message:
+                'stores/ 层禁止导入 views/hooks/components，应保持底层纯净',
             },
           ],
         },

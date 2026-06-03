@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { ModuleLineItem } from '@/types/module-page'
 import { moduleBehaviorRegistry } from './module-behavior-registry-core'
 import './module-behavior-normalizers'
@@ -35,11 +35,25 @@ const stubCtx = {
 describe('module-behavior-normalizers', () => {
   it('registers freight-bill normalizeDraftRecord', () => {
     const config = moduleBehaviorRegistry.get('freight-bill')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const items = [
-      makeItem({ sourceNo: 'SO001', customerName: '客户A', projectName: '项目X', weightTon: 10 }),
-      makeItem({ sourceNo: 'SO002', customerName: '客户B', projectName: '项目Y', weightTon: 20 }),
+      makeItem({
+        sourceNo: 'SO001',
+        customerName: '客户A',
+        projectName: '项目X',
+        weightTon: 10,
+      }),
+      makeItem({
+        sourceNo: 'SO002',
+        customerName: '客户B',
+        projectName: '项目Y',
+        weightTon: 20,
+      }),
     ]
     const record: any = { unitPrice: 2 }
     normalize(record, items, stubCtx)
@@ -54,10 +68,18 @@ describe('module-behavior-normalizers', () => {
 
   it('freight-bill normalize handles single customer and project', () => {
     const config = moduleBehaviorRegistry.get('freight-bill')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const items = [
-      makeItem({ sourceNo: 'SO001', customerName: '客户A', projectName: '项目X' }),
+      makeItem({
+        sourceNo: 'SO001',
+        customerName: '客户A',
+        projectName: '项目X',
+      }),
     ]
     const record: any = {}
     normalize(record, items, { sumLineItemsBy: () => 50 } as any)
@@ -69,7 +91,11 @@ describe('module-behavior-normalizers', () => {
 
   it('freight-bill normalize handles empty items without sourceNo', () => {
     const config = moduleBehaviorRegistry.get('freight-bill')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const items = [makeItem({})]
     const record: any = { outboundNo: 'EXISTING' }
@@ -82,7 +108,11 @@ describe('module-behavior-normalizers', () => {
 
   it('freight-bill normalize keeps existing deliveryStatus', () => {
     const config = moduleBehaviorRegistry.get('freight-bill')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const record: any = { deliveryStatus: '已送达' }
     normalize(record, [], { sumLineItemsBy: () => 0 } as any)
@@ -91,11 +121,23 @@ describe('module-behavior-normalizers', () => {
 
   it('registers freight-statement normalizeDraftRecord', () => {
     const config = moduleBehaviorRegistry.get('freight-statement')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const items = [
-      makeItem({ sourceNo: 'FB001', _parentTotalFreight: 500, _parentBillTime: '2026-01-01' }),
-      makeItem({ sourceNo: 'FB002', _parentTotalFreight: 300, _parentBillTime: '2026-01-15' }),
+      makeItem({
+        sourceNo: 'FB001',
+        _parentTotalFreight: 500,
+        _parentBillTime: '2026-01-01',
+      }),
+      makeItem({
+        sourceNo: 'FB002',
+        _parentTotalFreight: 300,
+        _parentBillTime: '2026-01-15',
+      }),
     ]
     const record: any = { paidAmount: 400 }
     normalize(record, items, stubCtx)
@@ -111,7 +153,11 @@ describe('module-behavior-normalizers', () => {
 
   it('freight-statement normalize handles empty items', () => {
     const config = moduleBehaviorRegistry.get('freight-statement')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const record: any = {}
     normalize(record, [], stubCtx)
@@ -121,7 +167,11 @@ describe('module-behavior-normalizers', () => {
 
   it('freight-statement normalize handles attachments', () => {
     const config = moduleBehaviorRegistry.get('freight-statement')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const record: any = {
       attachments: [{ name: 'file1.pdf' }, { name: 'file2.pdf' }, { name: '' }],
@@ -132,11 +182,23 @@ describe('module-behavior-normalizers', () => {
 
   it('registers supplier-statement normalizeDraftRecord', () => {
     const config = moduleBehaviorRegistry.get('supplier-statement')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const items = [
-      makeItem({ sourceNo: 'RK001', _parentBillTime: '2026-01-01', amount: 1000 }),
-      makeItem({ sourceNo: 'RK002', _parentBillTime: '2026-01-31', amount: 2000 }),
+      makeItem({
+        sourceNo: 'RK001',
+        _parentBillTime: '2026-01-01',
+        amount: 1000,
+      }),
+      makeItem({
+        sourceNo: 'RK002',
+        _parentBillTime: '2026-01-31',
+        amount: 2000,
+      }),
     ]
     const record: any = { paymentAmount: 1500 }
     normalize(record, items, { sumLineItemsBy: () => 3000 } as any)
@@ -151,10 +213,18 @@ describe('module-behavior-normalizers', () => {
 
   it('registers customer-statement normalizeDraftRecord', () => {
     const config = moduleBehaviorRegistry.get('customer-statement')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const items = [
-      makeItem({ sourceNo: 'XS001', _parentBillTime: '2026-02-01', amount: 5000 }),
+      makeItem({
+        sourceNo: 'XS001',
+        _parentBillTime: '2026-02-01',
+        amount: 5000,
+      }),
     ]
     const record: any = { receiptAmount: 3000 }
     normalize(record, items, { sumLineItemsBy: () => 5000 } as any)
@@ -169,20 +239,32 @@ describe('module-behavior-normalizers', () => {
 
   it('registers invoice-receipt normalizeDraftRecord', () => {
     const config = moduleBehaviorRegistry.get('invoice-receipt')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const record: any = {}
-    normalize(record, [makeItem({ sourceNo: 'PO001' })], { sumLineItemsBy: () => 2000 } as any)
+    normalize(record, [makeItem({ sourceNo: 'PO001' })], {
+      sumLineItemsBy: () => 2000,
+    } as any)
     expect(record.amount).toBe(2000)
     expect(record.sourcePurchaseOrderNos).toBe('PO001')
   })
 
   it('registers invoice-issue normalizeDraftRecord', () => {
     const config = moduleBehaviorRegistry.get('invoice-issue')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const record: any = {}
-    normalize(record, [makeItem({ sourceNo: 'SO001' })], { sumLineItemsBy: () => 3000 } as any)
+    normalize(record, [makeItem({ sourceNo: 'SO001' })], {
+      sumLineItemsBy: () => 3000,
+    } as any)
     expect(record.amount).toBe(3000)
     expect(record.sourceSalesOrderNos).toBe('SO001')
   })
@@ -190,7 +272,11 @@ describe('module-behavior-normalizers', () => {
   it('handles empty items in invoice normalizers', () => {
     for (const key of ['invoice-receipt', 'invoice-issue']) {
       const config = moduleBehaviorRegistry.get(key)
-      const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+      const normalize = config!.normalizeDraftRecord as (
+        record: any,
+        items: ModuleLineItem[],
+        ctx: any,
+      ) => void
       const record: any = {}
       normalize(record, [], { sumLineItemsBy: () => 0 } as any)
       expect(record.amount).toBeUndefined()
@@ -199,7 +285,11 @@ describe('module-behavior-normalizers', () => {
 
   it('freight-statement normalize handles items without sourceNo', () => {
     const config = moduleBehaviorRegistry.get('freight-statement')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const items = [makeItem({ sourceNo: '' })]
     const record: any = {}
@@ -211,7 +301,11 @@ describe('module-behavior-normalizers', () => {
 
   it('freight-statement normalize handles non-array attachments', () => {
     const config = moduleBehaviorRegistry.get('freight-statement')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const record: any = { attachments: 'not-an-array' }
     normalize(record, [], stubCtx)
@@ -220,7 +314,11 @@ describe('module-behavior-normalizers', () => {
 
   it('supplier-statement normalize handles empty items', () => {
     const config = moduleBehaviorRegistry.get('supplier-statement')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const record: any = { paymentAmount: 500 }
     normalize(record, [], stubCtx)
@@ -232,7 +330,11 @@ describe('module-behavior-normalizers', () => {
 
   it('customer-statement normalize handles empty items', () => {
     const config = moduleBehaviorRegistry.get('customer-statement')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const record: any = { receiptAmount: 300 }
     normalize(record, [], stubCtx)
@@ -244,9 +346,15 @@ describe('module-behavior-normalizers', () => {
 
   it('freight-bill normalize handles empty sourceNo items with existing outboundNo', () => {
     const config = moduleBehaviorRegistry.get('freight-bill')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
-    const items = [makeItem({ sourceNo: '', customerName: '', projectName: '' })]
+    const items = [
+      makeItem({ sourceNo: '', customerName: '', projectName: '' }),
+    ]
     const record: any = { outboundNo: 'EXISTING', unitPrice: 3 }
     normalize(record, items, { sumLineItemsBy: () => 0 } as any)
     expect(record.outboundNo).toBe('EXISTING')
@@ -255,7 +363,11 @@ describe('module-behavior-normalizers', () => {
 
   it('freight-bill normalize handles no customer/project names', () => {
     const config = moduleBehaviorRegistry.get('freight-bill')
-    const normalize = config!.normalizeDraftRecord as (record: any, items: ModuleLineItem[], ctx: any) => void
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
 
     const items = [makeItem({})]
     const record: any = {}

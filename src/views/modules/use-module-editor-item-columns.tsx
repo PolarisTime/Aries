@@ -4,12 +4,6 @@ import { fetchMaterialSearch } from '@/api/materials'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
-import type {
-  ModuleColumnDefinition,
-  ModuleLineItem,
-  ModulePageConfig,
-  ModuleRecord,
-} from '@/types/module-page'
 import { isEditorItemColumnEditableForModule } from '@/module-system/module-adapter-editor'
 import {
   buildModuleEditorDataColumns,
@@ -17,6 +11,12 @@ import {
 } from '@/module-system/module-editor-item-column-builders'
 import { useModuleEditorItemColumnHandlers } from '@/module-system/module-editor-item-column-handlers'
 import { applyMaterialToEditorLineItem } from '@/module-system/module-editor-line-item-utils'
+import type {
+  ModuleColumnDefinition,
+  ModuleLineItem,
+  ModulePageConfig,
+  ModuleRecord,
+} from '@/types/module-page'
 
 interface Props {
   moduleKey: string

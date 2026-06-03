@@ -48,17 +48,24 @@ describe('module-behavior-save', () => {
 
   it('registers extraScalarFields for each module in map', () => {
     Object.entries(extraScalarFieldsMap).forEach(([moduleKey, fields]) => {
-      const calls = mockedRegister.mock.calls.filter(([key]) => key === moduleKey)
+      const calls = mockedRegister.mock.calls.filter(
+        ([key]) => key === moduleKey,
+      )
       const hasExtraFields = calls.some(
-        ([, config]) => config.extraScalarFields?.join(',') === fields.join(','),
+        ([, config]) =>
+          config.extraScalarFields?.join(',') === fields.join(','),
       )
       expect(hasExtraFields).toBe(true)
     })
   })
 
   it('registers includeAttachmentIds for freight-statement', () => {
-    const calls = mockedRegister.mock.calls.filter(([key]) => key === 'freight-statement')
-    const hasAttachmentIds = calls.some(([, config]) => config.includeAttachmentIds === true)
+    const calls = mockedRegister.mock.calls.filter(
+      ([key]) => key === 'freight-statement',
+    )
+    const hasAttachmentIds = calls.some(
+      ([, config]) => config.includeAttachmentIds === true,
+    )
     expect(hasAttachmentIds).toBe(true)
   })
 
@@ -79,7 +86,9 @@ describe('module-behavior-save', () => {
   })
 
   it('registers all expected modules', () => {
-    const registeredKeys = new Set(mockedRegister.mock.calls.map(([key]) => key))
+    const registeredKeys = new Set(
+      mockedRegister.mock.calls.map(([key]) => key),
+    )
     lineItemPayloadModules.forEach((moduleKey) => {
       expect(registeredKeys.has(moduleKey)).toBe(true)
     })

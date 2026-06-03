@@ -11,7 +11,9 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/flex', () => ({
@@ -130,18 +132,27 @@ describe('ModuleTableToolbar', () => {
 
   it('renders extra content', () => {
     render(
-      <ModuleTableToolbar
-        {...defaultProps}
-        extra={<div>Extra Content</div>}
-      />,
+      <ModuleTableToolbar {...defaultProps} extra={<div>Extra Content</div>} />,
     )
     expect(screen.getByText('Extra Content')).toBeTruthy()
   })
 
   it('renders toolbar actions', () => {
     const toolbarActions = [
-      { label: '审核', type: 'primary' as const, danger: false, disabled: false, loading: false },
-      { label: '导出', type: 'default' as const, danger: false, disabled: false, loading: false },
+      {
+        label: '审核',
+        type: 'primary' as const,
+        danger: false,
+        disabled: false,
+        loading: false,
+      },
+      {
+        label: '导出',
+        type: 'default' as const,
+        danger: false,
+        disabled: false,
+        loading: false,
+      },
     ]
     const onAction = vi.fn()
     render(
@@ -156,26 +167,32 @@ describe('ModuleTableToolbar', () => {
 
   it('skips toolbar actions with label containing 新增', () => {
     const toolbarActions = [
-      { label: '新增记录', type: 'primary' as const, danger: false, disabled: false, loading: false },
+      {
+        label: '新增记录',
+        type: 'primary' as const,
+        danger: false,
+        disabled: false,
+        loading: false,
+      },
     ]
     render(
-      <ModuleTableToolbar
-        {...defaultProps}
-        toolbarActions={toolbarActions}
-      />,
+      <ModuleTableToolbar {...defaultProps} toolbarActions={toolbarActions} />,
     )
     expect(screen.queryByText('新增记录')).toBeNull()
   })
 
   it('hides export button when toolbarActions has 导出', () => {
     const toolbarActions = [
-      { label: '导出', type: 'default' as const, danger: false, disabled: false, loading: false },
+      {
+        label: '导出',
+        type: 'default' as const,
+        danger: false,
+        disabled: false,
+        loading: false,
+      },
     ]
     render(
-      <ModuleTableToolbar
-        {...defaultProps}
-        toolbarActions={toolbarActions}
-      />,
+      <ModuleTableToolbar {...defaultProps} toolbarActions={toolbarActions} />,
     )
     // The export from toolbarActions should show, but the default export button should be hidden
     const exportButtons = screen.getAllByText('导出')
@@ -184,7 +201,13 @@ describe('ModuleTableToolbar', () => {
 
   it('handles toolbar action click', () => {
     const toolbarActions = [
-      { label: '审核', type: 'primary' as const, danger: false, disabled: false, loading: false },
+      {
+        label: '审核',
+        type: 'primary' as const,
+        danger: false,
+        disabled: false,
+        loading: false,
+      },
     ]
     const onAction = vi.fn()
     render(
@@ -206,26 +229,32 @@ describe('ModuleTableToolbar', () => {
 
   it('renders disabled toolbar action', () => {
     const toolbarActions = [
-      { label: '删除', type: 'default' as const, danger: true, disabled: true, loading: false },
+      {
+        label: '删除',
+        type: 'default' as const,
+        danger: true,
+        disabled: true,
+        loading: false,
+      },
     ]
     render(
-      <ModuleTableToolbar
-        {...defaultProps}
-        toolbarActions={toolbarActions}
-      />,
+      <ModuleTableToolbar {...defaultProps} toolbarActions={toolbarActions} />,
     )
     expect(screen.getByText('删除')).toBeTruthy()
   })
 
   it('renders loading toolbar action', () => {
     const toolbarActions = [
-      { label: '同步', type: 'default' as const, danger: false, disabled: false, loading: true },
+      {
+        label: '同步',
+        type: 'default' as const,
+        danger: false,
+        disabled: false,
+        loading: true,
+      },
     ]
     render(
-      <ModuleTableToolbar
-        {...defaultProps}
-        toolbarActions={toolbarActions}
-      />,
+      <ModuleTableToolbar {...defaultProps} toolbarActions={toolbarActions} />,
     )
     expect(screen.getByText('同步')).toBeTruthy()
   })

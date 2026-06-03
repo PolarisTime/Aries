@@ -35,7 +35,13 @@ describe('invoiceIssuePageConfig', () => {
         orderNo: 'SO-001',
         id: 5,
         items: [
-          { id: 1, materialName: '螺纹钢', weightTon: 10, amount: 5000, quantity: 100 },
+          {
+            id: 1,
+            materialName: '螺纹钢',
+            weightTon: 10,
+            amount: 5000,
+            quantity: 100,
+          },
         ],
       } as any)
       expect(items).toHaveLength(1)

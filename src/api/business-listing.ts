@@ -23,7 +23,6 @@ import type { ModuleRecord } from '@/types/module-page'
 import { getApiMessage } from '@/utils/api-messages'
 import type { ListQueryOptions } from '@/utils/list'
 
-
 export async function listBusinessModule(
   moduleKey: string,
   search: SearchParams,

@@ -77,13 +77,22 @@ export function GeneralSettingsEditorModal({
     >
       {record && (
         <Form form={form} layout="vertical">
-          <Form.Item name="settingCode" label={t('system.generalSettingsEditor.settingCode')}>
+          <Form.Item
+            name="settingCode"
+            label={t('system.generalSettingsEditor.settingCode')}
+          >
             <Input disabled />
           </Form.Item>
-          <Form.Item name="settingName" label={t('system.generalSettingsEditor.settingName')}>
+          <Form.Item
+            name="settingName"
+            label={t('system.generalSettingsEditor.settingName')}
+          >
             <Input disabled />
           </Form.Item>
-          <Form.Item name="billName" label={t('system.generalSettingsEditor.billScope')}>
+          <Form.Item
+            name="billName"
+            label={t('system.generalSettingsEditor.billScope')}
+          >
             <Input disabled />
           </Form.Item>
           {isNumericSetting(record) ? (
@@ -101,11 +110,17 @@ export function GeneralSettingsEditorModal({
                       asString(record.settingCode) === WATERMARK_COLOR_CODE
                         ? 50
                         : 64,
-                    message: t('system.generalSettingsEditor.maxChars', { count: asString(record.settingCode) === WATERMARK_COLOR_CODE ? 50 : 64 }),
+                    message: t('system.generalSettingsEditor.maxChars', {
+                      count:
+                        asString(record.settingCode) === WATERMARK_COLOR_CODE
+                          ? 50
+                          : 64,
+                    }),
                   },
                 ]}
                 extra={
-                  asString(record.settingCode) === WATERMARK_COLOR_CODE ? null : (
+                  asString(record.settingCode) ===
+                  WATERMARK_COLOR_CODE ? null : (
                     <Typography.Text type="secondary" className="text-xs">
                       {t('system.generalSettingsEditor.magicVars')}{' '}
                       <Typography.Text code className="text-xs">
@@ -190,11 +205,21 @@ export function GeneralSettingsEditorModal({
                 label={t('system.generalSettingsEditor.enabledStatus')}
                 valuePropName="checked"
               >
-                <Switch checkedChildren={t('system.generalSettingsEditor.switchEnabled')} unCheckedChildren={t('system.generalSettingsEditor.switchDisabled')} />
+                <Switch
+                  checkedChildren={t(
+                    'system.generalSettingsEditor.switchEnabled',
+                  )}
+                  unCheckedChildren={t(
+                    'system.generalSettingsEditor.switchDisabled',
+                  )}
+                />
               </Form.Item>
               {asString(record.settingCode) ===
                 'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS' && (
-                <Form.Item name="selectedActions" label={t('system.generalSettingsEditor.recordedActions')}>
+                <Form.Item
+                  name="selectedActions"
+                  label={t('system.generalSettingsEditor.recordedActions')}
+                >
                   <Select
                     mode="multiple"
                     options={DETAILED_OPERATION_ACTION_OPTIONS}
@@ -203,7 +228,10 @@ export function GeneralSettingsEditorModal({
               )}
               {asString(record.settingCode) ===
                 'UI_HIDE_AUDITED_LIST_RECORDS' && (
-                <Form.Item name="selectedActions" label={t('system.generalSettingsEditor.hiddenStatuses')}>
+                <Form.Item
+                  name="selectedActions"
+                  label={t('system.generalSettingsEditor.hiddenStatuses')}
+                >
                   <Select
                     mode="multiple"
                     options={HIDE_AUDITED_STATUS_OPTIONS}
@@ -212,7 +240,10 @@ export function GeneralSettingsEditorModal({
               )}
             </>
           )}
-          <Form.Item name="remark" label={t('system.generalSettingsEditor.remark')}>
+          <Form.Item
+            name="remark"
+            label={t('system.generalSettingsEditor.remark')}
+          >
             <Input.TextArea rows={2} disabled />
           </Form.Item>
           {SYSTEM_SWITCH_HELP_TEXT[asString(record.settingCode)] && (

@@ -42,7 +42,9 @@ export function buildDashboardInfoItems(
     {
       key: 'totpEnabled',
       label: t('dashboard.info.mfaStatus'),
-      value: summary?.totpEnabled ? t('dashboard.values.enabled') : t('dashboard.values.disabled'),
+      value: summary?.totpEnabled
+        ? t('dashboard.values.enabled')
+        : t('dashboard.values.disabled'),
       icon: SafetyOutlined,
     },
     {

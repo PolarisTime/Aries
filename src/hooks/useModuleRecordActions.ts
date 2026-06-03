@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import type { ActionItem } from '@/components/TableActions'
+import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
-import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
 
 interface Props {
   moduleKey: string

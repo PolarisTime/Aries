@@ -33,7 +33,9 @@ describe('supplierStatementPageConfig', () => {
     })
 
     it('validateBeforeOpen returns null when supplierName is present', () => {
-      expect(pi.validateBeforeOpen!({ supplierName: '供应商A' } as any)).toBeNull()
+      expect(
+        pi.validateBeforeOpen!({ supplierName: '供应商A' } as any),
+      ).toBeNull()
     })
 
     it('validateBeforeOpen returns error when supplierName is empty', () => {
@@ -90,9 +92,7 @@ describe('supplierStatementPageConfig', () => {
     it('transformItems maps items with source info', () => {
       const items = pi.transformItems!({
         inboundNo: 'PI-2024-001',
-        items: [
-          { id: 1, materialName: '螺纹钢' },
-        ],
+        items: [{ id: 1, materialName: '螺纹钢' }],
       } as any)
       expect(items).toHaveLength(1)
       expect(items[0].id).toBe('PI-2024-001-1')

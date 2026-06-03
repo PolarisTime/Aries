@@ -5,7 +5,10 @@ const httpPutMock = vi.hoisted(() => vi.fn())
 const getApiMessageMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/api/client', () => ({
-  assertApiSuccess: <T extends { code?: number }>(response: T, fallback?: string) => {
+  assertApiSuccess: <T extends { code?: number }>(
+    response: T,
+    fallback?: string,
+  ) => {
     if (Number(response?.code) !== 0) {
       throw new Error(fallback || '请求失败')
     }
@@ -21,7 +24,10 @@ vi.mock('@/utils/api-messages', () => ({
   getApiMessage: getApiMessageMock,
 }))
 
-import { getUserColumnSettings, saveUserColumnSettings } from './user-preferences'
+import {
+  getUserColumnSettings,
+  saveUserColumnSettings,
+} from './user-preferences'
 
 describe('user-preferences', () => {
   beforeEach(() => {

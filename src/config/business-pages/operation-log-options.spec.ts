@@ -41,7 +41,9 @@ describe('operation-log-options', () => {
 
   describe('resolveOperationLogActionOptions', () => {
     it('returns module-specific options for known module', () => {
-      const options = resolveOperationLogActionOptions({ moduleName: '认证授权' })
+      const options = resolveOperationLogActionOptions({
+        moduleName: '认证授权',
+      })
       expect(Array.isArray(options)).toBe(true)
       expect(options.length).toBeGreaterThan(0)
       const values = options.map((o) => o.value)
@@ -49,7 +51,9 @@ describe('operation-log-options', () => {
     })
 
     it('returns default options for unknown module', () => {
-      const options = resolveOperationLogActionOptions({ moduleName: '未知模块' })
+      const options = resolveOperationLogActionOptions({
+        moduleName: '未知模块',
+      })
       expect(Array.isArray(options)).toBe(true)
       expect(options.length).toBeGreaterThan(0)
       const values = options.map((o) => o.value)
@@ -62,13 +66,17 @@ describe('operation-log-options', () => {
     })
 
     it('returns specific options for 个人设置', () => {
-      const options = resolveOperationLogActionOptions({ moduleName: '个人设置' })
+      const options = resolveOperationLogActionOptions({
+        moduleName: '个人设置',
+      })
       const values = options.map((o) => o.value)
       expect(values).toContain('修改密码')
     })
 
     it('returns specific options for API Key 管理', () => {
-      const options = resolveOperationLogActionOptions({ moduleName: 'API Key 管理' })
+      const options = resolveOperationLogActionOptions({
+        moduleName: 'API Key 管理',
+      })
       const values = options.map((o) => o.value)
       expect(values).toContain('生成 API Key')
     })

@@ -65,8 +65,6 @@ export function getCustomerProjectOptions(
   return uniqueProjectOptions(filteredRows, !customerName)
 }
 
-
-
 export function uniqueCustomerNameOptions(rows: CustomerOption[]) {
   const seen = new Set<string>()
   return rows.flatMap((row) => {
@@ -107,7 +105,10 @@ export function uniqueProjectOptions(
   })
 }
 
-export function formatProjectOptionLabel(row: CustomerOption, projectName: string) {
+export function formatProjectOptionLabel(
+  row: CustomerOption,
+  projectName: string,
+) {
   const projectNameAbbr = normalizeText(row.projectNameAbbr)
   return projectNameAbbr ? `${projectNameAbbr}（${projectName}）` : projectName
 }

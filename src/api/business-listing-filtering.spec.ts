@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest'
+import { FULL_SCAN_PAGE_SIZE } from './business-listing-constants'
 import {
   applyClientFilters,
   applyFilterDefinition,
-  buildQueryParams,
   buildFilterParams,
+  buildQueryParams,
   getUnsupportedFilterKeys,
   hasValue,
   isServerFilterKey,
-  shouldClientFilter,
   paginateRows,
+  shouldClientFilter,
 } from './business-listing-filtering'
-import { FULL_SCAN_PAGE_SIZE } from './business-listing-constants'
 
 describe('business-listing-filtering', () => {
   it('builds default server pagination and sorting params', () => {
@@ -144,11 +144,15 @@ describe('business-listing-filtering', () => {
   })
 
   it('shouldClientFilter returns true when client-side filter needed', () => {
-    expect(shouldClientFilter('purchase-order', { clientField: 'value' })).toBe(true)
+    expect(shouldClientFilter('purchase-order', { clientField: 'value' })).toBe(
+      true,
+    )
   })
 
   it('shouldClientFilter returns false when all keys are server-side', () => {
-    expect(shouldClientFilter('purchase-order', { keyword: 'test' })).toBe(false)
+    expect(shouldClientFilter('purchase-order', { keyword: 'test' })).toBe(
+      false,
+    )
   })
 
   it('shouldClientFilter returns false when search is empty', () => {
@@ -225,14 +229,20 @@ describe('business-listing-filtering', () => {
   describe('isServerFilterKey', () => {
     it('returns true for native filter key', () => {
       expect(
-        isServerFilterKey({ path: '/test', nativeFilterKeys: ['keyword'] }, 'keyword'),
+        isServerFilterKey(
+          { path: '/test', nativeFilterKeys: ['keyword'] },
+          'keyword',
+        ),
       ).toBe(true)
     })
 
     it('returns true for date range mapping key', () => {
       expect(
         isServerFilterKey(
-          { path: '/test', dateRangeMapping: { orderDate: { startKey: 's', endKey: 'e' } } },
+          {
+            path: '/test',
+            dateRangeMapping: { orderDate: { startKey: 's', endKey: 'e' } },
+          },
           'orderDate',
         ),
       ).toBe(true)
@@ -246,7 +256,11 @@ describe('business-listing-filtering', () => {
   describe('applyFilterDefinition', () => {
     it('returns true when rawValue has no value', () => {
       expect(
-        applyFilterDefinition({ id: '1' }, { key: 'k', type: 'input', label: 'L' }, null),
+        applyFilterDefinition(
+          { id: '1' },
+          { key: 'k', type: 'input', label: 'L' },
+          null,
+        ),
       ).toBe(true)
     })
 
@@ -265,7 +279,12 @@ describe('business-listing-filtering', () => {
         expect(
           applyFilterDefinition(
             { id: '1', orderNo: 'PO001' },
-            { key: 'k', type: 'input', label: 'L', clientSearchKeys: ['orderNo'] },
+            {
+              key: 'k',
+              type: 'input',
+              label: 'L',
+              clientSearchKeys: ['orderNo'],
+            },
             'PO001',
           ),
         ).toBe(true)
@@ -275,7 +294,12 @@ describe('business-listing-filtering', () => {
         expect(
           applyFilterDefinition(
             { id: '1', orderNo: 'PO001' },
-            { key: 'k', type: 'input', label: 'L', clientSearchKeys: ['orderNo'] },
+            {
+              key: 'k',
+              type: 'input',
+              label: 'L',
+              clientSearchKeys: ['orderNo'],
+            },
             'XS',
           ),
         ).toBe(false)

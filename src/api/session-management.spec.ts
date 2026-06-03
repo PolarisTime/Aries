@@ -25,10 +25,10 @@ vi.mock('@/utils/api-messages', () => ({
 }))
 
 import {
-  listRefreshTokens,
   getRefreshTokenSummary,
-  revokeRefreshToken,
+  listRefreshTokens,
   revokeAllRefreshTokens,
+  revokeRefreshToken,
 } from './session-management'
 
 describe('session-management', () => {
@@ -75,7 +75,10 @@ describe('session-management', () => {
     })
 
     it('passes keyword filter', async () => {
-      httpGetMock.mockResolvedValue({ code: 0, data: { content: [], totalElements: 0, totalPages: 0 } })
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: { content: [], totalElements: 0, totalPages: 0 },
+      })
 
       await listRefreshTokens({ page: 0, size: 10, keyword: 'admin' })
 
@@ -111,7 +114,9 @@ describe('session-management', () => {
 
       await revokeRefreshToken('token-1')
 
-      expect(httpPostMock).toHaveBeenCalledWith('/refresh-tokens/token-1/revoke')
+      expect(httpPostMock).toHaveBeenCalledWith(
+        '/refresh-tokens/token-1/revoke',
+      )
     })
   })
 

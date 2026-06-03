@@ -1,13 +1,16 @@
-import { describe, expect, it, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import type { ModuleFormFieldDefinition } from '@/types/module-page'
+import { moduleBehaviorRegistry } from './module-behavior-registry-core'
 import {
   normalizeDraftRecordForModule,
   syncDerivedEditorFormValuesForModule,
 } from './module-editor-draft'
-import { moduleBehaviorRegistry } from './module-behavior-registry-core'
-import type { ModuleFormFieldDefinition } from '@/types/module-page'
 
 const sumLineItemsBy = (_items: any[], key: string) => {
-  return (_items as any[]).reduce((s: number, item: any) => s + Number(item[key] || 0), 0)
+  return (_items as any[]).reduce(
+    (s: number, item: any) => s + Number(item[key] || 0),
+    0,
+  )
 }
 
 beforeEach(() => {
@@ -198,7 +201,9 @@ describe('syncDerivedEditorFormValuesForModule', () => {
       changedKeys: new Set(['signDate']),
     })
 
-    expect(syncFn).toHaveBeenCalledWith(record, { changedKeys: new Set(['signDate']) })
+    expect(syncFn).toHaveBeenCalledWith(record, {
+      changedKeys: new Set(['signDate']),
+    })
   })
 
   it('passes empty Set when changedKeys is undefined', () => {

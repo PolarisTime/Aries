@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
 import type { FormInstance } from 'antd/es/form'
+import { describe, expect, it, vi } from 'vitest'
 import { getFormString, validateForm } from './antd-form'
 
 function createMockForm(

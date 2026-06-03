@@ -34,9 +34,7 @@ describe('salesOutboundPageConfig', () => {
     it('transformItems clones and maps items', () => {
       const items = pi.transformItems!({
         orderNo: 'SO-001',
-        items: [
-          { id: 1, materialName: '螺纹钢' },
-        ],
+        items: [{ id: 1, materialName: '螺纹钢' }],
       } as any)
       expect(items).toHaveLength(1)
       expect(items[0].sourceNo).toBe('SO-001')

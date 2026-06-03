@@ -1,11 +1,11 @@
-import { asString } from '@/utils/type-narrowing'
-import { getBehaviorValue } from './module-behavior-registry'
 import type {
   ModuleFilterDefinition,
   ModuleFilterOptionEntry,
   ModuleFormFieldDefinition,
   ModuleFormFieldOption,
 } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
+import { getBehaviorValue } from './module-behavior-registry'
 
 export type ModuleActionKind =
   | 'openSupplierStatementGenerator'

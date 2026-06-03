@@ -5,7 +5,6 @@ import type {
   SavePrintTemplatePayload,
 } from '@/types/print-template'
 
-
 export function listPrintTemplates(billType: string) {
   return restGet<PrintTemplateResponse<PrintTemplateRecord[]>>(
     '/print-templates',

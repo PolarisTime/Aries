@@ -1,8 +1,12 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { useBusinessGridBatchActionsMock, useBusinessGridFreightActionsMock,
-  useBusinessGridPrintActionsMock, useBusinessGridStatementActionsMock } = vi.hoisted(() => ({
+const {
+  useBusinessGridBatchActionsMock,
+  useBusinessGridFreightActionsMock,
+  useBusinessGridPrintActionsMock,
+  useBusinessGridStatementActionsMock,
+} = vi.hoisted(() => ({
   useBusinessGridBatchActionsMock: vi.fn().mockReturnValue({
     handleSelectedAuditRecords: vi.fn(),
     handleSelectedDeleteRecords: vi.fn(),
@@ -53,7 +57,7 @@ describe('useBusinessGridActions', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
-    
+
     useBusinessGridBatchActionsMock.mockReturnValue({
       handleSelectedAuditRecords: vi.fn(),
       handleSelectedDeleteRecords: vi.fn(),
@@ -102,7 +106,7 @@ describe('useBusinessGridActions', () => {
         selectedRows: [{ id: '1' }, { id: '2' }],
         listAuditTarget: 'confirmed',
         listReverseAuditTarget: 'draft',
-      })
+      }),
     )
   })
 
@@ -127,11 +131,13 @@ describe('useBusinessGridActions', () => {
     const refreshModuleQueries = vi.fn().mockResolvedValue(undefined)
     const clearSelection = vi.fn()
 
-    renderHook(() => useBusinessGridActions({
-      ...defaultProps,
-      refreshModuleQueries,
-      clearSelection,
-    }))
+    renderHook(() =>
+      useBusinessGridActions({
+        ...defaultProps,
+        refreshModuleQueries,
+        clearSelection,
+      }),
+    )
 
     const batchActionsCall = useBusinessGridBatchActionsMock.mock.calls[0][0]
     await batchActionsCall.refreshAndClearSelection()

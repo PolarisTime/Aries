@@ -35,14 +35,14 @@ vi.mock('@/utils/api-messages', () => ({
 }))
 
 import {
-  login,
-  fetchCaptcha,
-  login2fa,
-  logout,
-  refreshSession,
-  pingAuth,
   checkAuthPing,
   fetchBackendHealth,
+  fetchCaptcha,
+  login,
+  login2fa,
+  logout,
+  pingAuth,
+  refreshSession,
 } from './auth'
 
 describe('auth', () => {
@@ -76,7 +76,10 @@ describe('auth', () => {
 
   describe('fetchCaptcha', () => {
     it('fetches captcha data', async () => {
-      const mockResponse = { code: 0, data: { captchaId: '1', image: 'base64' } }
+      const mockResponse = {
+        code: 0,
+        data: { captchaId: '1', image: 'base64' },
+      }
       httpGetMock.mockResolvedValue(mockResponse)
 
       const result = await fetchCaptcha()
@@ -93,7 +96,9 @@ describe('auth', () => {
 
       const result = await login2fa({ totpCode: '123456' })
 
-      expect(httpPostMock).toHaveBeenCalledWith('/auth/login-2fa', { totpCode: '123456' })
+      expect(httpPostMock).toHaveBeenCalledWith('/auth/login-2fa', {
+        totpCode: '123456',
+      })
       expect(result).toEqual(mockResponse)
     })
   })
@@ -178,7 +183,12 @@ describe('auth', () => {
 
   describe('fetchBackendHealth', () => {
     it('fetches health status', async () => {
-      const healthData = { status: 'UP', app: 'aries', traceId: 't1', timestamp: '2024-01-01' }
+      const healthData = {
+        status: 'UP',
+        app: 'aries',
+        traceId: 't1',
+        timestamp: '2024-01-01',
+      }
       httpGetMock.mockResolvedValue({ code: 0, data: healthData })
 
       const result = await fetchBackendHealth()

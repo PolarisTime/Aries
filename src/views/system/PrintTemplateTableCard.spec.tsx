@@ -8,9 +8,7 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/config/print-template-targets', () => ({
-  printTemplateTargetOptions: [
-    { label: '采购订单', value: 'PURCHASE_ORDER' },
-  ],
+  printTemplateTargetOptions: [{ label: '采购订单', value: 'PURCHASE_ORDER' }],
 }))
 
 vi.mock('@/utils/formatters', () => ({
@@ -28,7 +26,13 @@ describe('PrintTemplateTableCard', () => {
     selectedBillType: 'PURCHASE_ORDER',
     activeTemplateId: undefined,
     templates: [
-      { id: '1', templateName: 'Template 1', billType: 'PURCHASE_ORDER', templateType: 'HTML', updateTime: '2024-01-01' },
+      {
+        id: '1',
+        templateName: 'Template 1',
+        billType: 'PURCHASE_ORDER',
+        templateType: 'HTML',
+        updateTime: '2024-01-01',
+      },
     ],
     loading: false,
     canCreate: true,
@@ -61,12 +65,16 @@ describe('PrintTemplateTableCard', () => {
 
   it('renders create button when canCreate', () => {
     render(<PrintTemplateTableCard {...defaultProps} canCreate={true} />)
-    expect(screen.getByText('system.printTemplate.newTemplate')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplate.newTemplate'),
+    ).toBeInTheDocument()
   })
 
   it('does not render create button when not canCreate', () => {
     render(<PrintTemplateTableCard {...defaultProps} canCreate={false} />)
-    expect(screen.queryByText('system.printTemplate.newTemplate')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.printTemplate.newTemplate'),
+    ).not.toBeInTheDocument()
   })
 
   it('renders table with data', () => {

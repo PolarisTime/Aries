@@ -29,15 +29,23 @@ vi.mock('@/utils/type-narrowing', () => ({
   asString: (v: unknown) => String(v ?? ''),
 }))
 
-import { listAllStatementCandidates, listStatementCandidatePage, normalizeRecord } from './statements'
+import {
+  listAllStatementCandidates,
+  listStatementCandidatePage,
+  normalizeRecord,
+} from './statements'
 
 describe('statements', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     assertApiSuccessMock.mockImplementation(<T>(response: T) => response)
     getModuleConfigMock.mockReturnValue({ path: '/supplier-statements' })
-    pageContentMock.mockImplementation((data: { content?: unknown[] }) => data.content || [])
-    pageTotalElementsMock.mockImplementation((data: { totalElements?: number }) => data.totalElements || 0)
+    pageContentMock.mockImplementation(
+      (data: { content?: unknown[] }) => data.content || [],
+    )
+    pageTotalElementsMock.mockImplementation(
+      (data: { totalElements?: number }) => data.totalElements || 0,
+    )
   })
 
   describe('listAllStatementCandidates', () => {
@@ -48,7 +56,12 @@ describe('statements', () => {
         data: { content: rows, totalElements: 1 },
       })
 
-      const result = await listAllStatementCandidates('supplier-statement', '', 200, {})
+      const result = await listAllStatementCandidates(
+        'supplier-statement',
+        '',
+        200,
+        {},
+      )
 
       expect(getModuleConfigMock).toHaveBeenCalledWith('supplier-statement')
       expect(httpGetMock).toHaveBeenCalledWith(
@@ -59,7 +72,9 @@ describe('statements', () => {
     })
 
     it('paginates when total exceeds page size', async () => {
-      const page1Rows = Array.from({ length: 2 }, (_, i) => ({ id: String(i + 1) }))
+      const page1Rows = Array.from({ length: 2 }, (_, i) => ({
+        id: String(i + 1),
+      }))
       const page2Rows = [{ id: '3' }]
 
       httpGetMock
@@ -72,7 +87,12 @@ describe('statements', () => {
           data: { content: page2Rows, totalElements: 3 },
         })
 
-      const result = await listAllStatementCandidates('supplier-statement', '', 2, {})
+      const result = await listAllStatementCandidates(
+        'supplier-statement',
+        '',
+        2,
+        {},
+      )
 
       expect(httpGetMock).toHaveBeenCalledTimes(2)
       expect(result).toHaveLength(3)
@@ -84,7 +104,9 @@ describe('statements', () => {
         data: { content: [], totalElements: 0 },
       })
 
-      await listAllStatementCandidates('supplier-statement', 'test', 200, { status: '启用' })
+      await listAllStatementCandidates('supplier-statement', 'test', 200, {
+        status: '启用',
+      })
 
       expect(httpGetMock).toHaveBeenCalledWith(
         '/supplier-statements/candidate',
@@ -144,7 +166,10 @@ describe('statements', () => {
     it('normalizes items array ids', () => {
       const result = normalizeRecord({
         id: '1',
-        items: [{ id: 'item-1', name: 'a' }, { id: 'item-2', name: 'b' }],
+        items: [
+          { id: 'item-1', name: 'a' },
+          { id: 'item-2', name: 'b' },
+        ],
       })
       expect(result.items).toHaveLength(2)
       expect(result.items![0].id).toBe('item-1')

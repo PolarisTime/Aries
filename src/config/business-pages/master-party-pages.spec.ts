@@ -6,7 +6,8 @@ vi.mock('i18next', () => ({
 
 vi.mock('@/constants/module-options', () => ({
   enabledStatusOptions: [],
-  buildValueOptions: (...args: string[]) => args.map((v) => ({ label: v, value: v })),
+  buildValueOptions: (...args: string[]) =>
+    args.map((v) => ({ label: v, value: v })),
 }))
 
 import { masterPartyPageConfigs } from './master-party-pages'

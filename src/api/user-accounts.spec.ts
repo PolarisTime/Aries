@@ -35,17 +35,17 @@ vi.mock('@/utils/api-messages', () => ({
 
 import {
   buildUserAccountUrl,
-  listUserAccounts,
-  getUserAccountDetail,
   checkUserAccountLoginName,
   createUserAccount,
-  updateUserAccount,
   deleteUserAccount,
-  setupUserAccount2fa,
-  enableUserAccount2fa,
   disableUserAccount2fa,
-  listRoleOptions,
+  enableUserAccount2fa,
+  getUserAccountDetail,
   listDepartmentOptions,
+  listRoleOptions,
+  listUserAccounts,
+  setupUserAccount2fa,
+  updateUserAccount,
 } from './user-accounts'
 
 describe('user-accounts', () => {
@@ -100,9 +100,12 @@ describe('user-accounts', () => {
 
       const result = await checkUserAccountLoginName('newuser')
 
-      expect(httpGetMock).toHaveBeenCalledWith('/user-accounts/check-login-name', {
-        params: { loginName: 'newuser', excludeUserId: undefined },
-      })
+      expect(httpGetMock).toHaveBeenCalledWith(
+        '/user-accounts/check-login-name',
+        {
+          params: { loginName: 'newuser', excludeUserId: undefined },
+        },
+      )
       expect(result).toEqual({ available: true })
     })
 
@@ -111,9 +114,12 @@ describe('user-accounts', () => {
 
       await checkUserAccountLoginName('admin', 'user-1')
 
-      expect(httpGetMock).toHaveBeenCalledWith('/user-accounts/check-login-name', {
-        params: { loginName: 'admin', excludeUserId: 'user-1' },
-      })
+      expect(httpGetMock).toHaveBeenCalledWith(
+        '/user-accounts/check-login-name',
+        {
+          params: { loginName: 'admin', excludeUserId: 'user-1' },
+        },
+      )
     })
   })
 
@@ -171,7 +177,10 @@ describe('user-accounts', () => {
 
   describe('enableUserAccount2fa', () => {
     it('enables 2fa with TOTP code', async () => {
-      httpPostMock.mockResolvedValue({ code: 0, data: { id: '1', totpEnabled: true } })
+      httpPostMock.mockResolvedValue({
+        code: 0,
+        data: { id: '1', totpEnabled: true },
+      })
 
       const result = await enableUserAccount2fa('1', '123456')
 
@@ -184,7 +193,10 @@ describe('user-accounts', () => {
 
   describe('disableUserAccount2fa', () => {
     it('disables 2fa', async () => {
-      httpPostMock.mockResolvedValue({ code: 0, data: { id: '1', totpEnabled: false } })
+      httpPostMock.mockResolvedValue({
+        code: 0,
+        data: { id: '1', totpEnabled: false },
+      })
 
       const result = await disableUserAccount2fa('1')
 
@@ -208,7 +220,9 @@ describe('user-accounts', () => {
       expect(httpGetMock).toHaveBeenCalledWith('/roles', {
         params: { page: 0, size: 200 },
       })
-      expect(result).toEqual([{ id: '1', roleCode: 'admin', roleName: '管理员' }])
+      expect(result).toEqual([
+        { id: '1', roleCode: 'admin', roleName: '管理员' },
+      ])
     })
   })
 
@@ -216,9 +230,7 @@ describe('user-accounts', () => {
     it('fetches and normalizes department options', async () => {
       const mockData = {
         code: 0,
-        data: [
-          { id: 1, departmentCode: 'D001', departmentName: '技术部' },
-        ],
+        data: [{ id: 1, departmentCode: 'D001', departmentName: '技术部' }],
       }
       httpGetMock.mockResolvedValue(mockData)
 

@@ -28,15 +28,11 @@ describe('carrier-options', () => {
 
   describe('getCarrierOptions', () => {
     it('returns carriers from cache', () => {
-      getMock.mockReturnValue([
-        { value: '承运商A', label: '承运商A' },
-      ])
+      getMock.mockReturnValue([{ value: '承运商A', label: '承运商A' }])
 
       const result = getCarrierOptions()
 
-      expect(result).toEqual([
-        { value: '承运商A', label: '承运商A' },
-      ])
+      expect(result).toEqual([{ value: '承运商A', label: '承运商A' }])
     })
   })
 
@@ -124,12 +120,16 @@ describe('carrier-options', () => {
 
   describe('normalizeCarrierOptions', () => {
     it('converts id to string when present', () => {
-      const result = normalizeCarrierOptions([{ id: 42 as any, value: 'v', label: 'L' }])
+      const result = normalizeCarrierOptions([
+        { id: 42 as any, value: 'v', label: 'L' },
+      ])
       expect(result[0].id).toBe('42')
     })
 
     it('keeps id undefined when null', () => {
-      const result = normalizeCarrierOptions([{ id: null as any, value: 'v', label: 'L' }])
+      const result = normalizeCarrierOptions([
+        { id: null as any, value: 'v', label: 'L' },
+      ])
       expect(result[0].id).toBeUndefined()
     })
 
@@ -139,26 +139,38 @@ describe('carrier-options', () => {
     })
 
     it('falls back to empty string for falsy label', () => {
-      const result = normalizeCarrierOptions([{ value: 'v', label: null as any }])
+      const result = normalizeCarrierOptions([
+        { value: 'v', label: null as any },
+      ])
       expect(result[0].label).toBe('')
     })
 
     it('falls back to empty string for falsy value', () => {
-      const result = normalizeCarrierOptions([{ value: undefined as any, label: 'L' }])
+      const result = normalizeCarrierOptions([
+        { value: undefined as any, label: 'L' },
+      ])
       expect(result[0].value).toBe('')
     })
 
     it('filters empty and whitespace-only vehicle plates', () => {
-      const result = normalizeCarrierOptions([{
-        value: 'c', label: 'C', vehiclePlates: ['京A1', '', '  ', '京B2'],
-      }])
+      const result = normalizeCarrierOptions([
+        {
+          value: 'c',
+          label: 'C',
+          vehiclePlates: ['京A1', '', '  ', '京B2'],
+        },
+      ])
       expect(result[0].vehiclePlates).toEqual(['京A1', '京B2'])
     })
 
     it('returns empty array when vehiclePlates is not an array', () => {
-      const result = normalizeCarrierOptions([{
-        value: 'c', label: 'C', vehiclePlates: 'not-array' as any,
-      }])
+      const result = normalizeCarrierOptions([
+        {
+          value: 'c',
+          label: 'C',
+          vehiclePlates: 'not-array' as any,
+        },
+      ])
       expect(result[0].vehiclePlates).toEqual([])
     })
 
@@ -168,9 +180,13 @@ describe('carrier-options', () => {
     })
 
     it('handles empty vehiclePlates array', () => {
-      const result = normalizeCarrierOptions([{
-        value: 'c', label: 'C', vehiclePlates: [],
-      }])
+      const result = normalizeCarrierOptions([
+        {
+          value: 'c',
+          label: 'C',
+          vehiclePlates: [],
+        },
+      ])
       expect(result[0].vehiclePlates).toEqual([])
     })
   })

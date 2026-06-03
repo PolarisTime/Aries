@@ -1,12 +1,6 @@
-import type {
-  ModuleFilterDefinition,
-  ModuleFormFieldDefinition,
-  ModuleRecord,
-} from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 import {
-  buildListAuditTargets,
   buildEditorAuditTarget,
+  buildListAuditTargets,
   resolveStatusOptions,
 } from '@/module-system/module-adapter-actions'
 import {
@@ -14,6 +8,12 @@ import {
   isModuleLineItemsLocked,
 } from '@/module-system/module-adapter-editor'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
+import type {
+  ModuleFilterDefinition,
+  ModuleFormFieldDefinition,
+  ModuleRecord,
+} from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
 interface Props {
   moduleKey: string

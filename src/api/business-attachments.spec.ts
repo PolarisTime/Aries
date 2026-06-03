@@ -13,10 +13,10 @@ vi.mock('@/api/client', () => ({
 }))
 
 import {
-  uploadAttachment,
   getAttachmentBindings,
   updateAttachmentBindings,
   updatePageUploadRule,
+  uploadAttachment,
 } from './business-attachments'
 
 describe('business-attachments', () => {
@@ -26,7 +26,9 @@ describe('business-attachments', () => {
 
   describe('uploadAttachment', () => {
     it('sends form-data with file, moduleKey and sourceType', async () => {
-      const file = new File(['content'], 'test.pdf', { type: 'application/pdf' })
+      const file = new File(['content'], 'test.pdf', {
+        type: 'application/pdf',
+      })
       httpPostMock.mockResolvedValue({ code: 0, data: { id: '1' } })
 
       const result = await uploadAttachment(file, 'purchase-order')
@@ -44,7 +46,9 @@ describe('business-attachments', () => {
     })
 
     it('uses custom sourceType', async () => {
-      const file = new File(['content'], 'test.pdf', { type: 'application/pdf' })
+      const file = new File(['content'], 'test.pdf', {
+        type: 'application/pdf',
+      })
       httpPostMock.mockResolvedValue({})
 
       await uploadAttachment(file, 'sales-order', 'CUSTOM_UPLOAD')

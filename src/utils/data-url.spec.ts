@@ -49,7 +49,9 @@ describe('toDataImageUrl', () => {
 
   it('uses custom mime type', () => {
     const base64 = 'abc123'
-    expect(toDataImageUrl(base64, 'image/jpeg')).toBe('data:image/jpeg;base64,abc123')
+    expect(toDataImageUrl(base64, 'image/jpeg')).toBe(
+      'data:image/jpeg;base64,abc123',
+    )
   })
 
   it('trims whitespace', () => {

@@ -60,12 +60,18 @@ describe('modulePageMetaMap', () => {
     })
   })
 
-  it('stays aligned with loaded creatable page configs', { timeout: 30000 }, async () => {
+  it('stays aligned with loaded creatable page configs', {
+    timeout: 30000,
+  }, async () => {
     const missingMeta = []
 
     for (const moduleKey of autoNumberedCreatableModules) {
       const config = await loadBusinessPageConfig(moduleKey)
-      if (!config.readOnly && config.primaryNoKey && !modulePageMetaMap[moduleKey]?.primaryNoKey) {
+      if (
+        !config.readOnly &&
+        config.primaryNoKey &&
+        !modulePageMetaMap[moduleKey]?.primaryNoKey
+      ) {
         missingMeta.push(moduleKey)
       }
     }

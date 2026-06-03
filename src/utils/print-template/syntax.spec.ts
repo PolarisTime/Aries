@@ -1,17 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import {
-  expandEachBlocks,
-  expandIfBlocks,
-  renderPlaceholders,
-  PLACEHOLDER_RE,
-} from './syntax'
+import { expandEachBlocks, expandIfBlocks, renderPlaceholders } from './syntax'
 
 describe('renderPlaceholders', () => {
   it('replaces placeholders with data values', () => {
-    const result = renderPlaceholders('Hello {{name}}, your total is {{total}}', {
-      name: 'Alice',
-      total: '1000',
-    })
+    const result = renderPlaceholders(
+      'Hello {{name}}, your total is {{total}}',
+      {
+        name: 'Alice',
+        total: '1000',
+      },
+    )
     expect(result).toBe('Hello Alice, your total is 1000')
   })
 
@@ -35,10 +33,7 @@ describe('renderPlaceholders', () => {
 describe('expandEachBlocks', () => {
   it('expands each block with item data', () => {
     const template = '{{#each items}}<li>{{name}}</li>{{/each}}'
-    const items = [
-      { name: 'Item1' },
-      { name: 'Item2' },
-    ]
+    const items = [{ name: 'Item1' }, { name: 'Item2' }]
     const result = expandEachBlocks(template, items)
     expect(result).toBe('<li>Item1</li><li>Item2</li>')
   })
@@ -66,7 +61,8 @@ describe('expandEachBlocks', () => {
   })
 
   it('expands each block with multiple items and placeholders', () => {
-    const template = '{{#each rows}}<tr><td>{{code}}</td><td>{{value}}</td></tr>{{/each}}'
+    const template =
+      '{{#each rows}}<tr><td>{{code}}</td><td>{{value}}</td></tr>{{/each}}'
     const items = [
       { code: 'A001', value: '100' },
       { code: 'A002', value: '200' },
@@ -75,8 +71,8 @@ describe('expandEachBlocks', () => {
     const result = expandEachBlocks(template, items)
     expect(result).toBe(
       '<tr><td>A001</td><td>100</td></tr>' +
-      '<tr><td>A002</td><td>200</td></tr>' +
-      '<tr><td>A003</td><td>300</td></tr>',
+        '<tr><td>A002</td><td>200</td></tr>' +
+        '<tr><td>A003</td><td>300</td></tr>',
     )
   })
 

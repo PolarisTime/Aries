@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   getApiKeyAllowedActionText,
@@ -35,14 +35,17 @@ describe('api-key-view-utils', () => {
     })
 
     it('returns only loginName when userName is empty', () => {
-      expect(getApiKeyUserDisplayName({ userName: '', loginName: 'admin' })).toBe(
-        'admin',
-      )
+      expect(
+        getApiKeyUserDisplayName({ userName: '', loginName: 'admin' }),
+      ).toBe('admin')
     })
 
     it('returns only loginName when userName is falsy', () => {
       expect(
-        getApiKeyUserDisplayName({ userName: undefined as never, loginName: 'root' }),
+        getApiKeyUserDisplayName({
+          userName: undefined as never,
+          loginName: 'root',
+        }),
       ).toBe('root')
     })
   })
@@ -77,10 +80,7 @@ describe('api-key-view-utils', () => {
     })
 
     it('falls back to code when title not found', () => {
-      const result = getApiKeyAllowedResourceText(
-        ['unknown'],
-        resourceOptions,
-      )
+      const result = getApiKeyAllowedResourceText(['unknown'], resourceOptions)
       expect(result).toBe('unknown')
     })
 
@@ -111,7 +111,10 @@ describe('api-key-view-utils', () => {
     })
 
     it('maps action codes to titles', () => {
-      const result = getApiKeyAllowedActionText(['read', 'write'], actionOptions)
+      const result = getApiKeyAllowedActionText(
+        ['read', 'write'],
+        actionOptions,
+      )
       expect(result).toContain('读取')
       expect(result).toContain('写入')
     })

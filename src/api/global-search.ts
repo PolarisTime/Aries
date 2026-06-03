@@ -1,7 +1,7 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
 import type { GlobalSearchResult } from '@/layouts/global-search'
+import type { ApiResponse } from '@/types/api'
 import { asString } from '@/utils/type-narrowing'
 
 export interface GlobalSearchResponse {
@@ -13,7 +13,9 @@ export interface GlobalSearchResponse {
   matchedByTrackId?: boolean
 }
 
-export function toGlobalSearchResult(item: GlobalSearchResponse): GlobalSearchResult {
+export function toGlobalSearchResult(
+  item: GlobalSearchResponse,
+): GlobalSearchResult {
   const moduleKey = asString(item.moduleKey)
   const trackId = asString(item.trackId)
   const primaryNo = asString(item.primaryNo || item.trackId)

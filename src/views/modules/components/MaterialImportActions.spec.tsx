@@ -8,7 +8,9 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/space', () => ({
@@ -59,7 +61,9 @@ describe('MaterialImportActions', () => {
 
   it('renders download template button', () => {
     render(<MaterialImportActions {...defaultProps} />)
-    expect(screen.getByText('modules.pages.material.downloadTemplate')).toBeTruthy()
+    expect(
+      screen.getByText('modules.pages.material.downloadTemplate'),
+    ).toBeTruthy()
   })
 
   it('renders import button', () => {

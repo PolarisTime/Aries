@@ -38,9 +38,11 @@ function DatabaseServiceCard({
   return (
     <Card size="small" className="database-service-card">
       <div className="database-service-card-header">
-        <div className="database-service-icon"
+        <div
+          className="database-service-icon"
           /* 动态背景色：accent 由父组件传入，对应不同服务类型 */
-          style={{ background: accent }}>
+          style={{ background: accent }}
+        >
           {icon}
         </div>
         <div className="database-service-title">
@@ -116,8 +118,14 @@ export function DatabaseStatusOverview({ dbStatus, loading }: Props) {
               version={dbStatus.postgres.version}
               status={dbStatus.postgres.status}
               summary={[
-                { title: t('system.databaseStatus.dbSize'), value: dbStatus.postgres.databaseSize },
-                { title: t('system.databaseStatus.tableCount'), value: dbStatus.postgres.tableCount },
+                {
+                  title: t('system.databaseStatus.dbSize'),
+                  value: dbStatus.postgres.databaseSize,
+                },
+                {
+                  title: t('system.databaseStatus.tableCount'),
+                  value: dbStatus.postgres.tableCount,
+                },
                 {
                   title: t('system.databaseStatus.activeConnections'),
                   value: `${dbStatus.postgres.activeConnections}/${dbStatus.postgres.maxConnections}`,
@@ -128,7 +136,10 @@ export function DatabaseStatusOverview({ dbStatus, loading }: Props) {
                   label: t('system.databaseStatus.address'),
                   value: `${dbStatus.postgres.host}:${dbStatus.postgres.port}`,
                 },
-                { label: t('system.databaseStatus.database'), value: dbStatus.postgres.database },
+                {
+                  label: t('system.databaseStatus.database'),
+                  value: dbStatus.postgres.database,
+                },
                 ...(dbStatus.postgres.serverStartTime
                   ? [
                       {
@@ -154,15 +165,24 @@ export function DatabaseStatusOverview({ dbStatus, loading }: Props) {
                   title: t('system.databaseStatus.memUsage'),
                   value: formatDatabaseMemory(dbStatus.redis.usedMemory),
                 },
-                { title: t('system.databaseStatus.keyCount'), value: dbStatus.redis.totalKeys },
-                { title: t('system.databaseStatus.hitRate'), value: `${dbStatus.redis.hitRate}%` },
+                {
+                  title: t('system.databaseStatus.keyCount'),
+                  value: dbStatus.redis.totalKeys,
+                },
+                {
+                  title: t('system.databaseStatus.hitRate'),
+                  value: `${dbStatus.redis.hitRate}%`,
+                },
               ]}
               details={[
                 {
                   label: t('system.databaseStatus.address'),
                   value: `${dbStatus.redis.host}:${dbStatus.redis.port}`,
                 },
-                { label: t('system.databaseStatus.uptime'), value: dbStatus.redis.uptime },
+                {
+                  label: t('system.databaseStatus.uptime'),
+                  value: dbStatus.redis.uptime,
+                },
                 {
                   label: t('system.databaseStatus.clientConnections'),
                   value: `${dbStatus.redis.connectedClients} ${t('system.databaseStatus.connectionCount')}`,

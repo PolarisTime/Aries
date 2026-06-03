@@ -14,7 +14,9 @@ vi.mock('@ant-design/icons', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('./ColumnSettingsPopover', () => ({

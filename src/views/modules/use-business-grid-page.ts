@@ -19,10 +19,10 @@ import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import { useModuleRecordActions } from '@/hooks/useModuleRecordActions'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import { useModuleToolbarActions } from '@/hooks/useModuleToolbarActions'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 import { resolveStatusOptions } from '@/module-system/module-adapter-actions'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
+import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overlays'
 import { useBusinessGridTable } from '@/views/modules/use-business-grid-table'
@@ -104,7 +104,8 @@ export function useBusinessGridPage({
     })
 
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
-  const { exporting, handleExport: exportModuleRows } = useExcelExport(moduleKey)
+  const { exporting, handleExport: exportModuleRows } =
+    useExcelExport(moduleKey)
   const handleExport = async () => {
     await exportModuleRows(submittedFilters)
   }

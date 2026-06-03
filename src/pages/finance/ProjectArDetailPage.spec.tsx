@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { describe, afterEach, expect, it, vi } from 'vitest'
 import { useQuery } from '@tanstack/react-query'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const mockUseQuery = vi.mocked(useQuery)
 
@@ -110,7 +110,9 @@ vi.mock('@/api/client', () => ({
 vi.mock('@/constants/query-keys', () => ({
   QUERY_KEYS: {
     projectArSummary: vi.fn().mockReturnValue(['project-ar-summary', '123']),
-    projectArDetail: vi.fn().mockReturnValue(['project-ar-detail', '123', 'unreconciled']),
+    projectArDetail: vi
+      .fn()
+      .mockReturnValue(['project-ar-detail', '123', 'unreconciled']),
   },
 }))
 
@@ -151,12 +153,18 @@ vi.mock('antd/es/descriptions', () => {
 
 vi.mock('antd/es/flex', () => ({
   default: ({ children, justify, align, gap, className }: any) => (
-    <div data-testid="flex" className={className}>{children}</div>
+    <div data-testid="flex" className={className}>
+      {children}
+    </div>
   ),
 }))
 
 vi.mock('antd/es/spin', () => ({
-  default: ({ size }: any) => <div data-testid="spin" data-size={size}>Loading...</div>,
+  default: ({ size }: any) => (
+    <div data-testid="spin" data-size={size}>
+      Loading...
+    </div>
+  ),
 }))
 
 vi.mock('antd/es/table', () => {
@@ -208,7 +216,12 @@ vi.mock('antd/es/typography', () => {
     </h1>
   )
   Typography.Text = ({ children, strong, color, className }: any) => (
-    <span data-testid="text" data-strong={strong} data-color={color} className={className}>
+    <span
+      data-testid="text"
+      data-strong={strong}
+      data-color={color}
+      className={className}
+    >
       {children}
     </span>
   )
@@ -311,7 +324,9 @@ describe('ProjectArDetailPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Test Project')).toBeDefined()
       expect(screen.getAllByText('C001').length).toBeGreaterThanOrEqual(1)
-      expect(screen.getAllByText('Test Customer').length).toBeGreaterThanOrEqual(1)
+      expect(
+        screen.getAllByText('Test Customer').length,
+      ).toBeGreaterThanOrEqual(1)
     })
   })
 
@@ -348,13 +363,13 @@ describe('ProjectArDetailPage', () => {
 
   it('switches tabs when clicked', async () => {
     render(<ProjectArDetailPage />)
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('tab-reconciled')).toBeDefined()
     })
-    
+
     fireEvent.click(screen.getByTestId('tab-reconciled'))
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('active-tab').textContent).toBe('reconciled')
     })

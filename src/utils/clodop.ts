@@ -81,7 +81,6 @@ export function loadCLodop() {
   return loadPromise
 }
 
-
 function applyLicense(lodop: CLodopInstance) {
   if (licenseApplied) {
     return
@@ -128,7 +127,6 @@ function getCLodopInstance() {
 function isCLodopAvailable() {
   return getCLodopInstance() !== null
 }
-
 
 function wrapHtml(body: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
@@ -277,13 +275,16 @@ function evaluateNumericExpression(expression: string): number | null {
     return null
   }
   if (
-    tokens.some((token, index) => index % 2 === 0 && Number.isNaN(Number(token)))
+    tokens.some(
+      (token, index) => index % 2 === 0 && Number.isNaN(Number(token)),
+    )
   ) {
     return null
   }
   if (
     tokens.some(
-      (token, index) => index % 2 === 1 && !['+', '-', '*', '/'].includes(token),
+      (token, index) =>
+        index % 2 === 1 && !['+', '-', '*', '/'].includes(token),
     )
   ) {
     return null
@@ -392,7 +393,7 @@ function executeLodopScript(
     'Math',
     script,
   )
-  fn(lodop, parseFloat, parseInt, isNaN, String, Number, Math)
+  fn(lodop, parseFloat, parseInt, Number.isNaN, String, Number, Math)
 }
 
 function callInit(
@@ -414,7 +415,6 @@ export interface PrintHtmlOptions {
   pageSize?: string
   preview?: boolean
 }
-
 
 export function execPrintCode(code: string, options: PrintHtmlOptions = {}) {
   const lodop = getCLodopInstance()

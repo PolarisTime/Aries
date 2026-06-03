@@ -1,20 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { invoicePageConfigs } from './invoice-pages'
-import { paymentPageConfigs } from './payment-pages'
-import { statementPageConfigs } from './statement-pages'
-import { masterPartyPageConfigs } from './master-party-pages'
-import { masterMaterialPageConfigs } from './master-material-pages'
-import { masterWarehousePageConfigs } from './master-warehouse-pages'
 import { contractOperationsPageConfigs } from './contract-operations'
+import { invoicePageConfigs } from './invoice-pages'
+import { masterMaterialPageConfigs } from './master-material-pages'
+import { masterPartyPageConfigs } from './master-party-pages'
+import { masterWarehousePageConfigs } from './master-warehouse-pages'
+import { paymentPageConfigs } from './payment-pages'
 import { purchaseOperationsPageConfigs } from './purchase-operations'
 import { salesOperationsPageConfigs } from './sales-operations'
-import { systemOrganizationPageConfigs } from './system-organization-pages'
 import { systemAccessPageConfigs } from './system-access-pages'
+import { systemOrganizationPageConfigs } from './system-organization-pages'
 import { permissionManagementPageConfig } from './system-permission-management-page'
 
 describe('invoicePageConfigs', () => {
   it('contains invoice-receipt and invoice-issue', () => {
-    expect(Object.keys(invoicePageConfigs)).toEqual(['invoice-receipt', 'invoice-issue'])
+    expect(Object.keys(invoicePageConfigs)).toEqual([
+      'invoice-receipt',
+      'invoice-issue',
+    ])
   })
 
   it('each config has required fields', () => {

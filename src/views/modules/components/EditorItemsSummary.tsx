@@ -36,10 +36,24 @@ export function EditorItemsSummary({
         .filter(Boolean)
         .join(' ')}
     >
-      <span>{t('modules.itemsSummary.rowCount')} {items.length}</span>
-      {totalCount > 0 && <span>{t('modules.itemsSummary.quantity')} {totalCount}</span>}
-      {totalWeight > 0 && <span>{t('modules.itemsSummary.weight')} {totalWeight.toFixed(3)}</span>}
-      {totalAmount > 0 && <span>{t('modules.itemsSummary.amount')} {totalAmount.toFixed(2)}</span>}
+      <span>
+        {t('modules.itemsSummary.rowCount')} {items.length}
+      </span>
+      {totalCount > 0 && (
+        <span>
+          {t('modules.itemsSummary.quantity')} {totalCount}
+        </span>
+      )}
+      {totalWeight > 0 && (
+        <span>
+          {t('modules.itemsSummary.weight')} {totalWeight.toFixed(3)}
+        </span>
+      )}
+      {totalAmount > 0 && (
+        <span>
+          {t('modules.itemsSummary.amount')} {totalAmount.toFixed(2)}
+        </span>
+      )}
     </div>
   )
 }

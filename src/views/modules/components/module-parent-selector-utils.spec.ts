@@ -21,7 +21,14 @@ describe('module-parent-selector-utils', () => {
     it('returns true when items have positive salesRemainingQuantity for purchase-order', () => {
       const record = {
         id: '1',
-        items: [{ id: 'i1', salesRemainingQuantity: 5, remainingQuantity: 10, quantity: 20 }],
+        items: [
+          {
+            id: 'i1',
+            salesRemainingQuantity: 5,
+            remainingQuantity: 10,
+            quantity: 20,
+          },
+        ],
       }
       expect(hasImportableQuantity('purchase-order', record)).toBe(true)
     })
@@ -29,7 +36,14 @@ describe('module-parent-selector-utils', () => {
     it('returns false when items have zero salesRemainingQuantity for purchase-order', () => {
       const record = {
         id: '1',
-        items: [{ id: 'i1', salesRemainingQuantity: 0, remainingQuantity: 10, quantity: 20 }],
+        items: [
+          {
+            id: 'i1',
+            salesRemainingQuantity: 0,
+            remainingQuantity: 10,
+            quantity: 20,
+          },
+        ],
       }
       expect(hasImportableQuantity('purchase-order', record)).toBe(false)
     })
@@ -113,9 +127,21 @@ describe('module-parent-selector-utils', () => {
 
     it('filters by audited status for sales-order', () => {
       const records = [
-        { id: '1', status: '已审核', items: [{ id: 'i1', remainingQuantity: 5 }] },
-        { id: '2', status: '待审核', items: [{ id: 'i2', remainingQuantity: 5 }] },
-        { id: '3', status: '已审核', items: [{ id: 'i3', remainingQuantity: 0 }] },
+        {
+          id: '1',
+          status: '已审核',
+          items: [{ id: 'i1', remainingQuantity: 5 }],
+        },
+        {
+          id: '2',
+          status: '待审核',
+          items: [{ id: 'i2', remainingQuantity: 5 }],
+        },
+        {
+          id: '3',
+          status: '已审核',
+          items: [{ id: 'i3', remainingQuantity: 0 }],
+        },
       ]
       const result = filterImportableParentRecords('sales-order', records)
       expect(result).toHaveLength(1)
@@ -148,7 +174,11 @@ describe('module-parent-selector-utils', () => {
         { id: '2', status: '已审核' },
         { id: '3', status: '草稿' },
       ]
-      const result = filterImportableParentRecords('sales-order', records, 'customer-statement')
+      const result = filterImportableParentRecords(
+        'sales-order',
+        records,
+        'customer-statement',
+      )
       expect(result).toHaveLength(1)
       expect(result[0].id).toBe('1')
     })
@@ -159,7 +189,11 @@ describe('module-parent-selector-utils', () => {
         { id: '2', status: '已审核' },
         { id: '3', status: '草稿' },
       ]
-      const result = filterImportableParentRecords('purchase-inbound', records, 'supplier-statement')
+      const result = filterImportableParentRecords(
+        'purchase-inbound',
+        records,
+        'supplier-statement',
+      )
       expect(result).toHaveLength(1)
       expect(result[0].id).toBe('1')
     })
@@ -169,7 +203,11 @@ describe('module-parent-selector-utils', () => {
         { id: '1', status: '已审核' },
         { id: '2', status: '草稿' },
       ]
-      const result = filterImportableParentRecords('freight-bill', records, 'freight-statement')
+      const result = filterImportableParentRecords(
+        'freight-bill',
+        records,
+        'freight-statement',
+      )
       expect(result).toHaveLength(1)
       expect(result[0].id).toBe('1')
     })
@@ -180,9 +218,7 @@ describe('module-parent-selector-utils', () => {
     })
 
     it('handles records with no items for purchase-order', () => {
-      const records = [
-        { id: '1', status: '已审核' },
-      ]
+      const records = [{ id: '1', status: '已审核' }]
       const result = filterImportableParentRecords('purchase-order', records)
       expect(result).toHaveLength(0)
     })
@@ -210,7 +246,9 @@ describe('module-parent-selector-utils', () => {
     it('prefers current records over cached records', () => {
       const cached = { id: '1', name: 'old' } as ModuleRecord
       const current = { id: '1', name: 'new' } as ModuleRecord
-      const result = resolveSelectedParentRows(['1'], { '1': cached }, [current])
+      const result = resolveSelectedParentRows(['1'], { '1': cached }, [
+        current,
+      ])
       expect(result).toHaveLength(1)
       expect(result[0].name).toBe('new')
     })
@@ -227,7 +265,11 @@ describe('module-parent-selector-utils', () => {
     it('handles mix of current and cached records', () => {
       const cached = { id: '2', name: 'cached' } as ModuleRecord
       const current = [{ id: '1', name: 'current' }] as ModuleRecord[]
-      const result = resolveSelectedParentRows(['1', '2'], { '2': cached }, current)
+      const result = resolveSelectedParentRows(
+        ['1', '2'],
+        { '2': cached },
+        current,
+      )
       expect(result).toHaveLength(2)
       expect(result[0].name).toBe('current')
       expect(result[1].name).toBe('cached')

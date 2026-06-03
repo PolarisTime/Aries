@@ -7,9 +7,9 @@ import {
   saveSystemSetting,
   updateSystemUploadRule,
 } from '@/api/system-settings'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
-import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'

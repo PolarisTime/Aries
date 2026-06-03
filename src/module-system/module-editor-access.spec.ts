@@ -1,13 +1,13 @@
-import { describe, expect, it, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { moduleBehaviorRegistry } from './module-behavior-registry-core'
 import {
-  isModuleLineItemsLocked,
-  canManageEditorLineItems,
-  applyModuleDefaultEditorDraft,
   applyFormFieldDefaultDraftValues,
+  applyModuleDefaultEditorDraft,
+  canManageEditorLineItems,
   isEditorFieldDisabledForModule,
   isEditorItemColumnEditableForModule,
+  isModuleLineItemsLocked,
 } from './module-editor-access'
-import { moduleBehaviorRegistry } from './module-behavior-registry-core'
 
 beforeEach(() => {
   moduleBehaviorRegistry.clear()
@@ -65,7 +65,9 @@ describe('applyModuleDefaultEditorDraft', () => {
   })
 
   it('applies function defaultDraftValues', () => {
-    register('test', { defaultDraftValues: () => ({ orderDate: '2026-01-01' }) })
+    register('test', {
+      defaultDraftValues: () => ({ orderDate: '2026-01-01' }),
+    })
     const draft = { id: '' } as any
     applyModuleDefaultEditorDraft('test', draft, '张三')
     expect(draft.orderDate).toBe('2026-01-01')
@@ -135,27 +137,54 @@ describe('applyFormFieldDefaultDraftValues', () => {
 
 describe('isEditorFieldDisabledForModule', () => {
   it('returns true when canSaveCurrentEditor is false', () => {
-    expect(isEditorFieldDisabledForModule('test', 'name', false, false, false)).toBe(true)
+    expect(
+      isEditorFieldDisabledForModule('test', 'name', false, false, false),
+    ).toBe(true)
   })
 
   it('returns true when fieldDisabled is true', () => {
-    expect(isEditorFieldDisabledForModule('test', 'name', true, true, false)).toBe(true)
+    expect(
+      isEditorFieldDisabledForModule('test', 'name', true, true, false),
+    ).toBe(true)
   })
 
   it('returns true when parentFieldKey matches fieldKey', () => {
-    expect(isEditorFieldDisabledForModule('test', 'name', false, true, false, undefined, 'name')).toBe(true)
+    expect(
+      isEditorFieldDisabledForModule(
+        'test',
+        'name',
+        false,
+        true,
+        false,
+        undefined,
+        'name',
+      ),
+    ).toBe(true)
   })
 
   it('returns true when field is in readonlyEditorFields', () => {
     register('test', { readonlyEditorFields: ['name'] })
-    expect(isEditorFieldDisabledForModule('test', 'name', false, true, false)).toBe(true)
+    expect(
+      isEditorFieldDisabledForModule('test', 'name', false, true, false),
+    ).toBe(true)
   })
 
   it('returns true when resolveReadonlyEditorFields includes fieldKey', () => {
     register('test', {
-      resolveReadonlyEditorFields: (record: any) => ['name'],
+      resolveReadonlyEditorFields: (_record: any) => ['name'],
     })
-    expect(isEditorFieldDisabledForModule('test', 'name', false, true, false, undefined, undefined, { id: '1' } as any)).toBe(true)
+    expect(
+      isEditorFieldDisabledForModule(
+        'test',
+        'name',
+        false,
+        true,
+        false,
+        undefined,
+        undefined,
+        { id: '1' } as any,
+      ),
+    ).toBe(true)
   })
 
   it('returns true when record locked and field not in editableLockedFields', () => {
@@ -163,7 +192,9 @@ describe('isEditorFieldDisabledForModule', () => {
       locksLineItemsWhenRecordLocked: true,
       editableLockedFields: ['remark'],
     })
-    expect(isEditorFieldDisabledForModule('test', 'name', false, true, true)).toBe(true)
+    expect(
+      isEditorFieldDisabledForModule('test', 'name', false, true, true),
+    ).toBe(true)
   })
 
   it('returns false when record locked and field is in editableLockedFields', () => {
@@ -171,47 +202,87 @@ describe('isEditorFieldDisabledForModule', () => {
       locksLineItemsWhenRecordLocked: true,
       editableLockedFields: ['remark'],
     })
-    expect(isEditorFieldDisabledForModule('test', 'remark', false, true, true)).toBe(false)
+    expect(
+      isEditorFieldDisabledForModule('test', 'remark', false, true, true),
+    ).toBe(false)
   })
 
   it('returns false when all conditions pass', () => {
-    expect(isEditorFieldDisabledForModule('test', 'remark', false, true, false)).toBe(false)
+    expect(
+      isEditorFieldDisabledForModule('test', 'remark', false, true, false),
+    ).toBe(false)
   })
 })
 
 describe('isEditorItemColumnEditableForModule', () => {
   it('returns false when canEditLineItems is false', () => {
-    expect(isEditorItemColumnEditableForModule('test', 'col', false, false)).toBe(false)
+    expect(
+      isEditorItemColumnEditableForModule('test', 'col', false, false),
+    ).toBe(false)
   })
 
   it('returns false when column is in readonlyItemColumns', () => {
     register('test', { readonlyItemColumns: ['col'] })
-    expect(isEditorItemColumnEditableForModule('test', 'col', true, false)).toBe(false)
+    expect(
+      isEditorItemColumnEditableForModule('test', 'col', true, false),
+    ).toBe(false)
   })
 
   it('returns false when readonlyLineItems is true', () => {
     register('test', { readonlyLineItems: true })
-    expect(isEditorItemColumnEditableForModule('test', 'col', true, false)).toBe(false)
+    expect(
+      isEditorItemColumnEditableForModule('test', 'col', true, false),
+    ).toBe(false)
   })
 
   it('returns false for derived readonly columns', () => {
-    expect(isEditorItemColumnEditableForModule('test', 'sourceNo', true, false)).toBe(false)
+    expect(
+      isEditorItemColumnEditableForModule('test', 'sourceNo', true, false),
+    ).toBe(false)
   })
 
   it('returns true for weightTon on purchase-inbound', () => {
-    expect(isEditorItemColumnEditableForModule('purchase-inbound', 'weightTon', true, false)).toBe(true)
+    expect(
+      isEditorItemColumnEditableForModule(
+        'purchase-inbound',
+        'weightTon',
+        true,
+        false,
+      ),
+    ).toBe(true)
   })
 
   it('returns false for batchNo on purchase-inbound', () => {
-    expect(isEditorItemColumnEditableForModule('purchase-inbound', 'batchNo', true, false)).toBe(false)
+    expect(
+      isEditorItemColumnEditableForModule(
+        'purchase-inbound',
+        'batchNo',
+        true,
+        false,
+      ),
+    ).toBe(false)
   })
 
   it('returns false for batchNo on purchase-order', () => {
-    expect(isEditorItemColumnEditableForModule('purchase-order', 'batchNo', true, false)).toBe(false)
+    expect(
+      isEditorItemColumnEditableForModule(
+        'purchase-order',
+        'batchNo',
+        true,
+        false,
+      ),
+    ).toBe(false)
   })
 
   it('returns true for batchNo on sales-order', () => {
-    expect(isEditorItemColumnEditableForModule('sales-order', 'batchNo', true, false)).toBe(true)
+    expect(
+      isEditorItemColumnEditableForModule(
+        'sales-order',
+        'batchNo',
+        true,
+        false,
+      ),
+    ).toBe(true)
   })
 
   it('returns false when locked and column not in editableLockedItemColumns', () => {
@@ -219,7 +290,9 @@ describe('isEditorItemColumnEditableForModule', () => {
       locksLineItemsWhenRecordLocked: true,
       editableLockedItemColumns: ['col1'],
     })
-    expect(isEditorItemColumnEditableForModule('test', 'col2', true, true)).toBe(false)
+    expect(
+      isEditorItemColumnEditableForModule('test', 'col2', true, true),
+    ).toBe(false)
   })
 
   it('returns true when locked and column is in editableLockedItemColumns', () => {
@@ -227,18 +300,26 @@ describe('isEditorItemColumnEditableForModule', () => {
       locksLineItemsWhenRecordLocked: true,
       editableLockedItemColumns: ['col1'],
     })
-    expect(isEditorItemColumnEditableForModule('test', 'col1', true, true)).toBe(true)
+    expect(
+      isEditorItemColumnEditableForModule('test', 'col1', true, true),
+    ).toBe(true)
   })
 
   it('returns true by default', () => {
-    expect(isEditorItemColumnEditableForModule('test', 'col', true, false)).toBe(true)
+    expect(
+      isEditorItemColumnEditableForModule('test', 'col', true, false),
+    ).toBe(true)
   })
 
   it('returns false for derived readonly column sourceNo', () => {
-    expect(isEditorItemColumnEditableForModule('test', 'sourceNo', true, false)).toBe(false)
+    expect(
+      isEditorItemColumnEditableForModule('test', 'sourceNo', true, false),
+    ).toBe(false)
   })
 
   it('returns false for derived readonly column amount', () => {
-    expect(isEditorItemColumnEditableForModule('test', 'amount', true, false)).toBe(false)
+    expect(
+      isEditorItemColumnEditableForModule('test', 'amount', true, false),
+    ).toBe(false)
   })
 })

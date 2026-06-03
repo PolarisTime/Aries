@@ -1,11 +1,14 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./module-behavior-registry-core', () => ({
   registerModuleBehavior: vi.fn(),
 }))
 
 import { registerModuleBehavior } from './module-behavior-registry-core'
-import { protectedEditStatuses, protectedDeleteStatuses } from './module-behavior-statuses'
+import {
+  protectedDeleteStatuses,
+  protectedEditStatuses,
+} from './module-behavior-statuses'
 
 const mockedRegister = vi.mocked(registerModuleBehavior)
 
@@ -54,7 +57,9 @@ describe('module-behavior-statuses', () => {
     'freight-statement',
   ]
 
-  it.each(lineItemModules)('registers supportsLineItems for %s', (moduleKey) => {
+  it.each(
+    lineItemModules,
+  )('registers supportsLineItems for %s', (moduleKey) => {
     const call = mockedRegister.mock.calls.find(
       ([key, config]) => key === moduleKey && config.supportsLineItems === true,
     )
@@ -68,17 +73,18 @@ describe('module-behavior-statuses', () => {
     expect(call).toBeDefined()
   })
 
-  it.each(Object.entries(draftStatusModules))(
-    'registers defaultStatus for %s',
-    (moduleKey, status) => {
-      const call = mockedRegister.mock.calls.find(
-        ([key, config]) => key === moduleKey && config.defaultStatus === status,
-      )
-      expect(call).toBeDefined()
-    },
-  )
+  it.each(
+    Object.entries(draftStatusModules),
+  )('registers defaultStatus for %s', (moduleKey, status) => {
+    const call = mockedRegister.mock.calls.find(
+      ([key, config]) => key === moduleKey && config.defaultStatus === status,
+    )
+    expect(call).toBeDefined()
+  })
 
-  it.each(approvedStatusModules)('registers auditStatus "已审核" for %s', (moduleKey) => {
+  it.each(
+    approvedStatusModules,
+  )('registers auditStatus "已审核" for %s', (moduleKey) => {
     const call = mockedRegister.mock.calls.find(
       ([key, config]) => key === moduleKey && config.auditStatus === '已审核',
     )
@@ -86,23 +92,39 @@ describe('module-behavior-statuses', () => {
   })
 
   it('registers auditStatus for receipt', () => {
-    const receiptCalls = mockedRegister.mock.calls.filter(([key]) => key === 'receipt')
-    expect(receiptCalls.some(([, config]) => config.auditStatus === '已收款')).toBe(true)
+    const receiptCalls = mockedRegister.mock.calls.filter(
+      ([key]) => key === 'receipt',
+    )
+    expect(
+      receiptCalls.some(([, config]) => config.auditStatus === '已收款'),
+    ).toBe(true)
   })
 
   it('registers auditStatus for payment', () => {
-    const paymentCalls = mockedRegister.mock.calls.filter(([key]) => key === 'payment')
-    expect(paymentCalls.some(([, config]) => config.auditStatus === '已付款')).toBe(true)
+    const paymentCalls = mockedRegister.mock.calls.filter(
+      ([key]) => key === 'payment',
+    )
+    expect(
+      paymentCalls.some(([, config]) => config.auditStatus === '已付款'),
+    ).toBe(true)
   })
 
   it('registers auditStatus for invoice-receipt', () => {
-    const invoiceReceiptCalls = mockedRegister.mock.calls.filter(([key]) => key === 'invoice-receipt')
-    expect(invoiceReceiptCalls.some(([, config]) => config.auditStatus === '已收票')).toBe(true)
+    const invoiceReceiptCalls = mockedRegister.mock.calls.filter(
+      ([key]) => key === 'invoice-receipt',
+    )
+    expect(
+      invoiceReceiptCalls.some(([, config]) => config.auditStatus === '已收票'),
+    ).toBe(true)
   })
 
   it('registers auditStatus for invoice-issue', () => {
-    const invoiceIssueCalls = mockedRegister.mock.calls.filter(([key]) => key === 'invoice-issue')
-    expect(invoiceIssueCalls.some(([, config]) => config.auditStatus === '已开票')).toBe(true)
+    const invoiceIssueCalls = mockedRegister.mock.calls.filter(
+      ([key]) => key === 'invoice-issue',
+    )
+    expect(
+      invoiceIssueCalls.some(([, config]) => config.auditStatus === '已开票'),
+    ).toBe(true)
   })
 
   describe('protectedEditStatuses', () => {
@@ -149,7 +171,9 @@ describe('module-behavior-statuses', () => {
     })
 
     it('has same statuses as protectedEditStatuses', () => {
-      expect([...protectedDeleteStatuses].sort()).toEqual([...protectedEditStatuses].sort())
+      expect([...protectedDeleteStatuses].sort()).toEqual(
+        [...protectedEditStatuses].sort(),
+      )
     })
   })
 })

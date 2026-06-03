@@ -5,7 +5,8 @@ vi.mock('i18next', () => ({
 }))
 
 vi.mock('@/constants/module-options', () => ({
-  buildValueOptions: (...args: string[]) => args.map((v) => ({ label: v, value: v })),
+  buildValueOptions: (...args: string[]) =>
+    args.map((v) => ({ label: v, value: v })),
   getSupplierOptions: [],
   isPurchaseWeighRequiredCategory: () => false,
 }))
@@ -33,7 +34,9 @@ describe('purchaseInboundsPageConfig', () => {
 
   it('has parentImport config', () => {
     expect(purchaseInboundsPageConfig.parentImport).toBeDefined()
-    expect(purchaseInboundsPageConfig.parentImport!.parentModuleKey).toBe('purchase-order')
+    expect(purchaseInboundsPageConfig.parentImport!.parentModuleKey).toBe(
+      'purchase-order',
+    )
   })
 
   it('has itemColumns', () => {

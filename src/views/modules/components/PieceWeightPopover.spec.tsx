@@ -39,35 +39,17 @@ import { PieceWeightPopover } from '@/views/modules/components/PieceWeightPopove
 
 describe('PieceWeightPopover', () => {
   it('renders weight value for non-weigh category', () => {
-    render(
-      <PieceWeightPopover
-        itemId="1"
-        weightTon={1.234}
-        category="钢材"
-      />,
-    )
+    render(<PieceWeightPopover itemId="1" weightTon={1.234} category="钢材" />)
     expect(screen.getByText('1.234')).toBeTruthy()
   })
 
   it('renders clickable weight for weigh category', () => {
-    render(
-      <PieceWeightPopover
-        itemId="1"
-        weightTon={2.5}
-        category="盘螺"
-      />,
-    )
+    render(<PieceWeightPopover itemId="1" weightTon={2.5} category="盘螺" />)
     expect(screen.getByText('2.500')).toBeTruthy()
   })
 
   it('renders popover for line material category', () => {
-    render(
-      <PieceWeightPopover
-        itemId="1"
-        weightTon={3.0}
-        category="线材"
-      />,
-    )
+    render(<PieceWeightPopover itemId="1" weightTon={3.0} category="线材" />)
     expect(screen.getByTestId('popover')).toBeTruthy()
   })
 })

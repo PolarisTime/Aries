@@ -28,7 +28,9 @@ vi.mock('@/utils/env', () => ({
 }))
 
 vi.mock('antd/es/form', () => {
-  const Form = ({ children, ...props }: any) => <form {...props}>{children}</form>
+  const Form = ({ children, ...props }: any) => (
+    <form {...props}>{children}</form>
+  )
   Form.useForm = () => [{ __INTERNAL__: { name: '' } }]
   Form.Item = ({ children, ...props }: any) => <div {...props}>{children}</div>
   return { default: Form }
@@ -51,13 +53,20 @@ vi.mock('antd/es/space', () => ({
 }))
 
 vi.mock('antd/es/spin', () => ({
-  default: ({ children, tip, ...props }: any) => <div {...props}>{tip}{children}</div>,
+  default: ({ children, tip, ...props }: any) => (
+    <div {...props}>
+      {tip}
+      {children}
+    </div>
+  ),
 }))
 
 vi.mock('antd/es/steps', () => ({
   default: ({ items, ...props }: any) => (
     <div {...props}>
-      {items?.map((item: any, i: number) => <div key={i}>{item.title}</div>)}
+      {items?.map((item: any, i: number) => (
+        <div key={i}>{item.title}</div>
+      ))}
     </div>
   ),
 }))
@@ -86,7 +95,8 @@ const mockUseInitialSetupState = vi.fn().mockReturnValue({
 })
 
 vi.mock('@/views/auth/useInitialSetupState', () => ({
-  useInitialSetupState: (...args: unknown[]) => mockUseInitialSetupState(...args),
+  useInitialSetupState: (...args: unknown[]) =>
+    mockUseInitialSetupState(...args),
 }))
 
 vi.mock('@/views/auth/InitialSetupAdminForm', () => ({

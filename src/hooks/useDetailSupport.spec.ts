@@ -1,5 +1,5 @@
-import { renderHook, act } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { getBusinessModuleDetailMock, getModuleConfigMock } = vi.hoisted(() => ({
   getBusinessModuleDetailMock: vi.fn(),
@@ -143,7 +143,7 @@ describe('useDetailSupport', () => {
     const config = { columns: [] }
     const record = { id: '1', name: 'Test' }
     const { result } = renderHook(() =>
-      useDetailSupport({ moduleKey: 'sales-order', config })
+      useDetailSupport({ moduleKey: 'sales-order', config }),
     )
     await act(async () => {
       await result.current.openDetail(record)
@@ -193,7 +193,10 @@ describe('useDetailSupport', () => {
       await result.current.openDetail('123')
     })
 
-    expect(getBusinessModuleDetailMock).toHaveBeenCalledWith('sales-order', '123')
+    expect(getBusinessModuleDetailMock).toHaveBeenCalledWith(
+      'sales-order',
+      '123',
+    )
     expect(result.current.detailRecord).toEqual({ id: '123', name: 'Fetched' })
   })
 

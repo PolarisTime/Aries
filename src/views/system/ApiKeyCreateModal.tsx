@@ -52,11 +52,7 @@ export function ApiKeyCreateModal({
     >
       {!generatedKey ? (
         <Form form={form} layout="vertical">
-          <Form.Item
-            name="userId"
-            label={t('system.apiKey.userId')}
-            required
-          >
+          <Form.Item name="userId" label={t('system.apiKey.userId')} required>
             <Select
               showSearch
               placeholder={t('system.userAccount.searchPlaceholder')}
@@ -71,11 +67,7 @@ export function ApiKeyCreateModal({
               }
             />
           </Form.Item>
-          <Form.Item
-            name="keyName"
-            label={t('system.apiKey.keyName')}
-            required
-          >
+          <Form.Item name="keyName" label={t('system.apiKey.keyName')} required>
             <Input
               placeholder={t('system.apiKey.keyNamePlaceholder')}
               maxLength={64}
@@ -118,10 +110,7 @@ export function ApiKeyCreateModal({
               }))}
             />
           </Form.Item>
-          <Form.Item
-            name="expireDays"
-            label={t('system.apiKey.expireDays')}
-          >
+          <Form.Item name="expireDays" label={t('system.apiKey.expireDays')}>
             <InputNumber
               placeholder={t('system.apiKey.expireDaysPlaceholder')}
               className="w-full"

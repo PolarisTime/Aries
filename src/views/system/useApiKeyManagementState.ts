@@ -12,8 +12,8 @@ import {
   listApiKeyUserOptions,
   revokeApiKey,
 } from '@/api/api-keys'
-import { useRequestError } from '@/hooks/useRequestError'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useRequestError } from '@/hooks/useRequestError'
 import { useAuthStore } from '@/stores/authStore'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message, modal } from '@/utils/antd-app'

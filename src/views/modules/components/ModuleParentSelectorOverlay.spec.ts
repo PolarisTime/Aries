@@ -113,9 +113,9 @@ describe('resolveSelectedParentRows', () => {
     const cached = { id: '1', orderNo: 'old' } as ModuleRecord
     const current = { id: '1', orderNo: 'new' } as ModuleRecord
 
-    expect(resolveSelectedParentRows(['1'], { '1': cached }, [current])).toEqual([
-      current,
-    ])
+    expect(
+      resolveSelectedParentRows(['1'], { '1': cached }, [current]),
+    ).toEqual([current])
   })
 
   it('keeps cross-page selected records from cache', () => {

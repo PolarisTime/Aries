@@ -6,20 +6,20 @@ import {
   getBusinessModuleDetail,
   saveBusinessModule,
 } from '@/api/business'
-import { QUERY_KEYS } from '@/constants/query-keys'
 import { listAllStatementCandidates } from '@/api/statements'
 import {
   isDisplaySwitchEnabled,
   listDisplaySwitches,
 } from '@/api/system-settings'
-import type { ModuleRecord } from '@/types/module-page'
-import { cloneLineItems } from '@/utils/clone-utils'
-import { asString } from '@/utils/type-narrowing'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   buildCustomerStatementDraftData,
   buildFreightStatementDraftData,
   buildSupplierStatementDraftData,
 } from '@/module-system/module-adapter-statement-drafts'
+import type { ModuleRecord } from '@/types/module-page'
+import { cloneLineItems } from '@/utils/clone-utils'
+import { asString } from '@/utils/type-narrowing'
 
 type StatementType = 'supplier' | 'customer' | 'freight'
 

@@ -39,7 +39,7 @@ vi.mock('./business-listing-warnings', () => ({
   reportClientFilterTruncation: reportClientFilterTruncationMock,
 }))
 
-import { fetchModulePage, fetchAllModuleRows } from './business-listing-fetch'
+import { fetchAllModuleRows, fetchModulePage } from './business-listing-fetch'
 
 describe('business-listing-fetch', () => {
   beforeEach(() => {
@@ -54,7 +54,12 @@ describe('business-listing-fetch', () => {
   })
 
   describe('fetchModulePage', () => {
-    const pageData = { content: [{ id: '1' }], totalElements: 1, totalPages: 1, last: true }
+    const pageData = {
+      content: [{ id: '1' }],
+      totalElements: 1,
+      totalPages: 1,
+      last: true,
+    }
 
     beforeEach(() => {
       httpGetMock.mockResolvedValue({ code: 0, data: pageData })
@@ -66,7 +71,12 @@ describe('business-listing-fetch', () => {
     })
 
     it('fetches a single page successfully', async () => {
-      const result = await fetchModulePage('purchase-order', { keyword: 'PO' }, 0, 50)
+      const result = await fetchModulePage(
+        'purchase-order',
+        { keyword: 'PO' },
+        0,
+        50,
+      )
 
       expect(httpGetMock).toHaveBeenCalledWith('/purchase-orders', {
         params: { keyword: 'PO', page: 0, size: 50 },
@@ -81,7 +91,10 @@ describe('business-listing-fetch', () => {
     })
 
     it('includes fields param when fields provided', async () => {
-      await fetchModulePage('purchase-order', {}, 0, 50, undefined, ['id', 'name'])
+      await fetchModulePage('purchase-order', {}, 0, 50, undefined, [
+        'id',
+        'name',
+      ])
 
       expect(httpGetMock).toHaveBeenCalledWith('/purchase-orders', {
         params: { page: 0, size: 50, fields: 'id,name' },
@@ -103,7 +116,13 @@ describe('business-listing-fetch', () => {
 
     it('merges config params with additional params from config argument', async () => {
       const configArg = { params: { extra: 'value' } }
-      await fetchModulePage('purchase-order', { keyword: 'test' }, 1, 30, configArg)
+      await fetchModulePage(
+        'purchase-order',
+        { keyword: 'test' },
+        1,
+        30,
+        configArg,
+      )
 
       expect(httpGetMock).toHaveBeenCalledWith('/purchase-orders', {
         params: { keyword: 'test', page: 1, size: 30, extra: 'value' },
@@ -123,7 +142,9 @@ describe('business-listing-fetch', () => {
     })
 
     it('fetches all rows until last page', async () => {
-      const result = await fetchAllModuleRows('purchase-order', { keyword: 'test' })
+      const result = await fetchAllModuleRows('purchase-order', {
+        keyword: 'test',
+      })
 
       expect(result.rows.length).toBeGreaterThan(0)
       expect(result.truncated).toBe(false)
@@ -134,10 +155,16 @@ describe('business-listing-fetch', () => {
       pageLastMock.mockReturnValue(false)
       pageTotalPagesMock.mockReturnValue(100)
       // Return many rows per page
-      const manyRows = Array.from({ length: 200 }, (_, i) => ({ id: String(i) }))
+      const manyRows = Array.from({ length: 200 }, (_, i) => ({
+        id: String(i),
+      }))
       pageContentMock.mockReturnValue(manyRows)
 
-      const result = await fetchAllModuleRows('purchase-order', { keyword: 'test' }, true)
+      const result = await fetchAllModuleRows(
+        'purchase-order',
+        { keyword: 'test' },
+        true,
+      )
 
       expect(result.truncated).toBe(true)
       expect(reportClientFilterTruncationMock).toHaveBeenCalled()

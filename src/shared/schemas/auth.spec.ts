@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  loginPayloadSchema,
   captchaDataSchema,
-  login2faPayloadSchema,
   dataScopeSchema,
+  login2faPayloadSchema,
+  loginPayloadSchema,
   loginResponseDataSchema,
   loginStep1ResponseSchema,
   totpSetupResponseSchema,

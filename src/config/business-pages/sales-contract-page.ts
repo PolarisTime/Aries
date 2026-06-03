@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { getCustomerOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { contractStatusOptions } from './contract-shared'
@@ -12,14 +13,12 @@ import {
   compactOrderItemColumns,
   statusMap,
 } from './shared'
-import i18next from 'i18next'
 
 export const salesContractsPageConfig: ModulePageConfig = {
   key: 'sales-contract',
   title: i18next.t('modules.pages.salesContract.salesContract'),
   kicker: 'Contracts',
-  description:
-    i18next.t('modules.pages.salesContract.salesContractDesc'),
+  description: i18next.t('modules.pages.salesContract.salesContractDesc'),
   primaryNoKey: 'contractNo',
   actions: actionSet,
   filters: [
@@ -27,7 +26,9 @@ export const salesContractsPageConfig: ModulePageConfig = {
       key: 'keyword',
       label: CONTRACT_NO_FILTER_LABEL,
       type: 'input',
-      placeholder: i18next.t('modules.pages.salesContract.salesContractPlaceholder'),
+      placeholder: i18next.t(
+        'modules.pages.salesContract.salesContractPlaceholder',
+      ),
     },
     {
       key: 'customerName',
@@ -41,16 +42,51 @@ export const salesContractsPageConfig: ModulePageConfig = {
       type: 'select',
       options: contractStatusOptions,
     },
-    { key: 'signDate', label: i18next.t('modules.pages.salesContract.signDate'), type: 'dateRange' },
+    {
+      key: 'signDate',
+      label: i18next.t('modules.pages.salesContract.signDate'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: i18next.t('modules.pages.salesContract.contractNo'), dataIndex: 'contractNo', width: 170 },
-    { title: i18next.t('modules.pages.salesContract.customerName'), dataIndex: 'customerName', width: 150 },
-    { title: i18next.t('modules.pages.salesContract.projectName'), dataIndex: 'projectName', width: 180 },
-    { title: i18next.t('modules.pages.salesContract.signDate'), dataIndex: 'signDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.salesContract.effectiveDate'), dataIndex: 'effectiveDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.salesContract.expireDate'), dataIndex: 'expireDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.salesContract.salesperson'), dataIndex: 'salesName', width: 110 },
+    {
+      title: i18next.t('modules.pages.salesContract.contractNo'),
+      dataIndex: 'contractNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.customerName'),
+      dataIndex: 'customerName',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.projectName'),
+      dataIndex: 'projectName',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.signDate'),
+      dataIndex: 'signDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.effectiveDate'),
+      dataIndex: 'effectiveDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.expireDate'),
+      dataIndex: 'expireDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.salesperson'),
+      dataIndex: 'salesName',
+      width: 110,
+    },
     {
       title: i18next.t('modules.pages.salesContract.totalWeight'),
       dataIndex: 'totalWeight',
@@ -74,17 +110,68 @@ export const salesContractsPageConfig: ModulePageConfig = {
     },
   ],
   detailFields: [
-    { label: i18next.t('modules.pages.salesContract.contractNo'), key: 'contractNo', row: 1 },
-    { label: i18next.t('modules.pages.salesContract.customerName'), key: 'customerName', row: 1 },
-    { label: i18next.t('modules.pages.salesContract.projectName'), key: 'projectName', row: 1 },
-    { label: i18next.t('modules.pages.salesContract.signDate'), key: 'signDate', type: 'date', row: 1 },
-    { label: i18next.t('modules.pages.salesContract.effectiveDate'), key: 'effectiveDate', type: 'date', row: 2 },
-    { label: i18next.t('modules.pages.salesContract.expireDate'), key: 'expireDate', type: 'date', row: 2 },
-    { label: i18next.t('modules.pages.salesContract.salesperson'), key: 'salesName', row: 2 },
-    { label: i18next.t('modules.pages.salesContract.status'), key: 'status', type: 'status', row: 2 },
-    { label: i18next.t('modules.pages.salesContract.totalWeight'), key: 'totalWeight', type: 'weight', row: 3 },
-    { label: i18next.t('modules.pages.salesContract.totalAmount'), key: 'totalAmount', type: 'amount', row: 3 },
-    { label: i18next.t('modules.pages.salesContract.remark'), key: 'remark', row: 4, fullRow: true },
+    {
+      label: i18next.t('modules.pages.salesContract.contractNo'),
+      key: 'contractNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.customerName'),
+      key: 'customerName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.projectName'),
+      key: 'projectName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.signDate'),
+      key: 'signDate',
+      type: 'date',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.effectiveDate'),
+      key: 'effectiveDate',
+      type: 'date',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.expireDate'),
+      key: 'expireDate',
+      type: 'date',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.salesperson'),
+      key: 'salesName',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.status'),
+      key: 'status',
+      type: 'status',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.totalWeight'),
+      key: 'totalWeight',
+      type: 'weight',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.totalAmount'),
+      key: 'totalAmount',
+      type: 'amount',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.remark'),
+      key: 'remark',
+      row: 4,
+      fullRow: true,
+    },
   ],
   formFields: [
     {
@@ -145,7 +232,13 @@ export const salesContractsPageConfig: ModulePageConfig = {
       options: contractStatusOptions,
       row: 2,
     },
-    { key: 'remark', label: i18next.t('modules.pages.salesContract.remark'), type: 'textarea', row: 3, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.salesContract.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
   ],
   itemColumns: compactOrderItemColumns,
   data: [],

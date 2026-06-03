@@ -38,8 +38,24 @@ describe('UserAccountTableCard', () => {
     pageSize: 20,
     totalElements: 2,
     users: [
-      { id: '1', loginName: 'admin', userName: 'Admin', status: '正常', totpEnabled: true, roleNames: ['管理员'], dataScope: '全部数据' },
-      { id: '2', loginName: 'user1', userName: 'User 1', status: '正常', totpEnabled: false, roleNames: ['普通用户'], dataScope: '本人' },
+      {
+        id: '1',
+        loginName: 'admin',
+        userName: 'Admin',
+        status: '正常',
+        totpEnabled: true,
+        roleNames: ['管理员'],
+        dataScope: '全部数据',
+      },
+      {
+        id: '2',
+        loginName: 'user1',
+        userName: 'User 1',
+        status: '正常',
+        totpEnabled: false,
+        roleNames: ['普通用户'],
+        dataScope: '本人',
+      },
     ],
     loading: false,
     canCreate: true,
@@ -66,7 +82,9 @@ describe('UserAccountTableCard', () => {
 
   it('renders the card title', () => {
     render(<UserAccountTableCard {...defaultProps} />)
-    expect(screen.getByText('system.userAccountTable.title')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountTable.title'),
+    ).toBeInTheDocument()
   })
 
   it('renders user login names', () => {
@@ -93,12 +111,16 @@ describe('UserAccountTableCard', () => {
 
   it('renders view buttons', () => {
     render(<UserAccountTableCard {...defaultProps} />)
-    expect(screen.getAllByText('system.userAccountTable.view').length).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText('system.userAccountTable.view').length,
+    ).toBeGreaterThan(0)
   })
 
   it('renders edit buttons when canEdit', () => {
     render(<UserAccountTableCard {...defaultProps} canEdit={true} />)
-    expect(screen.getAllByText('system.userAccountTable.edit').length).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText('system.userAccountTable.edit').length,
+    ).toBeGreaterThan(0)
   })
 
   it('renders 2FA buttons when canEdit', () => {
@@ -108,6 +130,8 @@ describe('UserAccountTableCard', () => {
 
   it('renders delete buttons when canDelete', () => {
     render(<UserAccountTableCard {...defaultProps} canDelete={true} />)
-    expect(screen.getAllByText('system.userAccountTable.delete').length).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText('system.userAccountTable.delete').length,
+    ).toBeGreaterThan(0)
   })
 })

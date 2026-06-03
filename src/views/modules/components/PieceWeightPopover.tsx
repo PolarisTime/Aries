@@ -56,20 +56,32 @@ export function PieceWeightPopover({
       ? ['piece-weights', 'purchase-inbound-item', normalizedInboundItemId]
       : ['piece-weights', 'purchase-order-item', normalizedPurchaseOrderItemId]
 
-  const { data = [], isError, isFetching } = useQuery({
+  const {
+    data = [],
+    isError,
+    isFetching,
+  } = useQuery({
     queryKey,
     queryFn: async () => {
       const r = await http.get<{ code: number; data: PieceWeight[] }>(apiPath)
       assertApiSuccess(r, t('modules.pieceWeight.loadFailed'))
       return r.data || []
     },
-    enabled: open && (hasSalesOrderItemLookup || hasInboundItemLookup || Boolean(normalizedPurchaseOrderItemId)),
+    enabled:
+      open &&
+      (hasSalesOrderItemLookup ||
+        hasInboundItemLookup ||
+        Boolean(normalizedPurchaseOrderItemId)),
   })
 
   const isWeighCategory = category === '盘螺' || category === '线材'
 
   if (!isWeighCategory) {
-    return <span>{typeof weightTon === 'number' ? weightTon.toFixed(3) : weightTon}</span>
+    return (
+      <span>
+        {typeof weightTon === 'number' ? weightTon.toFixed(3) : weightTon}
+      </span>
+    )
   }
 
   const total = data.reduce((sum, p) => sum + Number(p.weightTon), 0)
@@ -79,15 +91,28 @@ export function PieceWeightPopover({
       open={open}
       onOpenChange={setOpen}
       trigger="click"
-      title={data.length > 0 ? t('modules.pieceWeight.detailTitle', { count: data.length, weight: total.toFixed(3) }) : t('modules.pieceWeight.detailTitleFallback')}
+      title={
+        data.length > 0
+          ? t('modules.pieceWeight.detailTitle', {
+              count: data.length,
+              weight: total.toFixed(3),
+            })
+          : t('modules.pieceWeight.detailTitleFallback')
+      }
       overlayStyle={{ maxWidth: 260 }}
       content={
         isFetching ? (
-          <div className="py-8 text-center">{t('modules.pieceWeight.loading')}</div>
+          <div className="py-8 text-center">
+            {t('modules.pieceWeight.loading')}
+          </div>
         ) : isError ? (
-          <div className="py-8 text-center text-gray-400">{t('modules.pieceWeight.loadFailed')}</div>
+          <div className="py-8 text-center text-gray-400">
+            {t('modules.pieceWeight.loadFailed')}
+          </div>
         ) : data.length === 0 ? (
-          <div className="py-8 text-center text-gray-400">{t('modules.pieceWeight.noData')}</div>
+          <div className="py-8 text-center text-gray-400">
+            {t('modules.pieceWeight.noData')}
+          </div>
         ) : (
           <Table
             rowKey="pieceNo"
@@ -95,7 +120,12 @@ export function PieceWeightPopover({
             size="small"
             pagination={false}
             columns={[
-              { title: '#', dataIndex: 'pieceNo', width: 40, align: 'center' as const },
+              {
+                title: '#',
+                dataIndex: 'pieceNo',
+                width: 40,
+                align: 'center' as const,
+              },
               {
                 title: t('modules.pieceWeight.ton'),
                 dataIndex: 'weightTon',
@@ -103,7 +133,12 @@ export function PieceWeightPopover({
                 align: 'right' as const,
                 render: (v: number) => v.toFixed(3),
               },
-              { title: t('modules.pieceWeight.relatedOrderNo'), dataIndex: 'salesOrderNo', width: 140, ellipsis: true },
+              {
+                title: t('modules.pieceWeight.relatedOrderNo'),
+                dataIndex: 'salesOrderNo',
+                width: 140,
+                ellipsis: true,
+              },
             ]}
           />
         )

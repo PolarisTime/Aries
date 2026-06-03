@@ -86,7 +86,9 @@ describe('SecurityKeyManagementView', () => {
 
   it('renders the description', () => {
     render(<SecurityKeyManagementView />)
-    expect(screen.getByText('system.securityKey.description')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.securityKey.description'),
+    ).toBeInTheDocument()
   })
 
   it('renders refresh button', () => {
@@ -107,23 +109,31 @@ describe('SecurityKeyManagementView', () => {
 
   it('renders configured keys statistic', () => {
     render(<SecurityKeyManagementView />)
-    expect(screen.getByText('system.securityKey.configuredKeys')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.securityKey.configuredKeys'),
+    ).toBeInTheDocument()
   })
 
   it('renders protected records statistic', () => {
     render(<SecurityKeyManagementView />)
-    expect(screen.getByText('system.securityKey.protectedRecords')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.securityKey.protectedRecords'),
+    ).toBeInTheDocument()
   })
 
   it('renders retired versions statistic', () => {
     render(<SecurityKeyManagementView />)
-    expect(screen.getByText('system.securityKey.retiredVersions')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.securityKey.retiredVersions'),
+    ).toBeInTheDocument()
   })
 
   it('renders rotate buttons', () => {
     render(<SecurityKeyManagementView />)
     expect(screen.getByText('system.securityKey.rotateJwt')).toBeInTheDocument()
-    expect(screen.getByText('system.securityKey.rotateTotp')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.securityKey.rotateTotp'),
+    ).toBeInTheDocument()
   })
 
   it('shows skeleton when loading', () => {
@@ -134,6 +144,8 @@ describe('SecurityKeyManagementView', () => {
       refetch: vi.fn(),
     })
     const { container } = render(<SecurityKeyManagementView />)
-    expect(container.querySelector('.ant-skeleton, .ant-card-loading')).toBeInTheDocument()
+    expect(
+      container.querySelector('.ant-skeleton, .ant-card-loading'),
+    ).toBeInTheDocument()
   })
 })

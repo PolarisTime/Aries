@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useBackendStatus } from '@/layouts/useBackendStatus'
 import { fetchBackendHealth } from '@/api/auth'
+import { useBackendStatus } from '@/layouts/useBackendStatus'
 
 vi.mock('@/api/auth', () => ({
   fetchBackendHealth: vi.fn(),
@@ -92,7 +92,7 @@ describe('useBackendStatus', () => {
 
     for (let i = 0; i <= 6; i++) {
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(i === 0 ? 1200 : 2000 * Math.pow(2, i))
+        await vi.advanceTimersByTimeAsync(i === 0 ? 1200 : 2000 * 2 ** i)
         await vi.advanceTimersByTimeAsync(0)
       })
     }

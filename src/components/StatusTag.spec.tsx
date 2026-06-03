@@ -31,7 +31,9 @@ describe('StatusTag', () => {
   })
 
   it('uses fallback text when meta is missing', () => {
-    render(<StatusTag status="unknown" statusMap={statusMap} fallback="未定义" />)
+    render(
+      <StatusTag status="unknown" statusMap={statusMap} fallback="未定义" />,
+    )
     expect(screen.getByText('未定义')).toBeTruthy()
   })
 

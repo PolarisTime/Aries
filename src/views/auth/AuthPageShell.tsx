@@ -30,7 +30,9 @@ export function AuthPageShell({ children, hero }: Props) {
               <Typography.Title level={3} className="!mb-1">
                 {appTitle}
               </Typography.Title>
-              <Typography.Text type="secondary">{t('common.brandSubtitle')}</Typography.Text>
+              <Typography.Text type="secondary">
+                {t('common.brandSubtitle')}
+              </Typography.Text>
             </div>
           )}
           {children}

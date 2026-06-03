@@ -9,8 +9,8 @@ vi.mock('@/config/module-page-meta', () => ({
 }))
 
 import {
-  printTemplateTargetOptions,
   printTemplateTargetMap,
+  printTemplateTargetOptions,
 } from './print-template-targets'
 
 describe('print-template-targets', () => {

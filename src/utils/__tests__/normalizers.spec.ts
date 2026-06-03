@@ -56,7 +56,13 @@ describe('normalizeRecord', () => {
     const raw = {
       id: '1',
       items: [
-        { id: 'item-1', lineNo: '1', product: 'Steel', quantity: 100, price: 50 },
+        {
+          id: 'item-1',
+          lineNo: '1',
+          product: 'Steel',
+          quantity: 100,
+          price: 50,
+        },
       ],
     }
     const result = normalizeRecord(raw)

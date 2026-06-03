@@ -9,7 +9,7 @@ describe('module-contracts-master', () => {
   })
 
   it('contains material config with search support', () => {
-    const config = masterModuleEndpointContracts['material']
+    const config = masterModuleEndpointContracts.material
     expect(config).toBeDefined()
     expect(config.path).toBe('/materials')
     expect(config.supportsSearch).toBe(true)
@@ -19,7 +19,7 @@ describe('module-contracts-master', () => {
   })
 
   it('contains supplier config', () => {
-    const config = masterModuleEndpointContracts['supplier']
+    const config = masterModuleEndpointContracts.supplier
     expect(config).toBeDefined()
     expect(config.path).toBe('/suppliers')
     expect(config.supportsSearch).toBe(false)
@@ -27,14 +27,14 @@ describe('module-contracts-master', () => {
   })
 
   it('contains customer config', () => {
-    const config = masterModuleEndpointContracts['customer']
+    const config = masterModuleEndpointContracts.customer
     expect(config).toBeDefined()
     expect(config.path).toBe('/customers')
     expect(config.supportsSearch).toBe(false)
   })
 
   it('contains carrier config', () => {
-    const config = masterModuleEndpointContracts['carrier']
+    const config = masterModuleEndpointContracts.carrier
     expect(config).toBeDefined()
     expect(config.path).toBe('/carriers')
   })
@@ -46,7 +46,7 @@ describe('module-contracts-master', () => {
   })
 
   it('contains warehouse config', () => {
-    const config = masterModuleEndpointContracts['warehouse']
+    const config = masterModuleEndpointContracts.warehouse
     expect(config).toBeDefined()
     expect(config.path).toBe('/warehouses')
     expect(config.nativeFilterKeys).toContain('warehouseType')

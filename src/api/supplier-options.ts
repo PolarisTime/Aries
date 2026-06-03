@@ -7,7 +7,9 @@ export type SupplierOption = {
   label: string
 }
 
-export function normalizeSupplierOptions(options: SupplierOption[]): SupplierOption[] {
+export function normalizeSupplierOptions(
+  options: SupplierOption[],
+): SupplierOption[] {
   return options.map((option) => ({
     ...option,
     id: option.id == null ? undefined : String(option.id),

@@ -50,10 +50,16 @@ export function UserAccountDetailModal({
             <Descriptions.Item label={t('system.userAccountDetail.dataScope')}>
               {record.dataScope || '--'}
             </Descriptions.Item>
-            <Descriptions.Item label={t('system.userAccountDetail.roles')} span="filled">
+            <Descriptions.Item
+              label={t('system.userAccountDetail.roles')}
+              span="filled"
+            >
               {record.roleNames?.length ? record.roleNames.join('、') : '--'}
             </Descriptions.Item>
-            <Descriptions.Item label={t('system.userAccountDetail.permSummary')} span="filled">
+            <Descriptions.Item
+              label={t('system.userAccountDetail.permSummary')}
+              span="filled"
+            >
               {record.permissionSummary || '--'}
             </Descriptions.Item>
             <Descriptions.Item label={t('system.userAccountDetail.status')}>
@@ -61,13 +67,21 @@ export function UserAccountDetailModal({
             </Descriptions.Item>
             <Descriptions.Item label={t('system.userAccountDetail.totpStatus')}>
               <Tag color={getTotpColor(record.totpEnabled)}>
-                {record.totpEnabled ? t('system.userAccountDetail.totpEnabled') : t('system.userAccountDetail.totpDisabled')}
+                {record.totpEnabled
+                  ? t('system.userAccountDetail.totpEnabled')
+                  : t('system.userAccountDetail.totpDisabled')}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label={t('system.userAccountDetail.lastLogin')} span="filled">
+            <Descriptions.Item
+              label={t('system.userAccountDetail.lastLogin')}
+              span="filled"
+            >
               {formatDateTime(record.lastLoginDate, '--')}
             </Descriptions.Item>
-            <Descriptions.Item label={t('system.userAccountDetail.remark')} span="filled">
+            <Descriptions.Item
+              label={t('system.userAccountDetail.remark')}
+              span="filled"
+            >
               {record.remark || '--'}
             </Descriptions.Item>
           </Descriptions>

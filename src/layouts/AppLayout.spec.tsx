@@ -144,15 +144,11 @@ vi.mock('@/layouts/useAppLayoutClock', () => ({
 
 vi.mock('@/layouts/useAppLayoutMenuState', () => ({
   useAppLayoutMenuState: vi.fn().mockReturnValue({
-    sideMenuItems: [
-      { key: '/dashboard', label: '工作台' },
-    ],
+    sideMenuItems: [{ key: '/dashboard', label: '工作台' }],
     siderOpenKeys: [],
     selectedKeys: ['/dashboard'],
     setSiderOpenKeys: vi.fn(),
-    topMenuItems: [
-      { key: '/dashboard', label: '工作台' },
-    ],
+    topMenuItems: [{ key: '/dashboard', label: '工作台' }],
     resolveMenuPath: vi.fn().mockReturnValue('/dashboard'),
   }),
 }))
@@ -249,10 +245,14 @@ vi.mock('@/utils/storage', () => ({
 
 vi.mock('antd/es/layout', () => {
   const Layout = ({ children, className, style }: any) => (
-    <div className={className} style={style}>{children}</div>
+    <div className={className} style={style}>
+      {children}
+    </div>
   )
   Layout.Header = ({ children, className, style }: any) => (
-    <header className={className} style={style}>{children}</header>
+    <header className={className} style={style}>
+      {children}
+    </header>
   )
   Layout.Sider = ({ children, className }: any) => (
     <aside className={className}>{children}</aside>

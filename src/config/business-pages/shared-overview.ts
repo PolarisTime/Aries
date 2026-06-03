@@ -14,9 +14,18 @@ export function buildAmountWeightOverview(
   weightKey = 'totalWeight',
 ): ModuleOverviewItem[] {
   return [
-    { label: i18next.t('modules.overview.recordCount'), value: formatInteger(rows.length) },
-    { label: i18next.t('modules.overview.totalWeight'), value: formatWeight(sumBy(rows, weightKey)) },
-    { label: i18next.t('modules.overview.totalAmount'), value: formatAmount(sumBy(rows, amountKey)) },
+    {
+      label: i18next.t('modules.overview.recordCount'),
+      value: formatInteger(rows.length),
+    },
+    {
+      label: i18next.t('modules.overview.totalWeight'),
+      value: formatWeight(sumBy(rows, weightKey)),
+    },
+    {
+      label: i18next.t('modules.overview.totalAmount'),
+      value: formatAmount(sumBy(rows, amountKey)),
+    },
   ]
 }
 
@@ -25,8 +34,14 @@ export function buildWeightOverview(
   weightKey = 'totalWeight',
 ): ModuleOverviewItem[] {
   return [
-    { label: i18next.t('modules.overview.recordCount'), value: formatInteger(rows.length) },
-    { label: i18next.t('modules.overview.totalWeight'), value: formatWeight(sumBy(rows, weightKey)) },
+    {
+      label: i18next.t('modules.overview.recordCount'),
+      value: formatInteger(rows.length),
+    },
+    {
+      label: i18next.t('modules.overview.totalWeight'),
+      value: formatWeight(sumBy(rows, weightKey)),
+    },
   ]
 }
 
@@ -37,10 +52,22 @@ export function buildStatementOverview(
   balanceKey: string,
 ): ModuleOverviewItem[] {
   return [
-    { label: i18next.t('modules.overview.statementCount'), value: formatInteger(rows.length) },
-    { label: i18next.t('modules.overview.currentAmount'), value: formatAmount(sumBy(rows, businessKey)) },
-    { label: i18next.t('modules.overview.settledAmount'), value: formatAmount(sumBy(rows, paidKey)) },
-    { label: i18next.t('modules.overview.balance'), value: formatAmount(sumBy(rows, balanceKey)) },
+    {
+      label: i18next.t('modules.overview.statementCount'),
+      value: formatInteger(rows.length),
+    },
+    {
+      label: i18next.t('modules.overview.currentAmount'),
+      value: formatAmount(sumBy(rows, businessKey)),
+    },
+    {
+      label: i18next.t('modules.overview.settledAmount'),
+      value: formatAmount(sumBy(rows, paidKey)),
+    },
+    {
+      label: i18next.t('modules.overview.balance'),
+      value: formatAmount(sumBy(rows, balanceKey)),
+    },
   ]
 }
 
@@ -49,8 +76,14 @@ export function buildFinanceOverview(
   amountKey: string,
 ): ModuleOverviewItem[] {
   return [
-    { label: i18next.t('modules.overview.documentCount'), value: formatInteger(rows.length) },
-    { label: i18next.t('modules.overview.totalAmount'), value: formatAmount(sumBy(rows, amountKey)) },
+    {
+      label: i18next.t('modules.overview.documentCount'),
+      value: formatInteger(rows.length),
+    },
+    {
+      label: i18next.t('modules.overview.totalAmount'),
+      value: formatAmount(sumBy(rows, amountKey)),
+    },
   ]
 }
 
@@ -60,7 +93,10 @@ export function buildMasterOverview(
   activeValue = '正常',
 ): ModuleOverviewItem[] {
   return [
-    { label: i18next.t('modules.overview.masterDataCount'), value: formatInteger(rows.length) },
+    {
+      label: i18next.t('modules.overview.masterDataCount'),
+      value: formatInteger(rows.length),
+    },
     {
       label: i18next.t('modules.overview.normalCount'),
       value: formatInteger(

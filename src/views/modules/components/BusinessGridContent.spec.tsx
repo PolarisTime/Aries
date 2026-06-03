@@ -93,7 +93,9 @@ describe('BusinessGridContent', () => {
   })
 
   it('renders warning message when present', () => {
-    render(<BusinessGridContent {...defaultProps} warningMessage="Test warning" />)
+    render(
+      <BusinessGridContent {...defaultProps} warningMessage="Test warning" />,
+    )
     expect(screen.getByText('Test warning')).toBeTruthy()
   })
 })

@@ -17,17 +17,23 @@ describe('systemOrganizationPageConfigs', () => {
   })
 
   it('has primaryNoKey', () => {
-    expect(systemOrganizationPageConfigs.department.primaryNoKey).toBe('departmentCode')
+    expect(systemOrganizationPageConfigs.department.primaryNoKey).toBe(
+      'departmentCode',
+    )
   })
 
   it('has filters', () => {
     expect(systemOrganizationPageConfigs.department.filters).toBeDefined()
-    expect(systemOrganizationPageConfigs.department.filters!.length).toBeGreaterThanOrEqual(2)
+    expect(
+      systemOrganizationPageConfigs.department.filters!.length,
+    ).toBeGreaterThanOrEqual(2)
   })
 
   it('has columns', () => {
     expect(systemOrganizationPageConfigs.department.columns).toBeDefined()
-    expect(systemOrganizationPageConfigs.department.columns.length).toBeGreaterThan(0)
+    expect(
+      systemOrganizationPageConfigs.department.columns.length,
+    ).toBeGreaterThan(0)
   })
 
   it('has formFields', () => {

@@ -17,7 +17,9 @@ describe('operationLogsPageConfig', () => {
 
   it('has quickFilters', () => {
     expect(operationLogsPageConfig.quickFilters).toBeDefined()
-    expect(operationLogsPageConfig.quickFilters!.length).toBeGreaterThanOrEqual(2)
+    expect(operationLogsPageConfig.quickFilters!.length).toBeGreaterThanOrEqual(
+      2,
+    )
   })
 
   it('has filters', () => {

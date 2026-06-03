@@ -38,7 +38,12 @@ const materialInfoColumns: ModuleColumnDefinition[] = [
     required: true,
     align: 'center',
   },
-  { title: i18next.t('modules.columns.length'), dataIndex: 'length', width: 70, align: 'center' },
+  {
+    title: i18next.t('modules.columns.length'),
+    dataIndex: 'length',
+    width: 70,
+    align: 'center',
+  },
   {
     title: i18next.t('modules.columns.unit'),
     dataIndex: 'unit',
@@ -73,7 +78,12 @@ export const orderItemColumns: ModuleColumnDefinition[] = [
     type: 'count',
     required: true,
   },
-  { title: i18next.t('modules.columns.quantityUnit'), dataIndex: 'quantityUnit', width: 64, align: 'center' },
+  {
+    title: i18next.t('modules.columns.quantityUnit'),
+    dataIndex: 'quantityUnit',
+    width: 64,
+    align: 'center',
+  },
   ...materialInfoColumns.slice(7),
   {
     title: i18next.t('modules.columns.weightTon'),
@@ -103,7 +113,11 @@ export const orderItemColumns: ModuleColumnDefinition[] = [
 
 export const batchOrderItemColumns: ModuleColumnDefinition[] = [
   ...materialInfoColumns.slice(0, 7),
-  { title: i18next.t('modules.columns.batchNo'), dataIndex: 'batchNo', width: 130 },
+  {
+    title: i18next.t('modules.columns.batchNo'),
+    dataIndex: 'batchNo',
+    width: 130,
+  },
   {
     title: i18next.t('modules.columns.quantity'),
     dataIndex: 'quantity',
@@ -112,7 +126,12 @@ export const batchOrderItemColumns: ModuleColumnDefinition[] = [
     type: 'count',
     required: true,
   },
-  { title: i18next.t('modules.columns.quantityUnit'), dataIndex: 'quantityUnit', width: 64, align: 'center' },
+  {
+    title: i18next.t('modules.columns.quantityUnit'),
+    dataIndex: 'quantityUnit',
+    width: 64,
+    align: 'center',
+  },
   ...materialInfoColumns.slice(7),
   {
     title: i18next.t('modules.columns.weightTon'),
@@ -142,8 +161,17 @@ export const batchOrderItemColumns: ModuleColumnDefinition[] = [
 
 export const purchaseItemColumns: ModuleColumnDefinition[] = [
   ...materialInfoColumns.slice(0, 7),
-  { title: i18next.t('modules.columns.warehouseName'), dataIndex: 'warehouseName', width: 110, required: true },
-  { title: i18next.t('modules.columns.batchNo'), dataIndex: 'batchNo', width: 130 },
+  {
+    title: i18next.t('modules.columns.warehouseName'),
+    dataIndex: 'warehouseName',
+    width: 110,
+    required: true,
+  },
+  {
+    title: i18next.t('modules.columns.batchNo'),
+    dataIndex: 'batchNo',
+    width: 130,
+  },
   {
     title: i18next.t('modules.columns.quantity'),
     dataIndex: 'quantity',
@@ -152,7 +180,12 @@ export const purchaseItemColumns: ModuleColumnDefinition[] = [
     type: 'count',
     required: true,
   },
-  { title: i18next.t('modules.columns.quantityUnit'), dataIndex: 'quantityUnit', width: 64, align: 'center' },
+  {
+    title: i18next.t('modules.columns.quantityUnit'),
+    dataIndex: 'quantityUnit',
+    width: 64,
+    align: 'center',
+  },
   ...materialInfoColumns.slice(7),
   {
     title: i18next.t('modules.columns.weightTon'),
@@ -220,7 +253,6 @@ export const purchaseInboundItemColumns = insertColumnsAfter(
   'weightTon',
   purchaseInboundSettlementColumns,
 )
-
 
 export const batchSupplierStatementItemColumns = insertColumnsAfter(
   batchOrderItemColumns,

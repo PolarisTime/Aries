@@ -23,11 +23,20 @@ describe('PrintTemplatePreviewModal', () => {
     render(
       <PrintTemplatePreviewModal
         open={true}
-        template={{ id: '1', templateName: 'Test Template', billType: 'PURCHASE_ORDER', templateHtml: '<div>test</div>' } as never}
+        template={
+          {
+            id: '1',
+            templateName: 'Test Template',
+            billType: 'PURCHASE_ORDER',
+            templateHtml: '<div>test</div>',
+          } as never
+        }
         onClose={vi.fn()}
       />,
     )
-    expect(screen.getByText('system.printTemplatePreview.title')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplatePreview.title'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Test Template')).toBeInTheDocument()
   })
 
@@ -46,7 +55,14 @@ describe('PrintTemplatePreviewModal', () => {
     render(
       <PrintTemplatePreviewModal
         open={true}
-        template={{ id: '1', templateName: 'Test', billType: 'ORDER', templateHtml: '<p>Hello</p>' } as never}
+        template={
+          {
+            id: '1',
+            templateName: 'Test',
+            billType: 'ORDER',
+            templateHtml: '<p>Hello</p>',
+          } as never
+        }
         onClose={vi.fn()}
       />,
     )
@@ -57,10 +73,19 @@ describe('PrintTemplatePreviewModal', () => {
     render(
       <PrintTemplatePreviewModal
         open={true}
-        template={{ id: '1', templateName: 'Test', billType: 'ORDER', templateHtml: '' } as never}
+        template={
+          {
+            id: '1',
+            templateName: 'Test',
+            billType: 'ORDER',
+            templateHtml: '',
+          } as never
+        }
         onClose={vi.fn()}
       />,
     )
-    expect(screen.getByText('system.printTemplatePreview.emptyTemplate')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplatePreview.emptyTemplate'),
+    ).toBeInTheDocument()
   })
 })

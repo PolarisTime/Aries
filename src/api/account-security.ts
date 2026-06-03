@@ -44,4 +44,3 @@ export async function enableOwn2fa(
   )
   return assertApiSuccess(response, getApiMessage('enable2faFailed'))
 }
-

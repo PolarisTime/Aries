@@ -56,7 +56,10 @@ interface PageResponse<T> {
   pageSize: number
 }
 
-function formatAmount(value: number | undefined | null, locale: string): string {
+function formatAmount(
+  value: number | undefined | null,
+  locale: string,
+): string {
   if (value == null) return '-'
   return value.toLocaleString(locale === 'zh-CN' ? 'zh-CN' : 'en-US', {
     minimumFractionDigits: 2,
@@ -85,16 +88,32 @@ async function fetchProjectArDetail(projectId: string, tab: string) {
 function useDetailColumns(locale: string): ColumnsType<ProjectArDetailRow> {
   const { t } = useTranslation()
   return [
-    { title: t('finance.projectArDetail.sourceDocumentNo'), dataIndex: 'sourceDocumentNo', width: 160 },
-    { title: t('finance.projectArDetail.documentType'), dataIndex: 'documentType', width: 100 },
+    {
+      title: t('finance.projectArDetail.sourceDocumentNo'),
+      dataIndex: 'sourceDocumentNo',
+      width: 160,
+    },
+    {
+      title: t('finance.projectArDetail.documentType'),
+      dataIndex: 'documentType',
+      width: 100,
+    },
     {
       title: t('finance.projectArDetail.businessDate'),
       dataIndex: 'businessDate',
       width: 120,
       render: (value: unknown) => formatDate(value, '-'),
     },
-    { title: t('finance.projectArDetail.customerCode'), dataIndex: 'customerCode', width: 110 },
-    { title: t('finance.projectArDetail.customerName'), dataIndex: 'customerName', width: 140 },
+    {
+      title: t('finance.projectArDetail.customerCode'),
+      dataIndex: 'customerCode',
+      width: 110,
+    },
+    {
+      title: t('finance.projectArDetail.customerName'),
+      dataIndex: 'customerName',
+      width: 140,
+    },
     {
       title: t('finance.projectArDetail.amount'),
       dataIndex: 'amount',
@@ -116,9 +135,21 @@ function useDetailColumns(locale: string): ColumnsType<ProjectArDetailRow> {
       align: 'right',
       render: (v: number) => formatAmount(v, locale),
     },
-    { title: t('finance.projectArDetail.reconciliationStatus'), dataIndex: 'reconciliationStatus', width: 120 },
-    { title: t('finance.projectArDetail.receiptStatus'), dataIndex: 'receiptStatus', width: 100 },
-    { title: t('finance.projectArDetail.operatorName'), dataIndex: 'operatorName', width: 100 },
+    {
+      title: t('finance.projectArDetail.reconciliationStatus'),
+      dataIndex: 'reconciliationStatus',
+      width: 120,
+    },
+    {
+      title: t('finance.projectArDetail.receiptStatus'),
+      dataIndex: 'receiptStatus',
+      width: 100,
+    },
+    {
+      title: t('finance.projectArDetail.operatorName'),
+      dataIndex: 'operatorName',
+      width: 100,
+    },
     { title: t('common.remark'), dataIndex: 'remark', width: 150 },
   ]
 }
@@ -204,41 +235,65 @@ export function ProjectArDetailPage(): React.JSX.Element {
             <Descriptions.Item label={t('finance.projectArDetail.projectName')}>
               {summary.projectName}
             </Descriptions.Item>
-            <Descriptions.Item label={t('finance.projectArDetail.projectNameAbbr')}>
+            <Descriptions.Item
+              label={t('finance.projectArDetail.projectNameAbbr')}
+            >
               {summary.projectNameAbbr || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label={t('finance.projectArDetail.customerCode')}>
+            <Descriptions.Item
+              label={t('finance.projectArDetail.customerCode')}
+            >
               {summary.customerCode}
             </Descriptions.Item>
-            <Descriptions.Item label={t('finance.projectArDetail.customerName')}>
+            <Descriptions.Item
+              label={t('finance.projectArDetail.customerName')}
+            >
               {summary.customerName}
             </Descriptions.Item>
-            <Descriptions.Item label={t('finance.projectArDetail.projectAddress')}>
+            <Descriptions.Item
+              label={t('finance.projectArDetail.projectAddress')}
+            >
               {summary.projectAddress || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label={t('finance.projectArDetail.projectStatus')}>
+            <Descriptions.Item
+              label={t('finance.projectArDetail.projectStatus')}
+            >
               {summary.projectStatus || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label={t('finance.projectArDetail.projectManager')}>
+            <Descriptions.Item
+              label={t('finance.projectArDetail.projectManager')}
+            >
               {summary.projectManager || '-'}
             </Descriptions.Item>
-            <Descriptions.Item label={t('finance.projectArDetail.contactPerson')}>{'-'}</Descriptions.Item>
-            <Descriptions.Item label={t('finance.projectArDetail.completedSalesAmount')}>
+            <Descriptions.Item
+              label={t('finance.projectArDetail.contactPerson')}
+            >
+              {'-'}
+            </Descriptions.Item>
+            <Descriptions.Item
+              label={t('finance.projectArDetail.completedSalesAmount')}
+            >
               <Text strong className="text-base">
                 {formatAmount(summary.completedSalesAmount, locale)}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label={t('finance.projectArDetail.prepaymentBalance')}>
+            <Descriptions.Item
+              label={t('finance.projectArDetail.prepaymentBalance')}
+            >
               <Text className="text-base">
                 {formatAmount(summary.prepaymentBalance, locale)}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label={t('finance.projectArDetail.unreceivedAmount')}>
+            <Descriptions.Item
+              label={t('finance.projectArDetail.unreceivedAmount')}
+            >
               <Text color="danger" className="text-base">
                 {formatAmount(summary.unreceivedAmount, locale)}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label={t('finance.projectArDetail.netUnreceivedAmount')}>
+            <Descriptions.Item
+              label={t('finance.projectArDetail.netUnreceivedAmount')}
+            >
               <Text color="danger" strong className="text-base">
                 {formatAmount(summary.netUnreceivedAmount, locale)}
               </Text>
@@ -254,7 +309,9 @@ export function ProjectArDetailPage(): React.JSX.Element {
         items={[
           {
             key: 'unreconciled',
-            label: t('finance.projectArDetail.unreconciledTab', { count: unreconciledTotal }),
+            label: t('finance.projectArDetail.unreconciledTab', {
+              count: unreconciledTotal,
+            }),
             children: (
               <Table
                 rowKey="sourceDocumentNo"
@@ -269,7 +326,9 @@ export function ProjectArDetailPage(): React.JSX.Element {
           },
           {
             key: 'reconciled',
-            label: t('finance.projectArDetail.reconciledTab', { count: reconciledTotal }),
+            label: t('finance.projectArDetail.reconciledTab', {
+              count: reconciledTotal,
+            }),
             children: (
               <Table
                 rowKey="sourceDocumentNo"

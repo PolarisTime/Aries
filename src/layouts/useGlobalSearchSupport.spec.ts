@@ -1,8 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useGlobalSearchSupport } from '@/layouts/useGlobalSearchSupport'
 import * as globalSearch from '@/layouts/global-search'
-import * as pageRegistry from '@/config/page-registry'
+import { useGlobalSearchSupport } from '@/layouts/useGlobalSearchSupport'
 
 vi.mock('@/api/global-search', () => ({
   searchGlobalDocuments: vi.fn().mockResolvedValue([]),
@@ -56,7 +55,9 @@ describe('useGlobalSearchSupport', () => {
     const searchPromise = new Promise((resolve) => {
       resolveSearch = resolve
     })
-    vi.mocked(globalSearch.searchAccessibleModules).mockReturnValue(searchPromise as any)
+    vi.mocked(globalSearch.searchAccessibleModules).mockReturnValue(
+      searchPromise as any,
+    )
 
     const { result } = renderHook(() => useGlobalSearchSupport(defaultOptions))
 
@@ -194,7 +195,9 @@ describe('useGlobalSearchSupport', () => {
       summary: '',
       matchedByTrackId: false,
     }
-    vi.mocked(globalSearch.searchAccessibleModules).mockResolvedValue([matchedResult])
+    vi.mocked(globalSearch.searchAccessibleModules).mockResolvedValue([
+      matchedResult,
+    ])
 
     const { result } = renderHook(() => useGlobalSearchSupport(defaultOptions))
 
@@ -278,7 +281,9 @@ describe('useGlobalSearchSupport', () => {
       summary: '',
       matchedByTrackId: false,
     }
-    vi.mocked(globalSearch.searchAccessibleModules).mockResolvedValue([singleResult])
+    vi.mocked(globalSearch.searchAccessibleModules).mockResolvedValue([
+      singleResult,
+    ])
 
     const { result } = renderHook(() => useGlobalSearchSupport(defaultOptions))
 
@@ -333,7 +338,9 @@ describe('useGlobalSearchSupport', () => {
       summary: '',
       matchedByTrackId: true,
     }
-    vi.mocked(globalSearch.searchAccessibleModules).mockResolvedValue([matchedResult])
+    vi.mocked(globalSearch.searchAccessibleModules).mockResolvedValue([
+      matchedResult,
+    ])
 
     const { result } = renderHook(() => useGlobalSearchSupport(defaultOptions))
 
@@ -383,7 +390,9 @@ describe('useGlobalSearchSupport', () => {
       summary: '',
       matchedByTrackId: false,
     }
-    vi.mocked(globalSearch.searchAccessibleModules).mockResolvedValue([searchResult])
+    vi.mocked(globalSearch.searchAccessibleModules).mockResolvedValue([
+      searchResult,
+    ])
 
     const { result } = renderHook(() => useGlobalSearchSupport(defaultOptions))
 
@@ -414,7 +423,9 @@ describe('useGlobalSearchSupport', () => {
       searchModule: vi.fn().mockResolvedValue({ data: { rows: [] } }),
     }
 
-    const { result } = renderHook(() => useGlobalSearchSupport(optionsWithoutPageConfigs))
+    const { result } = renderHook(() =>
+      useGlobalSearchSupport(optionsWithoutPageConfigs),
+    )
 
     await act(async () => {
       await result.current.handleSearch('test')
@@ -431,7 +442,9 @@ describe('useGlobalSearchSupport', () => {
       searchModule: vi.fn().mockResolvedValue({ data: { rows: [] } }),
     }
 
-    const { result } = renderHook(() => useGlobalSearchSupport(optionsWithoutModuleKeys))
+    const { result } = renderHook(() =>
+      useGlobalSearchSupport(optionsWithoutModuleKeys),
+    )
 
     await act(async () => {
       await result.current.handleSearch('test')

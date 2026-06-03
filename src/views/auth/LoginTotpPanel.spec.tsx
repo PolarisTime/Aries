@@ -68,26 +68,40 @@ describe('LoginTotpPanel', () => {
   })
 
   it('disables verify button when expired', () => {
-    const { container } = render(<LoginTotpPanel {...defaultProps} isExpired={true} />)
-    const verifyButton = container.querySelector('.login-submit-btn') as HTMLButtonElement
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} isExpired={true} />,
+    )
+    const verifyButton = container.querySelector(
+      '.login-submit-btn',
+    ) as HTMLButtonElement
     expect(verifyButton).toBeDisabled()
   })
 
   it('disables verify button when code is less than 6 digits', () => {
-    const { container } = render(<LoginTotpPanel {...defaultProps} totpCode="12345" />)
-    const verifyButton = container.querySelector('.login-submit-btn') as HTMLButtonElement
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} totpCode="12345" />,
+    )
+    const verifyButton = container.querySelector(
+      '.login-submit-btn',
+    ) as HTMLButtonElement
     expect(verifyButton).toBeDisabled()
   })
 
   it('enables verify button when code is 6 digits and not expired', () => {
-    const { container } = render(<LoginTotpPanel {...defaultProps} totpCode="123456" />)
-    const verifyButton = container.querySelector('.login-submit-btn') as HTMLButtonElement
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} totpCode="123456" />,
+    )
+    const verifyButton = container.querySelector(
+      '.login-submit-btn',
+    ) as HTMLButtonElement
     expect(verifyButton).not.toBeDisabled()
   })
 
   it('calls onTotpCodeChange when input changes', () => {
     const onTotpCodeChange = vi.fn()
-    render(<LoginTotpPanel {...defaultProps} onTotpCodeChange={onTotpCodeChange} />)
+    render(
+      <LoginTotpPanel {...defaultProps} onTotpCodeChange={onTotpCodeChange} />,
+    )
     const input = screen.getByLabelText('验证码')
     fireEvent.change(input, { target: { value: '123' } })
     expect(onTotpCodeChange).toHaveBeenCalledWith('123')
@@ -95,23 +109,39 @@ describe('LoginTotpPanel', () => {
 
   it('calls onVerify when verify button is clicked', () => {
     const onVerify = vi.fn()
-    const { container } = render(<LoginTotpPanel {...defaultProps} totpCode="123456" onVerify={onVerify} />)
-    const verifyButton = container.querySelector('.login-submit-btn') as HTMLButtonElement
+    const { container } = render(
+      <LoginTotpPanel
+        {...defaultProps}
+        totpCode="123456"
+        onVerify={onVerify}
+      />,
+    )
+    const verifyButton = container.querySelector(
+      '.login-submit-btn',
+    ) as HTMLButtonElement
     fireEvent.click(verifyButton)
     expect(onVerify).toHaveBeenCalled()
   })
 
   it('calls onBackToPassword when back button is clicked', () => {
     const onBackToPassword = vi.fn()
-    const { container } = render(<LoginTotpPanel {...defaultProps} onBackToPassword={onBackToPassword} />)
-    const backButton = container.querySelector('.anticon-arrow-left')?.closest('button') as HTMLButtonElement
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} onBackToPassword={onBackToPassword} />,
+    )
+    const backButton = container
+      .querySelector('.anticon-arrow-left')
+      ?.closest('button') as HTMLButtonElement
     fireEvent.click(backButton)
     expect(onBackToPassword).toHaveBeenCalled()
   })
 
   it('shows loading state on verify button', () => {
-    const { container } = render(<LoginTotpPanel {...defaultProps} totpLoading={true} />)
-    const verifyButton = container.querySelector('.login-submit-btn') as HTMLButtonElement
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} totpLoading={true} />,
+    )
+    const verifyButton = container.querySelector(
+      '.login-submit-btn',
+    ) as HTMLButtonElement
     expect(verifyButton).toBeTruthy()
     expect(verifyButton.className).toContain('ant-btn-loading')
   })
@@ -122,13 +152,17 @@ describe('LoginTotpPanel', () => {
   })
 
   it('applies is-expiring class to timer ring when expiring', () => {
-    const { container } = render(<LoginTotpPanel {...defaultProps} isExpiring={true} />)
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} isExpiring={true} />,
+    )
     const timerRing = container.querySelector('.login-totp-timer-ring')
     expect(timerRing?.className).toContain('is-expiring')
   })
 
   it('does not apply is-expiring class when not expiring', () => {
-    const { container } = render(<LoginTotpPanel {...defaultProps} isExpiring={false} />)
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} isExpiring={false} />,
+    )
     const timerRing = container.querySelector('.login-totp-timer-ring')
     expect(timerRing?.className).not.toContain('is-expiring')
   })
@@ -165,7 +199,13 @@ describe('LoginTotpPanel', () => {
 
   it('calls onVerify when Enter key is pressed in input', () => {
     const onVerify = vi.fn()
-    render(<LoginTotpPanel {...defaultProps} totpCode="123456" onVerify={onVerify} />)
+    render(
+      <LoginTotpPanel
+        {...defaultProps}
+        totpCode="123456"
+        onVerify={onVerify}
+      />,
+    )
     const input = screen.getByLabelText('验证码')
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })
     expect(onVerify).toHaveBeenCalled()
@@ -184,19 +224,25 @@ describe('LoginTotpPanel', () => {
   })
 
   it('shows red icon when expiring', () => {
-    const { container } = render(<LoginTotpPanel {...defaultProps} isExpiring={true} />)
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} isExpiring={true} />,
+    )
     const icon = container.querySelector('.text-red-500')
     expect(icon).toBeTruthy()
   })
 
   it('shows slate icon when not expiring', () => {
-    const { container } = render(<LoginTotpPanel {...defaultProps} isExpiring={false} />)
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} isExpiring={false} />,
+    )
     const icon = container.querySelector('.text-slate-500')
     expect(icon).toBeTruthy()
   })
 
   it('verify button has full width block class', () => {
-    const { container } = render(<LoginTotpPanel {...defaultProps} totpCode="123456" />)
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} totpCode="123456" />,
+    )
     const verifyButton = container.querySelector('.login-submit-btn')
     expect(verifyButton).toBeTruthy()
     expect(verifyButton?.className).toContain('login-submit-btn')
@@ -204,8 +250,12 @@ describe('LoginTotpPanel', () => {
 
   it('does not call onVerify when verify button is clicked and expired', () => {
     const onVerify = vi.fn()
-    const { container } = render(<LoginTotpPanel {...defaultProps} isExpired={true} onVerify={onVerify} />)
-    const verifyButton = container.querySelector('.login-submit-btn') as HTMLButtonElement
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} isExpired={true} onVerify={onVerify} />,
+    )
+    const verifyButton = container.querySelector(
+      '.login-submit-btn',
+    ) as HTMLButtonElement
     fireEvent.click(verifyButton)
     expect(onVerify).not.toHaveBeenCalled()
   })
@@ -223,8 +273,12 @@ describe('LoginTotpPanel', () => {
   })
 
   it('disables verify button when code has more than 6 digits', () => {
-    const { container } = render(<LoginTotpPanel {...defaultProps} totpCode="1234567" />)
-    const verifyButton = container.querySelector('.login-submit-btn') as HTMLButtonElement
+    const { container } = render(
+      <LoginTotpPanel {...defaultProps} totpCode="1234567" />,
+    )
+    const verifyButton = container.querySelector(
+      '.login-submit-btn',
+    ) as HTMLButtonElement
     expect(verifyButton).not.toBeDisabled()
   })
 

@@ -168,7 +168,6 @@ async function executePreRefresh() {
   }
 }
 
-
 let refreshPromise: Promise<void> | null = null
 
 export async function refreshAccessToken() {
