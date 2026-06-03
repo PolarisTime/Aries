@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { searchGlobalDocuments, toGlobalSearchResult } from '@/api/global-search'
+import {
+  searchGlobalDocuments,
+  toGlobalSearchResult,
+} from '@/api/global-search'
 import { ENDPOINTS } from '@/constants/endpoints'
 
 const { httpGetMock } = vi.hoisted(() => ({

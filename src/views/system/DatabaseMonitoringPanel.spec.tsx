@@ -38,16 +38,22 @@ describe('DatabaseMonitoringPanel', () => {
 
   it('renders empty state when no data and not fetching', () => {
     render(<DatabaseMonitoringPanel visible={true} />)
-    expect(screen.getByText('system.databaseMonitor.noData')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.databaseMonitor.noData'),
+    ).toBeInTheDocument()
   })
 
   it('renders section title when visible', () => {
     render(<DatabaseMonitoringPanel visible={true} />)
-    expect(screen.getByText('system.databaseMonitor.sectionTitle')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.databaseMonitor.sectionTitle'),
+    ).toBeInTheDocument()
   })
 
   it('renders refresh button', () => {
     render(<DatabaseMonitoringPanel visible={true} />)
-    expect(screen.getByText('system.databaseMonitor.refresh')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.databaseMonitor.refresh'),
+    ).toBeInTheDocument()
   })
 })

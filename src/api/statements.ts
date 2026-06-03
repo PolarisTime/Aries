@@ -2,7 +2,11 @@ import { assertApiSuccess, http } from '@/api/client'
 import { getModuleConfig } from '@/api/module-contracts'
 import { pageContent, pageTotalElements } from '@/api/page-contract'
 import type { ApiResponse, TableResponse } from '@/types/api'
-import type { RawApiRecord, RawPagePayload, SearchParams } from '@/types/api-raw'
+import type {
+  RawApiRecord,
+  RawPagePayload,
+  SearchParams,
+} from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 import { getApiMessage } from '@/utils/api-messages'
 import { asId, asString } from '@/utils/type-narrowing'

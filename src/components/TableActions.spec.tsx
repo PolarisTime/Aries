@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { TableActions, type ActionItem } from './TableActions'
+import { type ActionItem, TableActions } from './TableActions'
 
 describe('TableActions', () => {
   const defaultItems: ActionItem[] = [
@@ -39,11 +39,7 @@ describe('TableActions', () => {
 
   it('calls onClick when action button clicked', () => {
     const onClick = vi.fn()
-    render(
-      <TableActions
-        items={[{ key: 'edit', label: '编辑', onClick }]}
-      />,
-    )
+    render(<TableActions items={[{ key: 'edit', label: '编辑', onClick }]} />)
     fireEvent.click(screen.getByText('编辑'))
     expect(onClick).toHaveBeenCalledTimes(1)
   })

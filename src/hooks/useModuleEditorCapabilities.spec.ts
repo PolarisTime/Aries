@@ -1,9 +1,14 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { isModuleLineItemsLockedMock, canManageEditorLineItemsMock,
-  getBehaviorValueMock, buildListAuditTargetsMock, buildEditorAuditTargetMock,
-  resolveStatusOptionsMock } = vi.hoisted(() => ({
+const {
+  isModuleLineItemsLockedMock,
+  canManageEditorLineItemsMock,
+  getBehaviorValueMock,
+  buildListAuditTargetsMock,
+  buildEditorAuditTargetMock,
+  resolveStatusOptionsMock,
+} = vi.hoisted(() => ({
   isModuleLineItemsLockedMock: vi.fn().mockReturnValue(false),
   canManageEditorLineItemsMock: vi.fn().mockReturnValue(true),
   getBehaviorValueMock: vi.fn(),
@@ -63,7 +68,9 @@ describe('useModuleEditorCapabilities', () => {
   })
 
   it('returns all capability flags', () => {
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.canAddManualEditorItems).toBeDefined()
     expect(result.current.canAuditEditor).toBeDefined()
     expect(result.current.canManageEditorItems).toBeDefined()
@@ -81,13 +88,18 @@ describe('useModuleEditorCapabilities', () => {
 
   it('detects line items locked state', () => {
     isModuleLineItemsLockedMock.mockReturnValue(true)
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.lineItemsLocked).toBe(true)
   })
 
   it('uses lineItemsLockedOverride when provided', () => {
     const { result } = renderHook(() =>
-      useModuleEditorCapabilities({ ...defaultProps, lineItemsLockedOverride: true })
+      useModuleEditorCapabilities({
+        ...defaultProps,
+        lineItemsLockedOverride: true,
+      }),
     )
     expect(result.current.lineItemsLocked).toBe(true)
     expect(isModuleLineItemsLockedMock).not.toHaveBeenCalled()
@@ -95,79 +107,94 @@ describe('useModuleEditorCapabilities', () => {
 
   it('disables bulk audit when isReadOnly is true', () => {
     const { result } = renderHook(() =>
-      useModuleEditorCapabilities({ ...defaultProps, isReadOnly: true })
+      useModuleEditorCapabilities({ ...defaultProps, isReadOnly: true }),
     )
     expect(result.current.canUseBulkAuditActions).toBe(false)
   })
 
   it('disables bulk audit when canAuditRecords is false', () => {
     const { result } = renderHook(() =>
-      useModuleEditorCapabilities({ ...defaultProps, canAuditRecords: false })
+      useModuleEditorCapabilities({ ...defaultProps, canAuditRecords: false }),
     )
     expect(result.current.canUseBulkAuditActions).toBe(false)
   })
 
   it('disables bulk delete when isReadOnly is true', () => {
     const { result } = renderHook(() =>
-      useModuleEditorCapabilities({ ...defaultProps, isReadOnly: true })
+      useModuleEditorCapabilities({ ...defaultProps, isReadOnly: true }),
     )
     expect(result.current.canUseBulkDeleteActions).toBe(false)
   })
 
   it('disables bulk delete when canDeleteRecords is false', () => {
     const { result } = renderHook(() =>
-      useModuleEditorCapabilities({ ...defaultProps, canDeleteRecords: false })
+      useModuleEditorCapabilities({ ...defaultProps, canDeleteRecords: false }),
     )
     expect(result.current.canUseBulkDeleteActions).toBe(false)
   })
 
   it('enables bulk print when canPrintRecords is true', () => {
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.canUseBulkPrintActions).toBe(true)
   })
 
   it('disables bulk print when canPrintRecords is false', () => {
     const { result } = renderHook(() =>
-      useModuleEditorCapabilities({ ...defaultProps, canPrintRecords: false })
+      useModuleEditorCapabilities({ ...defaultProps, canPrintRecords: false }),
     )
     expect(result.current.canUseBulkPrintActions).toBe(false)
   })
 
   it('enables save and audit when all conditions met', () => {
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.canSaveAndAuditCurrentEditor).toBe(true)
   })
 
   it('disables save and audit when cannot save', () => {
     const { result } = renderHook(() =>
-      useModuleEditorCapabilities({ ...defaultProps, canSaveCurrentEditor: false })
+      useModuleEditorCapabilities({
+        ...defaultProps,
+        canSaveCurrentEditor: false,
+      }),
     )
     expect(result.current.canSaveAndAuditCurrentEditor).toBe(false)
   })
 
   it('disables add manual items when behavior disallows', () => {
     getBehaviorValueMock.mockReturnValue(false)
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.canAddManualEditorItems).toBe(false)
   })
 
   it('shows locked notice when line items are locked', () => {
     isModuleLineItemsLockedMock.mockReturnValue(true)
     getBehaviorValueMock.mockReturnValue('Items are locked')
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.lockedLineItemsNotice).toBe('Items are locked')
   })
 
   it('disables canAuditEditor when no editorAuditTarget', () => {
     buildEditorAuditTargetMock.mockReturnValue(null)
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.canAuditEditor).toBe(false)
     expect(result.current.canSaveAndAuditCurrentEditor).toBe(false)
   })
 
   it('disables canManageEditorItems when canManageEditorLineItems returns false', () => {
     canManageEditorLineItemsMock.mockReturnValue(false)
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.canManageEditorItems).toBe(false)
     expect(result.current.canAddManualEditorItems).toBe(false)
   })
@@ -184,14 +211,18 @@ describe('useModuleEditorCapabilities', () => {
 
   it('returns empty locked notice when line items not locked', () => {
     isModuleLineItemsLockedMock.mockReturnValue(false)
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.lockedLineItemsNotice).toBe('')
   })
 
   it('returns empty locked notice when behavior value is empty string', () => {
     isModuleLineItemsLockedMock.mockReturnValue(true)
     getBehaviorValueMock.mockReturnValue('')
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.lockedLineItemsNotice).toBe('')
   })
 
@@ -200,7 +231,9 @@ describe('useModuleEditorCapabilities', () => {
       auditTarget: null,
       reverseAuditTarget: null,
     })
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.canUseBulkAuditActions).toBe(false)
   })
 
@@ -209,7 +242,9 @@ describe('useModuleEditorCapabilities', () => {
       auditTarget: 'confirmed',
       reverseAuditTarget: null,
     })
-    const { result } = renderHook(() => useModuleEditorCapabilities(defaultProps))
+    const { result } = renderHook(() =>
+      useModuleEditorCapabilities(defaultProps),
+    )
     expect(result.current.canUseBulkAuditActions).toBe(false)
   })
 

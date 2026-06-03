@@ -83,6 +83,8 @@ describe('DatabaseStatusOverview', () => {
 
   it('renders section heading', () => {
     render(<DatabaseStatusOverview dbStatus={mockDbStatus} loading={false} />)
-    expect(screen.getByText('system.databaseStatus.serviceOverview')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.databaseStatus.serviceOverview'),
+    ).toBeInTheDocument()
   })
 })

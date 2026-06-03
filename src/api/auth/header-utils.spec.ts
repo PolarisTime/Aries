@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  requestHadAuthorization,
-  requestUsesApiKey,
-} from './header-utils'
+import { requestHadAuthorization, requestUsesApiKey } from './header-utils'
 import type { RetryableRequestConfig } from './types'
 
 function makeConfig(headers?: Record<string, string>): RetryableRequestConfig {
@@ -75,15 +72,13 @@ describe('header-utils', () => {
     })
 
     it('returns true when X-API-Key is present', () => {
-      expect(
-        requestUsesApiKey(makeConfig({ 'X-API-Key': 'leo_key' })),
-      ).toBe(true)
+      expect(requestUsesApiKey(makeConfig({ 'X-API-Key': 'leo_key' }))).toBe(
+        true,
+      )
     })
 
     it('returns false when X-API-Key is whitespace', () => {
-      expect(
-        requestUsesApiKey(makeConfig({ 'X-API-Key': '   ' })),
-      ).toBe(false)
+      expect(requestUsesApiKey(makeConfig({ 'X-API-Key': '   ' }))).toBe(false)
     })
 
     it('uses headers.get function', () => {

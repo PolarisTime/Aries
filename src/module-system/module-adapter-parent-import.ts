@@ -82,7 +82,6 @@ function isEmptyDraftLineItem(item: ModuleLineItem) {
   )
 }
 
-
 export function buildParentImportState(options: {
   parentImportConfig: ModuleParentImportDefinition
   parentRecord: ModuleRecord

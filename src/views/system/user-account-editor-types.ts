@@ -1,4 +1,3 @@
-
 export interface UserAccountEditorFormValues {
   loginName: string
   password: string

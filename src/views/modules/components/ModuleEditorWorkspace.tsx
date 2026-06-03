@@ -38,9 +38,18 @@ interface Props {
 }
 
 const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
-  'purchase-order': { labelKey: 'modules.nextModule.createPurchaseInbound', path: '/purchase-inbound' },
-  'sales-order': { labelKey: 'modules.nextModule.createSalesOutbound', path: '/sales-outbound' },
-  'sales-outbound': { labelKey: 'modules.nextModule.createFreightBill', path: '/freight-bill' },
+  'purchase-order': {
+    labelKey: 'modules.nextModule.createPurchaseInbound',
+    path: '/purchase-inbound',
+  },
+  'sales-order': {
+    labelKey: 'modules.nextModule.createSalesOutbound',
+    path: '/sales-outbound',
+  },
+  'sales-outbound': {
+    labelKey: 'modules.nextModule.createFreightBill',
+    path: '/freight-bill',
+  },
 }
 
 function isFinanceOrTradeModule(key: string) {
@@ -156,7 +165,10 @@ export function ModuleEditorWorkspace({
     <>
       <WorkspaceOverlay
         open={open}
-        title={t('modules.editor.title', { mode: isEdit ? t('modules.editor.edit') : t('modules.editor.create'), title: config.title })}
+        title={t('modules.editor.title', {
+          mode: isEdit ? t('modules.editor.edit') : t('modules.editor.create'),
+          title: config.title,
+        })}
         onClose={onClose}
       >
         <Form
@@ -261,25 +273,20 @@ function SaveResultOverlay({
 
   const statusIcon =
     saveResult.status === 'success' ? (
-      <CheckCircleFilled
-        className="text-4xl text-[var(--ant-color-success,#52c41a)]"
-      />
+      <CheckCircleFilled className="text-4xl text-[var(--ant-color-success,#52c41a)]" />
     ) : saveResult.status === 'warning' ? (
-      <WarningFilled
-        className="text-4xl text-[var(--ant-color-warning,#faad14)]"
-      />
+      <WarningFilled className="text-4xl text-[var(--ant-color-warning,#faad14)]" />
     ) : (
-      <CloseCircleFilled
-        className="text-4xl text-[var(--ant-color-error,#ff4d4f)]"
-      />
+      <CloseCircleFilled className="text-4xl text-[var(--ant-color-error,#ff4d4f)]" />
     )
 
-  const NEXT_MODULE: Record<string, { label: string; path: string }> = Object.fromEntries(
-    Object.entries(NEXT_MODULE_PATHS).map(([key, { labelKey, path }]) => [
-      key,
-      { label: t(labelKey), path },
-    ]),
-  )
+  const NEXT_MODULE: Record<string, { label: string; path: string }> =
+    Object.fromEntries(
+      Object.entries(NEXT_MODULE_PATHS).map(([key, { labelKey, path }]) => [
+        key,
+        { label: t(labelKey), path },
+      ]),
+    )
 
   const nextModule = isSuccess ? NEXT_MODULE[moduleKey] : null
 
@@ -328,38 +335,99 @@ function SaveResultOverlay({
   )
 
   const baseItemColumns = [
-    { title: t('modules.itemColumns.brand'), dataIndex: 'brand', ellipsis: true, align: 'center' as const },
-    { title: t('modules.itemColumns.material'), dataIndex: 'material', ellipsis: true, align: 'center' as const },
-    { title: t('modules.itemColumns.spec'), dataIndex: 'spec', ellipsis: true, align: 'center' as const },
-    { title: t('modules.itemColumns.length'), dataIndex: 'length', ellipsis: true, align: 'center' as const },
-    { title: t('modules.itemColumns.quantity'), dataIndex: 'quantity', align: 'center' as const },
-    { title: t('modules.itemColumns.weightTon'), dataIndex: 'weightTon', align: 'center' as const, render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-') },
+    {
+      title: t('modules.itemColumns.brand'),
+      dataIndex: 'brand',
+      ellipsis: true,
+      align: 'center' as const,
+    },
+    {
+      title: t('modules.itemColumns.material'),
+      dataIndex: 'material',
+      ellipsis: true,
+      align: 'center' as const,
+    },
+    {
+      title: t('modules.itemColumns.spec'),
+      dataIndex: 'spec',
+      ellipsis: true,
+      align: 'center' as const,
+    },
+    {
+      title: t('modules.itemColumns.length'),
+      dataIndex: 'length',
+      ellipsis: true,
+      align: 'center' as const,
+    },
+    {
+      title: t('modules.itemColumns.quantity'),
+      dataIndex: 'quantity',
+      align: 'center' as const,
+    },
+    {
+      title: t('modules.itemColumns.weightTon'),
+      dataIndex: 'weightTon',
+      align: 'center' as const,
+      render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-'),
+    },
   ]
   const financeItemColumns = [
-    { title: t('modules.itemColumns.unitPrice'), dataIndex: 'unitPrice', align: 'right' as const, render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-') },
-    { title: t('modules.itemColumns.amount'), dataIndex: 'amount', align: 'right' as const, render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-') },
+    {
+      title: t('modules.itemColumns.unitPrice'),
+      dataIndex: 'unitPrice',
+      align: 'right' as const,
+      render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-'),
+    },
+    {
+      title: t('modules.itemColumns.amount'),
+      dataIndex: 'amount',
+      align: 'right' as const,
+      render: (v: unknown) => (v != null ? Number(v).toFixed(2) : '-'),
+    },
   ]
   const freightItemColumns = [
-    { title: t('modules.itemColumns.warehouseName'), dataIndex: 'warehouseName', ellipsis: true },
-    { title: t('modules.itemColumns.brand'), dataIndex: 'brand', ellipsis: true },
-    { title: t('modules.itemColumns.material'), dataIndex: 'material', ellipsis: true },
+    {
+      title: t('modules.itemColumns.warehouseName'),
+      dataIndex: 'warehouseName',
+      ellipsis: true,
+    },
+    {
+      title: t('modules.itemColumns.brand'),
+      dataIndex: 'brand',
+      ellipsis: true,
+    },
+    {
+      title: t('modules.itemColumns.material'),
+      dataIndex: 'material',
+      ellipsis: true,
+    },
     { title: t('modules.itemColumns.spec'), dataIndex: 'spec', ellipsis: true },
-    { title: t('modules.itemColumns.length'), dataIndex: 'length', ellipsis: true },
-    { title: t('modules.itemColumns.quantity'), dataIndex: 'quantity', align: 'center' as const },
-    { title: t('modules.itemColumns.weightTon'), dataIndex: 'weightTon', align: 'center' as const, render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-') },
+    {
+      title: t('modules.itemColumns.length'),
+      dataIndex: 'length',
+      ellipsis: true,
+    },
+    {
+      title: t('modules.itemColumns.quantity'),
+      dataIndex: 'quantity',
+      align: 'center' as const,
+    },
+    {
+      title: t('modules.itemColumns.weightTon'),
+      dataIndex: 'weightTon',
+      align: 'center' as const,
+      render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-'),
+    },
   ]
-  const itemColumns = moduleKey === 'freight-bill'
-    ? freightItemColumns
-    : isFinanceOrTradeModule(moduleKey)
-      ? [...baseItemColumns, ...financeItemColumns]
-      : baseItemColumns
+  const itemColumns =
+    moduleKey === 'freight-bill'
+      ? freightItemColumns
+      : isFinanceOrTradeModule(moduleKey)
+        ? [...baseItemColumns, ...financeItemColumns]
+        : baseItemColumns
 
   return (
-    <WorkspaceOverlay
-      open
-      title={headerTitle}
-      onClose={onClear}
-    >
+    <WorkspaceOverlay open title={headerTitle} onClose={onClear}>
       {saveResult.status === 'error' && saveResult.traceId ? (
         <Card size="small" className="mb-16">
           <Typography.Text

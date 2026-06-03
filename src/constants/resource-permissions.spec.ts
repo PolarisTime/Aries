@@ -15,7 +15,11 @@ vi.mock('@/utils/logger', () => ({
   },
 }))
 
-import { normalizeAction, resolveResourceKey, loadPermissionCatalog } from './resource-permissions'
+import {
+  loadPermissionCatalog,
+  normalizeAction,
+  resolveResourceKey,
+} from './resource-permissions'
 
 describe('resource-permissions', () => {
   beforeEach(() => {

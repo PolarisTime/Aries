@@ -71,7 +71,11 @@ export function UserAccountEditorModal({
   )
   return (
     <FormModal
-      title={isCreate ? t('system.userAccountEditor.createTitle') : t('system.userAccountEditor.editTitle')}
+      title={
+        isCreate
+          ? t('system.userAccountEditor.createTitle')
+          : t('system.userAccountEditor.editTitle')
+      }
       open={open}
       onClose={onClose}
       onSave={onSave}
@@ -81,7 +85,9 @@ export function UserAccountEditorModal({
       <Spin spinning={loading}>
         <Form form={form} layout="vertical" className="user-account-form">
           <div className="form-section">
-            <div className="form-section-title">{t('system.userAccountEditor.accountInfo')}</div>
+            <div className="form-section-title">
+              {t('system.userAccountEditor.accountInfo')}
+            </div>
             <Row gutter={[24, 0]}>
               <Col xs={24} sm={12}>
                 <Form.Item
@@ -103,7 +109,9 @@ export function UserAccountEditorModal({
                   }
                 >
                   <Input
-                    placeholder={t('system.userAccountEditor.loginNamePlaceholder')}
+                    placeholder={t(
+                      'system.userAccountEditor.loginNamePlaceholder',
+                    )}
                     maxLength={64}
                     onBlur={() => {
                       const loginName = getFormString(form, 'loginName')
@@ -120,15 +128,32 @@ export function UserAccountEditorModal({
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
-                <Form.Item name="userName" label={t('system.userAccountEditor.userName')} required>
-                  <Input placeholder={t('system.userAccountEditor.userNamePlaceholder')} maxLength={64} />
+                <Form.Item
+                  name="userName"
+                  label={t('system.userAccountEditor.userName')}
+                  required
+                >
+                  <Input
+                    placeholder={t(
+                      'system.userAccountEditor.userNamePlaceholder',
+                    )}
+                    maxLength={64}
+                  />
                 </Form.Item>
               </Col>
             </Row>
             <Row gutter={[24, 0]}>
               <Col xs={24} sm={12}>
-                <Form.Item name="mobile" label={t('system.userAccountEditor.mobile')}>
-                  <Input placeholder={t('system.userAccountEditor.mobilePlaceholder')} maxLength={32} />
+                <Form.Item
+                  name="mobile"
+                  label={t('system.userAccountEditor.mobile')}
+                >
+                  <Input
+                    placeholder={t(
+                      'system.userAccountEditor.mobilePlaceholder',
+                    )}
+                    maxLength={32}
+                  />
                 </Form.Item>
               </Col>
               {isCreate ? (
@@ -139,16 +164,23 @@ export function UserAccountEditorModal({
                     extra={t('system.userAccountEditor.passwordHint')}
                   >
                     <Input.Password
-                      placeholder={t('system.userAccountEditor.passwordPlaceholder')}
+                      placeholder={t(
+                        'system.userAccountEditor.passwordPlaceholder',
+                      )}
                       maxLength={128}
                     />
                   </Form.Item>
                 </Col>
               ) : (
                 <Col xs={24} sm={12}>
-                  <Form.Item name="status" label={t('system.userAccountEditor.status')}>
+                  <Form.Item
+                    name="status"
+                    label={t('system.userAccountEditor.status')}
+                  >
                     <Select
-                      placeholder={t('system.userAccountEditor.statusPlaceholder')}
+                      placeholder={t(
+                        'system.userAccountEditor.statusPlaceholder',
+                      )}
                       options={enabledStatusOptions}
                     />
                   </Form.Item>
@@ -157,11 +189,17 @@ export function UserAccountEditorModal({
             </Row>
             <Row gutter={[24, 0]}>
               <Col xs={24} sm={12}>
-                <Form.Item name="departmentId" label={t('system.userAccountEditor.department')} required>
+                <Form.Item
+                  name="departmentId"
+                  label={t('system.userAccountEditor.department')}
+                  required
+                >
                   <Select
                     showSearch
                     optionFilterProp="label"
-                    placeholder={t('system.userAccountEditor.departmentPlaceholder')}
+                    placeholder={t(
+                      'system.userAccountEditor.departmentPlaceholder',
+                    )}
                     options={departmentOptions.map((department) => ({
                       label: department.departmentName,
                       value: String(department.id || ''),
@@ -172,11 +210,18 @@ export function UserAccountEditorModal({
             </Row>
           </div>
           <div className="form-section">
-            <div className="form-section-title">{t('system.userAccountEditor.permConfig')}</div>
+            <div className="form-section-title">
+              {t('system.userAccountEditor.permConfig')}
+            </div>
             <Row gutter={[24, 0]}>
               <Col xs={24} md={isCreate ? 12 : 16}>
-                <Form.Item name="roleIds" label={t('system.userAccountEditor.roles')} required
-                  getValueFromEvent={(ids: (string | number)[]) => ids?.map(Number)}
+                <Form.Item
+                  name="roleIds"
+                  label={t('system.userAccountEditor.roles')}
+                  required
+                  getValueFromEvent={(ids: (string | number)[]) =>
+                    ids?.map(Number)
+                  }
                 >
                   <Select
                     mode="multiple"
@@ -187,13 +232,14 @@ export function UserAccountEditorModal({
                       const isDisabled =
                         role.status === enabledStatusValues[1] &&
                         !selectedRoleIds.includes(roleId)
-                      const conflictWith = selectedRoleIds.find(
-                        (sid) => roleConflicts?.[sid]?.includes(roleId),
+                      const conflictWith = selectedRoleIds.find((sid) =>
+                        roleConflicts?.[sid]?.includes(roleId),
                       )
                       return {
-                        label: conflictWith != null
-                          ? `${role.roleName} ${t('system.userAccountEditor.roleConflict')}`
-                          : role.roleName,
+                        label:
+                          conflictWith != null
+                            ? `${role.roleName} ${t('system.userAccountEditor.roleConflict')}`
+                            : role.roleName,
                         value: role.id,
                         disabled: isDisabled || conflictWith != null,
                       }
@@ -218,9 +264,14 @@ export function UserAccountEditorModal({
               </Col>
               {isCreate && (
                 <Col xs={24} md={6}>
-                  <Form.Item name="status" label={t('system.userAccountEditor.status2')}>
+                  <Form.Item
+                    name="status"
+                    label={t('system.userAccountEditor.status2')}
+                  >
                     <Select
-                      placeholder={t('system.userAccountEditor.statusPlaceholder2')}
+                      placeholder={t(
+                        'system.userAccountEditor.statusPlaceholder2',
+                      )}
                       options={enabledStatusOptions}
                     />
                   </Form.Item>
@@ -244,9 +295,17 @@ export function UserAccountEditorModal({
             </Form.Item>
           </div>
           <div className="form-section">
-            <div className="form-section-title">{t('system.userAccountEditor.supplementInfo')}</div>
-            <Form.Item name="remark" label={t('system.userAccountEditor.remark')}>
-              <Input.TextArea rows={2} placeholder={t('system.userAccountEditor.remarkPlaceholder')} />
+            <div className="form-section-title">
+              {t('system.userAccountEditor.supplementInfo')}
+            </div>
+            <Form.Item
+              name="remark"
+              label={t('system.userAccountEditor.remark')}
+            >
+              <Input.TextArea
+                rows={2}
+                placeholder={t('system.userAccountEditor.remarkPlaceholder')}
+              />
             </Form.Item>
           </div>
         </Form>

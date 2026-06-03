@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuthStore } from '@/stores/authStore'
-import { setStoredUser } from '@/utils/storage'
 import {
   syncCurrentUserTotpState,
   syncCurrentUserTotpStateById,
 } from '@/stores/auth-user-sync'
+import { useAuthStore } from '@/stores/authStore'
+import { setStoredUser } from '@/utils/storage'
 
 vi.mock('@/utils/storage', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/utils/storage')>()

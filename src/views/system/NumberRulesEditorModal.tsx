@@ -138,16 +138,10 @@ export function NumberRulesEditorModal({
             >
               <Input disabled />
             </Form.Item>
-            <Form.Item
-              name="ruleCode"
-              label={t('system.numberRules.ruleCode')}
-            >
+            <Form.Item name="ruleCode" label={t('system.numberRules.ruleCode')}>
               <Input disabled />
             </Form.Item>
-            <Form.Item
-              name="ruleName"
-              label={t('system.numberRules.ruleName')}
-            >
+            <Form.Item name="ruleName" label={t('system.numberRules.ruleName')}>
               <Input disabled />
             </Form.Item>
             <Form.Item

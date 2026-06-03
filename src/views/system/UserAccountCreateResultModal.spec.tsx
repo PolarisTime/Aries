@@ -8,7 +8,15 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/components/FormModal', () => ({
-  FormModal: ({ children, title, open }: { children: React.ReactNode; title: string; open: boolean }) =>
+  FormModal: ({
+    children,
+    title,
+    open,
+  }: {
+    children: React.ReactNode
+    title: string
+    open: boolean
+  }) =>
     open ? (
       <div data-testid="form-modal">
         <div>{title}</div>
@@ -18,12 +26,16 @@ vi.mock('@/components/FormModal', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: Record<string, unknown>) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: Record<string, unknown>) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/typography', () => ({
   default: {
-    Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    Text: ({ children }: { children: React.ReactNode }) => (
+      <span>{children}</span>
+    ),
   },
 }))
 
@@ -57,7 +69,9 @@ describe('UserAccountCreateResultModal', () => {
 
   it('renders create success title', () => {
     render(<UserAccountCreateResultModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccount.createSuccess')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccount.createSuccess'),
+    ).toBeInTheDocument()
   })
 
   it('renders login name', () => {
@@ -82,8 +96,12 @@ describe('UserAccountCreateResultModal', () => {
 
   it('renders copy buttons', () => {
     render(<UserAccountCreateResultModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccount.copyAccount')).toBeInTheDocument()
-    expect(screen.getByText('system.userAccount.copyPassword')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccount.copyAccount'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccount.copyPassword'),
+    ).toBeInTheDocument()
   })
 
   it('renders ok button', () => {

@@ -9,9 +9,7 @@ describe('api-key-list-columns', () => {
       { code: 'read', title: '读取' },
       { code: 'write', title: '写入' },
     ],
-    resourceOptions: [
-      { code: 'order', title: '订单管理', group: '业务' },
-    ],
+    resourceOptions: [{ code: 'order', title: '订单管理', group: '业务' }],
     onView: vi.fn(),
     onRevoke: vi.fn(),
   }

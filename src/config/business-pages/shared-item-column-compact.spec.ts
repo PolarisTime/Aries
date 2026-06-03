@@ -5,13 +5,13 @@ vi.mock('i18next', () => ({
 }))
 
 import {
-  compactOrderItemColumns,
-  compactPurchaseItemColumns,
-  compactPurchaseInboundItemColumns,
   compactBatchCustomerStatementItemColumns,
   compactBatchSupplierStatementItemColumns,
-  compactInvoiceReceiptItemColumns,
   compactInvoiceIssueItemColumns,
+  compactInvoiceReceiptItemColumns,
+  compactOrderItemColumns,
+  compactPurchaseInboundItemColumns,
+  compactPurchaseItemColumns,
 } from './shared-item-column-compact'
 
 describe('shared-item-column-compact', () => {

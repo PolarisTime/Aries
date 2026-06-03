@@ -8,7 +8,15 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/components/FormModal', () => ({
-  FormModal: ({ children, title, open }: { children: React.ReactNode; title: string; open: boolean }) =>
+  FormModal: ({
+    children,
+    title,
+    open,
+  }: {
+    children: React.ReactNode
+    title: string
+    open: boolean
+  }) =>
     open ? (
       <div data-testid="form-modal">
         <div>{title}</div>
@@ -18,8 +26,16 @@ vi.mock('@/components/FormModal', () => ({
 }))
 
 vi.mock('antd/es/form', () => {
-  const Form = ({ children }: { children: React.ReactNode }) => <div>{children}</div>
-  Form.Item = ({ children, label }: { children: React.ReactNode; label: string }) => (
+  const Form = ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  )
+  Form.Item = ({
+    children,
+    label,
+  }: {
+    children: React.ReactNode
+    label: string
+  }) => (
     <div>
       {label && <span>{label}</span>}
       {children}
@@ -39,7 +55,13 @@ vi.mock('antd/es/select', () => ({
 }))
 
 vi.mock('antd/es/alert', () => ({
-  default: ({ message, description }: { message: string; description?: React.ReactNode }) => (
+  default: ({
+    message,
+    description,
+  }: {
+    message: string
+    description?: React.ReactNode
+  }) => (
     <div>
       <div>{message}</div>
       {description && <div>{description}</div>}
@@ -48,28 +70,36 @@ vi.mock('antd/es/alert', () => ({
 }))
 
 vi.mock('antd/es/row', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }))
 
 vi.mock('antd/es/col', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }))
 
 vi.mock('antd/es/tag', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <span>{children}</span>
+  ),
 }))
 
 vi.mock('antd/es/typography', () => ({
   default: {
-    Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-    Paragraph: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+    Text: ({ children }: { children: React.ReactNode }) => (
+      <span>{children}</span>
+    ),
+    Paragraph: ({ children }: { children: React.ReactNode }) => (
+      <p>{children}</p>
+    ),
   },
 }))
 
 vi.mock('@/config/print-template-targets', () => ({
-  printTemplateTargetOptions: [
-    { label: '采购订单', value: 'purchase-order' },
-  ],
+  printTemplateTargetOptions: [{ label: '采购订单', value: 'purchase-order' }],
 }))
 
 vi.mock('@/utils/form-control-a11y', () => ({
@@ -115,44 +145,64 @@ describe('PrintTemplateEditorModal', () => {
 
   it('renders create title when not editing', () => {
     render(<PrintTemplateEditorModal {...defaultProps} editing={false} />)
-    expect(screen.getByText('system.printTemplateEditor.createTitle')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.createTitle'),
+    ).toBeInTheDocument()
   })
 
   it('renders edit title when editing', () => {
     render(<PrintTemplateEditorModal {...defaultProps} editing={true} />)
-    expect(screen.getByText('system.printTemplateEditor.editTitle')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.editTitle'),
+    ).toBeInTheDocument()
   })
 
   it('renders form fields', () => {
     render(<PrintTemplateEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.printTemplateEditor.billType')).toBeInTheDocument()
-    expect(screen.getByText('system.printTemplateEditor.templateName')).toBeInTheDocument()
-    expect(screen.getByText('system.printTemplateEditor.templateType')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.billType'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.templateName'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.templateType'),
+    ).toBeInTheDocument()
   })
 
   it('renders template content field', () => {
     render(<PrintTemplateEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.printTemplateEditor.templateContent')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.templateContent'),
+    ).toBeInTheDocument()
   })
 
   it('renders help alert', () => {
     render(<PrintTemplateEditorModal {...defaultProps} />)
-    expect(screen.getByText('system.printTemplateEditor.helpTitle')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.helpTitle'),
+    ).toBeInTheDocument()
   })
 
   it('renders common fields section', () => {
     const { container } = render(<PrintTemplateEditorModal {...defaultProps} />)
-    expect(container.textContent).toContain('system.printTemplateEditor.commonFields')
+    expect(container.textContent).toContain(
+      'system.printTemplateEditor.commonFields',
+    )
   })
 
   it('renders detail fields section', () => {
     const { container } = render(<PrintTemplateEditorModal {...defaultProps} />)
-    expect(container.textContent).toContain('system.printTemplateEditor.detailFields')
+    expect(container.textContent).toContain(
+      'system.printTemplateEditor.detailFields',
+    )
   })
 
   it('renders layout fields section', () => {
     const { container } = render(<PrintTemplateEditorModal {...defaultProps} />)
-    expect(container.textContent).toContain('system.printTemplateEditor.layoutFields')
+    expect(container.textContent).toContain(
+      'system.printTemplateEditor.layoutFields',
+    )
   })
 
   it('does not render when closed', () => {

@@ -5,11 +5,11 @@ vi.mock('i18next', () => ({
 }))
 
 import {
-  orderItemColumns,
   batchOrderItemColumns,
-  purchaseItemColumns,
-  purchaseInboundItemColumns,
   batchSupplierStatementItemColumns,
+  orderItemColumns,
+  purchaseInboundItemColumns,
+  purchaseItemColumns,
 } from './shared-item-column-base'
 
 describe('shared-item-column-base', () => {
@@ -55,13 +55,17 @@ describe('shared-item-column-base', () => {
     })
 
     it('has more columns than orderItemColumns', () => {
-      expect(batchOrderItemColumns.length).toBeGreaterThan(orderItemColumns.length)
+      expect(batchOrderItemColumns.length).toBeGreaterThan(
+        orderItemColumns.length,
+      )
     })
   })
 
   describe('purchaseItemColumns', () => {
     it('includes warehouseName column', () => {
-      const col = purchaseItemColumns.find((c) => c.dataIndex === 'warehouseName')
+      const col = purchaseItemColumns.find(
+        (c) => c.dataIndex === 'warehouseName',
+      )
       expect(col).toBeDefined()
       expect(col!.required).toBe(true)
     })
@@ -74,24 +78,32 @@ describe('shared-item-column-base', () => {
 
   describe('purchaseInboundItemColumns', () => {
     it('includes settlementMode column', () => {
-      const col = purchaseInboundItemColumns.find((c) => c.dataIndex === 'settlementMode')
+      const col = purchaseInboundItemColumns.find(
+        (c) => c.dataIndex === 'settlementMode',
+      )
       expect(col).toBeDefined()
     })
 
     it('includes weighWeightTon column', () => {
-      const col = purchaseInboundItemColumns.find((c) => c.dataIndex === 'weighWeightTon')
+      const col = purchaseInboundItemColumns.find(
+        (c) => c.dataIndex === 'weighWeightTon',
+      )
       expect(col).toBeDefined()
     })
 
     it('includes weightAdjustmentTon column', () => {
-      const col = purchaseInboundItemColumns.find((c) => c.dataIndex === 'weightAdjustmentTon')
+      const col = purchaseInboundItemColumns.find(
+        (c) => c.dataIndex === 'weightAdjustmentTon',
+      )
       expect(col).toBeDefined()
     })
   })
 
   describe('batchSupplierStatementItemColumns', () => {
     it('includes weigh columns', () => {
-      const col = batchSupplierStatementItemColumns.find((c) => c.dataIndex === 'weighWeightTon')
+      const col = batchSupplierStatementItemColumns.find(
+        (c) => c.dataIndex === 'weighWeightTon',
+      )
       expect(col).toBeDefined()
     })
   })

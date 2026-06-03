@@ -16,7 +16,10 @@ describe('createCachedOptions', () => {
 
   describe('fetch', () => {
     it('fetches data from endpoint and caches it', async () => {
-      httpGetMock.mockResolvedValue({ code: 0, data: [{ value: 'A', label: 'A' }] })
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: [{ value: 'A', label: 'A' }],
+      })
       const options = createCachedOptions<{ value: string; label: string }>({
         endpoint: '/test/options',
       })
@@ -36,7 +39,10 @@ describe('createCachedOptions', () => {
     })
 
     it('applies normalizer when provided', async () => {
-      httpGetMock.mockResolvedValue({ code: 0, data: [{ value: 'a' }, { value: 'b' }] })
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: [{ value: 'a' }, { value: 'b' }],
+      })
       const options = createCachedOptions({
         endpoint: '/test/options',
         normalizer: (data) => data.filter((d) => d.value !== 'a'),

@@ -1,7 +1,7 @@
 import { LogoutOutlined, SettingOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd/es/menu'
-import type { CSSProperties } from 'react'
 import type { TFunction } from 'i18next'
+import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AppHeaderSearchProps } from '@/layouts/AppHeaderSearch'
 import { AppSideNavigationHeader } from '@/layouts/AppSideNavigationHeader'

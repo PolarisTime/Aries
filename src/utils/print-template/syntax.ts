@@ -23,15 +23,17 @@ export function expandEachBlocks(
   source: string,
   items: PrintDataRow[],
 ): string {
-  return source.replace(EACH_BLOCK_RE, (_match, _field: string, inner: string) =>
-    items
-      .map((item) =>
-        expandIfBlocksForRow(inner, item).replace(
-          PLACEHOLDER_RE,
-          (_m, key: string) => escapeJs(item[key] || ''),
-        ),
-      )
-      .join(''),
+  return source.replace(
+    EACH_BLOCK_RE,
+    (_match, _field: string, inner: string) =>
+      items
+        .map((item) =>
+          expandIfBlocksForRow(inner, item).replace(
+            PLACEHOLDER_RE,
+            (_m, key: string) => escapeJs(item[key] || ''),
+          ),
+        )
+        .join(''),
   )
 }
 

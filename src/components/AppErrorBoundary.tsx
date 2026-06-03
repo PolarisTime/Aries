@@ -1,7 +1,7 @@
 import Button from 'antd/es/button'
+import i18next from 'i18next'
 import type { ErrorInfo, ReactNode } from 'react'
 import { Component } from 'react'
-import i18next from 'i18next'
 import { AppResult } from '@/components/AppResult'
 
 interface Props {
@@ -48,7 +48,11 @@ export class AppErrorBoundary extends Component<Props, State> {
           traceId={traceId}
           showHomeButton
           showBackButton
-          extra={<Button onClick={this.handleReset}>{i18next.t('errorBoundary.retry')}</Button>}
+          extra={
+            <Button onClick={this.handleReset}>
+              {i18next.t('errorBoundary.retry')}
+            </Button>
+          }
         />
       )
     }

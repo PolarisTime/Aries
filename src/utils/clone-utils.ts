@@ -4,7 +4,6 @@ function cloneRecord<T>(value: T): T {
   return JSON.parse(JSON.stringify(value))
 }
 
-
 export function cloneLineItems(
   items: unknown,
   prefix?: string,
@@ -22,7 +21,6 @@ export function cloneLineItems(
 
   return cloneRecord(items) as ModuleLineItem[]
 }
-
 
 function buildLineItemId(prefix: string, index: number) {
   return `${prefix}-${Date.now()}-${index + 1}`

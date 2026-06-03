@@ -1,26 +1,29 @@
 import { describe, expect, it } from 'vitest'
 import { carriersPageConfig } from './carrier-page'
 import { customersPageConfig } from './customer-page'
-import { suppliersPageConfig } from './supplier-page'
-import { materialCategoriesPageConfig } from './material-categories-page'
-import { materialsPageConfig } from './material-page'
-import { purchaseOrdersPageConfig } from './purchase-order-page'
-import { purchaseInboundsPageConfig } from './purchase-inbound-page'
-import { purchaseContractsPageConfig } from './purchase-contract-page'
-import { salesOrdersPageConfig } from './sales-order-page'
-import { salesOutboundsPageConfig } from './sales-outbound-page'
-import { salesContractsPageConfig } from './sales-contract-page'
+import { freightStatementPageConfig } from './freight-statement-page'
 import { invoiceIssuePageConfig } from './invoice-issue-page'
 import { invoiceReceiptPageConfig } from './invoice-receipt-page'
+import { materialCategoriesPageConfig } from './material-categories-page'
+import { materialsPageConfig } from './material-page'
 import { paymentsPageConfig } from './payment-page'
+import { purchaseContractsPageConfig } from './purchase-contract-page'
+import { purchaseInboundsPageConfig } from './purchase-inbound-page'
+import { purchaseOrdersPageConfig } from './purchase-order-page'
 import { receiptsPageConfig } from './receipt-page'
-import { freightStatementPageConfig } from './freight-statement-page'
+import { salesContractsPageConfig } from './sales-contract-page'
+import { salesOrdersPageConfig } from './sales-order-page'
+import { salesOutboundsPageConfig } from './sales-outbound-page'
+import { suppliersPageConfig } from './supplier-page'
 
 const pageConfigs = [
   { name: 'carriersPageConfig', config: carriersPageConfig },
   { name: 'customersPageConfig', config: customersPageConfig },
   { name: 'suppliersPageConfig', config: suppliersPageConfig },
-  { name: 'materialCategoriesPageConfig', config: materialCategoriesPageConfig },
+  {
+    name: 'materialCategoriesPageConfig',
+    config: materialCategoriesPageConfig,
+  },
   { name: 'materialsPageConfig', config: materialsPageConfig },
   { name: 'purchaseOrdersPageConfig', config: purchaseOrdersPageConfig },
   { name: 'purchaseInboundsPageConfig', config: purchaseInboundsPageConfig },
@@ -95,7 +98,10 @@ describe.each(pageConfigs)('$name', ({ config }) => {
   })
 
   it('buildOverview handles non-empty rows', () => {
-    const overview = config.buildOverview([{ status: '正常' }, { status: '禁用' }])
+    const overview = config.buildOverview([
+      { status: '正常' },
+      { status: '禁用' },
+    ])
     expect(overview.length).toBeGreaterThan(0)
   })
 
@@ -148,7 +154,10 @@ describe.each(pageConfigs)('$name', ({ config }) => {
   })
 
   it('buildOverview handles non-empty rows', () => {
-    const overview = config.buildOverview([{ status: '正常' }, { status: '禁用' }])
+    const overview = config.buildOverview([
+      { status: '正常' },
+      { status: '禁用' },
+    ])
     expect(overview.length).toBeGreaterThan(0)
   })
 })
@@ -184,13 +193,21 @@ describe('freightStatementPageConfig', () => {
       currentRecord: { carrierName: '物流A' },
       parentRecord: { status: '已审核', carrierName: '物流B' },
     })
-    expect(validateWrongCarrier).toBe('只能选择同一物流商的物流单生成物流对账单')
+    expect(validateWrongCarrier).toBe(
+      '只能选择同一物流商的物流单生成物流对账单',
+    )
 
-    const draft = pi.mapParentToDraft?.({ carrierName: '物流A', billTime: '2024-01-01' })
+    const draft = pi.mapParentToDraft?.({
+      carrierName: '物流A',
+      billTime: '2024-01-01',
+    })
     expect(draft?.carrierName).toBe('物流A')
     expect(draft?.status).toBe('待审核')
 
-    const items = pi.transformItems?.({ billNo: 'BL2024001', items: [{ id: '1' }] })
+    const items = pi.transformItems?.({
+      billNo: 'BL2024001',
+      items: [{ id: '1' }],
+    })
     expect(items).toHaveLength(1)
     expect(items?.[0]?.sourceNo).toBe('BL2024001')
 
@@ -244,7 +261,12 @@ describe('page config specific features', () => {
 
   it('purchaseContractsPageConfig has parentImport with date logic', () => {
     const pi = purchaseContractsPageConfig.parentImport
-    const draft = pi?.mapParentToDraft?.({ orderNo: 'PO001', supplierName: '供应商A', buyerName: '采购员', orderDate: '2024-06-01' })
+    const draft = pi?.mapParentToDraft?.({
+      orderNo: 'PO001',
+      supplierName: '供应商A',
+      buyerName: '采购员',
+      orderDate: '2024-06-01',
+    })
     expect(draft?.supplierName).toBe('供应商A')
     expect(draft?.buyerName).toBe('采购员')
     expect(draft?.signDate).toBe('2024-06-01')
@@ -258,14 +280,23 @@ describe('page config specific features', () => {
   it('purchaseInboundsPageConfig has parentImport with settlement mode', () => {
     const pi = purchaseInboundsPageConfig.parentImport
     const items = pi?.transformItems?.({
-      items: [{ id: '1', category: '盘螺', remainingQuantity: 5, pieceWeightTon: 0.5 }],
+      items: [
+        {
+          id: '1',
+          category: '盘螺',
+          remainingQuantity: 5,
+          pieceWeightTon: 0.5,
+        },
+      ],
     })
     expect(items).toHaveLength(1)
     expect(items?.[0]?.settlementMode).toBe('过磅')
     expect(items?.[0]?.quantity).toBe(5)
 
     const itemsNoRemaining = pi?.transformItems?.({
-      items: [{ id: '2', category: '螺纹钢', quantity: 0, pieceWeightTon: 0.5 }],
+      items: [
+        { id: '2', category: '螺纹钢', quantity: 0, pieceWeightTon: 0.5 },
+      ],
     })
     expect(itemsNoRemaining).toHaveLength(0)
   })
@@ -277,7 +308,10 @@ describe('page config specific features', () => {
     const receiptPi = invoiceReceiptPageConfig.parentImport
     expect(receiptPi.parentModuleKey).toBe('purchase-order')
 
-    const draft = issuePi.mapParentToDraft?.({ customerName: '客户A', projectName: '项目X' })
+    const draft = issuePi.mapParentToDraft?.({
+      customerName: '客户A',
+      projectName: '项目X',
+    })
     expect(draft?.customerName).toBe('客户A')
     expect(draft?.projectName).toBe('项目X')
   })
@@ -293,10 +327,7 @@ describe('page config specific features', () => {
   })
 
   it('materialsPageConfig has custom buildOverview', () => {
-    const rows = [
-      { category: '螺纹钢' },
-      { category: '盘螺' },
-    ]
+    const rows = [{ category: '螺纹钢' }, { category: '盘螺' }]
     const overview = materialsPageConfig.buildOverview(rows)
     expect(overview).toHaveLength(3)
   })

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import type { LayoutMenuEntry } from '@/layouts/layout-menu'
 import {
   buildMenuPathMap,
   buildSideMenuItems,
   buildTopMenuItems,
   findMenuParentKeys,
 } from '@/layouts/layout-menu-items'
-import type { LayoutMenuEntry } from '@/layouts/layout-menu'
 
 const sampleEntries: LayoutMenuEntry[] = [
   {
@@ -58,11 +58,15 @@ describe('findMenuParentKeys', () => {
   })
 
   it('returns parent keys when target is a nested entry', () => {
-    expect(findMenuParentKeys(sampleEntries, 'material')).toEqual(['basic-data'])
+    expect(findMenuParentKeys(sampleEntries, 'material')).toEqual([
+      'basic-data',
+    ])
   })
 
   it('finds nested entry by path', () => {
-    expect(findMenuParentKeys(sampleEntries, '/customer')).toEqual(['basic-data'])
+    expect(findMenuParentKeys(sampleEntries, '/customer')).toEqual([
+      'basic-data',
+    ])
   })
 
   it('returns null when target is not found', () => {

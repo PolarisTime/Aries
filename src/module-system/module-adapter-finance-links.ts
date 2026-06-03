@@ -125,8 +125,11 @@ function buildFreightStatementOptions(
   return [...statements]
     .filter(
       (record) =>
-        keepCurrentOrOpenBalance(record, 'unpaidAmount', args.currentStatementId) &&
-        matchesFilter(record.carrierName, counterpartyName),
+        keepCurrentOrOpenBalance(
+          record,
+          'unpaidAmount',
+          args.currentStatementId,
+        ) && matchesFilter(record.carrierName, counterpartyName),
     )
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({

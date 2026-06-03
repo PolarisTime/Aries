@@ -1,8 +1,12 @@
-import { renderHook, act } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { getPersonalSettingsMock, setPersonalSettingsMock, matchMediaMock,
-  setAttributeMock } = vi.hoisted(() => ({
+const {
+  getPersonalSettingsMock,
+  setPersonalSettingsMock,
+  matchMediaMock,
+  setAttributeMock,
+} = vi.hoisted(() => ({
   getPersonalSettingsMock: vi.fn(),
   setPersonalSettingsMock: vi.fn(),
   matchMediaMock: vi.fn(),
@@ -25,12 +29,12 @@ describe('useThemeMode', () => {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     })
-    
+
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: matchMediaMock,
     })
-    
+
     Object.defineProperty(document.documentElement, 'setAttribute', {
       writable: true,
       value: setAttributeMock,
@@ -83,7 +87,7 @@ describe('useThemeMode', () => {
   it('sets theme mode and persists to storage', () => {
     getPersonalSettingsMock.mockReturnValue({ fontSize: 14 })
     const { result } = renderHook(() => useThemeMode())
-    
+
     act(() => {
       result.current.setThemeMode('dark')
     })
@@ -103,7 +107,7 @@ describe('useThemeMode', () => {
   it('applies data-theme attribute when resolved theme changes', () => {
     getPersonalSettingsMock.mockReturnValue({ themeMode: 'light' })
     const { result } = renderHook(() => useThemeMode())
-    
+
     act(() => {
       result.current.setThemeMode('dark')
     })
@@ -120,7 +124,10 @@ describe('useThemeMode', () => {
     })
 
     renderHook(() => useThemeMode())
-    expect(addEventListener).toHaveBeenCalledWith('change', expect.any(Function))
+    expect(addEventListener).toHaveBeenCalledWith(
+      'change',
+      expect.any(Function),
+    )
   })
 
   it('removes listener on unmount', () => {
@@ -133,7 +140,10 @@ describe('useThemeMode', () => {
 
     const { unmount } = renderHook(() => useThemeMode())
     unmount()
-    expect(removeEventListener).toHaveBeenCalledWith('change', expect.any(Function))
+    expect(removeEventListener).toHaveBeenCalledWith(
+      'change',
+      expect.any(Function),
+    )
   })
 
   it('listens for storage events', () => {
@@ -141,15 +151,23 @@ describe('useThemeMode', () => {
     vi.spyOn(window, 'addEventListener').mockImplementation(addEventListener)
 
     renderHook(() => useThemeMode())
-    expect(addEventListener).toHaveBeenCalledWith('storage', expect.any(Function))
+    expect(addEventListener).toHaveBeenCalledWith(
+      'storage',
+      expect.any(Function),
+    )
   })
 
   it('removes storage listener on unmount', () => {
     const removeEventListener = vi.fn()
-    vi.spyOn(window, 'removeEventListener').mockImplementation(removeEventListener)
+    vi.spyOn(window, 'removeEventListener').mockImplementation(
+      removeEventListener,
+    )
 
     const { unmount } = renderHook(() => useThemeMode())
     unmount()
-    expect(removeEventListener).toHaveBeenCalledWith('storage', expect.any(Function))
+    expect(removeEventListener).toHaveBeenCalledWith(
+      'storage',
+      expect.any(Function),
+    )
   })
 })

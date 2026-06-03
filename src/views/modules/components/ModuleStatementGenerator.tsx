@@ -27,7 +27,11 @@ const NAME_FIELD: Record<string, keyof ModuleRecord> = {
   freight: 'carrierName',
 }
 
-function extractCounterparty(rows: ModuleRecord[], type: string, t: (key: string) => string): string {
+function extractCounterparty(
+  rows: ModuleRecord[],
+  type: string,
+  t: (key: string) => string,
+): string {
   const nameField = NAME_FIELD[type]
   const names = new Set(
     rows.flatMap((r) => {
@@ -35,7 +39,8 @@ function extractCounterparty(rows: ModuleRecord[], type: string, t: (key: string
       return v ? [v] : []
     }),
   )
-  if (names.size === 0) throw new Error(t('modules.statement.counterpartyNotFound'))
+  if (names.size === 0)
+    throw new Error(t('modules.statement.counterpartyNotFound'))
   if (names.size > 1)
     throw new Error(t('modules.statement.multipleCounterparties'))
   return [...names][0]
@@ -100,12 +105,18 @@ export function ModuleStatementGenerator({
     try {
       setGenerating(true)
       await onGenerate(summary.counterparty, summary.start, summary.end)
-      setResult({ status: 'success', message: t('modules.statement.generated') })
+      setResult({
+        status: 'success',
+        message: t('modules.statement.generated'),
+      })
       setGenerating(false)
     } catch (err) {
       setResult({
         status: 'error',
-        message: err instanceof Error ? err.message : t('modules.statement.generateFailed'),
+        message:
+          err instanceof Error
+            ? err.message
+            : t('modules.statement.generateFailed'),
         traceId:
           err instanceof Error
             ? (err as Error & { traceId?: string }).traceId
@@ -152,18 +163,26 @@ export function ModuleStatementGenerator({
         ) : (
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-gray-500">{t('modules.statement.counterpartyUnit')}</span>
+              <span className="text-gray-500">
+                {t('modules.statement.counterpartyUnit')}
+              </span>
               <Tag color="blue">{summary.counterparty}</Tag>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-gray-500">{t('modules.statement.period')}</span>
+              <span className="text-gray-500">
+                {t('modules.statement.period')}
+              </span>
               <span className="font-medium">
                 {summary.start} ~ {summary.end}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-gray-500">{t('modules.statement.documentCount')}</span>
-              <span className="font-medium">{selectedRows.length} {t('modules.statement.documentCountUnit')}</span>
+              <span className="text-gray-500">
+                {t('modules.statement.documentCount')}
+              </span>
+              <span className="font-medium">
+                {selectedRows.length} {t('modules.statement.documentCountUnit')}
+              </span>
             </div>
           </div>
         )}

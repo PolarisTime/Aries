@@ -6,7 +6,8 @@ vi.mock('i18next', () => ({
 
 vi.mock('@/constants/module-options', () => ({
   getSupplierOptions: [],
-  buildValueOptions: (...args: string[]) => args.map((v) => ({ label: v, value: v })),
+  buildValueOptions: (...args: string[]) =>
+    args.map((v) => ({ label: v, value: v })),
 }))
 
 import { purchaseOrdersPageConfig } from './purchase-order-page'
@@ -50,6 +51,8 @@ describe('purchaseOrdersPageConfig', () => {
 
   it('has defaultHiddenColumnKeys', () => {
     expect(purchaseOrdersPageConfig.defaultHiddenColumnKeys).toBeDefined()
-    expect(purchaseOrdersPageConfig.defaultHiddenColumnKeys).toContain('buyerName')
+    expect(purchaseOrdersPageConfig.defaultHiddenColumnKeys).toContain(
+      'buyerName',
+    )
   })
 })

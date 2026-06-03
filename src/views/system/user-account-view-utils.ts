@@ -11,9 +11,7 @@ export function getUserAccountTotpColor(enabled: boolean) {
   return enabled ? 'processing' : 'default'
 }
 
-function normalizeUserAccountDataScopeLabel(
-  value: string | null | undefined,
-) {
+function normalizeUserAccountDataScopeLabel(value: string | null | undefined) {
   const normalized = String(value || '').trim()
   if (normalized === '全部数据' || normalized === '全部') return '全部数据'
   if (normalized === '本部门') return '本部门'

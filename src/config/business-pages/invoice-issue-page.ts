@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { buildValueOptions, customerOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from './filter-labels'
@@ -6,17 +7,19 @@ import {
   compactInvoiceIssueItemColumns,
   statusMap,
 } from './shared'
-import i18next from 'i18next'
 
 export const invoiceIssuePageConfig: ModulePageConfig = {
   key: 'invoice-issue',
   title: i18next.t('modules.pages.invoiceIssue.invoiceIssue'),
   kicker: 'Finance',
-  description:
-    i18next.t('modules.pages.invoiceIssue.invoiceIssueDesc'),
+  description: i18next.t('modules.pages.invoiceIssue.invoiceIssueDesc'),
   primaryNoKey: 'issueNo',
   actions: [
-    { key: 'create_invoice_issue', label: i18next.t('modules.pages.invoiceIssue.createInvoiceIssue'), type: 'primary' },
+    {
+      key: 'create_invoice_issue',
+      label: i18next.t('modules.pages.invoiceIssue.createInvoiceIssue'),
+      type: 'primary',
+    },
   ],
   filters: [
     {
@@ -31,16 +34,49 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       type: 'select',
       options: buildValueOptions('草稿', '已开票'),
     },
-    { key: 'invoiceDate', label: i18next.t('modules.pages.invoiceIssue.invoiceDate'), type: 'dateRange' },
+    {
+      key: 'invoiceDate',
+      label: i18next.t('modules.pages.invoiceIssue.invoiceDate'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: i18next.t('modules.pages.invoiceIssue.issueNo'), dataIndex: 'issueNo', width: 170 },
-    { title: i18next.t('modules.pages.invoiceIssue.relatedSalesOrder'), dataIndex: 'sourceSalesOrderNos', width: 180 },
-    { title: i18next.t('modules.pages.invoiceIssue.invoiceNo'), dataIndex: 'invoiceNo', width: 150 },
-    { title: i18next.t('modules.pages.invoiceIssue.customer'), dataIndex: 'customerName', width: 150 },
-    { title: i18next.t('modules.pages.invoiceIssue.project'), dataIndex: 'projectName', width: 180 },
-    { title: i18next.t('modules.pages.invoiceIssue.invoiceDate'), dataIndex: 'invoiceDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.invoiceIssue.invoiceType'), dataIndex: 'invoiceType', width: 120 },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.issueNo'),
+      dataIndex: 'issueNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.relatedSalesOrder'),
+      dataIndex: 'sourceSalesOrderNos',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.invoiceNo'),
+      dataIndex: 'invoiceNo',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.customer'),
+      dataIndex: 'customerName',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.project'),
+      dataIndex: 'projectName',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.invoiceDate'),
+      dataIndex: 'invoiceDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.invoiceType'),
+      dataIndex: 'invoiceType',
+      width: 120,
+    },
     {
       title: i18next.t('modules.pages.invoiceIssue.amount'),
       dataIndex: 'amount',
@@ -66,16 +102,50 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
   defaultHiddenColumnKeys: ['sourceSalesOrderNos', 'projectName', 'taxAmount'],
   detailFields: [
     { label: i18next.t('modules.pages.invoiceIssue.issueNo'), key: 'issueNo' },
-    { label: i18next.t('modules.pages.invoiceIssue.relatedSalesOrder'), key: 'sourceSalesOrderNos' },
-    { label: i18next.t('modules.pages.invoiceIssue.invoiceNo'), key: 'invoiceNo' },
-    { label: i18next.t('modules.pages.invoiceIssue.customer'), key: 'customerName' },
-    { label: i18next.t('modules.pages.invoiceIssue.project'), key: 'projectName' },
-    { label: i18next.t('modules.pages.invoiceIssue.invoiceDate'), key: 'invoiceDate', type: 'date' },
-    { label: i18next.t('modules.pages.invoiceIssue.invoiceType'), key: 'invoiceType' },
-    { label: i18next.t('modules.pages.invoiceIssue.amount'), key: 'amount', type: 'amount' },
-    { label: i18next.t('modules.pages.invoiceIssue.taxAmount'), key: 'taxAmount', type: 'amount' },
-    { label: i18next.t('modules.pages.invoiceIssue.status'), key: 'status', type: 'status' },
-    { label: i18next.t('modules.pages.invoiceIssue.operator'), key: 'operatorName' },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.relatedSalesOrder'),
+      key: 'sourceSalesOrderNos',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.invoiceNo'),
+      key: 'invoiceNo',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.customer'),
+      key: 'customerName',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.project'),
+      key: 'projectName',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.invoiceDate'),
+      key: 'invoiceDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.invoiceType'),
+      key: 'invoiceType',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.amount'),
+      key: 'amount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.taxAmount'),
+      key: 'taxAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.status'),
+      key: 'status',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.operator'),
+      key: 'operatorName',
+    },
     { label: i18next.t('modules.pages.invoiceIssue.remark'), key: 'remark' },
   ],
   formFields: [
@@ -91,7 +161,9 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.invoiceIssue.relatedSalesOrder'),
       type: 'input',
       disabled: true,
-      placeholder: i18next.t('modules.pages.invoiceIssue.importFromSalesOrders'),
+      placeholder: i18next.t(
+        'modules.pages.invoiceIssue.importFromSalesOrders',
+      ),
       row: 1,
     },
     {
@@ -187,7 +259,13 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       required: true,
       row: 4,
     },
-    { key: 'remark', label: i18next.t('modules.pages.invoiceIssue.remark'), type: 'textarea', row: 5, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.invoiceIssue.remark'),
+      type: 'textarea',
+      row: 5,
+      fullRow: true,
+    },
   ],
   parentImport: {
     parentModuleKey: 'sales-order',

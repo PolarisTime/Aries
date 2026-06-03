@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  initialSetupStatusSchema,
   initialSetupAdminPayloadSchema,
+  initialSetupCompanyPayloadSchema,
+  initialSetupStatusSchema,
   initialSetupTotpPayloadSchema,
   initialSetupTotpResultSchema,
-  initialSetupCompanyPayloadSchema,
 } from './setup'
 
 describe('setup schemas', () => {

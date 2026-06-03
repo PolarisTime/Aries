@@ -17,17 +17,23 @@ describe('masterWarehousePageConfigs', () => {
   })
 
   it('has primaryNoKey', () => {
-    expect(masterWarehousePageConfigs.warehouse.primaryNoKey).toBe('warehouseCode')
+    expect(masterWarehousePageConfigs.warehouse.primaryNoKey).toBe(
+      'warehouseCode',
+    )
   })
 
   it('has filters', () => {
     expect(masterWarehousePageConfigs.warehouse.filters).toBeDefined()
-    expect(masterWarehousePageConfigs.warehouse.filters!.length).toBeGreaterThanOrEqual(3)
+    expect(
+      masterWarehousePageConfigs.warehouse.filters!.length,
+    ).toBeGreaterThanOrEqual(3)
   })
 
   it('has columns', () => {
     expect(masterWarehousePageConfigs.warehouse.columns).toBeDefined()
-    expect(masterWarehousePageConfigs.warehouse.columns.length).toBeGreaterThan(0)
+    expect(masterWarehousePageConfigs.warehouse.columns.length).toBeGreaterThan(
+      0,
+    )
   })
 
   it('has formFields', () => {

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -10,13 +10,16 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-const mockGetAttachmentBindings = vi.fn().mockResolvedValue({ data: { attachments: [] } })
+const mockGetAttachmentBindings = vi
+  .fn()
+  .mockResolvedValue({ data: { attachments: [] } })
 const mockUpdateAttachmentBindings = vi.fn().mockResolvedValue({})
 const mockUploadAttachment = vi.fn().mockResolvedValue({ data: { id: '123' } })
 
 vi.mock('@/api/business', () => ({
   getAttachmentBindings: (...args: any[]) => mockGetAttachmentBindings(...args),
-  updateAttachmentBindings: (...args: any[]) => mockUpdateAttachmentBindings(...args),
+  updateAttachmentBindings: (...args: any[]) =>
+    mockUpdateAttachmentBindings(...args),
   uploadAttachment: (...args: any[]) => mockUploadAttachment(...args),
 }))
 
@@ -46,7 +49,9 @@ vi.mock('@/utils/type-narrowing', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/card', () => ({
@@ -54,7 +59,9 @@ vi.mock('antd/es/card', () => ({
 }))
 
 vi.mock('antd/es/empty', () => ({
-  default: ({ description, ...props }: any) => <div {...props}>{description}</div>,
+  default: ({ description, ...props }: any) => (
+    <div {...props}>{description}</div>
+  ),
 }))
 
 vi.mock('antd/es/flex', () => ({
@@ -63,7 +70,9 @@ vi.mock('antd/es/flex', () => ({
 
 vi.mock('antd/es/image', () => ({
   default: ({ ...props }: any) => <img {...props} />,
-  PreviewGroup: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  PreviewGroup: ({ children, ...props }: any) => (
+    <div {...props}>{children}</div>
+  ),
 }))
 
 vi.mock('antd/es/modal', () => ({
@@ -82,7 +91,11 @@ vi.mock('antd/es/space', () => ({
 }))
 
 vi.mock('antd/es/spin', () => ({
-  default: ({ children, ...props }: any) => <div data-testid="spin" {...props}>{children}</div>,
+  default: ({ children, ...props }: any) => (
+    <div data-testid="spin" {...props}>
+      {children}
+    </div>
+  ),
 }))
 
 vi.mock('antd/es/typography', () => ({
@@ -93,7 +106,11 @@ vi.mock('antd/es/typography', () => ({
 
 vi.mock('antd/es/upload', () => ({
   default: ({ children, customRequest, ...props }: any) => {
-    return <div data-testid="upload" {...props}>{children}</div>
+    return (
+      <div data-testid="upload" {...props}>
+        {children}
+      </div>
+    )
   },
 }))
 

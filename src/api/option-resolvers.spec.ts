@@ -36,17 +36,17 @@ vi.mock('@/api/warehouse-options', () => ({
 }))
 
 import {
-  materialCategoryOptions,
-  getMaterialCategoryOptions,
-  isPurchaseWeighRequiredCategory,
-  materialGradeOptions,
-  getSupplierOptions,
   customerOptions,
-  getCustomerOptions,
-  getCustomerProjectOptions,
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
+  getCustomerOptions,
+  getCustomerProjectOptions,
+  getMaterialCategoryOptions,
+  getSupplierOptions,
   getWarehouseOptions,
+  isPurchaseWeighRequiredCategory,
+  materialCategoryOptions,
+  materialGradeOptions,
 } from './option-resolvers'
 
 describe('option-resolvers', () => {

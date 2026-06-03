@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSystemMenuStore } from './systemMenuStore'
 
 vi.mock('@/api/system-menus', () => ({
@@ -12,7 +12,9 @@ describe('systemMenuStore', () => {
   })
 
   it('setMenus sets menus and loaded flag', () => {
-    useSystemMenuStore.getState().setMenus([{ key: 'home', label: '首页' }] as any)
+    useSystemMenuStore
+      .getState()
+      .setMenus([{ key: 'home', label: '首页' }] as any)
     const state = useSystemMenuStore.getState()
     expect(state.menus).toHaveLength(1)
     expect(state.loaded).toBe(true)
@@ -43,7 +45,9 @@ describe('systemMenuStore', () => {
     const { listSystemMenus } = await import('@/api/system-menus')
     let resolvePromise!: (menus: any[]) => void
     vi.mocked(listSystemMenus).mockReturnValue(
-      new Promise((resolve) => { resolvePromise = resolve }),
+      new Promise((resolve) => {
+        resolvePromise = resolve
+      }),
     )
 
     const p1 = useSystemMenuStore.getState().loadMenus()

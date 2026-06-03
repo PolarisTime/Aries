@@ -57,9 +57,7 @@ describe('customer-options', () => {
     })
 
     it('uses value when customerName is missing', () => {
-      getMock.mockReturnValue([
-        { value: '客户C', label: '客户C' },
-      ])
+      getMock.mockReturnValue([{ value: '客户C', label: '客户C' }])
 
       const result = getCustomerOptions()
 
@@ -96,9 +94,7 @@ describe('customer-options', () => {
     })
 
     it('includes customer name in label when no filter', () => {
-      getMock.mockReturnValue([
-        { customerName: '客户A', projectName: '项目X' },
-      ])
+      getMock.mockReturnValue([{ customerName: '客户A', projectName: '项目X' }])
 
       const result = getCustomerProjectOptions()
       expect(result[0].label).toBe('项目X / 客户A')
@@ -115,9 +111,7 @@ describe('customer-options', () => {
     })
 
     it('returns empty array when no match', () => {
-      getMock.mockReturnValue([
-        { customerName: '客户B', projectName: '项目Z' },
-      ])
+      getMock.mockReturnValue([{ customerName: '客户B', projectName: '项目Z' }])
 
       const result = getCustomerProjectOptions({ customerName: '客户A' })
       expect(result).toEqual([])
@@ -171,9 +165,7 @@ describe('customer-options', () => {
     })
 
     it('uses value as fallback for customerName', () => {
-      const result = normalizeCustomerRows([
-        { value: '客户X', label: 'L' },
-      ])
+      const result = normalizeCustomerRows([{ value: '客户X', label: 'L' }])
       expect(result[0].customerName).toBe('客户X')
     })
 
@@ -229,12 +221,17 @@ describe('customer-options', () => {
 
   describe('formatProjectOptionLabel', () => {
     it('returns projectName when projectNameAbbr is empty', () => {
-      expect(formatProjectOptionLabel({ value: 'v', label: 'l' }, '项目X')).toBe('项目X')
+      expect(
+        formatProjectOptionLabel({ value: 'v', label: 'l' }, '项目X'),
+      ).toBe('项目X')
     })
 
     it('returns abbreviated format when projectNameAbbr is present', () => {
       expect(
-        formatProjectOptionLabel({ value: 'v', label: 'l', projectNameAbbr: 'PX' }, '项目X'),
+        formatProjectOptionLabel(
+          { value: 'v', label: 'l', projectNameAbbr: 'PX' },
+          '项目X',
+        ),
       ).toBe('PX（项目X）')
     })
   })
@@ -270,7 +267,14 @@ describe('customer-options', () => {
   describe('uniqueProjectOptions', () => {
     it('includes customer name in label when includeCustomerInLabel is true', () => {
       const result = uniqueProjectOptions(
-        [{ value: '客户A', label: 'L', customerName: '客户A', projectName: '项目X' }],
+        [
+          {
+            value: '客户A',
+            label: 'L',
+            customerName: '客户A',
+            projectName: '项目X',
+          },
+        ],
         true,
       )
       expect(result[0].label).toContain('客户A')
@@ -278,7 +282,14 @@ describe('customer-options', () => {
 
     it('excludes customer name from label when includeCustomerInLabel is false', () => {
       const result = uniqueProjectOptions(
-        [{ value: '客户A', label: 'L', customerName: '客户A', projectName: '项目X' }],
+        [
+          {
+            value: '客户A',
+            label: 'L',
+            customerName: '客户A',
+            projectName: '项目X',
+          },
+        ],
         false,
       )
       expect(result[0].label).toBe('项目X')
@@ -305,7 +316,16 @@ describe('customer-options', () => {
 
     it('includes customerCode and projectNameAbbr in output', () => {
       const result = uniqueProjectOptions(
-        [{ value: 'A', label: 'L', customerName: 'A', projectName: 'P1', customerCode: 'C1', projectNameAbbr: 'PX' }],
+        [
+          {
+            value: 'A',
+            label: 'L',
+            customerName: 'A',
+            projectName: 'P1',
+            customerCode: 'C1',
+            projectNameAbbr: 'PX',
+          },
+        ],
         false,
       )
       expect(result[0].customerCode).toBe('C1')

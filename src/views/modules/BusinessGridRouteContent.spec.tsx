@@ -29,9 +29,7 @@ vi.mock('@/utils/type-narrowing', () => ({
 }))
 
 vi.mock('@/views/modules/components/BusinessGridContent', () => ({
-  BusinessGridContent: () => (
-    <div data-testid="grid-content">Grid Content</div>
-  ),
+  BusinessGridContent: () => <div data-testid="grid-content">Grid Content</div>,
 }))
 
 vi.mock('@/views/modules/components/BusinessGridOverlays', () => ({

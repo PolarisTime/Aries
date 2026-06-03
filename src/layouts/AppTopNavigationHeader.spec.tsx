@@ -81,7 +81,9 @@ describe('AppTopNavigationHeader', () => {
 
   it('calls onDashboardClick when brand button is clicked', () => {
     const onClick = vi.fn()
-    render(<AppTopNavigationHeader {...defaultProps} onDashboardClick={onClick} />)
+    render(
+      <AppTopNavigationHeader {...defaultProps} onDashboardClick={onClick} />,
+    )
     fireEvent.click(document.querySelector('.app-top-brand')!)
     expect(onClick).toHaveBeenCalled()
   })
@@ -165,21 +167,13 @@ describe('AppTopNavigationHeader', () => {
   })
 
   it('uses first character of user name for avatar', () => {
-    render(
-      <AppTopNavigationHeader
-        {...defaultProps}
-        currentUserName="李四"
-      />,
-    )
+    render(<AppTopNavigationHeader {...defaultProps} currentUserName="李四" />)
     expect(screen.getByText('李')).toBeDefined()
   })
 
   it('handles user name with leading spaces', () => {
     render(
-      <AppTopNavigationHeader
-        {...defaultProps}
-        currentUserName="  王五"
-      />,
+      <AppTopNavigationHeader {...defaultProps} currentUserName="  王五" />,
     )
     expect(screen.getByText('王')).toBeDefined()
   })

@@ -25,7 +25,12 @@ function getLineItemValidationMessages(
       Number.isFinite(maxImportQuantity) &&
       Number(item.quantity || 0) > maxImportQuantity
     ) {
-      messages.push(i18next.t('modules.validation.maxImportExceeded', { row: index + 1, max: maxImportQuantity }))
+      messages.push(
+        i18next.t('modules.validation.maxImportExceeded', {
+          row: index + 1,
+          max: maxImportQuantity,
+        }),
+      )
     }
     if (moduleKey === 'purchase-inbound') {
       const isWeighSettlement = asString(item.settlementMode).trim() === '过磅'
@@ -42,12 +47,21 @@ function getLineItemValidationMessages(
         (!hasEditorValue(item.weighWeightTon) ||
           Number(item.weighWeightTon || 0) <= 0)
       ) {
-        messages.push(i18next.t('modules.validation.weighWeightRequired', { row: index + 1 }))
+        messages.push(
+          i18next.t('modules.validation.weighWeightRequired', {
+            row: index + 1,
+          }),
+        )
       }
     }
     for (const column of requiredColumns) {
       if (!hasEditorValue(item[column.dataIndex])) {
-        messages.push(i18next.t('modules.validation.lineItemRequired', { row: index + 1, label: column.title }))
+        messages.push(
+          i18next.t('modules.validation.lineItemRequired', {
+            row: index + 1,
+            label: column.title,
+          }),
+        )
       }
     }
   }
@@ -91,8 +105,13 @@ export function getEditorValidationMessage(options: {
       continue
     }
     if (field.required && !hasEditorValue(editorForm[field.key])) {
-      if (!collectAll) return i18next.t('modules.validation.fieldRequired', { label: field.label })
-      allErrors.push(i18next.t('modules.validation.fieldRequired', { label: field.label }))
+      if (!collectAll)
+        return i18next.t('modules.validation.fieldRequired', {
+          label: field.label,
+        })
+      allErrors.push(
+        i18next.t('modules.validation.fieldRequired', { label: field.label }),
+      )
     }
   }
 
@@ -120,7 +139,11 @@ export function getEditorValidationMessage(options: {
     for (const parentNo of parentNos) {
       if (occupiedParentMap[parentNo]) {
         const occupiedPrimaryNo = getPrimaryNo(occupiedParentMap[parentNo])
-        const msg = i18next.t('modules.validation.parentRelationOccupied', { parentLabel: parentImportConfig.label, parentNo, occupiedNo: occupiedPrimaryNo })
+        const msg = i18next.t('modules.validation.parentRelationOccupied', {
+          parentLabel: parentImportConfig.label,
+          parentNo,
+          occupiedNo: occupiedPrimaryNo,
+        })
         if (!collectAll) return msg
         allErrors.push(msg)
       }
@@ -130,7 +153,9 @@ export function getEditorValidationMessage(options: {
   if (allErrors.length) {
     return (
       allErrors.slice(0, 5).join('；') +
-      (allErrors.length > 5 ? ` ${i18next.t('modules.validation.errorSummarySuffix', { count: allErrors.length })}` : '')
+      (allErrors.length > 5
+        ? ` ${i18next.t('modules.validation.errorSummarySuffix', { count: allErrors.length })}`
+        : '')
     )
   }
 

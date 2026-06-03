@@ -93,76 +93,76 @@ export const enUS: MessageSchema = {
       '{{appTitle}} now shows the current account and system linkage through a live API summary.',
     flow: {
       material: {
-      title: 'Material',
-      hint: 'Maintain product names, specs, and brands',
-      metric: '{{count}} items',
-    },
+        title: 'Material',
+        hint: 'Maintain product names, specs, and brands',
+        metric: '{{count}} items',
+      },
       supplier: {
-      title: 'Supplier',
-      hint: 'Procurement entity master data',
-      metric: '{{count}} suppliers',
-    },
+        title: 'Supplier',
+        hint: 'Procurement entity master data',
+        metric: '{{count}} suppliers',
+      },
       customer: {
-      title: 'Customer',
-      hint: 'Sales entity master data',
-      metric: '{{count}} customers',
-    },
+        title: 'Customer',
+        hint: 'Sales entity master data',
+        metric: '{{count}} customers',
+      },
       warehouse: {
-      title: 'Warehouse',
-      hint: 'Maintain warehouse and bin capabilities',
-    },
+        title: 'Warehouse',
+        hint: 'Maintain warehouse and bin capabilities',
+      },
       purchaseContract: {
-      title: 'Purchase Contract',
-      hint: 'Lock purchase terms',
-    },
+        title: 'Purchase Contract',
+        hint: 'Lock purchase terms',
+      },
       purchaseOrder: {
-      title: 'Purchase Order',
-      hint: 'Generate purchase execution order',
-    },
+        title: 'Purchase Order',
+        hint: 'Generate purchase execution order',
+      },
       purchaseInbound: {
-      title: 'Purchase Inbound',
-      hint: 'Confirm inbound quantity and weight',
-    },
+        title: 'Purchase Inbound',
+        hint: 'Confirm inbound quantity and weight',
+      },
       supplierStatement: {
-      title: 'Supplier Statement',
-      hint: 'Summarize purchase payables',
-    },
+        title: 'Supplier Statement',
+        hint: 'Summarize purchase payables',
+      },
       payment: {
-      title: 'Payment',
-      hint: 'Complete payment registration',
-    },
+        title: 'Payment',
+        hint: 'Complete payment registration',
+      },
       salesContract: {
-      title: 'Sales Contract',
-      hint: 'Lock sales terms',
-    },
+        title: 'Sales Contract',
+        hint: 'Lock sales terms',
+      },
       salesOrder: {
-      title: 'Sales Order',
-      hint: 'Issue customer order',
-    },
+        title: 'Sales Order',
+        hint: 'Issue customer order',
+      },
       salesOutbound: {
-      title: 'Sales Outbound',
-      hint: 'Confirm shipment and outbound',
-    },
+        title: 'Sales Outbound',
+        hint: 'Confirm shipment and outbound',
+      },
       customerStatement: {
-      title: 'Customer Statement',
-      hint: 'Summarize sales receivables',
-    },
+        title: 'Customer Statement',
+        hint: 'Summarize sales receivables',
+      },
       receipt: {
-      title: 'Receipt',
-      hint: 'Complete receipt registration',
-    },
+        title: 'Receipt',
+        hint: 'Complete receipt registration',
+      },
       carrier: {
-      title: 'Carrier',
-      hint: 'Maintain carrier entity',
-    },
+        title: 'Carrier',
+        hint: 'Maintain carrier entity',
+      },
       freightBill: {
-      title: 'Freight Bill',
-      hint: 'Record transportation process',
-    },
+        title: 'Freight Bill',
+        hint: 'Record transportation process',
+      },
       freightStatement: {
-      title: 'Freight Statement',
-      hint: 'Summarize freight settlement',
-    },
+        title: 'Freight Statement',
+        hint: 'Summarize freight settlement',
+      },
       loadingDescription: 'Loading business flow description...',
     },
     info: {
@@ -361,44 +361,44 @@ export const enUS: MessageSchema = {
       heroDescription:
         'This account must finish security binding before entering the system. The flow uses standard Ant Design cards, lists, and forms for 2FA setup.',
       highlights: {
-      scanTitle: 'Scan to Bind',
-      scanDescription:
+        scanTitle: 'Scan to Bind',
+        scanDescription:
           'Scan the QR code with Microsoft Authenticator, Google Authenticator, or a compatible app.',
-      secretTitle: 'Back Up Secret',
-      secretDescription:
+        secretTitle: 'Back Up Secret',
+        secretDescription:
           'If the QR code cannot be scanned, enter the secret manually.',
-      effectiveTitle: 'Effective Immediately',
-      effectiveDescription:
+        effectiveTitle: 'Effective Immediately',
+        effectiveDescription:
           'After submitting the 6-digit code, mandatory 2FA is enabled for this account.',
-    },
+      },
       steps: {
-      scanTitle: 'Step 1',
-      scanDescription:
+        scanTitle: 'Step 1',
+        scanDescription:
           'Open your Authenticator app and scan the QR code on the left.',
-      secretTitle: 'Step 2',
-      secretDescription:
+        secretTitle: 'Step 2',
+        secretDescription:
           'If scanning fails, use the secret below to add the account manually.',
-      verifyTitle: 'Step 3',
-      verifyDescription:
+        verifyTitle: 'Step 3',
+        verifyDescription:
           'Enter the current 6-digit code to enable 2FA for this account.',
-    },
+      },
       content: {
-      tag: 'TOTP Setup',
-      title: 'Set Up Two-Factor Authentication',
-      description:
+        tag: 'TOTP Setup',
+        title: 'Set Up Two-Factor Authentication',
+        description:
           '{{userName}}, follow these steps to bind Authenticator and enable dynamic code sign-in.',
-      regenerate: 'Regenerate QR Code',
-      secretLabel: 'Binding Secret',
-      backupHint:
+        regenerate: 'Regenerate QR Code',
+        secretLabel: 'Binding Secret',
+        backupHint:
           'Save the secret before submitting. It can restore the account on a new phone.',
-      codeLabel: 'Verification Code',
-      codeRequired: 'Please enter a 6-digit code',
-      codePlaceholder: 'Enter 6-digit TOTP code',
-      submit: 'Verify and Enable',
-      loadFailed:
+        codeLabel: 'Verification Code',
+        codeRequired: 'Please enter a 6-digit code',
+        codePlaceholder: 'Enter 6-digit TOTP code',
+        submit: 'Verify and Enable',
+        loadFailed:
           'Failed to generate QR code. Fetch it again before continuing.',
-      retry: 'Fetch QR Code Again',
-    },
+        retry: 'Fetch QR Code Again',
+      },
     },
     twofactormodal: {
       title: 'Two-Factor Confirmation',
@@ -484,44 +484,44 @@ export const enUS: MessageSchema = {
       adminCreateSuccess: 'Admin account created',
       companyCreateSuccess: 'Company information initialized',
       admin: {
-      loginNameLabel: 'Admin Login Name',
-      loginNameRequired: 'Please enter login name',
-      loginNamePlaceholder: 'Admin login name',
-      passwordLabel: 'Password',
-      passwordRequired: 'Password must be at least 6 characters',
-      passwordPlaceholder: 'At least 6 characters',
-      confirmPasswordLabel: 'Confirm Password',
-      confirmPasswordRequired: 'Please confirm password',
-      confirmPasswordPlaceholder: 'Enter password again',
-      userNameLabel: 'Admin Name',
-      userNamePlaceholder: 'System Administrator',
-      generateTotp: 'Generate TOTP Secret',
-      regenerateTotp: 'Regenerate TOTP Secret',
-      secretLabel: 'Secret',
-      totpCodeLabel: 'TOTP Code',
-      totpCodeRequired: 'Please enter a 6-digit code',
-      totpCodePlaceholder: '6-digit TOTP code',
-      submit: 'Create Admin and Continue',
-    },
+        loginNameLabel: 'Admin Login Name',
+        loginNameRequired: 'Please enter login name',
+        loginNamePlaceholder: 'Admin login name',
+        passwordLabel: 'Password',
+        passwordRequired: 'Password must be at least 6 characters',
+        passwordPlaceholder: 'At least 6 characters',
+        confirmPasswordLabel: 'Confirm Password',
+        confirmPasswordRequired: 'Please confirm password',
+        confirmPasswordPlaceholder: 'Enter password again',
+        userNameLabel: 'Admin Name',
+        userNamePlaceholder: 'System Administrator',
+        generateTotp: 'Generate TOTP Secret',
+        regenerateTotp: 'Regenerate TOTP Secret',
+        secretLabel: 'Secret',
+        totpCodeLabel: 'TOTP Code',
+        totpCodeRequired: 'Please enter a 6-digit code',
+        totpCodePlaceholder: '6-digit TOTP code',
+        submit: 'Create Admin and Continue',
+      },
       company: {
-      adminCreated: 'Admin account created',
-      companyNameLabel: 'Company Name',
-      companyNameRequired: 'Please enter company name',
-      companyNamePlaceholder: 'Company name',
-      taxNoLabel: 'Tax No.',
-      taxNoRequired: 'Please enter tax number',
-      taxNoPlaceholder: 'Tax number',
-      bankNameLabel: 'Bank Name',
-      bankNameRequired: 'Please enter bank name',
-      bankNamePlaceholder: 'Bank name',
-      bankAccountLabel: 'Bank Account',
-      bankAccountRequired: 'Please enter bank account',
-      bankAccountPlaceholder: 'Bank account',
-      taxRateLabel: 'Tax Rate',
-      remarkLabel: 'Remark',
-      back: 'Previous',
-      submit: 'Finish Initialization',
-    },
+        adminCreated: 'Admin account created',
+        companyNameLabel: 'Company Name',
+        companyNameRequired: 'Please enter company name',
+        companyNamePlaceholder: 'Company name',
+        taxNoLabel: 'Tax No.',
+        taxNoRequired: 'Please enter tax number',
+        taxNoPlaceholder: 'Tax number',
+        bankNameLabel: 'Bank Name',
+        bankNameRequired: 'Please enter bank name',
+        bankNamePlaceholder: 'Bank name',
+        bankAccountLabel: 'Bank Account',
+        bankAccountRequired: 'Please enter bank account',
+        bankAccountPlaceholder: 'Bank account',
+        taxRateLabel: 'Tax Rate',
+        remarkLabel: 'Remark',
+        back: 'Previous',
+        submit: 'Finish Initialization',
+      },
     },
     validation: {
       required: 'This field is required',
@@ -643,20 +643,22 @@ export const enUS: MessageSchema = {
     loginStatusExpired: 'Login status expired, please log in again',
     errorMessages: {
       requiredEmpty: 'Required field cannot be empty',
-      networkError: 'Network connection failed, please check if the service is available',
+      networkError:
+        'Network connection failed, please check if the service is available',
       timeout: 'Request timed out, please try again later',
       sessionExpired: 'Login session expired, please sign in again',
       forbidden: 'No permission to perform this action',
       notFound: 'Requested endpoint does not exist',
       requestFailed: 'Request failed, please try again later',
       missingRequiredField: 'Missing required field: {{fieldName}}',
-      serviceUnavailable: 'Service temporarily unavailable, please try again later',
+      serviceUnavailable:
+        'Service temporarily unavailable, please try again later',
     },
   },
   modules: {
     actions: {
       create: 'Create',
-      export: 'Export'
+      export: 'Export',
     },
     overview: {
       recordCount: 'Records',
@@ -668,7 +670,7 @@ export const enUS: MessageSchema = {
       currentAmount: 'Current Amount',
       settledAmount: 'Settled',
       statementCount: 'Statements',
-      balance: 'Balance'
+      balance: 'Balance',
     },
     status: {
       draft: 'Draft',
@@ -700,7 +702,7 @@ export const enUS: MessageSchema = {
       normal: 'Normal',
       disabled: 'Disabled',
       success: 'Success',
-      failed: 'Failed'
+      failed: 'Failed',
     },
     editor: {
       edit: 'Edit',
@@ -744,7 +746,8 @@ export const enUS: MessageSchema = {
         'Selected documents contain multiple counterparties. Please select documents from the same counterparty only.',
       dateMissing: 'Selected documents are missing date information',
       generateTitle: 'Generate {{type}} Statement',
-      selectHint: 'Please select documents from the list to generate a statement',
+      selectHint:
+        'Please select documents from the list to generate a statement',
       extractError:
         'Unable to extract statement information from selected documents. Please check data integrity.',
       counterpartyUnit: 'Counterparty: ',
@@ -780,7 +783,8 @@ export const enUS: MessageSchema = {
     attachment: {
       title: 'Attachments',
       upload: 'Upload',
-      uploadHint: 'Click to upload, or paste images/files directly in this area',
+      uploadHint:
+        'Click to upload, or paste images/files directly in this area',
       noPermissionHint:
         'No upload permission. You can view and download existing attachments.',
       noPreviewUrl: 'No preview URL available',
@@ -850,7 +854,8 @@ export const enUS: MessageSchema = {
       addItem: 'Add Item',
       importItems: 'Import {{label}} Items',
       deleteSelected: 'Delete Selected',
-      emptyTextWithImport: 'No items yet. Add manually or import from parent document.',
+      emptyTextWithImport:
+        'No items yet. Add manually or import from parent document.',
       emptyText: 'No items yet. Add manually.',
       parentDoc: 'Parent Document',
       selectParent: 'Select {{label}}',
@@ -891,72 +896,78 @@ export const enUS: MessageSchema = {
       selectedDocumentsCount: '({{count}})',
       clearSelected: 'Clear Selection',
       removeAriaLabel: 'Remove {{name}}',
-      noSelectionHint: 'No documents selected yet. Check items to pin them here.',
+      noSelectionHint:
+        'No documents selected yet. Check items to pin them here.',
       paginationTotal: 'Total {{count}}',
       status: {
-      draft: 'Draft',
-      unaudited: 'Unaudited',
-      audited: 'Audited',
-      invoiceReceived: 'Invoice Received',
-      invoiceIssued: 'Invoice Issued',
-      purchaseComplete: 'Purchase Complete',
-      salesComplete: 'Sales Complete',
-      inboundComplete: 'Inbound Complete',
-    },
+        draft: 'Draft',
+        unaudited: 'Unaudited',
+        audited: 'Audited',
+        invoiceReceived: 'Invoice Received',
+        invoiceIssued: 'Invoice Issued',
+        purchaseComplete: 'Purchase Complete',
+        salesComplete: 'Sales Complete',
+        inboundComplete: 'Inbound Complete',
+      },
       column: {
-      orderNo: 'Order No',
-      supplierName: 'Supplier',
-      buyerName: 'Buyer',
-      orderDate: 'Order Date',
-      totalWeight: 'Total Weight (ton)',
-      totalAmount: 'Total Amount',
-      status: 'Status',
-      relatedPurchaseOrder: 'Related Purchase Order',
-      customerName: 'Customer',
-      projectName: 'Project',
-      deliveryDate: 'Delivery Date',
-      outboundNo: 'Outbound No',
-      relatedOrder: 'Related Order',
-      outboundDate: 'Outbound Date',
-      inboundNo: 'Inbound No',
-      inboundDate: 'Inbound Date',
-      docNo: 'Document No',
-    },
+        orderNo: 'Order No',
+        supplierName: 'Supplier',
+        buyerName: 'Buyer',
+        orderDate: 'Order Date',
+        totalWeight: 'Total Weight (ton)',
+        totalAmount: 'Total Amount',
+        status: 'Status',
+        relatedPurchaseOrder: 'Related Purchase Order',
+        customerName: 'Customer',
+        projectName: 'Project',
+        deliveryDate: 'Delivery Date',
+        outboundNo: 'Outbound No',
+        relatedOrder: 'Related Order',
+        outboundDate: 'Outbound Date',
+        inboundNo: 'Inbound No',
+        inboundDate: 'Inbound Date',
+        docNo: 'Document No',
+      },
       filter: {
-      keyword: 'Keyword',
-      keywordPlaceholder: 'Enter document number or keyword',
-    },
+        keyword: 'Keyword',
+        keywordPlaceholder: 'Enter document number or keyword',
+      },
       summary: {
-      supplierName: 'Supplier',
-      buyerName: 'Buyer',
-      orderDate: 'Order Date',
-      relatedOrder: 'Related Order',
-      inboundDate: 'Inbound Date',
-      customerName: 'Customer',
-      projectName: 'Project',
-      deliveryDate: 'Delivery Date',
-      outboundDate: 'Outbound Date',
-      carrierName: 'Carrier',
-      relatedOutbound: 'Related Outbound',
-      billTime: 'Document Date',
-    },
+        supplierName: 'Supplier',
+        buyerName: 'Buyer',
+        orderDate: 'Order Date',
+        relatedOrder: 'Related Order',
+        inboundDate: 'Inbound Date',
+        customerName: 'Customer',
+        projectName: 'Project',
+        deliveryDate: 'Delivery Date',
+        outboundDate: 'Outbound Date',
+        carrierName: 'Carrier',
+        relatedOutbound: 'Related Outbound',
+        billTime: 'Document Date',
+      },
     },
     editorWorkspace: {
       preallocatedNoMismatchTitle: 'Document saved, system regenerated number',
-      preallocatedNoMismatchContent: 'This document was saved successfully, but the system did not use the pre-allocated number shown on the page. It has been automatically changed to actual number: {{primaryNo}}. Please use the actual saved number.',
-      preallocatedNoMismatchContentNoNo: 'This document was saved successfully, but the system did not use the pre-allocated number shown on the page. It has been automatically changed to a new actual number. Please refer to the save result.',
+      preallocatedNoMismatchContent:
+        'This document was saved successfully, but the system did not use the pre-allocated number shown on the page. It has been automatically changed to actual number: {{primaryNo}}. Please use the actual saved number.',
+      preallocatedNoMismatchContentNoNo:
+        'This document was saved successfully, but the system did not use the pre-allocated number shown on the page. It has been automatically changed to a new actual number. Please refer to the save result.',
       preallocatedNoUpdatedTitle: 'Document saved, actual number updated',
-      preallocatedNoUpdatedContent: 'The pre-allocated number on this page was {{expected}}, but the system saved with actual number {{actual}}. Please use the actual saved number.',
+      preallocatedNoUpdatedContent:
+        'The pre-allocated number on this page was {{expected}}, but the system saved with actual number {{actual}}. Please use the actual saved number.',
       currentUserFallback: 'Current User',
     },
     validation: {
       maxImportExceeded: 'Row {{row}}: import quantity cannot exceed {{max}}',
-      weighRequired: 'Row {{row}}: this category requires weigh-based inbound. Please change the settlement mode to weigh.',
+      weighRequired:
+        'Row {{row}}: this category requires weigh-based inbound. Please change the settlement mode to weigh.',
       weighWeightRequired: 'Please enter the weigh weight for row {{row}}',
       lineItemRequired: 'Please enter {{label}} for row {{row}}',
       fieldRequired: 'Please enter {{label}}',
       minOneItem: 'Please add at least one line item',
-      parentRelationOccupied: '{{parentLabel}}{{parentNo}} is already linked to {{occupiedNo}}',
+      parentRelationOccupied:
+        '{{parentLabel}}{{parentNo}} is already linked to {{occupiedNo}}',
       errorSummarySuffix: 'and {{count}} other issue(s)',
     },
     columns: {
@@ -1022,8 +1033,8 @@ export const enUS: MessageSchema = {
         templateDownloadFailed: 'Failed to download material template',
         importFailed: 'Failed to import materials',
         importSuccessSummary:
-          'Import completed: {{totalRows}} total, {{successCount}} succeeded, {{createdCount}} created, {{updatedCount}} updated, {{failedCount}} failed'
-    },
+          'Import completed: {{totalRows}} total, {{successCount}} succeeded, {{createdCount}} created, {{updatedCount}} updated, {{failedCount}} failed',
+      },
       materialCategories: {
         materialCategory: 'materialCategory',
         categoryDesc: 'categoryDesc',
@@ -1038,8 +1049,8 @@ export const enUS: MessageSchema = {
         required: 'required',
         notRequired: 'notRequired',
         categoryCount: 'categoryCount',
-        enabled: 'enabled'
-    },
+        enabled: 'enabled',
+      },
       purchaseContract: {
         purchaseContract: 'purchaseContract',
         purchaseContractPlaceholder: 'purchaseContractPlaceholder',
@@ -1057,8 +1068,8 @@ export const enUS: MessageSchema = {
         importFromParent: 'importFromParent',
         purchaseOrder: 'purchaseOrder',
         importPurchaseOrderItems: 'importPurchaseOrderItems',
-        purchaseContractDesc: 'purchaseContractDesc'
-    },
+        purchaseContractDesc: 'purchaseContractDesc',
+      },
       salesContract: {
         salesContract: 'salesContract',
         salesContractPlaceholder: 'salesContractPlaceholder',
@@ -1073,8 +1084,8 @@ export const enUS: MessageSchema = {
         totalAmount: 'totalAmount',
         status: 'status',
         remark: 'remark',
-        salesContractDesc: 'salesContractDesc'
-    },
+        salesContractDesc: 'salesContractDesc',
+      },
       payment: {
         payment: 'payment',
         createPayment: 'createPayment',
@@ -1095,8 +1106,8 @@ export const enUS: MessageSchema = {
         bankTransfer: 'bankTransfer',
         bankAcceptance: 'bankAcceptance',
         cash: 'cash',
-        paymentDesc: 'paymentDesc'
-    },
+        paymentDesc: 'paymentDesc',
+      },
       receipt: {
         receipt: 'receipt',
         createReceipt: 'createReceipt',
@@ -1116,8 +1127,8 @@ export const enUS: MessageSchema = {
         bankAcceptance: 'bankAcceptance',
         acceptanceBill: 'acceptanceBill',
         cash: 'cash',
-        receiptDesc: 'receiptDesc'
-    },
+        receiptDesc: 'receiptDesc',
+      },
       customerStatement: {
         customerStatement: 'customerStatement',
         generateStatement: 'generateStatement',
@@ -1132,8 +1143,8 @@ export const enUS: MessageSchema = {
         closingBalance: 'closingBalance',
         status: 'status',
         remark: 'remark',
-        customerStatementDesc: 'customerStatementDesc'
-    },
+        customerStatementDesc: 'customerStatementDesc',
+      },
       supplierStatement: {
         supplierStatement: 'supplierStatement',
         generateStatement: 'generateStatement',
@@ -1147,8 +1158,8 @@ export const enUS: MessageSchema = {
         closingBalance: 'closingBalance',
         status: 'status',
         remark: 'remark',
-        supplierStatementDesc: 'supplierStatementDesc'
-    },
+        supplierStatementDesc: 'supplierStatementDesc',
+      },
       freightStatement: {
         freightStatement: 'freightStatement',
         generateFreightStatement: 'generateFreightStatement',
@@ -1169,8 +1180,8 @@ export const enUS: MessageSchema = {
         signStatus: 'signStatus',
         attachment: 'attachment',
         remark: 'remark',
-        freightStatementDesc: 'freightStatementDesc'
-    },
+        freightStatementDesc: 'freightStatementDesc',
+      },
       freightOperations: {
         freightBill: 'freightBill',
         createFreightBill: 'createFreightBill',
@@ -1195,11 +1206,12 @@ export const enUS: MessageSchema = {
         importFromParent: 'importFromParent',
         parentSalesOutbound: 'parentSalesOutbound',
         importParentSalesOutbound: 'importParentSalesOutbound',
-        freightBillDesc: 'freightBillDesc'
-    },
+        freightBillDesc: 'freightBillDesc',
+      },
       carrier: {
         title: 'Carriers',
-        description: 'Manage carrier master data including contact info, vehicle details, and pricing modes.',
+        description:
+          'Manage carrier master data including contact info, vehicle details, and pricing modes.',
         placeholderKeyword: 'Carrier code / name / contact',
         colCarrierCode: 'Carrier Code',
         colCarrierName: 'Carrier Name',
@@ -1230,11 +1242,12 @@ export const enUS: MessageSchema = {
         formVehiclePlate3: 'Plate 3',
         formVehicleContact3: 'Driver 3',
         formVehiclePhone3: 'Driver Phone 3',
-        formVehicleRemark3: 'Remark 3'
-    },
+        formVehicleRemark3: 'Remark 3',
+      },
       customer: {
         title: 'Customers',
-        description: 'Manage customer master data including project info, contacts, and settlement modes.',
+        description:
+          'Manage customer master data including project info, contacts, and settlement modes.',
         placeholderKeyword: 'Customer code / name / project',
         colCustomerCode: 'Customer Code',
         colCustomerName: 'Customer Name',
@@ -1247,11 +1260,12 @@ export const enUS: MessageSchema = {
         colSettlementMode: 'Settlement',
         settlementCash: 'Cash',
         settlementMonthly: 'Monthly',
-        settlementCredit: 'Credit'
-    },
+        settlementCredit: 'Credit',
+      },
       purchaseOrder: {
         title: 'Purchase Orders',
-        description: 'Manage purchase orders by supplier, order date, and item details.',
+        description:
+          'Manage purchase orders by supplier, order date, and item details.',
         placeholderOrderNo: 'Enter order number',
         filterOrderDate: 'Order Date',
         colOrderNo: 'Order No',
@@ -1259,11 +1273,12 @@ export const enUS: MessageSchema = {
         colBuyer: 'Buyer',
         colOrderDate: 'Order Date',
         formTotalWeight: 'Total Weight (ton)',
-        formTotalAmount: 'Total Amount'
-    },
+        formTotalAmount: 'Total Amount',
+      },
       salesOrder: {
         title: 'Sales Orders',
-        description: 'Manage sales orders by customer, project, delivery date, and item details.',
+        description:
+          'Manage sales orders by customer, project, delivery date, and item details.',
         placeholderOrderNo: 'Enter order number',
         placeholderProductKeyword: 'Material code / brand / spec',
         placeholderPurchaseOrderNo: 'Auto-generated',
@@ -1277,8 +1292,8 @@ export const enUS: MessageSchema = {
         colSalesName: 'Salesperson',
         colDeliveryDate: 'Delivery Date',
         parentImportLabel: 'Purchase Order',
-        parentImportButton: 'Import PO Items'
-    },
+        parentImportButton: 'Import PO Items',
+      },
       purchaseInbound: {
         title: 'Purchase Inbounds',
         description: 'Manage purchase inbound and receiving confirmation.',
@@ -1297,8 +1312,8 @@ export const enUS: MessageSchema = {
         formTotalWeight: 'Total Weight (ton)',
         formTotalAmount: 'Total Amount',
         parentImportLabel: 'Purchase Order',
-        parentImportButton: 'Import PO Items'
-    },
+        parentImportButton: 'Import PO Items',
+      },
       salesOutbound: {
         title: 'Sales Outbounds',
         description: 'Manage sales outbound and shipment confirmation.',
@@ -1314,11 +1329,12 @@ export const enUS: MessageSchema = {
         colProjectName: 'Project',
         colOutboundDate: 'Outbound Date',
         parentImportLabel: 'Sales Order',
-        parentImportButton: 'Import SO Items'
-    },
+        parentImportButton: 'Import SO Items',
+      },
       supplier: {
         title: 'Suppliers',
-        description: 'Manage supplier master data including contacts and settlement info.',
+        description:
+          'Manage supplier master data including contacts and settlement info.',
         placeholderKeyword: 'Supplier code / name / contact',
         colSupplierCode: 'Supplier Code',
         colSupplierName: 'Supplier Name',
@@ -1328,8 +1344,8 @@ export const enUS: MessageSchema = {
         colSettlementMode: 'Settlement',
         settlementCash: 'Cash',
         settlementMonthly: 'Monthly',
-        settlementCredit: 'Credit'
-    },
+        settlementCredit: 'Credit',
+      },
       invoiceIssue: {
         invoiceIssue: 'invoiceIssue',
         createInvoiceIssue: 'createInvoiceIssue',
@@ -1350,8 +1366,8 @@ export const enUS: MessageSchema = {
         taxRate: 'taxRate',
         parentSalesOrder: 'parentSalesOrder',
         importSalesOrderItems: 'importSalesOrderItems',
-        invoiceIssueDesc: 'invoiceIssueDesc'
-    },
+        invoiceIssueDesc: 'invoiceIssueDesc',
+      },
       invoiceReceipt: {
         invoiceReceipt: 'invoiceReceipt',
         createInvoiceReceipt: 'createInvoiceReceipt',
@@ -1371,8 +1387,8 @@ export const enUS: MessageSchema = {
         taxRate: 'taxRate',
         parentPurchaseOrder: 'parentPurchaseOrder',
         importPurchaseOrderItems: 'importPurchaseOrderItems',
-        invoiceReceiptDesc: 'invoiceReceiptDesc'
-    },
+        invoiceReceiptDesc: 'invoiceReceiptDesc',
+      },
       balance: {
         receivablePayable: 'receivablePayable',
         exportBalance: 'exportBalance',
@@ -1403,8 +1419,8 @@ export const enUS: MessageSchema = {
         counterpartyCount: 'counterpartyCount',
         receivableBalance: 'receivableBalance',
         payableBalance: 'payableBalance',
-        balanceDesc: 'balanceDesc'
-    },
+        balanceDesc: 'balanceDesc',
+      },
       ioReport: {
         ioReport: 'ioReport',
         export: 'export',
@@ -1425,8 +1441,8 @@ export const enUS: MessageSchema = {
         outboundWeight: 'outboundWeight',
         remark: 'remark',
         transactionCount: 'transactionCount',
-        ioReportDesc: 'ioReportDesc'
-    },
+        ioReportDesc: 'ioReportDesc',
+      },
       inventoryReport: {
         inventoryReport: 'inventoryReport',
         export: 'export',
@@ -1446,8 +1462,8 @@ export const enUS: MessageSchema = {
         pieceWeight: 'pieceWeight',
         unit: 'unit',
         stockRecordCount: 'stockRecordCount',
-        inventoryReportDesc: 'inventoryReportDesc'
-    },
+        inventoryReportDesc: 'inventoryReportDesc',
+      },
       pendingInvoiceReceiptReport: {
         pendingInvoiceReceiptReport: 'pendingInvoiceReceiptReport',
         export: 'export',
@@ -1474,8 +1490,8 @@ export const enUS: MessageSchema = {
         pendingAmount: 'pendingAmount',
         status: 'status',
         pendingItemCount: 'pendingItemCount',
-        pendingInvoiceDesc: 'pendingInvoiceDesc'
-    },
+        pendingInvoiceDesc: 'pendingInvoiceDesc',
+      },
       operationLog: {
         operationLog: 'operationLog',
         export: 'export',
@@ -1501,8 +1517,8 @@ export const enUS: MessageSchema = {
         logCount: 'logCount',
         successCount: 'successCount',
         failedCount: 'failedCount',
-        operationLogDesc: 'operationLogDesc'
-    },
+        operationLogDesc: 'operationLogDesc',
+      },
       operationLogOptions: {
         query: 'query',
         view: 'view',
@@ -1566,8 +1582,8 @@ export const enUS: MessageSchema = {
         invoiceIssue: 'invoiceIssue',
         pendingInvoiceReceiptReport: 'pendingInvoiceReceiptReport',
         ioReport: 'ioReport',
-        inventoryReport: 'inventoryReport'
-    },
+        inventoryReport: 'inventoryReport',
+      },
       systemCore: {
         generalSettings: 'generalSettings',
         keyword: 'keyword',
@@ -1593,8 +1609,8 @@ export const enUS: MessageSchema = {
         companyName: 'companyName',
         taxNo: 'taxNo',
         generalSettingDesc: 'generalSettingDesc',
-        companyInfoDesc: 'companyInfoDesc'
-    },
+        companyInfoDesc: 'companyInfoDesc',
+      },
       systemPermissionManagement: {
         accessControl: 'accessControl',
         export: 'export',
@@ -1619,8 +1635,8 @@ export const enUS: MessageSchema = {
         audit: 'audit',
         print: 'print',
         customScope: 'customScope',
-        accessControlDesc: 'accessControlDesc'
-    },
+        accessControlDesc: 'accessControlDesc',
+      },
       systemOrganization: {
         department: 'department',
         keyword: 'keyword',
@@ -1634,8 +1650,8 @@ export const enUS: MessageSchema = {
         status: 'status',
         remark: 'remark',
         selectParentDept: 'selectParentDept',
-        deptDesc: 'deptDesc'
-    },
+        deptDesc: 'deptDesc',
+      },
       masterWarehouse: {
         warehouseMaster: 'warehouseMaster',
         keyword: 'keyword',
@@ -1652,8 +1668,8 @@ export const enUS: MessageSchema = {
         address: 'address',
         status: 'status',
         remark: 'remark',
-        warehouseDesc: 'warehouseDesc'
-    },
+        warehouseDesc: 'warehouseDesc',
+      },
       projectAr: {
         projectReceivable: 'projectReceivable',
         projectArDesc: 'projectArDesc',
@@ -1677,8 +1693,8 @@ export const enUS: MessageSchema = {
         totalCompletedSales: 'totalCompletedSales',
         totalNetUnreceived: 'totalNetUnreceived',
         YYYY: 'YYYY',
-        YYYYMM: 'YYYYMM'
-        }
+        YYYYMM: 'YYYYMM',
+      },
     },
   },
   hooks: {
@@ -1697,7 +1713,8 @@ export const enUS: MessageSchema = {
       auditCompletedWithFailures:
         'Audit completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
       skippedCount: ', {{count}} skipped',
-      auditSuccess: 'Audit succeeded for {{successCount}} record(s){{skippedPart}}',
+      auditSuccess:
+        'Audit succeeded for {{successCount}} record(s){{skippedPart}}',
       deleteNotSupported:
         'Selected records are in a status that does not support deletion',
       batchDelete: 'Batch Delete',
@@ -1727,12 +1744,12 @@ export const enUS: MessageSchema = {
       markDeliveredFailed: 'Failed to mark as delivered',
       markDeliveredCompletedWithFailures:
         'Mark delivered completed: {{successCount}} succeeded, {{failedCount}} failed{{errorPart}}',
-      markDeliveredSuccess:
-        'Marked {{successCount}} record(s) as delivered',
+      markDeliveredSuccess: 'Marked {{successCount}} record(s) as delivered',
     },
     printActions: {
       selectPrintTemplate: 'Select Print Template',
-      noPrintTemplateConfigured: 'No print template configured for this document',
+      noPrintTemplateConfigured:
+        'No print template configured for this document',
       noPrintableRecords: 'No printable records found in selection',
       printScriptGenerationFailed: 'Print script generation failed',
       printServiceUnavailable:
@@ -1791,7 +1808,8 @@ export const enUS: MessageSchema = {
         'Column settings saved locally. Cloud sync will retry later.',
     },
     statement: {
-      noCandidateDocuments: 'No candidate documents available for generation with current filters',
+      noCandidateDocuments:
+        'No candidate documents available for generation with current filters',
     },
     recordHelpers: {
       currentUser: 'Current User',
@@ -1816,18 +1834,18 @@ export const enUS: MessageSchema = {
       resetDefault: 'Reset Default',
       saveDisplay: 'Save Display Settings',
       theme: {
-      light: 'Light',
-      dark: 'Dark',
-      system: 'System',
-    },
+        light: 'Light',
+        dark: 'Dark',
+        system: 'System',
+      },
       layout: {
-      sider: 'Side Navigation',
-      top: 'Top Navigation',
-      siderDesc:
+        sider: 'Side Navigation',
+        top: 'Top Navigation',
+        siderDesc:
           'Keeps the side menu, better suited for high-frequency data entry and multi-module switching.',
-      topDesc:
+        topDesc:
           'Uses a top menu bar, consistent with the current Vue version layout.',
-    },
+      },
     },
     topNav: {
       serverTime: 'Server Time',
@@ -1862,8 +1880,7 @@ export const enUS: MessageSchema = {
         'At least one settlement account is required',
       inputAccountName:
         'Please enter account name for settlement account {{index}}',
-      inputBankName:
-        'Please enter bank name for settlement account {{index}}',
+      inputBankName: 'Please enter bank name for settlement account {{index}}',
       inputBankAccount:
         'Please enter bank account for settlement account {{index}}',
       duplicateBankAccount: 'Duplicate bank account: {{account}}',
@@ -2062,14 +2079,16 @@ export const enUS: MessageSchema = {
     },
     securityKey: {
       title: 'Security Key Management',
-      description: 'Review JWT and 2FA master key status in one place. Rotation requires 2FA verification from the current account.',
+      description:
+        'Review JWT and 2FA master key status in one place. Rotation requires 2FA verification from the current account.',
       jwtRotated: 'JWT master key rotated successfully',
       totpRotated: '2FA master key rotated successfully',
       rotateSuccess: '{{type}} key rotated',
       rotateFailed: 'Rotation failed',
       refresh: 'Refresh Status',
       riskTitle: 'Key rotation is a high-risk maintenance operation',
-      riskDescription: 'Rotating the JWT key affects token verification. Rotating the TOTP key affects decryption of 2FA secrets. Confirm system health and keep rollback or backup plans before proceeding.',
+      riskDescription:
+        'Rotating the JWT key affects token verification. Rotating the TOTP key affects decryption of 2FA secrets. Confirm system health and keep rollback or backup plans before proceeding.',
       configuredKeys: 'Configured Keys',
       protectedRecords: 'Protected Records',
       retiredVersions: 'Retired Versions',
@@ -2094,7 +2113,8 @@ export const enUS: MessageSchema = {
       tabUsers: 'User Accounts',
       tabRoles: 'Role Permissions',
       tabPermissions: 'Permission Directory',
-      noModules: 'No available modules, please contact admin to assign permissions',
+      noModules:
+        'No available modules, please contact admin to assign permissions',
     },
     apiKeyDetail: {
       fallbackUnlimited: 'Unlimited',
@@ -2120,18 +2140,26 @@ export const enUS: MessageSchema = {
     },
     apiKeyUsage: {
       title: 'API Key Usage Guide',
-      item1: 'The full key is returned only once upon generation and cannot be viewed again after closing the dialog.',
-      item2: 'Pass the API Key in the X-API-Key request header when calling endpoints.',
-      item3: 'Usage scope: Read-only endpoints only allow GET / HEAD / OPTIONS; write requests will be rejected.',
-      item4: 'Business endpoints only allow access to business data APIs; system management APIs are not allowed.',
-      item5: 'When allowed resources is empty, access is based on usage scope; after selecting resources, only whitelisted resource endpoints are allowed.',
-      item6: 'API Keys can only be generated for accounts with 2FA enabled, and the operator must verify their 2FA at generation time.',
+      item1:
+        'The full key is returned only once upon generation and cannot be viewed again after closing the dialog.',
+      item2:
+        'Pass the API Key in the X-API-Key request header when calling endpoints.',
+      item3:
+        'Usage scope: Read-only endpoints only allow GET / HEAD / OPTIONS; write requests will be rejected.',
+      item4:
+        'Business endpoints only allow access to business data APIs; system management APIs are not allowed.',
+      item5:
+        'When allowed resources is empty, access is based on usage scope; after selecting resources, only whitelisted resource endpoints are allowed.',
+      item6:
+        'API Keys can only be generated for accounts with 2FA enabled, and the operator must verify their 2FA at generation time.',
       item7: '建议按用途分开创建，例如订单同步、报表读取，便于后续排查和禁用。',
-      item8: 'Disabled keys are immediately invalidated; expired or disabled keys cannot continue calling endpoints.',
+      item8:
+        'Disabled keys are immediately invalidated; expired or disabled keys cannot continue calling endpoints.',
     },
     companyHeader: {
       title: 'Company Information',
-      description: 'This system runs in single-enterprise mode. Company name and tax number are initialized by OOBE; this page maintains settlement banks, status, and supplementary notes.',
+      description:
+        'This system runs in single-enterprise mode. Company name and tax number are initialized by OOBE; this page maintains settlement banks, status, and supplementary notes.',
       refresh: 'Refresh',
       save: 'Save',
     },
@@ -2152,7 +2180,8 @@ export const enUS: MessageSchema = {
     databaseMonitor: {
       noData: 'No monitoring data',
       sectionTitle: 'Database Read-only Diagnostics',
-      sectionDesc: 'PostgreSQL built-in stats views, optional slow SQL summary & Redis read-only metrics',
+      sectionDesc:
+        'PostgreSQL built-in stats views, optional slow SQL summary & Redis read-only metrics',
       refresh: 'Refresh',
       pgDiagnostics: 'PostgreSQL Diagnostics',
       pgUnavailable: 'PostgreSQL monitoring unavailable',
@@ -2246,7 +2275,8 @@ export const enUS: MessageSchema = {
     },
     databaseStatus: {
       serviceOverview: 'Service Overview',
-      serviceOverviewDesc: 'Current database component online status and key capacity metrics',
+      serviceOverviewDesc:
+        'Current database component online status and key capacity metrics',
       dbSize: 'Database Size',
       tableCount: 'Table Count',
       activeConnections: 'Active Connections',
@@ -2271,7 +2301,8 @@ export const enUS: MessageSchema = {
       maxChars: 'Max {{count}} characters',
       magicVars: 'Magic Variables:',
       autoReplace: ': auto-replaced during frontend rendering',
-      watermarkNewlineHint: '; each line is rendered as a separate watermark line.',
+      watermarkNewlineHint:
+        '; each line is rendered as a separate watermark line.',
       watermarkFontSize: 'Watermark Font Size',
       watermarkDensity: 'Watermark Density',
       currentValue: 'Current Value',
@@ -2317,7 +2348,8 @@ export const enUS: MessageSchema = {
       templateTypePdfForm: 'PDF Form',
       templateContent: 'Template Content',
       templateContentPlaceholder: 'Enter template content',
-      htmlHint: 'Supports HTML templates, LODOP instructions, and PDF form config. Use {{fieldName}} syntax to insert dynamic data.',
+      htmlHint:
+        'Supports HTML templates, LODOP instructions, and PDF form config. Use {{fieldName}} syntax to insert dynamic data.',
       helpTitle: 'Print Template Guide',
       unifiedPrintApi:
         'All templates use POST /print/record. HTML/COORD returns template data, PDF_FORM returns PDF content. The frontend only renders, previews, and prints.',
@@ -2367,8 +2399,10 @@ export const enUS: MessageSchema = {
       matrixView: 'Matrix',
       savePerm: 'Save Permissions',
       attachmentPermTitle: 'Attachment Permission Note',
-      attachmentPermDesc: 'Attachments do not have separate permissions; they follow the corresponding module permissions: view permission allows viewing and downloading, edit permission allows uploading, delete permission allows deleting.',
-      selectRoleHint: 'Please select a role from the left to configure permissions',
+      attachmentPermDesc:
+        'Attachments do not have separate permissions; they follow the corresponding module permissions: view permission allows viewing and downloading, edit permission allows uploading, delete permission allows deleting.',
+      selectRoleHint:
+        'Please select a role from the left to configure permissions',
     },
     roleList: {
       title: 'Role List',
@@ -2452,23 +2486,40 @@ export const enUS: MessageSchema = {
       unset: 'Unset',
     },
     generalSettingsUtils: {
-      helpDefaultTaxRate: 'Used for default invoice tax rate and automatic tax calculation. New invoice drafts will use this value after modification.',
-      helpMaxConcurrentSessions: 'Limits the number of concurrent valid sessions per user. Excess sessions will be automatically cleaned up. Set to 0 for unlimited, leave empty for default value 3.',
-      helpWeightOnlyPurchase: 'When enabled, the purchase inbound page switches to weight view, hiding amount and unit price fields.',
-      helpWeightOnlySales: 'When enabled, the sales outbound page switches to weight view, hiding amount and unit price fields.',
-      helpCustomerStatementZero: 'When enabled, customer statement drafts default to zero received amount; ending balance equals total sales order amount.',
-      helpSupplierStatementFull: 'When enabled, supplier statement drafts default payment amount to total purchase document amount.',
-      helpOperationLogAllWrite: 'When enabled, normal write operations are automatically logged by create, edit, delete, audit, export, print.',
-      helpOperationLogDetailed: 'When enabled, page-level operations are automatically logged based on the checkboxes below.',
-      helpOperationLogAuth: 'When enabled, login success, login failure, 2FA verification failure, and logout are written to operation logs.',
-      helpForceTotpOnFirstLogin: 'When enabled, admin-created accounts will enter a dedicated security setup page on first password login.',
-      helpBatchNoAutoGenerate: 'When enabled, for batch-managed items without a batch number, the system auto-generates one based on the numbering rule.',
-      helpForceBatchManagement: 'When enabled, all inbound and outbound detail lines are treated as batch-managed, overriding the material-level batch switch. Missing batch numbers are filled only when auto generation is enabled.',
-      helpHideAuditedRecords: 'When enabled, business list pagination defaults to hiding documents with the checked statuses below.',
-      helpShowSnowflakeId: 'When enabled, the business list displays the system snowflake ID column for data troubleshooting.',
-      helpUseSnowflakeAsBusinessNo: 'When enabled, new business documents pre-allocate a real snowflake ID and use it directly as the document number.',
-      helpLoginCaptcha: 'When enabled, a captcha is required during login for brute-force protection.',
-      helpAttachmentWatermark: 'When enabled, non-admin users get automatic tiled watermarks (username + time) when downloading or previewing image/PDF attachments.',
+      helpDefaultTaxRate:
+        'Used for default invoice tax rate and automatic tax calculation. New invoice drafts will use this value after modification.',
+      helpMaxConcurrentSessions:
+        'Limits the number of concurrent valid sessions per user. Excess sessions will be automatically cleaned up. Set to 0 for unlimited, leave empty for default value 3.',
+      helpWeightOnlyPurchase:
+        'When enabled, the purchase inbound page switches to weight view, hiding amount and unit price fields.',
+      helpWeightOnlySales:
+        'When enabled, the sales outbound page switches to weight view, hiding amount and unit price fields.',
+      helpCustomerStatementZero:
+        'When enabled, customer statement drafts default to zero received amount; ending balance equals total sales order amount.',
+      helpSupplierStatementFull:
+        'When enabled, supplier statement drafts default payment amount to total purchase document amount.',
+      helpOperationLogAllWrite:
+        'When enabled, normal write operations are automatically logged by create, edit, delete, audit, export, print.',
+      helpOperationLogDetailed:
+        'When enabled, page-level operations are automatically logged based on the checkboxes below.',
+      helpOperationLogAuth:
+        'When enabled, login success, login failure, 2FA verification failure, and logout are written to operation logs.',
+      helpForceTotpOnFirstLogin:
+        'When enabled, admin-created accounts will enter a dedicated security setup page on first password login.',
+      helpBatchNoAutoGenerate:
+        'When enabled, for batch-managed items without a batch number, the system auto-generates one based on the numbering rule.',
+      helpForceBatchManagement:
+        'When enabled, all inbound and outbound detail lines are treated as batch-managed, overriding the material-level batch switch. Missing batch numbers are filled only when auto generation is enabled.',
+      helpHideAuditedRecords:
+        'When enabled, business list pagination defaults to hiding documents with the checked statuses below.',
+      helpShowSnowflakeId:
+        'When enabled, the business list displays the system snowflake ID column for data troubleshooting.',
+      helpUseSnowflakeAsBusinessNo:
+        'When enabled, new business documents pre-allocate a real snowflake ID and use it directly as the document number.',
+      helpLoginCaptcha:
+        'When enabled, a captcha is required during login for brute-force protection.',
+      helpAttachmentWatermark:
+        'When enabled, non-admin users get automatic tiled watermarks (username + time) when downloading or previewing image/PDF attachments.',
       actionQuery: 'Query',
       actionDetail: 'View',
       actionCreate: 'Create',
@@ -2517,14 +2568,16 @@ export const enUS: MessageSchema = {
       disabledSuccess: 'Disabled',
       disableFailed: 'Disable failed',
       noCreatePermission: 'No API Key creation permission',
-      totpRequired: 'Current account does not have 2FA enabled, API Key generation is prohibited',
+      totpRequired:
+        'Current account does not have 2FA enabled, API Key generation is prohibited',
       fillRequired: 'Please select user, usage scope and fill in key name',
       selectOneAction: 'Please select at least one allowed action',
       generatedSuccess: 'API Key generated',
       generateFailed: 'Generation failed',
       noManagePermission: 'No API Key management permission',
       disableConfirmTitle: 'Disable API Key',
-      disableConfirmContent: 'Disable key "{{keyName}}"? Calls using this key will fail after disabling.',
+      disableConfirmContent:
+        'Disable key "{{keyName}}"? Calls using this key will fail after disabling.',
     },
     rolePermissions: {
       loadFailed: 'Failed to load role permissions',

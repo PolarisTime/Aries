@@ -25,7 +25,10 @@ export function useDetailSupport({ moduleKey, config }: Options) {
     setDetailOpen(true)
     setDetailRecord(fallbackRecord)
 
-    if (!recordId || (endpointConfig.readOnly && !endpointConfig.supportsDetail)) {
+    if (
+      !recordId ||
+      (endpointConfig.readOnly && !endpointConfig.supportsDetail)
+    ) {
       setDetailLoading(false)
       return
     }

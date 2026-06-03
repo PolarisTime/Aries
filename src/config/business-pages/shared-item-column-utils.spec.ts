@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { insertColumnsAfter, applyCompactItemLayout } from './shared-item-column-utils'
+import {
+  applyCompactItemLayout,
+  insertColumnsAfter,
+} from './shared-item-column-utils'
 
 describe('insertColumnsAfter', () => {
   const baseColumns = [

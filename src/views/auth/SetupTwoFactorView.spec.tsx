@@ -46,7 +46,13 @@ vi.mock('@/views/auth/useSetupTwoFactorState', () => ({
 }))
 
 vi.mock('@/views/auth/AuthPageShell', () => ({
-  AuthPageShell: ({ children, hero }: { children: React.ReactNode; hero?: React.ReactNode }) => (
+  AuthPageShell: ({
+    children,
+    hero,
+  }: {
+    children: React.ReactNode
+    hero?: React.ReactNode
+  }) => (
     <div data-testid="auth-shell">
       {hero && <div data-testid="hero">{hero}</div>}
       {children}
@@ -55,7 +61,9 @@ vi.mock('@/views/auth/AuthPageShell', () => ({
 }))
 
 vi.mock('@/views/auth/SetupTwoFactorContent', () => ({
-  SetupTwoFactorContent: ({ currentUserName }: any) => <div data-testid="setup-content">{currentUserName}</div>,
+  SetupTwoFactorContent: ({ currentUserName }: any) => (
+    <div data-testid="setup-content">{currentUserName}</div>
+  ),
 }))
 
 vi.mock('@/views/auth/setup-two-factor-constants', () => ({

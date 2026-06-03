@@ -48,10 +48,7 @@ describe('renderPrintTemplate', () => {
       ].join('\n'),
       'COORD',
       {},
-      [
-        { sourceNo: 'SOO-001' },
-        { isSeparator: 'true', groupName: '项目A' },
-      ],
+      [{ sourceNo: 'SOO-001' }, { isSeparator: 'true', groupName: '项目A' }],
     )
 
     expect(result.script).toContain('"SOO-001"')
@@ -124,8 +121,12 @@ describe('renderPrintTemplate', () => {
     )
 
     expect(result.type).toBe('HTML')
-    expect(result.html).toContain('<tr><td>A01</td><td>Item1</td><td>10</td></tr>')
-    expect(result.html).toContain('<tr><td>A02</td><td>Item2</td><td>20</td></tr>')
+    expect(result.html).toContain(
+      '<tr><td>A01</td><td>Item1</td><td>10</td></tr>',
+    )
+    expect(result.html).toContain(
+      '<tr><td>A02</td><td>Item2</td><td>20</td></tr>',
+    )
     expect(result.html).not.toContain('<!--DETAIL_ROW_START-->')
   })
 
@@ -170,7 +171,9 @@ describe('renderPrintTemplate', () => {
     )
 
     expect(result.type).toBe('COORD')
-    expect(result.script).toContain('LODOP.ADD_PRINT_TEXT(10,10,200,20,"报表标题")')
+    expect(result.script).toContain(
+      'LODOP.ADD_PRINT_TEXT(10,10,200,20,"报表标题")',
+    )
   })
 
   it('renders COORD template with falsy if block', () => {

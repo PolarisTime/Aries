@@ -76,11 +76,19 @@ describe('appAntdLocale', () => {
 
   it('defines Form validation messages', () => {
     expect(appAntdLocale.Form).toBeDefined()
-    expect(appAntdLocale.Form?.defaultValidateMessages?.required).toContain('${label}')
+    expect(appAntdLocale.Form?.defaultValidateMessages?.required).toContain(
+      '${label}',
+    )
     expect(appAntdLocale.Form?.optional).toBe('（可选）')
-    expect(appAntdLocale.Form?.defaultValidateMessages?.default).toContain('${label}')
-    expect(appAntdLocale.Form?.defaultValidateMessages?.enum).toContain('${label}')
-    expect(appAntdLocale.Form?.defaultValidateMessages?.whitespace).toContain('${label}')
+    expect(appAntdLocale.Form?.defaultValidateMessages?.default).toContain(
+      '${label}',
+    )
+    expect(appAntdLocale.Form?.defaultValidateMessages?.enum).toContain(
+      '${label}',
+    )
+    expect(appAntdLocale.Form?.defaultValidateMessages?.whitespace).toContain(
+      '${label}',
+    )
   })
 
   it('defines Form date validation messages', () => {

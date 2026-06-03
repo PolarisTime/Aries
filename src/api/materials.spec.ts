@@ -23,8 +23,8 @@ vi.mock('@/utils/download', () => ({
 }))
 
 import {
-  fetchMaterialSearch,
   downloadMaterialImportTemplate,
+  fetchMaterialSearch,
   importMaterialFile,
 } from './materials'
 
@@ -90,7 +90,10 @@ describe('materials', () => {
       expect(httpGetMock).toHaveBeenCalledWith('/materials/template', {
         responseType: 'blob',
       })
-      expect(downloadBlobMock).toHaveBeenCalledWith(mockBlob, '商品资料导入模板.xlsx')
+      expect(downloadBlobMock).toHaveBeenCalledWith(
+        mockBlob,
+        '商品资料导入模板.xlsx',
+      )
     })
   })
 

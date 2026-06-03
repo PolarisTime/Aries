@@ -8,7 +8,7 @@ import Button from 'antd/es/button'
 import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
 import Tag from 'antd/es/tag'
-import { type CSSProperties } from 'react'
+import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   LazyAppHeaderSearch,
@@ -45,17 +45,16 @@ export function AppSideNavigationHeader({
 
   return (
     <div className="app-header-bar">
-      <button
-        type="button"
-        className="app-trigger"
-        onClick={onToggleCollapsed}
-      >
+      <button type="button" className="app-trigger" onClick={onToggleCollapsed}>
         {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
       </button>
 
       <div className="header-page-meta">
         <div className="header-page-title">{title}</div>
-        <div className="header-page-desc">{t('layouts.sideNav.breadcrumbPrefix')}{title}</div>
+        <div className="header-page-desc">
+          {t('layouts.sideNav.breadcrumbPrefix')}
+          {title}
+        </div>
       </div>
 
       <LazyAppHeaderSearch className="header-global-search" {...search} />
@@ -63,7 +62,9 @@ export function AppSideNavigationHeader({
       <div className="user-wrapper" style={shellFontStyle}>
         <span className="action action-tag">
           <Tag color={backendOnline ? 'green' : 'red'}>
-            {backendOnline ? t('layouts.sideNav.apiOnline') : t('layouts.sideNav.apiOffline')}
+            {backendOnline
+              ? t('layouts.sideNav.apiOnline')
+              : t('layouts.sideNav.apiOffline')}
           </Tag>
           <Tag color="default">{clockText}</Tag>
         </span>
@@ -91,7 +92,8 @@ export function AppSideNavigationHeader({
               window.location.reload()
             }}
           >
-            <ReloadOutlined />{t('common.refresh')}
+            <ReloadOutlined />
+            {t('common.refresh')}
           </button>
         ) : null}
       </div>

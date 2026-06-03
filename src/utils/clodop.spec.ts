@@ -38,7 +38,13 @@ describe('execPrintCode', () => {
       { preview: true },
     )
     expect(success).toBe(true)
-    expect(lodop.ADD_PRINT_TEXT).toHaveBeenCalledWith(209, 12, 74, 16, '抚顺新钢')
+    expect(lodop.ADD_PRINT_TEXT).toHaveBeenCalledWith(
+      209,
+      12,
+      74,
+      16,
+      '抚顺新钢',
+    )
   })
 
   it('returns false when lodop is not available', () => {
@@ -48,16 +54,20 @@ describe('execPrintCode', () => {
 
   it('calls PRINT when preview is false', () => {
     const lodop = setupLodop()
-    const success = execPrintCode('LODOP.PRINT_INIT("test");', { preview: false })
+    const success = execPrintCode('LODOP.PRINT_INIT("test");', {
+      preview: false,
+    })
     expect(success).toBe(true)
     expect(lodop.PRINT).toHaveBeenCalled()
     expect(lodop.PREVIEW).not.toHaveBeenCalled()
   })
 
   it('handles script control flow (hasScriptControlFlow path)', () => {
-    const lodop = setupLodop(makeLodop({
-      ADD_PRINT_BARCODE: vi.fn(),
-    }))
+    const lodop = setupLodop(
+      makeLodop({
+        ADD_PRINT_BARCODE: vi.fn(),
+      }),
+    )
     const code = [
       'var x = 10;',
       'LODOP.ADD_PRINT_BARCODE(0,0,100,20,"123456");',
@@ -79,7 +89,7 @@ describe('execPrintCode', () => {
   })
 
   it('handles printer option with control flow script', () => {
-    const lodop = setupLodop()
+    const _lodop = setupLodop()
     const code = 'var x = 1; LODOP.PRINT_INIT("test");'
     const success = execPrintCode(code, { preview: true, printer: 'HP' })
     expect(success).toBe(true)
@@ -87,7 +97,9 @@ describe('execPrintCode', () => {
 
   it('handles errors in execPrintCode gracefully', () => {
     const lodop = setupLodop()
-    lodop.PRINT_INIT = vi.fn(() => { throw new Error('mock error') })
+    lodop.PRINT_INIT = vi.fn(() => {
+      throw new Error('mock error')
+    })
     const success = execPrintCode('LODOP.PRINT_INIT("test");')
     expect(success).toBe(false)
   })
@@ -100,28 +112,31 @@ describe('execPrintCode', () => {
   })
 
   it('returns false when code contains blocked script keywords', () => {
-    const lodop = setupLodop()
-    const code = 'var x = 1; LODOP.ADD_PRINT_TEXT(10,10,80,16,"test"); window.alert("x");'
+    const _lodop = setupLodop()
+    const code =
+      'var x = 1; LODOP.ADD_PRINT_TEXT(10,10,80,16,"test"); window.alert("x");'
     const success = execPrintCode(code, { preview: true })
     expect(success).toBe(false)
   })
 
   it('returns false when code uses document keyword', () => {
-    const lodop = setupLodop()
-    const code = 'var x = 1; LODOP.ADD_PRINT_TEXT(10,10,80,16,"test"); document.title = "x";'
+    const _lodop = setupLodop()
+    const code =
+      'var x = 1; LODOP.ADD_PRINT_TEXT(10,10,80,16,"test"); document.title = "x";'
     const success = execPrintCode(code, { preview: true })
     expect(success).toBe(false)
   })
 
   it('returns false when code uses eval keyword', () => {
-    const lodop = setupLodop()
-    const code = 'var x = 1; LODOP.ADD_PRINT_TEXT(10,10,80,16,"test"); eval("1+1");'
+    const _lodop = setupLodop()
+    const code =
+      'var x = 1; LODOP.ADD_PRINT_TEXT(10,10,80,16,"test"); eval("1+1");'
     const success = execPrintCode(code, { preview: true })
     expect(success).toBe(false)
   })
 
   it('returns false when code uses unknown LODOP methods in control flow', () => {
-    const lodop = setupLodop()
+    const _lodop = setupLodop()
     const code = 'var x = 1; LODOP.UNKNOWN_METHOD(10,10,80,16,"test");'
     const success = execPrintCode(code, { preview: true })
     expect(success).toBe(false)
@@ -129,7 +144,8 @@ describe('execPrintCode', () => {
 
   it('handles code with PRINT_INITA', () => {
     const lodop = setupLodop()
-    const code = 'LODOP.PRINT_INITA(0,0,200,100,"Title");LODOP.ADD_PRINT_TEXT(10,10,80,16,"hello");'
+    const code =
+      'LODOP.PRINT_INITA(0,0,200,100,"Title");LODOP.ADD_PRINT_TEXT(10,10,80,16,"hello");'
     const success = execPrintCode(code, { preview: true })
     expect(success).toBe(true)
     expect(lodop.PRINT_INITA).toHaveBeenCalled()
@@ -161,7 +177,7 @@ describe('execPrintCode', () => {
   })
 
   it('handles code with empty lines and whitespace', () => {
-    const lodop = setupLodop()
+    const _lodop = setupLodop()
     const code = [
       'LODOP.PRINT_INIT("test");',
       '',
@@ -174,20 +190,23 @@ describe('execPrintCode', () => {
 
   it('handles code with numeric arguments including expressions', () => {
     const lodop = setupLodop()
-    const code = 'LODOP.PRINT_INIT("test");LODOP.ADD_PRINT_TEXT(100+5,20*2,80,16,"expr");'
+    const code =
+      'LODOP.PRINT_INIT("test");LODOP.ADD_PRINT_TEXT(100+5,20*2,80,16,"expr");'
     execPrintCode(code, { preview: true })
     expect(lodop.ADD_PRINT_TEXT).toHaveBeenCalledWith(105, 40, 80, 16, 'expr')
   })
 
   it('handles code with boolean and mixed argument types', () => {
-    const lodop = setupLodop()
-    const code = 'LODOP.PRINT_INIT("test");LODOP.SET_PRINT_MODE("RESELECT_PRINTER",true);'
+    const _lodop = setupLodop()
+    const code =
+      'LODOP.PRINT_INIT("test");LODOP.SET_PRINT_MODE("RESELECT_PRINTER",true);'
     execPrintCode(code, { preview: true })
   })
 
   it('handles PRINT_INITA with quoted title containing spaces', () => {
     const lodop = setupLodop()
-    const code = 'LODOP.PRINT_INITA(0,0,2970,2100,"A4 打印模版");LODOP.ADD_PRINT_TEXT(10,10,80,16,"test");'
+    const code =
+      'LODOP.PRINT_INITA(0,0,2970,2100,"A4 打印模版");LODOP.ADD_PRINT_TEXT(10,10,80,16,"test");'
     execPrintCode(code, { preview: true })
     expect(lodop.PRINT_INITA).toHaveBeenCalled()
     const args = lodop.PRINT_INITA.mock.calls[0]
@@ -195,9 +214,11 @@ describe('execPrintCode', () => {
   })
 
   it('handles code with only control flow (var) and safe LODOP calls', () => {
-    const lodop = setupLodop(makeLodop({
-      ADD_PRINT_TABLE: vi.fn(),
-    }))
+    const lodop = setupLodop(
+      makeLodop({
+        ADD_PRINT_TABLE: vi.fn(),
+      }),
+    )
     const code = [
       'var pageSize = "A4";',
       'LODOP.ADD_PRINT_TABLE("0mm","0mm","100%","100%","<html></html>");',
@@ -208,9 +229,11 @@ describe('execPrintCode', () => {
   })
 
   it('handles control flow script with printer option', () => {
-    const lodop = setupLodop(makeLodop({
-      ADD_PRINT_BARCODE: vi.fn(),
-    }))
+    const _lodop = setupLodop(
+      makeLodop({
+        ADD_PRINT_BARCODE: vi.fn(),
+      }),
+    )
     const code = 'var x = 1; LODOP.ADD_PRINT_BARCODE(0,0,100,20,"123456");'
     const success = execPrintCode(code, { preview: true, printer: 'Thermal' })
     expect(success).toBe(true)
@@ -306,7 +329,9 @@ describe('printHtml', () => {
 
   it('handles errors gracefully', () => {
     const lodop = setupLodop()
-    lodop.PRINT_INIT = vi.fn(() => { throw new Error('mock') })
+    lodop.PRINT_INIT = vi.fn(() => {
+      throw new Error('mock')
+    })
     const result = printHtml('<p>test</p>')
     expect(result).toBe(false)
   })

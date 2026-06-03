@@ -18,7 +18,9 @@ describe('page-registry-finance', () => {
   })
 
   it('defines supplier-statement page', () => {
-    const page = financePageDefinitions.find((d) => d.key === 'supplier-statement')
+    const page = financePageDefinitions.find(
+      (d) => d.key === 'supplier-statement',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('供应商对账单')
     expect(page!.menuParent).toBe('statements')
@@ -28,7 +30,9 @@ describe('page-registry-finance', () => {
   })
 
   it('defines customer-statement page', () => {
-    const page = financePageDefinitions.find((d) => d.key === 'customer-statement')
+    const page = financePageDefinitions.find(
+      (d) => d.key === 'customer-statement',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('客户对账单')
     expect(page!.menuParent).toBe('statements')
@@ -38,7 +42,9 @@ describe('page-registry-finance', () => {
   })
 
   it('defines freight-statement page', () => {
-    const page = financePageDefinitions.find((d) => d.key === 'freight-statement')
+    const page = financePageDefinitions.find(
+      (d) => d.key === 'freight-statement',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('物流对账单')
     expect(page!.menuParent).toBe('statements')
@@ -88,7 +94,9 @@ describe('page-registry-finance', () => {
   })
 
   it('defines pending-invoice-receipt-report page', () => {
-    const page = financePageDefinitions.find((d) => d.key === 'pending-invoice-receipt-report')
+    const page = financePageDefinitions.find(
+      (d) => d.key === 'pending-invoice-receipt-report',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('未收票报表')
     expect(page!.menuParent).toBe('finance')
@@ -98,7 +106,9 @@ describe('page-registry-finance', () => {
   })
 
   it('defines receivable-payable page', () => {
-    const page = financePageDefinitions.find((d) => d.key === 'receivable-payable')
+    const page = financePageDefinitions.find(
+      (d) => d.key === 'receivable-payable',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('应收应付')
     expect(page!.menuParent).toBe('finance')
@@ -117,7 +127,9 @@ describe('page-registry-finance', () => {
   })
 
   it('defines project-ar-detail page with hiddenInMenu', () => {
-    const page = financePageDefinitions.find((d) => d.key === 'project-ar-detail')
+    const page = financePageDefinitions.find(
+      (d) => d.key === 'project-ar-detail',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('项目应收明细')
     expect(page!.hiddenInMenu).toBe(true)
@@ -127,8 +139,12 @@ describe('page-registry-finance', () => {
   })
 
   it('groups pages correctly by menuParent', () => {
-    const statements = financePageDefinitions.filter((d) => d.menuParent === 'statements')
-    const finance = financePageDefinitions.filter((d) => d.menuParent === 'finance')
+    const statements = financePageDefinitions.filter(
+      (d) => d.menuParent === 'statements',
+    )
+    const finance = financePageDefinitions.filter(
+      (d) => d.menuParent === 'finance',
+    )
     const hidden = financePageDefinitions.filter((d) => d.hiddenInMenu)
 
     expect(statements).toHaveLength(3)

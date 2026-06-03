@@ -1,5 +1,5 @@
-import { create } from 'zustand'
 import i18next from 'i18next'
+import { create } from 'zustand'
 import { ERROR_CODE } from '@/constants/error-codes'
 import type {
   Login2faPayload,
@@ -90,7 +90,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     const data = response.data as LoginResult
     if (isStep2(data)) {
-      if (!data.tempToken) throw new Error(i18next.t('auth.error.missing2faToken'))
+      if (!data.tempToken)
+        throw new Error(i18next.t('auth.error.missing2faToken'))
       return { requires2fa: true, tempToken: data.tempToken }
     }
     if (!data.accessToken || !data.user) {
@@ -120,7 +121,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { login2fa } = await loadAuthApi()
     const response = await login2fa(payload)
     if (response.code !== ERROR_CODE.SUCCESS) {
-      throw new Error(response.message || i18next.t('auth.error.verify2faFailed'))
+      throw new Error(
+        response.message || i18next.t('auth.error.verify2faFailed'),
+      )
     }
     const data = response.data
     if (!data.accessToken || !data.user) {
@@ -165,7 +168,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const { refreshSession } = await loadAuthApi()
       const data = await refreshSession()
-      if (!data.accessToken || !data.user) throw new Error(i18next.t('auth.error.sessionRestoreFailed'))
+      if (!data.accessToken || !data.user)
+        throw new Error(i18next.t('auth.error.sessionRestoreFailed'))
       persistSession(
         data.user,
         data.accessToken,

@@ -34,7 +34,9 @@ export function buildWorkflowSections(
           icon: DatabaseOutlined,
           tone: '#1677ff',
           hint: t('dashboard.flow.material.hint'),
-          metric: t('dashboard.flow.material.metric', { count: summary?.materialCount ?? 0 }),
+          metric: t('dashboard.flow.material.metric', {
+            count: summary?.materialCount ?? 0,
+          }),
         },
         {
           key: 'supplier',
@@ -43,7 +45,9 @@ export function buildWorkflowSections(
           icon: ShopOutlined,
           tone: '#52c41a',
           hint: t('dashboard.flow.supplier.hint'),
-          metric: t('dashboard.flow.supplier.metric', { count: summary?.supplierCount ?? 0 }),
+          metric: t('dashboard.flow.supplier.metric', {
+            count: summary?.supplierCount ?? 0,
+          }),
         },
         {
           key: 'customer',
@@ -52,7 +56,9 @@ export function buildWorkflowSections(
           icon: TeamOutlined,
           tone: '#fa8c16',
           hint: t('dashboard.flow.customer.hint'),
-          metric: t('dashboard.flow.customer.metric', { count: summary?.customerCount ?? 0 }),
+          metric: t('dashboard.flow.customer.metric', {
+            count: summary?.customerCount ?? 0,
+          }),
         },
         {
           key: 'warehouse',

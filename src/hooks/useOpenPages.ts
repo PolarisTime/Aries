@@ -131,7 +131,8 @@ export function useOpenPages(
 
       if (currentKey === key || options.fallbackPath) {
         const fallback = nextPages[Math.max(index - 1, 0)] || nextPages[0]
-        const fallbackPath = options.fallbackPath || fallback?.path || defaultPath
+        const fallbackPath =
+          options.fallbackPath || fallback?.path || defaultPath
         // Use setTimeout to avoid state update during render
         setTimeout(() => navigate(fallbackPath), 0)
       }

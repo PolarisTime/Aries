@@ -14,7 +14,8 @@ vi.mock('@/hooks/usePageVisibility', () => ({
 }))
 
 vi.mock('@/views/system/useApiKeyManagementState', () => ({
-  useApiKeyManagementState: (...args: unknown[]) => mockUseApiKeyManagementState(...args),
+  useApiKeyManagementState: (...args: unknown[]) =>
+    mockUseApiKeyManagementState(...args),
 }))
 
 vi.mock('@/views/system/ApiKeyUsageAlert', () => ({
@@ -129,12 +130,16 @@ describe('ApiKeyManagementView', () => {
       userOptions: [],
     })
     render(<ApiKeyManagementView />)
-    expect(screen.getByText('system.apiKey.totpRequiredHint')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.apiKey.totpRequiredHint'),
+    ).toBeInTheDocument()
   })
 
   it('does not show TOTP warning when totp is enabled', () => {
     render(<ApiKeyManagementView />)
-    expect(screen.queryByText('system.apiKey.totpRequiredHint')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.apiKey.totpRequiredHint'),
+    ).not.toBeInTheDocument()
   })
 
   it('renders create modal when generateModalOpen is true', () => {

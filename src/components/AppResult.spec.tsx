@@ -12,11 +12,7 @@ vi.mock('@tanstack/react-router', () => ({
 describe('AppResult', () => {
   it('renders a copyable trace id when provided', () => {
     render(
-      <AppResult
-        status="error"
-        subTitle="保存失败"
-        traceId="trace-20260602"
-      />,
+      <AppResult status="error" subTitle="保存失败" traceId="trace-20260602" />,
     )
 
     expect(screen.getByText('保存失败')).toBeTruthy()

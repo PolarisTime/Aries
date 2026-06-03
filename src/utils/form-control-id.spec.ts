@@ -15,7 +15,9 @@ describe('buildFormControlId', () => {
   })
 
   it('replaces non-alphanumeric characters with hyphens', () => {
-    expect(buildFormControlId('user@name', 'first#name')).toBe('user-name-first-name')
+    expect(buildFormControlId('user@name', 'first#name')).toBe(
+      'user-name-first-name',
+    )
   })
 
   it('removes leading and trailing hyphens', () => {

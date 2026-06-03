@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { ModuleRecord } from '@/types/module-page'
 import {
   buildCustomerStatementOptions,
   buildStatementLinkOptions,
   findStatementRecordById,
 } from '@/module-system/module-adapter-finance-links'
+import type { ModuleRecord } from '@/types/module-page'
 
 describe('module-adapter-finance-links', () => {
   it('preserves snowflake ids as strings in statement options', () => {

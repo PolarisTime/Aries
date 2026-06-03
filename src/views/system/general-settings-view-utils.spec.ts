@@ -89,103 +89,175 @@ describe('general-settings-view-utils', () => {
 
   describe('isDefaultTaxRateSetting', () => {
     it('returns true for SYS_DEFAULT_TAX_RATE', () => {
-      expect(isDefaultTaxRateSetting(makeRecord({ settingCode: 'SYS_DEFAULT_TAX_RATE' }))).toBe(true)
+      expect(
+        isDefaultTaxRateSetting(
+          makeRecord({ settingCode: 'SYS_DEFAULT_TAX_RATE' }),
+        ),
+      ).toBe(true)
     })
 
     it('returns false for other codes', () => {
-      expect(isDefaultTaxRateSetting(makeRecord({ settingCode: 'OTHER' }))).toBe(false)
+      expect(
+        isDefaultTaxRateSetting(makeRecord({ settingCode: 'OTHER' })),
+      ).toBe(false)
     })
   })
 
   describe('isDefaultListPageSizeSetting', () => {
     it('returns true for matching code', () => {
-      expect(isDefaultListPageSizeSetting(makeRecord({ settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE' }))).toBe(true)
+      expect(
+        isDefaultListPageSizeSetting(
+          makeRecord({ settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE' }),
+        ),
+      ).toBe(true)
     })
 
     it('returns false for other codes', () => {
-      expect(isDefaultListPageSizeSetting(makeRecord({ settingCode: 'OTHER' }))).toBe(false)
+      expect(
+        isDefaultListPageSizeSetting(makeRecord({ settingCode: 'OTHER' })),
+      ).toBe(false)
     })
   })
 
   describe('isWatermarkContentSetting', () => {
     it('returns true for SYS_WATERMARK_CONTENT', () => {
-      expect(isWatermarkContentSetting(makeRecord({ settingCode: 'SYS_WATERMARK_CONTENT' }))).toBe(true)
+      expect(
+        isWatermarkContentSetting(
+          makeRecord({ settingCode: 'SYS_WATERMARK_CONTENT' }),
+        ),
+      ).toBe(true)
     })
 
     it('returns true for SYS_WATERMARK_COLOR', () => {
-      expect(isWatermarkContentSetting(makeRecord({ settingCode: 'SYS_WATERMARK_COLOR' }))).toBe(true)
+      expect(
+        isWatermarkContentSetting(
+          makeRecord({ settingCode: 'SYS_WATERMARK_COLOR' }),
+        ),
+      ).toBe(true)
     })
 
     it('returns false for other codes', () => {
-      expect(isWatermarkContentSetting(makeRecord({ settingCode: 'OTHER' }))).toBe(false)
+      expect(
+        isWatermarkContentSetting(makeRecord({ settingCode: 'OTHER' })),
+      ).toBe(false)
     })
   })
 
   describe('isWatermarkPropSetting', () => {
     it('returns true for SYS_WATERMARK_FONT_SIZE', () => {
-      expect(isWatermarkPropSetting(makeRecord({ settingCode: 'SYS_WATERMARK_FONT_SIZE' }))).toBe(true)
+      expect(
+        isWatermarkPropSetting(
+          makeRecord({ settingCode: 'SYS_WATERMARK_FONT_SIZE' }),
+        ),
+      ).toBe(true)
     })
 
     it('returns true for SYS_WATERMARK_ROTATE', () => {
-      expect(isWatermarkPropSetting(makeRecord({ settingCode: 'SYS_WATERMARK_ROTATE' }))).toBe(true)
+      expect(
+        isWatermarkPropSetting(
+          makeRecord({ settingCode: 'SYS_WATERMARK_ROTATE' }),
+        ),
+      ).toBe(true)
     })
 
     it('returns true for SYS_WATERMARK_DENSITY', () => {
-      expect(isWatermarkPropSetting(makeRecord({ settingCode: 'SYS_WATERMARK_DENSITY' }))).toBe(true)
+      expect(
+        isWatermarkPropSetting(
+          makeRecord({ settingCode: 'SYS_WATERMARK_DENSITY' }),
+        ),
+      ).toBe(true)
     })
 
     it('returns false for other codes', () => {
-      expect(isWatermarkPropSetting(makeRecord({ settingCode: 'OTHER' }))).toBe(false)
+      expect(isWatermarkPropSetting(makeRecord({ settingCode: 'OTHER' }))).toBe(
+        false,
+      )
     })
   })
 
   describe('isDetailedOperationLogSetting', () => {
     it('returns true for matching code', () => {
-      expect(isDetailedOperationLogSetting(makeRecord({ settingCode: 'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS' }))).toBe(true)
+      expect(
+        isDetailedOperationLogSetting(
+          makeRecord({
+            settingCode: 'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS',
+          }),
+        ),
+      ).toBe(true)
     })
 
     it('returns false for other codes', () => {
-      expect(isDetailedOperationLogSetting(makeRecord({ settingCode: 'OTHER' }))).toBe(false)
+      expect(
+        isDetailedOperationLogSetting(makeRecord({ settingCode: 'OTHER' })),
+      ).toBe(false)
     })
   })
 
   describe('isHideAuditedListRecordsSetting', () => {
     it('returns true for matching code', () => {
-      expect(isHideAuditedListRecordsSetting(makeRecord({ settingCode: 'UI_HIDE_AUDITED_LIST_RECORDS' }))).toBe(true)
+      expect(
+        isHideAuditedListRecordsSetting(
+          makeRecord({ settingCode: 'UI_HIDE_AUDITED_LIST_RECORDS' }),
+        ),
+      ).toBe(true)
     })
 
     it('returns false for other codes', () => {
-      expect(isHideAuditedListRecordsSetting(makeRecord({ settingCode: 'OTHER' }))).toBe(false)
+      expect(
+        isHideAuditedListRecordsSetting(makeRecord({ settingCode: 'OTHER' })),
+      ).toBe(false)
     })
   })
 
   describe('isNumericSetting', () => {
     it('returns true for tax rate', () => {
-      expect(isNumericSetting(makeRecord({ settingCode: 'SYS_DEFAULT_TAX_RATE' }))).toBe(true)
+      expect(
+        isNumericSetting(makeRecord({ settingCode: 'SYS_DEFAULT_TAX_RATE' })),
+      ).toBe(true)
     })
 
     it('returns true for max concurrent sessions', () => {
-      expect(isNumericSetting(makeRecord({ settingCode: 'SYS_MAX_CONCURRENT_SESSIONS' }))).toBe(true)
+      expect(
+        isNumericSetting(
+          makeRecord({ settingCode: 'SYS_MAX_CONCURRENT_SESSIONS' }),
+        ),
+      ).toBe(true)
     })
 
     it('returns true for default list page size', () => {
-      expect(isNumericSetting(makeRecord({ settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE' }))).toBe(true)
+      expect(
+        isNumericSetting(
+          makeRecord({ settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE' }),
+        ),
+      ).toBe(true)
     })
 
     it('returns false for other codes', () => {
-      expect(isDefaultListPageSizeSetting(makeRecord({ settingCode: 'OTHER' }))).toBe(false)
+      expect(
+        isDefaultListPageSizeSetting(makeRecord({ settingCode: 'OTHER' })),
+      ).toBe(false)
     })
 
     it('returns true for watermark prop', () => {
-      expect(isNumericSetting(makeRecord({ settingCode: 'SYS_WATERMARK_FONT_SIZE' }))).toBe(true)
+      expect(
+        isNumericSetting(
+          makeRecord({ settingCode: 'SYS_WATERMARK_FONT_SIZE' }),
+        ),
+      ).toBe(true)
     })
 
     it('returns true for watermark content', () => {
-      expect(isNumericSetting(makeRecord({ settingCode: 'SYS_WATERMARK_CONTENT' }))).toBe(true)
+      expect(
+        isNumericSetting(makeRecord({ settingCode: 'SYS_WATERMARK_CONTENT' })),
+      ).toBe(true)
     })
 
     it('returns false for toggle settings', () => {
-      expect(isNumericSetting(makeRecord({ settingCode: 'SYS_BATCH_NO_AUTO_GENERATE' }))).toBe(false)
+      expect(
+        isNumericSetting(
+          makeRecord({ settingCode: 'SYS_BATCH_NO_AUTO_GENERATE' }),
+        ),
+      ).toBe(false)
     })
   })
 
@@ -308,7 +380,9 @@ describe('general-settings-view-utils', () => {
     })
 
     it('returns 0 when no matching row', () => {
-      expect(resolveDefaultTaxRateValue([makeRecord({ settingCode: 'OTHER' })])).toBe(0)
+      expect(
+        resolveDefaultTaxRateValue([makeRecord({ settingCode: 'OTHER' })]),
+      ).toBe(0)
     })
 
     it('returns tax rate value when matching row exists', () => {

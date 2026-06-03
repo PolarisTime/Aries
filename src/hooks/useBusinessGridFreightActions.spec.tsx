@@ -1,12 +1,13 @@
-import { renderHook, act } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { listAllBusinessModuleRowsMock, messageInfoMock, modalInfoMock, tMock } = vi.hoisted(() => ({
-  listAllBusinessModuleRowsMock: vi.fn(),
-  messageInfoMock: vi.fn(),
-  modalInfoMock: vi.fn(),
-  tMock: vi.fn((key: string) => key),
-}))
+const { listAllBusinessModuleRowsMock, messageInfoMock, modalInfoMock, tMock } =
+  vi.hoisted(() => ({
+    listAllBusinessModuleRowsMock: vi.fn(),
+    messageInfoMock: vi.fn(),
+    modalInfoMock: vi.fn(),
+    tMock: vi.fn((key: string) => key),
+  }))
 
 vi.mock('@/api/business', () => ({
   listAllBusinessModuleRows: listAllBusinessModuleRowsMock,
@@ -38,19 +39,25 @@ describe('useBusinessGridFreightActions', () => {
   })
 
   it('returns openFreightSummary function', () => {
-    const { result } = renderHook(() => useBusinessGridFreightActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridFreightActions(defaultProps),
+    )
     expect(result.current.openFreightSummary).toBeDefined()
   })
 
   it('shows info message when no freight data', async () => {
     listAllBusinessModuleRowsMock.mockResolvedValue([])
 
-    const { result } = renderHook(() => useBusinessGridFreightActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridFreightActions(defaultProps),
+    )
     await act(async () => {
       await result.current.openFreightSummary()
     })
 
-    expect(messageInfoMock).toHaveBeenCalledWith('hooks.freightActions.noFreightData')
+    expect(messageInfoMock).toHaveBeenCalledWith(
+      'hooks.freightActions.noFreightData',
+    )
   })
 
   it('shows modal with freight summary when data exists', async () => {
@@ -60,7 +67,9 @@ describe('useBusinessGridFreightActions', () => {
     ]
     listAllBusinessModuleRowsMock.mockResolvedValue(rows)
 
-    const { result } = renderHook(() => useBusinessGridFreightActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridFreightActions(defaultProps),
+    )
     await act(async () => {
       await result.current.openFreightSummary()
     })
@@ -69,7 +78,7 @@ describe('useBusinessGridFreightActions', () => {
       expect.objectContaining({
         title: 'hooks.freightActions.freightSummaryTitle',
         width: 720,
-      })
+      }),
     )
   })
 
@@ -80,7 +89,9 @@ describe('useBusinessGridFreightActions', () => {
     ]
     listAllBusinessModuleRowsMock.mockResolvedValue(rows)
 
-    const { result } = renderHook(() => useBusinessGridFreightActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridFreightActions(defaultProps),
+    )
     await act(async () => {
       await result.current.openFreightSummary()
     })
@@ -97,7 +108,9 @@ describe('useBusinessGridFreightActions', () => {
     ]
     listAllBusinessModuleRowsMock.mockResolvedValue(rows)
 
-    const { result } = renderHook(() => useBusinessGridFreightActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridFreightActions(defaultProps),
+    )
     await act(async () => {
       await result.current.openFreightSummary()
     })
@@ -113,7 +126,9 @@ describe('useBusinessGridFreightActions', () => {
     ]
     listAllBusinessModuleRowsMock.mockResolvedValue(rows)
 
-    const { result } = renderHook(() => useBusinessGridFreightActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridFreightActions(defaultProps),
+    )
     await act(async () => {
       await result.current.openFreightSummary()
     })
@@ -128,7 +143,9 @@ describe('useBusinessGridFreightActions', () => {
     ]
     listAllBusinessModuleRowsMock.mockResolvedValue(rows)
 
-    const { result } = renderHook(() => useBusinessGridFreightActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridFreightActions(defaultProps),
+    )
     await act(async () => {
       await result.current.openFreightSummary()
     })

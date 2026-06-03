@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  computeTableBodyScrollY,
-  parseTableColumnWidth,
-  computeTableScrollX,
-  computeTableAvailableHeight,
   buildTableScrollConfig,
+  computeTableAvailableHeight,
+  computeTableBodyScrollY,
+  computeTableScrollX,
+  parseTableColumnWidth,
 } from './business-grid-table-utils'
 
 describe('computeTableBodyScrollY', () => {
@@ -96,13 +96,15 @@ describe('computeTableAvailableHeight', () => {
 
 describe('buildTableScrollConfig', () => {
   it('returns undefined for empty data', () => {
-    expect(buildTableScrollConfig({
-      dataLength: 0,
-      isVirtual: false,
-      scrollX: undefined,
-      scrollY: 400,
-      shellWidth: 800,
-    })).toBeUndefined()
+    expect(
+      buildTableScrollConfig({
+        dataLength: 0,
+        isVirtual: false,
+        scrollX: undefined,
+        scrollY: 400,
+        shellWidth: 800,
+      }),
+    ).toBeUndefined()
   })
 
   it('returns config with x for virtual scroll', () => {

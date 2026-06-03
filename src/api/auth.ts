@@ -10,11 +10,11 @@ import type {
   LoginResult,
 } from '@/types/auth'
 import { getApiMessage } from '@/utils/api-messages'
-import { authHttp, http } from './client'
 import {
   isRefreshTokenReuseConflict,
   waitForRefreshTokenReuseRetry,
 } from './auth/auth-state'
+import { authHttp, http } from './client'
 
 export type HealthCheck = {
   status: string

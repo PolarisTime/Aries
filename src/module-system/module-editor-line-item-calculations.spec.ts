@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { recalculateEditorLineItem } from './module-editor-line-item-calculations'
 import type { ModuleLineItem } from '@/types/module-page'
+import { recalculateEditorLineItem } from './module-editor-line-item-calculations'
 
 function makeItem(overrides: Partial<ModuleLineItem> = {}): ModuleLineItem {
   return {

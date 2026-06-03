@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { HTTP_STATUS } from '@/constants/http-status'
-import { ERROR_CODE } from '@/constants/error-codes'
 
 const getTokenMock = vi.hoisted(() => vi.fn())
 const isApiKeyTokenMock = vi.hoisted(() => vi.fn())
@@ -135,7 +133,7 @@ describe('auth-interceptor', () => {
       const http = setupHttp()
       getTokenMock.mockReturnValue('my-jwt')
       isExactAuthEndpointMock.mockImplementation(
-        (url: string, endpoint: string) => endpoint === '/auth/login',
+        (_url: string, endpoint: string) => endpoint === '/auth/login',
       )
 
       const config = await http.interceptors.request.handlers[0].fulfilled({
@@ -221,7 +219,7 @@ describe('auth-interceptor', () => {
       refreshAccessTokenMock.mockResolvedValue(undefined)
       // Prevent retry call from causing unhandled rejection
       const retryResult = Promise.resolve({ data: {} })
-      const retryFn = vi.fn().mockReturnValue(retryResult)
+      const _retryFn = vi.fn().mockReturnValue(retryResult)
 
       const config = { url: '/api/data', _retry: false, headers: {} }
       const error = {

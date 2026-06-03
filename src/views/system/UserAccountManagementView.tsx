@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { deleteUserAccount } from '@/api/user-accounts'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useRequestError } from '@/hooks/useRequestError'
-import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { UserAccountRecord } from '@/types/user-account'
 import { message, modal } from '@/utils/antd-app'
@@ -113,7 +113,9 @@ export function UserAccountManagementView({
     mutationFn: deleteUserAccount,
     onSuccess: () => {
       message.success(t('common.deleteSuccess'))
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.userAccountBase })
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.userAccountBase,
+      })
     },
     onError: (error: Error) => showError(error, t('api.deleteFailed')),
   })

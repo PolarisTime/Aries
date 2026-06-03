@@ -19,7 +19,7 @@ vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
 }))
 
-import { getDatabaseStatus, getDatabaseMonitoring } from './database-admin'
+import { getDatabaseMonitoring, getDatabaseStatus } from './database-admin'
 
 describe('database-admin', () => {
   beforeEach(() => {
@@ -77,7 +77,9 @@ describe('database-admin', () => {
       })
       httpGetMock.mockResolvedValue({ code: -1 })
 
-      await expect(getDatabaseStatus()).rejects.toThrow('loadDatabaseStatusFailed')
+      await expect(getDatabaseStatus()).rejects.toThrow(
+        'loadDatabaseStatusFailed',
+      )
     })
   })
 
@@ -88,13 +90,26 @@ describe('database-admin', () => {
         data: {
           available: true,
           status: 'ok',
-          overview: { totalConnections: 100, activeConnections: 5, cacheHitRate: 0.95, databaseSize: '1 GB', uptimeSeconds: 86400 },
+          overview: {
+            totalConnections: 100,
+            activeConnections: 5,
+            cacheHitRate: 0.95,
+            databaseSize: '1 GB',
+            uptimeSeconds: 86400,
+          },
           activity: { activeSessions: 3 },
           tuning: { maxConnections: 200 },
           tableHealth: [],
           indexHealth: [],
           queryStats: { available: true, status: 'ok', items: [] },
-          redis: { status: 'ok', memory: {}, clients: {}, throughput: {}, keyspace: {}, persistence: {} },
+          redis: {
+            status: 'ok',
+            memory: {},
+            clients: {},
+            throughput: {},
+            keyspace: {},
+            persistence: {},
+          },
         },
       }
       httpGetMock.mockResolvedValue(mockData)

@@ -18,7 +18,10 @@ vi.mock('@/constants/endpoints', () => ({
   },
 }))
 
-import { fetchMaterialCategories, reloadMaterialCategories } from './material-categories'
+import {
+  fetchMaterialCategories,
+  reloadMaterialCategories,
+} from './material-categories'
 
 describe('material-categories', () => {
   beforeEach(() => {

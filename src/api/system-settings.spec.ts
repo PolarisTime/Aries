@@ -25,13 +25,13 @@ vi.mock('@/api/client', () => ({
 }))
 
 import {
+  DISPLAY_SWITCH_CODES,
+  isDisplaySwitchEnabled,
+  listClientSettings,
+  listDisplaySwitches,
   listSystemSettings,
   saveSystemSetting,
   updateSystemUploadRule,
-  listDisplaySwitches,
-  listClientSettings,
-  isDisplaySwitchEnabled,
-  DISPLAY_SWITCH_CODES,
 } from './system-settings'
 
 describe('system-settings', () => {

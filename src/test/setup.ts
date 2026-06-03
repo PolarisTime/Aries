@@ -32,6 +32,7 @@ import '@testing-library/jest-dom/vitest'
 // Initialize i18next for business-pages tests that call i18next.t() at module level
 import i18n from 'i18next'
 import { zhCN } from '@/locales/zh-CN'
+
 i18n.init({
   resources: { 'zh-CN': { translation: zhCN } },
   lng: 'zh-CN',

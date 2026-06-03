@@ -26,7 +26,13 @@ vi.mock('@/views/system/DatabaseMonitoringPanel', () => ({
 }))
 
 vi.mock('@/views/system/DatabaseStatusOverview', () => ({
-  DatabaseStatusOverview: ({ dbStatus, loading }: { dbStatus: unknown; loading: boolean }) => (
+  DatabaseStatusOverview: ({
+    dbStatus,
+    loading,
+  }: {
+    dbStatus: unknown
+    loading: boolean
+  }) => (
     <div data-testid="status-overview">
       {loading ? 'Loading...' : dbStatus ? 'Loaded' : 'No data'}
     </div>
@@ -65,7 +71,9 @@ describe('DatabaseBackupView', () => {
 
   it('renders refresh button', () => {
     render(<DatabaseBackupView />)
-    expect(screen.getByText('system.database.refreshStatus')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.database.refreshStatus'),
+    ).toBeInTheDocument()
   })
 
   it('renders the status overview component', () => {

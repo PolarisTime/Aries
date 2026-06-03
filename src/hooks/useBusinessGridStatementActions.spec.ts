@@ -1,10 +1,18 @@
-import { renderHook, act } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { useQueryMock, generateBusinessPrimaryNoMock, getBusinessModuleDetailMock,
-  saveBusinessModuleMock, listAllStatementCandidatesMock, isDisplaySwitchEnabledMock,
-  listDisplaySwitchesMock, buildCustomerStatementDraftDataMock,
-  buildSupplierStatementDraftDataMock, buildFreightStatementDraftDataMock } = vi.hoisted(() => ({
+const {
+  useQueryMock,
+  generateBusinessPrimaryNoMock,
+  getBusinessModuleDetailMock,
+  saveBusinessModuleMock,
+  listAllStatementCandidatesMock,
+  isDisplaySwitchEnabledMock,
+  listDisplaySwitchesMock,
+  buildCustomerStatementDraftDataMock,
+  buildSupplierStatementDraftDataMock,
+  buildFreightStatementDraftDataMock,
+} = vi.hoisted(() => ({
   useQueryMock: vi.fn().mockReturnValue({ data: [] }),
   generateBusinessPrimaryNoMock: vi.fn().mockResolvedValue('NO-001'),
   getBusinessModuleDetailMock: vi.fn(),
@@ -63,7 +71,9 @@ describe('useBusinessGridStatementActions', () => {
   })
 
   it('returns handleStatementGenerate function', () => {
-    const { result } = renderHook(() => useBusinessGridStatementActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridStatementActions(defaultProps),
+    )
     expect(result.current.handleStatementGenerate).toBeDefined()
   })
 
@@ -75,17 +85,22 @@ describe('useBusinessGridStatementActions', () => {
     listAllStatementCandidatesMock.mockResolvedValue(candidates)
     getBusinessModuleDetailMock.mockResolvedValue({ data: {} })
 
-    const { result } = renderHook(() => useBusinessGridStatementActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridStatementActions(defaultProps),
+    )
     await act(async () => {
       await result.current.handleStatementGenerate(
         'supplier',
         'Supplier A',
         '2024-01-01',
-        '2024-01-31'
+        '2024-01-31',
       )
     })
 
-    expect(saveBusinessModuleMock).toHaveBeenCalledWith('supplier-statement', expect.any(Object))
+    expect(saveBusinessModuleMock).toHaveBeenCalledWith(
+      'supplier-statement',
+      expect.any(Object),
+    )
     expect(defaultProps.refreshModuleQueries).toHaveBeenCalled()
   })
 
@@ -96,17 +111,22 @@ describe('useBusinessGridStatementActions', () => {
     listAllStatementCandidatesMock.mockResolvedValue(candidates)
     getBusinessModuleDetailMock.mockResolvedValue({ data: {} })
 
-    const { result } = renderHook(() => useBusinessGridStatementActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridStatementActions(defaultProps),
+    )
     await act(async () => {
       await result.current.handleStatementGenerate(
         'customer',
         'Customer A',
         '2024-01-01',
-        '2024-01-31'
+        '2024-01-31',
       )
     })
 
-    expect(saveBusinessModuleMock).toHaveBeenCalledWith('customer-statement', expect.any(Object))
+    expect(saveBusinessModuleMock).toHaveBeenCalledWith(
+      'customer-statement',
+      expect.any(Object),
+    )
   })
 
   it('generates freight statement', async () => {
@@ -116,32 +136,39 @@ describe('useBusinessGridStatementActions', () => {
     listAllStatementCandidatesMock.mockResolvedValue(candidates)
     getBusinessModuleDetailMock.mockResolvedValue({ data: {} })
 
-    const { result } = renderHook(() => useBusinessGridStatementActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridStatementActions(defaultProps),
+    )
     await act(async () => {
       await result.current.handleStatementGenerate(
         'freight',
         'Carrier A',
         '2024-01-01',
-        '2024-01-31'
+        '2024-01-31',
       )
     })
 
-    expect(saveBusinessModuleMock).toHaveBeenCalledWith('freight-statement', expect.any(Object))
+    expect(saveBusinessModuleMock).toHaveBeenCalledWith(
+      'freight-statement',
+      expect.any(Object),
+    )
   })
 
   it('throws error when no candidate documents found', async () => {
     listAllStatementCandidatesMock.mockResolvedValue([])
 
-    const { result } = renderHook(() => useBusinessGridStatementActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridStatementActions(defaultProps),
+    )
     await expect(
       act(async () => {
         await result.current.handleStatementGenerate(
           'supplier',
           'Supplier A',
           '2024-01-01',
-          '2024-01-31'
+          '2024-01-31',
         )
-      })
+      }),
     ).rejects.toThrow()
   })
 
@@ -153,13 +180,15 @@ describe('useBusinessGridStatementActions', () => {
     listAllStatementCandidatesMock.mockResolvedValue(candidates)
     getBusinessModuleDetailMock.mockResolvedValue({ data: {} })
 
-    const { result } = renderHook(() => useBusinessGridStatementActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridStatementActions(defaultProps),
+    )
     await act(async () => {
       await result.current.handleStatementGenerate(
         'supplier',
         'Supplier A',
         '2024-01-01',
-        '2024-01-31'
+        '2024-01-31',
       )
     })
 
@@ -174,13 +203,15 @@ describe('useBusinessGridStatementActions', () => {
     listAllStatementCandidatesMock.mockResolvedValue(candidates)
     getBusinessModuleDetailMock.mockResolvedValue({ data: {} })
 
-    const { result } = renderHook(() => useBusinessGridStatementActions(defaultProps))
+    const { result } = renderHook(() =>
+      useBusinessGridStatementActions(defaultProps),
+    )
     await act(async () => {
       await result.current.handleStatementGenerate(
         'supplier',
         'Supplier A',
         '2024-01-01',
-        '2024-01-31'
+        '2024-01-31',
       )
     })
 

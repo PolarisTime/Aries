@@ -14,9 +14,7 @@ const data = [
 
 describe('useDataTable', () => {
   it('creates table instance with data and columns', () => {
-    const { result } = renderHook(() =>
-      useDataTable({ data, columns }),
-    )
+    const { result } = renderHook(() => useDataTable({ data, columns }))
     expect(result.current.table).toBeDefined()
     expect(result.current.table.getAllColumns()).toHaveLength(2)
     expect(result.current.currentPage).toBe(1)
@@ -31,9 +29,7 @@ describe('useDataTable', () => {
   })
 
   it('supports setCurrentPage', () => {
-    const { result } = renderHook(() =>
-      useDataTable({ data, columns }),
-    )
+    const { result } = renderHook(() => useDataTable({ data, columns }))
     act(() => {
       result.current.setCurrentPage(3)
     })
@@ -42,9 +38,7 @@ describe('useDataTable', () => {
   })
 
   it('supports setCurrentPage with 0', () => {
-    const { result } = renderHook(() =>
-      useDataTable({ data, columns }),
-    )
+    const { result } = renderHook(() => useDataTable({ data, columns }))
     act(() => {
       result.current.setCurrentPage(0)
     })
@@ -128,10 +122,7 @@ describe('useDataTable', () => {
         onColumnOrderChange,
       }),
     )
-    expect(result.current.table.getState().columnOrder).toEqual([
-      'age',
-      'name',
-    ])
+    expect(result.current.table.getState().columnOrder).toEqual(['age', 'name'])
   })
 
   it('handles expanded state', () => {
@@ -154,9 +145,7 @@ describe('useDataTable', () => {
     const { result } = renderHook(() =>
       useDataTable({ data, columns, getRowId }),
     )
-    expect(
-      result.current.table.getRowModel().rows[0]?.id,
-    ).toBe('Alice')
+    expect(result.current.table.getRowModel().rows[0]?.id).toBe('Alice')
   })
 
   it('returns total from options', () => {
@@ -167,16 +156,17 @@ describe('useDataTable', () => {
   })
 
   it('defaults total to 0', () => {
-    const { result } = renderHook(() =>
-      useDataTable({ data, columns }),
-    )
+    const { result } = renderHook(() => useDataTable({ data, columns }))
     expect(result.current.total).toBe(0)
   })
 
   it('supports client-side pagination', () => {
     const { result } = renderHook(() =>
       useDataTable({
-        data: Array.from({ length: 100 }, (_, i) => ({ name: `User${i}`, age: 20 + i })),
+        data: Array.from({ length: 100 }, (_, i) => ({
+          name: `User${i}`,
+          age: 20 + i,
+        })),
         columns,
         manualPagination: false,
         initialPageSize: 10,

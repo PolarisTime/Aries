@@ -1,51 +1,119 @@
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
-import { asString, asNumber, asArray, asId, safe } from '../type-narrowing'
+import { asArray, asId, asNumber, asString, safe } from '../type-narrowing'
 
 describe('asString', () => {
-  it('returns string as-is', () => { expect(asString('hello')).toBe('hello') })
-  it('converts finite number', () => { expect(asString(42)).toBe('42') })
-  it('converts Infinity to empty', () => { expect(asString(Infinity)).toBe('') })
-  it('converts NaN to empty', () => { expect(asString(NaN)).toBe('') })
-  it('converts boolean', () => { expect(asString(true)).toBe('true') })
-  it('converts bigint', () => { expect(asString(42n)).toBe('42') })
-  it('returns empty for object', () => { expect(asString({})).toBe('') })
-  it('returns empty for null', () => { expect(asString(null)).toBe('') })
-  it('returns empty for undefined', () => { expect(asString(undefined)).toBe('') })
+  it('returns string as-is', () => {
+    expect(asString('hello')).toBe('hello')
+  })
+  it('converts finite number', () => {
+    expect(asString(42)).toBe('42')
+  })
+  it('converts Infinity to empty', () => {
+    expect(asString(Infinity)).toBe('')
+  })
+  it('converts NaN to empty', () => {
+    expect(asString(NaN)).toBe('')
+  })
+  it('converts boolean', () => {
+    expect(asString(true)).toBe('true')
+  })
+  it('converts bigint', () => {
+    expect(asString(42n)).toBe('42')
+  })
+  it('returns empty for object', () => {
+    expect(asString({})).toBe('')
+  })
+  it('returns empty for null', () => {
+    expect(asString(null)).toBe('')
+  })
+  it('returns empty for undefined', () => {
+    expect(asString(undefined)).toBe('')
+  })
 })
 
 describe('asNumber', () => {
-  it('returns finite number as-is', () => { expect(asNumber(42)).toBe(42) })
-  it('returns 0 for NaN', () => { expect(asNumber(NaN)).toBe(0) })
-  it('returns 0 for Infinity', () => { expect(asNumber(Infinity)).toBe(0) })
-  it('parses valid string', () => { expect(asNumber('42')).toBe(42) })
-  it('returns 0 for invalid string', () => { expect(asNumber('abc')).toBe(0) })
-  it('converts bigint', () => { expect(asNumber(42n)).toBe(42) })
-  it('converts bigint overflow', () => { expect(asNumber(BigInt('9007199254740993'))).toBe(9007199254740993) })
-  it('returns 0 for object', () => { expect(asNumber({})).toBe(0) })
-  it('returns 0 for boolean', () => { expect(asNumber(true)).toBe(0) })
+  it('returns finite number as-is', () => {
+    expect(asNumber(42)).toBe(42)
+  })
+  it('returns 0 for NaN', () => {
+    expect(asNumber(NaN)).toBe(0)
+  })
+  it('returns 0 for Infinity', () => {
+    expect(asNumber(Infinity)).toBe(0)
+  })
+  it('parses valid string', () => {
+    expect(asNumber('42')).toBe(42)
+  })
+  it('returns 0 for invalid string', () => {
+    expect(asNumber('abc')).toBe(0)
+  })
+  it('converts bigint', () => {
+    expect(asNumber(42n)).toBe(42)
+  })
+  it('converts bigint overflow', () => {
+    expect(asNumber(BigInt('9007199254740993'))).toBe(9007199254740993)
+  })
+  it('returns 0 for object', () => {
+    expect(asNumber({})).toBe(0)
+  })
+  it('returns 0 for boolean', () => {
+    expect(asNumber(true)).toBe(0)
+  })
 })
 
 describe('asArray', () => {
-  it('returns array as-is', () => { expect(asArray([1, 2])).toEqual([1, 2]) })
-  it('returns empty for non-array', () => { expect(asArray(null)).toEqual([]) })
-  it('returns empty for object', () => { expect(asArray({})).toEqual([]) })
-  it('returns empty for undefined', () => { expect(asArray(undefined)).toEqual([]) })
+  it('returns array as-is', () => {
+    expect(asArray([1, 2])).toEqual([1, 2])
+  })
+  it('returns empty for non-array', () => {
+    expect(asArray(null)).toEqual([])
+  })
+  it('returns empty for object', () => {
+    expect(asArray({})).toEqual([])
+  })
+  it('returns empty for undefined', () => {
+    expect(asArray(undefined)).toEqual([])
+  })
 })
 
 describe('asId', () => {
-  it('converts positive integer number', () => { expect(asId(42)).toBe('42') })
-  it('returns empty for zero number', () => { expect(asId(0)).toBe('') })
-  it('returns empty for negative number', () => { expect(asId(-1)).toBe('') })
-  it('returns empty for non-integer number', () => { expect(asId(1.5)).toBe('') })
-  it('converts positive bigint', () => { expect(asId(42n)).toBe('42') })
-  it('returns empty for zero bigint', () => { expect(asId(0n)).toBe('') })
-  it('converts valid numeric string', () => { expect(asId('42')).toBe('42') })
-  it('trims valid numeric string', () => { expect(asId(' 42 ')).toBe('42') })
-  it('returns empty for "0" string', () => { expect(asId('0')).toBe('') })
-  it('returns empty for non-numeric string', () => { expect(asId('abc')).toBe('') })
-  it('returns empty for null', () => { expect(asId(null)).toBe('') })
-  it('returns empty for boolean', () => { expect(asId(true)).toBe('') })
+  it('converts positive integer number', () => {
+    expect(asId(42)).toBe('42')
+  })
+  it('returns empty for zero number', () => {
+    expect(asId(0)).toBe('')
+  })
+  it('returns empty for negative number', () => {
+    expect(asId(-1)).toBe('')
+  })
+  it('returns empty for non-integer number', () => {
+    expect(asId(1.5)).toBe('')
+  })
+  it('converts positive bigint', () => {
+    expect(asId(42n)).toBe('42')
+  })
+  it('returns empty for zero bigint', () => {
+    expect(asId(0n)).toBe('')
+  })
+  it('converts valid numeric string', () => {
+    expect(asId('42')).toBe('42')
+  })
+  it('trims valid numeric string', () => {
+    expect(asId(' 42 ')).toBe('42')
+  })
+  it('returns empty for "0" string', () => {
+    expect(asId('0')).toBe('')
+  })
+  it('returns empty for non-numeric string', () => {
+    expect(asId('abc')).toBe('')
+  })
+  it('returns empty for null', () => {
+    expect(asId(null)).toBe('')
+  })
+  it('returns empty for boolean', () => {
+    expect(asId(true)).toBe('')
+  })
 })
 
 describe('safe', () => {
@@ -118,8 +186,12 @@ describe('safe', () => {
   it('get parses complex Zod schema', () => {
     const schema = z.object({ name: z.string(), age: z.number() })
     const valid = { name: 'Alice', age: 30 }
-    expect(safe({ data: valid }).get('data', schema, { name: '', age: 0 })).toEqual(valid)
-    expect(safe({ data: 'invalid' }).get('data', schema, { name: '', age: 0 })).toEqual({ name: '', age: 0 })
+    expect(
+      safe({ data: valid }).get('data', schema, { name: '', age: 0 }),
+    ).toEqual(valid)
+    expect(
+      safe({ data: 'invalid' }).get('data', schema, { name: '', age: 0 }),
+    ).toEqual({ name: '', age: 0 })
   })
 
   it('get parses string schema', () => {

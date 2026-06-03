@@ -29,13 +29,27 @@ export function CompanySubjectCard({
         </span>
       }
     >
-      <Form.Item name="companyName" label={t('system.companySubject.companyName')} required>
-        <Input disabled placeholder={t('system.companySubject.companyNamePlaceholder')} />
+      <Form.Item
+        name="companyName"
+        label={t('system.companySubject.companyName')}
+        required
+      >
+        <Input
+          disabled
+          placeholder={t('system.companySubject.companyNamePlaceholder')}
+        />
       </Form.Item>
       <Form.Item name="taxNo" label={t('system.companySubject.taxNo')} required>
-        <Input disabled placeholder={t('system.companySubject.companyNamePlaceholder')} />
+        <Input
+          disabled
+          placeholder={t('system.companySubject.companyNamePlaceholder')}
+        />
       </Form.Item>
-      <Form.Item name="status" label={t('system.companySubject.status')} required>
+      <Form.Item
+        name="status"
+        label={t('system.companySubject.status')}
+        required
+      >
         <Select
           disabled={!canSave}
           options={[

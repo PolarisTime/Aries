@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import type { ModuleLineItem } from '@/types/module-page'
 import {
-  buildSupplierStatementDraftData,
   buildCustomerStatementDraftData,
   buildFreightStatementDraftData,
+  buildSupplierStatementDraftData,
 } from './module-adapter-statement-drafts'
-import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 
 const cloneLineItems = (value: unknown) =>
   structuredClone(value) as ModuleLineItem[]
@@ -151,9 +151,7 @@ describe('buildCustomerStatementDraftData', () => {
       customerName: '客户A',
       projectName: '项目X',
       totalAmount: 3000,
-      items: [
-        { id: 'item-1', amount: 3000, weightTon: 30 },
-      ],
+      items: [{ id: 'item-1', amount: 3000, weightTon: 30 }],
     },
   ] as any[]
 
@@ -229,9 +227,7 @@ describe('buildFreightStatementDraftData', () => {
       carrierName: '物流商A',
       totalWeight: 50,
       totalFreight: 500,
-      items: [
-        { id: 'item-1', weightTon: 50, amount: 500 },
-      ],
+      items: [{ id: 'item-1', weightTon: 50, amount: 500 }],
     },
   ] as any[]
 

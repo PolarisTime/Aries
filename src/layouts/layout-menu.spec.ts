@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { buildVisibleLayoutMenuEntries } from '@/layouts/layout-menu'
-import type { AppPageDefinition } from '@/config/page-registry'
-import type { MenuGroupKey, MenuGroupDefinition, AppIconKey } from '@/config/navigation-registry'
 import type { MenuNode } from '@/api/system-menus'
+import type {
+  AppIconKey,
+  MenuGroupDefinition,
+  MenuGroupKey,
+} from '@/config/navigation-registry'
+import type { AppPageDefinition } from '@/config/page-registry'
+import { buildVisibleLayoutMenuEntries } from '@/layouts/layout-menu'
 
 const sampleEntries: AppPageDefinition[] = [
   {
@@ -32,7 +36,11 @@ const sampleEntries: AppPageDefinition[] = [
 ]
 
 const menuGroupDefinitions: Record<MenuGroupKey, MenuGroupDefinition> = {
-  basic: { key: 'basic', title: '基础数据', icon: 'DatabaseOutlined' as AppIconKey },
+  basic: {
+    key: 'basic',
+    title: '基础数据',
+    icon: 'DatabaseOutlined' as AppIconKey,
+  },
 }
 
 const defaultOptions = {

@@ -11,7 +11,9 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/col', () => ({
@@ -36,7 +38,15 @@ vi.mock('antd/es/date-picker', () => {
 
 vi.mock('antd/es/form', () => {
   const Form = ({ children, onFinish, ...props }: any) => (
-    <form onSubmit={(e) => { e.preventDefault(); onFinish?.() }} {...props}>{children}</form>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        onFinish?.()
+      }}
+      {...props}
+    >
+      {children}
+    </form>
   )
   Form.Item = ({ children, ...props }: any) => <div {...props}>{children}</div>
   return { default: Form }
@@ -59,7 +69,11 @@ vi.mock('antd/es/row', () => ({
 
 vi.mock('antd/es/select', () => ({
   default: ({ onChange, ...props }: any) => (
-    <select data-testid="select" onChange={(e) => onChange?.(e.target.value)} {...props} />
+    <select
+      data-testid="select"
+      onChange={(e) => onChange?.(e.target.value)}
+      {...props}
+    />
   ),
 }))
 
@@ -68,8 +82,10 @@ vi.mock('antd/es/space', () => ({
 }))
 
 vi.mock('dayjs', () => {
-  const dayjs = (v?: any) => ({
-    isValid: () => true, format: () => '', valueOf: () => 0,
+  const dayjs = (_v?: any) => ({
+    isValid: () => true,
+    format: () => '',
+    valueOf: () => 0,
   })
   dayjs.isDayjs = () => false
   return { default: dayjs }
@@ -100,8 +116,14 @@ import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterTool
 describe('ModuleFilterToolbar', () => {
   const defaultProps = {
     config: {
-      key: 'test', title: 'Test', kicker: '', description: '',
-      filters: [], columns: [], detailFields: [], data: [],
+      key: 'test',
+      title: 'Test',
+      kicker: '',
+      description: '',
+      filters: [],
+      columns: [],
+      detailFields: [],
+      data: [],
       buildOverview: () => [],
     },
     filters: {},
@@ -129,7 +151,12 @@ describe('ModuleFilterToolbar', () => {
     const config = {
       ...defaultProps.config,
       filters: [
-        { key: 'status', label: 'Status', type: 'select' as const, options: [{ label: 'Active', value: 'active' }] },
+        {
+          key: 'status',
+          label: 'Status',
+          type: 'select' as const,
+          options: [{ label: 'Active', value: 'active' }],
+        },
       ],
     }
     render(<ModuleFilterToolbar {...defaultProps} config={config} />)
@@ -150,9 +177,7 @@ describe('ModuleFilterToolbar', () => {
   it('renders input filter field', () => {
     const config = {
       ...defaultProps.config,
-      filters: [
-        { key: 'name', label: 'Name', type: 'input' as const },
-      ],
+      filters: [{ key: 'name', label: 'Name', type: 'input' as const }],
     }
     render(<ModuleFilterToolbar {...defaultProps} config={config} />)
     expect(screen.getAllByTestId('input').length).toBeGreaterThanOrEqual(1)
@@ -213,7 +238,12 @@ describe('ModuleFilterToolbar', () => {
     const config = {
       ...defaultProps.config,
       filters: [
-        { key: 'status', label: 'Status', type: 'select' as const, options: [] },
+        {
+          key: 'status',
+          label: 'Status',
+          type: 'select' as const,
+          options: [],
+        },
         { key: 'name', label: 'Name', type: 'input' as const },
         { key: 'dateRange', label: 'Date Range', type: 'dateRange' as const },
       ],
@@ -228,11 +258,22 @@ describe('ModuleFilterToolbar', () => {
     const config = {
       ...defaultProps.config,
       filters: [
-        { key: 'status', label: 'Status', type: 'select' as const, options: [] },
+        {
+          key: 'status',
+          label: 'Status',
+          type: 'select' as const,
+          options: [],
+        },
       ],
     }
     const filters = { status: 'active' }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} filters={filters} />)
+    render(
+      <ModuleFilterToolbar
+        {...defaultProps}
+        config={config}
+        filters={filters}
+      />,
+    )
     expect(screen.getByTestId('select')).toBeTruthy()
   })
 
@@ -244,7 +285,13 @@ describe('ModuleFilterToolbar', () => {
       ],
     }
     const filters = { dateRange: ['2024-01-01', '2024-01-31'] }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} filters={filters} />)
+    render(
+      <ModuleFilterToolbar
+        {...defaultProps}
+        config={config}
+        filters={filters}
+      />,
+    )
     expect(screen.getByTestId('range-picker')).toBeTruthy()
   })
 
@@ -256,7 +303,13 @@ describe('ModuleFilterToolbar', () => {
       ],
     }
     const filters = { dateRange: [] }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} filters={filters} />)
+    render(
+      <ModuleFilterToolbar
+        {...defaultProps}
+        config={config}
+        filters={filters}
+      />,
+    )
     expect(screen.getByTestId('range-picker')).toBeTruthy()
   })
 
@@ -264,7 +317,13 @@ describe('ModuleFilterToolbar', () => {
     const config = {
       ...defaultProps.config,
       filters: [
-        { key: 'status', label: 'Status', type: 'select' as const, options: [], placeholder: 'Select status' },
+        {
+          key: 'status',
+          label: 'Status',
+          type: 'select' as const,
+          options: [],
+          placeholder: 'Select status',
+        },
       ],
     }
     render(<ModuleFilterToolbar {...defaultProps} config={config} />)
@@ -275,7 +334,12 @@ describe('ModuleFilterToolbar', () => {
     const config = {
       ...defaultProps.config,
       filters: [
-        { key: 'name', label: 'Name', type: 'input' as const, placeholder: 'Enter name' },
+        {
+          key: 'name',
+          label: 'Name',
+          type: 'input' as const,
+          placeholder: 'Enter name',
+        },
       ],
     }
     render(<ModuleFilterToolbar {...defaultProps} config={config} />)
@@ -298,11 +362,22 @@ describe('ModuleFilterToolbar', () => {
     const config = {
       ...defaultProps.config,
       filters: [
-        { key: 'status', label: 'Status', type: 'select' as const, options: [] },
+        {
+          key: 'status',
+          label: 'Status',
+          type: 'select' as const,
+          options: [],
+        },
       ],
     }
     const filters = { status: 'active' }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} filters={filters} />)
+    render(
+      <ModuleFilterToolbar
+        {...defaultProps}
+        config={config}
+        filters={filters}
+      />,
+    )
     expect(screen.getByTestId('select')).toBeTruthy()
   })
 
@@ -310,11 +385,22 @@ describe('ModuleFilterToolbar', () => {
     const config = {
       ...defaultProps.config,
       filters: [
-        { key: 'status', label: 'Status', type: 'select' as const, options: [] },
+        {
+          key: 'status',
+          label: 'Status',
+          type: 'select' as const,
+          options: [],
+        },
       ],
     }
     const filters = { status: 123 }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} filters={filters} />)
+    render(
+      <ModuleFilterToolbar
+        {...defaultProps}
+        config={config}
+        filters={filters}
+      />,
+    )
     expect(screen.getByTestId('select')).toBeTruthy()
   })
 })

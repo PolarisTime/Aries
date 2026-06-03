@@ -9,7 +9,12 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('antd/es/date-picker', () => ({
   default: ({ id, placeholder, ...props }: any) => (
-    <input data-testid="date-picker" id={id} placeholder={placeholder} {...props} />
+    <input
+      data-testid="date-picker"
+      id={id}
+      placeholder={placeholder}
+      {...props}
+    />
   ),
 }))
 
@@ -36,7 +41,12 @@ vi.mock('antd/es/input', () => {
     <input data-testid="input" id={id} placeholder={placeholder} {...props} />
   )
   Input.TextArea = ({ id, placeholder, ...props }: any) => (
-    <textarea data-testid="textarea" id={id} placeholder={placeholder} {...props} />
+    <textarea
+      data-testid="textarea"
+      id={id}
+      placeholder={placeholder}
+      {...props}
+    />
   )
   return {
     default: Input,
@@ -46,7 +56,12 @@ vi.mock('antd/es/input', () => {
 
 vi.mock('antd/es/input-number', () => ({
   default: ({ id, placeholder, ...props }: any) => (
-    <input data-testid="input-number" id={id} placeholder={placeholder} {...props} />
+    <input
+      data-testid="input-number"
+      id={id}
+      placeholder={placeholder}
+      {...props}
+    />
   ),
 }))
 

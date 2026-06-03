@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
 import dayjs from 'dayjs'
+import { describe, expect, it } from 'vitest'
+import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import { moduleBehaviorRegistry } from './module-behavior-registry-core'
-import { hasBehavior, getBehaviorValue } from './module-behavior-registry'
 
 describe('module-behavior-editor', () => {
   it('registers carrier with priceMode default', () => {
@@ -19,7 +19,9 @@ describe('module-behavior-editor', () => {
   })
 
   it('registers purchase-order with defaultOperatorField', () => {
-    expect(getBehaviorValue('purchase-order', 'defaultOperatorField')).toBe('buyerName')
+    expect(getBehaviorValue('purchase-order', 'defaultOperatorField')).toBe(
+      'buyerName',
+    )
     expect(hasBehavior('purchase-order', 'lineItemTrimStrategy')).toBe(true)
   })
 
@@ -41,8 +43,12 @@ describe('module-behavior-editor', () => {
     const config = moduleBehaviorRegistry.get('purchase-contract')
     expect(config?.readonlyLineItems).toBe(true)
 
-    const resolveReadonly = config!.resolveReadonlyEditorFields as (record: any) => string[]
-    expect(resolveReadonly({ sourcePurchaseOrderNos: 'PO001' })).toEqual(['supplierName'])
+    const resolveReadonly = config!.resolveReadonlyEditorFields as (
+      record: any,
+    ) => string[]
+    expect(resolveReadonly({ sourcePurchaseOrderNos: 'PO001' })).toEqual([
+      'supplierName',
+    ])
     expect(resolveReadonly({ sourcePurchaseOrderNos: '' })).toEqual([])
 
     const defaultValues = (config!.defaultDraftValues as () => any)()
@@ -61,7 +67,11 @@ describe('module-behavior-editor', () => {
     expect(form1.effectiveDate.format('YYYY-MM-DD')).toBe('2026-06-01')
     expect(form1.expireDate.format('YYYY-MM-DD')).toBe('2027-06-01')
 
-    const form2: any = { signDate: dayjs('2026-06-01'), effectiveDate: dayjs('2026-07-01'), expireDate: dayjs('2026-12-31') }
+    const form2: any = {
+      signDate: dayjs('2026-06-01'),
+      effectiveDate: dayjs('2026-07-01'),
+      expireDate: dayjs('2026-12-31'),
+    }
     syncEditorForm(form2, { changedKeys: new Set(['signDate']) })
     expect(form2.effectiveDate.format('YYYY-MM-DD')).toBe('2026-06-01')
     expect(form2.expireDate.format('YYYY-MM-DD')).toBe('2027-06-01')
@@ -70,7 +80,10 @@ describe('module-behavior-editor', () => {
     syncEditorForm(form3, { changedKeys: new Set() })
     expect(form3.effectiveDate).toBeUndefined()
 
-    const form4: any = { signDate: dayjs('2026-06-01'), effectiveDate: dayjs('2026-07-01') }
+    const form4: any = {
+      signDate: dayjs('2026-06-01'),
+      effectiveDate: dayjs('2026-07-01'),
+    }
     syncEditorForm(form4, { changedKeys: new Set(['signDate']) })
     expect(form4.effectiveDate.format('YYYY-MM-DD')).toBe('2026-06-01')
 
@@ -89,26 +102,43 @@ describe('module-behavior-editor', () => {
     expect(form7.effectiveDate).toBeUndefined()
     expect(form7.expireDate).toBeUndefined()
 
-    const form8: any = { signDate: dayjs('2026-06-01'), effectiveDate: dayjs('2026-07-01'), expireDate: dayjs('2026-12-31') }
+    const form8: any = {
+      signDate: dayjs('2026-06-01'),
+      effectiveDate: dayjs('2026-07-01'),
+      expireDate: dayjs('2026-12-31'),
+    }
     syncEditorForm(form8, { changedKeys: new Set() })
     expect(form8.effectiveDate.format('YYYY-MM-DD')).toBe('2026-07-01')
     expect(form8.expireDate.format('YYYY-MM-DD')).toBe('2026-12-31')
 
-    const form9: any = { signDate: '2026-06-01', effectiveDate: 'invalid', expireDate: 'invalid' }
+    const form9: any = {
+      signDate: '2026-06-01',
+      effectiveDate: 'invalid',
+      expireDate: 'invalid',
+    }
     syncEditorForm(form9, { changedKeys: new Set() })
     expect(dayjs.isDayjs(form9.effectiveDate)).toBe(true)
     expect(dayjs.isDayjs(form9.expireDate)).toBe(true)
   })
 
   it('registers operator name modules', () => {
-    for (const key of ['receipt', 'payment', 'invoice-receipt', 'invoice-issue']) {
+    for (const key of [
+      'receipt',
+      'payment',
+      'invoice-receipt',
+      'invoice-issue',
+    ]) {
       expect(getBehaviorValue(key, 'defaultOperatorField')).toBe('operatorName')
     }
   })
 
   it('registers positive line item modules', () => {
-    expect(getBehaviorValue('invoice-receipt', 'lineItemTrimStrategy')).toBe('positiveWeightOrAmount')
-    expect(getBehaviorValue('invoice-issue', 'lineItemTrimStrategy')).toBe('positiveWeightOrAmount')
+    expect(getBehaviorValue('invoice-receipt', 'lineItemTrimStrategy')).toBe(
+      'positiveWeightOrAmount',
+    )
+    expect(getBehaviorValue('invoice-issue', 'lineItemTrimStrategy')).toBe(
+      'positiveWeightOrAmount',
+    )
     expect(hasBehavior('invoice-issue', 'allowsManualLineItems')).toBe(false)
   })
 
@@ -116,11 +146,17 @@ describe('module-behavior-editor', () => {
     expect(hasBehavior('freight-bill', 'allowsManualLineItems')).toBe(false)
     expect(hasBehavior('freight-bill', 'readonlyLineItems')).toBe(true)
     expect(hasBehavior('freight-bill', 'supportsStatements')).toBe(true)
-    expect(getBehaviorValue('freight-bill', 'statementLinkType')).toBe('freight')
+    expect(getBehaviorValue('freight-bill', 'statementLinkType')).toBe(
+      'freight',
+    )
   })
 
   it('registers statement readonly line items', () => {
-    for (const key of ['freight-statement', 'supplier-statement', 'customer-statement']) {
+    for (const key of [
+      'freight-statement',
+      'supplier-statement',
+      'customer-statement',
+    ]) {
       expect(hasBehavior(key, 'allowsManualLineItems')).toBe(false)
       expect(hasBehavior(key, 'readonlyLineItems')).toBe(true)
     }
@@ -134,7 +170,9 @@ describe('module-behavior-editor', () => {
   it('registers module type flags', () => {
     expect(hasBehavior('department', 'isSettingsModule')).toBe(true)
     expect(hasBehavior('general-setting', 'isSettingsModule')).toBe(true)
-    expect(hasBehavior('general-setting', 'hasUploadRuleExpandedRow')).toBe(true)
+    expect(hasBehavior('general-setting', 'hasUploadRuleExpandedRow')).toBe(
+      true,
+    )
     expect(hasBehavior('material', 'supportsMaterialImport')).toBe(true)
     expect(hasBehavior('permission', 'alertActionLink')).toBe(true)
   })
@@ -181,7 +219,9 @@ describe('module-behavior-editor', () => {
 
   it('purchase-contract resolveReadonlyEditorFields returns empty for whitespace sourcePurchaseOrderNos', () => {
     const config = moduleBehaviorRegistry.get('purchase-contract')
-    const resolveReadonly = config!.resolveReadonlyEditorFields as (record: any) => string[]
+    const resolveReadonly = config!.resolveReadonlyEditorFields as (
+      record: any,
+    ) => string[]
     expect(resolveReadonly({ sourcePurchaseOrderNos: '   ' })).toEqual([])
   })
 })

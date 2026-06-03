@@ -72,15 +72,20 @@ export function useUserAccountEditor({
         setCreateResultOpen(true)
       } else {
         message.success(
-          (response as { message?: string }).message || i18next.t('system.userAccountEditorHook.saveSuccess'),
+          (response as { message?: string }).message ||
+            i18next.t('system.userAccountEditorHook.saveSuccess'),
         )
       }
       setEditorOpen(false)
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.userAccountBase })
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.userAccountBase,
+      })
     },
     onError: (error: Error) => {
       if (error.message.includes('登录账号已存在')) {
-        setLoginNameValidationMessage(i18next.t('system.userAccountEditorHook.loginNameExists'))
+        setLoginNameValidationMessage(
+          i18next.t('system.userAccountEditorHook.loginNameExists'),
+        )
         return
       }
       showError(error, i18next.t('system.userAccountEditorHook.saveFailed'))
@@ -131,12 +136,16 @@ export function useUserAccountEditor({
       const result = await checkUserAccountLoginName(loginName, excludeUserId)
       const validationMessage = result.available
         ? ''
-        : result.message || i18next.t('system.userAccountEditorHook.loginNameExists')
+        : result.message ||
+          i18next.t('system.userAccountEditorHook.loginNameExists')
       setLoginNameValidationMessage(validationMessage)
       setLoginNameChecking(false)
       return { available: result.available, message: validationMessage }
     } catch (error) {
-      showError(error, i18next.t('system.userAccountEditorHook.checkLoginNameFailed'))
+      showError(
+        error,
+        i18next.t('system.userAccountEditorHook.checkLoginNameFailed'),
+      )
       setLoginNameChecking(false)
       return {
         available: true,
@@ -160,7 +169,10 @@ export function useUserAccountEditor({
       fillEditorForm(detail)
       setEditorLoading(false)
     } catch (error) {
-      showError(error, i18next.t('system.userAccountEditorHook.loadDetailFailed'))
+      showError(
+        error,
+        i18next.t('system.userAccountEditorHook.loadDetailFailed'),
+      )
       setEditorOpen(false)
       setEditorLoading(false)
     }
@@ -174,7 +186,10 @@ export function useUserAccountEditor({
         editorMode === 'edit' ? (editingId ?? undefined) : undefined,
       )
       if (!validationResult.available) {
-        message.warning(validationResult.message || i18next.t('system.userAccountEditorHook.loginNameExists'))
+        message.warning(
+          validationResult.message ||
+            i18next.t('system.userAccountEditorHook.loginNameExists'),
+        )
         return
       }
       const payload: UserAccountFormPayload = {

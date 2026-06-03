@@ -121,7 +121,9 @@ function PostgresDiagnostic({ monitoring }: PostgresDiagnosticProps) {
   return (
     <div className="database-monitor-subsection">
       <div className="database-monitor-subsection-heading">
-        <div className="database-monitor-subsection-title">{t('system.databaseMonitor.pgDiagnostics')}</div>
+        <div className="database-monitor-subsection-title">
+          {t('system.databaseMonitor.pgDiagnostics')}
+        </div>
         <Tag color={isHealthy ? 'green' : 'red'}>{monitoring.status}</Tag>
       </div>
       {monitoring.available ? (
@@ -140,7 +142,9 @@ function PostgresDiagnostic({ monitoring }: PostgresDiagnosticProps) {
         <Card className="database-monitor-card">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={monitoring.status || t('system.databaseMonitor.pgUnavailable')}
+            description={
+              monitoring.status || t('system.databaseMonitor.pgUnavailable')
+            }
           />
         </Card>
       )}
@@ -245,7 +249,9 @@ function PostgresOverviewCards({ overview }: PostgresOverviewCardsProps) {
 
   return (
     <div className="database-monitor-subsection">
-      <div className="database-monitor-subsection-title">{t('system.databaseMonitor.healthSummary')}</div>
+      <div className="database-monitor-subsection-title">
+        {t('system.databaseMonitor.healthSummary')}
+      </div>
       <Card
         size="small"
         className="database-monitor-card database-redis-monitor-card"
@@ -287,7 +293,9 @@ function PostgresActivityCards({ activity }: PostgresActivityCardsProps) {
 
   return (
     <div className="database-monitor-subsection">
-      <div className="database-monitor-subsection-title">{t('system.databaseMonitor.currentActivity')}</div>
+      <div className="database-monitor-subsection-title">
+        {t('system.databaseMonitor.currentActivity')}
+      </div>
       <Card
         size="small"
         className="database-monitor-card database-redis-monitor-card"
@@ -311,7 +319,11 @@ function PostgresHealthTables({
   return (
     <Row gutter={[16, 16]}>
       <Col xs={24} xl={12}>
-        <Card size="small" title={t('system.databaseMonitor.tableHealth')} className="database-monitor-card">
+        <Card
+          size="small"
+          title={t('system.databaseMonitor.tableHealth')}
+          className="database-monitor-card"
+        >
           <Table
             rowKey="tableName"
             dataSource={tableHealth}
@@ -408,7 +420,11 @@ function PostgresHealthTables({
         </Card>
       </Col>
       <Col xs={24} xl={12}>
-        <Card size="small" title={t('system.databaseMonitor.indexHealth')} className="database-monitor-card">
+        <Card
+          size="small"
+          title={t('system.databaseMonitor.indexHealth')}
+          className="database-monitor-card"
+        >
           <Table
             rowKey="indexName"
             dataSource={indexHealth}
@@ -445,7 +461,9 @@ function PostgresHealthTables({
                 width: 80,
                 render: (valid: boolean) => (
                   <Tag color={valid ? 'green' : 'red'}>
-                    {valid ? t('system.databaseMonitor.valid') : t('system.databaseMonitor.invalid')}
+                    {valid
+                      ? t('system.databaseMonitor.valid')
+                      : t('system.databaseMonitor.invalid')}
                   </Tag>
                 ),
               },
@@ -469,7 +487,9 @@ function PostgresQueryStats({ queryStats }: PostgresQueryStatsProps) {
   return (
     <div className="database-monitor-subsection">
       <div className="database-monitor-subsection-heading">
-        <div className="database-monitor-subsection-title">{t('system.databaseMonitor.slowSqlSummary')}</div>
+        <div className="database-monitor-subsection-title">
+          {t('system.databaseMonitor.slowSqlSummary')}
+        </div>
         <Tag color={queryStats.available ? 'green' : 'default'}>
           {queryStats.status}
         </Tag>
@@ -532,7 +552,9 @@ function PostgresQueryStats({ queryStats }: PostgresQueryStatsProps) {
         <Card className="database-monitor-card">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={queryStats.status || t('system.databaseMonitor.pgStatNotEnabled')}
+            description={
+              queryStats.status || t('system.databaseMonitor.pgStatNotEnabled')
+            }
           />
         </Card>
       )}
@@ -589,7 +611,9 @@ function RedisMonitoringSummary({ redis }: RedisMonitoringSummaryProps) {
     },
     {
       label: t('system.databaseMonitor.persistence'),
-      value: redis.persistence.rdbLastBgsaveStatus || t('system.databaseMonitor.unknown'),
+      value:
+        redis.persistence.rdbLastBgsaveStatus ||
+        t('system.databaseMonitor.unknown'),
       extra: `AOF ${redis.persistence.aofEnabled ? redis.persistence.aofLastBgrewriteStatus : t('system.databaseMonitor.aofNotEnabled')} / RDB ${formatUnixSeconds(redis.persistence.rdbLastSaveTime)}`,
     },
   ]
@@ -597,7 +621,9 @@ function RedisMonitoringSummary({ redis }: RedisMonitoringSummaryProps) {
   return (
     <div className="database-monitor-subsection">
       <div className="database-monitor-subsection-heading">
-        <div className="database-monitor-subsection-title">{t('system.databaseMonitor.redisMonitor')}</div>
+        <div className="database-monitor-subsection-title">
+          {t('system.databaseMonitor.redisMonitor')}
+        </div>
         <Tag color={isHealthy ? 'green' : 'red'}>{redis.status}</Tag>
       </div>
       <Card

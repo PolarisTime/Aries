@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import Form from 'antd/es/form'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -8,7 +8,8 @@ vi.mock('react-i18next', () => ({
       const map: Record<string, string> = {
         'auth.setup2fa.content.tag': '安全设置',
         'auth.setup2fa.content.title': '设置双因素认证',
-        'auth.setup2fa.content.description': '请为用户 {{userName}} 设置双因素认证',
+        'auth.setup2fa.content.description':
+          '请为用户 {{userName}} 设置双因素认证',
         'auth.setup2fa.content.loadFailed': '加载失败',
         'auth.setup2fa.content.retry': '重试',
         'auth.setup2fa.content.regenerate': '重新生成',

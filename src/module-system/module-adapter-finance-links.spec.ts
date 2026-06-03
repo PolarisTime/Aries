@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildCustomerStatementOptions,
-  findStatementRecordById,
   buildStatementLinkOptions,
+  findStatementRecordById,
 } from './module-adapter-finance-links'
 
 const sampleStatements = [
@@ -121,41 +121,61 @@ describe('buildStatementLinkOptions', () => {
   })
 
   it('returns supplier options for payment with businessType 供应商', () => {
-    const result = buildStatementLinkOptions('payment', {
-      businessType: '供应商',
-    }, catalog)
+    const result = buildStatementLinkOptions(
+      'payment',
+      {
+        businessType: '供应商',
+      },
+      catalog,
+    )
     expect(result.length).toBeGreaterThan(0)
     expect(result[0].label).toContain('待付')
   })
 
   it('returns freight options for payment with businessType 物流商', () => {
-    const result = buildStatementLinkOptions('payment', {
-      businessType: '物流商',
-    }, catalog)
+    const result = buildStatementLinkOptions(
+      'payment',
+      {
+        businessType: '物流商',
+      },
+      catalog,
+    )
     expect(result.length).toBeGreaterThan(0)
     expect(result[0].label).toContain('待付')
   })
 
   it('returns empty array for payment with unknown businessType', () => {
-    const result = buildStatementLinkOptions('payment', {
-      businessType: '其他',
-    }, catalog)
+    const result = buildStatementLinkOptions(
+      'payment',
+      {
+        businessType: '其他',
+      },
+      catalog,
+    )
     expect(result).toEqual([])
   })
 
   it('filters customer statements by currentStatementId', () => {
-    const result = buildStatementLinkOptions('receipt', {
-      sourceStatementId: '2',
-    }, catalog)
+    const result = buildStatementLinkOptions(
+      'receipt',
+      {
+        sourceStatementId: '2',
+      },
+      catalog,
+    )
     const ids = result.map((o) => o.value)
     expect(ids).toContain('2')
   })
 
   it('filters customer statements by customerName and projectName', () => {
-    const result = buildStatementLinkOptions('receipt', {
-      customerName: '客户A',
-      projectName: '项目X',
-    }, catalog)
+    const result = buildStatementLinkOptions(
+      'receipt',
+      {
+        customerName: '客户A',
+        projectName: '项目X',
+      },
+      catalog,
+    )
     expect(result).toHaveLength(1)
     expect(result[0].value).toBe('1')
   })
@@ -166,18 +186,26 @@ describe('buildStatementLinkOptions', () => {
   })
 
   it('filters supplier statements by counterpartyName', () => {
-    const result = buildStatementLinkOptions('payment', {
-      businessType: '供应商',
-      counterpartyName: '供应商A',
-    }, catalog)
+    const result = buildStatementLinkOptions(
+      'payment',
+      {
+        businessType: '供应商',
+        counterpartyName: '供应商A',
+      },
+      catalog,
+    )
     expect(result.length).toBeGreaterThan(0)
   })
 
   it('filters freight statements by counterpartyName', () => {
-    const result = buildStatementLinkOptions('payment', {
-      businessType: '物流商',
-      counterpartyName: '物流商A',
-    }, catalog)
+    const result = buildStatementLinkOptions(
+      'payment',
+      {
+        businessType: '物流商',
+        counterpartyName: '物流商A',
+      },
+      catalog,
+    )
     expect(result.length).toBeGreaterThan(0)
   })
 
@@ -190,8 +218,18 @@ describe('buildStatementLinkOptions', () => {
 describe('compareStatements edge cases', () => {
   it('sorts by statementNo descending when endDates are equal', () => {
     const statements = [
-      { id: '1', statementNo: 'KHDZ0002', closingAmount: 100, endDate: '2026-03-15' },
-      { id: '2', statementNo: 'KHDZ0001', closingAmount: 200, endDate: '2026-03-15' },
+      {
+        id: '1',
+        statementNo: 'KHDZ0002',
+        closingAmount: 100,
+        endDate: '2026-03-15',
+      },
+      {
+        id: '2',
+        statementNo: 'KHDZ0001',
+        closingAmount: 200,
+        endDate: '2026-03-15',
+      },
     ] as any[]
     const result = buildCustomerStatementOptions(statements)
     expect(result[0].value).toBe('1')
@@ -210,9 +248,18 @@ describe('compareStatements edge cases', () => {
 
   it('handles non-finite amounts in normalizeAmount', () => {
     const statements = [
-      { id: '1', statementNo: 'K001', closingAmount: 'abc', endDate: '2026-03-15', customerName: 'C', projectName: 'P' },
+      {
+        id: '1',
+        statementNo: 'K001',
+        closingAmount: 'abc',
+        endDate: '2026-03-15',
+        customerName: 'C',
+        projectName: 'P',
+      },
     ] as any[]
-    const result = buildCustomerStatementOptions(statements, { currentStatementId: '1' })
+    const result = buildCustomerStatementOptions(statements, {
+      currentStatementId: '1',
+    })
     expect(result[0].label).toContain('0.00')
   })
 })

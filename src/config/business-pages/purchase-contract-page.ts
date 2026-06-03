@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import i18next from 'i18next'
 import { getSupplierOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -15,14 +16,12 @@ import {
   compactOrderItemColumns,
   statusMap,
 } from './shared'
-import i18next from 'i18next'
 
 export const purchaseContractsPageConfig: ModulePageConfig = {
   key: 'purchase-contract',
   title: i18next.t('modules.pages.purchaseContract.purchaseContract'),
   kicker: 'Contracts',
-  description:
-    i18next.t('modules.pages.purchaseContract.purchaseContractDesc'),
+  description: i18next.t('modules.pages.purchaseContract.purchaseContractDesc'),
   primaryNoKey: 'contractNo',
   actions: actionSet,
   filters: [
@@ -30,7 +29,9 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
       key: 'keyword',
       label: CONTRACT_NO_FILTER_LABEL,
       type: 'input',
-      placeholder: i18next.t('modules.pages.purchaseContract.purchaseContractPlaceholder'),
+      placeholder: i18next.t(
+        'modules.pages.purchaseContract.purchaseContractPlaceholder',
+      ),
     },
     {
       key: 'supplierName',
@@ -44,16 +45,51 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
       type: 'select',
       options: contractStatusOptions,
     },
-    { key: 'signDate', label: i18next.t('modules.pages.purchaseContract.signDate'), type: 'dateRange' },
+    {
+      key: 'signDate',
+      label: i18next.t('modules.pages.purchaseContract.signDate'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: i18next.t('modules.pages.purchaseContract.contractNo'), dataIndex: 'contractNo', width: 170 },
-    { title: i18next.t('modules.pages.purchaseContract.relatedPurchaseOrder'), dataIndex: 'sourcePurchaseOrderNos', width: 180 },
-    { title: i18next.t('modules.pages.purchaseContract.supplier'), dataIndex: 'supplierName', width: 150 },
-    { title: i18next.t('modules.pages.purchaseContract.signDate'), dataIndex: 'signDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.purchaseContract.effectiveDate'), dataIndex: 'effectiveDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.purchaseContract.expireDate'), dataIndex: 'expireDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.purchaseContract.buyer'), dataIndex: 'buyerName', width: 110 },
+    {
+      title: i18next.t('modules.pages.purchaseContract.contractNo'),
+      dataIndex: 'contractNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.purchaseContract.relatedPurchaseOrder'),
+      dataIndex: 'sourcePurchaseOrderNos',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.purchaseContract.supplier'),
+      dataIndex: 'supplierName',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.purchaseContract.signDate'),
+      dataIndex: 'signDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.purchaseContract.effectiveDate'),
+      dataIndex: 'effectiveDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.purchaseContract.expireDate'),
+      dataIndex: 'expireDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.purchaseContract.buyer'),
+      dataIndex: 'buyerName',
+      width: 110,
+    },
     {
       title: i18next.t('modules.pages.purchaseContract.totalWeight'),
       dataIndex: 'totalWeight',
@@ -75,20 +111,75 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
-    { title: i18next.t('modules.pages.purchaseContract.remark'), dataIndex: 'remark', width: 180 },
+    {
+      title: i18next.t('modules.pages.purchaseContract.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
   detailFields: [
-    { label: i18next.t('modules.pages.purchaseContract.contractNo'), key: 'contractNo', row: 1 },
-    { label: i18next.t('modules.pages.purchaseContract.relatedPurchaseOrder'), key: 'sourcePurchaseOrderNos', row: 1 },
-    { label: i18next.t('modules.pages.purchaseContract.supplier'), key: 'supplierName', row: 1 },
-    { label: i18next.t('modules.pages.purchaseContract.signDate'), key: 'signDate', type: 'date', row: 2 },
-    { label: i18next.t('modules.pages.purchaseContract.effectiveDate'), key: 'effectiveDate', type: 'date', row: 2 },
-    { label: i18next.t('modules.pages.purchaseContract.expireDate'), key: 'expireDate', type: 'date', row: 2 },
-    { label: i18next.t('modules.pages.purchaseContract.buyer'), key: 'buyerName', row: 3 },
-    { label: i18next.t('modules.pages.purchaseContract.status'), key: 'status', type: 'status', row: 3 },
-    { label: i18next.t('modules.pages.purchaseContract.totalWeight'), key: 'totalWeight', type: 'weight', row: 3 },
-    { label: i18next.t('modules.pages.purchaseContract.totalAmount'), key: 'totalAmount', type: 'amount', row: 3 },
-    { label: i18next.t('modules.pages.purchaseContract.remark'), key: 'remark', row: 4, fullRow: true },
+    {
+      label: i18next.t('modules.pages.purchaseContract.contractNo'),
+      key: 'contractNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseContract.relatedPurchaseOrder'),
+      key: 'sourcePurchaseOrderNos',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseContract.supplier'),
+      key: 'supplierName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseContract.signDate'),
+      key: 'signDate',
+      type: 'date',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseContract.effectiveDate'),
+      key: 'effectiveDate',
+      type: 'date',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseContract.expireDate'),
+      key: 'expireDate',
+      type: 'date',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseContract.buyer'),
+      key: 'buyerName',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseContract.status'),
+      key: 'status',
+      type: 'status',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseContract.totalWeight'),
+      key: 'totalWeight',
+      type: 'weight',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseContract.totalAmount'),
+      key: 'totalAmount',
+      type: 'amount',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseContract.remark'),
+      key: 'remark',
+      row: 4,
+      fullRow: true,
+    },
   ],
   formFields: [
     {
@@ -151,7 +242,13 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
       options: contractStatusOptions,
       row: 3,
     },
-    { key: 'remark', label: i18next.t('modules.pages.purchaseContract.remark'), type: 'textarea', row: 3, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.purchaseContract.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
   ],
   parentImport: {
     parentModuleKey: 'purchase-order',
@@ -159,7 +256,9 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
     parentFieldKey: 'sourcePurchaseOrderNos',
     parentDisplayFieldKey: 'orderNo',
     allowMultipleSelection: false,
-    buttonText: i18next.t('modules.pages.purchaseContract.importPurchaseOrderItems'),
+    buttonText: i18next.t(
+      'modules.pages.purchaseContract.importPurchaseOrderItems',
+    ),
     mapParentToDraft: (parentRecord) => {
       const signDate = parentRecord.orderDate || undefined
       return {

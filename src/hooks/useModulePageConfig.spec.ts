@@ -1,9 +1,15 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { useQueryMock, loadBusinessPageConfigMock, listClientSettingsMock,
-  isDisplaySwitchEnabledMock, listAllBusinessModuleRowsMock, buildWeightOverviewMock,
-  buildStatementLinkOptionsMock } = vi.hoisted(() => ({
+const {
+  useQueryMock,
+  loadBusinessPageConfigMock,
+  listClientSettingsMock,
+  isDisplaySwitchEnabledMock,
+  listAllBusinessModuleRowsMock,
+  buildWeightOverviewMock,
+  buildStatementLinkOptionsMock,
+} = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
   loadBusinessPageConfigMock: vi.fn(),
   listClientSettingsMock: vi.fn(),
@@ -88,7 +94,7 @@ describe('useModulePageConfig', () => {
     useQueryMock.mockReturnValue({ data: undefined, isLoading: false })
 
     const { result } = renderHook(() =>
-      useModulePageConfig({ ...defaultProps, initialConfig })
+      useModulePageConfig({ ...defaultProps, initialConfig }),
     )
     expect(result.current.config).toEqual(initialConfig)
   })
@@ -102,7 +108,7 @@ describe('useModulePageConfig', () => {
 
   it('detects invoice assist modules', () => {
     const { result } = renderHook(() =>
-      useModulePageConfig({ moduleKey: 'invoice-receipt' })
+      useModulePageConfig({ moduleKey: 'invoice-receipt' }),
     )
     expect(result.current.supportsInvoiceAssist).toBe(true)
   })
@@ -114,7 +120,7 @@ describe('useModulePageConfig', () => {
 
   it('detects snowflake ID display switch', () => {
     isDisplaySwitchEnabledMock.mockImplementation(
-      (data: any, code: string) => code === 'showSnowflakeId'
+      (_data: any, code: string) => code === 'showSnowflakeId',
     )
 
     const { result } = renderHook(() => useModulePageConfig(defaultProps))
@@ -135,13 +141,13 @@ describe('useModulePageConfig', () => {
     }
     useQueryMock.mockReturnValue({ data: config, isLoading: false })
     isDisplaySwitchEnabledMock.mockImplementation(
-      (data: any, code: string) => code === 'weightOnlyPurchaseInbounds'
+      (_data: any, code: string) => code === 'weightOnlyPurchaseInbounds',
     )
 
     const { result } = renderHook(() =>
-      useModulePageConfig({ moduleKey: 'purchase-inbound' })
+      useModulePageConfig({ moduleKey: 'purchase-inbound' }),
     )
-    
+
     expect(result.current.config?.columns).toHaveLength(1)
     expect(result.current.config?.columns[0].dataIndex).toBe('totalWeight')
   })
@@ -158,7 +164,7 @@ describe('useModulePageConfig', () => {
     })
 
     const { result } = renderHook(() =>
-      useModulePageConfig({ moduleKey: 'receipt' })
+      useModulePageConfig({ moduleKey: 'receipt' }),
     )
 
     expect(result.current.config).toBeDefined()
@@ -176,7 +182,7 @@ describe('useModulePageConfig', () => {
     })
 
     const { result } = renderHook(() =>
-      useModulePageConfig({ moduleKey: 'payment' })
+      useModulePageConfig({ moduleKey: 'payment' }),
     )
 
     expect(result.current.config).toBeDefined()
@@ -190,12 +196,17 @@ describe('useModulePageConfig', () => {
       detailFields: [],
     }
     useQueryMock.mockReturnValue({
-      data: { key: 'other-module', columns: [], formFields: [], detailFields: [] },
+      data: {
+        key: 'other-module',
+        columns: [],
+        formFields: [],
+        detailFields: [],
+      },
       isLoading: false,
     })
 
     const { result } = renderHook(() =>
-      useModulePageConfig({ ...defaultProps, initialConfig })
+      useModulePageConfig({ ...defaultProps, initialConfig }),
     )
     expect(result.current.config).toEqual(initialConfig)
   })
@@ -214,11 +225,11 @@ describe('useModulePageConfig', () => {
     }
     useQueryMock.mockReturnValue({ data: config, isLoading: false })
     isDisplaySwitchEnabledMock.mockImplementation(
-      (data: any, code: string) => code === 'weightOnlySalesOutbounds'
+      (_data: any, code: string) => code === 'weightOnlySalesOutbounds',
     )
 
     const { result } = renderHook(() =>
-      useModulePageConfig({ moduleKey: 'sales-outbound' })
+      useModulePageConfig({ moduleKey: 'sales-outbound' }),
     )
 
     expect(result.current.config?.columns).toHaveLength(1)
@@ -248,7 +259,7 @@ describe('useModulePageConfig', () => {
     isDisplaySwitchEnabledMock.mockReturnValue(false)
 
     const { result } = renderHook(() =>
-      useModulePageConfig({ moduleKey: 'purchase-inbound' })
+      useModulePageConfig({ moduleKey: 'purchase-inbound' }),
     )
 
     expect(result.current.config?.columns).toHaveLength(2)

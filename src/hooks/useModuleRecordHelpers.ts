@@ -2,6 +2,10 @@ import dayjs from 'dayjs'
 
 import i18next from 'i18next'
 import { generateBusinessPrimaryNo } from '@/api/business'
+import {
+  generatePrimaryNo as buildModulePrimaryNo,
+  getModuleRecordPrimaryNo,
+} from '@/module-system/module-adapter-shared'
 import type {
   ModuleLineItem,
   ModulePageConfig,
@@ -9,10 +13,6 @@ import type {
 } from '@/types/module-page'
 import { getStoredUser } from '@/utils/storage'
 import { asString } from '@/utils/type-narrowing'
-import {
-  generatePrimaryNo as buildModulePrimaryNo,
-  getModuleRecordPrimaryNo,
-} from '@/module-system/module-adapter-shared'
 
 interface Props {
   moduleKey: string
@@ -32,7 +32,12 @@ export function useModuleRecordHelpers({ moduleKey, config }: Props) {
   const generatePrimaryNo = () => {
     const serial = String(Date.now()).slice(-6)
     const year = dayjs().format('YYYY')
-    return buildModulePrimaryNo(moduleKey, year, serial, dayjs().format('YYYYMMDD'))
+    return buildModulePrimaryNo(
+      moduleKey,
+      year,
+      serial,
+      dayjs().format('YYYYMMDD'),
+    )
   }
 
   const generatePrimaryNoAsync = async () => {

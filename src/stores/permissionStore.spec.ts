@@ -1,5 +1,5 @@
-import { describe, expect, it, beforeEach } from 'vitest'
-import { usePermissionStore, checkAccessResources } from './permissionStore'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { checkAccessResources, usePermissionStore } from './permissionStore'
 
 describe('permissionStore', () => {
   beforeEach(() => {
@@ -31,18 +31,26 @@ describe('permissionStore', () => {
   })
 
   it('setPermissions normalizes resource keys', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: '//purchase-order', actions: ['read'] },
-    ])
-    expect(usePermissionStore.getState().permissionMap['purchase-order'].has('read')).toBe(true)
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: '//purchase-order', actions: ['read'] }])
+    expect(
+      usePermissionStore.getState().permissionMap['purchase-order'].has('read'),
+    ).toBe(true)
   })
 
   it('can checks resource action', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: '/purchase-order', actions: ['read', 'write'] },
-    ])
-    expect(usePermissionStore.getState().can('purchase-order', 'read')).toBe(true)
-    expect(usePermissionStore.getState().can('purchase-order', 'delete')).toBe(false)
+    usePermissionStore
+      .getState()
+      .setPermissions([
+        { resource: '/purchase-order', actions: ['read', 'write'] },
+      ])
+    expect(usePermissionStore.getState().can('purchase-order', 'read')).toBe(
+      true,
+    )
+    expect(usePermissionStore.getState().can('purchase-order', 'delete')).toBe(
+      false,
+    )
   })
 
   it('can returns false for unknown resource', () => {
@@ -50,26 +58,34 @@ describe('permissionStore', () => {
   })
 
   it('can handles wildcard action', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: '/admin', actions: ['*'] },
-    ])
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: '/admin', actions: ['*'] }])
     expect(usePermissionStore.getState().can('admin', 'anything')).toBe(true)
   })
 
   it('canAny returns true if any action matches', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: '/doc', actions: ['read'] },
-    ])
-    expect(usePermissionStore.getState().canAny('doc', ['read', 'write'])).toBe(true)
-    expect(usePermissionStore.getState().canAny('doc', ['delete', 'write'])).toBe(false)
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: '/doc', actions: ['read'] }])
+    expect(usePermissionStore.getState().canAny('doc', ['read', 'write'])).toBe(
+      true,
+    )
+    expect(
+      usePermissionStore.getState().canAny('doc', ['delete', 'write']),
+    ).toBe(false)
   })
 
   it('canAll returns true if all actions match', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: '/doc', actions: ['read', 'write'] },
-    ])
-    expect(usePermissionStore.getState().canAll('doc', ['read', 'write'])).toBe(true)
-    expect(usePermissionStore.getState().canAll('doc', ['read', 'delete'])).toBe(false)
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: '/doc', actions: ['read', 'write'] }])
+    expect(usePermissionStore.getState().canAll('doc', ['read', 'write'])).toBe(
+      true,
+    )
+    expect(
+      usePermissionStore.getState().canAll('doc', ['read', 'delete']),
+    ).toBe(false)
   })
 
   it('syncFromUser sets permissions from user', () => {
@@ -81,9 +97,9 @@ describe('permissionStore', () => {
   })
 
   it('syncFromUser clears permissions for null user', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: '/test', actions: ['read'] },
-    ])
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: '/test', actions: ['read'] }])
     usePermissionStore.getState().syncFromUser(null)
     expect(usePermissionStore.getState().can('test', 'read')).toBe(false)
   })
@@ -94,20 +110,23 @@ describe('permissionStore', () => {
   })
 
   it('clearPermissions resets state', () => {
-    usePermissionStore.getState().setPermissions([
-      { resource: '/test', actions: ['read'] },
-    ])
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: '/test', actions: ['read'] }])
     usePermissionStore.getState().clearPermissions()
     expect(usePermissionStore.getState().permissionMap).toEqual({})
     expect(usePermissionStore.getState().dataScopes).toEqual({})
   })
 
   it('setPermissions stores dataScopes', () => {
-    usePermissionStore.getState().setPermissions(
-      [{ resource: '/test', actions: ['read'] }],
-      { test: 'department' },
-    )
-    expect(usePermissionStore.getState().dataScopes).toEqual({ test: 'department' })
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: '/test', actions: ['read'] }], {
+        test: 'department',
+      })
+    expect(usePermissionStore.getState().dataScopes).toEqual({
+      test: 'department',
+    })
   })
 })
 

@@ -4,9 +4,9 @@ import {
   updatePageUploadRule,
 } from '@/api/business'
 import type { UploadRulePayload } from '@/api/business-types'
+import { isToggleSetting } from '@/module-system/settings-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-import { isToggleSetting } from '@/module-system/settings-constants'
 
 const MODULE_KEY = 'general-setting'
 

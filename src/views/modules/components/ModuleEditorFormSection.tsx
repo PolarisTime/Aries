@@ -4,12 +4,12 @@ import Form from 'antd/es/form'
 import Row from 'antd/es/row'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
+import { isEditorFieldDisabledForModule } from '@/module-system/module-adapter-editor'
+import { groupFieldsByRow } from '@/module-system/module-field-layout'
 import type {
   ModuleFormFieldDefinition,
   ModulePageConfig,
 } from '@/types/module-page'
-import { isEditorFieldDisabledForModule } from '@/module-system/module-adapter-editor'
-import { groupFieldsByRow } from '@/module-system/module-field-layout'
 import { EditorFooterActions } from './EditorFooterActions'
 import { FormFieldRenderer } from './FormFieldRenderer'
 

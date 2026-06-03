@@ -43,7 +43,9 @@ describe('UserAccountDetailModal', () => {
 
   it('renders modal title', () => {
     render(<UserAccountDetailModal {...defaultProps} />)
-    expect(screen.getByText('system.userAccountDetail.title')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountDetail.title'),
+    ).toBeInTheDocument()
   })
 
   it('renders login name', () => {
@@ -92,25 +94,31 @@ describe('UserAccountDetailModal', () => {
   })
 
   it('renders loading state', () => {
-    const { container } = render(<UserAccountDetailModal {...defaultProps} loading={true} />)
+    const { container } = render(
+      <UserAccountDetailModal {...defaultProps} loading={true} />,
+    )
     expect(container).toBeInTheDocument()
   })
 
   it('renders null record gracefully', () => {
     render(<UserAccountDetailModal {...defaultProps} record={null} />)
-    expect(screen.getByText('system.userAccountDetail.title')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.userAccountDetail.title'),
+    ).toBeInTheDocument()
   })
 
   it('renders missing optional fields as --', () => {
     render(
       <UserAccountDetailModal
         {...defaultProps}
-        record={{
-          ...defaultProps.record,
-          mobile: '',
-          departmentName: '',
-          remark: '',
-        } as never}
+        record={
+          {
+            ...defaultProps.record,
+            mobile: '',
+            departmentName: '',
+            remark: '',
+          } as never
+        }
       />,
     )
     expect(screen.getAllByText('--').length).toBeGreaterThan(0)

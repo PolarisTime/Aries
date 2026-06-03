@@ -48,7 +48,9 @@ vi.mock('@/views/system/NumberRulesTableCard', () => ({
 }))
 
 vi.mock('@/views/system/NumberRulesEditorModal', () => ({
-  NumberRulesEditorModal: () => <div data-testid="editor-modal">EditorModal</div>,
+  NumberRulesEditorModal: () => (
+    <div data-testid="editor-modal">EditorModal</div>
+  ),
 }))
 
 vi.mock('@/views/system/number-rules-view-utils', () => ({

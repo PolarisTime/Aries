@@ -74,12 +74,16 @@ describe('supplier-options', () => {
 
   describe('normalizeSupplierOptions', () => {
     it('converts id to string when present', () => {
-      const result = normalizeSupplierOptions([{ id: 123 as any, value: 'v1', label: 'L1' }])
+      const result = normalizeSupplierOptions([
+        { id: 123 as any, value: 'v1', label: 'L1' },
+      ])
       expect(result[0].id).toBe('123')
     })
 
     it('keeps id undefined when null', () => {
-      const result = normalizeSupplierOptions([{ id: null as any, value: 'v1', label: 'L1' }])
+      const result = normalizeSupplierOptions([
+        { id: null as any, value: 'v1', label: 'L1' },
+      ])
       expect(result[0].id).toBeUndefined()
     })
 
@@ -94,17 +98,23 @@ describe('supplier-options', () => {
     })
 
     it('falls back to empty string when label is falsy', () => {
-      const result = normalizeSupplierOptions([{ value: 'v1', label: null as any }])
+      const result = normalizeSupplierOptions([
+        { value: 'v1', label: null as any },
+      ])
       expect(result[0].label).toBe('')
     })
 
     it('falls back to empty string when value is falsy', () => {
-      const result = normalizeSupplierOptions([{ value: null as any, label: 'L1' }])
+      const result = normalizeSupplierOptions([
+        { value: null as any, label: 'L1' },
+      ])
       expect(result[0].value).toBe('')
     })
 
     it('preserves valid label and value', () => {
-      const result = normalizeSupplierOptions([{ value: 's1', label: '供应商' }])
+      const result = normalizeSupplierOptions([
+        { value: 's1', label: '供应商' },
+      ])
       expect(result[0]).toEqual({ id: undefined, value: 's1', label: '供应商' })
     })
 

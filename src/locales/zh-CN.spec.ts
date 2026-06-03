@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { zhCN } from './zh-CN'
 import { enUS } from './en-US'
+import { zhCN } from './zh-CN'
 
 function getLeaves(obj: Record<string, unknown>, prefix = ''): string[] {
   const keys: string[] = []
@@ -16,10 +16,12 @@ function getLeaves(obj: Record<string, unknown>, prefix = ''): string[] {
 }
 
 function getValue(obj: unknown, path: string): unknown {
-  return path.split('.').reduce((o: unknown, k) => (o as Record<string, unknown>)?.[k], obj)
+  return path
+    .split('.')
+    .reduce((o: unknown, k) => (o as Record<string, unknown>)?.[k], obj)
 }
 
-function extractPlaceholders(s: string): string[] {
+function _extractPlaceholders(s: string): string[] {
   return [...s.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]).sort()
 }
 
@@ -78,7 +80,10 @@ describe('zh-CN locale', () => {
       if (typeof zhVal === 'string' && typeof enVal === 'string') {
         const zhCount = (zhVal.match(/\{\{[^}]+\}\}/g) || []).length
         const enCount = (enVal.match(/\{\{[^}]+\}\}/g) || []).length
-        expect(zhCount, `placeholder count mismatch at ${path}: zh="${zhVal}" en="${enVal}"`).toBe(enCount)
+        expect(
+          zhCount,
+          `placeholder count mismatch at ${path}: zh="${zhVal}" en="${enVal}"`,
+        ).toBe(enCount)
       }
     }
   })

@@ -1,4 +1,7 @@
-import type { ModuleFormFieldDefinition, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleFormFieldDefinition,
+  ModuleRecord,
+} from '@/types/module-page'
 import { getBehaviorValue } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'
 

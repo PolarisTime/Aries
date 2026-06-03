@@ -1,9 +1,9 @@
-import { describe, expect, it, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  hasBehavior,
   getBehaviorValue,
-  isEditBlockedByStatus,
+  hasBehavior,
   isDeleteBlockedByStatus,
+  isEditBlockedByStatus,
 } from './module-behavior-registry'
 import { moduleBehaviorRegistry } from './module-behavior-registry-core'
 

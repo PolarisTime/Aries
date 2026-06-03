@@ -9,6 +9,7 @@ import Space from 'antd/es/space'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
+import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleFilterDefinition,
@@ -20,7 +21,6 @@ import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 import { padLabel } from '@/utils/label-utils'
 import { asString } from '@/utils/type-narrowing'
-import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 
 interface Props {
   config: ModulePageConfig
@@ -76,7 +76,10 @@ function ModuleFilterField({
         id={fieldId}
         aria-label={field.label}
         allowClear
-        placeholder={field.placeholder || t('modules.filter.selectPlaceholder', { label: field.label })}
+        placeholder={
+          field.placeholder ||
+          t('modules.filter.selectPlaceholder', { label: field.label })
+        }
         value={
           typeof filters[field.key] === 'string'
             ? asString(filters[field.key])
@@ -92,10 +95,7 @@ function ModuleFilterField({
     const value = filters[field.key]
     const rangeValue =
       Array.isArray(value) && value.length === 2
-        ? ([dayjs(String(value[0])), dayjs(String(value[1]))] as [
-            Dayjs,
-            Dayjs,
-          ])
+        ? ([dayjs(String(value[0])), dayjs(String(value[1]))] as [Dayjs, Dayjs])
         : undefined
 
     return (
@@ -122,7 +122,10 @@ function ModuleFilterField({
       id={fieldId}
       name={field.key}
       allowClear
-      placeholder={field.placeholder || t('modules.filter.inputPlaceholder', { label: field.label })}
+      placeholder={
+        field.placeholder ||
+        t('modules.filter.inputPlaceholder', { label: field.label })
+      }
       value={asString(filters[field.key])}
       onChange={(event) => onUpdateFilter(field.key, event.target.value)}
       onPressEnter={onSearch}

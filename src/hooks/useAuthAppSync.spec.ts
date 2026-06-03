@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   syncFromUserMock,
@@ -25,8 +25,16 @@ const {
   isApiKeyTokenMock: vi.fn().mockReturnValue(false),
 }))
 
-let authState: any = { token: 'test-token', user: { userName: 'test' }, authReady: true }
-let permissionState: any = { syncFromUser: syncFromUserMock, clearPermissions: clearPermissionsMock, can: vi.fn().mockReturnValue(false) }
+let authState: any = {
+  token: 'test-token',
+  user: { userName: 'test' },
+  authReady: true,
+}
+let permissionState: any = {
+  syncFromUser: syncFromUserMock,
+  clearPermissions: clearPermissionsMock,
+  can: vi.fn().mockReturnValue(false),
+}
 let menuState: any = { loadMenus: loadMenusMock, clearMenus: clearMenusMock }
 
 vi.mock('@/stores/authStore', () => ({
@@ -44,12 +52,24 @@ vi.mock('@/stores/systemMenuStore', () => ({
   useSystemMenuStore: (selector: (state: any) => any) => selector(menuState),
 }))
 
-vi.mock('@/api/carrier-options', () => ({ reloadCarrierOptions: reloadCarrierOptionsMock }))
-vi.mock('@/api/customer-options', () => ({ reloadCustomerOptions: reloadCustomerOptionsMock }))
-vi.mock('@/api/material-categories', () => ({ reloadMaterialCategories: reloadMaterialCategoriesMock }))
-vi.mock('@/api/supplier-options', () => ({ reloadSupplierOptions: reloadSupplierOptionsMock }))
-vi.mock('@/api/warehouse-options', () => ({ reloadWarehouseOptions: reloadWarehouseOptionsMock }))
-vi.mock('@/constants/resource-permissions', () => ({ loadPermissionCatalog: vi.fn() }))
+vi.mock('@/api/carrier-options', () => ({
+  reloadCarrierOptions: reloadCarrierOptionsMock,
+}))
+vi.mock('@/api/customer-options', () => ({
+  reloadCustomerOptions: reloadCustomerOptionsMock,
+}))
+vi.mock('@/api/material-categories', () => ({
+  reloadMaterialCategories: reloadMaterialCategoriesMock,
+}))
+vi.mock('@/api/supplier-options', () => ({
+  reloadSupplierOptions: reloadSupplierOptionsMock,
+}))
+vi.mock('@/api/warehouse-options', () => ({
+  reloadWarehouseOptions: reloadWarehouseOptionsMock,
+}))
+vi.mock('@/constants/resource-permissions', () => ({
+  loadPermissionCatalog: vi.fn(),
+}))
 vi.mock('@/utils/auth-token', () => ({ isApiKeyToken: isApiKeyTokenMock }))
 vi.mock('@/utils/logger', () => ({ logger: { warn: vi.fn() } }))
 
@@ -60,8 +80,16 @@ describe('useAuthAppSync', () => {
     vi.resetAllMocks()
     vi.useFakeTimers()
 
-    authState = { token: 'test-token', user: { userName: 'test' }, authReady: true }
-    permissionState = { syncFromUser: syncFromUserMock, clearPermissions: clearPermissionsMock, can: vi.fn().mockReturnValue(false) }
+    authState = {
+      token: 'test-token',
+      user: { userName: 'test' },
+      authReady: true,
+    }
+    permissionState = {
+      syncFromUser: syncFromUserMock,
+      clearPermissions: clearPermissionsMock,
+      can: vi.fn().mockReturnValue(false),
+    }
     loadMenusMock.mockResolvedValue(undefined)
     menuState = { loadMenus: loadMenusMock, clearMenus: clearMenusMock }
     isApiKeyTokenMock.mockReturnValue(false)

@@ -1,11 +1,16 @@
-import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { buildModuleEditorManagementColumns, buildModuleEditorDataColumns } from './module-editor-item-column-builders'
+import { describe, expect, it, vi } from 'vitest'
+import {
+  buildModuleEditorDataColumns,
+  buildModuleEditorManagementColumns,
+} from './module-editor-item-column-builders'
 
 vi.mock('./module-adapter-editor', () => ({
   getEditorItemMin: vi.fn(() => 0),
   getEditorItemPrecision: vi.fn(() => 2),
-  isNumberEditorColumn: vi.fn((key) => ['quantity', 'unitPrice', 'weightTon', 'amount'].includes(key)),
+  isNumberEditorColumn: vi.fn((key) =>
+    ['quantity', 'unitPrice', 'weightTon', 'amount'].includes(key),
+  ),
 }))
 
 const mockConfig = {
@@ -60,7 +65,15 @@ describe('buildModuleEditorManagementColumns', () => {
   it('selection column renders checkbox header', { timeout: 15000 }, () => {
     const columns = buildModuleEditorManagementColumns(defaultProps)
     const SelectionHeader = columns[0].title as React.ReactElement
-    render(<table><thead><tr><th>{SelectionHeader}</th></tr></thead></table>)
+    render(
+      <table>
+        <thead>
+          <tr>
+            <th>{SelectionHeader}</th>
+          </tr>
+        </thead>
+      </table>,
+    )
     expect(screen.getByRole('checkbox')).toBeInTheDocument()
   })
 
@@ -94,7 +107,15 @@ describe('buildModuleEditorManagementColumns', () => {
     const props = { ...defaultProps, selectedItemIds: ['1'] }
     const columns = buildModuleEditorManagementColumns(props)
     const SelectionHeader = columns[0].title as React.ReactElement
-    render(<table><thead><tr><th>{SelectionHeader}</th></tr></thead></table>)
+    render(
+      <table>
+        <thead>
+          <tr>
+            <th>{SelectionHeader}</th>
+          </tr>
+        </thead>
+      </table>,
+    )
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement
     expect(checkbox.indeterminate).toBe(true)
   })
@@ -103,7 +124,15 @@ describe('buildModuleEditorManagementColumns', () => {
     const props = { ...defaultProps, selectedItemIds: ['1', '2'] }
     const columns = buildModuleEditorManagementColumns(props)
     const SelectionHeader = columns[0].title as React.ReactElement
-    render(<table><thead><tr><th>{SelectionHeader}</th></tr></thead></table>)
+    render(
+      <table>
+        <thead>
+          <tr>
+            <th>{SelectionHeader}</th>
+          </tr>
+        </thead>
+      </table>,
+    )
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement
     expect(checkbox.checked).toBe(true)
   })

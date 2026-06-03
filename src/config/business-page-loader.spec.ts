@@ -1,14 +1,18 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   loadBusinessPageConfig,
   primeBusinessPageConfig,
 } from '@/config/business-page-loader'
 
 describe('business-page-loader', () => {
-  it('loads the access-control permission catalog config by module key', { timeout: 15000 }, async () => {
+  it('loads the access-control permission catalog config by module key', {
+    timeout: 15000,
+  }, async () => {
     const config = await loadBusinessPageConfig('permission')
     expect(config.key).toBe('permission')
-    expect(config.columns.map((column: any) => column.dataIndex)).toContain('permissionCode')
+    expect(config.columns.map((column: any) => column.dataIndex)).toContain(
+      'permissionCode',
+    )
   })
 
   it('throws for unknown module key', async () => {
@@ -42,7 +46,7 @@ describe('business-page-loader', () => {
 
   it('handles cached config with different key (cached.key !== moduleKey)', async () => {
     const configA = { key: 'permission', columns: [] } as any
-    const configB = { key: 'material', columns: [] } as any
+    const _configB = { key: 'material', columns: [] } as any
     primeBusinessPageConfig('permission', configA)
     await expect(loadBusinessPageConfig('material')).resolves.toBeDefined()
   })

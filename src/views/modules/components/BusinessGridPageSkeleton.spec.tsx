@@ -11,17 +11,23 @@ describe('BusinessGridPageSkeleton', () => {
 
   it('renders skeleton rows', () => {
     const { container } = render(<BusinessGridPageSkeleton />)
-    expect(container.querySelectorAll('.module-page-skeleton-row').length).toBeGreaterThan(0)
+    expect(
+      container.querySelectorAll('.module-page-skeleton-row').length,
+    ).toBeGreaterThan(0)
   })
 
   it('renders skeleton blocks', () => {
     const { container } = render(<BusinessGridPageSkeleton />)
-    expect(container.querySelectorAll('.module-page-skeleton-block').length).toBeGreaterThan(0)
+    expect(
+      container.querySelectorAll('.module-page-skeleton-block').length,
+    ).toBeGreaterThan(0)
   })
 
   it('renders skeleton buttons', () => {
     const { container } = render(<BusinessGridPageSkeleton />)
-    expect(container.querySelectorAll('.module-page-skeleton-button').length).toBeGreaterThan(0)
+    expect(
+      container.querySelectorAll('.module-page-skeleton-button').length,
+    ).toBeGreaterThan(0)
   })
 
   it('renders skeleton table area', () => {

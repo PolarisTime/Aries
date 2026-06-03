@@ -212,8 +212,7 @@ describe('searchAccessibleModules', () => {
       moduleKeys: ['purchase-order'],
       pageConfigs: testPageConfigs,
       canAccessModule: () => true,
-      searchModule: () =>
-        Promise.resolve({ data: { rows: [record] } }),
+      searchModule: () => Promise.resolve({ data: { rows: [record] } }),
       lookupRecordById,
       buildSummary: buildGlobalSearchSummary,
     })
@@ -223,7 +222,10 @@ describe('searchAccessibleModules', () => {
   })
 
   it('uses lookupRecordById for trackId-like keywords', async () => {
-    const record = { id: '123456789012', orderNo: 'PO-001' } satisfies ModuleRecord
+    const record = {
+      id: '123456789012',
+      orderNo: 'PO-001',
+    } satisfies ModuleRecord
     const lookupRecordById = vi.fn().mockResolvedValue(record)
 
     const results = await searchAccessibleModules({
@@ -236,7 +238,10 @@ describe('searchAccessibleModules', () => {
       buildSummary: buildGlobalSearchSummary,
     })
 
-    expect(lookupRecordById).toHaveBeenCalledWith('purchase-order', '123456789012')
+    expect(lookupRecordById).toHaveBeenCalledWith(
+      'purchase-order',
+      '123456789012',
+    )
     expect(results).toHaveLength(1)
   })
 
@@ -261,8 +266,7 @@ describe('searchAccessibleModules', () => {
       moduleKeys: ['purchase-order'],
       pageConfigs: testPageConfigs,
       canAccessModule: () => true,
-      searchModule: () =>
-        Promise.resolve({ data: { rows: [record] } }),
+      searchModule: () => Promise.resolve({ data: { rows: [record] } }),
       buildSummary: buildGlobalSearchSummary,
     })
 
@@ -280,8 +284,7 @@ describe('searchAccessibleModules', () => {
       moduleKeys: ['purchase-order'],
       pageConfigs: testPageConfigs,
       canAccessModule: () => true,
-      searchModule: () =>
-        Promise.resolve({ data: { rows: [record] } }),
+      searchModule: () => Promise.resolve({ data: { rows: [record] } }),
       buildSummary: buildGlobalSearchSummary,
     })
 
@@ -300,8 +303,7 @@ describe('searchAccessibleModules', () => {
       moduleKeys: ['purchase-order'],
       pageConfigs: testPageConfigs,
       canAccessModule: () => true,
-      searchModule: () =>
-        Promise.resolve({ data: { rows: [record] } }),
+      searchModule: () => Promise.resolve({ data: { rows: [record] } }),
       buildSummary: buildGlobalSearchSummary,
     })
 

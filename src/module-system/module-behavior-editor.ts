@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
+import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 import { parseDateTimeValue } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
-import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 
 const currentDateTime = () => dayjs()
 const addOneYear = (value: dayjs.Dayjs) => value.add(1, 'year')

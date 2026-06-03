@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import type {
-  UploadRulePayload,
-  UploadRuleRecord,
-  AttachmentRecord,
   AttachmentBindingRecord,
+  AttachmentRecord,
   LeoPageData,
   NumberRuleGenerateRecord,
+  UploadRulePayload,
+  UploadRuleRecord,
 } from './business-types'
 
 describe('business-types', () => {

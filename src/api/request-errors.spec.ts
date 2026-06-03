@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  markHandledRequestError,
   isCanceledRequestError,
+  markHandledRequestError,
 } from './request-errors'
 
 describe('request-errors', () => {

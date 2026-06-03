@@ -1,12 +1,13 @@
-import { renderHook, act } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { exportModuleDataMock, messageSuccessMock, messageErrorMock, tMock } = vi.hoisted(() => ({
-  exportModuleDataMock: vi.fn(),
-  messageSuccessMock: vi.fn(),
-  messageErrorMock: vi.fn(),
-  tMock: vi.fn((key: string) => key),
-}))
+const { exportModuleDataMock, messageSuccessMock, messageErrorMock, tMock } =
+  vi.hoisted(() => ({
+    exportModuleDataMock: vi.fn(),
+    messageSuccessMock: vi.fn(),
+    messageErrorMock: vi.fn(),
+    tMock: vi.fn((key: string) => key),
+  }))
 
 vi.mock('@/api/common-export', () => ({
   exportModuleData: exportModuleDataMock,
@@ -62,7 +63,9 @@ describe('useExcelExport', () => {
       await result.current.handleExport()
     })
 
-    expect(messageSuccessMock).toHaveBeenCalledWith('hooks.excelExport.exportSuccess')
+    expect(messageSuccessMock).toHaveBeenCalledWith(
+      'hooks.excelExport.exportSuccess',
+    )
   })
 
   it('sets exporting to false after failed export', async () => {
@@ -95,7 +98,9 @@ describe('useExcelExport', () => {
       await result.current.handleExport()
     })
 
-    expect(messageErrorMock).toHaveBeenCalledWith('hooks.excelExport.exportFailed')
+    expect(messageErrorMock).toHaveBeenCalledWith(
+      'hooks.excelExport.exportFailed',
+    )
   })
 
   it('calls exportModuleData with correct module and params', async () => {

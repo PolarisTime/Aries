@@ -9,8 +9,8 @@ import {
   roleDataScopeValues,
   roleTypeValues,
 } from '@/constants/module-options'
-import { useRequestError } from '@/hooks/useRequestError'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { useRequestError } from '@/hooks/useRequestError'
 import { message, modal } from '@/utils/antd-app'
 
 type UseRoleEditorOptions = {
@@ -88,7 +88,9 @@ export function useRoleEditor({
       setRoleModalOpen(false)
 
       if (result.mode === 'create' && result.data) {
-        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.roleSettings })
+        void queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.roleSettings,
+        })
         message.success(t('common.addSuccess'))
         modal.confirm({
           title: t('common.addSuccess'),

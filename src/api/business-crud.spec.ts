@@ -34,11 +34,11 @@ vi.mock('@/api/client', () => ({
 }))
 
 import {
-  generateBusinessPrimaryNo,
   allocateBusinessPrimaryNo,
+  deleteBusinessModule,
+  generateBusinessPrimaryNo,
   getBusinessModuleDetail,
   saveBusinessModule,
-  deleteBusinessModule,
   updateBusinessModuleStatus,
 } from './business-crud'
 
@@ -50,7 +50,9 @@ describe('business-crud', () => {
       readOnly: false,
       supportsDetail: true,
     })
-    normalizeRecordMock.mockImplementation((data: Record<string, unknown>) => data)
+    normalizeRecordMock.mockImplementation(
+      (data: Record<string, unknown>) => data,
+    )
     assertApiSuccessMock.mockImplementation(
       <T extends { code?: number }>(response: T) => {
         if (Number(response?.code) !== 0) {
@@ -84,9 +86,9 @@ describe('business-crud', () => {
         data: { generatedNo: '' },
       })
 
-      await expect(
-        generateBusinessPrimaryNo('purchase-order'),
-      ).rejects.toThrow('未配置可用编号规则')
+      await expect(generateBusinessPrimaryNo('purchase-order')).rejects.toThrow(
+        '未配置可用编号规则',
+      )
     })
   })
 
@@ -111,9 +113,9 @@ describe('business-crud', () => {
         data: { generatedNo: '' },
       })
 
-      await expect(
-        allocateBusinessPrimaryNo('purchase-order'),
-      ).rejects.toThrow('未配置可用编号规则')
+      await expect(allocateBusinessPrimaryNo('purchase-order')).rejects.toThrow(
+        '未配置可用编号规则',
+      )
     })
   })
 
@@ -138,9 +140,9 @@ describe('business-crud', () => {
         supportsDetail: false,
       })
 
-      await expect(
-        getBusinessModuleDetail('read-only', '1'),
-      ).rejects.toThrow('当前模块不支持详情接口')
+      await expect(getBusinessModuleDetail('read-only', '1')).rejects.toThrow(
+        '当前模块不支持详情接口',
+      )
     })
   })
 
@@ -164,7 +166,10 @@ describe('business-crud', () => {
     })
 
     it('updates existing record via PUT', async () => {
-      httpPutMock.mockResolvedValue({ code: 0, data: { id: '1', name: 'updated' } })
+      httpPutMock.mockResolvedValue({
+        code: 0,
+        data: { id: '1', name: 'updated' },
+      })
       serializeBusinessRecordForSaveMock.mockResolvedValue({
         id: '1',
         name: 'updated',
@@ -236,9 +241,9 @@ describe('business-crud', () => {
         readOnly: true,
       })
 
-      await expect(
-        deleteBusinessModule('purchase-order', '1'),
-      ).rejects.toThrow('当前模块不支持删除')
+      await expect(deleteBusinessModule('purchase-order', '1')).rejects.toThrow(
+        '当前模块不支持删除',
+      )
     })
   })
 
@@ -256,10 +261,9 @@ describe('business-crud', () => {
         '已审核',
       )
 
-      expect(httpPatchMock).toHaveBeenCalledWith(
-        '/purchase-orders/1/status',
-        { status: '已审核' },
-      )
+      expect(httpPatchMock).toHaveBeenCalledWith('/purchase-orders/1/status', {
+        status: '已审核',
+      })
       expect(result.data).toEqual({ id: '1', status: '已审核' })
     })
 

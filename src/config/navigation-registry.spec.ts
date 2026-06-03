@@ -5,9 +5,9 @@ vi.mock('i18next', () => ({
 }))
 
 import {
-  menuGroupOrder,
-  menuGroupDefinitions,
   buildMenuEntriesByGroup,
+  menuGroupDefinitions,
+  menuGroupOrder,
 } from './navigation-registry'
 
 describe('navigation-registry', () => {
@@ -55,7 +55,9 @@ describe('navigation-registry', () => {
       expect(menuGroupDefinitions.freight.title).toBe('navigation.freight')
       expect(menuGroupDefinitions.contracts.title).toBe('navigation.contracts')
       expect(menuGroupDefinitions.reports.title).toBe('navigation.reports')
-      expect(menuGroupDefinitions.statements.title).toBe('navigation.statements')
+      expect(menuGroupDefinitions.statements.title).toBe(
+        'navigation.statements',
+      )
       expect(menuGroupDefinitions.finance.title).toBe('navigation.finance')
       expect(menuGroupDefinitions.system.title).toBe('navigation.system')
     })
@@ -70,9 +72,30 @@ describe('navigation-registry', () => {
 
     it('groups entries by menuParent', () => {
       const entries = [
-        { key: 'po', title: '采购订单', menuKey: '/po', view: 'business-grid' as const, icon: 'ProfileOutlined' as const, menuParent: 'purchase' as const },
-        { key: 'so', title: '销售订单', menuKey: '/so', view: 'business-grid' as const, icon: 'FileDoneOutlined' as const, menuParent: 'sales' as const },
-        { key: 'po2', title: '采购订单2', menuKey: '/po2', view: 'business-grid' as const, icon: 'ProfileOutlined' as const, menuParent: 'purchase' as const },
+        {
+          key: 'po',
+          title: '采购订单',
+          menuKey: '/po',
+          view: 'business-grid' as const,
+          icon: 'ProfileOutlined' as const,
+          menuParent: 'purchase' as const,
+        },
+        {
+          key: 'so',
+          title: '销售订单',
+          menuKey: '/so',
+          view: 'business-grid' as const,
+          icon: 'FileDoneOutlined' as const,
+          menuParent: 'sales' as const,
+        },
+        {
+          key: 'po2',
+          title: '采购订单2',
+          menuKey: '/po2',
+          view: 'business-grid' as const,
+          icon: 'ProfileOutlined' as const,
+          menuParent: 'purchase' as const,
+        },
       ]
       const result = buildMenuEntriesByGroup(entries)
       expect(result.get('purchase')).toHaveLength(2)
@@ -82,8 +105,23 @@ describe('navigation-registry', () => {
 
     it('filters out entries with hiddenInMenu', () => {
       const entries = [
-        { key: 'hidden', title: 'Hidden', menuKey: '/hidden', view: 'business-grid' as const, icon: 'ProfileOutlined' as const, menuParent: 'purchase' as const, hiddenInMenu: true },
-        { key: 'visible', title: 'Visible', menuKey: '/visible', view: 'business-grid' as const, icon: 'ProfileOutlined' as const, menuParent: 'purchase' as const },
+        {
+          key: 'hidden',
+          title: 'Hidden',
+          menuKey: '/hidden',
+          view: 'business-grid' as const,
+          icon: 'ProfileOutlined' as const,
+          menuParent: 'purchase' as const,
+          hiddenInMenu: true,
+        },
+        {
+          key: 'visible',
+          title: 'Visible',
+          menuKey: '/visible',
+          view: 'business-grid' as const,
+          icon: 'ProfileOutlined' as const,
+          menuParent: 'purchase' as const,
+        },
       ]
       const result = buildMenuEntriesByGroup(entries)
       expect(result.get('purchase')).toHaveLength(1)
@@ -99,9 +137,30 @@ describe('navigation-registry', () => {
 
     it('preserves entry order within groups', () => {
       const entries = [
-        { key: 'a', title: 'A', menuKey: '/a', view: 'business-grid' as const, icon: 'ProfileOutlined' as const, menuParent: 'master' as const },
-        { key: 'b', title: 'B', menuKey: '/b', view: 'business-grid' as const, icon: 'ProfileOutlined' as const, menuParent: 'master' as const },
-        { key: 'c', title: 'C', menuKey: '/c', view: 'business-grid' as const, icon: 'ProfileOutlined' as const, menuParent: 'master' as const },
+        {
+          key: 'a',
+          title: 'A',
+          menuKey: '/a',
+          view: 'business-grid' as const,
+          icon: 'ProfileOutlined' as const,
+          menuParent: 'master' as const,
+        },
+        {
+          key: 'b',
+          title: 'B',
+          menuKey: '/b',
+          view: 'business-grid' as const,
+          icon: 'ProfileOutlined' as const,
+          menuParent: 'master' as const,
+        },
+        {
+          key: 'c',
+          title: 'C',
+          menuKey: '/c',
+          view: 'business-grid' as const,
+          icon: 'ProfileOutlined' as const,
+          menuParent: 'master' as const,
+        },
       ]
       const result = buildMenuEntriesByGroup(entries)
       const masterEntries = result.get('master')!

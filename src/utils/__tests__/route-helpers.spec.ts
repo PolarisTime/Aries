@@ -1,5 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { getCurrentAppRoute, getRequestPath, isExactAuthEndpoint } from '../route-helpers'
+import { afterEach, describe, expect, it } from 'vitest'
+import {
+  getCurrentAppRoute,
+  getRequestPath,
+  isExactAuthEndpoint,
+} from '../route-helpers'
 
 describe('route-helpers', () => {
   describe('getCurrentAppRoute', () => {

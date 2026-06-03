@@ -15,7 +15,9 @@ vi.mock('@/api/http', () => ({
     put: httpPutMock,
     delete: httpDeleteMock,
     get instance() {
-      return { interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } } }
+      return {
+        interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } },
+      }
     },
   },
 }))
@@ -29,13 +31,13 @@ vi.mock('./auth/auth-interceptor', () => ({
 }))
 
 import {
+  assertApiSuccess,
   ensureApiClientSetup,
   isSuccessCode,
-  assertApiSuccess,
+  restDelete,
   restGet,
   restPost,
   restPut,
-  restDelete,
 } from './client'
 
 describe('client', () => {
@@ -94,9 +96,9 @@ describe('client', () => {
     })
 
     it('uses fallbackMessage parameter', () => {
-      expect(() =>
-        assertApiSuccess({ code: 4000 }, '自定义错误'),
-      ).toThrow('自定义错误')
+      expect(() => assertApiSuccess({ code: 4000 }, '自定义错误')).toThrow(
+        '自定义错误',
+      )
     })
 
     it('attaches traceId to the error', () => {
@@ -121,7 +123,9 @@ describe('client', () => {
     it('works without params', async () => {
       httpGetMock.mockResolvedValue('ok')
       await restGet('/api/test')
-      expect(httpGetMock).toHaveBeenCalledWith('/api/test', { params: undefined })
+      expect(httpGetMock).toHaveBeenCalledWith('/api/test', {
+        params: undefined,
+      })
     })
   })
 

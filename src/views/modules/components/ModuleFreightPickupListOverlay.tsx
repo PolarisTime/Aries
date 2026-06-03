@@ -19,14 +19,44 @@ interface Props {
 
 function getItemColumns(t: (key: string) => string) {
   return [
-    { title: t('modules.itemColumns.sourceNo'), dataIndex: 'sourceNo', width: 140 },
-    { title: t('modules.itemColumns.brand'), dataIndex: 'brand', ellipsis: true, align: 'center' as const },
-    { title: t('modules.itemColumns.material'), dataIndex: 'material', ellipsis: true, align: 'center' as const },
-    { title: t('modules.itemColumns.spec'), dataIndex: 'spec', ellipsis: true, align: 'center' as const },
-    { title: t('modules.itemColumns.length'), dataIndex: 'length', ellipsis: true, align: 'center' as const },
-    { title: t('modules.itemColumns.quantity'), dataIndex: 'quantity', align: 'center' as const },
     {
-      title: t('modules.itemColumns.weightTon'), dataIndex: 'weightTon', align: 'center' as const,
+      title: t('modules.itemColumns.sourceNo'),
+      dataIndex: 'sourceNo',
+      width: 140,
+    },
+    {
+      title: t('modules.itemColumns.brand'),
+      dataIndex: 'brand',
+      ellipsis: true,
+      align: 'center' as const,
+    },
+    {
+      title: t('modules.itemColumns.material'),
+      dataIndex: 'material',
+      ellipsis: true,
+      align: 'center' as const,
+    },
+    {
+      title: t('modules.itemColumns.spec'),
+      dataIndex: 'spec',
+      ellipsis: true,
+      align: 'center' as const,
+    },
+    {
+      title: t('modules.itemColumns.length'),
+      dataIndex: 'length',
+      ellipsis: true,
+      align: 'center' as const,
+    },
+    {
+      title: t('modules.itemColumns.quantity'),
+      dataIndex: 'quantity',
+      align: 'center' as const,
+    },
+    {
+      title: t('modules.itemColumns.weightTon'),
+      dataIndex: 'weightTon',
+      align: 'center' as const,
       render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-'),
     },
   ]
@@ -35,52 +65,93 @@ function getItemColumns(t: (key: string) => string) {
 function DetailCard({ record }: { record: ModuleRecord }) {
   const { t } = useTranslation()
   const itemColumns = getItemColumns(t)
-  const items = (Array.isArray(record.items) ? record.items : []) as ModuleRecord[]
+  const items = (
+    Array.isArray(record.items) ? record.items : []
+  ) as ModuleRecord[]
 
   return (
     <Card size="small" className="mb-3">
       <div className={items.length > 0 ? 'mb-3' : ''}>
         <div className="mb-1">
-          <Typography.Text type="secondary">{t('modules.freightPickup.billNo')}：</Typography.Text>
-          <Typography.Text strong>{String(record.billNo ?? '-')}</Typography.Text>
+          <Typography.Text type="secondary">
+            {t('modules.freightPickup.billNo')}：
+          </Typography.Text>
+          <Typography.Text strong>
+            {String(record.billNo ?? '-')}
+          </Typography.Text>
         </div>
         <div className="mb-1">
-          <Typography.Text type="secondary">{t('modules.freightPickup.customer')}：</Typography.Text>
-          <Typography.Text strong>{String(record.customerName ?? '-')}</Typography.Text>
+          <Typography.Text type="secondary">
+            {t('modules.freightPickup.customer')}：
+          </Typography.Text>
+          <Typography.Text strong>
+            {String(record.customerName ?? '-')}
+          </Typography.Text>
           <span className="ml-6">
-            <Typography.Text type="secondary">{t('modules.freightPickup.project')}：</Typography.Text>
-            <Typography.Text strong>{String(record.projectName ?? '-')}</Typography.Text>
+            <Typography.Text type="secondary">
+              {t('modules.freightPickup.project')}：
+            </Typography.Text>
+            <Typography.Text strong>
+              {String(record.projectName ?? '-')}
+            </Typography.Text>
           </span>
         </div>
         <div>
-          <Typography.Text type="secondary">{t('modules.freightPickup.carrier')}：</Typography.Text>
-          <Typography.Text strong>{String(record.carrierName ?? '-')}</Typography.Text>
+          <Typography.Text type="secondary">
+            {t('modules.freightPickup.carrier')}：
+          </Typography.Text>
+          <Typography.Text strong>
+            {String(record.carrierName ?? '-')}
+          </Typography.Text>
           <span className="ml-6">
-            <Typography.Text type="secondary">{t('modules.freightPickup.vehiclePlate')}：</Typography.Text>
-            <Typography.Text strong>{String(record.vehiclePlate ?? '-')}</Typography.Text>
-          </span>
-          <span className="ml-6">
-            <Typography.Text type="secondary">{t('modules.freightPickup.totalWeight')}：</Typography.Text>
+            <Typography.Text type="secondary">
+              {t('modules.freightPickup.vehiclePlate')}：
+            </Typography.Text>
             <Typography.Text strong>
-              {record.totalWeight != null ? Number(record.totalWeight).toFixed(3) : '-'}
+              {String(record.vehiclePlate ?? '-')}
             </Typography.Text>
           </span>
           <span className="ml-6">
-            <Typography.Text type="secondary">{t('modules.freightPickup.totalFreight')}：</Typography.Text>
+            <Typography.Text type="secondary">
+              {t('modules.freightPickup.totalWeight')}：
+            </Typography.Text>
             <Typography.Text strong>
-              {record.totalFreight != null ? Number(record.totalFreight).toFixed(2) : '-'}
+              {record.totalWeight != null
+                ? Number(record.totalWeight).toFixed(3)
+                : '-'}
+            </Typography.Text>
+          </span>
+          <span className="ml-6">
+            <Typography.Text type="secondary">
+              {t('modules.freightPickup.totalFreight')}：
+            </Typography.Text>
+            <Typography.Text strong>
+              {record.totalFreight != null
+                ? Number(record.totalFreight).toFixed(2)
+                : '-'}
             </Typography.Text>
           </span>
         </div>
       </div>
       {items.length > 0 ? (
-        <Table rowKey="id" columns={itemColumns} dataSource={items} size="small" pagination={false} />
+        <Table
+          rowKey="id"
+          columns={itemColumns}
+          dataSource={items}
+          size="small"
+          pagination={false}
+        />
       ) : null}
     </Card>
   )
 }
 
-export function ModuleFreightPickupListOverlay({ open, moduleKey, records, onClose }: Props) {
+export function ModuleFreightPickupListOverlay({
+  open,
+  moduleKey,
+  records,
+  onClose,
+}: Props) {
   const { t } = useTranslation()
   const recordIds = records.map((r) => String(r.id))
 

@@ -65,7 +65,9 @@ export function useRoleActionPermissions({
   const selectRole = async (role: RoleRecord) => {
     setSelectedRoleId(role.id)
     try {
-      const actions = buildNormalizedRoleActionSet(await getRoleActions(role.id))
+      const actions = buildNormalizedRoleActionSet(
+        await getRoleActions(role.id),
+      )
       setSelectedActions(actions)
     } catch (error) {
       setSelectedActions(new Set())
@@ -164,7 +166,8 @@ export function useRoleActionPermissions({
         queryKey: QUERY_KEYS.rolePermissionOptions,
       })
     },
-    onError: (error: Error) => showError(error, i18next.t('system.rolePermissions.saveFailed')),
+    onError: (error: Error) =>
+      showError(error, i18next.t('system.rolePermissions.saveFailed')),
   })
 
   const matrixColumns: TableColumnsType<RoleMatrixRow> = (() => {

@@ -13,9 +13,9 @@ vi.mock('@/api/client', () => ({
 }))
 
 import {
+  deletePrintTemplate,
   listPrintTemplates,
   savePrintTemplate,
-  deletePrintTemplate,
 } from './print-template'
 
 describe('print-template', () => {
@@ -27,7 +27,9 @@ describe('print-template', () => {
     it('fetches templates by bill type', async () => {
       const mockResponse = {
         code: 0,
-        data: [{ id: '1', templateName: '默认模板', billType: 'purchase-order' }],
+        data: [
+          { id: '1', templateName: '默认模板', billType: 'purchase-order' },
+        ],
       }
       restGetMock.mockResolvedValue(mockResponse)
 
@@ -97,9 +99,12 @@ describe('print-template', () => {
         templateHtml: '<div/>',
       })
 
-      expect(restPostMock).toHaveBeenCalledWith('/print-templates', expect.objectContaining({
-        templateType: 'HTML',
-      }))
+      expect(restPostMock).toHaveBeenCalledWith(
+        '/print-templates',
+        expect.objectContaining({
+          templateType: 'HTML',
+        }),
+      )
     })
 
     it('encodes id in URL for PUT', async () => {
@@ -135,7 +140,9 @@ describe('print-template', () => {
 
       await deletePrintTemplate('id/with/slash')
 
-      expect(restDeleteMock).toHaveBeenCalledWith('/print-templates/id%2Fwith%2Fslash')
+      expect(restDeleteMock).toHaveBeenCalledWith(
+        '/print-templates/id%2Fwith%2Fslash',
+      )
     })
   })
 })

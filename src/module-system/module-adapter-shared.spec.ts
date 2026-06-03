@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  parseParentRelationNos,
-  getModuleRecordPrimaryNo,
   generatePrimaryNo,
+  getModuleRecordPrimaryNo,
+  parseParentRelationNos,
 } from './module-adapter-shared'
 
 describe('parseParentRelationNos', () => {
@@ -69,7 +69,9 @@ describe('generatePrimaryNo', () => {
   })
 
   it('uses material-categories prefix', () => {
-    expect(generatePrimaryNo('material-categories', '2026', '0001')).toBe('MC0001')
+    expect(generatePrimaryNo('material-categories', '2026', '0001')).toBe(
+      'MC0001',
+    )
   })
 
   it('uses supplier prefix', () => {
@@ -81,19 +83,27 @@ describe('generatePrimaryNo', () => {
   })
 
   it('uses purchase-order prefix map', () => {
-    expect(generatePrimaryNo('purchase-order', '2026', '000001')).toBe('2026CG000001')
+    expect(generatePrimaryNo('purchase-order', '2026', '000001')).toBe(
+      '2026CG000001',
+    )
   })
 
   it('uses sales-order prefix map', () => {
-    expect(generatePrimaryNo('sales-order', '2026', '000001')).toBe('2026XS000001')
+    expect(generatePrimaryNo('sales-order', '2026', '000001')).toBe(
+      '2026XS000001',
+    )
   })
 
   it('uses fallback NO prefix for unknown modules', () => {
-    expect(generatePrimaryNo('unknown-module', '2026', '000001')).toBe('2026NO000001')
+    expect(generatePrimaryNo('unknown-module', '2026', '000001')).toBe(
+      '2026NO000001',
+    )
   })
 
   it('uses custom fullDate when provided', () => {
-    expect(generatePrimaryNo('department', '2026', '0001', '2026-01')).toBe('2026-01-0001')
+    expect(generatePrimaryNo('department', '2026', '0001', '2026-01')).toBe(
+      '2026-01-0001',
+    )
   })
 
   it('uses customer master prefix', () => {
@@ -109,35 +119,51 @@ describe('generatePrimaryNo', () => {
   })
 
   it('uses purchase-inbound prefix', () => {
-    expect(generatePrimaryNo('purchase-inbound', '2026', '000001')).toBe('2026RK000001')
+    expect(generatePrimaryNo('purchase-inbound', '2026', '000001')).toBe(
+      '2026RK000001',
+    )
   })
 
   it('uses sales-outbound prefix', () => {
-    expect(generatePrimaryNo('sales-outbound', '2026', '000001')).toBe('2026CK000001')
+    expect(generatePrimaryNo('sales-outbound', '2026', '000001')).toBe(
+      '2026CK000001',
+    )
   })
 
   it('uses freight-bill prefix', () => {
-    expect(generatePrimaryNo('freight-bill', '2026', '000001')).toBe('2026W000001')
+    expect(generatePrimaryNo('freight-bill', '2026', '000001')).toBe(
+      '2026W000001',
+    )
   })
 
   it('uses purchase-contract prefix', () => {
-    expect(generatePrimaryNo('purchase-contract', '2026', '000001')).toBe('2026CGHT000001')
+    expect(generatePrimaryNo('purchase-contract', '2026', '000001')).toBe(
+      '2026CGHT000001',
+    )
   })
 
   it('uses sales-contract prefix', () => {
-    expect(generatePrimaryNo('sales-contract', '2026', '000001')).toBe('2026XSHT000001')
+    expect(generatePrimaryNo('sales-contract', '2026', '000001')).toBe(
+      '2026XSHT000001',
+    )
   })
 
   it('uses supplier-statement prefix', () => {
-    expect(generatePrimaryNo('supplier-statement', '2026', '000001')).toBe('2026GYDZ000001')
+    expect(generatePrimaryNo('supplier-statement', '2026', '000001')).toBe(
+      '2026GYDZ000001',
+    )
   })
 
   it('uses customer-statement prefix', () => {
-    expect(generatePrimaryNo('customer-statement', '2026', '000001')).toBe('2026KHDZ000001')
+    expect(generatePrimaryNo('customer-statement', '2026', '000001')).toBe(
+      '2026KHDZ000001',
+    )
   })
 
   it('uses freight-statement prefix', () => {
-    expect(generatePrimaryNo('freight-statement', '2026', '000001')).toBe('2026WDZ000001')
+    expect(generatePrimaryNo('freight-statement', '2026', '000001')).toBe(
+      '2026WDZ000001',
+    )
   })
 
   it('uses receipts prefix', () => {
@@ -149,10 +175,14 @@ describe('generatePrimaryNo', () => {
   })
 
   it('uses invoice-receipt prefix', () => {
-    expect(generatePrimaryNo('invoice-receipt', '2026', '000001')).toBe('2026SP000001')
+    expect(generatePrimaryNo('invoice-receipt', '2026', '000001')).toBe(
+      '2026SP000001',
+    )
   })
 
   it('uses invoice-issue prefix', () => {
-    expect(generatePrimaryNo('invoice-issue', '2026', '000001')).toBe('2026KP000001')
+    expect(generatePrimaryNo('invoice-issue', '2026', '000001')).toBe(
+      '2026KP000001',
+    )
   })
 })

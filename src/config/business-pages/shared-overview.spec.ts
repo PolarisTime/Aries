@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
-  sumBy,
   buildAmountWeightOverview,
-  buildWeightOverview,
-  buildStatementOverview,
   buildFinanceOverview,
   buildMasterOverview,
+  buildStatementOverview,
+  buildWeightOverview,
+  formatAmount,
   formatInteger,
   formatWeight,
-  formatAmount,
+  sumBy,
 } from './shared-overview'
 
 describe('sumBy', () => {
@@ -41,7 +41,11 @@ describe('buildAmountWeightOverview', () => {
 
   it('uses custom weightKey', () => {
     const rows = [{ customWeight: 200, totalAmount: 3000 }]
-    const result = buildAmountWeightOverview(rows, 'totalAmount', 'customWeight')
+    const result = buildAmountWeightOverview(
+      rows,
+      'totalAmount',
+      'customWeight',
+    )
     expect(result[1].value).toBe(formatWeight(200))
   })
 })
@@ -55,10 +59,13 @@ describe('buildWeightOverview', () => {
 
 describe('buildStatementOverview', () => {
   it('returns four statement metrics', () => {
-    const rows = [
-      { businessAmount: 1000, paidAmount: 600, balanceAmount: 400 },
-    ]
-    const result = buildStatementOverview(rows, 'businessAmount', 'paidAmount', 'balanceAmount')
+    const rows = [{ businessAmount: 1000, paidAmount: 600, balanceAmount: 400 }]
+    const result = buildStatementOverview(
+      rows,
+      'businessAmount',
+      'paidAmount',
+      'balanceAmount',
+    )
     expect(result).toHaveLength(4)
     expect(result[0].value).toBe(formatInteger(1))
     expect(result[1].value).toBe(formatAmount(1000))
@@ -78,11 +85,7 @@ describe('buildFinanceOverview', () => {
 
 describe('buildMasterOverview', () => {
   it('returns master data count and normal count', () => {
-    const rows = [
-      { status: '正常' },
-      { status: '正常' },
-      { status: '禁用' },
-    ]
+    const rows = [{ status: '正常' }, { status: '正常' }, { status: '禁用' }]
     const result = buildMasterOverview(rows)
     expect(result).toHaveLength(2)
     expect(result[0].value).toBe(formatInteger(3))
@@ -90,10 +93,7 @@ describe('buildMasterOverview', () => {
   })
 
   it('uses custom activeKey and activeValue', () => {
-    const rows = [
-      { state: 'active' },
-      { state: 'inactive' },
-    ]
+    const rows = [{ state: 'active' }, { state: 'inactive' }]
     const result = buildMasterOverview(rows, 'state', 'active')
     expect(result[1].value).toBe(formatInteger(1))
   })

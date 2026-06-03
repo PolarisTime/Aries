@@ -44,9 +44,7 @@ describe('cloneLineItems', () => {
     vi.useFakeTimers()
     vi.setSystemTime(2000000)
 
-    const items = [
-      { id: '1', code: 'A001', quantity: 5, price: 100 },
-    ]
+    const items = [{ id: '1', code: 'A001', quantity: 5, price: 100 }]
     const result = cloneLineItems(items, 'INV')
 
     expect(result[0].code).toBe('A001')

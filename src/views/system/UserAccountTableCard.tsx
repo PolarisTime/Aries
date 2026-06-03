@@ -116,8 +116,16 @@ export function UserAccountTableCard({
         </Space>
       ),
     },
-    { dataIndex: 'loginName', title: t('system.userAccountTable.colLoginName'), width: 140 },
-    { dataIndex: 'userName', title: t('system.userAccountTable.colUserName'), width: 140 },
+    {
+      dataIndex: 'loginName',
+      title: t('system.userAccountTable.colLoginName'),
+      width: 140,
+    },
+    {
+      dataIndex: 'userName',
+      title: t('system.userAccountTable.colUserName'),
+      width: 140,
+    },
     {
       dataIndex: 'departmentName',
       title: t('system.userAccountTable.colDepartment'),
@@ -149,7 +157,11 @@ export function UserAccountTableCard({
       width: 110,
       align: 'center' as const,
       render: (value: boolean) => (
-        <Tag color={getTotpColor(!!value)}>{value ? t('system.userAccountTable.totpEnabled') : t('system.userAccountTable.totpDisabled')}</Tag>
+        <Tag color={getTotpColor(!!value)}>
+          {value
+            ? t('system.userAccountTable.totpEnabled')
+            : t('system.userAccountTable.totpDisabled')}
+        </Tag>
       ),
     },
     {

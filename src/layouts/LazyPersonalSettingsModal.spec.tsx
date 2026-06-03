@@ -23,7 +23,9 @@ const defaultProps = {
 
 describe('LazyPersonalSettingsModal', () => {
   it('returns null when open is false', () => {
-    const { container } = render(<LazyPersonalSettingsModal {...defaultProps} />)
+    const { container } = render(
+      <LazyPersonalSettingsModal {...defaultProps} />,
+    )
     expect(container.innerHTML).toBe('')
   })
 

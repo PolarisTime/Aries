@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { http, authHttp } from './http'
+import { authHttp, http } from './http'
 
 vi.mock('@/utils/env', () => ({
   apiBaseUrl: 'http://test-api.example.com',
@@ -37,7 +37,9 @@ describe('http client', () => {
 
     const result = await http.get('/test', { params: { q: 'foo' } })
     expect(result).toEqual(mockData)
-    expect(http.instance.get).toHaveBeenCalledWith('/test', { params: { q: 'foo' } })
+    expect(http.instance.get).toHaveBeenCalledWith('/test', {
+      params: { q: 'foo' },
+    })
   })
 
   it('post sends data and returns result', async () => {
@@ -46,16 +48,28 @@ describe('http client', () => {
 
     const result = await http.post('/test', { name: 'bar' })
     expect(result).toEqual(mockResponse)
-    expect(http.instance.post).toHaveBeenCalledWith('/test', { name: 'bar' }, undefined)
+    expect(http.instance.post).toHaveBeenCalledWith(
+      '/test',
+      { name: 'bar' },
+      undefined,
+    )
   })
 
   it('put sends data and returns result', async () => {
     const mockResponse = { updated: true }
     vi.spyOn(http.instance, 'put').mockResolvedValue(mockResponse)
 
-    const result = await http.put('/test/1', { name: 'updated' }, { headers: {} })
+    const result = await http.put(
+      '/test/1',
+      { name: 'updated' },
+      { headers: {} },
+    )
     expect(result).toEqual(mockResponse)
-    expect(http.instance.put).toHaveBeenCalledWith('/test/1', { name: 'updated' }, { headers: {} })
+    expect(http.instance.put).toHaveBeenCalledWith(
+      '/test/1',
+      { name: 'updated' },
+      { headers: {} },
+    )
   })
 
   it('patch sends data and returns result', async () => {

@@ -61,7 +61,11 @@ describe('useAppWatermark', () => {
     const fixedDate = new Date('2026-06-02T08:30:00+08:00')
 
     expect(
-      buildWatermarkContent('内部专用\n{username}\n{date}', 'zhangsan', fixedDate),
+      buildWatermarkContent(
+        '内部专用\n{username}\n{date}',
+        'zhangsan',
+        fixedDate,
+      ),
     ).toEqual(['内部专用', 'zhangsan', '2026/6/2'])
   })
 })

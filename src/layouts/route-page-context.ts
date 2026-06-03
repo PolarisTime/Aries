@@ -19,7 +19,10 @@ function normalizePath(pathname: string) {
   return normalized || '/'
 }
 
-export function resolveRoutePageContext(pathname: string, t: TFunction): RoutePageContext {
+export function resolveRoutePageContext(
+  pathname: string,
+  t: TFunction,
+): RoutePageContext {
   const normalizedPath = normalizePath(pathname)
   const matchedDefinition = pageDefinitionByPath.get(normalizedPath)
   if (matchedDefinition) {

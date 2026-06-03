@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   businessNoResultSchema,
-  materialInfoSchema,
-  weightPriceSchema,
   documentStatusSchema,
   enabledStatusSchema,
+  materialInfoSchema,
+  weightPriceSchema,
 } from './api'
 
 describe('api schemas', () => {

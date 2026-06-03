@@ -132,12 +132,22 @@ describe('setup-two-factor-constants', () => {
       const mockT = vi.fn((key: string) => `translated-${key}`)
       const highlights = buildSetupSecurityHighlights(mockT)
       expect(mockT).toHaveBeenCalledWith('auth.setup2fa.highlights.scanTitle')
-      expect(mockT).toHaveBeenCalledWith('auth.setup2fa.highlights.scanDescription')
+      expect(mockT).toHaveBeenCalledWith(
+        'auth.setup2fa.highlights.scanDescription',
+      )
       expect(mockT).toHaveBeenCalledWith('auth.setup2fa.highlights.secretTitle')
-      expect(mockT).toHaveBeenCalledWith('auth.setup2fa.highlights.secretDescription')
-      expect(mockT).toHaveBeenCalledWith('auth.setup2fa.highlights.effectiveTitle')
-      expect(mockT).toHaveBeenCalledWith('auth.setup2fa.highlights.effectiveDescription')
-      expect(highlights[0].title).toBe('translated-auth.setup2fa.highlights.scanTitle')
+      expect(mockT).toHaveBeenCalledWith(
+        'auth.setup2fa.highlights.secretDescription',
+      )
+      expect(mockT).toHaveBeenCalledWith(
+        'auth.setup2fa.highlights.effectiveTitle',
+      )
+      expect(mockT).toHaveBeenCalledWith(
+        'auth.setup2fa.highlights.effectiveDescription',
+      )
+      expect(highlights[0].title).toBe(
+        'translated-auth.setup2fa.highlights.scanTitle',
+      )
     })
 
     it('uses t function for all step values', () => {
@@ -146,9 +156,13 @@ describe('setup-two-factor-constants', () => {
       expect(mockT).toHaveBeenCalledWith('auth.setup2fa.steps.scanTitle')
       expect(mockT).toHaveBeenCalledWith('auth.setup2fa.steps.scanDescription')
       expect(mockT).toHaveBeenCalledWith('auth.setup2fa.steps.secretTitle')
-      expect(mockT).toHaveBeenCalledWith('auth.setup2fa.steps.secretDescription')
+      expect(mockT).toHaveBeenCalledWith(
+        'auth.setup2fa.steps.secretDescription',
+      )
       expect(mockT).toHaveBeenCalledWith('auth.setup2fa.steps.verifyTitle')
-      expect(mockT).toHaveBeenCalledWith('auth.setup2fa.steps.verifyDescription')
+      expect(mockT).toHaveBeenCalledWith(
+        'auth.setup2fa.steps.verifyDescription',
+      )
       expect(steps[0].title).toBe('translated-auth.setup2fa.steps.scanTitle')
     })
 

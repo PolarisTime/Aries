@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import {
@@ -7,15 +8,13 @@ import {
   statusMap,
 } from './shared'
 import { masterStatusFilter } from './shared-filters'
-import i18next from 'i18next'
 
 export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
   'general-setting': {
     key: 'general-setting',
     title: i18next.t('modules.pages.systemCore.generalSettings'),
     kicker: 'System',
-    description:
-      i18next.t('modules.pages.systemCore.generalSettingDesc'),
+    description: i18next.t('modules.pages.systemCore.generalSettingDesc'),
     actions: [...actionSet],
     filters: [
       {
@@ -27,11 +26,31 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
       { ...masterStatusFilter },
     ],
     columns: [
-      { title: i18next.t('modules.pages.systemCore.settingCode'), dataIndex: 'settingCode', width: 150 },
-      { title: i18next.t('modules.pages.systemCore.settingName'), dataIndex: 'settingName', width: 180 },
-      { title: i18next.t('modules.pages.systemCore.billName'), dataIndex: 'billName', width: 140 },
-      { title: i18next.t('modules.pages.systemCore.prefix'), dataIndex: 'prefix', width: 90 },
-      { title: i18next.t('modules.pages.systemCore.dateRule'), dataIndex: 'dateRule', width: 120 },
+      {
+        title: i18next.t('modules.pages.systemCore.settingCode'),
+        dataIndex: 'settingCode',
+        width: 150,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.settingName'),
+        dataIndex: 'settingName',
+        width: 180,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.billName'),
+        dataIndex: 'billName',
+        width: 140,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.prefix'),
+        dataIndex: 'prefix',
+        width: 90,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.dateRule'),
+        dataIndex: 'dateRule',
+        width: 120,
+      },
       {
         title: i18next.t('modules.pages.systemCore.serialLength'),
         dataIndex: 'serialLength',
@@ -39,8 +58,16 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
         align: 'right',
         type: 'count',
       },
-      { title: i18next.t('modules.pages.systemCore.resetRule'), dataIndex: 'resetRule', width: 110 },
-      { title: i18next.t('modules.pages.systemCore.sampleNoOrValue'), dataIndex: 'sampleNo', width: 170 },
+      {
+        title: i18next.t('modules.pages.systemCore.resetRule'),
+        dataIndex: 'resetRule',
+        width: 110,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.sampleNoOrValue'),
+        dataIndex: 'sampleNo',
+        width: 170,
+      },
       {
         title: i18next.t('modules.pages.systemCore.status'),
         dataIndex: 'status',
@@ -48,18 +75,48 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
         type: 'status',
         align: 'center',
       },
-      { title: i18next.t('modules.pages.systemCore.remark'), dataIndex: 'remark', width: 220 },
+      {
+        title: i18next.t('modules.pages.systemCore.remark'),
+        dataIndex: 'remark',
+        width: 220,
+      },
     ],
     detailFields: [
-      { label: i18next.t('modules.pages.systemCore.settingCode'), key: 'settingCode' },
-      { label: i18next.t('modules.pages.systemCore.settingName'), key: 'settingName' },
-      { label: i18next.t('modules.pages.systemCore.billName'), key: 'billName' },
+      {
+        label: i18next.t('modules.pages.systemCore.settingCode'),
+        key: 'settingCode',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.settingName'),
+        key: 'settingName',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.billName'),
+        key: 'billName',
+      },
       { label: i18next.t('modules.pages.systemCore.prefix'), key: 'prefix' },
-      { label: i18next.t('modules.pages.systemCore.dateRule'), key: 'dateRule' },
-      { label: i18next.t('modules.pages.systemCore.serialLength'), key: 'serialLength', type: 'count' },
-      { label: i18next.t('modules.pages.systemCore.resetRule'), key: 'resetRule' },
-      { label: i18next.t('modules.pages.systemCore.sampleNoOrValue'), key: 'sampleNo' },
-      { label: i18next.t('modules.pages.systemCore.status'), key: 'status', type: 'status' },
+      {
+        label: i18next.t('modules.pages.systemCore.dateRule'),
+        key: 'dateRule',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.serialLength'),
+        key: 'serialLength',
+        type: 'count',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.resetRule'),
+        key: 'resetRule',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.sampleNoOrValue'),
+        key: 'sampleNo',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.status'),
+        key: 'status',
+        type: 'status',
+      },
       { label: i18next.t('modules.pages.systemCore.remark'), key: 'remark' },
     ],
     formFields: [
@@ -84,7 +141,13 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
         required: true,
         row: 1,
       },
-      { key: 'prefix', label: i18next.t('modules.pages.systemCore.prefix'), type: 'input', required: true, row: 1 },
+      {
+        key: 'prefix',
+        label: i18next.t('modules.pages.systemCore.prefix'),
+        type: 'input',
+        required: true,
+        row: 1,
+      },
       {
         key: 'dateRule',
         label: i18next.t('modules.pages.systemCore.dateRule'),
@@ -113,9 +176,18 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
         required: true,
         row: 2,
         options: [
-          { label: i18next.t('modules.pages.systemCore.yearly'), value: '按年重置' },
-          { label: i18next.t('modules.pages.systemCore.monthly'), value: '按月重置' },
-          { label: i18next.t('modules.pages.systemCore.never'), value: '永不重置' },
+          {
+            label: i18next.t('modules.pages.systemCore.yearly'),
+            value: '按年重置',
+          },
+          {
+            label: i18next.t('modules.pages.systemCore.monthly'),
+            value: '按月重置',
+          },
+          {
+            label: i18next.t('modules.pages.systemCore.never'),
+            value: '永不重置',
+          },
         ],
       },
       {
@@ -134,11 +206,20 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
         options: enabledStatusOptions,
         row: 3,
       },
-      { key: 'remark', label: i18next.t('modules.pages.systemCore.remark'), type: 'textarea', row: 4, fullRow: true },
+      {
+        key: 'remark',
+        label: i18next.t('modules.pages.systemCore.remark'),
+        type: 'textarea',
+        row: 4,
+        fullRow: true,
+      },
     ],
     data: [],
     buildOverview: (rows) => [
-      { label: i18next.t('modules.pages.systemCore.ruleCount'), value: formatInteger(rows.length) },
+      {
+        label: i18next.t('modules.pages.systemCore.ruleCount'),
+        value: formatInteger(rows.length),
+      },
       {
         label: i18next.t('modules.pages.systemCore.enabledRuleCount'),
         value: formatInteger(
@@ -153,8 +234,7 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
     key: 'company-setting',
     title: i18next.t('modules.pages.systemCore.companyInfo'),
     kicker: 'System',
-    description:
-      i18next.t('modules.pages.systemCore.companyInfoDesc'),
+    description: i18next.t('modules.pages.systemCore.companyInfoDesc'),
     actions: [...actionSet],
     filters: [
       {
@@ -165,12 +245,27 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
       },
     ],
     columns: [
-      { title: i18next.t('modules.pages.systemCore.companyName'), dataIndex: 'companyName', width: 180 },
-      { title: i18next.t('modules.pages.systemCore.taxNo'), dataIndex: 'taxNo', width: 180 },
-      { title: i18next.t('modules.pages.systemCore.remark'), dataIndex: 'remark', width: 220 },
+      {
+        title: i18next.t('modules.pages.systemCore.companyName'),
+        dataIndex: 'companyName',
+        width: 180,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.taxNo'),
+        dataIndex: 'taxNo',
+        width: 180,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.remark'),
+        dataIndex: 'remark',
+        width: 220,
+      },
     ],
     detailFields: [
-      { label: i18next.t('modules.pages.systemCore.companyName'), key: 'companyName' },
+      {
+        label: i18next.t('modules.pages.systemCore.companyName'),
+        key: 'companyName',
+      },
       { label: i18next.t('modules.pages.systemCore.taxNo'), key: 'taxNo' },
       { label: i18next.t('modules.pages.systemCore.remark'), key: 'remark' },
     ],
@@ -182,8 +277,20 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
         required: true,
         row: 1,
       },
-      { key: 'taxNo', label: i18next.t('modules.pages.systemCore.taxNo'), type: 'input', required: true, row: 1 },
-      { key: 'remark', label: i18next.t('modules.pages.systemCore.remark'), type: 'textarea', row: 2, fullRow: true },
+      {
+        key: 'taxNo',
+        label: i18next.t('modules.pages.systemCore.taxNo'),
+        type: 'input',
+        required: true,
+        row: 1,
+      },
+      {
+        key: 'remark',
+        label: i18next.t('modules.pages.systemCore.remark'),
+        type: 'textarea',
+        row: 2,
+        fullRow: true,
+      },
     ],
     data: [],
     buildOverview: (rows) => buildMasterOverview(rows),

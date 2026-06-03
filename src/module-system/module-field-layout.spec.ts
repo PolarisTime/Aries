@@ -21,11 +21,7 @@ describe('groupFieldsByRow', () => {
   })
 
   it('puts fullRow field in its own row', () => {
-    const fields = [
-      { key: 'a' },
-      { fullRow: true, key: 'b' },
-      { key: 'c' },
-    ]
+    const fields = [{ key: 'a' }, { fullRow: true, key: 'b' }, { key: 'c' }]
     const result = groupFieldsByRow(fields)
     expect(result).toHaveLength(3)
     expect(result[0]).toHaveLength(1)
@@ -34,10 +30,7 @@ describe('groupFieldsByRow', () => {
   })
 
   it('puts textarea type field in its own row', () => {
-    const fields = [
-      { key: 'a' },
-      { type: 'textarea', key: 'b' },
-    ]
+    const fields = [{ key: 'a' }, { type: 'textarea', key: 'b' }]
     const result = groupFieldsByRow(fields)
     expect(result).toHaveLength(2)
     expect(result[0]).toHaveLength(1)
@@ -52,7 +45,10 @@ describe('groupFieldsByRow', () => {
     ]
     const result = groupFieldsByRow(fields)
     expect(result).toHaveLength(2)
-    expect(result[0]).toEqual([{ row: 1, key: 'a' }, { row: 1, key: 'b' }])
+    expect(result[0]).toEqual([
+      { row: 1, key: 'a' },
+      { row: 1, key: 'b' },
+    ])
     expect(result[1]).toEqual([{ row: 2, key: 'c' }])
   })
 
@@ -67,10 +63,7 @@ describe('groupFieldsByRow', () => {
   })
 
   it('handles mixed explicit and implicit rows by using explicit', () => {
-    const fields = [
-      { key: 'a' },
-      { row: 2, key: 'b' },
-    ]
+    const fields = [{ key: 'a' }, { row: 2, key: 'b' }]
     const result = groupFieldsByRow(fields)
     expect(result).toHaveLength(2)
     expect(result[0]).toHaveLength(1)
@@ -99,12 +92,7 @@ describe('groupFieldsByRow', () => {
   })
 
   it('handles exactly 4 fields per row when no explicit rows', () => {
-    const fields = [
-      { key: 'a' },
-      { key: 'b' },
-      { key: 'c' },
-      { key: 'd' },
-    ]
+    const fields = [{ key: 'a' }, { key: 'b' }, { key: 'c' }, { key: 'd' }]
     const result = groupFieldsByRow(fields)
     expect(result).toHaveLength(1)
     expect(result[0]).toHaveLength(4)

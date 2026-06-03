@@ -26,7 +26,9 @@ export function DashboardInfoPanels({
           <h1 className="dashboard-hero-title">
             {summary?.companyName || t('common.brandSubtitle')}
           </h1>
-          <p className="dashboard-hero-desc">{t('dashboard.fields.serverTime')} {animatedServerTime}</p>
+          <p className="dashboard-hero-desc">
+            {t('dashboard.fields.serverTime')} {animatedServerTime}
+          </p>
         </div>
         <div className="dashboard-hero-right">
           <Avatar size={48} className="bg-primary">
@@ -41,7 +43,10 @@ export function DashboardInfoPanels({
 
       <div className="dashboard-panels-grid">
         <div>
-          <Card title={t('dashboard.info.accountInfo')} className="dashboard-panel">
+          <Card
+            title={t('dashboard.info.accountInfo')}
+            className="dashboard-panel"
+          >
             <Descriptions
               column={1}
               size="small"
@@ -63,7 +68,10 @@ export function DashboardInfoPanels({
           </Card>
         </div>
         <div>
-          <Card title={t('dashboard.info.systemOverview')} className="dashboard-panel">
+          <Card
+            title={t('dashboard.info.systemOverview')}
+            className="dashboard-panel"
+          >
             <Statistic
               title={t('dashboard.info.activeSessions')}
               value={summary?.activeSessionCount ?? 0}
@@ -74,7 +82,10 @@ export function DashboardInfoPanels({
               value={summary?.visibleMenuCount ?? 0}
               className="mb-4"
             />
-            <Statistic title={t('dashboard.info.actionPermissions')} value={summary?.actionCount ?? 0} />
+            <Statistic
+              title={t('dashboard.info.actionPermissions')}
+              value={summary?.actionCount ?? 0}
+            />
           </Card>
         </div>
       </div>

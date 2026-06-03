@@ -6,14 +6,26 @@ export type NumberRuleEditorKind = 'number-rule' | 'upload-rule'
 
 export const DATE_RULE_OPTIONS = [
   { label: i18next.t('system.numberRulesUtils.dateRuleYear'), value: 'yyyy' },
-  { label: i18next.t('system.numberRulesUtils.dateRuleMonth'), value: 'yyyyMM' },
+  {
+    label: i18next.t('system.numberRulesUtils.dateRuleMonth'),
+    value: 'yyyyMM',
+  },
   { label: i18next.t('system.numberRulesUtils.dateRuleNone'), value: 'NONE' },
 ]
 
 export const RESET_RULE_OPTIONS = [
-  { label: i18next.t('system.numberRulesUtils.resetRuleYearly'), value: 'YEARLY' },
-  { label: i18next.t('system.numberRulesUtils.resetRuleMonthly'), value: 'MONTHLY' },
-  { label: i18next.t('system.numberRulesUtils.resetRuleNever'), value: 'NEVER' },
+  {
+    label: i18next.t('system.numberRulesUtils.resetRuleYearly'),
+    value: 'YEARLY',
+  },
+  {
+    label: i18next.t('system.numberRulesUtils.resetRuleMonthly'),
+    value: 'MONTHLY',
+  },
+  {
+    label: i18next.t('system.numberRulesUtils.resetRuleNever'),
+    value: 'NEVER',
+  },
 ]
 
 export const NUMBER_RULE_STATUS_OPTIONS = [
@@ -54,21 +66,26 @@ export function matchesNumberRuleKeyword(
 
 export function formatDateRuleLabel(value?: string) {
   if (value === 'yyyy') return i18next.t('system.numberRulesUtils.dateRuleYear')
-  if (value === 'yyyyMM') return i18next.t('system.numberRulesUtils.dateRuleMonth')
+  if (value === 'yyyyMM')
+    return i18next.t('system.numberRulesUtils.dateRuleMonth')
   if (value === 'NONE') return i18next.t('system.numberRulesUtils.dateRuleNone')
   return value || '--'
 }
 
 export function formatResetRuleLabel(value?: string) {
-  if (value === 'YEARLY') return i18next.t('system.numberRulesUtils.resetRuleYearly')
-  if (value === 'MONTHLY') return i18next.t('system.numberRulesUtils.resetRuleMonthly')
-  if (value === 'NEVER') return i18next.t('system.numberRulesUtils.resetRuleNever')
+  if (value === 'YEARLY')
+    return i18next.t('system.numberRulesUtils.resetRuleYearly')
+  if (value === 'MONTHLY')
+    return i18next.t('system.numberRulesUtils.resetRuleMonthly')
+  if (value === 'NEVER')
+    return i18next.t('system.numberRulesUtils.resetRuleNever')
   return value || '--'
 }
 
 export function formatNumberRuleStatusText(value?: string) {
   if (value === '正常') return i18next.t('system.numberRulesUtils.statusNormal')
-  if (value === '禁用') return i18next.t('system.numberRulesUtils.statusDisabled')
+  if (value === '禁用')
+    return i18next.t('system.numberRulesUtils.statusDisabled')
   return value || '--'
 }
 

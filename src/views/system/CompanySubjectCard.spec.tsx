@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -59,7 +59,9 @@ describe('CompanySubjectCard', () => {
         settlementAccountCount={0}
       />,
     )
-    expect(container.querySelectorAll('.ant-form-item').length).toBeGreaterThan(0)
+    expect(container.querySelectorAll('.ant-form-item').length).toBeGreaterThan(
+      0,
+    )
   })
 
   it('renders descriptions component', () => {

@@ -16,7 +16,9 @@ vi.mock('@tanstack/react-query', () => ({
 }))
 
 vi.mock('@/stores/permissionStore', () => ({
-  usePermissionStore: (selector?: (state: Record<string, unknown>) => unknown) => {
+  usePermissionStore: (
+    selector?: (state: Record<string, unknown>) => unknown,
+  ) => {
     const state = { can: mockCan }
     return selector ? selector(state) : state
   },

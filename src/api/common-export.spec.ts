@@ -37,7 +37,9 @@ describe('common-export', () => {
     await exportModuleData('purchase-order', { keyword: 'test' })
 
     expect(getModuleConfigMock).toHaveBeenCalledWith('purchase-order')
-    expect(buildFilterParamsMock).toHaveBeenCalledWith('purchase-order', { keyword: 'test' })
+    expect(buildFilterParamsMock).toHaveBeenCalledWith('purchase-order', {
+      keyword: 'test',
+    })
     expect(httpPostMock).toHaveBeenCalledWith(
       '/purchase-orders/export',
       { keyword: 'test' },
@@ -46,7 +48,10 @@ describe('common-export', () => {
         responseType: 'blob',
       },
     )
-    expect(downloadBlobMock).toHaveBeenCalledWith(mockBlob, 'purchase-order.xlsx')
+    expect(downloadBlobMock).toHaveBeenCalledWith(
+      mockBlob,
+      'purchase-order.xlsx',
+    )
   })
 
   it('throws when module is not configured', async () => {
@@ -54,8 +59,8 @@ describe('common-export', () => {
       throw new Error('moduleNotConfigured: invalid-module')
     })
 
-    await expect(
-      exportModuleData('invalid-module', {}),
-    ).rejects.toThrow('moduleNotConfigured: invalid-module')
+    await expect(exportModuleData('invalid-module', {})).rejects.toThrow(
+      'moduleNotConfigured: invalid-module',
+    )
   })
 })

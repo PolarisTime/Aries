@@ -27,7 +27,11 @@ import { LoginPasswordForm } from '@/views/auth/LoginPasswordForm'
 
 function TestWrapper({ children, ...props }: any) {
   const [form] = Form.useForm()
-  return <LoginPasswordForm form={form} {...props}>{children}</LoginPasswordForm>
+  return (
+    <LoginPasswordForm form={form} {...props}>
+      {children}
+    </LoginPasswordForm>
+  )
 }
 
 describe('LoginPasswordForm', () => {

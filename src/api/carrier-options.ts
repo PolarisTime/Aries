@@ -10,7 +10,9 @@ export type CarrierOption = {
   vehiclePlates?: string[]
 }
 
-export function normalizeCarrierOptions(options: CarrierOption[]): CarrierOption[] {
+export function normalizeCarrierOptions(
+  options: CarrierOption[],
+): CarrierOption[] {
   return options.map((option) => ({
     ...option,
     id: option.id == null ? undefined : String(option.id),

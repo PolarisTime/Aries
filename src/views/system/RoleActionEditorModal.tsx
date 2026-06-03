@@ -1,9 +1,9 @@
+import { useQuery } from '@tanstack/react-query'
 import type { FormInstance } from 'antd'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
-import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { http } from '@/api/client'
 import type { RoleRecord } from '@/api/role-actions'
@@ -50,7 +50,11 @@ export function RoleActionEditorModal({
 
   return (
     <FormModal
-      title={editingRole ? t('system.roleEditor.editTitle') : t('system.roleEditor.createTitle')}
+      title={
+        editingRole
+          ? t('system.roleEditor.editTitle')
+          : t('system.roleEditor.createTitle')
+      }
       open={open}
       onClose={onClose}
       onSave={onSave}
@@ -77,10 +81,21 @@ export function RoleActionEditorModal({
             </Typography.Text>
           </Form.Item>
         ) : null}
-        <Form.Item name="roleName" label={t('system.roleEditor.roleName')} required>
-          <Input placeholder={t('system.roleEditor.roleNamePlaceholder')} maxLength={64} />
+        <Form.Item
+          name="roleName"
+          label={t('system.roleEditor.roleName')}
+          required
+        >
+          <Input
+            placeholder={t('system.roleEditor.roleNamePlaceholder')}
+            maxLength={64}
+          />
         </Form.Item>
-        <Form.Item name="roleCode" label={t('system.roleEditor.roleCode')} required>
+        <Form.Item
+          name="roleCode"
+          label={t('system.roleEditor.roleCode')}
+          required
+        >
           <Input
             placeholder={t('system.roleEditor.roleCodePlaceholder')}
             maxLength={64}
@@ -101,7 +116,10 @@ export function RoleActionEditorModal({
           />
         </Form.Item>
         <Form.Item name="remark" label={t('system.roleEditor.remark')}>
-          <Input.TextArea placeholder={t('system.roleEditor.remarkPlaceholder')} rows={3} />
+          <Input.TextArea
+            placeholder={t('system.roleEditor.remarkPlaceholder')}
+            rows={3}
+          />
         </Form.Item>
       </Form>
     </FormModal>

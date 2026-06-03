@@ -45,7 +45,9 @@ describe('customerStatementPageConfig', () => {
     })
 
     it('validateBeforeOpen returns null when customerName is present', () => {
-      expect(pi.validateBeforeOpen!({ customerName: '客户A' } as any)).toBeNull()
+      expect(
+        pi.validateBeforeOpen!({ customerName: '客户A' } as any),
+      ).toBeNull()
     })
 
     it('validateBeforeOpen returns error when customerName is empty', () => {
@@ -114,11 +116,12 @@ describe('customerStatementPageConfig', () => {
     it('validateParentImport rejects mismatched project', () => {
       const result = pi.validateParentImport!({
         currentRecord: { customerName: '客户A', projectName: '项目Y' },
-        currentItems: [
-          { projectName: '项目Y' },
-          { projectName: '项目Z' },
-        ],
-        parentRecord: { status: '完成销售', customerName: '客户A', projectName: '项目X' },
+        currentItems: [{ projectName: '项目Y' }, { projectName: '项目Z' }],
+        parentRecord: {
+          status: '完成销售',
+          customerName: '客户A',
+          projectName: '项目X',
+        },
       } as any)
       expect(result).toBe('只能选择同一项目的销售订单生成客户对账单')
     })
@@ -127,7 +130,11 @@ describe('customerStatementPageConfig', () => {
       const result = pi.validateParentImport!({
         currentRecord: { customerName: '客户A', projectName: '' },
         currentItems: [],
-        parentRecord: { status: '完成销售', customerName: '客户A', projectName: '项目X' },
+        parentRecord: {
+          status: '完成销售',
+          customerName: '客户A',
+          projectName: '项目X',
+        },
       } as any)
       expect(result).toBeNull()
     })
@@ -136,7 +143,11 @@ describe('customerStatementPageConfig', () => {
       const result = pi.validateParentImport!({
         currentRecord: { customerName: '客户A', projectName: ' 项目X ' },
         currentItems: [{ projectName: '项目X' }],
-        parentRecord: { status: '完成销售', customerName: '客户A', projectName: '项目X' },
+        parentRecord: {
+          status: '完成销售',
+          customerName: '客户A',
+          projectName: '项目X',
+        },
       } as any)
       expect(result).toBeNull()
     })

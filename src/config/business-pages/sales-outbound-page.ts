@@ -30,14 +30,18 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       key: 'keyword',
       label: OUTBOUND_NO_FILTER_LABEL,
       type: 'input',
-      placeholder: i18next.t('modules.pages.salesOutbound.placeholderOutboundNo'),
+      placeholder: i18next.t(
+        'modules.pages.salesOutbound.placeholderOutboundNo',
+      ),
       clientSearchKeys: ['outboundNo'],
     },
     {
       key: 'productKeyword',
       label: i18next.t('modules.pages.salesOutbound.filterProductKeyword'),
       type: 'input',
-      placeholder: i18next.t('modules.pages.salesOutbound.placeholderProductKeyword'),
+      placeholder: i18next.t(
+        'modules.pages.salesOutbound.placeholderProductKeyword',
+      ),
       clientSearchLineItemKeys: [
         'materialCode',
         'materialName',
@@ -51,7 +55,11 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       type: 'select',
       options: buildValueOptions('草稿', '已审核'),
     },
-    { key: 'outboundDate', label: i18next.t('modules.pages.salesOutbound.filterOutboundDate'), type: 'dateRange' },
+    {
+      key: 'outboundDate',
+      label: i18next.t('modules.pages.salesOutbound.filterOutboundDate'),
+      type: 'dateRange',
+    },
     {
       key: 'customerName',
       label: CUSTOMER_NAME_LABEL,
@@ -68,9 +76,21 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
     },
   ],
   columns: [
-    { title: i18next.t('modules.pages.salesOutbound.colOutboundNo'), dataIndex: 'outboundNo', width: 160 },
-    { title: i18next.t('modules.pages.salesOutbound.colCustomerName'), dataIndex: 'customerName', width: 140 },
-    { title: i18next.t('modules.pages.salesOutbound.colProjectName'), dataIndex: 'projectName', width: 180 },
+    {
+      title: i18next.t('modules.pages.salesOutbound.colOutboundNo'),
+      dataIndex: 'outboundNo',
+      width: 160,
+    },
+    {
+      title: i18next.t('modules.pages.salesOutbound.colCustomerName'),
+      dataIndex: 'customerName',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.salesOutbound.colProjectName'),
+      dataIndex: 'projectName',
+      width: 180,
+    },
     {
       title: i18next.t('modules.pages.salesOutbound.colOutboundDate'),
       dataIndex: 'outboundDate',
@@ -98,18 +118,58 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
-    { title: i18next.t('modules.columns.remark'), dataIndex: 'remark', width: 180 },
+    {
+      title: i18next.t('modules.columns.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
   defaultHiddenColumnKeys: ['projectName', 'remark'],
   detailFields: [
-    { label: i18next.t('modules.pages.salesOutbound.colOutboundNo'), key: 'outboundNo', row: 1 },
-    { label: i18next.t('modules.pages.salesOutbound.colSalesOrderNo'), key: 'salesOrderNo', row: 1 },
-    { label: i18next.t('modules.pages.salesOutbound.colCustomerName'), key: 'customerName', row: 1 },
-    { label: i18next.t('modules.pages.salesOutbound.colProjectName'), key: 'projectName', row: 1 },
-    { label: i18next.t('modules.pages.salesOutbound.colOutboundDate'), key: 'outboundDate', type: 'date', row: 2 },
-    { label: i18next.t('modules.columns.totalWeight'), key: 'totalWeight', type: 'weight', row: 2 },
-    { label: i18next.t('modules.columns.totalAmount'), key: 'totalAmount', type: 'amount', row: 2 },
-    { label: i18next.t('modules.columns.status'), key: 'status', type: 'status', row: 2 },
+    {
+      label: i18next.t('modules.pages.salesOutbound.colOutboundNo'),
+      key: 'outboundNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesOutbound.colSalesOrderNo'),
+      key: 'salesOrderNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesOutbound.colCustomerName'),
+      key: 'customerName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesOutbound.colProjectName'),
+      key: 'projectName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesOutbound.colOutboundDate'),
+      key: 'outboundDate',
+      type: 'date',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.columns.totalWeight'),
+      key: 'totalWeight',
+      type: 'weight',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.columns.totalAmount'),
+      key: 'totalAmount',
+      type: 'amount',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.columns.status'),
+      key: 'status',
+      type: 'status',
+      row: 2,
+    },
     { label: i18next.t('modules.columns.remark'), key: 'remark', row: 3 },
   ],
   formFields: [
@@ -125,7 +185,9 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.salesOutbound.colSalesOrderNo'),
       type: 'input',
       disabled: true,
-      placeholder: i18next.t('modules.pages.salesOutbound.placeholderParentImport'),
+      placeholder: i18next.t(
+        'modules.pages.salesOutbound.placeholderParentImport',
+      ),
       row: 1,
     },
     {
@@ -150,7 +212,12 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       required: true,
       row: 2,
     },
-    { key: 'remark', label: i18next.t('modules.columns.remark'), type: 'input', row: 2 },
+    {
+      key: 'remark',
+      label: i18next.t('modules.columns.remark'),
+      type: 'input',
+      row: 2,
+    },
   ],
   parentImport: {
     parentModuleKey: 'sales-order',

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  hasEditorValue,
-  toRoundedNumber,
-  inferQuantityUnit,
   buildDefaultEditorLineItem,
   generatePlaceholderBatchNo,
+  hasEditorValue,
+  inferQuantityUnit,
+  toRoundedNumber,
 } from './module-editor-shared'
 
 describe('hasEditorValue', () => {

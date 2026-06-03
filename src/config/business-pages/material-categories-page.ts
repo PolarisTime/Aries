@@ -1,8 +1,8 @@
+import i18next from 'i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, formatInteger, statusMap } from './shared'
 import { masterStatusFilter } from './shared-filters'
-import i18next from 'i18next'
 
 export const materialCategoriesPageConfig: ModulePageConfig = {
   key: 'material-categories',
@@ -16,14 +16,29 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       key: 'keyword',
       label: i18next.t('modules.pages.materialCategories.keyword'),
       type: 'input',
-      placeholder: i18next.t('modules.pages.materialCategories.categoryPlaceholder'),
+      placeholder: i18next.t(
+        'modules.pages.materialCategories.categoryPlaceholder',
+      ),
     },
     { ...masterStatusFilter },
   ],
   columns: [
-    { title: i18next.t('modules.pages.materialCategories.categoryCode'), dataIndex: 'categoryCode', width: 150 },
-    { title: i18next.t('modules.pages.materialCategories.categoryName'), dataIndex: 'categoryName', width: 180 },
-    { title: i18next.t('modules.pages.materialCategories.sortOrder'), dataIndex: 'sortOrder', width: 80, align: 'right' },
+    {
+      title: i18next.t('modules.pages.materialCategories.categoryCode'),
+      dataIndex: 'categoryCode',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.materialCategories.categoryName'),
+      dataIndex: 'categoryName',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.materialCategories.sortOrder'),
+      dataIndex: 'sortOrder',
+      width: 80,
+      align: 'right',
+    },
     {
       title: i18next.t('modules.pages.materialCategories.purchaseWeigh'),
       dataIndex: 'purchaseWeighRequired',
@@ -37,15 +52,38 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
-    { title: i18next.t('modules.pages.materialCategories.remark'), dataIndex: 'remark', width: 200 },
+    {
+      title: i18next.t('modules.pages.materialCategories.remark'),
+      dataIndex: 'remark',
+      width: 200,
+    },
   ],
   detailFields: [
-    { label: i18next.t('modules.pages.materialCategories.categoryCode'), key: 'categoryCode' },
-    { label: i18next.t('modules.pages.materialCategories.categoryName'), key: 'categoryName' },
-    { label: i18next.t('modules.pages.materialCategories.sortOrder'), key: 'sortOrder' },
-    { label: i18next.t('modules.pages.materialCategories.purchaseWeigh'), key: 'purchaseWeighRequired' },
-    { label: i18next.t('modules.pages.materialCategories.status'), key: 'status', type: 'status' },
-    { label: i18next.t('modules.pages.materialCategories.remark'), key: 'remark' },
+    {
+      label: i18next.t('modules.pages.materialCategories.categoryCode'),
+      key: 'categoryCode',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.categoryName'),
+      key: 'categoryName',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.sortOrder'),
+      key: 'sortOrder',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.purchaseWeigh'),
+      key: 'purchaseWeighRequired',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.status'),
+      key: 'status',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.remark'),
+      key: 'remark',
+    },
   ],
   formFields: [
     {
@@ -80,8 +118,14 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       row: 2,
       colSpan: 4,
       options: [
-        { label: i18next.t('modules.pages.materialCategories.required'), value: true },
-        { label: i18next.t('modules.pages.materialCategories.notRequired'), value: false },
+        {
+          label: i18next.t('modules.pages.materialCategories.required'),
+          value: true,
+        },
+        {
+          label: i18next.t('modules.pages.materialCategories.notRequired'),
+          value: false,
+        },
       ],
     },
     {
@@ -93,13 +137,22 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       options: enabledStatusOptions,
       row: 2,
     },
-    { key: 'remark', label: i18next.t('modules.pages.materialCategories.remark'), type: 'textarea', row: 3, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.materialCategories.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
   ],
   data: [],
   statusMap,
   rowHighlightStatuses: ['禁用'],
   buildOverview: (rows) => [
-    { label: i18next.t('modules.pages.materialCategories.categoryCount'), value: formatInteger(rows.length) },
+    {
+      label: i18next.t('modules.pages.materialCategories.categoryCount'),
+      value: formatInteger(rows.length),
+    },
     {
       label: i18next.t('modules.pages.materialCategories.enabled'),
       value: formatInteger(rows.filter((row) => row.status === '正常').length),

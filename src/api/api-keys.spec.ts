@@ -28,13 +28,13 @@ vi.mock('@/utils/api-messages', () => ({
 
 import {
   buildApiKeyUrl,
+  createApiKey,
+  getApiKeyDetail,
+  listApiKeyActionOptions,
+  listApiKeyResourceOptions,
   listApiKeys,
   listApiKeyUserOptions,
-  listApiKeyResourceOptions,
-  listApiKeyActionOptions,
-  createApiKey,
   revokeApiKey,
-  getApiKeyDetail,
 } from './api-keys'
 
 describe('api-keys', () => {
@@ -102,7 +102,9 @@ describe('api-keys', () => {
 
       const result = await listApiKeyResourceOptions()
 
-      expect(result).toEqual([{ code: 'material', title: '物料', group: '主数据' }])
+      expect(result).toEqual([
+        { code: 'material', title: '物料', group: '主数据' },
+      ])
     })
   })
 
@@ -137,14 +139,10 @@ describe('api-keys', () => {
       }
       await createApiKey('user-1', payload, '123456')
 
-      expect(httpPostMock).toHaveBeenCalledWith(
-        '/api-keys',
-        payload,
-        {
-          params: { userId: 'user-1' },
-          headers: { 'X-TOTP-Code': '123456' },
-        },
-      )
+      expect(httpPostMock).toHaveBeenCalledWith('/api-keys', payload, {
+        params: { userId: 'user-1' },
+        headers: { 'X-TOTP-Code': '123456' },
+      })
     })
   })
 
@@ -175,7 +173,9 @@ describe('api-keys', () => {
     it('throws when data is null', async () => {
       httpGetMock.mockResolvedValue({ code: 0, data: null })
 
-      await expect(getApiKeyDetail('1')).rejects.toThrow('loadApiKeyDetailFailed')
+      await expect(getApiKeyDetail('1')).rejects.toThrow(
+        'loadApiKeyDetailFailed',
+      )
     })
   })
 

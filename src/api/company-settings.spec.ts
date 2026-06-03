@@ -24,7 +24,11 @@ vi.mock('@/utils/type-narrowing', () => ({
   asString: (v: unknown) => String(v ?? ''),
 }))
 
-import { getCompanySettingProfile, normalizeProfile, saveCompanySettingProfile } from './company-settings'
+import {
+  getCompanySettingProfile,
+  normalizeProfile,
+  saveCompanySettingProfile,
+} from './company-settings'
 
 describe('company-settings', () => {
   beforeEach(() => {
@@ -107,7 +111,10 @@ describe('company-settings', () => {
       }
       const result = await saveCompanySettingProfile(payload)
 
-      expect(httpPutMock).toHaveBeenCalledWith('/company-settings/current', payload)
+      expect(httpPutMock).toHaveBeenCalledWith(
+        '/company-settings/current',
+        payload,
+      )
       expect(result!.companyName).toBe('新公司')
       expect(result!.settlementAccounts).toEqual([])
     })
@@ -123,27 +130,47 @@ describe('company-settings', () => {
     })
 
     it('sets bankName to undefined when falsy', () => {
-      const result = normalizeProfile({ companyName: 'C', taxNo: 'T', bankName: '' })
+      const result = normalizeProfile({
+        companyName: 'C',
+        taxNo: 'T',
+        bankName: '',
+      })
       expect(result!.bankName).toBeUndefined()
     })
 
     it('sets bankAccount to undefined when falsy', () => {
-      const result = normalizeProfile({ companyName: 'C', taxNo: 'T', bankAccount: '' })
+      const result = normalizeProfile({
+        companyName: 'C',
+        taxNo: 'T',
+        bankAccount: '',
+      })
       expect(result!.bankAccount).toBeUndefined()
     })
 
     it('sets taxRate to undefined when falsy', () => {
-      const result = normalizeProfile({ companyName: 'C', taxNo: 'T', taxRate: 0 })
+      const result = normalizeProfile({
+        companyName: 'C',
+        taxNo: 'T',
+        taxRate: 0,
+      })
       expect(result!.taxRate).toBeUndefined()
     })
 
     it('defaults status to 正常 when empty', () => {
-      const result = normalizeProfile({ companyName: 'C', taxNo: 'T', status: '' })
+      const result = normalizeProfile({
+        companyName: 'C',
+        taxNo: 'T',
+        status: '',
+      })
       expect(result!.status).toBe('正常')
     })
 
     it('returns empty array for non-array settlementAccounts', () => {
-      const result = normalizeProfile({ companyName: 'C', taxNo: 'T', settlementAccounts: 'bad' as any })
+      const result = normalizeProfile({
+        companyName: 'C',
+        taxNo: 'T',
+        settlementAccounts: 'bad' as any,
+      })
       expect(result!.settlementAccounts).toEqual([])
     })
 
@@ -170,7 +197,9 @@ describe('company-settings', () => {
       const result = normalizeProfile({
         companyName: 'C',
         taxNo: 'T',
-        settlementAccounts: [{ accountName: 'A', usageType: '专用', status: '停用' }],
+        settlementAccounts: [
+          { accountName: 'A', usageType: '专用', status: '停用' },
+        ],
       })
       expect(result!.settlementAccounts[0].usageType).toBe('专用')
       expect(result!.settlementAccounts[0].status).toBe('停用')

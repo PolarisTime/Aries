@@ -70,7 +70,9 @@ describe('module-contracts', () => {
     })
 
     it('throws for unknown module key', () => {
-      expect(() => getModuleConfig('unknown-module')).toThrow('moduleNotConfigured: unknown-module')
+      expect(() => getModuleConfig('unknown-module')).toThrow(
+        'moduleNotConfigured: unknown-module',
+      )
     })
   })
 })

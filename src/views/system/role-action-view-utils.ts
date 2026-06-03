@@ -11,7 +11,9 @@ export const ROLE_ACTION_LABELS: Record<string, string> = {
   audit: i18next.t('system.roleActionUtils.actionAudit'),
   export: i18next.t('system.roleActionUtils.actionExport'),
   print: i18next.t('system.roleActionUtils.actionPrint'),
-  manage_permissions: i18next.t('system.roleActionUtils.actionManagePermissions'),
+  manage_permissions: i18next.t(
+    'system.roleActionUtils.actionManagePermissions',
+  ),
 }
 
 export const ALL_ROLE_ACTIONS = [

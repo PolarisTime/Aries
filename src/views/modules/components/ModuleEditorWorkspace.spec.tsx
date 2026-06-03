@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -62,18 +62,23 @@ const mockUseModuleEditorWorkspace = vi.fn().mockReturnValue({
 })
 
 vi.mock('@/views/modules/use-module-editor-workspace', () => ({
-  useModuleEditorWorkspace: (...args: any[]) => mockUseModuleEditorWorkspace(...args),
+  useModuleEditorWorkspace: (...args: any[]) =>
+    mockUseModuleEditorWorkspace(...args),
 }))
 
 vi.mock('./ModuleEditorFormSection', () => ({
   ModuleEditorFormSection: ({ ...props }: any) => (
-    <div data-testid="form-section" {...props}>FormSection</div>
+    <div data-testid="form-section" {...props}>
+      FormSection
+    </div>
   ),
 }))
 
 vi.mock('./ModuleEditorItemsSection', () => ({
   ModuleEditorItemsSection: ({ ...props }: any) => (
-    <div data-testid="items-section" {...props}>ItemsSection</div>
+    <div data-testid="items-section" {...props}>
+      ItemsSection
+    </div>
   ),
 }))
 
@@ -90,7 +95,9 @@ vi.mock('./WorkspaceOverlay', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/card', () => ({
@@ -98,7 +105,9 @@ vi.mock('antd/es/card', () => ({
 }))
 
 vi.mock('antd/es/form', () => {
-  const Form = ({ children, ...props }: any) => <form {...props}>{children}</form>
+  const Form = ({ children, ...props }: any) => (
+    <form {...props}>{children}</form>
+  )
   Form.useForm = () => [{ getFieldsValue: () => ({}) }]
   Form.Item = ({ children, ...props }: any) => <div {...props}>{children}</div>
   Form.useFormInstance = () => ({})
@@ -267,7 +276,15 @@ describe('ModuleEditorWorkspace', () => {
         record: {
           id: '1',
           items: [
-            { id: 'i1', brand: 'Brand A', material: 'Steel', spec: '10mm', length: '6m', quantity: 5, weightTon: 2.5 },
+            {
+              id: 'i1',
+              brand: 'Brand A',
+              material: 'Steel',
+              spec: '10mm',
+              length: '6m',
+              quantity: 5,
+              weightTon: 2.5,
+            },
           ],
         },
       },
@@ -297,7 +314,9 @@ describe('ModuleEditorWorkspace', () => {
         { key: 'totalAmount', label: 'Total Amount', type: 'amount' },
       ],
     }
-    render(<ModuleEditorWorkspace {...defaultProps} config={configWithFields} />)
+    render(
+      <ModuleEditorWorkspace {...defaultProps} config={configWithFields} />,
+    )
     expect(screen.getByText(/modules\.saveResult\.pageSuccess/)).toBeTruthy()
   })
 
@@ -310,12 +329,7 @@ describe('ModuleEditorWorkspace', () => {
         record: { id: '1', items: [{ id: 'i1', quantity: 5 }] },
       },
     })
-    render(
-      <ModuleEditorWorkspace
-        {...defaultProps}
-        moduleKey="freight-bill"
-      />,
-    )
+    render(<ModuleEditorWorkspace {...defaultProps} moduleKey="freight-bill" />)
     expect(screen.getByText('modules.saveResult.close')).toBeTruthy()
   })
 
@@ -329,10 +343,7 @@ describe('ModuleEditorWorkspace', () => {
       },
     })
     render(
-      <ModuleEditorWorkspace
-        {...defaultProps}
-        moduleKey="purchase-order"
-      />,
+      <ModuleEditorWorkspace {...defaultProps} moduleKey="purchase-order" />,
     )
     expect(screen.getByText('modules.saveResult.close')).toBeTruthy()
   })
@@ -346,12 +357,7 @@ describe('ModuleEditorWorkspace', () => {
         record: { id: '1', items: [] },
       },
     })
-    render(
-      <ModuleEditorWorkspace
-        {...defaultProps}
-        moduleKey="sales-order"
-      />,
-    )
+    render(<ModuleEditorWorkspace {...defaultProps} moduleKey="sales-order" />)
     expect(screen.getByText('modules.saveResult.close')).toBeTruthy()
   })
 
@@ -365,10 +371,7 @@ describe('ModuleEditorWorkspace', () => {
       },
     })
     render(
-      <ModuleEditorWorkspace
-        {...defaultProps}
-        moduleKey="sales-outbound"
-      />,
+      <ModuleEditorWorkspace {...defaultProps} moduleKey="sales-outbound" />,
     )
     expect(screen.getByText('modules.saveResult.close')).toBeTruthy()
   })
@@ -409,7 +412,9 @@ describe('ModuleEditorWorkspace', () => {
         label: 'Purchase Order',
       },
     }
-    render(<ModuleEditorWorkspace {...defaultProps} config={configWithParent} />)
+    render(
+      <ModuleEditorWorkspace {...defaultProps} config={configWithParent} />,
+    )
     expect(screen.getByTestId('items-section')).toBeTruthy()
   })
 
@@ -426,7 +431,9 @@ describe('ModuleEditorWorkspace', () => {
       ...defaultProps.config,
       formFields: [{ key: 'orderNo', label: 'Order No', type: 'input' }],
     }
-    render(<ModuleEditorWorkspace {...defaultProps} config={configWithFields} />)
+    render(
+      <ModuleEditorWorkspace {...defaultProps} config={configWithFields} />,
+    )
     expect(screen.getByText(/modules\.saveResult\.pageSuccess/)).toBeTruthy()
   })
 
@@ -443,7 +450,9 @@ describe('ModuleEditorWorkspace', () => {
       ...defaultProps.config,
       formFields: [{ key: 'notes', label: 'Notes', type: 'input' }],
     }
-    render(<ModuleEditorWorkspace {...defaultProps} config={configWithFields} />)
+    render(
+      <ModuleEditorWorkspace {...defaultProps} config={configWithFields} />,
+    )
     expect(screen.getByText(/modules\.saveResult\.pageSuccess/)).toBeTruthy()
   })
 })

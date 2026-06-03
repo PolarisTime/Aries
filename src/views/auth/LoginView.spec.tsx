@@ -1,8 +1,16 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { Mock } from 'vitest'
 
-const { mockNavigate, mockSignIn, mockVerify2fa, mockShowError, mockStart2faStep, mockReset2faStep, mockSetTotpCode, mockClearTotpSession } = vi.hoisted(() => ({
+const {
+  mockNavigate,
+  mockSignIn,
+  mockVerify2fa,
+  mockShowError,
+  mockStart2faStep,
+  mockReset2faStep,
+  mockSetTotpCode,
+  mockClearTotpSession,
+} = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockSignIn: vi.fn(),
   mockVerify2fa: vi.fn(),
@@ -78,10 +86,16 @@ vi.mock('@/views/auth/AuthPageShell', () => ({
 }))
 
 vi.mock('@/views/auth/LoginPasswordForm', () => ({
-  LoginPasswordForm: ({ onSubmit }: { onSubmit: (values: Record<string, unknown>) => void }) => (
+  LoginPasswordForm: ({
+    onSubmit,
+  }: {
+    onSubmit: (values: Record<string, unknown>) => void
+  }) => (
     <button
       data-testid="password-form"
-      onClick={() => onSubmit({ loginName: 'admin', password: 'pass123', remember: true })}
+      onClick={() =>
+        onSubmit({ loginName: 'admin', password: 'pass123', remember: true })
+      }
     >
       提交登录
     </button>

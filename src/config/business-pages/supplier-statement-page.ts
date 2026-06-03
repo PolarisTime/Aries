@@ -1,26 +1,31 @@
+import i18next from 'i18next'
 import {
   getSupplierOptions,
   statementStatusOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, SUPPLIER_NAME_LABEL } from './filter-labels'
 import {
   buildStatementOverview,
   compactBatchSupplierStatementItemColumns,
   statusMap,
 } from './shared'
-import i18next from 'i18next'
-import { asString } from '@/utils/type-narrowing'
 
 export const supplierStatementPageConfig: ModulePageConfig = {
   key: 'supplier-statement',
   title: i18next.t('modules.pages.supplierStatement.supplierStatement'),
   kicker: 'Statements',
-  description:
-    i18next.t('modules.pages.supplierStatement.supplierStatementDesc'),
+  description: i18next.t(
+    'modules.pages.supplierStatement.supplierStatementDesc',
+  ),
   primaryNoKey: 'statementNo',
   actions: [
-    { key: 'generate_statement', label: i18next.t('modules.pages.supplierStatement.generateStatement'), type: 'primary' },
+    {
+      key: 'generate_statement',
+      label: i18next.t('modules.pages.supplierStatement.generateStatement'),
+      type: 'primary',
+    },
   ],
   filters: [
     {
@@ -35,13 +40,35 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       type: 'select',
       options: statementStatusOptions,
     },
-    { key: 'endDate', label: i18next.t('modules.pages.supplierStatement.period'), type: 'dateRange' },
+    {
+      key: 'endDate',
+      label: i18next.t('modules.pages.supplierStatement.period'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: i18next.t('modules.pages.supplierStatement.statementNo'), dataIndex: 'statementNo', width: 170 },
-    { title: i18next.t('modules.pages.supplierStatement.supplier'), dataIndex: 'supplierName', width: 140 },
-    { title: i18next.t('modules.pages.supplierStatement.startDate'), dataIndex: 'startDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.supplierStatement.endDate'), dataIndex: 'endDate', width: 120, type: 'date' },
+    {
+      title: i18next.t('modules.pages.supplierStatement.statementNo'),
+      dataIndex: 'statementNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.supplierStatement.supplier'),
+      dataIndex: 'supplierName',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.supplierStatement.startDate'),
+      dataIndex: 'startDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.supplierStatement.endDate'),
+      dataIndex: 'endDate',
+      width: 120,
+      type: 'date',
+    },
     {
       title: i18next.t('modules.pages.supplierStatement.purchaseAmount'),
       dataIndex: 'purchaseAmount',
@@ -73,15 +100,48 @@ export const supplierStatementPageConfig: ModulePageConfig = {
   ],
   defaultHiddenColumnKeys: ['paymentAmount'],
   detailFields: [
-    { label: i18next.t('modules.pages.supplierStatement.statementNo'), key: 'statementNo' },
-    { label: i18next.t('modules.pages.supplierStatement.supplier'), key: 'supplierName' },
-    { label: i18next.t('modules.pages.supplierStatement.startDate'), key: 'startDate', type: 'date' },
-    { label: i18next.t('modules.pages.supplierStatement.endDate'), key: 'endDate', type: 'date' },
-    { label: i18next.t('modules.pages.supplierStatement.purchaseAmount'), key: 'purchaseAmount', type: 'amount' },
-    { label: i18next.t('modules.pages.supplierStatement.paymentAmount'), key: 'paymentAmount', type: 'amount' },
-    { label: i18next.t('modules.pages.supplierStatement.closingBalance'), key: 'closingAmount', type: 'amount' },
-    { label: i18next.t('modules.pages.supplierStatement.status'), key: 'status', type: 'status' },
-    { label: i18next.t('modules.pages.supplierStatement.remark'), key: 'remark' },
+    {
+      label: i18next.t('modules.pages.supplierStatement.statementNo'),
+      key: 'statementNo',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.supplier'),
+      key: 'supplierName',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.startDate'),
+      key: 'startDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.endDate'),
+      key: 'endDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.purchaseAmount'),
+      key: 'purchaseAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.paymentAmount'),
+      key: 'paymentAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.closingBalance'),
+      key: 'closingAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.status'),
+      key: 'status',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.remark'),
+      key: 'remark',
+    },
   ],
   formFields: [
     {
@@ -106,7 +166,13 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       required: true,
       row: 1,
     },
-    { key: 'endDate', label: i18next.t('modules.pages.supplierStatement.endDate'), type: 'date', required: true, row: 1 },
+    {
+      key: 'endDate',
+      label: i18next.t('modules.pages.supplierStatement.endDate'),
+      type: 'date',
+      required: true,
+      row: 1,
+    },
     {
       key: 'purchaseAmount',
       label: i18next.t('modules.pages.supplierStatement.purchaseAmount'),
@@ -137,7 +203,13 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       options: statementStatusOptions,
       row: 2,
     },
-    { key: 'remark', label: i18next.t('modules.pages.supplierStatement.remark'), type: 'textarea', row: 3, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.supplierStatement.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
   ],
   saveFields: {
     scalar: [

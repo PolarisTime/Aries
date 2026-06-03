@@ -23,12 +23,16 @@ describe('systemCorePageConfigs', () => {
 
   it('general-setting has filters', () => {
     expect(systemCorePageConfigs['general-setting'].filters).toBeDefined()
-    expect(systemCorePageConfigs['general-setting'].filters!.length).toBeGreaterThanOrEqual(2)
+    expect(
+      systemCorePageConfigs['general-setting'].filters!.length,
+    ).toBeGreaterThanOrEqual(2)
   })
 
   it('general-setting has columns', () => {
     expect(systemCorePageConfigs['general-setting'].columns).toBeDefined()
-    expect(systemCorePageConfigs['general-setting'].columns.length).toBeGreaterThan(0)
+    expect(
+      systemCorePageConfigs['general-setting'].columns.length,
+    ).toBeGreaterThan(0)
   })
 
   it('general-setting has formFields', () => {
@@ -43,7 +47,9 @@ describe('systemCorePageConfigs', () => {
 
   it('company-setting has columns', () => {
     expect(systemCorePageConfigs['company-setting'].columns).toBeDefined()
-    expect(systemCorePageConfigs['company-setting'].columns.length).toBeGreaterThan(0)
+    expect(
+      systemCorePageConfigs['company-setting'].columns.length,
+    ).toBeGreaterThan(0)
   })
 
   it('company-setting has formFields', () => {

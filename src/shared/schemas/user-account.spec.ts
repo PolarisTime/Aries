@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  userAccountFormPayloadSchema,
-  userAccountCreateResultSchema,
   departmentOptionRecordSchema,
   roleOptionRecordSchema,
+  userAccountCreateResultSchema,
+  userAccountFormPayloadSchema,
 } from './user-account'
 
 describe('user-account schemas', () => {

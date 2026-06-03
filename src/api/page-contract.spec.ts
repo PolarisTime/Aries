@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   pageContent,
+  pageHasMore,
+  pageLast,
   pageTotalElements,
   pageTotalPages,
-  pageLast,
-  pageHasMore,
 } from './page-contract'
 
 describe('pageContract', () => {
@@ -18,9 +18,7 @@ describe('pageContract', () => {
     })
 
     it('content takes precedence over records', () => {
-      expect(
-        pageContent({ content: [1], records: [2] }),
-      ).toEqual([1])
+      expect(pageContent({ content: [1], records: [2] })).toEqual([1])
     })
 
     it('returns empty array for null/undefined input', () => {

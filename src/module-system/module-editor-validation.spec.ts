@@ -158,7 +158,14 @@ describe('getEditorValidationMessage', () => {
         moduleKey: 'purchase-inbound',
         hasItemColumns: true,
         itemCount: 1,
-        items: [{ id: '1', category: '钢坯', settlementMode: '过磅', weighWeightTon: undefined }] as any,
+        items: [
+          {
+            id: '1',
+            category: '钢坯',
+            settlementMode: '过磅',
+            weighWeightTon: undefined,
+          },
+        ] as any,
         itemColumns: [] as any,
       })
       expect(result).toContain('modules.validation.weighWeightRequired')
@@ -170,7 +177,9 @@ describe('getEditorValidationMessage', () => {
         hasItemColumns: true,
         itemCount: 1,
         items: [{ id: '1', materialCode: '' }] as any,
-        itemColumns: [{ dataIndex: 'materialCode', title: '材质编码', required: true }] as any,
+        itemColumns: [
+          { dataIndex: 'materialCode', title: '材质编码', required: true },
+        ] as any,
       })
       expect(result).toContain('modules.validation.lineItemRequired')
     })
@@ -181,7 +190,9 @@ describe('getEditorValidationMessage', () => {
         hasItemColumns: true,
         itemCount: 1,
         items: [{ id: '1', materialCode: 'M001', quantity: 10 }] as any,
-        itemColumns: [{ dataIndex: 'materialCode', title: '材质编码', required: true }] as any,
+        itemColumns: [
+          { dataIndex: 'materialCode', title: '材质编码', required: true },
+        ] as any,
       })
       expect(result).toBeNull()
     })
@@ -204,7 +215,14 @@ describe('getEditorValidationMessage', () => {
         moduleKey: 'purchase-inbound',
         hasItemColumns: true,
         itemCount: 1,
-        items: [{ id: '1', category: '钢坯', settlementMode: '过磅', weighWeightTon: 50 }] as any,
+        items: [
+          {
+            id: '1',
+            category: '钢坯',
+            settlementMode: '过磅',
+            weighWeightTon: 50,
+          },
+        ] as any,
         itemColumns: [] as any,
       })
       expect(result).toBeNull()

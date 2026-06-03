@@ -48,5 +48,4 @@ function createApiClient(instance: AxiosInstance) {
   }
 }
 
-
 export const http = createApiClient(rawHttp)

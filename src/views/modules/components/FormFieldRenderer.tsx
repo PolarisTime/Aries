@@ -22,7 +22,9 @@ export function FormFieldRenderer({ field, disabled }: Props) {
   const formValues = Form.useWatch([], form) || {}
   const disabledValue = disabled ?? field.disabled
   const displayLabel = padLabel(field.label)
-  const placeholder = field.placeholder || t('modules.formField.inputPlaceholder', { label: field.label })
+  const placeholder =
+    field.placeholder ||
+    t('modules.formField.inputPlaceholder', { label: field.label })
   const allowClear = field.allowClear !== false
   const fieldId = buildFormControlId('module-form', field.key)
   const resolvedOptions =
@@ -91,7 +93,8 @@ export function FormFieldRenderer({ field, disabled }: Props) {
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
                   value:
-                    typeof opt.value === 'number' || typeof opt.value === 'boolean'
+                    typeof opt.value === 'number' ||
+                    typeof opt.value === 'boolean'
                       ? opt.value
                       : asString(opt.value),
                 }))
@@ -119,7 +122,8 @@ export function FormFieldRenderer({ field, disabled }: Props) {
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
                   value:
-                    typeof opt.value === 'number' || typeof opt.value === 'boolean'
+                    typeof opt.value === 'number' ||
+                    typeof opt.value === 'boolean'
                       ? opt.value
                       : asString(opt.value),
                 }))
@@ -171,7 +175,8 @@ export function FormFieldRenderer({ field, disabled }: Props) {
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
                   value:
-                    typeof opt.value === 'number' || typeof opt.value === 'boolean'
+                    typeof opt.value === 'number' ||
+                    typeof opt.value === 'boolean'
                       ? opt.value
                       : asString(opt.value),
                 }))

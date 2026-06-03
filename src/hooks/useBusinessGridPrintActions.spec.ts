@@ -1,9 +1,19 @@
-import { renderHook, act } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { httpMock, assertApiSuccessMock, listPrintTemplatesMock, messageWarningMock,
-  messageErrorMock, loadCLodopMock, execPrintCodeMock, printHtmlMock,
-  renderPrintTemplateMock, modalConfirmMock, tMock } = vi.hoisted(() => ({
+const {
+  httpMock,
+  assertApiSuccessMock,
+  listPrintTemplatesMock,
+  messageWarningMock,
+  messageErrorMock,
+  loadCLodopMock,
+  execPrintCodeMock,
+  printHtmlMock,
+  renderPrintTemplateMock,
+  modalConfirmMock,
+  tMock,
+} = vi.hoisted(() => ({
   httpMock: { post: vi.fn() },
   assertApiSuccessMock: vi.fn(),
   listPrintTemplatesMock: vi.fn(),
@@ -12,7 +22,9 @@ const { httpMock, assertApiSuccessMock, listPrintTemplatesMock, messageWarningMo
   loadCLodopMock: vi.fn().mockResolvedValue(undefined),
   execPrintCodeMock: vi.fn().mockReturnValue(true),
   printHtmlMock: vi.fn().mockReturnValue(true),
-  renderPrintTemplateMock: vi.fn().mockReturnValue({ type: 'HTML', html: '<div>test</div>' }),
+  renderPrintTemplateMock: vi
+    .fn()
+    .mockReturnValue({ type: 'HTML', html: '<div>test</div>' }),
   modalConfirmMock: vi.fn(),
   tMock: vi.fn((key: string) => key),
 }))
@@ -58,14 +70,20 @@ describe('useBusinessGridPrintActions', () => {
 
   it('returns handlePrintSelectedRecords function', () => {
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: ['1'] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
     )
     expect(result.current.handlePrintSelectedRecords).toBeDefined()
   })
 
   it('shows warning when no rows selected', async () => {
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: [] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: [],
+      }),
     )
     await act(async () => {
       await result.current.handlePrintSelectedRecords(false)
@@ -77,12 +95,17 @@ describe('useBusinessGridPrintActions', () => {
     listPrintTemplatesMock.mockResolvedValue({ data: [] })
 
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: ['1'] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
     )
     await act(async () => {
       await result.current.handlePrintSelectedRecords(false)
     })
-    expect(messageWarningMock).toHaveBeenCalledWith('hooks.printActions.noPrintTemplateConfigured')
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.noPrintTemplateConfigured',
+    )
   })
 
   it('prints using provided template', async () => {
@@ -102,7 +125,10 @@ describe('useBusinessGridPrintActions', () => {
     })
 
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: ['1'] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
     )
     await act(async () => {
       await result.current.handlePrintSelectedRecords(false, template)
@@ -132,7 +158,10 @@ describe('useBusinessGridPrintActions', () => {
     })
 
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: ['1', '2', '3'] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1', '2', '3'],
+      }),
     )
     await act(async () => {
       await result.current.handlePrintSelectedRecords(false, template)
@@ -151,7 +180,10 @@ describe('useBusinessGridPrintActions', () => {
     httpMock.post.mockRejectedValue(new Error('Print failed'))
 
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: ['1'] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
     )
     await act(async () => {
       await result.current.handlePrintSelectedRecords(false, template)
@@ -177,7 +209,10 @@ describe('useBusinessGridPrintActions', () => {
     })
 
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: ['1'] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
     )
     await act(async () => {
       await result.current.handlePrintSelectedRecords(false, template)
@@ -203,7 +238,10 @@ describe('useBusinessGridPrintActions', () => {
     })
 
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: ['1'] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
     )
     await act(async () => {
       await result.current.handlePrintSelectedRecords(true, template)
@@ -234,7 +272,10 @@ describe('useBusinessGridPrintActions', () => {
     })
 
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: ['1'] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
     )
     await act(async () => {
       await result.current.handlePrintSelectedRecords(false, template)
@@ -260,13 +301,18 @@ describe('useBusinessGridPrintActions', () => {
     renderPrintTemplateMock.mockReturnValue({ type: 'HTML', html: null })
 
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: ['1'] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
     )
     await act(async () => {
       await result.current.handlePrintSelectedRecords(false, template)
     })
 
-    expect(messageWarningMock).toHaveBeenCalledWith('hooks.printActions.noPrintContent')
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.noPrintContent',
+    )
   })
 
   it('handles printHtml returning false', async () => {
@@ -292,13 +338,18 @@ describe('useBusinessGridPrintActions', () => {
     printHtmlMock.mockReturnValue(false)
 
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: ['1'] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
     )
     await act(async () => {
       await result.current.handlePrintSelectedRecords(false, template)
     })
 
-    expect(messageErrorMock).toHaveBeenCalledWith('hooks.printActions.printServiceUnavailable')
+    expect(messageErrorMock).toHaveBeenCalledWith(
+      'hooks.printActions.printServiceUnavailable',
+    )
   })
 
   it('normalizes axios error with blob response', async () => {
@@ -319,7 +370,10 @@ describe('useBusinessGridPrintActions', () => {
     httpMock.post.mockRejectedValue(axiosError)
 
     const { result } = renderHook(() =>
-      useBusinessGridPrintActions({ moduleKey: 'sales-order', selectedRowKeys: ['1'] })
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
     )
     await act(async () => {
       await result.current.handlePrintSelectedRecords(false, template)

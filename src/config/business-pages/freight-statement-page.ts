@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { getCarrierOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -7,19 +8,19 @@ import {
   SIGN_STATUS_LABEL,
 } from './filter-labels'
 import { buildStatementOverview, freightItemColumns, statusMap } from './shared'
-import i18next from 'i18next'
 
 export const freightStatementPageConfig: ModulePageConfig = {
   key: 'freight-statement',
   title: i18next.t('modules.pages.freightStatement.freightStatement'),
   kicker: 'Statements',
-  description:
-    i18next.t('modules.pages.freightStatement.freightStatementDesc'),
+  description: i18next.t('modules.pages.freightStatement.freightStatementDesc'),
   primaryNoKey: 'statementNo',
   actions: [
     {
       key: 'generate_freight_statement',
-      label: i18next.t('modules.pages.freightStatement.generateFreightStatement'),
+      label: i18next.t(
+        'modules.pages.freightStatement.generateFreightStatement',
+      ),
       type: 'primary',
     },
     {
@@ -40,8 +41,14 @@ export const freightStatementPageConfig: ModulePageConfig = {
       label: AUDIT_STATUS_LABEL,
       type: 'select',
       options: [
-        { label: i18next.t('modules.pages.freightStatement.pendingAudit'), value: '待审核' },
-        { label: i18next.t('modules.pages.freightStatement.audited'), value: '已审核' },
+        {
+          label: i18next.t('modules.pages.freightStatement.pendingAudit'),
+          value: '待审核',
+        },
+        {
+          label: i18next.t('modules.pages.freightStatement.audited'),
+          value: '已审核',
+        },
       ],
     },
     {
@@ -49,17 +56,45 @@ export const freightStatementPageConfig: ModulePageConfig = {
       label: SIGN_STATUS_LABEL,
       type: 'select',
       options: [
-        { label: i18next.t('modules.pages.freightStatement.unsigned'), value: '未签署' },
-        { label: i18next.t('modules.pages.freightStatement.signed'), value: '已签署' },
+        {
+          label: i18next.t('modules.pages.freightStatement.unsigned'),
+          value: '未签署',
+        },
+        {
+          label: i18next.t('modules.pages.freightStatement.signed'),
+          value: '已签署',
+        },
       ],
     },
-    { key: 'endDate', label: i18next.t('modules.pages.freightStatement.period'), type: 'dateRange' },
+    {
+      key: 'endDate',
+      label: i18next.t('modules.pages.freightStatement.period'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: i18next.t('modules.pages.freightStatement.statementNo'), dataIndex: 'statementNo', width: 170 },
-    { title: i18next.t('modules.pages.freightStatement.carrier'), dataIndex: 'carrierName', width: 150 },
-    { title: i18next.t('modules.pages.freightStatement.startDate'), dataIndex: 'startDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.freightStatement.endDate'), dataIndex: 'endDate', width: 120, type: 'date' },
+    {
+      title: i18next.t('modules.pages.freightStatement.statementNo'),
+      dataIndex: 'statementNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.freightStatement.carrier'),
+      dataIndex: 'carrierName',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.freightStatement.startDate'),
+      dataIndex: 'startDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.freightStatement.endDate'),
+      dataIndex: 'endDate',
+      width: 120,
+      type: 'date',
+    },
     {
       title: i18next.t('modules.pages.freightStatement.totalWeight'),
       dataIndex: 'totalWeight',
@@ -98,17 +133,57 @@ export const freightStatementPageConfig: ModulePageConfig = {
   ],
   defaultHiddenColumnKeys: ['paidAmount'],
   detailFields: [
-    { label: i18next.t('modules.pages.freightStatement.statementNo'), key: 'statementNo' },
-    { label: i18next.t('modules.pages.freightStatement.carrier'), key: 'carrierName' },
-    { label: i18next.t('modules.pages.freightStatement.startDate'), key: 'startDate', type: 'date' },
-    { label: i18next.t('modules.pages.freightStatement.endDate'), key: 'endDate', type: 'date' },
-    { label: i18next.t('modules.pages.freightStatement.totalWeight'), key: 'totalWeight', type: 'weight' },
-    { label: i18next.t('modules.pages.freightStatement.totalFreight'), key: 'totalFreight', type: 'amount' },
-    { label: i18next.t('modules.pages.freightStatement.paidAmount'), key: 'paidAmount', type: 'amount' },
-    { label: i18next.t('modules.pages.freightStatement.auditStatus'), key: 'status', type: 'status' },
-    { label: i18next.t('modules.pages.freightStatement.signStatus'), key: 'signStatus', type: 'status' },
-    { label: i18next.t('modules.pages.freightStatement.attachment'), key: 'attachment' },
-    { label: i18next.t('modules.pages.freightStatement.remark'), key: 'remark' },
+    {
+      label: i18next.t('modules.pages.freightStatement.statementNo'),
+      key: 'statementNo',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.carrier'),
+      key: 'carrierName',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.startDate'),
+      key: 'startDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.endDate'),
+      key: 'endDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.totalWeight'),
+      key: 'totalWeight',
+      type: 'weight',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.totalFreight'),
+      key: 'totalFreight',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.paidAmount'),
+      key: 'paidAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.auditStatus'),
+      key: 'status',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.signStatus'),
+      key: 'signStatus',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.attachment'),
+      key: 'attachment',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.remark'),
+      key: 'remark',
+    },
   ],
   formFields: [
     {
@@ -133,7 +208,13 @@ export const freightStatementPageConfig: ModulePageConfig = {
       required: true,
       row: 1,
     },
-    { key: 'endDate', label: i18next.t('modules.pages.freightStatement.endDate'), type: 'date', required: true, row: 1 },
+    {
+      key: 'endDate',
+      label: i18next.t('modules.pages.freightStatement.endDate'),
+      type: 'date',
+      required: true,
+      row: 1,
+    },
     {
       key: 'totalWeight',
       label: i18next.t('modules.pages.freightStatement.totalWeight'),
@@ -160,8 +241,14 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'select',
       defaultValue: '待审核',
       options: [
-        { label: i18next.t('modules.pages.freightStatement.pendingAudit'), value: '待审核' },
-        { label: i18next.t('modules.pages.freightStatement.audited'), value: '已审核' },
+        {
+          label: i18next.t('modules.pages.freightStatement.pendingAudit'),
+          value: '待审核',
+        },
+        {
+          label: i18next.t('modules.pages.freightStatement.audited'),
+          value: '已审核',
+        },
       ],
       row: 2,
     },
@@ -171,12 +258,24 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'select',
       defaultValue: '未签署',
       options: [
-        { label: i18next.t('modules.pages.freightStatement.unsigned'), value: '未签署' },
-        { label: i18next.t('modules.pages.freightStatement.signed'), value: '已签署' },
+        {
+          label: i18next.t('modules.pages.freightStatement.unsigned'),
+          value: '未签署',
+        },
+        {
+          label: i18next.t('modules.pages.freightStatement.signed'),
+          value: '已签署',
+        },
       ],
       row: 2,
     },
-    { key: 'remark', label: i18next.t('modules.pages.freightStatement.remark'), type: 'textarea', row: 3, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.freightStatement.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
   ],
   saveFields: {
     scalar: [

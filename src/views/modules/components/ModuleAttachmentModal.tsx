@@ -355,7 +355,11 @@ export function ModuleAttachmentModal({
       await fetchAttachments()
       setState({ uploading: false })
     } catch (err) {
-      message.error(err instanceof Error ? err.message : t('modules.attachment.uploadFailed'))
+      message.error(
+        err instanceof Error
+          ? err.message
+          : t('modules.attachment.uploadFailed'),
+      )
       setState({ uploading: false })
     }
     return false
@@ -425,7 +429,11 @@ export function ModuleAttachmentModal({
       message.success(t('modules.attachment.unbindSuccess'))
       await fetchAttachments()
     } catch (err) {
-      message.error(err instanceof Error ? err.message : t('modules.attachment.deleteFailed'))
+      message.error(
+        err instanceof Error
+          ? err.message
+          : t('modules.attachment.deleteFailed'),
+      )
     }
   }
 
@@ -458,7 +466,11 @@ export function ModuleAttachmentModal({
           uploading: false,
         })
       } catch (err) {
-        message.error(err instanceof Error ? err.message : t('modules.attachment.uploadFailed'))
+        message.error(
+          err instanceof Error
+            ? err.message
+            : t('modules.attachment.uploadFailed'),
+        )
         setState({ uploading: false })
       }
     }

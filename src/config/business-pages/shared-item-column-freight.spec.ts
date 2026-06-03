@@ -5,8 +5,8 @@ vi.mock('i18next', () => ({
 }))
 
 import {
-  freightItemColumns,
   compactFreightItemColumns,
+  freightItemColumns,
 } from './shared-item-column-freight'
 
 describe('shared-item-column-freight', () => {
@@ -39,7 +39,9 @@ describe('shared-item-column-freight', () => {
     })
 
     it('contains warehouseName column', () => {
-      const col = freightItemColumns.find((c) => c.dataIndex === 'warehouseName')
+      const col = freightItemColumns.find(
+        (c) => c.dataIndex === 'warehouseName',
+      )
       expect(col).toBeDefined()
     })
   })
@@ -51,7 +53,9 @@ describe('shared-item-column-freight', () => {
     })
 
     it('has fewer columns than freightItemColumns (some hidden)', () => {
-      expect(compactFreightItemColumns.length).toBeLessThanOrEqual(freightItemColumns.length)
+      expect(compactFreightItemColumns.length).toBeLessThanOrEqual(
+        freightItemColumns.length,
+      )
     })
   })
 })

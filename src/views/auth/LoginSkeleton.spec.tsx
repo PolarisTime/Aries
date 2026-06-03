@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -8,7 +8,13 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/views/auth/AuthPageShell', () => ({
-  AuthPageShell: ({ children, hero }: { children: React.ReactNode; hero?: React.ReactNode }) => (
+  AuthPageShell: ({
+    children,
+    hero,
+  }: {
+    children: React.ReactNode
+    hero?: React.ReactNode
+  }) => (
     <div data-testid="auth-page-shell">
       {hero && <div data-testid="hero-slot">{hero}</div>}
       {children}
@@ -30,7 +36,9 @@ describe('LoginSkeleton', () => {
 
   it('renders skeleton form card', () => {
     const { container } = render(<LoginSkeleton />)
-    expect(container.querySelector('.login-form-card.login-skeleton-card')).toBeTruthy()
+    expect(
+      container.querySelector('.login-form-card.login-skeleton-card'),
+    ).toBeTruthy()
   })
 
   it('renders skeleton form elements', () => {

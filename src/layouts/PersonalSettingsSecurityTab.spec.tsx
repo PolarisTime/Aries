@@ -1,13 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import Form from 'antd/es/form'
 import { describe, expect, it, vi } from 'vitest'
 import { PersonalSettingsSecurityTab } from '@/layouts/PersonalSettingsSecurityTab'
-import Form from 'antd/es/form'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, params?: Record<string, string>) => {
       const map: Record<string, string> = {
-        'auth.personalsecurity.accountTitle': '账号: {{displayName}} ({{loginName}})',
+        'auth.personalsecurity.accountTitle':
+          '账号: {{displayName}} ({{loginName}})',
         'auth.personalsecurity.enabledDescription': '2FA 已启用',
         'auth.personalsecurity.disabledDescription': '2FA 未启用',
         'auth.personalsecurity.loginName': '登录名',

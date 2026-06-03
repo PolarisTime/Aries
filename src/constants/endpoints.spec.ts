@@ -14,8 +14,12 @@ describe('ENDPOINTS', () => {
   it('has all required API key endpoints', () => {
     expect(ENDPOINTS.API_KEYS).toBe('/auth/api-keys')
     expect(ENDPOINTS.API_KEYS_USER_OPTIONS).toBe('/auth/api-keys/user-option')
-    expect(ENDPOINTS.API_KEYS_RESOURCE_OPTIONS).toBe('/auth/api-keys/resource-option')
-    expect(ENDPOINTS.API_KEYS_ACTION_OPTIONS).toBe('/auth/api-keys/action-option')
+    expect(ENDPOINTS.API_KEYS_RESOURCE_OPTIONS).toBe(
+      '/auth/api-keys/resource-option',
+    )
+    expect(ENDPOINTS.API_KEYS_ACTION_OPTIONS).toBe(
+      '/auth/api-keys/action-option',
+    )
   })
 
   it('has all required master data endpoints', () => {
@@ -55,39 +59,77 @@ describe('ENDPOINTS', () => {
   it('has all required settings endpoints', () => {
     expect(ENDPOINTS.COMPANY_SETTINGS).toBe('/company-settings')
     expect(ENDPOINTS.COMPANY_NAME).toBe('/company-settings/name')
-    expect(ENDPOINTS.GENERAL_SETTING_CLIENT_SETTINGS).toBe('/general-settings/client-setting')
+    expect(ENDPOINTS.GENERAL_SETTING_CLIENT_SETTINGS).toBe(
+      '/general-settings/client-setting',
+    )
     expect(ENDPOINTS.UPLOAD_RULE).toBe('/general-settings/upload-rule')
   })
 
   it('has permission and role endpoints', () => {
     expect(ENDPOINTS.PERMISSION_CATALOG).toBe('/permissions/catalog')
     expect(ENDPOINTS.ROLE_SETTINGS).toBe('/role-settings')
-    expect(ENDPOINTS.ROLE_PERMISSION_OPTIONS).toBe('/role-settings/permission-option')
+    expect(ENDPOINTS.ROLE_PERMISSION_OPTIONS).toBe(
+      '/role-settings/permission-option',
+    )
   })
 
   it('has all expected keys', () => {
     const expectedKeys = [
-      'AUTH_LOGIN', 'AUTH_LOGIN_2FA', 'AUTH_REFRESH', 'AUTH_LOGOUT', 'AUTH_PING', 'AUTH_CAPTCHA',
-      'API_KEYS', 'API_KEYS_USER_OPTIONS', 'API_KEYS_RESOURCE_OPTIONS', 'API_KEYS_ACTION_OPTIONS',
-      'REFRESH_TOKENS', 'REFRESH_TOKENS_SUMMARY',
-      'ACCOUNT_SECURITY_STATUS', 'ACCOUNT_PASSWORD', 'ACCOUNT_2FA_SETUP', 'ACCOUNT_2FA_ENABLE', 'ACCOUNT_2FA_DISABLE',
-      'USER_ACCOUNTS', 'USER_ACCOUNTS_LOGIN_NAME_CHECK', 'USER_ACCOUNT_PREFERENCES',
+      'AUTH_LOGIN',
+      'AUTH_LOGIN_2FA',
+      'AUTH_REFRESH',
+      'AUTH_LOGOUT',
+      'AUTH_PING',
+      'AUTH_CAPTCHA',
+      'API_KEYS',
+      'API_KEYS_USER_OPTIONS',
+      'API_KEYS_RESOURCE_OPTIONS',
+      'API_KEYS_ACTION_OPTIONS',
+      'REFRESH_TOKENS',
+      'REFRESH_TOKENS_SUMMARY',
+      'ACCOUNT_SECURITY_STATUS',
+      'ACCOUNT_PASSWORD',
+      'ACCOUNT_2FA_SETUP',
+      'ACCOUNT_2FA_ENABLE',
+      'ACCOUNT_2FA_DISABLE',
+      'USER_ACCOUNTS',
+      'USER_ACCOUNTS_LOGIN_NAME_CHECK',
+      'USER_ACCOUNT_PREFERENCES',
       'PERMISSION_CATALOG',
-      'ROLE_SETTINGS', 'ROLE_PERMISSION_OPTIONS',
+      'ROLE_SETTINGS',
+      'ROLE_PERMISSION_OPTIONS',
       'SYSTEM_MENUS_TREE',
-      'COMPANY_SETTINGS', 'COMPANY_SETTINGS_CURRENT', 'COMPANY_NAME',
+      'COMPANY_SETTINGS',
+      'COMPANY_SETTINGS_CURRENT',
+      'COMPANY_NAME',
       'HEALTH',
       'DASHBOARD_SUMMARY',
       'GLOBAL_SEARCH',
-      'DATABASE_STATUS', 'DATABASE_MONITORING',
+      'DATABASE_STATUS',
+      'DATABASE_MONITORING',
       'SECURITY_KEYS',
       'PRINT_TEMPLATES',
-      'SETUP_STATUS', 'SETUP_INITIALIZE', 'SETUP_ADMIN_2FA', 'SETUP_ADMIN', 'SETUP_COMPANY',
-      'ATTACHMENTS_UPLOAD', 'ATTACHMENTS_BINDINGS',
-      'NUMBER_RULES_NEXT', 'GENERAL_SETTING_CLIENT_SETTINGS', 'UPLOAD_RULE',
-      'MATERIALS_IMPORT', 'MATERIALS_TEMPLATE', 'MATERIALS_EXPORT', 'MATERIALS_SEARCH', 'MATERIAL_GRADES',
+      'SETUP_STATUS',
+      'SETUP_INITIALIZE',
+      'SETUP_ADMIN_2FA',
+      'SETUP_ADMIN',
+      'SETUP_COMPANY',
+      'ATTACHMENTS_UPLOAD',
+      'ATTACHMENTS_BINDINGS',
+      'NUMBER_RULES_NEXT',
+      'GENERAL_SETTING_CLIENT_SETTINGS',
+      'UPLOAD_RULE',
+      'MATERIALS_IMPORT',
+      'MATERIALS_TEMPLATE',
+      'MATERIALS_EXPORT',
+      'MATERIALS_SEARCH',
+      'MATERIAL_GRADES',
       'DEPARTMENTS_OPTIONS',
-      'WAREHOUSES_OPTIONS', 'CUSTOMERS_OPTIONS', 'SUPPLIERS_OPTIONS', 'CARRIERS_OPTIONS', 'MATERIAL_CATEGORIES',
+      'WAREHOUSES_OPTIONS',
+      'CUSTOMERS_OPTIONS',
+      'SUPPLIERS_OPTIONS',
+      'CARRIERS_OPTIONS',
+      'MATERIAL_CATEGORIES',
     ]
 
     for (const key of expectedKeys) {

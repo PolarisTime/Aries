@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockNavigate = vi.fn()
 const mockSetupOwn2fa = vi.fn()
@@ -29,7 +29,8 @@ vi.mock('@/api/account-security', () => ({
 }))
 
 vi.mock('@/stores/auth-user-sync', () => ({
-  syncCurrentUserTotpState: (...args: unknown[]) => mockSyncCurrentUserTotpState(...args),
+  syncCurrentUserTotpState: (...args: unknown[]) =>
+    mockSyncCurrentUserTotpState(...args),
 }))
 
 vi.mock('@/utils/antd-app', () => ({
@@ -38,7 +39,9 @@ vi.mock('@/utils/antd-app', () => ({
 
 import { useSetupTwoFactorState } from '@/views/auth/useSetupTwoFactorState'
 
-async function waitForLoading(result: { current: ReturnType<typeof useSetupTwoFactorState> }) {
+async function waitForLoading(result: {
+  current: ReturnType<typeof useSetupTwoFactorState>
+}) {
   await waitFor(() => {
     expect(result.current.loading).toBe(false)
   })

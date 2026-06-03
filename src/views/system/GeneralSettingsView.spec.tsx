@@ -38,13 +38,15 @@ vi.mock('@/utils/type-narrowing', () => ({
 }))
 
 vi.mock('@/views/system/GeneralSettingsTableCard', () => ({
-  GeneralSettingsTableCard: (props: Record<string, unknown>) => (
+  GeneralSettingsTableCard: (_props: Record<string, unknown>) => (
     <div data-testid="table-card">TableCard</div>
   ),
 }))
 
 vi.mock('@/views/system/GeneralSettingsEditorModal', () => ({
-  GeneralSettingsEditorModal: () => <div data-testid="editor-modal">Editor</div>,
+  GeneralSettingsEditorModal: () => (
+    <div data-testid="editor-modal">Editor</div>
+  ),
 }))
 
 vi.mock('@/views/system/RateLimitRulesCard', () => ({

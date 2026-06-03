@@ -79,14 +79,18 @@ describe('PersonalSettingsDisplayTab', () => {
 
   it('calls onResetDisplay when reset button is clicked', () => {
     const onReset = vi.fn()
-    render(<PersonalSettingsDisplayTab {...defaultProps} onResetDisplay={onReset} />)
+    render(
+      <PersonalSettingsDisplayTab {...defaultProps} onResetDisplay={onReset} />,
+    )
     fireEvent.click(screen.getByText('恢复默认'))
     expect(onReset).toHaveBeenCalled()
   })
 
   it('calls onSaveDisplay when save button is clicked', () => {
     const onSave = vi.fn()
-    render(<PersonalSettingsDisplayTab {...defaultProps} onSaveDisplay={onSave} />)
+    render(
+      <PersonalSettingsDisplayTab {...defaultProps} onSaveDisplay={onSave} />,
+    )
     fireEvent.click(screen.getByText('保存设置'))
     expect(onSave).toHaveBeenCalled()
   })

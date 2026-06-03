@@ -1,13 +1,13 @@
-import { describe, expect, it, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  resolveModuleActionKind,
-  resolveModuleActionPermissionCodes,
   buildEditorAuditTarget,
-  buildReverseAuditTarget,
-  resolveStatusOptions,
   buildListAuditTargets,
+  buildReverseAuditTarget,
   canAuditFromStatus,
   canReverseAuditFromStatus,
+  resolveModuleActionKind,
+  resolveModuleActionPermissionCodes,
+  resolveStatusOptions,
 } from './module-adapter-actions'
 import { moduleBehaviorRegistry } from './module-behavior-registry-core'
 
@@ -280,15 +280,17 @@ describe('buildEditorAuditTarget', () => {
   })
 
   it('returns 已审核 when statusOptions includes it and auditStatus is not set', () => {
-    expect(
-      buildEditorAuditTarget('test', ['草稿', '已审核'], '草稿'),
-    ).toEqual({ key: 'status', value: '已审核' })
+    expect(buildEditorAuditTarget('test', ['草稿', '已审核'], '草稿')).toEqual({
+      key: 'status',
+      value: '已审核',
+    })
   })
 
   it('returns 已核准 when statusOptions includes it and 已审核 is not available', () => {
-    expect(
-      buildEditorAuditTarget('test', ['草稿', '已核准'], '草稿'),
-    ).toEqual({ key: 'status', value: '已核准' })
+    expect(buildEditorAuditTarget('test', ['草稿', '已核准'], '草稿')).toEqual({
+      key: 'status',
+      value: '已核准',
+    })
   })
 
   it('returns null when no matching audit status found', () => {
@@ -306,9 +308,9 @@ describe('buildEditorAuditTarget', () => {
 
 describe('buildReverseAuditTarget', () => {
   it('uses preferredStatus when valid', () => {
-    expect(
-      buildReverseAuditTarget('test', ['草稿', '已审核'], '草稿'),
-    ).toEqual({ key: 'status', value: '草稿' })
+    expect(buildReverseAuditTarget('test', ['草稿', '已审核'], '草稿')).toEqual(
+      { key: 'status', value: '草稿' },
+    )
   })
 
   it('ignores preferredStatus when not in statusOptions', () => {
@@ -327,7 +329,9 @@ describe('buildReverseAuditTarget', () => {
 
   it('rejects module default status when explicit options do not include it', () => {
     register('test-module', { defaultStatus: '草稿' })
-    expect(buildReverseAuditTarget('test-module', ['待审核', '已审核'])).toBeNull()
+    expect(
+      buildReverseAuditTarget('test-module', ['待审核', '已审核']),
+    ).toBeNull()
   })
 
   it('falls back through common statuses', () => {
@@ -345,12 +349,16 @@ describe('buildReverseAuditTarget', () => {
 
 describe('resolveStatusOptions', () => {
   it('returns empty array when no status field', () => {
-    expect(resolveStatusOptions({ fields: [{ key: 'name' } as any] })).toEqual([])
+    expect(resolveStatusOptions({ fields: [{ key: 'name' } as any] })).toEqual(
+      [],
+    )
   })
 
   it('returns empty array when status field has no options', () => {
     expect(
-      resolveStatusOptions({ fields: [{ key: 'status', type: 'select' } as any] }),
+      resolveStatusOptions({
+        fields: [{ key: 'status', type: 'select' } as any],
+      }),
     ).toEqual([])
   })
 
@@ -379,7 +387,10 @@ describe('resolveStatusOptions', () => {
             key: 'status',
             type: 'select',
             options: [
-              { label: '状态', options: [{ value: '草稿' }, { value: '已审核' }] },
+              {
+                label: '状态',
+                options: [{ value: '草稿' }, { value: '已审核' }],
+              },
             ],
           } as any,
         ],
@@ -390,7 +401,13 @@ describe('resolveStatusOptions', () => {
   it('returns empty array for non-select type', () => {
     expect(
       resolveStatusOptions({
-        fields: [{ key: 'status', type: 'text', options: [{ label: 'A', value: 'a' }] } as any],
+        fields: [
+          {
+            key: 'status',
+            type: 'text',
+            options: [{ label: 'A', value: 'a' }],
+          } as any,
+        ],
       }),
     ).toEqual([])
   })
@@ -438,14 +455,20 @@ describe('canAuditFromStatus', () => {
   })
 
   it('returns false when status is empty', () => {
-    expect(canAuditFromStatus('', { value: '已审核' }, { value: '草稿' })).toBe(false)
+    expect(canAuditFromStatus('', { value: '已审核' }, { value: '草稿' })).toBe(
+      false,
+    )
   })
 })
 
 describe('canReverseAuditFromStatus', () => {
   it('returns true when status equals auditTarget', () => {
     expect(
-      canReverseAuditFromStatus('已审核', { value: '已审核' }, { value: '草稿' }),
+      canReverseAuditFromStatus(
+        '已审核',
+        { value: '已审核' },
+        { value: '草稿' },
+      ),
     ).toBe(true)
   })
 
@@ -456,15 +479,21 @@ describe('canReverseAuditFromStatus', () => {
   })
 
   it('returns false when auditTarget is null', () => {
-    expect(canReverseAuditFromStatus('已审核', null, { value: '草稿' })).toBe(false)
+    expect(canReverseAuditFromStatus('已审核', null, { value: '草稿' })).toBe(
+      false,
+    )
   })
 
   it('returns false when reverseAuditTarget is null', () => {
-    expect(canReverseAuditFromStatus('已审核', { value: '已审核' }, null)).toBe(false)
+    expect(canReverseAuditFromStatus('已审核', { value: '已审核' }, null)).toBe(
+      false,
+    )
   })
 
   it('returns false when status is empty', () => {
-    expect(canReverseAuditFromStatus('', { value: '已审核' }, { value: '草稿' })).toBe(false)
+    expect(
+      canReverseAuditFromStatus('', { value: '已审核' }, { value: '草稿' }),
+    ).toBe(false)
   })
 
   it('returns false when both targets are null', () => {

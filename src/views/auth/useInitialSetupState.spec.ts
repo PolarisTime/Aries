@@ -1,6 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { waitFor } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockNavigate = vi.fn()
 const mockGetInitialSetupStatus = vi.fn()
@@ -33,10 +32,13 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/api/setup', () => ({
-  getInitialSetupStatus: (...args: unknown[]) => mockGetInitialSetupStatus(...args),
-  setupInitialAdmin2fa: (...args: unknown[]) => mockSetupInitialAdmin2fa(...args),
+  getInitialSetupStatus: (...args: unknown[]) =>
+    mockGetInitialSetupStatus(...args),
+  setupInitialAdmin2fa: (...args: unknown[]) =>
+    mockSetupInitialAdmin2fa(...args),
   submitInitialAdmin: (...args: unknown[]) => mockSubmitInitialAdmin(...args),
-  submitInitialCompany: (...args: unknown[]) => mockSubmitInitialCompany(...args),
+  submitInitialCompany: (...args: unknown[]) =>
+    mockSubmitInitialCompany(...args),
 }))
 
 vi.mock('@/utils/antd-app', () => ({

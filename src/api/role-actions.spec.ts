@@ -30,12 +30,12 @@ vi.mock('@/utils/api-messages', () => ({
 }))
 
 import {
-  listSystemMenus,
-  listRoleSettingsPage,
-  getRoleActions,
-  updateRoleActions,
-  updateRole,
   createRole,
+  getRoleActions,
+  listRoleSettingsPage,
+  listSystemMenus,
+  updateRole,
+  updateRoleActions,
 } from './role-actions'
 
 describe('role-actions', () => {
@@ -48,16 +48,16 @@ describe('role-actions', () => {
     it('fetches permission menu options', async () => {
       const mockData = {
         code: 0,
-        data: [
-          { menuCode: 'dashboard', menuName: '工作台', children: [] },
-        ],
+        data: [{ menuCode: 'dashboard', menuName: '工作台', children: [] }],
       }
       httpGetMock.mockResolvedValue(mockData)
 
       const result = await listSystemMenus()
 
       expect(httpGetMock).toHaveBeenCalledWith('/roles/permission-options')
-      expect(result).toEqual([{ menuCode: 'dashboard', menuName: '工作台', children: [] }])
+      expect(result).toEqual([
+        { menuCode: 'dashboard', menuName: '工作台', children: [] },
+      ])
     })
 
     it('returns empty array when data is null', async () => {
@@ -85,7 +85,9 @@ describe('role-actions', () => {
       expect(httpGetMock).toHaveBeenCalledWith('/roles', {
         params: { page: 0, size: 10 },
       })
-      expect(result.records).toEqual([{ id: '1', roleCode: 'admin', roleName: '管理员' }])
+      expect(result.records).toEqual([
+        { id: '1', roleCode: 'admin', roleName: '管理员' },
+      ])
     })
   })
 
@@ -121,7 +123,9 @@ describe('role-actions', () => {
 
       await updateRole('1', { roleName: '新角色' })
 
-      expect(httpPutMock).toHaveBeenCalledWith('/roles/1', { roleName: '新角色' })
+      expect(httpPutMock).toHaveBeenCalledWith('/roles/1', {
+        roleName: '新角色',
+      })
     })
   })
 
@@ -135,7 +139,10 @@ describe('role-actions', () => {
 
       const result = await createRole({ roleCode: 'new', roleName: '新角色' })
 
-      expect(httpPostMock).toHaveBeenCalledWith('/roles', { roleCode: 'new', roleName: '新角色' })
+      expect(httpPostMock).toHaveBeenCalledWith('/roles', {
+        roleCode: 'new',
+        roleName: '新角色',
+      })
       expect(result).toEqual(mockResponse)
     })
   })

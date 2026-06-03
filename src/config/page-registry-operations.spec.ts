@@ -18,7 +18,9 @@ describe('page-registry-operations', () => {
   })
 
   it('defines purchase-order page', () => {
-    const page = operationPageDefinitions.find((d) => d.key === 'purchase-order')
+    const page = operationPageDefinitions.find(
+      (d) => d.key === 'purchase-order',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('采购订单')
     expect(page!.menuParent).toBe('purchase')
@@ -28,7 +30,9 @@ describe('page-registry-operations', () => {
   })
 
   it('defines purchase-inbound page', () => {
-    const page = operationPageDefinitions.find((d) => d.key === 'purchase-inbound')
+    const page = operationPageDefinitions.find(
+      (d) => d.key === 'purchase-inbound',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('采购入库')
     expect(page!.menuParent).toBe('purchase')
@@ -48,7 +52,9 @@ describe('page-registry-operations', () => {
   })
 
   it('defines sales-outbound page', () => {
-    const page = operationPageDefinitions.find((d) => d.key === 'sales-outbound')
+    const page = operationPageDefinitions.find(
+      (d) => d.key === 'sales-outbound',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('销售出库')
     expect(page!.menuParent).toBe('sales')
@@ -68,7 +74,9 @@ describe('page-registry-operations', () => {
   })
 
   it('defines purchase-contract page', () => {
-    const page = operationPageDefinitions.find((d) => d.key === 'purchase-contract')
+    const page = operationPageDefinitions.find(
+      (d) => d.key === 'purchase-contract',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('采购合同')
     expect(page!.menuParent).toBe('contracts')
@@ -78,7 +86,9 @@ describe('page-registry-operations', () => {
   })
 
   it('defines sales-contract page', () => {
-    const page = operationPageDefinitions.find((d) => d.key === 'sales-contract')
+    const page = operationPageDefinitions.find(
+      (d) => d.key === 'sales-contract',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('销售合同')
     expect(page!.menuParent).toBe('contracts')
@@ -88,7 +98,9 @@ describe('page-registry-operations', () => {
   })
 
   it('defines inventory-report page', () => {
-    const page = operationPageDefinitions.find((d) => d.key === 'inventory-report')
+    const page = operationPageDefinitions.find(
+      (d) => d.key === 'inventory-report',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('商品库存报表')
     expect(page!.menuParent).toBe('reports')
@@ -107,11 +119,21 @@ describe('page-registry-operations', () => {
   })
 
   it('groups pages by menuParent correctly', () => {
-    const purchase = operationPageDefinitions.filter((d) => d.menuParent === 'purchase')
-    const sales = operationPageDefinitions.filter((d) => d.menuParent === 'sales')
-    const freight = operationPageDefinitions.filter((d) => d.menuParent === 'freight')
-    const contracts = operationPageDefinitions.filter((d) => d.menuParent === 'contracts')
-    const reports = operationPageDefinitions.filter((d) => d.menuParent === 'reports')
+    const purchase = operationPageDefinitions.filter(
+      (d) => d.menuParent === 'purchase',
+    )
+    const sales = operationPageDefinitions.filter(
+      (d) => d.menuParent === 'sales',
+    )
+    const freight = operationPageDefinitions.filter(
+      (d) => d.menuParent === 'freight',
+    )
+    const contracts = operationPageDefinitions.filter(
+      (d) => d.menuParent === 'contracts',
+    )
+    const reports = operationPageDefinitions.filter(
+      (d) => d.menuParent === 'reports',
+    )
 
     expect(purchase).toHaveLength(2)
     expect(sales).toHaveLength(2)

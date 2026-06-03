@@ -22,16 +22,20 @@ import { SessionManagementCard } from '@/views/system/SessionManagementCard'
 describe('SessionManagementCard', () => {
   const defaultProps = {
     canEdit: true,
-    columns: [
-      { title: 'Token', dataIndex: 'tokenId', width: 200 },
-    ],
+    columns: [{ title: 'Token', dataIndex: 'tokenId', width: 200 }],
     currentPage: 1,
     isLoading: false,
     keyword: '',
     pageSize: 20,
     summary: { onlineUsers: 5, onlineSessions: 10, activeSessions: 8 },
     tokens: [
-      { id: '1', tokenId: 'token-1', loginName: 'admin', userName: 'Admin', status: '有效' },
+      {
+        id: '1',
+        tokenId: 'token-1',
+        loginName: 'admin',
+        userName: 'Admin',
+        status: '有效',
+      },
     ],
     totalElements: 1,
     onKeywordChange: vi.fn(),
@@ -55,7 +59,9 @@ describe('SessionManagementCard', () => {
     render(<SessionManagementCard {...defaultProps} />)
     expect(screen.getByText('system.session.onlineUsers')).toBeInTheDocument()
     expect(screen.getByText('system.session.onlineDevices')).toBeInTheDocument()
-    expect(screen.getByText('system.session.activeSessions')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.session.activeSessions'),
+    ).toBeInTheDocument()
   })
 
   it('displays summary values', () => {
@@ -82,6 +88,8 @@ describe('SessionManagementCard', () => {
 
   it('does not render revoke all button when not canEdit', () => {
     render(<SessionManagementCard {...defaultProps} canEdit={false} />)
-    expect(screen.queryByText('system.session.revokeAll')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.session.revokeAll'),
+    ).not.toBeInTheDocument()
   })
 })

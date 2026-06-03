@@ -57,10 +57,15 @@ describe('en-US locale', () => {
     ])
     const leaves = getLeaves(enUS as Record<string, unknown>)
     for (const path of leaves) {
-      const val = path.split('.').reduce((o: unknown, k) => (o as Record<string, unknown>)?.[k], enUS)
+      const val = path
+        .split('.')
+        .reduce((o: unknown, k) => (o as Record<string, unknown>)?.[k], enUS)
       expect(typeof val, `${path} should be a string`).toBe('string')
       if (!allowedEmpty.has(path)) {
-        expect((val as string).trim().length, `${path} should not be empty`).toBeGreaterThan(0)
+        expect(
+          (val as string).trim().length,
+          `${path} should not be empty`,
+        ).toBeGreaterThan(0)
       }
     }
   })
@@ -68,12 +73,22 @@ describe('en-US locale', () => {
   it('has consistent interpolation placeholders in nested structures', () => {
     const leaves = getLeaves(enUS as Record<string, unknown>)
     const placeholderPaths = leaves.filter((p) => {
-      const val = p.split('.').reduce((o: unknown, k) => (o as Record<string, unknown>)?.[k], enUS) as string
+      const val = p
+        .split('.')
+        .reduce(
+          (o: unknown, k) => (o as Record<string, unknown>)?.[k],
+          enUS,
+        ) as string
       return val.includes('{{')
     })
     expect(placeholderPaths.length).toBeGreaterThan(0)
     for (const path of placeholderPaths) {
-      const val = path.split('.').reduce((o: unknown, k) => (o as Record<string, unknown>)?.[k], enUS) as string
+      const val = path
+        .split('.')
+        .reduce(
+          (o: unknown, k) => (o as Record<string, unknown>)?.[k],
+          enUS,
+        ) as string
       const placeholders = extractPlaceholders(val)
       expect(placeholders.length).toBeGreaterThan(0)
       for (const ph of placeholders) {

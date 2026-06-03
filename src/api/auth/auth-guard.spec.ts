@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
-import { shouldTriggerRefresh, shouldClearAuthState } from './auth-guard'
-import { HTTP_STATUS } from '@/constants/http-status'
+import { describe, expect, it } from 'vitest'
 import { ERROR_CODE } from '@/constants/error-codes'
+import { HTTP_STATUS } from '@/constants/http-status'
+import { shouldClearAuthState, shouldTriggerRefresh } from './auth-guard'
 import type { RetryableRequestConfig } from './types'
 
 function makeConfig(headers?: Record<string, string>): RetryableRequestConfig {
@@ -42,7 +42,12 @@ describe('auth-guard', () => {
     it('returns true when status is 401', () => {
       const error = { isAxiosError: true }
       expect(
-        shouldTriggerRefresh(HTTP_STATUS.UNAUTHORIZED, error, false, makeConfig()),
+        shouldTriggerRefresh(
+          HTTP_STATUS.UNAUTHORIZED,
+          error,
+          false,
+          makeConfig(),
+        ),
       ).toBe(true)
     })
 
@@ -94,7 +99,9 @@ describe('auth-guard', () => {
     })
 
     it('returns false for non-axios error in shouldTriggerRefresh', () => {
-      expect(shouldTriggerRefresh(401, 'string error', false, makeConfig())).toBe(true)
+      expect(
+        shouldTriggerRefresh(401, 'string error', false, makeConfig()),
+      ).toBe(true)
     })
   })
 
@@ -106,7 +113,12 @@ describe('auth-guard', () => {
     it('returns true when status is 401', () => {
       const error = { isAxiosError: true }
       expect(
-        shouldClearAuthState(HTTP_STATUS.UNAUTHORIZED, error, false, makeConfig()),
+        shouldClearAuthState(
+          HTTP_STATUS.UNAUTHORIZED,
+          error,
+          false,
+          makeConfig(),
+        ),
       ).toBe(true)
     })
 
@@ -146,7 +158,9 @@ describe('auth-guard', () => {
     })
 
     it('returns false for non-axios non-auth errors', () => {
-      expect(shouldClearAuthState(500, { isAxiosError: false }, false, makeConfig())).toBe(false)
+      expect(
+        shouldClearAuthState(500, { isAxiosError: false }, false, makeConfig()),
+      ).toBe(false)
     })
   })
 })

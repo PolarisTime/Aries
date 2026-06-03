@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { HTTP_STATUS } from '@/constants/http-status'
 import { ERROR_CODE } from '@/constants/error-codes'
+import { HTTP_STATUS } from '@/constants/http-status'
 
 const authHttpPostMock = vi.hoisted(() => vi.fn())
 const getTokenMock = vi.hoisted(() => vi.fn())
@@ -46,14 +46,14 @@ vi.mock('@/utils/route-helpers', () => ({
 }))
 
 import {
-  handleAuthFailure,
-  resetAuthFailureHandling,
-  refreshAccessToken,
   getRefreshPromise,
-  setRefreshPromise,
+  handleAuthFailure,
   isRefreshTokenReuseConflict,
-  waitForRefreshTokenReuseRetry,
+  refreshAccessToken,
+  resetAuthFailureHandling,
   retryWithToken,
+  setRefreshPromise,
+  waitForRefreshTokenReuseRetry,
 } from './auth-state'
 
 describe('auth-state', () => {
@@ -63,7 +63,7 @@ describe('auth-state', () => {
     resetAuthFailureHandling()
     getCurrentAppRouteMock.mockReturnValue('/dashboard')
 
-    const origDispatch = globalThis.window.dispatchEvent
+    const _origDispatch = globalThis.window.dispatchEvent
     globalThis.window.dispatchEvent = vi.fn()
     Object.defineProperty(globalThis.window, 'location', {
       value: { href: '' },
@@ -99,7 +99,9 @@ describe('auth-state', () => {
     it('uses safe route for non-slash routes', () => {
       getCurrentAppRouteMock.mockReturnValue('dashboard')
       handleAuthFailure('err')
-      expect(globalThis.window.location.href).toContain('/login?redirect=%2Fdashboard')
+      expect(globalThis.window.location.href).toContain(
+        '/login?redirect=%2Fdashboard',
+      )
     })
   })
 
@@ -229,7 +231,10 @@ describe('auth-state', () => {
     it('returns false for wrong status', () => {
       const error = {
         isAxiosError: true,
-        response: { status: 500, data: { code: ERROR_CODE.REFRESH_TOKEN_REUSE_CONFLICT } },
+        response: {
+          status: 500,
+          data: { code: ERROR_CODE.REFRESH_TOKEN_REUSE_CONFLICT },
+        },
       }
       expect(isRefreshTokenReuseConflict(error)).toBe(false)
     })
@@ -312,25 +317,32 @@ describe('auth-state', () => {
     it('handles plain object headers without set function', () => {
       getTokenMock.mockReturnValue('jwt-token')
       isApiKeyTokenMock.mockReturnValue(false)
-      const request = { headers: { 'X-API-Key': 'old', Authorization: 'old' } as Record<string, string> }
+      const request = {
+        headers: { 'X-API-Key': 'old', Authorization: 'old' } as Record<
+          string,
+          string
+        >,
+      }
 
       retryWithToken(request)
 
       expect(request.headers).toBeDefined()
       const headers = request.headers as Record<string, string>
-      expect(headers['Authorization']).toBe('Bearer jwt-token')
+      expect(headers.Authorization).toBe('Bearer jwt-token')
       expect(headers['X-API-Key']).toBeUndefined()
     })
 
     it('handles plain object headers with API key token', () => {
       getTokenMock.mockReturnValue('leo_key_456')
       isApiKeyTokenMock.mockReturnValue(true)
-      const request = { headers: { Authorization: 'Bearer old' } as Record<string, string> }
+      const request = {
+        headers: { Authorization: 'Bearer old' } as Record<string, string>,
+      }
 
       retryWithToken(request)
 
       const headers = request.headers as Record<string, string>
-      expect(headers['Authorization']).toBeUndefined()
+      expect(headers.Authorization).toBeUndefined()
       expect(headers['X-API-Key']).toBe('leo_key_456')
     })
   })

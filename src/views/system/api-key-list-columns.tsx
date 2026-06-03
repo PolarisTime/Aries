@@ -1,9 +1,9 @@
 import { EyeOutlined, StopOutlined } from '@ant-design/icons'
-import i18next from 'i18next'
 import type { TableColumnsType } from 'antd'
 import Button from 'antd/es/button'
 import Space from 'antd/es/space'
 import Tag from 'antd/es/tag'
+import i18next from 'i18next'
 import type {
   ApiKeyActionOption,
   ApiKeyRecord,
@@ -61,8 +61,16 @@ export function buildApiKeyListColumns({
         </Space>
       ),
     },
-    { dataIndex: 'keyName', title: i18next.t('system.apiKeyColumns.colKeyName'), width: 180 },
-    { dataIndex: 'usageScope', title: i18next.t('system.apiKeyColumns.colUsageScope'), width: 130 },
+    {
+      dataIndex: 'keyName',
+      title: i18next.t('system.apiKeyColumns.colKeyName'),
+      width: 180,
+    },
+    {
+      dataIndex: 'usageScope',
+      title: i18next.t('system.apiKeyColumns.colUsageScope'),
+      width: 130,
+    },
     {
       dataIndex: 'allowedResources',
       title: i18next.t('system.apiKeyColumns.colAllowedResources'),
@@ -94,7 +102,11 @@ export function buildApiKeyListColumns({
         </div>
       ),
     },
-    { dataIndex: 'keyPrefix', title: i18next.t('system.apiKeyColumns.colPrefix'), width: 110 },
+    {
+      dataIndex: 'keyPrefix',
+      title: i18next.t('system.apiKeyColumns.colPrefix'),
+      width: 110,
+    },
     {
       dataIndex: 'createdAt',
       title: i18next.t('system.apiKeyColumns.colCreatedAt'),

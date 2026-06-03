@@ -1,7 +1,7 @@
-import type { ModuleRecord } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 import { collectUniqueSourceNos } from '@/module-system/module-behavior-registry-utils'
+import type { ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
 registerModuleBehavior('freight-bill', {
   normalizeDraftRecord(record, items, ctx) {

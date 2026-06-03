@@ -20,7 +20,10 @@ const mockT = ((key: string) => {
 describe('buildAppLayoutUserInfo', () => {
   it('returns user name when available', () => {
     expect(
-      buildAppLayoutUserInfo(mockT, { userName: '张三', loginName: 'zhangsan' }),
+      buildAppLayoutUserInfo(mockT, {
+        userName: '张三',
+        loginName: 'zhangsan',
+      }),
     ).toEqual({
       currentUserName: '张三',
       currentUserLoginName: 'zhangsan',
@@ -28,9 +31,7 @@ describe('buildAppLayoutUserInfo', () => {
   })
 
   it('falls back to loginName when userName is empty', () => {
-    expect(
-      buildAppLayoutUserInfo(mockT, { loginName: 'zhangsan' }),
-    ).toEqual({
+    expect(buildAppLayoutUserInfo(mockT, { loginName: 'zhangsan' })).toEqual({
       currentUserName: 'zhangsan',
       currentUserLoginName: 'zhangsan',
     })

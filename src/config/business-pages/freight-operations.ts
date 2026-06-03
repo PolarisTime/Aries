@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
@@ -15,7 +16,6 @@ import {
   statusMap,
   transformFreightItems,
 } from './shared'
-import i18next from 'i18next'
 
 function getNormalizedUniqueValues(values: unknown[]) {
   return Array.from(
@@ -33,20 +33,33 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
     key: 'freight-bill',
     title: i18next.t('modules.pages.freightOperations.freightBill'),
     kicker: 'Freight',
-    description:
-      i18next.t('modules.pages.freightOperations.freightBillDesc'),
+    description: i18next.t('modules.pages.freightOperations.freightBillDesc'),
     primaryNoKey: 'billNo',
     actions: [
-      { key: 'create_freight_bill', label: i18next.t('modules.pages.freightOperations.createFreightBill'), type: 'primary' },
-      { key: 'generate_pickup_list', label: i18next.t('modules.pages.freightOperations.generatePickupList'), type: 'default' },
-      { key: 'mark_delivered', label: i18next.t('modules.pages.freightOperations.markDelivered'), type: 'default' },
+      {
+        key: 'create_freight_bill',
+        label: i18next.t('modules.pages.freightOperations.createFreightBill'),
+        type: 'primary',
+      },
+      {
+        key: 'generate_pickup_list',
+        label: i18next.t('modules.pages.freightOperations.generatePickupList'),
+        type: 'default',
+      },
+      {
+        key: 'mark_delivered',
+        label: i18next.t('modules.pages.freightOperations.markDelivered'),
+        type: 'default',
+      },
     ],
     filters: [
       {
         key: 'keyword',
         label: FREIGHT_NO_FILTER_LABEL,
         type: 'input',
-        placeholder: i18next.t('modules.pages.freightOperations.freightBillPlaceholder'),
+        placeholder: i18next.t(
+          'modules.pages.freightOperations.freightBillPlaceholder',
+        ),
       },
       {
         key: 'carrierName',
@@ -59,17 +72,44 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         label: AUDIT_STATUS_LABEL,
         type: 'select',
         options: [
-          { label: i18next.t('modules.pages.freightOperations.unaudited'), value: '未审核' },
-          { label: i18next.t('modules.pages.freightOperations.audited'), value: '已审核' },
+          {
+            label: i18next.t('modules.pages.freightOperations.unaudited'),
+            value: '未审核',
+          },
+          {
+            label: i18next.t('modules.pages.freightOperations.audited'),
+            value: '已审核',
+          },
         ],
       },
-      { key: 'billTime', label: i18next.t('modules.pages.freightOperations.documentDate'), type: 'dateRange' },
+      {
+        key: 'billTime',
+        label: i18next.t('modules.pages.freightOperations.documentDate'),
+        type: 'dateRange',
+      },
     ],
     columns: [
-      { title: i18next.t('modules.pages.freightOperations.freightBillNo'), dataIndex: 'billNo', width: 160 },
-      { title: i18next.t('modules.pages.freightOperations.carrier'), dataIndex: 'carrierName', width: 140 },
-      { title: i18next.t('modules.pages.freightOperations.vehiclePlate'), dataIndex: 'vehiclePlate', width: 120 },
-      { title: i18next.t('modules.pages.freightOperations.documentDate'), dataIndex: 'billTime', width: 120, type: 'date' },
+      {
+        title: i18next.t('modules.pages.freightOperations.freightBillNo'),
+        dataIndex: 'billNo',
+        width: 160,
+      },
+      {
+        title: i18next.t('modules.pages.freightOperations.carrier'),
+        dataIndex: 'carrierName',
+        width: 140,
+      },
+      {
+        title: i18next.t('modules.pages.freightOperations.vehiclePlate'),
+        dataIndex: 'vehiclePlate',
+        width: 120,
+      },
+      {
+        title: i18next.t('modules.pages.freightOperations.documentDate'),
+        dataIndex: 'billTime',
+        width: 120,
+        type: 'date',
+      },
       {
         title: i18next.t('modules.pages.freightOperations.totalWeight'),
         dataIndex: 'totalWeight',
@@ -94,19 +134,64 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
     ],
     defaultHiddenColumnKeys: ['vehiclePlate', 'unitPrice'],
     detailFields: [
-      { label: i18next.t('modules.pages.freightOperations.freightBillNo'), key: 'billNo' },
-      { label: i18next.t('modules.pages.freightOperations.relatedOutbound'), key: 'outboundNo' },
-      { label: i18next.t('modules.pages.freightOperations.carrier'), key: 'carrierName' },
-      { label: i18next.t('modules.pages.freightOperations.vehiclePlate'), key: 'vehiclePlate' },
-      { label: i18next.t('modules.pages.freightOperations.customerName'), key: 'customerName' },
-      { label: i18next.t('modules.pages.freightOperations.projectName'), key: 'projectName' },
-      { label: i18next.t('modules.pages.freightOperations.documentDate'), key: 'billTime', type: 'date' },
-      { label: i18next.t('modules.pages.freightOperations.unitPrice'), key: 'unitPrice', type: 'amount' },
-      { label: i18next.t('modules.pages.freightOperations.totalWeight'), key: 'totalWeight', type: 'weight' },
-      { label: i18next.t('modules.pages.freightOperations.totalFreight'), key: 'totalFreight', type: 'amount' },
-      { label: i18next.t('modules.pages.freightOperations.auditStatus'), key: 'status', type: 'status' },
-      { label: i18next.t('modules.pages.freightOperations.deliveryStatus'), key: 'deliveryStatus', type: 'status' },
-      { label: i18next.t('modules.pages.freightOperations.remark'), key: 'remark' },
+      {
+        label: i18next.t('modules.pages.freightOperations.freightBillNo'),
+        key: 'billNo',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.relatedOutbound'),
+        key: 'outboundNo',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.carrier'),
+        key: 'carrierName',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.vehiclePlate'),
+        key: 'vehiclePlate',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.customerName'),
+        key: 'customerName',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.projectName'),
+        key: 'projectName',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.documentDate'),
+        key: 'billTime',
+        type: 'date',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.unitPrice'),
+        key: 'unitPrice',
+        type: 'amount',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.totalWeight'),
+        key: 'totalWeight',
+        type: 'weight',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.totalFreight'),
+        key: 'totalFreight',
+        type: 'amount',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.auditStatus'),
+        key: 'status',
+        type: 'status',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.deliveryStatus'),
+        key: 'deliveryStatus',
+        type: 'status',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.remark'),
+        key: 'remark',
+      },
     ],
     formFields: [
       {
@@ -121,7 +206,9 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         label: i18next.t('modules.pages.freightOperations.relatedOutbound'),
         type: 'input',
         disabled: true,
-        placeholder: i18next.t('modules.pages.freightOperations.importFromParent'),
+        placeholder: i18next.t(
+          'modules.pages.freightOperations.importFromParent',
+        ),
         row: 1,
       },
       {
@@ -156,14 +243,21 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         defaultValue: 0,
         row: 2,
       },
-      { key: 'remark', label: i18next.t('modules.pages.freightOperations.remark'), type: 'input', row: 2 },
+      {
+        key: 'remark',
+        label: i18next.t('modules.pages.freightOperations.remark'),
+        type: 'input',
+        row: 2,
+      },
     ],
     parentImport: {
       parentModuleKey: 'sales-outbound',
       label: i18next.t('modules.pages.freightOperations.parentSalesOutbound'),
       parentFieldKey: 'outboundNo',
       parentDisplayFieldKey: 'outboundNo',
-      buttonText: i18next.t('modules.pages.freightOperations.importParentSalesOutbound'),
+      buttonText: i18next.t(
+        'modules.pages.freightOperations.importParentSalesOutbound',
+      ),
       enforceUniqueRelation: true,
       allowMultipleSelection: true,
       validateBeforeOpen: (currentRecord) =>

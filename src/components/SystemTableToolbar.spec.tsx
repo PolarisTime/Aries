@@ -17,10 +17,7 @@ describe('SystemTableToolbar', () => {
 
   it('renders custom placeholder', () => {
     render(
-      <SystemTableToolbar
-        {...defaultProps}
-        keywordPlaceholder="搜索订单号"
-      />,
+      <SystemTableToolbar {...defaultProps} keywordPlaceholder="搜索订单号" />,
     )
     expect(screen.getByPlaceholderText('搜索订单号')).toBeTruthy()
   })
@@ -67,10 +64,11 @@ describe('SystemTableToolbar', () => {
   })
 
   it('applies custom width to search input container', () => {
-    render(
-      <SystemTableToolbar {...defaultProps} keywordWidth={500} />,
-    )
+    render(<SystemTableToolbar {...defaultProps} keywordWidth={500} />)
     const input = screen.getByPlaceholderText('toolbar.searchPlaceholder')
-    expect(input.closest('.ant-input-search-wrapper')?.style?.width || input.style?.width).toBeDefined()
+    expect(
+      input.closest('.ant-input-search-wrapper')?.style?.width ||
+        input.style?.width,
+    ).toBeDefined()
   })
 })

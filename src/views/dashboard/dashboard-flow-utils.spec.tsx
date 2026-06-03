@@ -136,7 +136,9 @@ describe('dashboard-flow-utils', () => {
     it('returns material node with correct properties', () => {
       const sections = buildWorkflowSections(t)
       const masterSection = sections.find((s) => s.key === 'master')
-      const materialNode = masterSection!.nodes.find((n) => n.key === 'material')
+      const materialNode = masterSection!.nodes.find(
+        (n) => n.key === 'material',
+      )
       expect(materialNode).toBeDefined()
       expect(materialNode!.title).toBe('物料')
       expect(materialNode!.path).toBe('/material')
@@ -170,7 +172,9 @@ describe('dashboard-flow-utils', () => {
       }
       const sections = buildWorkflowSections(t, summary as never)
       const masterSection = sections.find((s) => s.key === 'master')
-      const materialNode = masterSection!.nodes.find((n) => n.key === 'material')
+      const materialNode = masterSection!.nodes.find(
+        (n) => n.key === 'material',
+      )
       expect(materialNode!.metric).toBe('100 个物料')
     })
   })

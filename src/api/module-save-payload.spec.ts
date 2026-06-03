@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { serializeBusinessRecordForSave } from './module-save-payload'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModulePageConfig } from '@/types/module-page'
+import { serializeBusinessRecordForSave } from './module-save-payload'
 
 const { getModulePageSchemaMock } = vi.hoisted(() => ({
   getModulePageSchemaMock: vi.fn(),
@@ -31,7 +31,9 @@ describe('module-save-payload', () => {
   })
 
   it('keeps receipt scalar fields in save payload', async () => {
-    const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
     vi.mocked(loadBusinessPageConfig).mockResolvedValue({
       key: 'receipt',
       detailFields: [
@@ -78,7 +80,9 @@ describe('module-save-payload', () => {
   })
 
   it('keeps payment scalar fields in save payload', async () => {
-    const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
     vi.mocked(loadBusinessPageConfig).mockResolvedValue({
       key: 'payment',
       detailFields: [
@@ -123,31 +127,49 @@ describe('module-save-payload', () => {
   })
 
   it('includes line items when behavior allows', async () => {
-    const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
-    const { hasBehavior, getBehaviorValue } = await import('@/module-system/module-behavior-registry')
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
     vi.mocked(loadBusinessPageConfig).mockResolvedValue({
       key: 'purchase-inbound',
-      detailFields: [
-        { key: 'inboundNo', type: 'input', label: '入库单号' },
-      ],
+      detailFields: [{ key: 'inboundNo', type: 'input', label: '入库单号' }],
       saveFields: {
         scalar: ['inboundNo'],
         lineItem: ['materialCode', 'quantity', 'unitPrice', 'settlementMode'],
       },
     } as ModulePageConfig)
-    vi.mocked(hasBehavior).mockImplementation((key: string, behavior: string) => {
-      if (key === 'purchase-inbound' && behavior === 'savePayloadLineItems') return true
-      if (key === 'purchase-inbound' && behavior === 'includeAttachmentIds') return true
-      return false
-    })
+    vi.mocked(hasBehavior).mockImplementation(
+      (key: string, behavior: string) => {
+        if (key === 'purchase-inbound' && behavior === 'savePayloadLineItems')
+          return true
+        if (key === 'purchase-inbound' && behavior === 'includeAttachmentIds')
+          return true
+        return false
+      },
+    )
     vi.mocked(getBehaviorValue).mockReturnValue([])
 
     const payload = await serializeBusinessRecordForSave('purchase-inbound', {
       id: '',
       inboundNo: 'RK20260001',
       items: [
-        { id: '100', materialCode: 'M001', quantity: 10, unitPrice: 100, settlementMode: '理算' },
-        { id: '101', materialCode: 'M002', quantity: 5, unitPrice: 200, settlementMode: '过磅' },
+        {
+          id: '100',
+          materialCode: 'M001',
+          quantity: 10,
+          unitPrice: 100,
+          settlementMode: '理算',
+        },
+        {
+          id: '101',
+          materialCode: 'M002',
+          quantity: 5,
+          unitPrice: 200,
+          settlementMode: '过磅',
+        },
       ],
       attachmentIds: ['att-1', 'att-2'],
     })
@@ -163,16 +185,22 @@ describe('module-save-payload', () => {
   })
 
   it('includes attachmentIds when behavior allows', async () => {
-    const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
-    const { hasBehavior, getBehaviorValue } = await import('@/module-system/module-behavior-registry')
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
     vi.mocked(loadBusinessPageConfig).mockResolvedValue({
       key: 'test-module',
       detailFields: [{ key: 'name', type: 'input', label: '名称' }],
     } as ModulePageConfig)
-    vi.mocked(hasBehavior).mockImplementation((key: string, behavior: string) => {
-      if (behavior === 'includeAttachmentIds') return true
-      return false
-    })
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => {
+        if (behavior === 'includeAttachmentIds') return true
+        return false
+      },
+    )
     vi.mocked(getBehaviorValue).mockReturnValue([])
 
     const payload = await serializeBusinessRecordForSave('test-module', {
@@ -184,7 +212,9 @@ describe('module-save-payload', () => {
   })
 
   it('handles dayjs values correctly', async () => {
-    const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
     vi.mocked(loadBusinessPageConfig).mockResolvedValue({
       key: 'test',
       detailFields: [{ key: 'date', type: 'input', label: '日期' }],
@@ -206,7 +236,9 @@ describe('module-save-payload', () => {
       },
     })
 
-    const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
     vi.mocked(loadBusinessPageConfig).mockResolvedValue({
       key: 'computed-test',
       detailFields: [{ key: 'name', type: 'input', label: '名称' }],
@@ -222,8 +254,12 @@ describe('module-save-payload', () => {
   })
 
   it('skips settlementMode for non-purchase-inbound modules', async () => {
-    const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
-    const { hasBehavior, getBehaviorValue } = await import('@/module-system/module-behavior-registry')
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
     vi.mocked(loadBusinessPageConfig).mockResolvedValue({
       key: 'sales-order',
       detailFields: [{ key: 'orderNo', type: 'input', label: '订单号' }],
@@ -232,34 +268,40 @@ describe('module-save-payload', () => {
         lineItem: ['materialCode', 'settlementMode'],
       },
     } as ModulePageConfig)
-    vi.mocked(hasBehavior).mockImplementation((key: string, behavior: string) => {
-      if (behavior === 'savePayloadLineItems') return true
-      return false
-    })
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => {
+        if (behavior === 'savePayloadLineItems') return true
+        return false
+      },
+    )
     vi.mocked(getBehaviorValue).mockReturnValue([])
 
     const payload = await serializeBusinessRecordForSave('sales-order', {
       id: '',
       orderNo: 'SO001',
-      items: [
-        { id: 'item-1', materialCode: 'M001', settlementMode: '过磅' },
-      ],
+      items: [{ id: 'item-1', materialCode: 'M001', settlementMode: '过磅' }],
     })
     expect(payload.items![0]).not.toHaveProperty('settlementMode')
   })
 
   it('handles persisted line item id as number', async () => {
-    const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
-    const { hasBehavior, getBehaviorValue } = await import('@/module-system/module-behavior-registry')
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
     vi.mocked(loadBusinessPageConfig).mockResolvedValue({
       key: 'test',
       detailFields: [{ key: 'name', type: 'input', label: '名称' }],
       saveFields: { scalar: ['name'], lineItem: ['materialCode'] },
     } as ModulePageConfig)
-    vi.mocked(hasBehavior).mockImplementation((key: string, behavior: string) => {
-      if (behavior === 'savePayloadLineItems') return true
-      return false
-    })
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => {
+        if (behavior === 'savePayloadLineItems') return true
+        return false
+      },
+    )
     vi.mocked(getBehaviorValue).mockReturnValue([])
 
     const payload = await serializeBusinessRecordForSave('test', {

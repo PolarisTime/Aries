@@ -86,7 +86,9 @@ describe('ApiKeyListCard', () => {
   })
 
   it('renders loading state', () => {
-    const { container } = render(<ApiKeyListCard {...defaultProps} loading={true} />)
+    const { container } = render(
+      <ApiKeyListCard {...defaultProps} loading={true} />,
+    )
     expect(container.querySelector('.ant-spin')).toBeInTheDocument()
   })
 

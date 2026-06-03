@@ -22,7 +22,9 @@ describe('permissionManagementPageConfig', () => {
 
   it('has filters', () => {
     expect(permissionManagementPageConfig.filters).toBeDefined()
-    expect(permissionManagementPageConfig.filters!.length).toBeGreaterThanOrEqual(2)
+    expect(
+      permissionManagementPageConfig.filters!.length,
+    ).toBeGreaterThanOrEqual(2)
   })
 
   it('has columns', () => {

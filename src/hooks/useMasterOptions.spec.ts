@@ -1,12 +1,23 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { useQueryMock, fetchSupplierOptionsMock, fetchCustomerOptionsMock,
-  fetchCarrierOptionsMock, fetchWarehouseOptionsMock, fetchMaterialCategoriesMock,
-  fetchMaterialSearchMock, useAuthStoreMock,
-  getSupplierOptionsFn, getCustomerOptionsFn, getCustomerProjectOptionsFn,
-  getCarrierOptionsFn, getCarrierVehiclePlateOptionsFn, getWarehouseOptionsFn,
-  materialCategoryOptionsFn } = vi.hoisted(() => ({
+const {
+  useQueryMock,
+  fetchSupplierOptionsMock,
+  fetchCustomerOptionsMock,
+  fetchCarrierOptionsMock,
+  fetchWarehouseOptionsMock,
+  fetchMaterialCategoriesMock,
+  fetchMaterialSearchMock,
+  useAuthStoreMock,
+  getSupplierOptionsFn,
+  getCustomerOptionsFn,
+  getCustomerProjectOptionsFn,
+  getCarrierOptionsFn,
+  getCarrierVehiclePlateOptionsFn,
+  getWarehouseOptionsFn,
+  materialCategoryOptionsFn,
+} = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
   fetchSupplierOptionsMock: vi.fn(),
   fetchCustomerOptionsMock: vi.fn(),
@@ -79,7 +90,10 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: useAuthStoreMock,
 }))
 
-import { useMasterOptions, resolveMasterOptionRequirements } from './useMasterOptions'
+import {
+  resolveMasterOptionRequirements,
+  useMasterOptions,
+} from './useMasterOptions'
 
 describe('useMasterOptions', () => {
   beforeEach(() => {
@@ -122,7 +136,7 @@ describe('useMasterOptions', () => {
         warehouses: true,
         materialCategories: true,
         materials: true,
-      })
+      }),
     )
 
     expect(result.current.suppliers).toEqual(suppliers)
@@ -134,42 +148,36 @@ describe('useMasterOptions', () => {
   })
 
   it('enables queries based on requirements', () => {
-    renderHook(() =>
-      useMasterOptions({ suppliers: true, customers: false })
-    )
+    renderHook(() => useMasterOptions({ suppliers: true, customers: false }))
 
     expect(useQueryMock).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: ['supplier'],
         enabled: true,
-      })
+      }),
     )
     expect(useQueryMock).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: ['customer'],
         enabled: false,
-      })
+      }),
     )
   })
 
   it('disables all queries when enabled is false', () => {
-    renderHook(() =>
-      useMasterOptions({ suppliers: true }, false)
-    )
+    renderHook(() => useMasterOptions({ suppliers: true }, false))
 
     expect(useQueryMock).toHaveBeenCalledWith(
-      expect.objectContaining({ enabled: false })
+      expect.objectContaining({ enabled: false }),
     )
   })
 
   it('disables all queries when token is missing', () => {
     useAuthStoreMock.mockReturnValue(null)
-    renderHook(() =>
-      useMasterOptions({ suppliers: true })
-    )
+    renderHook(() => useMasterOptions({ suppliers: true }))
 
     expect(useQueryMock).toHaveBeenCalledWith(
-      expect.objectContaining({ enabled: false })
+      expect.objectContaining({ enabled: false }),
     )
   })
 
@@ -179,7 +187,7 @@ describe('useMasterOptions', () => {
       .mockReturnValueOnce({ data: undefined, isLoading: false })
 
     const { result } = renderHook(() =>
-      useMasterOptions({ suppliers: true, customers: true })
+      useMasterOptions({ suppliers: true, customers: true }),
     )
 
     expect(result.current.isLoading).toBe(true)
@@ -249,9 +257,7 @@ describe('resolveMasterOptionRequirements', () => {
   })
 
   it('handles non-function options', () => {
-    const result = resolveMasterOptionRequirements([
-      { options: 'some-string' },
-    ])
+    const result = resolveMasterOptionRequirements([{ options: 'some-string' }])
     expect(result.suppliers).toBe(false)
   })
 })

@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const rootRouteOptions: { current: Record<string, any> | null } = { current: null }
+const rootRouteOptions: { current: Record<string, any> | null } = {
+  current: null,
+}
 const routeOptionsByPath = new Map<string, Record<string, any>>()
 const routeOptionsById = new Map<string, Record<string, any>>()
 
@@ -44,7 +46,8 @@ vi.mock('@/api/business-listing', () => ({
 
 const mockGetInitialSetupStatus = vi.fn()
 vi.mock('@/api/setup', () => ({
-  getInitialSetupStatus: (...args: unknown[]) => mockGetInitialSetupStatus(...args),
+  getInitialSetupStatus: (...args: unknown[]) =>
+    mockGetInitialSetupStatus(...args),
 }))
 
 vi.mock('@/config/business-page-loader', () => ({
@@ -176,13 +179,15 @@ vi.mock('@/stores/permissionStore', () => ({
   usePermissionStore: {
     getState: () => mockPermissionGetState(),
   },
-  checkAccessResources: vi.fn().mockImplementation(
-    (resources: string[], can: (r: string, a: string) => boolean) =>
-      resources.some((entry) => {
-        const [resource, action = 'read'] = entry.split(':')
-        return can(resource, action)
-      }),
-  ),
+  checkAccessResources: vi
+    .fn()
+    .mockImplementation(
+      (resources: string[], can: (r: string, a: string) => boolean) =>
+        resources.some((entry) => {
+          const [resource, action = 'read'] = entry.split(':')
+          return can(resource, action)
+        }),
+    ),
 }))
 
 vi.mock('@/utils/type-narrowing', () => ({
@@ -204,7 +209,9 @@ beforeEach(() => {
   routeOptionsById.clear()
 
   mockGetInitialSetupStatus.mockReset()
-  mockGetInitialSetupStatus.mockResolvedValue({ data: { setupRequired: false } })
+  mockGetInitialSetupStatus.mockResolvedValue({
+    data: { setupRequired: false },
+  })
 
   mockAuthGetState.mockReset()
   mockAuthGetState.mockReturnValue({ isAuthenticated: true })
@@ -278,48 +285,68 @@ describe('router', () => {
 
   describe('root route beforeLoad', () => {
     it('redirects to /setup when setup required and not on setup page', async () => {
-      mockGetInitialSetupStatus.mockResolvedValue({ data: { setupRequired: true } })
+      mockGetInitialSetupStatus.mockResolvedValue({
+        data: { setupRequired: true },
+      })
       await importRouter()
 
       await expect(
-        rootRouteOptions.current!.beforeLoad({ location: { pathname: '/dashboard' } }),
+        rootRouteOptions.current!.beforeLoad({
+          location: { pathname: '/dashboard' },
+        }),
       ).rejects.toMatchObject({ to: '/setup' })
     })
 
     it('redirects to /login when setup not required and on setup page', async () => {
-      mockGetInitialSetupStatus.mockResolvedValue({ data: { setupRequired: false } })
+      mockGetInitialSetupStatus.mockResolvedValue({
+        data: { setupRequired: false },
+      })
       await importRouter()
 
       await expect(
-        rootRouteOptions.current!.beforeLoad({ location: { pathname: '/setup' } }),
+        rootRouteOptions.current!.beforeLoad({
+          location: { pathname: '/setup' },
+        }),
       ).rejects.toMatchObject({ to: '/login' })
     })
 
     it('does not redirect when setup required and on setup page', async () => {
-      mockGetInitialSetupStatus.mockResolvedValue({ data: { setupRequired: true } })
+      mockGetInitialSetupStatus.mockResolvedValue({
+        data: { setupRequired: true },
+      })
       await importRouter()
 
       await expect(
-        rootRouteOptions.current!.beforeLoad({ location: { pathname: '/setup' } }),
+        rootRouteOptions.current!.beforeLoad({
+          location: { pathname: '/setup' },
+        }),
       ).resolves.toBeUndefined()
     })
 
     it('does not redirect when setup not required and not on setup page', async () => {
-      mockGetInitialSetupStatus.mockResolvedValue({ data: { setupRequired: false } })
+      mockGetInitialSetupStatus.mockResolvedValue({
+        data: { setupRequired: false },
+      })
       await importRouter()
 
       await expect(
-        rootRouteOptions.current!.beforeLoad({ location: { pathname: '/dashboard' } }),
+        rootRouteOptions.current!.beforeLoad({
+          location: { pathname: '/dashboard' },
+        }),
       ).resolves.toBeUndefined()
     })
 
     it('rethrows redirect errors from setup status API', async () => {
-      const redirectError = Object.assign(new Error('redirect'), { to: '/somewhere' })
+      const redirectError = Object.assign(new Error('redirect'), {
+        to: '/somewhere',
+      })
       mockGetInitialSetupStatus.mockRejectedValue(redirectError)
       await importRouter()
 
       await expect(
-        rootRouteOptions.current!.beforeLoad({ location: { pathname: '/dashboard' } }),
+        rootRouteOptions.current!.beforeLoad({
+          location: { pathname: '/dashboard' },
+        }),
       ).rejects.toMatchObject({ to: '/somewhere' })
     })
 
@@ -328,7 +355,9 @@ describe('router', () => {
       await importRouter()
 
       await expect(
-        rootRouteOptions.current!.beforeLoad({ location: { pathname: '/dashboard' } }),
+        rootRouteOptions.current!.beforeLoad({
+          location: { pathname: '/dashboard' },
+        }),
       ).rejects.toMatchObject({ to: '/setup' })
     })
 
@@ -337,7 +366,9 @@ describe('router', () => {
       await importRouter()
 
       await expect(
-        rootRouteOptions.current!.beforeLoad({ location: { pathname: '/setup' } }),
+        rootRouteOptions.current!.beforeLoad({
+          location: { pathname: '/setup' },
+        }),
       ).resolves.toBeUndefined()
     })
   })
@@ -491,8 +522,12 @@ describe('router', () => {
 
   describe('business-grid loader', () => {
     it('loads config and returns it', async () => {
-      const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
-      vi.mocked(loadBusinessPageConfig).mockResolvedValue({ key: 'customer' } as any)
+      const { loadBusinessPageConfig } = await import(
+        '@/config/business-page-loader'
+      )
+      vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+        key: 'customer',
+      } as any)
       const { queryClient } = await import('@/lib/query-client')
       vi.mocked(queryClient.ensureQueryData).mockResolvedValue({} as any)
 
@@ -506,8 +541,12 @@ describe('router', () => {
 
     it('prefetches data when user has read permission', async () => {
       mockPermissionCan.mockReturnValue(true)
-      const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
-      vi.mocked(loadBusinessPageConfig).mockResolvedValue({ key: 'customer' } as any)
+      const { loadBusinessPageConfig } = await import(
+        '@/config/business-page-loader'
+      )
+      vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+        key: 'customer',
+      } as any)
       const { queryClient } = await import('@/lib/query-client')
       vi.mocked(queryClient.ensureQueryData).mockResolvedValue({} as any)
 
@@ -525,8 +564,12 @@ describe('router', () => {
 
     it('skips prefetch when user lacks permission', async () => {
       mockPermissionCan.mockReturnValue(false)
-      const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
-      vi.mocked(loadBusinessPageConfig).mockResolvedValue({ key: 'customer' } as any)
+      const { loadBusinessPageConfig } = await import(
+        '@/config/business-page-loader'
+      )
+      vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+        key: 'customer',
+      } as any)
 
       await importRouter()
       const { queryClient } = await import('@/lib/query-client')
@@ -540,10 +583,16 @@ describe('router', () => {
 
     it('swallows prefetch errors gracefully', async () => {
       mockPermissionCan.mockReturnValue(true)
-      const { loadBusinessPageConfig } = await import('@/config/business-page-loader')
-      vi.mocked(loadBusinessPageConfig).mockResolvedValue({ key: 'customer' } as any)
+      const { loadBusinessPageConfig } = await import(
+        '@/config/business-page-loader'
+      )
+      vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+        key: 'customer',
+      } as any)
       const { queryClient } = await import('@/lib/query-client')
-      vi.mocked(queryClient.ensureQueryData).mockRejectedValue(new Error('fail'))
+      vi.mocked(queryClient.ensureQueryData).mockRejectedValue(
+        new Error('fail'),
+      )
 
       await importRouter()
       const opts = routeOptionsByPath.get('/customer')!
@@ -613,12 +662,14 @@ describe('router', () => {
       const customerMod = await customerComponent()
       expect(customerMod).toHaveProperty('default')
 
-      const generalComponent = routeOptionsByPath.get('/general-setting')!.component
+      const generalComponent =
+        routeOptionsByPath.get('/general-setting')!.component
       expect(generalComponent).toBeDefined()
       const generalMod = await generalComponent()
       expect(generalMod).toHaveProperty('default')
 
-      const accessComponent = routeOptionsByPath.get('/access-control')!.component
+      const accessComponent =
+        routeOptionsByPath.get('/access-control')!.component
       expect(accessComponent).toBeDefined()
       const accessMod = await accessComponent()
       expect(accessMod).toHaveProperty('default')

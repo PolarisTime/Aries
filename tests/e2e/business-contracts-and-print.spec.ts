@@ -9,7 +9,9 @@ test.describe('purchase contract', () => {
   })
 
   test('page loads at correct URL', async ({ page, assertNoFatalUiErrors }) => {
-    await page.goto(`${APP_BASE_URL}/purchase-contract`, { waitUntil: 'networkidle' })
+    await page.goto(`${APP_BASE_URL}/purchase-contract`, {
+      waitUntil: 'networkidle',
+    })
     await expect(page).toHaveURL(/\/purchase-contract/)
     await assertNoFatalUiErrors()
   })
@@ -21,7 +23,9 @@ test.describe('sales contract', () => {
   })
 
   test('page loads at correct URL', async ({ page, assertNoFatalUiErrors }) => {
-    await page.goto(`${APP_BASE_URL}/sales-contract`, { waitUntil: 'networkidle' })
+    await page.goto(`${APP_BASE_URL}/sales-contract`, {
+      waitUntil: 'networkidle',
+    })
     await expect(page).toHaveURL(/\/sales-contract/)
     await assertNoFatalUiErrors()
   })
@@ -33,7 +37,9 @@ test.describe('print template', () => {
   })
 
   test('page loads at correct URL', async ({ page, assertNoFatalUiErrors }) => {
-    await page.goto(`${APP_BASE_URL}/print-template`, { waitUntil: 'networkidle' })
+    await page.goto(`${APP_BASE_URL}/print-template`, {
+      waitUntil: 'networkidle',
+    })
     await expect(page).toHaveURL(/\/print-template/)
     await assertNoFatalUiErrors()
   })

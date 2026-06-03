@@ -22,7 +22,9 @@ vi.mock('antd/es/modal', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/space', () => ({
@@ -40,7 +42,14 @@ vi.mock('antd/es/typography', () => ({
 }))
 
 vi.mock('@/components/AppResultModal', () => ({
-  AppResultModal: ({ open, subTitle, traceId, footer, onClose, ...props }: any) =>
+  AppResultModal: ({
+    open,
+    subTitle,
+    traceId,
+    footer,
+    onClose,
+    ...props
+  }: any) =>
     open ? (
       <div data-testid="result-modal">
         <div>{subTitle}</div>
@@ -132,9 +141,7 @@ describe('ModuleStatementGenerator', () => {
   it('shows error when counterparty name is missing', () => {
     const props = {
       ...defaultProps,
-      selectedRows: [
-        { id: '1', inboundDate: '2024-01-01' },
-      ],
+      selectedRows: [{ id: '1', inboundDate: '2024-01-01' }],
     }
     render(<ModuleStatementGenerator {...props} />)
     expect(screen.getByText('modules.statement.extractError')).toBeTruthy()
@@ -143,9 +150,7 @@ describe('ModuleStatementGenerator', () => {
   it('shows error when date is missing', () => {
     const props = {
       ...defaultProps,
-      selectedRows: [
-        { id: '1', supplierName: 'Supplier A' },
-      ],
+      selectedRows: [{ id: '1', supplierName: 'Supplier A' }],
     }
     render(<ModuleStatementGenerator {...props} />)
     expect(screen.getByText('modules.statement.extractError')).toBeTruthy()
@@ -153,16 +158,24 @@ describe('ModuleStatementGenerator', () => {
 
   it('calls onGenerate when generate button clicked', async () => {
     const onGenerate = vi.fn().mockResolvedValue(undefined)
-    render(<ModuleStatementGenerator {...defaultProps} onGenerate={onGenerate} />)
+    render(
+      <ModuleStatementGenerator {...defaultProps} onGenerate={onGenerate} />,
+    )
     fireEvent.click(screen.getByText('modules.statement.generateButton'))
     await waitFor(() => {
-      expect(onGenerate).toHaveBeenCalledWith('Supplier A', '2024-01-01', '2024-01-15')
+      expect(onGenerate).toHaveBeenCalledWith(
+        'Supplier A',
+        '2024-01-01',
+        '2024-01-15',
+      )
     })
   })
 
   it('shows success result after generation', async () => {
     const onGenerate = vi.fn().mockResolvedValue(undefined)
-    render(<ModuleStatementGenerator {...defaultProps} onGenerate={onGenerate} />)
+    render(
+      <ModuleStatementGenerator {...defaultProps} onGenerate={onGenerate} />,
+    )
     fireEvent.click(screen.getByText('modules.statement.generateButton'))
     await waitFor(() => {
       expect(screen.getByTestId('result-modal')).toBeTruthy()
@@ -171,7 +184,9 @@ describe('ModuleStatementGenerator', () => {
 
   it('shows error result when generation fails', async () => {
     const onGenerate = vi.fn().mockRejectedValue(new Error('Generation failed'))
-    render(<ModuleStatementGenerator {...defaultProps} onGenerate={onGenerate} />)
+    render(
+      <ModuleStatementGenerator {...defaultProps} onGenerate={onGenerate} />,
+    )
     fireEvent.click(screen.getByText('modules.statement.generateButton'))
     await waitFor(() => {
       expect(screen.getByText('Generation failed')).toBeTruthy()
@@ -182,7 +197,9 @@ describe('ModuleStatementGenerator', () => {
     const error = new Error('Server error') as Error & { traceId?: string }
     error.traceId = 'trace-abc'
     const onGenerate = vi.fn().mockRejectedValue(error)
-    render(<ModuleStatementGenerator {...defaultProps} onGenerate={onGenerate} />)
+    render(
+      <ModuleStatementGenerator {...defaultProps} onGenerate={onGenerate} />,
+    )
     fireEvent.click(screen.getByText('modules.statement.generateButton'))
     await waitFor(() => {
       expect(screen.getByText(/trace:trace-abc/)).toBeTruthy()
@@ -191,7 +208,9 @@ describe('ModuleStatementGenerator', () => {
 
   it('shows generic error when non-Error thrown', async () => {
     const onGenerate = vi.fn().mockRejectedValue('unknown error')
-    render(<ModuleStatementGenerator {...defaultProps} onGenerate={onGenerate} />)
+    render(
+      <ModuleStatementGenerator {...defaultProps} onGenerate={onGenerate} />,
+    )
     fireEvent.click(screen.getByText('modules.statement.generateButton'))
     await waitFor(() => {
       expect(screen.getByText('modules.statement.generateFailed')).toBeTruthy()
@@ -218,7 +237,9 @@ describe('ModuleStatementGenerator', () => {
 
   it('renders document count', () => {
     render(<ModuleStatementGenerator {...defaultProps} />)
-    expect(screen.getByText(/modules\.statement\.documentCountUnit/)).toBeTruthy()
+    expect(
+      screen.getByText(/modules\.statement\.documentCountUnit/),
+    ).toBeTruthy()
   })
 
   it('handles date range sorting correctly', () => {
@@ -247,9 +268,7 @@ describe('ModuleStatementGenerator', () => {
   it('handles empty counterparty name field', () => {
     const props = {
       ...defaultProps,
-      selectedRows: [
-        { id: '1', supplierName: '', inboundDate: '2024-01-01' },
-      ],
+      selectedRows: [{ id: '1', supplierName: '', inboundDate: '2024-01-01' }],
     }
     render(<ModuleStatementGenerator {...props} />)
     expect(screen.getByText('modules.statement.extractError')).toBeTruthy()

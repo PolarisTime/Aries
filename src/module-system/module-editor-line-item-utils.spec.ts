@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  trimEditorItemsForModule,
-  moveEditorLineItemByDrag,
   applyMaterialToEditorLineItem,
-  isNumberEditorColumn,
-  getEditorItemPrecision,
   getEditorItemMin,
+  getEditorItemPrecision,
+  isNumberEditorColumn,
+  moveEditorLineItemByDrag,
+  trimEditorItemsForModule,
 } from './module-editor-line-item-utils'
 
 describe('isNumberEditorColumn', () => {
@@ -91,8 +91,40 @@ describe('moveEditorLineItemByDrag', () => {
 describe('trimEditorItemsForModule', () => {
   it('returns all non-empty items when no strategy', () => {
     const items = [
-      { id: 'item-1', materialCode: 'A', quantity: 5, weightTon: 10, amount: 100 },
-      { id: 'item-2', materialCode: '', quantity: 0, weightTon: 0, amount: 0, brand: '', category: '', material: '', spec: '', length: '', batchNo: '', sourceNo: '', warehouseName: '', customerName: '', projectName: '', materialName: '', unit: '吨', quantityUnit: '件', pieceWeightTon: 0, piecesPerBundle: 0, weighWeightTon: 0, weightAdjustmentTon: 0, weightAdjustmentAmount: 0, unitPrice: 0, settlementMode: '' },
+      {
+        id: 'item-1',
+        materialCode: 'A',
+        quantity: 5,
+        weightTon: 10,
+        amount: 100,
+      },
+      {
+        id: 'item-2',
+        materialCode: '',
+        quantity: 0,
+        weightTon: 0,
+        amount: 0,
+        brand: '',
+        category: '',
+        material: '',
+        spec: '',
+        length: '',
+        batchNo: '',
+        sourceNo: '',
+        warehouseName: '',
+        customerName: '',
+        projectName: '',
+        materialName: '',
+        unit: '吨',
+        quantityUnit: '件',
+        pieceWeightTon: 0,
+        piecesPerBundle: 0,
+        weighWeightTon: 0,
+        weightAdjustmentTon: 0,
+        weightAdjustmentAmount: 0,
+        unitPrice: 0,
+        settlementMode: '',
+      },
     ] as any[]
     const result = trimEditorItemsForModule('unknown', items)
     expect(result).toHaveLength(1)
@@ -100,8 +132,60 @@ describe('trimEditorItemsForModule', () => {
 
   it('applies positiveWeightOrAmount strategy', () => {
     const items = [
-      { id: '1', materialCode: 'A', weightTon: 0, amount: 0, quantity: 5, brand: '-', category: '-', material: '-', spec: '-', length: '-', batchNo: '-', sourceNo: '-', warehouseName: '-', customerName: '-', projectName: '-', materialName: '-', unit: '吨', quantityUnit: '件', pieceWeightTon: 0, piecesPerBundle: 0, weighWeightTon: 0, weightAdjustmentTon: 0, weightAdjustmentAmount: 0, unitPrice: 0, settlementMode: '' },
-      { id: '2', materialCode: 'B', weightTon: 5, amount: 0, quantity: 5, brand: '-', category: '-', material: '-', spec: '-', length: '-', batchNo: '-', sourceNo: '-', warehouseName: '-', customerName: '-', projectName: '-', materialName: '-', unit: '吨', quantityUnit: '件', pieceWeightTon: 0, piecesPerBundle: 0, weighWeightTon: 0, weightAdjustmentTon: 0, weightAdjustmentAmount: 0, unitPrice: 0, settlementMode: '' },
+      {
+        id: '1',
+        materialCode: 'A',
+        weightTon: 0,
+        amount: 0,
+        quantity: 5,
+        brand: '-',
+        category: '-',
+        material: '-',
+        spec: '-',
+        length: '-',
+        batchNo: '-',
+        sourceNo: '-',
+        warehouseName: '-',
+        customerName: '-',
+        projectName: '-',
+        materialName: '-',
+        unit: '吨',
+        quantityUnit: '件',
+        pieceWeightTon: 0,
+        piecesPerBundle: 0,
+        weighWeightTon: 0,
+        weightAdjustmentTon: 0,
+        weightAdjustmentAmount: 0,
+        unitPrice: 0,
+        settlementMode: '',
+      },
+      {
+        id: '2',
+        materialCode: 'B',
+        weightTon: 5,
+        amount: 0,
+        quantity: 5,
+        brand: '-',
+        category: '-',
+        material: '-',
+        spec: '-',
+        length: '-',
+        batchNo: '-',
+        sourceNo: '-',
+        warehouseName: '-',
+        customerName: '-',
+        projectName: '-',
+        materialName: '-',
+        unit: '吨',
+        quantityUnit: '件',
+        pieceWeightTon: 0,
+        piecesPerBundle: 0,
+        weighWeightTon: 0,
+        weightAdjustmentTon: 0,
+        weightAdjustmentAmount: 0,
+        unitPrice: 0,
+        settlementMode: '',
+      },
     ] as any[]
     const result = trimEditorItemsForModule('invoice-receipt', items)
     expect(result).toHaveLength(1)
@@ -110,7 +194,34 @@ describe('trimEditorItemsForModule', () => {
   it('applies purchaseOrderBlank strategy', () => {
     const items = [
       { id: '1', materialCode: 'A', quantity: 5, weightTon: 10, amount: 100 },
-      { id: 'item-2', materialCode: '', quantity: 0, weightTon: 0, amount: 0, brand: '', category: '', material: '', spec: '', length: '', batchNo: '', sourceNo: '', warehouseName: '', customerName: '', projectName: '', materialName: '', sourceStatementId: '', unit: '吨', quantityUnit: '件', pieceWeightTon: 0, piecesPerBundle: 0, weighWeightTon: 0, weightAdjustmentTon: 0, weightAdjustmentAmount: 0, unitPrice: 0, settlementMode: '' },
+      {
+        id: 'item-2',
+        materialCode: '',
+        quantity: 0,
+        weightTon: 0,
+        amount: 0,
+        brand: '',
+        category: '',
+        material: '',
+        spec: '',
+        length: '',
+        batchNo: '',
+        sourceNo: '',
+        warehouseName: '',
+        customerName: '',
+        projectName: '',
+        materialName: '',
+        sourceStatementId: '',
+        unit: '吨',
+        quantityUnit: '件',
+        pieceWeightTon: 0,
+        piecesPerBundle: 0,
+        weighWeightTon: 0,
+        weightAdjustmentTon: 0,
+        weightAdjustmentAmount: 0,
+        unitPrice: 0,
+        settlementMode: '',
+      },
     ] as any[]
     const result = trimEditorItemsForModule('purchase-order', items)
     expect(result).toHaveLength(1)
@@ -119,7 +230,33 @@ describe('trimEditorItemsForModule', () => {
 
   it('keeps items with positive amount in positiveWeightOrAmount strategy', () => {
     const items = [
-      { id: '1', materialCode: 'A', weightTon: 0, amount: 100, quantity: 5, brand: '-', category: '-', material: '-', spec: '-', length: '-', batchNo: '-', sourceNo: '-', warehouseName: '-', customerName: '-', projectName: '-', materialName: '-', unit: '吨', quantityUnit: '件', pieceWeightTon: 0, piecesPerBundle: 0, weighWeightTon: 0, weightAdjustmentTon: 0, weightAdjustmentAmount: 0, unitPrice: 0, settlementMode: '' },
+      {
+        id: '1',
+        materialCode: 'A',
+        weightTon: 0,
+        amount: 100,
+        quantity: 5,
+        brand: '-',
+        category: '-',
+        material: '-',
+        spec: '-',
+        length: '-',
+        batchNo: '-',
+        sourceNo: '-',
+        warehouseName: '-',
+        customerName: '-',
+        projectName: '-',
+        materialName: '-',
+        unit: '吨',
+        quantityUnit: '件',
+        pieceWeightTon: 0,
+        piecesPerBundle: 0,
+        weighWeightTon: 0,
+        weightAdjustmentTon: 0,
+        weightAdjustmentAmount: 0,
+        unitPrice: 0,
+        settlementMode: '',
+      },
     ] as any[]
     const result = trimEditorItemsForModule('invoice-receipt', items)
     expect(result).toHaveLength(1)
@@ -177,8 +314,18 @@ describe('applyMaterialToEditorLineItem', () => {
       weightTon: 0,
       amount: 0,
     } as any
-    const material = { brand: 'A', category: 'B', material: 'C', spec: 'D', length: 'E' }
-    const result = applyMaterialToEditorLineItem(item, material, 'purchase-order')
+    const material = {
+      brand: 'A',
+      category: 'B',
+      material: 'C',
+      spec: 'D',
+      length: 'E',
+    }
+    const result = applyMaterialToEditorLineItem(
+      item,
+      material,
+      'purchase-order',
+    )
     expect(result.batchNo).toBeTruthy()
   })
 
@@ -194,8 +341,18 @@ describe('applyMaterialToEditorLineItem', () => {
       weightTon: 0,
       amount: 0,
     } as any
-    const material = { brand: 'A', category: 'B', material: 'C', spec: 'D', length: 'E' }
-    const result = applyMaterialToEditorLineItem(item, material, 'purchase-order')
+    const material = {
+      brand: 'A',
+      category: 'B',
+      material: 'C',
+      spec: 'D',
+      length: 'E',
+    }
+    const result = applyMaterialToEditorLineItem(
+      item,
+      material,
+      'purchase-order',
+    )
     expect(result.batchNo).toBe('EXISTING-BATCH')
   })
 
@@ -211,7 +368,13 @@ describe('applyMaterialToEditorLineItem', () => {
       weightTon: 0,
       amount: 0,
     } as any
-    const material = { brand: 'A', category: 'B', material: 'C', spec: 'D', length: 'E' }
+    const material = {
+      brand: 'A',
+      category: 'B',
+      material: 'C',
+      spec: 'D',
+      length: 'E',
+    }
     const result = applyMaterialToEditorLineItem(item, material, 'sales-order')
     expect(result.batchNo).toBe('')
   })
@@ -228,7 +391,13 @@ describe('applyMaterialToEditorLineItem', () => {
       weightTon: 0,
       amount: 0,
     } as any
-    const material = { brand: 'A', category: 'B', material: 'C', spec: 'D', length: 'E' }
+    const material = {
+      brand: 'A',
+      category: 'B',
+      material: 'C',
+      spec: 'D',
+      length: 'E',
+    }
     const result = applyMaterialToEditorLineItem(item, material)
     expect(result.unit).toBe('吨')
   })
@@ -245,7 +414,13 @@ describe('applyMaterialToEditorLineItem', () => {
       weightTon: 0,
       amount: 0,
     } as any
-    const material = { brand: 'A', category: '普通材料', material: 'C', spec: 'D', length: 'E' }
+    const material = {
+      brand: 'A',
+      category: '普通材料',
+      material: 'C',
+      spec: 'D',
+      length: 'E',
+    }
     const result = applyMaterialToEditorLineItem(item, material)
     expect(result.settlementMode).toBe('理算')
   })
@@ -265,7 +440,16 @@ describe('applyMaterialToEditorLineItem', () => {
       weightAdjustmentTon: 5,
       weightAdjustmentAmount: 100,
     } as any
-    const material = { brand: 'A', category: 'B', material: 'C', spec: 'D', length: 'E', pieceWeightTon: 0.5, piecesPerBundle: 10, unitPrice: 200 }
+    const material = {
+      brand: 'A',
+      category: 'B',
+      material: 'C',
+      spec: 'D',
+      length: 'E',
+      pieceWeightTon: 0.5,
+      piecesPerBundle: 10,
+      unitPrice: 200,
+    }
     const result = applyMaterialToEditorLineItem(item, material)
     expect(result.weighWeightTon).toBeUndefined()
     expect(result.weightAdjustmentTon).toBe(0)

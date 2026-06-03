@@ -52,7 +52,10 @@ describe('AppHeaderSearch', () => {
 
   it('calls onSubmit on Enter key press', () => {
     render(<AppHeaderSearch {...defaultProps} keyword="test-keyword" />)
-    fireEvent.keyDown(screen.getByPlaceholderText('搜索单号/关键字'), { key: 'Enter', code: 'Enter' })
+    fireEvent.keyDown(screen.getByPlaceholderText('搜索单号/关键字'), {
+      key: 'Enter',
+      code: 'Enter',
+    })
     expect(defaultProps.onSubmit).toHaveBeenCalledWith('test-keyword')
   })
 

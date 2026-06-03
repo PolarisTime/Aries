@@ -28,7 +28,9 @@ describe('masterPageDefinitions', () => {
   })
 
   it('defines material-categories page', () => {
-    const page = masterPageDefinitions.find((d) => d.key === 'material-categories')
+    const page = masterPageDefinitions.find(
+      (d) => d.key === 'material-categories',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('商品类别')
     expect(page!.menuParent).toBe('master')
@@ -85,9 +87,9 @@ describe('masterPageDefinitions', () => {
         resourceKey: 'department',
       }),
     )
-    expect(systemPageDefinitions.some((page) => page.key === 'department')).toBe(
-      false,
-    )
+    expect(
+      systemPageDefinitions.some((page) => page.key === 'department'),
+    ).toBe(false)
   })
 
   it('all pages have menuParent set to master', () => {

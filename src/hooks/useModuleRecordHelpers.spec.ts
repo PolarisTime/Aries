@@ -1,8 +1,12 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { getStoredUserMock, generateBusinessPrimaryNoMock, getModuleRecordPrimaryNoMock,
-  generatePrimaryNoMock } = vi.hoisted(() => ({
+const {
+  getStoredUserMock,
+  generateBusinessPrimaryNoMock,
+  getModuleRecordPrimaryNoMock,
+  generatePrimaryNoMock,
+} = vi.hoisted(() => ({
   getStoredUserMock: vi.fn(),
   generateBusinessPrimaryNoMock: vi.fn(),
   getModuleRecordPrimaryNoMock: vi.fn(),
@@ -83,7 +87,9 @@ describe('useModuleRecordHelpers', () => {
   it('falls back to i18n key when user is missing', () => {
     getStoredUserMock.mockReturnValue(null)
     const { result } = renderHook(() => useModuleRecordHelpers(defaultProps))
-    expect(result.current.getCurrentOperatorName()).toBe('hooks.recordHelpers.currentUser')
+    expect(result.current.getCurrentOperatorName()).toBe(
+      'hooks.recordHelpers.currentUser',
+    )
   })
 
   it('generates primary number synchronously', () => {
@@ -118,8 +124,12 @@ describe('useModuleRecordHelpers', () => {
 
   it('returns emphasis class for highlighted statuses', () => {
     const { result } = renderHook(() => useModuleRecordHelpers(defaultProps))
-    expect(result.current.getRowClassName({ status: 'pending' })).toBe('table-row-emphasis')
-    expect(result.current.getRowClassName({ status: 'draft' })).toBe('table-row-emphasis')
+    expect(result.current.getRowClassName({ status: 'pending' })).toBe(
+      'table-row-emphasis',
+    )
+    expect(result.current.getRowClassName({ status: 'draft' })).toBe(
+      'table-row-emphasis',
+    )
   })
 
   it('returns empty string for non-highlighted statuses', () => {

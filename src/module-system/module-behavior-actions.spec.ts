@@ -11,7 +11,9 @@ const mockedRegister = vi.mocked(registerModuleBehavior)
 
 describe('module-behavior-actions', () => {
   it('registers supplier-statement behavior', () => {
-    const call = mockedRegister.mock.calls.find(([key]) => key === 'supplier-statement')
+    const call = mockedRegister.mock.calls.find(
+      ([key]) => key === 'supplier-statement',
+    )
     expect(call).toBeDefined()
     expect(call?.[1]).toEqual({
       actionKindsByKey: { generate_statement: 'openCreateEditor' },
@@ -20,7 +22,9 @@ describe('module-behavior-actions', () => {
   })
 
   it('registers customer-statement behavior', () => {
-    const call = mockedRegister.mock.calls.find(([key]) => key === 'customer-statement')
+    const call = mockedRegister.mock.calls.find(
+      ([key]) => key === 'customer-statement',
+    )
     expect(call).toBeDefined()
     expect(call?.[1]).toEqual({
       actionKindsByKey: { generate_statement: 'openCreateEditor' },
@@ -29,7 +33,9 @@ describe('module-behavior-actions', () => {
   })
 
   it('registers freight-statement behavior with actions', () => {
-    const calls = mockedRegister.mock.calls.filter(([key]) => key === 'freight-statement')
+    const calls = mockedRegister.mock.calls.filter(
+      ([key]) => key === 'freight-statement',
+    )
     expect(calls.length).toBeGreaterThanOrEqual(2)
     expect(calls[0]?.[1]).toEqual({
       actionKindsByKey: {
@@ -44,8 +50,12 @@ describe('module-behavior-actions', () => {
   })
 
   it('registers freight-statement permission codes', () => {
-    const calls = mockedRegister.mock.calls.filter(([key]) => key === 'freight-statement')
-    const permissionCall = calls.find(([, config]) => config.permissionCodesByActionKey)
+    const calls = mockedRegister.mock.calls.filter(
+      ([key]) => key === 'freight-statement',
+    )
+    const permissionCall = calls.find(
+      ([, config]) => config.permissionCodesByActionKey,
+    )
     expect(permissionCall).toBeDefined()
     expect(permissionCall?.[1]).toEqual({
       permissionCodesByActionKey: {
@@ -56,7 +66,9 @@ describe('module-behavior-actions', () => {
   })
 
   it('registers freight-bill behavior with actions', () => {
-    const calls = mockedRegister.mock.calls.filter(([key]) => key === 'freight-bill')
+    const calls = mockedRegister.mock.calls.filter(
+      ([key]) => key === 'freight-bill',
+    )
     expect(calls.length).toBeGreaterThanOrEqual(2)
     expect(calls[0]?.[1]).toEqual({
       actionKindsByKey: {
@@ -72,8 +84,12 @@ describe('module-behavior-actions', () => {
   })
 
   it('registers freight-bill permission codes', () => {
-    const calls = mockedRegister.mock.calls.filter(([key]) => key === 'freight-bill')
-    const permissionCall = calls.find(([, config]) => config.permissionCodesByActionKey)
+    const calls = mockedRegister.mock.calls.filter(
+      ([key]) => key === 'freight-bill',
+    )
+    const permissionCall = calls.find(
+      ([, config]) => config.permissionCodesByActionKey,
+    )
     expect(permissionCall).toBeDefined()
     expect(permissionCall?.[1]).toEqual({
       permissionCodesByActionKey: {
@@ -93,7 +109,9 @@ describe('module-behavior-actions', () => {
   })
 
   it('registers all expected modules', () => {
-    const registeredKeys = new Set(mockedRegister.mock.calls.map(([key]) => key))
+    const registeredKeys = new Set(
+      mockedRegister.mock.calls.map(([key]) => key),
+    )
     expect(registeredKeys).toContain('supplier-statement')
     expect(registeredKeys).toContain('customer-statement')
     expect(registeredKeys).toContain('freight-statement')

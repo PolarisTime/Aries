@@ -13,7 +13,11 @@ vi.mock('react-i18next', () => ({
 vi.mock('@tanstack/react-query', () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
-  useMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useMutation: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
 }))
 
 vi.mock('@/stores/permissionStore', () => ({
@@ -34,9 +38,7 @@ vi.mock('@/utils/antd-app', () => ({
 }))
 
 vi.mock('@/config/print-template-targets', () => ({
-  printTemplateTargetOptions: [
-    { label: '采购订单', value: 'purchase-order' },
-  ],
+  printTemplateTargetOptions: [{ label: '采购订单', value: 'purchase-order' }],
 }))
 
 vi.mock('@/api/print-template', () => ({
@@ -54,7 +56,9 @@ vi.mock('@/views/system/PrintTemplateEditorModal', () => ({
 }))
 
 vi.mock('@/views/system/PrintTemplatePreviewModal', () => ({
-  PrintTemplatePreviewModal: () => <div data-testid="preview-modal">Preview</div>,
+  PrintTemplatePreviewModal: () => (
+    <div data-testid="preview-modal">Preview</div>
+  ),
 }))
 
 vi.mock('@/views/system/print-template-view-utils', () => ({

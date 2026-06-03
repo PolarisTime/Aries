@@ -35,14 +35,14 @@ describe('module-contracts-finance', () => {
   })
 
   it('contains receipt config', () => {
-    const config = financeModuleEndpointContracts['receipt']
+    const config = financeModuleEndpointContracts.receipt
     expect(config).toBeDefined()
     expect(config.path).toBe('/receipts')
     expect(config.dateRangeMapping?.receiptDate.startKey).toBe('startDate')
   })
 
   it('contains payment config', () => {
-    const config = financeModuleEndpointContracts['payment']
+    const config = financeModuleEndpointContracts.payment
     expect(config).toBeDefined()
     expect(config.path).toBe('/payments')
     expect(config.nativeFilterKeys).toContain('businessType')

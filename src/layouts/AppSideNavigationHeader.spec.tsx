@@ -75,7 +75,12 @@ describe('AppSideNavigationHeader', () => {
 
   it('calls onToggleCollapsed when trigger button is clicked', () => {
     const onToggle = vi.fn()
-    render(<AppSideNavigationHeader {...defaultProps} onToggleCollapsed={onToggle} />)
+    render(
+      <AppSideNavigationHeader
+        {...defaultProps}
+        onToggleCollapsed={onToggle}
+      />,
+    )
     fireEvent.click(document.querySelector('.app-trigger')!)
     expect(onToggle).toHaveBeenCalled()
   })

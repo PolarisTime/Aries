@@ -37,7 +37,9 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       key: 'productKeyword',
       label: i18next.t('modules.pages.salesOrder.filterProductKeyword'),
       type: 'input',
-      placeholder: i18next.t('modules.pages.salesOrder.placeholderProductKeyword'),
+      placeholder: i18next.t(
+        'modules.pages.salesOrder.placeholderProductKeyword',
+      ),
       clientSearchLineItemKeys: [
         'materialCode',
         'materialName',
@@ -51,7 +53,11 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'select',
       options: buildValueOptions('草稿', '已审核', '完成销售'),
     },
-    { key: 'deliveryDate', label: i18next.t('modules.pages.salesOrder.filterDeliveryDate'), type: 'dateRange' },
+    {
+      key: 'deliveryDate',
+      label: i18next.t('modules.pages.salesOrder.filterDeliveryDate'),
+      type: 'dateRange',
+    },
     {
       key: 'customerName',
       label: CUSTOMER_NAME_LABEL,
@@ -68,10 +74,26 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     },
   ],
   columns: [
-    { title: i18next.t('modules.pages.salesOrder.colOrderNo'), dataIndex: 'orderNo', width: 160 },
-    { title: i18next.t('modules.pages.salesOrder.colProjectName'), dataIndex: 'projectName', width: 180 },
-    { title: i18next.t('modules.pages.salesOrder.colCustomerName'), dataIndex: 'customerName', width: 140 },
-    { title: i18next.t('modules.pages.salesOrder.colSalesName'), dataIndex: 'salesName', width: 110 },
+    {
+      title: i18next.t('modules.pages.salesOrder.colOrderNo'),
+      dataIndex: 'orderNo',
+      width: 160,
+    },
+    {
+      title: i18next.t('modules.pages.salesOrder.colProjectName'),
+      dataIndex: 'projectName',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.salesOrder.colCustomerName'),
+      dataIndex: 'customerName',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.salesOrder.colSalesName'),
+      dataIndex: 'salesName',
+      width: 110,
+    },
     {
       title: i18next.t('modules.pages.salesOrder.colDeliveryDate'),
       dataIndex: 'deliveryDate',
@@ -99,20 +121,69 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
-    { title: i18next.t('modules.columns.remark'), dataIndex: 'remark', width: 180 },
+    {
+      title: i18next.t('modules.columns.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
   defaultHiddenColumnKeys: ['projectName', 'salesName', 'remark'],
   detailFields: [
-    { label: i18next.t('modules.pages.salesOrder.colCustomerName'), key: 'customerName', row: 1 },
-    { label: i18next.t('modules.pages.salesOrder.colOrderNo'), key: 'orderNo', row: 1 },
-    { label: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'), key: 'purchaseOrderNo', row: 1 },
-    { label: i18next.t('modules.pages.salesOrder.colSalesName'), key: 'salesName', row: 1 },
-    { label: i18next.t('modules.pages.salesOrder.colProjectName'), key: 'projectName', row: 2 },
-    { label: i18next.t('modules.pages.salesOrder.colDeliveryDate'), key: 'deliveryDate', type: 'date', row: 2 },
-    { label: i18next.t('modules.columns.totalWeight'), key: 'totalWeight', type: 'weight', row: 2 },
-    { label: i18next.t('modules.columns.totalAmount'), key: 'totalAmount', type: 'amount', row: 2 },
-    { label: i18next.t('modules.columns.status'), key: 'status', type: 'status', row: 3 },
-    { label: i18next.t('modules.columns.remark'), key: 'remark', row: 3, fullRow: true },
+    {
+      label: i18next.t('modules.pages.salesOrder.colCustomerName'),
+      key: 'customerName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesOrder.colOrderNo'),
+      key: 'orderNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
+      key: 'purchaseOrderNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesOrder.colSalesName'),
+      key: 'salesName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesOrder.colProjectName'),
+      key: 'projectName',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.salesOrder.colDeliveryDate'),
+      key: 'deliveryDate',
+      type: 'date',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.columns.totalWeight'),
+      key: 'totalWeight',
+      type: 'weight',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.columns.totalAmount'),
+      key: 'totalAmount',
+      type: 'amount',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.columns.status'),
+      key: 'status',
+      type: 'status',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.columns.remark'),
+      key: 'remark',
+      row: 3,
+      fullRow: true,
+    },
   ],
   formFields: [
     {
@@ -127,7 +198,9 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
       type: 'input',
       disabled: true,
-      placeholder: i18next.t('modules.pages.salesOrder.placeholderPurchaseOrderNo'),
+      placeholder: i18next.t(
+        'modules.pages.salesOrder.placeholderPurchaseOrderNo',
+      ),
       row: 1,
     },
     {
@@ -161,7 +234,13 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       required: true,
       row: 2,
     },
-    { key: 'remark', label: i18next.t('modules.columns.remark'), type: 'input', row: 3, colSpan: 12 },
+    {
+      key: 'remark',
+      label: i18next.t('modules.columns.remark'),
+      type: 'input',
+      row: 3,
+      colSpan: 12,
+    },
   ],
   parentImport: {
     parentModuleKey: 'purchase-order',

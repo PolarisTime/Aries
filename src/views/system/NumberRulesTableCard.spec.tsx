@@ -47,18 +47,26 @@ describe('NumberRulesTableCard', () => {
 
   it('renders document rules section title', () => {
     render(<NumberRulesTableCard {...defaultProps} />)
-    expect(screen.getAllByText('system.numberRules.documentRules').length).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText('system.numberRules.documentRules').length,
+    ).toBeGreaterThan(0)
   })
 
   it('renders upload rules section title', () => {
     render(<NumberRulesTableCard {...defaultProps} />)
-    expect(screen.getAllByText('system.numberRules.uploadRules').length).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText('system.numberRules.uploadRules').length,
+    ).toBeGreaterThan(0)
   })
 
   it('renders statistics', () => {
     render(<NumberRulesTableCard {...defaultProps} />)
-    expect(screen.getAllByText('system.numberRules.documentRules').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('system.numberRules.uploadRules').length).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText('system.numberRules.documentRules').length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText('system.numberRules.uploadRules').length,
+    ).toBeGreaterThan(0)
   })
 
   it('renders tables', () => {

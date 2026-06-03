@@ -21,7 +21,9 @@ describe('materialCategoriesPageConfig', () => {
 
   it('has filters', () => {
     expect(materialCategoriesPageConfig.filters).toBeDefined()
-    expect(materialCategoriesPageConfig.filters!.length).toBeGreaterThanOrEqual(2)
+    expect(materialCategoriesPageConfig.filters!.length).toBeGreaterThanOrEqual(
+      2,
+    )
   })
 
   it('has columns', () => {

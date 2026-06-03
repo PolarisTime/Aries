@@ -51,7 +51,10 @@ describe('QUERY_KEYS', () => {
   })
 
   it('clientSettings is frozen array', () => {
-    expect(QUERY_KEYS.clientSettings).toEqual(['general-setting', 'client-settings'])
+    expect(QUERY_KEYS.clientSettings).toEqual([
+      'general-setting',
+      'client-settings',
+    ])
   })
 
   it('businessGrid returns dynamic query key', () => {
@@ -70,7 +73,12 @@ describe('QUERY_KEYS', () => {
   })
 
   it('businessGridList returns query key with filters and pagination', () => {
-    const key = QUERY_KEYS.businessGridList('carrier', { status: '正常' }, 2, 50)
+    const key = QUERY_KEYS.businessGridList(
+      'carrier',
+      { status: '正常' },
+      2,
+      50,
+    )
     expect(key).toEqual(['business-grid', 'carrier', { status: '正常' }, 2, 50])
   })
 
@@ -80,12 +88,30 @@ describe('QUERY_KEYS', () => {
   })
 
   it('masterOptions has all entity keys', () => {
-    expect(QUERY_KEYS.masterOptions.carrier).toEqual(['master-options', 'carrier'])
-    expect(QUERY_KEYS.masterOptions.customer).toEqual(['master-options', 'customer'])
-    expect(QUERY_KEYS.masterOptions.material).toEqual(['master-options', 'material'])
-    expect(QUERY_KEYS.masterOptions.materialCategories).toEqual(['master-options', 'material-categories'])
-    expect(QUERY_KEYS.masterOptions.supplier).toEqual(['master-options', 'supplier'])
-    expect(QUERY_KEYS.masterOptions.warehouse).toEqual(['master-options', 'warehouse'])
+    expect(QUERY_KEYS.masterOptions.carrier).toEqual([
+      'master-options',
+      'carrier',
+    ])
+    expect(QUERY_KEYS.masterOptions.customer).toEqual([
+      'master-options',
+      'customer',
+    ])
+    expect(QUERY_KEYS.masterOptions.material).toEqual([
+      'master-options',
+      'material',
+    ])
+    expect(QUERY_KEYS.masterOptions.materialCategories).toEqual([
+      'master-options',
+      'material-categories',
+    ])
+    expect(QUERY_KEYS.masterOptions.supplier).toEqual([
+      'master-options',
+      'supplier',
+    ])
+    expect(QUERY_KEYS.masterOptions.warehouse).toEqual([
+      'master-options',
+      'warehouse',
+    ])
   })
 
   it('apiKeyList returns key with all params', () => {
@@ -114,21 +140,50 @@ describe('QUERY_KEYS', () => {
   })
 
   it('projectArSummary and projectArDetail return keys', () => {
-    expect(QUERY_KEYS.projectArSummary('proj-1')).toEqual(['project-ar', 'summary', 'proj-1'])
-    expect(QUERY_KEYS.projectArDetail('proj-1', 'overview')).toEqual(['project-ar', 'detail', 'proj-1', 'overview'])
+    expect(QUERY_KEYS.projectArSummary('proj-1')).toEqual([
+      'project-ar',
+      'summary',
+      'proj-1',
+    ])
+    expect(QUERY_KEYS.projectArDetail('proj-1', 'overview')).toEqual([
+      'project-ar',
+      'detail',
+      'proj-1',
+      'overview',
+    ])
   })
 
   it('printTemplateByType returns key with billType', () => {
-    expect(QUERY_KEYS.printTemplateByType('purchase-order')).toEqual(['print-template', 'purchase-order'])
+    expect(QUERY_KEYS.printTemplateByType('purchase-order')).toEqual([
+      'print-template',
+      'purchase-order',
+    ])
   })
 
   it('parentSelectorConfig and parentSelectorList return keys', () => {
-    expect(QUERY_KEYS.parentSelectorConfig('purchase-order')).toEqual(['parent-selector-config', 'purchase-order'])
-    const listKey = QUERY_KEYS.parentSelectorList('purchase-order', { status: '正常' }, 1, 10)
-    expect(listKey).toEqual(['parent-selector-list', 'purchase-order', { status: '正常' }, 1, 10])
+    expect(QUERY_KEYS.parentSelectorConfig('purchase-order')).toEqual([
+      'parent-selector-config',
+      'purchase-order',
+    ])
+    const listKey = QUERY_KEYS.parentSelectorList(
+      'purchase-order',
+      { status: '正常' },
+      1,
+      10,
+    )
+    expect(listKey).toEqual([
+      'parent-selector-list',
+      'purchase-order',
+      { status: '正常' },
+      1,
+      10,
+    ])
   })
 
   it('freightPickup returns key', () => {
-    expect(QUERY_KEYS.freightPickup('freight-bill')).toEqual(['freight-pickup', 'freight-bill'])
+    expect(QUERY_KEYS.freightPickup('freight-bill')).toEqual([
+      'freight-pickup',
+      'freight-bill',
+    ])
   })
 })

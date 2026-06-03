@@ -22,16 +22,14 @@ vi.mock('@/utils/api-messages', () => ({
 
 import {
   changeOwnPassword,
-  setupOwn2fa,
   enableOwn2fa,
+  setupOwn2fa,
 } from './account-security'
 
 describe('account-security', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    assertApiSuccessMock.mockImplementation(
-      <T>(response: T) => response,
-    )
+    assertApiSuccessMock.mockImplementation(<T>(response: T) => response)
   })
 
   describe('changeOwnPassword', () => {

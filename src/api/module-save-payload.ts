@@ -1,16 +1,16 @@
 import dayjs from 'dayjs'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { getModulePageSchema } from '@/config/module-page-schema'
+import {
+  getBehaviorValue,
+  hasBehavior,
+} from '@/module-system/module-behavior-registry'
 import type {
   ModuleLineItem,
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
 import { logger } from '@/utils/logger'
-import {
-  getBehaviorValue,
-  hasBehavior,
-} from '@/module-system/module-behavior-registry'
 
 // Computed fields that the server calculates — never included in save payloads.
 const COMPUTED_FIELD_KEYS = new Set([

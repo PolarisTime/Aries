@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -27,7 +27,9 @@ describe('CompanySettlementAccountsCard', () => {
   })
 
   it('renders the settlement info title', () => {
-    const { container } = render(<CompanySettlementAccountsCard canSave={true} />)
+    const { container } = render(
+      <CompanySettlementAccountsCard canSave={true} />,
+    )
     expect(container).toBeInTheDocument()
   })
 

@@ -7,7 +7,8 @@ vi.mock('i18next', () => ({
 vi.mock('@/constants/module-options', () => ({
   getCustomerOptions: [],
   getCustomerProjectOptions: [],
-  buildValueOptions: (...args: string[]) => args.map((v) => ({ label: v, value: v })),
+  buildValueOptions: (...args: string[]) =>
+    args.map((v) => ({ label: v, value: v })),
   enabledStatusOptions: [],
 }))
 
@@ -21,7 +22,9 @@ describe('salesOperationsPageConfigs', () => {
 
   it('contains sales-outbound config', () => {
     expect(salesOperationsPageConfigs['sales-outbound']).toBeDefined()
-    expect(salesOperationsPageConfigs['sales-outbound'].key).toBe('sales-outbound')
+    expect(salesOperationsPageConfigs['sales-outbound'].key).toBe(
+      'sales-outbound',
+    )
   })
 
   it('has exactly 2 entries', () => {

@@ -41,7 +41,9 @@ describe('material-grades', () => {
   it('returns empty array on error', async () => {
     // Reload module to reset cache
     vi.resetModules()
-    const { fetchMaterialGrades: fetchEmpty } = await import('./material-grades')
+    const { fetchMaterialGrades: fetchEmpty } = await import(
+      './material-grades'
+    )
     httpGetMock.mockRejectedValue(new Error('Network error'))
 
     const result = await fetchEmpty()
@@ -51,7 +53,9 @@ describe('material-grades', () => {
 
   it('handles empty data response', async () => {
     vi.resetModules()
-    const { fetchMaterialGrades: fetchEmpty } = await import('./material-grades')
+    const { fetchMaterialGrades: fetchEmpty } = await import(
+      './material-grades'
+    )
     httpGetMock.mockResolvedValue({ code: 0, data: [] })
 
     const result = await fetchEmpty()

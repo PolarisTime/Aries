@@ -19,7 +19,5 @@ export {
   trimEditorItemsForModule,
 } from './module-editor-line-items'
 export type { EditorItemDragPosition } from './module-editor-shared'
-export {
-  buildDefaultEditorLineItem,
-} from './module-editor-shared'
+export { buildDefaultEditorLineItem } from './module-editor-shared'
 export { getEditorValidationMessage } from './module-editor-validation'

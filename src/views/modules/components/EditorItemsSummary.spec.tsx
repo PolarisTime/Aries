@@ -19,7 +19,10 @@ describe('EditorItemsSummary', () => {
   it('renders total weight when positive', () => {
     render(
       <EditorItemsSummary
-        items={[{ id: '1', weightTon: 10.5 }, { id: '2', weightTon: 5.3 }]}
+        items={[
+          { id: '1', weightTon: 10.5 },
+          { id: '2', weightTon: 5.3 },
+        ]}
       />,
     )
     expect(screen.getByText(/15.800/)).toBeTruthy()
@@ -28,7 +31,10 @@ describe('EditorItemsSummary', () => {
   it('renders total amount when positive', () => {
     render(
       <EditorItemsSummary
-        items={[{ id: '1', amount: 100 }, { id: '2', amount: 200 }]}
+        items={[
+          { id: '1', amount: 100 },
+          { id: '2', amount: 200 },
+        ]}
       />,
     )
     expect(screen.getByText(/300.00/)).toBeTruthy()
@@ -37,7 +43,10 @@ describe('EditorItemsSummary', () => {
   it('renders total quantity when positive', () => {
     render(
       <EditorItemsSummary
-        items={[{ id: '1', quantity: 5 }, { id: '2', quantity: 3 }]}
+        items={[
+          { id: '1', quantity: 5 },
+          { id: '2', quantity: 3 },
+        ]}
       />,
     )
     expect(screen.getByText(/8/)).toBeTruthy()

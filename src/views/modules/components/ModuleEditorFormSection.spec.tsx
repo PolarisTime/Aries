@@ -9,7 +9,9 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  default: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
 }))
 
 vi.mock('antd/es/form', () => ({
@@ -94,7 +96,12 @@ describe('ModuleEditorFormSection', () => {
     const config = {
       ...defaultProps.config,
       formFields: [
-        { key: 'field1', label: 'Field 1', type: 'text' as const, required: false },
+        {
+          key: 'field1',
+          label: 'Field 1',
+          type: 'text' as const,
+          required: false,
+        },
       ],
     }
     vi.mocked(groupFieldsByRow).mockReturnValue([

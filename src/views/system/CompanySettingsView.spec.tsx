@@ -41,10 +41,16 @@ vi.mock('@/lib/antd-form', () => ({
 }))
 
 vi.mock('@/views/system/CompanySettingsHeader', () => ({
-  CompanySettingsHeader: ({ overviewItems }: { overviewItems: Array<{ label: string; value: string }> }) => (
+  CompanySettingsHeader: ({
+    overviewItems,
+  }: {
+    overviewItems: Array<{ label: string; value: string }>
+  }) => (
     <div data-testid="header">
       {overviewItems.map((item: { label: string; value: string }) => (
-        <div key={item.label}>{item.label}: {item.value}</div>
+        <div key={item.label}>
+          {item.label}: {item.value}
+        </div>
       ))}
     </div>
   ),
@@ -55,7 +61,9 @@ vi.mock('@/views/system/CompanySubjectCard', () => ({
 }))
 
 vi.mock('@/views/system/CompanySettlementAccountsCard', () => ({
-  CompanySettlementAccountsCard: () => <div data-testid="settlement-card">Settlement</div>,
+  CompanySettlementAccountsCard: () => (
+    <div data-testid="settlement-card">Settlement</div>
+  ),
 }))
 
 import { CompanySettingsView } from '@/views/system/CompanySettingsView'
@@ -125,6 +133,8 @@ describe('CompanySettingsView', () => {
       return true
     })
     render(<CompanySettingsView />)
-    expect(screen.getByText('system.company.noViewPermission')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.company.noViewPermission'),
+    ).toBeInTheDocument()
   })
 })

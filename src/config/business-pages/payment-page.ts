@@ -1,16 +1,21 @@
+import i18next from 'i18next'
 import type { ModulePageConfig } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from './filter-labels'
 import { buildFinanceOverview, statusMap } from './shared'
-import i18next from 'i18next'
 
 export const paymentsPageConfig: ModulePageConfig = {
   key: 'payment',
   title: i18next.t('modules.pages.payment.payment'),
   kicker: 'Finance',
-  description:
-    i18next.t('modules.pages.payment.paymentDesc'),
+  description: i18next.t('modules.pages.payment.paymentDesc'),
   primaryNoKey: 'paymentNo',
-  actions: [{ key: 'create_payment', label: i18next.t('modules.pages.payment.createPayment'), type: 'primary' }],
+  actions: [
+    {
+      key: 'create_payment',
+      label: i18next.t('modules.pages.payment.createPayment'),
+      type: 'primary',
+    },
+  ],
   filters: [
     {
       key: 'businessType',
@@ -30,14 +35,39 @@ export const paymentsPageConfig: ModulePageConfig = {
         { label: i18next.t('modules.pages.payment.paid'), value: '已付款' },
       ],
     },
-    { key: 'paymentDate', label: i18next.t('modules.pages.payment.paymentDate'), type: 'dateRange' },
+    {
+      key: 'paymentDate',
+      label: i18next.t('modules.pages.payment.paymentDate'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: i18next.t('modules.pages.payment.paymentNo'), dataIndex: 'paymentNo', width: 170 },
-    { title: i18next.t('modules.pages.payment.businessType'), dataIndex: 'businessType', width: 110 },
-    { title: i18next.t('modules.pages.payment.counterparty'), dataIndex: 'counterpartyName', width: 160 },
-    { title: i18next.t('modules.pages.payment.paymentDate'), dataIndex: 'paymentDate', width: 120, type: 'date' },
-    { title: i18next.t('modules.pages.payment.payType'), dataIndex: 'payType', width: 120 },
+    {
+      title: i18next.t('modules.pages.payment.paymentNo'),
+      dataIndex: 'paymentNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.payment.businessType'),
+      dataIndex: 'businessType',
+      width: 110,
+    },
+    {
+      title: i18next.t('modules.pages.payment.counterparty'),
+      dataIndex: 'counterpartyName',
+      width: 160,
+    },
+    {
+      title: i18next.t('modules.pages.payment.paymentDate'),
+      dataIndex: 'paymentDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.payment.payType'),
+      dataIndex: 'payType',
+      width: 120,
+    },
     {
       title: i18next.t('modules.pages.payment.amount'),
       dataIndex: 'amount',
@@ -55,16 +85,60 @@ export const paymentsPageConfig: ModulePageConfig = {
   ],
   defaultHiddenColumnKeys: ['payType'],
   detailFields: [
-    { label: i18next.t('modules.pages.payment.paymentNo'), key: 'paymentNo', row: 1 },
-    { label: i18next.t('modules.pages.payment.businessType'), key: 'businessType', row: 1 },
-    { label: i18next.t('modules.pages.payment.counterparty'), key: 'counterpartyName', row: 1 },
-    { label: i18next.t('modules.pages.payment.relatedStatement'), key: 'sourceStatementId', row: 1 },
-    { label: i18next.t('modules.pages.payment.paymentDate'), key: 'paymentDate', type: 'date', row: 2 },
-    { label: i18next.t('modules.pages.payment.payType'), key: 'payType', row: 2 },
-    { label: i18next.t('modules.pages.payment.amount'), key: 'amount', type: 'amount', row: 2 },
-    { label: i18next.t('modules.pages.payment.status'), key: 'status', type: 'status', row: 2 },
-    { label: i18next.t('modules.pages.payment.operator'), key: 'operatorName', row: 3 },
-    { label: i18next.t('modules.pages.payment.remark'), key: 'remark', row: 4, fullRow: true },
+    {
+      label: i18next.t('modules.pages.payment.paymentNo'),
+      key: 'paymentNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.payment.businessType'),
+      key: 'businessType',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.payment.counterparty'),
+      key: 'counterpartyName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.payment.relatedStatement'),
+      key: 'sourceStatementId',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.payment.paymentDate'),
+      key: 'paymentDate',
+      type: 'date',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.payment.payType'),
+      key: 'payType',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.payment.amount'),
+      key: 'amount',
+      type: 'amount',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.payment.status'),
+      key: 'status',
+      type: 'status',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.payment.operator'),
+      key: 'operatorName',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.payment.remark'),
+      key: 'remark',
+      row: 4,
+      fullRow: true,
+    },
   ],
   formFields: [
     {
@@ -112,8 +186,14 @@ export const paymentsPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: [
-        { label: i18next.t('modules.pages.payment.bankTransfer'), value: '银行转账' },
-        { label: i18next.t('modules.pages.payment.bankAcceptance'), value: '银行承兑' },
+        {
+          label: i18next.t('modules.pages.payment.bankTransfer'),
+          value: '银行转账',
+        },
+        {
+          label: i18next.t('modules.pages.payment.bankAcceptance'),
+          value: '银行承兑',
+        },
         { label: i18next.t('modules.pages.payment.cash'), value: '现金' },
       ],
       row: 2,
@@ -146,7 +226,13 @@ export const paymentsPageConfig: ModulePageConfig = {
       required: true,
       row: 3,
     },
-    { key: 'remark', label: i18next.t('modules.pages.payment.remark'), type: 'textarea', row: 4, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.payment.remark'),
+      type: 'textarea',
+      row: 4,
+      fullRow: true,
+    },
   ],
   saveFields: {
     scalar: [

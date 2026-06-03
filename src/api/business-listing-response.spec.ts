@@ -12,11 +12,7 @@ vi.mock('@/utils/api-messages', () => ({
 
 describe('buildTableResponse', () => {
   it('returns success response when not truncated', () => {
-    const result = buildTableResponse(
-      [{ id: '1', name: 'test' }],
-      1,
-      false,
-    )
+    const result = buildTableResponse([{ id: '1', name: 'test' }], 1, false)
     expect(result).toEqual({
       code: 0,
       message: undefined,
@@ -29,11 +25,7 @@ describe('buildTableResponse', () => {
   })
 
   it('returns truncated response with message', () => {
-    const result = buildTableResponse(
-      [{ id: '1' }],
-      50,
-      true,
-    )
+    const result = buildTableResponse([{ id: '1' }], 50, true)
     expect(result.code).toBe(4000)
     expect(result.message).toContain('结果不完整')
     expect(result.message).toContain('2000')

@@ -23,14 +23,7 @@ export const QUERY_KEYS = {
     filters: Record<string, unknown>,
     page: number,
     pageSize: number,
-  ) =>
-    [
-      'business-grid',
-      moduleKey,
-      filters,
-      page,
-      pageSize,
-    ] as const,
+  ) => ['business-grid', moduleKey, filters, page, pageSize] as const,
   businessPageConfig: (moduleKey: string) =>
     ['business-page-config', moduleKey] as const,
 
