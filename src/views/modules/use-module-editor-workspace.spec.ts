@@ -183,11 +183,22 @@ describe('useModuleEditorWorkspace', () => {
       useModuleEditorWorkspace(props({ open: false })),
     )
     const keys = [
-      'addItem', 'closeParentSelector', 'handleImportParentRecord',
-      'handleSave', 'isEdit', 'items', 'openParentSelector',
-      'parentImporting', 'parentSelectorFilters', 'parentSelectorOpen',
-      'primaryNoLoading', 'saveResult', 'clearSaveResult', 'saving',
-      'setItems', 'handleFormValuesChange',
+      'addItem',
+      'closeParentSelector',
+      'handleImportParentRecord',
+      'handleSave',
+      'isEdit',
+      'items',
+      'openParentSelector',
+      'parentImporting',
+      'parentSelectorFilters',
+      'parentSelectorOpen',
+      'primaryNoLoading',
+      'saveResult',
+      'clearSaveResult',
+      'saving',
+      'setItems',
+      'handleFormValuesChange',
     ]
     for (const k of keys) expect(result.current).toHaveProperty(k)
   })
@@ -204,7 +215,9 @@ describe('useModuleEditorWorkspace', () => {
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ open: false })),
     )
-    act(() => { result.current.clearSaveResult() })
+    act(() => {
+      result.current.clearSaveResult()
+    })
     expect(result.current.saveResult).toBeNull()
   })
 
@@ -212,14 +225,18 @@ describe('useModuleEditorWorkspace', () => {
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ open: false })),
     )
-    act(() => { result.current.handleFormValuesChange({ orderNo: 'X' }) })
+    act(() => {
+      result.current.handleFormValuesChange({ orderNo: 'X' })
+    })
   })
 
   it('openParentSelector is no-op without parentImport config', () => {
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ open: false })),
     )
-    act(() => { result.current.openParentSelector() })
+    act(() => {
+      result.current.openParentSelector()
+    })
     expect(result.current.parentSelectorOpen).toBe(false)
   })
 
@@ -227,7 +244,9 @@ describe('useModuleEditorWorkspace', () => {
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ open: false })),
     )
-    act(() => { result.current.closeParentSelector() })
+    act(() => {
+      result.current.closeParentSelector()
+    })
     expect(result.current.parentSelectorOpen).toBe(false)
   })
 
@@ -235,7 +254,9 @@ describe('useModuleEditorWorkspace', () => {
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ open: false })),
     )
-    act(() => { result.current.setItems([{ id: 'a' }]) })
+    act(() => {
+      result.current.setItems([{ id: 'a' }])
+    })
     expect(result.current.items).toEqual([{ id: 'a' }])
   })
 
@@ -243,8 +264,12 @@ describe('useModuleEditorWorkspace', () => {
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ open: false })),
     )
-    act(() => { result.current.setItems([]) })
-    act(() => { result.current.setItems((prev: unknown[]) => [...prev, { id: 'b' }]) })
+    act(() => {
+      result.current.setItems([])
+    })
+    act(() => {
+      result.current.setItems((prev: unknown[]) => [...prev, { id: 'b' }])
+    })
     expect(result.current.items).toEqual([{ id: 'b' }])
   })
 
@@ -252,6 +277,8 @@ describe('useModuleEditorWorkspace', () => {
     const { result } = renderHook(() =>
       useModuleEditorWorkspace(props({ open: false })),
     )
-    act(() => { result.current.handleImportParentRecord([{ id: 'po-1' }]) })
+    act(() => {
+      result.current.handleImportParentRecord([{ id: 'po-1' }])
+    })
   })
 })
