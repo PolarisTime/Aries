@@ -16,6 +16,46 @@ const purchaseOrderConfig: ModulePageConfig = {
 }
 
 describe('resolveAutoOpenDetailTarget', () => {
+  it('returns null when no config', () => {
+    const result = resolveAutoOpenDetailTarget({
+      config: undefined,
+      records: [],
+      searchStr: '?openDetail=1',
+      autoOpenedRouteKey: '',
+    })
+    expect(result).toBeNull()
+  })
+
+  it('returns null when shouldOpenDetail is not set', () => {
+    const result = resolveAutoOpenDetailTarget({
+      config: purchaseOrderConfig,
+      records: [],
+      searchStr: '?docNo=PO2026000032',
+      autoOpenedRouteKey: '',
+    })
+    expect(result).toBeNull()
+  })
+
+  it('returns null when no routeKey and docNo is present', () => {
+    const result = resolveAutoOpenDetailTarget({
+      config: purchaseOrderConfig,
+      records: [],
+      searchStr: '?openDetail=1',
+      autoOpenedRouteKey: '',
+    })
+    expect(result).toBeNull()
+  })
+
+  it('returns null when autoOpenedRouteKey matches routeKey', () => {
+    const result = resolveAutoOpenDetailTarget({
+      config: purchaseOrderConfig,
+      records: [],
+      searchStr: '?docNo=PO2026000032&openDetail=1',
+      autoOpenedRouteKey: 'doc:PO2026000032',
+    })
+    expect(result).toBeNull()
+  })
+
   it('falls back to trackId detail lookup when current page does not contain the docNo record', () => {
     const result = resolveAutoOpenDetailTarget({
       config: purchaseOrderConfig,
@@ -71,6 +111,35 @@ describe('resolveAutoOpenDetailTarget', () => {
       autoOpenedRouteKey: '',
     })
 
+    expect(result).toBeNull()
+  })
+
+  it('finds record by trackId when trackId matches record.id', () => {
+    const record = {
+      id: '1914876201459236001',
+      orderNo: 'PO2026000032',
+    } satisfies ModuleRecord
+
+    const result = resolveAutoOpenDetailTarget({
+      config: purchaseOrderConfig,
+      records: [record],
+      searchStr: '?docNo=PO2026000032&trackId=1914876201459236001&openDetail=1',
+      autoOpenedRouteKey: '',
+    })
+
+    expect(result).toEqual({
+      nextAutoOpenedRouteKey: 'track:1914876201459236001',
+      target: record,
+    })
+  })
+
+  it('returns null when docNo record not found and no trackId', () => {
+    const result = resolveAutoOpenDetailTarget({
+      config: purchaseOrderConfig,
+      records: [],
+      searchStr: '?docNo=NONEXISTENT&openDetail=1',
+      autoOpenedRouteKey: '',
+    })
     expect(result).toBeNull()
   })
 })

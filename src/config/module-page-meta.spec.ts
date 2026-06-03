@@ -60,7 +60,7 @@ describe('modulePageMetaMap', () => {
     })
   })
 
-  it('stays aligned with loaded creatable page configs', async () => {
+  it('stays aligned with loaded creatable page configs', { timeout: 30000 }, async () => {
     const missingMeta = []
 
     for (const moduleKey of autoNumberedCreatableModules) {

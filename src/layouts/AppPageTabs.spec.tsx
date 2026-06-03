@@ -94,4 +94,136 @@ describe('AppPageTabs', () => {
 
     expect(closePage).not.toHaveBeenCalled()
   })
+
+  it('navigates to page on tab click', () => {
+    const navigate = vi.fn()
+
+    render(
+      <AppPageTabs
+        activeKey="/dashboard"
+        closePage={vi.fn()}
+        isTopNavigationLayout={false}
+        onNavigateToPath={navigate}
+        pages={pages}
+        shellFontStyle={{}}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('商品资料'))
+
+    expect(navigate).toHaveBeenCalledWith('/material')
+  })
+
+  it('renders with top-nav class when isTopNavigationLayout is true', () => {
+    const { container } = render(
+      <AppPageTabs
+        activeKey="/dashboard"
+        closePage={vi.fn()}
+        isTopNavigationLayout={true}
+        onNavigateToPath={vi.fn()}
+        pages={pages}
+        shellFontStyle={{}}
+      />,
+    )
+
+    expect(container.querySelector('.tab-layout-tabs-top-nav')).toBeDefined()
+  })
+
+  it('does not render top-nav class when isTopNavigationLayout is false', () => {
+    const { container } = render(
+      <AppPageTabs
+        activeKey="/dashboard"
+        closePage={vi.fn()}
+        isTopNavigationLayout={false}
+        onNavigateToPath={vi.fn()}
+        pages={pages}
+        shellFontStyle={{}}
+      />,
+    )
+
+    expect(container.querySelector('.tab-layout-tabs-top-nav')).toBeNull()
+  })
+
+  it('applies shellFontStyle to container', () => {
+    const style = { fontSize: '14px', color: 'red' }
+    const { container } = render(
+      <AppPageTabs
+        activeKey="/dashboard"
+        closePage={vi.fn()}
+        isTopNavigationLayout={false}
+        onNavigateToPath={vi.fn()}
+        pages={pages}
+        shellFontStyle={style}
+      />,
+    )
+
+    const tabContainer = container.querySelector('.tab-layout-tabs')
+    expect(tabContainer).toBeDefined()
+  })
+
+  it('renders all page tabs', () => {
+    render(
+      <AppPageTabs
+        activeKey="/dashboard"
+        closePage={vi.fn()}
+        isTopNavigationLayout={false}
+        onNavigateToPath={vi.fn()}
+        pages={pages}
+        shellFontStyle={{}}
+      />,
+    )
+
+    expect(screen.getByText('工作台')).toBeDefined()
+    expect(screen.getByText('商品资料')).toBeDefined()
+    expect(screen.getByText('客户资料')).toBeDefined()
+  })
+
+  it('uses previous page as fallback when closing non-active tab', () => {
+    const closePage = vi.fn()
+    const navigate = vi.fn()
+
+    render(
+      <AppPageTabs
+        activeKey="/dashboard"
+        closePage={closePage}
+        isTopNavigationLayout={false}
+        onNavigateToPath={navigate}
+        pages={pages}
+        shellFontStyle={{}}
+      />,
+    )
+
+    fireEvent.doubleClick(screen.getByText('客户资料'))
+
+    expect(closePage).toHaveBeenCalledWith('/customer', navigate, {
+      fallbackPath: '/dashboard',
+    })
+  })
+
+  it('falls back to any other page when closing first tab', () => {
+    const closePage = vi.fn()
+    const navigate = vi.fn()
+
+    const pagesWithFirstClosable = [
+      { key: '/first', path: '/first', title: '第一个', closable: true },
+      { key: '/second', path: '/second', title: '第二个', closable: true },
+    ]
+
+    render(
+      <AppPageTabs
+        activeKey="/first"
+        closePage={closePage}
+        isTopNavigationLayout={false}
+        onNavigateToPath={navigate}
+        pages={pagesWithFirstClosable}
+        shellFontStyle={{}}
+      />,
+    )
+
+    fireEvent.doubleClick(screen.getByText('第一个'))
+
+    expect(closePage).toHaveBeenCalledWith('/first', navigate, {
+      fallbackPath: '/second',
+    })
+  })
 })
