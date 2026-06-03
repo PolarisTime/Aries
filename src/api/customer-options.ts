@@ -13,11 +13,11 @@ export type CustomerOption = {
   projectNameAbbr?: string
 }
 
-function normalizeText(value: unknown) {
+export function normalizeText(value: unknown) {
   return asString(value).trim()
 }
 
-function normalizeCustomerRows(rows: CustomerOption[]) {
+export function normalizeCustomerRows(rows: CustomerOption[]) {
   return rows.flatMap((row) => {
     const customerName = normalizeText(
       row.customerName || row.value || row.label,
@@ -67,7 +67,7 @@ export function getCustomerProjectOptions(
 
 
 
-function uniqueCustomerNameOptions(rows: CustomerOption[]) {
+export function uniqueCustomerNameOptions(rows: CustomerOption[]) {
   const seen = new Set<string>()
   return rows.flatMap((row) => {
     const customerName = normalizeText(row.customerName || row.value)
@@ -79,7 +79,7 @@ function uniqueCustomerNameOptions(rows: CustomerOption[]) {
   })
 }
 
-function uniqueProjectOptions(
+export function uniqueProjectOptions(
   rows: CustomerOption[],
   includeCustomerInLabel: boolean,
 ) {
@@ -107,7 +107,7 @@ function uniqueProjectOptions(
   })
 }
 
-function formatProjectOptionLabel(row: CustomerOption, projectName: string) {
+export function formatProjectOptionLabel(row: CustomerOption, projectName: string) {
   const projectNameAbbr = normalizeText(row.projectNameAbbr)
   return projectNameAbbr ? `${projectNameAbbr}（${projectName}）` : projectName
 }

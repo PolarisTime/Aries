@@ -2103,6 +2103,22 @@ export interface MessageSchema {
       metricUptime: string
       metricLongestQuery: string
       healthSummary: string
+      tuningSettings: string
+      connectionLimit: string
+      currentConnections: string
+      hikariPool: string
+      leakDetection: string
+      statementTimeout: string
+      idleTxTimeout: string
+      lockTimeout: string
+      trackIoTiming: string
+      sharedBuffers: string
+      effectiveCache: string
+      workMem: string
+      maintenanceWorkMem: string
+      maxWal: string
+      checkpointTimeout: string
+      pgStatTrack: string
       activeSessions: string
       idleInTxSessions: string
       lockWait: string

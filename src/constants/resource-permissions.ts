@@ -64,6 +64,7 @@ export async function loadPermissionCatalog(): Promise<void> {
         logger.warn(
           '[resource-permissions] catalog response invalid, using fallback maps',
         )
+        catalogPromise = null
         return
       }
 

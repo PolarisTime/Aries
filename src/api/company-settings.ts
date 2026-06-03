@@ -31,7 +31,7 @@ interface CompanyResponse<T> {
   data: T
 }
 
-type RawSettlementAccount = {
+export type RawSettlementAccount = {
   id?: string | number
   accountName?: string
   bankName?: string
@@ -41,7 +41,7 @@ type RawSettlementAccount = {
   remark?: string
 }
 
-type RawCompanyProfile = {
+export type RawCompanyProfile = {
   id?: string | number
   companyName?: string
   taxNo?: string
@@ -53,7 +53,7 @@ type RawCompanyProfile = {
   remark?: string
 }
 
-function normalizeProfile(
+export function normalizeProfile(
   raw: RawCompanyProfile | null | undefined,
 ): CompanySettingProfile | null {
   if (!raw) return null

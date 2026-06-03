@@ -147,6 +147,7 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     appliedLayoutMode,
     setLayoutMode,
     themeMode,
+    appliedThemeMode,
     setThemeMode,
     open,
     close,

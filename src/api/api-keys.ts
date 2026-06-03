@@ -59,7 +59,7 @@ export interface ListApiKeysParams {
   usageScope?: string
 }
 
-function buildApiKeyUrl(id?: string) {
+export function buildApiKeyUrl(id?: string) {
   return id != null ? `${ENDPOINTS.API_KEYS}/${id}` : ENDPOINTS.API_KEYS
 }
 
