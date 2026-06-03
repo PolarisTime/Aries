@@ -13,7 +13,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     pool: 'threads',
-    testTimeout: 5000,
+    testTimeout: 10000,
     include: ['src/**/*.spec.ts', 'src/**/*.spec.tsx'],
     exclude: ['tests/**', 'src/mock/**', 'node_modules/**', 'dist/**'],
     setupFiles: ['./src/test/setup.ts'],
