@@ -12,7 +12,12 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    pool: 'threads',
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     testTimeout: 10000,
     include: ['src/**/*.spec.ts', 'src/**/*.spec.tsx'],
     exclude: ['tests/**', 'src/mock/**', 'node_modules/**', 'dist/**'],
