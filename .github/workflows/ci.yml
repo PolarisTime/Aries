@@ -58,11 +58,12 @@ jobs:
       fail-fast: false
       matrix:
         batch:
-          - api-types       # ~73 files
-          - config-module   # ~97 files
-          - hooks-utils     # ~71 files
-          - views-core      # ~86 files
-          - views-other     # ~89 files
+          - api-types            # ~73 files
+          - config-module        # ~97 files
+          - hooks-utils          # ~71 files
+          - views-core           # ~86 files
+          - views-modules        # ~52 files
+          - components-layouts   # ~37 files
     defaults:
       run:
         shell: bash
@@ -105,9 +106,13 @@ jobs:
         if: matrix.batch == 'views-core'
         run: pnpm vitest run src/views/system src/views/auth src/views/dashboard
 
-      - name: Run tests (views-other)
-        if: matrix.batch == 'views-other'
-        run: pnpm vitest run src/views/modules src/views/error src/components src/layouts src/shared src/pages src/router src/styles src/main.spec.ts src/main.spec.tsx
+      - name: Run tests (views-modules)
+        if: matrix.batch == 'views-modules'
+        run: pnpm vitest run src/views/modules src/views/error
+
+      - name: Run tests (components-layouts)
+        if: matrix.batch == 'components-layouts'
+        run: pnpm vitest run src/components src/layouts src/shared src/pages src/router src/styles src/main.spec.ts src/main.spec.tsx
 
   build:
     name: Build & Artifact
