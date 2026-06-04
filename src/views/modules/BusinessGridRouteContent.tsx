@@ -74,6 +74,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         rowSelection={state.rowSelection}
         rowClassName={state.getRowClassName}
         onUpdateFilter={state.updateFilter}
+        onApplyFilters={state.applyFilters}
         onSearch={state.handleSearch}
         onReset={state.handleReset}
         onCreate={() => {

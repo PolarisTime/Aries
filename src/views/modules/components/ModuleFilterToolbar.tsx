@@ -4,6 +4,7 @@ import DatePicker from 'antd/es/date-picker'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Row from 'antd/es/row'
+import Segmented from 'antd/es/segmented'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import type { Dayjs } from 'dayjs'
@@ -26,8 +27,32 @@ interface Props {
   config: ModulePageConfig
   filters: SearchParams
   onUpdateFilter: (key: string, value: unknown) => void
+  onApplyFilters?: (filters: SearchParams) => void
   onSearch: () => void
   onReset: () => void
+}
+
+function normalizeFilters(filters: SearchParams) {
+  const normalized: SearchParams = {}
+  for (const [key, value] of Object.entries(filters)) {
+    if (value === undefined || value === null || value === '') {
+      continue
+    }
+    normalized[key] = value
+  }
+  return normalized
+}
+
+function isSameFilterPreset(left: SearchParams, right: SearchParams) {
+  const leftEntries = Object.entries(normalizeFilters(left)).toSorted()
+  const rightEntries = Object.entries(normalizeFilters(right)).toSorted()
+  return (
+    leftEntries.length === rightEntries.length &&
+    leftEntries.every(([key, value], index) => {
+      const [rightKey, rightValue] = rightEntries[index]
+      return key === rightKey && String(value) === String(rightValue)
+    })
+  )
 }
 
 function ModuleFilterField({
@@ -137,6 +162,7 @@ export function ModuleFilterToolbar({
   config,
   filters,
   onUpdateFilter,
+  onApplyFilters,
   onSearch,
   onReset,
 }: Props) {
@@ -153,10 +179,34 @@ export function ModuleFilterToolbar({
   const visibleFilters = config.filters.toSorted(
     (left, right) => (left.row || 1) - (right.row || 1),
   )
+  const quickFilters = config.quickFilters || []
+  const activeQuickFilterKey =
+    quickFilters.find((filter) => isSameFilterPreset(filters, filter.values))
+      ?.key
 
   return (
     <Form onFinish={onSearch} colon={false} className="mb-4">
       <Row gutter={[16, 8]}>
+        {quickFilters.length ? (
+          <Col xs={24}>
+            <Segmented
+              aria-label={t('modules.filter.quickFilters')}
+              value={activeQuickFilterKey}
+              options={quickFilters.map((filter) => ({
+                label: filter.label,
+                value: filter.key,
+              }))}
+              onChange={(value) => {
+                const selected = quickFilters.find(
+                  (filter) => filter.key === String(value),
+                )
+                if (selected) {
+                  onApplyFilters?.(normalizeFilters(selected.values))
+                }
+              }}
+            />
+          </Col>
+        ) : null}
         {!hasConfigKeywordFilter ? (
           <Col xs={24} sm={12} lg={8} xl={6}>
             <Form.Item

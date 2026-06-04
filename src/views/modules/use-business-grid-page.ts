@@ -82,6 +82,7 @@ export function useBusinessGridPage({
   const {
     filters,
     submittedFilters,
+    applyFilters,
     handleSearch,
     handleReset,
     updateFilter,
@@ -310,6 +311,7 @@ export function useBusinessGridPage({
     editorLockLoading,
     editorOpen,
     exporting,
+    applyFilters,
     filters,
     handleAction,
     handleEditorSaved,

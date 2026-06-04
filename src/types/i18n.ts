@@ -774,6 +774,7 @@ export interface MessageSchema {
       freightNo: string
       selectPlaceholder: string
       inputPlaceholder: string
+      quickFilters: string
     }
     formField: {
       inputPlaceholder: string
@@ -1348,6 +1349,7 @@ export interface MessageSchema {
         supplier: string
         carrier: string
         counterparty: string
+        allBalances: string
         settlementStatus: string
         open: string
         closed: string
@@ -1362,6 +1364,8 @@ export interface MessageSchema {
         status: string
         remark: string
         entryRole: string
+        recognitionEntry: string
+        settlementEntry: string
         sourceType: string
         documentNo: string
         sourceNo: string

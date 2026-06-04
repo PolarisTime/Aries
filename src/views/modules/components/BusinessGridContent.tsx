@@ -30,6 +30,7 @@ interface Props {
   rowSelection?: TableProps<ModuleRecord>['rowSelection']
   rowClassName: (record: ModuleRecord) => string
   onUpdateFilter: (key: string, value: unknown) => void
+  onApplyFilters: (filters: SearchParams) => void
   onSearch: () => void
   onReset: () => void
   onCreate: () => void
@@ -65,6 +66,7 @@ export function BusinessGridContent({
   rowSelection,
   rowClassName,
   onUpdateFilter,
+  onApplyFilters,
   onSearch,
   onReset,
   onCreate,
@@ -95,6 +97,7 @@ export function BusinessGridContent({
         config={config}
         filters={filters}
         onUpdateFilter={onUpdateFilter}
+        onApplyFilters={onApplyFilters}
         onSearch={onSearch}
         onReset={onReset}
       />

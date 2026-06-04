@@ -5,12 +5,28 @@ import { formatAmount, formatInteger, statusMap, sumBy } from './shared'
 
 const balanceStatusMap = {
   ...statusMap,
+  应收: {
+    text: i18next.t('modules.pages.balance.receivable'),
+    color: 'processing' as const,
+  },
+  应付: {
+    text: i18next.t('modules.pages.balance.payable'),
+    color: 'warning' as const,
+  },
   未结清: {
     text: i18next.t('modules.pages.balance.open'),
     color: 'warning' as const,
   },
   已结清: {
     text: i18next.t('modules.pages.balance.closed'),
+    color: 'success' as const,
+  },
+  RECOGNITION: {
+    text: i18next.t('modules.pages.balance.recognitionEntry'),
+    color: 'processing' as const,
+  },
+  SETTLEMENT: {
+    text: i18next.t('modules.pages.balance.settlementEntry'),
     color: 'success' as const,
   },
 }
@@ -28,6 +44,33 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         key: 'export_balance',
         label: i18next.t('modules.pages.balance.exportBalance'),
         type: 'primary',
+      },
+    ],
+    quickFilters: [
+      {
+        key: 'all',
+        label: i18next.t('modules.pages.balance.allBalances'),
+        values: {},
+      },
+      {
+        key: 'receivable',
+        label: i18next.t('modules.pages.balance.receivable'),
+        values: { direction: '应收' },
+      },
+      {
+        key: 'payable',
+        label: i18next.t('modules.pages.balance.payable'),
+        values: { direction: '应付' },
+      },
+      {
+        key: 'open',
+        label: i18next.t('modules.pages.balance.open'),
+        values: { status: '未结清' },
+      },
+      {
+        key: 'closed',
+        label: i18next.t('modules.pages.balance.closed'),
+        values: { status: '已结清' },
       },
     ],
     filters: [
@@ -71,6 +114,8 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         title: i18next.t('modules.pages.balance.direction'),
         dataIndex: 'direction',
         width: 100,
+        align: 'center',
+        type: 'status',
       },
       {
         title: i18next.t('modules.pages.balance.counterpartyType'),
@@ -208,6 +253,8 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         title: i18next.t('modules.pages.balance.entryRole'),
         dataIndex: 'entryRole',
         width: 120,
+        align: 'center',
+        type: 'status',
       },
       {
         title: i18next.t('modules.pages.balance.sourceType'),
