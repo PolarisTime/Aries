@@ -160,6 +160,26 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       ],
     },
   },
+  'ledger-adjustment': {
+    saveFields: {
+      scalar: [
+        'adjustmentNo',
+        'direction',
+        'counterpartyType',
+        'counterpartyCode',
+        'counterpartyName',
+        'projectId',
+        'projectName',
+        'adjustmentDate',
+        'amount',
+        'adjustmentType',
+        'effect',
+        'status',
+        'operatorName',
+        'remark',
+      ],
+    },
+  },
   'supplier-statement': {
     saveFields: {
       scalar: [

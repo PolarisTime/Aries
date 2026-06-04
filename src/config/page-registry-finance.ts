@@ -72,6 +72,16 @@ export const financePageDefinitions: AppPageDefinition[] = [
     searchable: true,
   },
   {
+    key: 'ledger-adjustment',
+    title: '台账调整单',
+    menuKey: '/ledger-adjustment',
+    view: 'business-grid',
+    icon: 'AuditOutlined',
+    menuParent: 'finance',
+    moduleKey: 'ledger-adjustment',
+    searchable: true,
+  },
+  {
     key: 'pending-invoice-receipt-report',
     title: '未收票报表',
     menuKey: '/pending-invoice-receipt-report',

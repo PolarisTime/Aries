@@ -28,6 +28,7 @@ const primaryNoKeyMap: Record<string, string> = {
   payment: 'paymentNo',
   'invoice-receipt': 'receiveNo',
   'invoice-issue': 'issueNo',
+  'ledger-adjustment': 'adjustmentNo',
   department: 'departmentCode',
 }
 

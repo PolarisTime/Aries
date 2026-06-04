@@ -48,6 +48,7 @@ describe('module-behavior-statuses', () => {
     payment: '草稿',
     'invoice-receipt': '草稿',
     'invoice-issue': '草稿',
+    'ledger-adjustment': '草稿',
   }
 
   const approvedStatusModules = [
@@ -126,6 +127,15 @@ describe('module-behavior-statuses', () => {
     )
     expect(
       invoiceIssueCalls.some(([, config]) => config.auditStatus === '已开票'),
+    ).toBe(true)
+  })
+
+  it('registers auditStatus for ledger-adjustment', () => {
+    const adjustmentCalls = mockedRegister.mock.calls.filter(
+      ([key]) => key === 'ledger-adjustment',
+    )
+    expect(
+      adjustmentCalls.some(([, config]) => config.auditStatus === '已审核'),
     ).toBe(true)
   })
 

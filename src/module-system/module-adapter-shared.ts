@@ -87,9 +87,10 @@ export function generatePrimaryNo(
     'freight-statement': 'WDZ',
     receipts: 'SK',
     payments: 'FK',
-    'invoice-receipt': 'SP',
-    'invoice-issue': 'KP',
-  }
+  'invoice-receipt': 'SP',
+  'invoice-issue': 'KP',
+  'ledger-adjustment': 'LA',
+}
 
   return `${year}${prefixMap[moduleKey] || 'NO'}${serial}`
 }

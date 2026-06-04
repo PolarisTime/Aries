@@ -1085,6 +1085,37 @@ export interface MessageSchema {
         cash: string
         receiptDesc: string
       }
+      ledgerAdjustment: {
+        ledgerAdjustment: string
+        createAdjustment: string
+        ledgerAdjustmentDesc: string
+        adjustmentNo: string
+        direction: string
+        receivable: string
+        payable: string
+        counterpartyType: string
+        customer: string
+        supplier: string
+        carrier: string
+        counterpartyCode: string
+        counterparty: string
+        project: string
+        adjustmentDate: string
+        amount: string
+        adjustmentType: string
+        badDebt: string
+        rounding: string
+        discount: string
+        otherAdjustment: string
+        effect: string
+        increaseBalance: string
+        decreaseBalance: string
+        status: string
+        draft: string
+        audited: string
+        operator: string
+        remark: string
+      }
       customerStatement: {
         customerStatement: string
         generateStatement: string

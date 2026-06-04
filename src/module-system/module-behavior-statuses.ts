@@ -43,6 +43,7 @@ const draftStatusModules: Record<string, string> = {
   payment: '草稿',
   'invoice-receipt': '草稿',
   'invoice-issue': '草稿',
+  'ledger-adjustment': '草稿',
 }
 
 for (const [key, status] of Object.entries(draftStatusModules)) {
@@ -66,6 +67,7 @@ registerModuleBehavior('receipt', { auditStatus: '已收款' })
 registerModuleBehavior('payment', { auditStatus: '已付款' })
 registerModuleBehavior('invoice-receipt', { auditStatus: '已收票' })
 registerModuleBehavior('invoice-issue', { auditStatus: '已开票' })
+registerModuleBehavior('ledger-adjustment', { auditStatus: '已审核' })
 registerModuleBehavior('supplier-statement', { auditStatus: '已确认' })
 registerModuleBehavior('customer-statement', { auditStatus: '已确认' })
 

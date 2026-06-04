@@ -174,6 +174,12 @@ describe('generatePrimaryNo', () => {
     expect(generatePrimaryNo('payments', '2026', '000001')).toBe('2026FK000001')
   })
 
+  it('uses ledger-adjustment prefix', () => {
+    expect(generatePrimaryNo('ledger-adjustment', '2026', '000001')).toBe(
+      '2026LA000001',
+    )
+  })
+
   it('uses invoice-receipt prefix', () => {
     expect(generatePrimaryNo('invoice-receipt', '2026', '000001')).toBe(
       '2026SP000001',

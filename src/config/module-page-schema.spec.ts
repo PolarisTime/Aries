@@ -73,6 +73,16 @@ describe('module-page-schema', () => {
       expect(schema.saveFields!.lineItem).toBeUndefined()
     })
 
+    it('returns schema for ledger-adjustment with saveFields only', () => {
+      const schema = getModulePageSchema('ledger-adjustment')
+      expect(schema).toBeDefined()
+      expect(schema.saveFields!.scalar).toContain('adjustmentNo')
+      expect(schema.saveFields!.scalar).toContain('counterpartyType')
+      expect(schema.saveFields!.scalar).toContain('counterpartyCode')
+      expect(schema.saveFields!.scalar).toContain('effect')
+      expect(schema.saveFields!.lineItem).toBeUndefined()
+    })
+
     it('returns schema for supplier-statement', () => {
       const schema = getModulePageSchema('supplier-statement')
       expect(schema).toBeDefined()
