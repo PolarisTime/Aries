@@ -120,6 +120,12 @@ export const financeModuleEndpointContracts: Record<
     readOnly: true,
     supportsDetail: true,
     sortDirectionParam: 'sortDirection',
-    nativeFilterKeys: ['keyword', 'direction', 'counterpartyType', 'status'],
+    nativeFilterKeys: [
+      'keyword',
+      'direction',
+      'counterpartyType',
+      'reconciliationStatus',
+      'status',
+    ],
   },
 }

@@ -1431,8 +1431,11 @@ export const zhCN: MessageSchema = {
         counterpartyCode: '往来单位编码',
         allBalances: '全部',
         settlementStatus: '结清状态',
+        reconciliationStatus: '对账状态',
         open: '未结清',
         closed: '已结清',
+        unreconciled: '未对账',
+        reconciled: '已对账',
         recognizedAmount: '确认金额',
         settledAmount: '已结算金额',
         balanceAmount: '余额',
@@ -1460,7 +1463,7 @@ export const zhCN: MessageSchema = {
         receivableBalance: '应收余额',
         payableBalance: '应付余额',
         balanceDesc:
-          '按已确认客户/供应商对账单、已审核物流对账单确认应收应付，并以已收款/已付款且完成核销的收付款单抵减余额，按往来单位编码展示余额和账龄。',
+          '按完成销售订单、完成采购入库和已审核物流单形成应收应付台账，对账单仅标记已对账/未对账，已收款/已付款按核销抵减已对账余额。',
       },
       ioReport: {
         ioReport: '出入库报表',

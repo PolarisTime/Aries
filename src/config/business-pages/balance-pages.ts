@@ -21,6 +21,14 @@ const balanceStatusMap = {
     text: i18next.t('modules.pages.balance.closed'),
     color: 'success' as const,
   },
+  未对账: {
+    text: i18next.t('modules.pages.balance.unreconciled'),
+    color: 'warning' as const,
+  },
+  已对账: {
+    text: i18next.t('modules.pages.balance.reconciled'),
+    color: 'success' as const,
+  },
   RECOGNITION: {
     text: i18next.t('modules.pages.balance.recognitionEntry'),
     color: 'processing' as const,
@@ -72,6 +80,16 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         label: i18next.t('modules.pages.balance.closed'),
         values: { status: '已结清' },
       },
+      {
+        key: 'unreconciled',
+        label: i18next.t('modules.pages.balance.unreconciled'),
+        values: { reconciliationStatus: '未对账' },
+      },
+      {
+        key: 'reconciled',
+        label: i18next.t('modules.pages.balance.reconciled'),
+        values: { reconciliationStatus: '已对账' },
+      },
     ],
     filters: [
       {
@@ -108,6 +126,12 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         type: 'select',
         options: buildValueOptions('未结清', '已结清'),
       },
+      {
+        key: 'reconciliationStatus',
+        label: i18next.t('modules.pages.balance.reconciliationStatus'),
+        type: 'select',
+        options: buildValueOptions('未对账', '已对账'),
+      },
     ],
     columns: [
       {
@@ -131,6 +155,13 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         title: i18next.t('modules.pages.balance.counterparty'),
         dataIndex: 'counterpartyName',
         width: 160,
+      },
+      {
+        title: i18next.t('modules.pages.balance.reconciliationStatus'),
+        dataIndex: 'reconciliationStatus',
+        width: 110,
+        type: 'status',
+        align: 'center',
       },
       {
         title: i18next.t('modules.pages.balance.recognizedAmount'),
@@ -211,6 +242,11 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         key: 'counterpartyName',
       },
       {
+        label: i18next.t('modules.pages.balance.reconciliationStatus'),
+        key: 'reconciliationStatus',
+        type: 'status',
+      },
+      {
         label: i18next.t('modules.pages.balance.recognizedAmount'),
         key: 'recognizedAmount',
         type: 'amount',
@@ -284,6 +320,13 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         title: i18next.t('modules.pages.balance.project'),
         dataIndex: 'projectName',
         width: 160,
+      },
+      {
+        title: i18next.t('modules.pages.balance.reconciliationStatus'),
+        dataIndex: 'reconciliationStatus',
+        width: 110,
+        type: 'status',
+        align: 'center',
       },
       {
         title: i18next.t('modules.pages.balance.accountingDate'),
@@ -364,6 +407,6 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
       },
     ],
     statusMap: balanceStatusMap,
-    rowHighlightStatuses: ['未结清'],
+    rowHighlightStatuses: ['未结清', '未对账'],
   },
 }

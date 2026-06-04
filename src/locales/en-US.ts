@@ -1443,8 +1443,11 @@ export const enUS: MessageSchema = {
         counterpartyCode: 'Counterparty Code',
         allBalances: 'All',
         settlementStatus: 'Settlement Status',
+        reconciliationStatus: 'Reconciliation Status',
         open: 'Open',
         closed: 'Closed',
+        unreconciled: 'Unreconciled',
+        reconciled: 'Reconciled',
         recognizedAmount: 'Recognized Amount',
         settledAmount: 'Settled Amount',
         balanceAmount: 'Balance',
@@ -1472,7 +1475,7 @@ export const enUS: MessageSchema = {
         receivableBalance: 'Receivable Balance',
         payableBalance: 'Payable Balance',
         balanceDesc:
-          'Recognizes receivables and payables from confirmed customer/supplier statements and approved freight statements, offsets them with fully allocated received/paid settlements, and shows balances with ageing by counterparty code.',
+          'Builds the receivable/payable ledger from completed sales orders, completed purchase inbounds, and approved freight bills; statements only mark reconciliation status, while allocated receipts and payments offset reconciled balances.',
       },
       ioReport: {
         ioReport: 'ioReport',

@@ -33,6 +33,21 @@ describe('balancePageConfigs', () => {
     ])
   })
 
+  it('uses reconciliation status filters', () => {
+    const reconciliationStatusFilter = config.filters.find(
+      (filter) => filter.key === 'reconciliationStatus',
+    )
+
+    expect(reconciliationStatusFilter).toBeDefined()
+    expect(reconciliationStatusFilter?.label).toBe(
+      'modules.pages.balance.reconciliationStatus',
+    )
+    expect(reconciliationStatusFilter?.options).toEqual([
+      { label: '未对账', value: '未对账' },
+      { label: '已对账', value: '已对账' },
+    ])
+  })
+
   it('defines AntD quick filters for common balance views', () => {
     expect(config.quickFilters).toEqual([
       {
@@ -60,6 +75,16 @@ describe('balancePageConfigs', () => {
         label: 'modules.pages.balance.closed',
         values: { status: '已结清' },
       },
+      {
+        key: 'unreconciled',
+        label: 'modules.pages.balance.unreconciled',
+        values: { reconciliationStatus: '未对账' },
+      },
+      {
+        key: 'reconciled',
+        label: 'modules.pages.balance.reconciled',
+        values: { reconciliationStatus: '已对账' },
+      },
     ])
   })
 
@@ -71,6 +96,7 @@ describe('balancePageConfigs', () => {
       'counterpartyType',
       'counterpartyCode',
       'counterpartyName',
+      'reconciliationStatus',
       'recognizedAmount',
       'settledAmount',
       'balanceAmount',
@@ -93,6 +119,7 @@ describe('balancePageConfigs', () => {
 
     expect(keys).toContain('recognizedAmount')
     expect(keys).toContain('counterpartyCode')
+    expect(keys).toContain('reconciliationStatus')
     expect(keys).toContain('daysOver90Amount')
     expect(keys).toContain('entryCount')
     expect(keys).not.toContain('openingAmount')
@@ -109,6 +136,7 @@ describe('balancePageConfigs', () => {
       'documentNo',
       'sourceNo',
       'projectName',
+      'reconciliationStatus',
       'accountingDate',
       'dueDate',
       'debitAmount',
@@ -143,9 +171,11 @@ describe('balancePageConfigs', () => {
   })
 
   it('highlights open ledger balances', () => {
-    expect(config.rowHighlightStatuses).toEqual(['未结清'])
+    expect(config.rowHighlightStatuses).toEqual(['未结清', '未对账'])
     expect(config.statusMap?.未结清.color).toBe('warning')
     expect(config.statusMap?.已结清.color).toBe('success')
+    expect(config.statusMap?.未对账.color).toBe('warning')
+    expect(config.statusMap?.已对账.color).toBe('success')
     expect(config.statusMap?.应收.color).toBe('processing')
     expect(config.statusMap?.应付.color).toBe('warning')
     expect(config.statusMap?.RECOGNITION.color).toBe('processing')
