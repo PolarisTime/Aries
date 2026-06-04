@@ -220,6 +220,25 @@ describe('business-crud', () => {
         saveBusinessModule('read-only', {} as never),
       ).rejects.toThrow('当前模块不支持保存')
     })
+
+    it('does not call save api for readOnly receivable-payable', async () => {
+      getModuleConfigMock.mockReturnValue({
+        path: '/receivable-payables',
+        readOnly: true,
+        supportsDetail: true,
+      })
+
+      await expect(
+        saveBusinessModule('receivable-payable', { id: undefined } as never),
+      ).rejects.toThrow('当前模块不支持保存')
+      await expect(
+        saveBusinessModule('receivable-payable', { id: '1' } as never),
+      ).rejects.toThrow('当前模块不支持保存')
+
+      expect(serializeBusinessRecordForSaveMock).not.toHaveBeenCalled()
+      expect(httpPostMock).not.toHaveBeenCalled()
+      expect(httpPutMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('deleteBusinessModule', () => {
@@ -244,6 +263,23 @@ describe('business-crud', () => {
       await expect(deleteBusinessModule('purchase-order', '1')).rejects.toThrow(
         '当前模块不支持删除',
       )
+    })
+
+    it('does not call delete api for readOnly receivable-payable', async () => {
+      getModuleConfigMock.mockReturnValue({
+        path: '/receivable-payables',
+        readOnly: true,
+        supportsDetail: true,
+      })
+
+      await expect(
+        deleteBusinessModule('receivable-payable', '1'),
+      ).rejects.toThrow('当前模块不支持删除')
+      await expect(
+        deleteBusinessModule('receivable-payable', '1'),
+      ).rejects.toThrow('当前模块不支持删除')
+
+      expect(restDeleteMock).not.toHaveBeenCalled()
     })
   })
 
@@ -276,6 +312,23 @@ describe('business-crud', () => {
       await expect(
         updateBusinessModuleStatus('purchase-order', '1', '已审核'),
       ).rejects.toThrow('当前模块不支持状态变更')
+    })
+
+    it('does not call status api for readOnly receivable-payable', async () => {
+      getModuleConfigMock.mockReturnValue({
+        path: '/receivable-payables',
+        readOnly: true,
+        supportsDetail: true,
+      })
+
+      await expect(
+        updateBusinessModuleStatus('receivable-payable', '1', '已审核'),
+      ).rejects.toThrow('当前模块不支持状态变更')
+      await expect(
+        updateBusinessModuleStatus('receivable-payable', '1', '已审核'),
+      ).rejects.toThrow('当前模块不支持状态变更')
+
+      expect(httpPatchMock).not.toHaveBeenCalled()
     })
   })
 })
