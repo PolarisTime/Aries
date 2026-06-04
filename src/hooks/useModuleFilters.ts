@@ -20,6 +20,12 @@ export function useModuleFilters({ setCurrentPage }: Props) {
     setCurrentPage(1)
   }
 
+  const applyFilters = (nextFilters: SearchParams) => {
+    setFilters({ ...nextFilters })
+    setSubmittedFilters({ ...nextFilters })
+    setCurrentPage(1)
+  }
+
   const updateFilter = (key: string, value: unknown) => {
     setFilters((prev) => ({ ...prev, [key]: value }))
   }
@@ -29,6 +35,7 @@ export function useModuleFilters({ setCurrentPage }: Props) {
     submittedFilters,
     setFilters,
     setSubmittedFilters,
+    applyFilters,
     handleSearch,
     handleReset,
     updateFilter,

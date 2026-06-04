@@ -67,6 +67,22 @@ vi.mock('antd/es/row', () => ({
   default: ({ children, ...props }: any) => <div {...props}>{children}</div>,
 }))
 
+vi.mock('antd/es/segmented', () => ({
+  default: ({ options, onChange, value, ...props }: any) => (
+    <div data-testid="segmented" data-value={value || ''} {...props}>
+      {options.map((option: any) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange?.(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  ),
+}))
+
 vi.mock('antd/es/select', () => ({
   default: ({ onChange, ...props }: any) => (
     <select
@@ -128,6 +144,7 @@ describe('ModuleFilterToolbar', () => {
     },
     filters: {},
     onUpdateFilter: vi.fn(),
+    onApplyFilters: vi.fn(),
     onSearch: vi.fn(),
     onReset: vi.fn(),
   }
@@ -402,5 +419,53 @@ describe('ModuleFilterToolbar', () => {
       />,
     )
     expect(screen.getByTestId('select')).toBeTruthy()
+  })
+
+  it('renders quick filters and applies selected preset', () => {
+    const onApplyFilters = vi.fn()
+    const config = {
+      ...defaultProps.config,
+      quickFilters: [
+        { key: 'all', label: 'All', values: {} },
+        { key: 'open', label: 'Open', values: { status: 'open' } },
+      ],
+    }
+
+    render(
+      <ModuleFilterToolbar
+        {...defaultProps}
+        config={config}
+        onApplyFilters={onApplyFilters}
+      />,
+    )
+
+    expect(screen.getByTestId('segmented')).toBeTruthy()
+    fireEvent.click(screen.getByText('Open'))
+    expect(onApplyFilters).toHaveBeenCalledWith({ status: 'open' })
+  })
+
+  it('removes empty quick filter preset values before applying', () => {
+    const onApplyFilters = vi.fn()
+    const config = {
+      ...defaultProps.config,
+      quickFilters: [
+        {
+          key: 'open',
+          label: 'Open',
+          values: { status: 'open', direction: '', keyword: undefined },
+        },
+      ],
+    }
+
+    render(
+      <ModuleFilterToolbar
+        {...defaultProps}
+        config={config}
+        onApplyFilters={onApplyFilters}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Open'))
+    expect(onApplyFilters).toHaveBeenCalledWith({ status: 'open' })
   })
 })

@@ -60,6 +60,7 @@ describe('BusinessGridContent', () => {
     columns: [],
     rowClassName: () => '',
     onUpdateFilter: vi.fn(),
+    onApplyFilters: vi.fn(),
     onSearch: vi.fn(),
     onReset: vi.fn(),
     onCreate: vi.fn(),

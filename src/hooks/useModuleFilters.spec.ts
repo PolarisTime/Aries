@@ -85,6 +85,19 @@ describe('useModuleFilters', () => {
     expect(result.current.submittedFilters).toEqual({ status: 'confirmed' })
   })
 
+  it('applies filters and submits them immediately', () => {
+    const setCurrentPage = vi.fn()
+    const { result } = renderHook(() => useModuleFilters({ setCurrentPage }))
+
+    act(() => {
+      result.current.applyFilters({ status: 'open' })
+    })
+
+    expect(result.current.filters).toEqual({ status: 'open' })
+    expect(result.current.submittedFilters).toEqual({ status: 'open' })
+    expect(setCurrentPage).toHaveBeenCalledWith(1)
+  })
+
   it('creates a copy of filters when submitting', () => {
     const { result } = renderHook(() => useModuleFilters(defaultProps))
 

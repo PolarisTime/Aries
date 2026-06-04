@@ -33,6 +33,36 @@ describe('balancePageConfigs', () => {
     ])
   })
 
+  it('defines AntD quick filters for common balance views', () => {
+    expect(config.quickFilters).toEqual([
+      {
+        key: 'all',
+        label: 'modules.pages.balance.allBalances',
+        values: {},
+      },
+      {
+        key: 'receivable',
+        label: 'modules.pages.balance.receivable',
+        values: { direction: '应收' },
+      },
+      {
+        key: 'payable',
+        label: 'modules.pages.balance.payable',
+        values: { direction: '应付' },
+      },
+      {
+        key: 'open',
+        label: 'modules.pages.balance.open',
+        values: { status: '未结清' },
+      },
+      {
+        key: 'closed',
+        label: 'modules.pages.balance.closed',
+        values: { status: '已结清' },
+      },
+    ])
+  })
+
   it('uses ledger summary columns', () => {
     const keys = config.columns.map((column) => column.dataIndex)
 
@@ -53,6 +83,8 @@ describe('balancePageConfigs', () => {
     expect(keys).not.toContain('openingAmount')
     expect(keys).not.toContain('currentAmount')
     expect(keys).not.toContain('documentCount')
+    expect(config.columns.find((column) => column.dataIndex === 'direction'))
+      .toMatchObject({ type: 'status', align: 'center' })
   })
 
   it('uses ledger summary detail fields', () => {
@@ -112,5 +144,9 @@ describe('balancePageConfigs', () => {
     expect(config.rowHighlightStatuses).toEqual(['未结清'])
     expect(config.statusMap?.未结清.color).toBe('warning')
     expect(config.statusMap?.已结清.color).toBe('success')
+    expect(config.statusMap?.应收.color).toBe('processing')
+    expect(config.statusMap?.应付.color).toBe('warning')
+    expect(config.statusMap?.RECOGNITION.color).toBe('processing')
+    expect(config.statusMap?.SETTLEMENT.color).toBe('success')
   })
 })
