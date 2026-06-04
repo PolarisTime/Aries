@@ -1,13 +1,16 @@
 import i18next from 'i18next'
 import { buildValueOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { BILL_STATUS_LABEL } from './filter-labels'
 import { formatAmount, formatInteger, statusMap, sumBy } from './shared'
 
 const balanceStatusMap = {
   ...statusMap,
-  有效: {
-    text: i18next.t('modules.pages.balance.effective'),
+  未结清: {
+    text: i18next.t('modules.pages.balance.open'),
+    color: 'warning' as const,
+  },
+  已结清: {
+    text: i18next.t('modules.pages.balance.closed'),
     color: 'success' as const,
   },
 }
@@ -58,9 +61,9 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
       },
       {
         key: 'status',
-        label: BILL_STATUS_LABEL,
+        label: i18next.t('modules.pages.balance.settlementStatus'),
         type: 'select',
-        options: buildValueOptions('已确认', '已审核'),
+        options: buildValueOptions('未结清', '已结清'),
       },
     ],
     columns: [
@@ -80,36 +83,57 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         width: 160,
       },
       {
-        title: i18next.t('modules.pages.balance.openingBalance'),
-        dataIndex: 'openingAmount',
-        width: 110,
+        title: i18next.t('modules.pages.balance.recognizedAmount'),
+        dataIndex: 'recognizedAmount',
+        width: 120,
         align: 'right',
         type: 'amount',
       },
       {
-        title: i18next.t('modules.pages.balance.currentTransactions'),
-        dataIndex: 'currentAmount',
-        width: 110,
-        align: 'right',
-        type: 'amount',
-      },
-      {
-        title: i18next.t('modules.pages.balance.currentSettlement'),
+        title: i18next.t('modules.pages.balance.settledAmount'),
         dataIndex: 'settledAmount',
-        width: 110,
+        width: 120,
         align: 'right',
         type: 'amount',
       },
       {
-        title: i18next.t('modules.pages.balance.closingBalance'),
+        title: i18next.t('modules.pages.balance.balanceAmount'),
         dataIndex: 'balanceAmount',
-        width: 110,
+        width: 120,
         align: 'right',
         type: 'amount',
       },
       {
-        title: i18next.t('modules.pages.balance.documentCount'),
-        dataIndex: 'documentCount',
+        title: i18next.t('modules.pages.balance.days0To30Amount'),
+        dataIndex: 'days0To30Amount',
+        width: 120,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: i18next.t('modules.pages.balance.days31To60Amount'),
+        dataIndex: 'days31To60Amount',
+        width: 120,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: i18next.t('modules.pages.balance.days61To90Amount'),
+        dataIndex: 'days61To90Amount',
+        width: 120,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: i18next.t('modules.pages.balance.daysOver90Amount'),
+        dataIndex: 'daysOver90Amount',
+        width: 120,
+        align: 'right',
+        type: 'amount',
+      },
+      {
+        title: i18next.t('modules.pages.balance.entryCount'),
+        dataIndex: 'entryCount',
         width: 110,
         align: 'right',
         type: 'count',
@@ -133,28 +157,43 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         key: 'counterpartyName',
       },
       {
-        label: i18next.t('modules.pages.balance.openingBalance'),
-        key: 'openingAmount',
+        label: i18next.t('modules.pages.balance.recognizedAmount'),
+        key: 'recognizedAmount',
         type: 'amount',
       },
       {
-        label: i18next.t('modules.pages.balance.currentTransactions'),
-        key: 'currentAmount',
-        type: 'amount',
-      },
-      {
-        label: i18next.t('modules.pages.balance.currentSettlement'),
+        label: i18next.t('modules.pages.balance.settledAmount'),
         key: 'settledAmount',
         type: 'amount',
       },
       {
-        label: i18next.t('modules.pages.balance.closingBalance'),
+        label: i18next.t('modules.pages.balance.balanceAmount'),
         key: 'balanceAmount',
         type: 'amount',
       },
       {
-        label: i18next.t('modules.pages.balance.documentCount'),
-        key: 'documentCount',
+        label: i18next.t('modules.pages.balance.days0To30Amount'),
+        key: 'days0To30Amount',
+        type: 'amount',
+      },
+      {
+        label: i18next.t('modules.pages.balance.days31To60Amount'),
+        key: 'days31To60Amount',
+        type: 'amount',
+      },
+      {
+        label: i18next.t('modules.pages.balance.days61To90Amount'),
+        key: 'days61To90Amount',
+        type: 'amount',
+      },
+      {
+        label: i18next.t('modules.pages.balance.daysOver90Amount'),
+        key: 'daysOver90Amount',
+        type: 'amount',
+      },
+      {
+        label: i18next.t('modules.pages.balance.entryCount'),
+        key: 'entryCount',
         type: 'count',
       },
       {
@@ -166,14 +205,24 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
     ],
     detailItemColumns: [
       {
+        title: i18next.t('modules.pages.balance.entryRole'),
+        dataIndex: 'entryRole',
+        width: 120,
+      },
+      {
+        title: i18next.t('modules.pages.balance.sourceType'),
+        dataIndex: 'sourceType',
+        width: 110,
+      },
+      {
+        title: i18next.t('modules.pages.balance.documentNo'),
+        dataIndex: 'documentNo',
+        width: 170,
+      },
+      {
         title: i18next.t('modules.pages.balance.sourceNo'),
         dataIndex: 'sourceNo',
         width: 160,
-      },
-      {
-        title: i18next.t('modules.pages.balance.statementNo'),
-        dataIndex: 'statementNo',
-        width: 170,
       },
       {
         title: i18next.t('modules.pages.balance.project'),
@@ -181,43 +230,44 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         width: 160,
       },
       {
-        title: i18next.t('modules.pages.balance.businessDate'),
-        dataIndex: 'businessDate',
+        title: i18next.t('modules.pages.balance.accountingDate'),
+        dataIndex: 'accountingDate',
         width: 120,
         type: 'date',
       },
       {
-        title: i18next.t('modules.pages.balance.periodStart'),
-        dataIndex: 'periodStart',
+        title: i18next.t('modules.pages.balance.dueDate'),
+        dataIndex: 'dueDate',
         width: 120,
         type: 'date',
       },
       {
-        title: i18next.t('modules.pages.balance.periodEnd'),
-        dataIndex: 'periodEnd',
-        width: 120,
-        type: 'date',
-      },
-      {
-        title: i18next.t('modules.pages.balance.currentTransactions'),
-        dataIndex: 'currentAmount',
+        title: i18next.t('modules.pages.balance.debitAmount'),
+        dataIndex: 'debitAmount',
         width: 120,
         align: 'right',
         type: 'amount',
       },
       {
-        title: i18next.t('modules.pages.balance.statementSettlement'),
-        dataIndex: 'statementSettledAmount',
-        width: 130,
+        title: i18next.t('modules.pages.balance.creditAmount'),
+        dataIndex: 'creditAmount',
+        width: 120,
         align: 'right',
         type: 'amount',
       },
       {
-        title: i18next.t('modules.pages.balance.statementBalance'),
-        dataIndex: 'statementBalanceAmount',
+        title: i18next.t('modules.pages.balance.entryBalanceAmount'),
+        dataIndex: 'balanceAmount',
         width: 120,
         align: 'right',
         type: 'amount',
+      },
+      {
+        title: i18next.t('modules.pages.balance.ageDays'),
+        dataIndex: 'ageDays',
+        width: 100,
+        align: 'right',
+        type: 'count',
       },
       {
         title: i18next.t('modules.pages.balance.status'),
@@ -258,6 +308,6 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
       },
     ],
     statusMap: balanceStatusMap,
-    rowHighlightStatuses: ['待确认', '待审核'],
+    rowHighlightStatuses: ['未结清'],
   },
 }
