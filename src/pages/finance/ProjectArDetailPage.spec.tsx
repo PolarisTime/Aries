@@ -37,6 +37,7 @@ vi.mock('@tanstack/react-query', () => ({
         data: {
           content: [
             {
+              sourceDocumentId: 1001,
               sourceDocumentNo: 'DOC001',
               documentType: 'Invoice',
               businessDate: '2024-01-01',
@@ -172,15 +173,23 @@ vi.mock('antd/es/table', () => {
     <div data-testid="table">
       <div data-testid="table-loading">{String(loading)}</div>
       <div data-testid="table-row-count">{dataSource?.length ?? 0}</div>
-      {dataSource?.map((row: any, index: number) => (
-        <div key={index} data-testid="table-row">
-          {columns?.map((col: any) => (
-            <span key={col.dataIndex} data-testid={`cell-${col.dataIndex}`}>
-              {row[col.dataIndex]}
-            </span>
-          ))}
-        </div>
-      ))}
+      {dataSource?.map((row: any, index: number) => {
+        const resolvedKey =
+          typeof rowKey === 'function' ? rowKey(row, index) : row[rowKey]
+        return (
+          <div
+            key={resolvedKey}
+            data-testid="table-row"
+            data-row-key={resolvedKey}
+          >
+            {columns?.map((col: any) => (
+              <span key={col.dataIndex} data-testid={`cell-${col.dataIndex}`}>
+                {row[col.dataIndex]}
+              </span>
+            ))}
+          </div>
+        )
+      })}
     </div>
   )
   return { default: Table }
@@ -263,6 +272,7 @@ describe('ProjectArDetailPage', () => {
           data: {
             content: [
               {
+                sourceDocumentId: 1001,
                 sourceDocumentNo: 'DOC001',
                 documentType: 'Invoice',
                 businessDate: '2024-01-01',
@@ -358,6 +368,69 @@ describe('ProjectArDetailPage', () => {
     await waitFor(() => {
       expect(screen.getByText('DOC001')).toBeDefined()
       expect(screen.getByText('Invoice')).toBeDefined()
+    })
+  })
+
+  it('uses non-empty unique row keys when document numbers are blank', async () => {
+    mockUseQuery.mockImplementation(({ queryKey }: any) => {
+      const key = queryKey[0]
+      if (key === 'project-ar-summary') {
+        return {
+          data: {
+            projectId: 123,
+            customerCode: 'C001',
+            customerName: 'Test Customer',
+            projectName: 'Test Project',
+            projectNameAbbr: 'TP',
+            projectManager: 'John Doe',
+            projectAddress: '123 Test St',
+            projectStatus: 'Active',
+            completedSalesAmount: 100000,
+            prepaymentBalance: 20000,
+            unreceivedAmount: 30000,
+            netUnreceivedAmount: 25000,
+          },
+          isLoading: false,
+          isFetching: false,
+        }
+      }
+      if (key === 'project-ar-detail') {
+        const baseRow = {
+          sourceDocumentNo: '',
+          documentType: 'Invoice',
+          businessDate: '2024-01-01',
+          customerCode: 'C001',
+          customerName: 'Test Customer',
+          amount: 50000,
+          writtenOffAmount: 20000,
+          unwrittenOffAmount: 30000,
+          reconciliationStatus: 'Unreconciled',
+          receiptStatus: 'Pending',
+          operatorName: 'Admin',
+          remark: 'Test remark',
+        }
+        return {
+          data: {
+            content: [baseRow, { ...baseRow }],
+            totalElements: 2,
+          },
+          isLoading: false,
+          isFetching: false,
+          refetch: vi.fn(),
+        }
+      }
+      return { data: null, isLoading: false, isFetching: false }
+    })
+
+    render(<ProjectArDetailPage />)
+
+    await waitFor(() => {
+      const rowKeys = screen
+        .getAllByTestId('table-row')
+        .map((row) => row.getAttribute('data-row-key'))
+      expect(rowKeys).toHaveLength(2)
+      expect(rowKeys.every(Boolean)).toBe(true)
+      expect(new Set(rowKeys).size).toBe(2)
     })
   })
 

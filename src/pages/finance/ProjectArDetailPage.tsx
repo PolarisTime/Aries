@@ -19,6 +19,7 @@ const { Title } = Typography
 const { Text } = Typography
 
 interface ProjectArDetailRow {
+  sourceDocumentId?: number | string
   sourceDocumentNo: string
   documentType: string
   businessDate: string
@@ -65,6 +66,21 @@ function formatAmount(
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+function resolveDetailRowKey(row: ProjectArDetailRow, index?: number): string {
+  if (row.sourceDocumentId != null && String(row.sourceDocumentId).trim()) {
+    return String(row.sourceDocumentId)
+  }
+
+  return [
+    row.sourceDocumentNo?.trim() || 'empty-source-document-no',
+    row.documentType?.trim() || 'empty-document-type',
+    row.businessDate || 'empty-business-date',
+    row.customerCode?.trim() || 'empty-customer-code',
+    row.amount ?? 'empty-amount',
+    index ?? 0,
+  ].join('|')
 }
 
 async function fetchProjectArSummary(projectId: string) {
@@ -314,7 +330,7 @@ export function ProjectArDetailPage(): React.JSX.Element {
             }),
             children: (
               <Table
-                rowKey="sourceDocumentNo"
+                rowKey={resolveDetailRowKey}
                 columns={detailColumns}
                 dataSource={unreconciledData}
                 loading={activeTabLoading}
@@ -331,7 +347,7 @@ export function ProjectArDetailPage(): React.JSX.Element {
             }),
             children: (
               <Table
-                rowKey="sourceDocumentNo"
+                rowKey={resolveDetailRowKey}
                 columns={detailColumns}
                 dataSource={reconciledData}
                 loading={activeTabLoading}
