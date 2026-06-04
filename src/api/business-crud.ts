@@ -1,6 +1,7 @@
 import { normalizeRecord } from '@/api/business-normalizers'
 import type { NumberRuleGenerateRecord } from '@/api/business-types'
-import { assertApiSuccess, http, restDelete } from '@/api/client'
+import { assertApiSuccess, http } from '@/api/client'
+import { withIdempotencyKey } from '@/api/idempotency'
 import { getModuleConfig } from '@/api/module-contracts'
 import { serializeBusinessRecordForSave } from '@/api/module-save-payload'
 import type { ApiResponse } from '@/types/api'
@@ -83,18 +84,21 @@ export async function saveBusinessModule(
       ? await http.put<ApiResponse<RawApiRecord>>(
           `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`,
           payload,
+          withIdempotencyKey(),
         )
       : await http.post<ApiResponse<RawApiRecord>>(
           endpointConfig.path,
           payload,
-          preallocatedId
-            ? {
-                headers: {
-                  'X-Business-Module-Key': moduleKey,
-                  'X-Preallocated-Id': preallocatedId,
-                },
-              }
-            : undefined,
+          withIdempotencyKey(
+            preallocatedId
+              ? {
+                  headers: {
+                    'X-Business-Module-Key': moduleKey,
+                    'X-Preallocated-Id': preallocatedId,
+                  },
+                }
+              : undefined,
+          ),
         ),
   )
 
@@ -111,8 +115,9 @@ export async function deleteBusinessModule(moduleKey: string, id: string) {
     throw new Error('当前模块不支持删除')
   }
 
-  return restDelete<ApiResponse<null>>(
+  return http.delete<ApiResponse<null>>(
     `${endpointConfig.path}/${encodeURIComponent(id)}`,
+    withIdempotencyKey(),
   )
 }
 
@@ -130,6 +135,7 @@ export async function updateBusinessModuleStatus(
     await http.patch<ApiResponse<RawApiRecord>>(
       `${endpointConfig.path}/${encodeURIComponent(id)}/status`,
       { status },
+      withIdempotencyKey(),
     ),
   )
 
