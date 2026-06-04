@@ -30,10 +30,11 @@ describe('invoicePageConfigs', () => {
 })
 
 describe('paymentPageConfigs', () => {
-  it('contains receipt and payment', () => {
+  it('contains receipt, payment, and ledger-adjustment', () => {
     const keys = Object.keys(paymentPageConfigs)
     expect(keys).toContain('receipt')
     expect(keys).toContain('payment')
+    expect(keys).toContain('ledger-adjustment')
   })
 
   it('each config has required fields', () => {

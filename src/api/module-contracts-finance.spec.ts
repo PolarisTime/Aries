@@ -61,6 +61,16 @@ describe('module-contracts-finance', () => {
     expect(config.nativeFilterKeys).toContain('customerName')
   })
 
+  it('contains ledger-adjustment config', () => {
+    const config = financeModuleEndpointContracts['ledger-adjustment']
+    expect(config).toBeDefined()
+    expect(config.path).toBe('/ledger-adjustments')
+    expect(config.nativeFilterKeys).toContain('direction')
+    expect(config.nativeFilterKeys).toContain('counterpartyType')
+    expect(config.dateRangeMapping?.adjustmentDate.startKey).toBe('startDate')
+    expect(config.dateRangeMapping?.adjustmentDate.endKey).toBe('endDate')
+  })
+
   it('contains receivable-payable config as read-only', () => {
     const config = financeModuleEndpointContracts['receivable-payable']
     expect(config).toBeDefined()
@@ -69,5 +79,4 @@ describe('module-contracts-finance', () => {
     expect(config.supportsDetail).toBe(true)
     expect(config.sortDirectionParam).toBe('sortDirection')
   })
-
 })
