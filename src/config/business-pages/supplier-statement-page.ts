@@ -53,6 +53,11 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       width: 170,
     },
     {
+      title: i18next.t('modules.pages.supplierStatement.supplierCode'),
+      dataIndex: 'supplierCode',
+      width: 130,
+    },
+    {
       title: i18next.t('modules.pages.supplierStatement.supplier'),
       dataIndex: 'supplierName',
       width: 140,
@@ -109,6 +114,10 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       key: 'supplierName',
     },
     {
+      label: i18next.t('modules.pages.supplierStatement.supplierCode'),
+      key: 'supplierCode',
+    },
+    {
       label: i18next.t('modules.pages.supplierStatement.startDate'),
       key: 'startDate',
       type: 'date',
@@ -157,6 +166,13 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getSupplierOptions,
+      row: 1,
+    },
+    {
+      key: 'supplierCode',
+      label: i18next.t('modules.pages.supplierStatement.supplierCode'),
+      type: 'input',
+      disabled: true,
       row: 1,
     },
     {
@@ -215,6 +231,7 @@ export const supplierStatementPageConfig: ModulePageConfig = {
     scalar: [
       'statementNo',
       'sourceInboundNos',
+      'supplierCode',
       'supplierName',
       'startDate',
       'endDate',

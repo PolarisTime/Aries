@@ -53,6 +53,11 @@ export const customerStatementPageConfig: ModulePageConfig = {
       width: 170,
     },
     {
+      title: i18next.t('modules.pages.customerStatement.customerCode'),
+      dataIndex: 'customerCode',
+      width: 130,
+    },
+    {
       title: i18next.t('modules.pages.customerStatement.customer'),
       dataIndex: 'customerName',
       width: 140,
@@ -114,6 +119,10 @@ export const customerStatementPageConfig: ModulePageConfig = {
       key: 'customerName',
     },
     {
+      label: i18next.t('modules.pages.customerStatement.customerCode'),
+      key: 'customerCode',
+    },
+    {
       label: i18next.t('modules.pages.customerStatement.project'),
       key: 'projectName',
     },
@@ -166,6 +175,13 @@ export const customerStatementPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: customerOptions,
+      row: 1,
+    },
+    {
+      key: 'customerCode',
+      label: i18next.t('modules.pages.customerStatement.customerCode'),
+      type: 'input',
+      disabled: true,
       row: 1,
     },
     {
@@ -231,6 +247,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
     scalar: [
       'statementNo',
       'sourceOrderNos',
+      'customerCode',
       'customerName',
       'projectName',
       'startDate',

@@ -13,6 +13,15 @@ describe('supplierStatementPageConfig', () => {
     expect(Array.isArray(supplierStatementPageConfig.columns)).toBe(true)
     expect(Array.isArray(supplierStatementPageConfig.detailFields)).toBe(true)
     expect(Array.isArray(supplierStatementPageConfig.formFields)).toBe(true)
+    expect(
+      supplierStatementPageConfig.columns.map((column) => column.dataIndex),
+    ).toContain('supplierCode')
+    expect(
+      supplierStatementPageConfig.detailFields.map((field) => field.key),
+    ).toContain('supplierCode')
+    expect(supplierStatementPageConfig.saveFields?.scalar).toContain(
+      'supplierCode',
+    )
     expect(supplierStatementPageConfig.buildOverview).toBeTypeOf('function')
   })
 

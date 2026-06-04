@@ -13,6 +13,15 @@ describe('freightStatementPageConfig', () => {
     expect(Array.isArray(freightStatementPageConfig.columns)).toBe(true)
     expect(Array.isArray(freightStatementPageConfig.detailFields)).toBe(true)
     expect(Array.isArray(freightStatementPageConfig.formFields)).toBe(true)
+    expect(
+      freightStatementPageConfig.columns.map((column) => column.dataIndex),
+    ).toContain('carrierCode')
+    expect(
+      freightStatementPageConfig.detailFields.map((field) => field.key),
+    ).toContain('carrierCode')
+    expect(freightStatementPageConfig.saveFields?.scalar).toContain(
+      'carrierCode',
+    )
     expect(freightStatementPageConfig.buildOverview).toBeTypeOf('function')
   })
 

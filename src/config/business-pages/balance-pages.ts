@@ -123,6 +123,11 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
         width: 110,
       },
       {
+        title: i18next.t('modules.pages.balance.counterpartyCode'),
+        dataIndex: 'counterpartyCode',
+        width: 130,
+      },
+      {
         title: i18next.t('modules.pages.balance.counterparty'),
         dataIndex: 'counterpartyName',
         width: 160,
@@ -196,6 +201,10 @@ export const balancePageConfigs: Record<string, ModulePageConfig> = {
       {
         label: i18next.t('modules.pages.balance.counterpartyType'),
         key: 'counterpartyType',
+      },
+      {
+        label: i18next.t('modules.pages.balance.counterpartyCode'),
+        key: 'counterpartyCode',
       },
       {
         label: i18next.t('modules.pages.balance.counterparty'),

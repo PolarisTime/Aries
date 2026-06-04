@@ -1098,6 +1098,7 @@ export const enUS: MessageSchema = {
         paymentDate: 'paymentDate',
         paymentNo: 'paymentNo',
         counterparty: 'counterparty',
+        counterpartyCode: 'counterpartyCode',
         payType: 'payType',
         amount: 'amount',
         status: 'status',
@@ -1107,7 +1108,8 @@ export const enUS: MessageSchema = {
         bankTransfer: 'bankTransfer',
         bankAcceptance: 'bankAcceptance',
         cash: 'cash',
-        paymentDesc: 'paymentDesc',
+        paymentDesc:
+          'Payments handle supplier and carrier settlements. Paid records must fully allocate to supplier or freight statements.',
       },
       receipt: {
         receipt: 'receipt',
@@ -1117,6 +1119,7 @@ export const enUS: MessageSchema = {
         receiptDate: 'receiptDate',
         receiptNo: 'receiptNo',
         customer: 'customer',
+        customerCode: 'customerCode',
         project: 'project',
         receiptMethod: 'receiptMethod',
         amount: 'amount',
@@ -1128,7 +1131,8 @@ export const enUS: MessageSchema = {
         bankAcceptance: 'bankAcceptance',
         acceptanceBill: 'acceptanceBill',
         cash: 'cash',
-        receiptDesc: 'receiptDesc',
+        receiptDesc:
+          'Receipts handle customer collections. Received records must fully allocate to customer statements.',
       },
       customerStatement: {
         customerStatement: 'customerStatement',
@@ -1136,6 +1140,7 @@ export const enUS: MessageSchema = {
         period: 'period',
         statementNo: 'statementNo',
         customer: 'customer',
+        customerCode: 'customerCode',
         project: 'project',
         startDate: 'startDate',
         endDate: 'endDate',
@@ -1152,6 +1157,7 @@ export const enUS: MessageSchema = {
         period: 'period',
         statementNo: 'statementNo',
         supplier: 'supplier',
+        supplierCode: 'supplierCode',
         startDate: 'startDate',
         endDate: 'endDate',
         purchaseAmount: 'purchaseAmount',
@@ -1172,6 +1178,7 @@ export const enUS: MessageSchema = {
         period: 'period',
         statementNo: 'statementNo',
         carrier: 'carrier',
+        carrierCode: 'carrierCode',
         startDate: 'startDate',
         endDate: 'endDate',
         totalWeight: 'totalWeight',
@@ -1401,6 +1408,7 @@ export const enUS: MessageSchema = {
         supplier: 'Supplier',
         carrier: 'Carrier',
         counterparty: 'Counterparty',
+        counterpartyCode: 'Counterparty Code',
         allBalances: 'All',
         settlementStatus: 'Settlement Status',
         open: 'Open',
@@ -1432,7 +1440,7 @@ export const enUS: MessageSchema = {
         receivableBalance: 'Receivable Balance',
         payableBalance: 'Payable Balance',
         balanceDesc:
-          'Recognizes receivables and payables from issued invoices, received invoices, and approved freight bills, offsets them with receipts and payments, and shows balances with ageing by counterparty.',
+          'Recognizes receivables and payables from confirmed customer/supplier statements and approved freight statements, offsets them with fully allocated received/paid settlements, and shows balances with ageing by counterparty code.',
       },
       ioReport: {
         ioReport: 'ioReport',
