@@ -1388,8 +1388,11 @@ export interface MessageSchema {
         counterpartyCode: string
         allBalances: string
         settlementStatus: string
+        reconciliationStatus: string
         open: string
         closed: string
+        unreconciled: string
+        reconciled: string
         recognizedAmount: string
         settledAmount: string
         balanceAmount: string
