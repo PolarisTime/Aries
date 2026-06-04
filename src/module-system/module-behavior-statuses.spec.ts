@@ -159,14 +159,15 @@ describe('module-behavior-statuses', () => {
       expect(protectedEditStatuses).toContain('完成采购')
       expect(protectedEditStatuses).toContain('完成入库')
       expect(protectedEditStatuses).toContain('完成销售')
+      expect(protectedEditStatuses).toContain('已确认')
       expect(protectedEditStatuses).toContain('已付款')
       expect(protectedEditStatuses).toContain('已收款')
       expect(protectedEditStatuses).toContain('已签署')
       expect(protectedEditStatuses).toContain('已送达')
     })
 
-    it('has 9 items', () => {
-      expect(protectedEditStatuses.size).toBe(9)
+    it('has 10 items', () => {
+      expect(protectedEditStatuses.size).toBe(10)
     })
   })
 
@@ -181,14 +182,15 @@ describe('module-behavior-statuses', () => {
       expect(protectedDeleteStatuses).toContain('完成采购')
       expect(protectedDeleteStatuses).toContain('完成入库')
       expect(protectedDeleteStatuses).toContain('完成销售')
+      expect(protectedDeleteStatuses).toContain('已确认')
       expect(protectedDeleteStatuses).toContain('已付款')
       expect(protectedDeleteStatuses).toContain('已收款')
       expect(protectedDeleteStatuses).toContain('已签署')
       expect(protectedDeleteStatuses).toContain('已送达')
     })
 
-    it('has 9 items', () => {
-      expect(protectedDeleteStatuses.size).toBe(9)
+    it('has 10 items', () => {
+      expect(protectedDeleteStatuses.size).toBe(10)
     })
 
     it('has same statuses as protectedEditStatuses', () => {

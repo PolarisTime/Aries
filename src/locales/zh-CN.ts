@@ -2521,6 +2521,7 @@ export const zhCN: MessageSchema = {
       statusPurchaseDone: '完成采购',
       statusInboundDone: '完成入库',
       statusSalesDone: '完成销售',
+      statusConfirmed: '已确认',
       statusPaid: '已付款',
       statusReceived: '已收款',
       statusSigned: '已签署',

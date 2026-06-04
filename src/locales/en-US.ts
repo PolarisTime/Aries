@@ -2561,6 +2561,7 @@ export const enUS: MessageSchema = {
       statusPurchaseDone: 'Purchase Done',
       statusInboundDone: 'Inbound Done',
       statusSalesDone: 'Sales Done',
+      statusConfirmed: 'Confirmed',
       statusPaid: 'Paid',
       statusReceived: 'Received',
       statusSigned: 'Signed',
