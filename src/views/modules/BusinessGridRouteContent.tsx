@@ -116,6 +116,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           }
         }}
         canCreate={
+          !state.config.readOnly &&
           state.canCreateRecord &&
           moduleKey !== 'supplier-statement' &&
           moduleKey !== 'customer-statement' &&
