@@ -127,6 +127,10 @@ export const HIDE_AUDITED_STATUS_OPTIONS = [
     value: '完成销售',
   },
   {
+    label: i18next.t('system.generalSettingsUtils.statusConfirmed'),
+    value: '已确认',
+  },
+  {
     label: i18next.t('system.generalSettingsUtils.statusPaid'),
     value: '已付款',
   },

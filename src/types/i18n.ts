@@ -2432,6 +2432,7 @@ export interface MessageSchema {
       statusPurchaseDone: string
       statusInboundDone: string
       statusSalesDone: string
+      statusConfirmed: string
       statusPaid: string
       statusReceived: string
       statusSigned: string
