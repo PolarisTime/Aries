@@ -15,7 +15,6 @@ describe('page-registry-types', () => {
         'session',
         'api-key',
         'security-key',
-        'project-ar-detail',
         'database-backup',
       ]
 

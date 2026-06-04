@@ -1630,31 +1630,6 @@ export interface MessageSchema {
         remark: string
         warehouseDesc: string
       }
-      projectAr: {
-        projectReceivable: string
-        projectArDesc: string
-        export: string
-        search: string
-        projectArPlaceholder: string
-        customerCode: string
-        customerName: string
-        projectName: string
-        projectAbbr: string
-        projectManager: string
-        completedSales: string
-        receivedAmount: string
-        unreceivedAmount: string
-        prepaymentBalance: string
-        netUnreceived: string
-        unreconciledDocCount: string
-        reconciledDocCount: string
-        latestBusinessDate: string
-        projectCount: string
-        totalCompletedSales: string
-        totalNetUnreceived: string
-        YYYY: string
-        YYYYMM: string
-      }
     }
   }
   hooks: {
@@ -2483,35 +2458,6 @@ export interface MessageSchema {
       saveFailed: string
       checkLoginNameFailed: string
       loadDetailFailed: string
-    }
-  }
-  finance: {
-    projectArDetail: {
-      title: string
-      projectOverview: string
-      projectName: string
-      projectNameAbbr: string
-      customerCode: string
-      customerName: string
-      projectAddress: string
-      projectStatus: string
-      projectManager: string
-      contactPerson: string
-      completedSalesAmount: string
-      prepaymentBalance: string
-      unreceivedAmount: string
-      netUnreceivedAmount: string
-      unreconciledTab: string
-      reconciledTab: string
-      sourceDocumentNo: string
-      documentType: string
-      businessDate: string
-      amount: string
-      writtenOffAmount: string
-      unwrittenOffAmount: string
-      reconciliationStatus: string
-      receiptStatus: string
-      operatorName: string
     }
   }
   print: {

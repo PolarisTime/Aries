@@ -47,7 +47,3 @@ registerModuleBehavior('freight-statement', {
     view_freight_summary: ['read'],
   },
 })
-
-registerModuleBehavior('project-ar', {
-  detailRoutePath: '/project-ar/:projectId',
-})

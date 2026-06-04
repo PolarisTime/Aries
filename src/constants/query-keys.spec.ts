@@ -32,8 +32,6 @@ describe('QUERY_KEYS', () => {
       'refreshTokensBase',
       'refreshTokensSummary',
       'statementLinkOptions',
-      'projectArSummary',
-      'projectArDetail',
       'printTemplate',
       'printTemplateByType',
       'parentSelectorConfig',
@@ -137,20 +135,6 @@ describe('QUERY_KEYS', () => {
   it('statementLinkOptions returns key with type', () => {
     const key = QUERY_KEYS.statementLinkOptions('supplier')
     expect(key).toEqual(['statement-link-options', 'supplier'])
-  })
-
-  it('projectArSummary and projectArDetail return keys', () => {
-    expect(QUERY_KEYS.projectArSummary('proj-1')).toEqual([
-      'project-ar',
-      'summary',
-      'proj-1',
-    ])
-    expect(QUERY_KEYS.projectArDetail('proj-1', 'overview')).toEqual([
-      'project-ar',
-      'detail',
-      'proj-1',
-      'overview',
-    ])
   })
 
   it('printTemplateByType returns key with billType', () => {
