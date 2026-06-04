@@ -42,6 +42,8 @@ describe('module-behavior-statuses', () => {
     'sales-outbound': '草稿',
     'freight-bill': '未审核',
     'freight-statement': '待审核',
+    'supplier-statement': '待确认',
+    'customer-statement': '待确认',
     receipt: '草稿',
     payment: '草稿',
     'invoice-receipt': '草稿',
@@ -125,6 +127,15 @@ describe('module-behavior-statuses', () => {
     expect(
       invoiceIssueCalls.some(([, config]) => config.auditStatus === '已开票'),
     ).toBe(true)
+  })
+
+  it('registers auditStatus for statement confirmation modules', () => {
+    for (const moduleKey of ['supplier-statement', 'customer-statement']) {
+      const calls = mockedRegister.mock.calls.filter(([key]) => key === moduleKey)
+      expect(
+        calls.some(([, config]) => config.auditStatus === '已确认'),
+      ).toBe(true)
+    }
   })
 
   describe('protectedEditStatuses', () => {
