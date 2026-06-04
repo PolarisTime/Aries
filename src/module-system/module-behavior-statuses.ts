@@ -37,6 +37,8 @@ const draftStatusModules: Record<string, string> = {
   'sales-outbound': '草稿',
   'freight-bill': '未审核',
   'freight-statement': '待审核',
+  'supplier-statement': '待确认',
+  'customer-statement': '待确认',
   receipt: '草稿',
   payment: '草稿',
   'invoice-receipt': '草稿',
@@ -64,6 +66,8 @@ registerModuleBehavior('receipt', { auditStatus: '已收款' })
 registerModuleBehavior('payment', { auditStatus: '已付款' })
 registerModuleBehavior('invoice-receipt', { auditStatus: '已收票' })
 registerModuleBehavior('invoice-issue', { auditStatus: '已开票' })
+registerModuleBehavior('supplier-statement', { auditStatus: '已确认' })
+registerModuleBehavior('customer-statement', { auditStatus: '已确认' })
 
 export const protectedEditStatuses = new Set([
   '已审核',
