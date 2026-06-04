@@ -1348,22 +1348,30 @@ export interface MessageSchema {
         supplier: string
         carrier: string
         counterparty: string
-        openingBalance: string
-        currentTransactions: string
-        currentSettlement: string
-        closingBalance: string
+        settlementStatus: string
+        open: string
+        closed: string
+        recognizedAmount: string
+        settledAmount: string
+        balanceAmount: string
+        days0To30Amount: string
+        days31To60Amount: string
+        days61To90Amount: string
+        daysOver90Amount: string
+        entryCount: string
         status: string
-        effective: string
         remark: string
-        documentCount: string
+        entryRole: string
+        sourceType: string
+        documentNo: string
         sourceNo: string
-        statementNo: string
         project: string
-        businessDate: string
-        periodStart: string
-        periodEnd: string
-        statementSettlement: string
-        statementBalance: string
+        accountingDate: string
+        dueDate: string
+        debitAmount: string
+        creditAmount: string
+        entryBalanceAmount: string
+        ageDays: string
         counterpartyCount: string
         receivableBalance: string
         payableBalance: string

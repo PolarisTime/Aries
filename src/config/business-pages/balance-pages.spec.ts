@@ -12,46 +12,88 @@ vi.mock('@/constants/module-options', () => ({
 import { balancePageConfigs } from './balance-pages'
 
 describe('balancePageConfigs', () => {
+  const config = balancePageConfigs['receivable-payable']
+
   it('contains receivable-payable config', () => {
-    expect(balancePageConfigs['receivable-payable']).toBeDefined()
-    expect(balancePageConfigs['receivable-payable'].key).toBe(
-      'receivable-payable',
-    )
+    expect(config).toBeDefined()
+    expect(config.key).toBe('receivable-payable')
   })
 
   it('is readOnly', () => {
-    expect(balancePageConfigs['receivable-payable'].readOnly).toBe(true)
+    expect(config.readOnly).toBe(true)
   })
 
-  it('has filters', () => {
-    expect(balancePageConfigs['receivable-payable'].filters).toBeDefined()
-    expect(
-      balancePageConfigs['receivable-payable'].filters!.length,
-    ).toBeGreaterThanOrEqual(3)
+  it('uses settlement status filters', () => {
+    const statusFilter = config.filters.find((filter) => filter.key === 'status')
+
+    expect(statusFilter).toBeDefined()
+    expect(statusFilter?.options).toEqual([
+      { label: '未结清', value: '未结清' },
+      { label: '已结清', value: '已结清' },
+    ])
   })
 
-  it('has columns', () => {
-    expect(balancePageConfigs['receivable-payable'].columns).toBeDefined()
-    expect(
-      balancePageConfigs['receivable-payable'].columns.length,
-    ).toBeGreaterThan(0)
+  it('uses ledger summary columns', () => {
+    const keys = config.columns.map((column) => column.dataIndex)
+
+    expect(keys).toEqual([
+      'direction',
+      'counterpartyType',
+      'counterpartyName',
+      'recognizedAmount',
+      'settledAmount',
+      'balanceAmount',
+      'days0To30Amount',
+      'days31To60Amount',
+      'days61To90Amount',
+      'daysOver90Amount',
+      'entryCount',
+      'status',
+    ])
+    expect(keys).not.toContain('openingAmount')
+    expect(keys).not.toContain('currentAmount')
+    expect(keys).not.toContain('documentCount')
   })
 
-  it('has detailFields', () => {
-    expect(balancePageConfigs['receivable-payable'].detailFields).toBeDefined()
+  it('uses ledger summary detail fields', () => {
+    const keys = config.detailFields.map((field) => field.key)
+
+    expect(keys).toContain('recognizedAmount')
+    expect(keys).toContain('daysOver90Amount')
+    expect(keys).toContain('entryCount')
+    expect(keys).not.toContain('openingAmount')
+    expect(keys).not.toContain('currentAmount')
+    expect(keys).not.toContain('documentCount')
   })
 
-  it('has detailItemColumns', () => {
-    expect(
-      balancePageConfigs['receivable-payable'].detailItemColumns,
-    ).toBeDefined()
-    expect(
-      balancePageConfigs['receivable-payable'].detailItemColumns!.length,
-    ).toBeGreaterThan(0)
+  it('uses ledger entry detail item columns', () => {
+    const keys = config.detailItemColumns?.map((column) => column.dataIndex)
+
+    expect(keys).toEqual([
+      'entryRole',
+      'sourceType',
+      'documentNo',
+      'sourceNo',
+      'projectName',
+      'accountingDate',
+      'dueDate',
+      'debitAmount',
+      'creditAmount',
+      'balanceAmount',
+      'ageDays',
+      'status',
+      'remark',
+    ])
+    expect(keys).not.toContain('statementNo')
+    expect(keys).not.toContain('businessDate')
+    expect(keys).not.toContain('periodStart')
+    expect(keys).not.toContain('periodEnd')
+    expect(keys).not.toContain('statementSettledAmount')
+    expect(keys).not.toContain('statementBalanceAmount')
   })
 
   it('buildOverview returns result', () => {
-    const result = balancePageConfigs['receivable-payable'].buildOverview!([])
+    const result = config.buildOverview!([])
     expect(Array.isArray(result)).toBe(true)
     expect(result.length).toBe(3)
   })
@@ -62,9 +104,13 @@ describe('balancePageConfigs', () => {
       { direction: '应付', balanceAmount: 50 },
       { direction: '应收', balanceAmount: 200 },
     ]
-    const result = balancePageConfigs['receivable-payable'].buildOverview!(
-      rows as any,
-    )
+    const result = config.buildOverview!(rows as any)
     expect(result).toHaveLength(3)
+  })
+
+  it('highlights open ledger balances', () => {
+    expect(config.rowHighlightStatuses).toEqual(['未结清'])
+    expect(config.statusMap?.未结清.color).toBe('warning')
+    expect(config.statusMap?.已结清.color).toBe('success')
   })
 })
