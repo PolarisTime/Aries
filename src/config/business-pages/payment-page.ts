@@ -53,6 +53,11 @@ export const paymentsPageConfig: ModulePageConfig = {
       width: 110,
     },
     {
+      title: i18next.t('modules.pages.payment.counterpartyCode'),
+      dataIndex: 'counterpartyCode',
+      width: 130,
+    },
+    {
       title: i18next.t('modules.pages.payment.counterparty'),
       dataIndex: 'counterpartyName',
       width: 160,
@@ -98,6 +103,11 @@ export const paymentsPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.payment.counterparty'),
       key: 'counterpartyName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.payment.counterpartyCode'),
+      key: 'counterpartyCode',
       row: 1,
     },
     {
@@ -164,6 +174,13 @@ export const paymentsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.payment.counterparty'),
       type: 'input',
       required: true,
+      row: 1,
+    },
+    {
+      key: 'counterpartyCode',
+      label: i18next.t('modules.pages.payment.counterpartyCode'),
+      type: 'input',
+      disabled: true,
       row: 1,
     },
     {
@@ -238,6 +255,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     scalar: [
       'paymentNo',
       'businessType',
+      'counterpartyCode',
       'counterpartyName',
       'sourceStatementId',
       'paymentDate',

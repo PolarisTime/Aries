@@ -130,6 +130,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     saveFields: {
       scalar: [
         'receiptNo',
+        'customerCode',
         'customerName',
         'projectName',
         'sourceStatementId',
@@ -147,6 +148,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       scalar: [
         'paymentNo',
         'businessType',
+        'counterpartyCode',
         'counterpartyName',
         'sourceStatementId',
         'paymentDate',
@@ -163,6 +165,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       scalar: [
         'statementNo',
         'sourceInboundNos',
+        'supplierCode',
         'supplierName',
         'startDate',
         'endDate',
@@ -201,6 +204,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       scalar: [
         'statementNo',
         'sourceOrderNos',
+        'customerCode',
         'customerName',
         'projectName',
         'startDate',
@@ -268,6 +272,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       scalar: [
         'statementNo',
         'sourceBillNos',
+        'carrierCode',
         'carrierName',
         'startDate',
         'endDate',

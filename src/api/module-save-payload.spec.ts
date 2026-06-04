@@ -38,6 +38,7 @@ describe('module-save-payload', () => {
       key: 'receipt',
       detailFields: [
         { key: 'receiptNo', type: 'input', label: '单据编号' },
+        { key: 'customerCode', type: 'input', label: '客户编码' },
         { key: 'customerName', type: 'input', label: '客户' },
         { key: 'projectName', type: 'input', label: '项目' },
         { key: 'sourceStatementId', type: 'input', label: '对账单' },
@@ -54,6 +55,7 @@ describe('module-save-payload', () => {
     const payload = await serializeBusinessRecordForSave('receipt', {
       id: '',
       receiptNo: 'RC20260001',
+      customerCode: 'C-001',
       customerName: '测试客户',
       projectName: '测试项目',
       sourceStatementId: '308251467645452288',
@@ -67,6 +69,7 @@ describe('module-save-payload', () => {
 
     expect(payload).toMatchObject({
       receiptNo: 'RC20260001',
+      customerCode: 'C-001',
       customerName: '测试客户',
       projectName: '测试项目',
       sourceStatementId: '308251467645452288',
@@ -88,6 +91,7 @@ describe('module-save-payload', () => {
       detailFields: [
         { key: 'paymentNo', type: 'input', label: '单据编号' },
         { key: 'businessType', type: 'input', label: '类型' },
+        { key: 'counterpartyCode', type: 'input', label: '往来单位编码' },
         { key: 'counterpartyName', type: 'input', label: '对方' },
         { key: 'sourceStatementId', type: 'input', label: '对账单' },
         { key: 'paymentDate', type: 'input', label: '日期' },
@@ -103,6 +107,7 @@ describe('module-save-payload', () => {
       id: '',
       paymentNo: 'FK20260001',
       businessType: '供应商',
+      counterpartyCode: 'S-001',
       counterpartyName: '测试供应商',
       sourceStatementId: '308251467645452289',
       paymentDate: '2026-05-09',
@@ -116,6 +121,7 @@ describe('module-save-payload', () => {
     expect(payload).toMatchObject({
       paymentNo: 'FK20260001',
       businessType: '供应商',
+      counterpartyCode: 'S-001',
       counterpartyName: '测试供应商',
       sourceStatementId: '308251467645452289',
       paymentDate: '2026-05-09',

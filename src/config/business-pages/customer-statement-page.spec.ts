@@ -11,6 +11,15 @@ describe('customerStatementPageConfig', () => {
     expect(Array.isArray(customerStatementPageConfig.actions)).toBe(true)
     expect(Array.isArray(customerStatementPageConfig.filters)).toBe(true)
     expect(Array.isArray(customerStatementPageConfig.columns)).toBe(true)
+    expect(
+      customerStatementPageConfig.columns.map((column) => column.dataIndex),
+    ).toContain('customerCode')
+    expect(
+      customerStatementPageConfig.detailFields.map((field) => field.key),
+    ).toContain('customerCode')
+    expect(customerStatementPageConfig.saveFields?.scalar).toContain(
+      'customerCode',
+    )
     expect(customerStatementPageConfig.buildOverview).toBeTypeOf('function')
   })
 

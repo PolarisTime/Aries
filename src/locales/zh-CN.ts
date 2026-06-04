@@ -1078,6 +1078,7 @@ export const zhCN: MessageSchema = {
         paymentDate: '付款日期',
         paymentNo: '付款单号',
         counterparty: '往来单位',
+        counterpartyCode: '往来单位编码',
         payType: '付款方式',
         amount: '金额',
         status: '状态',
@@ -1088,7 +1089,7 @@ export const zhCN: MessageSchema = {
         bankAcceptance: '银行承兑',
         cash: '现金',
         paymentDesc:
-          '付款单统一承接供应商付款和物流付款，页面先以业务类型、往来单位、金额和状态为主。',
+          '付款单统一承接供应商付款和物流付款，已付款必须关联并完整核销供应商或物流对账单。',
       },
       receipt: {
         receipt: '收款单',
@@ -1098,6 +1099,7 @@ export const zhCN: MessageSchema = {
         receiptDate: '收款日期',
         receiptNo: '收款单号',
         customer: '客户',
+        customerCode: '客户编码',
         project: '项目',
         receiptMethod: '收款方式',
         amount: '金额',
@@ -1110,7 +1112,7 @@ export const zhCN: MessageSchema = {
         acceptanceBill: '承兑汇票',
         cash: '现金',
         receiptDesc:
-          '收款单页面用于承接客户回款，当前重点确认单据字段、状态和列表交互，不先接核销明细。',
+          '收款单用于承接客户回款，已收款必须关联并完整核销客户对账单。',
       },
       customerStatement: {
         customerStatement: '客户对账单',
@@ -1118,6 +1120,7 @@ export const zhCN: MessageSchema = {
         period: '账期',
         statementNo: '对账单号',
         customer: '客户',
+        customerCode: '客户编码',
         project: '项目',
         startDate: '开始日期',
         endDate: '结束日期',
@@ -1135,6 +1138,7 @@ export const zhCN: MessageSchema = {
         period: '账期',
         statementNo: '对账单号',
         supplier: '供应商',
+        supplierCode: '供应商编码',
         startDate: '开始日期',
         endDate: '结束日期',
         purchaseAmount: '采购金额',
@@ -1156,6 +1160,7 @@ export const zhCN: MessageSchema = {
         period: '账期',
         statementNo: '对账单号',
         carrier: '物流商',
+        carrierCode: '物流商编码',
         startDate: '开始日期',
         endDate: '结束日期',
         totalWeight: '总重量（吨）',
@@ -1391,6 +1396,7 @@ export const zhCN: MessageSchema = {
         supplier: '供应商',
         carrier: '物流商',
         counterparty: '往来单位',
+        counterpartyCode: '往来单位编码',
         allBalances: '全部',
         settlementStatus: '结清状态',
         open: '未结清',
@@ -1422,7 +1428,7 @@ export const zhCN: MessageSchema = {
         receivableBalance: '应收余额',
         payableBalance: '应付余额',
         balanceDesc:
-          '按已开票、已收票、已审核物流账单确认应收应付，并用已收款、已付款抵减余额，按往来单位展示余额和账龄。',
+          '按已确认客户/供应商对账单、已审核物流对账单确认应收应付，并以已收款/已付款且完成核销的收付款单抵减余额，按往来单位编码展示余额和账龄。',
       },
       ioReport: {
         ioReport: '出入库报表',

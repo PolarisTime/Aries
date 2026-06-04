@@ -46,6 +46,11 @@ export const receiptsPageConfig: ModulePageConfig = {
       width: 170,
     },
     {
+      title: i18next.t('modules.pages.receipt.customerCode'),
+      dataIndex: 'customerCode',
+      width: 130,
+    },
+    {
       title: i18next.t('modules.pages.receipt.customer'),
       dataIndex: 'customerName',
       width: 140,
@@ -91,6 +96,11 @@ export const receiptsPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.receipt.customer'),
       key: 'customerName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.receipt.customerCode'),
+      key: 'customerCode',
       row: 1,
     },
     {
@@ -152,6 +162,13 @@ export const receiptsPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: customerOptions,
+      row: 1,
+    },
+    {
+      key: 'customerCode',
+      label: i18next.t('modules.pages.receipt.customerCode'),
+      type: 'input',
+      disabled: true,
       row: 1,
     },
     {
@@ -236,6 +253,7 @@ export const receiptsPageConfig: ModulePageConfig = {
   saveFields: {
     scalar: [
       'receiptNo',
+      'customerCode',
       'customerName',
       'projectName',
       'sourceStatementId',

@@ -79,6 +79,11 @@ export const freightStatementPageConfig: ModulePageConfig = {
       width: 170,
     },
     {
+      title: i18next.t('modules.pages.freightStatement.carrierCode'),
+      dataIndex: 'carrierCode',
+      width: 130,
+    },
+    {
       title: i18next.t('modules.pages.freightStatement.carrier'),
       dataIndex: 'carrierName',
       width: 150,
@@ -142,6 +147,10 @@ export const freightStatementPageConfig: ModulePageConfig = {
       key: 'carrierName',
     },
     {
+      label: i18next.t('modules.pages.freightStatement.carrierCode'),
+      key: 'carrierCode',
+    },
+    {
       label: i18next.t('modules.pages.freightStatement.startDate'),
       key: 'startDate',
       type: 'date',
@@ -199,6 +208,13 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getCarrierOptions,
+      row: 1,
+    },
+    {
+      key: 'carrierCode',
+      label: i18next.t('modules.pages.freightStatement.carrierCode'),
+      type: 'input',
+      disabled: true,
       row: 1,
     },
     {
@@ -281,6 +297,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
     scalar: [
       'statementNo',
       'sourceBillNos',
+      'carrierCode',
       'carrierName',
       'startDate',
       'endDate',

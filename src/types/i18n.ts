@@ -1051,6 +1051,7 @@ export interface MessageSchema {
         paymentDate: string
         paymentNo: string
         counterparty: string
+        counterpartyCode: string
         payType: string
         amount: string
         status: string
@@ -1070,6 +1071,7 @@ export interface MessageSchema {
         receiptDate: string
         receiptNo: string
         customer: string
+        customerCode: string
         project: string
         receiptMethod: string
         amount: string
@@ -1089,6 +1091,7 @@ export interface MessageSchema {
         period: string
         statementNo: string
         customer: string
+        customerCode: string
         project: string
         startDate: string
         endDate: string
@@ -1105,6 +1108,7 @@ export interface MessageSchema {
         period: string
         statementNo: string
         supplier: string
+        supplierCode: string
         startDate: string
         endDate: string
         purchaseAmount: string
@@ -1125,6 +1129,7 @@ export interface MessageSchema {
         period: string
         statementNo: string
         carrier: string
+        carrierCode: string
         startDate: string
         endDate: string
         totalWeight: string
@@ -1349,6 +1354,7 @@ export interface MessageSchema {
         supplier: string
         carrier: string
         counterparty: string
+        counterpartyCode: string
         allBalances: string
         settlementStatus: string
         open: string

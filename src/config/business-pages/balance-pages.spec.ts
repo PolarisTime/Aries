@@ -69,6 +69,7 @@ describe('balancePageConfigs', () => {
     expect(keys).toEqual([
       'direction',
       'counterpartyType',
+      'counterpartyCode',
       'counterpartyName',
       'recognizedAmount',
       'settledAmount',
@@ -91,6 +92,7 @@ describe('balancePageConfigs', () => {
     const keys = config.detailFields.map((field) => field.key)
 
     expect(keys).toContain('recognizedAmount')
+    expect(keys).toContain('counterpartyCode')
     expect(keys).toContain('daysOver90Amount')
     expect(keys).toContain('entryCount')
     expect(keys).not.toContain('openingAmount')
