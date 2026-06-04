@@ -116,28 +116,6 @@ describe('page-registry-finance', () => {
     expect(page!.icon).toBe('CalculatorOutlined')
   })
 
-  it('defines project-ar page', () => {
-    const page = financePageDefinitions.find((d) => d.key === 'project-ar')
-    expect(page).toBeDefined()
-    expect(page!.title).toBe('项目应收')
-    expect(page!.menuParent).toBe('finance')
-    expect(page!.moduleKey).toBe('project-ar')
-    expect(page!.searchable).toBe(true)
-    expect(page!.icon).toBe('ProfileOutlined')
-  })
-
-  it('defines project-ar-detail page with hiddenInMenu', () => {
-    const page = financePageDefinitions.find(
-      (d) => d.key === 'project-ar-detail',
-    )
-    expect(page).toBeDefined()
-    expect(page!.title).toBe('项目应收明细')
-    expect(page!.hiddenInMenu).toBe(true)
-    expect(page!.resourceKey).toBe('project-ar')
-    expect(page!.menuKey).toBe('/project-ar/$projectId')
-    expect(page!.icon).toBe('FileSearchOutlined')
-  })
-
   it('groups pages correctly by menuParent', () => {
     const statements = financePageDefinitions.filter(
       (d) => d.menuParent === 'statements',
@@ -148,7 +126,7 @@ describe('page-registry-finance', () => {
     const hidden = financePageDefinitions.filter((d) => d.hiddenInMenu)
 
     expect(statements).toHaveLength(3)
-    expect(finance).toHaveLength(7)
-    expect(hidden).toHaveLength(1)
+    expect(finance).toHaveLength(6)
+    expect(hidden).toHaveLength(0)
   })
 })

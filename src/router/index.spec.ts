@@ -90,9 +90,6 @@ vi.mock('@/views/system/AccessControlView', () => ({
 vi.mock('@/views/system/SecurityKeyManagementView', () => ({
   SecurityKeyManagementView: () => null,
 }))
-vi.mock('@/pages/finance/ProjectArDetailPage', () => ({
-  ProjectArDetailPage: () => null,
-}))
 vi.mock('@/views/system/DatabaseBackupView', () => ({
   DatabaseBackupView: () => null,
 }))

@@ -100,14 +100,6 @@ describe('module-behavior-actions', () => {
     })
   })
 
-  it('registers project-ar behavior with detail route path', () => {
-    const call = mockedRegister.mock.calls.find(([key]) => key === 'project-ar')
-    expect(call).toBeDefined()
-    expect(call?.[1]).toEqual({
-      detailRoutePath: '/project-ar/:projectId',
-    })
-  })
-
   it('registers all expected modules', () => {
     const registeredKeys = new Set(
       mockedRegister.mock.calls.map(([key]) => key),
@@ -116,6 +108,5 @@ describe('module-behavior-actions', () => {
     expect(registeredKeys).toContain('customer-statement')
     expect(registeredKeys).toContain('freight-statement')
     expect(registeredKeys).toContain('freight-bill')
-    expect(registeredKeys).toContain('project-ar')
   })
 })

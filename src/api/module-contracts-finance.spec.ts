@@ -70,10 +70,4 @@ describe('module-contracts-finance', () => {
     expect(config.sortDirectionParam).toBe('sortDirection')
   })
 
-  it('contains project-ar config as read-only', () => {
-    const config = financeModuleEndpointContracts['project-ar']
-    expect(config).toBeDefined()
-    expect(config.path).toBe('/project-ar/summary')
-    expect(config.readOnly).toBe(true)
-  })
 })

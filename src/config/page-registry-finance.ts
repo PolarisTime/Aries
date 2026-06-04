@@ -89,23 +89,4 @@ export const financePageDefinitions: AppPageDefinition[] = [
     menuParent: 'finance',
     moduleKey: 'receivable-payable',
   },
-  {
-    key: 'project-ar',
-    title: '项目应收',
-    menuKey: '/project-ar',
-    view: 'business-grid',
-    icon: 'ProfileOutlined',
-    menuParent: 'finance',
-    moduleKey: 'project-ar',
-    searchable: true,
-  },
-  {
-    key: 'project-ar-detail',
-    title: '项目应收明细',
-    menuKey: '/project-ar/$projectId',
-    view: 'project-ar-detail',
-    icon: 'FileSearchOutlined',
-    hiddenInMenu: true,
-    resourceKey: 'project-ar',
-  },
 ]
