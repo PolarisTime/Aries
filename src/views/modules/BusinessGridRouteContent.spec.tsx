@@ -1,53 +1,10 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@tanstack/react-router', () => ({
-  useLocation: () => ({
-    pathname: '/test',
-    search: '',
-    hash: '',
-  }),
-}))
+const mockUseBusinessGridPage = vi.hoisted(() => vi.fn())
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const map: Record<string, string> = {
-        'modules.page.moduleConfigNotFound': '模块配置未找到',
-      }
-      return map[key] ?? key
-    },
-  }),
-}))
-
-vi.mock('@/module-system/module-behavior-registry', () => ({
-  isEditBlockedByStatus: () => false,
-}))
-
-vi.mock('@/utils/type-narrowing', () => ({
-  asString: (v: unknown) => String(v ?? ''),
-}))
-
-vi.mock('@/views/modules/components/BusinessGridContent', () => ({
-  BusinessGridContent: () => <div data-testid="grid-content">Grid Content</div>,
-}))
-
-vi.mock('@/views/modules/components/BusinessGridOverlays', () => ({
-  BusinessGridOverlays: () => (
-    <div data-testid="grid-overlays">Grid Overlays</div>
-  ),
-}))
-
-vi.mock('@/views/modules/components/MaterialImportActions', () => ({
-  MaterialImportActions: () => null,
-}))
-
-vi.mock('@/views/modules/components/PrintTemplateDropdown', () => ({
-  PrintTemplateDropdown: () => null,
-}))
-
-vi.mock('@/views/modules/use-business-grid-page', () => ({
-  useBusinessGridPage: () => ({
+function createGridState(overrides: Record<string, unknown> = {}) {
+  return {
     config: { readOnly: false },
     records: [],
     isLoading: false,
@@ -63,6 +20,7 @@ vi.mock('@/views/modules/use-business-grid-page', () => ({
     rowSelection: {},
     getRowClassName: () => '',
     updateFilter: vi.fn(),
+    applyFilters: vi.fn(),
     handleSearch: vi.fn(),
     handleReset: vi.fn(),
     openEditor: vi.fn(),
@@ -114,7 +72,61 @@ vi.mock('@/views/modules/use-business-grid-page', () => ({
     filters: [],
     setFilters: vi.fn(),
     submittedFilters: [],
+    ...overrides,
+  }
+}
+
+vi.mock('@tanstack/react-router', () => ({
+  useLocation: () => ({
+    pathname: '/test',
+    search: '',
+    hash: '',
   }),
+}))
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const map: Record<string, string> = {
+        'modules.page.moduleConfigNotFound': '模块配置未找到',
+      }
+      return map[key] ?? key
+    },
+  }),
+}))
+
+vi.mock('@/module-system/module-behavior-registry', () => ({
+  isEditBlockedByStatus: () => false,
+}))
+
+vi.mock('@/utils/type-narrowing', () => ({
+  asString: (v: unknown) => String(v ?? ''),
+}))
+
+vi.mock('@/views/modules/components/BusinessGridContent', () => ({
+  BusinessGridContent: ({ canCreate }: { canCreate: boolean }) => (
+    <div data-testid="grid-content" data-can-create={String(canCreate)}>
+      Grid Content
+    </div>
+  ),
+}))
+
+vi.mock('@/views/modules/components/BusinessGridOverlays', () => ({
+  BusinessGridOverlays: () => (
+    <div data-testid="grid-overlays">Grid Overlays</div>
+  ),
+}))
+
+vi.mock('@/views/modules/components/MaterialImportActions', () => ({
+  MaterialImportActions: () => null,
+}))
+
+vi.mock('@/views/modules/components/PrintTemplateDropdown', () => ({
+  PrintTemplateDropdown: () => null,
+}))
+
+vi.mock('@/views/modules/use-business-grid-page', () => ({
+  useBusinessGridPage: mockUseBusinessGridPage,
 }))
 
 vi.mock('@/views/modules/use-business-grid-route-sync', () => ({
@@ -134,9 +146,34 @@ describe('BusinessGridRouteContent', () => {
     initialConfig: undefined,
   }
 
+  beforeEach(() => {
+    mockUseBusinessGridPage.mockReturnValue(createGridState())
+  })
+
   it('renders grid content', () => {
     render(<BusinessGridRouteContent {...defaultProps} />)
     expect(screen.getByTestId('grid-content')).toBeTruthy()
+  })
+
+  it('passes canCreate when module is editable and user can create', () => {
+    render(<BusinessGridRouteContent {...defaultProps} />)
+    expect(screen.getByTestId('grid-content')).toHaveAttribute(
+      'data-can-create',
+      'true',
+    )
+  })
+
+  it('does not pass canCreate for read-only modules', () => {
+    mockUseBusinessGridPage.mockReturnValue(
+      createGridState({ config: { readOnly: true } }),
+    )
+
+    render(<BusinessGridRouteContent {...defaultProps} />)
+
+    expect(screen.getByTestId('grid-content')).toHaveAttribute(
+      'data-can-create',
+      'false',
+    )
   })
 
   it('renders grid overlays', () => {
