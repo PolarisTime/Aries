@@ -7,8 +7,10 @@ const httpPostMock = vi.hoisted(() => vi.fn())
 const httpGetMock = vi.hoisted(() => vi.fn())
 const httpPutMock = vi.hoisted(() => vi.fn())
 const httpPatchMock = vi.hoisted(() => vi.fn())
+const httpDeleteMock = vi.hoisted(() => vi.fn())
 const restDeleteMock = vi.hoisted(() => vi.fn())
 const assertApiSuccessMock = vi.hoisted(() => vi.fn())
+const withIdempotencyKeyMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/api/business-normalizers', () => ({
   normalizeRecord: normalizeRecordMock,
@@ -29,8 +31,13 @@ vi.mock('@/api/client', () => ({
     get: httpGetMock,
     put: httpPutMock,
     patch: httpPatchMock,
+    delete: httpDeleteMock,
   },
   restDelete: restDeleteMock,
+}))
+
+vi.mock('@/api/idempotency', () => ({
+  withIdempotencyKey: withIdempotencyKeyMock,
 }))
 
 import {
@@ -61,6 +68,14 @@ describe('business-crud', () => {
         return response
       },
     )
+    withIdempotencyKeyMock.mockImplementation((config?: unknown) => ({
+      ...((config as Record<string, unknown>) || {}),
+      headers: {
+        ...(((config as { headers?: Record<string, unknown> })?.headers ||
+          {}) as Record<string, unknown>),
+        'X-Idempotency-Key': 'idem-test',
+      },
+    }))
   })
 
   describe('generateBusinessPrimaryNo', () => {
@@ -160,7 +175,11 @@ describe('business-crud', () => {
       expect(httpPostMock).toHaveBeenCalledWith(
         '/purchase-orders',
         { name: 'test' },
-        undefined,
+        {
+          headers: {
+            'X-Idempotency-Key': 'idem-test',
+          },
+        },
       )
       expect(result.data).toEqual({ id: 'new-id', name: 'test' })
     })
@@ -179,10 +198,18 @@ describe('business-crud', () => {
       const record = { id: '1', name: 'updated' } as never
       const result = await saveBusinessModule('purchase-order', record)
 
-      expect(httpPutMock).toHaveBeenCalledWith('/purchase-orders/1', {
-        id: '1',
-        name: 'updated',
-      })
+      expect(httpPutMock).toHaveBeenCalledWith(
+        '/purchase-orders/1',
+        {
+          id: '1',
+          name: 'updated',
+        },
+        {
+          headers: {
+            'X-Idempotency-Key': 'idem-test',
+          },
+        },
+      )
       expect(result.data).toEqual({ id: '1', name: 'updated' })
     })
 
@@ -204,6 +231,7 @@ describe('business-crud', () => {
         {
           headers: {
             'X-Business-Module-Key': 'purchase-order',
+            'X-Idempotency-Key': 'idem-test',
             'X-Preallocated-Id': 'pre-123',
           },
         },
@@ -238,12 +266,13 @@ describe('business-crud', () => {
       expect(serializeBusinessRecordForSaveMock).not.toHaveBeenCalled()
       expect(httpPostMock).not.toHaveBeenCalled()
       expect(httpPutMock).not.toHaveBeenCalled()
+      expect(withIdempotencyKeyMock).not.toHaveBeenCalled()
     })
   })
 
   describe('deleteBusinessModule', () => {
-    it('deletes via restDelete', async () => {
-      restDeleteMock.mockResolvedValue({ code: 0 })
+    it('deletes via http delete with idempotency key', async () => {
+      httpDeleteMock.mockResolvedValue({ code: 0 })
       getModuleConfigMock.mockReturnValue({
         path: '/purchase-orders',
         readOnly: false,
@@ -251,7 +280,11 @@ describe('business-crud', () => {
 
       await deleteBusinessModule('purchase-order', '1')
 
-      expect(restDeleteMock).toHaveBeenCalledWith('/purchase-orders/1')
+      expect(httpDeleteMock).toHaveBeenCalledWith('/purchase-orders/1', {
+        headers: {
+          'X-Idempotency-Key': 'idem-test',
+        },
+      })
     })
 
     it('throws on readOnly module', async () => {
@@ -279,7 +312,9 @@ describe('business-crud', () => {
         deleteBusinessModule('receivable-payable', '1'),
       ).rejects.toThrow('当前模块不支持删除')
 
+      expect(httpDeleteMock).not.toHaveBeenCalled()
       expect(restDeleteMock).not.toHaveBeenCalled()
+      expect(withIdempotencyKeyMock).not.toHaveBeenCalled()
     })
   })
 
@@ -297,9 +332,17 @@ describe('business-crud', () => {
         '已审核',
       )
 
-      expect(httpPatchMock).toHaveBeenCalledWith('/purchase-orders/1/status', {
-        status: '已审核',
-      })
+      expect(httpPatchMock).toHaveBeenCalledWith(
+        '/purchase-orders/1/status',
+        {
+          status: '已审核',
+        },
+        {
+          headers: {
+            'X-Idempotency-Key': 'idem-test',
+          },
+        },
+      )
       expect(result.data).toEqual({ id: '1', status: '已审核' })
     })
 
@@ -329,6 +372,7 @@ describe('business-crud', () => {
       ).rejects.toThrow('当前模块不支持状态变更')
 
       expect(httpPatchMock).not.toHaveBeenCalled()
+      expect(withIdempotencyKeyMock).not.toHaveBeenCalled()
     })
   })
 })
