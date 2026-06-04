@@ -11,6 +11,14 @@ vi.mock('@/constants/module-options', () => ({
 
 import { balancePageConfigs } from './balance-pages'
 
+function expectUnique(values: Array<string | undefined>) {
+  const normalizedValues = values.filter(
+    (value): value is string => typeof value === 'string',
+  )
+
+  expect(new Set(normalizedValues).size).toBe(normalizedValues.length)
+}
+
 describe('balancePageConfigs', () => {
   const config = balancePageConfigs['receivable-payable']
 
@@ -21,6 +29,27 @@ describe('balancePageConfigs', () => {
 
   it('is readOnly', () => {
     expect(config.readOnly).toBe(true)
+  })
+
+  it('does not expose create or delete actions', () => {
+    const actionKeys = config.actions?.map((action) => action.key) ?? []
+
+    expect(actionKeys).toEqual(['export_balance'])
+    expect(actionKeys).not.toContain('create')
+    expect(actionKeys).not.toContain('delete')
+    expect(actionKeys.some((key) => key?.includes('create'))).toBe(false)
+    expect(actionKeys.some((key) => key?.includes('delete'))).toBe(false)
+  })
+
+  it('keeps interactive keys unique for idempotent rendering', () => {
+    expectUnique(config.actions?.map((action) => action.key) ?? [])
+    expectUnique(config.quickFilters?.map((filter) => filter.key) ?? [])
+    expectUnique(config.filters.map((filter) => filter.key))
+    expectUnique(config.columns.map((column) => String(column.dataIndex)))
+    expectUnique(config.detailFields.map((field) => field.key))
+    expectUnique(
+      config.detailItemColumns?.map((column) => String(column.dataIndex)) ?? [],
+    )
   })
 
   it('uses settlement status filters', () => {

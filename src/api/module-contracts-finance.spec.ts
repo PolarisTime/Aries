@@ -79,5 +79,8 @@ describe('module-contracts-finance', () => {
     expect(config.supportsDetail).toBe(true)
     expect(config.sortDirectionParam).toBe('sortDirection')
     expect(config.nativeFilterKeys).toContain('reconciliationStatus')
+    expect(new Set(config.nativeFilterKeys).size).toBe(
+      config.nativeFilterKeys?.length,
+    )
   })
 })
