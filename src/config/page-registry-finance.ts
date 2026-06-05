@@ -77,7 +77,8 @@ export const financePageDefinitions: AppPageDefinition[] = [
     title: '台账调整单',
     menuKey: '/ledger-adjustment',
     view: 'business-grid',
-    icon: 'AuditOutlined' as any,
+    // @ts-expect-error icon type mismatch
+    icon: 'AuditOutlined',
     menuParent: 'finance',
     moduleKey: 'ledger-adjustment',
     searchable: true,
