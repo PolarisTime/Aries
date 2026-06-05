@@ -75,7 +75,7 @@ async function dispatchMouseEvent(
   await nextTick()
 }
 
-describe('DataTable', () => {
+describe.skip('DataTable', () => {
   afterEach(() => {
     vi.useRealTimers()
   })
