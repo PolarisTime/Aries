@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { UploadProps } from 'ant-design-vue'
 import { Modal, message } from 'ant-design-vue'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'

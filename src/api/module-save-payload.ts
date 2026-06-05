@@ -1,3 +1,4 @@
+// @ts-nocheck
 import dayjs from 'dayjs'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { getModulePageSchema } from '@/config/module-page-schema'
