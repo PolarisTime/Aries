@@ -31,7 +31,7 @@ interface AccessibleGlobalSearchOptions {
   searchModule: (
     moduleKey: string,
     keyword: string,
-  ) => Promise<any>
+  ) => Promise<GlobalSearchResult[]>
   lookupRecordById?: (
     moduleKey: string,
     id: string,
