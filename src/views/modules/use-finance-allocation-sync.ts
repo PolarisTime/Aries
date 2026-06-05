@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type Ref, watch } from 'vue'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import {

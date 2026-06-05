@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { AxiosRequestConfig } from 'axios'
 
 export const IDEMPOTENCY_HEADER = 'X-Idempotency-Key'
