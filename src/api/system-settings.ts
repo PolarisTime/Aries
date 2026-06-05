@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { assertApiSuccess, http } from '@/api/client'
+
 import {
   listAllBusinessModuleRows,
   saveBusinessModule,
   updatePageUploadRule,
 } from '@/api/business'
 import type { UploadRulePayload } from '@/api/business-types'
+import { assertApiSuccess, http } from '@/api/client'
 import { isToggleSetting } from '@/module-system/settings-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
