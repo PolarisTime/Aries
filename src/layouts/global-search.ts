@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { ModulePageMeta } from '@/config/module-page-meta'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -31,7 +30,8 @@ interface AccessibleGlobalSearchOptions {
   searchModule: (
     moduleKey: string,
     keyword: string,
-  ) => Promise<GlobalSearchResult[]>
+    // biome-ignore lint/suspicious/noExplicitAny: in-progress type migration
+  ) => Promise<any>
   lookupRecordById?: (
     moduleKey: string,
     id: string,
