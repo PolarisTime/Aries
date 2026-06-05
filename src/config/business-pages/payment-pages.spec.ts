@@ -22,7 +22,14 @@ describe('paymentPageConfigs', () => {
     expect(paymentPageConfigs.payment.key).toBe('payment')
   })
 
-  it('has exactly 2 entries', () => {
-    expect(Object.keys(paymentPageConfigs)).toHaveLength(2)
+  it('contains ledger adjustment config', () => {
+    expect(paymentPageConfigs['ledger-adjustment']).toBeDefined()
+    expect(paymentPageConfigs['ledger-adjustment'].key).toBe(
+      'ledger-adjustment',
+    )
+  })
+
+  it('has exactly 3 entries', () => {
+    expect(Object.keys(paymentPageConfigs)).toHaveLength(3)
   })
 })

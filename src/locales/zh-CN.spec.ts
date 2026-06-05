@@ -47,7 +47,6 @@ describe('zh-CN locale', () => {
       'hooks',
       'layouts',
       'system',
-      'finance',
       'print',
       'error',
       'navigation',
