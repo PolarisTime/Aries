@@ -1,3 +1,4 @@
+// TODO: remove @ts-nocheck — properly define StatementGeneratorRules interface and ApiResponse import
 // @ts-nocheck
 
 import {
@@ -44,10 +45,10 @@ export async function listClientSettings(): Promise<ModuleRecord[]> {
     ),
     '加载客户端设置失败',
   )
-  return (response.data || []).map(normalizeSwitch)
+  return (response.data || []).map(toModuleRecord)
 }
 
-function normalizeSwitch(item: Record<string, unknown>): ModuleRecord {
+function toModuleRecord(item: Record<string, unknown>): ModuleRecord {
   return item as unknown as ModuleRecord
 }
 

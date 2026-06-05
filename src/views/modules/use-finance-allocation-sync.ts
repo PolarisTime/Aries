@@ -1,3 +1,4 @@
+// TODO: remove @ts-nocheck — fix vue import, module-adapter-finance-links import, and implicit any parameters
 // @ts-nocheck
 import { type Ref, watch } from 'vue'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'

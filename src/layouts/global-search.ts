@@ -133,20 +133,15 @@ export async function searchAccessibleModules(
           // A failed keyword search should not block direct trackId lookup below.
         }
 
-        const shouldLookupOnlyByTrackId = false
-        if (shouldLookupOnlyByTrackId && options.lookupRecordById) {
-          try {
-            const record = await options.lookupRecordById(
-              moduleKey,
-              normalizedKeyword,
-            )
-            if (record) {
-              rows.push(record)
-            }
-          } catch {
-            // A snowflake id belongs to at most one module; misses in other modules are expected.
-          }
-        }
+        // TODO: re-enable lookupRecordById when trackId matching rules are finalized
+        // if (options.lookupRecordById) {
+        //   try {
+        //     const record = await options.lookupRecordById(moduleKey, normalizedKeyword)
+        //     if (record) rows.push(record)
+        //   } catch {
+        //     // A snowflake id belongs to at most one module; misses in other modules are expected.
+        //   }
+        // }
 
         const seenKeys = new Set<string>()
         return rows.flatMap((record) => {

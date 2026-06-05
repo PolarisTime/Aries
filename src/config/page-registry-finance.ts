@@ -1,3 +1,4 @@
+// TODO: remove @ts-nocheck — fix AuditOutlined icon type to match AppIconKey
 // @ts-nocheck
 import type { AppPageDefinition } from '@/config/page-registry-types'
 
