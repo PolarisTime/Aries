@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { assertApiSuccess, http } from '@/api/client'
 import {
   listAllBusinessModuleRows,
   saveBusinessModule,
@@ -43,6 +44,10 @@ export async function listClientSettings(): Promise<ModuleRecord[]> {
     '加载客户端设置失败',
   )
   return (response.data || []).map(normalizeSwitch)
+}
+
+function normalizeSwitch(item: Record<string, unknown>): ModuleRecord {
+  return item as unknown as ModuleRecord
 }
 
 export async function getStatementGeneratorRules(): Promise<StatementGeneratorRules> {
