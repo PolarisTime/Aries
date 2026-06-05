@@ -2,19 +2,20 @@ import {
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
-  PlusOutlined,
-  ReloadOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
-import Input from 'antd/es/input'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
+import { useTranslation } from 'react-i18next'
+import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { enabledStatusOptions } from '@/constants/module-options'
+import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import type { UserAccountRecord } from '@/types/user-account'
+import { formatDateTime } from '@/utils/formatters'
 
 interface Props {
   keyword: string
@@ -40,7 +41,6 @@ interface Props {
   onDelete: (record: UserAccountRecord) => void
   onPageChange: (page: number, pageSize: number) => void
 }
-
 export function UserAccountTableCard({
   keyword,
   statusFilter,
@@ -65,9 +65,10 @@ export function UserAccountTableCard({
   onDelete,
   onPageChange,
 }: Props) {
+  const { t } = useTranslation()
   const columns = [
     {
-      title: '操作',
+      title: t('system.userAccountTable.colOperation'),
       key: 'action',
       width: 260,
       fixed: 'left' as const,
@@ -79,7 +80,7 @@ export function UserAccountTableCard({
             icon={<EyeOutlined />}
             onClick={() => onView(record)}
           >
-            查看
+            {t('system.userAccountTable.view')}
           </Button>
           {canEdit && (
             <Button
@@ -88,7 +89,7 @@ export function UserAccountTableCard({
               icon={<EditOutlined />}
               onClick={() => onEdit(record)}
             >
-              编辑
+              {t('system.userAccountTable.edit')}
             </Button>
           )}
           {canEdit && (
@@ -109,51 +110,63 @@ export function UserAccountTableCard({
               icon={<DeleteOutlined />}
               onClick={() => onDelete(record)}
             >
-              删除
+              {t('system.userAccountTable.delete')}
             </Button>
           )}
         </Space>
       ),
     },
-    { dataIndex: 'loginName', title: '登录账号', width: 140 },
-    { dataIndex: 'userName', title: '用户姓名', width: 140 },
+    {
+      dataIndex: 'loginName',
+      title: t('system.userAccountTable.colLoginName'),
+      width: 140,
+    },
+    {
+      dataIndex: 'userName',
+      title: t('system.userAccountTable.colUserName'),
+      width: 140,
+    },
     {
       dataIndex: 'departmentName',
-      title: '所属部门',
+      title: t('system.userAccountTable.colDepartment'),
       width: 140,
       render: (value: string) => value || '--',
     },
     {
       dataIndex: 'mobile',
-      title: '手机号',
+      title: t('system.userAccountTable.colMobile'),
       width: 140,
       render: (value: string) => value || '--',
     },
     {
       dataIndex: 'roleNames',
-      title: '所属角色',
+      title: t('system.userAccountTable.colRoles'),
       width: 220,
       render: (names: string[]) =>
         Array.isArray(names) ? names.join('、') : '--',
     },
     {
       dataIndex: 'dataScope',
-      title: '数据范围',
+      title: t('system.userAccountTable.colDataScope'),
       width: 120,
       render: (value: string) => value || '--',
     },
     {
       dataIndex: 'totpEnabled',
-      title: '2FA 状态',
+      title: t('system.userAccountTable.colTotpStatus'),
       width: 110,
       align: 'center' as const,
       render: (value: boolean) => (
-        <Tag color={getTotpColor(!!value)}>{value ? '已启用' : '未启用'}</Tag>
+        <Tag color={getTotpColor(!!value)}>
+          {value
+            ? t('system.userAccountTable.totpEnabled')
+            : t('system.userAccountTable.totpDisabled')}
+        </Tag>
       ),
     },
     {
       dataIndex: 'status',
-      title: '状态',
+      title: t('system.userAccountTable.colStatus'),
       width: 100,
       align: 'center' as const,
       render: (value: string) => (
@@ -162,42 +175,32 @@ export function UserAccountTableCard({
     },
     {
       dataIndex: 'lastLoginDate',
-      title: '最近登录',
+      title: t('system.userAccountTable.colLastLogin'),
       width: 180,
-      render: (value: string) => value || '--',
+      render: (value: unknown) => formatDateTime(value, '--'),
     },
   ]
-
   return (
     <Card
-      title="用户账户管理"
+      title={t('system.userAccountTable.title')}
       extra={
-        <Space>
-          <Input.Search
-            placeholder="搜索登录账号 / 用户姓名 / 手机号"
-            style={{ width: 320 }}
-            allowClear
-            value={keyword}
-            onChange={(event) => onKeywordChange(event.target.value)}
-            onSearch={onSearch}
-          />
+        <SystemTableToolbar
+          keyword={keyword}
+          keywordPlaceholder={t('system.userAccountTable.searchPlaceholder')}
+          onKeywordChange={onKeywordChange}
+          onSearch={onSearch}
+          onRefresh={onRefresh}
+          onCreate={canCreate ? onCreate : undefined}
+        >
           <Select
             allowClear
-            placeholder="全部状态"
-            style={{ width: 140 }}
+            placeholder={t('system.userAccountTable.allStatus')}
+            className="w-140"
             value={statusFilter}
             onChange={onStatusFilterChange}
             options={enabledStatusOptions}
           />
-          <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-            刷新
-          </Button>
-          {canCreate && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-              新建
-            </Button>
-          )}
-        </Space>
+        </SystemTableToolbar>
       }
     >
       <Table
@@ -207,14 +210,13 @@ export function UserAccountTableCard({
         loading={loading}
         size="middle"
         scroll={{ x: 1400 }}
-        pagination={{
+        pagination={createPaginationConfig({
           current: currentPage,
           pageSize,
           total: totalElements,
-          showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
           onChange: onPageChange,
-        }}
+          t,
+        })}
       />
     </Card>
   )

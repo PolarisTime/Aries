@@ -1,15 +1,19 @@
+import i18next from 'i18next'
 import type { MenuNode } from '@/api/role-actions'
 import { normalizeAction } from '@/constants/resource-permissions'
+import type { ModuleRecord } from '@/types/module-page'
 
 export const ROLE_ACTION_LABELS: Record<string, string> = {
-  read: '查看',
-  create: '新增',
-  update: '编辑',
-  delete: '删除',
-  audit: '审核',
-  export: '导出',
-  print: '打印',
-  manage_permissions: '配置权限',
+  read: i18next.t('system.roleActionUtils.actionRead'),
+  create: i18next.t('system.roleActionUtils.actionCreate'),
+  update: i18next.t('system.roleActionUtils.actionUpdate'),
+  delete: i18next.t('system.roleActionUtils.actionDelete'),
+  audit: i18next.t('system.roleActionUtils.actionAudit'),
+  export: i18next.t('system.roleActionUtils.actionExport'),
+  print: i18next.t('system.roleActionUtils.actionPrint'),
+  manage_permissions: i18next.t(
+    'system.roleActionUtils.actionManagePermissions',
+  ),
 }
 
 export const ALL_ROLE_ACTIONS = [
@@ -31,7 +35,7 @@ export interface FlattenedRoleMenu {
   actions: string[]
 }
 
-export type RoleMatrixRow = Record<string, unknown>
+export type RoleMatrixRow = ModuleRecord
 
 export function flattenRoleActionMenus(menuTree: MenuNode[]) {
   const result: FlattenedRoleMenu[] = []
@@ -70,15 +74,17 @@ export function buildRoleMatrixData(
 ) {
   return flatMenus.map((menu) => {
     const row: RoleMatrixRow = {
+      id: menu.menuCode,
       key: menu.menuCode,
       menuName: menu.menuName,
       menuCode: menu.menuCode,
       resource: menu.resource,
       actions: menu.actions,
     }
+    const menuActionsSet = new Set(menu.actions)
     let count = 0
     for (const action of ALL_ROLE_ACTIONS) {
-      const supported = menu.actions.includes(action)
+      const supported = menuActionsSet.has(action)
       const checked =
         supported && selectedActions.has(`${menu.resource}:${action}`)
       row[action] = checked

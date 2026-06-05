@@ -1,4 +1,5 @@
 import Alert from 'antd/es/alert'
+import { useTranslation } from 'react-i18next'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { ApiKeyCreateModal } from '@/views/system/ApiKeyCreateModal'
@@ -13,6 +14,7 @@ interface ApiKeyManagementViewProps {
 export function ApiKeyManagementView({
   active = true,
 }: ApiKeyManagementViewProps) {
+  const { t } = useTranslation()
   const isPageVisible = usePageVisibility()
   const queryEnabled = active && isPageVisible
   const {
@@ -59,8 +61,8 @@ export function ApiKeyManagementView({
         <Alert
           type="warning"
           showIcon
-          style={{ marginBottom: 16 }}
-          title="当前账号未启用 2FA，禁止生成 API Key。请先在用户管理中完成 2FA 绑定。"
+          className="mb-4"
+          title={t('system.apiKey.totpRequiredHint')}
         />
       )}
 
@@ -131,7 +133,7 @@ export function ApiKeyManagementView({
           open={totpModalOpen}
           onConfirm={handleGenerateWithTotp}
           onCancel={() => setTotpModalOpen(false)}
-          title="验证 2FA 后生成 API Key"
+          title={t('system.apiKey.verifyTotpTitle')}
         />
       ) : null}
     </div>

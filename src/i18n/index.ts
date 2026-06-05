@@ -1,11 +1,11 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
-import enUS from '@/locales/en-US'
-import zhCN from '@/locales/zh-CN'
+import { enUS } from '@/locales/en-US'
+import { zhCN } from '@/locales/zh-CN'
 
 const LOCALE_STORAGE_KEY = 'leo-locale'
 
-function detectLocale(): string {
+export function detectLocale(): string {
   const stored =
     typeof window !== 'undefined'
       ? localStorage.getItem(LOCALE_STORAGE_KEY)
@@ -19,7 +19,7 @@ function detectLocale(): string {
   return 'zh-CN'
 }
 
-i18n.use(initReactI18next).init({
+void i18n.use(initReactI18next).init({
   resources: {
     'zh-CN': { translation: zhCN },
     'en-US': { translation: enUS },
@@ -30,5 +30,3 @@ i18n.use(initReactI18next).init({
     escapeValue: false,
   },
 })
-
-export default i18n

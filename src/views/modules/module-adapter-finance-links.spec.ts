@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { ModuleRecord } from '@/types/module-page'
 import {
-  buildStatementLinkOptions,
   buildCustomerStatementOptions,
+  buildStatementLinkOptions,
   findStatementRecordById,
-} from './module-adapter-finance-links'
+} from '@/module-system/module-adapter-finance-links'
+import type { ModuleRecord } from '@/types/module-page'
 
 describe('module-adapter-finance-links', () => {
   it('preserves snowflake ids as strings in statement options', () => {
@@ -31,10 +31,7 @@ describe('module-adapter-finance-links', () => {
       closingAmount: 0,
     } satisfies ModuleRecord
 
-    const matched = findStatementRecordById(
-      [target],
-      '308251467645452288',
-    )
+    const matched = findStatementRecordById([target], '308251467645452288')
 
     expect(matched).toBe(target)
   })

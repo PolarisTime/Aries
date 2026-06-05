@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { MenuNode } from '@/api/system-menus'
 import { isKnownAppIconKey } from '@/config/app-icons'
 import {
@@ -18,18 +18,26 @@ import {
   buildTopMenuItems,
   findMenuParentKeys,
 } from '@/layouts/layout-menu-items'
-import { checkAccessResources, usePermissionStore } from '@/stores/permissionStore'
+import {
+  checkAccessResources,
+  usePermissionStore,
+} from '@/stores/permissionStore'
 
 const menuEntriesByGroup = buildMenuEntriesByGroup(appPageDefinitions)
 
 function resolveEntryAccess(entry: AppPageDefinition) {
-  if (Array.isArray(entry.accessResources) && entry.accessResources.length > 0) {
+  if (
+    Array.isArray(entry.accessResources) &&
+    entry.accessResources.length > 0
+  ) {
     return checkAccessResources(
       entry.accessResources,
       usePermissionStore.getState().can,
     )
   }
-  return usePermissionStore.getState().can(entry.resourceKey || entry.key, 'read')
+  return usePermissionStore
+    .getState()
+    .can(entry.resourceKey || entry.key, 'read')
 }
 
 interface Options {
@@ -40,69 +48,43 @@ interface Options {
 }
 
 export function useAppLayoutMenuState(options: Options) {
-  const [siderOpenKeys, setSiderOpenKeys] = useState<string[]>([])
+  const [manualSiderOpenKeys, setManualSiderOpenKeys] = useState<string[]>([])
+  const visibleMenuEntries = buildVisibleLayoutMenuEntries({
+    appPageDefinitions,
+    defaultIcon: 'AppstoreOutlined',
+    getMenuEntriesByGroup: (groupKey) => menuEntriesByGroup.get(groupKey) || [],
+    getPageDefinition,
+    isKnownIconKey: isKnownAppIconKey,
+    menuGroupDefinitions,
+    menuGroupOrder,
+    systemMenuTree: options.menus,
+    userCanAccessEntry: (entry) => resolveEntryAccess(entry),
+    userCanAccessMenuCode: (resourceCode, menuCode) =>
+      options.can(resourceCode || menuCode, 'read'),
+  })
 
-  const visibleMenuEntries = useMemo(() => {
-    return buildVisibleLayoutMenuEntries({
-      appPageDefinitions,
-      defaultIcon: 'AppstoreOutlined',
-      getMenuEntriesByGroup: (groupKey) =>
-        menuEntriesByGroup.get(groupKey) || [],
-      getPageDefinition,
-      isKnownIconKey: isKnownAppIconKey,
-      menuGroupDefinitions,
-      menuGroupOrder,
-      systemMenuTree: options.menus,
-      userCanAccessEntry: (entry) => resolveEntryAccess(entry),
-      userCanAccessMenuCode: (resourceCode, menuCode) =>
-        options.can(resourceCode || menuCode, 'read'),
-    })
-  }, [options.can, options.menus])
+  const menuPathByKey = buildMenuPathMap(visibleMenuEntries)
 
-  const menuPathByKey = useMemo(
-    () => buildMenuPathMap(visibleMenuEntries),
-    [visibleMenuEntries],
+  const selectedKeys = [options.activeMenuKey]
+
+  const resolvedSiderOpenKeys =
+    findMenuParentKeys(visibleMenuEntries, options.activeMenuKey) || []
+  const mergedSiderOpenKeys = Array.from(
+    new Set([...resolvedSiderOpenKeys, ...manualSiderOpenKeys]),
   )
 
-  const selectedKeys = useMemo(
-    () => [options.activeMenuKey],
-    [options.activeMenuKey],
-  )
+  const sideMenuItems = buildSideMenuItems(visibleMenuEntries)
 
-  const resolvedSiderOpenKeys = useMemo(
-    () => findMenuParentKeys(visibleMenuEntries, options.activeMenuKey) || [],
-    [options.activeMenuKey, visibleMenuEntries],
-  )
+  const topMenuItems = buildTopMenuItems(visibleMenuEntries)
 
-  useEffect(() => {
-    if (options.collapsed) {
-      setSiderOpenKeys([])
-      return
-    }
-    setSiderOpenKeys(resolvedSiderOpenKeys)
-  }, [options.collapsed, resolvedSiderOpenKeys])
-
-  const sideMenuItems = useMemo(
-    () => buildSideMenuItems(visibleMenuEntries),
-    [visibleMenuEntries],
-  )
-
-  const topMenuItems = useMemo(
-    () => buildTopMenuItems(visibleMenuEntries),
-    [visibleMenuEntries],
-  )
-
-  const resolveMenuPath = useCallback(
-    (key: string) => menuPathByKey[key],
-    [menuPathByKey],
-  )
+  const resolveMenuPath = (key: string) => menuPathByKey[key]
 
   return {
     resolvedSiderOpenKeys,
     sideMenuItems,
-    siderOpenKeys,
+    siderOpenKeys: options.collapsed ? [] : mergedSiderOpenKeys,
     selectedKeys,
-    setSiderOpenKeys,
+    setSiderOpenKeys: setManualSiderOpenKeys,
     topMenuItems,
     visibleMenuEntries,
     resolveMenuPath,

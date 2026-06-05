@@ -1,6 +1,7 @@
 import { AuditOutlined, CloseOutlined, SaveOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Space from 'antd/es/space'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   canSave: boolean
@@ -17,6 +18,7 @@ export function EditorFooterActions({
   onCancel,
   onSave,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <Space>
       <Button
@@ -24,7 +26,7 @@ export function EditorFooterActions({
         icon={<CloseOutlined />}
         onClick={onCancel}
       >
-        取消
+        {t('modules.editorFooter.cancel')}
       </Button>
       {canSave && (
         <Button
@@ -34,7 +36,7 @@ export function EditorFooterActions({
           loading={saving}
           onClick={() => onSave(false)}
         >
-          保存
+          {t('modules.editorFooter.save')}
         </Button>
       )}
       {canAudit && (
@@ -45,7 +47,7 @@ export function EditorFooterActions({
           loading={saving}
           onClick={() => onSave(true)}
         >
-          保存并审核
+          {t('modules.editorFooter.saveAndAudit')}
         </Button>
       )}
     </Space>

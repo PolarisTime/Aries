@@ -7,6 +7,7 @@ import Alert from 'antd/es/alert'
 import Button from 'antd/es/button'
 import Input from 'antd/es/input'
 import Space from 'antd/es/space'
+import { useTranslation } from 'react-i18next'
 import { buildFormControlId } from '@/utils/form-control-id'
 
 interface Props {
@@ -32,17 +33,18 @@ export function LoginTotpPanel({
   totpLoading,
   activeLoginName,
 }: Props) {
+  const { t } = useTranslation()
   const totpInputId = buildFormControlId('login-totp', 'code')
 
   return (
     <div>
       <div className="login-step-tag is-totp">
         <SafetyCertificateOutlined />
-        二次验证
+        {t('auth.totppanel.step')}
       </div>
-      <h2 className="login-form-title">验证身份</h2>
+      <h2 className="login-form-title">{t('auth.totppanel.title')}</h2>
       <p className="login-form-desc">
-        请输入 {activeLoginName} 的 Authenticator 动态验证码完成登录。
+        {t('auth.totppanel.description', { loginName: activeLoginName })}
       </p>
 
       <div className="login-totp-timer">
@@ -52,10 +54,9 @@ export function LoginTotpPanel({
           {countdownText}
         </div>
         <ClockCircleOutlined
-          style={{
-            fontSize: 20,
-            color: isExpiring ? '#ef4444' : '#64748b',
-          }}
+          className={
+            isExpiring ? 'text-xl text-red-500' : 'text-xl text-slate-500'
+          }
         />
       </div>
 
@@ -63,19 +64,19 @@ export function LoginTotpPanel({
         <Alert
           type="error"
           showIcon
-          title="验证会话已过期，请返回密码登录重新发起认证。"
-          style={{ marginBottom: 20 }}
+          title={t('auth.totppanel.expired')}
+          className="mb-5"
         />
       )}
 
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="middle" className="w-full">
         <Input
           id={totpInputId}
           name="login-totp-code"
-          aria-label="输入 6 位动态验证码"
+          aria-label={t('auth.totppanel.inputAria')}
           size="large"
           prefix={<SafetyCertificateOutlined />}
-          placeholder="请输入 6 位验证码"
+          placeholder={t('auth.totppanel.placeholder')}
           maxLength={6}
           value={totpCode}
           onChange={(event) => onTotpCodeChange(event.target.value)}
@@ -83,7 +84,7 @@ export function LoginTotpPanel({
           autoFocus
           inputMode="numeric"
           autoComplete="one-time-code"
-          style={{ textAlign: 'center', letterSpacing: 4, fontSize: 18 }}
+          className="text-center text-lg tracking-[4px]"
         />
 
         <Button
@@ -94,16 +95,16 @@ export function LoginTotpPanel({
           block
           className="login-submit-btn"
         >
-          验证并登录
+          {t('auth.totppanel.submit')}
         </Button>
 
         <Button
           onClick={onBackToPassword}
           block
           icon={<ArrowLeftOutlined />}
-          style={{ height: 48, fontWeight: 500, borderRadius: 10 }}
+          className="h-12 rounded-[10px] font-medium"
         >
-          返回密码登录
+          {t('auth.totppanel.back')}
         </Button>
       </Space>
     </div>

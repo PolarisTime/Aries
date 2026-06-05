@@ -7,9 +7,7 @@ export interface MaterialGradeOption {
   label: string
 }
 
-const cachedGrades = shallowRef<MaterialGradeOption[] | null>(null)
-let fetchFailed = false
-let loadingGrades: Promise<MaterialGradeOption[]> | null = null
+let cachedGrades: MaterialGradeOption[] | null = null
 
 export async function fetchMaterialGrades(): Promise<MaterialGradeOption[]> {
   if (cachedGrades) return cachedGrades
@@ -18,47 +16,9 @@ export async function fetchMaterialGrades(): Promise<MaterialGradeOption[]> {
       ENDPOINTS.MATERIAL_GRADES,
     )
     const list = response.data || []
-    cachedGrades.value = normalizeMaterialGrades(list)
-    fetchFailed = false
-    return cachedGrades.value
-  })()
-
-  try {
-    return await loadingGrades
+    cachedGrades = list.map((v) => ({ value: v, label: v }))
+    return cachedGrades
   } catch {
-    fetchFailed = true
     return []
-  } finally {
-    loadingGrades = null
   }
-}
-
-export function getCachedMaterialGrades(): MaterialGradeOption[] {
-  return cachedGrades.value || []
-}
-
-export function getMaterialGradeOptions(): MaterialGradeOption[] {
-  if (cachedGrades.value === null && !loadingGrades) {
-    if (fetchFailed) {
-      fetchFailed = false
-    }
-    fetchMaterialGrades()
-  }
-  return cachedGrades.value || []
-}
-
-export function reloadMaterialGrades() {
-  cachedGrades.value = null
-  fetchFailed = false
-  loadingGrades = null
-  return fetchMaterialGrades()
-}
-
-function normalizeMaterialGrades(values: string[]) {
-  return values
-    .map((value) => {
-      const text = String(value || '').trim()
-      return { value: text, label: text }
-    })
-    .filter((option) => option.value)
 }

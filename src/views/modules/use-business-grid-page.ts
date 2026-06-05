@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
-import { useBusinessQueries } from '@/hooks/useBusinessQueries'
-import type { SortingState } from '@/hooks/useDataTable'
+import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
 import { useDetailSupport } from '@/hooks/useDetailSupport'
-import { useMasterOptions } from '@/hooks/useMasterOptions'
-import { resolveMasterOptionRequirements } from '@/hooks/useMasterOptions'
+import { useExcelExport } from '@/hooks/useExcelExport'
+import { useInfiniteBusinessItems } from '@/hooks/useInfiniteBusinessItems'
+import {
+  resolveMasterOptionRequirements,
+  useMasterOptions,
+} from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
-import { useModuleExportSupport } from '@/hooks/useModuleExportSupport'
 import { useModuleFilters } from '@/hooks/useModuleFilters'
 import { useModulePageConfig } from '@/hooks/useModulePageConfig'
 import { useModulePermissions } from '@/hooks/useModulePermissions'
@@ -16,8 +19,10 @@ import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import { useModuleRecordActions } from '@/hooks/useModuleRecordActions'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import { useModuleToolbarActions } from '@/hooks/useModuleToolbarActions'
+import { resolveStatusOptions } from '@/module-system/module-adapter-actions'
+import { getBehaviorValue } from '@/module-system/module-behavior-registry'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { getBehaviorValue } from '@/views/modules/module-behavior-registry'
+import { asString } from '@/utils/type-narrowing'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overlays'
 import { useBusinessGridTable } from '@/views/modules/use-business-grid-table'
@@ -57,55 +62,54 @@ export function useBusinessGridPage({
     canPrintRecord,
     can,
     resolvedResource,
+    // react-doctor: intentional callback, not event handler
   } = useModulePermissions({ moduleKey, resourceKey: pageDef.resourceKey })
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [selectedRowMap, setSelectedRowMap] = useState<
     Record<string, ModuleRecord>
   >({})
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
-  const [sorting, setSorting] = useState<SortingState>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const defaultPageSize = useDefaultPageSize()
+  const [pageSize, setPageSize] = useState(defaultPageSize)
   const { formatCellValue } = useModuleDisplaySupport()
-  const listOptionRequirements = useMemo(
-    () => resolveMasterOptionRequirements(config?.filters || []),
-    [config?.filters],
+  const listOptionRequirements = resolveMasterOptionRequirements(
+    config?.filters || [],
   )
 
   useMasterOptions(listOptionRequirements)
 
-  useEffect(() => {
-    setSelectedRowKeys([])
-    setSelectedRowMap({})
-    setPage(1)
-    setPageSize(20)
-    setSorting([])
-  }, [moduleKey])
-
   const {
     filters,
     submittedFilters,
+    applyFilters,
     handleSearch,
     handleReset,
     updateFilter,
     setSubmittedFilters,
   } = useModuleFilters({
-    setCurrentPage: (nextPage: number) => setPage(nextPage),
+    setCurrentPage: (page: number) => setCurrentPage(page),
   })
 
   const { records, total, isLoading, isFetching, warningMessage } =
-    useBusinessQueries({
+    useInfiniteBusinessItems({
       moduleKey,
+      // react-doctor: intentional callback, not event handler
       filters: submittedFilters,
-      page,
+      // react-doctor: intentional callback, not event handler
+      enabled: canViewRecords,
+      // react-doctor: intentional callback, not event handler
+      currentPage,
+      // react-doctor: intentional callback, not event handler
       pageSize,
-      enabled: canViewRecords && !!config,
-      sortBy: sorting[0]?.id,
-      sortDirection: sorting[0]?.desc ? 'desc' : sorting[0] ? 'asc' : undefined,
     })
 
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
-  const { exporting, handleExport } = useModuleExportSupport(moduleKey)
+  const { exporting, handleExport: exportModuleRows } =
+    useExcelExport(moduleKey)
+  const handleExport = async () => {
+    await exportModuleRows(submittedFilters)
+  }
   const { detailOpen, detailRecord, detailLoading, openDetail, closeDetail } =
     useDetailSupport({ moduleKey, config: resolvedConfig })
   const {
@@ -123,68 +127,34 @@ export function useBusinessGridPage({
     config: resolvedConfig,
   })
 
-  const clearSelection = useCallback(() => {
+  const clearSelection = () => {
     setSelectedRowKeys([])
     setSelectedRowMap({})
-  }, [])
+  }
 
-  useEffect(() => {
-    const currentPageIds = new Set(records.map((r) => String(r.id)))
+  const navigate = useNavigate()
+  const detailRoutePath = getBehaviorValue(moduleKey, 'detailRoutePath')
 
-    setSelectedRowMap((prev) => {
-      const next: Record<string, ModuleRecord> = {}
-      for (const key of Object.keys(prev)) {
-        if (!currentPageIds.has(key) && selectedRowKeys.includes(key)) {
-          next[key] = prev[key]
-        }
-      }
-      for (const record of records) {
-        const id = String(record.id)
-        if (selectedRowKeys.includes(id)) {
-          next[id] = record
-        }
-      }
+  const handleEdit = (record: ModuleRecord) => {
+    void openEditor(record)
+  }
 
-      const prevKeys = Object.keys(prev)
-      const nextKeys = Object.keys(next)
-      if (prevKeys.length !== nextKeys.length) {
-        return next
-      }
+  const handleDetail = (record: ModuleRecord) => {
+    if (detailRoutePath) {
+      const path = detailRoutePath.replace(
+        ':projectId',
+        String(record.projectId),
+      )
+      void navigate({ to: path as never })
+    }
+  }
 
-      for (const key of nextKeys) {
-        if (prev[key] !== next[key]) {
-          return next
-        }
-      }
-
-      return prev
-    })
-  }, [records, selectedRowKeys])
-
-  const handleEdit = useCallback(
-    (record: ModuleRecord) => {
-      void openEditor(record)
-    },
-    [openEditor],
+  const lockedLineItemsNotice = String(
+    getBehaviorValue(moduleKey, 'lockedLineItemsNotice') || '',
   )
 
-  const { buildActions } = useModuleRecordActions({
-    moduleKey,
-    resourceKey: pageDef.resourceKey,
-    onEdit: handleEdit,
-    onAttach: overlays.openAttachment,
-    onRefresh: refreshModuleQueries,
-  })
-
-  const lockedLineItemsNotice = useMemo(
-    () => String(getBehaviorValue(moduleKey, 'lockedLineItemsNotice') || ''),
-    [moduleKey],
-  )
-
-  const formFields = useMemo(
-    () => config?.formFields || [],
-    [config?.formFields],
-  )
+  const formFields = config?.formFields || []
+  const statusFields = [...formFields, ...(config?.filters || [])]
   const {
     canUseBulkAuditActions,
     canUseBulkDeleteActions,
@@ -195,8 +165,9 @@ export function useBusinessGridPage({
   } = useModuleEditorCapabilities({
     moduleKey,
     formFields,
+    listStatusFields: statusFields,
     lineItemLockRelatedRows: editorLockRelatedRows,
-    currentStatus: editRecord?.status ? String(editRecord.status) : undefined,
+    currentStatus: editRecord?.status ? asString(editRecord.status) : undefined,
     canEditLineItems: canUpdateRecord,
     canSaveCurrentEditor: canCreateRecord || canUpdateRecord,
     canAuditRecords: canAuditRecord,
@@ -204,11 +175,23 @@ export function useBusinessGridPage({
     canDeleteRecords: canDeleteRecord,
     isReadOnly: Boolean(config?.readOnly),
     resolveModuleStatusOptions: (statusField) => {
-      if (!statusField?.options) return []
-      return (statusField.options as Array<{ value: string }>).map(
-        (option) => option.value,
-      )
+      if (!Array.isArray(statusField?.options)) return []
+      return resolveStatusOptions({ fields: [statusField] })
     },
+  })
+
+  const { buildActions } = useModuleRecordActions({
+    moduleKey,
+    resourceKey: pageDef.resourceKey,
+    isReadOnly: Boolean(config?.readOnly),
+    onEdit: handleEdit,
+    onAttach: overlays.openAttachment,
+    onDetail:
+      detailRoutePath || moduleKey === 'receivable-payable'
+        ? detailRoutePath
+          ? handleDetail
+          : openDetail
+        : undefined,
   })
 
   const {
@@ -221,7 +204,6 @@ export function useBusinessGridPage({
     handleStatementGenerate,
   } = useBusinessGridActions({
     moduleKey,
-    config: resolvedConfig,
     selectedRowKeys,
     selectedRows: Object.values(selectedRowMap),
     submittedFilters,
@@ -240,8 +222,6 @@ export function useBusinessGridPage({
     selectedRowCount: selectedRowKeys.length,
     canUseBulkAuditActions,
     canUseBulkDeleteActions,
-    canUseBulkPrintActions,
-    detailPrintLoading: false,
     hasAnyModuleAction: (codes) =>
       codes.some((code) => {
         if (code === 'create') return canCreateRecord
@@ -262,7 +242,6 @@ export function useBusinessGridPage({
       exportRows: async () => {
         await handleExport()
       },
-      handlePrintSelectedRecords,
       handleSelectedAuditRecords,
       handleSelectedDeleteRecords,
       handleSelectedReverseAuditRecords,
@@ -273,17 +252,20 @@ export function useBusinessGridPage({
       openCreateEditor: async () => {
         await openEditor(null)
       },
-      openCustomerStatementGenerator: async () => {
+      openCustomerStatementGenerator: () => {
         overlays.openCustomerStatement()
       },
-      openFreightPickupList: async () => {
-        overlays.openFreightPickup()
+      openFreightPickupList: () => {
+        const selected = records.filter((r) =>
+          selectedRowKeys.includes(String(r.id)),
+        )
+        overlays.openFreightPickup(selected)
       },
-      openFreightStatementGenerator: async () => {
+      openFreightStatementGenerator: () => {
         overlays.openFreightStatement()
       },
       openFreightSummary,
-      openSupplierStatementGenerator: async () => {
+      openSupplierStatementGenerator: () => {
         overlays.openSupplierStatement()
       },
     },
@@ -296,24 +278,16 @@ export function useBusinessGridPage({
     toggleColumn,
     rowSelection,
     onColumnOrderChange,
-    onSortingChange,
   } = useBusinessGridTable({
     moduleKey,
     config,
     records,
-    pageSize,
-    total,
     canUpdateRecord,
     selectedRowKeys,
     setSelectedRowKeys,
     setSelectedRowMap,
     buildActions,
-    onPaginationChange: (nextPage, nextPageSize) => {
-      setPage(nextPage)
-      setPageSize(nextPageSize)
-    },
-    sorting,
-    onSortingChange: setSorting,
+    showActions: true,
   })
 
   return {
@@ -327,8 +301,8 @@ export function useBusinessGridPage({
     columnVisibleKeys,
     columnOrder,
     onColumnOrderChange,
-    onSortingChange,
     config,
+    currentPage,
     detailLoading,
     detailOpen,
     detailRecord,
@@ -337,6 +311,7 @@ export function useBusinessGridPage({
     editorLockLoading,
     editorOpen,
     exporting,
+    applyFilters,
     filters,
     handleAction,
     handleEditorSaved,
@@ -350,23 +325,25 @@ export function useBusinessGridPage({
     openDetail,
     openEditor,
     overlays,
-    page,
-    pageSize,
     records,
+    total,
+    pageSize,
+    setCurrentPage,
+    setPageSize,
     refreshModuleQueries,
     rowSelection,
     selectedRowKeys,
-    setPage,
-    setPageSize,
     setSelectedRowKeys,
+    setSelectedRowMap,
     setSubmittedFilters,
     antdColumns,
     toggleColumn,
-    total,
     updateFilter,
     visibleToolbarActions,
     warningMessage,
     getRowClassName,
     closeEditor,
+    canUseBulkPrintActions,
+    handlePrintSelectedRecords,
   }
 }

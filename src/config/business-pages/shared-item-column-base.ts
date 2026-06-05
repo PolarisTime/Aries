@@ -1,52 +1,58 @@
+import i18next from 'i18next'
 import type { ModuleColumnDefinition } from '@/types/module-page'
 import { insertColumnsAfter } from './shared-item-column-utils'
 
 const materialInfoColumns: ModuleColumnDefinition[] = [
   {
-    title: '商品编码',
+    title: i18next.t('modules.columns.materialCode'),
     dataIndex: 'materialCode',
-    width: 128,
+    width: 240,
     required: true,
     align: 'center',
   },
   {
-    title: '品牌',
+    title: i18next.t('modules.columns.brand'),
     dataIndex: 'brand',
     width: 86,
     required: true,
     align: 'center',
   },
   {
-    title: '类别',
+    title: i18next.t('modules.columns.category'),
     dataIndex: 'category',
     width: 72,
     required: true,
     align: 'center',
   },
   {
-    title: '材质',
+    title: i18next.t('modules.columns.material'),
     dataIndex: 'material',
     width: 82,
     required: true,
     align: 'center',
   },
   {
-    title: '规格',
+    title: i18next.t('modules.columns.spec'),
     dataIndex: 'spec',
     width: 78,
     required: true,
     align: 'center',
   },
-  { title: '长度', dataIndex: 'length', width: 70, align: 'center' },
   {
-    title: '单位',
+    title: i18next.t('modules.columns.length'),
+    dataIndex: 'length',
+    width: 70,
+    align: 'center',
+  },
+  {
+    title: i18next.t('modules.columns.unit'),
     dataIndex: 'unit',
     width: 58,
     required: true,
     align: 'center',
   },
   {
-    title: '件重/吨',
+    title: i18next.t('modules.columns.pieceWeightTon'),
     dataIndex: 'pieceWeightTon',
     width: 82,
     align: 'center',
@@ -54,7 +60,7 @@ const materialInfoColumns: ModuleColumnDefinition[] = [
     required: true,
   },
   {
-    title: '每件支数',
+    title: i18next.t('modules.columns.piecesPerBundle'),
     dataIndex: 'piecesPerBundle',
     width: 76,
     align: 'center',
@@ -65,17 +71,22 @@ const materialInfoColumns: ModuleColumnDefinition[] = [
 export const orderItemColumns: ModuleColumnDefinition[] = [
   ...materialInfoColumns.slice(0, 7),
   {
-    title: '数量',
+    title: i18next.t('modules.columns.quantity'),
     dataIndex: 'quantity',
     width: 76,
     align: 'center',
     type: 'count',
     required: true,
   },
-  { title: '数量单位', dataIndex: 'quantityUnit', width: 64, align: 'center' },
+  {
+    title: i18next.t('modules.columns.quantityUnit'),
+    dataIndex: 'quantityUnit',
+    width: 64,
+    align: 'center',
+  },
   ...materialInfoColumns.slice(7),
   {
-    title: '总重量（吨）',
+    title: i18next.t('modules.columns.weightTon'),
     dataIndex: 'weightTon',
     width: 108,
     align: 'center',
@@ -83,7 +94,7 @@ export const orderItemColumns: ModuleColumnDefinition[] = [
     required: true,
   },
   {
-    title: '单价',
+    title: i18next.t('modules.columns.unitPrice'),
     dataIndex: 'unitPrice',
     width: 88,
     align: 'center',
@@ -91,7 +102,7 @@ export const orderItemColumns: ModuleColumnDefinition[] = [
     required: true,
   },
   {
-    title: '金额',
+    title: i18next.t('modules.columns.amount'),
     dataIndex: 'amount',
     width: 92,
     align: 'center',
@@ -102,19 +113,28 @@ export const orderItemColumns: ModuleColumnDefinition[] = [
 
 export const batchOrderItemColumns: ModuleColumnDefinition[] = [
   ...materialInfoColumns.slice(0, 7),
-  { title: '批号', dataIndex: 'batchNo', width: 100 },
   {
-    title: '数量',
+    title: i18next.t('modules.columns.batchNo'),
+    dataIndex: 'batchNo',
+    width: 130,
+  },
+  {
+    title: i18next.t('modules.columns.quantity'),
     dataIndex: 'quantity',
     width: 76,
     align: 'center',
     type: 'count',
     required: true,
   },
-  { title: '数量单位', dataIndex: 'quantityUnit', width: 64, align: 'center' },
+  {
+    title: i18next.t('modules.columns.quantityUnit'),
+    dataIndex: 'quantityUnit',
+    width: 64,
+    align: 'center',
+  },
   ...materialInfoColumns.slice(7),
   {
-    title: '总重量（吨）',
+    title: i18next.t('modules.columns.weightTon'),
     dataIndex: 'weightTon',
     width: 108,
     align: 'center',
@@ -122,7 +142,7 @@ export const batchOrderItemColumns: ModuleColumnDefinition[] = [
     required: true,
   },
   {
-    title: '单价',
+    title: i18next.t('modules.columns.unitPrice'),
     dataIndex: 'unitPrice',
     width: 88,
     align: 'center',
@@ -130,7 +150,7 @@ export const batchOrderItemColumns: ModuleColumnDefinition[] = [
     required: true,
   },
   {
-    title: '金额',
+    title: i18next.t('modules.columns.amount'),
     dataIndex: 'amount',
     width: 92,
     align: 'center',
@@ -141,20 +161,34 @@ export const batchOrderItemColumns: ModuleColumnDefinition[] = [
 
 export const purchaseItemColumns: ModuleColumnDefinition[] = [
   ...materialInfoColumns.slice(0, 7),
-  { title: '码头', dataIndex: 'warehouseName', width: 96, required: true },
-  { title: '批号', dataIndex: 'batchNo', width: 100 },
   {
-    title: '数量',
+    title: i18next.t('modules.columns.warehouseName'),
+    dataIndex: 'warehouseName',
+    width: 110,
+    required: true,
+  },
+  {
+    title: i18next.t('modules.columns.batchNo'),
+    dataIndex: 'batchNo',
+    width: 130,
+  },
+  {
+    title: i18next.t('modules.columns.quantity'),
     dataIndex: 'quantity',
     width: 76,
     align: 'center',
     type: 'count',
     required: true,
   },
-  { title: '数量单位', dataIndex: 'quantityUnit', width: 64, align: 'center' },
+  {
+    title: i18next.t('modules.columns.quantityUnit'),
+    dataIndex: 'quantityUnit',
+    width: 64,
+    align: 'center',
+  },
   ...materialInfoColumns.slice(7),
   {
-    title: '总重量（吨）',
+    title: i18next.t('modules.columns.weightTon'),
     dataIndex: 'weightTon',
     width: 108,
     align: 'center',
@@ -162,7 +196,7 @@ export const purchaseItemColumns: ModuleColumnDefinition[] = [
     required: true,
   },
   {
-    title: '单价',
+    title: i18next.t('modules.columns.unitPrice'),
     dataIndex: 'unitPrice',
     width: 88,
     align: 'center',
@@ -170,7 +204,7 @@ export const purchaseItemColumns: ModuleColumnDefinition[] = [
     required: true,
   },
   {
-    title: '金额',
+    title: i18next.t('modules.columns.amount'),
     dataIndex: 'amount',
     width: 92,
     align: 'center',
@@ -179,23 +213,23 @@ export const purchaseItemColumns: ModuleColumnDefinition[] = [
   },
 ]
 
-export const purchaseWeighColumns: ModuleColumnDefinition[] = [
+const purchaseWeighColumns: ModuleColumnDefinition[] = [
   {
-    title: '过磅重量',
+    title: i18next.t('modules.columns.weighWeight'),
     dataIndex: 'weighWeightTon',
     width: 88,
     align: 'center',
     type: 'weight',
   },
   {
-    title: '差额重量（吨）',
+    title: i18next.t('modules.columns.weightAdjustmentTon'),
     dataIndex: 'weightAdjustmentTon',
     width: 106,
     align: 'center',
     type: 'weight',
   },
   {
-    title: '差额金额',
+    title: i18next.t('modules.columns.weightAdjustmentAmount'),
     dataIndex: 'weightAdjustmentAmount',
     width: 92,
     align: 'center',
@@ -205,7 +239,7 @@ export const purchaseWeighColumns: ModuleColumnDefinition[] = [
 
 const purchaseInboundSettlementColumns: ModuleColumnDefinition[] = [
   {
-    title: '结算方式',
+    title: i18next.t('modules.columns.settlementMode'),
     dataIndex: 'settlementMode',
     width: 76,
     align: 'center',
@@ -218,12 +252,6 @@ export const purchaseInboundItemColumns = insertColumnsAfter(
   purchaseItemColumns,
   'weightTon',
   purchaseInboundSettlementColumns,
-)
-
-export const supplierStatementItemColumns = insertColumnsAfter(
-  orderItemColumns,
-  'weightTon',
-  purchaseWeighColumns,
 )
 
 export const batchSupplierStatementItemColumns = insertColumnsAfter(

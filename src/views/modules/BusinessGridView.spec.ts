@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AppPageDefinition } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
-import { resolveBusinessGridInitialConfig } from '@/views/modules/BusinessGridView'
+import { resolveBusinessGridInitialConfig } from '@/views/modules/business-grid-view-utils'
 
 const purchaseOrderPageDef = {
   key: 'purchase-order',
@@ -46,6 +46,24 @@ describe('resolveBusinessGridInitialConfig', () => {
         },
         purchaseOrderConfig,
       ),
+    ).toBeUndefined()
+  })
+
+  it('returns undefined when no pageDef provided', () => {
+    expect(
+      resolveBusinessGridInitialConfig(undefined, purchaseOrderConfig),
+    ).toBeUndefined()
+  })
+
+  it('returns undefined when no config provided', () => {
+    expect(
+      resolveBusinessGridInitialConfig(purchaseOrderPageDef, undefined),
+    ).toBeUndefined()
+  })
+
+  it('handles null loader config', () => {
+    expect(
+      resolveBusinessGridInitialConfig(purchaseOrderPageDef, null),
     ).toBeUndefined()
   })
 })

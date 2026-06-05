@@ -1,5 +1,5 @@
 import Form from 'antd/es/form'
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import type { RoleOptionRecord } from '@/types/user-account'
 import type { UserAccountEditorFormValues } from '@/views/system/user-account-editor-types'
 import {
@@ -13,38 +13,35 @@ interface Props {
 }
 
 export function useUserAccountEditorRoleState({ form, roleOptions }: Props) {
-  const watchedRoleNames = Form.useWatch('roleNames', form)
-  const selectedRoleNames = useMemo(
-    () => (Array.isArray(watchedRoleNames) ? watchedRoleNames : []),
-    [watchedRoleNames],
+  const watchedRoleIds = Form.useWatch('roleIds', form)
+  const selectedRoleIds = Array.isArray(watchedRoleIds)
+    ? watchedRoleIds.map(Number)
+    : []
+
+  const selectedRoleDataScope = buildSelectedRoleDataScope(
+    selectedRoleIds,
+    roleOptions,
+    form.getFieldValue('dataScope'),
   )
 
-  const selectedRoleDataScope = useMemo(
-    () =>
-      buildSelectedRoleDataScope(
-        selectedRoleNames,
-        roleOptions,
-        form.getFieldValue('dataScope'),
-      ),
-    [selectedRoleNames, roleOptions, form],
-  )
-
-  const selectedRoleSummaries = useMemo(
-    () => buildSelectedRoleSummaries(selectedRoleNames, roleOptions),
-    [selectedRoleNames, roleOptions],
+  const selectedRoleSummaries = buildSelectedRoleSummaries(
+    selectedRoleIds,
+    roleOptions,
   )
 
   useEffect(() => {
+    // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- Antd Form 是外部状态容器，需要把角色推导的数据权限写回提交字段。
     form.setFieldValue('dataScope', selectedRoleDataScope)
   }, [selectedRoleDataScope, form])
 
   useEffect(() => {
+    // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- Antd Form 是外部状态容器，需要把角色说明写回只读提交字段。
     form.setFieldValue('permissionSummary', selectedRoleSummaries.join('；'))
   }, [selectedRoleSummaries, form])
 
   return {
     selectedRoleDataScope,
-    selectedRoleNames,
+    selectedRoleIds,
     selectedRoleSummaries,
   }
 }

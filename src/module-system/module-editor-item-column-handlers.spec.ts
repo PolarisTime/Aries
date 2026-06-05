@@ -1,0 +1,313 @@
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useModuleEditorItemColumnHandlers } from './module-editor-item-column-handlers'
+
+vi.mock('./module-adapter-editor', () => ({
+  recalculateEditorLineItem: vi.fn((item, key) => ({
+    ...item,
+    recalculated: key,
+  })),
+}))
+
+describe('useModuleEditorItemColumnHandlers', () => {
+  let setItems: ReturnType<typeof vi.fn>
+  let items: any[]
+
+  beforeEach(() => {
+    items = []
+    setItems = vi.fn((updater: any) => {
+      if (typeof updater === 'function') {
+        items = updater(items)
+      } else {
+        items = updater
+      }
+    })
+  })
+
+  it('returns all handler functions', () => {
+    const { result } = renderHook(() =>
+      useModuleEditorItemColumnHandlers({ setItems }),
+    )
+    expect(result.current.handleItemNumberChange).toBeInstanceOf(Function)
+    expect(result.current.handleItemInputChange).toBeInstanceOf(Function)
+    expect(result.current.handleMaterialSelect).toBeInstanceOf(Function)
+    expect(result.current.handleWarehouseSelect).toBeInstanceOf(Function)
+    expect(result.current.handleSettlementModeChange).toBeInstanceOf(Function)
+  })
+
+  describe('handleItemNumberChange', () => {
+    it('updates item number value', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [
+        { id: '1', quantity: 10 },
+        { id: '2', quantity: 20 },
+      ]
+
+      act(() => {
+        result.current.handleItemNumberChange('1', 'quantity', 15)
+      })
+
+      expect(setItems).toHaveBeenCalled()
+      expect(items[0].quantity).toBe(15)
+      expect(items[1].quantity).toBe(20)
+    })
+
+    it('converts null to 0', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', quantity: 10 }]
+
+      act(() => {
+        result.current.handleItemNumberChange('1', 'quantity', null)
+      })
+
+      expect(items[0].quantity).toBe(0)
+    })
+
+    it('converts undefined to 0', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', quantity: 10 }]
+
+      act(() => {
+        result.current.handleItemNumberChange('1', 'quantity', undefined)
+      })
+
+      expect(items[0].quantity).toBe(0)
+    })
+
+    it('does not update other items', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [
+        { id: '1', quantity: 10 },
+        { id: '2', quantity: 20 },
+      ]
+
+      act(() => {
+        result.current.handleItemNumberChange('2', 'quantity', 30)
+      })
+
+      expect(items[0].quantity).toBe(10)
+      expect(items[1].quantity).toBe(30)
+    })
+  })
+
+  describe('handleItemInputChange', () => {
+    it('updates item input value', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', name: 'test' }]
+
+      act(() => {
+        result.current.handleItemInputChange('1', 'name', 'new value')
+      })
+
+      expect(items[0].name).toBe('new value')
+    })
+
+    it('does not update other items', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [
+        { id: '1', name: 'test1' },
+        { id: '2', name: 'test2' },
+      ]
+
+      act(() => {
+        result.current.handleItemInputChange('2', 'name', 'new value')
+      })
+
+      expect(items[0].name).toBe('test1')
+      expect(items[1].name).toBe('new value')
+    })
+  })
+
+  describe('handleMaterialSelect', () => {
+    it('updates material code', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', materialCode: 'old' }]
+
+      act(() => {
+        result.current.handleMaterialSelect('1', 'new-code')
+      })
+
+      expect(items[0].materialCode).toBe('new-code')
+    })
+
+    it('applies material when applyMaterial provided', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', materialCode: 'old' }]
+      const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
+      const materialRecord = { name: 'Material A' }
+
+      act(() => {
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          materialRecord,
+          applyMaterial,
+        )
+      })
+
+      expect(applyMaterial).toHaveBeenCalled()
+      expect(items[0].applied).toBe(true)
+    })
+
+    it('resolves material when resolveMaterial provided', async () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', materialCode: 'new-code' }]
+      const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
+      const resolveMaterial = vi
+        .fn()
+        .mockResolvedValue({ name: 'Resolved Material' })
+
+      await act(async () => {
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          null,
+          applyMaterial,
+          resolveMaterial,
+        )
+      })
+
+      expect(resolveMaterial).toHaveBeenCalledWith('new-code')
+    })
+
+    it('does not call resolveMaterial when resolveMaterial returns null', async () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', materialCode: 'new-code' }]
+      const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
+      const resolveMaterial = vi.fn().mockResolvedValue(null)
+
+      await act(async () => {
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          null,
+          applyMaterial,
+          resolveMaterial,
+        )
+      })
+
+      expect(resolveMaterial).toHaveBeenCalledWith('new-code')
+    })
+
+    it('does not apply resolved material when materialCode changed before resolution', async () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', materialCode: 'new-code' }]
+      const applyMaterial = vi.fn((item, mat) =>
+        mat ? { ...item, resolvedApplied: true } : item,
+      )
+      const resolveMaterial = vi.fn().mockImplementation(async () => {
+        items[0] = { ...items[0], materialCode: 'different-code' }
+        return { name: 'Resolved Material' }
+      })
+
+      await act(async () => {
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          null,
+          applyMaterial,
+          resolveMaterial,
+        )
+      })
+
+      expect(items[0].resolvedApplied).toBeUndefined()
+    })
+
+    it('applies resolved material when materialCode matches', async () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', materialCode: 'new-code' }]
+      const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
+      const resolveMaterial = vi
+        .fn()
+        .mockResolvedValue({ name: 'Resolved Material' })
+
+      await act(async () => {
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          null,
+          applyMaterial,
+          resolveMaterial,
+        )
+      })
+
+      expect(items[0].applied).toBe(true)
+    })
+
+    it('does not call resolveMaterial when materialRecord is provided', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', materialCode: 'old' }]
+      const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
+      const resolveMaterial = vi.fn()
+      const materialRecord = { name: 'Material A' }
+
+      act(() => {
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          materialRecord,
+          applyMaterial,
+          resolveMaterial,
+        )
+      })
+
+      expect(resolveMaterial).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('handleWarehouseSelect', () => {
+    it('updates warehouse name', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', warehouseName: 'old' }]
+
+      act(() => {
+        result.current.handleWarehouseSelect('1', 'new-warehouse')
+      })
+
+      expect(items[0].warehouseName).toBe('new-warehouse')
+    })
+  })
+
+  describe('handleSettlementModeChange', () => {
+    it('updates settlement mode', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', settlementMode: 'old' }]
+
+      act(() => {
+        result.current.handleSettlementModeChange('1', '过磅')
+      })
+
+      expect(items[0].settlementMode).toBe('过磅')
+    })
+  })
+})

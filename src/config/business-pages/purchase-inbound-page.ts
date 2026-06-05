@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import {
   buildValueOptions,
   getSupplierOptions,
@@ -19,10 +20,9 @@ import {
 
 export const purchaseInboundsPageConfig: ModulePageConfig = {
   key: 'purchase-inbound',
-  title: '采购入库',
+  title: i18next.t('modules.pages.purchaseInbound.title'),
   kicker: 'Purchase',
-  description:
-    '采购入库页面承接采购订单，明细行展示码头、批号、结算方式、重量（吨）和金额，适合作为后续库存和供应商对账入口。',
+  description: i18next.t('modules.pages.purchaseInbound.description'),
   primaryNoKey: 'inboundNo',
   actions: actionSet,
   filters: [
@@ -30,7 +30,9 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       key: 'keyword',
       label: INBOUND_NO_FILTER_LABEL,
       type: 'input',
-      placeholder: '输入采购入库单号',
+      placeholder: i18next.t(
+        'modules.pages.purchaseInbound.placeholderInboundNo',
+      ),
     },
     {
       key: 'supplierName',
@@ -44,73 +46,153 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       type: 'select',
       options: buildValueOptions('草稿', '已审核', '完成入库'),
     },
-    { key: 'inboundDate', label: '入库日期', type: 'dateRange' },
+    {
+      key: 'inboundDate',
+      label: i18next.t('modules.pages.purchaseInbound.filterInboundDate'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: '入库单号', dataIndex: 'inboundNo', width: 160 },
-    { title: '关联订单', dataIndex: 'purchaseOrderNo', width: 160 },
-    { title: '供应商', dataIndex: 'supplierName', width: 140 },
-    { title: '入库日期', dataIndex: 'inboundDate', width: 120, type: 'date' },
     {
-      title: '总重量（吨）',
+      title: i18next.t('modules.pages.purchaseInbound.colInboundNo'),
+      dataIndex: 'inboundNo',
+      width: 160,
+    },
+    {
+      title: i18next.t('modules.pages.purchaseInbound.colSupplier'),
+      dataIndex: 'supplierName',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.purchaseInbound.colInboundDate'),
+      dataIndex: 'inboundDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.columns.totalWeight'),
       dataIndex: 'totalWeight',
-      width: 116,
+      width: 100,
       align: 'right',
       type: 'weight',
     },
     {
-      title: '总金额',
-      dataIndex: 'totalAmount',
+      title: i18next.t('modules.pages.purchaseInbound.colTotalWeighWeight'),
+      dataIndex: 'totalWeighWeightTon',
       width: 110,
+      align: 'right',
+      type: 'weight',
+    },
+    {
+      title: i18next.t('modules.pages.purchaseInbound.colWeightAdjustment'),
+      dataIndex: 'totalWeightAdjustmentTon',
+      width: 90,
+      align: 'right',
+      type: 'weight',
+    },
+    {
+      title: i18next.t('modules.columns.totalAmount'),
+      dataIndex: 'totalAmount',
+      width: 100,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '状态',
+      title: i18next.t('modules.columns.status'),
       dataIndex: 'status',
       width: 110,
       type: 'status',
       align: 'center',
     },
-    { title: '备注', dataIndex: 'remark', width: 180 },
+    {
+      title: i18next.t('modules.columns.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
   defaultHiddenColumnKeys: ['remark'],
   detailFields: [
-    { label: '入库单号', key: 'inboundNo', row: 1 },
-    { label: '关联订单', key: 'purchaseOrderNo', row: 1 },
-    { label: '供应商', key: 'supplierName', row: 1 },
-    { label: '入库日期', key: 'inboundDate', type: 'date', row: 1 },
-    { label: '总重量（吨）', key: 'totalWeight', type: 'weight', row: 2 },
-    { label: '总金额', key: 'totalAmount', type: 'amount', row: 2 },
-    { label: '状态', key: 'status', type: 'status', row: 2 },
-    { label: '备注', key: 'remark', row: 2 },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colInboundNo'),
+      key: 'inboundNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colPurchaseOrderNo'),
+      key: 'purchaseOrderNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colSupplier'),
+      key: 'supplierName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colInboundDate'),
+      key: 'inboundDate',
+      type: 'date',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.columns.totalWeight'),
+      key: 'totalWeight',
+      type: 'weight',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colTotalWeighWeight'),
+      key: 'totalWeighWeightTon',
+      type: 'weight',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseInbound.colWeightAdjustment'),
+      key: 'totalWeightAdjustmentTon',
+      type: 'weight',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.columns.totalAmount'),
+      key: 'totalAmount',
+      type: 'amount',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.columns.status'),
+      key: 'status',
+      type: 'status',
+      row: 2,
+    },
+    { label: i18next.t('modules.columns.remark'), key: 'remark', row: 2 },
   ],
   formFields: [
     {
       key: 'orderNo',
-      label: '订单编号',
+      label: i18next.t('modules.pages.purchaseInbound.formOrderNo'),
       type: 'input',
       disabled: true,
       row: 1,
     },
     {
       key: 'purchaseOrderNo',
-      label: '关联采购订单',
+      label: i18next.t('modules.pages.purchaseInbound.colPurchaseOrderNo'),
       type: 'input',
       disabled: true,
-      placeholder: '通过上级单据导入',
+      placeholder: i18next.t(
+        'modules.pages.purchaseInbound.placeholderParentImport',
+      ),
       row: 1,
     },
     {
       key: 'inboundDate',
-      label: '订单日期',
+      label: i18next.t('modules.pages.purchaseInbound.formInboundDate'),
       type: 'date',
       required: true,
       row: 1,
     },
     {
       key: 'buyerName',
-      label: '采购员',
+      label: i18next.t('modules.pages.purchaseInbound.formBuyer'),
       type: 'input',
       required: true,
       disabled: true,
@@ -118,7 +200,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     },
     {
       key: 'supplierName',
-      label: '供应商',
+      label: i18next.t('modules.pages.purchaseInbound.colSupplier'),
       type: 'select',
       required: true,
       options: getSupplierOptions,
@@ -126,42 +208,56 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     },
     {
       key: 'totalWeight',
-      label: '合计重量',
+      label: i18next.t('modules.pages.purchaseInbound.formTotalWeight'),
       type: 'input',
       disabled: true,
       row: 2,
     },
     {
       key: 'totalAmount',
-      label: '合计金额',
+      label: i18next.t('modules.pages.purchaseInbound.formTotalAmount'),
       type: 'input',
       disabled: true,
       row: 2,
     },
-    { key: 'remark', label: '备注', type: 'input', row: 2, colSpan: 6 },
+    {
+      key: 'remark',
+      label: i18next.t('modules.columns.remark'),
+      type: 'input',
+      row: 2,
+      colSpan: 6,
+    },
   ],
   parentImport: {
     parentModuleKey: 'purchase-order',
-    label: '上级采购订单',
+    label: i18next.t('modules.pages.purchaseInbound.parentImportLabel'),
     parentFieldKey: 'purchaseOrderNo',
     parentDisplayFieldKey: 'orderNo',
-    buttonText: '导入采购订单明细',
+    buttonText: i18next.t('modules.pages.purchaseInbound.parentImportButton'),
     mapParentToDraft: (parentRecord) => ({
-      orderNo: parentRecord.orderNo || '',
-      buyerName: parentRecord.buyerName || '',
+      purchaseOrderNo: parentRecord.orderNo || '',
       supplierName: parentRecord.supplierName || '',
     }),
     transformItems: (parentRecord) =>
       cloneLineItems(
         Array.isArray(parentRecord.items)
-          ? parentRecord.items.map((item) => ({
-              ...item,
-              sourcePurchaseOrderItemId: item.id,
-              _sourcePieceWeightTon: item.pieceWeightTon,
-              settlementMode: isPurchaseWeighRequiredCategory(item.category)
-                ? '过磅'
-                : '理算',
-            }))
+          ? parentRecord.items.flatMap((item) =>
+              Number(item.remainingQuantity ?? item.quantity) > 0
+                ? [
+                    {
+                      ...item,
+                      quantity: Number(item.remainingQuantity ?? item.quantity),
+                      sourcePurchaseOrderItemId: item.id,
+                      _sourcePieceWeightTon: item.pieceWeightTon,
+                      settlementMode: isPurchaseWeighRequiredCategory(
+                        item.category,
+                      )
+                        ? '过磅'
+                        : '理算',
+                    },
+                  ]
+                : [],
+            )
           : [],
         'purchase-inbound-item',
       ),

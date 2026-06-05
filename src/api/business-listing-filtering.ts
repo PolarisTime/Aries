@@ -4,8 +4,10 @@ import {
   type ModuleEndpointConfig,
 } from '@/api/module-contracts'
 import { getModulePageSchema } from '@/config/module-page-schema'
+import type { SearchParams } from '@/types/api-raw'
 import type { ModuleFilterDefinition, ModuleRecord } from '@/types/module-page'
 import type { ListQueryOptions } from '@/utils/list'
+import { asString, safe } from '@/utils/type-narrowing'
 import { FULL_SCAN_PAGE_SIZE } from './business-listing-constants'
 
 export function hasValue(value: unknown) {
@@ -31,19 +33,13 @@ export function isServerFilterKey(
   )
 }
 
-export function shouldClientFilter(
-  moduleKey: string,
-  search: Record<string, unknown>,
-) {
+export function shouldClientFilter(moduleKey: string, search: SearchParams) {
   const endpointConfig = getModuleConfig(moduleKey)
   const keys = Object.keys(search).filter((key) => hasValue(search[key]))
   return keys.some((key) => !isServerFilterKey(endpointConfig, key))
 }
 
-export function buildFilterParams(
-  moduleKey: string,
-  search: Record<string, unknown>,
-) {
+export function buildFilterParams(moduleKey: string, search: SearchParams) {
   const endpointConfig = getModuleConfig(moduleKey)
   const params: Record<string, QueryValue> = {}
 
@@ -54,13 +50,13 @@ export function buildFilterParams(
 
     const dateRangeMapping = endpointConfig.dateRangeMapping?.[key]
     if (dateRangeMapping && Array.isArray(value) && value.length === 2) {
-      params[dateRangeMapping.startKey] = String(value[0] || '')
-      params[dateRangeMapping.endKey] = String(value[1] || '')
+      params[dateRangeMapping.startKey] = asString(value[0])
+      params[dateRangeMapping.endKey] = asString(value[1])
       return
     }
 
     if (isServerFilterKey(endpointConfig, key)) {
-      params[key] = Array.isArray(value) ? value.map(String) : String(value)
+      params[key] = Array.isArray(value) ? value.map(asString) : asString(value)
     }
   })
 
@@ -69,7 +65,7 @@ export function buildFilterParams(
 
 export function getUnsupportedFilterKeys(
   moduleKey: string,
-  search: Record<string, unknown>,
+  search: SearchParams,
 ) {
   const endpointConfig = getModuleConfig(moduleKey)
   return Object.keys(search).filter(
@@ -79,7 +75,7 @@ export function getUnsupportedFilterKeys(
 
 export function buildQueryParams(
   moduleKey: string,
-  search: Record<string, unknown>,
+  search: SearchParams,
   options: ListQueryOptions,
   useClientFilter: boolean,
 ) {
@@ -102,7 +98,7 @@ export function buildQueryParams(
   return params
 }
 
-function applyFilterDefinition(
+export function applyFilterDefinition(
   record: ModuleRecord,
   filter: ModuleFilterDefinition,
   rawValue: unknown,
@@ -112,47 +108,36 @@ function applyFilterDefinition(
   }
 
   if (filter.type === 'input') {
-    const keyword = String(rawValue || '')
-      .trim()
-      .toLowerCase()
-    if (!keyword) {
-      return true
-    }
+    const keyword = asString(rawValue).trim().toLowerCase()
+    if (!keyword) return true
 
     const recordSearchKeys = filter.clientSearchKeys || []
     const lineItemSearchKeys = filter.clientSearchLineItemKeys || []
+    const rec = safe(record)
+
     if (recordSearchKeys.length || lineItemSearchKeys.length) {
       const matchedRecordField = recordSearchKeys.some((key) =>
-        String(record[key] ?? '')
-          .toLowerCase()
-          .includes(keyword),
+        rec.str(key).toLowerCase().includes(keyword),
       )
-      if (matchedRecordField) {
-        return true
-      }
-
-      if (!lineItemSearchKeys.length || !Array.isArray(record.items)) {
+      if (matchedRecordField) return true
+      if (!lineItemSearchKeys.length || !Array.isArray(record.items))
         return false
-      }
 
-      return record.items.some((item) =>
-        lineItemSearchKeys.some((key) =>
-          String(item[key] ?? '')
-            .toLowerCase()
-            .includes(keyword),
-        ),
-      )
+      return record.items.some((item) => {
+        const it = safe(item)
+        return lineItemSearchKeys.some((key) =>
+          it.str(key).toLowerCase().includes(keyword),
+        )
+      })
     }
 
     return Object.values(record).some((value) =>
-      String(value ?? '')
-        .toLowerCase()
-        .includes(keyword),
+      asString(value).toLowerCase().includes(keyword),
     )
   }
 
   if (filter.type === 'select') {
-    return String(record[filter.key] ?? '') === String(rawValue ?? '')
+    return safe(record).str(filter.key) === asString(rawValue)
   }
 
   if (
@@ -161,11 +146,9 @@ function applyFilterDefinition(
     rawValue.length === 2
   ) {
     const [start, end] = rawValue
-    const current = String(record[filter.key] ?? '')
-    if (!current || !start || !end) {
-      return true
-    }
-    return current >= String(start) && current <= String(end)
+    const current = safe(record).str(filter.key)
+    if (!current || !start || !end) return true
+    return current >= asString(start) && current <= asString(end)
   }
 
   return true
@@ -174,7 +157,7 @@ function applyFilterDefinition(
 export function applyClientFilters(
   moduleKey: string,
   rows: ModuleRecord[],
-  search: Record<string, unknown>,
+  search: SearchParams,
 ) {
   const filters = getModulePageSchema(moduleKey)?.filters
   if (!filters?.length) {

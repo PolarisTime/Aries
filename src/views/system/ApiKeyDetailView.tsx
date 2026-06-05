@@ -1,5 +1,5 @@
 import { ArrowLeftOutlined } from '@ant-design/icons'
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Descriptions from 'antd/es/descriptions'
@@ -8,7 +8,8 @@ import Flex from 'antd/es/flex'
 import Spin from 'antd/es/spin'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   type ApiKeyActionOption,
   type ApiKeyRecord,
@@ -17,6 +18,7 @@ import {
   listApiKeyActionOptions,
   listApiKeyResourceOptions,
 } from '@/api/api-keys'
+import { formatDateTime } from '@/utils/formatters'
 
 function getStatusColor(status: string) {
   if (status === '有效' || status === 'active') return 'green'
@@ -26,8 +28,20 @@ function getStatusColor(status: string) {
   return 'default'
 }
 
+function formatAllowedCodes(
+  codes: string[] | undefined,
+  options: Array<{ code: string; title: string }>,
+  fallback: string,
+): string {
+  if (!codes?.length) {
+    return fallback
+  }
+  const titleMap = new Map(options.map((item) => [item.code, item.title]))
+  return codes.map((item) => titleMap.get(item) || item).join('、')
+}
+
 export function ApiKeyDetailView() {
-  const location = useLocation()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [record, setRecord] = useState<ApiKeyRecord | null>(null)
@@ -36,10 +50,8 @@ export function ApiKeyDetailView() {
   >([])
   const [actionOptions, setActionOptions] = useState<ApiKeyActionOption[]>([])
 
-  const id = useMemo(() => {
-    const segments = location.pathname.split('/').filter(Boolean)
-    return segments[segments.length - 1] || ''
-  }, [location.pathname])
+  const params = useParams({ strict: false })
+  const id = params.id ?? ''
 
   useEffect(() => {
     if (!id) {
@@ -62,10 +74,14 @@ export function ApiKeyDetailView() {
         setRecord(detail)
         setResourceOptions(resources)
         setActionOptions(actions)
-      } finally {
         if (!cancelled) {
           setLoading(false)
         }
+      } catch (error) {
+        if (!cancelled) {
+          setLoading(false)
+        }
+        throw error
       }
     }
 
@@ -76,29 +92,16 @@ export function ApiKeyDetailView() {
     }
   }, [id])
 
-  const allowedResourceText = useMemo(() => {
-    if (!record?.allowedResources?.length) {
-      return '未限制'
-    }
-    const titleMap = new Map(
-      resourceOptions.map((item) => [item.code, item.title]),
-    )
-    return record.allowedResources
-      .map((item) => titleMap.get(item) || item)
-      .join('、')
-  }, [record?.allowedResources, resourceOptions])
-
-  const allowedActionText = useMemo(() => {
-    if (!record?.allowedActions?.length) {
-      return '未设置'
-    }
-    const titleMap = new Map(
-      actionOptions.map((item) => [item.code, item.title]),
-    )
-    return record.allowedActions
-      .map((item) => titleMap.get(item) || item)
-      .join('、')
-  }, [actionOptions, record?.allowedActions])
+  const allowedResourceText = formatAllowedCodes(
+    record?.allowedResources,
+    resourceOptions,
+    t('system.apiKeyDetail.fallbackUnlimited'),
+  )
+  const allowedActionText = formatAllowedCodes(
+    record?.allowedActions,
+    actionOptions,
+    t('system.apiKeyDetail.fallbackUnset'),
+  )
 
   return (
     <div className="page-stack">
@@ -107,12 +110,14 @@ export function ApiKeyDetailView() {
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate({ to: '/api-key' as '/' })}
+            onClick={() => {
+              void navigate({ to: '/api-key' as '/' })
+            }}
           >
-            返回
+            {t('system.apiKeyDetail.back')}
           </Button>
-          <Typography.Title level={5} style={{ margin: 0 }}>
-            API Key 详情
+          <Typography.Title level={5} className="m-0">
+            {t('system.apiKeyDetail.title')}
           </Typography.Title>
         </Flex>
       </Card>
@@ -120,46 +125,52 @@ export function ApiKeyDetailView() {
       <Spin spinning={loading}>
         {record ? (
           <Card>
-            <Descriptions bordered column={2} size="small">
-              <Descriptions.Item label="密钥名称">
+            <Descriptions bordered column={{ xs: 1, md: 2 }} size="small">
+              <Descriptions.Item label={t('system.apiKeyDetail.keyName')}>
                 {record.keyName}
               </Descriptions.Item>
-              <Descriptions.Item label="使用范围">
+              <Descriptions.Item label={t('system.apiKeyDetail.usageScope')}>
                 {record.usageScope}
               </Descriptions.Item>
-              <Descriptions.Item label="允许资源">
+              <Descriptions.Item
+                label={t('system.apiKeyDetail.allowedResources')}
+              >
                 {allowedResourceText}
               </Descriptions.Item>
-              <Descriptions.Item label="允许动作">
+              <Descriptions.Item
+                label={t('system.apiKeyDetail.allowedActions')}
+              >
                 {allowedActionText}
               </Descriptions.Item>
-              <Descriptions.Item label="所属用户">
+              <Descriptions.Item label={t('system.apiKeyDetail.ownerUser')}>
                 {record.userName || record.loginName}（{record.loginName}）
               </Descriptions.Item>
-              <Descriptions.Item label="用户 ID">
+              <Descriptions.Item label={t('system.apiKeyDetail.userId')}>
                 {record.userId}
               </Descriptions.Item>
-              <Descriptions.Item label="密钥前缀">
-                <Typography.Paragraph copyable code style={{ marginBottom: 0 }}>
+              <Descriptions.Item label={t('system.apiKeyDetail.keyPrefix')}>
+                <Typography.Paragraph copyable code className="mb-0">
                   {record.keyPrefix}
                 </Typography.Paragraph>
               </Descriptions.Item>
-              <Descriptions.Item label="状态">
+              <Descriptions.Item label={t('system.apiKeyDetail.status')}>
                 <Tag color={getStatusColor(record.status)}>{record.status}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="创建时间">
-                {record.createdAt}
+              <Descriptions.Item label={t('system.apiKeyDetail.createdAt')}>
+                {formatDateTime(record.createdAt, '--')}
               </Descriptions.Item>
-              <Descriptions.Item label="过期时间">
-                {record.expiresAt || '永不过期'}
+              <Descriptions.Item label={t('system.apiKeyDetail.expiresAt')}>
+                {record.expiresAt == null || record.expiresAt === ''
+                  ? t('system.apiKeyDetail.neverExpires')
+                  : formatDateTime(record.expiresAt, '--')}
               </Descriptions.Item>
-              <Descriptions.Item label="最后使用">
-                {record.lastUsedAt || '--'}
+              <Descriptions.Item label={t('system.apiKeyDetail.lastUsed')}>
+                {formatDateTime(record.lastUsedAt, '--')}
               </Descriptions.Item>
             </Descriptions>
           </Card>
         ) : (
-          <Empty description="未找到该 API Key" />
+          <Empty description={t('system.apiKeyDetail.notFound')} />
         )}
       </Spin>
     </div>

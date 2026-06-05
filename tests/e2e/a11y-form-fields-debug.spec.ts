@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import {
   fetchCollection,
   pickSearchTerm,
@@ -18,7 +19,12 @@ interface BrokenLabelNode {
   outerHTML: string
 }
 
-async function collectFindings(page: Parameters<typeof test>[0]['page']) {
+type CollectedFindings = {
+  fields: Array<Omit<MissingFieldNode, 'path'>>
+  brokenLabels: Array<Omit<BrokenLabelNode, 'path'>>
+}
+
+function collectFindings(page: Page): Promise<CollectedFindings> {
   return page.evaluate(() => {
     const skipInputTypes = new Set(['hidden', 'submit', 'button', 'reset'])
 

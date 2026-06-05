@@ -1,26 +1,26 @@
+import i18next from 'i18next'
 import {
   batchOrderItemColumns,
   batchSupplierStatementItemColumns,
   orderItemColumns,
   purchaseInboundItemColumns,
   purchaseItemColumns,
-  supplierStatementItemColumns,
 } from './shared-item-column-base'
 import { applyCompactItemLayout } from './shared-item-column-utils'
 
 const compactTradeItemWidthMap: Record<string, number> = {
   sourceNo: 140,
-  materialCode: 136,
+  materialCode: 240,
   brand: 68,
   category: 58,
   material: 76,
   spec: 72,
   length: 64,
   unit: 56,
-  warehouseName: 88,
+  warehouseName: 110,
   quantity: 70,
   quantityUnit: 64,
-  batchNo: 96,
+  batchNo: 130,
   pieceWeightTon: 76,
   weightTon: 108,
   settlementMode: 76,
@@ -37,18 +37,6 @@ export const compactOrderItemColumns = applyCompactItemLayout(
   ['piecesPerBundle'],
 )
 
-export const compactBatchOrderItemColumns = applyCompactItemLayout(
-  batchOrderItemColumns,
-  compactTradeItemWidthMap,
-  ['piecesPerBundle'],
-)
-
-export const compactWeightOnlyBatchOrderItemColumns = applyCompactItemLayout(
-  batchOrderItemColumns,
-  compactTradeItemWidthMap,
-  ['piecesPerBundle', 'unitPrice', 'amount'],
-)
-
 export const compactPurchaseItemColumns = applyCompactItemLayout(
   purchaseItemColumns,
   compactTradeItemWidthMap,
@@ -61,31 +49,14 @@ export const compactPurchaseInboundItemColumns = applyCompactItemLayout(
   ['piecesPerBundle'],
 )
 
-export const compactWeightOnlyPurchaseItemColumns = applyCompactItemLayout(
-  purchaseItemColumns,
-  compactTradeItemWidthMap,
-  ['piecesPerBundle', 'unitPrice', 'amount'],
-)
-
-export const compactCustomerStatementItemColumns = applyCompactItemLayout(
-  [{ title: '订单号', dataIndex: 'sourceNo', width: 160 }, ...orderItemColumns],
-  compactTradeItemWidthMap,
-  ['piecesPerBundle'],
-)
-
 export const compactBatchCustomerStatementItemColumns = applyCompactItemLayout(
   [
-    { title: '订单号', dataIndex: 'sourceNo', width: 160 },
+    {
+      title: i18next.t('modules.columns.orderNo'),
+      dataIndex: 'sourceNo',
+      width: 160,
+    },
     ...batchOrderItemColumns,
-  ],
-  compactTradeItemWidthMap,
-  ['piecesPerBundle'],
-)
-
-export const compactSupplierStatementItemColumns = applyCompactItemLayout(
-  [
-    { title: '入库单号', dataIndex: 'sourceNo', width: 160 },
-    ...supplierStatementItemColumns,
   ],
   compactTradeItemWidthMap,
   ['piecesPerBundle'],
@@ -93,7 +64,11 @@ export const compactSupplierStatementItemColumns = applyCompactItemLayout(
 
 export const compactBatchSupplierStatementItemColumns = applyCompactItemLayout(
   [
-    { title: '入库单号', dataIndex: 'sourceNo', width: 160 },
+    {
+      title: i18next.t('modules.columns.inboundNo'),
+      dataIndex: 'sourceNo',
+      width: 160,
+    },
     ...batchSupplierStatementItemColumns,
   ],
   compactTradeItemWidthMap,
@@ -102,7 +77,11 @@ export const compactBatchSupplierStatementItemColumns = applyCompactItemLayout(
 
 export const compactInvoiceReceiptItemColumns = applyCompactItemLayout(
   [
-    { title: '采购订单号', dataIndex: 'sourceNo', width: 160 },
+    {
+      title: i18next.t('modules.columns.purchaseOrderNo'),
+      dataIndex: 'sourceNo',
+      width: 160,
+    },
     ...purchaseItemColumns,
   ],
   compactTradeItemWidthMap,
@@ -111,7 +90,11 @@ export const compactInvoiceReceiptItemColumns = applyCompactItemLayout(
 
 export const compactInvoiceIssueItemColumns = applyCompactItemLayout(
   [
-    { title: '销售订单号', dataIndex: 'sourceNo', width: 160 },
+    {
+      title: i18next.t('modules.columns.salesOrderNo'),
+      dataIndex: 'sourceNo',
+      width: 160,
+    },
     ...purchaseItemColumns,
   ],
   compactTradeItemWidthMap,

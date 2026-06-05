@@ -1,5 +1,6 @@
 import { useLocation } from '@tanstack/react-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export interface OpenPage {
   key: string
@@ -14,6 +15,10 @@ export interface OpenPageDescriptor {
   title: string
 }
 
+export interface ClosePageOptions {
+  fallbackPath?: string
+}
+
 function resolveOpenPageKey(
   path: string,
   meta?: Record<string, unknown>,
@@ -23,81 +28,124 @@ function resolveOpenPageKey(
 
 export function useOpenPages(
   defaultPath = '/dashboard',
-  defaultTitle = '未命名页面',
-  homeTitle = '工作台',
+  defaultTitle?: string,
+  homeTitle?: string,
   resolvePage?: (pathname: string) => OpenPageDescriptor,
 ) {
+  const { t } = useTranslation()
+  const resolvedDefaultTitle = defaultTitle ?? t('hooks.openPages.unnamedPage')
+  const resolvedHomeTitle = homeTitle ?? t('hooks.openPages.workbench')
+
   const location = useLocation()
-  const [pages, setPages] = useState<OpenPage[]>([
-    { key: defaultPath, path: defaultPath, title: homeTitle, closable: false },
+  const closingPageKeyRef = useRef<string | null>(null)
+  const [storedPages, setStoredPages] = useState<OpenPage[]>([
+    {
+      key: defaultPath,
+      path: defaultPath,
+      title: resolvedHomeTitle,
+      closable: false,
+    },
   ])
 
-  useEffect(() => {
-    const currentPage = resolvePage
-      ? resolvePage(location.pathname)
-      : {
-          key: resolveOpenPageKey(location.pathname),
-          path: location.pathname,
-          title: defaultTitle,
-        }
-    const nextPage: OpenPage = {
-      key: currentPage.key,
-      path: currentPage.path,
-      title: currentPage.title,
-      closable: currentPage.key !== defaultPath,
+  const currentPage = resolvePage
+    ? resolvePage(location.pathname)
+    : {
+        key: resolveOpenPageKey(location.pathname),
+        path: location.pathname,
+        title: resolvedDefaultTitle,
+      }
+  const currentOpenPage: OpenPage = {
+    key: currentPage.key,
+    path: currentPage.path,
+    title: currentPage.title,
+    closable: currentPage.key !== defaultPath,
+  }
+  const pages = (() => {
+    const normalizedPages = [
+      {
+        key: defaultPath,
+        path: defaultPath,
+        title: resolvedHomeTitle,
+        closable: false,
+      },
+      ...storedPages.filter((item) => item.key !== defaultPath),
+    ]
+    const visiblePages = closingPageKeyRef.current
+      ? normalizedPages.filter((item) => item.key !== closingPageKeyRef.current)
+      : normalizedPages
+
+    if (closingPageKeyRef.current === currentOpenPage.key) {
+      return visiblePages
     }
 
-    setPages((prev) => {
-      const normalizedPages = [
-        {
-          key: defaultPath,
-          path: defaultPath,
-          title: homeTitle,
-          closable: false,
-        },
-        ...prev.filter((item) => item.key !== defaultPath),
-      ]
+    if (visiblePages.some((item) => item.key === currentOpenPage.key)) {
+      return visiblePages.map((item) =>
+        item.key === currentOpenPage.key ? currentOpenPage : item,
+      )
+    }
+    return [...visiblePages, currentOpenPage]
+  })()
 
-      if (normalizedPages.some((item) => item.key === currentPage.key)) {
-        return normalizedPages.map((item) =>
-          item.key === currentPage.key ? nextPage : item,
+  useEffect(() => {
+    if (
+      closingPageKeyRef.current &&
+      closingPageKeyRef.current !== currentOpenPage.key
+    ) {
+      closingPageKeyRef.current = null
+    }
+  }, [currentOpenPage.key])
+
+  if (pages !== storedPages) {
+    const samePages =
+      pages.length === storedPages.length &&
+      pages.every((page, index) => {
+        const stored = storedPages[index]
+        return (
+          stored &&
+          stored.key === page.key &&
+          stored.path === page.path &&
+          stored.title === page.title &&
+          stored.closable === page.closable
         )
-      }
-      return [...normalizedPages, nextPage]
-    })
-  }, [defaultPath, defaultTitle, homeTitle, location.pathname, resolvePage])
-
-  const closePage = useCallback(
-    (key: string, navigate: (path: string) => void) => {
-      setPages((prev) => {
-        const index = prev.findIndex((item) => item.key === key)
-        if (index < 0) return prev
-        if (key === defaultPath || prev[index]?.closable === false) return prev
-
-        const nextPages = prev.filter((item) => item.key !== key)
-        const currentKey = resolvePage
-          ? resolvePage(location.pathname).key
-          : resolveOpenPageKey(location.pathname)
-
-        if (currentKey === key) {
-          const fallback = nextPages[Math.max(index - 1, 0)] || nextPages[0]
-          if (fallback?.path) {
-            // Use setTimeout to avoid state update during render
-            setTimeout(() => navigate(fallback.path), 0)
-          } else {
-            setTimeout(() => navigate(defaultPath), 0)
-          }
-        }
-
-        return nextPages
       })
-    },
-    [defaultPath, location.pathname, resolvePage],
-  )
+    if (!samePages) {
+      setStoredPages(pages)
+    }
+  }
 
-  const updatePageTitle = useCallback((key: string, title: string) => {
-    setPages((prev) => prev.map((p) => (p.key === key ? { ...p, title } : p)))
-  }, [])
+  const closePage = (
+    key: string,
+    navigate: (path: string) => void,
+    options: ClosePageOptions = {},
+  ) => {
+    setStoredPages((prev) => {
+      const index = prev.findIndex((item) => item.key === key)
+      if (index < 0) return prev
+      if (key === defaultPath || prev[index]?.closable === false) return prev
+
+      closingPageKeyRef.current = key
+      const nextPages = prev.filter((item) => item.key !== key)
+      const currentKey = resolvePage
+        ? resolvePage(location.pathname).key
+        : resolveOpenPageKey(location.pathname)
+
+      if (currentKey === key || options.fallbackPath) {
+        const fallback = nextPages[Math.max(index - 1, 0)] || nextPages[0]
+        const fallbackPath =
+          options.fallbackPath || fallback?.path || defaultPath
+        // Use setTimeout to avoid state update during render
+        setTimeout(() => navigate(fallbackPath), 0)
+      }
+
+      return nextPages
+    })
+  }
+
+  const updatePageTitle = (key: string, title: string) => {
+    setStoredPages((prev) =>
+      prev.map((p) => (p.key === key ? { ...p, title } : p)),
+    )
+  }
 
   return { pages, closePage, updatePageTitle }
 }

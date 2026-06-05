@@ -5,22 +5,22 @@ export const masterModuleEndpointContracts: Record<
   ModuleEndpointConfig
 > = {
   material: {
-    path: '/material',
+    path: '/materials',
     supportsSearch: true,
     nativeFilterKeys: ['keyword', 'category', 'material'],
   },
   supplier: {
-    path: '/supplier',
+    path: '/suppliers',
     supportsSearch: false,
     nativeFilterKeys: ['keyword', 'status'],
   },
   customer: {
-    path: '/customer',
+    path: '/customers',
     supportsSearch: false,
     nativeFilterKeys: ['keyword', 'status'],
   },
   carrier: {
-    path: '/carrier',
+    path: '/carriers',
     supportsSearch: false,
     nativeFilterKeys: ['keyword', 'status'],
   },
@@ -30,7 +30,7 @@ export const masterModuleEndpointContracts: Record<
     nativeFilterKeys: ['keyword', 'status'],
   },
   warehouse: {
-    path: '/warehouse',
+    path: '/warehouses',
     supportsSearch: false,
     nativeFilterKeys: ['keyword', 'warehouseType', 'status'],
   },

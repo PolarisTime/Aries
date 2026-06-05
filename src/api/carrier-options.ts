@@ -1,82 +1,58 @@
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
-import { http } from './client'
-export interface CarrierOption {
+import { createCachedOptions } from '@/lib/create-cached-options'
+import type { ModuleRecordInput } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
+
+export type CarrierOption = {
   id?: string
   value: string
   label: string
   vehiclePlates?: string[]
 }
 
-let cachedCarriers: CarrierOption[] | null = null
-let fetchFailed = false
-let loadingCarriers: Promise<CarrierOption[]> | null = null
-
-export async function fetchCarrierOptions(): Promise<CarrierOption[]> {
-  if (cachedCarriers !== null) return cachedCarriers
-  if (loadingCarriers) return loadingCarriers
-
-  loadingCarriers = (async () => {
-    const response = await http.get<ApiResponse<CarrierOption[]>>(
-      ENDPOINTS.CARRIERS_OPTIONS,
-    )
-    cachedCarriers = normalizeCarrierOptions(response.data || [])
-    fetchFailed = false
-    return cachedCarriers
-  })()
-
-  try {
-    return await loadingCarriers
-  } catch {
-    fetchFailed = true
-    return []
-  } finally {
-    loadingCarriers = null
-  }
-}
-
-export function getCarrierOptions(): CarrierOption[] {
-  if (cachedCarriers === null && !loadingCarriers && !fetchFailed) {
-    fetchCarrierOptions()
-  }
-  return cachedCarriers || []
-}
-
-export function findCarrierOption(
-  carrierName: unknown,
-): CarrierOption | undefined {
-  const normalizedCarrierName = String(carrierName || '').trim()
-  if (!normalizedCarrierName) return undefined
-  return getCarrierOptions().find(
-    (option) => String(option.value).trim() === normalizedCarrierName,
-  )
-}
-
-export function getCarrierVehiclePlateOptions(form?: Record<string, unknown>) {
-  const carrier = findCarrierOption(form?.carrierName)
-  return (carrier?.vehiclePlates || []).map((plate) => ({
-    label: plate,
-    value: plate,
-  }))
-}
-
-export function reloadCarrierOptions() {
-  cachedCarriers = null
-  fetchFailed = false
-  loadingCarriers = null
-  return fetchCarrierOptions()
-}
-
-function normalizeCarrierOptions(options: CarrierOption[]): CarrierOption[] {
+export function normalizeCarrierOptions(
+  options: CarrierOption[],
+): CarrierOption[] {
   return options.map((option) => ({
     ...option,
     id: option.id == null ? undefined : String(option.id),
     label: String(option.label || ''),
     value: String(option.value || ''),
     vehiclePlates: Array.isArray(option.vehiclePlates)
-      ? option.vehiclePlates
-          .map((plate) => String(plate || '').trim())
-          .filter(Boolean)
+      ? option.vehiclePlates.flatMap((plate) => {
+          const v = String(plate || '').trim()
+          return v ? [v] : []
+        })
       : [],
+  }))
+}
+
+const cached = createCachedOptions<CarrierOption>({
+  endpoint: ENDPOINTS.CARRIERS_OPTIONS,
+  normalizer: normalizeCarrierOptions,
+})
+
+export const fetchCarrierOptions = cached.fetch
+export const reloadCarrierOptions = cached.reload
+
+export function getCarrierOptions(): CarrierOption[] {
+  return cached.get()
+}
+
+export function findCarrierOption(
+  carrierName: unknown,
+): CarrierOption | undefined {
+  const normalizedCarrierName = asString(carrierName).trim()
+  if (!normalizedCarrierName) return undefined
+  return cached
+    .get()
+    .find((option) => String(option.value).trim() === normalizedCarrierName)
+}
+
+export function getCarrierVehiclePlateOptions(form?: ModuleRecordInput) {
+  const carrier = findCarrierOption(form?.carrierName)
+  return (carrier?.vehiclePlates || []).map((plate) => ({
+    label: plate,
+    value: plate,
   }))
 }

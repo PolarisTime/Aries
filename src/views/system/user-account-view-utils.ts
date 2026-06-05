@@ -11,16 +11,14 @@ export function getUserAccountTotpColor(enabled: boolean) {
   return enabled ? 'processing' : 'default'
 }
 
-export function normalizeUserAccountDataScopeLabel(
-  value: string | null | undefined,
-) {
+function normalizeUserAccountDataScopeLabel(value: string | null | undefined) {
   const normalized = String(value || '').trim()
   if (normalized === '全部数据' || normalized === '全部') return '全部数据'
   if (normalized === '本部门') return '本部门'
   return '本人'
 }
 
-export function getUserAccountDataScopeRank(value: string) {
+function getUserAccountDataScopeRank(value: string) {
   switch (normalizeUserAccountDataScopeLabel(value)) {
     case '全部数据':
       return 3
@@ -32,15 +30,15 @@ export function getUserAccountDataScopeRank(value: string) {
 }
 
 export function buildSelectedRoleDataScope(
-  selectedRoleNames: string[],
+  selectedRoleIds: number[],
   roleOptions: RoleOptionRecord[],
   currentDataScope?: string,
 ) {
   const selectedRoles = roleOptions.filter((role) =>
-    selectedRoleNames.includes(role.roleName),
+    selectedRoleIds.includes(Number(role.id)),
   )
   if (!selectedRoles.length) {
-    return selectedRoleNames.length
+    return selectedRoleIds.length
       ? normalizeUserAccountDataScopeLabel(currentDataScope)
       : '本人'
   }
@@ -57,14 +55,16 @@ export function buildSelectedRoleDataScope(
 }
 
 export function buildSelectedRoleSummaries(
-  selectedRoleNames: string[],
+  selectedRoleIds: number[],
   roleOptions: RoleOptionRecord[],
 ) {
-  return roleOptions
-    .filter((role) => selectedRoleNames.includes(role.roleName))
-    .map((role) => role.permissionSummary)
-    .filter((summary): summary is string => Boolean(summary?.trim()))
-    .filter((summary, index, values) => values.indexOf(summary) === index)
+  return roleOptions.reduce<string[]>((acc, role) => {
+    if (!selectedRoleIds.includes(Number(role.id))) return acc
+    const summary = role.permissionSummary?.trim()
+    if (!summary || acc.includes(summary)) return acc
+    acc.push(summary)
+    return acc
+  }, [])
 }
 
 export function buildDefaultUserAccountFormValues() {

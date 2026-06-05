@@ -1,5 +1,4 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef } from 'react'
 import { listAllBusinessModuleRows } from '@/api/business'
 import {
   DISPLAY_SWITCH_CODES,
@@ -8,21 +7,23 @@ import {
 } from '@/api/system-settings'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { buildWeightOverview } from '@/config/business-pages/shared'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   buildStatementLinkOptions,
   type StatementLinkCatalog,
-} from '@/views/modules/module-adapter-finance-links'
+} from '@/module-system/module-adapter-finance-links'
+import type {
+  ModulePageConfig,
+  ModuleRecord,
+  ModuleRecordInput,
+} from '@/types/module-page'
 
 const WEIGHT_ONLY_VIEW_SETTING_CODES: Record<string, string> = {
   'purchase-inbound': DISPLAY_SWITCH_CODES.weightOnlyPurchaseInbounds,
   'sales-outbound': DISPLAY_SWITCH_CODES.weightOnlySalesOutbounds,
 }
 
-const INVOICE_ASSIST_MODULE_KEYS = new Set([
-  'invoice-receipt',
-  'invoice-issue',
-])
+const INVOICE_ASSIST_MODULE_KEYS = new Set(['invoice-receipt', 'invoice-issue'])
 
 function buildWeightOnlyViewConfig(
   baseConfig: ModulePageConfig,
@@ -46,41 +47,37 @@ interface Props {
 
 function useStatementLinkCatalog(enabled: boolean) {
   const customerStatementsQuery = useQuery({
-    queryKey: ['statement-link-options', 'customer-statement'],
+    queryKey: QUERY_KEYS.statementLinkOptions('customer-statement'),
     queryFn: () => listAllBusinessModuleRows('customer-statement', {}),
     enabled,
     placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   })
 
   const supplierStatementsQuery = useQuery({
-    queryKey: ['statement-link-options', 'supplier-statement'],
+    queryKey: QUERY_KEYS.statementLinkOptions('supplier-statement'),
     queryFn: () => listAllBusinessModuleRows('supplier-statement', {}),
     enabled,
     placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   })
 
   const freightStatementsQuery = useQuery({
-    queryKey: ['statement-link-options', 'freight-statement'],
+    queryKey: QUERY_KEYS.statementLinkOptions('freight-statement'),
     queryFn: () => listAllBusinessModuleRows('freight-statement', {}),
     enabled,
     placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   })
 
-  return useMemo<StatementLinkCatalog>(
-    () => ({
-      customerStatements: customerStatementsQuery.data || [],
-      supplierStatements: supplierStatementsQuery.data || [],
-      freightStatements: freightStatementsQuery.data || [],
-    }),
-    [
-      customerStatementsQuery.data,
-      supplierStatementsQuery.data,
-      freightStatementsQuery.data,
-    ],
-  )
+  return {
+    customerStatements: customerStatementsQuery.data || [],
+    supplierStatements: supplierStatementsQuery.data || [],
+    freightStatements: freightStatementsQuery.data || [],
+  } satisfies StatementLinkCatalog
 }
 
 function decorateStatementLinkConfig(
@@ -100,37 +97,27 @@ function decorateStatementLinkConfig(
       }
       return {
         ...field,
-        options: (form?: Record<string, unknown>) =>
-          buildStatementLinkOptions(
-            moduleKey as 'receipt' | 'payment',
-            form,
-            catalog,
-          ),
+        options: (form?: ModuleRecordInput) =>
+          buildStatementLinkOptions(moduleKey, form, catalog),
       }
     }),
   }
 }
 
 export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
-  const previousModuleKeyRef = useRef(moduleKey)
   const switchCode = WEIGHT_ONLY_VIEW_SETTING_CODES[moduleKey]
   const needsStatementLinkCatalog =
     moduleKey === 'receipt' || moduleKey === 'payment'
-  const canReusePreviousConfig = previousModuleKeyRef.current === moduleKey
 
   const moduleConfigQuery = useQuery({
-    queryKey: ['business-page-config', moduleKey],
+    queryKey: QUERY_KEYS.businessPageConfig(moduleKey),
     queryFn: () => loadBusinessPageConfig(moduleKey),
-    placeholderData: initialConfig
-      ? () => initialConfig
-      : canReusePreviousConfig
-        ? keepPreviousData
-        : undefined,
+    placeholderData: initialConfig ? () => initialConfig : keepPreviousData,
     staleTime: 5 * 60_000,
   })
 
   const displaySwitchesQuery = useQuery({
-    queryKey: ['general-setting', 'client-settings'],
+    queryKey: QUERY_KEYS.clientSettings,
     queryFn: async () => {
       try {
         return await listClientSettings()
@@ -143,12 +130,14 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
     staleTime: 30_000,
   })
 
-  const statementLinkCatalog = useStatementLinkCatalog(needsStatementLinkCatalog)
+  const statementLinkCatalog = useStatementLinkCatalog(
+    needsStatementLinkCatalog,
+  )
 
-  const config = useMemo<ModulePageConfig | undefined>(() => {
+  const config = (() => {
     const found = moduleConfigQuery.data
     if (!found || found.key !== moduleKey) {
-      return undefined
+      return initialConfig
     }
 
     const isWeightOnlyViewEnabled = Boolean(
@@ -165,30 +154,14 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
       moduleKey,
       statementLinkCatalog,
     )
-  }, [
-    moduleKey,
-    moduleConfigQuery.data,
+  })() satisfies ModulePageConfig | undefined
+
+  const showSnowflakeId = isDisplaySwitchEnabled(
     displaySwitchesQuery.data,
-    statementLinkCatalog,
-  ])
-
-  const showSnowflakeId = useMemo(
-    () =>
-      isDisplaySwitchEnabled(
-        displaySwitchesQuery.data,
-        DISPLAY_SWITCH_CODES.showSnowflakeId,
-      ),
-    [displaySwitchesQuery.data],
+    DISPLAY_SWITCH_CODES.showSnowflakeId,
   )
 
-  const supportsInvoiceAssist = useMemo(
-    () => INVOICE_ASSIST_MODULE_KEYS.has(moduleKey),
-    [moduleKey],
-  )
-
-  useEffect(() => {
-    previousModuleKeyRef.current = moduleKey
-  }, [moduleKey])
+  const supportsInvoiceAssist = INVOICE_ASSIST_MODULE_KEYS.has(moduleKey)
 
   return {
     config,

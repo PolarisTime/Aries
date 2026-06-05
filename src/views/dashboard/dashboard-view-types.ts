@@ -1,10 +1,11 @@
 import type { ComponentType, CSSProperties } from 'react'
 
-export interface DashboardIconProps {
+interface DashboardIconProps {
+  className?: string
   style?: CSSProperties
 }
 
-export interface WorkflowNode {
+interface WorkflowNode {
   key: string
   title: string
   path: string

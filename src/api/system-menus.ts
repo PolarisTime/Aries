@@ -1,5 +1,6 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { getApiMessage } from '@/utils/api-messages'
 
 export interface MenuNode {
   menuCode: string
@@ -61,7 +62,7 @@ function normalizeMenuNode(
 export async function listSystemMenus() {
   const response = assertApiSuccess(
     await http.get<MenuResponse<RawMenuNode[]>>(ENDPOINTS.SYSTEM_MENUS_TREE),
-    '加载菜单失败',
+    getApiMessage('loadMenusFailed'),
   )
   return Array.isArray(response.data)
     ? response.data.map((node) => normalizeMenuNode(node))

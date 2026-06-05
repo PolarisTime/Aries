@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
 import Alert from 'antd/es/alert'
 import Card from 'antd/es/card'
 import type { ColumnsType, TableProps } from 'antd/es/table'
-import type { SortOrder } from 'antd/es/table/interface'
+import { useState } from 'react'
+import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleActionDefinition,
   ModulePageConfig,
@@ -16,11 +16,13 @@ import { ModuleTableToolbar } from '@/views/modules/components/ModuleTableToolba
 interface Props {
   moduleKey: string
   config: ModulePageConfig
-  filters: Record<string, unknown>
-  total: number
+  filters: SearchParams
   loading: boolean
   exporting: boolean
   records: ModuleRecord[]
+  total: number
+  currentPage: number
+  pageSize: number
   warningMessage: string
   columnVisibleKeys: string[]
   columnOrder: string[]
@@ -28,6 +30,7 @@ interface Props {
   rowSelection?: TableProps<ModuleRecord>['rowSelection']
   rowClassName: (record: ModuleRecord) => string
   onUpdateFilter: (key: string, value: unknown) => void
+  onApplyFilters: (filters: SearchParams) => void
   onSearch: () => void
   onReset: () => void
   onCreate: () => void
@@ -37,24 +40,25 @@ interface Props {
   onColumnOrderChange: (order: string[]) => void
   onRowClick: (record: ModuleRecord) => void
   onRowDoubleClick: (record: ModuleRecord) => void
-  page: number
-  pageSize: number
   canCreate: boolean
   canExport: boolean
   toolbarActions: ModuleActionDefinition[]
   onAction: (action: ModuleActionDefinition) => void
   onPageChange: (page: number, pageSize: number) => void
-  onSortingChange: (columnKey?: string | number, order?: SortOrder) => void
+  selectedCount: number
+  printDropdown?: React.ReactNode
 }
 
 export function BusinessGridContent({
   moduleKey,
   config,
   filters,
-  total,
   loading,
   exporting,
   records,
+  total,
+  currentPage,
+  pageSize,
   warningMessage,
   columnVisibleKeys,
   columnOrder,
@@ -62,6 +66,7 @@ export function BusinessGridContent({
   rowSelection,
   rowClassName,
   onUpdateFilter,
+  onApplyFilters,
   onSearch,
   onReset,
   onCreate,
@@ -71,27 +76,28 @@ export function BusinessGridContent({
   onColumnOrderChange,
   onRowClick,
   onRowDoubleClick,
-  page,
-  pageSize,
   canCreate,
   canExport,
   toolbarActions,
   onAction,
   onPageChange,
-  onSortingChange,
+  selectedCount,
+  printDropdown,
 }: Props) {
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
-  useEffect(() => {
-    setColumnSettingsOpen(false)
-  }, [moduleKey])
+  // columnSettingsOpen initialised to false via useState; no mount-effect needed
 
   return (
-    <Card className="module-grid-card">
+    <Card
+      className="module-grid-card"
+      styles={{ body: { padding: '12px 16px 0' } }}
+    >
       <ModuleFilterToolbar
         config={config}
         filters={filters}
         onUpdateFilter={onUpdateFilter}
+        onApplyFilters={onApplyFilters}
         onSearch={onSearch}
         onReset={onReset}
       />
@@ -100,23 +106,30 @@ export function BusinessGridContent({
         canCreate={canCreate}
         canExport={canExport}
         total={total}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        selectedCount={selectedCount}
         loading={loading}
         exporting={exporting}
+        onPageChange={onPageChange}
         onCreate={onCreate}
         onExport={onExport}
         onRefresh={onRefresh}
         toolbarActions={toolbarActions}
         onAction={onAction}
         extra={
-          <ColumnSettingsPopover
-            columns={config.columns}
-            orderedKeys={columnOrder}
-            visibleKeys={columnVisibleKeys}
-            onToggle={onToggleColumn}
-            onOrderChange={onColumnOrderChange}
-            open={columnSettingsOpen}
-            onOpenChange={setColumnSettingsOpen}
-          />
+          <>
+            {printDropdown}
+            <ColumnSettingsPopover
+              columns={config.columns}
+              orderedKeys={columnOrder}
+              visibleKeys={columnVisibleKeys}
+              onToggle={onToggleColumn}
+              onOrderChange={onColumnOrderChange}
+              open={columnSettingsOpen}
+              onOpenChange={setColumnSettingsOpen}
+            />
+          </>
         }
       />
 
@@ -125,7 +138,7 @@ export function BusinessGridContent({
           type="warning"
           showIcon
           title={warningMessage}
-          style={{ marginBottom: 16 }}
+          className="mb-4"
         />
       ) : null}
 
@@ -139,11 +152,6 @@ export function BusinessGridContent({
         rowClassName={rowClassName}
         onRowClick={onRowClick}
         onRowDoubleClick={onRowDoubleClick}
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        onPageChange={onPageChange}
-        onSortingChange={onSortingChange}
       />
     </Card>
   )

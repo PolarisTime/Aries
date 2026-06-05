@@ -1,17 +1,19 @@
-import { EditOutlined, ReloadOutlined } from '@ant-design/icons'
+import { EditOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
-import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Statistic from 'antd/es/statistic'
 import Switch from 'antd/es/switch'
-import Table from 'antd/es/table'
 import type { TableProps } from 'antd/es/table'
+import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
+import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import type { ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   formatSettingValue,
   GENERAL_SETTING_STATUS_OPTIONS,
@@ -32,7 +34,6 @@ interface Props {
   onEdit: (record: ModuleRecord) => void
   onToggle: (record: ModuleRecord) => void
 }
-
 export function GeneralSettingsTableCard({
   keyword,
   statusFilter,
@@ -48,9 +49,10 @@ export function GeneralSettingsTableCard({
   onEdit,
   onToggle,
 }: Props) {
+  const { t } = useTranslation()
   const basicSettingColumns: TableProps<ModuleRecord>['columns'] = [
     {
-      title: '操作',
+      title: t('system.generalSettingsTable.colOperation'),
       key: 'action',
       width: 90,
       align: 'center',
@@ -62,95 +64,120 @@ export function GeneralSettingsTableCard({
           disabled={!canEdit}
           onClick={() => onEdit(record)}
         >
-          编辑
+          {t('system.generalSettingsTable.edit')}
         </Button>
       ),
     },
-    { dataIndex: 'settingName', title: '参数名称', width: 240 },
     {
-      title: '当前值',
+      dataIndex: 'settingName',
+      title: t('system.generalSettingsTable.colParamName'),
+      width: 240,
+    },
+    {
+      title: t('system.generalSettingsTable.colCurrentValue'),
       key: 'value',
       width: 140,
       align: 'right',
       render: (_value, record) => formatSettingValue(record),
     },
-    { dataIndex: 'remark', title: '说明', width: 420 },
-  ]
-
-  const switchColumns: TableProps<ModuleRecord>['columns'] = [
-    { dataIndex: 'settingName', title: '开关名称', width: 240 },
     {
-      title: '当前状态 / 操作',
+      dataIndex: 'remark',
+      title: t('system.generalSettingsTable.colRemark'),
+      width: 420,
+    },
+  ]
+  const switchColumns: TableProps<ModuleRecord>['columns'] = [
+    {
+      dataIndex: 'settingName',
+      title: t('system.generalSettingsTable.colSwitchName'),
+      width: 240,
+    },
+    {
+      title: t('system.generalSettingsTable.colStatusAction'),
       key: 'state',
       width: 160,
       align: 'center',
       render: (_value, record) => {
-        const enabled = String(record.status || '') === '正常'
+        const enabled = asString(record.status) === '正常'
         return (
           <Space>
             <Switch
               checked={enabled}
               loading={toggling}
               disabled={!canEdit}
-              checkedChildren="启用"
-              unCheckedChildren="关闭"
+              checkedChildren={t('system.generalSettingsTable.switchEnabled')}
+              unCheckedChildren={t(
+                'system.generalSettingsTable.switchDisabled',
+              )}
               onChange={() => onToggle(record)}
             />
-            <span style={{ fontSize: 12, color: enabled ? '#22c55e' : '#94a3b8' }}>
-              {enabled ? '已启用' : '已关闭'}
+            <span
+              className={`text-xs ${enabled ? 'text-[var(--theme-success)]' : 'text-[var(--theme-disabled)]'}`}
+            >
+              {enabled
+                ? t('system.generalSettingsTable.enabled')
+                : t('system.generalSettingsTable.disabled')}
             </span>
           </Space>
         )
       },
     },
-    { dataIndex: 'remark', title: '说明', width: 420 },
+    {
+      dataIndex: 'remark',
+      title: t('system.generalSettingsTable.colRemark'),
+      width: 420,
+    },
   ]
-
   return (
     <Card
-      title="通用设置"
+      title={t('system.generalSettingsTable.title')}
       extra={
-        <Space>
-          <Input.Search
-            placeholder="搜索设置项"
-            style={{ width: 280 }}
-            allowClear
-            value={keyword}
-            onChange={(event) => onKeywordChange(event.target.value)}
-          />
+        <SystemTableToolbar
+          keyword={keyword}
+          keywordPlaceholder={t(
+            'system.generalSettingsTable.searchPlaceholder',
+          )}
+          keywordWidth={280}
+          onKeywordChange={onKeywordChange}
+          onRefresh={onRefresh}
+        >
           <Select
             allowClear
-            placeholder="全部状态"
-            style={{ width: 140 }}
+            placeholder={t('system.generalSettingsTable.allStatus')}
+            className="w-140"
             value={statusFilter}
             onChange={onStatusFilterChange}
             options={GENERAL_SETTING_STATUS_OPTIONS}
           />
-          <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-            刷新
-          </Button>
-        </Space>
+        </SystemTableToolbar>
       }
     >
-      <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={8}>
-          <Statistic title="基础参数" value={basicSettingRows.length} />
-        </Col>
-        <Col span={8}>
-          <Statistic title="系统开关" value={switchRows.length} />
-        </Col>
-        <Col span={8}>
+      <Row gutter={[16, 16]} className="mb-4">
+        <Col xs={24} sm={8}>
           <Statistic
-            title="当前启用"
+            title={t('system.generalSettingsTable.basicParams')}
+            value={basicSettingRows.length}
+          />
+        </Col>
+        <Col xs={24} sm={8}>
+          <Statistic
+            title={t('system.generalSettingsTable.systemSwitches')}
+            value={switchRows.length}
+          />
+        </Col>
+        <Col xs={24} sm={8}>
+          <Statistic
+            title={t('system.generalSettingsTable.currentEnabled')}
             value={
-              filteredRows.filter((row) => String(row.status || '') === '正常')
+              filteredRows.filter((row) => asString(row.status) === '正常')
                 .length
             }
           />
         </Col>
       </Row>
-
-      <Typography.Title level={5}>基础参数</Typography.Title>
+      <Typography.Title level={5}>
+        {t('system.generalSettingsTable.basicParamsTitle')}
+      </Typography.Title>
       <Table
         rowKey="id"
         columns={basicSettingColumns}
@@ -158,10 +185,12 @@ export function GeneralSettingsTableCard({
         loading={loading}
         size="small"
         pagination={false}
-        style={{ marginBottom: 24 }}
+        scroll={{ x: 890 }}
+        className="mb-6"
       />
-
-      <Typography.Title level={5}>系统开关</Typography.Title>
+      <Typography.Title level={5}>
+        {t('system.generalSettingsTable.systemSwitchesTitle')}
+      </Typography.Title>
       <Table
         rowKey="id"
         columns={switchColumns}
@@ -169,6 +198,7 @@ export function GeneralSettingsTableCard({
         loading={loading}
         size="small"
         pagination={false}
+        scroll={{ x: 820 }}
       />
     </Card>
   )

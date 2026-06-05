@@ -1,20 +1,27 @@
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { StatusTag } from '@/components/StatusTag'
-import { listBusinessModule } from '@/api/business'
-import { loadBusinessPageConfig } from '@/config/business-page-loader'
-import { getModuleConfig } from '@/api/module-contracts'
-import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import Button from 'antd/es/button'
-import Table from 'antd/es/table'
 import type { ColumnsType } from 'antd/es/table'
-import { useEffect, useMemo, useState } from 'react'
-import { compactSearch } from '@/utils/list'
-import type {
-  ModulePageConfig,
-  ModuleRecord,
-} from '@/types/module-page'
+import Table from 'antd/es/table'
+import i18next from 'i18next'
+import { useReducer } from 'react'
+import { useTranslation } from 'react-i18next'
+import { listBusinessModule } from '@/api/business'
+import { buildFilterParams } from '@/api/business-listing-filtering'
+import { getModuleConfig } from '@/api/module-contracts'
+import { listStatementCandidatePage } from '@/api/statements'
+import { StatusTag } from '@/components/StatusTag'
+import { loadBusinessPageConfig } from '@/config/business-page-loader'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import type { SearchParams } from '@/types/api-raw'
+import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { ModuleFilterToolbar } from './ModuleFilterToolbar'
+import {
+  filterImportableParentRecords,
+  resolveSelectedParentRows,
+} from './module-parent-selector-utils'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -22,6 +29,11 @@ interface Props {
   parentModuleKey: string
   parentDisplayFieldKey?: string
   allowMultipleSelection?: boolean
+  candidateStatementModuleKey?:
+    | 'supplier-statement'
+    | 'customer-statement'
+    | 'freight-statement'
+  fixedFilters?: SearchParams
   title?: string
   onSelect: (records: ModuleRecord[]) => void
   onClose: () => void
@@ -50,73 +62,292 @@ type SelectedSummaryField = {
 
 const DEFAULT_PAGE_SIZE = 15
 
-const overlayStatusMap = {
-  草稿: { color: 'default', text: '草稿' },
-  未审核: { color: 'default', text: '未审核' },
-  已审核: { color: 'processing', text: '已审核' },
-  已收票: { color: 'success', text: '已收票' },
-  已开票: { color: 'success', text: '已开票' },
-  完成采购: { color: 'success', text: '完成采购' },
-  完成销售: { color: 'success', text: '完成销售' },
-  完成入库: { color: 'success', text: '完成入库' },
+function getOverlayStatusMap() {
+  return {
+    草稿: {
+      color: 'default',
+      text: i18next.t('modules.parentSelector.status.draft'),
+    },
+    未审核: {
+      color: 'default',
+      text: i18next.t('modules.parentSelector.status.unaudited'),
+    },
+    已审核: {
+      color: 'processing',
+      text: i18next.t('modules.parentSelector.status.audited'),
+    },
+    已收票: {
+      color: 'success',
+      text: i18next.t('modules.parentSelector.status.invoiceReceived'),
+    },
+    已开票: {
+      color: 'success',
+      text: i18next.t('modules.parentSelector.status.invoiceIssued'),
+    },
+    完成采购: {
+      color: 'success',
+      text: i18next.t('modules.parentSelector.status.purchaseComplete'),
+    },
+    完成销售: {
+      color: 'success',
+      text: i18next.t('modules.parentSelector.status.salesComplete'),
+    },
+    完成入库: {
+      color: 'success',
+      text: i18next.t('modules.parentSelector.status.inboundComplete'),
+    },
+  }
 }
 
-const parentSelectorColumnMap: Record<string, OverlayColumn[]> = {
-  'purchase-order': [
-    { dataIndex: 'orderNo', title: '订单编号', width: 160 },
-    { dataIndex: 'supplierName', title: '供应商', width: 180 },
-    { dataIndex: 'buyerName', title: '采购员', width: 120 },
-    { dataIndex: 'orderDate', title: '订单日期', width: 130, type: 'date' },
-    { dataIndex: 'totalWeight', title: '总重量（吨）', width: 130, type: 'weight' },
-    { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
-    { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
-  ],
-  'sales-order': [
-    { dataIndex: 'orderNo', title: '订单编号', width: 160 },
-    { dataIndex: 'purchaseOrderNo', title: '关联采购订单', width: 180 },
-    { dataIndex: 'customerName', title: '客户名称', width: 160 },
-    { dataIndex: 'projectName', title: '项目名称', width: 180 },
-    { dataIndex: 'deliveryDate', title: '送货日期', width: 130, type: 'date' },
-    { dataIndex: 'totalWeight', title: '总重量（吨）', width: 130, type: 'weight' },
-    { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
-    { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
-  ],
-  'sales-outbound': [
-    { dataIndex: 'outboundNo', title: '出库单号', width: 160 },
-    { dataIndex: 'salesOrderNo', title: '关联订单', width: 160 },
-    { dataIndex: 'customerName', title: '客户名称', width: 160 },
-    { dataIndex: 'projectName', title: '项目名称', width: 180 },
-    { dataIndex: 'outboundDate', title: '出库日期', width: 130, type: 'date' },
-    { dataIndex: 'totalWeight', title: '总重量（吨）', width: 130, type: 'weight' },
-    { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
-    { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
-  ],
-  'purchase-inbound': [
-    { dataIndex: 'inboundNo', title: '入库单号', width: 160 },
-    { dataIndex: 'purchaseOrderNo', title: '关联订单', width: 160 },
-    { dataIndex: 'supplierName', title: '供应商', width: 180 },
-    { dataIndex: 'inboundDate', title: '入库日期', width: 130, type: 'date' },
-    { dataIndex: 'totalWeight', title: '总重量（吨）', width: 130, type: 'weight' },
-    { dataIndex: 'totalAmount', title: '总金额', width: 120, type: 'amount' },
-    { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
-  ],
+function getParentSelectorColumnMap(): Record<string, OverlayColumn[]> {
+  return {
+    'purchase-order': [
+      {
+        dataIndex: 'orderNo',
+        title: i18next.t('modules.parentSelector.column.orderNo'),
+        width: 160,
+      },
+      {
+        dataIndex: 'supplierName',
+        title: i18next.t('modules.parentSelector.column.supplierName'),
+        width: 180,
+      },
+      {
+        dataIndex: 'buyerName',
+        title: i18next.t('modules.parentSelector.column.buyerName'),
+        width: 120,
+      },
+      {
+        dataIndex: 'orderDate',
+        title: i18next.t('modules.parentSelector.column.orderDate'),
+        width: 130,
+        type: 'date',
+      },
+      {
+        dataIndex: 'totalWeight',
+        title: i18next.t('modules.parentSelector.column.totalWeight'),
+        width: 130,
+        type: 'weight',
+      },
+      {
+        dataIndex: 'totalAmount',
+        title: i18next.t('modules.parentSelector.column.totalAmount'),
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
+    ],
+    'sales-order': [
+      {
+        dataIndex: 'orderNo',
+        title: i18next.t('modules.parentSelector.column.orderNo'),
+        width: 160,
+      },
+      {
+        dataIndex: 'purchaseOrderNo',
+        title: i18next.t('modules.parentSelector.column.relatedPurchaseOrder'),
+        width: 180,
+      },
+      {
+        dataIndex: 'customerName',
+        title: i18next.t('modules.parentSelector.column.customerName'),
+        width: 160,
+      },
+      {
+        dataIndex: 'projectName',
+        title: i18next.t('modules.parentSelector.column.projectName'),
+        width: 180,
+      },
+      {
+        dataIndex: 'deliveryDate',
+        title: i18next.t('modules.parentSelector.column.deliveryDate'),
+        width: 130,
+        type: 'date',
+      },
+      {
+        dataIndex: 'totalWeight',
+        title: i18next.t('modules.parentSelector.column.totalWeight'),
+        width: 130,
+        type: 'weight',
+      },
+      {
+        dataIndex: 'totalAmount',
+        title: i18next.t('modules.parentSelector.column.totalAmount'),
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
+    ],
+    'sales-outbound': [
+      {
+        dataIndex: 'outboundNo',
+        title: i18next.t('modules.parentSelector.column.outboundNo'),
+        width: 160,
+      },
+      {
+        dataIndex: 'salesOrderNo',
+        title: i18next.t('modules.parentSelector.column.relatedOrder'),
+        width: 160,
+      },
+      {
+        dataIndex: 'customerName',
+        title: i18next.t('modules.parentSelector.column.customerName'),
+        width: 160,
+      },
+      {
+        dataIndex: 'projectName',
+        title: i18next.t('modules.parentSelector.column.projectName'),
+        width: 180,
+      },
+      {
+        dataIndex: 'outboundDate',
+        title: i18next.t('modules.parentSelector.column.outboundDate'),
+        width: 130,
+        type: 'date',
+      },
+      {
+        dataIndex: 'totalWeight',
+        title: i18next.t('modules.parentSelector.column.totalWeight'),
+        width: 130,
+        type: 'weight',
+      },
+      {
+        dataIndex: 'totalAmount',
+        title: i18next.t('modules.parentSelector.column.totalAmount'),
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
+    ],
+    'freight-bill': [
+      {
+        dataIndex: 'billNo',
+        title: i18next.t('modules.filter.freightNo'),
+        width: 160,
+      },
+      {
+        dataIndex: 'carrierName',
+        title: i18next.t('modules.filter.carrierName'),
+        width: 150,
+      },
+      {
+        dataIndex: 'customerName',
+        title: i18next.t('modules.parentSelector.column.customerName'),
+        width: 160,
+      },
+      {
+        dataIndex: 'projectName',
+        title: i18next.t('modules.parentSelector.column.projectName'),
+        width: 180,
+      },
+      {
+        dataIndex: 'billTime',
+        title: i18next.t('modules.parentSelector.summary.billTime'),
+        width: 130,
+        type: 'date',
+      },
+      {
+        dataIndex: 'totalWeight',
+        title: i18next.t('modules.parentSelector.column.totalWeight'),
+        width: 130,
+        type: 'weight',
+      },
+      {
+        dataIndex: 'totalFreight',
+        title: i18next.t('modules.pages.freightStatement.totalFreight'),
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
+    ],
+    'purchase-inbound': [
+      {
+        dataIndex: 'inboundNo',
+        title: i18next.t('modules.parentSelector.column.inboundNo'),
+        width: 160,
+      },
+      {
+        dataIndex: 'purchaseOrderNo',
+        title: i18next.t('modules.parentSelector.column.relatedOrder'),
+        width: 160,
+      },
+      {
+        dataIndex: 'supplierName',
+        title: i18next.t('modules.parentSelector.column.supplierName'),
+        width: 180,
+      },
+      {
+        dataIndex: 'inboundDate',
+        title: i18next.t('modules.parentSelector.column.inboundDate'),
+        width: 130,
+        type: 'date',
+      },
+      {
+        dataIndex: 'totalWeight',
+        title: i18next.t('modules.parentSelector.column.totalWeight'),
+        width: 130,
+        type: 'weight',
+      },
+      {
+        dataIndex: 'totalAmount',
+        title: i18next.t('modules.parentSelector.column.totalAmount'),
+        width: 120,
+        type: 'amount',
+      },
+      {
+        dataIndex: 'status',
+        title: i18next.t('modules.parentSelector.column.status'),
+        width: 110,
+        type: 'status',
+      },
+    ],
+  }
 }
 
 function resolveParentSelectorColumns(
   parentModuleKey: string,
   displayFieldKey: string,
 ): OverlayColumn[] {
-  const configuredColumns = parentSelectorColumnMap[parentModuleKey]
+  const configuredColumns = getParentSelectorColumnMap()[parentModuleKey]
   if (configuredColumns?.length) {
     return configuredColumns
   }
   return [
-    { dataIndex: displayFieldKey, title: '单据号', width: 180 },
-    { dataIndex: 'status', title: '状态', width: 110, type: 'status' },
+    {
+      dataIndex: displayFieldKey,
+      title: i18next.t('modules.parentSelector.column.docNo'),
+      width: 180,
+    },
+    {
+      dataIndex: 'status',
+      title: i18next.t('modules.parentSelector.column.status'),
+      width: 110,
+      type: 'status',
+    },
   ]
 }
 
-function normalizeFilterValues(filters: Record<string, unknown>) {
+function normalizeFilterValues(filters: SearchParams) {
   return Object.fromEntries(
     Object.entries(filters).map(([key, value]) => [
       key,
@@ -125,17 +356,35 @@ function normalizeFilterValues(filters: Record<string, unknown>) {
   )
 }
 
+function resolveParentSelectorSourceModule(
+  parentModuleKey: string,
+  candidateStatementModuleKey?: string,
+) {
+  return candidateStatementModuleKey || parentModuleKey
+}
+
 function buildOverlayFilterConfig(
   parentModuleKey: string,
   pageConfig: ModulePageConfig,
+  fixedFilters: SearchParams,
 ): ModulePageConfig {
   const endpointConfig = getModuleConfig(parentModuleKey)
   const nativeFilterKeys = new Set(endpointConfig.nativeFilterKeys || [])
   const dateRangeKeys = new Set(
     Object.keys(endpointConfig.dateRangeMapping || {}),
   )
+  const fixedFilterKeys = new Set(
+    Object.entries(fixedFilters).flatMap(([key, value]) => {
+      if (value === undefined || value === null) return []
+      if (typeof value === 'string' && !value.trim()) return []
+      return [key]
+    }),
+  )
 
   const supportedFilters = pageConfig.filters.filter((filter) => {
+    if (fixedFilterKeys.has(filter.key)) {
+      return false
+    }
     if (filter.type === 'dateRange') {
       return dateRangeKeys.has(filter.key)
     }
@@ -145,9 +394,11 @@ function buildOverlayFilterConfig(
   if (!supportedFilters.some((filter) => filter.key === 'keyword')) {
     supportedFilters.unshift({
       key: 'keyword',
-      label: '关键字',
+      label: i18next.t('modules.parentSelector.filter.keyword'),
       type: 'input',
-      placeholder: '输入单据号或关键词',
+      placeholder: i18next.t(
+        'modules.parentSelector.filter.keywordPlaceholder',
+      ),
     })
   }
 
@@ -157,32 +408,87 @@ function buildOverlayFilterConfig(
   }
 }
 
-const selectedRecordSummaryFieldMap: Record<string, SelectedSummaryField[]> = {
-  'purchase-order': [
-    { key: 'supplierName', label: '供应商' },
-    { key: 'buyerName', label: '采购员' },
-    { key: 'orderDate', label: '订单日期', type: 'date' },
-  ],
-  'purchase-inbound': [
-    { key: 'supplierName', label: '供应商' },
-    { key: 'purchaseOrderNo', label: '关联订单' },
-    { key: 'inboundDate', label: '入库日期', type: 'date' },
-  ],
-  'sales-order': [
-    { key: 'customerName', label: '客户名称' },
-    { key: 'projectName', label: '项目名称' },
-    { key: 'deliveryDate', label: '送货日期', type: 'date' },
-  ],
-  'sales-outbound': [
-    { key: 'customerName', label: '客户名称' },
-    { key: 'projectName', label: '项目名称' },
-    { key: 'outboundDate', label: '出库日期', type: 'date' },
-  ],
-  'freight-bill': [
-    { key: 'carrierName', label: '物流商' },
-    { key: 'outboundNo', label: '关联出库单' },
-    { key: 'billTime', label: '单据日期', type: 'date' },
-  ],
+function getSelectedRecordSummaryFieldMap(): Record<
+  string,
+  SelectedSummaryField[]
+> {
+  return {
+    'purchase-order': [
+      {
+        key: 'supplierName',
+        label: i18next.t('modules.parentSelector.summary.supplierName'),
+      },
+      {
+        key: 'buyerName',
+        label: i18next.t('modules.parentSelector.summary.buyerName'),
+      },
+      {
+        key: 'orderDate',
+        label: i18next.t('modules.parentSelector.summary.orderDate'),
+        type: 'date',
+      },
+    ],
+    'purchase-inbound': [
+      {
+        key: 'supplierName',
+        label: i18next.t('modules.parentSelector.summary.supplierName'),
+      },
+      {
+        key: 'purchaseOrderNo',
+        label: i18next.t('modules.parentSelector.summary.relatedOrder'),
+      },
+      {
+        key: 'inboundDate',
+        label: i18next.t('modules.parentSelector.summary.inboundDate'),
+        type: 'date',
+      },
+    ],
+    'sales-order': [
+      {
+        key: 'customerName',
+        label: i18next.t('modules.parentSelector.summary.customerName'),
+      },
+      {
+        key: 'projectName',
+        label: i18next.t('modules.parentSelector.summary.projectName'),
+      },
+      {
+        key: 'deliveryDate',
+        label: i18next.t('modules.parentSelector.summary.deliveryDate'),
+        type: 'date',
+      },
+    ],
+    'sales-outbound': [
+      {
+        key: 'customerName',
+        label: i18next.t('modules.parentSelector.summary.customerName'),
+      },
+      {
+        key: 'projectName',
+        label: i18next.t('modules.parentSelector.summary.projectName'),
+      },
+      {
+        key: 'outboundDate',
+        label: i18next.t('modules.parentSelector.summary.outboundDate'),
+        type: 'date',
+      },
+    ],
+    'freight-bill': [
+      {
+        key: 'carrierName',
+        label: i18next.t('modules.parentSelector.summary.carrierName'),
+      },
+      {
+        key: 'outboundNo',
+        label: i18next.t('modules.parentSelector.summary.relatedOutbound'),
+      },
+      {
+        key: 'billTime',
+        label: i18next.t('modules.parentSelector.summary.billTime'),
+        type: 'date',
+      },
+    ],
+  }
 }
 
 function buildSelectedRecordSummary(
@@ -194,23 +500,150 @@ function buildSelectedRecordSummary(
     type?: 'date' | 'amount' | 'weight' | 'status',
   ) => string,
 ) {
-  const primary = String(record[displayFieldKey] || record.id || '--')
-  const meta = (selectedRecordSummaryFieldMap[parentModuleKey] || [])
-    .map((field) => {
-      const rawValue =
-        field.type != null
-          ? formatValue(record[field.key], field.type)
-          : String(record[field.key] || '').trim()
-      const value = String(rawValue || '').trim()
-      return value ? `${field.label}：${value}` : ''
-    })
-    .filter(Boolean)
+  const primary = asString(record[displayFieldKey] || record.id)
+  const meta = (
+    getSelectedRecordSummaryFieldMap()[parentModuleKey] || []
+  ).flatMap((field) => {
+    const rawValue =
+      field.type != null
+        ? formatValue(record[field.key], field.type)
+        : asString(record[field.key]).trim()
+    const value = String(rawValue || '').trim()
+    return value ? [`${field.label}：${value}`] : []
+  })
 
   return {
     primary,
     meta,
-    status: String(record.status || '').trim(),
+    status: asString(record.status).trim(),
   }
+}
+
+type ParentSelectorContentProps = Omit<Props, 'open'>
+
+interface ParentSelectorState {
+  draftFilters: SearchParams
+  submittedFilters: SearchParams
+  page: number
+  pageSize: number
+  selectedRowKeys: string[]
+  selectedRecordMap: Record<string, ModuleRecord>
+}
+
+const parentSelectorInitialState: ParentSelectorState = {
+  draftFilters: {},
+  submittedFilters: {},
+  page: 1,
+  pageSize: DEFAULT_PAGE_SIZE,
+  selectedRowKeys: [],
+  selectedRecordMap: {},
+}
+
+interface ParentSelectorSelectedPanelProps {
+  displayFieldKey: string
+  formatCellValue: (
+    value: unknown,
+    type?: 'date' | 'amount' | 'weight' | 'status',
+  ) => string
+  onClear: () => void
+  onRemove: (recordId: string) => void
+  parentModuleKey: string
+  selectedRows: ModuleRecord[]
+  t: (key: string, options?: Record<string, unknown>) => string
+}
+
+function ParentSelectorSelectedPanel({
+  displayFieldKey,
+  formatCellValue,
+  onClear,
+  onRemove,
+  parentModuleKey,
+  selectedRows,
+  t,
+}: ParentSelectorSelectedPanelProps) {
+  return (
+    <div className="parent-selector-selected-panel">
+      <div className="parent-selector-selected-header">
+        <span className="parent-selector-selected-title">
+          {t('modules.parentSelector.selectedDocuments')}
+          <span className="parent-selector-selected-count">
+            {selectedRows.length
+              ? t('modules.parentSelector.selectedDocumentsCount', {
+                  count: selectedRows.length,
+                })
+              : t('modules.parentSelector.selectedDocumentsCount', {
+                  count: 0,
+                })}
+          </span>
+        </span>
+        <Button disabled={!selectedRows.length} onClick={onClear}>
+          {t('modules.parentSelector.clearSelected')}
+        </Button>
+      </div>
+      {selectedRows.length ? (
+        <div className="parent-selector-selected-list">
+          {selectedRows.map((record) => {
+            const recordId = String(record.id)
+            const summary = buildSelectedRecordSummary(
+              record,
+              parentModuleKey,
+              displayFieldKey,
+              formatCellValue,
+            )
+
+            return (
+              <div key={recordId} className="parent-selector-selected-chip">
+                <div className="parent-selector-selected-chip-main">
+                  <div className="parent-selector-selected-chip-top">
+                    <span className="parent-selector-selected-chip-title">
+                      {summary.primary}
+                    </span>
+                    {summary.status ? (
+                      <StatusTag
+                        status={summary.status}
+                        statusMap={getOverlayStatusMap()}
+                        fallback={summary.status}
+                      />
+                    ) : null}
+                  </div>
+                  {summary.meta.length ? (
+                    <div className="parent-selector-selected-chip-meta">
+                      {summary.meta.map((item) => (
+                        <span
+                          key={`${recordId}-${item}`}
+                          className="parent-selector-selected-chip-desc"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="parent-selector-selected-chip-desc">
+                      {t('modules.parentSelector.selectedDocuments')}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="parent-selector-selected-chip-remove"
+                  onClick={() => onRemove(recordId)}
+                  aria-label={t('modules.parentSelector.removeAriaLabel', {
+                    name: summary.primary,
+                  })}
+                >
+                  <CloseOutlined />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="parent-selector-selected-empty">
+          {t('modules.parentSelector.noSelectionHint')}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function ModuleParentSelectorOverlay({
@@ -218,214 +651,258 @@ export function ModuleParentSelectorOverlay({
   parentModuleKey,
   parentDisplayFieldKey,
   allowMultipleSelection = false,
-  title = '选择父单据',
+  candidateStatementModuleKey,
+  fixedFilters = {},
+  title,
   onSelect,
   onClose,
 }: Props) {
+  if (!open) return null
+
+  return (
+    <ModuleParentSelectorOverlayContent
+      key={`${parentModuleKey}:${parentDisplayFieldKey || ''}:${allowMultipleSelection ? 'multi' : 'single'}`}
+      parentModuleKey={parentModuleKey}
+      parentDisplayFieldKey={parentDisplayFieldKey}
+      allowMultipleSelection={allowMultipleSelection}
+      candidateStatementModuleKey={candidateStatementModuleKey}
+      fixedFilters={fixedFilters}
+      title={title}
+      onSelect={onSelect}
+      onClose={onClose}
+    />
+  )
+}
+
+function ModuleParentSelectorOverlayContent({
+  parentModuleKey,
+  parentDisplayFieldKey,
+  allowMultipleSelection = false,
+  candidateStatementModuleKey,
+  fixedFilters = {},
+  title,
+  onSelect,
+  onClose,
+}: ParentSelectorContentProps) {
+  const { t } = useTranslation()
+  const effectiveTitle = title ?? t('modules.parentSelector.title')
   const { formatCellValue } = useModuleDisplaySupport()
-  const [draftFilters, setDraftFilters] = useState<Record<string, unknown>>({})
-  const [submittedFilters, setSubmittedFilters] = useState<
-    Record<string, unknown>
-  >({})
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
-  const [selectedRecordMap, setSelectedRecordMap] = useState<
-    Record<string, ModuleRecord>
-  >({})
+  const [state, setState] = useReducer(
+    (prev: ParentSelectorState, patch: Partial<ParentSelectorState>) => ({
+      ...prev,
+      ...patch,
+    }),
+    parentSelectorInitialState,
+  )
+  const {
+    draftFilters,
+    submittedFilters,
+    page,
+    pageSize,
+    selectedRowKeys,
+    selectedRecordMap,
+  } = state
   const displayFieldKey =
     parentDisplayFieldKey ||
     parentDisplayFieldFallbackMap[parentModuleKey] ||
     'id'
-
-  useEffect(() => {
-    if (!open) {
-      setDraftFilters({})
-      setSubmittedFilters({})
-      setPage(1)
-      setPageSize(DEFAULT_PAGE_SIZE)
-      setSelectedRowKeys([])
-      setSelectedRecordMap({})
-      return
-    }
-    setDraftFilters({})
-    setSubmittedFilters({})
-    setPage(1)
-    setPageSize(DEFAULT_PAGE_SIZE)
-    setSelectedRowKeys([])
-    setSelectedRecordMap({})
-  }, [open, parentModuleKey])
+  const effectiveSubmittedFilters = {
+    ...submittedFilters,
+    ...fixedFilters,
+  }
 
   const { data: parentPageConfig, isLoading: isConfigLoading } = useQuery({
-    queryKey: ['parent-selector-config', parentModuleKey],
+    queryKey: QUERY_KEYS.parentSelectorConfig(parentModuleKey),
     queryFn: () => loadBusinessPageConfig(parentModuleKey),
-    enabled: open && !!parentModuleKey,
+    enabled: !!parentModuleKey,
     staleTime: Infinity,
   })
 
-  const overlayFilterConfig = useMemo(
-    () =>
-      parentPageConfig
-        ? buildOverlayFilterConfig(parentModuleKey, parentPageConfig)
-        : undefined,
-    [parentModuleKey, parentPageConfig],
-  )
+  const overlayFilterConfig = parentPageConfig
+    ? buildOverlayFilterConfig(parentModuleKey, parentPageConfig, fixedFilters)
+    : undefined
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: [
-      'parent-selector-list',
-      parentModuleKey,
-      submittedFilters,
+    queryKey: QUERY_KEYS.parentSelectorList(
+      resolveParentSelectorSourceModule(
+        parentModuleKey,
+        candidateStatementModuleKey,
+      ),
+      effectiveSubmittedFilters,
       page,
       pageSize,
-    ],
-    queryFn: ({ signal }) =>
-      listBusinessModule(
+    ),
+    queryFn: ({ signal }) => {
+      if (candidateStatementModuleKey) {
+        return listStatementCandidatePage(
+          candidateStatementModuleKey,
+          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          Math.max(page - 1, 0),
+          pageSize,
+        )
+      }
+      return listBusinessModule(
         parentModuleKey,
-        submittedFilters,
+        effectiveSubmittedFilters,
         {
           currentPage: page,
           pageSize,
         },
         { signal },
-      ),
-    enabled: open && !!parentModuleKey,
+      )
+    },
+    enabled: !!parentModuleKey,
     placeholderData: keepPreviousData,
   })
 
-  const records = data?.data?.rows || []
+  const records = filterImportableParentRecords(
+    parentModuleKey,
+    data?.data?.rows || [],
+    candidateStatementModuleKey,
+  )
   const total = Number(data?.data?.total || 0)
 
-  const columns = useMemo<ColumnsType<ModuleRecord>>(
-    () =>
-      resolveParentSelectorColumns(parentModuleKey, displayFieldKey).map(
-        (column) => ({
-          dataIndex: column.dataIndex,
-          title: column.title,
-          width: column.width,
-          ellipsis: true,
-          render: (value: unknown) => {
-            if (column.type === 'status') {
-              return (
-                <StatusTag
-                  status={String(value || '')}
-                  statusMap={overlayStatusMap}
-                  fallback={String(value || '--')}
-                />
-              )
-            }
-            return formatCellValue(value, column.type)
-          },
-        }),
-      ),
-    [displayFieldKey, formatCellValue, parentModuleKey],
+  const columns: ColumnsType<ModuleRecord> = resolveParentSelectorColumns(
+    parentModuleKey,
+    displayFieldKey,
+  ).map((column) => ({
+    dataIndex: column.dataIndex,
+    title: column.title,
+    width: column.width,
+    ellipsis: true,
+    render: (value: unknown) => {
+      if (column.type === 'status') {
+        return (
+          <StatusTag
+            status={asString(value)}
+            statusMap={getOverlayStatusMap()}
+            fallback={asString(value)}
+          />
+        )
+      }
+      return formatCellValue(value, column.type)
+    },
+  }))
+  const selectedRows = resolveSelectedParentRows(
+    selectedRowKeys,
+    selectedRecordMap,
+    records,
   )
-  const selectedRows = useMemo(
-    () =>
-      selectedRowKeys
-        .map((key) => selectedRecordMap[String(key)])
-        .filter(Boolean) as ModuleRecord[],
-    [selectedRecordMap, selectedRowKeys],
-  )
-
-  useEffect(() => {
-    if (!records?.length || !allowMultipleSelection) {
-      return
-    }
-    setSelectedRecordMap((prev) => {
-      let changed = false
-      const next = { ...prev }
-      records.forEach((record) => {
-        const key = String(record.id)
-        if (
-          selectedRowKeys.includes(key) &&
-          next[key] !== record
-        ) {
-          next[key] = record
-          changed = true
-        }
-      })
-      return changed ? next : prev
-    })
-  }, [allowMultipleSelection, records, selectedRowKeys])
 
   const toggleRecordSelection = (record: ModuleRecord) => {
     const recordKey = String(record.id)
-    setSelectedRowKeys((prev) => {
-      const isSelected = prev.includes(recordKey)
-      setSelectedRecordMap((prevMap) => {
-        if (isSelected) {
-          const next = { ...prevMap }
-          delete next[recordKey]
-          return next
-        }
-        return {
-          ...prevMap,
-          [recordKey]: record,
-        }
-      })
-      return isSelected
-        ? prev.filter((key) => key !== recordKey)
-        : [...prev, recordKey]
+    const isSelected = selectedRowKeys.includes(recordKey)
+    const nextSelectedRecordMap = { ...selectedRecordMap }
+    if (isSelected) {
+      delete nextSelectedRecordMap[recordKey]
+    } else {
+      nextSelectedRecordMap[recordKey] = record
+    }
+    setState({
+      selectedRowKeys: isSelected
+        ? selectedRowKeys.filter((key) => key !== recordKey)
+        : [...selectedRowKeys, recordKey],
+      selectedRecordMap: nextSelectedRecordMap,
     })
   }
 
   const updateFilter = (key: string, value: unknown) => {
-    setDraftFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }))
-  }
-
-  const submitFilters = () => {
-    setPage(1)
-    setSubmittedFilters(compactSearch(normalizeFilterValues(draftFilters)))
-  }
-
-  const resetFilters = () => {
-    setDraftFilters({})
-    setSubmittedFilters({})
-    setPage(1)
-  }
-
-  const removeSelectedRecord = (recordId: string) => {
-    setSelectedRowKeys((prev) => prev.filter((key) => key !== recordId))
-    setSelectedRecordMap((prev) => {
-      if (!prev[recordId]) {
-        return prev
-      }
-      const next = { ...prev }
-      delete next[recordId]
-      return next
+    setState({
+      draftFilters: {
+        ...draftFilters,
+        [key]: value,
+      },
     })
   }
 
-  const clearSelectedRecords = () => {
-    setSelectedRowKeys([])
-    setSelectedRecordMap({})
+  const buildSubmittedFilters = () =>
+    Object.fromEntries(
+      Object.entries(normalizeFilterValues(draftFilters)).filter(
+        ([, value]) => {
+          if (value === undefined || value === null) return false
+          if (typeof value === 'string') return value.length > 0
+          return true
+        },
+      ),
+    )
+
+  const submitFilters = () => {
+    setState({
+      page: 1,
+      submittedFilters: buildSubmittedFilters(),
+    })
+  }
+
+  const resetFilters = () => {
+    setState({
+      draftFilters: {},
+      submittedFilters: {},
+      page: 1,
+    })
+  }
+
+  const removeSelectedRecord = (recordId: string) => {
+    if (!selectedRecordMap[recordId]) {
+      setState({
+        selectedRowKeys: selectedRowKeys.filter((key) => key !== recordId),
+      })
+      return
+    }
+    const nextSelectedRecordMap = { ...selectedRecordMap }
+    delete nextSelectedRecordMap[recordId]
+    setState({
+      selectedRowKeys: selectedRowKeys.filter((key) => key !== recordId),
+      selectedRecordMap: nextSelectedRecordMap,
+    })
+  }
+
+  const handleClearSelectedRecords = () => {
+    setState({ selectedRowKeys: [], selectedRecordMap: {} })
+  }
+
+  const handleSelectedRowsChange = (
+    keys: React.Key[],
+    rows: ModuleRecord[],
+  ) => {
+    const normalizedKeys = keys.map((key) => String(key))
+    setState({
+      selectedRowKeys: normalizedKeys,
+      selectedRecordMap: Object.fromEntries(
+        normalizedKeys.map((normalizedKey) => {
+          const matchedRow = rows.find(
+            (row) => String(row.id) === normalizedKey,
+          )
+          return [normalizedKey, matchedRow || selectedRecordMap[normalizedKey]]
+        }),
+      ),
+    })
+  }
+
+  const handlePageChange = (nextPage: number, nextPageSize: number) => {
+    setState({
+      page: nextPage,
+      pageSize: nextPageSize !== pageSize ? nextPageSize : pageSize,
+    })
   }
 
   return (
     <WorkspaceOverlay
-      title={title}
-      open={open}
+      title={effectiveTitle}
+      open
       onClose={onClose}
       className="workspace-overlay-panel--parent-selector"
       footer={
         allowMultipleSelection ? (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            <span style={{ color: 'var(--ant-color-text-secondary)' }}>
-              已选择 {selectedRows.length} 条
+          <div className="flex justify-between items-center gap-12">
+            <span className="text-secondary">
+              {t('modules.parentSelector.selectedCount', {
+                count: selectedRows.length,
+              })}
             </span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Button onClick={onClose}>取消</Button>
+            <div className="flex gap-8">
+              <Button onClick={onClose}>
+                {t('modules.parentSelector.cancel')}
+              </Button>
               <Button
                 type="primary"
                 icon={<CheckOutlined />}
@@ -435,7 +912,7 @@ export function ModuleParentSelectorOverlay({
                   onClose()
                 }}
               >
-                确认导入
+                {t('modules.parentSelector.confirmImport')}
               </Button>
             </div>
           </div>
@@ -457,87 +934,15 @@ export function ModuleParentSelectorOverlay({
           />
         ) : null}
         {allowMultipleSelection ? (
-          <div className="parent-selector-selected-panel">
-            <div className="parent-selector-selected-header">
-              <span className="parent-selector-selected-title">
-                已选单据
-                <span className="parent-selector-selected-count">
-                  {selectedRows.length
-                    ? `（${selectedRows.length} 条）`
-                    : '（0 条）'}
-                </span>
-              </span>
-              <Button
-                disabled={!selectedRows.length}
-                onClick={clearSelectedRecords}
-              >
-                清空已选
-              </Button>
-            </div>
-            {selectedRows.length ? (
-              <div className="parent-selector-selected-list">
-                {selectedRows.map((record) => {
-                  const recordId = String(record.id)
-                  const summary = buildSelectedRecordSummary(
-                    record,
-                    parentModuleKey,
-                    displayFieldKey,
-                    formatCellValue,
-                  )
-
-                  return (
-                    <div
-                      key={recordId}
-                      className="parent-selector-selected-chip"
-                    >
-                      <div className="parent-selector-selected-chip-main">
-                        <div className="parent-selector-selected-chip-top">
-                          <span className="parent-selector-selected-chip-title">
-                            {summary.primary}
-                          </span>
-                          {summary.status ? (
-                            <StatusTag
-                              status={summary.status}
-                              statusMap={overlayStatusMap}
-                              fallback={summary.status}
-                            />
-                          ) : null}
-                        </div>
-                        {summary.meta.length ? (
-                          <div className="parent-selector-selected-chip-meta">
-                            {summary.meta.map((item) => (
-                              <span
-                                key={`${recordId}-${item}`}
-                                className="parent-selector-selected-chip-desc"
-                              >
-                                {item}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="parent-selector-selected-chip-desc">
-                            已选单据
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        className="parent-selector-selected-chip-remove"
-                        onClick={() => removeSelectedRecord(recordId)}
-                        aria-label={`移除 ${summary.primary}`}
-                      >
-                        <CloseOutlined />
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="parent-selector-selected-empty">
-                暂未选择单据，勾选后会固定显示在这里。
-              </div>
-            )}
-          </div>
+          <ParentSelectorSelectedPanel
+            displayFieldKey={displayFieldKey}
+            formatCellValue={formatCellValue}
+            onClear={handleClearSelectedRecords}
+            onRemove={removeSelectedRecord}
+            parentModuleKey={parentModuleKey}
+            selectedRows={selectedRows}
+            t={t}
+          />
         ) : null}
       </div>
       <Table
@@ -551,21 +956,7 @@ export function ModuleParentSelectorOverlay({
             ? {
                 preserveSelectedRowKeys: true,
                 selectedRowKeys,
-                onChange: (keys, rows) => {
-                  const normalizedKeys = keys.map((key) => String(key))
-                  setSelectedRowKeys(normalizedKeys)
-                  setSelectedRecordMap((prev) => {
-                    const next: Record<string, ModuleRecord> = {}
-                    normalizedKeys.forEach((normalizedKey) => {
-                      const matchedRow = rows.find(
-                        (row) => String(row.id) === normalizedKey,
-                      )
-                      next[normalizedKey] =
-                        matchedRow || prev[normalizedKey]
-                    })
-                    return next
-                  })
-                },
+                onChange: handleSelectedRowsChange,
               }
             : undefined
         }
@@ -594,13 +985,9 @@ export function ModuleParentSelectorOverlay({
           total,
           showSizeChanger: true,
           pageSizeOptions: ['15', '30', '50'],
-          showTotal: (count) => `共 ${count} 条`,
-          onChange: (nextPage, nextPageSize) => {
-            setPage(nextPage)
-            if (nextPageSize !== pageSize) {
-              setPageSize(nextPageSize)
-            }
-          },
+          showTotal: (count) =>
+            t('modules.parentSelector.paginationTotal', { count }),
+          onChange: handlePageChange,
         }}
       />
     </WorkspaceOverlay>

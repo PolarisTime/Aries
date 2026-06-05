@@ -1,60 +1,52 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { ENDPOINTS } from '@/constants/endpoints'
-import { apiBaseUrl } from '@/utils/env'
+import { useEffect, useRef, useState } from 'react'
+import { fetchBackendHealth } from '@/api/auth'
 
 const HEALTH_CHECK_INTERVAL_MS = 30_000
-const HEALTH_CHECK_TIMEOUT_MS = 5_000
 const HEALTH_CHECK_MAX_RETRIES = 5
 const HEALTH_CHECK_MAX_BACKOFF_MS = 30_000
 const INITIAL_BOOT_DELAY_MS = 1200
 
-export function useBackendStatus(token: string) {
-  const [backendOnline, setBackendOnline] = useState(false)
-  const healthTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+export function useBackendStatus(token: string): { backendOnline: boolean } {
+  const [healthState, setHealthState] = useState<{
+    backendOnline: boolean
+    token: string
+  }>({ backendOnline: false, token })
+  const backendOnline = token ? healthState.backendOnline : false
   const healthRetriesRef = useRef(0)
-
-  const checkBackendHealth = useCallback(async () => {
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(
-        () => controller.abort(),
-        HEALTH_CHECK_TIMEOUT_MS,
-      )
-      const response = await fetch(`${apiBaseUrl}${ENDPOINTS.HEALTH}`, {
-        signal: controller.signal,
-        headers: { Accept: 'application/json' },
-      })
-      clearTimeout(timeout)
-
-      if (response.ok) {
-        const body = (await response.json()) as { status?: string }
-        setBackendOnline(body.status === 'UP')
-        healthRetriesRef.current = 0
-      } else {
-        setBackendOnline(false)
-      }
-    } catch {
-      setBackendOnline(false)
-      healthRetriesRef.current += 1
-      if (healthRetriesRef.current <= HEALTH_CHECK_MAX_RETRIES) {
-        const delay = Math.min(
-          1000 * 2 ** healthRetriesRef.current,
-          HEALTH_CHECK_MAX_BACKOFF_MS,
-        )
-        window.setTimeout(checkBackendHealth, delay)
-      }
-    }
-  }, [])
 
   useEffect(() => {
     if (!token) {
-      setBackendOnline(false)
       return
+    }
+
+    let healthTimer: ReturnType<typeof setInterval> | null = null
+    const retryTimers = new Set<ReturnType<typeof setTimeout>>()
+
+    const checkBackendHealth = async (): Promise<void> => {
+      try {
+        const body = await fetchBackendHealth()
+        setHealthState({ backendOnline: body.status === 'UP', token })
+        healthRetriesRef.current = 0
+      } catch {
+        setHealthState({ backendOnline: false, token })
+        healthRetriesRef.current += 1
+        if (healthRetriesRef.current <= HEALTH_CHECK_MAX_RETRIES) {
+          const delay = Math.min(
+            1000 * 2 ** healthRetriesRef.current,
+            HEALTH_CHECK_MAX_BACKOFF_MS,
+          )
+          const retryTimer = window.setTimeout(() => {
+            retryTimers.delete(retryTimer)
+            void checkBackendHealth()
+          }, delay)
+          retryTimers.add(retryTimer)
+        }
+      }
     }
 
     const timer = window.setTimeout(() => {
       void checkBackendHealth()
-      healthTimerRef.current = setInterval(() => {
+      healthTimer = setInterval(() => {
         if (healthRetriesRef.current === 0) {
           void checkBackendHealth()
         }
@@ -63,11 +55,15 @@ export function useBackendStatus(token: string) {
 
     return () => {
       window.clearTimeout(timer)
-      if (healthTimerRef.current) {
-        clearInterval(healthTimerRef.current)
+      if (healthTimer) {
+        clearInterval(healthTimer)
       }
+      for (const retryTimer of retryTimers) {
+        window.clearTimeout(retryTimer)
+      }
+      retryTimers.clear()
     }
-  }, [checkBackendHealth, token])
+  }, [token])
 
   return {
     backendOnline,

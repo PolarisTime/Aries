@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import {
@@ -6,73 +7,150 @@ import {
   formatInteger,
   statusMap,
 } from './shared'
+import { masterStatusFilter } from './shared-filters'
 
 export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
   'general-setting': {
     key: 'general-setting',
-    title: '通用设置',
+    title: i18next.t('modules.pages.systemCore.generalSettings'),
     kicker: 'System',
-    description:
-      '通用设置集中维护默认税率和系统开关，用于控制页面行为、草稿默认值和附件命名策略。',
+    description: i18next.t('modules.pages.systemCore.generalSettingDesc'),
     actions: [...actionSet],
     filters: [
       {
         key: 'keyword',
-        label: '关键字',
+        label: i18next.t('modules.pages.systemCore.keyword'),
         type: 'input',
-        placeholder: '配置编码 / 单据名称 / 前缀',
+        placeholder: i18next.t('modules.pages.systemCore.settingPlaceholder'),
       },
-      {
-        key: 'status',
-        label: '状态',
-        type: 'select',
-        options: enabledStatusOptions,
-      },
+      { ...masterStatusFilter },
     ],
     columns: [
-      { title: '配置编码', dataIndex: 'settingCode', width: 150 },
-      { title: '配置名称', dataIndex: 'settingName', width: 180 },
-      { title: '单据名称', dataIndex: 'billName', width: 140 },
-      { title: '前缀', dataIndex: 'prefix', width: 90 },
-      { title: '日期规则', dataIndex: 'dateRule', width: 120 },
       {
-        title: '流水位数',
+        title: i18next.t('modules.pages.systemCore.settingCode'),
+        dataIndex: 'settingCode',
+        width: 150,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.settingName'),
+        dataIndex: 'settingName',
+        width: 180,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.billName'),
+        dataIndex: 'billName',
+        width: 140,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.prefix'),
+        dataIndex: 'prefix',
+        width: 90,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.dateRule'),
+        dataIndex: 'dateRule',
+        width: 120,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.serialLength'),
         dataIndex: 'serialLength',
         width: 100,
         align: 'right',
         type: 'count',
       },
-      { title: '重置规则', dataIndex: 'resetRule', width: 110 },
-      { title: '示例号 / 配置值', dataIndex: 'sampleNo', width: 170 },
       {
-        title: '状态',
+        title: i18next.t('modules.pages.systemCore.resetRule'),
+        dataIndex: 'resetRule',
+        width: 110,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.sampleNoOrValue'),
+        dataIndex: 'sampleNo',
+        width: 170,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.status'),
         dataIndex: 'status',
         width: 100,
         type: 'status',
         align: 'center',
       },
-      { title: '备注', dataIndex: 'remark', width: 220 },
+      {
+        title: i18next.t('modules.pages.systemCore.remark'),
+        dataIndex: 'remark',
+        width: 220,
+      },
     ],
     detailFields: [
-      { label: '配置编码', key: 'settingCode' },
-      { label: '配置名称', key: 'settingName' },
-      { label: '单据名称', key: 'billName' },
-      { label: '前缀', key: 'prefix' },
-      { label: '日期规则', key: 'dateRule' },
-      { label: '流水位数', key: 'serialLength', type: 'count' },
-      { label: '重置规则', key: 'resetRule' },
-      { label: '示例号 / 配置值', key: 'sampleNo' },
-      { label: '状态', key: 'status', type: 'status' },
-      { label: '备注', key: 'remark' },
+      {
+        label: i18next.t('modules.pages.systemCore.settingCode'),
+        key: 'settingCode',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.settingName'),
+        key: 'settingName',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.billName'),
+        key: 'billName',
+      },
+      { label: i18next.t('modules.pages.systemCore.prefix'), key: 'prefix' },
+      {
+        label: i18next.t('modules.pages.systemCore.dateRule'),
+        key: 'dateRule',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.serialLength'),
+        key: 'serialLength',
+        type: 'count',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.resetRule'),
+        key: 'resetRule',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.sampleNoOrValue'),
+        key: 'sampleNo',
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.status'),
+        key: 'status',
+        type: 'status',
+      },
+      { label: i18next.t('modules.pages.systemCore.remark'), key: 'remark' },
     ],
     formFields: [
-      { key: 'settingCode', label: '配置编码', type: 'input', required: true, row: 1 },
-      { key: 'settingName', label: '配置名称', type: 'input', required: true, row: 1 },
-      { key: 'billName', label: '单据名称', type: 'input', required: true, row: 1 },
-      { key: 'prefix', label: '前缀', type: 'input', required: true, row: 1 },
+      {
+        key: 'settingCode',
+        label: i18next.t('modules.pages.systemCore.settingCode'),
+        type: 'input',
+        required: true,
+        row: 1,
+      },
+      {
+        key: 'settingName',
+        label: i18next.t('modules.pages.systemCore.settingName'),
+        type: 'input',
+        required: true,
+        row: 1,
+      },
+      {
+        key: 'billName',
+        label: i18next.t('modules.pages.systemCore.billName'),
+        type: 'input',
+        required: true,
+        row: 1,
+      },
+      {
+        key: 'prefix',
+        label: i18next.t('modules.pages.systemCore.prefix'),
+        type: 'input',
+        required: true,
+        row: 1,
+      },
       {
         key: 'dateRule',
-        label: '日期规则',
+        label: i18next.t('modules.pages.systemCore.dateRule'),
         type: 'select',
         required: true,
         row: 2,
@@ -83,7 +161,7 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
       },
       {
         key: 'serialLength',
-        label: '流水位数',
+        label: i18next.t('modules.pages.systemCore.serialLength'),
         type: 'number',
         required: true,
         min: 1,
@@ -93,39 +171,57 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
       },
       {
         key: 'resetRule',
-        label: '重置规则',
+        label: i18next.t('modules.pages.systemCore.resetRule'),
         type: 'select',
         required: true,
         row: 2,
         options: [
-          { label: '按年重置', value: '按年重置' },
-          { label: '按月重置', value: '按月重置' },
-          { label: '永不重置', value: '永不重置' },
+          {
+            label: i18next.t('modules.pages.systemCore.yearly'),
+            value: '按年重置',
+          },
+          {
+            label: i18next.t('modules.pages.systemCore.monthly'),
+            value: '按月重置',
+          },
+          {
+            label: i18next.t('modules.pages.systemCore.never'),
+            value: '永不重置',
+          },
         ],
       },
       {
         key: 'sampleNo',
-        label: '示例号 / 配置值',
+        label: i18next.t('modules.pages.systemCore.sampleNoOrValue'),
         type: 'input',
         required: true,
-        placeholder: '单号规则为示例; 系统开关为当前值',
+        placeholder: i18next.t('modules.pages.systemCore.sampleForNumberRules'),
         row: 2,
       },
       {
         key: 'status',
-        label: '状态',
+        label: i18next.t('modules.pages.systemCore.status'),
         type: 'select',
         defaultValue: '正常',
         options: enabledStatusOptions,
         row: 3,
       },
-      { key: 'remark', label: '备注', type: 'textarea', row: 4, fullRow: true },
+      {
+        key: 'remark',
+        label: i18next.t('modules.pages.systemCore.remark'),
+        type: 'textarea',
+        row: 4,
+        fullRow: true,
+      },
     ],
     data: [],
     buildOverview: (rows) => [
-      { label: '规则数', value: formatInteger(rows.length) },
       {
-        label: '启用规则',
+        label: i18next.t('modules.pages.systemCore.ruleCount'),
+        value: formatInteger(rows.length),
+      },
+      {
+        label: i18next.t('modules.pages.systemCore.enabledRuleCount'),
         value: formatInteger(
           rows.filter((row) => row.status === '正常').length,
         ),
@@ -136,40 +232,65 @@ export const systemCorePageConfigs: Record<string, ModulePageConfig> = {
   },
   'company-setting': {
     key: 'company-setting',
-    title: '公司信息',
+    title: i18next.t('modules.pages.systemCore.companyInfo'),
     kicker: 'System',
-    description:
-      '公司信息集中维护公司名称、税号与多个结算银行信息，供打印模板、结算抬头和财务页面统一引用。',
-    primaryNoKey: 'companyName',
+    description: i18next.t('modules.pages.systemCore.companyInfoDesc'),
     actions: [...actionSet],
     filters: [
       {
         key: 'keyword',
-        label: '关键字',
+        label: i18next.t('modules.pages.systemCore.keyword'),
         type: 'input',
-        placeholder: '公司名称 / 税号 / 银行 / 账号',
+        placeholder: i18next.t('modules.pages.systemCore.companyPlaceholder'),
       },
     ],
     columns: [
-      { title: '公司名称', dataIndex: 'companyName', width: 180 },
-      { title: '税号', dataIndex: 'taxNo', width: 180 },
-      { title: '备注', dataIndex: 'remark', width: 220 },
+      {
+        title: i18next.t('modules.pages.systemCore.companyName'),
+        dataIndex: 'companyName',
+        width: 180,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.taxNo'),
+        dataIndex: 'taxNo',
+        width: 180,
+      },
+      {
+        title: i18next.t('modules.pages.systemCore.remark'),
+        dataIndex: 'remark',
+        width: 220,
+      },
     ],
     detailFields: [
-      { label: '公司名称', key: 'companyName' },
-      { label: '税号', key: 'taxNo' },
-      { label: '备注', key: 'remark' },
+      {
+        label: i18next.t('modules.pages.systemCore.companyName'),
+        key: 'companyName',
+      },
+      { label: i18next.t('modules.pages.systemCore.taxNo'), key: 'taxNo' },
+      { label: i18next.t('modules.pages.systemCore.remark'), key: 'remark' },
     ],
     formFields: [
       {
         key: 'companyName',
-        label: '公司名称',
+        label: i18next.t('modules.pages.systemCore.companyName'),
         type: 'input',
         required: true,
         row: 1,
       },
-      { key: 'taxNo', label: '税号', type: 'input', required: true, row: 1 },
-      { key: 'remark', label: '备注', type: 'textarea', row: 2, fullRow: true },
+      {
+        key: 'taxNo',
+        label: i18next.t('modules.pages.systemCore.taxNo'),
+        type: 'input',
+        required: true,
+        row: 1,
+      },
+      {
+        key: 'remark',
+        label: i18next.t('modules.pages.systemCore.remark'),
+        type: 'textarea',
+        row: 2,
+        fullRow: true,
+      },
     ],
     data: [],
     buildOverview: (rows) => buildMasterOverview(rows),

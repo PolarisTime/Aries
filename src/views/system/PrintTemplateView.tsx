@@ -1,23 +1,45 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
-import { useCallback, useState } from 'react'
+import { useReducer } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   deletePrintTemplate,
   listPrintTemplates,
   savePrintTemplate,
 } from '@/api/print-template'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { PrintTemplateRecord } from '@/types/print-template'
+import { message, modal } from '@/utils/antd-app'
 import { PrintTemplateEditorModal } from '@/views/system/PrintTemplateEditorModal'
 import { PrintTemplatePreviewModal } from '@/views/system/PrintTemplatePreviewModal'
 import { PrintTemplateTableCard } from '@/views/system/PrintTemplateTableCard'
 import { buildPrintTemplateCopyName } from '@/views/system/print-template-view-utils'
-import { message, modal } from '@/utils/antd-app'
+
+interface PrintTemplateState {
+  selectedBillType: string
+  activeTemplateId: string | undefined
+  editorOpen: boolean
+  previewOpen: boolean
+  previewTemplate: PrintTemplateRecord | null
+  templateHtml: string
+}
+
+const printTemplateInitialState: PrintTemplateState = {
+  selectedBillType: printTemplateTargetOptions[0]?.value || 'purchase-order',
+  activeTemplateId: undefined,
+  editorOpen: false,
+  previewOpen: false,
+  previewTemplate: null,
+  templateHtml: '',
+}
 
 export function PrintTemplateView() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
 
@@ -25,21 +47,25 @@ export function PrintTemplateView() {
   const canEdit = permissionStore.can('print-template', 'update')
   const canDelete = permissionStore.can('print-template', 'delete')
 
-  const [selectedBillType, setSelectedBillType] = useState(
-    printTemplateTargetOptions[0]?.value || 'purchase-order',
+  const [state, setState] = useReducer(
+    (prev: PrintTemplateState, patch: Partial<PrintTemplateState>) => ({
+      ...prev,
+      ...patch,
+    }),
+    printTemplateInitialState,
   )
-  const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>(
-    undefined,
-  )
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [previewOpen, setPreviewOpen] = useState(false)
-  const [previewTemplate, setPreviewTemplate] =
-    useState<PrintTemplateRecord | null>(null)
-  const [templateHtml, setTemplateHtml] = useState('')
+  const {
+    selectedBillType,
+    activeTemplateId,
+    editorOpen,
+    previewOpen,
+    previewTemplate,
+    templateHtml,
+  } = state
   const [form] = Form.useForm()
 
   const { data: templatesResponse, isLoading } = useQuery({
-    queryKey: ['print-template', selectedBillType],
+    queryKey: QUERY_KEYS.printTemplateByType(selectedBillType),
     queryFn: () => listPrintTemplates(selectedBillType),
   })
   const templates = templatesResponse?.data || []
@@ -47,120 +73,116 @@ export function PrintTemplateView() {
   const saveMutation = useMutation({
     mutationFn: savePrintTemplate,
     onSuccess: () => {
-      message.success('保存成功')
-      queryClient.invalidateQueries({ queryKey: ['print-template'] })
-      setEditorOpen(false)
+      message.success(t('common.saveSuccess'))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
+      setState({ editorOpen: false })
     },
-    onError: (error: Error) => showError(error, '保存失败'),
+    onError: (error: Error) => showError(error, t('api.saveFailed')),
   })
 
   const deleteMutation = useMutation({
     mutationFn: deletePrintTemplate,
     onSuccess: () => {
-      message.success('删除成功')
-      queryClient.invalidateQueries({ queryKey: ['print-template'] })
+      message.success(t('common.deleteSuccess'))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
     },
-    onError: (error: Error) => showError(error, '删除失败'),
+    onError: (error: Error) => showError(error, t('api.deleteFailed')),
   })
 
-  const refresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['print-template'] })
-  }, [queryClient])
+  const refresh = useRefreshQuery('print-template')
 
-  const openCreate = useCallback(() => {
+  const openCreate = () => {
     if (!canCreate) {
-      message.warning('暂无创建权限')
+      message.warning(t('common.noPermission'))
       return
     }
     form.resetFields()
     form.setFieldsValue({
       billType: selectedBillType,
       templateName: '',
-      isDefault: false,
+      templateType: 'HTML',
     })
-    setTemplateHtml('')
-    setActiveTemplateId(undefined)
-    setEditorOpen(true)
-  }, [canCreate, form, selectedBillType])
+    setState({
+      templateHtml: '',
+      activeTemplateId: undefined,
+      editorOpen: true,
+    })
+  }
 
-  const openEdit = useCallback(
-    (record: PrintTemplateRecord) => {
-      if (!canEdit) {
-        message.warning('暂无编辑权限')
-        return
-      }
-      form.setFieldsValue({
-        id: record.id,
-        billType: record.billType || selectedBillType,
-        templateName: record.templateName,
-        isDefault: record.isDefault ?? false,
-      })
-      setTemplateHtml(record.templateHtml || '')
-      setActiveTemplateId(record.id)
-      setEditorOpen(true)
-    },
-    [canEdit, form, selectedBillType],
-  )
+  const openEdit = (record: PrintTemplateRecord) => {
+    if (!canEdit) {
+      message.warning(t('common.noPermission'))
+      return
+    }
+    form.setFieldsValue({
+      id: record.id,
+      billType: record.billType || selectedBillType,
+      templateName: record.templateName,
+      templateType: record.templateType || 'HTML',
+    })
+    setState({
+      templateHtml: record.templateHtml || '',
+      activeTemplateId: record.id,
+      editorOpen: true,
+    })
+  }
 
-  const openPreview = useCallback((record: PrintTemplateRecord) => {
-    setPreviewTemplate(record)
-    setPreviewOpen(true)
-  }, [])
+  const openPreview = (record: PrintTemplateRecord) => {
+    setState({ previewTemplate: record, previewOpen: true })
+  }
 
-  const handleCopy = useCallback(
-    (record: PrintTemplateRecord) => {
-      if (!canCreate) {
-        message.warning('暂无创建权限')
-        return
-      }
-      form.setFieldsValue({
-        billType: record.billType || selectedBillType,
-        templateName: buildPrintTemplateCopyName(record),
-        isDefault: false,
-      })
-      setTemplateHtml(record.templateHtml || '')
-      setActiveTemplateId(undefined)
-      setEditorOpen(true)
-    },
-    [canCreate, form, selectedBillType],
-  )
+  const handleCopy = (record: PrintTemplateRecord) => {
+    if (!canCreate) {
+      message.warning(t('common.noPermission'))
+      return
+    }
+    form.setFieldsValue({
+      billType: record.billType || selectedBillType,
+      templateName: buildPrintTemplateCopyName(record),
+      templateType: record.templateType || 'HTML',
+    })
+    setState({
+      templateHtml: record.templateHtml || '',
+      activeTemplateId: undefined,
+      editorOpen: true,
+    })
+  }
 
-  const handleDelete = useCallback(
-    (record: PrintTemplateRecord) => {
-      if (!canDelete) {
-        message.warning('暂无删除权限')
-        return
-      }
-      modal.confirm({
-        title: '删除打印模板',
-        content: `确定删除模板「${record.templateName}」吗？`,
-        okText: '确认删除',
-        cancelText: '取消',
-        okButtonProps: { danger: true },
-        onOk: () => deleteMutation.mutateAsync(record.id),
-      })
-    },
-    [canDelete, deleteMutation],
-  )
+  const handleDelete = (record: PrintTemplateRecord) => {
+    if (!canDelete) {
+      message.warning(t('common.noPermission'))
+      return
+    }
+    modal.confirm({
+      title: t('system.printTemplate.deleteTemplate'),
+      content: t('system.printTemplate.deleteContent', {
+        name: record.templateName,
+      }),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: () => deleteMutation.mutateAsync(record.id),
+    })
+  }
 
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
+    if (!templateHtml.trim()) {
+      message.warning(t('system.printTemplate.inputTemplateContent'))
+      return
+    }
     try {
       const values = await form.validateFields()
-      if (!templateHtml.trim()) {
-        message.warning('请输入模板内容')
-        return
-      }
       saveMutation.mutate({
         id: activeTemplateId || undefined,
         billType: values.billType,
         templateName: values.templateName.trim(),
         templateHtml: templateHtml.trim(),
-        isDefault: values.isDefault ?? false,
+        templateType: values.templateType || 'HTML',
       })
     } catch {
       // validation failed
     }
-  }, [activeTemplateId, form, saveMutation, templateHtml])
+  }
 
   return (
     <div className="page-stack">
@@ -172,14 +194,14 @@ export function PrintTemplateView() {
         canCreate={canCreate}
         canEdit={canEdit}
         canDelete={canDelete}
-        onBillTypeChange={setSelectedBillType}
+        onBillTypeChange={(value) => setState({ selectedBillType: value })}
         onRefresh={refresh}
         onCreate={openCreate}
         onPreview={openPreview}
         onEdit={openEdit}
         onCopy={handleCopy}
         onDelete={handleDelete}
-        onActiveChange={setActiveTemplateId}
+        onActiveChange={(value) => setState({ activeTemplateId: value })}
       />
 
       {editorOpen ? (
@@ -189,11 +211,11 @@ export function PrintTemplateView() {
           form={form}
           templateHtml={templateHtml}
           saving={saveMutation.isPending}
-          onTemplateHtmlChange={setTemplateHtml}
+          onTemplateHtmlChange={(value) => setState({ templateHtml: value })}
           onSave={() => {
             void handleSave()
           }}
-          onClose={() => setEditorOpen(false)}
+          onClose={() => setState({ editorOpen: false })}
         />
       ) : null}
 
@@ -201,7 +223,7 @@ export function PrintTemplateView() {
         <PrintTemplatePreviewModal
           open={previewOpen}
           template={previewTemplate}
-          onClose={() => setPreviewOpen(false)}
+          onClose={() => setState({ previewOpen: false })}
         />
       ) : null}
     </div>

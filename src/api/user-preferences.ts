@@ -1,13 +1,17 @@
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
 import type { UserColumnSettingsPayload } from '@/types/module-page'
+import { getApiMessage } from '@/utils/api-messages'
 import { assertApiSuccess, http } from './client'
 
 export async function getUserColumnSettings() {
   const response = await http.get<ApiResponse<UserColumnSettingsPayload>>(
     ENDPOINTS.USER_ACCOUNT_PREFERENCES,
   )
-  return assertApiSuccess(response, '加载账号列设置失败').data
+  return assertApiSuccess(
+    response,
+    getApiMessage('loadAccountColumnSettingsFailed'),
+  ).data
 }
 
 export async function saveUserColumnSettings(
@@ -17,5 +21,8 @@ export async function saveUserColumnSettings(
     ENDPOINTS.USER_ACCOUNT_PREFERENCES,
     payload,
   )
-  return assertApiSuccess(response, '保存账号列设置失败').data
+  return assertApiSuccess(
+    response,
+    getApiMessage('saveAccountColumnSettingsFailed'),
+  ).data
 }

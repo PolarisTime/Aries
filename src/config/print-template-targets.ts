@@ -5,7 +5,7 @@ export interface PrintTemplateTargetOption {
   label: string
 }
 
-export const allowedPrintTemplateTargetKeys = [
+const allowedPrintTemplateTargetKeys = [
   'purchase-order',
   'purchase-inbound',
   'sales-order',
@@ -23,13 +23,10 @@ export const allowedPrintTemplateTargetKeys = [
 ] as const
 
 export const printTemplateTargetOptions: PrintTemplateTargetOption[] =
-  allowedPrintTemplateTargetKeys
-    .map((key) => modulePageMetaMap[key])
-    .filter((config) => Boolean(config))
-    .map((config) => ({
-      value: config.key,
-      label: config.title,
-    }))
+  allowedPrintTemplateTargetKeys.flatMap((key) => {
+    const config = modulePageMetaMap[key]
+    return config ? [{ value: config.key, label: config.title }] : []
+  })
 
 export const printTemplateTargetMap = Object.fromEntries(
   printTemplateTargetOptions.map((item) => [item.value, item.label]),

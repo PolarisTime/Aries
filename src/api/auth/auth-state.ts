@@ -1,11 +1,13 @@
-import { AxiosHeaders } from 'axios'
+import axios, { AxiosHeaders, type AxiosResponse } from 'axios'
 import { authHttp } from '@/api/http'
 import { AUTH_STATE_CHANGED_EVENT } from '@/constants/auth'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { ERROR_CODE } from '@/constants/error-codes'
+import { HTTP_STATUS } from '@/constants/http-status'
 import type { ApiResponse } from '@/types/api'
 import type { LoginResponseData } from '@/types/auth'
-import { message, notification } from '@/utils/antd-app'
+import { message } from '@/utils/antd-app'
+import { getApiMessage } from '@/utils/api-messages'
 import { isApiKeyToken } from '@/utils/auth-token'
 import { getCurrentAppRoute } from '@/utils/route-helpers'
 import {
@@ -23,9 +25,26 @@ let authFailureHandled = false
 const PRE_REFRESH_ADVANCE_MS = 5 * 60 * 1000
 const REFRESH_EXPIRES_AT_KEY = 'aries-refresh-expires-at'
 const REFRESH_WARNED_KEY = 'aries-refresh-warned'
-const ONE_DAY_MS = 24 * 60 * 60 * 1000
+const REFRESH_REUSE_RETRY_DELAY_MS = 250
 
 let preRefreshTimer: ReturnType<typeof setTimeout> | null = null
+
+export function isRefreshTokenReuseConflict(error: unknown) {
+  if (!axios.isAxiosError(error)) {
+    return false
+  }
+  return (
+    error.response?.status === HTTP_STATUS.CONFLICT &&
+    Number(error.response?.data?.code) ===
+      ERROR_CODE.REFRESH_TOKEN_REUSE_CONFLICT
+  )
+}
+
+export function waitForRefreshTokenReuseRetry() {
+  return new Promise((resolve) => {
+    setTimeout(resolve, REFRESH_REUSE_RETRY_DELAY_MS)
+  })
+}
 
 function notifyAuthStateChanged() {
   if (typeof window !== 'undefined') {
@@ -33,7 +52,7 @@ function notifyAuthStateChanged() {
   }
 }
 
-export function clearAuthState() {
+function clearAuthState() {
   clearToken()
   clearStoredUser()
   clearTokenExpiresAt()
@@ -41,7 +60,7 @@ export function clearAuthState() {
   notifyAuthStateChanged()
 }
 
-export function applyTokenResponse(data: LoginResponseData) {
+function applyTokenResponse(data: LoginResponseData) {
   authFailureHandled = false
   if (data.user) {
     setAuthSession(
@@ -88,28 +107,29 @@ function redirectToLogin() {
     return
   }
 
-  window.location.href = `/login?redirect=${encodeURIComponent(currentRoute)}`
+  const safe = currentRoute.startsWith('/') ? currentRoute : '/dashboard'
+  window.location.href = `/login?redirect=${encodeURIComponent(safe)}`
 }
 
-export function schedulePreRefresh(delayMs?: number) {
+function schedulePreRefresh(delayMs?: number) {
   cancelPreRefresh()
   if (typeof window === 'undefined') return
 
   const delay = delayMs ?? computePreRefreshDelay()
   if (delay <= 0) {
-    executePreRefresh()
+    void executePreRefresh()
     return
   }
   preRefreshTimer = setTimeout(
     () => {
       preRefreshTimer = null
-      executePreRefresh()
+      void executePreRefresh()
     },
     Math.min(delay, 2_147_483_647),
   )
 }
 
-export function cancelPreRefresh() {
+function cancelPreRefresh() {
   if (preRefreshTimer !== null) {
     clearTimeout(preRefreshTimer)
     preRefreshTimer = null
@@ -148,40 +168,35 @@ async function executePreRefresh() {
   }
 }
 
-export function checkRefreshTokenExpiry() {
-  if (typeof window === 'undefined') return
-  const raw = localStorage.getItem(REFRESH_EXPIRES_AT_KEY)
-  if (!raw) return
-  if (localStorage.getItem(REFRESH_WARNED_KEY)) return
-
-  const expiresAt = Number(raw)
-  const remaining = expiresAt - Date.now()
-
-  if (remaining > 0 && remaining <= ONE_DAY_MS) {
-    notification.warning({
-      message: '登录即将过期',
-      description: '您的登录状态将在明天过期，请及时保存工作并重新登录',
-      duration: 0,
-    })
-    localStorage.setItem(REFRESH_WARNED_KEY, '1')
-  }
-}
-
 let refreshPromise: Promise<void> | null = null
 
 export async function refreshAccessToken() {
-  const response = await authHttp.post<ApiResponse<LoginResponseData>>(
-    ENDPOINTS.AUTH_REFRESH,
-    {},
-  )
+  let response: AxiosResponse<ApiResponse<LoginResponseData>>
+  try {
+    response = await authHttp.post<ApiResponse<LoginResponseData>>(
+      ENDPOINTS.AUTH_REFRESH,
+      {},
+    )
+  } catch (error) {
+    if (!isRefreshTokenReuseConflict(error)) {
+      throw error
+    }
+    await waitForRefreshTokenReuseRetry()
+    response = await authHttp.post<ApiResponse<LoginResponseData>>(
+      ENDPOINTS.AUTH_REFRESH,
+      {},
+    )
+  }
   const payload = response.data
 
   if (payload.code !== ERROR_CODE.SUCCESS) {
-    throw new Error(payload.message || '刷新登录状态失败')
+    throw new Error(
+      payload.message || getApiMessage('refreshLoginStatusFailed'),
+    )
   }
 
   if (!payload.data?.accessToken || !payload.data?.user) {
-    throw new Error(payload.message || '登录状态已失效，请重新登录')
+    throw new Error(payload.message || getApiMessage('loginStatusExpired'))
   }
 
   applyTokenResponse(payload.data)

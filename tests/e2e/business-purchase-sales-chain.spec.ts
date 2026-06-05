@@ -1,4 +1,4 @@
-import type { Locator } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { waitForFirstDetailRow } from './support/business-e2e'
 import { expect, test } from './support/test'
 
@@ -26,7 +26,7 @@ function isoNextDay() {
   return `${year}-${month}-${day}`
 }
 
-async function openCreateOverlay(page: Parameters<typeof test>[0]['page']) {
+async function openCreateOverlay(page: Page) {
   const beforeCount = await page.locator('.workspace-overlay-panel').count()
   await page.getByRole('button', { name: '新建' }).click()
   const overlay = page.locator('.workspace-overlay-panel').nth(beforeCount)
@@ -34,7 +34,7 @@ async function openCreateOverlay(page: Parameters<typeof test>[0]['page']) {
   return overlay
 }
 
-async function loginAsTest9(page: Parameters<typeof test>[0]['page']) {
+async function loginAsTest9(page: Page) {
   const response = await page.request.post(`${API_BASE_URL}/auth/login`, {
     data: {
       loginName: 'test9',
@@ -60,7 +60,15 @@ async function loginAsTest9(page: Parameters<typeof test>[0]['page']) {
   expect(user).toBeTruthy()
 
   await page.addInitScript(
-    ({ token, currentUser, ttl }) => {
+    ({
+      token,
+      currentUser,
+      ttl,
+    }: {
+      token: string
+      currentUser: unknown
+      ttl: number
+    }) => {
       const expiresAt = String(Date.now() + ttl * 1000)
       localStorage.setItem('aries-token', token)
       localStorage.setItem('aries-token-expires-at', expiresAt)
@@ -82,10 +90,7 @@ async function loginAsTest9(page: Parameters<typeof test>[0]['page']) {
   await expect(page).not.toHaveURL(/\/login(?:\?|$)/)
 }
 
-async function selectAntOption(
-  target: Locator,
-  optionText?: string,
-) {
+async function selectAntOption(target: Locator, optionText?: string) {
   await target.click()
   if (optionText) {
     const input = target.locator('input').last()
@@ -97,18 +102,12 @@ async function selectAntOption(
   await target.press('Enter')
 }
 
-async function fillDateInput(
-  target: Locator,
-  value: string,
-) {
+async function fillDateInput(target: Locator, value: string) {
   await target.fill(value)
   await target.press('Enter')
 }
 
-async function setSpinbuttonValue(
-  target: Locator,
-  value: string,
-) {
+async function setSpinbuttonValue(target: Locator, value: string) {
   await target.click()
   await target.press('ControlOrMeta+A')
   await target.pressSequentially(value)
@@ -117,7 +116,7 @@ async function setSpinbuttonValue(
 }
 
 async function importParentByKeyword(
-  page: Parameters<typeof test>[0]['page'],
+  page: Page,
   overlay: Locator,
   buttonName: string,
   keyword: string,
@@ -138,7 +137,7 @@ async function importParentByKeyword(
 }
 
 async function waitForSaveOutcome(
-  page: Parameters<typeof test>[0]['page'],
+  page: Page,
   overlay: Locator,
   expectedNo?: string,
 ) {
@@ -159,7 +158,11 @@ async function waitForSaveOutcome(
         if ((await successMessage.count()) > 0) {
           return 'message'
         }
-        if (rowInList && (await rowInList.count()) > 0 && (await rowInList.isVisible())) {
+        if (
+          rowInList &&
+          (await rowInList.count()) > 0 &&
+          (await rowInList.isVisible())
+        ) {
           return 'row'
         }
         if (!(await overlay.isVisible().catch(() => false))) {
@@ -172,11 +175,7 @@ async function waitForSaveOutcome(
     .not.toBe('pending')
 }
 
-async function saveOverlay(
-  page: Parameters<typeof test>[0]['page'],
-  overlay: Locator,
-  expectedNo?: string,
-) {
+async function saveOverlay(page: Page, overlay: Locator, expectedNo?: string) {
   await overlay
     .locator('button.overlay-action-button')
     .filter({ hasText: /^保存$/ })
@@ -185,7 +184,7 @@ async function saveOverlay(
 }
 
 async function saveAndAuditOverlay(
-  page: Parameters<typeof test>[0]['page'],
+  page: Page,
   overlay: Locator,
   expectedNo?: string,
 ) {
@@ -222,7 +221,11 @@ test.describe('purchase to sales chain', () => {
     await fillDateInput(purchaseOrderOverlay.locator('#orderDate'), orderDate)
 
     const purchaseOrderRow = await waitForFirstDetailRow(purchaseOrderOverlay)
-    await purchaseOrderRow.locator('td').nth(3).locator('input').fill('HZ-YG-PL8')
+    await purchaseOrderRow
+      .locator('td')
+      .nth(3)
+      .locator('input')
+      .fill('HZ-YG-PL8')
     await page.waitForTimeout(1200)
     await selectAntOption(
       purchaseOrderRow.locator('td').nth(10).locator('.ant-select'),
@@ -236,7 +239,10 @@ test.describe('purchase to sales chain', () => {
     await page.goto('/purchase-inbound')
     const purchaseInboundOverlay = await openCreateOverlay(page)
     await purchaseInboundOverlay.locator('#inboundNo').fill(purchaseInboundNo)
-    await fillDateInput(purchaseInboundOverlay.locator('#inboundDate'), orderDate)
+    await fillDateInput(
+      purchaseInboundOverlay.locator('#inboundDate'),
+      orderDate,
+    )
     await importParentByKeyword(
       page,
       purchaseInboundOverlay,
@@ -266,7 +272,10 @@ test.describe('purchase to sales chain', () => {
       salesOrderOverlay.locator('#projectName'),
       '恒力(大连)船厂有限公司-绿色高端装备制造项目6#曲面分段车间',
     )
-    await fillDateInput(salesOrderOverlay.locator('#deliveryDate'), deliveryDate)
+    await fillDateInput(
+      salesOrderOverlay.locator('#deliveryDate'),
+      deliveryDate,
+    )
     await importParentByKeyword(
       page,
       salesOrderOverlay,
@@ -289,7 +298,10 @@ test.describe('purchase to sales chain', () => {
     await page.goto('/sales-outbound')
     const salesOutboundOverlay = await openCreateOverlay(page)
     await salesOutboundOverlay.locator('#outboundNo').fill(salesOutboundNo)
-    await fillDateInput(salesOutboundOverlay.locator('#outboundDate'), deliveryDate)
+    await fillDateInput(
+      salesOutboundOverlay.locator('#outboundDate'),
+      deliveryDate,
+    )
     await importParentByKeyword(
       page,
       salesOutboundOverlay,
@@ -298,12 +310,15 @@ test.describe('purchase to sales chain', () => {
     )
     await saveAndAuditOverlay(page, salesOutboundOverlay, salesOutboundNo)
 
-    const loginRes = await page.request.post('http://127.0.0.1:11211/api/auth/login', {
-      data: {
-        loginName: 'test9',
-        password: '123456',
+    const loginRes = await page.request.post(
+      'http://127.0.0.1:11211/api/auth/login',
+      {
+        data: {
+          loginName: 'test9',
+          password: '123456',
+        },
       },
-    })
+    )
     expect(loginRes.ok()).toBeTruthy()
     const loginPayload = (await loginRes.json()) as {
       code: number

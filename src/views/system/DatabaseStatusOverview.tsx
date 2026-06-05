@@ -1,5 +1,4 @@
-import { DatabaseOutlined, ReloadOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
+import { CloudServerOutlined, DatabaseOutlined } from '@ant-design/icons'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
 import Descriptions from 'antd/es/descriptions'
@@ -8,6 +7,7 @@ import Skeleton from 'antd/es/skeleton'
 import Statistic from 'antd/es/statistic'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type { DatabaseStatus } from '@/api/database-admin'
 import {
   formatDatabaseDateTime,
@@ -16,6 +16,7 @@ import {
 
 interface ServiceCardProps {
   accent: string
+  icon: React.ReactNode
   title: string
   version: string
   status: string
@@ -25,67 +26,50 @@ interface ServiceCardProps {
 
 function DatabaseServiceCard({
   accent,
+  icon,
   title,
   version,
   status,
   summary,
   details,
 }: ServiceCardProps) {
+  const isHealthy = status === '正常' || status.toUpperCase() === 'UP'
+
   return (
-    <Card size="small" style={{ background: '#fafafa' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 20,
-        }}
-      >
+    <Card size="small" className="database-service-card">
+      <div className="database-service-card-header">
         <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 12,
-            background: accent,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 24,
-            color: '#fff',
-          }}
+          className="database-service-icon"
+          /* 动态背景色：accent 由父组件传入，对应不同服务类型 */
+          style={{ background: accent }}
         >
-          <DatabaseOutlined />
+          {icon}
         </div>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 600 }}>{title}</div>
-          <div style={{ fontSize: 12, color: '#8c8c8c' }}>{version}</div>
+        <div className="database-service-title">
+          <div className="database-service-name">{title}</div>
+          <div className="database-service-version">{version}</div>
         </div>
         <Tag
-          color={status === '正常' ? 'green' : 'red'}
-          style={{ marginLeft: 'auto' }}
+          color={isHealthy ? 'green' : 'red'}
+          className="database-status-tag"
         >
           {status}
         </Tag>
       </div>
-      <Row
-        gutter={16}
-        style={{
-          marginBottom: 20,
-          paddingBottom: 20,
-          borderBottom: '1px solid #f0f0f0',
-        }}
-      >
+
+      <div className="database-service-metrics">
         {summary.map((item) => (
-          <Col key={item.title} span={8}>
-            <Statistic
-              title={item.title}
-              value={item.value}
-              styles={{ content: { fontSize: 20 } }}
-            />
-          </Col>
+          <Statistic
+            key={item.title}
+            title={item.title}
+            value={item.value}
+            className="database-service-metric"
+            styles={{ content: { fontSize: 20 } }}
+          />
         ))}
-      </Row>
-      <Descriptions size="small" column={1}>
+      </div>
+
+      <Descriptions size="small" column={1} className="database-service-detail">
         {details.map((item) => (
           <Descriptions.Item key={item.label} label={item.label}>
             {item.value}
@@ -99,69 +83,67 @@ function DatabaseServiceCard({
 interface Props {
   dbStatus?: DatabaseStatus
   loading: boolean
-  onRefresh: () => void
 }
 
-export function DatabaseStatusOverview({
-  dbStatus,
-  loading,
-  onRefresh,
-}: Props) {
+export function DatabaseStatusOverview({ dbStatus, loading }: Props) {
+  const { t } = useTranslation()
+  if (loading && !dbStatus) {
+    return (
+      <div className="database-status-section">
+        <Skeleton active paragraph={{ rows: 8 }} />
+      </div>
+    )
+  }
+
   return (
-    <div
-      style={{
-        background: '#fff',
-        borderRadius: 8,
-        padding: 24,
-        marginBottom: 16,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: 20,
-        }}
-      >
-        <Typography.Title level={5} style={{ margin: 0 }}>
-          数据库状态
-        </Typography.Title>
-        <Button
-          size="small"
-          loading={loading}
-          icon={<ReloadOutlined />}
-          onClick={onRefresh}
-        >
-          刷新
-        </Button>
+    <div className="database-status-section">
+      <div className="database-section-heading">
+        <div>
+          <Typography.Title level={5} className="database-section-title">
+            {t('system.databaseStatus.serviceOverview')}
+          </Typography.Title>
+          <Typography.Text type="secondary">
+            {t('system.databaseStatus.serviceOverviewDesc')}
+          </Typography.Text>
+        </div>
       </div>
 
       {dbStatus ? (
-        <Row gutter={20}>
-          <Col span={12}>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} xl={12}>
             <DatabaseServiceCard
-              accent="linear-gradient(135deg, #1890ff, #096dd9)"
+              accent="var(--theme-primary)"
+              icon={<DatabaseOutlined />}
               title="PostgreSQL"
               version={dbStatus.postgres.version}
               status={dbStatus.postgres.status}
               summary={[
-                { title: '数据库大小', value: dbStatus.postgres.databaseSize },
-                { title: '表数量', value: dbStatus.postgres.tableCount },
                 {
-                  title: '活跃连接',
+                  title: t('system.databaseStatus.dbSize'),
+                  value: dbStatus.postgres.databaseSize,
+                },
+                {
+                  title: t('system.databaseStatus.tableCount'),
+                  value: dbStatus.postgres.tableCount,
+                },
+                {
+                  title: t('system.databaseStatus.activeConnections'),
                   value: `${dbStatus.postgres.activeConnections}/${dbStatus.postgres.maxConnections}`,
                 },
               ]}
               details={[
                 {
-                  label: '地址',
+                  label: t('system.databaseStatus.address'),
                   value: `${dbStatus.postgres.host}:${dbStatus.postgres.port}`,
                 },
-                { label: '数据库', value: dbStatus.postgres.database },
+                {
+                  label: t('system.databaseStatus.database'),
+                  value: dbStatus.postgres.database,
+                },
                 ...(dbStatus.postgres.serverStartTime
                   ? [
                       {
-                        label: '启动时间',
+                        label: t('system.databaseStatus.startTime'),
                         value: formatDatabaseDateTime(
                           dbStatus.postgres.serverStartTime,
                         ),
@@ -171,36 +153,46 @@ export function DatabaseStatusOverview({
               ]}
             />
           </Col>
-          <Col span={12}>
+          <Col xs={24} xl={12}>
             <DatabaseServiceCard
-              accent="linear-gradient(135deg, #ff4d4f, #cf1322)"
+              accent="var(--theme-error)"
+              icon={<CloudServerOutlined />}
               title="Redis"
               version={dbStatus.redis.version}
               status={dbStatus.redis.status}
               summary={[
                 {
-                  title: '内存占用',
+                  title: t('system.databaseStatus.memUsage'),
                   value: formatDatabaseMemory(dbStatus.redis.usedMemory),
                 },
-                { title: '键数量', value: dbStatus.redis.totalKeys },
-                { title: '命中率', value: `${dbStatus.redis.hitRate}%` },
+                {
+                  title: t('system.databaseStatus.keyCount'),
+                  value: dbStatus.redis.totalKeys,
+                },
+                {
+                  title: t('system.databaseStatus.hitRate'),
+                  value: `${dbStatus.redis.hitRate}%`,
+                },
               ]}
               details={[
                 {
-                  label: '地址',
+                  label: t('system.databaseStatus.address'),
                   value: `${dbStatus.redis.host}:${dbStatus.redis.port}`,
                 },
-                { label: '运行时间', value: dbStatus.redis.uptime },
                 {
-                  label: '客户端',
-                  value: `${dbStatus.redis.connectedClients} 个连接`,
+                  label: t('system.databaseStatus.uptime'),
+                  value: dbStatus.redis.uptime,
+                },
+                {
+                  label: t('system.databaseStatus.clientConnections'),
+                  value: `${dbStatus.redis.connectedClients} ${t('system.databaseStatus.connectionCount')}`,
                 },
               ]}
             />
           </Col>
         </Row>
       ) : (
-        <Skeleton active />
+        <Skeleton active paragraph={{ rows: 8 }} />
       )}
     </div>
   )

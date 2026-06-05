@@ -3,11 +3,13 @@ import type { TableColumnsType } from 'antd'
 import Button from 'antd/es/button'
 import Space from 'antd/es/space'
 import Tag from 'antd/es/tag'
+import i18next from 'i18next'
 import type {
   ApiKeyActionOption,
   ApiKeyRecord,
   ApiKeyResourceOption,
 } from '@/api/api-keys'
+import { formatDateTime } from '@/utils/formatters'
 import {
   getApiKeyAllowedActionText,
   getApiKeyAllowedResourceText,
@@ -31,7 +33,7 @@ export function buildApiKeyListColumns({
 }: Options): TableColumnsType<ApiKeyRecord> {
   return [
     {
-      title: '操作',
+      title: i18next.t('system.apiKeyColumns.colOperation'),
       key: 'action',
       width: 150,
       fixed: 'left',
@@ -43,7 +45,7 @@ export function buildApiKeyListColumns({
             icon={<EyeOutlined />}
             onClick={() => onView(record)}
           >
-            查看
+            {i18next.t('system.apiKeyColumns.view')}
           </Button>
           {canEdit && record.status === '有效' && (
             <Button
@@ -53,17 +55,25 @@ export function buildApiKeyListColumns({
               icon={<StopOutlined />}
               onClick={() => onRevoke(record)}
             >
-              禁用
+              {i18next.t('system.apiKeyColumns.disable')}
             </Button>
           )}
         </Space>
       ),
     },
-    { dataIndex: 'keyName', title: '密钥名称', width: 180 },
-    { dataIndex: 'usageScope', title: '使用范围', width: 130 },
+    {
+      dataIndex: 'keyName',
+      title: i18next.t('system.apiKeyColumns.colKeyName'),
+      width: 180,
+    },
+    {
+      dataIndex: 'usageScope',
+      title: i18next.t('system.apiKeyColumns.colUsageScope'),
+      width: 130,
+    },
     {
       dataIndex: 'allowedResources',
-      title: '允许资源',
+      title: i18next.t('system.apiKeyColumns.colAllowedResources'),
       width: 240,
       ellipsis: true,
       render: (value: string[]) =>
@@ -71,14 +81,14 @@ export function buildApiKeyListColumns({
     },
     {
       dataIndex: 'allowedActions',
-      title: '允许动作',
+      title: i18next.t('system.apiKeyColumns.colAllowedActions'),
       width: 180,
       ellipsis: true,
       render: (value: string[]) =>
         getApiKeyAllowedActionText(value, actionOptions),
     },
     {
-      title: '所属用户',
+      title: i18next.t('system.apiKeyColumns.colOwnerUser'),
       dataIndex: 'userName',
       width: 200,
       render: (_, record) => (
@@ -87,30 +97,40 @@ export function buildApiKeyListColumns({
             <strong>{record.userName || record.loginName}</strong>
           </div>
           {record.userName && (
-            <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>
-              {record.loginName}
-            </div>
+            <div className="text-xs text-secondary">{record.loginName}</div>
           )}
         </div>
       ),
     },
-    { dataIndex: 'keyPrefix', title: '前缀', width: 110 },
-    { dataIndex: 'createdAt', title: '创建时间', width: 180 },
+    {
+      dataIndex: 'keyPrefix',
+      title: i18next.t('system.apiKeyColumns.colPrefix'),
+      width: 110,
+    },
+    {
+      dataIndex: 'createdAt',
+      title: i18next.t('system.apiKeyColumns.colCreatedAt'),
+      width: 180,
+      render: (value: unknown) => formatDateTime(value, '--'),
+    },
     {
       dataIndex: 'expiresAt',
-      title: '过期时间',
+      title: i18next.t('system.apiKeyColumns.colExpiresAt'),
       width: 180,
-      render: (value: string) => value || '永不过期',
+      render: (value: unknown) =>
+        value == null || value === ''
+          ? i18next.t('system.apiKeyColumns.neverExpires')
+          : formatDateTime(value, '--'),
     },
     {
       dataIndex: 'lastUsedAt',
-      title: '最后使用',
+      title: i18next.t('system.apiKeyColumns.colLastUsed'),
       width: 180,
-      render: (value: string) => value || '--',
+      render: (value: unknown) => formatDateTime(value, '--'),
     },
     {
       dataIndex: 'status',
-      title: '状态',
+      title: i18next.t('system.apiKeyColumns.colStatus'),
       width: 110,
       align: 'center',
       render: (value: string) => (

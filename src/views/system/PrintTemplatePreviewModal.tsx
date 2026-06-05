@@ -1,5 +1,6 @@
 import Modal from 'antd/es/modal'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { getPrintTemplateBillTypeLabel } from '@/views/system/print-template-view-utils'
 
@@ -10,9 +11,10 @@ interface Props {
 }
 
 export function PrintTemplatePreviewModal({ open, template, onClose }: Props) {
+  const { t } = useTranslation()
   return (
     <Modal
-      title="模板预览"
+      title={t('system.printTemplatePreview.title')}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -22,27 +24,13 @@ export function PrintTemplatePreviewModal({ open, template, onClose }: Props) {
         <div>
           <Typography.Title level={5}>{template.templateName}</Typography.Title>
           <Typography.Paragraph type="secondary">
-            单据类型：{getPrintTemplateBillTypeLabel(template.billType)}
+            {t('system.printTemplatePreview.billType')}
+            {getPrintTemplateBillTypeLabel(template.billType)}
           </Typography.Paragraph>
-          <div
-            style={{
-              background: '#f5f5f5',
-              border: '1px solid #d9d9d9',
-              borderRadius: 6,
-              padding: 16,
-              maxHeight: 400,
-              overflow: 'auto',
-            }}
-          >
-            <pre
-              style={{
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-                margin: 0,
-                fontSize: 12,
-              }}
-            >
-              {template.templateHtml || '（空模板）'}
+          <div className="p-16 rounded overflow-auto bg-gray-100 border border-gray-300 max-h-400">
+            <pre className="m-0 text-xs whitespace-pre-wrap break-all">
+              {template.templateHtml ||
+                t('system.printTemplatePreview.emptyTemplate')}
             </pre>
           </div>
         </div>

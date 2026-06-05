@@ -1,9 +1,10 @@
 import { ReloadOutlined, SaveOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
-import Col from 'antd/es/col'
-import Row from 'antd/es/row'
+import Card from 'antd/es/card'
+import Descriptions from 'antd/es/descriptions'
 import Space from 'antd/es/space'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 
 interface OverviewItem {
   label: string
@@ -27,72 +28,51 @@ export function CompanySettingsHeader({
   onRefresh,
   onSave,
 }: Props) {
+  const { t } = useTranslation()
   return (
-    <div
-      style={{
-        background: '#fff',
-        borderRadius: 8,
-        padding: 24,
-        marginBottom: 16,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: 20,
-        }}
-      >
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            公司信息
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            本系统按单企业模式运行，公司名称和税号由 OOBE
-            初始化写入；本页集中维护多个结算银行、状态和补充说明。
-          </Typography.Text>
-        </div>
-        <Space>
-          <Button
-            size="small"
-            loading={loading}
-            icon={<ReloadOutlined />}
-            onClick={onRefresh}
-          >
-            刷新
-          </Button>
-          {canSave && (
+    <Card
+      className="mb-16"
+      title={
+        <div className="flex flex-wrap items-start justify-between gap-12 py-4">
+          <div className="min-w-0 flex-1">
+            <Typography.Title level={4} className="m-0">
+              {t('system.companyHeader.title')}
+            </Typography.Title>
+            <Typography.Text type="secondary">
+              {t('system.companyHeader.description')}
+            </Typography.Text>
+          </div>
+          <Space wrap>
             <Button
-              type="primary"
               size="small"
-              loading={saving}
-              icon={<SaveOutlined />}
-              onClick={onSave}
+              loading={loading}
+              icon={<ReloadOutlined />}
+              onClick={onRefresh}
             >
-              保存
+              {t('system.companyHeader.refresh')}
             </Button>
-          )}
-        </Space>
-      </div>
-      <Row gutter={16}>
+            {canSave && (
+              <Button
+                type="primary"
+                size="small"
+                loading={saving}
+                icon={<SaveOutlined />}
+                onClick={onSave}
+              >
+                {t('system.companyHeader.save')}
+              </Button>
+            )}
+          </Space>
+        </div>
+      }
+    >
+      <Descriptions size="small" column={{ xs: 1, sm: 3 }}>
         {overviewItems.map((item) => (
-          <Col span={8} key={item.label}>
-            <div
-              style={{
-                border: '1px solid #f0f0f0',
-                borderRadius: 12,
-                padding: '18px 20px',
-                background: 'linear-gradient(180deg, #fafafa 0%, #fff 100%)',
-              }}
-            >
-              <div style={{ fontSize: 13, color: '#8c8c8c' }}>{item.label}</div>
-              <div style={{ marginTop: 10, fontSize: 22, fontWeight: 600 }}>
-                {item.value}
-              </div>
-            </div>
-          </Col>
+          <Descriptions.Item key={item.label} label={item.label}>
+            {item.value}
+          </Descriptions.Item>
         ))}
-      </Row>
-    </div>
+      </Descriptions>
+    </Card>
   )
 }

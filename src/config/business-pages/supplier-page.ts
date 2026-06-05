@@ -1,81 +1,138 @@
+import i18next from 'i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, buildMasterOverview, statusMap } from './shared'
+import { masterStatusFilter } from './shared-filters'
 
 export const suppliersPageConfig: ModulePageConfig = {
   key: 'supplier',
-  title: '供应商资料',
+  title: i18next.t('modules.pages.supplier.title'),
   kicker: 'Master Data',
-  description:
-    '供应商主数据统一维护基础档案、联系人和合作状态，供采购与对账页面复用。',
+  description: i18next.t('modules.pages.supplier.description'),
   primaryNoKey: 'supplierCode',
   actions: actionSet,
   filters: [
     {
       key: 'keyword',
-      label: '关键字',
+      label: i18next.t('modules.filter.keyword'),
       type: 'input',
-      placeholder: '供应商编码 / 名称 / 联系人',
+      placeholder: i18next.t('modules.pages.supplier.placeholderKeyword'),
     },
-    {
-      key: 'status',
-      label: '状态',
-      type: 'select',
-      options: enabledStatusOptions,
-    },
+    { ...masterStatusFilter },
   ],
   columns: [
-    { title: '供应商编码', dataIndex: 'supplierCode', width: 140 },
-    { title: '供应商名称', dataIndex: 'supplierName', width: 180 },
-    { title: '联系人', dataIndex: 'contactName', width: 110 },
-    { title: '联系电话', dataIndex: 'contactPhone', width: 140 },
-    { title: '所在城市', dataIndex: 'city', width: 120 },
     {
-      title: '状态',
+      title: i18next.t('modules.pages.supplier.colSupplierCode'),
+      dataIndex: 'supplierCode',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.supplier.colSupplierName'),
+      dataIndex: 'supplierName',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.supplier.colContactName'),
+      dataIndex: 'contactName',
+      width: 110,
+    },
+    {
+      title: i18next.t('modules.pages.supplier.colContactPhone'),
+      dataIndex: 'contactPhone',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.supplier.colCity'),
+      dataIndex: 'city',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.columns.status'),
       dataIndex: 'status',
       width: 100,
       type: 'status',
       align: 'center',
     },
-    { title: '备注', dataIndex: 'remark', width: 180 },
+    {
+      title: i18next.t('modules.columns.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
   detailFields: [
-    { label: '供应商编码', key: 'supplierCode' },
-    { label: '供应商名称', key: 'supplierName' },
-    { label: '联系人', key: 'contactName' },
-    { label: '联系电话', key: 'contactPhone' },
-    { label: '所在城市', key: 'city' },
-    { label: '状态', key: 'status', type: 'status' },
-    { label: '备注', key: 'remark' },
+    {
+      label: i18next.t('modules.pages.supplier.colSupplierCode'),
+      key: 'supplierCode',
+    },
+    {
+      label: i18next.t('modules.pages.supplier.colSupplierName'),
+      key: 'supplierName',
+    },
+    {
+      label: i18next.t('modules.pages.supplier.colContactName'),
+      key: 'contactName',
+    },
+    {
+      label: i18next.t('modules.pages.supplier.colContactPhone'),
+      key: 'contactPhone',
+    },
+    { label: i18next.t('modules.pages.supplier.colCity'), key: 'city' },
+    {
+      label: i18next.t('modules.columns.status'),
+      key: 'status',
+      type: 'status',
+    },
+    { label: i18next.t('modules.columns.remark'), key: 'remark' },
   ],
   detailColumnCount: 4,
   formFields: [
     {
       key: 'supplierCode',
-      label: '供应商编码',
+      label: i18next.t('modules.pages.supplier.colSupplierCode'),
       type: 'input',
       required: true,
       row: 1,
     },
     {
       key: 'supplierName',
-      label: '供应商名称',
+      label: i18next.t('modules.pages.supplier.colSupplierName'),
       type: 'input',
       required: true,
       row: 1,
     },
-    { key: 'contactName', label: '联系人', type: 'input', row: 1 },
-    { key: 'contactPhone', label: '联系电话', type: 'input', row: 1 },
-    { key: 'city', label: '所在城市', type: 'input', row: 2 },
+    {
+      key: 'contactName',
+      label: i18next.t('modules.pages.supplier.colContactName'),
+      type: 'input',
+      row: 1,
+    },
+    {
+      key: 'contactPhone',
+      label: i18next.t('modules.pages.supplier.colContactPhone'),
+      type: 'input',
+      row: 1,
+    },
+    {
+      key: 'city',
+      label: i18next.t('modules.pages.supplier.colCity'),
+      type: 'input',
+      row: 2,
+    },
     {
       key: 'status',
-      label: '状态',
+      label: i18next.t('modules.columns.status'),
       type: 'select',
       defaultValue: '正常',
       options: enabledStatusOptions,
       row: 2,
     },
-    { key: 'remark', label: '备注', type: 'textarea', row: 3, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.columns.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
   ],
   data: [],
   buildOverview: (rows) => buildMasterOverview(rows),

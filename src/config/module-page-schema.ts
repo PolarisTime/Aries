@@ -1,12 +1,12 @@
 import type { ModuleFilterDefinition } from '@/types/module-page'
 
-export interface ModuleSaveFieldSchema {
+interface ModuleSaveFieldSchema {
   scalar?: string[]
   lineItem?: string[]
   computed?: string[]
 }
 
-export interface ModulePageSchema {
+interface ModulePageSchema {
   filters?: ModuleFilterDefinition[]
   saveFields?: ModuleSaveFieldSchema
 }
@@ -23,7 +23,7 @@ const productKeywordFilter: ModuleFilterDefinition = {
   ],
 }
 
-export const modulePageSchemaMap: Record<string, ModulePageSchema> = {
+const modulePageSchemaMap: Record<string, ModulePageSchema> = {
   'purchase-order': {
     filters: [
       {
@@ -130,6 +130,7 @@ export const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     saveFields: {
       scalar: [
         'receiptNo',
+        'customerCode',
         'customerName',
         'projectName',
         'sourceStatementId',
@@ -147,6 +148,7 @@ export const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       scalar: [
         'paymentNo',
         'businessType',
+        'counterpartyCode',
         'counterpartyName',
         'sourceStatementId',
         'paymentDate',
@@ -158,11 +160,32 @@ export const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       ],
     },
   },
+  'ledger-adjustment': {
+    saveFields: {
+      scalar: [
+        'adjustmentNo',
+        'direction',
+        'counterpartyType',
+        'counterpartyCode',
+        'counterpartyName',
+        'projectId',
+        'projectName',
+        'adjustmentDate',
+        'amount',
+        'adjustmentType',
+        'effect',
+        'status',
+        'operatorName',
+        'remark',
+      ],
+    },
+  },
   'supplier-statement': {
     saveFields: {
       scalar: [
         'statementNo',
         'sourceInboundNos',
+        'supplierCode',
         'supplierName',
         'startDate',
         'endDate',
@@ -201,6 +224,7 @@ export const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       scalar: [
         'statementNo',
         'sourceOrderNos',
+        'customerCode',
         'customerName',
         'projectName',
         'startDate',
@@ -268,6 +292,7 @@ export const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       scalar: [
         'statementNo',
         'sourceBillNos',
+        'carrierCode',
         'carrierName',
         'startDate',
         'endDate',

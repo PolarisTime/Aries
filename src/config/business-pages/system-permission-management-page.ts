@@ -1,125 +1,267 @@
+import i18next from 'i18next'
 import {
   enabledStatusOptions,
   userAccountDataScopeOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { buildMasterOverview, statusMap } from './shared'
+import { masterStatusFilter } from './shared-filters'
 
 export const permissionManagementPageConfig: ModulePageConfig = {
   key: 'permission',
-  title: '权限管理',
+  title: i18next.t('modules.pages.systemPermissionManagement.accessControl'),
   kicker: 'System',
-  description:
-    '权限管理页面展示系统菜单和操作权限定义，权限分配请通过「角色权限配置」页面操作。',
+  description: i18next.t(
+    'modules.pages.systemPermissionManagement.accessControlDesc',
+  ),
   readOnly: true,
-  actions: [{ label: '导出', type: 'primary' }],
+  actions: [
+    {
+      label: i18next.t('modules.pages.systemPermissionManagement.export'),
+      type: 'primary',
+    },
+  ],
   filters: [
     {
       key: 'keyword',
-      label: '关键字',
+      label: i18next.t('modules.pages.systemPermissionManagement.keyword'),
       type: 'input',
-      placeholder: '权限编码 / 名称 / 模块',
+      placeholder: i18next.t(
+        'modules.pages.systemPermissionManagement.permissionPlaceholder',
+      ),
     },
-    {
-      key: 'status',
-      label: '状态',
-      type: 'select',
-      options: enabledStatusOptions,
-    },
+    { ...masterStatusFilter },
   ],
   columns: [
-    { title: '权限编码', dataIndex: 'permissionCode', width: 150 },
-    { title: '权限名称', dataIndex: 'permissionName', width: 180 },
-    { title: '模块', dataIndex: 'moduleName', width: 140 },
-    { title: '权限类型', dataIndex: 'permissionType', width: 110 },
-    { title: '动作', dataIndex: 'actionName', width: 120 },
-    { title: '数据范围', dataIndex: 'scopeName', width: 120 },
-    { title: '资源标识', dataIndex: 'resourceKey', width: 180 },
     {
-      title: '状态',
+      title: i18next.t(
+        'modules.pages.systemPermissionManagement.permissionCode',
+      ),
+      dataIndex: 'permissionCode',
+      width: 150,
+    },
+    {
+      title: i18next.t(
+        'modules.pages.systemPermissionManagement.permissionName',
+      ),
+      dataIndex: 'permissionName',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.systemPermissionManagement.module'),
+      dataIndex: 'moduleName',
+      width: 140,
+    },
+    {
+      title: i18next.t(
+        'modules.pages.systemPermissionManagement.permissionType',
+      ),
+      dataIndex: 'permissionType',
+      width: 110,
+    },
+    {
+      title: i18next.t('modules.pages.systemPermissionManagement.action'),
+      dataIndex: 'actionName',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.pages.systemPermissionManagement.dataScope'),
+      dataIndex: 'scopeName',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.pages.systemPermissionManagement.resourceKey'),
+      dataIndex: 'resourceKey',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.systemPermissionManagement.status'),
       dataIndex: 'status',
       width: 100,
       type: 'status',
       align: 'center',
     },
-    { title: '备注', dataIndex: 'remark', width: 220 },
+    {
+      title: i18next.t('modules.pages.systemPermissionManagement.remark'),
+      dataIndex: 'remark',
+      width: 220,
+    },
   ],
   detailFields: [
-    { label: '权限编码', key: 'permissionCode' },
-    { label: '权限名称', key: 'permissionName' },
-    { label: '模块', key: 'moduleName' },
-    { label: '权限类型', key: 'permissionType' },
-    { label: '动作', key: 'actionName' },
-    { label: '数据范围', key: 'scopeName' },
-    { label: '资源标识', key: 'resourceKey' },
-    { label: '状态', key: 'status', type: 'status' },
-    { label: '备注', key: 'remark' },
+    {
+      label: i18next.t(
+        'modules.pages.systemPermissionManagement.permissionCode',
+      ),
+      key: 'permissionCode',
+    },
+    {
+      label: i18next.t(
+        'modules.pages.systemPermissionManagement.permissionName',
+      ),
+      key: 'permissionName',
+    },
+    {
+      label: i18next.t('modules.pages.systemPermissionManagement.module'),
+      key: 'moduleName',
+    },
+    {
+      label: i18next.t(
+        'modules.pages.systemPermissionManagement.permissionType',
+      ),
+      key: 'permissionType',
+    },
+    {
+      label: i18next.t('modules.pages.systemPermissionManagement.action'),
+      key: 'actionName',
+    },
+    {
+      label: i18next.t('modules.pages.systemPermissionManagement.dataScope'),
+      key: 'scopeName',
+    },
+    {
+      label: i18next.t('modules.pages.systemPermissionManagement.resourceKey'),
+      key: 'resourceKey',
+    },
+    {
+      label: i18next.t('modules.pages.systemPermissionManagement.status'),
+      key: 'status',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.systemPermissionManagement.remark'),
+      key: 'remark',
+    },
   ],
   formFields: [
     {
       key: 'permissionCode',
-      label: '权限编码',
+      label: i18next.t(
+        'modules.pages.systemPermissionManagement.permissionCode',
+      ),
       type: 'input',
       required: true,
       row: 1,
     },
     {
       key: 'permissionName',
-      label: '权限名称',
+      label: i18next.t(
+        'modules.pages.systemPermissionManagement.permissionName',
+      ),
       type: 'input',
       required: true,
       row: 1,
     },
-    { key: 'moduleName', label: '模块', type: 'input', required: true, row: 1 },
+    {
+      key: 'moduleName',
+      label: i18next.t('modules.pages.systemPermissionManagement.module'),
+      type: 'input',
+      required: true,
+      row: 1,
+    },
     {
       key: 'permissionType',
-      label: '权限类型',
+      label: i18next.t(
+        'modules.pages.systemPermissionManagement.permissionType',
+      ),
       type: 'select',
       required: true,
       row: 1,
       options: [
-        { label: '菜单权限', value: '菜单权限' },
-        { label: '按钮权限', value: '按钮权限' },
-        { label: '数据权限', value: '数据权限' },
+        {
+          label: i18next.t(
+            'modules.pages.systemPermissionManagement.menuPermission',
+          ),
+          value: '菜单权限',
+        },
+        {
+          label: i18next.t(
+            'modules.pages.systemPermissionManagement.buttonPermission',
+          ),
+          value: '按钮权限',
+        },
+        {
+          label: i18next.t(
+            'modules.pages.systemPermissionManagement.dataPermission',
+          ),
+          value: '数据权限',
+        },
       ],
     },
     {
       key: 'actionName',
-      label: '动作',
+      label: i18next.t('modules.pages.systemPermissionManagement.action'),
       type: 'select',
       required: true,
       row: 2,
       options: [
-        { label: '查看', value: '查看' },
-        { label: '新增', value: '新增' },
-        { label: '编辑', value: '编辑' },
-        { label: '删除', value: '删除' },
-        { label: '审核', value: '审核' },
-        { label: '导出', value: '导出' },
-        { label: '打印', value: '打印' },
+        {
+          label: i18next.t('modules.pages.systemPermissionManagement.view'),
+          value: '查看',
+        },
+        {
+          label: i18next.t('modules.pages.systemPermissionManagement.create'),
+          value: '新增',
+        },
+        {
+          label: i18next.t('modules.pages.systemPermissionManagement.edit'),
+          value: '编辑',
+        },
+        {
+          label: i18next.t('modules.pages.systemPermissionManagement.delete'),
+          value: '删除',
+        },
+        {
+          label: i18next.t('modules.pages.systemPermissionManagement.audit'),
+          value: '审核',
+        },
+        {
+          label: i18next.t('modules.pages.systemPermissionManagement.export'),
+          value: '导出',
+        },
+        {
+          label: i18next.t('modules.pages.systemPermissionManagement.print'),
+          value: '打印',
+        },
       ],
     },
     {
       key: 'scopeName',
-      label: '数据范围',
+      label: i18next.t('modules.pages.systemPermissionManagement.dataScope'),
       type: 'select',
       required: true,
       row: 2,
       options: [
         ...userAccountDataScopeOptions,
-        { label: '自定义范围', value: '自定义范围' },
+        {
+          label: i18next.t(
+            'modules.pages.systemPermissionManagement.customScope',
+          ),
+          value: '自定义范围',
+        },
       ],
     },
-    { key: 'resourceKey', label: '资源标识', type: 'input', required: true, row: 2 },
+    {
+      key: 'resourceKey',
+      label: i18next.t('modules.pages.systemPermissionManagement.resourceKey'),
+      type: 'input',
+      required: true,
+      row: 2,
+    },
     {
       key: 'status',
-      label: '状态',
+      label: i18next.t('modules.pages.systemPermissionManagement.status'),
       type: 'select',
       defaultValue: '正常',
       options: enabledStatusOptions,
       row: 2,
     },
-    { key: 'remark', label: '备注', type: 'textarea', row: 3, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.systemPermissionManagement.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
   ],
   data: [],
   buildOverview: (rows) => buildMasterOverview(rows),

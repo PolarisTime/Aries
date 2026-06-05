@@ -25,7 +25,7 @@ export function findMenuParentKeys(
     const currentKeys = [entry.menuCode, entry.path].filter(
       (value): value is string => Boolean(value),
     )
-    if (currentKeys.includes(targetKey)) {
+    if (new Set(currentKeys).has(targetKey)) {
       return parents
     }
     if (entry.children.length > 0) {

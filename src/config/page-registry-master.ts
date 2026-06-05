@@ -18,6 +18,7 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     icon: 'TagsOutlined',
     menuParent: 'master',
     moduleKey: 'material-categories',
+    resourceKey: 'material',
   },
   {
     key: 'supplier',
@@ -54,5 +55,15 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     icon: 'BankOutlined',
     menuParent: 'master',
     moduleKey: 'warehouse',
+  },
+  {
+    key: 'department',
+    title: '部门管理',
+    menuKey: '/department',
+    view: 'business-grid',
+    icon: 'ApartmentOutlined',
+    menuParent: 'master',
+    moduleKey: 'department',
+    resourceKey: 'department',
   },
 ]

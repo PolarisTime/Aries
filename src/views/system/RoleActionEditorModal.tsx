@@ -1,10 +1,15 @@
+import { useQuery } from '@tanstack/react-query'
 import type { FormInstance } from 'antd'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
-import Modal from 'antd/es/modal'
 import Select from 'antd/es/select'
+import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
+import { http } from '@/api/client'
 import type { RoleRecord } from '@/api/role-actions'
+import { FormModal } from '@/components/FormModal'
 import { roleDataScopeValues, roleTypeValues } from '@/constants/module-options'
+import { asString } from '@/utils/type-narrowing'
 
 interface Props {
   open: boolean
@@ -13,6 +18,12 @@ interface Props {
   saving: boolean
   onSave: () => void
   onClose: () => void
+  onApplyTemplate?: (templateName: string) => void
+}
+
+interface RoleTemplate {
+  name: string
+  description: string
 }
 
 export function RoleActionEditorModal({
@@ -22,36 +33,81 @@ export function RoleActionEditorModal({
   saving,
   onSave,
   onClose,
+  onApplyTemplate,
 }: Props) {
+  const { t } = useTranslation()
+  const { data: templates = [] } = useQuery<RoleTemplate[]>({
+    queryKey: ['role-templates'],
+    queryFn: async () => {
+      const resp = await http.get<{ data?: RoleTemplate[] } | RoleTemplate[]>(
+        '/role-settings/templates',
+      )
+      return Array.isArray(resp) ? resp : (resp.data ?? [])
+    },
+    enabled: open && !editingRole,
+    staleTime: 10 * 60 * 1000,
+  })
+
   return (
-    <Modal
-      title={editingRole ? '编辑角色' : '新增角色'}
+    <FormModal
+      title={
+        editingRole
+          ? t('system.roleEditor.editTitle')
+          : t('system.roleEditor.createTitle')
+      }
       open={open}
-      onCancel={onClose}
-      onOk={onSave}
+      onClose={onClose}
+      onSave={onSave}
       confirmLoading={saving}
-      okText="保存"
-      cancelText="取消"
-      mask={{ closable: false }}
-      forceRender
+      okText={t('system.roleEditor.save')}
+      cancelText={t('system.roleEditor.cancel')}
     >
       <Form form={form} layout="vertical">
-        <Form.Item name="roleName" label="角色名称" required>
-          <Input placeholder="例如：采购主管" maxLength={64} />
-        </Form.Item>
-        <Form.Item name="roleCode" label="角色编码" required>
+        {!editingRole && templates.length > 0 ? (
+          <Form.Item label={t('system.roleEditor.permTemplate')}>
+            <Select
+              placeholder={t('system.roleEditor.templatePlaceholder')}
+              allowClear
+              options={templates.map((t) => ({
+                label: `${t.name} — ${t.description}`,
+                value: t.name,
+              }))}
+              onChange={(name) => {
+                if (name && onApplyTemplate) onApplyTemplate(asString(name))
+              }}
+            />
+            <Typography.Text type="secondary" className="text-xs">
+              {t('system.roleEditor.templateHint')}
+            </Typography.Text>
+          </Form.Item>
+        ) : null}
+        <Form.Item
+          name="roleName"
+          label={t('system.roleEditor.roleName')}
+          required
+        >
           <Input
-            placeholder="例如：PURCHASER"
+            placeholder={t('system.roleEditor.roleNamePlaceholder')}
+            maxLength={64}
+          />
+        </Form.Item>
+        <Form.Item
+          name="roleCode"
+          label={t('system.roleEditor.roleCode')}
+          required
+        >
+          <Input
+            placeholder={t('system.roleEditor.roleCodePlaceholder')}
             maxLength={64}
             disabled={!!editingRole}
           />
         </Form.Item>
-        <Form.Item name="roleType" label="角色类型">
+        <Form.Item name="roleType" label={t('system.roleEditor.roleType')}>
           <Select
             options={roleTypeValues.map((value) => ({ label: value, value }))}
           />
         </Form.Item>
-        <Form.Item name="dataScope" label="数据范围">
+        <Form.Item name="dataScope" label={t('system.roleEditor.dataScope')}>
           <Select
             options={roleDataScopeValues.map((value) => ({
               label: value,
@@ -59,10 +115,13 @@ export function RoleActionEditorModal({
             }))}
           />
         </Form.Item>
-        <Form.Item name="remark" label="备注">
-          <Input.TextArea placeholder="角色描述" rows={3} />
+        <Form.Item name="remark" label={t('system.roleEditor.remark')}>
+          <Input.TextArea
+            placeholder={t('system.roleEditor.remarkPlaceholder')}
+            rows={3}
+          />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormModal>
   )
 }

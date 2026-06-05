@@ -1,16 +1,18 @@
 import dayjs from 'dayjs'
-import { useCallback } from 'react'
+
+import i18next from 'i18next'
 import { generateBusinessPrimaryNo } from '@/api/business'
+import {
+  generatePrimaryNo as buildModulePrimaryNo,
+  getModuleRecordPrimaryNo,
+} from '@/module-system/module-adapter-shared'
 import type {
   ModuleLineItem,
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
 import { getStoredUser } from '@/utils/storage'
-import {
-  generatePrimaryNo as buildModulePrimaryNo,
-  getModuleRecordPrimaryNo,
-} from '@/views/modules/module-adapter-shared'
+import { asString } from '@/utils/type-narrowing'
 
 interface Props {
   moduleKey: string
@@ -18,46 +20,46 @@ interface Props {
 }
 
 export function useModuleRecordHelpers({ moduleKey, config }: Props) {
-  const getCurrentOperatorName = useCallback(() => {
+  const getCurrentOperatorName = () => {
     const user = getStoredUser()
-    return String(user?.userName || user?.loginName || '当前用户')
-  }, [])
+    return String(
+      user?.userName ||
+        user?.loginName ||
+        i18next.t('hooks.recordHelpers.currentUser'),
+    )
+  }
 
-  const generatePrimaryNo = useCallback(() => {
+  const generatePrimaryNo = () => {
     const serial = String(Date.now()).slice(-6)
     const year = dayjs().format('YYYY')
-    return buildModulePrimaryNo(moduleKey, year, serial)
-  }, [moduleKey])
+    return buildModulePrimaryNo(
+      moduleKey,
+      year,
+      serial,
+      dayjs().format('YYYYMMDD'),
+    )
+  }
 
-  const generatePrimaryNoAsync = useCallback(async () => {
+  const generatePrimaryNoAsync = async () => {
     try {
       return await generateBusinessPrimaryNo(moduleKey)
     } catch {
       return generatePrimaryNo()
     }
-  }, [moduleKey, generatePrimaryNo])
+  }
 
-  const getPrimaryNo = useCallback(
-    (record: ModuleRecord) =>
-      getModuleRecordPrimaryNo(record, config.primaryNoKey),
-    [config.primaryNoKey],
-  )
+  const getPrimaryNo = (record: ModuleRecord) =>
+    getModuleRecordPrimaryNo(record, config.primaryNoKey)
 
-  const getRowClassName = useCallback(
-    (record: ModuleRecord) => {
-      const status = String(record.status || '')
-      return config.rowHighlightStatuses?.includes(status)
-        ? 'table-row-emphasis'
-        : ''
-    },
-    [config.rowHighlightStatuses],
-  )
+  const getRowClassName = (record: ModuleRecord) => {
+    const status = asString(record.status)
+    return config.rowHighlightStatuses?.includes(status)
+      ? 'table-row-emphasis'
+      : ''
+  }
 
-  const sumLineItemsBy = useCallback(
-    (items: ModuleLineItem[], key: string) =>
-      items.reduce((sum, item) => sum + Number(item[key] || 0), 0),
-    [],
-  )
+  const sumLineItemsBy = (items: ModuleLineItem[], key: string) =>
+    items.reduce((sum, item) => sum + Number(item[key] || 0), 0)
 
   return {
     generatePrimaryNo,

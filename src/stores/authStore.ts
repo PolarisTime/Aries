@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { create } from 'zustand'
 import { ERROR_CODE } from '@/constants/error-codes'
 import type {
@@ -13,6 +14,7 @@ import {
   getAuthPersistenceMode,
   getStoredUser,
   getToken,
+  getTokenExpiresAt,
   setAuthSession,
 } from '@/utils/storage'
 
@@ -34,6 +36,10 @@ interface LoginStep1Result {
 
 type LoginResult = LoginStep1Result | LoginStep2
 
+function isStep2(data: LoginResult): data is LoginStep2 {
+  return data.requires2fa === true
+}
+
 interface AuthState {
   token: string
   user: LoginUser | null
@@ -44,6 +50,19 @@ interface AuthState {
   verify2fa: (payload: Login2faPayload) => Promise<LoginResponseData>
   signOut: () => Promise<void>
   restoreSession: () => Promise<boolean>
+}
+
+function persistSession(
+  user: LoginUser,
+  token: string,
+  expiresIn: number,
+  remember: boolean,
+) {
+  const mode: AuthPersistenceMode = remember ? 'local' : 'session'
+  if (typeof window !== 'undefined') {
+    window.sessionStorage.removeItem('aries-logged-out')
+  }
+  setAuthSession(user, token, expiresIn, mode)
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -58,7 +77,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       token: nextToken,
       user: nextUser,
-      isAuthenticated: Boolean(nextToken),
+      isAuthenticated: Boolean(nextToken || nextUser),
       authReady: false,
     })
   },
@@ -66,41 +85,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signIn: async (payload: LoginPayload) => {
     const { login } = await loadAuthApi()
     const response = await login(payload)
-
     if (response.code !== ERROR_CODE.SUCCESS) {
-      throw new Error(response.message || '登录失败')
+      throw new Error(response.message || i18next.t('auth.error.loginFailed'))
     }
-
-    const data = response.data
-
-    if ('requires2fa' in data && data.requires2fa) {
-      if (!data.tempToken) {
-        throw new Error('登录响应缺少二次验证令牌')
-      }
-      return { requires2fa: true as const, tempToken: data.tempToken }
+    const data = response.data as LoginResult
+    if (isStep2(data)) {
+      if (!data.tempToken)
+        throw new Error(i18next.t('auth.error.missing2faToken'))
+      return { requires2fa: true, tempToken: data.tempToken }
     }
-
-    if (!('accessToken' in data) || !data.accessToken || !data.user) {
-      throw new Error('登录响应缺少 token 或用户信息')
+    if (!data.accessToken || !data.user) {
+      throw new Error(i18next.t('auth.error.missingTokenOrUser'))
     }
-
-    const mode: AuthPersistenceMode =
-      payload.remember === false ? 'session' : 'local'
-
-    if (typeof window !== 'undefined') {
-      window.sessionStorage.removeItem('aries-logged-out')
-    }
-
-    setAuthSession(data.user, data.accessToken, data.expiresIn, mode)
+    persistSession(
+      data.user,
+      data.accessToken,
+      data.expiresIn,
+      payload.remember !== false,
+    )
     set({
       token: data.accessToken,
       user: data.user,
       isAuthenticated: true,
       authReady: true,
     })
-
     return {
-      requires2fa: false as const,
+      requires2fa: false,
       accessToken: data.accessToken,
       user: data.user,
       expiresIn: data.expiresIn,
@@ -110,19 +120,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verify2fa: async (payload: Login2faPayload) => {
     const { login2fa } = await loadAuthApi()
     const response = await login2fa(payload)
-
     if (response.code !== ERROR_CODE.SUCCESS) {
-      throw new Error(response.message || '二次验证失败')
+      throw new Error(
+        response.message || i18next.t('auth.error.verify2faFailed'),
+      )
     }
-
     const data = response.data
     if (!data.accessToken || !data.user) {
-      throw new Error('二次验证响应缺少 token 或用户信息')
+      throw new Error(i18next.t('auth.error.missing2faResponseTokenOrUser'))
     }
-
-    const mode: AuthPersistenceMode =
-      payload.remember === false ? 'session' : 'local'
-    setAuthSession(data.user, data.accessToken, data.expiresIn, mode)
+    persistSession(
+      data.user,
+      data.accessToken,
+      data.expiresIn,
+      payload.remember !== false,
+    )
     set({
       token: data.accessToken,
       user: data.user,
@@ -137,7 +149,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { logout } = await loadAuthApi()
       await logout()
     } catch {
-      // logout request failures are non-critical
+      /* non-critical */
     }
     clearToken()
     clearStoredUser()
@@ -145,26 +157,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   restoreSession: async () => {
-    get().hydrate()
-
-    const token = get().token
-    const user = get().user
-    if (!token) {
+    const { user } = get()
+    // 无本地用户数据 → 未登录，静默跳过
+    if (!user) {
+      clearToken()
+      clearStoredUser()
       set({ token: '', user: null, isAuthenticated: false, authReady: true })
       return false
     }
-
     try {
       const { refreshSession } = await loadAuthApi()
       const data = await refreshSession()
-      if (!data.accessToken || !data.user) {
-        throw new Error('Session 恢复失败')
-      }
-      setAuthSession(
+      if (!data.accessToken || !data.user)
+        throw new Error(i18next.t('auth.error.sessionRestoreFailed'))
+      persistSession(
         data.user,
         data.accessToken,
         data.expiresIn,
-        getAuthPersistenceMode(),
+        getAuthPersistenceMode() === 'local',
       )
       set({
         token: data.accessToken,
@@ -174,10 +184,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       })
       return true
     } catch {
-      if (token && user) {
-        set({ isAuthenticated: true, authReady: true })
+      const fallbackToken = getToken()
+      const fallbackUser = getStoredUser()
+      const tokenExpiresAt = getTokenExpiresAt()
+      if (
+        fallbackToken &&
+        fallbackUser &&
+        (!tokenExpiresAt || tokenExpiresAt > Date.now())
+      ) {
+        set({
+          token: fallbackToken,
+          user: fallbackUser,
+          isAuthenticated: true,
+          authReady: true,
+        })
         return true
       }
+
+      // refresh token 已过期且无可用 access token → 清除登录态
       clearToken()
       clearStoredUser()
       set({ token: '', user: null, isAuthenticated: false, authReady: true })

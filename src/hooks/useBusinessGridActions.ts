@@ -1,4 +1,3 @@
-import { useCallback } from 'react'
 import {
   type AuditTarget,
   useBusinessGridBatchActions,
@@ -6,14 +5,14 @@ import {
 import { useBusinessGridFreightActions } from '@/hooks/useBusinessGridFreightActions'
 import { useBusinessGridPrintActions } from '@/hooks/useBusinessGridPrintActions'
 import { useBusinessGridStatementActions } from '@/hooks/useBusinessGridStatementActions'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type { SearchParams } from '@/types/api-raw'
+import type { ModuleRecord } from '@/types/module-page'
 
 interface Props {
   moduleKey: string
-  config: ModulePageConfig
   selectedRowKeys: string[]
   selectedRows: ModuleRecord[]
-  submittedFilters: Record<string, unknown>
+  submittedFilters: SearchParams
   listAuditTarget: AuditTarget | null
   listReverseAuditTarget: AuditTarget | null
   refreshModuleQueries: () => Promise<void>
@@ -23,7 +22,6 @@ interface Props {
 
 export function useBusinessGridActions({
   moduleKey,
-  config,
   selectedRowKeys,
   selectedRows,
   submittedFilters,
@@ -33,16 +31,14 @@ export function useBusinessGridActions({
   clearSelection,
   formatCellValue,
 }: Props) {
-  const refreshAndClearSelection = useCallback(async () => {
+  const refreshAndClearSelection = async () => {
     clearSelection()
     await refreshModuleQueries()
-  }, [clearSelection, refreshModuleQueries])
+  }
 
   const { handlePrintSelectedRecords } = useBusinessGridPrintActions({
     moduleKey,
-    config,
     selectedRowKeys,
-    formatCellValue,
   })
 
   const {

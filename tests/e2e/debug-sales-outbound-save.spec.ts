@@ -108,7 +108,11 @@ async function importParentByKeyword(
   await row.click()
 }
 
-async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: string) {
+async function waitForSaveOutcome(
+  page: Page,
+  overlay: Locator,
+  expectedNo?: string,
+) {
   const rowInList = expectedNo
     ? page
         .locator('tbody tr:not(.ant-table-measure-row)')
@@ -123,7 +127,12 @@ async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: str
     .poll(
       async () => {
         if ((await successMessage.count()) > 0) return 'message'
-        if (rowInList && (await rowInList.count()) > 0 && (await rowInList.isVisible())) return 'row'
+        if (
+          rowInList &&
+          (await rowInList.count()) > 0 &&
+          (await rowInList.isVisible())
+        )
+          return 'row'
         if (!(await overlay.isVisible().catch(() => false))) return 'closed'
         return 'pending'
       },
@@ -207,7 +216,10 @@ test('debug sales outbound save result', async ({ page }) => {
   await page.goto('/sales-outbound')
   const salesOutboundOverlay = await openCreateOverlay(page)
   await salesOutboundOverlay.locator('#outboundNo').fill(salesOutboundNo)
-  await fillDateInput(salesOutboundOverlay.locator('#outboundDate'), deliveryDate)
+  await fillDateInput(
+    salesOutboundOverlay.locator('#outboundDate'),
+    deliveryDate,
+  )
   await importParentByKeyword(
     page,
     salesOutboundOverlay,
@@ -239,7 +251,9 @@ test('debug sales outbound save result', async ({ page }) => {
 
   await page.waitForTimeout(2500)
   await responsePromise
-  const messageTexts = await page.locator('.ant-message-notice').allTextContents()
+  const messageTexts = await page
+    .locator('.ant-message-notice')
+    .allTextContents()
   const rowTexts = await salesOutboundOverlay
     .locator('.module-detail-table tbody tr:not(.ant-table-measure-row)')
     .first()

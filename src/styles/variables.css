@@ -1,13 +1,5 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "PingFang Intranet";
-  src: url("/fonts/PingFangSC-Regular.otf") format("opentype");
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-}
-
 :root {
   --app-font-size: 12px;
   --app-control-height: 36px;
@@ -34,22 +26,46 @@
   --theme-header-text: #0f172a;
   --theme-header-muted: #6b7280;
   --theme-card-border: #dbe3ee;
-  --app-header-height: 62px;
-  --app-tabs-height: 40px;
+  --text-primary: #333;
+  --text-secondary: #595959;
+  --text-placeholder: #bfbfbf;
+  --theme-table-header-bg: #fafafa;
+  --theme-surface: #fff;
+  --theme-surface-elevated: rgba(255, 255, 255, 0.88);
+  --theme-surface-hover: rgba(37, 99, 235, 0.07);
+  --theme-border-subtle: rgba(226, 232, 240, 0.92);
+  --theme-border-light: rgba(226, 232, 240, 0.96);
+  --theme-shadow-sm: rgba(15, 23, 42, 0.04);
+  --theme-shadow-md: rgba(15, 23, 42, 0.06);
+  --theme-highlight-bg: #e6f7ff;
+  --theme-highlight-border: #91d5ff;
+  --theme-skeleton-from: #edf2f7;
+  --theme-skeleton-to: #f8fafc;
+  --theme-error: #ff4d4f;
+  --theme-error-hover: #ff7875;
+  --theme-success: #22c55e;
+  --theme-disabled: #94a3b8;
+  --theme-accent-bg: #fafcff;
+  --theme-accent-border: #cbd5e1;
+  --theme-text-muted: #666;
+  --theme-text-muted-light: #8c8c8c;
+  --app-header-height: 48px;
+  --app-tabs-height: 38px;
   --app-tab-card-height: 34px;
   --app-tab-card-top-gap: 6px;
   --app-top-offset: calc(var(--app-header-height) + var(--app-tabs-height));
-  --app-content-padding: 16px;
-  --app-page-gap: 12px;
+  --app-content-padding: 8px 0px 0px 0px;
+  --app-page-gap: 0px;
   --app-card-body-padding: 12px;
   --app-table-cell-padding-y: 12px;
   --app-table-th-padding-y: 10px;
   --app-overlay-header-height: 55px;
   --app-overlay-body-padding: 16px;
-  color: #333;
+  color: var(--text-primary);
   background: var(--theme-shell-bg);
   font-family:
-    "PingFang Intranet", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
 }
 
 * {
@@ -60,13 +76,58 @@ body {
   margin: 0;
   min-width: 320px;
   background: var(--theme-shell-bg);
-  color: #333;
+  color: var(--text-primary);
   font-size: var(--app-font-size);
   font-family:
-    "PingFang Intranet", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+[data-theme="dark"] {
+  --theme-primary: #4f8eff;
+  --theme-primary-hover: #6ba3ff;
+  --theme-primary-soft: #1e3a5f;
+  --theme-primary-soft-strong: #2a4a6f;
+  --theme-primary-deep: #6ba3ff;
+  --theme-shell-bg: #0f1419;
+  --theme-sider-surface: #1a1f25;
+  --theme-sider-hover: #252b33;
+  --theme-sider-text: #e2e8f0;
+  --theme-sider-muted: #8899aa;
+  --theme-header-bg: linear-gradient(
+    180deg,
+    rgba(26, 31, 37, 0.98) 0%,
+    rgba(15, 20, 25, 0.96) 100%
+  );
+  --theme-header-text: #e2e8f0;
+  --theme-header-muted: #8899aa;
+  --theme-card-border: #2d3748;
+  --text-primary: #e2e8f0;
+  --text-secondary: #a0aec0;
+  --text-placeholder: #5a6577;
+  --theme-table-header-bg: #1a1f25;
+  --theme-surface: #1a1f25;
+  --theme-surface-elevated: rgba(26, 31, 37, 0.88);
+  --theme-surface-hover: rgba(79, 142, 255, 0.12);
+  --theme-border-subtle: rgba(45, 55, 72, 0.92);
+  --theme-border-light: rgba(45, 55, 72, 0.96);
+  --theme-shadow-sm: rgba(0, 0, 0, 0.2);
+  --theme-shadow-md: rgba(0, 0, 0, 0.3);
+  --theme-highlight-bg: #1a2744;
+  --theme-highlight-border: #2a4a6f;
+  --theme-skeleton-from: #252b33;
+  --theme-skeleton-to: #1a1f25;
+  --theme-error: #ff4d4f;
+  --theme-error-hover: #ff7875;
+  --theme-success: #22c55e;
+  --theme-disabled: #718096;
+  --theme-accent-bg: #1a2030;
+  --theme-accent-border: #2d3748;
+  --theme-text-muted: #a0aec0;
+  --theme-text-muted-light: #718096;
 }

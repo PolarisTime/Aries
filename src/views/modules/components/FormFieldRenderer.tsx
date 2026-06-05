@@ -4,10 +4,12 @@ import Input from 'antd/es/input'
 import InputNumber from 'antd/es/input-number'
 import Select from 'antd/es/select'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ModuleFormFieldDefinition } from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 import { padLabel } from '@/utils/label-utils'
+import { asString } from '@/utils/type-narrowing'
 
 interface Props {
   field: ModuleFormFieldDefinition
@@ -15,11 +17,14 @@ interface Props {
 }
 
 export function FormFieldRenderer({ field, disabled }: Props) {
+  const { t } = useTranslation()
   const form = Form.useFormInstance()
   const formValues = Form.useWatch([], form) || {}
   const disabledValue = disabled ?? field.disabled
   const displayLabel = padLabel(field.label)
-  const placeholder = field.placeholder || `请输入${field.label}`
+  const placeholder =
+    field.placeholder ||
+    t('modules.formField.inputPlaceholder', { label: field.label })
   const allowClear = field.allowClear !== false
   const fieldId = buildFormControlId('module-form', field.key)
   const resolvedOptions =
@@ -35,8 +40,8 @@ export function FormFieldRenderer({ field, disabled }: Props) {
             field.type === 'select' ||
             field.type === 'multiSelect' ||
             field.type === 'date'
-              ? `请选择${field.label}`
-              : `请输入${field.label}`,
+              ? t('modules.formField.selectRequired', { label: field.label })
+              : t('modules.formField.inputRequired', { label: field.label }),
         },
       ]
     : undefined
@@ -72,7 +77,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           disabled={disabledValue}
           min={field.min}
           precision={field.precision || 2}
-          style={{ width: '100%' }}
+          className="w-full"
         />,
       )
 
@@ -87,7 +92,11 @@ export function FormFieldRenderer({ field, disabled }: Props) {
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
-                  value: opt.value as string | number,
+                  value:
+                    typeof opt.value === 'number' ||
+                    typeof opt.value === 'boolean'
+                      ? opt.value
+                      : asString(opt.value),
                 }))
               : []
           }
@@ -112,7 +121,11 @@ export function FormFieldRenderer({ field, disabled }: Props) {
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
-                  value: opt.value as string | number,
+                  value:
+                    typeof opt.value === 'number' ||
+                    typeof opt.value === 'boolean'
+                      ? opt.value
+                      : asString(opt.value),
                 }))
               : []
           }
@@ -128,7 +141,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           disabled={disabledValue}
           format="YYYY-MM-DD HH:mm:ss"
           showTime={{ format: 'HH:mm:ss' }}
-          style={{ width: '100%' }}
+          className="w-full"
         />,
       )
 
@@ -161,7 +174,11 @@ export function FormFieldRenderer({ field, disabled }: Props) {
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
                   label: String(opt.label),
-                  value: opt.value as string | number,
+                  value:
+                    typeof opt.value === 'number' ||
+                    typeof opt.value === 'boolean'
+                      ? opt.value
+                      : asString(opt.value),
                 }))
               : []
           }

@@ -4,8 +4,9 @@ import {
   updatePageUploadRule,
 } from '@/api/business'
 import type { UploadRulePayload } from '@/api/business-types'
+import { isToggleSetting } from '@/module-system/settings-constants'
 import type { ModuleRecord } from '@/types/module-page'
-import { isToggleSetting } from '@/views/system/general-settings-view-utils'
+import { asString } from '@/utils/type-narrowing'
 
 const MODULE_KEY = 'general-setting'
 
@@ -34,13 +35,16 @@ export async function listDisplaySwitches() {
 }
 
 export async function listClientSettings() {
-  const { assertApiSuccess, http } = await import('@/api/client')
+  const [{ ENDPOINTS }, { assertApiSuccess, http }] = await Promise.all([
+    import('@/constants/endpoints'),
+    import('@/api/client'),
+  ])
   const response = assertApiSuccess(
     await http.get<{
       code?: number
       message?: string
       data?: ModuleRecord[]
-    }>('/general-setting/client-settings'),
+    }>(ENDPOINTS.GENERAL_SETTING_CLIENT_SETTINGS),
   )
   return Array.isArray(response.data) ? response.data : []
 }
@@ -69,9 +73,9 @@ export function isDisplaySwitchEnabled(
   settingCode: string,
 ) {
   const matched = rows?.find(
-    (record) => String(record.settingCode || '').trim() === settingCode,
+    (record) => asString(record.settingCode).trim() === settingCode,
   )
-  return String(matched?.status || '') === '正常'
+  return asString(matched?.status) === '正常'
 }
 
 export function getClientSettingNumber(

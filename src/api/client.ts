@@ -1,8 +1,8 @@
-export { restoreRedirectedHistoryRoute } from '@/utils/route-helpers'
-export { type ApiClient, authHttp, http } from './http'
-export { isHandledRequestError } from './request-errors'
+export { authHttp, http } from './http'
 
 import { ERROR_CODE } from '@/constants/error-codes'
+import type { SearchParams } from '@/types/api-raw'
+import { getApiMessage } from '@/utils/api-messages'
 import { setupAuthInterceptors } from './auth/auth-interceptor'
 import { http } from './http'
 
@@ -21,41 +21,34 @@ export function isSuccessCode(code: unknown) {
   return Number(code) === ERROR_CODE.SUCCESS
 }
 
-export function assertApiSuccess<T extends { code?: number; message?: string }>(
-  response: T,
-  fallbackMessage = '请求失败',
-) {
+export function assertApiSuccess<
+  T extends { code?: number; message?: string; traceId?: string },
+>(response: T, fallbackMessage?: string) {
   if (!isSuccessCode(response?.code)) {
-    throw new Error(response?.message || fallbackMessage)
+    const err = new Error(
+      response?.message || fallbackMessage || getApiMessage('requestFailed'),
+    )
+    if (response?.traceId) {
+      ;(err as Error & { traceId: string }).traceId = response.traceId
+    }
+    throw err
   }
 
   return response
 }
 
-export function restGet<T>(
-  url: string,
-  params?: Record<string, unknown>,
-): Promise<T> {
+export function restGet<T>(url: string, params?: SearchParams): Promise<T> {
   return http.get<T>(url, { params })
 }
 
-export function restPost<T>(
-  url: string,
-  data?: Record<string, unknown>,
-): Promise<T> {
+export function restPost<T>(url: string, data?: SearchParams): Promise<T> {
   return http.post<T>(url, data)
 }
 
-export function restPut<T>(
-  url: string,
-  data?: Record<string, unknown>,
-): Promise<T> {
+export function restPut<T>(url: string, data?: SearchParams): Promise<T> {
   return http.put<T>(url, data)
 }
 
-export function restDelete<T>(
-  url: string,
-  params?: Record<string, unknown>,
-): Promise<T> {
+export function restDelete<T>(url: string, params?: SearchParams): Promise<T> {
   return http.delete<T>(url, { params })
 }

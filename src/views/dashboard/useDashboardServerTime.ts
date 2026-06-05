@@ -2,37 +2,52 @@ import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 
+function formatServerTime(serverTime?: string | null) {
+  if (!serverTime) {
+    return '—'
+  }
+  const parsed = dayjs(serverTime)
+  if (!parsed.isValid()) {
+    return serverTime
+  }
+  return parsed.format('YYYY-MM-DD HH:mm:ss')
+}
+
 export function useDashboardServerTime(serverTime?: string | null) {
-  const [animatedServerTime, setAnimatedServerTime] = useState('—')
+  const [tickingServerTime, setTickingServerTime] = useState({
+    source: '',
+    value: '',
+  })
   const isPageVisible = usePageVisibility()
+  const displayServerTime =
+    tickingServerTime.source === String(serverTime || '')
+      ? tickingServerTime.value
+      : formatServerTime(serverTime)
 
   useEffect(() => {
-    if (!serverTime) {
-      setAnimatedServerTime('—')
-      return
-    }
-
     const parsed = dayjs(serverTime)
     if (!parsed.isValid()) {
-      setAnimatedServerTime(serverTime)
       return
     }
 
     const base = parsed.valueOf()
     const syncedAt = Date.now()
     const update = () => {
-      setAnimatedServerTime(
-        dayjs(base + (Date.now() - syncedAt)).format('YYYY-MM-DD HH:mm:ss'),
-      )
+      setTickingServerTime({
+        source: String(serverTime || ''),
+        value: dayjs(base + (Date.now() - syncedAt)).format(
+          'YYYY-MM-DD HH:mm:ss',
+        ),
+      })
     }
 
-    update()
     if (!isPageVisible) {
       return
     }
+    update()
     const timer = window.setInterval(update, 1000)
     return () => window.clearInterval(timer)
   }, [isPageVisible, serverTime])
 
-  return animatedServerTime
+  return displayServerTime
 }

@@ -1,118 +1,254 @@
-import { useCallback } from 'react'
-import { getBusinessModuleDetail } from '@/api/business'
-import { getDefaultPrintTemplate } from '@/api/print-template'
-import type { ModulePageConfig } from '@/types/module-page'
-import { message } from '@/utils/antd-app'
-import { execPrintCode, isCLodopCode, printHtml } from '@/utils/clodop'
-import { buildModulePrintHtml } from '@/utils/module-print'
-import { renderPrintTemplate } from '@/utils/print-template-engine'
+import axios from 'axios'
+import { createElement } from 'react'
+import { useTranslation } from 'react-i18next'
+import { assertApiSuccess, http } from '@/api/client'
+import { listPrintTemplates } from '@/api/print-template'
+import { PrintTemplateSelector } from '@/components/PrintTemplateSelector'
+import { printTemplateTargetMap } from '@/config/print-template-targets'
+import type { PrintTemplateRecord } from '@/types/print-template'
+import { message, modal } from '@/utils/antd-app'
+import { execPrintCode, loadCLodop, printHtml } from '@/utils/clodop'
+import { renderPrintTemplate } from '@/utils/print-template'
 
 interface Props {
   moduleKey: string
-  config: ModulePageConfig
   selectedRowKeys: string[]
-  formatCellValue: (value: unknown, columnType?: string) => string
+}
+
+interface PrintRecordResponse {
+  templateName?: string
+  templateHtml?: string
+  templateType: string
+  data?: Record<string, string>
+  items?: Record<string, string>[]
+  contentType?: string
+  fileName?: string
+  pdfBase64?: string
+}
+
+function requirePrintService(success: boolean, message: string) {
+  if (!success) {
+    throw new Error(message)
+  }
+}
+
+function openPdfBlob(blob: Blob) {
+  const url = URL.createObjectURL(blob)
+  window.open(url, '_blank', 'noopener,noreferrer')
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
+
+function blobFromBase64(base64: string, contentType = 'application/pdf') {
+  const binary = window.atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return new Blob([bytes], { type: contentType })
+}
+
+function printPdfBlob(blob: Blob) {
+  const url = URL.createObjectURL(blob)
+  const frame = document.createElement('iframe')
+  frame.src = url
+  frame.style.position = 'fixed'
+  frame.style.right = '0'
+  frame.style.bottom = '0'
+  frame.style.width = '0'
+  frame.style.height = '0'
+  frame.style.border = '0'
+  frame.addEventListener(
+    'load',
+    () => {
+      frame.contentWindow?.focus()
+      frame.contentWindow?.print()
+    },
+    { once: true },
+  )
+  document.body.appendChild(frame)
+  window.setTimeout(() => {
+    frame.remove()
+    URL.revokeObjectURL(url)
+  }, 60_000)
+}
+
+function handlePdfBlob(blob: Blob, preview: boolean) {
+  if (preview) {
+    openPdfBlob(blob)
+    return
+  }
+  printPdfBlob(blob)
+}
+
+async function normalizePdfError(err: unknown, fallbackMessage: string) {
+  if (!axios.isAxiosError(err)) {
+    return err instanceof Error ? err.message : fallbackMessage
+  }
+
+  const data = err.response?.data
+  if (data instanceof Blob) {
+    try {
+      const text = await data.text()
+      const parsed = JSON.parse(text) as { message?: string }
+      if (parsed.message) return parsed.message
+    } catch {
+      // fall through to axios message
+    }
+  }
+
+  return err.message || fallbackMessage
+}
+
+async function pickPrintTemplate(
+  moduleKey: string,
+  t: (key: string) => string,
+): Promise<PrintTemplateRecord | null> {
+  if (!Object.hasOwn(printTemplateTargetMap, moduleKey)) return null
+  const response = await listPrintTemplates(moduleKey)
+  const templates = (response?.data || []).filter((t) => t.templateHtml?.trim())
+
+  if (templates.length === 0) return null
+  if (templates.length === 1) return templates[0]
+
+  return new Promise<PrintTemplateRecord | null>((resolve) => {
+    let selectedId = templates[0].id
+
+    modal.confirm({
+      title: t('hooks.printActions.selectPrintTemplate'),
+      width: 480,
+      icon: null,
+      okText: t('common.ok'),
+      cancelText: t('common.cancel'),
+      content: createElement(PrintTemplateSelector, {
+        templates,
+        defaultId: selectedId,
+        onSelect: (id: string) => {
+          selectedId = id
+        },
+      }),
+      onOk: () => {
+        resolve(templates.find((t) => t.id === selectedId) || null)
+      },
+      onCancel: () => {
+        resolve(null)
+      },
+    })
+  })
 }
 
 export function useBusinessGridPrintActions({
   moduleKey,
-  config,
   selectedRowKeys,
-  formatCellValue,
 }: Props) {
-  const handlePrintSelectedRecords = useCallback(
-    async (preview: boolean) => {
-      if (!selectedRowKeys.length) {
-        message.warning('请先选择记录')
-        return
+  const { t } = useTranslation()
+  const handlePrintSelectedRecords = async (
+    preview: boolean,
+    selectedTemplate?: PrintTemplateRecord,
+  ) => {
+    if (!selectedRowKeys.length) {
+      message.warning(t('common.pleaseSelect'))
+      return
+    }
+
+    const template = selectedTemplate || (await pickPrintTemplate(moduleKey, t))
+
+    if (!template) {
+      message.warning(t('hooks.printActions.noPrintTemplateConfigured'))
+      return
+    }
+
+    try {
+      // 确保 CLodop 脚本已加载（main.tsx 预加载 + 此处兜底）
+      if (template.templateType !== 'PDF_FORM') {
+        await loadCLodop()
       }
 
-      try {
-        const templateResponse = await getDefaultPrintTemplate(moduleKey)
-        const template = templateResponse.data
-        const selectedDetails = await Promise.all(
-          selectedRowKeys.map((id) => getBusinessModuleDetail(moduleKey, id)),
+      const results = await Promise.all(
+        selectedRowKeys.map((recordId) =>
+          http.post<{
+            code: number
+            data: PrintRecordResponse
+            message?: string
+          }>('/print/record', {
+            templateId: template.id,
+            moduleKey,
+            recordId,
+          }),
+        ),
+      )
+      for (const r of results) {
+        assertApiSuccess(r, t('hooks.printActions.printScriptGenerationFailed'))
+      }
+
+      const pdfResults = results
+        .map((r) => r.data)
+        .filter(
+          (d): d is PrintRecordResponse =>
+            d?.templateType === 'PDF_FORM' && Boolean(d.pdfBase64),
         )
-        const selectedRecords = selectedDetails.map((detail) => detail.data)
-
-        if (!selectedRecords.length) {
-          message.warning('未找到可打印的选中记录')
-          return
-        }
-
-        if (template?.templateHtml?.trim()) {
-          const renderedTemplates = selectedRecords.map((record) =>
-            renderPrintTemplate(
-              template.templateHtml,
-              record,
-              Array.isArray(record.items)
-                ? (record.items as Array<Record<string, unknown>>)
-                : [],
-            ),
-          )
-          const renderedHtml = isCLodopCode(template.templateHtml)
-            ? renderedTemplates.join('\nLODOP.NEWPAGEA();\n')
-            : renderedTemplates.join('<div class="print-page"></div>')
-
-          const success = isCLodopCode(template.templateHtml)
-            ? execPrintCode(renderedHtml, {
-                preview,
-                title: template.templateName || config.title,
-              })
-            : printHtml(renderedHtml, {
-                preview,
-                title: template.templateName || config.title,
-              })
-
-          if (!success) {
-            throw new Error('打印服务不可用，请检查 CLodop 或打印模板配置')
-          }
-
-          return
-        }
-
-        const renderedHtml = selectedRecords
-          .map((record) => {
-            const fields = (config.detailFields || []).map((field) => ({
-              label: field.label,
-              value: formatCellValue(record[field.key], field.type),
-            }))
-            const itemColumns = config.itemColumns || []
-            const rows = Array.isArray(record.items)
-              ? record.items.map((item) =>
-                  itemColumns.map((column) =>
-                    formatCellValue(item[column.dataIndex], column.type),
-                  ),
-                )
-              : []
-
-            return buildModulePrintHtml({
-              title: config.title,
-              subtitle: String(record[config.primaryNoKey || 'id'] || ''),
-              fields,
-              columns: itemColumns.map((column) => ({
-                title: column.title,
-                align: column.align || 'left',
-              })),
-              rows,
-            })
-          })
-          .join('<div class="print-page"></div>')
-
-        const success = printHtml(renderedHtml, {
-          preview,
-          title: config.title,
-        })
-
-        if (!success) {
-          throw new Error('打印服务不可用，请检查 CLodop 环境')
-        }
-      } catch (err) {
-        message.error(err instanceof Error ? err.message : '打印失败')
+      for (const d of pdfResults) {
+        handlePdfBlob(blobFromBase64(d.pdfBase64 || '', d.contentType), preview)
       }
-    },
-    [config, formatCellValue, moduleKey, selectedRowKeys],
-  )
+
+      const rendered = results
+        .map((r) => {
+          const d = r.data
+          if (d?.templateType === 'PDF_FORM') return null
+          if (!d?.templateHtml) return null
+          return {
+            title: d.templateName || template.templateName,
+            result: renderPrintTemplate(
+              d.templateHtml,
+              d.templateType || 'HTML',
+              d.data || {},
+              d.items || [],
+            ),
+          }
+        })
+        .filter((r): r is NonNullable<typeof r> => Boolean(r))
+
+      const coordResults = rendered.filter((r) => r.result.type === 'COORD')
+      const htmlResults = rendered.filter((r) => r.result.type === 'HTML')
+
+      for (const r of coordResults) {
+        if (!r.result.script) continue
+        const success = execPrintCode(r.result.script, {
+          preview,
+          title: r.title,
+        })
+        requirePrintService(
+          success,
+          t('hooks.printActions.printServiceUnavailable'),
+        )
+      }
+
+      const htmlContents = htmlResults
+        .map((r) => r.result.html)
+        .filter((html): html is string => Boolean(html))
+      if (htmlContents.length) {
+        const success = printHtml(
+          htmlContents.join('<div class="print-page"></div>'),
+          {
+            preview,
+            title: htmlResults[0]?.title,
+          },
+        )
+        if (!success)
+          requirePrintService(
+            success,
+            t('hooks.printActions.printServiceUnavailable'),
+          )
+      }
+
+      if (!coordResults.length && !htmlResults.length) {
+        message.warning(t('hooks.printActions.noPrintContent'))
+      }
+    } catch (err) {
+      message.error(
+        await normalizePdfError(err, t('hooks.printActions.printFailed')),
+      )
+    }
+  }
 
   return { handlePrintSelectedRecords }
 }

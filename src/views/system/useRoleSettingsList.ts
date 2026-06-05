@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { listRoleSettingsPage, type RoleRecord } from '@/api/role-actions'
+import { QUERY_KEYS } from '@/constants/query-keys'
 
 export function useRoleSettingsList(enabled = true) {
   const { data: rolesData = [] } = useQuery({
-    queryKey: ['role-settings'],
+    queryKey: QUERY_KEYS.roleSettings,
     queryFn: async () => {
       const allRoles: RoleRecord[] = []
       let page = 0

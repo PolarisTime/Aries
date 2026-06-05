@@ -1,8 +1,9 @@
 import { SearchOutlined } from '@ant-design/icons'
+import type { AutoCompleteProps } from 'antd/es/auto-complete'
 import AutoComplete from 'antd/es/auto-complete'
 import Button from 'antd/es/button'
 import Input from 'antd/es/input'
-import type { AutoCompleteProps } from 'antd/es/auto-complete'
+import { useTranslation } from 'react-i18next'
 import { buildFormControlId } from '@/utils/form-control-id'
 
 export interface AppHeaderSearchProps {
@@ -34,6 +35,7 @@ export function AppHeaderSearch({
   onSelect,
   onSubmit,
 }: AppHeaderSearchProps) {
+  const { t } = useTranslation()
   const searchInputId = buildFormControlId('header-search', 'keyword')
 
   return (
@@ -48,16 +50,27 @@ export function AppHeaderSearch({
             onOpen()
             void onSearch(value)
           }}
-          onChange={(value) => onKeywordChange(String(value))}
-          onSelect={(value) => onSelect(String(value))}
+          onChange={(value) => {
+            const nextValue = String(value)
+            const isOptionValue = options.some(
+              (option) => String(option.value) === nextValue,
+            )
+            if (!isOptionValue) {
+              onKeywordChange(nextValue)
+            }
+          }}
+          onSelect={(value) => {
+            const selectedValue = String(value)
+            onSelect(selectedValue)
+          }}
           onOpenChange={onOpenChange}
         >
           <Input
             id={searchInputId}
             name="header-search-keyword"
-            aria-label="搜索单号、合同号、对账单号"
+            aria-label={t('layouts.headerSearch.placeholder')}
             className="header-global-search-input"
-            placeholder="搜索单号、合同号、对账单号"
+            placeholder={t('layouts.headerSearch.placeholder')}
             onFocus={onOpen}
             onBlur={onBlur}
             onPressEnter={(event) => void onSubmit(event.currentTarget.value)}

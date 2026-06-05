@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
+const EMPTY_FREIGHT_PICKUP_RECORDS: ModuleRecord[] = []
+
 const ModuleAttachmentModal = lazy(() =>
   import('@/views/modules/components/ModuleAttachmentModal').then((module) => ({
     default: module.ModuleAttachmentModal,
@@ -48,6 +50,8 @@ interface Props {
   customerStatementOpen: boolean
   freightStatementOpen: boolean
   freightPickupOpen: boolean
+  freightPickupRecords?: ModuleRecord[]
+  selectedRows: ModuleRecord[]
   canSave: boolean
   canAudit: boolean
   lineItemsLocked: boolean
@@ -92,6 +96,8 @@ export function BusinessGridOverlays({
   customerStatementOpen,
   freightStatementOpen,
   freightPickupOpen,
+  freightPickupRecords = EMPTY_FREIGHT_PICKUP_RECORDS,
+  selectedRows,
   canSave,
   canAudit,
   lineItemsLocked,
@@ -150,6 +156,7 @@ export function BusinessGridOverlays({
         <ModuleStatementGenerator
           open={supplierStatementOpen}
           statementType="supplier"
+          selectedRows={selectedRows}
           onClose={onCloseSupplierStatement}
           onGenerate={onGenerateSupplierStatement}
         />
@@ -158,6 +165,7 @@ export function BusinessGridOverlays({
         <ModuleStatementGenerator
           open={customerStatementOpen}
           statementType="customer"
+          selectedRows={selectedRows}
           onClose={onCloseCustomerStatement}
           onGenerate={onGenerateCustomerStatement}
         />
@@ -166,6 +174,7 @@ export function BusinessGridOverlays({
         <ModuleStatementGenerator
           open={freightStatementOpen}
           statementType="freight"
+          selectedRows={selectedRows}
           onClose={onCloseFreightStatement}
           onGenerate={onGenerateFreightStatement}
         />
@@ -175,6 +184,7 @@ export function BusinessGridOverlays({
         <ModuleFreightPickupListOverlay
           open={freightPickupOpen}
           moduleKey={moduleKey}
+          records={freightPickupRecords}
           onClose={onCloseFreightPickup}
         />
       ) : null}

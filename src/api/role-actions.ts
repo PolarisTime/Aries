@@ -1,6 +1,8 @@
 import { assertApiSuccess, http } from '@/api/client'
+import { pageContent } from '@/api/page-contract'
 import type { MenuNode } from '@/api/system-menus'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { getApiMessage } from '@/utils/api-messages'
 
 export type { MenuNode } from '@/api/system-menus'
 
@@ -25,14 +27,15 @@ interface RoleResponse<T> {
   data: T
 }
 interface RolePageData {
-  records: RoleRecord[]
+  content?: RoleRecord[]
+  records?: RoleRecord[]
   totalPages?: number
 }
 
 export async function listSystemMenus() {
   const response = assertApiSuccess(
     await http.get<RoleResponse<MenuNode[]>>(ENDPOINTS.ROLE_PERMISSION_OPTIONS),
-    '加载权限选项失败',
+    getApiMessage('loadPermissionOptionsFailed'),
   )
   return response.data || []
 }
@@ -41,16 +44,19 @@ export async function listRoleSettingsPage(page: number, size: number) {
     await http.get<RoleResponse<RolePageData>>(ENDPOINTS.ROLE_SETTINGS, {
       params: { page, size },
     }),
-    '加载角色失败',
+    getApiMessage('loadRolesFailed'),
   )
-  return response.data
+  return {
+    ...response.data,
+    records: pageContent(response.data),
+  }
 }
 export async function getRoleActions(id: string) {
   const response = assertApiSuccess(
     await http.get<RoleResponse<RolePermissionRecord[]>>(
-      `${ENDPOINTS.ROLE_SETTINGS}/${id}/permissions`,
+      `${ENDPOINTS.ROLE_SETTINGS}/${id}/permission`,
     ),
-    '加载角色权限失败',
+    getApiMessage('loadRolePermissionsFailed'),
   )
   return response.data || []
 }
@@ -60,28 +66,34 @@ export async function updateRoleActions(
 ) {
   return assertApiSuccess(
     await http.put<RoleResponse<null>>(
-      `${ENDPOINTS.ROLE_SETTINGS}/${id}/permissions`,
+      `${ENDPOINTS.ROLE_SETTINGS}/${id}/permission`,
       actions,
     ),
-    '保存角色权限失败',
+    getApiMessage('saveRolePermissionsFailed'),
   )
 }
-export async function updateRole(
-  id: string,
-  payload: Record<string, unknown>,
-) {
+type RolePayload = {
+  roleCode?: string
+  roleName?: string
+  roleType?: string
+  dataScope?: string
+  status?: string
+  remark?: string
+}
+
+export async function updateRole(id: string, payload: RolePayload) {
   return assertApiSuccess(
     await http.put<RoleResponse<null>>(
       `${ENDPOINTS.ROLE_SETTINGS}/${id}`,
       payload,
     ),
-    '更新角色失败',
+    getApiMessage('updateRoleFailed'),
   )
 }
-export async function createRole(payload: Record<string, unknown>) {
+export async function createRole(payload: RolePayload) {
   return assertApiSuccess(
     await http.post<RoleResponse<RoleRecord>>(ENDPOINTS.ROLE_SETTINGS, payload),
-    '创建角色失败',
+    getApiMessage('createRoleFailed'),
   )
 }
 

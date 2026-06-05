@@ -1,37 +1,27 @@
-import { flexRender } from '@tanstack/react-table'
 import type { TableColumnsType, TableProps } from 'antd'
 import type { ColumnType } from 'antd/es/table'
-import { useCallback, useMemo } from 'react'
+import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
-import type {
-  ColumnDef,
-  PaginationState,
-  RowSelectionState,
-  SortingState,
-} from '@/hooks/useDataTable'
+import type { ColumnDef, RowSelectionState } from '@/hooks/useDataTable'
 import { useDataTable } from '@/hooks/useDataTable'
-import { type GridColumnRenderMeta, useGridColumns } from '@/hooks/useGridColumns'
+import { ACTION_COLUMN_WIDTH, useGridColumns } from '@/hooks/useGridColumns'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
 interface Props {
   moduleKey: string
   config: ModulePageConfig | undefined
   records: ModuleRecord[]
-  pageSize: number
-  total: number
   canUpdateRecord: boolean
   selectedRowKeys: string[]
-  setSelectedRowKeys: (keys: string[]) => void
+  setSelectedRowKeys: Dispatch<SetStateAction<string[]>>
   setSelectedRowMap: (
     updater: (
       prev: Record<string, ModuleRecord>,
     ) => Record<string, ModuleRecord>,
   ) => void
   buildActions: (record: ModuleRecord) => ActionItem[]
-  onPaginationChange: (page: number, pageSize: number) => void
-  sorting: SortingState
-  onSortingChange: (sorting: SortingState) => void
+  showActions?: boolean
 }
 
 function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
@@ -40,102 +30,125 @@ function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
   for (const id of allIds) {
     if (!ordered.has(id)) merged.push(id)
   }
+  // 强制操作列始终排在数据列第一位（勾选框之后）
+  const idx = merged.indexOf('actions')
+  if (idx > 0) {
+    merged.splice(idx, 1)
+    merged.unshift('actions')
+  }
   return merged
+}
+
+function buildAntdColumns({
+  columnDefs,
+  columnOrder,
+  columnVisibility,
+}: {
+  columnDefs: ColumnDef<ModuleRecord, unknown>[]
+  columnOrder: string[]
+  columnVisibility: Record<string, boolean>
+}): TableColumnsType<ModuleRecord> {
+  const columnMap = new Map(
+    columnDefs.map((column) => [
+      (column as ColumnDef<ModuleRecord, unknown> & { id: string }).id,
+      column,
+    ]),
+  )
+  return columnOrder.flatMap((columnId) => {
+    if (columnVisibility[columnId] === false) {
+      return []
+    }
+    const columnDef = columnMap.get(columnId)
+    if (!columnDef) {
+      return []
+    }
+    const title: ReactNode =
+      typeof columnDef.header === 'function' ? '' : columnDef.header
+    return [
+      {
+        title,
+        dataIndex: columnId,
+        key: columnId,
+        fixed: columnDef.meta?.fixed as ColumnType<ModuleRecord>['fixed'],
+        className: columnId === 'actions' ? 'sticky-actions-col' : undefined,
+        onCell:
+          columnId === 'actions'
+            ? () => ({ className: 'sticky-actions-col' })
+            : undefined,
+        onHeaderCell:
+          columnId === 'actions'
+            ? () => ({ className: 'sticky-actions-col' })
+            : undefined,
+        width:
+          columnId === 'actions' ? ACTION_COLUMN_WIDTH : columnDef.meta?.width,
+        align: (columnDef.meta?.align ??
+          'center') as ColumnType<ModuleRecord>['align'],
+        ellipsis: true,
+        render: (_: unknown, record: ModuleRecord) => {
+          return columnDef.meta?.renderCell?.(record) ?? null
+        },
+      },
+    ]
+  })
 }
 
 export function useBusinessGridTable({
   moduleKey,
   config,
   records,
-  pageSize,
-  total,
   canUpdateRecord,
   selectedRowKeys,
   setSelectedRowKeys,
   setSelectedRowMap,
   buildActions,
-  onPaginationChange,
-  sorting,
-  onSortingChange,
+  showActions,
 }: Props) {
+  const totalColumnCount = config?.columns?.length ?? 0
   const {
     columnOrder: savedOrder,
     columnVisibility,
     handleColumnOrderChange,
     handleColumnVisibilityChange,
-  } = useColumnSettingsSupport(moduleKey, config?.defaultHiddenColumnKeys)
-
-  const rowSelectionState: RowSelectionState = useMemo(() => {
+  } = useColumnSettingsSupport(
+    moduleKey,
+    config?.defaultHiddenColumnKeys,
+    totalColumnCount,
+  )
+  const rowSelectionState: RowSelectionState = (() => {
     const state: RowSelectionState = {}
     for (const id of selectedRowKeys) {
       state[id] = true
     }
     return state
-  }, [selectedRowKeys])
-
-  const { columns: columnDefs } = useGridColumns({
-    config: config ?? {
-      key: '',
-      title: '',
-      kicker: '',
-      description: '',
-      filters: [],
-      columns: [],
-      detailFields: [],
-      data: [],
-      buildOverview: () => [],
-    },
-    rowActions: buildActions,
-    canUpdate: Boolean(config) && canUpdateRecord,
-  })
-
-  const allColumnIds = useMemo(
-    () =>
-      columnDefs.map(
-        (c) =>
-          (c as ColumnDef<ModuleRecord, unknown> & { id: string }).id || '',
-      ),
-    [columnDefs],
-  )
-
-  const columnOrder = useMemo(
-    () => mergeColumnOrder(allColumnIds, savedOrder),
-    [allColumnIds, savedOrder],
-  )
-
-  const handlePaginationChange = (p: PaginationState) => {
-    onPaginationChange(p.pageIndex + 1, p.pageSize)
+  })()
+  const fallbackConfig: ModulePageConfig = {
+    key: moduleKey,
+    title: '',
+    kicker: '',
+    description: '',
+    filters: [],
+    columns: [],
+    detailFields: [],
+    data: [],
+    buildOverview: () => [],
   }
-
-  const handleAntdSortingChange = useCallback(
-    (columnKey?: string | number, order?: 'ascend' | 'descend' | null) => {
-      if (!columnKey || !order) {
-        onSortingChange([])
-        return
-      }
-
-      onSortingChange([
-        {
-          id: String(columnKey),
-          desc: order === 'descend',
-        },
-      ])
-    },
-    [onSortingChange],
+  const { columns: columnDefs } = useGridColumns({
+    config: config ?? fallbackConfig,
+    rowActions: buildActions,
+    canUpdate: Boolean(config) && (canUpdateRecord || Boolean(showActions)),
+    showActions: Boolean(config) && showActions,
+  })
+  const allColumnIds = columnDefs.map(
+    (c) => (c as ColumnDef<ModuleRecord, unknown> & { id: string }).id || '',
   )
-
+  const columnOrder = mergeColumnOrder(allColumnIds, savedOrder)
   const { table } = useDataTable<ModuleRecord>({
     data: records,
-    columns: columnDefs as ColumnDef<ModuleRecord, unknown>[],
-    pageCount: Math.ceil(total / pageSize),
-    total,
-    manualPagination: true,
+    columns: columnDefs,
     manualSorting: true,
-    enableSorting: true,
-    enableRowSelection: canUpdateRecord,
-    initialPageSize: pageSize,
-    onPaginationChange: handlePaginationChange,
-    onSortingChange,
+    enableSorting: false,
+    enableRowSelection: true,
+    getRowId: (row) => String(row.id),
     rowSelection: rowSelectionState,
     onRowSelectionChange: (updater) => {
       const next =
@@ -146,85 +159,46 @@ export function useBusinessGridTable({
     onColumnVisibilityChange: handleColumnVisibilityChange,
     columnOrder,
     onColumnOrderChange: handleColumnOrderChange,
-    sorting,
   })
-
-  const headerGroup = table.getHeaderGroups()[0]
-  const antdColumns: TableColumnsType<ModuleRecord> = headerGroup
-    ? headerGroup.headers.map((header) => ({
-        title: flexRender(header.column.columnDef.header, header.getContext()),
-        dataIndex: header.column.id,
-        key: header.column.id,
-        width: (
-          header.column.columnDef.meta as GridColumnRenderMeta | undefined
-        )?.width,
-        align: ((
-          header.column.columnDef.meta as
-            | GridColumnRenderMeta
-            | undefined
-        )?.align ?? 'center') as ColumnType<ModuleRecord>['align'],
-        ellipsis: true,
-        sorter: header.column.getCanSort(),
-        sortOrder:
-          header.column.getIsSorted() === 'asc'
-            ? 'ascend'
-            : header.column.getIsSorted() === 'desc'
-              ? 'descend'
-              : null,
-        render: (_: unknown, record: ModuleRecord) => {
-          const meta = header.column.columnDef.meta as
-            | GridColumnRenderMeta
-            | undefined
-          return meta?.renderCell?.(record) ?? null
-        },
-      }))
-    : []
-
-  const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined =
-    canUpdateRecord
-      ? {
-          selectedRowKeys,
-          onChange: (keys, rows) => {
-            const normalizedKeys = keys.map(String)
-            setSelectedRowKeys(normalizedKeys)
-            setSelectedRowMap((prev) => {
-              const next = { ...prev }
-
-              for (const key of Object.keys(next)) {
-                if (!normalizedKeys.includes(key)) {
-                  delete next[key]
-                }
-              }
-
-              for (const row of rows) {
-                next[String(row.id)] = row
-              }
-
-              return next
-            })
-          },
-          preserveSelectedRowKeys: true,
+  const computedColumns = buildAntdColumns({
+    columnDefs,
+    columnOrder,
+    columnVisibility,
+  })
+  const antdColumns = computedColumns
+  const rowSelection: TableProps<ModuleRecord>['rowSelection'] | undefined = {
+    selectedRowKeys,
+    onChange: (keys: React.Key[], rows: ModuleRecord[]) => {
+      const normalizedKeys = keys.map(String)
+      const normalizedKeysSet = new Set(normalizedKeys)
+      setSelectedRowKeys(normalizedKeys)
+      setSelectedRowMap((prev) => {
+        const next = { ...prev }
+        for (const key of Object.keys(next)) {
+          if (!normalizedKeysSet.has(key)) {
+            delete next[key]
+          }
         }
-      : undefined
-
-  const columnVisibleKeys = useMemo(
-    () => allColumnIds.filter((id) => columnVisibility[id] !== false),
-    [allColumnIds, columnVisibility],
-  )
-
-  const toggleColumn = useCallback(
-    (key: string) => {
-      const next = { ...columnVisibility }
-      if (next[key] === false) {
-        delete next[key]
-      } else {
-        next[key] = false
-      }
-      handleColumnVisibilityChange(next)
+        for (const row of rows) {
+          next[String(row.id)] = row
+        }
+        return next
+      })
     },
-    [columnVisibility, handleColumnVisibilityChange],
+    preserveSelectedRowKeys: true,
+  }
+  const columnVisibleKeys = allColumnIds.filter(
+    (id) => columnVisibility[id] !== false,
   )
-
+  const toggleColumn = (key: string) => {
+    const next = { ...columnVisibility }
+    if (next[key] === false) {
+      delete next[key]
+    } else {
+      next[key] = false
+    }
+    handleColumnVisibilityChange(next)
+  }
   return {
     table,
     antdColumns,
@@ -233,6 +207,5 @@ export function useBusinessGridTable({
     toggleColumn,
     rowSelection,
     onColumnOrderChange: handleColumnOrderChange,
-    onSortingChange: handleAntdSortingChange,
   }
 }

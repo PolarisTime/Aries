@@ -1,22 +1,25 @@
+import type { TableColumnsType } from 'antd'
 import Button from 'antd/es/button'
 import Col from 'antd/es/col'
 import Empty from 'antd/es/empty'
 import Flex from 'antd/es/flex'
 import Row from 'antd/es/row'
 import Spin from 'antd/es/spin'
-import type { TableColumnsType } from 'antd'
-import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
+import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import type {
   ModuleLineItem,
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
 import { padLabel } from '@/utils/label-utils'
-import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
+import { asString } from '@/utils/type-narrowing'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsTable } from './ModuleItemsTable'
+import { PieceWeightPopover } from './PieceWeightPopover'
+import { resolvePieceWeightLookupSource } from './piece-weight-source'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -36,24 +39,44 @@ export function ModuleRecordDetailOverlay({
   canPrint = false,
   onClose,
 }: Props) {
+  const { t } = useTranslation()
   const { formatCellValue } = useModuleDisplaySupport()
   const { getPrimaryNo } = useModuleRecordHelpers({
     moduleKey: config.key,
     config,
   })
   const detailItemColumns = config.detailItemColumns || config.itemColumns || []
-  const detailTableColumns = useMemo<TableColumnsType<ModuleLineItem>>(
-    () =>
-      detailItemColumns.map((column) => ({
-        title: column.title,
-        dataIndex: column.dataIndex,
-        key: column.dataIndex,
-        width: column.width,
-        align: column.align,
-        render: (value: unknown) => formatCellValue(value, column.type),
-      })),
-    [detailItemColumns, formatCellValue],
-  )
+  const detailTableColumns: TableColumnsType<ModuleLineItem> =
+    detailItemColumns.map((column) => ({
+      title: column.title,
+      dataIndex: column.dataIndex,
+      key: column.dataIndex,
+      width: column.width,
+      align: column.align,
+      render:
+        column.dataIndex === 'weightTon'
+          ? (value: unknown, record: ModuleLineItem) => {
+              const lookupSource = resolvePieceWeightLookupSource(
+                config.key,
+                record,
+              )
+              return (
+                <PieceWeightPopover
+                  itemId={record.id}
+                  weightTon={asString(value)}
+                  category={
+                    typeof record.category === 'string'
+                      ? record.category
+                      : undefined
+                  }
+                  inboundItemId={lookupSource.inboundItemId}
+                  purchaseOrderItemId={lookupSource.purchaseOrderItemId}
+                  salesOrderItemId={lookupSource.salesOrderItemId}
+                />
+              )
+            }
+          : (value: unknown) => formatCellValue(value, column.type),
+    }))
   const detailFields = config.detailFields || []
   const colSpan = Math.max(
     6,
@@ -64,16 +87,18 @@ export function ModuleRecordDetailOverlay({
     <WorkspaceOverlay
       open={open}
       title={
-        record ? `${config.title}详情 - ${getPrimaryNo(record)}` : '记录详情'
+        record
+          ? `${config.title}${t('modules.detail.titleSuffix')} - ${getPrimaryNo(record)}`
+          : t('modules.detail.recordDetail')
       }
       onClose={onClose}
     >
       {loading ? (
-        <Flex justify="center" align="center" style={{ paddingBlock: 64 }}>
+        <Flex justify="center" align="center" className="py-64">
           <Spin />
         </Flex>
       ) : !record ? (
-        <Empty description="暂无数据" />
+        <Empty description={t('modules.detail.noData')} />
       ) : (
         <>
           <Row gutter={[12, 12]}>
@@ -115,14 +140,14 @@ export function ModuleRecordDetailOverlay({
                     icon={resolveModuleActionIcon('关闭')}
                     onClick={onClose}
                   >
-                    关闭
+                    {t('modules.detail.close')}
                   </Button>
                   {canPrint ? (
                     <Button
                       className="overlay-action-button"
                       icon={resolveModuleActionIcon('打印')}
                     >
-                      打印
+                      {t('modules.detail.print')}
                     </Button>
                   ) : null}
                 </>
@@ -131,25 +156,24 @@ export function ModuleRecordDetailOverlay({
               <ModuleItemsTable
                 columns={detailTableColumns}
                 dataSource={record.items || []}
-                emptyText="暂无明细数据"
+                emptyText={t('modules.detail.noDetailItems')}
               />
             </ModuleItemsPanel>
           ) : (
-            <div style={{ marginTop: 20 }}>
+            <div className="mt-20">
               <Button
                 className="overlay-action-button"
                 icon={resolveModuleActionIcon('关闭')}
                 onClick={onClose}
               >
-                关闭
+                {t('modules.detail.close')}
               </Button>
               {canPrint && (
                 <Button
-                  style={{ marginLeft: 8 }}
-                  className="overlay-action-button"
+                  className="overlay-action-button ml-8"
                   icon={resolveModuleActionIcon('打印')}
                 >
-                  打印
+                  {t('modules.detail.print')}
                 </Button>
               )}
             </div>

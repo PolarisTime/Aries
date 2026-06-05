@@ -1,8 +1,9 @@
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
-import { http } from './client'
+import { createCachedOptions } from '@/lib/create-cached-options'
+import type { ModuleRecordInput } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
-export interface CustomerOption {
+export type CustomerOption = {
   id?: string
   value: string
   label: string
@@ -12,44 +13,50 @@ export interface CustomerOption {
   projectNameAbbr?: string
 }
 
-let cachedCustomers: CustomerOption[] | null = null
-let fetchFailed = false
-let loadingCustomers: Promise<CustomerOption[]> | null = null
-
-export async function fetchCustomerOptions(): Promise<CustomerOption[]> {
-  if (cachedCustomers !== null) return cachedCustomers
-  if (loadingCustomers) return loadingCustomers
-
-  loadingCustomers = (async () => {
-    const response = await http.get<ApiResponse<CustomerOption[]>>(
-      ENDPOINTS.CUSTOMERS_OPTIONS,
-    )
-    cachedCustomers = normalizeCustomerRows(response.data || [])
-    fetchFailed = false
-    return cachedCustomers
-  })()
-
-  try {
-    return await loadingCustomers
-  } catch {
-    fetchFailed = true
-    return []
-  } finally {
-    loadingCustomers = null
-  }
+export function normalizeText(value: unknown) {
+  return asString(value).trim()
 }
 
+export function normalizeCustomerRows(rows: CustomerOption[]) {
+  return rows.flatMap((row) => {
+    const customerName = normalizeText(
+      row.customerName || row.value || row.label,
+    )
+    const projectName = normalizeText(row.projectName)
+    return customerName
+      ? [
+          {
+            ...row,
+            id: row.id == null ? undefined : String(row.id),
+            value: customerName,
+            label:
+              row.label ||
+              (projectName ? `${customerName} / ${projectName}` : customerName),
+            customerName,
+            projectName,
+          },
+        ]
+      : []
+  })
+}
+
+const cached = createCachedOptions<CustomerOption>({
+  endpoint: ENDPOINTS.CUSTOMERS_OPTIONS,
+  normalizer: normalizeCustomerRows,
+})
+
+export const fetchCustomerOptions = cached.fetch
+export const reloadCustomerOptions = cached.reload
+
 export function getCustomerOptions(): CustomerOption[] {
-  ensureCustomerOptionsLoaded()
-  return uniqueCustomerNameOptions(cachedCustomers || [])
+  return uniqueCustomerNameOptions(cached.get())
 }
 
 export function getCustomerProjectOptions(
-  form?: Record<string, unknown>,
+  form?: ModuleRecordInput,
 ): CustomerOption[] {
-  ensureCustomerOptionsLoaded()
   const customerName = normalizeText(form?.customerName)
-  const rows = cachedCustomers || []
+  const rows = cached.get()
   const filteredRows = customerName
     ? rows.filter(
         (row) => normalizeText(row.customerName || row.value) === customerName,
@@ -58,72 +65,7 @@ export function getCustomerProjectOptions(
   return uniqueProjectOptions(filteredRows, !customerName)
 }
 
-export function findCustomerOption(
-  customerName: unknown,
-  projectName?: unknown,
-): CustomerOption | undefined {
-  ensureCustomerOptionsLoaded()
-  const normalizedCustomer = normalizeText(customerName)
-  const normalizedProject = normalizeText(projectName)
-  if (!normalizedCustomer && !normalizedProject) {
-    return undefined
-  }
-  const rows = cachedCustomers || []
-  return rows.find(
-    (row) =>
-      (!normalizedCustomer ||
-        normalizeText(row.customerName || row.value) === normalizedCustomer) &&
-      (!normalizedProject ||
-        normalizeText(row.projectName) === normalizedProject),
-  )
-}
-
-export function resolveSingleCustomerProjectName(
-  customerName: unknown,
-): string {
-  ensureCustomerOptionsLoaded()
-  const normalizedCustomer = normalizeText(customerName)
-  if (!normalizedCustomer) {
-    return ''
-  }
-  const projects = uniqueProjectOptions(
-    (cachedCustomers || []).filter(
-      (row) =>
-        normalizeText(row.customerName || row.value) === normalizedCustomer,
-    ),
-    false,
-  )
-  return projects.length === 1 ? String(projects[0].value || '') : ''
-}
-
-function ensureCustomerOptionsLoaded() {
-  if (cachedCustomers === null && !loadingCustomers && !fetchFailed) {
-    fetchCustomerOptions()
-  }
-}
-
-function normalizeCustomerRows(rows: CustomerOption[]) {
-  return rows
-    .map((row) => {
-      const customerName = normalizeText(
-        row.customerName || row.value || row.label,
-      )
-      const projectName = normalizeText(row.projectName)
-      return {
-        ...row,
-        id: row.id == null ? undefined : String(row.id),
-        value: customerName,
-        label:
-          row.label ||
-          (projectName ? `${customerName} / ${projectName}` : customerName),
-        customerName,
-        projectName,
-      }
-    })
-    .filter((row) => row.customerName)
-}
-
-function uniqueCustomerNameOptions(rows: CustomerOption[]) {
+export function uniqueCustomerNameOptions(rows: CustomerOption[]) {
   const seen = new Set<string>()
   return rows.flatMap((row) => {
     const customerName = normalizeText(row.customerName || row.value)
@@ -135,7 +77,7 @@ function uniqueCustomerNameOptions(rows: CustomerOption[]) {
   })
 }
 
-function uniqueProjectOptions(
+export function uniqueProjectOptions(
   rows: CustomerOption[],
   includeCustomerInLabel: boolean,
 ) {
@@ -163,18 +105,10 @@ function uniqueProjectOptions(
   })
 }
 
-function formatProjectOptionLabel(row: CustomerOption, projectName: string) {
+export function formatProjectOptionLabel(
+  row: CustomerOption,
+  projectName: string,
+) {
   const projectNameAbbr = normalizeText(row.projectNameAbbr)
   return projectNameAbbr ? `${projectNameAbbr}（${projectName}）` : projectName
-}
-
-function normalizeText(value: unknown) {
-  return String(value || '').trim()
-}
-
-export function reloadCustomerOptions() {
-  cachedCustomers = null
-  fetchFailed = false
-  loadingCustomers = null
-  return fetchCustomerOptions()
 }

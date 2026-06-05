@@ -117,7 +117,11 @@ async function importParentByKeyword(
   await row.click()
 }
 
-async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: string) {
+async function waitForSaveOutcome(
+  page: Page,
+  overlay: Locator,
+  expectedNo?: string,
+) {
   const rowInList = expectedNo
     ? page
         .locator('tbody tr:not(.ant-table-measure-row)')
@@ -135,7 +139,11 @@ async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: str
         if ((await successMessage.count()) > 0) {
           return 'message'
         }
-        if (rowInList && (await rowInList.count()) > 0 && (await rowInList.isVisible())) {
+        if (
+          rowInList &&
+          (await rowInList.count()) > 0 &&
+          (await rowInList.isVisible())
+        ) {
           return 'row'
         }
         if (!(await overlay.isVisible().catch(() => false))) {
@@ -239,7 +247,9 @@ test('debug sales order save result', async ({ page }) => {
 
   await page.waitForTimeout(2000)
   await responsePromise
-  const messageTexts = await page.locator('.ant-message-notice').allTextContents()
+  const messageTexts = await page
+    .locator('.ant-message-notice')
+    .allTextContents()
   const spinValues = await salesOrderRow
     .locator('input[role="spinbutton"]')
     .evaluateAll((nodes) =>

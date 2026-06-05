@@ -1,46 +1,26 @@
-export interface InitialSetupStatus {
-  setupRequired: boolean
-  adminConfigured: boolean
-  companyConfigured: boolean
-}
+/** @deprecated 类型已迁移至 src/shared/schemas/setup.ts，请从 '@/shared/schemas' 导入 */
+export type {
+  InitialSetupAdminPayload,
+  InitialSetupCompanyPayload,
+  InitialSetupStatus,
+  InitialSetupTotpPayload,
+  InitialSetupTotpResult,
+} from '@/shared/schemas'
 
-export interface InitialSetupAdminPayload {
-  loginName: string
-  password: string
-  userName: string
-  mobile?: string
-}
+import type {
+  InitialSetupAdminPayload,
+  InitialSetupStatus,
+} from '@/shared/schemas'
 
-export interface InitialSetupTotpPayload {
-  loginName: string
-}
-
-export interface InitialSetupTotpResult {
-  qrCodeBase64: string
-  secret: string
-}
-
-export interface InitialSetupAdminSubmitPayload {
+export type InitialSetupAdminSubmitPayload = {
   admin: InitialSetupAdminPayload
-  totpSecret: string
-  totpCode: string
+  totpSecret?: string
+  totpCode?: string
 }
 
-export interface InitialSetupCompanyPayload {
-  companyName: string
-  taxNo: string
-  bankName: string
-  bankAccount: string
-  taxRate: number
-  remark?: string
-}
+export type InitialSetupResult = InitialSetupStatus
 
-export interface InitialSetupPayload {
-  admin?: InitialSetupAdminSubmitPayload
-  company?: InitialSetupCompanyPayload
-}
-
-export interface InitialSetupResult {
+export interface InitialSetupSubmitResponse {
   adminLoginName: string
   companyName: string
 }

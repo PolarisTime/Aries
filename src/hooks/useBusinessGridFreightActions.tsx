@@ -1,11 +1,12 @@
 import Flex from 'antd/es/flex'
 import Typography from 'antd/es/typography'
-import { useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { listAllBusinessModuleRows } from '@/api/business'
+import type { SearchParams } from '@/types/api-raw'
 import { message, modal } from '@/utils/antd-app'
 
 interface Props {
-  submittedFilters: Record<string, unknown>
+  submittedFilters: SearchParams
   formatCellValue: (value: unknown, columnType?: string) => string
 }
 
@@ -13,14 +14,16 @@ export function useBusinessGridFreightActions({
   submittedFilters,
   formatCellValue,
 }: Props) {
-  const openFreightSummary = useCallback(async () => {
+  const { t } = useTranslation()
+
+  const openFreightSummary = async () => {
     const rows = await listAllBusinessModuleRows(
       'freight-statement',
       submittedFilters,
     )
 
     if (!rows.length) {
-      message.info('当前列表暂无物流对账单数据')
+      message.info(t('hooks.freightActions.noFreightData'))
       return
     }
 
@@ -47,27 +50,33 @@ export function useBusinessGridFreightActions({
     )
 
     modal.info({
-      title: '运费对账汇总',
+      title: t('hooks.freightActions.freightSummaryTitle'),
       width: 720,
       content: (
-        <Flex vertical gap={12} style={{ marginTop: 12 }}>
-          <Typography.Text>当前列表单据数：{rows.length}</Typography.Text>
+        <Flex vertical gap={12} className="mt-12">
           <Typography.Text>
-            总重量（吨）：{formatCellValue(totalWeight, 'weight')}
+            {t('hooks.freightActions.documentCount', { count: rows.length })}
           </Typography.Text>
           <Typography.Text>
-            总运费：{formatCellValue(totalFreight, 'amount')}
+            {t('hooks.freightActions.totalWeight')}
+            {formatCellValue(totalWeight, 'weight')}
           </Typography.Text>
           <Typography.Text>
-            已付金额：{formatCellValue(paidAmount, 'amount')}
+            {t('hooks.freightActions.totalFreight')}
+            {formatCellValue(totalFreight, 'amount')}
           </Typography.Text>
           <Typography.Text>
-            未付金额：{formatCellValue(unpaidAmount, 'amount')}
+            {t('hooks.freightActions.paidAmount')}
+            {formatCellValue(paidAmount, 'amount')}
+          </Typography.Text>
+          <Typography.Text>
+            {t('hooks.freightActions.unpaidAmount')}
+            {formatCellValue(unpaidAmount, 'amount')}
           </Typography.Text>
         </Flex>
       ),
     })
-  }, [formatCellValue, submittedFilters])
+  }
 
   return { openFreightSummary }
 }

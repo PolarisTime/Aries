@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
+import type { ThemeMode } from '@/utils/storage'
 
 const PersonalSettingsModal = lazy(() =>
   import('@/layouts/PersonalSettingsModal').then((m) => ({
@@ -16,6 +17,8 @@ interface Props {
   onFontSizeChange: (value: number) => void
   layoutMode: LayoutMode
   onLayoutModeChange: (value: LayoutMode) => void
+  themeMode: ThemeMode
+  onThemeModeChange: (value: ThemeMode) => void
 }
 
 export function LazyPersonalSettingsModal(props: Props) {

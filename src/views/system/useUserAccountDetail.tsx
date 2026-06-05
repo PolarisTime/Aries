@@ -1,9 +1,11 @@
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getUserAccountDetail } from '@/api/user-accounts'
 import { useRequestError } from '@/hooks/useRequestError'
 import type { UserAccountRecord } from '@/types/user-account'
 
 export function useUserAccountDetail() {
+  const { t } = useTranslation()
   const { showError } = useRequestError()
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -11,26 +13,23 @@ export function useUserAccountDetail() {
     null,
   )
 
-  const openDetailModal = useCallback(
-    async (record: UserAccountRecord) => {
-      setDetailOpen(true)
-      setDetailLoading(true)
-      try {
-        setDetailRecord(await getUserAccountDetail(record.id))
-      } catch (error) {
-        showError(error, '加载详情失败')
-        setDetailOpen(false)
-      } finally {
-        setDetailLoading(false)
-      }
-    },
-    [showError],
-  )
+  const openDetailModal = async (record: UserAccountRecord) => {
+    setDetailOpen(true)
+    setDetailLoading(true)
+    try {
+      setDetailRecord(await getUserAccountDetail(record.id))
+      setDetailLoading(false)
+    } catch (error) {
+      showError(error, t('api.loadUserDetailFailed'))
+      setDetailOpen(false)
+      setDetailLoading(false)
+    }
+  }
 
-  const closeDetailModal = useCallback(() => {
+  const closeDetailModal = () => {
     setDetailOpen(false)
     setDetailRecord(null)
-  }, [])
+  }
 
   return {
     detailOpen,

@@ -1,8 +1,10 @@
+import i18next from 'i18next'
 import {
   getSupplierOptions,
   statementStatusOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, SUPPLIER_NAME_LABEL } from './filter-labels'
 import {
   buildStatementOverview,
@@ -12,13 +14,18 @@ import {
 
 export const supplierStatementPageConfig: ModulePageConfig = {
   key: 'supplier-statement',
-  title: '供应商对账单',
+  title: i18next.t('modules.pages.supplierStatement.supplierStatement'),
   kicker: 'Statements',
-  description:
-    '供应商对账单按已审核采购入库明细口径组织，生成后保留来源入库行，便于逐项核对采购数量、单价和金额。',
+  description: i18next.t(
+    'modules.pages.supplierStatement.supplierStatementDesc',
+  ),
   primaryNoKey: 'statementNo',
   actions: [
-    { key: 'generate_statement', label: '生成对账单', type: 'primary' },
+    {
+      key: 'generate_statement',
+      label: i18next.t('modules.pages.supplierStatement.generateStatement'),
+      type: 'primary',
+    },
   ],
   filters: [
     {
@@ -33,36 +40,63 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       type: 'select',
       options: statementStatusOptions,
     },
-    { key: 'endDate', label: '账期', type: 'dateRange' },
+    {
+      key: 'endDate',
+      label: i18next.t('modules.pages.supplierStatement.period'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: '对账单号', dataIndex: 'statementNo', width: 170 },
-    { title: '供应商', dataIndex: 'supplierName', width: 140 },
-    { title: '开始日期', dataIndex: 'startDate', width: 120, type: 'date' },
-    { title: '结束日期', dataIndex: 'endDate', width: 120, type: 'date' },
     {
-      title: '采购金额',
+      title: i18next.t('modules.pages.supplierStatement.statementNo'),
+      dataIndex: 'statementNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.supplierStatement.supplierCode'),
+      dataIndex: 'supplierCode',
+      width: 130,
+    },
+    {
+      title: i18next.t('modules.pages.supplierStatement.supplier'),
+      dataIndex: 'supplierName',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.supplierStatement.startDate'),
+      dataIndex: 'startDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.supplierStatement.endDate'),
+      dataIndex: 'endDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.supplierStatement.purchaseAmount'),
       dataIndex: 'purchaseAmount',
       width: 110,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '付款金额',
+      title: i18next.t('modules.pages.supplierStatement.paymentAmount'),
       dataIndex: 'paymentAmount',
       width: 110,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '期末余额',
+      title: i18next.t('modules.pages.supplierStatement.closingBalance'),
       dataIndex: 'closingAmount',
       width: 110,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '状态',
+      title: i18next.t('modules.pages.supplierStatement.status'),
       dataIndex: 'status',
       width: 110,
       type: 'status',
@@ -71,43 +105,93 @@ export const supplierStatementPageConfig: ModulePageConfig = {
   ],
   defaultHiddenColumnKeys: ['paymentAmount'],
   detailFields: [
-    { label: '对账单号', key: 'statementNo' },
-    { label: '供应商', key: 'supplierName' },
-    { label: '开始日期', key: 'startDate', type: 'date' },
-    { label: '结束日期', key: 'endDate', type: 'date' },
-    { label: '采购金额', key: 'purchaseAmount', type: 'amount' },
-    { label: '付款金额', key: 'paymentAmount', type: 'amount' },
-    { label: '期末余额', key: 'closingAmount', type: 'amount' },
-    { label: '状态', key: 'status', type: 'status' },
-    { label: '备注', key: 'remark' },
+    {
+      label: i18next.t('modules.pages.supplierStatement.statementNo'),
+      key: 'statementNo',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.supplier'),
+      key: 'supplierName',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.supplierCode'),
+      key: 'supplierCode',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.startDate'),
+      key: 'startDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.endDate'),
+      key: 'endDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.purchaseAmount'),
+      key: 'purchaseAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.paymentAmount'),
+      key: 'paymentAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.closingBalance'),
+      key: 'closingAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.status'),
+      key: 'status',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.supplierStatement.remark'),
+      key: 'remark',
+    },
   ],
   formFields: [
     {
       key: 'statementNo',
-      label: '对账单号',
+      label: i18next.t('modules.pages.supplierStatement.statementNo'),
       type: 'input',
       required: true,
       row: 1,
     },
     {
       key: 'supplierName',
-      label: '供应商',
+      label: i18next.t('modules.pages.supplierStatement.supplier'),
       type: 'select',
       required: true,
       options: getSupplierOptions,
       row: 1,
     },
     {
+      key: 'supplierCode',
+      label: i18next.t('modules.pages.supplierStatement.supplierCode'),
+      type: 'input',
+      disabled: true,
+      row: 1,
+    },
+    {
       key: 'startDate',
-      label: '开始日期',
+      label: i18next.t('modules.pages.supplierStatement.startDate'),
       type: 'date',
       required: true,
       row: 1,
     },
-    { key: 'endDate', label: '结束日期', type: 'date', required: true, row: 1 },
+    {
+      key: 'endDate',
+      label: i18next.t('modules.pages.supplierStatement.endDate'),
+      type: 'date',
+      required: true,
+      row: 1,
+    },
     {
       key: 'purchaseAmount',
-      label: '采购金额',
+      label: i18next.t('modules.pages.supplierStatement.purchaseAmount'),
       type: 'number',
       required: true,
       min: 0,
@@ -118,7 +202,7 @@ export const supplierStatementPageConfig: ModulePageConfig = {
     },
     {
       key: 'closingAmount',
-      label: '期末余额',
+      label: i18next.t('modules.pages.supplierStatement.closingBalance'),
       type: 'number',
       required: true,
       min: 0,
@@ -129,18 +213,25 @@ export const supplierStatementPageConfig: ModulePageConfig = {
     },
     {
       key: 'status',
-      label: '状态',
+      label: i18next.t('modules.pages.supplierStatement.status'),
       type: 'select',
       defaultValue: '待确认',
       options: statementStatusOptions,
       row: 2,
     },
-    { key: 'remark', label: '备注', type: 'textarea', row: 3, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.supplierStatement.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
   ],
   saveFields: {
     scalar: [
       'statementNo',
       'sourceInboundNos',
+      'supplierCode',
       'supplierName',
       'startDate',
       'endDate',
@@ -171,6 +262,55 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       'unitPrice',
       'amount',
     ],
+  },
+  parentImport: {
+    parentModuleKey: 'purchase-inbound',
+    label: '采购入库单',
+    parentFieldKey: 'sourceInboundNos',
+    parentDisplayFieldKey: 'inboundNo',
+    candidateStatementModuleKey: 'supplier-statement',
+    buttonText: '选择采购入库单生成明细',
+    enforceUniqueRelation: true,
+    allowMultipleSelection: true,
+    buildParentFilters: (currentRecord) => ({
+      supplierName: asString(currentRecord.supplierName).trim(),
+      status: '完成采购',
+    }),
+    validateBeforeOpen: (currentRecord) =>
+      asString(currentRecord.supplierName).trim()
+        ? null
+        : '请先选择供应商，再选择采购入库单',
+    mapParentToDraft: (parentRecord) => ({
+      supplierName: parentRecord.supplierName || '',
+      startDate: parentRecord.inboundDate || '',
+      endDate: parentRecord.inboundDate || '',
+      paymentAmount: 0,
+      status: '待确认',
+    }),
+    validateParentImport: ({ currentRecord, parentRecord }) => {
+      if (asString(parentRecord.status).trim() !== '完成采购') {
+        return '只能选择完成采购的采购入库单生成供应商对账单'
+      }
+      if (
+        asString(currentRecord.supplierName).trim() !==
+        asString(parentRecord.supplierName).trim()
+      ) {
+        return '只能选择同一供应商的采购入库单生成供应商对账单'
+      }
+      return null
+    },
+    transformItems: (parentRecord) => {
+      const sourceNo = asString(parentRecord.inboundNo).trim()
+      return (Array.isArray(parentRecord.items) ? parentRecord.items : []).map(
+        (item, index) => ({
+          ...item,
+          id: `${sourceNo || 'purchase-inbound'}-${String(item.id || index)}`,
+          sourceNo,
+          sourceInboundItemId: item.id,
+          _parentBillTime: parentRecord.inboundDate || '',
+        }),
+      )
+    },
   },
   itemColumns: compactBatchSupplierStatementItemColumns,
   data: [],

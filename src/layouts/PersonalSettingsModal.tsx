@@ -1,11 +1,13 @@
 import Modal from 'antd/es/modal'
 import Tabs from 'antd/es/tabs'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PersonalSettingsDisplayTab } from '@/layouts/PersonalSettingsDisplayTab'
 import { PersonalSettingsSecurityTab } from '@/layouts/PersonalSettingsSecurityTab'
 import { usePersonalSecuritySettings } from '@/layouts/usePersonalSecuritySettings'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
 import { useAuthStore } from '@/stores/authStore'
+import type { ThemeMode } from '@/utils/storage'
 
 interface Props {
   open: boolean
@@ -16,6 +18,8 @@ interface Props {
   onFontSizeChange: (value: number) => void
   layoutMode: LayoutMode
   onLayoutModeChange: (value: LayoutMode) => void
+  themeMode: ThemeMode
+  onThemeModeChange: (value: ThemeMode) => void
 }
 
 export function PersonalSettingsModal({
@@ -27,7 +31,10 @@ export function PersonalSettingsModal({
   onFontSizeChange,
   layoutMode,
   onLayoutModeChange,
+  themeMode,
+  onThemeModeChange,
 }: Props) {
+  const { t } = useTranslation()
   const [tab, setTab] = useState('display')
   const user = useAuthStore((state) => state.user)
   const {
@@ -36,7 +43,6 @@ export function PersonalSettingsModal({
     handleSetupTotp,
     pwForm,
     pwSaving,
-    resetSecurityState,
     totpCode,
     totpEnabling,
     totpLoading,
@@ -44,17 +50,10 @@ export function PersonalSettingsModal({
     setTotpCode,
   } = usePersonalSecuritySettings({ open, tab })
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-    setTab('display')
-    resetSecurityState()
-  }, [open, resetSecurityState])
-
   return (
     <Modal
-      title="个人设置"
+      key={String(open)}
+      title={t('layouts.personalSettings.title')}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -65,8 +64,8 @@ export function PersonalSettingsModal({
         activeKey={tab}
         onChange={setTab}
         items={[
-          { key: 'display', label: '显示偏好' },
-          { key: 'security', label: '账户安全' },
+          { key: 'display', label: t('layouts.personalSettings.displayTab') },
+          { key: 'security', label: t('layouts.personalSettings.securityTab') },
         ]}
       />
 
@@ -74,8 +73,10 @@ export function PersonalSettingsModal({
         <PersonalSettingsDisplayTab
           fontSize={fontSize}
           layoutMode={layoutMode}
+          themeMode={themeMode}
           onFontSizeChange={onFontSizeChange}
           onLayoutModeChange={onLayoutModeChange}
+          onThemeModeChange={onThemeModeChange}
           onResetDisplay={onResetDisplay}
           onSaveDisplay={onSaveDisplay}
         />

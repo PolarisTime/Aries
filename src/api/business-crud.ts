@@ -1,15 +1,17 @@
 import { normalizeRecord } from '@/api/business-normalizers'
 import type { NumberRuleGenerateRecord } from '@/api/business-types'
-import { assertApiSuccess, http, restDelete } from '@/api/client'
+import { assertApiSuccess, http } from '@/api/client'
+import { withIdempotencyKey } from '@/api/idempotency'
 import { getModuleConfig } from '@/api/module-contracts'
 import { serializeBusinessRecordForSave } from '@/api/module-save-payload'
 import type { ApiResponse } from '@/types/api'
+import type { RawApiRecord } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
 
 export async function generateBusinessPrimaryNo(moduleKey: string) {
   const response = assertApiSuccess(
     await http.post<ApiResponse<NumberRuleGenerateRecord>>(
-      '/general-setting/number-rules/next',
+      '/general-settings/number-rule/next',
       null,
       {
         params: { moduleKey },
@@ -27,7 +29,7 @@ export async function generateBusinessPrimaryNo(moduleKey: string) {
 export async function allocateBusinessPrimaryNo(moduleKey: string) {
   const response = assertApiSuccess(
     await http.post<ApiResponse<NumberRuleGenerateRecord>>(
-      '/general-setting/number-rules/next',
+      '/general-settings/number-rule/next',
       null,
       {
         params: { moduleKey },
@@ -45,12 +47,12 @@ export async function allocateBusinessPrimaryNo(moduleKey: string) {
 
 export async function getBusinessModuleDetail(moduleKey: string, id: string) {
   const endpointConfig = getModuleConfig(moduleKey)
-  if (endpointConfig.readOnly) {
+  if (endpointConfig.readOnly && !endpointConfig.supportsDetail) {
     throw new Error('当前模块不支持详情接口')
   }
 
   const response = assertApiSuccess(
-    await http.get<ApiResponse<Record<string, unknown>>>(
+    await http.get<ApiResponse<RawApiRecord>>(
       `${endpointConfig.path}/${encodeURIComponent(id)}`,
     ),
   )
@@ -79,20 +81,24 @@ export async function saveBusinessModule(
   const hasId = Boolean(record.id)
   const response = assertApiSuccess(
     hasId
-      ? await http.put<ApiResponse<Record<string, unknown>>>(
+      ? await http.put<ApiResponse<RawApiRecord>>(
           `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`,
           payload,
+          withIdempotencyKey(),
         )
-      : await http.post<ApiResponse<Record<string, unknown>>>(
+      : await http.post<ApiResponse<RawApiRecord>>(
           endpointConfig.path,
           payload,
-          preallocatedId
-            ? {
-                headers: {
-                  'X-Preallocated-Id': preallocatedId,
-                },
-              }
-            : undefined,
+          withIdempotencyKey(
+            preallocatedId
+              ? {
+                  headers: {
+                    'X-Business-Module-Key': moduleKey,
+                    'X-Preallocated-Id': preallocatedId,
+                  },
+                }
+              : undefined,
+          ),
         ),
   )
 
@@ -109,7 +115,33 @@ export async function deleteBusinessModule(moduleKey: string, id: string) {
     throw new Error('当前模块不支持删除')
   }
 
-  return restDelete<ApiResponse<null>>(
+  return http.delete<ApiResponse<null>>(
     `${endpointConfig.path}/${encodeURIComponent(id)}`,
+    withIdempotencyKey(),
   )
+}
+
+export async function updateBusinessModuleStatus(
+  moduleKey: string,
+  id: string,
+  status: string,
+) {
+  const endpointConfig = getModuleConfig(moduleKey)
+  if (endpointConfig.readOnly) {
+    throw new Error('当前模块不支持状态变更')
+  }
+
+  const response = assertApiSuccess(
+    await http.patch<ApiResponse<RawApiRecord>>(
+      `${endpointConfig.path}/${encodeURIComponent(id)}/status`,
+      { status },
+      withIdempotencyKey(),
+    ),
+  )
+
+  return {
+    code: response.code,
+    message: response.message,
+    data: response.data ? normalizeRecord(response.data) : undefined,
+  }
 }

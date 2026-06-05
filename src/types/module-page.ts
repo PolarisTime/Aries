@@ -1,85 +1,32 @@
-export type ModuleColumnType =
-  | 'text'
-  | 'amount'
-  | 'weight'
-  | 'status'
-  | 'date'
-  | 'count'
+import type {
+  ModuleColumnDefinition,
+  ModuleDetailField,
+  ModuleFilterDefinition,
+  ModuleFormFieldDefinition,
+  ModuleQuickFilterDefinition,
+} from '@/types/module-page-fields'
 
-export type ModuleFilterType = 'input' | 'select' | 'dateRange'
-export type ModuleFormFieldType =
-  | 'input'
-  | 'select'
-  | 'autoComplete'
-  | 'multiSelect'
-  | 'date'
-  | 'textarea'
-  | 'number'
+export type {
+  ModuleColumnDefinition,
+  ModuleColumnType,
+  ModuleDetailField,
+  ModuleFilterDefinition,
+  ModuleFilterOption,
+  ModuleFilterOptionEntry,
+  ModuleFilterOptionGroup,
+  ModuleFilterOptionResolver,
+  ModuleFilterType,
+  ModuleFormFieldDefinition,
+  ModuleFormFieldOption,
+  ModuleFormFieldOptionResolver,
+  ModuleFormFieldType,
+  ModuleQuickFilterDefinition,
+} from '@/types/module-page-fields'
 
-export interface ModuleFilterOption {
-  label: string
-  value: string
-}
-
-export interface ModuleFilterOptionGroup {
-  label: string
-  options: ModuleFilterOption[]
-}
-
-export type ModuleFilterOptionEntry =
-  | ModuleFilterOption
-  | ModuleFilterOptionGroup
-export type ModuleFilterOptionResolver = (
-  filters: Record<string, unknown>,
-) => ModuleFilterOptionEntry[]
-
-export interface ModuleFormFieldOption {
-  label: string
-  value: string | number | boolean
-  customerCode?: string
-  customerName?: string
-  projectName?: string
-  projectNameAbbr?: string
-  purchaseWeighRequired?: boolean
-}
-
-export type ModuleFormFieldOptionResolver = (
-  form?: Record<string, unknown>,
-) => ModuleFormFieldOption[]
-
-export interface ModuleFilterDefinition {
-  key: string
-  label: string
-  type: ModuleFilterType
-  placeholder?: string
-  clientSearchKeys?: string[]
-  clientSearchLineItemKeys?: string[]
-  options?: ModuleFilterOptionEntry[] | ModuleFilterOptionResolver
-  row?: number
-}
-
-export interface ModuleQuickFilterDefinition {
-  key: string
-  label: string
-  values: Record<string, string | undefined>
-}
-
-export interface ModuleColumnDefinition {
-  title: string
-  dataIndex: string
-  width?: number
-  align?: 'left' | 'center' | 'right'
-  type?: ModuleColumnType
-  required?: boolean
-}
-
-export interface ModuleDetailField {
-  label: string
-  key: string
-  type?: ModuleColumnType
-  row?: number
-  fullRow?: boolean
-}
+export type {
+  ListColumnSettings,
+  UserColumnSettingsPayload,
+} from '@/types/module-page-settings'
 
 export interface ModuleStatusMeta {
   text: string
@@ -100,40 +47,21 @@ export interface ModuleActionDefinition {
   loading?: boolean
 }
 
-export interface ModuleFormFieldDefinition {
-  key: string
-  label: string
-  type: ModuleFormFieldType
-  placeholder?: string
-  options?: ModuleFormFieldOption[] | ModuleFormFieldOptionResolver
-  required?: boolean
-  disabled?: boolean
-  allowClear?: boolean
-  defaultValue?: string | number | boolean
-  min?: number
-  precision?: number
-  readonlyWhenLocked?: boolean
-  row?: number
-  colSpan?: number
-  fullRow?: boolean
+export type ModuleRecordInput = {
+  id?: string | number
+  items?: ModuleRecordInput[]
+  [key: string]: unknown
 }
 
-export interface ModuleLineItem extends Record<string, unknown> {
+export type ModuleLineItem = {
   id: string
+  [key: string]: unknown
 }
 
-export interface ModuleRecord extends Record<string, unknown> {
+export type ModuleRecord = {
   id: string
   items?: ModuleLineItem[]
-}
-
-export interface ListColumnSettings {
-  orderedKeys: string[]
-  hiddenKeys: string[]
-}
-
-export interface UserColumnSettingsPayload {
-  pages: Record<string, ListColumnSettings>
+  [key: string]: unknown
 }
 
 export interface ModuleParentImportDefinition {
@@ -144,6 +72,11 @@ export interface ModuleParentImportDefinition {
   buttonText?: string
   enforceUniqueRelation?: boolean
   allowMultipleSelection?: boolean
+  candidateStatementModuleKey?:
+    | 'supplier-statement'
+    | 'customer-statement'
+    | 'freight-statement'
+  buildParentFilters?: (currentRecord: ModuleRecord) => Record<string, unknown>
   validateBeforeOpen?: (currentRecord: ModuleRecord) => string | null
   remainingQuantityKey?: string
   candidateQueryType?: 'purchase-order-import'
@@ -181,7 +114,6 @@ export interface ModulePageConfig {
   buildOverview: (rows: ModuleRecord[]) => ModuleOverviewItem[]
   statusMap?: Record<string, ModuleStatusMeta>
   rowHighlightStatuses?: string[]
-  /** Per-module save field schema. Replaces global COMPUTED_FIELD_KEYS + EXTRA_SCALAR_FIELDS + LINE_ITEM_FIELDS. */
   saveFields?: {
     scalar?: string[]
     lineItem?: string[]

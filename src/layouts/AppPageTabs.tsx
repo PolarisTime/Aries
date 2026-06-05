@@ -1,10 +1,6 @@
-import type {
-  CSSProperties,
-  KeyboardEvent as ReactKeyboardEvent,
-  MouseEvent as ReactMouseEvent,
-} from 'react'
 import Tabs from 'antd/es/tabs'
-import type { OpenPage } from '@/hooks/useOpenPages'
+import type { CSSProperties, MouseEvent } from 'react'
+import type { ClosePageOptions, OpenPage } from '@/hooks/useOpenPages'
 
 interface AppPageTabsProps {
   activeKey: string
@@ -12,22 +8,11 @@ interface AppPageTabsProps {
   onNavigateToPath: (path: string) => void
   pages: OpenPage[]
   shellFontStyle: CSSProperties
-  closePage: (key: string, navigate: (path: string) => void) => void
-}
-
-function buildPageTabLabel(page: OpenPage, onClose: (key: string) => void) {
-  return (
-    <span
-      className="app-page-tab-label"
-      onDoubleClick={() => {
-        if (page.closable) {
-          onClose(page.key)
-        }
-      }}
-    >
-      {page.title}
-    </span>
-  )
+  closePage: (
+    key: string,
+    navigate: (path: string) => void,
+    options?: ClosePageOptions,
+  ) => void
 }
 
 export function AppPageTabs({
@@ -38,10 +23,47 @@ export function AppPageTabs({
   shellFontStyle,
   closePage,
 }: AppPageTabsProps) {
+  const resolveCloseFallbackPath = (page: OpenPage) => {
+    const activePage = pages.find(
+      (item) => item.key === activeKey && item.key !== page.key,
+    )
+    if (activePage?.path) {
+      return activePage.path
+    }
+
+    const pageIndex = pages.findIndex((item) => item.key === page.key)
+    const previousPage = pages[pageIndex - 1]
+    if (previousPage?.path && previousPage.key !== page.key) {
+      return previousPage.path
+    }
+
+    return pages.find((item) => item.key !== page.key)?.path
+  }
+
+  const handleTabDoubleClick = (
+    event: MouseEvent<HTMLSpanElement>,
+    page: OpenPage,
+  ) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!page.closable) {
+      return
+    }
+    closePage(page.key, onNavigateToPath, {
+      fallbackPath: resolveCloseFallbackPath(page),
+    })
+  }
+
   const tabItems = pages.map((page) => ({
     key: page.key,
-    label: buildPageTabLabel(page, (key) => closePage(key, onNavigateToPath)),
-    closable: page.closable,
+    label: (
+      <span
+        className="app-page-tab-label"
+        onDoubleClick={(event) => handleTabDoubleClick(event, page)}
+      >
+        {page.title}
+      </span>
+    ),
   }))
 
   const handleTabChange = (key: string) => {
@@ -51,27 +73,15 @@ export function AppPageTabs({
     }
   }
 
-  const handleTabEdit = (
-    event: ReactMouseEvent | ReactKeyboardEvent | string,
-    action: 'add' | 'remove',
-  ) => {
-    if (action === 'remove' && typeof event === 'string') {
-      closePage(event, onNavigateToPath)
-    }
-  }
-
   return (
     <div
       className={`tab-layout-tabs${isTopNavigationLayout ? ' tab-layout-tabs-top-nav' : ''}`}
       style={shellFontStyle}
     >
       <Tabs
-        type="editable-card"
-        hideAdd
         activeKey={activeKey}
         items={tabItems}
         onChange={handleTabChange}
-        onEdit={handleTabEdit}
         size="small"
       />
     </div>

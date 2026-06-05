@@ -1,26 +1,26 @@
 import { AuthPageShell } from '@/views/auth/AuthPageShell'
 
-export function LoginSkeleton() {
-  const hero = (
-    <div className="login-hero-content login-skeleton-hero">
-      <div className="login-skeleton-block login-skeleton-logo" />
-      <div className="login-skeleton-block login-skeleton-title" />
-      <div className="login-skeleton-block login-skeleton-subtitle" />
+const loginSkeletonHero = (
+  <div className="login-hero-content login-skeleton-hero">
+    <div className="login-skeleton-block login-skeleton-logo" />
+    <div className="login-skeleton-block login-skeleton-title" />
+    <div className="login-skeleton-block login-skeleton-subtitle" />
 
-      <div className="login-skeleton-meta">
-        <div className="login-skeleton-block login-skeleton-chip" />
-        <div className="login-skeleton-block login-skeleton-chip" />
-      </div>
-
-      <div className="login-skeleton-clock-wrap">
-        <div className="login-skeleton-block login-skeleton-clock" />
-        <div className="login-skeleton-block login-skeleton-date" />
-      </div>
+    <div className="login-skeleton-meta">
+      <div className="login-skeleton-block login-skeleton-chip" />
+      <div className="login-skeleton-block login-skeleton-chip" />
     </div>
-  )
 
+    <div className="login-skeleton-clock-wrap">
+      <div className="login-skeleton-block login-skeleton-clock" />
+      <div className="login-skeleton-block login-skeleton-date" />
+    </div>
+  </div>
+)
+
+export function LoginSkeleton() {
   return (
-    <AuthPageShell hero={hero}>
+    <AuthPageShell hero={loginSkeletonHero}>
       <div className="login-scene">
         <div className="login-form-card login-skeleton-card">
           <div className="login-skeleton-form">
