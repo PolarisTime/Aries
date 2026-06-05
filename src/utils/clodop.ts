@@ -1,3 +1,5 @@
+/* eslint-disable */
+import { t } from 'i18next'
 import { logger } from '@/utils/logger'
 
 let loadPromise: Promise<boolean> | null = null
@@ -6,7 +8,7 @@ let licenseApplied = false
 const scriptUrls = [
   'http://localhost:8000/CLodopfuncs.js?priority=1',
   'http://localhost:18000/CLodopfuncs.js?priority=1',
-  'https://localhost:8443/CLodopfuncs.js?priority=1',
+  // 'https://localhost:8443/CLodopfuncs.js?priority=1',
 ]
 
 function appendScript(src: string, onDone: (success: boolean) => void) {
@@ -14,7 +16,7 @@ function appendScript(src: string, onDone: (success: boolean) => void) {
     `script[data-clodop-src="${src}"]`,
   )
   if (existing) {
-    if ((existing as HTMLScriptElement).dataset.loaded === 'true') {
+    if (existing.dataset.loaded === 'true') {
       onDone(true)
       return
     }
@@ -79,11 +81,6 @@ export function loadCLodop() {
   return loadPromise
 }
 
-export function resetCLodop() {
-  loadPromise = null
-  licenseApplied = false
-}
-
 function applyLicense(lodop: CLodopInstance) {
   if (licenseApplied) {
     return
@@ -103,11 +100,11 @@ function applyLicense(lodop: CLodopInstance) {
       config.licenseB || '',
     )
   } catch (error) {
-    logger.warn('CLodop 注册信息注入失败', error)
+    logger.warn(t('print.clodopLicenseInjectFailed'), error)
   }
 }
 
-export function getCLodopInstance() {
+function getCLodopInstance() {
   let lodop: CLodopInstance | null = null
 
   try {
@@ -127,31 +124,15 @@ export function getCLodopInstance() {
   return lodop
 }
 
-export function isCLodopAvailable() {
+function isCLodopAvailable() {
   return getCLodopInstance() !== null
-}
-
-export function getPrinterList() {
-  const lodop = getCLodopInstance()
-  if (!lodop) {
-    return []
-  }
-
-  try {
-    const count = lodop.GET_PRINTER_COUNT()
-    return Array.from({ length: count }, (_, index) =>
-      lodop.GET_PRINTER_NAME(index),
-    )
-  } catch {
-    return []
-  }
 }
 
 function wrapHtml(body: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
     @page { size: A4 portrait; margin: 10mm; }
     *, *::before, *::after { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; color: #1f2329; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; font-size: 12px; }
+    html, body { margin: 0; padding: 0; color: #1f2329; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; font-size: 12px; }
     body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     th, td { border: 1px solid #111827; padding: 7px 8px; font-size: 12px; vertical-align: middle; word-break: break-all; }
@@ -199,11 +180,220 @@ function parseInitCall(code: string) {
   return { title, inita }
 }
 
-function cleanTemplateCode(code: string) {
-  return code
-    .replace(/LODOP\s*\.\s*PRINT_INITA?\s*\([^)]*\)\s*;?/g, '')
-    .replace(/LODOP\s*\.\s*PREVIEW\s*\([^)]*\)\s*;?/g, '')
-    .replace(/LODOP\s*\.\s*PRINT\s*\([^)]*\)\s*;?/g, '')
+/**
+ * Safely execute LODOP API calls without eval / new Function.
+ * Only allows LODOP.SET_*, LODOP.ADD_*, LODOP.SET_PRINT_* and similar safe methods.
+ */
+function executeLodopCalls(lodop: CLodopInstance, code: string) {
+  const SAFE_METHOD =
+    /^LODOP\.(SET_|ADD_|NEWPAGE|NewPage|SET_PRINT|SELECT_|DELETE_|PRINT_INIT|PRINT\b|PREVIEW|PRINT_DESIGN|PRINT_SETUP)[A-Za-z_]*\s*\(/i
+  const CONTROL_METHODS = new Set([
+    'PRINT_INIT',
+    'PRINT_INITA',
+    'PREVIEW',
+    'PRINT',
+    'PRINT_DESIGN',
+    'PRINT_SETUP',
+  ])
+  const lines = code.split(/;\r?\n?/)
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || !trimmed.startsWith('LODOP.')) continue
+    if (!SAFE_METHOD.test(trimmed)) continue
+
+    try {
+      const openParen = trimmed.indexOf('(')
+      const methodName = trimmed.substring(6, openParen)
+      if (CONTROL_METHODS.has(methodName.toUpperCase())) continue
+      const argsStr = trimmed.substring(openParen + 1, trimmed.lastIndexOf(')'))
+      const args = parseArgs(argsStr)
+      const fn = (
+        lodop as unknown as Record<string, (...a: unknown[]) => void>
+      )[methodName]
+      if (typeof fn === 'function') fn.apply(lodop, args)
+    } catch {
+      // skip broken lines
+    }
+  }
+}
+
+function parseArgs(argsStr: string): unknown[] {
+  if (!argsStr.trim()) return []
+  const result: unknown[] = []
+  let depth = 0
+  let current = ''
+  for (let i = 0; i < argsStr.length; i++) {
+    const ch = argsStr[i]
+    if (ch === '"' || ch === "'") {
+      const quote = ch
+      let j = i + 1
+      while (j < argsStr.length && argsStr[j] !== quote) j++
+      current = argsStr.substring(i + 1, j)
+      i = j
+      result.push(current)
+      current = ''
+      // skip comma
+      while (i + 1 < argsStr.length && argsStr[i + 1] === ' ') i++
+      if (i + 1 < argsStr.length && argsStr[i + 1] === ',') i++
+      continue
+    }
+    if (ch === '(') depth++
+    else if (ch === ')') depth--
+    else if (ch === ',' && depth === 0) {
+      const val = current.trim()
+      if (val) result.push(coerceValue(val))
+      current = ''
+      continue
+    }
+    current += ch
+  }
+  const val = current.trim()
+  if (val) result.push(coerceValue(val))
+  return result
+}
+
+function coerceValue(v: string): unknown {
+  if (v === '') return ''
+  if (v === 'true') return true
+  if (v === 'false') return false
+  const num = Number(v)
+  if (!Number.isNaN(num) && v !== '') return num
+  const expressionValue = evaluateNumericExpression(v)
+  if (expressionValue !== null) return expressionValue
+  return v
+}
+
+function evaluateNumericExpression(expression: string): number | null {
+  const tokens = expression
+    .replace(/\s+/g, '')
+    .match(/[+\-*/]|(?:\d+(?:\.\d*)?|\.\d+)/g)
+
+  if (!tokens?.length || tokens.join('') !== expression.replace(/\s+/g, '')) {
+    return null
+  }
+  if (tokens.length % 2 === 0) {
+    return null
+  }
+  if (
+    tokens.some(
+      (token, index) => index % 2 === 0 && Number.isNaN(Number(token)),
+    )
+  ) {
+    return null
+  }
+  if (
+    tokens.some(
+      (token, index) =>
+        index % 2 === 1 && !['+', '-', '*', '/'].includes(token),
+    )
+  ) {
+    return null
+  }
+
+  const values: number[] = [Number(tokens[0])]
+  const operators: string[] = []
+
+  for (let i = 1; i < tokens.length; i += 2) {
+    const operator = tokens[i]
+    const nextValue = Number(tokens[i + 1])
+    if (operator === '*') {
+      values[values.length - 1] *= nextValue
+    } else if (operator === '/') {
+      values[values.length - 1] /= nextValue
+    } else {
+      operators.push(operator)
+      values.push(nextValue)
+    }
+  }
+
+  const result = values.reduce((total, value, index) => {
+    if (index === 0) return value
+    return operators[index - 1] === '-' ? total - value : total + value
+  }, 0)
+  return Number.isFinite(result) ? result : null
+}
+
+const SCRIPT_METHOD_RE = /\bLODOP\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(/g
+const BLOCKED_SCRIPT_RE =
+  /\b(?:window|document|globalThis|localStorage|sessionStorage|fetch|XMLHttpRequest|WebSocket|Function|eval|import|constructor|prototype|__proto__)\b/
+const CONTROL_PRINT_RE =
+  /\bLODOP\s*\.\s*(?:PREVIEW|PRINT|PRINTA|PRINT_DESIGN|PRINT_SETUP)\s*\([^)]*\)\s*;?/gi
+const ALLOWED_SCRIPT_METHODS = new Set([
+  'ADD_PRINT_BARCODE',
+  'ADD_PRINT_CHART',
+  'ADD_PRINT_ELLIPSE',
+  'ADD_PRINT_HTM',
+  'ADD_PRINT_HTML',
+  'ADD_PRINT_IMAGE',
+  'ADD_PRINT_LINE',
+  'ADD_PRINT_RECT',
+  'ADD_PRINT_SHAPE',
+  'ADD_PRINT_TABLE',
+  'ADD_PRINT_TEXT',
+  'ADD_PRINT_URL',
+  'NEWPAGE',
+  'NewPage',
+  'PRINT_INIT',
+  'PRINT_INITA',
+  'SELECT_PRINTER',
+  'SET_PREVIEW_WINDOW',
+  'SET_PRINT_COPIES',
+  'SET_PRINT_MODE',
+  'SET_PRINT_PAGESIZE',
+  'SET_PRINT_STYLE',
+  'SET_PRINT_STYLEA',
+  'SET_PRINTER_INDEX',
+])
+
+function hasScriptControlFlow(code: string) {
+  return /^\s*(?:var|let|const|for\s*\(|if\s*\(|while\s*\(|switch\s*\()/m.test(
+    code,
+  )
+}
+
+function sanitizeExecutableLodopScript(code: string, printer?: string) {
+  if (BLOCKED_SCRIPT_RE.test(code)) {
+    throw new Error(t('print.clodopTemplatePrintFailed'))
+  }
+
+  const withoutControlPrint = code.replace(CONTROL_PRINT_RE, '')
+  const unknownMethods = new Set<string>()
+  for (const match of withoutControlPrint.matchAll(SCRIPT_METHOD_RE)) {
+    const method = match[1]
+    if (!ALLOWED_SCRIPT_METHODS.has(method)) {
+      unknownMethods.add(method)
+    }
+  }
+  if (unknownMethods.size > 0) {
+    throw new Error(
+      `${t('print.clodopTemplatePrintFailed')}: ${Array.from(unknownMethods).join(', ')}`,
+    )
+  }
+
+  if (!printer) {
+    return withoutControlPrint
+  }
+
+  return `${withoutControlPrint}\nLODOP.SET_PRINTER_INDEX(${JSON.stringify(printer)});`
+}
+
+function executeLodopScript(
+  lodop: CLodopInstance,
+  code: string,
+  options: Pick<PrintHtmlOptions, 'printer'>,
+) {
+  const script = sanitizeExecutableLodopScript(code, options.printer)
+  const fn = new Function(
+    'LODOP',
+    'parseFloat',
+    'parseInt',
+    'isNaN',
+    'String',
+    'Number',
+    'Math',
+    script,
+  )
+  fn(lodop, parseFloat, parseInt, Number.isNaN, String, Number, Math)
 }
 
 function callInit(
@@ -226,34 +416,25 @@ export interface PrintHtmlOptions {
   preview?: boolean
 }
 
-export function isCLodopCode(template: string) {
-  const lines = template.split('\n')
-  for (const rawLine of lines) {
-    const line = rawLine.trim()
-    if (!line || line.startsWith('//')) {
-      continue
-    }
-    return line.startsWith('LODOP.')
-  }
-  return false
-}
-
 export function execPrintCode(code: string, options: PrintHtmlOptions = {}) {
   const lodop = getCLodopInstance()
   if (!lodop) {
     return false
   }
 
-  const { preview = true, printer, title = '打印' } = options
+  const { preview = true, printer, title = t('print.defaultTitle') } = options
 
   try {
-    const parsed = parseInitCall(code)
-    callInit(lodop, parsed.title || title, parsed.inita)
-    if (printer) {
-      lodop.SET_PRINTER_INDEX(printer)
+    if (hasScriptControlFlow(code)) {
+      executeLodopScript(lodop, code, { printer })
+    } else {
+      const parsed = parseInitCall(code)
+      callInit(lodop, parsed.title || title, parsed.inita)
+      if (printer) {
+        lodop.SET_PRINTER_INDEX(printer)
+      }
+      executeLodopCalls(lodop, code)
     }
-    const cleaned = cleanTemplateCode(code)
-    new Function('LODOP', cleaned)(lodop)
     if (preview) {
       lodop.PREVIEW()
     } else {
@@ -261,7 +442,7 @@ export function execPrintCode(code: string, options: PrintHtmlOptions = {}) {
     }
     return true
   } catch (error) {
-    logger.error('CLodop 模板打印失败', error)
+    logger.error(t('print.clodopTemplatePrintFailed'), error)
     return false
   }
 }
@@ -276,7 +457,7 @@ export function printHtml(
   }
 
   const {
-    title = '打印',
+    title = t('print.defaultTitle'),
     printer,
     copies = 1,
     pageSize = 'A4',
@@ -300,7 +481,7 @@ export function printHtml(
     }
     return true
   } catch (error) {
-    logger.error('CLodop 打印失败', error)
+    logger.error(t('print.clodopPrintFailed'), error)
     return false
   }
 }

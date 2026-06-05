@@ -1,12 +1,13 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import {
   listUserAccounts,
   type UserAccountListParams,
 } from '@/api/user-accounts'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 
 export function useUserAccountListState(enabled = true) {
-  const queryClient = useQueryClient()
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<string | undefined>(
     undefined,
@@ -15,7 +16,12 @@ export function useUserAccountListState(enabled = true) {
   const [pageSize, setPageSize] = useState(20)
 
   const { data: usersData, isLoading } = useQuery({
-    queryKey: ['user-account', currentPage, pageSize, keyword, statusFilter],
+    queryKey: QUERY_KEYS.userAccount(
+      currentPage,
+      pageSize,
+      keyword,
+      statusFilter,
+    ),
     queryFn: async () => {
       const params: UserAccountListParams = {
         page: currentPage - 1,
@@ -28,30 +34,25 @@ export function useUserAccountListState(enabled = true) {
     enabled,
   })
 
-  const users = useMemo(() => usersData?.records || [], [usersData])
-  const totalElements = useMemo(
-    () => Number(usersData?.totalElements) || 0,
-    [usersData],
-  )
+  const users = usersData?.records || []
+  const totalElements = Number(usersData?.totalElements) || 0
 
-  const refresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['user-account'] })
-  }, [queryClient])
+  const refresh = useRefreshQuery('user-account')
 
-  const handleSearch = useCallback(() => {
+  const handleSearch = () => {
     setCurrentPage(1)
     refresh()
-  }, [refresh])
+  }
 
-  const handleStatusFilterChange = useCallback((value?: string) => {
+  const handleStatusFilterChange = (value?: string) => {
     setStatusFilter(value)
     setCurrentPage(1)
-  }, [])
+  }
 
-  const handlePageChange = useCallback((page: number, size: number) => {
+  const handlePageChange = (page: number, size: number) => {
     setCurrentPage(page)
     setPageSize(size)
-  }, [])
+  }
 
   return {
     keyword,

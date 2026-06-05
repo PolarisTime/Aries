@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import type { ModuleRecord } from '@/types/module-page'
 
 export function useBusinessGridOverlays() {
@@ -8,16 +8,19 @@ export function useBusinessGridOverlays() {
   const [customerStatementOpen, setCustomerStatementOpen] = useState(false)
   const [freightStatementOpen, setFreightStatementOpen] = useState(false)
   const [freightPickupOpen, setFreightPickupOpen] = useState(false)
+  const [freightPickupRecords, setFreightPickupRecords] = useState<
+    ModuleRecord[]
+  >([])
 
-  const openAttachment = useCallback((record: ModuleRecord) => {
+  const openAttachment = (record: ModuleRecord) => {
     setAttachRecordId(String(record.id || ''))
     setAttachOpen(true)
-  }, [])
+  }
 
-  const closeAttachment = useCallback(() => {
+  const closeAttachment = () => {
     setAttachOpen(false)
     setAttachRecordId('')
-  }, [])
+  }
 
   return {
     attachOpen,
@@ -28,28 +31,20 @@ export function useBusinessGridOverlays() {
     freightPickupOpen,
     openAttachment,
     closeAttachment,
-    openSupplierStatement: useCallback(
-      () => setSupplierStatementOpen(true),
-      [],
-    ),
-    closeSupplierStatement: useCallback(
-      () => setSupplierStatementOpen(false),
-      [],
-    ),
-    openCustomerStatement: useCallback(
-      () => setCustomerStatementOpen(true),
-      [],
-    ),
-    closeCustomerStatement: useCallback(
-      () => setCustomerStatementOpen(false),
-      [],
-    ),
-    openFreightStatement: useCallback(() => setFreightStatementOpen(true), []),
-    closeFreightStatement: useCallback(
-      () => setFreightStatementOpen(false),
-      [],
-    ),
-    openFreightPickup: useCallback(() => setFreightPickupOpen(true), []),
-    closeFreightPickup: useCallback(() => setFreightPickupOpen(false), []),
+    openSupplierStatement: () => setSupplierStatementOpen(true),
+    closeSupplierStatement: () => setSupplierStatementOpen(false),
+    openCustomerStatement: () => setCustomerStatementOpen(true),
+    closeCustomerStatement: () => setCustomerStatementOpen(false),
+    openFreightStatement: () => setFreightStatementOpen(true),
+    closeFreightStatement: () => setFreightStatementOpen(false),
+    freightPickupRecords,
+    openFreightPickup: (records: ModuleRecord[]) => {
+      setFreightPickupRecords(records)
+      setFreightPickupOpen(true)
+    },
+    closeFreightPickup: () => {
+      setFreightPickupOpen(false)
+      setFreightPickupRecords([])
+    },
   }
 }

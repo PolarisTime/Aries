@@ -1,18 +1,21 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import Form from 'antd/es/form'
-import { useCallback, useState } from 'react'
+import i18next from 'i18next'
+import { useState } from 'react'
 import {
   checkUserAccountLoginName,
   createUserAccount,
   getUserAccountDetail,
   updateUserAccount,
 } from '@/api/user-accounts'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRequestError } from '@/hooks/useRequestError'
 import type {
   UserAccountCreateResult,
   UserAccountFormPayload,
   UserAccountRecord,
 } from '@/types/user-account'
+import { message } from '@/utils/antd-app'
 import type {
   LoginNameValidationResult,
   UserAccountEditorFormValues,
@@ -23,7 +26,6 @@ import {
 } from '@/views/system/user-account-view-utils'
 import { useUserAccountEditorCatalogs } from '@/views/system/useUserAccountEditorCatalogs'
 import { useUserAccountEditorRoleState } from '@/views/system/useUserAccountEditorRoleState'
-import { message } from '@/utils/antd-app'
 
 interface UseUserAccountEditorOptions {
   canViewRoleCatalog: boolean
@@ -54,7 +56,7 @@ export function useUserAccountEditor({
     canViewDepartmentCatalog,
     enabled: enabled && editorOpen,
   })
-  const { selectedRoleDataScope, selectedRoleNames, selectedRoleSummaries } =
+  const { selectedRoleDataScope, selectedRoleIds, selectedRoleSummaries } =
     useUserAccountEditorRoleState({ form, roleOptions })
 
   const saveMutation = useMutation({
@@ -70,107 +72,113 @@ export function useUserAccountEditor({
         setCreateResultOpen(true)
       } else {
         message.success(
-          (response as { message?: string }).message || '保存成功',
+          (response as { message?: string }).message ||
+            i18next.t('system.userAccountEditorHook.saveSuccess'),
         )
       }
       setEditorOpen(false)
-      queryClient.invalidateQueries({ queryKey: ['user-account'] })
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.userAccountBase,
+      })
     },
     onError: (error: Error) => {
       if (error.message.includes('登录账号已存在')) {
-        setLoginNameValidationMessage('登录账号已存在')
+        setLoginNameValidationMessage(
+          i18next.t('system.userAccountEditorHook.loginNameExists'),
+        )
         return
       }
-      showError(error, '保存失败')
+      showError(error, i18next.t('system.userAccountEditorHook.saveFailed'))
     },
   })
 
-  const resetEditorForm = useCallback(() => {
+  const resetEditorForm = () => {
     setEditingId(null)
     form.resetFields()
     form.setFieldsValue(buildDefaultUserAccountFormValues())
     setLoginNameValidationMessage('')
     setLoginNameChecking(false)
-  }, [form])
+  }
 
   const defaultValues = buildDefaultUserAccountFormValues()
 
-  const fillEditorForm = useCallback(
-    (record: UserAccountRecord) => {
-      setEditingId(record.id)
-      form.setFieldsValue({
-        loginName: record.loginName || '',
-        password: '',
-        userName: record.userName || '',
-        mobile: record.mobile || '',
-        departmentId: record.departmentId ?? null,
-        roleNames: [...(record.roleNames || [])],
-        dataScope: record.dataScope || defaultValues.dataScope,
-        permissionSummary: record.permissionSummary || '',
-        status: record.status || defaultValues.status,
-        remark: record.remark || '',
-      })
+  const fillEditorForm = (record: UserAccountRecord) => {
+    setEditingId(record.id)
+    form.setFieldsValue({
+      loginName: record.loginName || '',
+      password: '',
+      userName: record.userName || '',
+      mobile: record.mobile || '',
+      departmentId: record.departmentId ?? null,
+      roleNames: [...(record.roleNames || [])],
+      dataScope: record.dataScope || defaultValues.dataScope,
+      permissionSummary: record.permissionSummary || '',
+      status: record.status || defaultValues.status,
+      remark: record.remark || '',
+    })
+    setLoginNameValidationMessage('')
+    setLoginNameChecking(false)
+  }
+
+  const runLoginNameCheck = async (
+    loginName: string,
+    excludeUserId?: string,
+  ) => {
+    if (!loginName.trim()) {
       setLoginNameValidationMessage('')
+      return {
+        available: true,
+        message: '',
+      } satisfies LoginNameValidationResult
+    }
+    setLoginNameChecking(true)
+    try {
+      const result = await checkUserAccountLoginName(loginName, excludeUserId)
+      const validationMessage = result.available
+        ? ''
+        : result.message ||
+          i18next.t('system.userAccountEditorHook.loginNameExists')
+      setLoginNameValidationMessage(validationMessage)
       setLoginNameChecking(false)
-    },
-    [defaultValues.dataScope, defaultValues.status, form],
-  )
+      return { available: result.available, message: validationMessage }
+    } catch (error) {
+      showError(
+        error,
+        i18next.t('system.userAccountEditorHook.checkLoginNameFailed'),
+      )
+      setLoginNameChecking(false)
+      return {
+        available: true,
+        message: '',
+      } satisfies LoginNameValidationResult
+    }
+  }
 
-  const runLoginNameCheck = useCallback(
-    async (loginName: string, excludeUserId?: string) => {
-      if (!loginName.trim()) {
-        setLoginNameValidationMessage('')
-        return {
-          available: true,
-          message: '',
-        } satisfies LoginNameValidationResult
-      }
-      setLoginNameChecking(true)
-      try {
-        const result = await checkUserAccountLoginName(loginName, excludeUserId)
-        const validationMessage = result.available
-          ? ''
-          : result.message || '登录账号已存在'
-        setLoginNameValidationMessage(validationMessage)
-        return { available: result.available, message: validationMessage }
-      } catch (error) {
-        showError(error, '检查登录账号失败')
-        return {
-          available: true,
-          message: '',
-        } satisfies LoginNameValidationResult
-      } finally {
-        setLoginNameChecking(false)
-      }
-    },
-    [showError],
-  )
-
-  const openCreateModal = useCallback(() => {
+  const openCreateModal = () => {
     setEditorMode('create')
     resetEditorForm()
     setEditorOpen(true)
-  }, [resetEditorForm])
+  }
 
-  const openEditModal = useCallback(
-    async (record: UserAccountRecord) => {
-      setEditorMode('edit')
-      setEditorOpen(true)
-      setEditorLoading(true)
-      try {
-        const detail = await getUserAccountDetail(record.id)
-        fillEditorForm(detail)
-      } catch (error) {
-        showError(error, '加载用户详情失败')
-        setEditorOpen(false)
-      } finally {
-        setEditorLoading(false)
-      }
-    },
-    [fillEditorForm, showError],
-  )
+  const openEditModal = async (record: UserAccountRecord) => {
+    setEditorMode('edit')
+    setEditorOpen(true)
+    setEditorLoading(true)
+    try {
+      const detail = await getUserAccountDetail(record.id)
+      fillEditorForm(detail)
+      setEditorLoading(false)
+    } catch (error) {
+      showError(
+        error,
+        i18next.t('system.userAccountEditorHook.loadDetailFailed'),
+      )
+      setEditorOpen(false)
+      setEditorLoading(false)
+    }
+  }
 
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
     try {
       const values = await form.validateFields()
       const validationResult = await runLoginNameCheck(
@@ -178,7 +186,10 @@ export function useUserAccountEditor({
         editorMode === 'edit' ? (editingId ?? undefined) : undefined,
       )
       if (!validationResult.available) {
-        message.warning(validationResult.message || '登录账号已存在')
+        message.warning(
+          validationResult.message ||
+            i18next.t('system.userAccountEditorHook.loginNameExists'),
+        )
         return
       }
       const payload: UserAccountFormPayload = {
@@ -199,23 +210,16 @@ export function useUserAccountEditor({
     } catch {
       // validation failed
     }
-  }, [
-    editingId,
-    editorMode,
-    form,
-    runLoginNameCheck,
-    saveMutation,
-    selectedRoleDataScope,
-  ])
+  }
 
-  const closeEditor = useCallback(() => {
+  const closeEditor = () => {
     setEditorOpen(false)
-  }, [])
+  }
 
-  const closeCreateResult = useCallback(() => {
+  const closeCreateResult = () => {
     setCreateResultOpen(false)
     setCreateResult(null)
-  }, [])
+  }
 
   return {
     form,
@@ -227,7 +231,7 @@ export function useUserAccountEditor({
     loginNameChecking,
     departmentOptions,
     roleOptions,
-    selectedRoleNames,
+    selectedRoleIds,
     selectedRoleDataScope,
     selectedRoleSummaries,
     createResultOpen,

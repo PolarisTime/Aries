@@ -1,5 +1,7 @@
 import { assertApiSuccess, http } from '@/api/client'
+import { pageContent } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { getApiMessage } from '@/utils/api-messages'
 
 export interface ApiKeyRecord {
   id: string
@@ -33,9 +35,12 @@ export interface ApiKeyActionOption {
   title: string
 }
 export interface ApiKeyPageData {
-  records: ApiKeyRecord[]
-  page: number
-  size: number
+  content?: ApiKeyRecord[]
+  records?: ApiKeyRecord[]
+  currentPage?: number
+  page?: number
+  pageSize?: number
+  size?: number
   totalElements: number
   totalPages: number
 }
@@ -54,7 +59,7 @@ export interface ListApiKeysParams {
   usageScope?: string
 }
 
-function buildApiKeyUrl(id?: string) {
+export function buildApiKeyUrl(id?: string) {
   return id != null ? `${ENDPOINTS.API_KEYS}/${id}` : ENDPOINTS.API_KEYS
 }
 
@@ -63,9 +68,12 @@ export async function listApiKeys(params: ListApiKeysParams) {
     await http.get<ApiKeyResponse<ApiKeyPageData>>(ENDPOINTS.API_KEYS, {
       params,
     }),
-    '加载 API Key 失败',
+    getApiMessage('loadApiKeyFailed'),
   )
-  return response.data
+  return {
+    ...response.data,
+    records: pageContent(response.data),
+  }
 }
 export async function listApiKeyUserOptions(keyword?: string) {
   const response = assertApiSuccess(
@@ -75,7 +83,7 @@ export async function listApiKeyUserOptions(keyword?: string) {
         params: { keyword: keyword?.trim() || undefined },
       },
     ),
-    '加载用户选项失败',
+    getApiMessage('loadUserOptionsFailed'),
   )
   return (response.data || []).map((item) => ({
     ...item,
@@ -90,7 +98,7 @@ export async function listApiKeyResourceOptions() {
     await http.get<ApiKeyResponse<ApiKeyResourceOption[]>>(
       ENDPOINTS.API_KEYS_RESOURCE_OPTIONS,
     ),
-    '加载资源选项失败',
+    getApiMessage('loadResourceOptionsFailed'),
   )
   return response.data || []
 }
@@ -110,7 +118,7 @@ export async function createApiKey(
       params: { userId },
       headers: { 'X-TOTP-Code': totpCode.trim() },
     }),
-    '生成 API Key 失败',
+    getApiMessage('generateApiKeyFailed'),
   )
 }
 export async function listApiKeyActionOptions() {
@@ -118,23 +126,23 @@ export async function listApiKeyActionOptions() {
     await http.get<ApiKeyResponse<ApiKeyActionOption[]>>(
       ENDPOINTS.API_KEYS_ACTION_OPTIONS,
     ),
-    '加载动作选项失败',
+    getApiMessage('loadActionOptionsFailed'),
   )
   return response.data || []
 }
 export async function revokeApiKey(id: string) {
   return assertApiSuccess(
     await http.post<ApiKeyResponse<null>>(`${buildApiKeyUrl(id)}/revoke`),
-    '禁用 API Key 失败',
+    getApiMessage('disableApiKeyFailed'),
   )
 }
 export async function getApiKeyDetail(id: string) {
   const response = assertApiSuccess(
     await http.get<ApiKeyResponse<ApiKeyRecord>>(buildApiKeyUrl(id)),
-    '加载 API Key 详情失败',
+    getApiMessage('loadApiKeyDetailFailed'),
   )
   if (!response.data) {
-    throw new Error('加载 API Key 详情失败')
+    throw new Error(getApiMessage('loadApiKeyDetailFailed'))
   }
   return response.data
 }

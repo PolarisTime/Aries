@@ -1,15 +1,19 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import Form from 'antd/es/form'
-import { useCallback, useMemo, useState } from 'react'
+import { useReducer, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   listSystemSettings,
   saveSystemSetting,
   updateSystemUploadRule,
 } from '@/api/system-settings'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
+import { asString } from '@/utils/type-narrowing'
 import { NumberRulesEditorModal } from '@/views/system/NumberRulesEditorModal'
 import { NumberRulesTableCard } from '@/views/system/NumberRulesTableCard'
 import {
@@ -19,106 +23,104 @@ import {
   type NumberRuleEditorKind,
 } from '@/views/system/number-rules-view-utils'
 
+interface NumberRulesState {
+  keyword: string
+  statusFilter: string | undefined
+  editorOpen: boolean
+  editorKind: NumberRuleEditorKind
+  saving: boolean
+}
+
+const numberRulesInitialState: NumberRulesState = {
+  keyword: '',
+  statusFilter: undefined,
+  editorOpen: false,
+  editorKind: 'number-rule',
+  saving: false,
+}
+
 export function NumberRulesView() {
-  const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
   const canEdit = permissionStore.can('general-setting', 'update')
 
-  const [keyword, setKeyword] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(
-    undefined,
+  const [state, setState] = useReducer(
+    (prev: NumberRulesState, patch: Partial<NumberRulesState>) => ({
+      ...prev,
+      ...patch,
+    }),
+    numberRulesInitialState,
   )
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [editorKind, setEditorKind] =
-    useState<NumberRuleEditorKind>('number-rule')
-  const [editingRecord, setEditingRecord] = useState<ModuleRecord | null>(null)
-  const [saving, setSaving] = useState(false)
+  const { keyword, statusFilter, editorOpen, editorKind, saving } = state
+  const editingRecord = useRef<ModuleRecord | null>(null)
   const [form] = Form.useForm()
 
   const { data: rows = [], isLoading } = useQuery<ModuleRecord[]>({
-    queryKey: ['number-rules'],
+    queryKey: QUERY_KEYS.numberRules,
     queryFn: () => listSystemSettings(),
   })
 
-  const filteredRows = useMemo(
-    () =>
-      rows.filter((record) => {
-        if (statusFilter && String(record.status || '') !== statusFilter) {
-          return false
-        }
-        return matchesNumberRuleKeyword(record, keyword)
-      }),
-    [rows, keyword, statusFilter],
-  )
+  const filteredRows = rows.filter((record) => {
+    if (statusFilter && asString(record.status) !== statusFilter) {
+      return false
+    }
+    return matchesNumberRuleKeyword(record, keyword)
+  })
 
-  const numberRuleRows = useMemo(
-    () => filteredRows.filter(isNumberRule),
-    [filteredRows],
-  )
-  const uploadRuleRows = useMemo(
-    () => filteredRows.filter(isUploadRule),
-    [filteredRows],
-  )
+  const numberRuleRows = filteredRows.filter(isNumberRule)
+  const uploadRuleRows = filteredRows.filter(isUploadRule)
 
-  const refresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['number-rules'] })
-  }, [queryClient])
+  const refresh = useRefreshQuery('number-rules')
 
-  const openNumberRuleEditor = useCallback(
-    (record: ModuleRecord) => {
-      if (!canEdit) {
-        message.warning('暂无编辑权限')
-        return
-      }
-      setEditingRecord(record)
-      setEditorKind('number-rule')
-      form.setFieldsValue({
-        settingCode: record.settingCode,
-        settingName: record.settingName,
-        billName: record.billName,
-        prefix: record.prefix || '',
-        dateRule: record.dateRule || 'yyyy',
-        serialLength: record.serialLength || 6,
-        resetRule: record.resetRule || 'YEARLY',
-        status: record.status || '正常',
-        remark: record.remark || '',
-      })
-      setEditorOpen(true)
-    },
-    [canEdit, form],
-  )
+  const openNumberRuleEditor = (record: ModuleRecord) => {
+    if (!canEdit) {
+      message.warning(t('system.numberRules.noEditPermission'))
+      return
+    }
+    editingRecord.current = record
+    setState({ editorKind: 'number-rule' })
+    form.setFieldsValue({
+      settingCode: record.settingCode,
+      settingName: record.settingName,
+      billName: record.billName,
+      prefix: record.prefix || '',
+      dateRule: record.dateRule || 'yyyy',
+      serialLength: record.serialLength || 6,
+      resetRule: record.resetRule || 'YEARLY',
+      status: record.status || '正常',
+      remark: record.remark || '',
+    })
+    setState({ editorOpen: true })
+  }
 
-  const openUploadRuleEditor = useCallback(
-    (record: ModuleRecord) => {
-      if (!canEdit) {
-        message.warning('暂无编辑权限')
-        return
-      }
-      setEditingRecord(record)
-      setEditorKind('upload-rule')
-      form.setFieldsValue({
-        moduleKey: record.moduleKey,
-        moduleName: record.moduleName || record.billName,
-        ruleCode: record.ruleCode || record.settingCode,
-        ruleName: record.ruleName || record.settingName,
-        renamePattern: record.renamePattern || record.prefix || '',
-        status: record.status || '正常',
-        remark: record.remark || '',
-      })
-      setEditorOpen(true)
-    },
-    [canEdit, form],
-  )
+  const openUploadRuleEditor = (record: ModuleRecord) => {
+    if (!canEdit) {
+      message.warning(t('system.numberRules.noEditPermission'))
+      return
+    }
+    editingRecord.current = record
+    setState({ editorKind: 'upload-rule' })
+    form.setFieldsValue({
+      moduleKey: record.moduleKey,
+      moduleName: record.moduleName || record.billName,
+      ruleCode: record.ruleCode || record.settingCode,
+      ruleName: record.ruleName || record.settingName,
+      renamePattern: record.renamePattern || record.prefix || '',
+      status: record.status || '正常',
+      remark: record.remark || '',
+    })
+    setState({ editorOpen: true })
+  }
 
-  const handleSave = useCallback(async () => {
-    if (!editingRecord) return
-    setSaving(true)
+  const handleSave = async () => {
+    if (!editingRecord.current) return
+    setState({ saving: true })
     try {
       const values = await form.validateFields()
       if (editorKind === 'number-rule') {
         await saveSystemSetting({
-          id: editingRecord.id,
+          id: editingRecord.current.id,
           settingCode: values.settingCode,
           settingName: values.settingName,
           billName: values.billName,
@@ -136,15 +138,14 @@ export function NumberRulesView() {
           remark: values.remark,
         })
       }
-      message.success('保存成功')
+      message.success(t('common.saveSuccess'))
       refresh()
-      setEditorOpen(false)
+      setState({ editorOpen: false, saving: false })
     } catch (error) {
-      showError(error, '保存失败')
-    } finally {
-      setSaving(false)
+      showError(error, t('system.numberRules.saveFailed'))
+      setState({ saving: false })
     }
-  }, [editingRecord, editorKind, form, refresh, showError])
+  }
 
   return (
     <div className="page-stack">
@@ -156,8 +157,8 @@ export function NumberRulesView() {
         uploadRuleRows={uploadRuleRows}
         loading={isLoading}
         canEdit={canEdit}
-        onKeywordChange={setKeyword}
-        onStatusFilterChange={setStatusFilter}
+        onKeywordChange={(value) => setState({ keyword: value })}
+        onStatusFilterChange={(value) => setState({ statusFilter: value })}
         onRefresh={refresh}
         onEditNumberRule={openNumberRuleEditor}
         onEditUploadRule={openUploadRuleEditor}
@@ -172,7 +173,7 @@ export function NumberRulesView() {
           onSave={() => {
             void handleSave()
           }}
-          onClose={() => setEditorOpen(false)}
+          onClose={() => setState({ editorOpen: false })}
         />
       ) : null}
     </div>

@@ -1,56 +1,75 @@
-import type { Dayjs } from 'dayjs'
-import dayjs from 'dayjs'
 import Button from 'antd/es/button'
 import Col from 'antd/es/col'
 import DatePicker from 'antd/es/date-picker'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Row from 'antd/es/row'
+import Segmented from 'antd/es/segmented'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
+import type { Dayjs } from 'dayjs'
+import dayjs from 'dayjs'
+import { useTranslation } from 'react-i18next'
+import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
+import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleFilterDefinition,
   ModuleFilterOption,
   ModuleFilterOptionEntry,
-  ModuleFilterOptionGroup,
   ModulePageConfig,
 } from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 import { padLabel } from '@/utils/label-utils'
-import { resolveModuleActionIcon } from '@/views/modules/module-action-icons'
+import { asString } from '@/utils/type-narrowing'
 
 interface Props {
   config: ModulePageConfig
-  filters: Record<string, unknown>
+  filters: SearchParams
   onUpdateFilter: (key: string, value: unknown) => void
+  onApplyFilters?: (filters: SearchParams) => void
   onSearch: () => void
   onReset: () => void
 }
 
-export function ModuleFilterToolbar({
-  config,
+function normalizeFilters(filters: SearchParams) {
+  const normalized: SearchParams = {}
+  for (const [key, value] of Object.entries(filters)) {
+    if (value === undefined || value === null || value === '') {
+      continue
+    }
+    normalized[key] = value
+  }
+  return normalized
+}
+
+function isSameFilterPreset(left: SearchParams, right: SearchParams) {
+  const leftEntries = Object.entries(normalizeFilters(left)).toSorted()
+  const rightEntries = Object.entries(normalizeFilters(right)).toSorted()
+  return (
+    leftEntries.length === rightEntries.length &&
+    leftEntries.every(([key, value], index) => {
+      const [rightKey, rightValue] = rightEntries[index]
+      return key === rightKey && String(value) === String(rightValue)
+    })
+  )
+}
+
+function ModuleFilterField({
+  field,
   filters,
   onUpdateFilter,
   onSearch,
-  onReset,
-}: Props) {
-  const getFilterFieldId = (field: ModuleFilterDefinition) =>
-    buildFormControlId('module-filter', field.key)
+}: {
+  field: ModuleFilterDefinition
+  filters: SearchParams
+  onUpdateFilter: (key: string, value: unknown) => void
+  onSearch: () => void
+}) {
+  const { t } = useTranslation()
+  const fieldId = buildFormControlId('module-filter', field.key)
 
-  const getFilterFieldLabelTargetId = (field: ModuleFilterDefinition) => {
-    const fieldId = getFilterFieldId(field)
-    return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
-  }
-
-  const hasConfigKeywordFilter = config.filters.some(
-    (field) => field.key === 'keyword',
-  )
-  const visibleFilters = [...config.filters].sort(
-    (left, right) => (left.row || 1) - (right.row || 1),
-  )
-
-  const resolveOptions = (field: ModuleFilterDefinition) => {
+  const resolveOptions = () => {
     const rawOptions =
       typeof field.options === 'function'
         ? field.options(filters)
@@ -58,7 +77,7 @@ export function ModuleFilterToolbar({
 
     return rawOptions.map((option: ModuleFilterOptionEntry) => {
       if ('options' in option) {
-        const group = option as ModuleFilterOptionGroup
+        const group = option
         return {
           label: group.label,
           options: group.options.map((item: ModuleFilterOption) => ({
@@ -68,7 +87,7 @@ export function ModuleFilterToolbar({
         }
       }
 
-      const entry = option as ModuleFilterOption
+      const entry = option
       return {
         label: entry.label,
         value: entry.value,
@@ -76,77 +95,123 @@ export function ModuleFilterToolbar({
     })
   }
 
-  const renderFilterField = (field: ModuleFilterDefinition) => {
-    const fieldId = getFilterFieldId(field)
+  if (field.type === 'select') {
+    return (
+      <Select
+        id={fieldId}
+        aria-label={field.label}
+        allowClear
+        placeholder={
+          field.placeholder ||
+          t('modules.filter.selectPlaceholder', { label: field.label })
+        }
+        value={
+          typeof filters[field.key] === 'string'
+            ? asString(filters[field.key])
+            : undefined
+        }
+        onChange={(value) => onUpdateFilter(field.key, value)}
+        options={resolveOptions()}
+      />
+    )
+  }
 
-    if (field.type === 'select') {
-      return (
-        <Select
-          id={fieldId}
-          aria-label={field.label}
-          allowClear
-          placeholder={field.placeholder || `请选择${field.label}`}
-          value={
-            typeof filters[field.key] === 'string'
-              ? (filters[field.key] as string)
-              : undefined
-          }
-          onChange={(value) => onUpdateFilter(field.key, value)}
-          options={resolveOptions(field)}
-        />
-      )
-    }
-
-    if (field.type === 'dateRange') {
-      const value = filters[field.key]
-      const rangeValue =
-        Array.isArray(value) && value.length === 2
-          ? ([dayjs(String(value[0])), dayjs(String(value[1]))] as [
-              Dayjs,
-              Dayjs,
-            ])
-          : undefined
-
-      return (
-        <DatePicker.RangePicker
-          id={{
-            start: `${fieldId}-start`,
-            end: `${fieldId}-end`,
-          }}
-          aria-label={field.label}
-          value={rangeValue}
-          style={{ width: '100%' }}
-          onChange={(_, dateStrings) =>
-            onUpdateFilter(
-              field.key,
-              dateStrings[0] && dateStrings[1] ? dateStrings : undefined,
-            )
-          }
-        />
-      )
-    }
+  if (field.type === 'dateRange') {
+    const value = filters[field.key]
+    const rangeValue =
+      Array.isArray(value) && value.length === 2
+        ? ([dayjs(String(value[0])), dayjs(String(value[1]))] as [Dayjs, Dayjs])
+        : undefined
 
     return (
-      <Input
-        id={fieldId}
-        name={field.key}
-        allowClear
-        placeholder={field.placeholder || `请输入${field.label}`}
-        value={String(filters[field.key] || '')}
-        onChange={(event) => onUpdateFilter(field.key, event.target.value)}
-        onPressEnter={onSearch}
+      <DatePicker.RangePicker
+        id={{
+          start: `${fieldId}-start`,
+          end: `${fieldId}-end`,
+        }}
+        aria-label={field.label}
+        value={rangeValue}
+        className="w-full"
+        onChange={(_, dateStrings) =>
+          onUpdateFilter(
+            field.key,
+            dateStrings[0] && dateStrings[1] ? dateStrings : undefined,
+          )
+        }
       />
     )
   }
 
   return (
-    <Form onFinish={onSearch} colon={false} style={{ marginBottom: 16 }}>
+    <Input
+      id={fieldId}
+      name={field.key}
+      allowClear
+      placeholder={
+        field.placeholder ||
+        t('modules.filter.inputPlaceholder', { label: field.label })
+      }
+      value={asString(filters[field.key])}
+      onChange={(event) => onUpdateFilter(field.key, event.target.value)}
+      onPressEnter={onSearch}
+    />
+  )
+}
+
+export function ModuleFilterToolbar({
+  config,
+  filters,
+  onUpdateFilter,
+  onApplyFilters,
+  onSearch,
+  onReset,
+}: Props) {
+  const { t } = useTranslation()
+
+  const getFilterFieldLabelTargetId = (field: ModuleFilterDefinition) => {
+    const fieldId = buildFormControlId('module-filter', field.key)
+    return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
+  }
+
+  const hasConfigKeywordFilter = config.filters.some(
+    (field) => field.key === 'keyword',
+  )
+  const visibleFilters = config.filters.toSorted(
+    (left, right) => (left.row || 1) - (right.row || 1),
+  )
+  const quickFilters = config.quickFilters || []
+  const activeQuickFilterKey =
+    quickFilters.find((filter) => isSameFilterPreset(filters, filter.values))
+      ?.key
+
+  return (
+    <Form onFinish={onSearch} colon={false} className="mb-4">
       <Row gutter={[16, 8]}>
+        {quickFilters.length ? (
+          <Col xs={24}>
+            <Segmented
+              aria-label={t('modules.filter.quickFilters')}
+              value={activeQuickFilterKey}
+              options={quickFilters.map((filter) => ({
+                label: filter.label,
+                value: filter.key,
+              }))}
+              onChange={(value) => {
+                const selected = quickFilters.find(
+                  (filter) => filter.key === String(value),
+                )
+                if (selected) {
+                  onApplyFilters?.(normalizeFilters(selected.values))
+                }
+              }}
+            />
+          </Col>
+        ) : null}
         {!hasConfigKeywordFilter ? (
           <Col xs={24} sm={12} lg={8} xl={6}>
             <Form.Item
               {...buildLabeledFormItemProps({
-                label: padLabel('关键字'),
+                label: padLabel(t('common.keyword')),
                 htmlFor: buildFormControlId('module-filter', 'keyword'),
               })}
               className="module-filter-item"
@@ -155,8 +220,8 @@ export function ModuleFilterToolbar({
                 id={buildFormControlId('module-filter', 'keyword')}
                 name="keyword"
                 allowClear
-                placeholder="搜索关键词..."
-                value={String(filters.keyword || '')}
+                placeholder={t('common.pleaseInput')}
+                value={asString(filters.keyword)}
                 onChange={(event) =>
                   onUpdateFilter('keyword', event.target.value)
                 }
@@ -174,7 +239,12 @@ export function ModuleFilterToolbar({
               })}
               className="module-filter-item"
             >
-              {renderFilterField(field)}
+              <ModuleFilterField
+                field={field}
+                filters={filters}
+                onUpdateFilter={onUpdateFilter}
+                onSearch={onSearch}
+              />
             </Form.Item>
           </Col>
         ))}
@@ -186,10 +256,10 @@ export function ModuleFilterToolbar({
                 htmlType="submit"
                 icon={resolveModuleActionIcon('查询')}
               >
-                查询
+                {t('common.query')}
               </Button>
               <Button icon={resolveModuleActionIcon('重置')} onClick={onReset}>
-                重置
+                {t('common.reset')}
               </Button>
             </Space>
           </Form.Item>

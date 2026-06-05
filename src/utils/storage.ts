@@ -2,14 +2,12 @@ import { STORAGE_KEYS } from '@/constants/storage'
 import type { LoginUser } from '@/types/auth'
 import type { ListColumnSettings } from '@/types/module-page'
 
+export type ThemeMode = 'light' | 'dark' | 'system'
+
 export interface PersonalSettings {
   fontSize?: number
   layoutMode?: 'sider' | 'top'
-}
-
-export interface BusinessListCacheEntry<T = unknown> {
-  savedAt: number
-  data: T
+  themeMode?: ThemeMode
 }
 
 export type AuthPersistenceMode = 'local' | 'session'
@@ -18,27 +16,6 @@ let accessToken = ''
 
 function getStorage(mode: AuthPersistenceMode) {
   return mode === 'session' ? sessionStorage : localStorage
-}
-
-function readTokenExpiresAtValue() {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  const raw = localStorage.getItem(STORAGE_KEYS.tokenExpiresAt)
-    || sessionStorage.getItem(STORAGE_KEYS.tokenExpiresAt)
-
-  if (!raw) {
-    return null
-  }
-
-  const expiresAt = Number(raw)
-  if (!Number.isFinite(expiresAt) || expiresAt <= 0) {
-    clearStorageItem(STORAGE_KEYS.tokenExpiresAt)
-    return null
-  }
-
-  return expiresAt
 }
 
 function clearLegacyAuthStorage() {
@@ -107,58 +84,42 @@ function resolvePersistenceMode(
   return 'local'
 }
 
-export function clearExpiredAuthSession() {
+function readStoredToken() {
   if (typeof window === 'undefined') {
-    return false
+    return ''
   }
 
-  const expiresAt = readTokenExpiresAtValue()
-  if (expiresAt === null || expiresAt > Date.now()) {
-    return false
+  const mode = resolvePersistenceMode()
+  const storage = getStorage(mode)
+  const token = storage.getItem(STORAGE_KEYS.token) || ''
+  if (!token) {
+    return ''
   }
 
-  clearToken()
-  clearStoredUser()
-  return true
+  const expiresAt = Number(storage.getItem(STORAGE_KEYS.tokenExpiresAt) || 0)
+  if (expiresAt > 0 && expiresAt <= Date.now()) {
+    clearToken()
+    return ''
+  }
+
+  accessToken = token
+  return token
 }
 
 export function getToken() {
-  if (typeof window === 'undefined') {
-    return accessToken
-  }
-
-  clearExpiredAuthSession()
-
-  if (!accessToken) {
-    const mode = resolvePersistenceMode()
-    accessToken = getStorage(mode).getItem(STORAGE_KEYS.token) || ''
-  }
-  return accessToken
-}
-
-export function setToken(token: string, mode?: AuthPersistenceMode) {
-  const persistenceMode = resolvePersistenceMode(mode)
-  accessToken = token
-  clearStorageItem(STORAGE_KEYS.token)
-  getStorage(persistenceMode).setItem(STORAGE_KEYS.token, token)
-  setStoredPersistenceMode(persistenceMode)
-  clearLegacyAuthStorage()
+  return accessToken || readStoredToken()
 }
 
 export function clearToken() {
   accessToken = ''
   clearStorageItem(STORAGE_KEYS.token)
   clearStorageItem(STORAGE_KEYS.tokenExpiresAt)
-  clearStorageItem(STORAGE_KEYS.authPersistence)
-  clearLegacyAuthStorage()
 }
 
 export function getStoredUser() {
   if (typeof window === 'undefined') {
     return null
   }
-
-  clearExpiredAuthSession()
 
   const mode = resolvePersistenceMode()
   const raw = getStorage(mode).getItem(STORAGE_KEYS.user)
@@ -177,7 +138,7 @@ export function getStoredUser() {
     }
     return null
   } catch {
-    clearStorageItem(STORAGE_KEYS.user)
+    localStorage.removeItem(STORAGE_KEYS.user)
     return null
   }
 }
@@ -275,69 +236,6 @@ export function setListColumnSettings(
     getListColumnSettingsKey(pageKey, userKey),
     JSON.stringify(settings),
   )
-}
-
-export function clearListColumnSettings(pageKey: string, userKey?: string) {
-  localStorage.removeItem(getListColumnSettingsKey(pageKey, userKey))
-}
-
-function getBusinessListCacheKey(key: string) {
-  return `${STORAGE_KEYS.businessListCachePrefix}${key}`
-}
-
-export function getBusinessListCache<T = unknown>(
-  key: string,
-  maxAgeMs: number,
-): BusinessListCacheEntry<T> | null {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  const raw = sessionStorage.getItem(getBusinessListCacheKey(key))
-  if (!raw) {
-    return null
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as BusinessListCacheEntry<T>
-    if (
-      !parsed ||
-      typeof parsed !== 'object' ||
-      typeof parsed.savedAt !== 'number' ||
-      !('data' in parsed)
-    ) {
-      sessionStorage.removeItem(getBusinessListCacheKey(key))
-      return null
-    }
-    if (Date.now() - parsed.savedAt > maxAgeMs) {
-      sessionStorage.removeItem(getBusinessListCacheKey(key))
-      return null
-    }
-    return parsed
-  } catch {
-    sessionStorage.removeItem(getBusinessListCacheKey(key))
-    return null
-  }
-}
-
-export function setBusinessListCache<T = unknown>(key: string, data: T) {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  const payload: BusinessListCacheEntry<T> = {
-    savedAt: Date.now(),
-    data,
-  }
-
-  sessionStorage.setItem(getBusinessListCacheKey(key), JSON.stringify(payload))
-}
-
-export function clearBusinessListCache(key: string) {
-  if (typeof window === 'undefined') {
-    return
-  }
-  sessionStorage.removeItem(getBusinessListCacheKey(key))
 }
 
 export function getTokenExpiresAt(): number | null {

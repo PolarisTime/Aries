@@ -1,7 +1,17 @@
 import type { NavigateFn } from '@tanstack/react-router'
 import Card from 'antd/es/card'
+import type { CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { DashboardSummary } from '@/api/dashboard'
 import { buildWorkflowSections } from '@/views/dashboard/dashboard-flow-utils'
+
+type FlowSectionStyle = CSSProperties & {
+  '--flow-accent': string
+}
+
+function flowSectionStyle(accent: string): FlowSectionStyle {
+  return { '--flow-accent': accent }
+}
 
 interface Props {
   navigate: NavigateFn
@@ -9,16 +19,17 @@ interface Props {
 }
 
 export function DashboardFlowCard({ navigate, summary }: Props) {
-  const workflowSections = buildWorkflowSections(summary)
+  const { t } = useTranslation()
+  const workflowSections = buildWorkflowSections(t, summary)
 
   return (
-    <Card title="业务流程总览" className="dashboard-flow-card">
+    <Card title={t('dashboard.title')} className="dashboard-flow-card">
       <div className="dashboard-flow-grid">
         {workflowSections.map((section) => (
           <section
             key={section.key}
             className="dashboard-flow-section"
-            style={{ ['--flow-accent' as string]: section.accent }}
+            style={flowSectionStyle(section.accent)}
           >
             <div className="dashboard-flow-section-head">
               <div className="dashboard-flow-section-title">
@@ -37,10 +48,12 @@ export function DashboardFlowCard({ navigate, summary }: Props) {
                     <button
                       type="button"
                       className="dashboard-flow-node"
+                      // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
                       onClick={() => navigate({ to: node.path as '/' })}
                     >
                       <span
                         className="dashboard-flow-node-icon"
+                        /* 动态背景色：node.tone 由业务数据决定 */
                         style={{ background: node.tone }}
                       >
                         <Icon />

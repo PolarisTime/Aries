@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { getSupplierOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { SUPPLIER_NAME_LABEL } from './filter-labels'
@@ -11,18 +12,29 @@ import {
 
 export const pendingInvoiceReceiptReportPageConfig: ModulePageConfig = {
   key: 'pending-invoice-receipt-report',
-  title: '未收票报表',
+  title: i18next.t(
+    'modules.pages.pendingInvoiceReceiptReport.pendingInvoiceReceiptReport',
+  ),
   kicker: 'Finance',
-  description:
-    '未收票报表按采购订单明细对比已收票明细，展示尚未收票的剩余重量（吨）与金额，供采购和财务快速追踪到票进度。',
+  description: i18next.t(
+    'modules.pages.pendingInvoiceReceiptReport.pendingInvoiceDesc',
+  ),
   readOnly: true,
-  actions: [{ key: 'export', label: '导出', type: 'primary' }],
+  actions: [
+    {
+      key: 'export',
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.export'),
+      type: 'primary',
+    },
+  ],
   filters: [
     {
       key: 'keyword',
-      label: '关键字',
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.keyword'),
       type: 'input',
-      placeholder: '采购单号 / 供应商 / 商品编码 / 规格',
+      placeholder: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.pendingInvoicePlaceholder',
+      ),
     },
     {
       key: 'supplierName',
@@ -30,78 +42,145 @@ export const pendingInvoiceReceiptReportPageConfig: ModulePageConfig = {
       type: 'select',
       options: getSupplierOptions,
     },
-    { key: 'orderDate', label: '采购日期', type: 'dateRange' },
+    {
+      key: 'orderDate',
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.purchaseDate',
+      ),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: '采购订单号', dataIndex: 'orderNo', width: 170 },
-    { title: '供应商', dataIndex: 'supplierName', width: 150 },
-    { title: '开票方抬头', dataIndex: 'invoiceTitle', width: 170 },
-    { title: '采购日期', dataIndex: 'orderDate', width: 120, type: 'date' },
-    { title: '商品编码', dataIndex: 'materialCode', width: 140 },
-    { title: '品牌', dataIndex: 'brand', width: 110 },
-    { title: '材质', dataIndex: 'material', width: 110 },
-    { title: '类别', dataIndex: 'category', width: 100 },
-    { title: '规格', dataIndex: 'spec', width: 100 },
-    { title: '长度', dataIndex: 'length', width: 100 },
     {
-      title: '订单数量',
+      title: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.purchaseOrderNo',
+      ),
+      dataIndex: 'orderNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.supplier'),
+      dataIndex: 'supplierName',
+      width: 150,
+    },
+    {
+      title: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.invoiceTitle',
+      ),
+      dataIndex: 'invoiceTitle',
+      width: 170,
+    },
+    {
+      title: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.purchaseDate',
+      ),
+      dataIndex: 'orderDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.materialCode',
+      ),
+      dataIndex: 'materialCode',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.brand'),
+      dataIndex: 'brand',
+      width: 110,
+    },
+    {
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.material'),
+      dataIndex: 'material',
+      width: 110,
+    },
+    {
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.category'),
+      dataIndex: 'category',
+      width: 100,
+    },
+    {
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.spec'),
+      dataIndex: 'spec',
+      width: 100,
+    },
+    {
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.length'),
+      dataIndex: 'length',
+      width: 100,
+    },
+    {
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.orderQty'),
       dataIndex: 'orderQuantity',
       width: 100,
       align: 'right',
       type: 'count',
     },
-    { title: '数量单位', dataIndex: 'quantityUnit', width: 90 },
     {
-      title: '订单重量（吨）',
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.qtyUnit'),
+      dataIndex: 'quantityUnit',
+      width: 90,
+    },
+    {
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.orderWeight'),
       dataIndex: 'orderWeightTon',
       width: 124,
       align: 'right',
       type: 'weight',
     },
     {
-      title: '已收票重量（吨）',
+      title: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.receivedWeight',
+      ),
       dataIndex: 'receivedInvoiceWeightTon',
       width: 136,
       align: 'right',
       type: 'weight',
     },
     {
-      title: '未收票重量（吨）',
+      title: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.pendingWeight',
+      ),
       dataIndex: 'pendingInvoiceWeightTon',
       width: 136,
       align: 'right',
       type: 'weight',
     },
     {
-      title: '单价',
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.unitPrice'),
       dataIndex: 'unitPrice',
       width: 100,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '订单金额',
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.orderAmount'),
       dataIndex: 'orderAmount',
       width: 110,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '已收票金额',
+      title: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.receivedAmount',
+      ),
       dataIndex: 'receivedInvoiceAmount',
       width: 110,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '未收票金额',
+      title: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.pendingAmount',
+      ),
       dataIndex: 'pendingInvoiceAmount',
       width: 110,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '状态',
+      title: i18next.t('modules.pages.pendingInvoiceReceiptReport.status'),
       dataIndex: 'status',
       width: 100,
       type: 'status',
@@ -109,44 +188,131 @@ export const pendingInvoiceReceiptReportPageConfig: ModulePageConfig = {
     },
   ],
   detailFields: [
-    { label: '采购订单号', key: 'orderNo' },
-    { label: '供应商', key: 'supplierName' },
-    { label: '开票方抬头', key: 'invoiceTitle' },
-    { label: '采购日期', key: 'orderDate', type: 'date' },
-    { label: '商品编码', key: 'materialCode' },
-    { label: '品牌', key: 'brand' },
-    { label: '材质', key: 'material' },
-    { label: '类别', key: 'category' },
-    { label: '规格', key: 'spec' },
-    { label: '长度', key: 'length' },
-    { label: '订单数量', key: 'orderQuantity', type: 'count' },
-    { label: '数量单位', key: 'quantityUnit' },
-    { label: '订单重量（吨）', key: 'orderWeightTon', type: 'weight' },
     {
-      label: '已收票重量（吨）',
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.purchaseOrderNo',
+      ),
+      key: 'orderNo',
+    },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.supplier'),
+      key: 'supplierName',
+    },
+    {
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.invoiceTitle',
+      ),
+      key: 'invoiceTitle',
+    },
+    {
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.purchaseDate',
+      ),
+      key: 'orderDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.materialCode',
+      ),
+      key: 'materialCode',
+    },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.brand'),
+      key: 'brand',
+    },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.material'),
+      key: 'material',
+    },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.category'),
+      key: 'category',
+    },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.spec'),
+      key: 'spec',
+    },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.length'),
+      key: 'length',
+    },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.orderQty'),
+      key: 'orderQuantity',
+      type: 'count',
+    },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.qtyUnit'),
+      key: 'quantityUnit',
+    },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.orderWeight'),
+      key: 'orderWeightTon',
+      type: 'weight',
+    },
+    {
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.receivedWeight',
+      ),
       key: 'receivedInvoiceWeightTon',
       type: 'weight',
     },
     {
-      label: '未收票重量（吨）',
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.pendingWeight',
+      ),
       key: 'pendingInvoiceWeightTon',
       type: 'weight',
     },
-    { label: '单价', key: 'unitPrice', type: 'amount' },
-    { label: '订单金额', key: 'orderAmount', type: 'amount' },
-    { label: '已收票金额', key: 'receivedInvoiceAmount', type: 'amount' },
-    { label: '未收票金额', key: 'pendingInvoiceAmount', type: 'amount' },
-    { label: '状态', key: 'status', type: 'status' },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.unitPrice'),
+      key: 'unitPrice',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.orderAmount'),
+      key: 'orderAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.receivedAmount',
+      ),
+      key: 'receivedInvoiceAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.pendingAmount',
+      ),
+      key: 'pendingInvoiceAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.status'),
+      key: 'status',
+      type: 'status',
+    },
   ],
   data: [],
   buildOverview: (rows) => [
-    { label: '待跟进明细', value: formatInteger(rows.length) },
     {
-      label: '未收票重量（吨）',
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.pendingItemCount',
+      ),
+      value: formatInteger(rows.length),
+    },
+    {
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.pendingWeight',
+      ),
       value: formatWeight(sumBy(rows, 'pendingInvoiceWeightTon')),
     },
     {
-      label: '未收票金额',
+      label: i18next.t(
+        'modules.pages.pendingInvoiceReceiptReport.pendingAmount',
+      ),
       value: formatAmount(sumBy(rows, 'pendingInvoiceAmount')),
     },
   ],

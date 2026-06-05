@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { buildValueOptions, customerOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from './filter-labels'
@@ -9,13 +10,16 @@ import {
 
 export const invoiceIssuePageConfig: ModulePageConfig = {
   key: 'invoice-issue',
-  title: '开票单',
+  title: i18next.t('modules.pages.invoiceIssue.invoiceIssue'),
   kicker: 'Finance',
-  description:
-    '开票单用于登记客户开票记录，表头由用户填写，明细支持按销售订单勾选导入并自动汇总开票金额。',
+  description: i18next.t('modules.pages.invoiceIssue.invoiceIssueDesc'),
   primaryNoKey: 'issueNo',
   actions: [
-    { key: 'create_invoice_issue', label: '新增开票单', type: 'primary' },
+    {
+      key: 'create_invoice_issue',
+      label: i18next.t('modules.pages.invoiceIssue.createInvoiceIssue'),
+      type: 'primary',
+    },
   ],
   filters: [
     {
@@ -30,32 +34,65 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       type: 'select',
       options: buildValueOptions('草稿', '已开票'),
     },
-    { key: 'invoiceDate', label: '发票日期', type: 'dateRange' },
+    {
+      key: 'invoiceDate',
+      label: i18next.t('modules.pages.invoiceIssue.invoiceDate'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: '开票单号', dataIndex: 'issueNo', width: 170 },
-    { title: '关联销售订单', dataIndex: 'sourceSalesOrderNos', width: 180 },
-    { title: '发票号码', dataIndex: 'invoiceNo', width: 150 },
-    { title: '客户', dataIndex: 'customerName', width: 150 },
-    { title: '项目', dataIndex: 'projectName', width: 180 },
-    { title: '发票日期', dataIndex: 'invoiceDate', width: 120, type: 'date' },
-    { title: '票种', dataIndex: 'invoiceType', width: 120 },
     {
-      title: '金额',
+      title: i18next.t('modules.pages.invoiceIssue.issueNo'),
+      dataIndex: 'issueNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.relatedSalesOrder'),
+      dataIndex: 'sourceSalesOrderNos',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.invoiceNo'),
+      dataIndex: 'invoiceNo',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.customer'),
+      dataIndex: 'customerName',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.project'),
+      dataIndex: 'projectName',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.invoiceDate'),
+      dataIndex: 'invoiceDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.invoiceType'),
+      dataIndex: 'invoiceType',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.amount'),
       dataIndex: 'amount',
       width: 110,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '税额',
+      title: i18next.t('modules.pages.invoiceIssue.taxAmount'),
       dataIndex: 'taxAmount',
       width: 110,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '状态',
+      title: i18next.t('modules.pages.invoiceIssue.status'),
       dataIndex: 'status',
       width: 110,
       type: 'status',
@@ -64,45 +101,81 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
   ],
   defaultHiddenColumnKeys: ['sourceSalesOrderNos', 'projectName', 'taxAmount'],
   detailFields: [
-    { label: '开票单号', key: 'issueNo' },
-    { label: '关联销售订单', key: 'sourceSalesOrderNos' },
-    { label: '发票号码', key: 'invoiceNo' },
-    { label: '客户', key: 'customerName' },
-    { label: '项目', key: 'projectName' },
-    { label: '发票日期', key: 'invoiceDate', type: 'date' },
-    { label: '票种', key: 'invoiceType' },
-    { label: '金额', key: 'amount', type: 'amount' },
-    { label: '税额', key: 'taxAmount', type: 'amount' },
-    { label: '状态', key: 'status', type: 'status' },
-    { label: '经办人', key: 'operatorName' },
-    { label: '备注', key: 'remark' },
+    { label: i18next.t('modules.pages.invoiceIssue.issueNo'), key: 'issueNo' },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.relatedSalesOrder'),
+      key: 'sourceSalesOrderNos',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.invoiceNo'),
+      key: 'invoiceNo',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.customer'),
+      key: 'customerName',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.project'),
+      key: 'projectName',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.invoiceDate'),
+      key: 'invoiceDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.invoiceType'),
+      key: 'invoiceType',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.amount'),
+      key: 'amount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.taxAmount'),
+      key: 'taxAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.status'),
+      key: 'status',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.invoiceIssue.operator'),
+      key: 'operatorName',
+    },
+    { label: i18next.t('modules.pages.invoiceIssue.remark'), key: 'remark' },
   ],
   formFields: [
     {
       key: 'issueNo',
-      label: '开票单号',
+      label: i18next.t('modules.pages.invoiceIssue.issueNo'),
       type: 'input',
       required: true,
       row: 1,
     },
     {
       key: 'sourceSalesOrderNos',
-      label: '关联销售订单',
+      label: i18next.t('modules.pages.invoiceIssue.relatedSalesOrder'),
       type: 'input',
       disabled: true,
-      placeholder: '通过销售订单明细导入，可追加多个单号',
+      placeholder: i18next.t(
+        'modules.pages.invoiceIssue.importFromSalesOrders',
+      ),
       row: 1,
     },
     {
       key: 'invoiceNo',
-      label: '发票号码',
+      label: i18next.t('modules.pages.invoiceIssue.invoiceNo'),
       type: 'input',
       required: true,
       row: 1,
     },
     {
       key: 'customerName',
-      label: '客户',
+      label: i18next.t('modules.pages.invoiceIssue.customer'),
       type: 'select',
       required: true,
       options: customerOptions,
@@ -110,21 +183,21 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     },
     {
       key: 'projectName',
-      label: '项目',
+      label: i18next.t('modules.pages.invoiceIssue.project'),
       type: 'input',
       required: true,
       row: 2,
     },
     {
       key: 'invoiceDate',
-      label: '发票日期',
+      label: i18next.t('modules.pages.invoiceIssue.invoiceDate'),
       type: 'date',
       required: true,
       row: 2,
     },
     {
       key: 'invoiceType',
-      label: '票种',
+      label: i18next.t('modules.pages.invoiceIssue.invoiceType'),
       type: 'select',
       required: true,
       options: buildValueOptions('增值税专票', '增值税普票'),
@@ -132,7 +205,7 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     },
     {
       key: 'targetAmount',
-      label: '开票总金额',
+      label: i18next.t('modules.pages.invoiceIssue.targetAmount'),
       type: 'number',
       min: 0,
       precision: 2,
@@ -141,7 +214,7 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     },
     {
       key: 'amount',
-      label: '金额',
+      label: i18next.t('modules.pages.invoiceIssue.amount'),
       type: 'number',
       required: true,
       min: 0,
@@ -152,7 +225,7 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     },
     {
       key: 'taxRate',
-      label: '税率',
+      label: i18next.t('modules.pages.invoiceIssue.taxRate'),
       type: 'number',
       min: 0,
       precision: 4,
@@ -162,7 +235,7 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     },
     {
       key: 'taxAmount',
-      label: '税额',
+      label: i18next.t('modules.pages.invoiceIssue.taxAmount'),
       type: 'number',
       required: true,
       min: 0,
@@ -173,7 +246,7 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     },
     {
       key: 'status',
-      label: '状态',
+      label: i18next.t('modules.pages.invoiceIssue.status'),
       type: 'select',
       defaultValue: '草稿',
       options: buildValueOptions('草稿', '已开票'),
@@ -181,19 +254,25 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     },
     {
       key: 'operatorName',
-      label: '经办人',
+      label: i18next.t('modules.pages.invoiceIssue.operator'),
       type: 'input',
       required: true,
       row: 4,
     },
-    { key: 'remark', label: '备注', type: 'textarea', row: 5, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.invoiceIssue.remark'),
+      type: 'textarea',
+      row: 5,
+      fullRow: true,
+    },
   ],
   parentImport: {
     parentModuleKey: 'sales-order',
-    label: '上级销售订单',
+    label: i18next.t('modules.pages.invoiceIssue.parentSalesOrder'),
     parentFieldKey: 'sourceSalesOrderNos',
     parentDisplayFieldKey: 'orderNo',
-    buttonText: '导入销售订单明细',
+    buttonText: i18next.t('modules.pages.invoiceIssue.importSalesOrderItems'),
     mapParentToDraft: (parentRecord) => ({
       customerName: parentRecord.customerName || '',
       projectName: parentRecord.projectName || '',

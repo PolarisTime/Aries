@@ -8,10 +8,10 @@ export type RouteViewKey =
   | 'company-setting'
   | 'print-template'
   | 'access-control'
-  | 'database'
   | 'session'
   | 'api-key'
   | 'security-key'
+  | 'database-backup'
 
 export interface AppPageDefinition {
   key: string

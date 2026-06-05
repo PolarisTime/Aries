@@ -1,5 +1,8 @@
+import { useTranslation } from 'react-i18next'
+import type { ModuleRecord } from '@/types/module-page'
+
 interface Props {
-  items: Record<string, unknown>[]
+  items: ModuleRecord[]
   weightKey?: string
   amountKey?: string
   countKey?: string
@@ -13,6 +16,7 @@ export function EditorItemsSummary({
   countKey = 'quantity',
   className,
 }: Props) {
+  const { t } = useTranslation()
   const totalWeight = items.reduce(
     (sum, item) => sum + (Number(item[weightKey]) || 0),
     0,
@@ -27,11 +31,29 @@ export function EditorItemsSummary({
   )
 
   return (
-    <div className={['editor-items-summary', className || ''].filter(Boolean).join(' ')}>
-      <span>行数 {items.length}</span>
-      {totalCount > 0 && <span>数量 {totalCount}</span>}
-      {totalWeight > 0 && <span>重量 {totalWeight.toFixed(3)}</span>}
-      {totalAmount > 0 && <span>金额 {totalAmount.toFixed(2)}</span>}
+    <div
+      className={['editor-items-summary', className || '']
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <span>
+        {t('modules.itemsSummary.rowCount')} {items.length}
+      </span>
+      {totalCount > 0 && (
+        <span>
+          {t('modules.itemsSummary.quantity')} {totalCount}
+        </span>
+      )}
+      {totalWeight > 0 && (
+        <span>
+          {t('modules.itemsSummary.weight')} {totalWeight.toFixed(3)}
+        </span>
+      )}
+      {totalAmount > 0 && (
+        <span>
+          {t('modules.itemsSummary.amount')} {totalAmount.toFixed(2)}
+        </span>
+      )}
     </div>
   )
 }

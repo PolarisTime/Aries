@@ -6,40 +6,47 @@ type IdleDeadlineLike = {
   timeRemaining: () => number
 }
 
+type IdleWindow = Window &
+  typeof globalThis & {
+    requestIdleCallback?: (
+      callback: (deadline: IdleDeadlineLike) => void,
+      options?: { timeout?: number },
+    ) => IdleCallbackHandle
+    cancelIdleCallback?: (handle: IdleCallbackHandle) => void
+  }
+
 export function useIdleActivation(enabled = true, timeout = 1200) {
-  const [active, setActive] = useState(false)
+  const [idleState, setIdleState] = useState({ enabled, ready: false })
+  const active =
+    enabled &&
+    (typeof window === 'undefined' || idleState.ready) &&
+    idleState.enabled === enabled
 
   useEffect(() => {
     if (!enabled) {
-      setActive(false)
       return
     }
 
     if (typeof window === 'undefined') {
-      setActive(true)
       return
     }
 
-    type IdleWindow = Window &
-      typeof globalThis & {
-        requestIdleCallback?: (
-          callback: (deadline: IdleDeadlineLike) => void,
-          options?: { timeout?: number },
-        ) => IdleCallbackHandle
-        cancelIdleCallback?: (handle: IdleCallbackHandle) => void
-      }
-
-    const idleWindow = window as IdleWindow
-    setActive(false)
+    const idleWindow: IdleWindow = window
 
     if (typeof idleWindow.requestIdleCallback === 'function') {
-      const handle = idleWindow.requestIdleCallback(() => setActive(true), {
-        timeout,
-      })
+      const handle = idleWindow.requestIdleCallback(
+        () => setIdleState({ enabled, ready: true }),
+        {
+          timeout,
+        },
+      )
       return () => idleWindow.cancelIdleCallback?.(handle)
     }
 
-    const handle = window.setTimeout(() => setActive(true), 180)
+    const handle = window.setTimeout(
+      () => setIdleState({ enabled, ready: true }),
+      180,
+    )
     return () => window.clearTimeout(handle)
   }, [enabled, timeout])
 

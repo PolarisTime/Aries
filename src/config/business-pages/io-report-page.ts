@@ -1,69 +1,113 @@
+import i18next from 'i18next'
 import type { ModulePageConfig } from '@/types/module-page'
 import { formatInteger, formatWeight, sumBy } from './shared'
 
 export const ioReportPageConfig: ModulePageConfig = {
   key: 'io-report',
-  title: '出入库报表',
+  title: i18next.t('modules.pages.ioReport.ioReport'),
   kicker: 'Reports',
-  description:
-    '出入库报表用于查看业务流水，统一展示查询区、流水表格和明细字段，方便继续接库存与追溯链路。',
+  description: i18next.t('modules.pages.ioReport.ioReportDesc'),
   readOnly: true,
-  actions: [{ key: 'export', label: '导出', type: 'primary' }],
+  actions: [
+    {
+      key: 'export',
+      label: i18next.t('modules.pages.ioReport.export'),
+      type: 'primary',
+    },
+  ],
   filters: [
     {
       key: 'keyword',
-      label: '来源单号',
+      label: i18next.t('modules.pages.ioReport.sourceNo'),
       type: 'input',
-      placeholder: '输入来源单号',
+      placeholder: i18next.t('modules.pages.ioReport.sourceNoPlaceholder'),
     },
     {
       key: 'businessType',
-      label: '业务类型',
+      label: i18next.t('modules.pages.ioReport.businessType'),
       type: 'select',
       options: [
-        { label: '采购入库', value: '采购入库' },
-        { label: '销售出库', value: '销售出库' },
+        {
+          label: i18next.t('modules.pages.ioReport.purchaseInbound'),
+          value: '采购入库',
+        },
+        {
+          label: i18next.t('modules.pages.ioReport.salesOutbound'),
+          value: '销售出库',
+        },
       ],
     },
-    { key: 'businessDate', label: '业务日期', type: 'dateRange' },
+    {
+      key: 'businessDate',
+      label: i18next.t('modules.pages.ioReport.businessDate'),
+      type: 'dateRange',
+    },
   ],
   columns: [
     {
-      title: '业务日期',
+      title: i18next.t('modules.pages.ioReport.businessDate'),
       dataIndex: 'businessDate',
       width: 120,
       type: 'date',
     },
-    { title: '业务类型', dataIndex: 'businessType', width: 120 },
-    { title: '来源单号', dataIndex: 'sourceNo', width: 160 },
-    { title: '商品编码', dataIndex: 'materialCode', width: 140 },
-    { title: '规格', dataIndex: 'spec', width: 100 },
-    { title: '仓库', dataIndex: 'warehouseName', width: 110 },
-    { title: '批号', dataIndex: 'batchNo', width: 140 },
     {
-      title: '入库数量',
+      title: i18next.t('modules.pages.ioReport.businessType'),
+      dataIndex: 'businessType',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.pages.ioReport.sourceNo'),
+      dataIndex: 'sourceNo',
+      width: 160,
+    },
+    {
+      title: i18next.t('modules.pages.ioReport.materialCode'),
+      dataIndex: 'materialCode',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.ioReport.spec'),
+      dataIndex: 'spec',
+      width: 100,
+    },
+    {
+      title: i18next.t('modules.pages.ioReport.warehouse'),
+      dataIndex: 'warehouseName',
+      width: 110,
+    },
+    {
+      title: i18next.t('modules.pages.ioReport.batchNo'),
+      dataIndex: 'batchNo',
+      width: 140,
+    },
+    {
+      title: i18next.t('modules.pages.ioReport.inboundQty'),
       dataIndex: 'inQuantity',
       width: 100,
       align: 'right',
       type: 'count',
     },
     {
-      title: '出库数量',
+      title: i18next.t('modules.pages.ioReport.outboundQty'),
       dataIndex: 'outQuantity',
       width: 100,
       align: 'right',
       type: 'count',
     },
-    { title: '数量单位', dataIndex: 'quantityUnit', width: 90 },
     {
-      title: '入库重量（吨）',
+      title: i18next.t('modules.pages.ioReport.qtyUnit'),
+      dataIndex: 'quantityUnit',
+      width: 90,
+    },
+    {
+      title: i18next.t('modules.pages.ioReport.inboundWeight'),
       dataIndex: 'inWeightTon',
       width: 124,
       align: 'right',
       type: 'weight',
     },
     {
-      title: '出库重量（吨）',
+      title: i18next.t('modules.pages.ioReport.outboundWeight'),
       dataIndex: 'outWeightTon',
       width: 124,
       align: 'right',
@@ -71,29 +115,61 @@ export const ioReportPageConfig: ModulePageConfig = {
     },
   ],
   detailFields: [
-    { label: '业务日期', key: 'businessDate', type: 'date' },
-    { label: '业务类型', key: 'businessType' },
-    { label: '来源单号', key: 'sourceNo' },
-    { label: '商品编码', key: 'materialCode' },
-    { label: '规格', key: 'spec' },
-    { label: '仓库', key: 'warehouseName' },
-    { label: '批号', key: 'batchNo' },
-    { label: '入库数量', key: 'inQuantity', type: 'count' },
-    { label: '出库数量', key: 'outQuantity', type: 'count' },
-    { label: '数量单位', key: 'quantityUnit' },
-    { label: '入库重量（吨）', key: 'inWeightTon', type: 'weight' },
-    { label: '出库重量（吨）', key: 'outWeightTon', type: 'weight' },
-    { label: '备注', key: 'remark' },
+    {
+      label: i18next.t('modules.pages.ioReport.businessDate'),
+      key: 'businessDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.ioReport.businessType'),
+      key: 'businessType',
+    },
+    { label: i18next.t('modules.pages.ioReport.sourceNo'), key: 'sourceNo' },
+    {
+      label: i18next.t('modules.pages.ioReport.materialCode'),
+      key: 'materialCode',
+    },
+    { label: i18next.t('modules.pages.ioReport.spec'), key: 'spec' },
+    {
+      label: i18next.t('modules.pages.ioReport.warehouse'),
+      key: 'warehouseName',
+    },
+    { label: i18next.t('modules.pages.ioReport.batchNo'), key: 'batchNo' },
+    {
+      label: i18next.t('modules.pages.ioReport.inboundQty'),
+      key: 'inQuantity',
+      type: 'count',
+    },
+    {
+      label: i18next.t('modules.pages.ioReport.outboundQty'),
+      key: 'outQuantity',
+      type: 'count',
+    },
+    { label: i18next.t('modules.pages.ioReport.qtyUnit'), key: 'quantityUnit' },
+    {
+      label: i18next.t('modules.pages.ioReport.inboundWeight'),
+      key: 'inWeightTon',
+      type: 'weight',
+    },
+    {
+      label: i18next.t('modules.pages.ioReport.outboundWeight'),
+      key: 'outWeightTon',
+      type: 'weight',
+    },
+    { label: i18next.t('modules.pages.ioReport.remark'), key: 'remark' },
   ],
   data: [],
   buildOverview: (rows) => [
-    { label: '流水数', value: formatInteger(rows.length) },
     {
-      label: '入库重量（吨）',
+      label: i18next.t('modules.pages.ioReport.transactionCount'),
+      value: formatInteger(rows.length),
+    },
+    {
+      label: i18next.t('modules.pages.ioReport.inboundWeight'),
       value: formatWeight(sumBy(rows, 'inWeightTon')),
     },
     {
-      label: '出库重量（吨）',
+      label: i18next.t('modules.pages.ioReport.outboundWeight'),
       value: formatWeight(sumBy(rows, 'outWeightTon')),
     },
   ],

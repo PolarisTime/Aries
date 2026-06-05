@@ -24,10 +24,10 @@ Aries 是 Leo ERP 的 React 前端工作台，基于 `Vite 8 + React 19 + TypeSc
 pnpm install
 ```
 
-生成本地环境文件：
+生成开发环境文件：
 
 ```bash
-pnpm env:local
+bash scripts/env/dev.sh
 ```
 
 启动开发服务器：
@@ -36,17 +36,18 @@ pnpm env:local
 pnpm dev --host 0.0.0.0
 ```
 
-默认地址：`http://localhost:3100`
+也可以使用分层后的启动入口：
 
-默认通过 `.env.local` 中的 `VITE_PROXY_TARGET` 代理后端，脚本默认写入：
+```bash
+bash scripts/frontend/start-dev.sh
+```
 
-- `VITE_API_BASE_URL=/api`
-- `VITE_PROXY_TARGET=http://127.0.0.1:11211`
+默认通过 `.env.local` 中的 `VITE_PROXY_TARGET` 代理 Leo 后端。
 
 如果需要同时启动前后端，优先在工作区根目录执行：
 
 ```bash
-bash scripts/start-local.sh
+bash ../leo/scripts/dev.sh start
 ```
 
 ## 常用命令
@@ -57,42 +58,19 @@ pnpm lint:fix
 pnpm format
 pnpm typecheck
 pnpm test:unit
-pnpm build
-pnpm test:e2e:mock
-pnpm test:e2e:real
+pnpm build-only
+pnpm test:e2e
 ```
 
-如需重新生成后端 OpenAPI 类型：
+如需运行依赖登录态的 E2E 调试脚本，请通过环境变量注入测试账号：
 
 ```bash
-pnpm generate:api
-```
-
-## 关键能力
-
-- 业务单据表格工作台与统一操作列
-- 双击打开单据的查看/编辑行为
-- 附件上传、绑定、预览
-- 权限驱动菜单和页面访问控制
-- 聚合全局搜索：按权限搜索采购、销售、合同、对账、收付款、开收票等业务单据
-- 大量系统开关、通用设置和页面行为配置
-
-## CI 校验
-
-GitHub Actions 当前会执行以下步骤：
-
-```bash
-pnpm install --frozen-lockfile
-pnpm lint
-pnpm typecheck
-pnpm test:unit
-pnpm build
-docker build -t aries-web:ci .
+E2E_LOGIN_NAME=your_user E2E_LOGIN_PASSWORD=your_password pnpm test:e2e
 ```
 
 ## 环境变量
 
-本地环境文件为 `.env.local`，已被 `.gitignore` 忽略。
+本地环境文件为 `.env.local`，已被 `.gitignore` 忽略，不应提交真实地址、令牌或其他敏感数据。
 
 常见变量：
 

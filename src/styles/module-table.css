@@ -1,0 +1,384 @@
+/* 操作列宽度固定 + 背景色（fixed 定位由 antd 处理） */
+.module-table-shell .sticky-actions-col,
+.module-table-shell col.sticky-actions-col,
+.module-table-shell .ant-table-fixed-left .sticky-actions-col,
+.module-table-shell .ant-table-fixed-left col.sticky-actions-col {
+  width: 155px !important;
+  min-width: 155px !important;
+  max-width: 155px !important;
+}
+.module-table-shell .ant-table-thead .sticky-actions-col,
+.module-table-shell .ant-table-fixed-left .ant-table-thead .sticky-actions-col {
+  background: var(--theme-table-header-bg) !important;
+}
+.module-table-shell .ant-table-tbody .sticky-actions-col,
+.module-table-shell .ant-table-fixed-left .ant-table-tbody .sticky-actions-col {
+  background: var(--theme-card-bg) !important;
+}
+.module-table-shell
+  .ant-table-tbody
+  .ant-table-row-selected
+  .sticky-actions-col,
+.module-table-shell .ant-table-tbody .ant-table-row:hover .sticky-actions-col {
+  background: transparent !important;
+}
+
+.module-table-shell .ant-table-tbody > tr > td,
+.module-table-shell .ant-table-tbody > tr > th,
+.module-table-shell .ant-table-tbody .ant-table-cell {
+  padding-top: var(--app-table-cell-padding-y);
+  padding-bottom: var(--app-table-cell-padding-y);
+  font-size: var(--app-font-size);
+  text-align: center !important;
+  vertical-align: middle !important;
+  white-space: nowrap;
+  border-color: var(--theme-card-border) !important;
+  border-style: dashed !important;
+}
+
+.module-table-shell .ant-table-tbody .ant-table-cell > * {
+  vertical-align: middle;
+}
+
+.module-table-shell .ant-table-bordered .ant-table-thead .ant-table-cell,
+.module-table-shell .ant-table-bordered .ant-table-tbody .ant-table-cell {
+  border-inline-end: 1px dashed var(--theme-card-border) !important;
+  border-bottom: 1px dashed var(--theme-card-border) !important;
+}
+
+.module-table-shell .ant-table-bordered .ant-table-thead .ant-table-cell {
+  border-bottom: 1px dashed var(--theme-card-border) !important;
+}
+
+.table-action-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: var(--app-font-size);
+}
+
+.table-action-group .ant-divider-vertical {
+  margin: 0 6px;
+}
+
+.table-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--theme-primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.module-attachment-upload-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: var(--theme-accent-bg);
+  border: 1px dashed var(--theme-accent-border);
+  border-radius: 12px;
+}
+
+.module-attachment-upload-hint {
+  line-height: 1.4;
+}
+
+.module-attachment-preview-thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  min-width: 56px;
+  height: 56px;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--theme-sider-surface);
+  border: 1px solid var(--theme-card-border);
+  border-radius: 10px;
+}
+
+.module-attachment-preview-thumb .ant-image,
+.module-attachment-preview-thumb img {
+  width: 100%;
+  height: 100%;
+}
+
+.module-attachment-preview-thumb img {
+  object-fit: cover;
+}
+
+.module-attachment-pdf-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  min-width: 56px;
+  height: 56px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  background: #e74c3c;
+  border-radius: 10px;
+}
+
+.module-attachment-file-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  min-width: 56px;
+  height: 56px;
+  color: var(--theme-primary);
+  font-size: 18px;
+  background: var(--theme-primary-soft);
+  border-radius: 10px;
+}
+
+.table-action-btn:hover {
+  color: var(--theme-primary-hover);
+  text-decoration: underline;
+}
+
+.table-action-danger {
+  color: #ff4d4f;
+}
+
+.table-action-danger:hover {
+  color: #ff7875;
+}
+
+.table-action-disabled {
+  color: var(--text-placeholder);
+  cursor: not-allowed;
+}
+
+.table-action-disabled:hover {
+  color: var(--text-placeholder);
+  text-decoration: none;
+}
+
+.table-action-empty {
+  color: var(--text-placeholder);
+}
+
+.detail-section-title {
+  margin: 0 0 12px;
+  color: var(--text-primary);
+  font-size: calc(var(--app-font-size) + 2px);
+  font-weight: 500;
+}
+
+.editor-form-head,
+.editor-items-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.editor-form-head {
+  justify-content: space-between;
+}
+
+.editor-items-head {
+  justify-content: flex-start;
+}
+
+.editor-form-title-block,
+.editor-items-title-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.editor-form-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.editor-form-head {
+  margin-bottom: 8px;
+}
+
+.editor-form-shell {
+  margin-bottom: 16px;
+}
+
+.editor-form-row {
+  row-gap: 2px;
+}
+
+.editor-form-shell .ant-form-item {
+  margin-bottom: 8px;
+}
+
+.editor-form-shell .ant-form-item-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.editor-form-shell .ant-form-item-label {
+  flex: 0 0 var(--app-label-width);
+  width: var(--app-label-width);
+  max-width: none;
+  min-width: 0;
+  height: var(--app-control-height);
+  padding: 0;
+  margin-right: 8px;
+  overflow: hidden;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.editor-form-shell .ant-form-item-label > label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: var(--app-control-height);
+  color: var(--text-secondary);
+  font-size: var(--app-font-size);
+  white-space: nowrap;
+}
+
+.editor-form-shell .ant-form-item-control {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.editor-form-shell .ant-form-item-control-input,
+.editor-form-shell .ant-form-item-control-input-content {
+  width: 100%;
+  min-width: 0;
+}
+
+.editor-form-item--textarea .ant-form-item-row {
+  align-items: flex-start;
+}
+
+.editor-form-shell .ant-input,
+.editor-form-shell .ant-picker,
+.editor-form-shell .ant-select-selector,
+.editor-form-shell .ant-input-number-input {
+  font-size: var(--app-font-size);
+}
+
+.editor-form-shell .ant-input-number,
+.editor-form-shell .ant-picker,
+.editor-form-shell .ant-select {
+  width: 100%;
+}
+
+.editor-form-shell .ant-input-textarea textarea.ant-input {
+  min-height: calc(var(--app-control-height) * 3);
+}
+
+.editor-items-head {
+  margin-bottom: 12px;
+}
+
+.editor-items-head .detail-section-title {
+  margin-bottom: 0;
+}
+
+.editor-items-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.editor-items-title-row {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+}
+
+.editor-items-summary {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--theme-text-muted);
+}
+
+.editor-items-summary-inline {
+  margin-left: 8px;
+}
+
+.editor-items-summary-mobile {
+  display: none;
+}
+
+.module-items-panel {
+  min-width: 0;
+}
+
+.overlay-action-button.ant-btn {
+  color: var(--theme-primary-deep);
+  border-color: var(--theme-primary-soft-strong);
+  background: var(--theme-primary-soft);
+}
+
+.overlay-action-button.ant-btn:hover,
+.overlay-action-button.ant-btn:focus {
+  color: var(--theme-primary-hover);
+  border-color: var(--theme-primary-hover);
+  background: var(--theme-primary-soft);
+}
+
+.overlay-action-button.ant-btn.ant-btn-primary {
+  color: #fff;
+  border-color: var(--theme-primary);
+  background: var(--theme-primary);
+}
+
+.overlay-action-button.ant-btn.ant-btn-primary:hover,
+.overlay-action-button.ant-btn.ant-btn-primary:focus {
+  color: #fff;
+  border-color: var(--theme-primary-hover);
+  background: var(--theme-primary-hover);
+}
+
+/* ── Bill detail page ── */
+
+.bill-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--theme-card-border);
+  border-radius: var(--app-border-radius);
+  background: var(--theme-sider-surface);
+  min-height: var(--app-control-height);
+}
+
+.bill-detail-label {
+  flex: 0 0 var(--app-label-width);
+  width: var(--app-label-width);
+  align-self: center;
+  font-size: var(--app-font-size);
+  color: var(--theme-sider-muted);
+  white-space: nowrap;
+  text-align: right;
+  line-height: var(--app-control-height);
+}
+
+.bill-detail-label::after {
+  content: "：";
+}
+
+.bill-detail-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--app-font-size);
+  color: var(--theme-sider-text);
+  word-break: break-all;
+}

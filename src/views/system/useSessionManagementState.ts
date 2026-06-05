@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getRefreshTokenSummary,
   listRefreshTokens,
@@ -7,12 +8,14 @@ import {
   revokeAllRefreshTokens,
   revokeRefreshToken,
 } from '@/api/session-management'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message, modal } from '@/utils/antd-app'
 import { buildSessionTableColumns } from '@/views/system/session-management-view-utils'
 
 export function useSessionManagementState(enabled = true) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
@@ -21,15 +24,18 @@ export function useSessionManagementState(enabled = true) {
   const [keyword, setKeyword] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const refreshSessionData = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['refresh-tokens'] })
-    queryClient.invalidateQueries({ queryKey: ['refresh-tokens-summary'] })
-  }, [queryClient])
+  const refreshSessionData = () => {
+    void queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.refreshTokensBase,
+    })
+    void queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.refreshTokensSummary,
+    })
+  }
 
   const { data: tokensData, isLoading } = useQuery({
-    queryKey: ['refresh-tokens', currentPage, pageSize, keyword],
+    queryKey: QUERY_KEYS.refreshTokens(currentPage, pageSize, keyword),
     queryFn: async () =>
       listRefreshTokens({
         page: currentPage - 1,
@@ -40,7 +46,7 @@ export function useSessionManagementState(enabled = true) {
   })
 
   const { data: summary } = useQuery({
-    queryKey: ['refresh-tokens-summary'],
+    queryKey: QUERY_KEYS.refreshTokensSummary,
     queryFn: getRefreshTokenSummary,
     enabled,
   })
@@ -48,84 +54,80 @@ export function useSessionManagementState(enabled = true) {
   const tokens = tokensData?.records || []
   const totalElements = Number(tokensData?.totalElements) || 0
 
-  const startAutoRefresh = useCallback(() => {
-    refreshTimerRef.current = setInterval(() => {
+  useEffect(() => {
+    const refreshSessionData = () => {
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.refreshTokensBase,
+      })
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.refreshTokensSummary,
+      })
+    }
+
+    if (!enabled) {
+      return
+    }
+    const refreshTimer = setInterval(() => {
       refreshSessionData()
     }, 30000)
-  }, [refreshSessionData])
-
-  const stopAutoRefresh = useCallback(() => {
-    if (!refreshTimerRef.current) {
-      return
+    return () => {
+      clearInterval(refreshTimer)
     }
-    clearInterval(refreshTimerRef.current)
-    refreshTimerRef.current = null
-  }, [])
+  }, [enabled, queryClient])
 
-  useEffect(() => {
-    if (!enabled) {
-      stopAutoRefresh()
-      return
-    }
-    startAutoRefresh()
-    return stopAutoRefresh
-  }, [enabled, startAutoRefresh, stopAutoRefresh])
-
-  const handleRevoke = useCallback(
-    (record: RefreshTokenRecord) => {
-      if (!canEdit) {
-        message.warning('暂无会话管理权限')
-        return
-      }
-
-      modal.confirm({
-        title: '禁用令牌',
-        content: '确定禁用该会话令牌吗？禁用后对应设备需要重新登录。',
-        okText: '确认禁用',
-        cancelText: '取消',
-        okButtonProps: { danger: true },
-        onOk: async () => {
-          try {
-            await revokeRefreshToken(record.id)
-            message.success('已禁用')
-            refreshSessionData()
-          } catch (error) {
-            showError(error, '禁用失败')
-          }
-        },
-      })
-    },
-    [canEdit, refreshSessionData, showError],
-  )
-
-  const handleRevokeAll = useCallback(() => {
+  const handleRevoke = (record: RefreshTokenRecord) => {
     if (!canEdit) {
-      message.warning('暂无会话管理权限')
+      message.warning(t('common.noPermission'))
       return
     }
 
     modal.confirm({
-      title: '清除全部令牌',
-      content: '确定禁用所有有效的会话令牌吗？所有设备将需要重新登录。',
-      okText: '确认清除',
-      cancelText: '取消',
+      title: t('system.session.disable'),
+      content: t('system.session.disableConfirm'),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          await revokeRefreshToken(record.id)
+          message.success(t('system.session.disabledSuccess'))
+          refreshSessionData()
+        } catch (error) {
+          showError(error, t('api.disableSessionFailed'))
+        }
+      },
+    })
+  }
+
+  const handleRevokeAll = () => {
+    if (!canEdit) {
+      message.warning(t('common.noPermission'))
+      return
+    }
+
+    modal.confirm({
+      title: t('system.session.revokeAll'),
+      content: t('system.session.revokeAllConfirm'),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
           const response = await revokeAllRefreshTokens()
-          message.success(response.message || '已清除')
+          message.success(response.message || t('system.session.revoked'))
           refreshSessionData()
         } catch (error) {
-          showError(error, '清除失败')
+          showError(error, t('api.clearAllSessionsFailed'))
         }
       },
     })
-  }, [canEdit, refreshSessionData, showError])
+  }
 
-  const columns = useMemo(
-    () => buildSessionTableColumns({ canEdit, onRevoke: handleRevoke }),
-    [canEdit, handleRevoke],
-  )
+  const columns = buildSessionTableColumns({
+    canEdit,
+    onRevoke: handleRevoke,
+    t,
+  })
 
   return {
     canEdit,

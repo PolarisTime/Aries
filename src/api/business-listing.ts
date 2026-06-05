@@ -13,20 +13,19 @@ import { buildTableResponse } from '@/api/business-listing-response'
 import {
   reportClientFilterFallback,
   reportUnpaginatedRowFetch,
-  resetReportedClientFilterSignatures,
 } from '@/api/business-listing-warnings'
 import { normalizeRows } from '@/api/business-normalizers'
 import { http, isSuccessCode } from '@/api/client'
 import { getModuleConfig } from '@/api/module-contracts'
 import type { ApiResponse } from '@/types/api'
+import type { RawApiRecord, SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
+import { getApiMessage } from '@/utils/api-messages'
 import type { ListQueryOptions } from '@/utils/list'
-
-export { resetReportedClientFilterSignatures }
 
 export async function listBusinessModule(
   moduleKey: string,
-  search: Record<string, unknown>,
+  search: SearchParams,
   options: ListQueryOptions,
   config?: AxiosRequestConfig,
   fields?: string[],
@@ -58,7 +57,12 @@ export async function listBusinessModule(
     config,
     fields,
   )
-  return buildTableResponse(current.rows, current.totalElements)
+  return buildTableResponse(
+    current.rows,
+    current.totalElements,
+    false,
+    current.hasMore,
+  )
 }
 
 export async function searchBusinessModule(
@@ -77,14 +81,14 @@ export async function searchBusinessModule(
 
   if (endpointConfig.supportsSearch !== false) {
     try {
-      const response = await http.get<ApiResponse<Record<string, unknown>[]>>(
+      const response = await http.get<ApiResponse<RawApiRecord[]>>(
         `${endpointConfig.path}/search`,
         {
           ...config,
           params: {
             keyword: normalizedKeyword,
             limit: maxSize,
-            ...(config?.params as Record<string, unknown> | undefined),
+            ...(config?.params as SearchParams | undefined),
           },
         },
       )
@@ -93,7 +97,9 @@ export async function searchBusinessModule(
       }
     } catch {
       if (endpointConfig.supportsSearch === true) {
-        throw new Error(`加载${moduleKey}搜索结果失败`)
+        throw new Error(
+          `${getApiMessage('loadSearchResultsFailed')}: ${moduleKey}`,
+        )
       }
     }
   }
@@ -116,7 +122,7 @@ export async function searchBusinessModule(
 
 export async function listAllBusinessModuleRows(
   moduleKey: string,
-  search: Record<string, unknown>,
+  search: SearchParams,
 ) {
   const useClientFilter = shouldClientFilter(moduleKey, search)
   if (useClientFilter) {

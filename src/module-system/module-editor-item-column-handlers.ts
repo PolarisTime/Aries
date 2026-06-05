@@ -1,0 +1,115 @@
+import { recalculateEditorLineItem } from '@/module-system/module-adapter-editor'
+import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
+
+interface Props {
+  setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
+}
+
+type MaterialDraftApplicator = (
+  item: ModuleLineItem,
+  materialRecord?: ModuleRecord | null,
+) => ModuleLineItem
+
+type MaterialLookupResolver = (
+  materialCode: string,
+) => Promise<ModuleRecord | null>
+
+export function useModuleEditorItemColumnHandlers({ setItems }: Props) {
+  const handleItemNumberChange = (
+    itemId: string,
+    key: string,
+    value: unknown,
+  ) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item
+        const updated = {
+          ...item,
+          [key]: value === null || value === undefined ? 0 : value,
+        }
+        return recalculateEditorLineItem(updated, key)
+      }),
+    )
+  }
+
+  const handleItemInputChange = (
+    itemId: string,
+    key: string,
+    value: string,
+  ) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, [key]: value } : item,
+      ),
+    )
+  }
+
+  const handleMaterialSelect = (
+    itemId: string,
+    materialCode: string,
+    materialRecord?: ModuleRecord | null,
+    applyMaterial?: MaterialDraftApplicator,
+    resolveMaterial?: MaterialLookupResolver,
+  ) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item
+        const updated = { ...item, materialCode }
+        if (applyMaterial) {
+          return { ...applyMaterial(updated, materialRecord) }
+        }
+        return updated
+      }),
+    )
+
+    if (!materialRecord && applyMaterial && resolveMaterial) {
+      void resolveMaterial(materialCode).then((resolvedMaterial) => {
+        if (!resolvedMaterial) {
+          return
+        }
+        setItems((prev) =>
+          prev.map((item) => {
+            if (item.id !== itemId) {
+              return item
+            }
+            if (asString(item.materialCode).trim() !== materialCode.trim()) {
+              return item
+            }
+            const applied = applyMaterial({ ...item }, resolvedMaterial)
+            return { ...applied }
+          }),
+        )
+      })
+    }
+  }
+
+  const handleWarehouseSelect = (itemId: string, warehouseName: string) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, warehouseName } : item,
+      ),
+    )
+  }
+
+  const handleSettlementModeChange = (
+    itemId: string,
+    settlementMode: string,
+  ) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item
+        const updated = { ...item, settlementMode }
+        return recalculateEditorLineItem(updated, 'settlementMode')
+      }),
+    )
+  }
+
+  return {
+    handleItemInputChange,
+    handleItemNumberChange,
+    handleMaterialSelect,
+    handleSettlementModeChange,
+    handleWarehouseSelect,
+  }
+}

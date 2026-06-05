@@ -1,8 +1,10 @@
+import i18next from 'i18next'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   AUDIT_STATUS_LABEL,
   CARRIER_NAME_LABEL,
@@ -17,29 +19,47 @@ import {
 
 function getNormalizedUniqueValues(values: unknown[]) {
   return Array.from(
-    new Set(values.map((value) => String(value || '').trim()).filter(Boolean)),
+    new Set(
+      values.flatMap((value) => {
+        const v = asString(value).trim()
+        return v ? [v] : []
+      }),
+    ),
   )
 }
 
 export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
   'freight-bill': {
     key: 'freight-bill',
-    title: '物流单',
+    title: i18next.t('modules.pages.freightOperations.freightBill'),
     kicker: 'Freight',
-    description:
-      '物流单页面按现版逻辑建立在销售出库之上，支持关联出库单、自动计算总重量和总运费，并继续流向物流对账。',
+    description: i18next.t('modules.pages.freightOperations.freightBillDesc'),
     primaryNoKey: 'billNo',
     actions: [
-      { key: 'create_freight_bill', label: '新增物流单', type: 'primary' },
-      { key: 'generate_pickup_list', label: '生成提货清单', type: 'default' },
-      { key: 'mark_delivered', label: '标记送达', type: 'default' },
+      {
+        key: 'create_freight_bill',
+        label: i18next.t('modules.pages.freightOperations.createFreightBill'),
+        type: 'primary',
+      },
+      {
+        key: 'generate_pickup_list',
+        label: i18next.t('modules.pages.freightOperations.generatePickupList'),
+        type: 'default',
+      },
+      {
+        key: 'mark_delivered',
+        label: i18next.t('modules.pages.freightOperations.markDelivered'),
+        type: 'default',
+      },
     ],
     filters: [
       {
         key: 'keyword',
         label: FREIGHT_NO_FILTER_LABEL,
         type: 'input',
-        placeholder: '输入物流单号',
+        placeholder: i18next.t(
+          'modules.pages.freightOperations.freightBillPlaceholder',
+        ),
       },
       {
         key: 'carrierName',
@@ -52,33 +72,60 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         label: AUDIT_STATUS_LABEL,
         type: 'select',
         options: [
-          { label: '未审核', value: '未审核' },
-          { label: '已审核', value: '已审核' },
+          {
+            label: i18next.t('modules.pages.freightOperations.unaudited'),
+            value: '未审核',
+          },
+          {
+            label: i18next.t('modules.pages.freightOperations.audited'),
+            value: '已审核',
+          },
         ],
       },
-      { key: 'billTime', label: '单据日期', type: 'dateRange' },
+      {
+        key: 'billTime',
+        label: i18next.t('modules.pages.freightOperations.documentDate'),
+        type: 'dateRange',
+      },
     ],
     columns: [
-      { title: '物流单号', dataIndex: 'billNo', width: 160 },
-      { title: '物流商', dataIndex: 'carrierName', width: 140 },
-      { title: '车号', dataIndex: 'vehiclePlate', width: 120 },
-      { title: '单据日期', dataIndex: 'billTime', width: 120, type: 'date' },
       {
-        title: '总重量（吨）',
+        title: i18next.t('modules.pages.freightOperations.freightBillNo'),
+        dataIndex: 'billNo',
+        width: 160,
+      },
+      {
+        title: i18next.t('modules.pages.freightOperations.carrier'),
+        dataIndex: 'carrierName',
+        width: 140,
+      },
+      {
+        title: i18next.t('modules.pages.freightOperations.vehiclePlate'),
+        dataIndex: 'vehiclePlate',
+        width: 120,
+      },
+      {
+        title: i18next.t('modules.pages.freightOperations.documentDate'),
+        dataIndex: 'billTime',
+        width: 120,
+        type: 'date',
+      },
+      {
+        title: i18next.t('modules.pages.freightOperations.totalWeight'),
         dataIndex: 'totalWeight',
         width: 116,
         align: 'right',
         type: 'weight',
       },
       {
-        title: '单价',
+        title: i18next.t('modules.pages.freightOperations.unitPrice'),
         dataIndex: 'unitPrice',
         width: 100,
         align: 'right',
         type: 'amount',
       },
       {
-        title: '总运费',
+        title: i18next.t('modules.pages.freightOperations.totalFreight'),
         dataIndex: 'totalFreight',
         width: 110,
         align: 'right',
@@ -87,39 +134,86 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
     ],
     defaultHiddenColumnKeys: ['vehiclePlate', 'unitPrice'],
     detailFields: [
-      { label: '物流单号', key: 'billNo' },
-      { label: '关联出库单', key: 'outboundNo' },
-      { label: '物流商', key: 'carrierName' },
-      { label: '车号', key: 'vehiclePlate' },
-      { label: '客户名称', key: 'customerName' },
-      { label: '项目名称', key: 'projectName' },
-      { label: '单据日期', key: 'billTime', type: 'date' },
-      { label: '单价', key: 'unitPrice', type: 'amount' },
-      { label: '总重量（吨）', key: 'totalWeight', type: 'weight' },
-      { label: '总运费', key: 'totalFreight', type: 'amount' },
-      { label: '审核状态', key: 'status', type: 'status' },
-      { label: '送达状态', key: 'deliveryStatus', type: 'status' },
-      { label: '备注', key: 'remark' },
+      {
+        label: i18next.t('modules.pages.freightOperations.freightBillNo'),
+        key: 'billNo',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.relatedOutbound'),
+        key: 'outboundNo',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.carrier'),
+        key: 'carrierName',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.vehiclePlate'),
+        key: 'vehiclePlate',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.customerName'),
+        key: 'customerName',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.projectName'),
+        key: 'projectName',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.documentDate'),
+        key: 'billTime',
+        type: 'date',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.unitPrice'),
+        key: 'unitPrice',
+        type: 'amount',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.totalWeight'),
+        key: 'totalWeight',
+        type: 'weight',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.totalFreight'),
+        key: 'totalFreight',
+        type: 'amount',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.auditStatus'),
+        key: 'status',
+        type: 'status',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.deliveryStatus'),
+        key: 'deliveryStatus',
+        type: 'status',
+      },
+      {
+        label: i18next.t('modules.pages.freightOperations.remark'),
+        key: 'remark',
+      },
     ],
     formFields: [
       {
         key: 'billNo',
-        label: '物流单号',
+        label: i18next.t('modules.pages.freightOperations.freightBillNo'),
         type: 'input',
         required: true,
         row: 1,
       },
       {
         key: 'outboundNo',
-        label: '关联出库单',
+        label: i18next.t('modules.pages.freightOperations.relatedOutbound'),
         type: 'input',
         disabled: true,
-        placeholder: '通过上级单据导入',
+        placeholder: i18next.t(
+          'modules.pages.freightOperations.importFromParent',
+        ),
         row: 1,
       },
       {
         key: 'carrierName',
-        label: '物流商',
+        label: i18next.t('modules.pages.freightOperations.carrier'),
         type: 'select',
         required: true,
         options: getCarrierOptions,
@@ -127,21 +221,21 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       },
       {
         key: 'vehiclePlate',
-        label: '车号',
+        label: i18next.t('modules.pages.freightOperations.vehiclePlate'),
         type: 'autoComplete',
         options: getCarrierVehiclePlateOptions,
         row: 1,
       },
       {
         key: 'billTime',
-        label: '单据日期',
+        label: i18next.t('modules.pages.freightOperations.documentDate'),
         type: 'date',
         required: true,
         row: 2,
       },
       {
         key: 'unitPrice',
-        label: '单价',
+        label: i18next.t('modules.pages.freightOperations.unitPrice'),
         type: 'number',
         required: true,
         min: 0,
@@ -149,18 +243,25 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         defaultValue: 0,
         row: 2,
       },
-      { key: 'remark', label: '备注', type: 'input', row: 2 },
+      {
+        key: 'remark',
+        label: i18next.t('modules.pages.freightOperations.remark'),
+        type: 'input',
+        row: 2,
+      },
     ],
     parentImport: {
       parentModuleKey: 'sales-outbound',
-      label: '上级销售出库单',
+      label: i18next.t('modules.pages.freightOperations.parentSalesOutbound'),
       parentFieldKey: 'outboundNo',
       parentDisplayFieldKey: 'outboundNo',
-      buttonText: '导入上级销售出库单',
+      buttonText: i18next.t(
+        'modules.pages.freightOperations.importParentSalesOutbound',
+      ),
       enforceUniqueRelation: true,
       allowMultipleSelection: true,
       validateBeforeOpen: (currentRecord) =>
-        String(currentRecord.carrierName || '').trim()
+        asString(currentRecord.carrierName).trim()
           ? null
           : '请先选择物流商，再导入销售出库单',
       mapParentToDraft: (parentRecord) => ({
@@ -172,7 +273,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
           currentRecord.customerName,
           ...currentItems.map((item) => item.customerName),
         ])
-        const nextCustomerName = String(parentRecord.customerName || '').trim()
+        const nextCustomerName = asString(parentRecord.customerName).trim()
 
         if (
           existingCustomerNames.length &&

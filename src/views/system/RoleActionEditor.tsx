@@ -65,8 +65,8 @@ export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
 
   return (
     <div className="page-stack">
-      <Row gutter={16} style={{ height: 'calc(100vh - 160px)' }}>
-        <Col span={6}>
+      <Row gutter={[16, 16]} className="min-h-0 flex-1">
+        <Col xs={24} lg={6} className="min-h-0">
           <RoleActionRoleListCard
             roles={roles}
             selectedRoleId={selectedRoleId}
@@ -78,15 +78,17 @@ export function RoleActionEditor({ active = true }: RoleActionEditorProps) {
           />
         </Col>
 
-        <Col span={18}>
+        <Col xs={24} lg={18} className="min-h-0">
           <RoleActionPermissionCard
             selectedRoleInfo={selectedRoleInfo}
-            canEditPermissions={canEditPermissions}
             viewMode={viewMode}
             menuTree={menuTree}
             matrixColumns={matrixColumns}
             matrixData={matrixData}
-            saveLoading={savePending}
+            permissionActions={{
+              editable: canEditPermissions,
+              saving: savePending,
+            }}
             onSelectAll={selectAll}
             onDeselectAll={deselectAll}
             onViewModeChange={setViewMode}

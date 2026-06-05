@@ -1,37 +1,30 @@
-import { useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import {
+  type PermissionActionCode,
+  resolveModuleActionKind,
+  resolveModuleActionPermissionCodes,
+} from '@/module-system/module-adapter-actions'
 import type {
   ModuleActionDefinition,
   ModuleFormFieldDefinition,
   ModulePageConfig,
 } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
-import {
-  type PermissionActionCode,
-  resolveModuleActionKind,
-  resolveModuleActionPermissionCodes,
-} from '@/views/modules/module-adapter-actions'
-
-export const BULK_DELETE_LABEL = '删除'
-export const BULK_AUDIT_LABEL = '审核'
-export const BULK_REVERSE_AUDIT_LABEL = '反审核'
-export const BULK_PRINT_PREVIEW_LABEL = '打印预览'
-export const BULK_DIRECT_PRINT_LABEL = '直接打印'
 
 interface Handlers {
   exportMaterialRows: () => Promise<void>
   exportRows: (mode: 'selected' | 'page' | 'filtered') => Promise<void>
-  handlePrintSelectedRecords: (preview: boolean) => Promise<void>
-  handleSelectedAuditRecords: () => Promise<void>
+  handleSelectedAuditRecords: () => void
   handleSelectedDeleteRecords: () => void
-  handleSelectedReverseAuditRecords: () => Promise<void>
-  markSelectedFreightDelivered: () => Promise<void>
+  handleSelectedReverseAuditRecords: () => void
+  markSelectedFreightDelivered: () => void
   navigateToRoleActionEditor: () => void
   openCreateEditor: () => Promise<void>
-  openCustomerStatementGenerator: () => Promise<void>
-  openFreightPickupList: () => Promise<void>
-  openFreightStatementGenerator: () => Promise<void>
+  openCustomerStatementGenerator: () => void
+  openFreightPickupList: () => void
+  openFreightStatementGenerator: () => void
   openFreightSummary: () => Promise<void>
-  openSupplierStatementGenerator: () => Promise<void>
+  openSupplierStatementGenerator: () => void
 }
 
 interface Props {
@@ -42,8 +35,6 @@ interface Props {
   selectedRowCount: number
   canUseBulkAuditActions: boolean
   canUseBulkDeleteActions: boolean
-  canUseBulkPrintActions: boolean
-  detailPrintLoading: boolean
   hasAnyModuleAction: (actionCodes: PermissionActionCode[]) => boolean
   handlers: Handlers
 }
@@ -64,70 +55,47 @@ export function useModuleToolbarActions({
   selectedRowCount,
   canUseBulkAuditActions,
   canUseBulkDeleteActions,
-  canUseBulkPrintActions,
-  detailPrintLoading,
   hasAnyModuleAction,
   handlers,
 }: Props) {
-  const canUseAction = useCallback(
-    (action: ModuleActionDefinition) =>
-      hasAnyModuleAction(
-        resolveModuleActionPermissionCodes({
-          moduleKey,
-          actionKey: action.key,
-          actionLabel: action.label,
-        }),
-      ),
-    [hasAnyModuleAction, moduleKey],
-  )
+  const { t } = useTranslation()
 
-  const bulkDeleteAction = useMemo<ModuleActionDefinition | null>(
-    () =>
-      canUseBulkDeleteActions
-        ? {
-            label: BULK_DELETE_LABEL,
-            type: 'default',
-            danger: true,
-            disabled: selectedRowCount === 0,
-          }
-        : null,
-    [canUseBulkDeleteActions, selectedRowCount],
-  )
+  const canUseAction = (action: ModuleActionDefinition) =>
+    hasAnyModuleAction(
+      resolveModuleActionPermissionCodes({
+        moduleKey,
+        actionKey: action.key,
+        actionLabel: action.label,
+      }),
+    )
 
-  const bulkToolbarActions = useMemo<ModuleActionDefinition[]>(() => {
+  const bulkDeleteAction: ModuleActionDefinition | null =
+    canUseBulkDeleteActions
+      ? {
+          label: t('hooks.toolbarActions.delete'),
+          type: 'default',
+          danger: true,
+          disabled: selectedRowCount === 0,
+        }
+      : null
+
+  const bulkToolbarActions = (() => {
     const disabled = selectedRowCount === 0
     const actions: ModuleActionDefinition[] = []
     if (canUseBulkAuditActions) {
       actions.push(
-        { label: BULK_AUDIT_LABEL, type: 'default', disabled },
-        { label: BULK_REVERSE_AUDIT_LABEL, type: 'default', disabled },
-      )
-    }
-    if (canUseBulkPrintActions) {
-      actions.push(
+        { label: t('hooks.toolbarActions.audit'), type: 'default', disabled },
         {
-          label: BULK_PRINT_PREVIEW_LABEL,
+          label: t('hooks.toolbarActions.reverseAudit'),
           type: 'default',
           disabled,
-          loading: detailPrintLoading,
-        },
-        {
-          label: BULK_DIRECT_PRINT_LABEL,
-          type: 'default',
-          disabled,
-          loading: detailPrintLoading,
         },
       )
     }
     return actions
-  }, [
-    canUseBulkAuditActions,
-    canUseBulkPrintActions,
-    selectedRowCount,
-    detailPrintLoading,
-  ])
+  })() satisfies ModuleActionDefinition[]
 
-  const visibleToolbarActions = useMemo<ModuleActionDefinition[]>(() => {
+  const visibleToolbarActions = (() => {
     const remainingActions = [...(config.actions || [])]
     const createActionIndex = remainingActions.findIndex(isCreateToolbarAction)
     const orderedActions: ModuleActionDefinition[] = []
@@ -138,82 +106,87 @@ export function useModuleToolbarActions({
       orderedActions.push(bulkDeleteAction)
     }
     orderedActions.push(...bulkToolbarActions, ...remainingActions)
-    return orderedActions.filter((action) => canUseAction(action))
-  }, [config.actions, bulkDeleteAction, bulkToolbarActions, canUseAction])
-
-  const handleAction = useCallback(
-    async (action: ModuleActionDefinition) => {
+    return orderedActions.flatMap((action) => {
       if (!canUseAction(action)) {
-        message.warning(`暂无${action.label}权限`)
-        return
+        return []
       }
+      if (action.key === 'generate_pickup_list' && selectedRowCount === 0) {
+        return [{ ...action, disabled: true }]
+      }
+      return [action]
+    })
+  })() satisfies ModuleActionDefinition[]
 
-      if (action.label === BULK_AUDIT_LABEL) {
-        await handlers.handleSelectedAuditRecords()
-        return
-      }
-      if (action.label === BULK_REVERSE_AUDIT_LABEL) {
-        await handlers.handleSelectedReverseAuditRecords()
-        return
-      }
-      if (action.label === BULK_PRINT_PREVIEW_LABEL) {
-        await handlers.handlePrintSelectedRecords(true)
-        return
-      }
-      if (action.label === BULK_DIRECT_PRINT_LABEL) {
-        await handlers.handlePrintSelectedRecords(false)
-        return
-      }
-      if (action.label === BULK_DELETE_LABEL) {
-        handlers.handleSelectedDeleteRecords()
-        return
-      }
+  const handleAction = async (action: ModuleActionDefinition) => {
+    if (!canUseAction(action)) {
+      message.warning(
+        t('hooks.toolbarActions.noPermission', { label: action.label }),
+      )
+      return
+    }
 
-      switch (
-        resolveModuleActionKind({
-          moduleKey,
-          actionKey: action.key,
-          actionLabel: action.label,
-          hasFormFields: formFields.length > 0,
-          isMaterialModule,
-        })
-      ) {
-        case 'openSupplierStatementGenerator':
-          await handlers.openSupplierStatementGenerator()
-          return
-        case 'openCustomerStatementGenerator':
-          await handlers.openCustomerStatementGenerator()
-          return
-        case 'openFreightStatementGenerator':
-          await handlers.openFreightStatementGenerator()
-          return
-        case 'openCreateEditor':
-          await handlers.openCreateEditor()
-          return
-        case 'exportMaterialRows':
-          await handlers.exportMaterialRows()
-          return
-        case 'exportRows':
-          await handlers.exportRows('filtered')
-          return
-        case 'openFreightPickupList':
-          await handlers.openFreightPickupList()
-          return
-        case 'markSelectedFreightDelivered':
-          await handlers.markSelectedFreightDelivered()
-          return
-        case 'openFreightSummary':
-          await handlers.openFreightSummary()
-          return
-        case 'navigateToRoleActionEditor':
-          handlers.navigateToRoleActionEditor()
-          return
-        default:
-          message.info(`${action.label} 当前没有额外处理逻辑。`)
-      }
-    },
-    [canUseAction, formFields, handlers, isMaterialModule, moduleKey],
-  )
+    const auditLabel = t('hooks.toolbarActions.audit')
+    const reverseAuditLabel = t('hooks.toolbarActions.reverseAudit')
+    const deleteLabel = t('hooks.toolbarActions.delete')
+
+    if (action.label === auditLabel) {
+      handlers.handleSelectedAuditRecords()
+      return
+    }
+    if (action.label === reverseAuditLabel) {
+      handlers.handleSelectedReverseAuditRecords()
+      return
+    }
+    if (action.label === deleteLabel) {
+      handlers.handleSelectedDeleteRecords()
+      return
+    }
+
+    switch (
+      resolveModuleActionKind({
+        moduleKey,
+        actionKey: action.key,
+        actionLabel: action.label,
+        hasFormFields: formFields.length > 0,
+        isMaterialModule,
+      })
+    ) {
+      case 'openSupplierStatementGenerator':
+        handlers.openSupplierStatementGenerator()
+        return
+      case 'openCustomerStatementGenerator':
+        handlers.openCustomerStatementGenerator()
+        return
+      case 'openFreightStatementGenerator':
+        handlers.openFreightStatementGenerator()
+        return
+      case 'openCreateEditor':
+        await handlers.openCreateEditor()
+        return
+      case 'exportMaterialRows':
+        await handlers.exportMaterialRows()
+        return
+      case 'exportRows':
+        await handlers.exportRows('filtered')
+        return
+      case 'openFreightPickupList':
+        handlers.openFreightPickupList()
+        return
+      case 'markSelectedFreightDelivered':
+        handlers.markSelectedFreightDelivered()
+        return
+      case 'openFreightSummary':
+        await handlers.openFreightSummary()
+        return
+      case 'navigateToRoleActionEditor':
+        handlers.navigateToRoleActionEditor()
+        return
+      default:
+        message.info(
+          t('hooks.toolbarActions.noExtraLogic', { label: action.label }),
+        )
+    }
+  }
 
   return {
     canUseAction,

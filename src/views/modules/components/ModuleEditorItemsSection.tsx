@@ -2,6 +2,8 @@ import { DeleteOutlined, ImportOutlined, PlusOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
 import Button from 'antd/es/button'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleLineItem,
   ModulePageConfig,
@@ -10,22 +12,25 @@ import type {
 import { ColumnSettingsPopover } from './ColumnSettingsPopover'
 import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
-import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
 import { ModuleItemsTable } from './ModuleItemsTable'
+import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
 
 interface Props {
   config: ModulePageConfig
   items: ModuleLineItem[]
   selectedItemIds: string[]
-  canAddManualItems: boolean
-  canImportParentItems: boolean
   parentImporting: boolean
+  parentSelectorFilters: SearchParams
   parentSelectorOpen: boolean
   itemColumns: TableColumnsType<ModuleLineItem>
   itemColumnOrder: string[]
   visibleItemColumnKeys: string[]
-  canSave: boolean
-  canAudit: boolean
+  permissions: {
+    addManualItems: boolean
+    importParentItems: boolean
+    save: boolean
+    audit: boolean
+  }
   saving: boolean
   onAddItem: () => void
   onCancel: () => void
@@ -43,15 +48,13 @@ export function ModuleEditorItemsSection({
   config,
   items,
   selectedItemIds,
-  canAddManualItems,
-  canImportParentItems,
   parentImporting,
+  parentSelectorFilters,
   parentSelectorOpen,
   itemColumns,
   itemColumnOrder,
   visibleItemColumnKeys,
-  canSave,
-  canAudit,
+  permissions,
   saving,
   onAddItem,
   onCancel,
@@ -64,6 +67,7 @@ export function ModuleEditorItemsSection({
   onToggleItemColumn,
   onRowDragOver,
 }: Props) {
+  const { t } = useTranslation()
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
   if (!config.itemColumns?.length) {
@@ -72,22 +76,22 @@ export function ModuleEditorItemsSection({
 
   return (
     <>
-      <div style={{ marginTop: 24 }}>
+      <div className="mt-6">
         <ModuleItemsPanel
           items={items}
           actions={
             <>
-              {canAddManualItems && (
+              {permissions.addManualItems && (
                 <Button
                   type="primary"
                   className="overlay-action-button"
                   icon={<PlusOutlined />}
                   onClick={onAddItem}
                 >
-                  新增明细
+                  {t('modules.itemsSection.addItem')}
                 </Button>
               )}
-              {canImportParentItems && (
+              {permissions.importParentItems && (
                 <Button
                   className="overlay-action-button"
                   icon={<ImportOutlined />}
@@ -95,7 +99,11 @@ export function ModuleEditorItemsSection({
                   onClick={onOpenParentSelector}
                 >
                   {config.parentImport?.buttonText ||
-                    `导入${config.parentImport?.label || '上级单据'}明细`}
+                    t('modules.itemsSection.importItems', {
+                      label:
+                        config.parentImport?.label ||
+                        t('modules.itemsSection.parentDoc'),
+                    })}
                 </Button>
               )}
               <ColumnSettingsPopover
@@ -114,12 +122,13 @@ export function ModuleEditorItemsSection({
                   icon={<DeleteOutlined />}
                   onClick={onRemoveSelectedItems}
                 >
-                  删除选中 ({selectedItemIds.length})
+                  {t('modules.itemsSection.deleteSelected')} (
+                  {selectedItemIds.length})
                 </Button>
               )}
               <EditorFooterActions
-                canSave={canSave}
-                canAudit={canAudit}
+                canSave={permissions.save}
+                canAudit={permissions.audit}
                 saving={saving}
                 onCancel={onCancel}
                 onSave={onSave}
@@ -132,8 +141,8 @@ export function ModuleEditorItemsSection({
             dataSource={items}
             emptyText={
               config.parentImport
-                ? '当前没有明细，可手动新增或从上级单据导入'
-                : '当前没有明细，可手动新增'
+                ? t('modules.itemsSection.emptyTextWithImport')
+                : t('modules.itemsSection.emptyText')
             }
             rowClassName={(record) =>
               selectedItemIds.includes(record.id)
@@ -154,7 +163,14 @@ export function ModuleEditorItemsSection({
           parentModuleKey={config.parentImport.parentModuleKey}
           parentDisplayFieldKey={config.parentImport.parentDisplayFieldKey}
           allowMultipleSelection={config.parentImport.allowMultipleSelection}
-          title={`选择${config.parentImport.label || '上级单据'}`}
+          candidateStatementModuleKey={
+            config.parentImport.candidateStatementModuleKey
+          }
+          fixedFilters={parentSelectorFilters}
+          title={t('modules.itemsSection.selectParent', {
+            label:
+              config.parentImport.label || t('modules.itemsSection.parentDoc'),
+          })}
           onSelect={onImportParentRecord}
           onClose={onCloseParentSelector}
         />

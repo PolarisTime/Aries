@@ -1,17 +1,25 @@
-import { useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
+
+import i18next from 'i18next'
 import {
   generateBusinessPrimaryNo,
   getBusinessModuleDetail,
   saveBusinessModule,
 } from '@/api/business'
 import { listAllStatementCandidates } from '@/api/statements'
-import type { ModuleRecord } from '@/types/module-page'
-import { cloneLineItems } from '@/utils/clone-utils'
+import {
+  isDisplaySwitchEnabled,
+  listDisplaySwitches,
+} from '@/api/system-settings'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   buildCustomerStatementDraftData,
   buildFreightStatementDraftData,
   buildSupplierStatementDraftData,
-} from '@/views/modules/module-adapter-statements'
+} from '@/module-system/module-adapter-statement-drafts'
+import type { ModuleRecord } from '@/types/module-page'
+import { cloneLineItems } from '@/utils/clone-utils'
+import { asString } from '@/utils/type-narrowing'
 
 type StatementType = 'supplier' | 'customer' | 'freight'
 
@@ -22,149 +30,166 @@ interface Props {
 export function useBusinessGridStatementActions({
   refreshModuleQueries,
 }: Props) {
-  const buildDraftLineItemId = useCallback((prefix: string) => {
+  const { data: displaySwitches = [] } = useQuery({
+    queryKey: QUERY_KEYS.displaySwitches,
+    queryFn: () => listDisplaySwitches(),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const customerReceiptZero = isDisplaySwitchEnabled(
+    displaySwitches,
+    'SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER',
+  )
+
+  const supplierFullPayment = isDisplaySwitchEnabled(
+    displaySwitches,
+    'SYS_SUPPLIER_STATEMENT_FULL_PAYMENT_FROM_PURCHASE',
+  )
+  const buildDraftLineItemId = (prefix: string) => {
     let index = 0
-    return () => `${prefix}-${Date.now()}-${index++}`
-  }, [])
+    return () => {
+      const currentIndex = index
+      index += 1
+      return `${prefix}-${Date.now()}-${currentIndex}`
+    }
+  }
 
-  const handleStatementGenerate = useCallback(
-    async (
-      type: StatementType,
-      counterpartyName: string,
-      startDate: string,
-      endDate: string,
-    ) => {
-      const statementModuleKey =
+  const handleStatementGenerate = async (
+    type: StatementType,
+    counterpartyName: string,
+    startDate: string,
+    endDate: string,
+  ) => {
+    const statementModuleKey =
+      type === 'supplier'
+        ? 'supplier-statement'
+        : type === 'customer'
+          ? 'customer-statement'
+          : 'freight-statement'
+    const sourceModuleKey =
+      type === 'supplier'
+        ? 'purchase-inbound'
+        : type === 'customer'
+          ? 'sales-order'
+          : 'freight-bill'
+    const candidateRows = await listAllStatementCandidates(
+      statementModuleKey,
+      '',
+    )
+    const filteredCandidates = candidateRows.filter((candidate) => {
+      const dateField =
         type === 'supplier'
-          ? 'supplier-statement'
+          ? candidate.inboundDate
           : type === 'customer'
-            ? 'customer-statement'
-            : 'freight-statement'
-      const sourceModuleKey =
-        type === 'supplier'
-          ? 'purchase-inbound'
-          : type === 'customer'
-            ? 'sales-order'
-            : 'freight-bill'
-      const candidateRows = await listAllStatementCandidates(
-        statementModuleKey,
-        '',
-      )
-      const filteredCandidates = candidateRows.filter((candidate) => {
-        const dateField =
-          type === 'supplier'
-            ? candidate.inboundDate
-            : type === 'customer'
-              ? candidate.deliveryDate
-              : candidate.billTime
-        const currentDate = String(dateField || '')
+            ? candidate.deliveryDate
+            : candidate.billTime
+      const currentDate = asString(dateField)
 
-        if (!currentDate || currentDate < startDate || currentDate > endDate) {
-          return false
-        }
-
-        if (type === 'supplier') {
-          return String(candidate.supplierName || '') === counterpartyName
-        }
-        if (type === 'customer') {
-          return String(candidate.customerName || '') === counterpartyName
-        }
-
-        return String(candidate.carrierName || '') === counterpartyName
-      })
-
-      if (!filteredCandidates.length) {
-        throw new Error('当前筛选条件下没有可生成的候选单据')
+      if (!currentDate || currentDate < startDate || currentDate > endDate) {
+        return false
       }
 
-      const detailedRecords = await Promise.all(
-        filteredCandidates.map((candidate) =>
-          getBusinessModuleDetail(sourceModuleKey, String(candidate.id)),
-        ),
-      )
-      const sourceRecords = detailedRecords.map((detail) => detail.data)
-      const statementPeriod = { startDate, endDate }
-
+      if (type === 'supplier') {
+        return asString(candidate.supplierName) === counterpartyName
+      }
       if (type === 'customer') {
-        const recordsByProject = new Map<string, ModuleRecord[]>()
+        return asString(candidate.customerName) === counterpartyName
+      }
 
-        for (const record of sourceRecords) {
-          const projectName = String(record.projectName || '')
-          const current = recordsByProject.get(projectName) || []
-          current.push(record)
-          recordsByProject.set(projectName, current)
-        }
+      return asString(candidate.carrierName) === counterpartyName
+    })
 
-        for (const [projectName, projectRecords] of recordsByProject) {
-          const buildLineItemId = buildDraftLineItemId(
+    if (!filteredCandidates.length) {
+      throw new Error(i18next.t('hooks.statement.noCandidateDocuments'))
+    }
+
+    const detailedRecords = await Promise.all(
+      filteredCandidates.map((candidate) =>
+        getBusinessModuleDetail(sourceModuleKey, String(candidate.id)),
+      ),
+    )
+    const sourceRecords = detailedRecords.map((detail) => detail.data)
+    const statementPeriod = { startDate, endDate }
+
+    if (type === 'customer') {
+      const recordsByProject = new Map<string, ModuleRecord[]>()
+
+      for (const record of sourceRecords) {
+        const projectName = asString(record.projectName)
+        const current = recordsByProject.get(projectName) || []
+        current.push(record)
+        recordsByProject.set(projectName, current)
+      }
+
+      await Promise.all(
+        Array.from(recordsByProject, async ([projectName, projectRecords]) => {
+          const localBuildLineItemId = buildDraftLineItemId(
             `draft-customer-${projectName || 'project'}`,
           )
           const draft = buildCustomerStatementDraftData({
             baseDraft: {
               id: '',
-              statementNo: await generateBusinessPrimaryNo(
-                'customer-statement',
-              ),
+              statementNo:
+                await generateBusinessPrimaryNo('customer-statement'),
               status: '待确认',
               remark: '',
             },
             sourceOrders: projectRecords,
             today: endDate,
             statementPeriod,
-            defaultReceiptAmountZero: true,
+            defaultReceiptAmountZero: customerReceiptZero,
             cloneLineItems,
-            buildLineItemId,
+            buildLineItemId: localBuildLineItemId,
           })
           await saveBusinessModule('customer-statement', {
             ...draft,
             remark: '',
           })
-        }
-      } else if (type === 'supplier') {
-        const buildLineItemId = buildDraftLineItemId('draft-supplier')
-        const draft = buildSupplierStatementDraftData({
-          baseDraft: {
-            id: '',
-            statementNo: await generateBusinessPrimaryNo('supplier-statement'),
-            status: '待确认',
-            remark: '',
-          },
-          sourceInbounds: sourceRecords,
-          payments: [],
-          today: endDate,
-          statementPeriod,
-          defaultFullPayment: false,
-          cloneLineItems,
-          buildLineItemId,
-        })
-        await saveBusinessModule('supplier-statement', {
-          ...draft,
+        }),
+      )
+    } else if (type === 'supplier') {
+      const buildLineItemId = buildDraftLineItemId('draft-supplier')
+      const draft = buildSupplierStatementDraftData({
+        baseDraft: {
+          id: '',
+          statementNo: await generateBusinessPrimaryNo('supplier-statement'),
+          status: '待确认',
           remark: '',
-        })
-      } else {
-        const buildLineItemId = buildDraftLineItemId('draft-freight')
-        const draft = buildFreightStatementDraftData({
-          baseDraft: {
-            id: '',
-            statementNo: await generateBusinessPrimaryNo('freight-statement'),
-            remark: '',
-          },
-          sourceBills: sourceRecords,
-          today: endDate,
-          statementPeriod,
-          cloneLineItems,
-          buildLineItemId,
-        })
-        await saveBusinessModule('freight-statement', {
-          ...draft,
+        },
+        sourceInbounds: sourceRecords,
+        payments: [],
+        today: endDate,
+        statementPeriod,
+        defaultFullPayment: supplierFullPayment,
+        cloneLineItems,
+        buildLineItemId,
+      })
+      await saveBusinessModule('supplier-statement', {
+        ...draft,
+        remark: '',
+      })
+    } else {
+      const buildLineItemId = buildDraftLineItemId('draft-freight')
+      const draft = buildFreightStatementDraftData({
+        baseDraft: {
+          id: '',
+          statementNo: await generateBusinessPrimaryNo('freight-statement'),
           remark: '',
-        })
-      }
+        },
+        sourceBills: sourceRecords,
+        today: endDate,
+        statementPeriod,
+        cloneLineItems,
+        buildLineItemId,
+      })
+      await saveBusinessModule('freight-statement', {
+        ...draft,
+        remark: '',
+      })
+    }
 
-      await refreshModuleQueries()
-    },
-    [buildDraftLineItemId, refreshModuleQueries],
-  )
+    await refreshModuleQueries()
+  }
 
   return { handleStatementGenerate }
 }

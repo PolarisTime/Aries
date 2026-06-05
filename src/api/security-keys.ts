@@ -1,7 +1,8 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { getApiMessage } from '@/utils/api-messages'
 
-export interface SecurityKeyItem {
+interface SecurityKeyItem {
   keyCode: string
   keyName: string
   source: string
@@ -27,33 +28,44 @@ export interface SecurityKeyRotateResult {
   remark: string
 }
 
-interface SecurityKeyResponse<T> {
+export interface SecurityKeyResponse<T> {
   code: number
   message?: string
   data: T
 }
 
-function buildTotpHeaders(totpCode: string) {
+function buildTotpHeaders(totpCode: string): {
+  headers: { 'X-TOTP-Code': string }
+} {
   return { headers: { 'X-TOTP-Code': totpCode.trim() } }
 }
 
-export async function getSecurityKeyOverview() {
+export async function getSecurityKeyOverview(): Promise<
+  SecurityKeyResponse<SecurityKeyOverview>
+> {
   const response = await http.get<SecurityKeyResponse<SecurityKeyOverview>>(
     ENDPOINTS.SECURITY_KEYS,
   )
-  return assertApiSuccess(response, '加载安全密钥状态失败')
+  return assertApiSuccess(
+    response,
+    getApiMessage('loadSecurityKeyStatusFailed'),
+  )
 }
 
-export async function rotateJwtSecurityKey(totpCode: string) {
+export async function rotateJwtSecurityKey(
+  totpCode: string,
+): Promise<SecurityKeyResponse<SecurityKeyRotateResult>> {
   const response = await http.post<
     SecurityKeyResponse<SecurityKeyRotateResult>
   >(`${ENDPOINTS.SECURITY_KEYS}/jwt/rotate`, null, buildTotpHeaders(totpCode))
-  return assertApiSuccess(response, 'JWT 主密钥轮转失败')
+  return assertApiSuccess(response, getApiMessage('jwtKeyRotationFailed'))
 }
 
-export async function rotateTotpSecurityKey(totpCode: string) {
+export async function rotateTotpSecurityKey(
+  totpCode: string,
+): Promise<SecurityKeyResponse<SecurityKeyRotateResult>> {
   const response = await http.post<
     SecurityKeyResponse<SecurityKeyRotateResult>
   >(`${ENDPOINTS.SECURITY_KEYS}/totp/rotate`, null, buildTotpHeaders(totpCode))
-  return assertApiSuccess(response, '2FA 主密钥轮转失败')
+  return assertApiSuccess(response, getApiMessage('twoFactorKeyRotationFailed'))
 }

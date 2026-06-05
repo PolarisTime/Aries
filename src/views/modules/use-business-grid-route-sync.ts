@@ -1,6 +1,8 @@
 import type { ParsedLocation } from '@tanstack/react-router'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
+import type { SearchParams } from '@/types/api-raw'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
 interface Props {
   location: ParsedLocation
@@ -8,7 +10,7 @@ interface Props {
   records: ModuleRecord[]
   setPage: (page: number) => void
   clearSelection: () => void
-  setSubmittedFilters: (filters: Record<string, unknown>) => void
+  setSubmittedFilters: (filters: SearchParams) => void
   updateFilter: (key: string, value: unknown) => void
   openDetail: (target: string | ModuleRecord) => Promise<void>
 }
@@ -66,7 +68,7 @@ export function resolveAutoOpenDetailTarget({
   const matchedRecord = routeParams.trackId
     ? records.find((record) => String(record.id || '') === routeParams.trackId)
     : records.find(
-        (record) => String(record[primaryNoKey] || '') === routeParams.docNo,
+        (record) => asString(record[primaryNoKey]) === routeParams.docNo,
       )
 
   if (matchedRecord) {
@@ -97,27 +99,27 @@ export function useBusinessGridRouteSync({
   openDetail,
 }: Props) {
   const autoOpenedRouteKeyRef = useRef('')
-  const rawSearchStr = useMemo(
-    () => getRawSearchString(location.searchStr),
-    [location.searchStr],
-  )
-  const routeParams = useMemo(
-    () => parseRouteParams(rawSearchStr),
-    [rawSearchStr],
-  )
+  // react-doctor-disable-next-line react-doctor/no-event-handler -- URL 查询串是模块列表的外部入口，变化时需要同步列表过滤条件。
+  const rawSearchStr = getRawSearchString(location.searchStr)
+  const routeParams = parseRouteParams(rawSearchStr)
 
+  // react-doctor-disable-next-line react-doctor/no-cascading-set-state -- 路由入口变化需要同时重置分页、选中行和过滤条件。
   useEffect(() => {
     setPage(1)
     clearSelection()
     autoOpenedRouteKeyRef.current = ''
 
     if (!routeParams.routeKeyword) {
+      // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 过滤状态由父级列表持有，这里只同步路由入口。
       updateFilter('keyword', '')
+      // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 同步已提交过滤条件，保证详情跳转后的列表立即收敛到目标单据。
       setSubmittedFilters({})
       return
     }
 
+    // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 过滤状态由父级列表持有，这里只同步路由入口。
     updateFilter('keyword', routeParams.routeKeyword)
+    // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 同步已提交过滤条件，保证详情跳转后的列表立即收敛到目标单据。
     setSubmittedFilters({ keyword: routeParams.routeKeyword })
   }, [
     clearSelection,

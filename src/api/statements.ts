@@ -1,86 +1,97 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { getModuleConfig } from '@/api/module-contracts'
-import type { ApiResponse } from '@/types/api'
+import { pageContent, pageTotalElements } from '@/api/page-contract'
+import type { ApiResponse, TableResponse } from '@/types/api'
+import type {
+  RawApiRecord,
+  RawPagePayload,
+  SearchParams,
+} from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
+import { getApiMessage } from '@/utils/api-messages'
+import { asId, asString } from '@/utils/type-narrowing'
 
-interface PagePayload<T> {
-  records: T[]
-  totalElements: number
+export function normalizeRecord(raw: RawApiRecord): ModuleRecord {
+  const id = asId(raw.id) || asString(raw.id)
+  const items = Array.isArray(raw.items)
+    ? raw.items.map((item) => ({
+        ...item,
+        id: asId(item.id) || asString(item.id),
+      }))
+    : undefined
+  return { ...raw, id, items }
 }
 
-function normalizeRecord(record: Record<string, unknown>) {
-  return {
-    ...record,
-    id: String(record.id ?? ''),
-    items: Array.isArray(record.items)
-      ? record.items.map((item) => ({
-          ...(item as Record<string, unknown>),
-          id: String((item as Record<string, unknown>).id ?? ''),
-        }))
-      : undefined,
-  } as ModuleRecord
-}
+type StatementModuleKey =
+  | 'supplier-statement'
+  | 'customer-statement'
+  | 'freight-statement'
 
-export async function listStatementCandidates(
-  statementModuleKey:
-    | 'supplier-statement'
-    | 'customer-statement'
-    | 'freight-statement',
+async function listStatementCandidates(
+  statementModuleKey: StatementModuleKey,
   keyword = '',
   page = 0,
   size = 200,
+  filters: SearchParams = {},
 ) {
   const endpointConfig = getModuleConfig(statementModuleKey)
   const response = assertApiSuccess(
-    await http.get<ApiResponse<PagePayload<Record<string, unknown>>>>(
-      `${endpointConfig.path}/candidates`,
-      {
-        params: {
-          keyword: keyword.trim(),
-          page,
-          size,
-        },
-      },
+    await http.get<ApiResponse<RawPagePayload>>(
+      `${endpointConfig.path}/candidate`,
+      { params: { ...filters, keyword: keyword.trim(), page, size } },
     ),
-    '查询对账候选单据失败',
+    getApiMessage('queryStatementCandidatesFailed'),
   )
-
+  const content = pageContent(response.data)
   return {
-    rows: Array.isArray(response.data?.records)
-      ? response.data.records.map((item) => normalizeRecord(item))
-      : [],
-    total: Number(response.data?.totalElements ?? 0),
+    rows: content.map(normalizeRecord),
+    total: pageTotalElements(response.data),
   }
 }
 
 export async function listAllStatementCandidates(
-  statementModuleKey:
-    | 'supplier-statement'
-    | 'customer-statement'
-    | 'freight-statement',
+  statementModuleKey: StatementModuleKey,
   keyword = '',
   pageSize = 200,
+  filters: SearchParams = {},
 ) {
   const rows: ModuleRecord[] = []
   let page = 0
   let total = 0
-
   while (true) {
     const current = await listStatementCandidates(
       statementModuleKey,
       keyword,
       page,
       pageSize,
+      filters,
     )
-    if (page === 0) {
-      total = current.total
-    }
+    if (page === 0) total = current.total
     rows.push(...current.rows)
-    if (rows.length >= total || current.rows.length < pageSize) {
-      break
-    }
+    if (rows.length >= total || current.rows.length < pageSize) break
     page += 1
   }
-
   return rows
+}
+
+export async function listStatementCandidatePage(
+  statementModuleKey: StatementModuleKey,
+  filters: SearchParams,
+  page: number,
+  size: number,
+): Promise<TableResponse<ModuleRecord>> {
+  const current = await listStatementCandidates(
+    statementModuleKey,
+    asString(filters.keyword).trim(),
+    page,
+    size,
+    filters,
+  )
+  return {
+    code: 0,
+    data: {
+      rows: current.rows,
+      total: current.total,
+    },
+  }
 }

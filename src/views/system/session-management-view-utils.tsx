@@ -1,27 +1,58 @@
 import { StopOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
-import Tag from 'antd/es/tag'
 import type { ColumnsType } from 'antd/es/table'
+import Tag from 'antd/es/tag'
+import type { TFunction } from 'i18next'
 import type { RefreshTokenRecord } from '@/api/session-management'
+import { formatDateTime } from '@/utils/formatters'
+import { asString } from '@/utils/type-narrowing'
 
-export function getSessionStatusColor(status: string) {
-  if (status === '有效') return 'green'
-  if (status === '已禁用') return 'red'
+type SessionStatus = 'valid' | 'disabled' | 'unknown'
+
+function normalizeSessionStatus(status: unknown): SessionStatus {
+  const normalized = asString(status).trim().toLowerCase()
+  if (['有效', 'valid', 'active'].includes(normalized)) return 'valid'
+  if (
+    ['已禁用', 'disabled', 'revoked', 'inactive', 'invalid'].includes(
+      normalized,
+    )
+  )
+    return 'disabled'
+  return 'unknown'
+}
+
+function isSessionValidStatus(status: unknown) {
+  return normalizeSessionStatus(status) === 'valid'
+}
+
+function getSessionStatusColor(status: unknown) {
+  const normalizedStatus = normalizeSessionStatus(status)
+  if (normalizedStatus === 'valid') return 'green'
+  if (normalizedStatus === 'disabled') return 'red'
   return 'default'
 }
 
-export function getSessionOnlineColor(record: RefreshTokenRecord) {
-  if (record.status !== '有效') return 'default'
+function getSessionOnlineColor(record: RefreshTokenRecord) {
+  if (!isSessionValidStatus(record.status)) return 'default'
   return record.online ? 'green' : 'orange'
 }
 
-export function getSessionOnlineLabel(record: RefreshTokenRecord) {
-  if (record.status !== '有效') return '离线'
-  return record.online ? '在线' : '离线'
+function getSessionStatusLabel(status: unknown, t: TFunction) {
+  const normalizedStatus = normalizeSessionStatus(status)
+  if (normalizedStatus === 'valid') return t('system.session.valid')
+  if (normalizedStatus === 'disabled') return t('system.session.disabled')
+  return asString(status) || '--'
 }
 
-export function truncateSessionDeviceInfo(text: unknown) {
-  const normalized = String(text ?? '')
+function getSessionOnlineLabel(record: RefreshTokenRecord, t: TFunction) {
+  if (!isSessionValidStatus(record.status)) return t('system.session.offline')
+  return record.online
+    ? t('system.session.online')
+    : t('system.session.offline')
+}
+
+function truncateSessionDeviceInfo(text: unknown) {
+  const normalized = asString(text)
   if (!normalized) return '--'
   return normalized.length > 60 ? `${normalized.slice(0, 60)}...` : normalized
 }
@@ -29,20 +60,22 @@ export function truncateSessionDeviceInfo(text: unknown) {
 interface SessionColumnsOptions {
   canEdit: boolean
   onRevoke: (record: RefreshTokenRecord) => void
+  t: TFunction
 }
 
 export function buildSessionTableColumns({
   canEdit,
   onRevoke,
+  t,
 }: SessionColumnsOptions): ColumnsType<RefreshTokenRecord> {
   return [
     {
-      title: '操作',
+      title: t('common.operation'),
       key: 'action',
       width: 100,
       align: 'center',
       render: (_: unknown, record) =>
-        canEdit && record.status === '有效' ? (
+        canEdit && isSessionValidStatus(record.status) ? (
           <Button
             type="link"
             size="small"
@@ -50,47 +83,76 @@ export function buildSessionTableColumns({
             icon={<StopOutlined />}
             onClick={() => onRevoke(record)}
           >
-            禁用
+            {t('system.session.disable')}
           </Button>
         ) : null,
     },
-    { dataIndex: 'tokenId', title: 'Token ID', width: 200, ellipsis: true },
-    { dataIndex: 'loginName', title: '登录名', width: 120 },
-    { dataIndex: 'userName', title: '用户名', width: 120 },
-    { dataIndex: 'loginIp', title: '登录IP', width: 140 },
+    {
+      dataIndex: 'tokenId',
+      title: t('system.session.tokenId'),
+      width: 200,
+      ellipsis: true,
+    },
+    {
+      dataIndex: 'loginName',
+      title: t('system.userAccount.loginName'),
+      width: 120,
+    },
+    {
+      dataIndex: 'userName',
+      title: t('system.userAccount.userName'),
+      width: 120,
+    },
+    {
+      dataIndex: 'loginIp',
+      title: t('system.session.loginIp'),
+      width: 140,
+    },
     {
       dataIndex: 'deviceInfo',
-      title: '设备信息',
+      title: t('system.session.deviceInfo'),
       width: 280,
       ellipsis: true,
       render: (value: unknown) => truncateSessionDeviceInfo(value),
     },
-    { dataIndex: 'createdAt', title: '创建时间', width: 170 },
+    {
+      dataIndex: 'createdAt',
+      title: t('common.createdAt'),
+      width: 170,
+      render: (value: unknown) => formatDateTime(value, '--'),
+    },
     {
       dataIndex: 'lastActiveAt',
-      title: '最近活跃',
+      title: t('system.session.lastActive'),
       width: 170,
-      render: (value: string) => value || '--',
+      render: (value: unknown) => formatDateTime(value, '--'),
     },
-    { dataIndex: 'expiresAt', title: '过期时间', width: 170 },
     {
-      title: '在线状态',
+      dataIndex: 'expiresAt',
+      title: t('system.session.expiresAt'),
+      width: 170,
+      render: (value: unknown) => formatDateTime(value, '--'),
+    },
+    {
+      title: t('system.session.onlineStatus'),
       key: 'online',
       width: 100,
       align: 'center',
       render: (_: unknown, record) => (
         <Tag color={getSessionOnlineColor(record)}>
-          {getSessionOnlineLabel(record)}
+          {getSessionOnlineLabel(record, t)}
         </Tag>
       ),
     },
     {
       dataIndex: 'status',
-      title: '状态',
+      title: t('common.status'),
       width: 100,
       align: 'center',
-      render: (value: string) => (
-        <Tag color={getSessionStatusColor(value)}>{value}</Tag>
+      render: (value: unknown) => (
+        <Tag color={getSessionStatusColor(value)}>
+          {getSessionStatusLabel(value, t)}
+        </Tag>
       ),
     },
   ]

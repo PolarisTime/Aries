@@ -81,13 +81,39 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react({
+        babel: {
+          plugins: [['babel-plugin-react-compiler', { target: '19' }]],
+        },
+      }),
+      tailwindcss(),
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
     },
     server: {
+      host: '0.0.0.0',
+      port: 3100,
+      warmup: {
+        clientFiles: [
+          'src/main.tsx',
+          'src/router/index.ts',
+          'src/api/client.ts',
+        ],
+      },
+      proxy: env.VITE_PROXY_TARGET
+        ? {
+            '^/api(?:/|$)': {
+              target: env.VITE_PROXY_TARGET,
+              changeOrigin: true,
+            },
+          }
+        : undefined,
+    },
+    preview: {
       host: '0.0.0.0',
       port: 3100,
       proxy: env.VITE_PROXY_TARGET
@@ -100,6 +126,8 @@ export default defineConfig(({ mode }) => {
         : undefined,
     },
     build: {
+      target: 'esnext',
+      cssMinify: 'lightningcss',
       chunkSizeWarningLimit: 900,
       modulePreload: {
         resolveDependencies(_filename, deps, context) {
@@ -205,18 +233,6 @@ export default defineConfig(({ mode }) => {
                 test: /src[\\/]views[\\/]dashboard[\\/]/,
                 minSize: 12_000,
                 priority: 15,
-              },
-              {
-                name: 'business-dnd',
-                test: /src[\\/]views[\\/]modules[\\/]components[\\/](BusinessGridSortableTable|DraggableColumnHeader)\.tsx$|node_modules[\\/]@dnd-kit[\\/]/,
-                minSize: 4_000,
-                priority: 14,
-              },
-              {
-                name: 'business',
-                test: /src[\\/]views[\\/]modules[\\/]/,
-                minSize: 30_000,
-                priority: 10,
               },
             ],
           },

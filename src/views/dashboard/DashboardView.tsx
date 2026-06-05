@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { lazy, Suspense, useMemo } from 'react'
 import Alert from 'antd/es/alert'
+import { lazy, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getDashboardSummary } from '@/api/dashboard'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useIdleActivation } from '@/hooks/useIdleActivation'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { DashboardInfoPanels } from '@/views/dashboard/DashboardInfoPanels'
@@ -16,18 +18,19 @@ const LazyDashboardFlowCard = lazy(() =>
 )
 
 export function DashboardView() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const isPageVisible = usePageVisibility()
   const canMountFlowCard = useIdleActivation(Boolean(isPageVisible), 1400)
   const summaryQuery = useQuery({
-    queryKey: ['dashboard-summary'],
+    queryKey: QUERY_KEYS.dashboardSummary,
     queryFn: getDashboardSummary,
     refetchInterval: isPageVisible ? 120000 : false,
   })
 
   const summary = summaryQuery.data
   const animatedServerTime = useDashboardServerTime(summary?.serverTime)
-  const infoItems = useMemo(() => buildDashboardInfoItems(summary), [summary])
+  const infoItems = buildDashboardInfoItems(t, summary)
 
   return (
     <div className="page-stack dashboard-root">
@@ -35,8 +38,8 @@ export function DashboardView() {
         <Alert
           type="error"
           showIcon
-          title="工作台数据加载失败，请刷新页面重试"
-          style={{ marginBottom: 16 }}
+          title={t('dashboard.alerts.loadFailed')}
+          className="mb-4"
         />
       ) : null}
 
@@ -48,7 +51,9 @@ export function DashboardView() {
 
       {canMountFlowCard ? (
         <Suspense
-          fallback={<div className="dashboard-flow-card-placeholder" aria-hidden />}
+          fallback={
+            <div className="dashboard-flow-card-placeholder" aria-hidden />
+          }
         >
           <LazyDashboardFlowCard navigate={navigate} summary={summary} />
         </Suspense>

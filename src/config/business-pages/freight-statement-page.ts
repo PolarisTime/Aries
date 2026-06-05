@@ -1,5 +1,7 @@
+import i18next from 'i18next'
 import { getCarrierOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import {
   AUDIT_STATUS_LABEL,
   CARRIER_NAME_LABEL,
@@ -9,20 +11,21 @@ import { buildStatementOverview, freightItemColumns, statusMap } from './shared'
 
 export const freightStatementPageConfig: ModulePageConfig = {
   key: 'freight-statement',
-  title: '物流对账单',
+  title: i18next.t('modules.pages.freightStatement.freightStatement'),
   kicker: 'Statements',
-  description:
-    '物流对账单和运费对账汇总拆开处理，这里展示正式物流对账单列表，用于审核、签署、附件和付款累计。',
+  description: i18next.t('modules.pages.freightStatement.freightStatementDesc'),
   primaryNoKey: 'statementNo',
   actions: [
     {
       key: 'generate_freight_statement',
-      label: '生成物流对账单',
+      label: i18next.t(
+        'modules.pages.freightStatement.generateFreightStatement',
+      ),
       type: 'primary',
     },
     {
       key: 'view_freight_summary',
-      label: '查看运费对账汇总',
+      label: i18next.t('modules.pages.freightStatement.viewFreightSummary'),
       type: 'default',
     },
   ],
@@ -38,8 +41,14 @@ export const freightStatementPageConfig: ModulePageConfig = {
       label: AUDIT_STATUS_LABEL,
       type: 'select',
       options: [
-        { label: '待审核', value: '待审核' },
-        { label: '已审核', value: '已审核' },
+        {
+          label: i18next.t('modules.pages.freightStatement.pendingAudit'),
+          value: '待审核',
+        },
+        {
+          label: i18next.t('modules.pages.freightStatement.audited'),
+          value: '已审核',
+        },
       ],
     },
     {
@@ -47,47 +56,80 @@ export const freightStatementPageConfig: ModulePageConfig = {
       label: SIGN_STATUS_LABEL,
       type: 'select',
       options: [
-        { label: '未签署', value: '未签署' },
-        { label: '已签署', value: '已签署' },
+        {
+          label: i18next.t('modules.pages.freightStatement.unsigned'),
+          value: '未签署',
+        },
+        {
+          label: i18next.t('modules.pages.freightStatement.signed'),
+          value: '已签署',
+        },
       ],
     },
-    { key: 'endDate', label: '账期', type: 'dateRange' },
+    {
+      key: 'endDate',
+      label: i18next.t('modules.pages.freightStatement.period'),
+      type: 'dateRange',
+    },
   ],
   columns: [
-    { title: '对账单号', dataIndex: 'statementNo', width: 170 },
-    { title: '物流商', dataIndex: 'carrierName', width: 150 },
-    { title: '开始日期', dataIndex: 'startDate', width: 120, type: 'date' },
-    { title: '结束日期', dataIndex: 'endDate', width: 120, type: 'date' },
     {
-      title: '总重量（吨）',
+      title: i18next.t('modules.pages.freightStatement.statementNo'),
+      dataIndex: 'statementNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.freightStatement.carrierCode'),
+      dataIndex: 'carrierCode',
+      width: 130,
+    },
+    {
+      title: i18next.t('modules.pages.freightStatement.carrier'),
+      dataIndex: 'carrierName',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.freightStatement.startDate'),
+      dataIndex: 'startDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.freightStatement.endDate'),
+      dataIndex: 'endDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.freightStatement.totalWeight'),
       dataIndex: 'totalWeight',
       width: 116,
       align: 'right',
       type: 'weight',
     },
     {
-      title: '总运费',
+      title: i18next.t('modules.pages.freightStatement.totalFreight'),
       dataIndex: 'totalFreight',
       width: 110,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '已付金额',
+      title: i18next.t('modules.pages.freightStatement.paidAmount'),
       dataIndex: 'paidAmount',
       width: 110,
       align: 'right',
       type: 'amount',
     },
     {
-      title: '审核状态',
+      title: i18next.t('modules.pages.freightStatement.auditStatus'),
       dataIndex: 'status',
       width: 110,
       type: 'status',
       align: 'center',
     },
     {
-      title: '签署状态',
+      title: i18next.t('modules.pages.freightStatement.signStatus'),
       dataIndex: 'signStatus',
       width: 110,
       type: 'status',
@@ -96,45 +138,102 @@ export const freightStatementPageConfig: ModulePageConfig = {
   ],
   defaultHiddenColumnKeys: ['paidAmount'],
   detailFields: [
-    { label: '对账单号', key: 'statementNo' },
-    { label: '物流商', key: 'carrierName' },
-    { label: '开始日期', key: 'startDate', type: 'date' },
-    { label: '结束日期', key: 'endDate', type: 'date' },
-    { label: '总重量（吨）', key: 'totalWeight', type: 'weight' },
-    { label: '总运费', key: 'totalFreight', type: 'amount' },
-    { label: '已付金额', key: 'paidAmount', type: 'amount' },
-    { label: '审核状态', key: 'status', type: 'status' },
-    { label: '签署状态', key: 'signStatus', type: 'status' },
-    { label: '附件', key: 'attachment' },
-    { label: '备注', key: 'remark' },
+    {
+      label: i18next.t('modules.pages.freightStatement.statementNo'),
+      key: 'statementNo',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.carrier'),
+      key: 'carrierName',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.carrierCode'),
+      key: 'carrierCode',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.startDate'),
+      key: 'startDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.endDate'),
+      key: 'endDate',
+      type: 'date',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.totalWeight'),
+      key: 'totalWeight',
+      type: 'weight',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.totalFreight'),
+      key: 'totalFreight',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.paidAmount'),
+      key: 'paidAmount',
+      type: 'amount',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.auditStatus'),
+      key: 'status',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.signStatus'),
+      key: 'signStatus',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.attachment'),
+      key: 'attachment',
+    },
+    {
+      label: i18next.t('modules.pages.freightStatement.remark'),
+      key: 'remark',
+    },
   ],
   formFields: [
     {
       key: 'statementNo',
-      label: '对账单号',
+      label: i18next.t('modules.pages.freightStatement.statementNo'),
       type: 'input',
       required: true,
       row: 1,
     },
     {
       key: 'carrierName',
-      label: '物流商',
+      label: i18next.t('modules.pages.freightStatement.carrier'),
       type: 'select',
       required: true,
       options: getCarrierOptions,
       row: 1,
     },
     {
+      key: 'carrierCode',
+      label: i18next.t('modules.pages.freightStatement.carrierCode'),
+      type: 'input',
+      disabled: true,
+      row: 1,
+    },
+    {
       key: 'startDate',
-      label: '开始日期',
+      label: i18next.t('modules.pages.freightStatement.startDate'),
       type: 'date',
       required: true,
       row: 1,
     },
-    { key: 'endDate', label: '结束日期', type: 'date', required: true, row: 1 },
+    {
+      key: 'endDate',
+      label: i18next.t('modules.pages.freightStatement.endDate'),
+      type: 'date',
+      required: true,
+      row: 1,
+    },
     {
       key: 'totalWeight',
-      label: '总重量（吨）',
+      label: i18next.t('modules.pages.freightStatement.totalWeight'),
       type: 'number',
       required: true,
       min: 0,
@@ -144,7 +243,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
     },
     {
       key: 'totalFreight',
-      label: '总运费',
+      label: i18next.t('modules.pages.freightStatement.totalFreight'),
       type: 'number',
       required: true,
       min: 0,
@@ -154,32 +253,51 @@ export const freightStatementPageConfig: ModulePageConfig = {
     },
     {
       key: 'status',
-      label: '审核状态',
+      label: i18next.t('modules.pages.freightStatement.auditStatus'),
       type: 'select',
       defaultValue: '待审核',
       options: [
-        { label: '待审核', value: '待审核' },
-        { label: '已审核', value: '已审核' },
+        {
+          label: i18next.t('modules.pages.freightStatement.pendingAudit'),
+          value: '待审核',
+        },
+        {
+          label: i18next.t('modules.pages.freightStatement.audited'),
+          value: '已审核',
+        },
       ],
       row: 2,
     },
     {
       key: 'signStatus',
-      label: '签署状态',
+      label: i18next.t('modules.pages.freightStatement.signStatus'),
       type: 'select',
       defaultValue: '未签署',
       options: [
-        { label: '未签署', value: '未签署' },
-        { label: '已签署', value: '已签署' },
+        {
+          label: i18next.t('modules.pages.freightStatement.unsigned'),
+          value: '未签署',
+        },
+        {
+          label: i18next.t('modules.pages.freightStatement.signed'),
+          value: '已签署',
+        },
       ],
       row: 2,
     },
-    { key: 'remark', label: '备注', type: 'textarea', row: 3, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.freightStatement.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
   ],
   saveFields: {
     scalar: [
       'statementNo',
       'sourceBillNos',
+      'carrierCode',
       'carrierName',
       'startDate',
       'endDate',
@@ -211,6 +329,56 @@ export const freightStatementPageConfig: ModulePageConfig = {
       'weightTon',
       'warehouseName',
     ],
+  },
+  parentImport: {
+    parentModuleKey: 'freight-bill',
+    label: '物流单',
+    parentFieldKey: 'sourceBillNos',
+    parentDisplayFieldKey: 'billNo',
+    candidateStatementModuleKey: 'freight-statement',
+    buttonText: '选择物流单生成明细',
+    enforceUniqueRelation: true,
+    allowMultipleSelection: true,
+    buildParentFilters: (currentRecord) => ({
+      carrierName: asString(currentRecord.carrierName).trim(),
+      status: '已审核',
+    }),
+    validateBeforeOpen: (currentRecord) =>
+      asString(currentRecord.carrierName).trim()
+        ? null
+        : '请先选择物流商，再选择物流单',
+    mapParentToDraft: (parentRecord) => ({
+      carrierName: parentRecord.carrierName || '',
+      startDate: parentRecord.billTime || '',
+      endDate: parentRecord.billTime || '',
+      paidAmount: 0,
+      status: '待审核',
+      signStatus: '未签署',
+    }),
+    validateParentImport: ({ currentRecord, parentRecord }) => {
+      if (asString(parentRecord.status).trim() !== '已审核') {
+        return '只能选择已审核的物流单生成物流对账单'
+      }
+      if (
+        asString(currentRecord.carrierName).trim() !==
+        asString(parentRecord.carrierName).trim()
+      ) {
+        return '只能选择同一物流商的物流单生成物流对账单'
+      }
+      return null
+    },
+    transformItems: (parentRecord) => {
+      const sourceNo = asString(parentRecord.billNo).trim()
+      return (Array.isArray(parentRecord.items) ? parentRecord.items : []).map(
+        (item, index) => ({
+          ...item,
+          id: `${sourceNo || 'freight-bill'}-${String(item.id || index)}`,
+          sourceNo,
+          _parentBillTime: parentRecord.billTime || '',
+          _parentTotalFreight: Number(parentRecord.totalFreight || 0),
+        }),
+      )
+    },
   },
   itemColumns: freightItemColumns,
   data: [],

@@ -1,10 +1,15 @@
 import { useLocation } from '@tanstack/react-router'
 import Empty from 'antd/es/empty'
+import type { Dispatch, SetStateAction } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
+import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
-import { isEditBlockedByStatus } from '@/views/modules/module-behavior-registry'
+import { MaterialImportActions } from '@/views/modules/components/MaterialImportActions'
+import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateDropdown'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
 
@@ -13,16 +18,27 @@ interface Props {
   initialConfig?: ModulePageConfig
 }
 
+function toggleSelectedKey(
+  setSelectedRowKeys: Dispatch<SetStateAction<string[]>>,
+  recordId: string,
+) {
+  setSelectedRowKeys((prev) => {
+    if (prev.includes(recordId)) return prev.filter((key) => key !== recordId)
+    return [...prev, recordId]
+  })
+}
+
 export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
+  const { t } = useTranslation()
   const location = useLocation()
-  const moduleKey = pageDef.moduleKey as string
+  const moduleKey = asString(pageDef.moduleKey)
   const state = useBusinessGridPage({ moduleKey, pageDef, initialConfig })
 
   useBusinessGridRouteSync({
     location,
     config: state.config,
     records: state.records,
-    setPage: state.setPage,
+    setPage: () => {},
     clearSelection: state.clearSelection,
     setSubmittedFilters: state.setSubmittedFilters,
     updateFilter: state.updateFilter,
@@ -32,8 +48,8 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
   if (!state.config) {
     return (
       <Empty
-        description={`模块配置未找到: ${moduleKey}`}
-        style={{ marginTop: 96 }}
+        description={`${t('modules.page.moduleConfigNotFound')}: ${moduleKey}`}
+        className="mt-96"
       />
     )
   }
@@ -45,10 +61,12 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         moduleKey={moduleKey}
         config={state.config}
         filters={state.filters}
-        total={state.total}
         loading={state.isLoading || state.editorLockLoading}
         exporting={state.exporting}
         records={state.records}
+        total={state.total}
+        currentPage={state.currentPage}
+        pageSize={state.pageSize}
         warningMessage={state.warningMessage}
         columnVisibleKeys={state.columnVisibleKeys}
         columnOrder={state.columnOrder}
@@ -56,6 +74,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         rowSelection={state.rowSelection}
         rowClassName={state.getRowClassName}
         onUpdateFilter={state.updateFilter}
+        onApplyFilters={state.applyFilters}
         onSearch={state.handleSearch}
         onReset={state.handleReset}
         onCreate={() => {
@@ -69,8 +88,25 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         }}
         onToggleColumn={state.toggleColumn}
         onColumnOrderChange={state.onColumnOrderChange}
-        onRowClick={() => {}}
+        onRowClick={(record) => {
+          const id = String(record.id)
+          toggleSelectedKey(state.setSelectedRowKeys, id)
+          state.setSelectedRowMap((prev) => {
+            if (prev[id]) {
+              const next = { ...prev }
+              delete next[id]
+              return next
+            }
+            return { ...prev, [id]: record }
+          })
+        }}
         onRowDoubleClick={(record) => {
+          if (state.config?.readOnly) {
+            if (state.canViewRecords) {
+              void state.openDetail(record)
+            }
+            return
+          }
           if (state.canUpdateRecord && !isEditBlockedByStatus(record.status)) {
             void state.openEditor(record)
             return
@@ -79,19 +115,46 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
             void state.openDetail(record)
           }
         }}
-        page={state.page}
-        pageSize={state.pageSize}
-        canCreate={state.canCreateRecord}
+        canCreate={
+          !state.config.readOnly &&
+          state.canCreateRecord &&
+          moduleKey !== 'supplier-statement' &&
+          moduleKey !== 'customer-statement' &&
+          moduleKey !== 'freight-statement'
+        }
         canExport={state.canExportData}
         toolbarActions={state.visibleToolbarActions}
         onAction={(action) => {
           void state.handleAction(action)
         }}
-        onPageChange={(nextPage, nextPageSize) => {
-          state.setPage(nextPage)
-          state.setPageSize(nextPageSize)
+        onPageChange={(page, ps) => {
+          if (ps !== state.pageSize) {
+            state.setPageSize(ps)
+          }
+          state.setCurrentPage(page)
         }}
-        onSortingChange={state.onSortingChange}
+        selectedCount={state.selectedRowKeys.length}
+        printDropdown={
+          <>
+            {moduleKey === 'material' && (
+              <MaterialImportActions
+                canDownloadTemplate={state.canExportData}
+                canImport={state.canUpdateRecord}
+                onImported={state.refreshModuleQueries}
+              />
+            )}
+            {state.canUseBulkPrintActions ? (
+              <PrintTemplateDropdown
+                moduleKey={moduleKey}
+                disabled={!state.selectedRowKeys.length}
+                loading={false}
+                onPrint={(preview, template) => {
+                  void state.handlePrintSelectedRecords(preview, template)
+                }}
+              />
+            ) : null}
+          </>
+        }
       />
 
       <BusinessGridOverlays
@@ -109,6 +172,10 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         customerStatementOpen={state.overlays.customerStatementOpen}
         freightStatementOpen={state.overlays.freightStatementOpen}
         freightPickupOpen={state.overlays.freightPickupOpen}
+        freightPickupRecords={state.overlays.freightPickupRecords}
+        selectedRows={state.records.filter((r) =>
+          state.selectedRowKeys.includes(String(r.id)),
+        )}
         canSave={
           state.editRecord ? state.canUpdateRecord : state.canCreateRecord
         }

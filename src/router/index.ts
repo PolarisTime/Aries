@@ -7,19 +7,54 @@ import {
   redirect,
 } from '@tanstack/react-router'
 import { lazy } from 'react'
+import { listBusinessModule } from '@/api/business-listing'
+import { getInitialSetupStatus } from '@/api/setup'
+import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import {
   appPageDefinitions,
   getPageRoutePath,
   type RouteViewKey,
 } from '@/config/page-registry'
-import { loadBusinessPageConfig } from '@/config/business-page-loader'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { queryClient } from '@/lib/query-client'
 import { useAuthStore } from '@/stores/authStore'
-import { checkAccessResources, usePermissionStore } from '@/stores/permissionStore'
+import {
+  checkAccessResources,
+  usePermissionStore,
+} from '@/stores/permissionStore'
+import { asString } from '@/utils/type-narrowing'
 import { LazyLoginView } from '@/views/auth/LazyLoginView'
 import { LazyDashboardView } from '@/views/dashboard/LazyDashboardView'
-import { BusinessGridPageSkeleton } from '@/views/modules/components/BusinessGridPageSkeleton'
 
-const rootRoute = createRootRoute({ component: Outlet })
+const SETUP_ROUTE_PATH = '/setup'
+
+const rootRoute = createRootRoute({
+  component: Outlet,
+  beforeLoad: async ({ location }) => {
+    const pathname = location.pathname
+    const isSetupPage = pathname === SETUP_ROUTE_PATH
+
+    try {
+      const response = await getInitialSetupStatus()
+      if (response.data.setupRequired && !isSetupPage) {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw redirect({ to: SETUP_ROUTE_PATH })
+      }
+      if (!response.data.setupRequired && isSetupPage) {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw redirect({ to: '/login' })
+      }
+    } catch (error) {
+      if (error && typeof error === 'object' && 'to' in error) {
+        throw error
+      }
+      if (!isSetupPage) {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw redirect({ to: SETUP_ROUTE_PATH })
+      }
+    }
+  },
+})
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -47,7 +82,8 @@ const setup2faRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!useAuthStore.getState().isAuthenticated)
-      throw redirect({ to: '/login' as '/' })
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: '/login' })
   },
 })
 
@@ -59,7 +95,8 @@ const authenticatedLayoutRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!useAuthStore.getState().isAuthenticated)
-      throw redirect({ to: '/login' as '/' })
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: '/login' })
   },
 })
 
@@ -87,11 +124,7 @@ const viewLoaders: Record<
     import('@/views/system/PrintTemplateView').then((m) => ({
       default: m.PrintTemplateView,
     })),
-  'database': () =>
-    import('@/views/system/DatabaseBackupView').then((m) => ({
-      default: m.DatabaseBackupView,
-    })),
-  'session': () =>
+  session: () =>
     import('@/views/system/SessionManagementView').then((m) => ({
       default: m.SessionManagementView,
     })),
@@ -107,22 +140,14 @@ const viewLoaders: Record<
     import('@/views/system/SecurityKeyManagementView').then((m) => ({
       default: m.SecurityKeyManagementView,
     })),
+  'database-backup': () =>
+    import('@/views/system/DatabaseBackupView').then((m) => ({
+      default: m.DatabaseBackupView,
+    })),
 }
 
 const moduleRoutes = appPageDefinitions.map((def) => {
   const path = `/${getPageRoutePath(def)}`
-  const usesPageSkeleton =
-    def.view === 'business-grid' ||
-    def.view === 'number-rules' ||
-    def.view === 'general-setting' ||
-    def.view === 'company-setting' ||
-    def.view === 'print-template' ||
-    def.view === 'access-control' ||
-    def.view === 'database' ||
-    def.view === 'session' ||
-    def.view === 'api-key' ||
-    def.view === 'security-key'
-
   return createRoute({
     getParentRoute: () => authenticatedLayoutRoute,
     path,
@@ -130,11 +155,37 @@ const moduleRoutes = appPageDefinitions.map((def) => {
       def.view === 'dashboard'
         ? LazyDashboardView
         : lazy(viewLoaders[def.view]),
-    pendingComponent: usesPageSkeleton ? BusinessGridPageSkeleton : undefined,
-    pendingMinMs: usesPageSkeleton ? 200 : undefined,
     loader:
       def.view === 'business-grid' && def.moduleKey
-        ? async () => loadBusinessPageConfig(def.moduleKey as string)
+        ? async () => {
+            const moduleKey = asString(def.moduleKey)
+            const resourceKey = def.resourceKey || moduleKey
+            const canView = usePermissionStore
+              .getState()
+              .can(resourceKey, 'read')
+
+            const config = await loadBusinessPageConfig(moduleKey)
+
+            if (canView) {
+              try {
+                await queryClient.ensureQueryData({
+                  queryKey: QUERY_KEYS.businessGridPage(moduleKey),
+                  queryFn: ({ signal }) =>
+                    listBusinessModule(
+                      moduleKey,
+                      {},
+                      { currentPage: 1, pageSize: 20 },
+                      { signal },
+                    ),
+                  staleTime: 5_000,
+                })
+              } catch {
+                // 预取失败不影响页面渲染，组件内 useQuery 会自行重试
+              }
+            }
+
+            return config
+          }
         : undefined,
     beforeLoad: () => {
       if (def.view === 'dashboard') return
@@ -144,12 +195,14 @@ const moduleRoutes = appPageDefinitions.map((def) => {
         def.accessResources.length > 0
       ) {
         if (!checkAccessResources(def.accessResources, store.can)) {
-          throw redirect({ to: '/dashboard' as '/' })
+          // eslint-disable-next-line @typescript-eslint/only-throw-error
+          throw redirect({ to: '/' })
         }
         return
       }
       if (!store.can(def.resourceKey || def.key, 'read')) {
-        throw redirect({ to: '/dashboard' as '/' })
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw redirect({ to: '/' })
       }
     },
   })
@@ -165,7 +218,8 @@ const apiKeyDetailRoute = createRoute({
   ),
   beforeLoad: () => {
     if (!usePermissionStore.getState().can('api-key', 'read')) {
-      throw redirect({ to: '/dashboard' as '/' })
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: '/' })
     }
   },
 })
@@ -174,15 +228,27 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: () => {
-    throw redirect({ to: '/dashboard' as '/' })
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw redirect({ to: '/dashboard' as never })
   },
 })
 
-export const routeTree = rootRoute.addChildren([
+const notFoundRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '*',
+  component: lazy(() =>
+    import('@/views/error/NotFoundView').then((m) => ({
+      default: m.NotFoundView,
+    })),
+  ),
+})
+
+const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   setupRoute,
   setup2faRoute,
+  notFoundRoute,
   authenticatedLayoutRoute.addChildren([...moduleRoutes, apiKeyDetailRoute]),
 ])
 
@@ -190,6 +256,22 @@ export const router = createRouter({
   routeTree,
   history: createBrowserHistory(),
   defaultPreload: 'intent',
+  defaultPendingComponent: lazy(() =>
+    import('@/views/modules/components/BusinessGridPageSkeleton').then((m) => ({
+      default: m.BusinessGridPageSkeleton,
+    })),
+  ),
+  defaultPendingMs: 100,
+  defaultErrorComponent: lazy(() =>
+    import('@/views/error/ErrorView').then((m) => ({
+      default: m.ErrorView,
+    })),
+  ),
+  defaultNotFoundComponent: lazy(() =>
+    import('@/views/error/NotFoundView').then((m) => ({
+      default: m.NotFoundView,
+    })),
+  ),
 })
 
 declare module '@tanstack/react-router' {

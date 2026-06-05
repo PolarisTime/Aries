@@ -1,4 +1,7 @@
+import { useTranslation } from 'react-i18next'
+
 export function DashboardSkeleton() {
+  const { t } = useTranslation()
   return (
     <div className="page-stack dashboard-root dashboard-skeleton">
       <section className="dashboard-hero dashboard-hero-skeleton">
@@ -37,14 +40,17 @@ export function DashboardSkeleton() {
       <section className="dashboard-flow-card dashboard-skeleton-panel">
         <div className="dashboard-skeleton-block dashboard-skeleton-card-title" />
         <div className="dashboard-flow-grid">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="dashboard-flow-section">
+          {['a', 'b', 'c', 'd'].map((key, index) => (
+            <div
+              key={`skeleton-flow-${key}`}
+              className="dashboard-flow-section"
+            >
               <div className="dashboard-flow-section-head">
                 <div className="dashboard-skeleton-block dashboard-skeleton-flow-title" />
                 <div className="dashboard-flow-section-desc">
                   {index === 0
-                    ? '先维护业务主数据，后续单据可直接关联带出。'
-                    : '正在加载业务流程说明...'}
+                    ? t('common.masterDataDesc')
+                    : t('dashboard.flow.loadingDescription')}
                 </div>
               </div>
               <div className="dashboard-skeleton-chip-row">

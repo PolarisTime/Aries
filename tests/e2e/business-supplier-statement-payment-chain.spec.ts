@@ -63,7 +63,9 @@ async function loginAsTest9(page: Page) {
 }
 
 async function getCurrentAccessToken(page: Page) {
-  const token = await page.evaluate(() => localStorage.getItem('aries-token') || '')
+  const token = await page.evaluate(
+    () => localStorage.getItem('aries-token') || '',
+  )
   expect(token).toBeTruthy()
   return token
 }
@@ -113,7 +115,11 @@ async function setSpinbuttonValue(target: Locator, value: string) {
   await target.blur()
 }
 
-async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: string) {
+async function waitForSaveOutcome(
+  page: Page,
+  overlay: Locator,
+  expectedNo?: string,
+) {
   const rowInList = expectedNo
     ? page
         .locator('tbody tr:not(.ant-table-measure-row)')
@@ -129,7 +135,10 @@ async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: str
   await expect
     .poll(
       async () => {
-        if ((await errorMessage.count()) > 0 && (await errorMessage.isVisible())) {
+        if (
+          (await errorMessage.count()) > 0 &&
+          (await errorMessage.isVisible())
+        ) {
           const text = (await errorMessage.textContent())?.trim()
           return text ? `error:${text}` : 'error'
         }
@@ -141,7 +150,12 @@ async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: str
           }
         }
         if ((await successMessage.count()) > 0) return 'message'
-        if (rowInList && (await rowInList.count()) > 0 && (await rowInList.isVisible())) return 'row'
+        if (
+          rowInList &&
+          (await rowInList.count()) > 0 &&
+          (await rowInList.isVisible())
+        )
+          return 'row'
         if (!(await overlay.isVisible().catch(() => false))) return 'closed'
         return 'pending'
       },
@@ -158,7 +172,11 @@ async function saveOverlay(page: Page, overlay: Locator, expectedNo?: string) {
   await waitForSaveOutcome(page, overlay, expectedNo)
 }
 
-async function saveAndAuditOverlay(page: Page, overlay: Locator, expectedNo?: string) {
+async function saveAndAuditOverlay(
+  page: Page,
+  overlay: Locator,
+  expectedNo?: string,
+) {
   await overlay
     .locator('button.overlay-action-button')
     .filter({ hasText: /^保存并审核$/ })
@@ -254,7 +272,9 @@ async function createPurchaseInboundAuditedChain(page: Page, suffix: string) {
   }
   expect(inboundDetailJson.code).toBe(0)
   expect(String(inboundDetailJson.data?.status || '')).toBe('已审核')
-  const actualInboundDate = String(inboundDetailJson.data?.inboundDate || orderDate)
+  const actualInboundDate = String(
+    inboundDetailJson.data?.inboundDate || orderDate,
+  )
 
   return { purchaseInboundNo, orderDate: actualInboundDate }
 }
@@ -269,10 +289,8 @@ test('creates supplier statement and payment from audited purchase inbound flow'
   const suffix = buildSuffix()
   const paymentNo = `FK-SP-${suffix}`
 
-  const { purchaseInboundNo, orderDate } = await createPurchaseInboundAuditedChain(
-    page,
-    suffix,
-  )
+  const { purchaseInboundNo, orderDate } =
+    await createPurchaseInboundAuditedChain(page, suffix)
 
   await page.goto('/supplier-statement')
   await page.getByRole('button', { name: '生成对账单' }).click()
@@ -303,9 +321,11 @@ test('creates supplier statement and payment from audited purchase inbound flow'
       }>
     }
     expect(json.code).toBe(0)
-    return (json.data || [])
-      .filter((item) => String(item.statementNo || item.id || '').length > 0)
-      .sort(compareRecordIds)[0] || null
+    return (
+      (json.data || [])
+        .filter((item) => String(item.statementNo || item.id || '').length > 0)
+        .sort(compareRecordIds)[0] || null
+    )
   }
 
   await expect
@@ -365,33 +385,45 @@ test('creates supplier statement and payment from audited purchase inbound flow'
       businessType?: string
       sourceStatementId?: string | number | null
       amount?: number
-      items?: Array<{ allocatedAmount?: number; sourceStatementId?: string | number }>
+      items?: Array<{
+        allocatedAmount?: number
+        sourceStatementId?: string | number
+      }>
     }
   }
   expect(paymentDetailJson.code).toBe(0)
   expect(String(paymentDetailJson.data?.paymentNo || '')).toBe(paymentNo)
   expect(String(paymentDetailJson.data?.status || '')).toBe('已付款')
   expect(String(paymentDetailJson.data?.businessType || '')).toBe('供应商')
-  expect(String(paymentDetailJson.data?.sourceStatementId || '')).toBe(statementId)
+  expect(String(paymentDetailJson.data?.sourceStatementId || '')).toBe(
+    statementId,
+  )
   expect(Number(paymentDetailJson.data?.amount || 0)).toBeGreaterThan(0)
-  expect(Number(paymentDetailJson.data?.items?.[0]?.allocatedAmount || 0)).toBeGreaterThan(0)
+  expect(
+    Number(paymentDetailJson.data?.items?.[0]?.allocatedAmount || 0),
+  ).toBeGreaterThan(0)
 
   const refreshedStatementDetailRes = await page.request.get(
     `${API_BASE_URL}/supplier-statement/${statementId}`,
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
-  const refreshedStatementDetailJson = (await refreshedStatementDetailRes.json()) as {
-    code: number
-    data?: {
-      paymentAmount?: number
-      closingAmount?: number
-      purchaseAmount?: number
+  const refreshedStatementDetailJson =
+    (await refreshedStatementDetailRes.json()) as {
+      code: number
+      data?: {
+        paymentAmount?: number
+        closingAmount?: number
+        purchaseAmount?: number
+      }
     }
-  }
   expect(refreshedStatementDetailJson.code).toBe(0)
-  expect(Number(refreshedStatementDetailJson.data?.paymentAmount || 0)).toBeGreaterThan(0)
+  expect(
+    Number(refreshedStatementDetailJson.data?.paymentAmount || 0),
+  ).toBeGreaterThan(0)
   expect(Number(refreshedStatementDetailJson.data?.closingAmount || 0)).toBe(0)
-  expect(Number(refreshedStatementDetailJson.data?.purchaseAmount || 0)).toBeGreaterThan(0)
+  expect(
+    Number(refreshedStatementDetailJson.data?.purchaseAmount || 0),
+  ).toBeGreaterThan(0)
 
   await assertNoFatalUiErrors()
 })

@@ -1,3 +1,4 @@
+import { pageContent } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
 import type { TotpSetupResponse } from '@/types/auth'
@@ -9,16 +10,20 @@ import type {
   UserAccountLoginNameAvailability,
   UserAccountRecord,
 } from '@/types/user-account'
+import { getApiMessage } from '@/utils/api-messages'
 import { assertApiSuccess, http } from './client'
 
 interface PageResponse<T> {
-  records: T[]
-  page: number
-  size: number
+  content?: T[]
+  records?: T[]
+  currentPage?: number
+  page?: number
+  pageSize?: number
+  size?: number
   totalElements: number
   totalPages: number
-  first: boolean
-  last: boolean
+  first?: boolean
+  last?: boolean
 }
 
 export interface UserAccountListParams {
@@ -28,7 +33,7 @@ export interface UserAccountListParams {
   status?: string
 }
 
-function buildUserAccountUrl(id?: string) {
+export function buildUserAccountUrl(id?: string) {
   return id != null
     ? `${ENDPOINTS.USER_ACCOUNTS}/${id}`
     : ENDPOINTS.USER_ACCOUNTS
@@ -39,14 +44,15 @@ export async function listUserAccounts(params: UserAccountListParams) {
     ENDPOINTS.USER_ACCOUNTS,
     { params },
   )
-  return assertApiSuccess(response, '加载用户失败').data
+  const data = assertApiSuccess(response, getApiMessage('loadUsersFailed')).data
+  return { ...data, records: pageContent(data) }
 }
 
 export async function getUserAccountDetail(id: string) {
   const response = await http.get<ApiResponse<UserAccountRecord>>(
     buildUserAccountUrl(id),
   )
-  return assertApiSuccess(response, '加载用户详情失败').data
+  return assertApiSuccess(response, getApiMessage('loadUserDetailFailed')).data
 }
 
 export async function checkUserAccountLoginName(
@@ -58,7 +64,7 @@ export async function checkUserAccountLoginName(
   >(ENDPOINTS.USER_ACCOUNTS_LOGIN_NAME_CHECK, {
     params: { loginName, excludeUserId },
   })
-  return assertApiSuccess(response, '检查登录账号失败').data
+  return assertApiSuccess(response, getApiMessage('checkLoginNameFailed')).data
 }
 
 export async function createUserAccount(payload: UserAccountFormPayload) {
@@ -66,7 +72,7 @@ export async function createUserAccount(payload: UserAccountFormPayload) {
     ENDPOINTS.USER_ACCOUNTS,
     payload,
   )
-  return assertApiSuccess(response, '创建用户失败')
+  return assertApiSuccess(response, getApiMessage('createUserFailed'))
 }
 
 export async function updateUserAccount(
@@ -77,37 +83,34 @@ export async function updateUserAccount(
     buildUserAccountUrl(id),
     payload,
   )
-  return assertApiSuccess(response, '保存用户失败')
+  return assertApiSuccess(response, getApiMessage('saveUserFailed'))
 }
 
 export async function deleteUserAccount(id: string) {
   const response = await http.delete<ApiResponse<null>>(buildUserAccountUrl(id))
-  return assertApiSuccess(response, '删除用户失败')
+  return assertApiSuccess(response, getApiMessage('deleteUserFailed'))
 }
 
 export async function setupUserAccount2fa(id: string) {
   const response = await http.post<ApiResponse<TotpSetupResponse>>(
     `${buildUserAccountUrl(id)}/2fa/setup`,
   )
-  return assertApiSuccess(response, '生成 2FA 二维码失败')
+  return assertApiSuccess(response, getApiMessage('generate2faQrCodeFailed'))
 }
 
-export async function enableUserAccount2fa(
-  id: string,
-  totpCode: string,
-) {
+export async function enableUserAccount2fa(id: string, totpCode: string) {
   const response = await http.post<ApiResponse<UserAccountRecord>>(
     `${buildUserAccountUrl(id)}/2fa/enable`,
     { totpCode },
   )
-  return assertApiSuccess(response, '启用 2FA 失败')
+  return assertApiSuccess(response, getApiMessage('enable2faFailed'))
 }
 
 export async function disableUserAccount2fa(id: string) {
   const response = await http.post<ApiResponse<UserAccountRecord>>(
     `${buildUserAccountUrl(id)}/2fa/disable`,
   )
-  return assertApiSuccess(response, '停用 2FA 失败')
+  return assertApiSuccess(response, getApiMessage('disable2faFailed'))
 }
 
 export async function listRoleOptions() {
@@ -117,19 +120,22 @@ export async function listRoleOptions() {
       params: { page: 0, size: 200 },
     },
   )
-  return assertApiSuccess(response, '加载角色失败').data?.records || []
+  return pageContent(
+    assertApiSuccess(response, getApiMessage('loadRolesFailed')).data,
+  )
 }
 
 export async function listDepartmentOptions() {
   const response = await http.get<ApiResponse<DepartmentOptionRecord[]>>(
     ENDPOINTS.DEPARTMENTS_OPTIONS,
   )
-  return (assertApiSuccess(response, '加载部门失败').data || []).map(
-    (item) => ({
-      ...item,
-      id: String(item.id || ''),
-      departmentCode: String(item.departmentCode || ''),
-      departmentName: String(item.departmentName || ''),
-    }),
-  )
+  return (
+    assertApiSuccess(response, getApiMessage('loadDepartmentsFailed')).data ||
+    []
+  ).map((item) => ({
+    ...item,
+    id: String(item.id || ''),
+    departmentCode: String(item.departmentCode || ''),
+    departmentName: String(item.departmentName || ''),
+  }))
 }

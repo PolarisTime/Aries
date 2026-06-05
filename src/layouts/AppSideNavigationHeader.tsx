@@ -1,6 +1,7 @@
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  ReloadOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
 import Button from 'antd/es/button'
@@ -8,6 +9,7 @@ import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
 import Tag from 'antd/es/tag'
 import type { CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   LazyAppHeaderSearch,
   type LazyAppHeaderSearchProps,
@@ -38,15 +40,21 @@ export function AppSideNavigationHeader({
   title,
   userMenuItems,
 }: Props) {
+  const { t } = useTranslation()
+  const devTimeString = new Date().toLocaleTimeString()
+
   return (
     <div className="app-header-bar">
-      <span className="app-trigger" onClick={onToggleCollapsed}>
+      <button type="button" className="app-trigger" onClick={onToggleCollapsed}>
         {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-      </span>
+      </button>
 
       <div className="header-page-meta">
         <div className="header-page-title">{title}</div>
-        <div className="header-page-desc">业务中心 / {title}</div>
+        <div className="header-page-desc">
+          {t('layouts.sideNav.breadcrumbPrefix')}
+          {title}
+        </div>
       </div>
 
       <LazyAppHeaderSearch className="header-global-search" {...search} />
@@ -54,7 +62,9 @@ export function AppSideNavigationHeader({
       <div className="user-wrapper" style={shellFontStyle}>
         <span className="action action-tag">
           <Tag color={backendOnline ? 'green' : 'red'}>
-            {backendOnline ? 'API 正常' : 'API 离线'}
+            {backendOnline
+              ? t('layouts.sideNav.apiOnline')
+              : t('layouts.sideNav.apiOffline')}
           </Tag>
           <Tag color="default">{clockText}</Tag>
         </span>
@@ -68,6 +78,24 @@ export function AppSideNavigationHeader({
             />
           </Dropdown>
         </span>
+        {import.meta.env.DEV ? (
+          <button
+            type="button"
+            className="app-dev-refresh-btn"
+            title={devTimeString}
+            onClick={() => {
+              if ('caches' in window) {
+                void caches.keys().then((keys) => {
+                  void Promise.all(keys.map((k) => caches.delete(k)))
+                })
+              }
+              window.location.reload()
+            }}
+          >
+            <ReloadOutlined />
+            {t('common.refresh')}
+          </button>
+        ) : null}
       </div>
     </div>
   )

@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import {
   fetchCollection,
   fetchData,
@@ -8,23 +9,23 @@ import { expect, test } from './support/test'
 
 type AnyRecord = Record<string, unknown>
 
-function getTableBody(page: Parameters<typeof test>[0]['page']) {
+function getTableBody(page: Page) {
   return page.locator('.ant-table-tbody')
 }
 
-function getFirstDataRow(page: Parameters<typeof test>[0]['page']) {
-  return getTableBody(page)
-    .locator('tr:not(.ant-table-measure-row)')
-    .first()
+function getFirstDataRow(page: Page) {
+  return getTableBody(page).locator('tr:not(.ant-table-measure-row)').first()
 }
 
-function getDataRows(page: Parameters<typeof test>[0]['page']) {
+function getDataRows(page: Page) {
   return getTableBody(page).locator('tr:not(.ant-table-measure-row)')
 }
 
 function toCategorySet(records: AnyRecord[]) {
   return new Set(
-    records.map((record) => String(record.category || '').trim()).filter(Boolean),
+    records
+      .map((record) => String(record.category || '').trim())
+      .filter(Boolean),
   )
 }
 
@@ -33,18 +34,17 @@ function findWeighLine(record: AnyRecord | null) {
     return null
   }
 
-  return (record.items as AnyRecord[]).find((item) => {
-    return (
-      ['盘螺', '线材'].includes(String(item.category || '').trim()) &&
-      String(item.settlementMode || '').trim() === '过磅'
-    )
-  }) || null
+  return (
+    (record.items as AnyRecord[]).find((item) => {
+      return (
+        ['盘螺', '线材'].includes(String(item.category || '').trim()) &&
+        String(item.settlementMode || '').trim() === '过磅'
+      )
+    }) || null
+  )
 }
 
-async function expectPageLoaded(
-  page: Parameters<typeof test>[0]['page'],
-  title: string,
-) {
+async function expectPageLoaded(page: Page, title: string) {
   const pageHeading = page.getByRole('heading', {
     level: 3,
     name: title,
@@ -62,7 +62,7 @@ async function expectPageLoaded(
 }
 
 async function openTopLevelPage(
-  page: Parameters<typeof test>[0]['page'],
+  page: Page,
   topMenu: string,
   entryTitle: string,
 ) {
@@ -109,7 +109,9 @@ test.describe('material category and weight flow coverage', () => {
     await openTopLevelPage(page, '基础数据', '商品资料')
 
     await expect(getDataRows(page).first()).toBeVisible()
-    await expect(page.locator('main')).toContainText(`共 ${materials.records.length} 条`)
+    await expect(page.locator('main')).toContainText(
+      `共 ${materials.records.length} 条`,
+    )
     await expect(page.locator('table')).toContainText('盘螺')
     await expect(page.locator('table')).toContainText('直条')
 
@@ -141,8 +143,14 @@ test.describe('material category and weight flow coverage', () => {
 
     expect(coil, '缺少盘螺类别配置').toBeTruthy()
     expect(wire, '缺少线材类别配置').toBeTruthy()
-    expect(Boolean(coil?.purchaseWeighRequired), '盘螺未标记为过磅品类').toBeTruthy()
-    expect(Boolean(wire?.purchaseWeighRequired), '线材未标记为过磅品类').toBeTruthy()
+    expect(
+      Boolean(coil?.purchaseWeighRequired),
+      '盘螺未标记为过磅品类',
+    ).toBeTruthy()
+    expect(
+      Boolean(wire?.purchaseWeighRequired),
+      '线材未标记为过磅品类',
+    ).toBeTruthy()
 
     const materials = await fetchCollection(page.request, 'material', {
       size: 200,
@@ -158,7 +166,9 @@ test.describe('material category and weight flow coverage', () => {
       ).toBe(0)
     }
 
-    const firstCoilMaterialCode = String(materials.records[0]?.materialCode || '').trim()
+    const firstCoilMaterialCode = String(
+      materials.records[0]?.materialCode || '',
+    ).trim()
     expect(firstCoilMaterialCode, '盘螺商品缺少商品编码').toBeTruthy()
 
     await openTopLevelPage(page, '基础数据', '商品资料')
@@ -174,9 +184,13 @@ test.describe('material category and weight flow coverage', () => {
     page,
     assertNoFatalUiErrors,
   }) => {
-    const purchaseInbounds = await fetchCollection(page.request, 'purchase-inbound', {
-      size: 20,
-    })
+    const purchaseInbounds = await fetchCollection(
+      page.request,
+      'purchase-inbound',
+      {
+        size: 20,
+      },
+    )
     expect(purchaseInbounds.ok, '读取采购入库列表失败').toBeTruthy()
 
     let targetRecord: AnyRecord | null = null
@@ -229,14 +243,16 @@ test.describe('material category and weight flow coverage', () => {
       '采购入库详情',
     )
     await expect(overlay).toContainText('盘螺')
-    await expect(overlay).toContainText(String(targetWeighItem?.materialCode || ''))
+    await expect(overlay).toContainText(
+      String(targetWeighItem?.materialCode || ''),
+    )
     await expect(overlay).toContainText(String(targetRecord?.inboundNo || ''))
-    await expect(
-      overlay.locator('.module-detail-table'),
-    ).toContainText(String(targetWeighItem?.weighWeightTon || ''))
-    await expect(
-      overlay.locator('.module-detail-table'),
-    ).toContainText(String(targetWeighItem?.weightTon || ''))
+    await expect(overlay.locator('.module-detail-table')).toContainText(
+      String(targetWeighItem?.weighWeightTon || ''),
+    )
+    await expect(overlay.locator('.module-detail-table')).toContainText(
+      String(targetWeighItem?.weightTon || ''),
+    )
 
     await assertNoFatalUiErrors()
   })

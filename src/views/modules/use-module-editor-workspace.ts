@@ -1,6 +1,14 @@
-import dayjs from 'dayjs'
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useEffect, useState } from 'react'
+import dayjs from 'dayjs'
+import i18next from 'i18next'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useReducer,
+  useState,
+} from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   allocateBusinessPrimaryNo,
   generateBusinessPrimaryNo,
@@ -14,7 +22,26 @@ import {
   listClientSettings,
   listSystemSettings,
 } from '@/api/system-settings'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
+import {
+  applyFormFieldDefaultDraftValues,
+  applyModuleDefaultEditorDraft,
+  buildDefaultEditorLineItem,
+  getEditorValidationMessage,
+  normalizeDraftRecordForModule,
+  syncDerivedEditorFormValuesForModule,
+  trimEditorItemsForModule,
+} from '@/module-system/module-adapter-editor'
+import {
+  buildOccupiedParentMap,
+  buildParentImportState,
+} from '@/module-system/module-adapter-parent-import'
+import {
+  getModuleRecordPrimaryNo,
+  parseParentRelationNos,
+} from '@/module-system/module-adapter-shared'
+import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleLineItem,
   ModulePageConfig,
@@ -22,35 +49,32 @@ import type {
 } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
 import { cloneLineItems } from '@/utils/clone-utils'
+import { parseDateTimeValue } from '@/utils/formatters'
 import { getStoredUser } from '@/utils/storage'
+import { asString } from '@/utils/type-narrowing'
 import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view-utils'
-import {
-  applyModuleDefaultEditorDraft,
-  buildDefaultEditorLineItem,
-  getEditorValidationMessage,
-  normalizeDraftRecordForModule,
-  syncDerivedEditorFormValuesForModule,
-  trimEditorItemsForModule,
-} from '@/views/modules/module-adapter-editor'
-import { buildOccupiedParentMap, buildParentImportState } from '@/views/modules/module-adapter-parent-import'
-import {
-  getModuleRecordPrimaryNo,
-  parseParentRelationNos,
-} from '@/views/modules/module-adapter-shared'
+
+const SNOWFLAKE_BUSINESS_NO_SWITCH_CODE =
+  DISPLAY_SWITCH_CODES.useSnowflakeBusinessNo
 
 interface AuditTarget {
   key: string
   value: string
 }
 
+interface EditorWorkspaceState {
+  items: ModuleLineItem[]
+  primaryNoLoading: boolean
+}
+
 interface WorkspaceFormApi {
-  validateFields: () => Promise<Record<string, unknown>>
-  getFieldsValue: (all?: boolean) => Record<string, unknown>
-  setFieldsValue: (values: Record<string, unknown>) => void
+  validateFields: () => Promise<ModuleRecord>
+  getFieldsValue: (all?: boolean) => ModuleRecord
+  setFieldsValue: (values: ModuleRecord) => void
   resetFields: () => void
 }
 
-type FormChangedValues = Record<string, unknown>
+type FormChangedValues = ModuleRecord
 
 interface Props {
   open: boolean
@@ -85,15 +109,44 @@ function normalizeRecordForEditor(
       continue
     }
 
-    const parsed = dayjs(String(rawValue))
-    normalized[field.key] = parsed.isValid() ? parsed : undefined
+    const parsed = parseDateTimeValue(rawValue)
+    normalized[field.key] = parsed ?? undefined
   }
 
   return normalized
 }
 
+function isAntdFormValidationError(err: unknown): boolean {
+  if (err == null || typeof err !== 'object') return false
+  const obj = err as Record<string, unknown>
+  return (
+    Array.isArray(obj.errorFields) &&
+    typeof obj.values === 'object' &&
+    obj.values !== null
+  )
+}
+
+function getCurrentOperatorName() {
+  const user = getStoredUser()
+  if (user) {
+    return String(
+      user.userName ||
+        user.loginName ||
+        i18next.t('modules.editorWorkspace.currentUserFallback'),
+    )
+  }
+  return i18next.t('modules.editorWorkspace.currentUserFallback')
+}
+
 function normalizeOptionalString(value: unknown) {
-  return String(value || '').trim()
+  return asString(value).trim()
+}
+
+function editorWorkspaceReducer(
+  state: EditorWorkspaceState,
+  patch: Partial<EditorWorkspaceState>,
+): EditorWorkspaceState {
+  return { ...state, ...patch }
 }
 
 function syncEditorFormValues(args: {
@@ -114,11 +167,11 @@ function syncEditorFormValues(args: {
     changedValues,
     systemSettings,
   } = args
-  const currentValues = form.getFieldsValue(true) as ModuleRecord
+  const currentValues = form.getFieldsValue(true)
   const changedKeys = new Set(Object.keys(changedValues || {}))
   const nextValues = syncDerivedEditorFormValuesForModule({
     moduleKey,
-    record: { ...currentValues },
+    record: { ...currentValues, ...changedValues },
     items,
     sumLineItemsBy,
     changedKeys,
@@ -135,20 +188,20 @@ function syncEditorFormValues(args: {
 
 function buildPreallocatedIdWarning(args: {
   isEdit: boolean
-  useSnowflakeBusinessNo: boolean
+  snowflakeBusinessNoEnabled: boolean
   primaryNoKey?: string
   draftRecord: ModuleRecord
   savedRecord?: ModuleRecord
 }) {
   const {
     isEdit,
-    useSnowflakeBusinessNo,
+    snowflakeBusinessNoEnabled,
     primaryNoKey,
     draftRecord,
     savedRecord,
   } = args
 
-  if (isEdit || !useSnowflakeBusinessNo || !primaryNoKey) {
+  if (isEdit || !snowflakeBusinessNoEnabled || !primaryNoKey) {
     return null
   }
 
@@ -165,11 +218,15 @@ function buildPreallocatedIdWarning(args: {
 
   if (!expectedPreallocatedId) {
     return {
-      title: '单据已保存，系统已重新生成单号',
+      title: i18next.t('modules.editorWorkspace.preallocatedNoMismatchTitle'),
       content:
         actualPrimaryNo || actualId
-          ? `这张单据已经保存成功，但系统未使用当前页面显示的预生成单号，已自动改为实际单号：${actualPrimaryNo || actualId}。请以实际保存后的单号为准。`
-          : '这张单据已经保存成功，但系统未使用当前页面显示的预生成单号，已自动改为新的实际单号。请以保存结果为准。',
+          ? i18next.t('modules.editorWorkspace.preallocatedNoMismatchContent', {
+              primaryNo: actualPrimaryNo || actualId,
+            })
+          : i18next.t(
+              'modules.editorWorkspace.preallocatedNoMismatchContentNoNo',
+            ),
     }
   }
 
@@ -184,8 +241,11 @@ function buildPreallocatedIdWarning(args: {
   }
 
   return {
-    title: '单据已保存，实际单号已更新',
-    content: `当前页面预生成的单号是 ${expectedIdentityNo}，但系统最终保存的实际单号是 ${actualPrimaryNo || actualId || '未知'}。请以实际保存后的单号为准。`,
+    title: i18next.t('modules.editorWorkspace.preallocatedNoUpdatedTitle'),
+    content: i18next.t('modules.editorWorkspace.preallocatedNoUpdatedContent', {
+      expected: expectedIdentityNo,
+      actual: actualPrimaryNo || actualId || '未知',
+    }),
   }
 }
 
@@ -196,44 +256,51 @@ export function useModuleEditorWorkspace({
   moduleKey,
   editorAuditTarget,
   form,
-  onClose,
   onSaved,
   autoInsertBlankItemOnCreate,
 }: Props) {
   const [saving, setSaving] = useState(false)
-  const [primaryNoLoading, setPrimaryNoLoading] = useState(false)
-  const [parentSelectorOpen, setParentSelectorOpen] = useState(false)
+  const [parentSelectorSessionKey, setParentSelectorSessionKey] = useState<
+    string | null
+  >(null)
+  const [parentSelectorFilters, setParentSelectorFilters] =
+    useState<SearchParams>({})
   const [parentImporting, setParentImporting] = useState(false)
-  const [items, setItems] = useState<ModuleLineItem[]>([])
+  const [workspaceState, setWorkspaceState] = useReducer(
+    editorWorkspaceReducer,
+    {
+      items: [],
+      primaryNoLoading: false,
+    },
+  )
+  const { items, primaryNoLoading } = workspaceState
+  const { t } = useTranslation()
+  const [saveResult, setSaveResult] = useState<{
+    status: 'success' | 'error' | 'warning'
+    message: string
+    traceId?: string
+    record?: ModuleRecord
+  } | null>(null)
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const isEdit = !!record
+  const editorSessionKey = `${moduleKey}:${String(record?.id || 'new')}:${String(open)}`
+  const parentSelectorOpen = parentSelectorSessionKey === editorSessionKey
   const { data: systemSettings = [] } = useQuery({
-    queryKey: ['general-setting'],
+    queryKey: QUERY_KEYS.generalSetting,
     queryFn: listSystemSettings,
   })
   const { data: clientSettings = [] } = useQuery({
-    queryKey: ['general-setting', 'client-settings'],
+    queryKey: QUERY_KEYS.clientSettings,
     queryFn: listClientSettings,
     staleTime: 30_000,
   })
-  const useSnowflakeBusinessNo = isDisplaySwitchEnabled(
+  const snowflakeBusinessNoEnabled = isDisplaySwitchEnabled(
     clientSettings,
-    DISPLAY_SWITCH_CODES.useSnowflakeBusinessNo,
+    SNOWFLAKE_BUSINESS_NO_SWITCH_CODE,
   )
 
-  const sumLineItemsBy = useCallback(
-    (nextItems: ModuleLineItem[], key: string) =>
-      nextItems.reduce((sum, item) => sum + Number(item[key] || 0), 0),
-    [],
-  )
-
-  const getCurrentOperatorName = useCallback(() => {
-    const user = getStoredUser()
-    if (user) {
-      return String(user.userName || user.loginName || '当前用户')
-    }
-    return '当前用户'
-  }, [])
+  const sumLineItemsBy = (nextItems: ModuleLineItem[], key: string) =>
+    nextItems.reduce((sum, item) => sum + Number(item[key] || 0), 0)
 
   useEffect(() => {
     if (!open) {
@@ -244,23 +311,26 @@ export function useModuleEditorWorkspace({
 
     if (record) {
       form.setFieldsValue(normalizeRecordForEditor(config, record))
-      setItems((record.items as ModuleLineItem[]) || [])
-      setPrimaryNoLoading(false)
+      setWorkspaceState({
+        items: record.items || [],
+        primaryNoLoading: false,
+      })
     } else {
       form.resetFields()
-      const defaultDraft: Record<string, unknown> = {}
+      const defaultDraft: ModuleRecord = {} as ModuleRecord
+      applyFormFieldDefaultDraftValues(defaultDraft, config.formFields)
       applyModuleDefaultEditorDraft(
         moduleKey,
         defaultDraft,
         getCurrentOperatorName(),
       )
       form.setFieldsValue(defaultDraft)
-      setItems(
-        autoInsertBlankItemOnCreate ? [buildDefaultEditorLineItem(undefined, moduleKey)] : [],
-      )
+      const draftItems = autoInsertBlankItemOnCreate
+        ? [buildDefaultEditorLineItem(undefined, moduleKey)]
+        : []
       if (config.primaryNoKey) {
-        setPrimaryNoLoading(true)
-        if (useSnowflakeBusinessNo) {
+        setWorkspaceState({ items: draftItems, primaryNoLoading: true })
+        if (snowflakeBusinessNoEnabled) {
           void allocateBusinessPrimaryNo(moduleKey)
             .then(({ generatedNo, generatedId }) => {
               if (!active) {
@@ -269,7 +339,7 @@ export function useModuleEditorWorkspace({
               form.setFieldsValue({
                 ...defaultDraft,
                 _preallocatedId: generatedId || '',
-                [config.primaryNoKey as string]: generatedNo,
+                [asString(config.primaryNoKey)]: generatedNo,
               })
             })
             .catch((err) => {
@@ -277,12 +347,14 @@ export function useModuleEditorWorkspace({
                 return
               }
               message.error(
-                err instanceof Error ? err.message : '预分配系统单号失败',
+                err instanceof Error
+                  ? err.message
+                  : t('common.preallocateNoFailed'),
               )
             })
             .finally(() => {
               if (active) {
-                setPrimaryNoLoading(false)
+                setWorkspaceState({ primaryNoLoading: false })
               }
             })
         } else {
@@ -293,7 +365,7 @@ export function useModuleEditorWorkspace({
               }
               form.setFieldsValue({
                 ...defaultDraft,
-                [config.primaryNoKey as string]: generatedNo,
+                [asString(config.primaryNoKey)]: generatedNo,
               })
             })
             .catch((err) => {
@@ -301,38 +373,40 @@ export function useModuleEditorWorkspace({
                 return
               }
               message.error(
-                err instanceof Error ? err.message : '获取系统单号失败',
+                err instanceof Error
+                  ? err.message
+                  : t('common.generateNoFailed'),
               )
             })
             .finally(() => {
               if (active) {
-                setPrimaryNoLoading(false)
+                setWorkspaceState({ primaryNoLoading: false })
               }
             })
         }
       } else {
-        setPrimaryNoLoading(false)
+        setWorkspaceState({ items: draftItems, primaryNoLoading: false })
       }
     }
-    setParentSelectorOpen(false)
-
     return () => {
       active = false
     }
   }, [
     autoInsertBlankItemOnCreate,
-    clientSettings,
     config,
     form,
-    getCurrentOperatorName,
     moduleKey,
     open,
     record,
-    useSnowflakeBusinessNo,
+    snowflakeBusinessNoEnabled,
+    t,
   ])
 
-  useEffect(() => {
-    if (!open || !config.itemColumns?.length) {
+  const handleFormValuesChange = (changedValues: FormChangedValues) => {
+    if (!open) {
+      return
+    }
+    if (!Object.keys(changedValues).length) {
       return
     }
     syncEditorFormValues({
@@ -341,275 +415,306 @@ export function useModuleEditorWorkspace({
       moduleKey,
       items,
       sumLineItemsBy,
+      changedValues,
       systemSettings,
     })
-  }, [config, form, items, moduleKey, open, sumLineItemsBy, systemSettings])
+  }
 
-  const handleFormValuesChange = useCallback(
-    (changedValues: FormChangedValues) => {
-      if (!open) {
+  const handleSave = async (audit = false) => {
+    try {
+      if (primaryNoLoading) {
+        message.warning(t('common.primaryNoGenerating'))
         return
       }
-      if (!Object.keys(changedValues).length) {
-        return
+
+      const values = await form.validateFields()
+      const trimmedItems = trimEditorItemsForModule(moduleKey, items)
+
+      let occupiedParentMap: Record<string, ModuleRecord> = {}
+      if (config.parentImport?.enforceUniqueRelation) {
+        try {
+          const existingRows = await listAllBusinessModuleRows(moduleKey, {})
+          occupiedParentMap = buildOccupiedParentMap(
+            existingRows,
+            config.parentImport.parentFieldKey,
+            record?.id ? String(record.id) : undefined,
+          )
+        } catch {
+          // non-critical — skip uniqueness check if fetch fails
+        }
       }
-      syncEditorFormValues({
-        config,
-        form,
+
+      const validationMessage = getEditorValidationMessage({
         moduleKey,
-        items,
-        sumLineItemsBy,
-        changedValues,
-        systemSettings,
+        fields: config.formFields || [],
+        editorForm: values,
+        hasItemColumns: Boolean(config.itemColumns?.length),
+        itemColumns: config.itemColumns,
+        items: trimmedItems,
+        itemCount: trimmedItems.length,
+        skipRequiredFieldKeys:
+          snowflakeBusinessNoEnabled && config.primaryNoKey
+            ? [config.primaryNoKey]
+            : [],
+        parentImportConfig: config.parentImport,
+        occupiedParentMap,
+        getPrimaryNo: (candidate) =>
+          getModuleRecordPrimaryNo(candidate, config.primaryNoKey),
+        collectAll: true,
       })
-    },
-    [config, form, items, moduleKey, open, sumLineItemsBy, systemSettings],
-  )
-
-  const handleSave = useCallback(
-    async (audit = false) => {
-      try {
-        if (primaryNoLoading) {
-          message.warning('系统单号生成中，请稍后再保存')
-          return
-        }
-
-        const values = await form.validateFields()
-        const trimmedItems = trimEditorItemsForModule(moduleKey, items)
-
-        let occupiedParentMap: Record<string, ModuleRecord> = {}
-        if (config.parentImport?.enforceUniqueRelation) {
-          try {
-            const existingRows = await listAllBusinessModuleRows(moduleKey, {})
-            occupiedParentMap = buildOccupiedParentMap(
-              existingRows,
-              config.parentImport.parentFieldKey,
-              record?.id ? String(record.id) : undefined,
-            )
-          } catch {
-            // non-critical — skip uniqueness check if fetch fails
-          }
-        }
-
-        const validationMessage = getEditorValidationMessage({
-          moduleKey,
-          fields: config.formFields || [],
-          editorForm: values,
-          hasItemColumns: Boolean(config.itemColumns?.length),
-          itemColumns: config.itemColumns,
-          items: trimmedItems,
-          itemCount: trimmedItems.length,
-          skipRequiredFieldKeys:
-            useSnowflakeBusinessNo && config.primaryNoKey
-              ? [config.primaryNoKey]
-              : [],
-          parentImportConfig: config.parentImport,
-          occupiedParentMap,
-          getPrimaryNo: (candidate) =>
-            getModuleRecordPrimaryNo(candidate, config.primaryNoKey),
-          collectAll: true,
-        })
-        if (validationMessage) {
-          message.warning(validationMessage)
-          return
-        }
-
-        if (audit && editorAuditTarget) {
-          const confirmed = await new Promise<boolean>((resolve) => {
-            modal.confirm({
-              title: '保存并审核',
-              content: '审核后单据状态将变更为已审核，且不可再编辑。确定继续？',
-              okText: '确定审核',
-              cancelText: '取消',
-              onOk: () => resolve(true),
-              onCancel: () => resolve(false),
-            })
-          })
-          if (!confirmed) return
-        }
-
-        setSaving(true)
-        const draftRecord: ModuleRecord = {
-          ...values,
-          id: record?.id || '',
-          _preallocatedId:
-            !record && useSnowflakeBusinessNo
-              ? String(values._preallocatedId || '')
-              : undefined,
-          items: trimmedItems,
-        }
-
-        normalizeDraftRecordForModule({
-          moduleKey,
-          record: draftRecord,
-          items: trimmedItems,
-          primaryNoKey: config.primaryNoKey,
-          currentOperatorName: getCurrentOperatorName(),
-          sumLineItemsBy,
-        })
-
-        if (audit && editorAuditTarget) {
-          draftRecord[editorAuditTarget.key] = editorAuditTarget.value
-        }
-
-        const savedResult = await saveBusinessModule(moduleKey, draftRecord)
-        const preallocatedIdWarning = buildPreallocatedIdWarning({
-          isEdit,
-          useSnowflakeBusinessNo,
-          primaryNoKey: config.primaryNoKey,
-          draftRecord,
-          savedRecord: savedResult.data,
-        })
-        message.success(isEdit ? '更新成功' : '创建成功')
-        if (preallocatedIdWarning) {
-          modal.warning({
-            title: preallocatedIdWarning.title,
-            content: preallocatedIdWarning.content,
-            okText: '知道了',
-          })
-        }
-        await refreshModuleQueries()
-        onSaved()
-        onClose()
-      } catch (err) {
-        if (err instanceof Error) {
-          message.error(err.message || '保存失败')
-        }
-      } finally {
-        setSaving(false)
-      }
-    },
-    [
-      config,
-      editorAuditTarget,
-      form,
-      getCurrentOperatorName,
-      isEdit,
-      items,
-      moduleKey,
-      onClose,
-      onSaved,
-      primaryNoLoading,
-      record,
-      refreshModuleQueries,
-      sumLineItemsBy,
-    ],
-  )
-
-  const handleImportParentRecord = useCallback(
-    async (selectedRecords: ModuleRecord[]) => {
-      const parentImportConfig = config.parentImport
-      if (!parentImportConfig) {
-        return
-      }
-      if (!selectedRecords.length) {
-        message.warning(`请先选择${parentImportConfig.label}`)
+      if (validationMessage) {
+        message.warning(validationMessage)
         return
       }
 
-      setParentImporting(true)
-      try {
-        let nextValues = form.getFieldsValue(true) as ModuleRecord
-        let nextItems = items
-        let importedParentCount = 0
-        let importedItemCount = 0
-
-        for (const selectedRecord of selectedRecords) {
-          const parentDetail = await getBusinessModuleDetail(
-            parentImportConfig.parentModuleKey,
-            String(selectedRecord.id),
-          )
-          const parentRecord = parentDetail.data
-          const currentParentNos = parseParentRelationNos(
-            nextValues[parentImportConfig.parentFieldKey],
-          )
-          const validationError = parentImportConfig.validateParentImport?.({
-            currentRecord: nextValues,
-            currentItems: nextItems,
-            currentParentNos,
-            parentRecord,
+      if (audit && editorAuditTarget) {
+        const confirmed = await new Promise<boolean>((resolve) => {
+          modal.confirm({
+            title: t('common.saveAndAudit'),
+            content: t('common.auditConfirm'),
+            okText: t('common.confirmAudit'),
+            cancelText: t('common.cancel'),
+            onOk: () => resolve(true),
+            onCancel: () => resolve(false),
           })
-          if (validationError) {
-            throw new Error(validationError)
-          }
-          const importState = buildParentImportState({
-            parentImportConfig,
-            parentRecord,
-            currentParentNos,
-            currentItems: nextItems,
-            cloneLineItems,
-          })
-
-          nextValues = {
-            ...nextValues,
-            [parentImportConfig.parentFieldKey]: importState.parentNosText,
-          }
-          if (importState.shouldApplyMappedValues) {
-            Object.assign(nextValues, importState.mappedValues)
-          }
-          nextItems = importState.nextItems
-          importedParentCount += importState.hasImportedCurrentParent ? 0 : 1
-          importedItemCount += importState.importedItemCount
-        }
-
-        syncEditorFormValues({
-          config,
-          form,
-          moduleKey,
-          items: nextItems,
-          sumLineItemsBy,
-          changedValues: nextValues,
-          systemSettings,
         })
-        setItems(nextItems)
-        setParentSelectorOpen(false)
-        message.success(
-          importedParentCount > 1
-            ? `已导入 ${importedParentCount} 张上级单据，共 ${importedItemCount} 条明细`
-            : `已导入 ${importedItemCount} 条明细`,
-        )
-      } catch (err) {
-        message.error(err instanceof Error ? err.message : '导入上级单据失败')
-      } finally {
-        setParentImporting(false)
+        if (!confirmed) return
       }
-    },
-    [config, form, items],
-  )
 
-  const openParentSelector = useCallback(() => {
+      setSaving(true)
+      const draftRecord: ModuleRecord = {
+        ...values,
+        id: record?.id || '',
+        _preallocatedId:
+          !record && snowflakeBusinessNoEnabled
+            ? asString(values._preallocatedId)
+            : undefined,
+        items: trimmedItems,
+      }
+
+      normalizeDraftRecordForModule({
+        moduleKey,
+        record: draftRecord,
+        items: trimmedItems,
+        primaryNoKey: config.primaryNoKey,
+        currentOperatorName: getCurrentOperatorName(),
+        sumLineItemsBy,
+        formFields: config.formFields,
+      })
+
+      if (audit && editorAuditTarget) {
+        draftRecord[editorAuditTarget.key] = editorAuditTarget.value
+      }
+
+      const savedResult = await saveBusinessModule(moduleKey, draftRecord)
+      const preallocatedIdWarning = buildPreallocatedIdWarning({
+        isEdit,
+        snowflakeBusinessNoEnabled,
+        primaryNoKey: config.primaryNoKey,
+        draftRecord,
+        savedRecord: savedResult.data,
+      })
+      await refreshModuleQueries()
+      onSaved()
+      if (preallocatedIdWarning) {
+        setSaveResult({
+          status: 'warning',
+          message: preallocatedIdWarning.content,
+          record: savedResult.data,
+        })
+      } else {
+        setSaveResult({
+          status: 'success',
+          message: isEdit ? t('common.editSuccess') : t('common.addSuccess'),
+          record: savedResult.data,
+        })
+      }
+      setSaving(false)
+    } catch (err) {
+      if (isAntdFormValidationError(err)) {
+        // Form 已内联展示校验错误，不重复提示
+      } else if (err instanceof Error) {
+        const traceId = (err as Error & { traceId?: string }).traceId
+        setSaveResult({
+          status: 'error',
+          message: err.message || t('common.saveFailed'),
+          traceId,
+        })
+      } else {
+        setSaveResult({ status: 'error', message: t('common.saveFailedRetry') })
+      }
+      setSaving(false)
+    }
+  }
+
+  const handleImportParentRecord = async (selectedRecords: ModuleRecord[]) => {
     const parentImportConfig = config.parentImport
     if (!parentImportConfig) {
       return
     }
-    const currentValues = form.getFieldsValue(true) as ModuleRecord
+    if (!selectedRecords.length) {
+      message.warning(
+        t('common.pleaseSelectWith', { label: parentImportConfig.label }),
+      )
+      return
+    }
+
+    setParentImporting(true)
+    try {
+      const parentDetails = await Promise.all(
+        selectedRecords.map((selectedRecord) =>
+          getBusinessModuleDetail(
+            parentImportConfig.parentModuleKey,
+            String(selectedRecord.id),
+          ),
+        ),
+      )
+
+      let nextValues = form.getFieldsValue(true)
+      let nextItems = items
+      let importedParentCount = 0
+      let importedItemCount = 0
+      let importValidationError = ''
+
+      for (const parentDetail of parentDetails) {
+        const parentRecord = parentDetail.data
+        const currentParentNos = parseParentRelationNos(
+          nextValues[parentImportConfig.parentFieldKey],
+        )
+        const validationError = parentImportConfig.validateParentImport?.({
+          currentRecord: nextValues,
+          currentItems: nextItems,
+          currentParentNos,
+          parentRecord,
+        })
+        if (validationError) {
+          importValidationError = validationError
+          break
+        }
+        const importState = buildParentImportState({
+          parentImportConfig,
+          parentRecord,
+          currentParentNos,
+          currentItems: nextItems,
+          cloneLineItems,
+        })
+
+        nextValues = {
+          ...nextValues,
+          [parentImportConfig.parentFieldKey]: importState.parentNosText,
+        }
+        if (importState.shouldApplyMappedValues) {
+          Object.assign(nextValues, importState.mappedValues)
+        }
+        nextItems = importState.nextItems
+        importedParentCount += importState.hasImportedCurrentParent ? 0 : 1
+        importedItemCount += importState.importedItemCount
+      }
+
+      if (importValidationError) {
+        message.error(importValidationError)
+        setParentImporting(false)
+        return
+      }
+
+      syncEditorFormValues({
+        config,
+        form,
+        moduleKey,
+        items: nextItems,
+        sumLineItemsBy,
+        changedValues: nextValues,
+        systemSettings,
+      })
+      setWorkspaceState({ items: nextItems })
+      setParentSelectorSessionKey(null)
+      message.success(
+        importedParentCount > 1
+          ? t('common.importParentSuccess', {
+              parentCount: importedParentCount,
+              itemCount: importedItemCount,
+            })
+          : t('common.importParentSuccessSimple', {
+              itemCount: importedItemCount,
+            }),
+      )
+      setParentImporting(false)
+    } catch (err) {
+      message.error(
+        err instanceof Error ? err.message : t('common.importParentFailed'),
+      )
+      setParentImporting(false)
+    }
+  }
+
+  const openParentSelector = () => {
+    const parentImportConfig = config.parentImport
+    if (!parentImportConfig) {
+      return
+    }
+    const currentValues = form.getFieldsValue(true)
     const validationError =
       parentImportConfig.validateBeforeOpen?.(currentValues)
     if (validationError) {
       message.warning(validationError)
       return
     }
-    setParentSelectorOpen(true)
-  }, [config.parentImport, form])
+    const nextParentFilters =
+      parentImportConfig.buildParentFilters?.(currentValues) || {}
+    setParentSelectorFilters(nextParentFilters)
+    setParentSelectorSessionKey(editorSessionKey)
+  }
 
-  const addItem = useCallback(() => {
+  const addItem = () => {
     const newItem = buildDefaultEditorLineItem(undefined, moduleKey)
-    setItems((prev) => [...prev, newItem])
-  }, [])
+    const nextItems = [...items, newItem]
+    setWorkspaceState({ items: nextItems })
+    if (open && config.itemColumns?.length) {
+      syncEditorFormValues({
+        config,
+        form,
+        moduleKey,
+        items: nextItems,
+        sumLineItemsBy,
+        systemSettings,
+      })
+    }
+  }
+
+  const updateItems: Dispatch<SetStateAction<ModuleLineItem[]>> = (
+    nextItems,
+  ) => {
+    const resolvedItems =
+      typeof nextItems === 'function' ? nextItems(items) : nextItems
+    setWorkspaceState({ items: resolvedItems })
+    if (open && config.itemColumns?.length) {
+      syncEditorFormValues({
+        config,
+        form,
+        moduleKey,
+        items: resolvedItems,
+        sumLineItemsBy,
+        systemSettings,
+      })
+    }
+  }
 
   return {
     addItem,
-    closeParentSelector: useCallback(() => setParentSelectorOpen(false), []),
+    closeParentSelector: () => setParentSelectorSessionKey(null),
     handleImportParentRecord,
     handleSave,
     isEdit,
     items,
     openParentSelector,
     parentImporting,
+    parentSelectorFilters,
     parentSelectorOpen,
     primaryNoLoading,
+    saveResult,
+    clearSaveResult: () => setSaveResult(null),
     saving,
-    setItems,
+    setItems: updateItems,
     handleFormValuesChange,
   }
 }

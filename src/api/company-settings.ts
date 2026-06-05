@@ -1,5 +1,7 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { getApiMessage } from '@/utils/api-messages'
+import { asNumber, asString } from '@/utils/type-narrowing'
 
 export interface CompanySettlementAccount {
   id?: string | number
@@ -29,55 +31,74 @@ interface CompanyResponse<T> {
   data: T
 }
 
-function normalizeProfile(
-  record: Record<string, unknown> | null | undefined,
+export type RawSettlementAccount = {
+  id?: string | number
+  accountName?: string
+  bankName?: string
+  bankAccount?: string
+  usageType?: string
+  status?: string
+  remark?: string
+}
+
+export type RawCompanyProfile = {
+  id?: string | number
+  companyName?: string
+  taxNo?: string
+  bankName?: string
+  bankAccount?: string
+  taxRate?: number
+  settlementAccounts?: RawSettlementAccount[]
+  status?: string
+  remark?: string
+}
+
+export function normalizeProfile(
+  raw: RawCompanyProfile | null | undefined,
 ): CompanySettingProfile | null {
-  if (!record) return null
+  if (!raw) return null
   return {
-    id: String(record.id || ''),
-    companyName: String(record.companyName || ''),
-    taxNo: String(record.taxNo || ''),
-    bankName: String(record.bankName || ''),
-    bankAccount: String(record.bankAccount || ''),
-    taxRate: Number(record.taxRate || 0),
-    settlementAccounts: Array.isArray(record.settlementAccounts)
-      ? record.settlementAccounts.map((item) => {
-          const row = item as Record<string, unknown>
-          return {
-            id: row.id == null ? '' : String(row.id),
-            accountName: String(row.accountName || ''),
-            bankName: String(row.bankName || ''),
-            bankAccount: String(row.bankAccount || ''),
-            usageType: String(row.usageType || '通用'),
-            status: String(row.status || '正常'),
-            remark: String(row.remark || ''),
-          }
-        })
+    id: asString(raw.id),
+    companyName: asString(raw.companyName),
+    taxNo: asString(raw.taxNo),
+    bankName: raw.bankName ? asString(raw.bankName) : undefined,
+    bankAccount: raw.bankAccount ? asString(raw.bankAccount) : undefined,
+    taxRate: raw.taxRate ? asNumber(raw.taxRate) : undefined,
+    settlementAccounts: Array.isArray(raw.settlementAccounts)
+      ? raw.settlementAccounts.map((item) => ({
+          id: item.id == null ? '' : asString(item.id),
+          accountName: asString(item.accountName),
+          bankName: asString(item.bankName),
+          bankAccount: asString(item.bankAccount),
+          usageType: asString(item.usageType) || '通用',
+          status: asString(item.status) || '正常',
+          remark: asString(item.remark),
+        }))
       : [],
-    status: String(record.status || '正常'),
-    remark: String(record.remark || ''),
+    status: asString(raw.status) || '正常',
+    remark: asString(raw.remark),
   }
 }
 
 export async function getCompanySettingProfile() {
-  const response = assertApiSuccess(
-    await http.get<CompanyResponse<Record<string, unknown> | null>>(
+  const r = assertApiSuccess(
+    await http.get<CompanyResponse<RawCompanyProfile | null>>(
       ENDPOINTS.COMPANY_SETTINGS_CURRENT,
     ),
-    '加载公司信息失败',
+    getApiMessage('loadCompanyInfoFailed'),
   )
-  return normalizeProfile(response.data)
+  return normalizeProfile(r.data)
 }
 
 export async function saveCompanySettingProfile(
   payload: Omit<CompanySettingProfile, 'id'>,
 ) {
-  const response = assertApiSuccess(
-    await http.put<CompanyResponse<Record<string, unknown>>>(
+  const r = assertApiSuccess(
+    await http.put<CompanyResponse<RawCompanyProfile>>(
       ENDPOINTS.COMPANY_SETTINGS_CURRENT,
       payload,
     ),
-    '保存公司信息失败',
+    getApiMessage('saveCompanyInfoFailed'),
   )
-  return normalizeProfile(response.data)
+  return normalizeProfile(r.data)
 }

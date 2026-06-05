@@ -1,0 +1,90 @@
+{
+  "userAccount": {
+    "title": "用户账户管理",
+    "searchPlaceholder": "搜索登录账号 / 用户姓名 / 手机号",
+    "createButton": "新建",
+    "loginName": "登录账号",
+    "userName": "用户姓名",
+    "department": "所属部门",
+    "mobile": "手机号",
+    "roleNames": "所属角色",
+    "dataScope": "数据范围",
+    "twoFactorStatus": "2FA 状态",
+    "lastLogin": "最近登录",
+    "enabled": "已启用",
+    "notEnabled": "未启用"
+  },
+  "apiKey": {
+    "title": "API Key 管理"
+  },
+  "session": {
+    "title": "会话管理",
+    "searchPlaceholder": "搜索 Token ID / IP / 设备信息",
+    "revokeAll": "清除全部"
+  },
+  "generalSettings": {
+    "title": "通用设置",
+    "searchPlaceholder": "搜索设置项",
+    "basicParams": "基础参数",
+    "systemSwitches": "系统开关",
+    "currentEnabled": "当前启用",
+    "enabled": "已启用",
+    "closed": "已关闭"
+  },
+  "numberRules": {
+    "title": "编号规则",
+    "searchPlaceholder": "搜索规则项",
+    "documentRules": "单号规则",
+    "uploadRules": "上传规则",
+    "disabledUploadRules": "禁用上传规则"
+  },
+  "printTemplate": {
+    "title": "打印模板",
+    "newTemplate": "新建模板",
+    "editTemplate": "编辑模板",
+    "deleteTemplate": "删除打印模板",
+    "preview": "预览"
+  },
+  "company": {
+    "title": "公司信息",
+    "saveSuccess": "公司信息已保存",
+    "enterpriseMode": "企业模式",
+    "singleEnterprise": "单企业",
+    "subjectStatus": "主体状态",
+    "settlementBanks": "结算银行",
+    "supplementNote": "补充说明"
+  },
+  "database": {
+    "title": "数据库管理",
+    "exportTask": "导出备份",
+    "importBackup": "导入数据库备份",
+    "verifyAndImport": "验证并导入",
+    "selectFile": "选择备份文件",
+    "noFile": "未选择文件",
+    "downloadLink": "下载链接已生成"
+  },
+  "role": {
+    "newRole": "新增角色",
+    "editRole": "编辑角色",
+    "roleName": "角色名称",
+    "roleCode": "角色编码",
+    "roleType": "角色类型",
+    "permissions": "权限配置"
+  },
+  "twoFactor": {
+    "title": "2FA 管理",
+    "enabled": "当前已启用二次验证",
+    "notEnabled": "当前未启用二次验证",
+    "step1": "步骤 1：生成绑定二维码",
+    "step2": "步骤 2：输入 6 位验证码确认启用",
+    "generateQr": "生成二维码",
+    "confirmEnable": "确认启用 2FA",
+    "disable": "关闭 2FA",
+    "currentStatus": "当前状态"
+  },
+  "securityKey": {
+    "title": "安全密钥管理",
+    "jwtRotated": "JWT 主密钥轮转成功",
+    "totpRotated": "2FA 主密钥轮转成功"
+  }
+}

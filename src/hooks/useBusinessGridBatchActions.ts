@@ -1,15 +1,17 @@
-import { useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   deleteBusinessModule,
   getBusinessModuleDetail,
   saveBusinessModule,
+  updateBusinessModuleStatus,
 } from '@/api/business'
+import {
+  canAuditFromStatus,
+  canReverseAuditFromStatus,
+} from '@/module-system/module-adapter-actions'
+import { isDeleteBlockedByStatus } from '@/module-system/module-behavior-registry'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
-import {
-  isDeleteBlockedByStatus,
-  isEditBlockedByStatus,
-} from '@/views/modules/module-behavior-registry'
 
 export interface AuditTarget {
   key: string
@@ -33,86 +35,104 @@ export function useBusinessGridBatchActions({
   listReverseAuditTarget,
   refreshAndClearSelection,
 }: Props) {
-  const handleSelectedAuditRecords = useCallback(async () => {
+  const { t } = useTranslation()
+
+  const handleSelectedAuditRecords = () => {
     if (!selectedRowKeys.length) {
-      message.warning('请先选择记录')
+      message.warning(t('hooks.batchActions.pleaseSelectRecords'))
       return
     }
     if (!listAuditTarget) {
-      message.warning('当前模块未配置批量审核状态')
+      message.warning(t('hooks.batchActions.noBatchAuditStatus'))
       return
     }
 
     const selected = selectedRows
-    const auditStatus = String(listAuditTarget.value ?? '').trim()
-    const eligible = selected.filter((r) => {
-      const status = String(r.status ?? '').trim()
-      if (!status) return true
-      if (status === auditStatus) return false
-      return !isEditBlockedByStatus(status)
-    })
+    const eligible = selected.filter((record) =>
+      canAuditFromStatus(
+        record.status,
+        listAuditTarget,
+        listReverseAuditTarget,
+      ),
+    )
     const skippedCount = selected.length - eligible.length
 
     if (!eligible.length) {
-      message.warning('勾选单据当前状态不支持审核')
+      message.warning(t('hooks.batchActions.auditNotSupported'))
       return
     }
 
     modal.confirm({
-      title: '批量审核',
-      content: `确定审核选中的 ${eligible.length} 条记录吗？${
-        skippedCount > 0 ? `另有 ${skippedCount} 条因状态不支持将跳过。` : ''
-      }`,
+      title: t('hooks.batchActions.batchAudit'),
+      content: t('hooks.batchActions.batchAuditConfirm', {
+        count: eligible.length,
+        skippedPart:
+          skippedCount > 0
+            ? t('hooks.batchActions.skippedPart', { count: skippedCount })
+            : '',
+      }),
       onOk: async () => {
+        const auditResults = await Promise.allSettled(
+          eligible.map((record) =>
+            updateBusinessModuleStatus(
+              moduleKey,
+              String(record.id),
+              listAuditTarget.value,
+            ),
+          ),
+        )
         let successCount = 0
         let failedCount = 0
         let firstError = ''
-        for (const record of eligible) {
-          try {
-            const detail = await getBusinessModuleDetail(
-              moduleKey,
-              String(record.id),
-            )
-            await saveBusinessModule(moduleKey, {
-              ...detail.data,
-              [listAuditTarget.key]: listAuditTarget.value,
-            })
+        for (const result of auditResults) {
+          if (result.status === 'fulfilled') {
             successCount += 1
-          } catch (err) {
+          } else {
             failedCount += 1
             if (!firstError) {
-              firstError = err instanceof Error ? err.message : '审核失败'
+              firstError =
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : t('hooks.batchActions.auditFailed')
             }
           }
         }
 
         if (failedCount > 0) {
           message.warning(
-            `审核完成：成功 ${successCount} 条，失败 ${failedCount} 条${
-              skippedCount > 0 ? `，跳过 ${skippedCount} 条` : ''
-            }${firstError ? `；${firstError}` : ''}`,
+            t('hooks.batchActions.auditCompletedWithFailures', {
+              successCount,
+              failedCount,
+              skippedPart:
+                skippedCount > 0
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
+                  : '',
+              errorPart: firstError ? `；${firstError}` : '',
+            }),
           )
         } else {
           message.success(
-            `审核成功 ${successCount} 条${
-              skippedCount > 0 ? `，跳过 ${skippedCount} 条` : ''
-            }`,
+            t('hooks.batchActions.auditSuccess', {
+              successCount,
+              skippedPart:
+                skippedCount > 0
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
+                  : '',
+            }),
           )
         }
         await refreshAndClearSelection()
       },
     })
-  }, [
-    listAuditTarget,
-    moduleKey,
-    refreshAndClearSelection,
-    selectedRowKeys,
-    selectedRows,
-  ])
+  }
 
-  const handleSelectedDeleteRecords = useCallback(() => {
+  const handleSelectedDeleteRecords = () => {
     if (!selectedRowKeys.length) {
-      message.warning('请先选择记录')
+      message.warning(t('hooks.batchActions.pleaseSelectRecords'))
       return
     }
 
@@ -121,168 +141,224 @@ export function useBusinessGridBatchActions({
     const skippedCount = selected.length - eligible.length
 
     if (!eligible.length) {
-      message.warning('勾选单据当前状态不支持删除')
+      message.warning(t('hooks.batchActions.deleteNotSupported'))
       return
     }
 
     modal.confirm({
-      title: '批量删除',
-      content: `确定删除选中的 ${eligible.length} 条记录吗？此操作不可恢复。${
-        skippedCount > 0 ? `另有 ${skippedCount} 条因状态不支持将跳过。` : ''
-      }`,
+      title: t('hooks.batchActions.batchDelete'),
+      content: t('hooks.batchActions.batchDeleteConfirm', {
+        count: eligible.length,
+        skippedPart:
+          skippedCount > 0
+            ? t('hooks.batchActions.skippedPart', { count: skippedCount })
+            : '',
+      }),
       okButtonProps: { danger: true },
       onOk: async () => {
+        const deleteResults = await Promise.allSettled(
+          eligible.map((record) =>
+            deleteBusinessModule(moduleKey, String(record.id)),
+          ),
+        )
         let successCount = 0
         let failedCount = 0
         let firstError = ''
-        for (const record of eligible) {
-          try {
-            await deleteBusinessModule(moduleKey, String(record.id))
+        for (const result of deleteResults) {
+          if (result.status === 'fulfilled') {
             successCount += 1
-          } catch (err) {
+          } else {
             failedCount += 1
             if (!firstError) {
-              firstError = err instanceof Error ? err.message : '删除失败'
+              firstError =
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : t('hooks.batchActions.deleteFailed')
             }
           }
         }
 
         if (failedCount > 0) {
           message.warning(
-            `删除完成：成功 ${successCount} 条，失败 ${failedCount} 条${
-              skippedCount > 0 ? `，跳过 ${skippedCount} 条` : ''
-            }${firstError ? `；${firstError}` : ''}`,
+            t('hooks.batchActions.deleteCompletedWithFailures', {
+              successCount,
+              failedCount,
+              skippedPart:
+                skippedCount > 0
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
+                  : '',
+              errorPart: firstError ? `；${firstError}` : '',
+            }),
           )
         } else {
           message.success(
-            `删除成功 ${successCount} 条${
-              skippedCount > 0 ? `，跳过 ${skippedCount} 条` : ''
-            }`,
+            t('hooks.batchActions.deleteSuccess', {
+              successCount,
+              skippedPart:
+                skippedCount > 0
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
+                  : '',
+            }),
           )
         }
         await refreshAndClearSelection()
       },
     })
-  }, [moduleKey, refreshAndClearSelection, selectedRowKeys, selectedRows])
+  }
 
-  const handleSelectedReverseAuditRecords = useCallback(async () => {
+  const handleSelectedReverseAuditRecords = () => {
     if (!selectedRowKeys.length) {
-      message.warning('请先选择记录')
+      message.warning(t('hooks.batchActions.pleaseSelectRecords'))
       return
     }
     if (!listReverseAuditTarget) {
-      message.warning('当前模块未配置批量反审核状态')
+      message.warning(t('hooks.batchActions.noBatchReverseAuditStatus'))
       return
     }
 
     const selected = selectedRows
-    const auditStatus = String(listAuditTarget?.value ?? '').trim()
-    const eligible = selected.filter((r) => {
-      const status = String(r.status ?? '').trim()
-      return Boolean(auditStatus && status === auditStatus)
-    })
+    const eligible = selected.filter((record) =>
+      canReverseAuditFromStatus(
+        record.status,
+        listAuditTarget,
+        listReverseAuditTarget,
+      ),
+    )
     const skippedCount = selected.length - eligible.length
 
     if (!eligible.length) {
-      message.warning('勾选单据当前状态不支持反审核')
+      message.warning(t('hooks.batchActions.reverseAuditNotSupported'))
       return
     }
 
     modal.confirm({
-      title: '批量反审核',
-      content: `确定反审核选中的 ${eligible.length} 条记录吗？${
-        skippedCount > 0 ? `另有 ${skippedCount} 条因状态不支持将跳过。` : ''
-      }`,
+      title: t('hooks.batchActions.batchReverseAudit'),
+      content: t('hooks.batchActions.batchReverseAuditConfirm', {
+        count: eligible.length,
+        skippedPart:
+          skippedCount > 0
+            ? t('hooks.batchActions.skippedPart', { count: skippedCount })
+            : '',
+      }),
       onOk: async () => {
+        const reverseAuditResults = await Promise.allSettled(
+          eligible.map((record) =>
+            updateBusinessModuleStatus(
+              moduleKey,
+              String(record.id),
+              listReverseAuditTarget.value,
+            ),
+          ),
+        )
         let successCount = 0
         let failedCount = 0
         let firstError = ''
-        for (const record of eligible) {
-          try {
-            const detail = await getBusinessModuleDetail(
-              moduleKey,
-              String(record.id),
-            )
-            await saveBusinessModule(moduleKey, {
-              ...detail.data,
-              [listReverseAuditTarget.key]: listReverseAuditTarget.value,
-            })
+        for (const result of reverseAuditResults) {
+          if (result.status === 'fulfilled') {
             successCount += 1
-          } catch (err) {
+          } else {
             failedCount += 1
             if (!firstError) {
-              firstError = err instanceof Error ? err.message : '反审核失败'
+              firstError =
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : t('hooks.batchActions.reverseAuditFailed')
             }
           }
         }
 
         if (failedCount > 0) {
           message.warning(
-            `反审核完成：成功 ${successCount} 条，失败 ${failedCount} 条${
-              skippedCount > 0 ? `，跳过 ${skippedCount} 条` : ''
-            }${firstError ? `；${firstError}` : ''}`,
+            t('hooks.batchActions.reverseAuditCompletedWithFailures', {
+              successCount,
+              failedCount,
+              skippedPart:
+                skippedCount > 0
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
+                  : '',
+              errorPart: firstError ? `；${firstError}` : '',
+            }),
           )
         } else {
           message.success(
-            `反审核成功 ${successCount} 条${
-              skippedCount > 0 ? `，跳过 ${skippedCount} 条` : ''
-            }`,
+            t('hooks.batchActions.reverseAuditSuccess', {
+              successCount,
+              skippedPart:
+                skippedCount > 0
+                  ? t('hooks.batchActions.skippedCount', {
+                      count: skippedCount,
+                    })
+                  : '',
+            }),
           )
         }
         await refreshAndClearSelection()
       },
     })
-  }, [
-    listAuditTarget,
-    listReverseAuditTarget,
-    moduleKey,
-    refreshAndClearSelection,
-    selectedRowKeys,
-    selectedRows,
-  ])
+  }
 
-  const markSelectedFreightDelivered = useCallback(async () => {
+  const markSelectedFreightDelivered = () => {
     if (!selectedRowKeys.length) {
-      message.warning('请先选择物流单')
+      message.warning(t('hooks.batchActions.pleaseSelectFreight'))
       return
     }
 
     modal.confirm({
-      title: '批量标记送达',
-      content: `确定将选中的 ${selectedRowKeys.length} 条物流单标记为已送达吗？`,
+      title: t('hooks.batchActions.batchMarkDelivered'),
+      content: t('hooks.batchActions.batchMarkDeliveredConfirm', {
+        count: selectedRowKeys.length,
+      }),
       onOk: async () => {
+        const deliveredResults = await Promise.allSettled(
+          selectedRowKeys.map((id) =>
+            getBusinessModuleDetail('freight-bill', id).then((detail) =>
+              saveBusinessModule('freight-bill', {
+                ...detail.data,
+                deliveryStatus: '已送达',
+              }),
+            ),
+          ),
+        )
         let successCount = 0
         let failedCount = 0
         let firstError = ''
-        for (const id of selectedRowKeys) {
-          try {
-            const detail = await getBusinessModuleDetail('freight-bill', id)
-            await saveBusinessModule('freight-bill', {
-              ...detail.data,
-              deliveryStatus: '已送达',
-            })
+        for (const result of deliveredResults) {
+          if (result.status === 'fulfilled') {
             successCount += 1
-          } catch (err) {
+          } else {
             failedCount += 1
             if (!firstError) {
-              firstError = err instanceof Error ? err.message : '标记送达失败'
+              firstError =
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : t('hooks.batchActions.markDeliveredFailed')
             }
           }
         }
 
         if (failedCount > 0) {
           message.warning(
-            `标记送达完成：成功 ${successCount} 条，失败 ${failedCount} 条${
-              firstError ? `；${firstError}` : ''
-            }`,
+            t('hooks.batchActions.markDeliveredCompletedWithFailures', {
+              successCount,
+              failedCount,
+              errorPart: firstError ? `；${firstError}` : '',
+            }),
           )
         } else {
-          message.success(`标记送达成功 ${successCount} 条`)
+          message.success(
+            t('hooks.batchActions.markDeliveredSuccess', { successCount }),
+          )
         }
         await refreshAndClearSelection()
       },
     })
-  }, [refreshAndClearSelection, selectedRowKeys])
+  }
 
   return {
     handleSelectedAuditRecords,

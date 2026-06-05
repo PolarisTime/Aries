@@ -1,17 +1,22 @@
 import Button from 'antd/es/button'
 import Radio from 'antd/es/radio'
 import Select from 'antd/es/select'
+import { useTranslation } from 'react-i18next'
 import {
   fontSizeOptions,
-  layoutModeOptions,
+  getLayoutModeOptions,
+  getThemeModeOptions,
 } from '@/layouts/personal-settings-constants'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
+import type { ThemeMode } from '@/utils/storage'
 
 interface Props {
   fontSize: number
   layoutMode: LayoutMode
+  themeMode: ThemeMode
   onFontSizeChange: (value: number) => void
   onLayoutModeChange: (value: LayoutMode) => void
+  onThemeModeChange: (value: ThemeMode) => void
   onResetDisplay: () => void
   onSaveDisplay: () => void
 }
@@ -19,22 +24,34 @@ interface Props {
 export function PersonalSettingsDisplayTab({
   fontSize,
   layoutMode,
+  themeMode,
   onFontSizeChange,
   onLayoutModeChange,
+  onThemeModeChange,
   onResetDisplay,
   onSaveDisplay,
 }: Props) {
+  const { t } = useTranslation()
+  const themeModeOptions = getThemeModeOptions(t)
+  const layoutModeOptions = getLayoutModeOptions(t)
+
   return (
     <div className="personal-setting-panel">
       <div className="personal-setting-row">
-        <span className="personal-setting-label">系统字体</span>
-        <span className="personal-setting-value">苹方</span>
+        <span className="personal-setting-label">
+          {t('layouts.settings.systemFont')}
+        </span>
+        <span className="personal-setting-value">
+          {t('layouts.settings.systemFontDefault')}
+        </span>
       </div>
       <div className="personal-setting-row">
-        <span className="personal-setting-label">字体大小</span>
+        <span className="personal-setting-label">
+          {t('layouts.settings.fontSize')}
+        </span>
         <Select
           value={fontSize}
-          style={{ width: 160 }}
+          className="w-160"
           onChange={onFontSizeChange}
           options={fontSizeOptions.map((value) => ({
             value,
@@ -44,7 +61,9 @@ export function PersonalSettingsDisplayTab({
         />
       </div>
       <div className="personal-setting-row personal-setting-layout-row">
-        <span className="personal-setting-label">导航布局</span>
+        <span className="personal-setting-label">
+          {t('layouts.settings.navLayout')}
+        </span>
         <Radio.Group
           className="personal-layout-mode-group"
           optionType="button"
@@ -67,10 +86,31 @@ export function PersonalSettingsDisplayTab({
             ?.description
         }
       </div>
+      <div className="personal-setting-row">
+        <span className="personal-setting-label">
+          {t('layouts.settings.themeMode')}
+        </span>
+        <Radio.Group
+          optionType="button"
+          buttonStyle="solid"
+          value={themeMode}
+          onChange={(event) =>
+            onThemeModeChange(event.target.value as ThemeMode)
+          }
+        >
+          {themeModeOptions.map((item) => (
+            <Radio.Button key={item.value} value={item.value}>
+              {item.label}
+            </Radio.Button>
+          ))}
+        </Radio.Group>
+      </div>
       <div className="personal-setting-actions">
-        <Button onClick={onResetDisplay}>恢复默认</Button>
+        <Button onClick={onResetDisplay}>
+          {t('layouts.settings.resetDefault')}
+        </Button>
         <Button type="primary" onClick={onSaveDisplay}>
-          保存显示设置
+          {t('layouts.settings.saveDisplay')}
         </Button>
       </div>
     </div>

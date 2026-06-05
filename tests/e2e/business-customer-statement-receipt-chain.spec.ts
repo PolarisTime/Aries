@@ -72,7 +72,9 @@ async function loginAsTest9(page: Page) {
 }
 
 async function getCurrentAccessToken(page: Page) {
-  const token = await page.evaluate(() => localStorage.getItem('aries-token') || '')
+  const token = await page.evaluate(
+    () => localStorage.getItem('aries-token') || '',
+  )
   expect(token).toBeTruthy()
   return token
 }
@@ -122,7 +124,11 @@ async function setSpinbuttonValue(target: Locator, value: string) {
   await target.blur()
 }
 
-async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: string) {
+async function waitForSaveOutcome(
+  page: Page,
+  overlay: Locator,
+  expectedNo?: string,
+) {
   const rowInList = expectedNo
     ? page
         .locator('tbody tr:not(.ant-table-measure-row)')
@@ -138,7 +144,10 @@ async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: str
   await expect
     .poll(
       async () => {
-        if ((await errorMessage.count()) > 0 && (await errorMessage.isVisible())) {
+        if (
+          (await errorMessage.count()) > 0 &&
+          (await errorMessage.isVisible())
+        ) {
           const text = (await errorMessage.textContent())?.trim()
           return text ? `error:${text}` : 'error'
         }
@@ -150,7 +159,12 @@ async function waitForSaveOutcome(page: Page, overlay: Locator, expectedNo?: str
           }
         }
         if ((await successMessage.count()) > 0) return 'message'
-        if (rowInList && (await rowInList.count()) > 0 && (await rowInList.isVisible())) return 'row'
+        if (
+          rowInList &&
+          (await rowInList.count()) > 0 &&
+          (await rowInList.isVisible())
+        )
+          return 'row'
         if (!(await overlay.isVisible().catch(() => false))) return 'closed'
         return 'pending'
       },
@@ -167,7 +181,11 @@ async function saveOverlay(page: Page, overlay: Locator, expectedNo?: string) {
   await waitForSaveOutcome(page, overlay, expectedNo)
 }
 
-async function saveAndAuditOverlay(page: Page, overlay: Locator, expectedNo?: string) {
+async function saveAndAuditOverlay(
+  page: Page,
+  overlay: Locator,
+  expectedNo?: string,
+) {
   await overlay
     .locator('button.overlay-action-button')
     .filter({ hasText: /^保存并审核$/ })
@@ -253,7 +271,10 @@ async function createPurchaseSalesCompletedChain(page: Page, suffix: string) {
   await page.goto('/sales-outbound')
   const salesOutboundOverlay = await openCreateOverlay(page)
   await salesOutboundOverlay.locator('#outboundNo').fill(salesOutboundNo)
-  await fillDateInput(salesOutboundOverlay.locator('#outboundDate'), deliveryDate)
+  await fillDateInput(
+    salesOutboundOverlay.locator('#outboundDate'),
+    deliveryDate,
+  )
   await importParentByKeyword(
     page,
     salesOutboundOverlay,
@@ -275,17 +296,15 @@ test('creates customer statement and receipt from completed sales flow', async (
   const suffix = buildSuffix()
   const receiptNo = `RC-CS-${suffix}`
 
-  const { salesOrderNo, deliveryDate } = await createPurchaseSalesCompletedChain(
-    page,
-    suffix,
-  )
+  const { salesOrderNo, deliveryDate } =
+    await createPurchaseSalesCompletedChain(page, suffix)
 
   const fetchSalesOrderId = async () => {
-  const token = await getCurrentAccessToken(page)
-  const salesOrderSearch = await page.request.get(
-    `${API_BASE_URL}/sales-order/search?keyword=${encodeURIComponent(salesOrderNo)}&limit=5`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  )
+    const token = await getCurrentAccessToken(page)
+    const salesOrderSearch = await page.request.get(
+      `${API_BASE_URL}/sales-order/search?keyword=${encodeURIComponent(salesOrderNo)}&limit=5`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
     const salesOrderSearchJson = (await salesOrderSearch.json()) as {
       code: number
       message?: string
@@ -346,20 +365,23 @@ test('creates customer statement and receipt from completed sales flow', async (
       `${API_BASE_URL}/customer-statement/search?keyword=${encodeURIComponent(salesOrderNo)}&limit=10`,
       { headers: { Authorization: `Bearer ${currentToken}` } },
     )
-    const customerStatementSearchJson = (await customerStatementSearch.json()) as {
-      code: number
-      data?: Array<{
-        id?: string
-        statementNo?: string
-        closingAmount?: number
-        customerName?: string
-        projectName?: string
-      }>
-    }
+    const customerStatementSearchJson =
+      (await customerStatementSearch.json()) as {
+        code: number
+        data?: Array<{
+          id?: string
+          statementNo?: string
+          closingAmount?: number
+          customerName?: string
+          projectName?: string
+        }>
+      }
     expect(customerStatementSearchJson.code).toBe(0)
-    return (customerStatementSearchJson.data || [])
-      .filter((item) => String(item.statementNo || item.id || '').length > 0)
-      .sort(compareRecordIds)[0] || null
+    return (
+      (customerStatementSearchJson.data || [])
+        .filter((item) => String(item.statementNo || item.id || '').length > 0)
+        .sort(compareRecordIds)[0] || null
+    )
   }
 
   await expect
@@ -389,7 +411,10 @@ test('creates customer statement and receipt from completed sales flow', async (
     receiptOverlay.locator('#sourceStatementId'),
     String(statement?.statementNo || ''),
   )
-  await fillDateInput(receiptOverlay.locator('#receiptDate'), actualDeliveryDate)
+  await fillDateInput(
+    receiptOverlay.locator('#receiptDate'),
+    actualDeliveryDate,
+  )
   await selectAntOption(receiptOverlay.locator('#payType'), '银行转账')
   await receiptOverlay
     .locator('#amount')
@@ -422,32 +447,44 @@ test('creates customer statement and receipt from completed sales flow', async (
       status?: string
       sourceStatementId?: string | number | null
       amount?: number
-      items?: Array<{ allocatedAmount?: number; sourceStatementId?: string | number }>
+      items?: Array<{
+        allocatedAmount?: number
+        sourceStatementId?: string | number
+      }>
     }
   }
   expect(receiptDetailJson.code).toBe(0)
   expect(String(receiptDetailJson.data?.receiptNo || '')).toBe(receiptNo)
   expect(String(receiptDetailJson.data?.status || '')).toBe('已收款')
-  expect(String(receiptDetailJson.data?.sourceStatementId || '')).toBe(statementId)
+  expect(String(receiptDetailJson.data?.sourceStatementId || '')).toBe(
+    statementId,
+  )
   expect(Number(receiptDetailJson.data?.amount || 0)).toBeGreaterThan(0)
-  expect(Number(receiptDetailJson.data?.items?.[0]?.allocatedAmount || 0)).toBeGreaterThan(0)
+  expect(
+    Number(receiptDetailJson.data?.items?.[0]?.allocatedAmount || 0),
+  ).toBeGreaterThan(0)
 
   const refreshedStatementDetailRes = await page.request.get(
     `${API_BASE_URL}/customer-statement/${statementId}`,
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
-  const refreshedStatementDetailJson = (await refreshedStatementDetailRes.json()) as {
-    code: number
-    data?: {
-      receiptAmount?: number
-      closingAmount?: number
-      salesAmount?: number
+  const refreshedStatementDetailJson =
+    (await refreshedStatementDetailRes.json()) as {
+      code: number
+      data?: {
+        receiptAmount?: number
+        closingAmount?: number
+        salesAmount?: number
+      }
     }
-  }
   expect(refreshedStatementDetailJson.code).toBe(0)
-  expect(Number(refreshedStatementDetailJson.data?.receiptAmount || 0)).toBeGreaterThan(0)
+  expect(
+    Number(refreshedStatementDetailJson.data?.receiptAmount || 0),
+  ).toBeGreaterThan(0)
   expect(Number(refreshedStatementDetailJson.data?.closingAmount || 0)).toBe(0)
-  expect(Number(refreshedStatementDetailJson.data?.salesAmount || 0)).toBeGreaterThan(0)
+  expect(
+    Number(refreshedStatementDetailJson.data?.salesAmount || 0),
+  ).toBeGreaterThan(0)
 
   await assertNoFatalUiErrors()
 })

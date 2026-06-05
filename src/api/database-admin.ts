@@ -1,5 +1,6 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { getApiMessage } from '@/utils/api-messages'
 
 export interface PostgresStatus {
   host: string
@@ -14,7 +15,6 @@ export interface PostgresStatus {
   serverStartTime: string | null
   status: string
 }
-
 export interface RedisStatus {
   host: string
   port: number
@@ -30,28 +30,9 @@ export interface RedisStatus {
   hitRate: number
   status: string
 }
-
 export interface DatabaseStatus {
   postgres: PostgresStatus
   redis: RedisStatus
-}
-
-export interface DatabaseExportTask {
-  id: string
-  taskNo: string
-  status: string
-  fileName?: string
-  fileSize?: number
-  failureReason?: string
-  createdAt?: string
-  finishedAt?: string
-  expiresAt?: string
-  downloadUrl?: string
-}
-
-export interface DatabaseExportDownloadLink {
-  downloadUrl: string
-  expiresAt?: string
 }
 
 interface DatabaseResponse<T> {
@@ -60,96 +41,166 @@ interface DatabaseResponse<T> {
   data: T
 }
 
-function buildTotpHeaders(totpCode: string) {
-  return {
-    'X-TOTP-Code': totpCode.trim(),
-  }
+export type ApiNumeric = number | string
+
+export interface PostgresOverview {
+  totalConnections: ApiNumeric
+  activeConnections: ApiNumeric
+  idleInTransactionConnections: ApiNumeric
+  lockWaitSessions: ApiNumeric
+  blockedSessions: ApiNumeric
+  longTransactions: ApiNumeric
+  longestTransactionSeconds: ApiNumeric
+  longestQuerySeconds: ApiNumeric
+  xactCommit: ApiNumeric
+  xactRollback: ApiNumeric
+  deadlocks: ApiNumeric
+  tempFiles: ApiNumeric
+  tempBytes: ApiNumeric
+  cacheHitRate: number
+  databaseSize: string
+  uptimeSeconds: ApiNumeric
+}
+export interface PostgresActivity {
+  activeSessions: ApiNumeric
+  idleInTransactionSessions: ApiNumeric
+  lockWaitSessions: ApiNumeric
+  blockedSessions: ApiNumeric
+  longTransactions: ApiNumeric
+  longestTransactionSeconds: ApiNumeric
+  longestQuerySeconds: ApiNumeric
+}
+export interface PostgresTuningSettings {
+  maxConnections: ApiNumeric
+  totalConnections: ApiNumeric
+  activeConnections: ApiNumeric
+  hikariMaximumPoolSize: ApiNumeric
+  hikariMinimumIdle: ApiNumeric
+  hikariLeakDetectionThresholdMs: ApiNumeric
+  statementTimeout: string
+  idleInTransactionSessionTimeout: string
+  lockTimeout: string
+  trackIoTiming: string
+  sharedBuffers: string
+  effectiveCacheSize: string
+  workMem: string
+  maintenanceWorkMem: string
+  maxWalSize: string
+  checkpointTimeout: string
+  pgStatStatementsTrack: string
+}
+export interface TableHealthItem {
+  tableName: string
+  liveRows: ApiNumeric
+  deadRows: ApiNumeric
+  deadPct: number
+  seqScan: ApiNumeric
+  idxScan: ApiNumeric
+  nModSinceAnalyze: ApiNumeric
+  heapCachePct: number
+  vacuumTriggerRows: ApiNumeric
+  analyzeTriggerRows: ApiNumeric
+  lastAutovacuumAgeSeconds: ApiNumeric | null
+  lastAutoanalyzeAgeSeconds: ApiNumeric | null
+  autovacuumStatus: string
+  autovacuumAdvice: string
+  lastVacuum: string | null
+  lastAutovacuum: string | null
+  lastAnalyze: string | null
+  lastAutoanalyze: string | null
+}
+export interface IndexHealthItem {
+  indexName: string
+  tableName: string
+  size: string
+  sizeBytes: ApiNumeric
+  scans: ApiNumeric
+  tuplesRead: ApiNumeric
+  tuplesFetched: ApiNumeric
+  valid: boolean
+  unique: boolean
+  primary: boolean
+}
+export interface QueryStatsItem {
+  queryId: string
+  queryPreview: string
+  calls: ApiNumeric
+  totalMs: number
+  avgMs: number
+  rows: ApiNumeric
+  cacheHitPct: number
+}
+export interface QueryStats {
+  available: boolean
+  status: string
+  items: QueryStatsItem[]
+}
+interface RedisMemoryItem {
+  usedMemory: ApiNumeric
+  usedMemoryPeak: ApiNumeric
+  maxMemory: ApiNumeric
+  fragmentationRatio: number
+  evictedKeys: ApiNumeric
+  expiredKeys: ApiNumeric
+}
+interface RedisClientItem {
+  connectedClients: ApiNumeric
+  blockedClients: ApiNumeric
+  rejectedConnections: ApiNumeric
+}
+interface RedisThroughputItem {
+  totalCommandsProcessed: ApiNumeric
+  instantaneousOpsPerSec: ApiNumeric
+  keyspaceHits: ApiNumeric
+  keyspaceMisses: ApiNumeric
+  hitRate: number
+}
+interface RedisKeyspaceItem {
+  database: number
+  keys: ApiNumeric
+  expires: ApiNumeric
+  avgTtlMs: ApiNumeric
+}
+interface RedisPersistenceItem {
+  rdbLastSaveTime: ApiNumeric
+  rdbLastBgsaveStatus: string
+  aofEnabled: boolean
+  aofLastBgrewriteStatus: string
+}
+export interface RedisMonitoring {
+  memory: RedisMemoryItem
+  clients: RedisClientItem
+  throughput: RedisThroughputItem
+  keyspace: RedisKeyspaceItem
+  persistence: RedisPersistenceItem
+  status: string
+}
+export interface DatabaseMonitoring {
+  available: boolean
+  status: string
+  overview: PostgresOverview
+  activity: PostgresActivity
+  tuning: PostgresTuningSettings
+  tableHealth: TableHealthItem[]
+  indexHealth: IndexHealthItem[]
+  queryStats: QueryStats
+  redis: RedisMonitoring
 }
 
 export async function getDatabaseStatus() {
-  const response = assertApiSuccess(
+  const r = assertApiSuccess(
     await http.get<DatabaseResponse<DatabaseStatus>>(ENDPOINTS.DATABASE_STATUS),
-    '加载数据库状态失败',
+    getApiMessage('loadDatabaseStatusFailed'),
   )
-  return response.data
+  return r.data
 }
 
-function normalizeTask(record: Record<string, unknown>): DatabaseExportTask {
-  return {
-    id: String(record.id || ''),
-    taskNo: String(record.taskNo || ''),
-    status: String(record.status || ''),
-    fileName: record.fileName ? String(record.fileName) : '',
-    fileSize: Number(record.fileSize || 0),
-    failureReason: record.failureReason ? String(record.failureReason) : '',
-    createdAt: record.createdAt ? String(record.createdAt) : '',
-    finishedAt: record.finishedAt ? String(record.finishedAt) : '',
-    expiresAt: record.expiresAt ? String(record.expiresAt) : '',
-    downloadUrl: record.downloadUrl ? String(record.downloadUrl) : '',
-  }
-}
-
-export async function createDatabaseExportTask(totpCode: string) {
-  const response = assertApiSuccess(
-    await http.post<DatabaseResponse<Record<string, unknown>>>(
-      ENDPOINTS.DATABASE_EXPORT_TASKS,
-      null,
-      {
-        headers: buildTotpHeaders(totpCode),
-      },
+export async function getDatabaseMonitoring() {
+  const r = assertApiSuccess(
+    await http.get<DatabaseResponse<DatabaseMonitoring>>(
+      ENDPOINTS.DATABASE_MONITORING,
     ),
-    '提交数据库导出任务失败',
+    '获取数据库监控数据失败',
   )
-  return normalizeTask(response.data || {})
-}
-
-export async function listDatabaseExportTasks() {
-  const response = assertApiSuccess(
-    await http.get<DatabaseResponse<Record<string, unknown>[]>>(
-      ENDPOINTS.DATABASE_EXPORT_TASKS,
-    ),
-    '加载数据库导出任务失败',
-  )
-  return Array.isArray(response.data)
-    ? response.data.map((item) => normalizeTask(item))
-    : []
-}
-
-export async function generateDatabaseExportDownloadLink(taskId: string) {
-  const response = assertApiSuccess(
-    await http.post<DatabaseResponse<Record<string, unknown>>>(
-      `${ENDPOINTS.DATABASE_EXPORT_TASKS}/${encodeURIComponent(taskId)}/download-link`,
-    ),
-    '生成下载链接失败',
-  )
-  return {
-    downloadUrl: String(response.data?.downloadUrl || ''),
-    expiresAt: response.data?.expiresAt ? String(response.data.expiresAt) : '',
-  } as DatabaseExportDownloadLink
-}
-
-export async function importDatabaseBackup(
-  file: File,
-  totpCode: string,
-  databaseUsername: string,
-  databasePassword: string,
-) {
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('databaseUsername', databaseUsername.trim())
-  formData.append('databasePassword', databasePassword)
-
-  return assertApiSuccess(
-    await http.post<DatabaseResponse<null>>(
-      ENDPOINTS.DATABASE_IMPORT,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          ...buildTotpHeaders(totpCode),
-        },
-      },
-    ),
-    '导入数据库备份失败',
-  )
+  return r.data
 }

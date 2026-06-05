@@ -1,21 +1,22 @@
 import type { TableColumnsType } from 'antd'
-import { useCallback, useMemo } from 'react'
+import { pinyin } from 'pinyin-pro'
 import { fetchMaterialSearch } from '@/api/materials'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import { isEditorItemColumnEditableForModule } from '@/module-system/module-adapter-editor'
+import {
+  buildModuleEditorDataColumns,
+  buildModuleEditorManagementColumns,
+} from '@/module-system/module-editor-item-column-builders'
+import { useModuleEditorItemColumnHandlers } from '@/module-system/module-editor-item-column-handlers'
+import { applyMaterialToEditorLineItem } from '@/module-system/module-editor-line-item-utils'
 import type {
   ModuleColumnDefinition,
   ModuleLineItem,
   ModulePageConfig,
+  ModuleRecord,
 } from '@/types/module-page'
-import { isEditorItemColumnEditableForModule } from '@/views/modules/module-adapter-editor'
-import {
-  buildModuleEditorDataColumns,
-  buildModuleEditorManagementColumns,
-} from '@/views/modules/module-editor-item-column-builders'
-import { useModuleEditorItemColumnHandlers } from '@/views/modules/module-editor-item-column-handlers'
-import { applyMaterialToEditorLineItem } from '@/views/modules/module-editor-line-item-utils'
 
 interface Props {
   moduleKey: string
@@ -24,12 +25,20 @@ interface Props {
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
   canManageItems: boolean
   lineItemsLocked: boolean
+  canEditItemColumns: boolean
   selectedItemIds: string[]
   onSelectAll: (checked: boolean) => void
   onSelectItem: (itemId: string, checked: boolean) => void
   onDragStart: (itemId: string, event: React.DragEvent) => void
   onDragOver: (itemId: string, event: React.DragEvent) => void
   onDragEnd: () => void
+}
+
+type MaterialLookupEntry = readonly [string, ModuleRecord]
+type MaterialSelectOption = {
+  label: string
+  searchText: string
+  value: string
 }
 
 function mergeColumnOrder(allIds: string[], savedOrder: string[]) {
@@ -51,6 +60,7 @@ export function useModuleEditorItemColumns({
   setItems,
   canManageItems,
   lineItemsLocked,
+  canEditItemColumns,
   selectedItemIds,
   onSelectAll,
   onSelectItem,
@@ -63,12 +73,17 @@ export function useModuleEditorItemColumns({
     warehouses: true,
     materials: true,
   })
+  const totalItemColumnCount = config.itemColumns?.length ?? 0
   const {
     columnOrder: savedItemColumnOrder,
     columnVisibility,
     handleColumnOrderChange,
     handleColumnVisibilityChange,
-  } = useColumnSettingsSupport(`${config.key}:editor-items`)
+  } = useColumnSettingsSupport(
+    `${config?.key ?? moduleKey}:editor-items`,
+    undefined,
+    totalItemColumnCount,
+  )
   const {
     handleItemInputChange,
     handleItemNumberChange,
@@ -77,137 +92,128 @@ export function useModuleEditorItemColumns({
     handleWarehouseSelect,
   } = useModuleEditorItemColumnHandlers({ setItems })
 
-  const isItemColumnEditable = useCallback(
-    (columnKey: string) =>
-      isEditorItemColumnEditableForModule(
-        moduleKey,
-        columnKey,
-        canManageItems,
-        lineItemsLocked,
-      ),
-    [canManageItems, lineItemsLocked, moduleKey],
-  )
+  const isItemColumnEditable = (columnKey: string) =>
+    isEditorItemColumnEditableForModule(
+      moduleKey,
+      columnKey,
+      canEditItemColumns,
+      lineItemsLocked,
+    )
 
-  const materialLookup = useMemo(() => {
-    const entries = materials
-      .map((record) => {
-        const materialCode = String(record.materialCode || '').trim()
-        if (!materialCode) {
-          return null
-        }
-        return [materialCode.toLowerCase(), record] as const
-      })
-      .filter(Boolean) as Array<readonly [string, Record<string, unknown>]>
+  const materialLookup = (() => {
+    const entries = materials.flatMap((record): MaterialLookupEntry[] => {
+      const materialCode = String(record.materialCode || '').trim()
+      if (!materialCode) {
+        return []
+      }
+      return [[materialCode.toLowerCase(), record]]
+    })
 
     return new Map(entries)
-  }, [materials])
+  })()
 
-  const materialOptions = useMemo(() => {
+  const materialOptions = (() => {
     const seen = new Set<string>()
 
-    return materials
-      .map((record) => {
-        const materialCode = String(record.materialCode || '').trim()
-        if (!materialCode) {
-          return null
-        }
+    return materials.flatMap((record): MaterialSelectOption[] => {
+      const materialCode = String(record.materialCode || '').trim()
+      if (!materialCode) {
+        return []
+      }
 
-        const normalizedCode = materialCode.toLowerCase()
-        if (seen.has(normalizedCode)) {
-          return null
-        }
-        seen.add(normalizedCode)
+      const normalizedCode = materialCode.toLowerCase()
+      if (seen.has(normalizedCode)) {
+        return []
+      }
+      seen.add(normalizedCode)
 
-        const brand = String(record.brand || '').trim()
-        const category = String(record.category || '').trim()
-        const material = String(record.material || '').trim()
-        const spec = String(record.spec || '').trim()
-        const length = String(record.length || '').trim()
-        const materialName =
-          typeof record.materialName === 'string'
-            ? record.materialName.trim()
-            : ''
+      const brand = String(record.brand || '').trim()
+      const category = String(record.category || '').trim()
+      const material = String(record.material || '').trim()
+      const spec = String(record.spec || '').trim()
+      const length = String(record.length || '').trim()
+      const materialName =
+        typeof record.materialName === 'string'
+          ? record.materialName.trim()
+          : ''
 
-        return {
-          label: [materialCode, brand || materialName, material, spec, length]
+      return [
+        {
+          label: [brand || materialName, category, material, spec, length]
             .filter(Boolean)
             .join(' | '),
-          searchText: [
-            materialCode,
-            brand,
-            materialName,
-            category,
-            material,
-            spec,
-            length,
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase(),
+          searchText: (() => {
+            const pyFields = [brand, materialName, category, material, spec]
+              .filter(Boolean)
+              .map((s) =>
+                pinyin(s, { toneType: 'none', type: 'array' })
+                  .map((p) => p[0])
+                  .join(''),
+              )
+            return [brand, materialName, category, material, spec, ...pyFields]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase()
+          })(),
           value: materialCode,
-        }
-      })
-      .filter(Boolean) as Array<{
-      label: string
-      searchText: string
-      value: string
-    }>
-  }, [materials])
-  const allItemColumnIds = useMemo(
-    () => (config.itemColumns || []).map((column) => column.dataIndex),
-    [config.itemColumns],
+        },
+      ]
+    })
+  })()
+  const allItemColumnIds = (config.itemColumns || []).map(
+    (column) => column.dataIndex,
   )
-  const itemColumnOrder = useMemo(
-    () => mergeColumnOrder(allItemColumnIds, savedItemColumnOrder),
-    [allItemColumnIds, savedItemColumnOrder],
+  const itemColumnOrder = mergeColumnOrder(
+    allItemColumnIds,
+    savedItemColumnOrder,
   )
-  const visibleItemColumnKeys = useMemo(
-    () => itemColumnOrder.filter((key) => columnVisibility[key] !== false),
-    [columnVisibility, itemColumnOrder],
+  const visibleItemColumnKeys = itemColumnOrder.filter(
+    (key) => columnVisibility[key] !== false,
   )
-  const orderedVisibleItemColumns = useMemo(() => {
+  const orderedVisibleItemColumns = (() => {
     const columnMap = new Map<string, ModuleColumnDefinition>(
       (config.itemColumns || []).map((column) => [column.dataIndex, column]),
     )
 
-    return visibleItemColumnKeys
-      .map((key) => columnMap.get(key))
-      .filter(Boolean) as ModuleColumnDefinition[]
-  }, [config.itemColumns, visibleItemColumnKeys])
+    return visibleItemColumnKeys.flatMap((key) => {
+      const col = columnMap.get(key)
+      return col ? [col] : []
+    })
+  })()
 
-  const handleResolvedMaterialSelect = useCallback(
-    (itemId: string, materialCode: string) => {
-      const normalizedCode = materialCode.trim().toLowerCase()
-      const materialRecord =
-        normalizedCode.length > 0
-          ? materialLookup.get(normalizedCode) || null
-          : null
+  const handleResolvedMaterialSelect = (
+    itemId: string,
+    materialCode: string,
+  ) => {
+    const normalizedCode = materialCode.trim().toLowerCase()
+    const materialRecord =
+      normalizedCode.length > 0
+        ? materialLookup.get(normalizedCode) || null
+        : null
 
-      handleMaterialSelect(
-        itemId,
-        materialCode,
-        materialRecord,
-        applyMaterialToEditorLineItem,
-        async (keyword) => {
-          const normalizedKeyword = keyword.trim()
-          if (!normalizedKeyword) {
-            return null
-          }
-          const matches = await fetchMaterialSearch(normalizedKeyword, 20)
-          const exact = matches.find(
-            (record) =>
-              String(record.materialCode || '')
-                .trim()
-                .toLowerCase() === normalizedKeyword.toLowerCase(),
-          )
-          return exact || null
-        },
-      )
-    },
-    [handleMaterialSelect, materialLookup],
-  )
+    handleMaterialSelect(
+      itemId,
+      materialCode,
+      materialRecord,
+      (item, record) => applyMaterialToEditorLineItem(item, record, moduleKey),
+      async (keyword) => {
+        const normalizedKeyword = keyword.trim()
+        if (!normalizedKeyword) {
+          return null
+        }
+        const matches = await fetchMaterialSearch(normalizedKeyword, 20)
+        const exact = matches.find(
+          (record) =>
+            String(record.materialCode || '')
+              .trim()
+              .toLowerCase() === normalizedKeyword.toLowerCase(),
+        )
+        return exact || null
+      },
+    )
+  }
 
-  const itemColumns = useMemo<TableColumnsType<ModuleLineItem>>(() => {
+  const itemColumns: TableColumnsType<ModuleLineItem> = (() => {
     if (!config.itemColumns?.length) return []
 
     const cols: TableColumnsType<ModuleLineItem> = []
@@ -243,40 +249,17 @@ export function useModuleEditorItemColumns({
     )
 
     return cols
-  }, [
-    canManageItems,
-    config,
-    formatCellValue,
-    handleItemInputChange,
-    handleItemNumberChange,
-    handleResolvedMaterialSelect,
-    handleSettlementModeChange,
-    handleWarehouseSelect,
-    isItemColumnEditable,
-    items,
-    materialOptions,
-    onDragEnd,
-    onDragOver,
-    onDragStart,
-    onSelectAll,
-    onSelectItem,
-    orderedVisibleItemColumns,
-    selectedItemIds,
-    warehouses,
-  ])
+  })()
 
-  const toggleItemColumn = useCallback(
-    (key: string) => {
-      const next = { ...columnVisibility }
-      if (next[key] === false) {
-        delete next[key]
-      } else {
-        next[key] = false
-      }
-      handleColumnVisibilityChange(next)
-    },
-    [columnVisibility, handleColumnVisibilityChange],
-  )
+  const toggleItemColumn = (key: string) => {
+    const next = { ...columnVisibility }
+    if (next[key] === false) {
+      delete next[key]
+    } else {
+      next[key] = false
+    }
+    handleColumnVisibilityChange(next)
+  }
 
   return {
     itemColumns,

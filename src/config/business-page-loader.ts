@@ -59,6 +59,8 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
     (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,
   payment: async () =>
     (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,
+  'ledger-adjustment': async () =>
+    (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,
   'invoice-receipt': async () =>
     (await import('@/config/business-pages/invoice-pages')).invoicePageConfigs,
   'invoice-issue': async () =>
@@ -87,6 +89,9 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
     (await import('@/config/business-pages/system-organization-pages'))
       .systemOrganizationPageConfigs,
   'system-permission-management': async () =>
+    (await import('@/config/business-pages/system-access-pages'))
+      .systemAccessPageConfigs,
+  permission: async () =>
     (await import('@/config/business-pages/system-access-pages'))
       .systemAccessPageConfigs,
 }

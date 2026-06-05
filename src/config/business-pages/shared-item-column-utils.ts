@@ -22,11 +22,12 @@ export function applyCompactItemLayout(
   hiddenKeys: string[] = [],
 ) {
   const hiddenKeySet = new Set(hiddenKeys)
-  return columns
-    .filter((column) => !hiddenKeySet.has(column.dataIndex))
-    .map((column) =>
+  return columns.flatMap((column) => {
+    if (hiddenKeySet.has(column.dataIndex)) return []
+    return [
       widthMap[column.dataIndex]
         ? { ...column, width: widthMap[column.dataIndex] }
         : column,
-    )
+    ]
+  })
 }

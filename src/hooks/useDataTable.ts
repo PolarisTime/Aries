@@ -11,12 +11,11 @@ import {
   type Row,
   type RowSelectionState,
   type SortingState,
-  type Table,
   type Updater,
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table'
-import { useCallback, useMemo, useState } from 'react'
+import { useState } from 'react'
 
 interface UseDataTableOptions<TData> {
   data: TData[]
@@ -30,6 +29,7 @@ interface UseDataTableOptions<TData> {
   enableExpanding?: boolean
   enableColumnVisibility?: boolean
   getRowCanExpand?: (row: TData) => boolean
+  getRowId?: (row: TData, index: number) => string
   initialPageSize?: number
   onPaginationChange?: (pagination: PaginationState) => void
   onSortingChange?: (sorting: SortingState) => void
@@ -45,6 +45,8 @@ interface UseDataTableOptions<TData> {
 }
 
 export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
+  'use no memo'
+  // TanStack Table returns a mutable table instance that React Compiler should not memoize.
   const {
     data,
     columns,
@@ -56,6 +58,7 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
     enableRowSelection = false,
     enableExpanding = false,
     getRowCanExpand = undefined,
+    getRowId,
     initialPageSize = 20,
     onPaginationChange,
     onSortingChange,
@@ -78,27 +81,26 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const resolvedSorting = controlledSorting ?? sorting
 
-  const handlePaginationChange: OnChangeFn<PaginationState> = useCallback(
-    (updater: Updater<PaginationState>) => {
-      const next = typeof updater === 'function' ? updater(pagination) : updater
-      setPagination(next)
-      onPaginationChange?.(next)
-    },
-    [pagination, onPaginationChange],
-  )
+  const handlePaginationChange: OnChangeFn<PaginationState> = (
+    updater: Updater<PaginationState>,
+  ) => {
+    const next = typeof updater === 'function' ? updater(pagination) : updater
+    setPagination(next)
+    onPaginationChange?.(next)
+  }
 
-  const handleSortingChange: OnChangeFn<SortingState> = useCallback(
-    (updater: Updater<SortingState>) => {
-      const next =
-        typeof updater === 'function' ? updater(resolvedSorting) : updater
-      if (controlledSorting === undefined) {
-        setSorting(next)
-      }
-      onSortingChange?.(next)
-    },
-    [controlledSorting, onSortingChange, resolvedSorting],
-  )
+  const handleSortingChange: OnChangeFn<SortingState> = (
+    updater: Updater<SortingState>,
+  ) => {
+    const next =
+      typeof updater === 'function' ? updater(resolvedSorting) : updater
+    if (controlledSorting === undefined) {
+      setSorting(next)
+    }
+    onSortingChange?.(next)
+  }
 
+  // react-doctor-disable-next-line react-hooks-js/incompatible-library -- TanStack Table returns a mutable table instance; keep this wrapper as the third-party boundary.
   const table = useReactTable<TData>({
     data,
     columns,
@@ -111,6 +113,7 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
     getRowCanExpand: getRowCanExpand as unknown as
       | ((row: Row<TData>) => boolean)
       | undefined,
+    getRowId,
     state: {
       pagination,
       sorting: resolvedSorting,
@@ -133,22 +136,16 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
     getExpandedRowModel: enableExpanding ? getExpandedRowModel() : undefined,
   })
 
-  const currentPage = useMemo(
-    () => pagination.pageIndex + 1,
-    [pagination.pageIndex],
-  )
+  const currentPage = pagination.pageIndex + 1
   const pageSize = pagination.pageSize
 
-  const setCurrentPage = useCallback(
-    (page: number) => {
-      const index = Math.max(0, page - 1)
-      handlePaginationChange({
-        pageIndex: index,
-        pageSize: pagination.pageSize,
-      })
-    },
-    [pagination.pageSize, handlePaginationChange],
-  )
+  const setCurrentPage = (page: number) => {
+    const index = Math.max(0, page - 1)
+    handlePaginationChange({
+      pageIndex: index,
+      pageSize: pagination.pageSize,
+    })
+  }
 
   return {
     table,
@@ -164,10 +161,8 @@ export function useDataTable<TData>(options: UseDataTableOptions<TData>) {
 
 export type {
   ColumnDef,
-  ExpandedState,
   PaginationState,
   RowSelectionState,
   SortingState,
-  Table,
   UseDataTableOptions,
 }

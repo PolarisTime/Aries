@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { listDepartmentOptions, listRoleOptions } from '@/api/user-accounts'
+import { QUERY_KEYS } from '@/constants/query-keys'
 
 interface Props {
   canViewRoleCatalog: boolean
@@ -13,13 +14,13 @@ export function useUserAccountEditorCatalogs({
   enabled = true,
 }: Props) {
   const { data: roleOptions = [] } = useQuery({
-    queryKey: ['role-options'],
+    queryKey: QUERY_KEYS.roleOptions,
     queryFn: listRoleOptions,
     enabled: enabled && canViewRoleCatalog,
   })
 
   const { data: departmentOptions = [] } = useQuery({
-    queryKey: ['department-options'],
+    queryKey: QUERY_KEYS.departmentOptions,
     queryFn: listDepartmentOptions,
     enabled: enabled && canViewDepartmentCatalog,
   })

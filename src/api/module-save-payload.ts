@@ -1,12 +1,16 @@
 import dayjs from 'dayjs'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { getModulePageSchema } from '@/config/module-page-schema'
-import type { ModuleLineItem, ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { logger } from '@/utils/logger'
 import {
   getBehaviorValue,
   hasBehavior,
-} from '@/views/modules/module-behavior-registry'
+} from '@/module-system/module-behavior-registry'
+import type {
+  ModuleLineItem,
+  ModulePageConfig,
+  ModuleRecord,
+} from '@/types/module-page'
+import { logger } from '@/utils/logger'
 
 // Computed fields that the server calculates — never included in save payloads.
 const COMPUTED_FIELD_KEYS = new Set([
@@ -19,7 +23,9 @@ const COMPUTED_FIELD_KEYS = new Set([
   'userCount',
 ])
 
-async function loadModuleConfig(moduleKey: string): Promise<ModulePageConfig | null> {
+async function loadModuleConfig(
+  moduleKey: string,
+): Promise<ModulePageConfig | null> {
   try {
     return await loadBusinessPageConfig(moduleKey)
   } catch {
@@ -47,9 +53,9 @@ async function resolveScalarFields(moduleKey: string): Promise<string[]> {
     return scalar.filter((key) => !computed.has(key))
   }
 
-  const fromDetailFields = (config.detailFields || [])
-    .map((f) => f.key)
-    .filter((key) => !COMPUTED_FIELD_KEYS.has(key))
+  const fromDetailFields = (config.detailFields || []).flatMap((f) =>
+    !COMPUTED_FIELD_KEYS.has(f.key) ? [f.key] : [],
+  )
 
   const extras = getBehaviorValue(moduleKey, 'extraScalarFields') || []
   return [...new Set([...fromDetailFields, ...extras])]
@@ -63,7 +69,7 @@ function getScalarFields(moduleKey: string): Promise<readonly string[]> {
     return cached
   }
   const fieldsPromise = resolveScalarFields(moduleKey).then((fields) =>
-    Object.freeze(fields) as readonly string[],
+    Object.freeze(fields),
   )
   scalarFieldCache.set(moduleKey, fieldsPromise)
   return fieldsPromise
@@ -179,7 +185,7 @@ function getCachedLineItemFields(
   const cached = lineItemFieldCache.get(moduleKey)
   if (cached) return cached
   const fieldsPromise = resolveLineItemFields(moduleKey).then((fields) =>
-    Object.freeze(fields) as readonly LineItemFieldSpec[],
+    Object.freeze(fields),
   )
   lineItemFieldCache.set(moduleKey, fieldsPromise)
   return fieldsPromise
@@ -224,7 +230,14 @@ async function serializeBusinessRecordForSaveAsync(
   if (import.meta.env.DEV) {
     const scalarFieldSet = new Set(scalarFields)
     for (const key of Object.keys(record)) {
-      if (key === 'id' || key === 'items' || key === 'attachmentIds') continue
+      if (
+        key === 'id' ||
+        key === 'items' ||
+        key === 'attachmentIds' ||
+        key === '_preallocatedId'
+      ) {
+        continue
+      }
       if (record[key] !== undefined && !scalarFieldSet.has(key)) {
         logger.warn(
           `[save-payload] ${moduleKey}: field "${key}" not in save schema, will be silently dropped`,

@@ -1,23 +1,35 @@
-export function isDatabaseTaskRunning(status: string) {
-  return status === '排队中' || status === '执行中'
+export function formatDatabaseDateTime(
+  value: string | undefined | null,
+): string {
+  return value || '--'
 }
 
-export function formatDatabaseMemory(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024)
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`
-}
+const DATABASE_MEMORY_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'] as const
 
-export function formatDatabaseDateTime(value?: string) {
-  if (!value) return '--'
-  return value.replace('T', ' ').slice(0, 19)
-}
+export function formatDatabaseMemory(
+  value: number | string | undefined | null,
+): string {
+  const numericValue =
+    typeof value === 'string' && value.trim() !== '' ? Number(value) : value
+  if (
+    typeof numericValue !== 'number' ||
+    !Number.isFinite(numericValue) ||
+    numericValue < 0
+  ) {
+    return '--'
+  }
 
-export function formatDatabaseTaskStatusColor(status: string) {
-  if (status === '已完成') return 'success'
-  if (status === '失败' || status === '已过期') return 'error'
-  if (status === '执行中') return 'processing'
-  return 'default'
+  if (numericValue === 0) {
+    return '0 B'
+  }
+
+  let unitIndex = 0
+  let displayValue = numericValue
+  while (displayValue >= 1024 && unitIndex < DATABASE_MEMORY_UNITS.length - 1) {
+    displayValue /= 1024
+    unitIndex += 1
+  }
+
+  const fractionDigits = unitIndex === 0 || displayValue >= 100 ? 0 : 1
+  return `${displayValue.toFixed(fractionDigits)} ${DATABASE_MEMORY_UNITS[unitIndex]}`
 }

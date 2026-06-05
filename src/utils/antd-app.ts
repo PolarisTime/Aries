@@ -1,101 +1,98 @@
-import AntdApp from 'antd/es/app'
+import type AntdApp from 'antd/es/app'
 import modalApi from 'antd/es/modal'
 
 type AntdAppApi = ReturnType<typeof AntdApp.useApp>
-type MessageApi = AntdAppApi['message']
-type NotificationApi = AntdAppApi['notification']
-type ModalApi = AntdAppApi['modal']
-type AnyFn = (...args: any[]) => any
+type UnknownMethod = (...args: unknown[]) => unknown
+
+function isUnknownMethod(value: unknown): value is UnknownMethod {
+  return typeof value === 'function'
+}
+
+function callMethod<Api, K extends keyof Api>(
+  api: Api | undefined,
+  method: K,
+  args: unknown[],
+  fallbackImport?: () => Promise<{ default: Api }>,
+): unknown {
+  if (api) {
+    const callable = api[method]
+    if (isUnknownMethod(callable)) {
+      return callable(...args)
+    }
+  }
+  if (fallbackImport) {
+    void fallbackImport().then((mod) => {
+      const callable = mod.default[method]
+      if (isUnknownMethod(callable)) {
+        callable(...args)
+      }
+    })
+  }
+  return undefined
+}
+
+function getMessageApi() {
+  return currentAntdAppApi?.message
+}
+
+function getModalApi() {
+  return currentAntdAppApi?.modal
+}
 
 let currentAntdAppApi: AntdAppApi | null = null
 
-export function bindAntdAppApi(api: AntdAppApi | null) {
+export function bindAntdAppApi(api: AntdAppApi | null): void {
   currentAntdAppApi = api
 }
 
-function runMessageMethod<K extends keyof MessageApi>(
-  method: K,
-  args: Parameters<MessageApi[K]>,
-) {
-  const api = currentAntdAppApi?.message
-  if (api) {
-    return (api[method] as AnyFn)(...args)
-  }
-
-  void import('antd/es/message').then(({ default: messageApi }) => {
-    ;(messageApi[method as keyof typeof messageApi] as AnyFn)(...args)
-  })
-  return undefined
-}
-
-function runNotificationMethod<K extends keyof NotificationApi>(
-  method: K,
-  args: Parameters<NotificationApi[K]>,
-) {
-  const api = currentAntdAppApi?.notification
-  if (api) {
-    return (api[method] as AnyFn)(...args)
-  }
-
-  void import('antd/es/notification').then(({ default: notificationApi }) => {
-    ;(
-      notificationApi[method as keyof typeof notificationApi] as AnyFn
-    )(...args)
-  })
-  return undefined
-}
-
-function runModalMethod<K extends keyof ModalApi>(
-  method: K,
-  args: Parameters<ModalApi[K]>,
-) {
-  const api = currentAntdAppApi?.modal
-  if (api) {
-    return (api[method] as AnyFn)(...args)
-  }
-
-  return (modalApi[method as keyof typeof modalApi] as AnyFn)(...args)
-}
+type MsgMethod = Parameters<AntdAppApi['message'][keyof AntdAppApi['message']]>
+type ModMethod = Parameters<AntdAppApi['modal'][keyof AntdAppApi['modal']]>
 
 export const message = {
-  success: (...args: Parameters<MessageApi['success']>) =>
-    runMessageMethod('success', args),
-  error: (...args: Parameters<MessageApi['error']>) =>
-    runMessageMethod('error', args),
-  warning: (...args: Parameters<MessageApi['warning']>) =>
-    runMessageMethod('warning', args),
-  info: (...args: Parameters<MessageApi['info']>) =>
-    runMessageMethod('info', args),
-  loading: (...args: Parameters<MessageApi['loading']>) =>
-    runMessageMethod('loading', args),
-  destroy: (...args: Parameters<MessageApi['destroy']>) =>
-    runMessageMethod('destroy', args),
-}
-
-export const notification = {
-  warning: (...args: Parameters<NotificationApi['warning']>) =>
-    runNotificationMethod('warning', args),
-  info: (...args: Parameters<NotificationApi['info']>) =>
-    runNotificationMethod('info', args),
-  success: (...args: Parameters<NotificationApi['success']>) =>
-    runNotificationMethod('success', args),
-  error: (...args: Parameters<NotificationApi['error']>) =>
-    runNotificationMethod('error', args),
-  open: (...args: Parameters<NotificationApi['open']>) =>
-    runNotificationMethod('open', args),
-  destroy: (...args: Parameters<NotificationApi['destroy']>) =>
-    runNotificationMethod('destroy', args),
+  success: (...args: MsgMethod) =>
+    callMethod(
+      getMessageApi(),
+      'success',
+      args,
+      () => import('antd/es/message'),
+    ),
+  error: (...args: MsgMethod) =>
+    callMethod(getMessageApi(), 'error', args, () => import('antd/es/message')),
+  warning: (...args: MsgMethod) =>
+    callMethod(
+      getMessageApi(),
+      'warning',
+      args,
+      () => import('antd/es/message'),
+    ),
+  info: (...args: MsgMethod) =>
+    callMethod(getMessageApi(), 'info', args, () => import('antd/es/message')),
+  loading: (...args: MsgMethod) =>
+    callMethod(
+      getMessageApi(),
+      'loading',
+      args,
+      () => import('antd/es/message'),
+    ),
+  destroy: (...args: MsgMethod) =>
+    callMethod(
+      getMessageApi(),
+      'destroy',
+      args,
+      () => import('antd/es/message'),
+    ),
 }
 
 export const modal = {
-  confirm: (...args: Parameters<ModalApi['confirm']>) =>
-    runModalMethod('confirm', args),
-  info: (...args: Parameters<ModalApi['info']>) => runModalMethod('info', args),
-  success: (...args: Parameters<ModalApi['success']>) =>
-    runModalMethod('success', args),
-  warning: (...args: Parameters<ModalApi['warning']>) =>
-    runModalMethod('warning', args),
-  error: (...args: Parameters<ModalApi['error']>) =>
-    runModalMethod('error', args),
+  confirm: (...args: ModMethod) =>
+    callMethod(getModalApi(), 'confirm', args) ?? modalApi.confirm(...args),
+  info: (...args: ModMethod) =>
+    callMethod(getModalApi(), 'info', args) ?? modalApi.info(...args),
+  success: (...args: ModMethod) =>
+    callMethod(getModalApi(), 'success', args) ?? modalApi.success(...args),
+  warning: (...args: ModMethod) =>
+    callMethod(getModalApi(), 'warning', args) ?? modalApi.warning(...args),
+  error: (...args: ModMethod) =>
+    callMethod(getModalApi(), 'error', args) ?? modalApi.error(...args),
   destroyAll: () => modalApi.destroyAll(),
 }

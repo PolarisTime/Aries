@@ -1,35 +1,25 @@
 import { useLoaderData, useLocation } from '@tanstack/react-router'
-import { useEffect, useMemo } from 'react'
 import Empty from 'antd/es/empty'
+import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { primeBusinessPageConfig } from '@/config/business-page-loader'
-import {
-  getPageDefinition,
-  type AppPageDefinition,
-} from '@/config/page-registry'
+import { getPageDefinition } from '@/config/page-registry'
 import type { ModulePageConfig } from '@/types/module-page'
 import { BusinessGridPage } from '@/views/modules/BusinessGridPage'
-
-export function resolveBusinessGridInitialConfig(
-  pageDef: AppPageDefinition | undefined,
-  loaderConfig?: ModulePageConfig,
-) {
-  if (!pageDef?.moduleKey || loaderConfig?.key !== pageDef.moduleKey) {
-    return undefined
-  }
-  return loaderConfig
-}
+import { resolveBusinessGridInitialConfig } from '@/views/modules/business-grid-view-utils'
 
 export function BusinessGridView() {
+  const { t } = useTranslation()
   const location = useLocation()
   const loaderConfig = useLoaderData({
     strict: false,
-  }) as ModulePageConfig | undefined
-  const pageDef = useMemo(() => {
-    return getPageDefinition(location.pathname)
-  }, [location.pathname])
-  const initialConfig = useMemo(
-    () => resolveBusinessGridInitialConfig(pageDef, loaderConfig),
-    [loaderConfig, pageDef],
+  })
+  const pageDef = getPageDefinition(location.pathname)
+  const initialConfig = resolveBusinessGridInitialConfig(
+    pageDef,
+    loaderConfig && typeof loaderConfig === 'object' && 'key' in loaderConfig
+      ? (loaderConfig as ModulePageConfig)
+      : undefined,
   )
 
   useEffect(() => {
@@ -39,7 +29,9 @@ export function BusinessGridView() {
   }, [initialConfig, pageDef?.moduleKey])
 
   if (!pageDef?.moduleKey) {
-    return <Empty description="页面配置未找到" style={{ marginTop: 96 }} />
+    return (
+      <Empty description={t('modules.page.configNotFound')} className="mt-96" />
+    )
   }
 
   return (

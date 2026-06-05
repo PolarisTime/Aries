@@ -3,12 +3,13 @@ import Col from 'antd/es/col'
 import Form from 'antd/es/form'
 import Row from 'antd/es/row'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
+import { isEditorFieldDisabledForModule } from '@/module-system/module-adapter-editor'
+import { groupFieldsByRow } from '@/module-system/module-field-layout'
 import type {
   ModuleFormFieldDefinition,
   ModulePageConfig,
 } from '@/types/module-page'
-import { isEditorFieldDisabledForModule } from '@/views/modules/module-adapter-editor'
-import { groupFieldsByRow } from '@/views/modules/module-field-layout'
 import { EditorFooterActions } from './EditorFooterActions'
 import { FormFieldRenderer } from './FormFieldRenderer'
 
@@ -37,6 +38,7 @@ export function ModuleEditorFormSection({
   onCancel,
   onSave,
 }: Props) {
+  const { t } = useTranslation()
   const form = Form.useFormInstance()
   const formValues = Form.useWatch([], form) || {}
   const formFieldRows = groupFieldsByRow(config.formFields || [])
@@ -62,13 +64,16 @@ export function ModuleEditorFormSection({
           type="warning"
           showIcon
           title={lockedLineItemsNotice}
-          style={{ marginBottom: 12 }}
+          className="mb-12"
         />
       ) : null}
+      <Form.Item name="_preallocatedId" hidden initialValue="">
+        <input aria-label="Preallocated ID" />
+      </Form.Item>
       <div className="editor-form-head">
         <div className="editor-form-title-block">
-          <Typography.Title level={5} style={{ margin: 0 }}>
-            单据信息
+          <Typography.Title level={5} className="m-0">
+            {t('modules.editorForm.documentInfo')}
           </Typography.Title>
         </div>
         {showActions ? (

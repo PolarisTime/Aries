@@ -1,12 +1,16 @@
-import dayjs from 'dayjs'
+import { useTranslation } from 'react-i18next'
+import { formatDate, formatDateTime } from '@/utils/formatters'
+import { asString } from '@/utils/type-narrowing'
 
 export function useModuleDisplaySupport() {
+  const { t } = useTranslation()
+
   const formatCellValue = (value: unknown, columnType?: string): string => {
     if (value === null || value === undefined) return '--'
     if (columnType === 'amount' || columnType === 'number') {
       const num = Number(value)
       return Number.isNaN(num)
-        ? String(value)
+        ? asString(value)
         : num.toLocaleString('zh-CN', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
@@ -15,7 +19,7 @@ export function useModuleDisplaySupport() {
     if (columnType === 'weight') {
       const num = Number(value)
       return Number.isNaN(num)
-        ? String(value)
+        ? asString(value)
         : num.toLocaleString('zh-CN', {
             minimumFractionDigits: 3,
             maximumFractionDigits: 3,
@@ -23,20 +27,19 @@ export function useModuleDisplaySupport() {
     }
     if (columnType === 'count' || columnType === 'integer') {
       const num = Number(value)
-      return Number.isNaN(num) ? String(value) : num.toLocaleString('zh-CN')
+      return Number.isNaN(num) ? asString(value) : num.toLocaleString('zh-CN')
     }
     if (columnType === 'date' || columnType === 'datetime') {
-      const d = dayjs(value as string | number)
-      return d.isValid()
-        ? d.format(
-            columnType === 'datetime' ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD',
-          )
-        : String(value)
+      return columnType === 'datetime'
+        ? formatDateTime(value, asString(value))
+        : formatDate(value, asString(value))
     }
     if (columnType === 'boolean') {
-      return value ? '是' : '否'
+      return value
+        ? t('hooks.displaySupport.yes')
+        : t('hooks.displaySupport.no')
     }
-    return String(value)
+    return asString(value)
   }
 
   return { formatCellValue }

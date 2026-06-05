@@ -1,4 +1,5 @@
 import { appPageDefinitions } from '@/config/page-registry'
+import { asString } from '@/utils/type-narrowing'
 
 export interface ModulePageMeta {
   key: string
@@ -7,6 +8,12 @@ export interface ModulePageMeta {
 }
 
 const primaryNoKeyMap: Record<string, string> = {
+  material: 'materialCode',
+  'material-categories': 'categoryCode',
+  supplier: 'supplierCode',
+  customer: 'customerCode',
+  carrier: 'carrierCode',
+  warehouse: 'warehouseCode',
   'purchase-order': 'orderNo',
   'purchase-inbound': 'inboundNo',
   'sales-order': 'orderNo',
@@ -21,26 +28,24 @@ const primaryNoKeyMap: Record<string, string> = {
   payment: 'paymentNo',
   'invoice-receipt': 'receiveNo',
   'invoice-issue': 'issueNo',
-  material: 'materialCode',
+  'ledger-adjustment': 'adjustmentNo',
+  department: 'departmentCode',
 }
 
 export const modulePageMetaMap: Record<string, ModulePageMeta> =
   Object.fromEntries(
-    appPageDefinitions
-      .filter((entry) => Boolean(entry.moduleKey))
-      .map((entry) => {
-        const moduleKey = entry.moduleKey as string
-        return [
+    appPageDefinitions.flatMap((entry) => {
+      if (!entry.moduleKey) return []
+      const moduleKey = asString(entry.moduleKey)
+      return [
+        [
           moduleKey,
           {
             key: moduleKey,
             title: entry.title,
             primaryNoKey: primaryNoKeyMap[moduleKey],
           } satisfies ModulePageMeta,
-        ]
-      }),
+        ],
+      ]
+    }),
   )
-
-export function getModulePageMeta(moduleKey: string) {
-  return modulePageMetaMap[moduleKey]
-}

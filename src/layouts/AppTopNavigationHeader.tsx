@@ -1,8 +1,9 @@
-import { DownOutlined } from '@ant-design/icons'
+import { DownOutlined, ReloadOutlined } from '@ant-design/icons'
 import Dropdown from 'antd/es/dropdown'
 import type { MenuProps } from 'antd/es/menu'
 import Menu from 'antd/es/menu'
 import type { CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   LazyAppHeaderSearch,
   type LazyAppHeaderSearchProps,
@@ -37,6 +38,9 @@ export function AppTopNavigationHeader({
   topMenuItems,
   userMenuItems,
 }: Props) {
+  const { t } = useTranslation()
+  const devTimeString = new Date().toLocaleTimeString()
+
   return (
     <div className="app-header-bar app-header-bar-top">
       <div className="app-top-nav-left">
@@ -60,6 +64,24 @@ export function AppTopNavigationHeader({
       </div>
 
       <div className="app-top-nav-right" style={shellFontStyle}>
+        {import.meta.env.DEV ? (
+          <button
+            type="button"
+            className="app-dev-refresh-btn"
+            title={devTimeString}
+            onClick={() => {
+              if ('caches' in window) {
+                void caches.keys().then((keys) => {
+                  void Promise.all(keys.map((k) => caches.delete(k)))
+                })
+              }
+              window.location.reload()
+            }}
+          >
+            <ReloadOutlined />
+            {t('common.refresh')}
+          </button>
+        ) : null}
         <LazyAppHeaderSearch
           className="header-global-search header-global-search-top"
           {...search}
@@ -67,7 +89,9 @@ export function AppTopNavigationHeader({
 
         <div className="user-wrapper user-wrapper-top" style={shellFontStyle}>
           <div className="app-top-header-meta">
-            <span className="app-top-header-meta-label">服务器时间</span>
+            <span className="app-top-header-meta-label">
+              {t('layouts.topNav.serverTime')}
+            </span>
             <strong>{clockText}</strong>
           </div>
           <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>

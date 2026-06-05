@@ -1,12 +1,14 @@
 import { useNavigate } from '@tanstack/react-router'
 import Card from 'antd/es/card'
 import Table from 'antd/es/table'
+import { useTranslation } from 'react-i18next'
 import type {
   ApiKeyActionOption,
   ApiKeyRecord,
   ApiKeyResourceOption,
   ApiKeyUserOption,
 } from '@/api/api-keys'
+import { createPaginationConfig } from '@/hooks/usePaginationConfig'
 import { ApiKeyListToolbar } from '@/views/system/ApiKeyListToolbar'
 import { buildApiKeyListColumns } from '@/views/system/api-key-list-columns'
 
@@ -63,19 +65,21 @@ export function ApiKeyListCard({
   onRevoke,
   onPageChange,
 }: Props) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const columns = buildApiKeyListColumns({
     canEdit,
     actionOptions,
     resourceOptions,
-    onView: (record) =>
-      navigate({ to: `/api-key/${record.id}` as '/' }),
+    onView: (record) => {
+      void navigate({ to: `/api-key/${record.id}` as '/' })
+    },
     onRevoke,
   })
 
   return (
     <Card
-      title="API Key 管理"
+      title={t('system.apiKeyList.title')}
       extra={
         <ApiKeyListToolbar
           keyword={keyword}
@@ -102,14 +106,13 @@ export function ApiKeyListCard({
         loading={loading}
         size="middle"
         scroll={{ x: 1800 }}
-        pagination={{
+        pagination={createPaginationConfig({
           current: currentPage,
           pageSize,
           total: totalElements,
-          showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
           onChange: onPageChange,
-        }}
+          t,
+        })}
       />
     </Card>
   )

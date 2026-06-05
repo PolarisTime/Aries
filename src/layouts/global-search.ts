@@ -1,5 +1,6 @@
-import type { ModuleRecord } from '@/types/module-page'
 import type { ModulePageMeta } from '@/config/module-page-meta'
+import type { ModuleRecord } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 
 export interface GlobalSearchResult {
   value: string
@@ -89,7 +90,7 @@ function buildGlobalSearchResult(
     matchedByTrackId && trackId !== primaryNo ? ` | ID ${trackId}` : ''
 
   return {
-    value: `${moduleKey}::${primaryNo || trackId}`,
+    value: `${moduleKey}::${trackId || primaryNo}`,
     label: `${config.title} | ${primaryNo}${idText}${summary ? ` | ${summary}` : ''}`,
     moduleKey,
     title: config.title,
@@ -145,18 +146,15 @@ export async function searchAccessibleModules(
         }
 
         const seenKeys = new Set<string>()
-        return rows
-          .filter((record) => {
-            const key = String(
-              record.id || record[config.primaryNoKey || 'id'] || '',
-            )
-            if (!key || seenKeys.has(key)) {
-              return false
-            }
-            seenKeys.add(key)
-            return true
-          })
-          .map((record) =>
+        return rows.flatMap((record) => {
+          const key = String(
+            record.id || asString(record[config.primaryNoKey || 'id']),
+          )
+          if (!key || seenKeys.has(key)) {
+            return []
+          }
+          seenKeys.add(key)
+          return [
             buildGlobalSearchResult(
               moduleKey,
               config,
@@ -164,7 +162,8 @@ export async function searchAccessibleModules(
               normalizedKeyword,
               options.buildSummary,
             ),
-          )
+          ]
+        })
       } catch {
         return []
       }

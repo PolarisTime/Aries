@@ -1,7 +1,8 @@
 import { CopyOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
-import Modal from 'antd/es/modal'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
+import { FormModal } from '@/components/FormModal'
 import type { UserAccountCreateResult } from '@/types/user-account'
 
 interface Props {
@@ -17,78 +18,75 @@ export function UserAccountCreateResultModal({
   onCopy,
   onClose,
 }: Props) {
+  const { t } = useTranslation()
+  const loginName = result?.user?.loginName || result?.loginName || ''
+  const initialPassword = result?.initialPassword || result?.password || ''
+
   return (
-    <Modal
-      title="用户创建成功"
+    <FormModal
+      title={t('system.userAccount.createSuccess')}
       open={open}
-      onCancel={onClose}
+      onClose={onClose}
       footer={null}
       width={560}
-      mask={{ closable: false }}
     >
       {result && (
-        <div style={{ padding: '16px 0' }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 16,
-            }}
-          >
+        <div className="py-16">
+          <div className="flex justify-between items-center mb-16">
             <div>
-              <div style={{ color: '#666', fontSize: 12 }}>账号</div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>
-                {result.user.loginName}
+              <div className="text-secondary text-xs">
+                {t('system.userAccount.account')}
               </div>
+              <div className="text-lg font-semibold">{loginName}</div>
             </div>
             <Button
               icon={<CopyOutlined />}
-              onClick={() => onCopy(result.user.loginName, '账号')}
+              onClick={() => onCopy(loginName, t('system.userAccount.account'))}
             >
-              复制账号
+              {t('system.userAccount.copyAccount')}
             </Button>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 16,
-            }}
-          >
+          <div className="flex justify-between items-center mb-16">
             <div>
-              <div style={{ color: '#666', fontSize: 12 }}>初始密码</div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#f5222d' }}>
-                {result.initialPassword}
+              <div className="text-secondary text-xs">
+                {t('system.userAccount.initialPassword')}
+              </div>
+              <div className="text-lg font-semibold text-error">
+                {initialPassword}
               </div>
             </div>
             <Button
               type="primary"
               icon={<CopyOutlined />}
-              onClick={() => onCopy(result.initialPassword, '密码')}
+              onClick={() =>
+                onCopy(initialPassword, t('system.userAccount.initialPassword'))
+              }
             >
-              复制密码
+              {t('system.userAccount.copyPassword')}
             </Button>
           </div>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ color: '#666', fontSize: 12 }}>所属部门</div>
-            <div>{result.user.departmentName || '--'}</div>
+          <div className="mb-12">
+            <div className="text-secondary text-xs">
+              {t('system.userAccount.department')}
+            </div>
+            <div>{result.user?.departmentName || '--'}</div>
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ color: '#666', fontSize: 12 }}>所属角色</div>
-            <div>{result.user.roleNames?.join('、') || '--'}</div>
+          <div className="mb-4">
+            <div className="text-secondary text-xs">
+              {t('system.userAccount.roleNames')}
+            </div>
+            <div>{result.user?.roleNames?.join('、') || '--'}</div>
           </div>
           <Typography.Text type="warning">
-            请妥善保存初始密码，关闭后将不再展示。
+            {t('system.userAccount.savePasswordHint')}
           </Typography.Text>
-          <div style={{ textAlign: 'right', marginTop: 16 }}>
+          <div className="text-right mt-16">
             <Button type="primary" onClick={onClose}>
-              知道了
+              {t('common.ok')}
             </Button>
           </div>
         </div>
       )}
-    </Modal>
+    </FormModal>
   )
 }

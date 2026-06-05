@@ -1,33 +1,15 @@
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import { cloneLineItems } from '@/utils/clone-utils'
+import { asString } from '@/utils/type-narrowing'
 
-function cloneRecord<T>(value: T): T {
-  return structuredClone(value)
-}
-
-function buildLineItemId(prefix: string, index: number) {
-  return `${prefix}-${Date.now()}-${index + 1}`
-}
-
-export function cloneLineItems(
-  items: unknown,
-  prefix: string,
-): ModuleLineItem[] {
-  if (!Array.isArray(items)) {
-    return []
-  }
-
-  return cloneRecord(items).map((item: ModuleLineItem, index: number) => ({
-    ...item,
-    id: buildLineItemId(prefix, index),
-  }))
-}
+export { cloneLineItems }
 
 export function transformFreightItems(
   parentRecord: ModuleRecord,
 ): ModuleLineItem[] {
   return cloneLineItems(parentRecord.items, 'freight-item').map(
     (item, index) => ({
-      id: item.id || buildLineItemId('freight-item', index),
+      id: item.id || `freight-item-${Date.now()}-${index + 1}`,
       sourceNo: parentRecord.outboundNo || '',
       customerName: parentRecord.customerName || '',
       projectName: parentRecord.projectName || '',
@@ -50,9 +32,9 @@ export function transformFreightItems(
 }
 
 function resolveFreightMaterialName(item: ModuleLineItem) {
-  const explicitName = String(item.materialName || '').trim()
+  const explicitName = asString(item.materialName).trim()
   if (explicitName) {
     return explicitName
   }
-  return String(item.brand || '').trim()
+  return asString(item.brand).trim()
 }

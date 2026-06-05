@@ -1,3 +1,4 @@
+import { HolderOutlined, SettingOutlined } from '@ant-design/icons'
 import type { DragEndEvent } from '@dnd-kit/core'
 import {
   closestCenter,
@@ -13,7 +14,6 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { HolderOutlined, SettingOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Checkbox from 'antd/es/checkbox'
 import Divider from 'antd/es/divider'
@@ -21,6 +21,7 @@ import Popover from 'antd/es/popover'
 import Space from 'antd/es/space'
 import Typography from 'antd/es/typography'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ModuleColumnDefinition } from '@/types/module-page'
 
 interface Props {
@@ -58,24 +59,18 @@ function SortableColumnRow({
   return (
     <div
       ref={setNodeRef}
+      className="flex items-center gap-8"
+      /* DnD 动态样式：transform/transition/opacity 由拖拽状态实时计算 */
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.4 : 1,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
       }}
     >
       <span
         {...attributes}
         {...listeners}
-        style={{
-          cursor: 'grab',
-          color: 'var(--ant-color-text-tertiary)',
-          display: 'inline-flex',
-          alignItems: 'center',
-        }}
+        className="cursor-grab text-tertiary inline-flex items-center"
       >
         <HolderOutlined />
       </span>
@@ -108,6 +103,7 @@ export function ColumnSettingsPopover({
   open,
   onOpenChange,
 }: Props) {
+  const { t } = useTranslation()
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor),
@@ -126,18 +122,18 @@ export function ColumnSettingsPopover({
       return
     }
     onOrderChange(
-      reorderKeys(
-        orderedSortableKeys,
-        String(active.id),
-        String(over.id),
-      ),
+      reorderKeys(orderedSortableKeys, String(active.id), String(over.id)),
     )
   }
 
   const content = (
-    <Space orientation="vertical" size="small" style={{ minWidth: 240 }}>
-      <Typography.Text strong>列设置</Typography.Text>
-      <Divider style={{ margin: '4px 0 8px' }} />
+    <Space
+      orientation="vertical"
+      size="small"
+      className="min-w-[200px] max-w-[280px]"
+    >
+      <Typography.Text strong>{t('common.columnSettings')}</Typography.Text>
+      <Divider className="my-4 mb-8" />
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -147,7 +143,7 @@ export function ColumnSettingsPopover({
           items={orderedSortableKeys}
           strategy={verticalListSortingStrategy}
         >
-          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <Space orientation="vertical" size="small" className="w-full">
             {orderedSortableKeys.map((key) => {
               const column = columns.find((item) => item.dataIndex === key)
               if (!column) {
@@ -160,7 +156,7 @@ export function ColumnSettingsPopover({
                   columnId={column.dataIndex}
                   checked={visibleKeys.includes(column.dataIndex)}
                   onToggle={() => onToggle(column.dataIndex)}
-                  label={column.title}
+                  label={<span className="text-xs">{column.title}</span>}
                 />
               )
             })}
@@ -177,8 +173,9 @@ export function ColumnSettingsPopover({
       placement="bottomRight"
       open={open}
       onOpenChange={onOpenChange}
+      styles={{ container: { maxWidth: 300 } }}
     >
-      <Button icon={<SettingOutlined />}>列设置</Button>
+      <Button icon={<SettingOutlined />}>{t('common.columnSettings')}</Button>
     </Popover>
   )
 }

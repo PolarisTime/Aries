@@ -1,50 +1,108 @@
+import i18next from 'i18next'
 import { enabledStatusOptions } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
-import { actionSet, formatInteger } from './shared'
+import { actionSet, formatInteger, statusMap } from './shared'
+import { masterStatusFilter } from './shared-filters'
 
 export const materialCategoriesPageConfig: ModulePageConfig = {
   key: 'material-categories',
-  title: '商品类别',
+  title: i18next.t('modules.pages.materialCategories.materialCategory'),
   kicker: 'Master Data',
-  description: '管理商品类别字典，支持按编码和名称增删改查。',
+  description: i18next.t('modules.pages.materialCategories.categoryDesc'),
   primaryNoKey: 'categoryCode',
   actions: actionSet,
   filters: [
     {
       key: 'keyword',
-      label: '关键字',
+      label: i18next.t('modules.pages.materialCategories.keyword'),
       type: 'input',
-      placeholder: '类别编码 / 类别名称',
+      placeholder: i18next.t(
+        'modules.pages.materialCategories.categoryPlaceholder',
+      ),
     },
-    {
-      key: 'status',
-      label: '状态',
-      type: 'select',
-      options: enabledStatusOptions,
-    },
+    { ...masterStatusFilter },
   ],
   columns: [
-    { title: '类别编码', dataIndex: 'categoryCode', width: 150 },
-    { title: '类别名称', dataIndex: 'categoryName', width: 180 },
-    { title: '排序', dataIndex: 'sortOrder', width: 80, align: 'right' },
-    { title: '采购过磅', dataIndex: 'purchaseWeighRequired', width: 100 },
-    { title: '状态', dataIndex: 'status', width: 90 },
-    { title: '备注', dataIndex: 'remark', width: 200 },
+    {
+      title: i18next.t('modules.pages.materialCategories.categoryCode'),
+      dataIndex: 'categoryCode',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.materialCategories.categoryName'),
+      dataIndex: 'categoryName',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.materialCategories.sortOrder'),
+      dataIndex: 'sortOrder',
+      width: 80,
+      align: 'right',
+    },
+    {
+      title: i18next.t('modules.pages.materialCategories.purchaseWeigh'),
+      dataIndex: 'purchaseWeighRequired',
+      width: 100,
+      type: 'boolean',
+    },
+    {
+      title: i18next.t('modules.pages.materialCategories.status'),
+      dataIndex: 'status',
+      width: 100,
+      type: 'status',
+      align: 'center',
+    },
+    {
+      title: i18next.t('modules.pages.materialCategories.remark'),
+      dataIndex: 'remark',
+      width: 200,
+    },
   ],
   detailFields: [
-    { label: '类别编码', key: 'categoryCode' },
-    { label: '类别名称', key: 'categoryName' },
-    { label: '排序', key: 'sortOrder' },
-    { label: '采购过磅', key: 'purchaseWeighRequired' },
-    { label: '状态', key: 'status' },
-    { label: '备注', key: 'remark' },
+    {
+      label: i18next.t('modules.pages.materialCategories.categoryCode'),
+      key: 'categoryCode',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.categoryName'),
+      key: 'categoryName',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.sortOrder'),
+      key: 'sortOrder',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.purchaseWeigh'),
+      key: 'purchaseWeighRequired',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.status'),
+      key: 'status',
+      type: 'status',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.remark'),
+      key: 'remark',
+    },
   ],
   formFields: [
-    { key: 'categoryCode', label: '类别编码', type: 'input', required: true, row: 1 },
-    { key: 'categoryName', label: '类别名称', type: 'input', required: true, row: 1 },
+    {
+      key: 'categoryCode',
+      label: i18next.t('modules.pages.materialCategories.categoryCode'),
+      type: 'input',
+      required: true,
+      row: 1,
+    },
+    {
+      key: 'categoryName',
+      label: i18next.t('modules.pages.materialCategories.categoryName'),
+      type: 'input',
+      required: true,
+      row: 1,
+    },
     {
       key: 'sortOrder',
-      label: '排序',
+      label: i18next.t('modules.pages.materialCategories.sortOrder'),
       type: 'number',
       required: true,
       min: 0,
@@ -54,35 +112,53 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
     },
     {
       key: 'purchaseWeighRequired',
-      label: '采购过磅',
+      label: i18next.t('modules.pages.materialCategories.purchaseWeigh'),
       type: 'select',
       defaultValue: false,
-      row: 1,
+      row: 2,
+      colSpan: 4,
       options: [
-        { label: '需要', value: true },
-        { label: '不需要', value: false },
+        {
+          label: i18next.t('modules.pages.materialCategories.required'),
+          value: true,
+        },
+        {
+          label: i18next.t('modules.pages.materialCategories.notRequired'),
+          value: false,
+        },
       ],
     },
     {
       key: 'status',
-      label: '状态',
+      label: i18next.t('modules.pages.materialCategories.status'),
       type: 'select',
       required: true,
       defaultValue: '正常',
       options: enabledStatusOptions,
       row: 2,
     },
-    { key: 'remark', label: '备注', type: 'textarea', row: 3, fullRow: true },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.materialCategories.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
   ],
   data: [],
+  statusMap,
+  rowHighlightStatuses: ['禁用'],
   buildOverview: (rows) => [
-    { label: '类别数', value: formatInteger(rows.length) },
     {
-      label: '启用',
+      label: i18next.t('modules.pages.materialCategories.categoryCount'),
+      value: formatInteger(rows.length),
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.enabled'),
       value: formatInteger(rows.filter((row) => row.status === '正常').length),
     },
     {
-      label: '采购过磅',
+      label: i18next.t('modules.pages.materialCategories.purchaseWeigh'),
       value: formatInteger(
         rows.filter((row) => row.purchaseWeighRequired === true).length,
       ),

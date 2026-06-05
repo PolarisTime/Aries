@@ -12,7 +12,7 @@ export const systemPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'number-rules',
-    title: '单号规则',
+    title: '编号规则',
     menuKey: '/number-rules',
     view: 'number-rules',
     icon: 'ProfileOutlined',
@@ -50,16 +50,6 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     resourceKey: 'operation-log',
   },
   {
-    key: 'department',
-    title: '部门管理',
-    menuKey: '/department',
-    view: 'business-grid',
-    icon: 'ApartmentOutlined',
-    menuParent: 'system',
-    moduleKey: 'department',
-    resourceKey: 'department',
-  },
-  {
     key: 'access-control',
     title: '访问控制',
     menuKey: '/access-control',
@@ -67,15 +57,6 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     icon: 'SafetyCertificateOutlined',
     menuParent: 'system',
     accessResources: ['access-control'],
-  },
-  {
-    key: 'database',
-    title: '数据库管理',
-    menuKey: '/database',
-    view: 'database',
-    icon: 'DatabaseOutlined',
-    menuParent: 'system',
-    resourceKey: 'database',
   },
   {
     key: 'session',
@@ -103,5 +84,14 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     icon: 'SafetyCertificateOutlined',
     menuParent: 'system',
     resourceKey: 'security-key',
+  },
+  {
+    key: 'database-backup',
+    title: '数据库管理',
+    menuKey: '/database',
+    view: 'database-backup',
+    icon: 'DatabaseOutlined',
+    menuParent: 'system',
+    resourceKey: 'database',
   },
 ]

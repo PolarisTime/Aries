@@ -5,18 +5,9 @@ import type {
   SavePrintTemplatePayload,
 } from '@/types/print-template'
 
-export function getDefaultPrintTemplate(billType: string) {
-  return restGet<PrintTemplateResponse<PrintTemplateRecord | null>>(
-    '/print-template/default',
-    {
-      billType,
-    },
-  )
-}
-
 export function listPrintTemplates(billType: string) {
   return restGet<PrintTemplateResponse<PrintTemplateRecord[]>>(
-    '/print-template',
+    '/print-templates',
     {
       billType,
     },
@@ -28,22 +19,22 @@ export function savePrintTemplate(payload: SavePrintTemplatePayload) {
     billType: payload.billType,
     templateName: payload.templateName,
     templateHtml: payload.templateHtml,
-    isDefault: payload.isDefault,
+    templateType: payload.templateType || 'HTML',
   }
 
   return payload.id
     ? restPut<PrintTemplateResponse<PrintTemplateRecord>>(
-        `/print-template/${encodeURIComponent(payload.id)}`,
+        `/print-templates/${encodeURIComponent(payload.id)}`,
         requestBody,
       )
     : restPost<PrintTemplateResponse<PrintTemplateRecord>>(
-        '/print-template',
+        '/print-templates',
         requestBody,
       )
 }
 
 export function deletePrintTemplate(id: string) {
   return restDelete<PrintTemplateResponse<string>>(
-    `/print-template/${encodeURIComponent(id)}`,
+    `/print-templates/${encodeURIComponent(id)}`,
   )
 }

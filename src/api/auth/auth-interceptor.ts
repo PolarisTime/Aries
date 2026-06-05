@@ -1,14 +1,14 @@
-import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
+import type { AxiosInstance } from 'axios'
 import axios from 'axios'
+import {
+  isCanceledRequestError,
+  markHandledRequestError,
+} from '@/api/request-errors'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { message } from '@/utils/antd-app'
 import { isApiKeyToken } from '@/utils/auth-token'
 import { getRequestPath, isExactAuthEndpoint } from '@/utils/route-helpers'
 import { getToken } from '@/utils/storage'
-import {
-  isCanceledRequestError,
-  markHandledRequestError,
-} from '@/api/request-errors'
 import { shouldClearAuthState, shouldTriggerRefresh } from './auth-guard'
 import {
   getRefreshPromise,
@@ -19,9 +19,40 @@ import {
   setRefreshPromise,
 } from './auth-state'
 import { normalizeErrorMessage } from './error-messages'
+import type { RetryableRequestConfig } from './types'
 
-type RetryableRequestConfig = InternalAxiosRequestConfig & {
-  _retry?: boolean
+function extractBackendTraceId(error: {
+  response?: {
+    data?: { traceId?: string }
+    headers?: Record<string, unknown> & {
+      get?: (name: string) => unknown
+    }
+  }
+}): string | undefined {
+  const bodyTraceId = error.response?.data?.traceId
+  if (bodyTraceId) {
+    return bodyTraceId
+  }
+
+  const headers = error.response?.headers
+  const headerTraceId =
+    headers?.get?.('x-trace-id') ??
+    headers?.get?.('X-Trace-Id') ??
+    headers?.get?.('traceId') ??
+    headers?.get?.('traceid') ??
+    headers?.['x-trace-id'] ??
+    headers?.['X-Trace-Id'] ??
+    headers?.traceId ??
+    headers?.traceid
+  return typeof headerTraceId === 'string' && headerTraceId.length > 0
+    ? headerTraceId
+    : undefined
+}
+
+function attachTraceIdToError(err: Error, traceId: string | undefined) {
+  if (traceId) {
+    ;(err as Error & { traceId: string }).traceId = traceId
+  }
 }
 
 type GuardedAxiosInstance = AxiosInstance & {
@@ -93,8 +124,10 @@ export function setupAuthInterceptors(http: AxiosInstance) {
     (response) => response.data,
     async (error) => {
       if (isCanceledRequestError(error)) {
-        markHandledRequestError(error)
-        return Promise.reject(error)
+        const canceledErr = new Error(error?.message || '请求已取消')
+        attachTraceIdToError(canceledErr, extractBackendTraceId(error))
+        markHandledRequestError(canceledErr)
+        return Promise.reject(canceledErr)
       }
 
       const status = error.response?.status
@@ -148,8 +181,15 @@ export function setupAuthInterceptors(http: AxiosInstance) {
 
           markHandledRequestError(error)
           handleAuthFailure(refreshMessage)
-          error.message = refreshMessage
-          return Promise.reject(error)
+          const refreshErr = new Error(refreshMessage)
+          attachTraceIdToError(
+            refreshErr,
+            extractBackendTraceId(
+              axios.isAxiosError(refreshError) ? refreshError : error,
+            ),
+          )
+          markHandledRequestError(refreshErr)
+          return Promise.reject(refreshErr)
         }
       }
 
@@ -173,9 +213,11 @@ export function setupAuthInterceptors(http: AxiosInstance) {
         message.error(description)
       }
 
-      error.message = description
+      const normalizedErr = new Error(description)
+      attachTraceIdToError(normalizedErr, extractBackendTraceId(error))
+      markHandledRequestError(normalizedErr)
 
-      return Promise.reject(error)
+      return Promise.reject(normalizedErr)
     },
   )
 }

@@ -15,18 +15,22 @@ import Radio from 'antd/es/radio'
 import Space from 'antd/es/space'
 import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
+import { useTranslation } from 'react-i18next'
 import type { MenuNode, RoleRecord } from '@/api/role-actions'
+import type { ModuleRecord } from '@/types/module-page'
 
-type MatrixRow = Record<string, unknown>
+type MatrixRow = ModuleRecord
 
 interface Props {
   selectedRoleInfo?: RoleRecord
-  canEditPermissions: boolean
   viewMode: 'list' | 'matrix'
   menuTree: MenuNode[]
   matrixColumns: TableColumnsType<MatrixRow>
   matrixData: MatrixRow[]
-  saveLoading: boolean
+  permissionActions: {
+    editable: boolean
+    saving: boolean
+  }
   onSelectAll: () => void
   onDeselectAll: () => void
   onViewModeChange: (value: 'list' | 'matrix') => void
@@ -41,12 +45,11 @@ interface Props {
 
 export function RoleActionPermissionCard({
   selectedRoleInfo,
-  canEditPermissions,
   viewMode,
   menuTree,
   matrixColumns,
   matrixData,
-  saveLoading,
+  permissionActions,
   onSelectAll,
   onDeselectAll,
   onViewModeChange,
@@ -58,44 +61,45 @@ export function RoleActionPermissionCard({
   onToggleAction,
   actionLabels,
 }: Props) {
+  const { t } = useTranslation()
   return (
     <Card
       size="small"
-      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+      className="h-full flex flex-col"
       styles={{ body: { flex: 1, overflow: 'auto' } }}
       title={
-        <Space>
+        <Space wrap>
           <SafetyCertificateOutlined />
           <span>
             {selectedRoleInfo
-              ? `${selectedRoleInfo.roleName} - 权限配置`
-              : '请选择角色'}
+              ? `${selectedRoleInfo.roleName} - ${t('system.rolePermission.permConfig')}`
+              : t('system.rolePermission.selectRole')}
           </span>
         </Space>
       }
       extra={
         selectedRoleInfo && (
-          <Space size="small">
-            {canEditPermissions && (
+          <Space size="small" wrap>
+            {permissionActions.editable && (
               <Button
                 size="small"
                 icon={<CheckSquareOutlined />}
                 onClick={onSelectAll}
               >
-                全选
+                {t('system.rolePermission.selectAll')}
               </Button>
             )}
-            {canEditPermissions && (
+            {permissionActions.editable && (
               <Button
                 size="small"
                 icon={<BorderOutlined />}
                 onClick={onDeselectAll}
               >
-                全不选
+                {t('system.rolePermission.deselectAll')}
               </Button>
             )}
-            {canEditPermissions && (
-              <span style={{ borderLeft: '1px solid #f0f0f0', height: 20 }} />
+            {permissionActions.editable && (
+              <span className="inline-block border-l border-l-[var(--theme-card-border)] h-5" />
             )}
             <Radio.Group
               size="small"
@@ -104,21 +108,21 @@ export function RoleActionPermissionCard({
               buttonStyle="solid"
             >
               <Radio.Button value="list">
-                <UnorderedListOutlined /> 列表
+                <UnorderedListOutlined /> {t('system.rolePermission.listView')}
               </Radio.Button>
               <Radio.Button value="matrix">
-                <AppstoreOutlined /> 矩阵
+                <AppstoreOutlined /> {t('system.rolePermission.matrixView')}
               </Radio.Button>
             </Radio.Group>
-            <span style={{ borderLeft: '1px solid #f0f0f0', height: 20 }} />
-            {canEditPermissions && (
+            <span className="inline-block border-l border-l-[var(--theme-card-border)] h-5" />
+            {permissionActions.editable && (
               <Button
                 type="primary"
                 size="small"
-                loading={saveLoading}
+                loading={permissionActions.saving}
                 onClick={onSave}
               >
-                保存权限
+                {t('system.rolePermission.savePerm')}
               </Button>
             )}
           </Space>
@@ -130,67 +134,65 @@ export function RoleActionPermissionCard({
           <Alert
             type="info"
             showIcon
-            style={{ marginBottom: 16 }}
-            message="附件权限说明"
-            description="附件不单独配置权限，默认跟随对应模块权限：有查看权限可查看和下载附件，有编辑权限可上传附件，有删除权限可删除附件。"
+            className="mb-4"
+            message={t('system.rolePermission.attachmentPermTitle')}
+            description={t('system.rolePermission.attachmentPermDesc')}
           />
           {viewMode === 'list' ? (
-          <div>
-            {menuTree.map((group) => (
-              <div key={group.menuCode} style={{ marginBottom: 16 }}>
-                {group.children.length > 0 && (
-                  <div
-                    style={{
-                      padding: '8px 0',
-                      borderBottom: '1px solid #f0f0f0',
-                      marginBottom: 8,
-                    }}
-                  >
-                    <Typography.Text strong>{group.menuName}</Typography.Text>
-                  </div>
-                )}
-                {(group.children.length > 0 ? group.children : [group])
-                  .filter((menu) => menu.actions.length > 0)
-                  .map((child) => (
-                    <div
-                      key={child.menuCode}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '6px 0 6px 16px',
-                      }}
-                    >
-                      <div style={{ width: 160, flexShrink: 0 }}>
-                        <Checkbox
-                          checked={isMenuChecked(child.menuCode)}
-                          indeterminate={isMenuPartiallyChecked(child)}
-                          disabled={!canEditPermissions}
-                          onChange={() => onToggleAllMenuActions(child)}
-                        >
-                          <Typography.Text strong>
-                            {child.menuName}
-                          </Typography.Text>
-                        </Checkbox>
-                      </div>
-                      <Space size={16} wrap>
-                        {child.actions.map((action) => (
-                          <Checkbox
-                            key={action}
-                            checked={isActionSelected(child.menuCode, action)}
-                            disabled={!canEditPermissions}
-                            onChange={() =>
-                              onToggleAction(child.menuCode, action)
-                            }
-                          >
-                            {actionLabels[action] || action}
-                          </Checkbox>
-                        ))}
-                      </Space>
+            <div>
+              {menuTree.map((group) => (
+                <div key={group.menuCode} className="mb-4">
+                  {group.children.length > 0 && (
+                    <div className="mb-8 py-2 border-b border-b-[var(--theme-card-border)]">
+                      <Typography.Text strong>{group.menuName}</Typography.Text>
                     </div>
-                  ))}
-              </div>
-            ))}
-          </div>
+                  )}
+                  {(group.children.length > 0
+                    ? group.children
+                    : [group]
+                  ).flatMap((child) =>
+                    child.actions.length > 0
+                      ? [
+                          <div
+                            key={child.menuCode}
+                            className="flex items-center py-1.5 pl-4"
+                          >
+                            <div className="w-160 flex-shrink-0">
+                              <Checkbox
+                                checked={isMenuChecked(child.menuCode)}
+                                indeterminate={isMenuPartiallyChecked(child)}
+                                disabled={!permissionActions.editable}
+                                onChange={() => onToggleAllMenuActions(child)}
+                              >
+                                <Typography.Text strong>
+                                  {child.menuName}
+                                </Typography.Text>
+                              </Checkbox>
+                            </div>
+                            <Space size={16} wrap>
+                              {child.actions.map((action) => (
+                                <Checkbox
+                                  key={action}
+                                  checked={isActionSelected(
+                                    child.menuCode,
+                                    action,
+                                  )}
+                                  disabled={!permissionActions.editable}
+                                  onChange={() =>
+                                    onToggleAction(child.menuCode, action)
+                                  }
+                                >
+                                  {actionLabels[action] || action}
+                                </Checkbox>
+                              ))}
+                            </Space>
+                          </div>,
+                        ]
+                      : [],
+                  )}
+                </div>
+              ))}
+            </div>
           ) : (
             <Table
               rowKey="key"
@@ -205,8 +207,8 @@ export function RoleActionPermissionCard({
         </div>
       ) : (
         <Empty
-          description="请从左侧选择一个角色来配置权限"
-          style={{ marginTop: 120 }}
+          description={t('system.rolePermission.selectRoleHint')}
+          className="mt-120"
         />
       )}
     </Card>

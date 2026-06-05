@@ -5,55 +5,51 @@ import {
   ShopOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import dayjs from 'dayjs'
+import type { TFunction } from 'i18next'
 import type { DashboardSummary } from '@/api/dashboard'
+import { formatDateTime } from '@/utils/formatters'
 import type { DashboardInfoItem } from '@/views/dashboard/dashboard-view-types'
 
-export function formatDateTime(value?: string | null) {
-  if (!value) {
-    return '—'
-  }
-  const parsed = dayjs(value)
-  return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : value
-}
-
 export function buildDashboardInfoItems(
+  t: TFunction,
   summary?: DashboardSummary,
 ): DashboardInfoItem[] {
   return [
     {
       key: 'userName',
-      label: '当前用户',
+      label: t('dashboard.info.userName'),
       value: summary?.userName || '—',
       icon: UserOutlined,
     },
     {
       key: 'loginName',
-      label: '登录账号',
+      label: t('dashboard.info.loginName'),
       value: summary?.loginName || '—',
       icon: SafetyOutlined,
     },
     {
       key: 'roleName',
-      label: '所属角色',
-      value: summary?.roleName || '未分配',
+      label: t('dashboard.info.roleName'),
+      value: summary?.roleName || t('dashboard.info.unassigned'),
       icon: ApartmentOutlined,
     },
     {
       key: 'companyName',
-      label: '所属公司',
-      value: summary?.companyName || '未配置',
+      label: t('dashboard.info.companyName'),
+      value: summary?.companyName || t('dashboard.values.unconfigured'),
       icon: ShopOutlined,
     },
     {
       key: 'totpEnabled',
-      label: 'MFA 状态',
-      value: summary?.totpEnabled ? '已启用' : '未启用',
+      label: t('dashboard.info.mfaStatus'),
+      value: summary?.totpEnabled
+        ? t('dashboard.values.enabled')
+        : t('dashboard.values.disabled'),
       icon: SafetyOutlined,
     },
     {
       key: 'lastLoginAt',
-      label: '最近登录',
+      label: t('dashboard.info.lastLogin'),
       value: formatDateTime(summary?.lastLoginAt),
       icon: ClockCircleOutlined,
     },

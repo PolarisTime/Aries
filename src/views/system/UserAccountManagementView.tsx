@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { deleteUserAccount } from '@/api/user-accounts'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
@@ -28,6 +29,7 @@ export function UserAccountManagementView({
   active = true,
 }: UserAccountManagementViewProps) {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const { showError } = useRequestError()
   const permissionStore = usePermissionStore()
 
@@ -64,7 +66,7 @@ export function UserAccountManagementView({
     loginNameChecking,
     departmentOptions,
     roleOptions,
-    selectedRoleNames,
+    selectedRoleIds,
     selectedRoleDataScope,
     selectedRoleSummaries,
     createResultOpen,
@@ -110,34 +112,35 @@ export function UserAccountManagementView({
   const deleteMutation = useMutation({
     mutationFn: deleteUserAccount,
     onSuccess: () => {
-      message.success('删除成功')
-      queryClient.invalidateQueries({ queryKey: ['user-account'] })
-    },
-    onError: (error: Error) => showError(error, '删除失败'),
-  })
-
-  const handleDelete = useCallback(
-    (record: UserAccountRecord) => {
-      modal.confirm({
-        title: '删除用户账户',
-        content: `确定删除账号「${record.loginName}」吗？删除后该用户将无法继续登录。`,
-        okText: '确认删除',
-        cancelText: '取消',
-        okButtonProps: { danger: true },
-        onOk: () => deleteMutation.mutateAsync(record.id),
+      message.success(t('common.deleteSuccess'))
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.userAccountBase,
       })
     },
-    [deleteMutation],
-  )
+    onError: (error: Error) => showError(error, t('api.deleteFailed')),
+  })
 
-  const copyText = useCallback(async (value: string, label: string) => {
+  const handleDelete = (record: UserAccountRecord) => {
+    modal.confirm({
+      title: t('system.userAccount.deleteTitle'),
+      content: t('system.userAccount.deleteContent', {
+        loginName: record.loginName,
+      }),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: () => deleteMutation.mutateAsync(record.id),
+    })
+  }
+
+  const copyText = async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value)
-      message.success(`${label}已复制`)
+      message.success(t('system.userAccount.copied', { label }))
     } catch {
-      message.error(`${label}复制失败`)
+      message.error(t('system.userAccount.copyFailed', { label }))
     }
-  }, [])
+  }
 
   return (
     <div className="page-stack">
@@ -184,7 +187,7 @@ export function UserAccountManagementView({
           loginNameChecking={loginNameChecking}
           departmentOptions={departmentOptions}
           roleOptions={roleOptions}
-          selectedRoleNames={selectedRoleNames}
+          selectedRoleIds={selectedRoleIds}
           selectedRoleDataScope={selectedRoleDataScope}
           selectedRoleSummaries={selectedRoleSummaries}
           onCheckLoginName={(loginName, excludeUserId) => {
