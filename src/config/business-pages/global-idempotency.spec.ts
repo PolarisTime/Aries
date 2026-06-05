@@ -107,8 +107,7 @@ describe('business page global idempotency contracts', () => {
     expectUnique(
       config.key,
       'detailItemColumns',
-      config.detailItemColumns?.map((column) => String(column.dataIndex)) ??
-        [],
+      config.detailItemColumns?.map((column) => String(column.dataIndex)) ?? [],
     )
     expectUnique(
       config.key,
@@ -122,16 +121,15 @@ describe('business page global idempotency contracts', () => {
     )
   })
 
-  it.each(pageConfigs.filter((config) => config.readOnly))(
-    '$key does not expose write actions when readOnly',
-    (config) => {
-      const actionKeys = config.actions?.map((action) => action.key ?? '') ?? []
+  it.each(
+    pageConfigs.filter((config) => config.readOnly),
+  )('$key does not expose write actions when readOnly', (config) => {
+    const actionKeys = config.actions?.map((action) => action.key ?? '') ?? []
 
-      expect(
-        actionKeys.filter((key) =>
-          writeActionKeyParts.some((part) => key.includes(part)),
-        ),
-      ).toEqual([])
-    },
-  )
+    expect(
+      actionKeys.filter((key) =>
+        writeActionKeyParts.some((part) => key.includes(part)),
+      ),
+    ).toEqual([])
+  })
 })

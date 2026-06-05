@@ -16,7 +16,7 @@ interface Props {
 
 defineProps<Props>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   select: [record: PrintTemplateRecord]
   create: []
   delete: [record: PrintTemplateRecord]
@@ -25,8 +25,10 @@ const emit = defineEmits<{
   'update:templateKeyword': [value: string]
 }>()
 
-const selectedBillType = defineModel<string>('selectedBillType', { default: '' })
-const templateKeyword = defineModel<string>('templateKeyword', { default: '' })
+const _selectedBillType = defineModel<string>('selectedBillType', {
+  default: '',
+})
+const _templateKeyword = defineModel<string>('templateKeyword', { default: '' })
 </script>
 
 <template>

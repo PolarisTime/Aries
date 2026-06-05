@@ -34,24 +34,11 @@ export async function listDisplaySwitches() {
   return rows.filter(isToggleSetting)
 }
 
-export async function listClientSettings() {
-  const [{ ENDPOINTS }, { assertApiSuccess, http }] = await Promise.all([
-    import('@/constants/endpoints'),
-    import('@/api/client'),
-  ])
-  const response = assertApiSuccess(
-    await http.get<{
-      code?: number
-      message?: string
-      data?: ModuleRecord[]
-    }>(ENDPOINTS.GENERAL_SETTING_CLIENT_SETTINGS),
-  )
-  return Array.isArray(response.data) ? response.data : []
-}
-
 export async function listClientSettings(): Promise<ModuleRecord[]> {
   const response = assertApiSuccess(
-    await http.get<ApiResponse<DisplaySwitchResponse[]>>('/general-settings/client-settings'),
+    await http.get<ApiResponse<DisplaySwitchResponse[]>>(
+      '/general-settings/client-settings',
+    ),
     '加载客户端设置失败',
   )
   return (response.data || []).map(normalizeSwitch)
@@ -59,12 +46,18 @@ export async function listClientSettings(): Promise<ModuleRecord[]> {
 
 export async function getStatementGeneratorRules(): Promise<StatementGeneratorRules> {
   const response = assertApiSuccess(
-    await http.get<ApiResponse<Partial<StatementGeneratorRules>>>('/general-settings/statement-generator-rules'),
+    await http.get<ApiResponse<Partial<StatementGeneratorRules>>>(
+      '/general-settings/statement-generator-rules',
+    ),
     '加载对账单生成规则失败',
   )
   return {
-    customerStatementReceiptAmountZero: Boolean(response.data?.customerStatementReceiptAmountZero),
-    supplierStatementFullPayment: Boolean(response.data?.supplierStatementFullPayment),
+    customerStatementReceiptAmountZero: Boolean(
+      response.data?.customerStatementReceiptAmountZero,
+    ),
+    supplierStatementFullPayment: Boolean(
+      response.data?.supplierStatementFullPayment,
+    ),
   }
 }
 
@@ -83,8 +76,10 @@ export function getClientSettingNumber(
   settingCode: string,
   fallbackValue: number,
 ) {
-  const target = (rows || []).find((row) =>
-    String(row.settingCode || '') === settingCode && String(row.status || '') === '正常',
+  const target = (rows || []).find(
+    (row) =>
+      String(row.settingCode || '') === settingCode &&
+      String(row.status || '') === '正常',
   )
   const numericValue = Number(target?.sampleNo)
   return Number.isFinite(numericValue) ? numericValue : fallbackValue

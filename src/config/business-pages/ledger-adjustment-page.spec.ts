@@ -13,12 +13,9 @@ describe('ledgerAdjustmentPageConfig', () => {
   })
 
   it('defines ledger adjustment filters', () => {
-    expect(ledgerAdjustmentPageConfig.filters?.map((field) => field.key)).toEqual([
-      'direction',
-      'counterpartyType',
-      'status',
-      'adjustmentDate',
-    ])
+    expect(
+      ledgerAdjustmentPageConfig.filters?.map((field) => field.key),
+    ).toEqual(['direction', 'counterpartyType', 'status', 'adjustmentDate'])
   })
 
   it('shows counterparty code in columns', () => {

@@ -180,9 +180,9 @@ export function ModuleFilterToolbar({
     (left, right) => (left.row || 1) - (right.row || 1),
   )
   const quickFilters = config.quickFilters || []
-  const activeQuickFilterKey =
-    quickFilters.find((filter) => isSameFilterPreset(filters, filter.values))
-      ?.key
+  const activeQuickFilterKey = quickFilters.find((filter) =>
+    isSameFilterPreset(filters, filter.values),
+  )?.key
 
   return (
     <Form onFinish={onSearch} colon={false} className="mb-4">

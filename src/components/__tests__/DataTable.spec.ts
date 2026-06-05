@@ -1,7 +1,7 @@
-import { computed, defineComponent, nextTick, ref } from 'vue'
-import { mount } from '@vue/test-utils'
 import type { ColumnDef, RowSelectionState, Updater } from '@tanstack/vue-table'
+import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { computed, defineComponent, nextTick, ref } from 'vue'
 import DataTable from '@/components/DataTable.vue'
 import { useDataTable } from '@/composables/use-data-table'
 
@@ -20,46 +20,46 @@ function mountTable(options?: {
   onRowClick?: (row: TestRow) => void
   onRowDoubleClick?: (row: TestRow) => void
 }) {
-  return mount(defineComponent({
-    components: { DataTable },
-    setup() {
-      const rows = ref<TestRow[]>([
-        { id: 'row-1', name: '单据A' },
-      ])
-      const columns = computed<ColumnDef<TestRow, unknown>[]>(() => [
-        { accessorKey: 'name', header: () => '名称' },
-      ])
-      const rowSelection = ref<RowSelectionState>({})
-      const { table } = useDataTable({
-        data: rows,
-        columns,
-        getRowId: (row) => row.id,
-        manualPagination: false,
-        enableRowSelection: true,
-        rowSelection,
-        onRowSelectionChange: (updater) => {
-          rowSelection.value = applyUpdater(rowSelection.value, updater)
-        },
-      })
+  return mount(
+    defineComponent({
+      components: { DataTable },
+      setup() {
+        const rows = ref<TestRow[]>([{ id: 'row-1', name: '单据A' }])
+        const columns = computed<ColumnDef<TestRow, unknown>[]>(() => [
+          { accessorKey: 'name', header: () => '名称' },
+        ])
+        const rowSelection = ref<RowSelectionState>({})
+        const { table } = useDataTable({
+          data: rows,
+          columns,
+          getRowId: (row) => row.id,
+          manualPagination: false,
+          enableRowSelection: true,
+          rowSelection,
+          onRowSelectionChange: (updater) => {
+            rowSelection.value = applyUpdater(rowSelection.value, updater)
+          },
+        })
 
-      function rowProps(row: TestRow) {
-        const props: Record<string, unknown> = {}
-        if (options?.onRowClick) {
-          props.onClick = () => options.onRowClick?.(row)
+        function rowProps(row: TestRow) {
+          const props: Record<string, unknown> = {}
+          if (options?.onRowClick) {
+            props.onClick = () => options.onRowClick?.(row)
+          }
+          if (options?.onRowDoubleClick) {
+            props.onDblclick = () => options.onRowDoubleClick?.(row)
+          }
+          return props
         }
-        if (options?.onRowDoubleClick) {
-          props.onDblclick = () => options.onRowDoubleClick?.(row)
-        }
-        return props
-      }
 
-      return {
-        rowProps,
-        table,
-      }
-    },
-    template: '<DataTable :table="table" :row-props="rowProps" />',
-  }))
+        return {
+          rowProps,
+          table,
+        }
+      },
+      template: '<DataTable :table="table" :row-props="rowProps" />',
+    }),
+  )
 }
 
 async function dispatchMouseEvent(
@@ -86,7 +86,9 @@ describe('DataTable', () => {
     await wrapper.find('tbody tr.leo-data-table-row').trigger('click')
     await nextTick()
 
-    expect(wrapper.find('tbody tr.leo-data-table-row').classes()).toContain('leo-data-table-row-selected')
+    expect(wrapper.find('tbody tr.leo-data-table-row').classes()).toContain(
+      'leo-data-table-row-selected',
+    )
   })
 
   it('delays single-click selection when a double-click handler exists', async () => {

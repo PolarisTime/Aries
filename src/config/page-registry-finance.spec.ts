@@ -74,7 +74,9 @@ describe('page-registry-finance', () => {
   })
 
   it('defines ledger-adjustment page', () => {
-    const page = financePageDefinitions.find((d) => d.key === 'ledger-adjustment')
+    const page = financePageDefinitions.find(
+      (d) => d.key === 'ledger-adjustment',
+    )
     expect(page).toBeDefined()
     expect(page!.title).toBe('台账调整单')
     expect(page!.menuParent).toBe('finance')

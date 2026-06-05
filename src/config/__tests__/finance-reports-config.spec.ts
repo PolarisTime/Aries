@@ -1,11 +1,18 @@
-import { getMaterialCategoryOptions, getWarehouseOptions } from '@/constants/module-options'
 import { financeAndReportPageConfigs } from '@/config/business-pages/finance-reports'
+import {
+  getMaterialCategoryOptions,
+  getWarehouseOptions,
+} from '@/constants/module-options'
 
 describe('finance reports page config', () => {
   it('uses dynamic master-data options for inventory report filters', () => {
     const config = financeAndReportPageConfigs['inventory-report']
-    const warehouseFilter = config.filters.find((filter) => filter.key === 'warehouseName')
-    const categoryFilter = config.filters.find((filter) => filter.key === 'category')
+    const warehouseFilter = config.filters.find(
+      (filter) => filter.key === 'warehouseName',
+    )
+    const categoryFilter = config.filters.find(
+      (filter) => filter.key === 'category',
+    )
 
     expect(warehouseFilter?.options).toBe(getWarehouseOptions)
     expect(categoryFilter?.options).toBe(getMaterialCategoryOptions)
@@ -21,10 +28,18 @@ describe('finance reports page config', () => {
   it('hides amount and status from receipt detail view while keeping a compact statement column', () => {
     const config = financeAndReportPageConfigs.receipts
 
-    expect(config.detailFields.map((field) => field.key)).not.toContain('amount')
-    expect(config.detailFields.map((field) => field.key)).not.toContain('status')
+    expect(config.detailFields.map((field) => field.key)).not.toContain(
+      'amount',
+    )
+    expect(config.detailFields.map((field) => field.key)).not.toContain(
+      'status',
+    )
     expect(config.formFields?.map((field) => field.key)).not.toContain('amount')
     expect(config.formFields?.map((field) => field.key)).not.toContain('status')
-    expect(config.itemColumns?.find((column) => column.dataIndex === 'sourceStatementId')?.width).toBe(180)
+    expect(
+      config.itemColumns?.find(
+        (column) => column.dataIndex === 'sourceStatementId',
+      )?.width,
+    ).toBe(180)
   })
 })
