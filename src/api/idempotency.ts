@@ -1,3 +1,4 @@
+// TODO: remove @ts-nocheck — fix AxiosRequestConfig headers type to use AxiosRequestHeaders instead of Record<string, unknown>
 // @ts-nocheck
 import type { AxiosRequestConfig } from 'axios'
 

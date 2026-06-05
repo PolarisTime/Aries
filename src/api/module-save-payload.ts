@@ -1,3 +1,4 @@
+// TODO: remove @ts-nocheck — fix resolveIgnoredScalarFields/ignoredScalarFieldCache (renamed by biome auto-fix)
 // @ts-nocheck
 import dayjs from 'dayjs'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'

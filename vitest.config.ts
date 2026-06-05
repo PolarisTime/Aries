@@ -15,6 +15,7 @@ export default defineConfig({
     pool: 'forks',
     testTimeout: 10000,
     include: ['src/**/*.spec.ts', 'src/**/*.spec.tsx'],
+    // TODO: fix missing deps (vue, @vue/test-utils, finance-reports module) in excluded tests, then remove from this list
     exclude: [
       'tests/**',
       'src/mock/**',
