@@ -53,7 +53,9 @@ describe('balancePageConfigs', () => {
   })
 
   it('uses settlement status filters', () => {
-    const statusFilter = config.filters.find((filter) => filter.key === 'status')
+    const statusFilter = config.filters.find(
+      (filter) => filter.key === 'status',
+    )
 
     expect(statusFilter).toBeDefined()
     expect(statusFilter?.options).toEqual([
@@ -139,8 +141,9 @@ describe('balancePageConfigs', () => {
     expect(keys).not.toContain('openingAmount')
     expect(keys).not.toContain('currentAmount')
     expect(keys).not.toContain('documentCount')
-    expect(config.columns.find((column) => column.dataIndex === 'direction'))
-      .toMatchObject({ type: 'status', align: 'center' })
+    expect(
+      config.columns.find((column) => column.dataIndex === 'direction'),
+    ).toMatchObject({ type: 'status', align: 'center' })
   })
 
   it('uses ledger summary detail fields', () => {

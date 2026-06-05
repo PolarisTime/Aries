@@ -1,17 +1,17 @@
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { Modal, message } from 'ant-design-vue'
 import type { UploadProps } from 'ant-design-vue'
-import { businessPageConfigs } from '@/config/business-pages'
-import { useRequestError } from '@/composables/use-request-error'
-import {
-  printTemplateTargetMap,
-  printTemplateTargetOptions,
-} from '@/config/print-template-targets'
+import { Modal, message } from 'ant-design-vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import {
   deletePrintTemplate,
   listPrintTemplates,
   savePrintTemplate,
 } from '@/api/print-template'
+import { useRequestError } from '@/composables/use-request-error'
+import { businessPageConfigs } from '@/config/business-pages'
+import {
+  printTemplateTargetMap,
+  printTemplateTargetOptions,
+} from '@/config/print-template-targets'
 import { usePermissionStore } from '@/stores/permission'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { isCLodopCode } from '@/utils/clodop'
@@ -79,7 +79,9 @@ export function usePrintTemplate() {
   const tokenGroups = computed(() =>
     buildPrintTemplateTokenGroups(editorConfig.value),
   )
-  const snippets = computed(() => buildPrintTemplateSnippets(editorConfig.value))
+  const snippets = computed(() =>
+    buildPrintTemplateSnippets(editorConfig.value),
+  )
   const starterTemplate = computed(() =>
     buildPrintTemplateStarter(editorConfig.value),
   )
@@ -110,7 +112,9 @@ export function usePrintTemplate() {
     })
   })
   const selectedTemplateRecord = computed(() =>
-    templateRows.value.find((item) => String(item.id) === activeTemplateId.value),
+    templateRows.value.find(
+      (item) => String(item.id) === activeTemplateId.value,
+    ),
   )
   const previewSource = computed(() =>
     renderPrintTemplate(

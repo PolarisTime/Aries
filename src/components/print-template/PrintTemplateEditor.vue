@@ -22,7 +22,9 @@ interface Props {
 }
 
 defineProps<Props>()
-const editorForm = defineModel<EditorFormModel>('editorForm', { required: true })
+const _editorForm = defineModel<EditorFormModel>('editorForm', {
+  required: true,
+})
 
 const emit = defineEmits<{
   save: []
@@ -32,7 +34,7 @@ const emit = defineEmits<{
   'update:templateTextareaRef': [ref: unknown]
 }>()
 
-function handleTextareaRef(el: unknown) {
+function _handleTextareaRef(el: unknown) {
   emit('update:templateTextareaRef', el)
 }
 </script>

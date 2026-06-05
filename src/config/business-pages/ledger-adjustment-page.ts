@@ -74,9 +74,7 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
   key: 'ledger-adjustment',
   title: i18next.t('modules.pages.ledgerAdjustment.ledgerAdjustment'),
   kicker: 'Finance',
-  description: i18next.t(
-    'modules.pages.ledgerAdjustment.ledgerAdjustmentDesc',
-  ),
+  description: i18next.t('modules.pages.ledgerAdjustment.ledgerAdjustmentDesc'),
   primaryNoKey: 'adjustmentNo',
   actions: [
     {
@@ -364,8 +362,14 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
   buildOverview: (rows) => buildFinanceOverview(rows, 'amount'),
   statusMap: {
     ...statusMap,
-    应收: { text: i18next.t('modules.pages.ledgerAdjustment.receivable'), color: 'processing' },
-    应付: { text: i18next.t('modules.pages.ledgerAdjustment.payable'), color: 'warning' },
+    应收: {
+      text: i18next.t('modules.pages.ledgerAdjustment.receivable'),
+      color: 'processing',
+    },
+    应付: {
+      text: i18next.t('modules.pages.ledgerAdjustment.payable'),
+      color: 'warning',
+    },
   },
   rowHighlightStatuses: ['草稿'],
 }

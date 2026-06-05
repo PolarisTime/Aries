@@ -69,7 +69,7 @@
       }
     },
     {
-      "includes": ["**/*.spec.ts", "**/*.spec.tsx"],
+      "includes": ["**/*.spec.ts", "**/*.spec.tsx", "**/__tests__/**"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -82,7 +82,8 @@
           "correctness": {
             "noUnusedFunctionParameters": "off",
             "noUnusedVariables": "off",
-            "noPrecisionLoss": "off"
+            "noPrecisionLoss": "off",
+            "useHookAtTopLevel": "off"
           },
           "a11y": {
             "useButtonType": "off",

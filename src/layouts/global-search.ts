@@ -61,7 +61,8 @@ export function normalizeGlobalSearchResult(source: GlobalSearchSourceRecord) {
   const trackId = String(source.trackId || '')
   const summary = String(source.summary || '')
   const matchedByTrackId = Boolean(source.matchedByTrackId)
-  const idText = matchedByTrackId && trackId !== primaryNo ? ` | ID ${trackId}` : ''
+  const idText =
+    matchedByTrackId && trackId !== primaryNo ? ` | ID ${trackId}` : ''
 
   return {
     value: `${source.moduleKey}::${primaryNo || trackId}`,
@@ -98,7 +99,7 @@ function buildGlobalSearchResult(
     primaryNo: String(record[config.primaryNoKey || 'id'] || record.id),
     summary: buildSummary(record),
     matchedByTrackId: Boolean(record.id && String(record.id) === keyword),
-  })
+  }
 }
 
 export async function searchAccessibleModules(

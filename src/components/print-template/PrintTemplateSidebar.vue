@@ -11,7 +11,7 @@ interface Props {
 
 defineProps<Props>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   insert: [content: string]
 }>()
 </script>

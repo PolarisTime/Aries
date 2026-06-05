@@ -154,7 +154,10 @@ export function resolveModuleActionPermissionCodes(options: {
   return ['read']
 }
 
-export function resolveStatusChangeActionLabel(targetValue: unknown, reverse = false) {
+export function resolveStatusChangeActionLabel(
+  targetValue: unknown,
+  reverse = false,
+) {
   const normalizedTarget = String(targetValue ?? '').trim()
   if (normalizedTarget === '已确认' || normalizedTarget === '待确认') {
     return reverse ? '反确认' : '确认'

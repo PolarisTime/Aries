@@ -9,7 +9,7 @@ interface Props {
 
 defineProps<Props>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   'update:previewTab': [value: 'preview' | 'data']
 }>()
 </script>

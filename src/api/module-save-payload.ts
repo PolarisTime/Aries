@@ -75,12 +75,14 @@ function getScalarFields(moduleKey: string): Promise<readonly string[]> {
   return fieldsPromise
 }
 
-function getIgnoredScalarFields(moduleKey: string): readonly string[] {
+function _getIgnoredScalarFields(moduleKey: string): readonly string[] {
   const cached = ignoredScalarFieldCache.get(moduleKey)
   if (cached) {
     return cached
   }
-  const fields: readonly string[] = Object.freeze(resolveIgnoredScalarFields(moduleKey))
+  const fields: readonly string[] = Object.freeze(
+    resolveIgnoredScalarFields(moduleKey),
+  )
   ignoredScalarFieldCache.set(moduleKey, fields)
   return fields
 }
@@ -168,7 +170,10 @@ async function resolveLineItemFields(
   const config = await loadModuleConfig(moduleKey)
   const moduleSaveFields = config?.saveFields
   if (moduleSaveFields?.lineItem) {
-    return moduleSaveFields.lineItem.map((key) => ({ key, numeric: NUMERIC_LINE_ITEM_FIELD_KEYS.has(key) }))
+    return moduleSaveFields.lineItem.map((key) => ({
+      key,
+      numeric: NUMERIC_LINE_ITEM_FIELD_KEYS.has(key),
+    }))
   }
   // numeric fields only matter for the global list
   return LINE_ITEM_FIELDS

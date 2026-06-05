@@ -141,10 +141,12 @@ describe('module-behavior-statuses', () => {
 
   it('registers auditStatus for statement confirmation modules', () => {
     for (const moduleKey of ['supplier-statement', 'customer-statement']) {
-      const calls = mockedRegister.mock.calls.filter(([key]) => key === moduleKey)
-      expect(
-        calls.some(([, config]) => config.auditStatus === '已确认'),
-      ).toBe(true)
+      const calls = mockedRegister.mock.calls.filter(
+        ([key]) => key === moduleKey,
+      )
+      expect(calls.some(([, config]) => config.auditStatus === '已确认')).toBe(
+        true,
+      )
     }
   })
 
