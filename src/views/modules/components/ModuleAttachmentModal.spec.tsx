@@ -105,7 +105,11 @@ vi.mock('antd/es/image', () => {
       {children}
     </div>
   )
-  const Image = ({ preview: _preview, ...props }: any) => <img {...props} />
+  const Image = ({
+    alt = 'attachment preview',
+    preview: _preview,
+    ...props
+  }: any) => <img alt={alt} {...props} />
   Image.PreviewGroup = PreviewGroup
   return { default: Image }
 })
