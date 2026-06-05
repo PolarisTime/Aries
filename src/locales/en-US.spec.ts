@@ -40,7 +40,6 @@ describe('en-US locale', () => {
       'hooks',
       'layouts',
       'system',
-      'finance',
       'print',
       'error',
       'navigation',
