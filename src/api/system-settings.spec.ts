@@ -27,6 +27,7 @@ vi.mock('@/api/client', () => ({
 import {
   DISPLAY_SWITCH_CODES,
   isDisplaySwitchEnabled,
+  getStatementGeneratorRules,
   listClientSettings,
   listDisplaySwitches,
   listSystemSettings,
@@ -112,6 +113,9 @@ describe('system-settings', () => {
 
       const result = await listClientSettings()
 
+      expect(httpGetMock).toHaveBeenCalledWith(
+        '/general-settings/client-setting',
+      )
       expect(result).toEqual(responseData)
     })
 
@@ -124,6 +128,31 @@ describe('system-settings', () => {
       const result = await listClientSettings()
 
       expect(result).toEqual([])
+    })
+  })
+
+  describe('getStatementGeneratorRules', () => {
+    it('fetches statement generator rules from singular endpoint', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: {
+          customerStatementReceiptAmountZero: true,
+          supplierStatementFullPayment: false,
+        },
+      })
+      assertApiSuccessMock.mockImplementation(
+        <T extends { code?: number }>(response: T) => response,
+      )
+
+      const result = await getStatementGeneratorRules()
+
+      expect(httpGetMock).toHaveBeenCalledWith(
+        '/general-settings/statement-generator-rule',
+      )
+      expect(result).toEqual({
+        customerStatementReceiptAmountZero: true,
+        supplierStatementFullPayment: false,
+      })
     })
   })
 

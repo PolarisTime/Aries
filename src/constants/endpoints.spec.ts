@@ -62,6 +62,9 @@ describe('ENDPOINTS', () => {
     expect(ENDPOINTS.GENERAL_SETTING_CLIENT_SETTINGS).toBe(
       '/general-settings/client-setting',
     )
+    expect(ENDPOINTS.STATEMENT_GENERATOR_RULE).toBe(
+      '/general-settings/statement-generator-rule',
+    )
     expect(ENDPOINTS.UPLOAD_RULE).toBe('/general-settings/upload-rule')
   })
 
@@ -118,6 +121,7 @@ describe('ENDPOINTS', () => {
       'ATTACHMENTS_BINDINGS',
       'NUMBER_RULES_NEXT',
       'GENERAL_SETTING_CLIENT_SETTINGS',
+      'STATEMENT_GENERATOR_RULE',
       'UPLOAD_RULE',
       'MATERIALS_IMPORT',
       'MATERIALS_TEMPLATE',

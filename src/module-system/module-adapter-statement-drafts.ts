@@ -37,6 +37,25 @@ function sumLineItemAmounts(
   }, 0)
 }
 
+function roundAmount(value: number) {
+  return Number(value.toFixed(2))
+}
+
+function normalizeAmount(value: unknown) {
+  const amount = Number(value)
+  return Number.isFinite(amount) ? amount : 0
+}
+
+function sumRecordAmounts(records: ModuleRecord[]) {
+  return roundAmount(
+    records.reduce((sum, record) => sum + normalizeAmount(record.amount), 0),
+  )
+}
+
+function capSettlementAmount(amount: number, totalAmount: number) {
+  return roundAmount(Math.min(Math.max(amount, 0), Math.max(totalAmount, 0)))
+}
+
 export function buildSupplierStatementDraftData({
   baseDraft,
   sourceInbounds,
@@ -47,9 +66,6 @@ export function buildSupplierStatementDraftData({
   cloneLineItems,
   buildLineItemId,
 }: SupplierStatementDraftOptions) {
-  void payments
-  void defaultFullPayment
-
   const sortedInbounds = structuredClone(sourceInbounds)
   sortedInbounds.sort(
     (left, right) =>
@@ -80,7 +96,10 @@ export function buildSupplierStatementDraftData({
   const purchaseAmount = Number(
     sumLineItemAmounts(sortedInbounds, cloneLineItems).toFixed(2),
   )
-  const paymentAmount = 0
+  const paymentAmount = capSettlementAmount(
+    defaultFullPayment ? purchaseAmount : sumRecordAmounts(payments),
+    purchaseAmount,
+  )
 
   return {
     ...baseDraft,
@@ -89,7 +108,7 @@ export function buildSupplierStatementDraftData({
     endDate,
     purchaseAmount,
     paymentAmount,
-    closingAmount: purchaseAmount,
+    closingAmount: roundAmount(purchaseAmount - paymentAmount),
     sourceInboundNos,
     remark: `由采购入库单 ${sourceInboundNos} 生成`,
     items: statementItems,
@@ -105,8 +124,6 @@ export function buildCustomerStatementDraftData({
   cloneLineItems,
   buildLineItemId,
 }: CustomerStatementDraftOptions) {
-  void defaultReceiptAmountZero
-
   const sortedOrders = structuredClone(sourceOrders)
   sortedOrders.sort(
     (left, right) =>
@@ -143,7 +160,7 @@ export function buildCustomerStatementDraftData({
   const salesAmount = Number(
     sumLineItemAmounts(sortedOrders, cloneLineItems).toFixed(2),
   )
-  const receiptAmount = 0
+  const receiptAmount = defaultReceiptAmountZero ? 0 : salesAmount
 
   return {
     ...baseDraft,
@@ -153,7 +170,7 @@ export function buildCustomerStatementDraftData({
     endDate,
     salesAmount,
     receiptAmount,
-    closingAmount: salesAmount,
+    closingAmount: roundAmount(salesAmount - receiptAmount),
     sourceOrderNos,
     remark: `由销售订单 ${sourceOrderNos} 生成`,
     items: statementItems,

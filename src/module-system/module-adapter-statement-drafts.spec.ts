@@ -75,6 +75,54 @@ describe('buildSupplierStatementDraftData', () => {
     expect(result.remark).toContain('RK001')
   })
 
+  it('uses payment records when default full payment is disabled', () => {
+    const result = buildSupplierStatementDraftData({
+      baseDraft,
+      sourceInbounds,
+      payments: [{ id: 'PAY-1', amount: 1200.456 }] as any[],
+      today: '2026-03-01',
+      statementPeriod: undefined,
+      defaultFullPayment: false,
+      cloneLineItems,
+      buildLineItemId,
+    })
+
+    expect(result.paymentAmount).toBe(1200.46)
+    expect(result.closingAmount).toBe(1799.54)
+  })
+
+  it('defaults to full payment when default full payment is enabled', () => {
+    const result = buildSupplierStatementDraftData({
+      baseDraft,
+      sourceInbounds,
+      payments: [{ id: 'PAY-1', amount: 1200 }] as any[],
+      today: '2026-03-01',
+      statementPeriod: undefined,
+      defaultFullPayment: true,
+      cloneLineItems,
+      buildLineItemId,
+    })
+
+    expect(result.paymentAmount).toBe(3000)
+    expect(result.closingAmount).toBe(0)
+  })
+
+  it('caps payment amount at purchase amount', () => {
+    const result = buildSupplierStatementDraftData({
+      baseDraft,
+      sourceInbounds,
+      payments: [{ id: 'PAY-1', amount: 5000 }] as any[],
+      today: '2026-03-01',
+      statementPeriod: undefined,
+      defaultFullPayment: false,
+      cloneLineItems,
+      buildLineItemId,
+    })
+
+    expect(result.paymentAmount).toBe(3000)
+    expect(result.closingAmount).toBe(0)
+  })
+
   it('handles single inbound', () => {
     const single = [sourceInbounds[0]]
     const result = buildSupplierStatementDraftData({
@@ -169,9 +217,25 @@ describe('buildCustomerStatementDraftData', () => {
     expect(result.customerName).toBe('客户A')
     expect(result.projectName).toBe('项目X')
     expect(result.salesAmount).toBe(3000)
-    expect(result.receiptAmount).toBe(0)
+    expect(result.receiptAmount).toBe(3000)
+    expect(result.closingAmount).toBe(0)
     expect(result.items).toHaveLength(1)
     expect(result.sourceOrderNos).toBe('XS001')
+  })
+
+  it('keeps receipt amount zero when configured', () => {
+    const result = buildCustomerStatementDraftData({
+      baseDraft,
+      sourceOrders,
+      today: '2026-03-15',
+      statementPeriod: undefined,
+      defaultReceiptAmountZero: true,
+      cloneLineItems,
+      buildLineItemId,
+    })
+
+    expect(result.receiptAmount).toBe(0)
+    expect(result.closingAmount).toBe(3000)
   })
 
   it('handles empty source orders', () => {
