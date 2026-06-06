@@ -141,8 +141,8 @@ describe('UserAccountEditorModal', () => {
       { id: '2', departmentName: '销售部' },
     ],
     roleOptions: [
-      { id: 1, roleName: '管理员', status: '正常' },
-      { id: 2, roleName: '普通用户', status: '正常' },
+      { id: '700520000000000001', roleName: '管理员', status: '正常' },
+      { id: '700520000000000002', roleName: '普通用户', status: '正常' },
     ],
     selectedRoleIds: [],
     selectedRoleDataScope: '本人',

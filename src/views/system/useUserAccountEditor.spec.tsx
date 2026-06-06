@@ -51,7 +51,7 @@ vi.mock('@/views/system/user-account-view-utils', () => ({
     userName: '',
     mobile: '',
     departmentId: null,
-    roleNames: [],
+    roleIds: [],
     dataScope: '本人',
     permissionSummary: '',
     status: 'enabled',
@@ -84,7 +84,7 @@ vi.mock('antd/es/form', () => {
       password: 'pass123',
       userName: 'Test User',
       mobile: '1234567890',
-      roleNames: ['Admin'],
+      roleIds: ['700520000000000001', '700520000000000002'],
       dataScope: '本人',
       status: 'enabled',
     })),
@@ -93,7 +93,7 @@ vi.mock('antd/es/form', () => {
       password: 'pass123',
       userName: 'Test User',
       mobile: '1234567890',
-      roleNames: ['Admin'],
+      roleIds: ['700520000000000001', '700520000000000002'],
       dataScope: '本人',
       status: 'enabled',
     })),
@@ -171,6 +171,7 @@ describe('useUserAccountEditor', () => {
       userName: 'Admin',
       mobile: '123',
       roleNames: ['Admin'],
+      roleIds: ['700520000000000001'],
       dataScope: '全部数据',
       status: 'enabled',
     }
@@ -305,6 +306,64 @@ describe('useUserAccountEditor', () => {
     })
     expect(checkResult.available).toBe(true)
     expect(mockShowError).toHaveBeenCalled()
+  })
+
+  it('saves selected role ids in payload', async () => {
+    const mutate = vi.fn()
+    mockUseMutation.mockReturnValue({
+      mutate,
+      isPending: false,
+    })
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        roleIds: ['700520000000000001', '700520000000000002'],
+      }),
+    )
+    expect(mutate.mock.calls[0][0]).not.toHaveProperty('roleNames')
+  })
+
+  it('keeps snowflake role ids as strings when filling edit form', async () => {
+    const detail = {
+      id: '1',
+      loginName: 'admin',
+      userName: 'Admin',
+      mobile: '123',
+      roleNames: ['Admin'],
+      roleIds: ['700520000000000001', '700520000000000002'],
+      dataScope: '全部数据',
+      status: 'enabled',
+    }
+    mockGetUserAccountDetail.mockResolvedValue(detail)
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    await act(async () => {
+      await result.current.openEditModal({ id: '1' } as never)
+    })
+
+    const form = result.current.form as unknown as {
+      setFieldsValue: ReturnType<typeof vi.fn>
+    }
+    expect(form.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        roleIds: ['700520000000000001', '700520000000000002'],
+      }),
+    )
   })
 
   it('returns all expected properties', () => {

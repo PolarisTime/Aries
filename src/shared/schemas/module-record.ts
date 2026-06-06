@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { materialInfoSchema, weightPriceSchema } from './api'
 
+const snowflakeIdSchema = z.union([z.string(), z.number()])
+
 // ── 行项目 Schema ──────────────────────────────────────
 
 /** 行项目通用字段 — .passthrough() 保留模块特有字段兼容存量 */
@@ -8,9 +10,9 @@ const lineItemSchema = z
   .object({
     id: z.string(),
     sourceNo: z.string().optional(),
-    sourcePurchaseOrderItemId: z.union([z.string(), z.number()]).optional(),
-    sourceSalesOrderItemId: z.union([z.string(), z.number()]).optional(),
-    sourceInboundItemId: z.union([z.string(), z.number()]).optional(),
+    sourcePurchaseOrderItemId: snowflakeIdSchema.optional(),
+    sourceSalesOrderItemId: snowflakeIdSchema.optional(),
+    sourceInboundItemId: snowflakeIdSchema.optional(),
     warehouseName: z.string().optional(),
     batchNo: z.string().optional(),
     settlementMode: z.string().optional(),
@@ -60,14 +62,14 @@ export type PurchaseOrderItem = z.infer<typeof purchaseOrderItemSchema>
 
 /** 销售订单行项目 */
 export const salesOrderItemSchema = purchaseOrderItemSchema.extend({
-  sourceInboundItemId: z.number().optional(),
-  sourcePurchaseOrderItemId: z.number().optional(),
+  sourceInboundItemId: snowflakeIdSchema.optional(),
+  sourcePurchaseOrderItemId: snowflakeIdSchema.optional(),
 })
 export type SalesOrderItem = z.infer<typeof salesOrderItemSchema>
 
 /** 采购入库行项目 */
 export const purchaseInboundItemSchema = lineItemSchema.extend({
-  sourcePurchaseOrderItemId: z.number().optional(),
+  sourcePurchaseOrderItemId: snowflakeIdSchema.optional(),
   settlementMode: z.string().optional(),
   weighWeightTon: z.number().optional(),
   weightAdjustmentTon: z.number().optional(),
@@ -81,7 +83,7 @@ export type PurchaseInboundItem = z.infer<typeof purchaseInboundItemSchema>
 /** 销售出库行项目 */
 export const salesOutboundItemSchema = lineItemSchema.extend({
   sourceNo: z.string().optional(),
-  sourceSalesOrderItemId: z.number().optional(),
+  sourceSalesOrderItemId: snowflakeIdSchema.optional(),
   quantity: z.number(),
   unitPrice: z.number(),
   pieceWeightTon: z.number(),

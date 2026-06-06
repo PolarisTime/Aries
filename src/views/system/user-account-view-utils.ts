@@ -30,12 +30,12 @@ function getUserAccountDataScopeRank(value: string) {
 }
 
 export function buildSelectedRoleDataScope(
-  selectedRoleIds: number[],
+  selectedRoleIds: string[],
   roleOptions: RoleOptionRecord[],
   currentDataScope?: string,
 ) {
   const selectedRoles = roleOptions.filter((role) =>
-    selectedRoleIds.includes(Number(role.id)),
+    selectedRoleIds.includes(String(role.id)),
   )
   if (!selectedRoles.length) {
     return selectedRoleIds.length
@@ -55,11 +55,11 @@ export function buildSelectedRoleDataScope(
 }
 
 export function buildSelectedRoleSummaries(
-  selectedRoleIds: number[],
+  selectedRoleIds: string[],
   roleOptions: RoleOptionRecord[],
 ) {
   return roleOptions.reduce<string[]>((acc, role) => {
-    if (!selectedRoleIds.includes(Number(role.id))) return acc
+    if (!selectedRoleIds.includes(String(role.id))) return acc
     const summary = role.permissionSummary?.trim()
     if (!summary || acc.includes(summary)) return acc
     acc.push(summary)
@@ -74,7 +74,7 @@ export function buildDefaultUserAccountFormValues() {
     userName: '',
     mobile: '',
     departmentId: null,
-    roleNames: [],
+    roleIds: [],
     dataScope: '本人',
     permissionSummary: '',
     status: enabledStatusValues[0],

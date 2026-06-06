@@ -15,7 +15,7 @@ interface Props {
 export function useUserAccountEditorRoleState({ form, roleOptions }: Props) {
   const watchedRoleIds = Form.useWatch('roleIds', form)
   const selectedRoleIds = Array.isArray(watchedRoleIds)
-    ? watchedRoleIds.map(Number)
+    ? watchedRoleIds.map(String)
     : []
 
   const selectedRoleDataScope = buildSelectedRoleDataScope(

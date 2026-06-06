@@ -4,7 +4,7 @@ export interface UserAccountEditorFormValues {
   userName: string
   mobile: string
   departmentId: string | null
-  roleNames: string[]
+  roleIds: string[]
   dataScope: string
   permissionSummary: string
   status: string

@@ -23,7 +23,7 @@ import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 
 type EditorMode = 'create' | 'edit'
-const EMPTY_ROLE_CONFLICTS: Record<number, number[]> = {}
+const EMPTY_ROLE_CONFLICTS: Record<string, string[]> = {}
 
 interface Props {
   open: boolean
@@ -36,8 +36,8 @@ interface Props {
   loginNameChecking: boolean
   departmentOptions: DepartmentOptionRecord[]
   roleOptions: RoleOptionRecord[]
-  selectedRoleIds: number[]
-  roleConflicts?: Record<number, number[]>
+  selectedRoleIds: string[]
+  roleConflicts?: Record<string, string[]>
   selectedRoleDataScope: string
   selectedRoleSummaries: string[]
   onCheckLoginName: (loginName: string, excludeUserId?: string) => void
@@ -220,7 +220,7 @@ export function UserAccountEditorModal({
                   label={t('system.userAccountEditor.roles')}
                   required
                   getValueFromEvent={(ids: (string | number)[]) =>
-                    ids?.map(Number)
+                    ids?.map(String)
                   }
                 >
                   <Select
@@ -228,7 +228,7 @@ export function UserAccountEditorModal({
                     placeholder={t('system.userAccountEditor.rolesPlaceholder')}
                     maxTagCount={5}
                     options={roleOptions.map((role) => {
-                      const roleId = Number(role.id)
+                      const roleId = String(role.id)
                       const isDisabled =
                         role.status === enabledStatusValues[1] &&
                         !selectedRoleIds.includes(roleId)
@@ -240,7 +240,7 @@ export function UserAccountEditorModal({
                           conflictWith != null
                             ? `${role.roleName} ${t('system.userAccountEditor.roleConflict')}`
                             : role.roleName,
-                        value: role.id,
+                        value: roleId,
                         disabled: isDisabled || conflictWith != null,
                       }
                     })}

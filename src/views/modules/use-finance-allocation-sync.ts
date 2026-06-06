@@ -58,6 +58,11 @@ function normalizeOptionValue(value: unknown) {
   return String(value ?? '').trim()
 }
 
+function normalizeStatementId(value: unknown) {
+  const id = normalizeOptionValue(value)
+  return id ? id : null
+}
+
 function hasSameOptions(current: unknown, nextOptions: StatementOption[]) {
   if (!Array.isArray(current) || current.length !== nextOptions.length) {
     return false
@@ -79,10 +84,11 @@ function syncReceiptAllocationItems(options: UseFinanceAllocationSyncOptions) {
   const projectName = String(options.editorForm.projectName || '').trim()
 
   options.editorItems.value.forEach((item) => {
+    const currentStatementId = normalizeStatementId(item.sourceStatementId)
     const statementOptions = buildCustomerStatementOptions(
       options.customerStatementRows.value,
       {
-        currentStatementId: Number(item.sourceStatementId || 0),
+        currentStatementId,
         customerName,
         projectName,
       },
@@ -97,10 +103,9 @@ function syncReceiptAllocationItems(options: UseFinanceAllocationSyncOptions) {
       item.sourceStatementId,
     )
     const availableIds = new Set(
-      statementOptions.map((option) => Number(option.value)),
+      statementOptions.map((option) => normalizeStatementId(option.value)),
     )
-    const currentStatementId = Number(item.sourceStatementId || 0)
-    if (currentStatementId > 0 && !availableIds.has(currentStatementId)) {
+    if (currentStatementId !== null && !availableIds.has(currentStatementId)) {
       changed = updateDraftField(item, 'sourceStatementId', '') || changed
     }
 
@@ -161,14 +166,15 @@ function syncPaymentAllocationItems(options: UseFinanceAllocationSyncOptions) {
 
   options.editorItems.value.forEach((item) => {
     const isSupplier = options.paymentBusinessType.value === '供应商'
+    const currentStatementId = normalizeStatementId(item.sourceStatementId)
     const statementOptions = isSupplier
       ? buildSupplierStatementOptions(options.supplierStatementRows.value, {
-          currentStatementId: Number(item.sourceStatementId || 0),
+          currentStatementId,
           counterpartyName,
         })
       : options.paymentBusinessType.value === '物流商'
         ? buildFreightStatementOptions(options.freightStatementRows.value, {
-            currentStatementId: Number(item.sourceStatementId || 0),
+            currentStatementId,
             counterpartyName,
           })
         : []
@@ -179,10 +185,9 @@ function syncPaymentAllocationItems(options: UseFinanceAllocationSyncOptions) {
     }
 
     const availableIds = new Set(
-      statementOptions.map((option) => Number(option.value)),
+      statementOptions.map((option) => normalizeStatementId(option.value)),
     )
-    const currentStatementId = Number(item.sourceStatementId || 0)
-    if (currentStatementId > 0 && !availableIds.has(currentStatementId)) {
+    if (currentStatementId !== null && !availableIds.has(currentStatementId)) {
       changed = updateDraftField(item, 'sourceStatementId', '') || changed
     }
 
