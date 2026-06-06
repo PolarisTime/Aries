@@ -8,6 +8,7 @@ import {
 } from '@/api/business'
 import type { UploadRulePayload } from '@/api/business-types'
 import { assertApiSuccess, http } from '@/api/client'
+import { ENDPOINTS } from '@/constants/endpoints'
 import { isToggleSetting } from '@/module-system/settings-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -41,7 +42,7 @@ export async function listDisplaySwitches() {
 export async function listClientSettings(): Promise<ModuleRecord[]> {
   const response = assertApiSuccess(
     await http.get<ApiResponse<DisplaySwitchResponse[]>>(
-      '/general-settings/client-settings',
+      ENDPOINTS.GENERAL_SETTING_CLIENT_SETTINGS,
     ),
     '加载客户端设置失败',
   )
@@ -56,7 +57,7 @@ function toModuleRecord(item: Record<string, unknown>): ModuleRecord {
 export async function getStatementGeneratorRules(): Promise<StatementGeneratorRules> {
   const response = assertApiSuccess(
     await http.get<ApiResponse<Partial<StatementGeneratorRules>>>(
-      '/general-settings/statement-generator-rules',
+      ENDPOINTS.STATEMENT_GENERATOR_RULE,
     ),
     '加载对账单生成规则失败',
   )
