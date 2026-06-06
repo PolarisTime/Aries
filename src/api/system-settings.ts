@@ -48,6 +48,7 @@ export async function listClientSettings(): Promise<ModuleRecord[]> {
   return (response.data || []).map(toModuleRecord)
 }
 
+// TODO: implement field mapping/validation instead of bare type assertion
 function toModuleRecord(item: Record<string, unknown>): ModuleRecord {
   return item as unknown as ModuleRecord
 }
