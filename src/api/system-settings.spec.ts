@@ -26,8 +26,8 @@ vi.mock('@/api/client', () => ({
 
 import {
   DISPLAY_SWITCH_CODES,
-  isDisplaySwitchEnabled,
   getStatementGeneratorRules,
+  isDisplaySwitchEnabled,
   listClientSettings,
   listDisplaySwitches,
   listSystemSettings,

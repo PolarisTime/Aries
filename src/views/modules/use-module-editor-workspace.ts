@@ -467,6 +467,27 @@ export function useModuleEditorWorkspace({
         return
       }
 
+      // 销售订单独有提示: 明细 unitPrice 为 0 时提醒「价格待定」
+      const zeroPriceItemCount =
+        moduleKey === 'sales-order'
+          ? trimmedItems.filter(
+              (item) => !item.unitPrice || Number(item.unitPrice) === 0,
+            ).length
+          : 0
+      if (zeroPriceItemCount > 0) {
+        const confirmed = await new Promise<boolean>((resolve) => {
+          modal.confirm({
+            title: '价格待定提醒',
+            content: `当前 ${zeroPriceItemCount} 条明细单价为 0，将以「待定价」状态保存。确认继续吗？`,
+            okText: '继续保存',
+            cancelText: '返回修改',
+            onOk: () => resolve(true),
+            onCancel: () => resolve(false),
+          })
+        })
+        if (!confirmed) return
+      }
+
       if (audit && editorAuditTarget) {
         const confirmed = await new Promise<boolean>((resolve) => {
           modal.confirm({
