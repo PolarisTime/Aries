@@ -76,8 +76,8 @@ describe('module-record schemas', () => {
         piecesPerBundle: 2,
         unit: 'kg',
         materialCode: 'M001',
-        sourceInboundItemId: 123,
-        sourcePurchaseOrderItemId: 456,
+        sourceInboundItemId: '700520000000000001',
+        sourcePurchaseOrderItemId: '700520000000000002',
       }
       const result = salesOrderItemSchema.safeParse(data)
       expect(result.success).toBe(true)
@@ -91,7 +91,7 @@ describe('module-record schemas', () => {
         quantity: 10,
         unitPrice: 100,
         pieceWeightTon: 0.5,
-        sourcePurchaseOrderItemId: 123,
+        sourcePurchaseOrderItemId: '700520000000000003',
         settlementMode: 'mode',
         weighWeightTon: 5,
         weightAdjustmentTon: 0.1,
@@ -110,7 +110,7 @@ describe('module-record schemas', () => {
         unitPrice: 100,
         pieceWeightTon: 0.5,
         sourceNo: 'SO001',
-        sourceSalesOrderItemId: 123,
+        sourceSalesOrderItemId: '700520000000000004',
       }
       const result = salesOutboundItemSchema.safeParse(data)
       expect(result.success).toBe(true)

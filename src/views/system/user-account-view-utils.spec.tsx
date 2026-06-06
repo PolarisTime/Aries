@@ -35,19 +35,19 @@ describe('user-account-view-utils', () => {
   describe('buildSelectedRoleDataScope', () => {
     const roleOptions: RoleOptionRecord[] = [
       {
-        id: 1,
+        id: '700520000000000001',
         roleName: '管理员',
         dataScope: '全部数据',
         permissionSummary: '全部权限',
       },
       {
-        id: 2,
+        id: '700520000000000002',
         roleName: '普通用户',
         dataScope: '本人',
         permissionSummary: '部分权限',
       },
       {
-        id: 3,
+        id: '700520000000000003',
         roleName: '部门经理',
         dataScope: '本部门',
         permissionSummary: '部门权限',
@@ -59,35 +59,65 @@ describe('user-account-view-utils', () => {
     })
 
     it('returns currentDataScope when selected roles not found in options', () => {
-      expect(buildSelectedRoleDataScope([999], roleOptions, '全部数据')).toBe(
-        '全部数据',
-      )
+      expect(
+        buildSelectedRoleDataScope(['999'], roleOptions, '全部数据'),
+      ).toBe('全部数据')
     })
 
     it('returns "本人" when selected roles not found and no currentDataScope', () => {
-      expect(buildSelectedRoleDataScope([999], roleOptions)).toBe('本人')
+      expect(buildSelectedRoleDataScope(['999'], roleOptions)).toBe('本人')
     })
 
     it('returns highest data scope from selected roles', () => {
-      expect(buildSelectedRoleDataScope([1], roleOptions)).toBe('全部数据')
-      expect(buildSelectedRoleDataScope([2], roleOptions)).toBe('本人')
-      expect(buildSelectedRoleDataScope([3], roleOptions)).toBe('本部门')
+      expect(
+        buildSelectedRoleDataScope(['700520000000000001'], roleOptions),
+      ).toBe('全部数据')
+      expect(
+        buildSelectedRoleDataScope(['700520000000000002'], roleOptions),
+      ).toBe('本人')
+      expect(
+        buildSelectedRoleDataScope(['700520000000000003'], roleOptions),
+      ).toBe('本部门')
     })
 
     it('returns highest scope when multiple roles selected', () => {
-      expect(buildSelectedRoleDataScope([2, 3], roleOptions)).toBe('本部门')
-      expect(buildSelectedRoleDataScope([1, 2, 3], roleOptions)).toBe(
-        '全部数据',
-      )
+      expect(
+        buildSelectedRoleDataScope(
+          ['700520000000000002', '700520000000000003'],
+          roleOptions,
+        ),
+      ).toBe('本部门')
+      expect(
+        buildSelectedRoleDataScope(
+          [
+            '700520000000000001',
+            '700520000000000002',
+            '700520000000000003',
+          ],
+          roleOptions,
+        ),
+      ).toBe('全部数据')
     })
   })
 
   describe('buildSelectedRoleSummaries', () => {
     const roleOptions: RoleOptionRecord[] = [
-      { id: 1, roleName: '管理员', permissionSummary: '全部权限' },
-      { id: 2, roleName: '普通用户', permissionSummary: '部分权限' },
-      { id: 3, roleName: '无总结', permissionSummary: '' },
-      { id: 4, roleName: '重复', permissionSummary: '全部权限' },
+      {
+        id: '700520000000000001',
+        roleName: '管理员',
+        permissionSummary: '全部权限',
+      },
+      {
+        id: '700520000000000002',
+        roleName: '普通用户',
+        permissionSummary: '部分权限',
+      },
+      { id: '700520000000000003', roleName: '无总结', permissionSummary: '' },
+      {
+        id: '700520000000000004',
+        roleName: '重复',
+        permissionSummary: '全部权限',
+      },
     ] as never
 
     it('returns empty array when no roles selected', () => {
@@ -95,18 +125,27 @@ describe('user-account-view-utils', () => {
     })
 
     it('returns summaries for selected roles', () => {
-      const result = buildSelectedRoleSummaries([1, 2], roleOptions)
+      const result = buildSelectedRoleSummaries(
+        ['700520000000000001', '700520000000000002'],
+        roleOptions,
+      )
       expect(result).toContain('全部权限')
       expect(result).toContain('部分权限')
     })
 
     it('skips roles without permissionSummary', () => {
-      const result = buildSelectedRoleSummaries([3], roleOptions)
+      const result = buildSelectedRoleSummaries(
+        ['700520000000000003'],
+        roleOptions,
+      )
       expect(result).toEqual([])
     })
 
     it('deduplicates summaries', () => {
-      const result = buildSelectedRoleSummaries([1, 4], roleOptions)
+      const result = buildSelectedRoleSummaries(
+        ['700520000000000001', '700520000000000004'],
+        roleOptions,
+      )
       expect(result.filter((s) => s === '全部权限')).toHaveLength(1)
     })
   })
@@ -119,7 +158,7 @@ describe('user-account-view-utils', () => {
       expect(values).toHaveProperty('userName', '')
       expect(values).toHaveProperty('mobile', '')
       expect(values).toHaveProperty('departmentId', null)
-      expect(values).toHaveProperty('roleNames', [])
+      expect(values).toHaveProperty('roleIds', [])
       expect(values).toHaveProperty('dataScope', '本人')
       expect(values).toHaveProperty('permissionSummary', '')
       expect(values).toHaveProperty('status')

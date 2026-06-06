@@ -15,7 +15,7 @@ describe('user-account schemas', () => {
         userName: '用户1',
         mobile: '13800138000',
         departmentId: 'dept1',
-        roleNames: ['admin', 'user'],
+        roleIds: ['700520000000000001', '700520000000000002'],
         dataScope: 'all',
         permissionSummary: '全部权限',
         status: '正常',
@@ -25,7 +25,7 @@ describe('user-account schemas', () => {
       expect(result.success).toBe(true)
     })
 
-    it('should require loginName, userName, roleNames, etc.', () => {
+    it('should require loginName, userName, roleIds, etc.', () => {
       const data = { loginName: 'user1' }
       const result = userAccountFormPayloadSchema.safeParse(data)
       expect(result.success).toBe(false)
@@ -36,7 +36,7 @@ describe('user-account schemas', () => {
         loginName: 'user1',
         userName: '用户1',
         mobile: '13800138000',
-        roleNames: ['admin'],
+        roleIds: ['700520000000000001'],
         dataScope: 'all',
         permissionSummary: '全部权限',
         status: '正常',
@@ -52,7 +52,7 @@ describe('user-account schemas', () => {
         userName: '用户1',
         mobile: '13800138000',
         departmentId: null,
-        roleNames: ['admin'],
+        roleIds: ['700520000000000001'],
         dataScope: 'all',
         permissionSummary: '全部权限',
         status: '正常',

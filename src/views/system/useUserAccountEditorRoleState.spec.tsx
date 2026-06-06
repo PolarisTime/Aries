@@ -10,18 +10,18 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/views/system/user-account-view-utils', () => ({
   buildSelectedRoleDataScope: vi.fn(
-    (ids: number[], _options: unknown[], current?: string) => {
+    (ids: string[], _options: unknown[], current?: string) => {
       if (ids.length === 0) return '本人'
       return current || '全部数据'
     },
   ),
   buildSelectedRoleSummaries: vi.fn(
     (
-      ids: number[],
+      ids: string[],
       options: Array<{ id: string; permissionSummary?: string }>,
     ) => {
       return options
-        .filter((o) => ids.includes(Number(o.id)))
+        .filter((o) => ids.includes(String(o.id)))
         .map((o) => o.permissionSummary || '')
         .filter(Boolean)
     },
