@@ -1,5 +1,5 @@
-// TODO: remove @ts-nocheck — fix missing imports (isCLodopCode, print-template-designer, print-template-engine)
-// and implicit any parameters; use @ts-expect-error for individual issues instead
+// TODO: remove @ts-nocheck — fix implicit any parameters and type assertions
+// use @ts-expect-error for individual issues instead
 // @ts-nocheck
 import type { UploadProps } from 'ant-design-vue'
 import { Modal, message } from 'ant-design-vue'
