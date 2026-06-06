@@ -1,4 +1,6 @@
+import { Tooltip } from 'antd'
 import i18next from 'i18next'
+import React from 'react'
 import {
   buildValueOptions,
   getCustomerOptions,
@@ -103,9 +105,32 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     {
       title: i18next.t('modules.columns.totalWeight'),
       dataIndex: 'totalWeight',
-      width: 116,
+      width: 140,
       align: 'right',
       type: 'weight',
+      render: (value, record) => {
+        const fmt = (v: unknown) =>
+          Number(v)
+            .toFixed(3)
+            .replace(/\.?0+$/, '')
+        const hasOverwritten = (record.items || []).some(
+          (item: Record<string, unknown>) =>
+            item.originalWeightTon != null &&
+            Number(item.originalWeightTon) !== Number(item.weightTon),
+        )
+        if (!hasOverwritten) return undefined
+        const original = (record.items as Record<string, unknown>[]).reduce(
+          (sum, item) => sum + Number(item.originalWeightTon || 0),
+          0,
+        )
+        return React.createElement(
+          Tooltip,
+          {
+            title: `原始计划 ${fmt(original)} 吨`,
+          },
+          `${fmt(value)} ⚠️`,
+        )
+      },
     },
     {
       title: i18next.t('modules.columns.totalAmount'),
