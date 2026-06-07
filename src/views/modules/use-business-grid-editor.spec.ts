@@ -53,6 +53,7 @@ describe('useBusinessGridEditor', () => {
     })
     expect(result.current.editorOpen).toBe(true)
     expect(result.current.editRecord).toBeNull()
+    expect(result.current.editorLockLoading).toBe(false)
   })
 
   it('closes editor', async () => {

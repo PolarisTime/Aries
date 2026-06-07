@@ -59,9 +59,9 @@ describe('user-account-view-utils', () => {
     })
 
     it('returns currentDataScope when selected roles not found in options', () => {
-      expect(
-        buildSelectedRoleDataScope(['999'], roleOptions, '全部数据'),
-      ).toBe('全部数据')
+      expect(buildSelectedRoleDataScope(['999'], roleOptions, '全部数据')).toBe(
+        '全部数据',
+      )
     })
 
     it('returns "本人" when selected roles not found and no currentDataScope', () => {
@@ -89,11 +89,7 @@ describe('user-account-view-utils', () => {
       ).toBe('本部门')
       expect(
         buildSelectedRoleDataScope(
-          [
-            '700520000000000001',
-            '700520000000000002',
-            '700520000000000003',
-          ],
+          ['700520000000000001', '700520000000000002', '700520000000000003'],
           roleOptions,
         ),
       ).toBe('全部数据')

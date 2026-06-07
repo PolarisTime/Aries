@@ -1,12 +1,13 @@
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
-import type { ModuleRecord } from '@/types/module-page'
+import type { ModuleColumnDefinition, ModuleRecord } from '@/types/module-page'
 import { EditorItemsSummary } from './EditorItemsSummary'
 
 interface Props {
   title?: React.ReactNode
   actions?: React.ReactNode
   items?: ModuleRecord[]
+  itemColumns?: ModuleColumnDefinition[]
   className?: string
   children: React.ReactNode
 }
@@ -15,12 +16,15 @@ export function ModuleItemsPanel({
   title,
   actions,
   items,
+  itemColumns,
   className,
   children,
 }: Props) {
   const { t } = useTranslation()
   const resolvedTitle = title ?? t('modules.itemsPanel.defaultTitle')
   const hasSummary = Array.isArray(items)
+  const showAmountSummary =
+    !itemColumns || itemColumns.some((column) => column.dataIndex === 'amount')
 
   return (
     <div
@@ -39,6 +43,7 @@ export function ModuleItemsPanel({
           {hasSummary ? (
             <EditorItemsSummary
               items={items}
+              showAmount={showAmountSummary}
               className="editor-items-summary-inline"
             />
           ) : null}
@@ -47,6 +52,7 @@ export function ModuleItemsPanel({
       {hasSummary ? (
         <EditorItemsSummary
           items={items}
+          showAmount={showAmountSummary}
           className="editor-items-summary-mobile"
         />
       ) : null}

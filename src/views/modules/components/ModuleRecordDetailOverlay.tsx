@@ -133,6 +133,7 @@ export function ModuleRecordDetailOverlay({
             <ModuleItemsPanel
               className="module-detail-items-panel"
               items={record.items || []}
+              itemColumns={detailItemColumns}
               actions={
                 <>
                   <Button

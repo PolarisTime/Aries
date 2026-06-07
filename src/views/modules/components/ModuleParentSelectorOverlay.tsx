@@ -6,16 +6,22 @@ import Table from 'antd/es/table'
 import i18next from 'i18next'
 import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
-import { listBusinessModule } from '@/api/business'
+import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
 import { buildFilterParams } from '@/api/business-listing-filtering'
 import { getModuleConfig } from '@/api/module-contracts'
+import { listPurchaseOrderImportCandidatePage } from '@/api/purchase-order-candidates'
 import { listStatementCandidatePage } from '@/api/statements'
 import { StatusTag } from '@/components/StatusTag'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { SearchParams } from '@/types/api-raw'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type {
+  ModulePageConfig,
+  ModuleParentImportDefinition,
+  ModuleRecord,
+} from '@/types/module-page'
+import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import { ModuleFilterToolbar } from './ModuleFilterToolbar'
 import {
@@ -33,6 +39,8 @@ interface Props {
     | 'supplier-statement'
     | 'customer-statement'
     | 'freight-statement'
+  candidateQueryType?: ModuleParentImportDefinition['candidateQueryType']
+  candidateUsage?: ModuleParentImportDefinition['candidateUsage']
   fixedFilters?: SearchParams
   title?: string
   onSelect: (records: ModuleRecord[]) => void
@@ -356,10 +364,42 @@ function normalizeFilterValues(filters: SearchParams) {
   )
 }
 
+function needsParentDetail(record: ModuleRecord) {
+  return !Array.isArray(record.items) || record.items.length === 0
+}
+
+async function resolveParentImportRecords(
+  parentModuleKey: string,
+  records: ModuleRecord[],
+  candidateStatementModuleKey?: string,
+  candidateQueryType?: ModuleParentImportDefinition['candidateQueryType'],
+) {
+  if (candidateStatementModuleKey || candidateQueryType) {
+    return records
+  }
+  const resolvedRecords = await Promise.all(
+    records.map(async (record) => {
+      if (!record.id || !needsParentDetail(record)) {
+        return record
+      }
+      const detail = await getBusinessModuleDetail(
+        parentModuleKey,
+        String(record.id),
+      )
+      return detail.data
+    }),
+  )
+  return resolvedRecords
+}
+
 function resolveParentSelectorSourceModule(
   parentModuleKey: string,
   candidateStatementModuleKey?: string,
+  candidateQueryType?: ModuleParentImportDefinition['candidateQueryType'],
 ) {
+  if (candidateQueryType === 'purchase-order-import') {
+    return 'purchase-order-import'
+  }
   return candidateStatementModuleKey || parentModuleKey
 }
 
@@ -652,6 +692,8 @@ export function ModuleParentSelectorOverlay({
   parentDisplayFieldKey,
   allowMultipleSelection = false,
   candidateStatementModuleKey,
+  candidateQueryType,
+  candidateUsage,
   fixedFilters = {},
   title,
   onSelect,
@@ -666,6 +708,8 @@ export function ModuleParentSelectorOverlay({
       parentDisplayFieldKey={parentDisplayFieldKey}
       allowMultipleSelection={allowMultipleSelection}
       candidateStatementModuleKey={candidateStatementModuleKey}
+      candidateQueryType={candidateQueryType}
+      candidateUsage={candidateUsage}
       fixedFilters={fixedFilters}
       title={title}
       onSelect={onSelect}
@@ -679,6 +723,8 @@ function ModuleParentSelectorOverlayContent({
   parentDisplayFieldKey,
   allowMultipleSelection = false,
   candidateStatementModuleKey,
+  candidateQueryType,
+  candidateUsage,
   fixedFilters = {},
   title,
   onSelect,
@@ -727,6 +773,7 @@ function ModuleParentSelectorOverlayContent({
       resolveParentSelectorSourceModule(
         parentModuleKey,
         candidateStatementModuleKey,
+        candidateQueryType,
       ),
       effectiveSubmittedFilters,
       page,
@@ -736,6 +783,14 @@ function ModuleParentSelectorOverlayContent({
       if (candidateStatementModuleKey) {
         return listStatementCandidatePage(
           candidateStatementModuleKey,
+          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          Math.max(page - 1, 0),
+          pageSize,
+        )
+      }
+      if (candidateQueryType === 'purchase-order-import') {
+        return listPurchaseOrderImportCandidatePage(
+          candidateUsage || 'purchase-inbound',
           buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
           Math.max(page - 1, 0),
           pageSize,
@@ -885,6 +940,25 @@ function ModuleParentSelectorOverlayContent({
     })
   }
 
+  const handleImportRecords = async (recordsToImport: ModuleRecord[]) => {
+    try {
+      const resolvedRecords = await resolveParentImportRecords(
+        parentModuleKey,
+        recordsToImport,
+        candidateStatementModuleKey,
+        candidateQueryType,
+      )
+      onSelect(resolvedRecords)
+      onClose()
+    } catch (error) {
+      message.error(
+        error instanceof Error
+          ? error.message
+          : t('modules.importParentFailed'),
+      )
+    }
+  }
+
   return (
     <WorkspaceOverlay
       title={effectiveTitle}
@@ -908,8 +982,7 @@ function ModuleParentSelectorOverlayContent({
                 icon={<CheckOutlined />}
                 disabled={!selectedRows.length}
                 onClick={() => {
-                  onSelect(selectedRows)
-                  onClose()
+                  void handleImportRecords(selectedRows)
                 }}
               >
                 {t('modules.parentSelector.confirmImport')}
@@ -974,8 +1047,7 @@ function ModuleParentSelectorOverlayContent({
               toggleRecordSelection(record)
               return
             }
-            onSelect([record])
-            onClose()
+            void handleImportRecords([record])
           },
           style: { cursor: 'pointer' },
         })}

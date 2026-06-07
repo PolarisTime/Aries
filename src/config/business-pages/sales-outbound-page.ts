@@ -196,14 +196,14 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getCustomerOptions,
-      row: 1,
+      row: 2,
     },
     {
       key: 'projectName',
       label: i18next.t('modules.pages.salesOutbound.colProjectName'),
       type: 'input',
       required: true,
-      row: 1,
+      row: 2,
     },
     {
       key: 'outboundDate',

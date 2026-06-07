@@ -1,39 +1,21 @@
 import { lazy, Suspense } from 'react'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import {
+  loadModuleAttachmentModal,
+  loadModuleEditorWorkspace,
+  loadModuleFreightPickupListOverlay,
+  loadModuleRecordDetailOverlay,
+  loadModuleStatementGenerator,
+} from '@/views/modules/components/business-grid-overlay-loaders'
+import { OverlayLazyFallback } from '@/views/modules/components/OverlayLazyFallback'
 
 const EMPTY_FREIGHT_PICKUP_RECORDS: ModuleRecord[] = []
 
-const ModuleAttachmentModal = lazy(() =>
-  import('@/views/modules/components/ModuleAttachmentModal').then((module) => ({
-    default: module.ModuleAttachmentModal,
-  })),
-)
-const ModuleEditorWorkspace = lazy(() =>
-  import('@/views/modules/components/ModuleEditorWorkspace').then((module) => ({
-    default: module.ModuleEditorWorkspace,
-  })),
-)
-const ModuleFreightPickupListOverlay = lazy(() =>
-  import('@/views/modules/components/ModuleFreightPickupListOverlay').then(
-    (module) => ({
-      default: module.ModuleFreightPickupListOverlay,
-    }),
-  ),
-)
-const ModuleRecordDetailOverlay = lazy(() =>
-  import('@/views/modules/components/ModuleRecordDetailOverlay').then(
-    (module) => ({
-      default: module.ModuleRecordDetailOverlay,
-    }),
-  ),
-)
-const ModuleStatementGenerator = lazy(() =>
-  import('@/views/modules/components/ModuleStatementGenerator').then(
-    (module) => ({
-      default: module.ModuleStatementGenerator,
-    }),
-  ),
-)
+const ModuleAttachmentModal = lazy(loadModuleAttachmentModal)
+const ModuleEditorWorkspace = lazy(loadModuleEditorWorkspace)
+const ModuleFreightPickupListOverlay = lazy(loadModuleFreightPickupListOverlay)
+const ModuleRecordDetailOverlay = lazy(loadModuleRecordDetailOverlay)
+const ModuleStatementGenerator = lazy(loadModuleStatementGenerator)
 
 interface Props {
   moduleKey: string
@@ -115,7 +97,7 @@ export function BusinessGridOverlays({
   onGenerateFreightStatement,
 }: Props) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<OverlayLazyFallback />}>
       {editorOpen ? (
         <ModuleEditorWorkspace
           open={editorOpen}

@@ -40,14 +40,21 @@ export function applyModuleDefaultEditorDraft(
       typeof defaultDraftValues === 'function'
         ? defaultDraftValues()
         : defaultDraftValues
-    Object.assign(draft, resolvedDraftValues)
+    for (const [key, value] of Object.entries(resolvedDraftValues)) {
+      if (draft[key] === undefined) {
+        draft[key] = value
+      }
+    }
   }
 
   const defaultOperatorField = getBehaviorValue(
     moduleKey,
     'defaultOperatorField',
   )
-  if (typeof defaultOperatorField === 'string') {
+  if (
+    typeof defaultOperatorField === 'string' &&
+    draft[defaultOperatorField] === undefined
+  ) {
     draft[defaultOperatorField] = currentOperatorName
   }
 

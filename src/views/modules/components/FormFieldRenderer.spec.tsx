@@ -8,12 +8,22 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('antd/es/date-picker', () => ({
-  default: ({ id, placeholder, ...props }: any) => (
+  default: ({
+    id,
+    placeholder,
+    allowClear,
+    disabled,
+    format,
+    showTime,
+  }: any) => (
     <input
       data-testid="date-picker"
+      data-allow-clear={String(Boolean(allowClear))}
+      data-format={String(format || '')}
+      data-show-time={showTime === false ? 'false' : String(Boolean(showTime))}
       id={id}
       placeholder={placeholder}
-      {...props}
+      disabled={disabled}
     />
   ),
 }))
@@ -37,15 +47,34 @@ vi.mock('antd/es/form', () => {
 })
 
 vi.mock('antd/es/input', () => {
-  const Input = ({ id, placeholder, ...props }: any) => (
-    <input data-testid="input" id={id} placeholder={placeholder} {...props} />
-  )
-  Input.TextArea = ({ id, placeholder, ...props }: any) => (
-    <textarea
-      data-testid="textarea"
+  const Input = ({ id, placeholder, allowClear, disabled, maxLength }: any) => (
+    <input
+      data-testid="input"
+      data-allow-clear={String(Boolean(allowClear))}
       id={id}
       placeholder={placeholder}
-      {...props}
+      disabled={disabled}
+      maxLength={maxLength}
+    />
+  )
+  Input.TextArea = ({
+    id,
+    placeholder,
+    allowClear,
+    disabled,
+    maxLength,
+    showCount,
+    rows,
+  }: any) => (
+    <textarea
+      data-testid="textarea"
+      data-allow-clear={String(Boolean(allowClear))}
+      data-show-count={String(Boolean(showCount))}
+      data-rows={String(rows || '')}
+      id={id}
+      placeholder={placeholder}
+      disabled={disabled}
+      maxLength={maxLength}
     />
   )
   return {
@@ -55,19 +84,46 @@ vi.mock('antd/es/input', () => {
 })
 
 vi.mock('antd/es/input-number', () => ({
-  default: ({ id, placeholder, ...props }: any) => (
+  default: ({
+    id,
+    placeholder,
+    controls,
+    disabled,
+    min,
+    precision,
+    step,
+  }: any) => (
     <input
       data-testid="input-number"
+      data-controls={String(controls)}
+      data-min={String(min || '')}
+      data-precision={String(precision || '')}
+      data-step={String(step || '')}
       id={id}
       placeholder={placeholder}
-      {...props}
+      disabled={disabled}
     />
   ),
 }))
 
 vi.mock('antd/es/select', () => ({
-  default: ({ id, placeholder, ...props }: any) => (
-    <select data-testid="select" id={id} placeholder={placeholder} {...props} />
+  default: ({
+    id,
+    placeholder,
+    allowClear,
+    disabled,
+    mode,
+    showSearch,
+  }: any) => (
+    <select
+      data-testid="select"
+      data-allow-clear={String(Boolean(allowClear))}
+      data-mode={String(mode || '')}
+      data-show-search={String(Boolean(showSearch))}
+      id={id}
+      disabled={disabled}
+      aria-label={placeholder}
+    />
   ),
 }))
 
@@ -121,6 +177,27 @@ describe('FormFieldRenderer', () => {
     expect(screen.getByTestId('input-number')).toBeTruthy()
   })
 
+  it('passes number field input options', () => {
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        type: 'number',
+        min: 0.01,
+        precision: 2,
+        step: 0.01,
+        controls: false,
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    const input = screen.getByTestId('input-number')
+    expect(input).toHaveAttribute('data-min', '0.01')
+    expect(input).toHaveAttribute('data-precision', '2')
+    expect(input).toHaveAttribute('data-step', '0.01')
+    expect(input).toHaveAttribute('data-controls', 'false')
+  })
+
   it('renders select for select type', () => {
     const props = {
       ...defaultProps,
@@ -139,6 +216,25 @@ describe('FormFieldRenderer', () => {
     expect(screen.getByTestId('date-picker')).toBeTruthy()
   })
 
+  it('passes date field display options', () => {
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        type: 'date',
+        allowClear: false,
+        dateFormat: 'YYYY-MM-DD',
+        showTime: false,
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    const datePicker = screen.getByTestId('date-picker')
+    expect(datePicker).toHaveAttribute('data-format', 'YYYY-MM-DD')
+    expect(datePicker).toHaveAttribute('data-show-time', 'false')
+    expect(datePicker).toHaveAttribute('data-allow-clear', 'false')
+  })
+
   it('renders textarea for textarea type', () => {
     const props = {
       ...defaultProps,
@@ -146,6 +242,34 @@ describe('FormFieldRenderer', () => {
     }
     render(<FormFieldRenderer {...props} />)
     expect(screen.getByTestId('textarea')).toBeTruthy()
+  })
+
+  it('passes text length options', () => {
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        maxLength: 64,
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+    expect(screen.getByTestId('input')).toHaveAttribute('maxlength', '64')
+  })
+
+  it('passes textarea count options', () => {
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        type: 'textarea',
+        maxLength: 500,
+        showCount: true,
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+    const textarea = screen.getByTestId('textarea')
+    expect(textarea).toHaveAttribute('maxlength', '500')
+    expect(textarea).toHaveAttribute('data-show-count', 'true')
   })
 
   it('renders with disabled state', () => {

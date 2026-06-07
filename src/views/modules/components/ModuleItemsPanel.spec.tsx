@@ -14,8 +14,12 @@ vi.mock('antd/es/typography', () => ({
   },
 }))
 
+const mocks = vi.hoisted(() => ({
+  EditorItemsSummary: vi.fn(() => <div data-testid="summary" />),
+}))
+
 vi.mock('./EditorItemsSummary', () => ({
-  EditorItemsSummary: () => <div data-testid="summary" />,
+  EditorItemsSummary: mocks.EditorItemsSummary,
 }))
 
 import { ModuleItemsPanel } from '@/views/modules/components/ModuleItemsPanel'
@@ -50,5 +54,35 @@ describe('ModuleItemsPanel', () => {
   it('renders summary when items provided', () => {
     render(<ModuleItemsPanel {...defaultProps} items={[{ id: '1' }]} />)
     expect(screen.getAllByTestId('summary').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('hides amount summary when amount item column is not visible', () => {
+    render(
+      <ModuleItemsPanel
+        {...defaultProps}
+        items={[{ id: '1', amount: 100 }]}
+        itemColumns={[{ title: 'Weight', dataIndex: 'weightTon' }]}
+      />,
+    )
+
+    expect(mocks.EditorItemsSummary).toHaveBeenCalledWith(
+      expect.objectContaining({ showAmount: false }),
+      undefined,
+    )
+  })
+
+  it('keeps amount summary when amount item column is visible', () => {
+    render(
+      <ModuleItemsPanel
+        {...defaultProps}
+        items={[{ id: '1', amount: 100 }]}
+        itemColumns={[{ title: 'Amount', dataIndex: 'amount' }]}
+      />,
+    )
+
+    expect(mocks.EditorItemsSummary).toHaveBeenCalledWith(
+      expect.objectContaining({ showAmount: true }),
+      undefined,
+    )
   })
 })

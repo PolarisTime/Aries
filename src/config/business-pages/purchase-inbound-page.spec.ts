@@ -37,6 +37,12 @@ describe('purchaseInboundsPageConfig', () => {
     expect(purchaseInboundsPageConfig.parentImport!.parentModuleKey).toBe(
       'purchase-order',
     )
+    expect(purchaseInboundsPageConfig.parentImport!.candidateQueryType).toBe(
+      'purchase-order-import',
+    )
+    expect(purchaseInboundsPageConfig.parentImport!.candidateUsage).toBe(
+      'purchase-inbound',
+    )
   })
 
   it('has itemColumns', () => {

@@ -100,6 +100,12 @@ export interface ModuleFormFieldDefinition {
   defaultValue?: string | number | boolean
   min?: number
   precision?: number
+  step?: number
+  controls?: boolean
+  dateFormat?: string
+  showTime?: boolean
+  maxLength?: number
+  showCount?: boolean
   readonlyWhenLocked?: boolean
   row?: number
   colSpan?: number

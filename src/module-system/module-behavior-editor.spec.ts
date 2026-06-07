@@ -11,8 +11,9 @@ describe('module-behavior-editor', () => {
 
   it('registers sales-order with editableLockedFields', () => {
     const config = moduleBehaviorRegistry.get('sales-order')
-    expect(config?.editableLockedFields).toEqual(['deliveryDate', 'remark'])
+    expect(config?.editableLockedFields).toEqual([])
     expect(config?.editableLockedItemColumns).toEqual(['unitPrice'])
+    expect(config?.protectedEditStatuses).toEqual(['完成销售'])
     expect(config?.defaultOperatorField).toBe('salesName')
     expect(hasBehavior('sales-order', 'supportsStatements')).toBe(true)
     expect(hasBehavior('sales-order', 'supportsFreightPickup')).toBe(true)
@@ -127,9 +128,51 @@ describe('module-behavior-editor', () => {
       'payment',
       'invoice-receipt',
       'invoice-issue',
+      'ledger-adjustment',
     ]) {
       expect(getBehaviorValue(key, 'defaultOperatorField')).toBe('operatorName')
     }
+  })
+
+  it('registers ledger adjustment editor defaults', () => {
+    const config = moduleBehaviorRegistry.get('ledger-adjustment')
+    const values = (config!.defaultDraftValues as () => any)()
+
+    expect(config?.defaultOperatorField).toBe('operatorName')
+    expect(dayjs.isDayjs(values.adjustmentDate)).toBe(true)
+    expect(values.adjustmentDate.hour()).toBe(0)
+    expect(values.adjustmentDate.minute()).toBe(0)
+    expect(values.adjustmentDate.second()).toBe(0)
+  })
+
+  it('ledger adjustment clears stale counterparty values', () => {
+    const config = moduleBehaviorRegistry.get('ledger-adjustment')
+    const syncEditorForm = config!.syncEditorForm as (
+      form: any,
+      ctx: { changedKeys: Set<string> },
+    ) => void
+
+    const typeChangedForm: any = {
+      counterpartyType: '供应商',
+      counterpartyName: '客户A',
+      counterpartyCode: 'C001',
+    }
+    syncEditorForm(typeChangedForm, {
+      changedKeys: new Set(['counterpartyType']),
+    })
+    expect(typeChangedForm.counterpartyName).toBe('')
+    expect(typeChangedForm.counterpartyCode).toBe('')
+
+    const nameChangedForm: any = {
+      counterpartyType: '客户',
+      counterpartyName: '客户B',
+      counterpartyCode: 'C001',
+    }
+    syncEditorForm(nameChangedForm, {
+      changedKeys: new Set(['counterpartyName']),
+    })
+    expect(nameChangedForm.counterpartyName).toBe('客户B')
+    expect(nameChangedForm.counterpartyCode).toBe('')
   })
 
   it('registers positive line item modules', () => {

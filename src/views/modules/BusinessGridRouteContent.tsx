@@ -10,6 +10,7 @@ import { BusinessGridContent } from '@/views/modules/components/BusinessGridCont
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
 import { MaterialImportActions } from '@/views/modules/components/MaterialImportActions'
 import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateDropdown'
+import { useBusinessGridOverlayPreload } from '@/views/modules/use-business-grid-overlay-preload'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-route-sync'
 
@@ -33,6 +34,12 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
   const location = useLocation()
   const moduleKey = asString(pageDef.moduleKey)
   const state = useBusinessGridPage({ moduleKey, pageDef, initialConfig })
+
+  useBusinessGridOverlayPreload({
+    canUpdateRecord: state.canUpdateRecord,
+    canViewRecords: state.canViewRecords,
+    config: state.config,
+  })
 
   useBusinessGridRouteSync({
     location,
@@ -107,7 +114,10 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
             }
             return
           }
-          if (state.canUpdateRecord && !isEditBlockedByStatus(record.status)) {
+          if (
+            state.canUpdateRecord &&
+            !isEditBlockedByStatus(record.status, moduleKey)
+          ) {
             void state.openEditor(record)
             return
           }

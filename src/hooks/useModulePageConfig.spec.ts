@@ -138,6 +138,15 @@ describe('useModulePageConfig', () => {
         { key: 'totalAmount', title: 'Total Amount' },
         { key: 'totalWeight', title: 'Total Weight' },
       ],
+      formFields: [
+        { key: 'inboundNo', label: 'Inbound No', type: 'input' },
+        { key: 'totalAmount', label: 'Total Amount', type: 'input' },
+      ],
+      itemColumns: [
+        { dataIndex: 'materialCode', title: 'Material' },
+        { dataIndex: 'weightAdjustmentAmount', title: 'Adjustment Amount' },
+        { dataIndex: 'weightTon', title: 'Weight' },
+      ],
     }
     useQueryMock.mockReturnValue({ data: config, isLoading: false })
     isDisplaySwitchEnabledMock.mockImplementation(
@@ -150,6 +159,12 @@ describe('useModulePageConfig', () => {
 
     expect(result.current.config?.columns).toHaveLength(1)
     expect(result.current.config?.columns[0].dataIndex).toBe('totalWeight')
+    expect(
+      result.current.config?.formFields?.map((field) => field.key),
+    ).toEqual(['inboundNo'])
+    expect(
+      result.current.config?.itemColumns?.map((column) => column.dataIndex),
+    ).toEqual(['materialCode', 'weightTon'])
   })
 
   it('handles receipt module with statement link catalog', () => {
@@ -222,6 +237,18 @@ describe('useModulePageConfig', () => {
         { key: 'totalAmount', title: 'Total Amount' },
         { key: 'totalWeight', title: 'Total Weight' },
       ],
+      itemColumns: [
+        { dataIndex: 'materialCode', title: 'Material' },
+        { dataIndex: 'unitPrice', title: 'Unit Price' },
+        { dataIndex: 'amount', title: 'Amount' },
+        { dataIndex: 'weightTon', title: 'Weight' },
+      ],
+      detailItemColumns: [
+        { dataIndex: 'materialCode', title: 'Material' },
+        { dataIndex: 'unitPrice', title: 'Unit Price' },
+        { dataIndex: 'amount', title: 'Amount' },
+        { dataIndex: 'weightTon', title: 'Weight' },
+      ],
     }
     useQueryMock.mockReturnValue({ data: config, isLoading: false })
     isDisplaySwitchEnabledMock.mockImplementation(
@@ -234,6 +261,14 @@ describe('useModulePageConfig', () => {
 
     expect(result.current.config?.columns).toHaveLength(1)
     expect(result.current.config?.columns[0].dataIndex).toBe('totalWeight')
+    expect(
+      result.current.config?.itemColumns?.map((column) => column.dataIndex),
+    ).toEqual(['materialCode', 'weightTon'])
+    expect(
+      result.current.config?.detailItemColumns?.map(
+        (column) => column.dataIndex,
+      ),
+    ).toEqual(['materialCode', 'weightTon'])
   })
 
   it('returns undefined config when no data and no initialConfig', () => {

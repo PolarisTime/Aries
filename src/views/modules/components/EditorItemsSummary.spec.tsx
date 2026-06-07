@@ -40,6 +40,19 @@ describe('EditorItemsSummary', () => {
     expect(screen.getByText(/300.00/)).toBeTruthy()
   })
 
+  it('hides total amount when showAmount is false', () => {
+    render(
+      <EditorItemsSummary
+        showAmount={false}
+        items={[
+          { id: '1', amount: 100 },
+          { id: '2', amount: 200 },
+        ]}
+      />,
+    )
+    expect(screen.queryByText(/300.00/)).toBeNull()
+  })
+
   it('renders total quantity when positive', () => {
     render(
       <EditorItemsSummary

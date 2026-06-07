@@ -8,7 +8,11 @@ import {
   listAllBusinessModuleRows,
   saveBusinessModule,
 } from '@/api/business'
-import { isDisplaySwitchEnabled } from '@/api/system-settings'
+import {
+  isDisplaySwitchEnabled,
+  listClientSettings,
+  listSystemSettings,
+} from '@/api/system-settings'
 import {
   applyFormFieldDefaultDraftValues,
   applyModuleDefaultEditorDraft,
@@ -259,6 +263,23 @@ describe('useModuleEditorWorkspace', () => {
       'handleFormValuesChange',
     ]
     for (const k of keys) expect(result.current).toHaveProperty(k)
+  })
+
+  it('loads editor settings from public client settings only', () => {
+    renderWorkspace({ open: false })
+
+    expect(useQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['client'],
+        queryFn: listClientSettings,
+      }),
+    )
+    expect(useQuery).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['general'],
+        queryFn: listSystemSettings,
+      }),
+    )
   })
 
   it('starts with empty items in create mode without autoInsert', () => {

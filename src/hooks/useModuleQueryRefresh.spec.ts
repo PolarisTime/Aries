@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const { useQueryClientMock, invalidateQueriesMock } = vi.hoisted(() => ({
   useQueryClientMock: vi.fn(),
   invalidateQueriesMock: vi.fn().mockResolvedValue(undefined),
+  setQueryDataMock: vi.fn(),
+  reloadMasterOptionsForModuleMock: vi.fn().mockResolvedValue([{ value: 'A' }]),
 }))
 
 vi.mock('@tanstack/react-query', () => ({
@@ -14,7 +16,17 @@ vi.mock('@/constants/query-keys', () => ({
   QUERY_KEYS: {
     businessGrid: vi.fn((key: string) => ['businessGrid', key]),
     businessGridAll: vi.fn((key: string) => ['businessGridAll', key]),
+    masterOptions: {
+      customer: ['master-options', 'customer'],
+    },
   },
+}))
+
+vi.mock('@/hooks/master-option-cache-refresh', () => ({
+  getMasterOptionQueryKey: vi.fn((moduleKey: string) =>
+    moduleKey === 'customer' ? ['master-options', 'customer'] : undefined,
+  ),
+  reloadMasterOptionsForModule: reloadMasterOptionsForModuleMock,
 }))
 
 import { useModuleQueryRefresh } from './useModuleQueryRefresh'
@@ -24,6 +36,7 @@ describe('useModuleQueryRefresh', () => {
     vi.resetAllMocks()
     useQueryClientMock.mockReturnValue({
       invalidateQueries: invalidateQueriesMock,
+      setQueryData: setQueryDataMock,
     })
   })
 
@@ -61,6 +74,22 @@ describe('useModuleQueryRefresh', () => {
     })
 
     expect(invalidateQueriesMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('refreshes master option cache for master data modules', async () => {
+    const { result } = renderHook(() => useModuleQueryRefresh('customer'))
+    await act(async () => {
+      await result.current.refreshModuleQueries()
+    })
+
+    expect(reloadMasterOptionsForModuleMock).toHaveBeenCalledWith('customer')
+    expect(setQueryDataMock).toHaveBeenCalledWith(
+      ['master-options', 'customer'],
+      [{ value: 'A' }],
+    )
+    expect(invalidateQueriesMock).toHaveBeenCalledWith({
+      queryKey: ['master-options', 'customer'],
+    })
   })
 
   it('uses correct module key', async () => {
