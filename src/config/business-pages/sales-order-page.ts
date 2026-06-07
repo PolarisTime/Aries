@@ -274,6 +274,8 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     parentDisplayFieldKey: 'orderNo',
     buttonText: i18next.t('modules.pages.salesOrder.parentImportButton'),
     remainingQuantityKey: 'salesRemainingQuantity',
+    candidateQueryType: 'purchase-order-import',
+    candidateUsage: 'sales-order',
     transformItems: (parentRecord) =>
       cloneLineItems(
         Array.isArray(parentRecord.items)

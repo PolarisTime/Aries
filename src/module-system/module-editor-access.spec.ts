@@ -64,6 +64,13 @@ describe('applyModuleDefaultEditorDraft', () => {
     expect(draft.priceMode).toBe('按吨')
   })
 
+  it('keeps explicit values when applying defaultDraftValues', () => {
+    register('test', { defaultDraftValues: { priceMode: '按吨' } })
+    const draft = { id: '', priceMode: '按件' } as any
+    applyModuleDefaultEditorDraft('test', draft, '张三')
+    expect(draft.priceMode).toBe('按件')
+  })
+
   it('applies function defaultDraftValues', () => {
     register('test', {
       defaultDraftValues: () => ({ orderDate: '2026-01-01' }),
@@ -78,6 +85,13 @@ describe('applyModuleDefaultEditorDraft', () => {
     const draft = { id: '' } as any
     applyModuleDefaultEditorDraft('test', draft, '张三')
     expect(draft.buyerName).toBe('张三')
+  })
+
+  it('keeps explicit operator values', () => {
+    register('test', { defaultOperatorField: 'buyerName' })
+    const draft = { id: '', buyerName: '李四' } as any
+    applyModuleDefaultEditorDraft('test', draft, '张三')
+    expect(draft.buyerName).toBe('李四')
   })
 
   it('skips setting when defaultOperatorField is not a string', () => {

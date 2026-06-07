@@ -77,6 +77,8 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           disabled={disabledValue}
           min={field.min}
           precision={field.precision || 2}
+          step={field.step}
+          controls={field.controls}
           className="w-full"
         />,
       )
@@ -139,8 +141,8 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           placeholder={placeholder}
           allowClear={allowClear}
           disabled={disabledValue}
-          format="YYYY-MM-DD HH:mm:ss"
-          showTime={{ format: 'HH:mm:ss' }}
+          format={field.dateFormat || 'YYYY-MM-DD HH:mm:ss'}
+          showTime={field.showTime === false ? false : { format: 'HH:mm:ss' }}
           className="w-full"
         />,
       )
@@ -153,6 +155,8 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           placeholder={placeholder}
           allowClear={allowClear}
           disabled={disabledValue}
+          maxLength={field.maxLength}
+          showCount={field.showCount}
           rows={4}
         />,
       )
@@ -193,6 +197,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           placeholder={placeholder}
           allowClear={allowClear}
           disabled={disabledValue}
+          maxLength={field.maxLength}
         />,
       )
   }

@@ -1,6 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
+const mocks = vi.hoisted(() => ({
+  ModuleParentSelectorOverlay: vi.fn(() => (
+    <div data-testid="parent-selector" />
+  )),
+}))
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -41,7 +47,7 @@ vi.mock('./ModuleItemsTable', () => ({
 }))
 
 vi.mock('./ModuleParentSelectorOverlay', () => ({
-  ModuleParentSelectorOverlay: () => <div data-testid="parent-selector" />,
+  ModuleParentSelectorOverlay: mocks.ModuleParentSelectorOverlay,
 }))
 
 import { ModuleEditorItemsSection } from '@/views/modules/components/ModuleEditorItemsSection'
@@ -113,5 +119,40 @@ describe('ModuleEditorItemsSection', () => {
       <ModuleEditorItemsSection {...defaultProps} config={config} />,
     )
     expect(container.textContent).toBe('')
+  })
+
+  it('passes purchase order candidate settings to parent selector', () => {
+    const config = {
+      ...defaultProps.config,
+      parentImport: {
+        parentModuleKey: 'purchase-order',
+        parentFieldKey: 'purchaseOrderNo',
+        parentDisplayFieldKey: 'orderNo',
+        label: '采购订单',
+        candidateQueryType: 'purchase-order-import' as const,
+        candidateUsage: 'purchase-inbound' as const,
+      },
+    }
+
+    render(
+      <ModuleEditorItemsSection
+        {...defaultProps}
+        config={config}
+        parentSelectorOpen
+        permissions={{
+          ...defaultProps.permissions,
+          importParentItems: true,
+        }}
+      />,
+    )
+
+    expect(mocks.ModuleParentSelectorOverlay).toHaveBeenCalledWith(
+      expect.objectContaining({
+        candidateQueryType: 'purchase-order-import',
+        candidateUsage: 'purchase-inbound',
+        parentModuleKey: 'purchase-order',
+      }),
+      undefined,
+    )
   })
 })

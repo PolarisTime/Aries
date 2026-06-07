@@ -13,6 +13,7 @@ import {
   type StatementLinkCatalog,
 } from '@/module-system/module-adapter-finance-links'
 import type {
+  ModuleColumnDefinition,
   ModulePageConfig,
   ModuleRecord,
   ModuleRecordInput,
@@ -23,7 +24,21 @@ const WEIGHT_ONLY_VIEW_SETTING_CODES: Record<string, string> = {
   'sales-outbound': DISPLAY_SWITCH_CODES.weightOnlySalesOutbounds,
 }
 
+const WEIGHT_ONLY_AMOUNT_COLUMN_KEYS = new Set([
+  'unitPrice',
+  'amount',
+  'weightAdjustmentAmount',
+])
+
 const INVOICE_ASSIST_MODULE_KEYS = new Set(['invoice-receipt', 'invoice-issue'])
+
+function filterWeightOnlyItemColumns(
+  columns?: ModuleColumnDefinition[],
+): ModuleColumnDefinition[] | undefined {
+  return columns?.filter(
+    (column) => !WEIGHT_ONLY_AMOUNT_COLUMN_KEYS.has(column.dataIndex),
+  )
+}
 
 function buildWeightOnlyViewConfig(
   baseConfig: ModulePageConfig,
@@ -35,6 +50,13 @@ function buildWeightOnlyViewConfig(
     ),
     detailFields: baseConfig.detailFields.filter(
       (field) => field.key !== 'totalAmount',
+    ),
+    formFields: baseConfig.formFields?.filter(
+      (field) => field.key !== 'totalAmount',
+    ),
+    itemColumns: filterWeightOnlyItemColumns(baseConfig.itemColumns),
+    detailItemColumns: filterWeightOnlyItemColumns(
+      baseConfig.detailItemColumns,
     ),
     buildOverview: (rows: ModuleRecord[]) => buildWeightOverview(rows),
   }

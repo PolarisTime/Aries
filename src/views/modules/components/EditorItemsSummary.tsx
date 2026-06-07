@@ -6,6 +6,7 @@ interface Props {
   weightKey?: string
   amountKey?: string
   countKey?: string
+  showAmount?: boolean
   className?: string
 }
 
@@ -14,6 +15,7 @@ export function EditorItemsSummary({
   weightKey = 'weightTon',
   amountKey = 'amount',
   countKey = 'quantity',
+  showAmount = true,
   className,
 }: Props) {
   const { t } = useTranslation()
@@ -49,7 +51,7 @@ export function EditorItemsSummary({
           {t('modules.itemsSummary.weight')} {totalWeight.toFixed(3)}
         </span>
       )}
-      {totalAmount > 0 && (
+      {showAmount && totalAmount > 0 && (
         <span>
           {t('modules.itemsSummary.amount')} {totalAmount.toFixed(2)}
         </span>

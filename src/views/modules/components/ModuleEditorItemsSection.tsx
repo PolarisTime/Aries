@@ -79,6 +79,7 @@ export function ModuleEditorItemsSection({
       <div className="mt-6">
         <ModuleItemsPanel
           items={items}
+          itemColumns={config.itemColumns}
           actions={
             <>
               {permissions.addManualItems && (
@@ -166,6 +167,8 @@ export function ModuleEditorItemsSection({
           candidateStatementModuleKey={
             config.parentImport.candidateStatementModuleKey
           }
+          candidateQueryType={config.parentImport.candidateQueryType}
+          candidateUsage={config.parentImport.candidateUsage}
           fixedFilters={parentSelectorFilters}
           title={t('modules.itemsSection.selectParent', {
             label:

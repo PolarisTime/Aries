@@ -83,11 +83,17 @@ describe('system-settings', () => {
   })
 
   describe('listDisplaySwitches', () => {
-    it('filters rows with isToggleSetting', async () => {
-      listAllBusinessModuleRowsMock.mockResolvedValue([
-        { id: '1', settingCode: 'UI_SHOW_SNOWFLAKE_ID', status: '正常' },
-        { id: '2', settingCode: 'SYS_TAX_RATE', status: '正常' },
-      ])
+    it('filters public client settings with isToggleSetting', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: [
+          { id: '1', settingCode: 'UI_SHOW_SNOWFLAKE_ID', status: '正常' },
+          { id: '2', settingCode: 'SYS_TAX_RATE', status: '正常' },
+        ],
+      })
+      assertApiSuccessMock.mockImplementation(
+        <T extends { code?: number }>(response: T) => response,
+      )
       isToggleSettingMock.mockImplementation(
         (record: { settingCode: string }) =>
           record.settingCode === 'UI_SHOW_SNOWFLAKE_ID',
@@ -95,6 +101,10 @@ describe('system-settings', () => {
 
       const result = await listDisplaySwitches()
 
+      expect(httpGetMock).toHaveBeenCalledWith(
+        '/general-settings/client-setting',
+      )
+      expect(listAllBusinessModuleRowsMock).not.toHaveBeenCalled()
       expect(result).toEqual([
         { id: '1', settingCode: 'UI_SHOW_SNOWFLAKE_ID', status: '正常' },
       ])

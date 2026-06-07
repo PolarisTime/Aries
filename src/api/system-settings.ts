@@ -35,7 +35,7 @@ export function updateSystemUploadRule(record: UploadRulePayload) {
 }
 
 export async function listDisplaySwitches() {
-  const rows = await listSystemSettings()
+  const rows = await listClientSettings()
   return rows.filter(isToggleSetting)
 }
 

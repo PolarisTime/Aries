@@ -15,8 +15,11 @@ export function hasImportableQuantity(
   record: ModuleRecord,
 ) {
   const items = Array.isArray(record.items) ? record.items : []
+  if (hasPositiveQuantity(record.importableQuantity)) {
+    return true
+  }
   if (items.length === 0) {
-    return false
+    return parentModuleKey === 'sales-order'
   }
 
   if (parentModuleKey === 'purchase-order') {

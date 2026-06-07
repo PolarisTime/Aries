@@ -37,6 +37,12 @@ describe('salesOrdersPageConfig', () => {
     expect(salesOrdersPageConfig.parentImport!.parentModuleKey).toBe(
       'purchase-order',
     )
+    expect(salesOrdersPageConfig.parentImport!.candidateQueryType).toBe(
+      'purchase-order-import',
+    )
+    expect(salesOrdersPageConfig.parentImport!.candidateUsage).toBe(
+      'sales-order',
+    )
   })
 
   it('buildOverview returns result', () => {

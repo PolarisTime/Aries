@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   isEditBlockedByStatus: vi.fn(() => false),
   materialImportProps: undefined as Record<string, any> | undefined,
   printDropdownProps: undefined as Record<string, any> | undefined,
+  useBusinessGridOverlayPreload: vi.fn(),
   useBusinessGridPage: vi.fn(),
   useBusinessGridRouteSync: vi.fn(),
 }))
@@ -148,6 +149,10 @@ vi.mock('@/views/modules/components/PrintTemplateDropdown', () => ({
   },
 }))
 
+vi.mock('@/views/modules/use-business-grid-overlay-preload', () => ({
+  useBusinessGridOverlayPreload: mocks.useBusinessGridOverlayPreload,
+}))
+
 vi.mock('@/views/modules/use-business-grid-page', () => ({
   useBusinessGridPage: mocks.useBusinessGridPage,
 }))
@@ -193,6 +198,11 @@ describe('BusinessGridRouteContent', () => {
         location: expect.objectContaining({ pathname: '/test' }),
       }),
     )
+    expect(mocks.useBusinessGridOverlayPreload).toHaveBeenCalledWith({
+      canUpdateRecord: true,
+      canViewRecords: true,
+      config: expect.objectContaining({ readOnly: false }),
+    })
   })
 
   it('renders empty state when module config is missing', () => {
@@ -295,6 +305,10 @@ describe('BusinessGridRouteContent', () => {
 
     expect(state.openEditor).toHaveBeenCalledWith(record)
     expect(state.openDetail).not.toHaveBeenCalled()
+    expect(mocks.isEditBlockedByStatus).toHaveBeenCalledWith(
+      '草稿',
+      'test-module',
+    )
   })
 
   it('opens detail on row double click when the module is read-only', () => {

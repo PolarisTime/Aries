@@ -4,6 +4,7 @@ import { parseDateTimeValue } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 
 const currentDateTime = () => dayjs()
+const currentDate = () => dayjs().startOf('day')
 const addOneYear = (value: dayjs.Dayjs) => value.add(1, 'year')
 
 registerModuleBehavior('carrier', {
@@ -11,7 +12,7 @@ registerModuleBehavior('carrier', {
 })
 
 registerModuleBehavior('sales-order', {
-  editableLockedFields: ['deliveryDate', 'remark'],
+  editableLockedFields: [],
   editableLockedItemColumns: ['unitPrice'],
   locksLineItemsWhenRecordLocked: true,
   lineItemLockSourceModule: 'sales-outbound',
@@ -19,7 +20,8 @@ registerModuleBehavior('sales-order', {
   lineItemLockTargetField: 'orderNo',
   lineItemLockStatuses: ['已审核'],
   lockedLineItemsNotice:
-    '当前销售订单已存在已审核的销售出库，数量和商品信息已锁定，仅允许调整单价、送货日期和备注。',
+    '当前销售订单已存在已审核的销售出库，数量、重量和单据信息已锁定，仅允许调整单价。',
+  protectedEditStatuses: ['完成销售'],
 })
 
 registerModuleBehavior('purchase-order', { defaultOperatorField: 'buyerName' })
@@ -100,11 +102,27 @@ const operatorNameModules = [
   'payment',
   'invoice-receipt',
   'invoice-issue',
+  'ledger-adjustment',
 ]
 
 for (const key of operatorNameModules) {
   registerModuleBehavior(key, { defaultOperatorField: 'operatorName' })
 }
+
+registerModuleBehavior('ledger-adjustment', {
+  defaultDraftValues: () => ({ adjustmentDate: currentDate() }),
+  syncEditorForm(editorForm, ctx) {
+    if (ctx.changedKeys.has('counterpartyType')) {
+      editorForm.counterpartyName = ''
+      editorForm.counterpartyCode = ''
+      return
+    }
+
+    if (ctx.changedKeys.has('counterpartyName')) {
+      editorForm.counterpartyCode = ''
+    }
+  },
+})
 
 registerModuleBehavior('purchase-order', {
   lineItemTrimStrategy: 'purchaseOrderBlank',

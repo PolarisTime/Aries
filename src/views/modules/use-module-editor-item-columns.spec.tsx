@@ -72,12 +72,22 @@ vi.mock('@/module-system/module-editor-line-item-utils', () => ({
 describe('useModuleEditorItemColumns', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.pinyin.mockImplementation((value: string) =>
-      value
+    mocks.pinyin.mockImplementation((value: string) => {
+      const tokens: Record<string, string> = {
+        中: 'zhong',
+        天: 'tian',
+        直: 'zhi',
+        条: 'tiao',
+        铸: 'zhu',
+        铁: 'tie',
+        长: 'chang',
+        兴: 'xing',
+      }
+      return value
         .split('')
         .filter(Boolean)
-        .map((item) => [item.toLowerCase()]),
-    )
+        .map((char) => tokens[char] || char.toLowerCase())
+    })
     mocks.useMasterOptions.mockReturnValue({
       materials: [
         {
@@ -199,6 +209,82 @@ describe('useModuleEditorItemColumns', () => {
     )
     expect(mocks.fetchMaterialSearch).toHaveBeenCalledWith('remote-1', 20)
     await expect(resolver(' ')).resolves.toBeNull()
+  })
+
+  it('limits pinyin initial search for material code select to brand and material name', () => {
+    mocks.useMasterOptions.mockReturnValue({
+      materials: [
+        {
+          brand: '中天',
+          category: '螺纹钢',
+          material: 'HRB400',
+          materialCode: 'M-001',
+          spec: '18',
+        },
+        {
+          brand: '宝钢',
+          category: '直条',
+          material: '铸铁',
+          materialCode: 'M-002',
+          spec: '20',
+        },
+      ],
+      warehouses: [],
+    })
+
+    renderHook(() => useModuleEditorItemColumns(defaultProps()))
+    const dataOptions = mocks.buildModuleEditorDataColumns.mock.calls[0][0]
+    const materialOptions = dataOptions.materialOptions as Array<{
+      searchText: string
+      value: string
+    }>
+    const matches = materialOptions
+      .filter((option) => option.searchText.includes('zt'))
+      .map((option) => option.value)
+
+    expect(matches).toEqual(['M-001'])
+    expect(materialOptions.find((option) => option.value === 'M-001')).toEqual(
+      expect.objectContaining({
+        searchText: expect.stringContaining('zhongtian'),
+      }),
+    )
+    expect(materialOptions.find((option) => option.value === 'M-002')).toEqual(
+      expect.objectContaining({
+        searchText: expect.not.stringContaining('zhitiao'),
+      }),
+    )
+  })
+
+  it('builds search initials automatically for newly added material brands', () => {
+    mocks.useMasterOptions.mockReturnValue({
+      materials: [
+        {
+          brand: '长兴',
+          category: '螺纹钢',
+          material: 'HRB400',
+          materialCode: 'M-NEW',
+          spec: '12',
+        },
+      ],
+      warehouses: [],
+    })
+
+    renderHook(() => useModuleEditorItemColumns(defaultProps()))
+    const dataOptions = mocks.buildModuleEditorDataColumns.mock.calls[0][0]
+    const materialOptions = dataOptions.materialOptions as Array<{
+      searchText: string
+      value: string
+    }>
+
+    expect(materialOptions).toEqual([
+      expect.objectContaining({
+        searchText: expect.stringContaining('changxing'),
+        value: 'M-NEW',
+      }),
+    ])
+    expect(
+      materialOptions.filter((option) => option.searchText.includes('cx')),
+    ).toEqual([expect.objectContaining({ value: 'M-NEW' })])
   })
 
   it('omits management columns when line items cannot be managed', () => {

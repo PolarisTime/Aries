@@ -234,6 +234,8 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     parentFieldKey: 'purchaseOrderNo',
     parentDisplayFieldKey: 'orderNo',
     buttonText: i18next.t('modules.pages.purchaseInbound.parentImportButton'),
+    candidateQueryType: 'purchase-order-import',
+    candidateUsage: 'purchase-inbound',
     mapParentToDraft: (parentRecord) => ({
       purchaseOrderNo: parentRecord.orderNo || '',
       supplierName: parentRecord.supplierName || '',

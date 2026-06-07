@@ -15,7 +15,7 @@ export default defineConfig({
     pool: 'forks',
     testTimeout: 10000,
     include: ['src/**/*.spec.ts', 'src/**/*.spec.tsx'],
-    // TODO: fix missing deps (vue, @vue/test-utils, finance-reports module) in excluded tests, then remove from this list
+    // TODO: fix missing finance-reports module in excluded tests, then remove from this list
     exclude: [
       'tests/**',
       'src/mock/**',
@@ -23,9 +23,6 @@ export default defineConfig({
       'dist/**',
       'src/config/__tests__/finance-reports-config.spec.ts',
       'src/views/modules/__tests__/module-display-switch-config.spec.ts',
-      'src/views/modules/__tests__/use-module-grid-row-renderers.spec.ts',
-      'src/views/modules/__tests__/use-module-record-actions.spec.ts',
-      'src/components/__tests__/DataTable.spec.ts',
     ],
     setupFiles: ['./src/test/setup.ts'],
     coverage: {

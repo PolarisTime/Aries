@@ -80,6 +80,17 @@ describe('ModuleParentSelectorOverlay importable record filtering', () => {
     ).toBe(true)
   })
 
+  it('keeps audited sales order list rows without items because detail is loaded before import', () => {
+    const records = [
+      { id: 'so-1', status: '已审核' },
+      { id: 'so-2', status: '草稿' },
+    ] as ModuleRecord[]
+
+    expect(
+      filterImportableParentRecords('sales-order', records).map((r) => r.id),
+    ).toEqual(['so-1'])
+  })
+
   it('keeps only audited freight bills', () => {
     const records = [
       { id: 'fb-1', status: '已审核' },

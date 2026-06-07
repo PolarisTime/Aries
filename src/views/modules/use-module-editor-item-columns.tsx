@@ -41,6 +41,58 @@ type MaterialSelectOption = {
   value: string
 }
 
+type MaterialSelectSearchFields = {
+  materialCode: string
+  brand: string
+  materialName: string
+  category: string
+  material: string
+  spec: string
+  length: string
+}
+
+function buildPinyinSearchTokens(value: string) {
+  if (!value) {
+    return []
+  }
+  const tokens = pinyin(value, { toneType: 'none', type: 'array' })
+    .map((token) =>
+      String(token || '')
+        .trim()
+        .toLowerCase(),
+    )
+    .filter(Boolean)
+  if (tokens.length === 0) {
+    return []
+  }
+  return [tokens.join(''), tokens.map((token) => token.charAt(0)).join('')]
+}
+
+function buildMaterialSelectSearchText({
+  materialCode,
+  brand,
+  materialName,
+  category,
+  material,
+  spec,
+  length,
+}: MaterialSelectSearchFields) {
+  return [
+    materialCode,
+    brand,
+    materialName,
+    category,
+    material,
+    spec,
+    length,
+    ...buildPinyinSearchTokens(brand),
+    ...buildPinyinSearchTokens(materialName),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+}
+
 function mergeColumnOrder(allIds: string[], savedOrder: string[]) {
   const validIds = new Set(allIds)
   const merged = savedOrder.filter((id) => validIds.has(id))
@@ -142,19 +194,15 @@ export function useModuleEditorItemColumns({
           label: [brand || materialName, category, material, spec, length]
             .filter(Boolean)
             .join(' | '),
-          searchText: (() => {
-            const pyFields = [brand, materialName, category, material, spec]
-              .filter(Boolean)
-              .map((s) =>
-                pinyin(s, { toneType: 'none', type: 'array' })
-                  .map((p) => p[0])
-                  .join(''),
-              )
-            return [brand, materialName, category, material, spec, ...pyFields]
-              .filter(Boolean)
-              .join(' ')
-              .toLowerCase()
-          })(),
+          searchText: buildMaterialSelectSearchText({
+            materialCode,
+            brand,
+            materialName,
+            category,
+            material,
+            spec,
+            length,
+          }),
           value: materialCode,
         },
       ]

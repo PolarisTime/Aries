@@ -13,9 +13,19 @@ describe('module-parent-selector-utils', () => {
       expect(hasImportableQuantity('purchase-order', record)).toBe(false)
     })
 
+    it('returns true when importableQuantity is positive without items', () => {
+      const record = { id: '1', importableQuantity: 60 }
+      expect(hasImportableQuantity('purchase-order', record)).toBe(true)
+    })
+
     it('returns false when items is not an array', () => {
       const record = { id: '1' } as any
       expect(hasImportableQuantity('purchase-order', record)).toBe(false)
+    })
+
+    it('allows sales-order list rows without items because details are loaded before import', () => {
+      const record = { id: '1' } as any
+      expect(hasImportableQuantity('sales-order', record)).toBe(true)
     })
 
     it('returns true when items have positive salesRemainingQuantity for purchase-order', () => {
@@ -148,6 +158,16 @@ describe('module-parent-selector-utils', () => {
       expect(result[0].id).toBe('1')
     })
 
+    it('keeps audited sales-order list rows without items', () => {
+      const records = [
+        { id: '1', status: '已审核' },
+        { id: '2', status: '草稿' },
+      ]
+      const result = filterImportableParentRecords('sales-order', records)
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('1')
+    })
+
     it('filters by audited status for freight-bill', () => {
       const records = [
         { id: '1', status: '已审核' },
@@ -221,6 +241,16 @@ describe('module-parent-selector-utils', () => {
       const records = [{ id: '1', status: '已审核' }]
       const result = filterImportableParentRecords('purchase-order', records)
       expect(result).toHaveLength(0)
+    })
+
+    it('keeps audited purchase-order import candidates with positive importableQuantity', () => {
+      const records = [
+        { id: '1', status: '已审核', importableQuantity: 60 },
+        { id: '2', status: '已审核', importableQuantity: 0 },
+      ]
+      const result = filterImportableParentRecords('purchase-order', records)
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('1')
     })
   })
 

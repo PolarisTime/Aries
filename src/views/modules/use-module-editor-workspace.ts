@@ -20,7 +20,6 @@ import {
   DISPLAY_SWITCH_CODES,
   isDisplaySwitchEnabled,
   listClientSettings,
-  listSystemSettings,
 } from '@/api/system-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
@@ -285,10 +284,6 @@ export function useModuleEditorWorkspace({
   const isEdit = !!record
   const editorSessionKey = `${moduleKey}:${String(record?.id || 'new')}:${String(open)}`
   const parentSelectorOpen = parentSelectorSessionKey === editorSessionKey
-  const { data: systemSettings = [] } = useQuery({
-    queryKey: QUERY_KEYS.generalSetting,
-    queryFn: listSystemSettings,
-  })
   const { data: clientSettings = [] } = useQuery({
     queryKey: QUERY_KEYS.clientSettings,
     queryFn: listClientSettings,
@@ -416,7 +411,7 @@ export function useModuleEditorWorkspace({
       items,
       sumLineItemsBy,
       changedValues,
-      systemSettings,
+      systemSettings: clientSettings,
     })
   }
 
@@ -645,7 +640,7 @@ export function useModuleEditorWorkspace({
         items: nextItems,
         sumLineItemsBy,
         changedValues: nextValues,
-        systemSettings,
+        systemSettings: clientSettings,
       })
       setWorkspaceState({ items: nextItems })
       setParentSelectorSessionKey(null)
@@ -697,7 +692,7 @@ export function useModuleEditorWorkspace({
         moduleKey,
         items: nextItems,
         sumLineItemsBy,
-        systemSettings,
+        systemSettings: clientSettings,
       })
     }
   }
@@ -715,7 +710,7 @@ export function useModuleEditorWorkspace({
         moduleKey,
         items: resolvedItems,
         sumLineItemsBy,
-        systemSettings,
+        systemSettings: clientSettings,
       })
     }
   }
