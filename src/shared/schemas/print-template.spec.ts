@@ -10,8 +10,13 @@ describe('print-template schemas', () => {
       const data = {
         id: '1',
         templateName: '模板1',
+        templateCode: 'TPL_1',
         templateHtml: '<div>模板</div>',
         templateType: 'HTML',
+        engine: 'BROWSER_HTML',
+        assetRef: null,
+        versionNo: 1,
+        status: 'ACTIVE',
         source: 'db',
         fileName: 'template.html',
         billType: 'purchase',
@@ -95,11 +100,23 @@ describe('print-template schemas', () => {
       const data = {
         billType: 'purchase',
         templateName: '模板1',
-        templateHtml: '<div>模板</div>',
+        templateHtml: '',
         templateType: 'PDF_FORM',
+        assetRef: 'print-forms/yingjie-a4-remark.pdf',
       }
       const result = savePrintTemplatePayloadSchema.safeParse(data)
       expect(result.success).toBe(true)
+    })
+
+    it('should reject PDF_FORM without assetRef', () => {
+      const data = {
+        billType: 'purchase',
+        templateName: '模板1',
+        templateHtml: '',
+        templateType: 'PDF_FORM',
+      }
+      const result = savePrintTemplatePayloadSchema.safeParse(data)
+      expect(result.success).toBe(false)
     })
 
     it('should reject invalid templateType', () => {

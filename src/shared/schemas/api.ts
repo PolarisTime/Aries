@@ -45,8 +45,6 @@ export const documentStatusSchema = z.enum([
   '部分出库',
   '已签署',
   '未签署',
-  '已送达',
-  '未送达',
   '待确认',
   '已确认',
   '待审核',

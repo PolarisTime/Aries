@@ -31,8 +31,6 @@ export const statusMap: Record<string, ModuleStatusMeta> = {
     color: 'processing',
   },
   已完成: { text: i18next.t('modules.status.completed'), color: 'success' },
-  已送达: { text: i18next.t('modules.status.delivered'), color: 'success' },
-  未送达: { text: i18next.t('modules.status.undelivered'), color: 'default' },
   待确认: {
     text: i18next.t('modules.status.pendingConfirm'),
     color: 'warning',

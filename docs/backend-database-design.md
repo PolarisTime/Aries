@@ -437,7 +437,6 @@
 | `total_weight` | `DECIMAL(14,3)` | 是 | 总吨位 |
 | `total_freight` | `DECIMAL(14,2)` | 是 | 总运费 |
 | `status` | `VARCHAR(16)` | 是 | `未审核/已审核` |
-| `delivery_status` | `VARCHAR(16)` | 是 | `未送达/已送达` |
 | `paid_amount` | `DECIMAL(14,2)` | 否 | 已付金额，可供汇总使用 |
 | `unpaid_amount` | `DECIMAL(14,2)` | 否 | 未付金额 |
 | `remark` | `VARCHAR(255)` | 否 | 备注 |
@@ -446,7 +445,7 @@
 
 - `uk_lg_bill_no(bill_no)`
 - `idx_lg_carrier_date(carrier_name, bill_time)`
-- `idx_lg_status(status, delivery_status)`
+- `idx_lg_status(status)`
 
 ### 7.2 物流单明细 `lg_freight_bill_item`
 

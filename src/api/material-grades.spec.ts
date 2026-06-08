@@ -6,7 +6,7 @@ vi.mock('@/api/client', () => ({
   http: { get: httpGetMock },
 }))
 
-import { fetchMaterialGrades } from './material-grades'
+import { fetchMaterialGrades, reloadMaterialGrades } from './material-grades'
 
 describe('material-grades', () => {
   beforeEach(() => {
@@ -36,6 +36,22 @@ describe('material-grades', () => {
 
     expect(httpGetMock).toHaveBeenCalledTimes(0)
     expect(first).toEqual(second)
+  })
+
+  it('reloads cached results', async () => {
+    vi.resetModules()
+    const { fetchMaterialGrades: fetchFresh, reloadMaterialGrades: reloadFresh } =
+      await import('./material-grades')
+    httpGetMock
+      .mockResolvedValueOnce({ code: 0, data: ['HRB400'] })
+      .mockResolvedValueOnce({ code: 0, data: ['HRB600'] })
+
+    await expect(fetchFresh()).resolves.toEqual([
+      { value: 'HRB400', label: 'HRB400' },
+    ])
+    await expect(reloadFresh()).resolves.toEqual([
+      { value: 'HRB600', label: 'HRB600' },
+    ])
   })
 
   it('returns empty array on error', async () => {

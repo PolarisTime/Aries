@@ -12,6 +12,7 @@ import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import type { TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
+import Tag from 'antd/es/tag'
 import { useTranslation } from 'react-i18next'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/types/print-template'
@@ -110,6 +111,12 @@ export function PrintTemplateTableCard({
       width: 200,
     },
     {
+      dataIndex: 'templateCode',
+      title: t('system.printTemplate.templateCode'),
+      width: 220,
+      render: (value: string | null | undefined) => value || '--',
+    },
+    {
       dataIndex: 'billType',
       title: t('system.printTemplate.billType'),
       width: 150,
@@ -120,6 +127,30 @@ export function PrintTemplateTableCard({
       title: t('system.printTemplate.templateType'),
       width: 120,
       render: (value: string) => value || 'HTML',
+    },
+    {
+      dataIndex: 'engine',
+      title: t('system.printTemplate.engine'),
+      width: 140,
+      render: (value: string | null | undefined) => value || '--',
+    },
+    {
+      dataIndex: 'assetRef',
+      title: t('system.printTemplate.assetRef'),
+      width: 240,
+      render: (value: string | null | undefined) => value || '--',
+    },
+    {
+      dataIndex: 'status',
+      title: t('system.printTemplate.status'),
+      width: 120,
+      render: (value: string | null | undefined) => (
+        <Tag color={value === 'DISABLED' ? 'default' : 'green'}>
+          {value === 'DISABLED'
+            ? t('system.printTemplate.statusDisabled')
+            : t('system.printTemplate.statusActive')}
+        </Tag>
+      ),
     },
     {
       dataIndex: 'updateTime',

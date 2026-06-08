@@ -51,10 +51,10 @@ export function useModuleEditorCapabilities({
   const lineItemsLocked =
     typeof lineItemsLockedOverride === 'boolean'
       ? lineItemsLockedOverride
-      : isModuleLineItemsLocked(
-          moduleKey,
-          lineItemLockRelatedRows.map((record) => asString(record.status)),
-        )
+      : isModuleLineItemsLocked(moduleKey, [
+          currentStatus ? asString(currentStatus) : '',
+          ...lineItemLockRelatedRows.map((record) => asString(record.status)),
+        ])
 
   const editorAuditTarget = (() => {
     const statusField = formFields.find((field) => field.key === 'status')

@@ -94,6 +94,21 @@ describe('useModuleEditorCapabilities', () => {
     expect(result.current.lineItemsLocked).toBe(true)
   })
 
+  it('includes current record status when detecting locked line items', () => {
+    renderHook(() =>
+      useModuleEditorCapabilities({
+        ...defaultProps,
+        currentStatus: '已审核',
+        lineItemLockRelatedRows: [{ id: 'outbound-1', status: '草稿' } as any],
+      }),
+    )
+
+    expect(isModuleLineItemsLockedMock).toHaveBeenCalledWith('sales-order', [
+      '已审核',
+      '草稿',
+    ])
+  })
+
   it('uses lineItemsLockedOverride when provided', () => {
     const { result } = renderHook(() =>
       useModuleEditorCapabilities({

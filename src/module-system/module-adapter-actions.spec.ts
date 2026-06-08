@@ -140,14 +140,6 @@ describe('resolveModuleActionPermissionCodes', () => {
     ).toEqual(['update'])
   })
 
-  it('returns audit for 标记送达', () => {
-    expect(
-      resolveModuleActionPermissionCodes({
-        actionLabel: '标记送达',
-      }),
-    ).toEqual(['audit'])
-  })
-
   it('returns export for 生成提货清单', () => {
     expect(
       resolveModuleActionPermissionCodes({

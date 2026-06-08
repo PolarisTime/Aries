@@ -15,8 +15,6 @@ describe('statusMap', () => {
       '部分入库',
       '部分出库',
       '已完成',
-      '已送达',
-      '未送达',
       '待确认',
       '已确认',
       '待审核',
@@ -60,7 +58,6 @@ describe('statusMap', () => {
       '正常',
       '成功',
       '已完成',
-      '已送达',
     ]
     for (const key of successStatuses) {
       expect(statusMap[key].color).toBe('success')
@@ -80,7 +77,6 @@ describe('statusMap', () => {
       expect(statusMap[key].color).toBe('warning')
     }
     expect(statusMap.失败.color).toBe('error')
-    expect(statusMap.未送达.color).toBe('default')
   })
 })
 

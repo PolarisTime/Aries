@@ -45,7 +45,6 @@ export function useBusinessGridActions({
     handleSelectedAuditRecords,
     handleSelectedDeleteRecords,
     handleSelectedReverseAuditRecords,
-    markSelectedFreightDelivered,
   } = useBusinessGridBatchActions({
     moduleKey,
     selectedRowKeys,
@@ -69,7 +68,6 @@ export function useBusinessGridActions({
     handleSelectedAuditRecords,
     handleSelectedDeleteRecords,
     handleSelectedReverseAuditRecords,
-    markSelectedFreightDelivered,
     openFreightSummary,
     handleStatementGenerate,
   }

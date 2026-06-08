@@ -11,7 +11,7 @@ describe('module-behavior-editor', () => {
 
   it('registers sales-order with editableLockedFields', () => {
     const config = moduleBehaviorRegistry.get('sales-order')
-    expect(config?.editableLockedFields).toEqual([])
+    expect(config?.editableLockedFields).toEqual(['deliveryDate', 'remark'])
     expect(config?.editableLockedItemColumns).toEqual(['unitPrice'])
     expect(config?.protectedEditStatuses).toEqual(['完成销售'])
     expect(config?.defaultOperatorField).toBe('salesName')

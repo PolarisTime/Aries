@@ -30,7 +30,6 @@
     "pending": "待确认",
     "confirmed": "已确认",
     "signed": "已签署",
-    "delivered": "已送达",
     "paid": "已付款",
     "received": "已收款"
   },

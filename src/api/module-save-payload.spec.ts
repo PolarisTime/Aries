@@ -132,6 +132,91 @@ describe('module-save-payload', () => {
     })
   })
 
+  it('keeps sales order hidden scalar fields in save payload', async () => {
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: [
+          'orderNo',
+          'purchaseInboundNo',
+          'purchaseOrderNo',
+          'customerCode',
+          'customerName',
+          'projectId',
+          'projectName',
+          'deliveryDate',
+          'salesName',
+          'status',
+          'remark',
+        ],
+        lineItem: [
+          'sourceInboundItemId',
+          'sourcePurchaseOrderItemId',
+          'materialCode',
+          'warehouseName',
+          'batchNo',
+          'quantity',
+          'unitPrice',
+        ],
+      },
+    })
+    const { hasBehavior } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    vi.mocked(hasBehavior).mockImplementation(
+      (_moduleKey, flag) => flag === 'savePayloadLineItems',
+    )
+
+    const payload = await serializeBusinessRecordForSave('sales-order', {
+      id: '322056014486568960',
+      orderNo: '322056014486568960',
+      purchaseInboundNo: '',
+      purchaseOrderNo: '322055806084186112',
+      customerCode: '',
+      customerName: '浙江景华建设有限公司',
+      projectId: undefined,
+      projectName: '海宁市袁花镇稻米加工口心项目',
+      deliveryDate: dayjs('2026-06-07'),
+      salesName: '沈李聪',
+      status: '已审核',
+      remark: '',
+      items: [
+        {
+          id: '322056379525234688',
+          sourcePurchaseOrderItemId: '322055940159307776',
+          materialCode: '322052448292175872',
+          warehouseName: '升华',
+          batchNo: '2G339IW09NNK',
+          quantity: 20,
+          unitPrice: 3300,
+        },
+      ],
+    })
+
+    expect(payload).toMatchObject({
+      orderNo: '322056014486568960',
+      purchaseInboundNo: '',
+      purchaseOrderNo: '322055806084186112',
+      customerCode: '',
+      customerName: '浙江景华建设有限公司',
+      projectName: '海宁市袁花镇稻米加工口心项目',
+      deliveryDate: '2026-06-07 00:00:00',
+      salesName: '沈李聪',
+      status: '已审核',
+      remark: '',
+      items: [
+        {
+          id: '322056379525234688',
+          sourcePurchaseOrderItemId: '322055940159307776',
+          materialCode: '322052448292175872',
+          warehouseName: '升华',
+          batchNo: '2G339IW09NNK',
+          quantity: 20,
+          unitPrice: 3300,
+        },
+      ],
+    })
+  })
+
   it('includes line items when behavior allows', async () => {
     const { loadBusinessPageConfig } = await import(
       '@/config/business-page-loader'

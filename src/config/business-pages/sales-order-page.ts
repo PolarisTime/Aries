@@ -109,16 +109,18 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       align: 'right',
       type: 'weight',
       render: (value, record) => {
-        const fmt = (v: unknown) =>
-          Number(v)
-            .toFixed(3)
-            .replace(/\.?0+$/, '')
+        const fmt = (v: unknown) => {
+          const n = Number(v)
+          return Number.isFinite(n)
+            ? n.toFixed(3).replace(/\.?0+$/, '')
+            : '-'
+        }
         const hasOverwritten = (record.items || []).some(
           (item: Record<string, unknown>) =>
             item.originalWeightTon != null &&
             Number(item.originalWeightTon) !== Number(item.weightTon),
         )
-        if (!hasOverwritten) return undefined
+        if (!hasOverwritten) return fmt(value)
         const original = (record.items as Record<string, unknown>[]).reduce(
           (sum, item) => sum + Number(item.originalWeightTon || 0),
           0,

@@ -199,7 +199,6 @@ export function useBusinessGridPage({
     handleSelectedAuditRecords,
     handleSelectedDeleteRecords,
     handleSelectedReverseAuditRecords,
-    markSelectedFreightDelivered,
     openFreightSummary,
     handleStatementGenerate,
   } = useBusinessGridActions({
@@ -245,7 +244,6 @@ export function useBusinessGridPage({
       handleSelectedAuditRecords,
       handleSelectedDeleteRecords,
       handleSelectedReverseAuditRecords,
-      markSelectedFreightDelivered,
       navigateToRoleActionEditor: () => {
         window.location.href = '/access-control?tab=roles'
       },

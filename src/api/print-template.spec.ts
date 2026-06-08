@@ -60,8 +60,13 @@ describe('print-template', () => {
       expect(restPostMock).toHaveBeenCalledWith('/print-templates', {
         billType: 'purchase-order',
         templateName: '新模板',
+        templateCode: undefined,
         templateHtml: '<div>test</div>',
         templateType: 'HTML',
+        engine: 'BROWSER_HTML',
+        assetRef: undefined,
+        versionNo: 1,
+        status: 'ACTIVE',
       })
       expect(result).toEqual(mockResponse)
     })
@@ -84,8 +89,13 @@ describe('print-template', () => {
       expect(restPutMock).toHaveBeenCalledWith('/print-templates/1', {
         billType: 'purchase-order',
         templateName: '更新模板',
+        templateCode: undefined,
         templateHtml: '<div>updated</div>',
         templateType: 'HTML',
+        engine: 'BROWSER_HTML',
+        assetRef: undefined,
+        versionNo: 1,
+        status: 'ACTIVE',
       })
       expect(result).toEqual(mockResponse)
     })
@@ -103,8 +113,36 @@ describe('print-template', () => {
         '/print-templates',
         expect.objectContaining({
           templateType: 'HTML',
+          engine: 'BROWSER_HTML',
         }),
       )
+    })
+
+    it('sends PDF_FORM metadata without requiring template html', async () => {
+      restPostMock.mockResolvedValue({ code: 0, data: {} })
+
+      await savePrintTemplate({
+        billType: 'sales-order',
+        templateName: 'PDF 模板',
+        templateCode: 'SALES_ORDER_PDF',
+        templateHtml: '',
+        templateType: 'PDF_FORM',
+        assetRef: 'print-forms/yingjie-a4-remark.pdf',
+        versionNo: 2,
+        status: 'ACTIVE',
+      })
+
+      expect(restPostMock).toHaveBeenCalledWith('/print-templates', {
+        billType: 'sales-order',
+        templateName: 'PDF 模板',
+        templateCode: 'SALES_ORDER_PDF',
+        templateHtml: '',
+        templateType: 'PDF_FORM',
+        engine: 'PDF_FORM',
+        assetRef: 'print-forms/yingjie-a4-remark.pdf',
+        versionNo: 2,
+        status: 'ACTIVE',
+      })
     })
 
     it('encodes id in URL for PUT', async () => {

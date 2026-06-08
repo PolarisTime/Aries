@@ -356,7 +356,7 @@ describe('BusinessGridRouteContent', () => {
     expect(screen.getByTestId('print-template-dropdown')).toBeTruthy()
 
     mocks.materialImportProps!.onImported()
-    mocks.printDropdownProps!.onPrint(true, { id: 'tpl-1' })
+    mocks.printDropdownProps!.onPrint('preview', { id: 'tpl-1' })
 
     expect(mocks.materialImportProps).toEqual(
       expect.objectContaining({
@@ -371,7 +371,7 @@ describe('BusinessGridRouteContent', () => {
       }),
     )
     expect(state.refreshModuleQueries).toHaveBeenCalled()
-    expect(state.handlePrintSelectedRecords).toHaveBeenCalledWith(true, {
+    expect(state.handlePrintSelectedRecords).toHaveBeenCalledWith('preview', {
       id: 'tpl-1',
     })
   })

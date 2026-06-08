@@ -72,6 +72,7 @@ export const QUERY_KEYS = {
   refreshTokensSummary: ['refresh-tokens-summary'] as const,
 
   // Statements
+  statementLinkOptionsBase: ['statement-link-options'] as const,
   statementLinkOptions: (type: string) =>
     ['statement-link-options', type] as const,
 
@@ -81,6 +82,7 @@ export const QUERY_KEYS = {
     ['print-template', billType] as const,
 
   // Parent selector
+  parentSelectorListBase: ['parent-selector-list'] as const,
   parentSelectorConfig: (moduleKey: string) =>
     ['parent-selector-config', moduleKey] as const,
   parentSelectorList: (

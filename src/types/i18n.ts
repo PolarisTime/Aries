@@ -655,8 +655,6 @@ export interface MessageSchema {
       pendingAudit: string
       pendingApproval: string
       approved: string
-      delivered: string
-      undelivered: string
       paid: string
       received: string
       invoiceReceived: string
@@ -800,6 +798,7 @@ export interface MessageSchema {
       noTemplate: string
       preview: string
       directPrint: string
+      downloadPdf: string
       print: string
     }
     itemsPanel: {
@@ -1179,7 +1178,6 @@ export interface MessageSchema {
         freightBill: string
         createFreightBill: string
         generatePickupList: string
-        markDelivered: string
         freightBillPlaceholder: string
         unaudited: string
         audited: string
@@ -1194,7 +1192,6 @@ export interface MessageSchema {
         customerName: string
         projectName: string
         auditStatus: string
-        deliveryStatus: string
         remark: string
         importFromParent: string
         parentSalesOutbound: string
@@ -1700,12 +1697,6 @@ export interface MessageSchema {
       reverseAuditFailed: string
       reverseAuditCompletedWithFailures: string
       reverseAuditSuccess: string
-      pleaseSelectFreight: string
-      batchMarkDelivered: string
-      batchMarkDeliveredConfirm: string
-      markDeliveredFailed: string
-      markDeliveredCompletedWithFailures: string
-      markDeliveredSuccess: string
     }
     printActions: {
       selectPrintTemplate: string
@@ -1888,10 +1879,17 @@ export interface MessageSchema {
       preview: string
       copy: string
       templateName: string
+      templateCode: string
       billType: string
       templateType: string
+      engine: string
+      assetRef: string
+      status: string
+      statusActive: string
+      statusDisabled: string
       deleteContent: string
       inputTemplateContent: string
+      inputAssetRef: string
     }
     numberRules: {
       title: string
@@ -2269,13 +2267,25 @@ export interface MessageSchema {
       billType: string
       templateName: string
       templateNamePlaceholder: string
+      templateCode: string
+      templateCodePlaceholder: string
       templateType: string
       templateTypeHtml: string
       templateTypeCoord: string
       templateTypePdfForm: string
+      engine: string
+      engineBrowserHtml: string
+      engineLodop: string
+      enginePdfForm: string
+      assetRef: string
+      assetRefPlaceholder: string
+      versionNo: string
+      status: string
+      statusActive: string
+      statusDisabled: string
       templateContent: string
       templateContentPlaceholder: string
-      htmlHint: string
+      templateHint: string
       helpTitle: string
       unifiedPrintApi: string
       syntaxHint: string
@@ -2442,7 +2452,6 @@ export interface MessageSchema {
       statusPaid: string
       statusReceived: string
       statusSigned: string
-      statusDelivered: string
       settingStatusEnabled: string
       settingStatusClosed: string
     }

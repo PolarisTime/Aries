@@ -321,7 +321,6 @@
 - `totalWeight`
 - `totalFreight`
 - `status`
-- `deliveryStatus`
 - `remark`
 
 建议扩展字段：
@@ -334,8 +333,6 @@
 
 - `未审核`
 - `已审核`
-- `未送达`
-- `已送达`
 
 现版逻辑提取：
 

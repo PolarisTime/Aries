@@ -5,6 +5,14 @@ import type {
   SavePrintTemplatePayload,
 } from '@/types/print-template'
 
+function defaultEngineForTemplateType(
+  templateType: SavePrintTemplatePayload['templateType'],
+) {
+  if (templateType === 'COORD') return 'LODOP'
+  if (templateType === 'PDF_FORM') return 'PDF_FORM'
+  return 'BROWSER_HTML'
+}
+
 export function listPrintTemplates(billType: string) {
   return restGet<PrintTemplateResponse<PrintTemplateRecord[]>>(
     '/print-templates',
@@ -15,11 +23,17 @@ export function listPrintTemplates(billType: string) {
 }
 
 export function savePrintTemplate(payload: SavePrintTemplatePayload) {
+  const templateType = payload.templateType || 'HTML'
   const requestBody = {
     billType: payload.billType,
     templateName: payload.templateName,
-    templateHtml: payload.templateHtml,
-    templateType: payload.templateType || 'HTML',
+    templateCode: payload.templateCode,
+    templateHtml: payload.templateHtml || '',
+    templateType,
+    engine: payload.engine || defaultEngineForTemplateType(templateType),
+    assetRef: templateType === 'PDF_FORM' ? payload.assetRef : undefined,
+    versionNo: payload.versionNo || 1,
+    status: payload.status || 'ACTIVE',
   }
 
   return payload.id
