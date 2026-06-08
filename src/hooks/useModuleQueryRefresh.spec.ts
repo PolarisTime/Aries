@@ -1,7 +1,12 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { useQueryClientMock, invalidateQueriesMock } = vi.hoisted(() => ({
+const {
+  useQueryClientMock,
+  invalidateQueriesMock,
+  setQueryDataMock,
+  reloadMasterOptionsForModuleMock,
+} = vi.hoisted(() => ({
   useQueryClientMock: vi.fn(),
   invalidateQueriesMock: vi.fn().mockResolvedValue(undefined),
   setQueryDataMock: vi.fn(),
@@ -16,6 +21,8 @@ vi.mock('@/constants/query-keys', () => ({
   QUERY_KEYS: {
     businessGrid: vi.fn((key: string) => ['businessGrid', key]),
     businessGridAll: vi.fn((key: string) => ['businessGridAll', key]),
+    parentSelectorListBase: ['parent-selector-list'],
+    statementLinkOptionsBase: ['statement-link-options'],
     masterOptions: {
       customer: ['master-options', 'customer'],
     },
@@ -34,6 +41,7 @@ import { useModuleQueryRefresh } from './useModuleQueryRefresh'
 describe('useModuleQueryRefresh', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    reloadMasterOptionsForModuleMock.mockResolvedValue([{ value: 'A' }])
     useQueryClientMock.mockReturnValue({
       invalidateQueries: invalidateQueriesMock,
       setQueryData: setQueryDataMock,
@@ -73,7 +81,13 @@ describe('useModuleQueryRefresh', () => {
       await result.current.refreshModuleQueries()
     })
 
-    expect(invalidateQueriesMock).toHaveBeenCalledTimes(2)
+    expect(invalidateQueriesMock).toHaveBeenCalledTimes(4)
+    expect(invalidateQueriesMock).toHaveBeenCalledWith({
+      queryKey: ['parent-selector-list'],
+    })
+    expect(invalidateQueriesMock).toHaveBeenCalledWith({
+      queryKey: ['statement-link-options'],
+    })
   })
 
   it('refreshes master option cache for master data modules', async () => {

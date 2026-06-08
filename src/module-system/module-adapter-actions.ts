@@ -15,7 +15,6 @@ export type ModuleActionKind =
   | 'exportMaterialRows'
   | 'exportRows'
   | 'openFreightPickupList'
-  | 'markSelectedFreightDelivered'
   | 'openFreightSummary'
   | 'navigateToRoleActionEditor'
   | 'none'
@@ -97,10 +96,6 @@ export function resolveModuleActionPermissionCodes(options: {
 
   if (actionLabel === '页面上传命名规则') {
     return ['update']
-  }
-
-  if (actionLabel === '标记送达') {
-    return ['audit']
   }
 
   if (actionLabel === '生成提货清单') {

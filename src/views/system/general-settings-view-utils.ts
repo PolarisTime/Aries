@@ -142,10 +142,6 @@ export const HIDE_AUDITED_STATUS_OPTIONS = [
     label: i18next.t('system.generalSettingsUtils.statusSigned'),
     value: '已签署',
   },
-  {
-    label: i18next.t('system.generalSettingsUtils.statusDelivered'),
-    value: '已送达',
-  },
 ]
 export const HIDE_AUDITED_STATUS_VALUES = HIDE_AUDITED_STATUS_OPTIONS.map(
   (option) => option.value,

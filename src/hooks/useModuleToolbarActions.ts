@@ -17,7 +17,6 @@ interface Handlers {
   handleSelectedAuditRecords: () => void
   handleSelectedDeleteRecords: () => void
   handleSelectedReverseAuditRecords: () => void
-  markSelectedFreightDelivered: () => void
   navigateToRoleActionEditor: () => void
   openCreateEditor: () => Promise<void>
   openCustomerStatementGenerator: () => void
@@ -171,9 +170,6 @@ export function useModuleToolbarActions({
         return
       case 'openFreightPickupList':
         handlers.openFreightPickupList()
-        return
-      case 'markSelectedFreightDelivered':
-        handlers.markSelectedFreightDelivered()
         return
       case 'openFreightSummary':
         await handlers.openFreightSummary()

@@ -198,8 +198,13 @@ const template: PrintTemplateRecord = {
   id: 'tpl-1',
   billType: 'purchase-order',
   templateName: '采购模板',
+  templateCode: 'PURCHASE_TEMPLATE',
   templateHtml: '<div>采购</div>',
   templateType: 'HTML',
+  engine: 'BROWSER_HTML',
+  assetRef: null,
+  versionNo: 1,
+  status: 'ACTIVE',
   updateTime: '2026-06-05 10:00:00',
 }
 
@@ -220,7 +225,12 @@ describe('PrintTemplateView', () => {
     mockForm.validateFields.mockResolvedValue({
       billType: 'purchase-order',
       templateName: '  新模板  ',
+      templateCode: '  NEW_TEMPLATE  ',
       templateType: 'HTML',
+      engine: 'BROWSER_HTML',
+      assetRef: '',
+      versionNo: 1,
+      status: 'ACTIVE',
     })
     mockUseMutation.mockImplementation((options: any) => ({
       isPending: false,
@@ -280,7 +290,7 @@ describe('PrintTemplateView', () => {
     expect(mockRefresh).toHaveBeenCalledTimes(1)
   })
 
-  it('opens create editor and warns when template content is empty', () => {
+  it('opens create editor and warns when template content is empty', async () => {
     render(<PrintTemplateView />)
 
     fireEvent.click(screen.getByText('create'))
@@ -290,13 +300,20 @@ describe('PrintTemplateView', () => {
     expect(mockForm.setFieldsValue).toHaveBeenCalledWith({
       billType: 'purchase-order',
       templateName: '',
+      templateCode: '',
       templateType: 'HTML',
+      engine: 'BROWSER_HTML',
+      assetRef: '',
+      versionNo: 1,
+      status: 'ACTIVE',
     })
 
     fireEvent.click(screen.getByText('save'))
-    expect(mockMessageWarning).toHaveBeenCalledWith(
-      'system.printTemplate.inputTemplateContent',
-    )
+    await waitFor(() => {
+      expect(mockMessageWarning).toHaveBeenCalledWith(
+        'system.printTemplate.inputTemplateContent',
+      )
+    })
   })
 
   it('opens editor, updates html and saves an existing template', async () => {
@@ -312,7 +329,12 @@ describe('PrintTemplateView', () => {
         id: 'tpl-1',
         billType: 'purchase-order',
         templateName: '采购模板',
+        templateCode: 'PURCHASE_TEMPLATE',
         templateType: 'HTML',
+        engine: 'BROWSER_HTML',
+        assetRef: '',
+        versionNo: 1,
+        status: 'ACTIVE',
       }),
     )
 
@@ -324,8 +346,13 @@ describe('PrintTemplateView', () => {
         id: 'tpl-1',
         billType: 'purchase-order',
         templateName: '新模板',
+        templateCode: 'NEW_TEMPLATE',
         templateHtml: '<div>ok</div>',
         templateType: 'HTML',
+        engine: 'BROWSER_HTML',
+        assetRef: undefined,
+        versionNo: 1,
+        status: 'ACTIVE',
       })
     })
     expect(mockMessageSuccess).toHaveBeenCalledWith('common.saveSuccess')
@@ -345,8 +372,13 @@ describe('PrintTemplateView', () => {
         id: undefined,
         billType: 'purchase-order',
         templateName: '新模板',
+        templateCode: 'NEW_TEMPLATE',
         templateHtml: '<div>ok</div>',
         templateType: 'HTML',
+        engine: 'BROWSER_HTML',
+        assetRef: undefined,
+        versionNo: 1,
+        status: 'ACTIVE',
       })
     })
   })
@@ -361,7 +393,12 @@ describe('PrintTemplateView', () => {
       expect.objectContaining({
         billType: 'purchase-order',
         templateName: 'Copy',
+        templateCode: '',
         templateType: 'HTML',
+        engine: 'BROWSER_HTML',
+        assetRef: '',
+        versionNo: 1,
+        status: 'ACTIVE',
       }),
     )
     expect(screen.getByTestId('template-html')).toHaveTextContent(

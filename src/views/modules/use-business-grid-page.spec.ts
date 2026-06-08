@@ -23,7 +23,6 @@ const mocks = vi.hoisted(() => ({
   handleSelectedDeleteRecords: vi.fn(),
   handleSelectedReverseAuditRecords: vi.fn(),
   handleStatementGenerate: vi.fn(),
-  markSelectedFreightDelivered: vi.fn(),
   navigate: vi.fn(),
   onColumnOrderChange: vi.fn(),
   openAttachment: vi.fn(),
@@ -165,7 +164,6 @@ describe('useBusinessGridPage', () => {
       handleSelectedDeleteRecords: mocks.handleSelectedDeleteRecords,
       handleSelectedReverseAuditRecords:
         mocks.handleSelectedReverseAuditRecords,
-      markSelectedFreightDelivered: mocks.markSelectedFreightDelivered,
       openFreightSummary: mocks.openFreightSummary,
       handleStatementGenerate: mocks.handleStatementGenerate,
     })
@@ -372,7 +370,6 @@ describe('useBusinessGridPage', () => {
     toolbarOptions.handlers.openSupplierStatementGenerator()
     toolbarOptions.handlers.openFreightStatementGenerator()
     toolbarOptions.handlers.openFreightSummary()
-    toolbarOptions.handlers.markSelectedFreightDelivered()
     toolbarOptions.handlers.handleSelectedAuditRecords()
     toolbarOptions.handlers.handleSelectedDeleteRecords()
     toolbarOptions.handlers.handleSelectedReverseAuditRecords()
@@ -383,7 +380,6 @@ describe('useBusinessGridPage', () => {
     expect(mocks.openSupplierStatement).toHaveBeenCalled()
     expect(mocks.openFreightStatement).toHaveBeenCalled()
     expect(mocks.openFreightSummary).toHaveBeenCalled()
-    expect(mocks.markSelectedFreightDelivered).toHaveBeenCalled()
     expect(mocks.handleSelectedAuditRecords).toHaveBeenCalled()
     expect(mocks.handleSelectedDeleteRecords).toHaveBeenCalled()
     expect(mocks.handleSelectedReverseAuditRecords).toHaveBeenCalled()

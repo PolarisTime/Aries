@@ -74,11 +74,9 @@ describe('module-behavior-actions', () => {
       actionKindsByKey: {
         create_freight_bill: 'openCreateEditor',
         generate_pickup_list: 'openFreightPickupList',
-        mark_delivered: 'markSelectedFreightDelivered',
       },
       actionKindsByLabel: {
         生成提货清单: 'openFreightPickupList',
-        标记送达: 'markSelectedFreightDelivered',
       },
     })
   })
@@ -95,7 +93,6 @@ describe('module-behavior-actions', () => {
       permissionCodesByActionKey: {
         create_freight_bill: ['create'],
         generate_pickup_list: ['export'],
-        mark_delivered: ['audit'],
       },
     })
   })

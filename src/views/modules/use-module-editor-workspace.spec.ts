@@ -437,6 +437,47 @@ describe('useModuleEditorWorkspace', () => {
     )
   })
 
+  it('keeps existing hidden fields when saving an edited record', async () => {
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      orderNo: 'SO-001',
+      customerName: '客户A',
+    })
+    vi.mocked(trimEditorItemsForModule).mockReturnValue([
+      { id: 'line-1', unitPrice: 3300 },
+    ])
+
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+      record: {
+        id: 'record-1',
+        orderNo: 'SO-001',
+        customerName: '客户A',
+        purchaseOrderNo: 'PO-001',
+        status: '已审核',
+        items: [{ id: 'line-1', unitPrice: 3260 }],
+      },
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(saveBusinessModule).toHaveBeenCalledWith(
+      'test-module',
+      expect.objectContaining({
+        id: 'record-1',
+        orderNo: 'SO-001',
+        customerName: '客户A',
+        purchaseOrderNo: 'PO-001',
+        status: '已审核',
+        items: [{ id: 'line-1', unitPrice: 3300 }],
+      }),
+    )
+  })
+
   it('stops save and warns when editor validation fails', async () => {
     vi.mocked(getEditorValidationMessage).mockReturnValueOnce('缺少字段')
     const { result } = renderWorkspace({

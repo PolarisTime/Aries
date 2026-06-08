@@ -50,7 +50,6 @@ function createHandlers() {
     handleSelectedAuditRecords: vi.fn(),
     handleSelectedDeleteRecords: vi.fn(),
     handleSelectedReverseAuditRecords: vi.fn(),
-    markSelectedFreightDelivered: vi.fn(),
     navigateToRoleActionEditor: vi.fn(),
     openCreateEditor: vi.fn().mockResolvedValue(undefined),
     openCustomerStatementGenerator: vi.fn(),
@@ -534,35 +533,6 @@ describe('useModuleToolbarActions', () => {
     })
 
     expect(handlers.exportMaterialRows).toHaveBeenCalled()
-  })
-
-  it('calls handler for markSelectedFreightDelivered', () => {
-    const handlers = createHandlers()
-    resolveModuleActionKindMock.mockReturnValue('markSelectedFreightDelivered')
-    const { result } = renderHook(() =>
-      useModuleToolbarActions({
-        moduleKey: 'sales-order',
-        config: {
-          ...baseConfig,
-          actions: [
-            { key: 'mark_delivered', label: '标记送达', type: 'default' },
-          ],
-        },
-        formFields: [],
-        isMaterialModule: false,
-        selectedRowCount: 1,
-        canUseBulkAuditActions: false,
-        canUseBulkDeleteActions: false,
-        hasAnyModuleAction: () => true,
-        handlers,
-      }),
-    )
-
-    act(() => {
-      void result.current.handleAction(result.current.visibleToolbarActions[0])
-    })
-
-    expect(handlers.markSelectedFreightDelivered).toHaveBeenCalled()
   })
 
   it('calls handler for openCreateEditor', () => {

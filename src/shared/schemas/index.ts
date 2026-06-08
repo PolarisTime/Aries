@@ -34,6 +34,7 @@ export type {
 } from './module-record'
 
 export type {
+  PrintActionMode,
   PrintTemplateRecord,
   SavePrintTemplatePayload,
 } from './print-template'

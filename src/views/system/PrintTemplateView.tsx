@@ -37,6 +37,12 @@ const printTemplateInitialState: PrintTemplateState = {
   templateHtml: '',
 }
 
+function defaultEngineForTemplateType(templateType: string | undefined) {
+  if (templateType === 'COORD') return 'LODOP'
+  if (templateType === 'PDF_FORM') return 'PDF_FORM'
+  return 'BROWSER_HTML'
+}
+
 export function PrintTemplateView() {
   const queryClient = useQueryClient()
   const { t } = useTranslation()
@@ -100,7 +106,12 @@ export function PrintTemplateView() {
     form.setFieldsValue({
       billType: selectedBillType,
       templateName: '',
+      templateCode: '',
       templateType: 'HTML',
+      engine: 'BROWSER_HTML',
+      assetRef: '',
+      versionNo: 1,
+      status: 'ACTIVE',
     })
     setState({
       templateHtml: '',
@@ -118,7 +129,13 @@ export function PrintTemplateView() {
       id: record.id,
       billType: record.billType || selectedBillType,
       templateName: record.templateName,
+      templateCode: record.templateCode || '',
       templateType: record.templateType || 'HTML',
+      engine:
+        record.engine || defaultEngineForTemplateType(record.templateType),
+      assetRef: record.assetRef || '',
+      versionNo: record.versionNo || 1,
+      status: record.status || 'ACTIVE',
     })
     setState({
       templateHtml: record.templateHtml || '',
@@ -139,7 +156,13 @@ export function PrintTemplateView() {
     form.setFieldsValue({
       billType: record.billType || selectedBillType,
       templateName: buildPrintTemplateCopyName(record),
+      templateCode: '',
       templateType: record.templateType || 'HTML',
+      engine:
+        record.engine || defaultEngineForTemplateType(record.templateType),
+      assetRef: record.assetRef || '',
+      versionNo: record.versionNo || 1,
+      status: 'ACTIVE',
     })
     setState({
       templateHtml: record.templateHtml || '',
@@ -166,18 +189,31 @@ export function PrintTemplateView() {
   }
 
   const handleSave = async () => {
-    if (!templateHtml.trim()) {
-      message.warning(t('system.printTemplate.inputTemplateContent'))
-      return
-    }
     try {
       const values = await form.validateFields()
+      const templateType = values.templateType || 'HTML'
+      const normalizedTemplateHtml = templateHtml.trim()
+      const normalizedAssetRef = values.assetRef?.trim?.() || ''
+      if (templateType === 'PDF_FORM') {
+        if (!normalizedAssetRef) {
+          message.warning(t('system.printTemplate.inputAssetRef'))
+          return
+        }
+      } else if (!normalizedTemplateHtml) {
+        message.warning(t('system.printTemplate.inputTemplateContent'))
+        return
+      }
       saveMutation.mutate({
         id: activeTemplateId || undefined,
         billType: values.billType,
         templateName: values.templateName.trim(),
-        templateHtml: templateHtml.trim(),
-        templateType: values.templateType || 'HTML',
+        templateCode: values.templateCode?.trim?.() || undefined,
+        templateHtml: normalizedTemplateHtml,
+        templateType,
+        engine: values.engine || defaultEngineForTemplateType(templateType),
+        assetRef: normalizedAssetRef || undefined,
+        versionNo: Number(values.versionNo || 1),
+        status: values.status || 'ACTIVE',
       })
     } catch {
       // validation failed

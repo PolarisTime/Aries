@@ -21,48 +21,48 @@ vi.mock('antd/es/button', () => ({
   ),
 }))
 
-vi.mock('antd/es/dropdown', () => ({
-  default: ({ children, menu, ...props }: any) => (
-    <div data-testid="dropdown" {...props}>
-      {children}
-      <div data-testid="menu">
-        {(menu?.items || []).map((item: any) => {
-          if (item.type === 'group') {
-            return (
-              <div data-testid="menu-group" key={item.label}>
-                <span>{item.label}</span>
-                {(item.children || []).map((child: any) => (
-                  <button
-                    data-testid={`menu-item-${child.key}`}
-                    key={child.key}
-                    onClick={() => menu.onClick({ key: child.key })}
-                    type="button"
-                  >
-                    {child.icon}
-                    {child.label}
-                  </button>
-                ))}
-              </div>
-            )
-          }
-          return (
-            <button
-              data-disabled={String(item.disabled)}
-              data-testid={`menu-item-${item.key}`}
-              key={item.key}
-              onClick={() => menu.onClick({ key: item.key })}
-              type="button"
-            >
-              {item.label}
-            </button>
-          )
-        })}
-      </div>
-    </div>
+vi.mock('antd/es/empty', () => ({
+  default: ({ description }: any) => (
+    <div data-testid="empty">{description}</div>
   ),
 }))
 
+vi.mock('antd/es/modal', () => ({
+  default: ({ children, open, title }: any) =>
+    open ? (
+      <div data-testid="print-modal">
+        <h2>{title}</h2>
+        {children}
+      </div>
+    ) : null,
+}))
+
+vi.mock('antd/es/select', () => ({
+  default: ({ onChange, options = [], value }: any) => (
+    <select
+      data-testid="template-select"
+      onChange={(event) => onChange(event.target.value)}
+      value={value}
+    >
+      {options.map((option: any) => (
+        <option key={option.value} value={option.value}>
+          {option.value}
+        </option>
+      ))}
+    </select>
+  ),
+}))
+
+vi.mock('antd/es/space', () => ({
+  default: ({ children }: any) => <div data-testid="space">{children}</div>,
+}))
+
+vi.mock('antd/es/tag', () => ({
+  default: ({ children }: any) => <span data-testid="tag">{children}</span>,
+}))
+
 vi.mock('@ant-design/icons', () => ({
+  EyeOutlined: () => <span>EyeOutlined</span>,
   PrinterOutlined: () => <span>PrinterOutlined</span>,
 }))
 
@@ -77,6 +77,10 @@ vi.mock('@/config/print-template-targets', () => ({
 }))
 
 import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateDropdown'
+
+function openPrintModal() {
+  fireEvent.click(screen.getAllByText('modules.print.print')[0])
+}
 
 describe('PrintTemplateDropdown', () => {
   const defaultProps = {
@@ -93,22 +97,24 @@ describe('PrintTemplateDropdown', () => {
 
   it('renders print button', () => {
     render(<PrintTemplateDropdown {...defaultProps} />)
-    expect(screen.getByText('modules.print.print')).toBeTruthy()
+    expect(screen.getAllByText('modules.print.print')[0]).toBeTruthy()
   })
 
-  it('renders dropdown', () => {
+  it('opens template modal', () => {
     render(<PrintTemplateDropdown {...defaultProps} />)
-    expect(screen.getByTestId('dropdown')).toBeTruthy()
+
+    openPrintModal()
+
+    expect(screen.getByTestId('print-modal')).toBeTruthy()
   })
 
-  it('renders disabled no-template menu item when templates are empty', () => {
+  it('renders empty state when templates are empty', () => {
     render(<PrintTemplateDropdown {...defaultProps} />)
+
+    openPrintModal()
 
     expect(screen.getByText('modules.print.noTemplate')).toBeTruthy()
-    expect(screen.getByTestId('menu-item-no-template')).toHaveAttribute(
-      'data-disabled',
-      'true',
-    )
+    expect(screen.getByTestId('empty')).toBeTruthy()
   })
 
   it('prints selected template in preview and direct modes', () => {
@@ -117,17 +123,50 @@ describe('PrintTemplateDropdown', () => {
       id: 'tpl-1',
       templateName: '出库单模板',
       targetType: 'test-module',
+      templateType: 'HTML',
     }
     vi.mocked(useQuery).mockReturnValue({ data: [template] } as never)
 
     render(<PrintTemplateDropdown {...defaultProps} onPrint={onPrint} />)
 
-    expect(screen.getByText('出库单模板')).toBeTruthy()
-    fireEvent.click(screen.getByTestId('menu-item-preview:tpl-1'))
-    fireEvent.click(screen.getByTestId('menu-item-direct:tpl-1'))
+    openPrintModal()
+    expect(screen.getByTestId('template-select')).toHaveValue('tpl-1')
+    fireEvent.click(screen.getByText('modules.print.preview'))
 
-    expect(onPrint).toHaveBeenCalledWith(true, template)
-    expect(onPrint).toHaveBeenCalledWith(false, template)
+    openPrintModal()
+    fireEvent.click(screen.getByText('modules.print.directPrint'))
+
+    expect(onPrint).toHaveBeenCalledWith('preview', template)
+    expect(onPrint).toHaveBeenCalledWith('print', template)
+  })
+
+  it('prints the selected template after switching selection', () => {
+    const onPrint = vi.fn()
+    const firstTemplate = {
+      id: 'tpl-1',
+      templateName: 'A 模板',
+      targetType: 'test-module',
+      templateType: 'HTML',
+    }
+    const secondTemplate = {
+      id: 'tpl-2',
+      templateName: 'B 模板',
+      targetType: 'test-module',
+      templateType: 'COORD',
+    }
+    vi.mocked(useQuery).mockReturnValue({
+      data: [firstTemplate, secondTemplate],
+    } as never)
+
+    render(<PrintTemplateDropdown {...defaultProps} onPrint={onPrint} />)
+
+    openPrintModal()
+    fireEvent.change(screen.getByTestId('template-select'), {
+      target: { value: 'tpl-2' },
+    })
+    fireEvent.click(screen.getByText('modules.print.preview'))
+
+    expect(onPrint).toHaveBeenCalledWith('preview', secondTemplate)
   })
 
   it('disables query for unsupported module key', () => {

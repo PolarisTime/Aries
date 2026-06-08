@@ -9,7 +9,7 @@ describe('freightOperationsPageConfigs', () => {
     expect(config.title).toBeTruthy()
     expect(config.primaryNoKey).toBe('billNo')
     expect(Array.isArray(config.actions)).toBe(true)
-    expect(config.actions).toHaveLength(3)
+    expect(config.actions).toHaveLength(2)
     expect(Array.isArray(config.filters)).toBe(true)
     expect(Array.isArray(config.columns)).toBe(true)
     expect(Array.isArray(config.detailFields)).toBe(true)

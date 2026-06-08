@@ -168,6 +168,17 @@ describe('PrintTemplateEditorModal', () => {
     expect(
       screen.getByText('system.printTemplateEditor.templateType'),
     ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.templateCode'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('system.printTemplateEditor.engine')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.assetRef'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.versionNo'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('system.printTemplateEditor.status')).toBeInTheDocument()
   })
 
   it('renders template content field', () => {

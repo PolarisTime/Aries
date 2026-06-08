@@ -10,9 +10,11 @@ const {
   loadCLodopMock,
   execPrintCodeMock,
   printHtmlMock,
+  downloadBlobMock,
   renderPrintTemplateMock,
   modalConfirmMock,
   tMock,
+  windowOpenMock,
 } = vi.hoisted(() => ({
   httpMock: { post: vi.fn() },
   assertApiSuccessMock: vi.fn(),
@@ -22,11 +24,13 @@ const {
   loadCLodopMock: vi.fn().mockResolvedValue(undefined),
   execPrintCodeMock: vi.fn().mockReturnValue(true),
   printHtmlMock: vi.fn().mockReturnValue(true),
+  downloadBlobMock: vi.fn(),
   renderPrintTemplateMock: vi
     .fn()
     .mockReturnValue({ type: 'HTML', html: '<div>test</div>' }),
   modalConfirmMock: vi.fn(),
   tMock: vi.fn((key: string) => key),
+  windowOpenMock: vi.fn(),
 }))
 
 vi.mock('@/api/client', () => ({
@@ -53,6 +57,10 @@ vi.mock('@/utils/print-template', () => ({
   renderPrintTemplate: renderPrintTemplateMock,
 }))
 
+vi.mock('@/utils/download', () => ({
+  downloadBlob: downloadBlobMock,
+}))
+
 vi.mock('@/config/print-template-targets', () => ({
   printTemplateTargetMap: { 'sales-order': true },
 }))
@@ -66,6 +74,7 @@ import { useBusinessGridPrintActions } from './useBusinessGridPrintActions'
 describe('useBusinessGridPrintActions', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    vi.spyOn(window, 'open').mockImplementation(windowOpenMock)
   })
 
   it('returns handlePrintSelectedRecords function', () => {
@@ -86,7 +95,7 @@ describe('useBusinessGridPrintActions', () => {
       }),
     )
     await act(async () => {
-      await result.current.handlePrintSelectedRecords(false)
+      await result.current.handlePrintSelectedRecords('print')
     })
     expect(messageWarningMock).toHaveBeenCalledWith('common.pleaseSelect')
   })
@@ -101,11 +110,45 @@ describe('useBusinessGridPrintActions', () => {
       }),
     )
     await act(async () => {
-      await result.current.handlePrintSelectedRecords(false)
+      await result.current.handlePrintSelectedRecords('print')
     })
     expect(messageWarningMock).toHaveBeenCalledWith(
       'hooks.printActions.noPrintTemplateConfigured',
     )
+  })
+
+  it('allows picking a PDF_FORM template without template html', async () => {
+    const template = {
+      id: 'template-1',
+      templateName: 'PDF Template',
+      templateHtml: '',
+      templateType: 'PDF_FORM',
+    }
+    listPrintTemplatesMock.mockResolvedValue({ data: [template] })
+    httpMock.post.mockResolvedValue({
+      code: 200,
+      data: {
+        templateType: 'PDF_FORM',
+        pdfBase64: btoa('pdf-content'),
+        contentType: 'application/pdf',
+      },
+    })
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+    await act(async () => {
+      await result.current.handlePrintSelectedRecords('preview')
+    })
+
+    expect(httpMock.post).toHaveBeenCalledWith('/print/record', {
+      templateId: 'template-1',
+      moduleKey: 'sales-order',
+      recordId: '1',
+    })
   })
 
   it('prints using provided template', async () => {
@@ -131,7 +174,7 @@ describe('useBusinessGridPrintActions', () => {
       }),
     )
     await act(async () => {
-      await result.current.handlePrintSelectedRecords(false, template)
+      await result.current.handlePrintSelectedRecords('print', template)
     })
 
     expect(httpMock.post).toHaveBeenCalledWith('/print/record', {
@@ -164,7 +207,7 @@ describe('useBusinessGridPrintActions', () => {
       }),
     )
     await act(async () => {
-      await result.current.handlePrintSelectedRecords(false, template)
+      await result.current.handlePrintSelectedRecords('print', template)
     })
 
     expect(httpMock.post).toHaveBeenCalledTimes(3)
@@ -186,7 +229,7 @@ describe('useBusinessGridPrintActions', () => {
       }),
     )
     await act(async () => {
-      await result.current.handlePrintSelectedRecords(false, template)
+      await result.current.handlePrintSelectedRecords('print', template)
     })
 
     expect(messageErrorMock).toHaveBeenCalled()
@@ -215,10 +258,11 @@ describe('useBusinessGridPrintActions', () => {
       }),
     )
     await act(async () => {
-      await result.current.handlePrintSelectedRecords(false, template)
+      await result.current.handlePrintSelectedRecords('print', template)
     })
 
     expect(httpMock.post).toHaveBeenCalled()
+    expect(loadCLodopMock).not.toHaveBeenCalled()
   })
 
   it('handles preview mode for PDF', async () => {
@@ -244,10 +288,78 @@ describe('useBusinessGridPrintActions', () => {
       }),
     )
     await act(async () => {
-      await result.current.handlePrintSelectedRecords(true, template)
+      await result.current.handlePrintSelectedRecords('preview', template)
     })
 
     expect(httpMock.post).toHaveBeenCalled()
+    expect(windowOpenMock).toHaveBeenCalled()
+    expect(loadCLodopMock).not.toHaveBeenCalled()
+  })
+
+  it('downloads PDF_FORM template output', async () => {
+    const template = {
+      id: 'template-1',
+      templateName: 'PDF Template',
+      templateHtml: '',
+      templateType: 'PDF_FORM',
+    }
+    httpMock.post.mockResolvedValue({
+      code: 200,
+      data: {
+        templateType: 'PDF_FORM',
+        pdfBase64: btoa('pdf-content'),
+        contentType: 'application/pdf',
+        fileName: 'sales-order',
+      },
+    })
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+    await act(async () => {
+      await result.current.handlePrintSelectedRecords('download', template)
+    })
+
+    expect(downloadBlobMock).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'sales-order.pdf',
+    )
+    expect(loadCLodopMock).not.toHaveBeenCalled()
+    expect(renderPrintTemplateMock).not.toHaveBeenCalled()
+  })
+
+  it('blocks download mode for non-PDF templates', async () => {
+    const template = {
+      id: 'template-1',
+      templateName: 'HTML Template',
+      templateHtml: '<div>test</div>',
+      templateType: 'HTML',
+    }
+    httpMock.post.mockResolvedValue({
+      code: 200,
+      data: {
+        templateType: 'HTML',
+        templateHtml: '<div>test</div>',
+      },
+    })
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+    await act(async () => {
+      await result.current.handlePrintSelectedRecords('download', template)
+    })
+
+    expect(httpMock.post).toHaveBeenCalled()
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.noPrintContent',
+    )
   })
 
   it('handles COORD template type', async () => {
@@ -278,10 +390,11 @@ describe('useBusinessGridPrintActions', () => {
       }),
     )
     await act(async () => {
-      await result.current.handlePrintSelectedRecords(false, template)
+      await result.current.handlePrintSelectedRecords('print', template)
     })
 
     expect(execPrintCodeMock).toHaveBeenCalled()
+    expect(loadCLodopMock).toHaveBeenCalled()
   })
 
   it('shows warning when no print content generated', async () => {
@@ -307,7 +420,7 @@ describe('useBusinessGridPrintActions', () => {
       }),
     )
     await act(async () => {
-      await result.current.handlePrintSelectedRecords(false, template)
+      await result.current.handlePrintSelectedRecords('print', template)
     })
 
     expect(messageWarningMock).toHaveBeenCalledWith(
@@ -344,7 +457,7 @@ describe('useBusinessGridPrintActions', () => {
       }),
     )
     await act(async () => {
-      await result.current.handlePrintSelectedRecords(false, template)
+      await result.current.handlePrintSelectedRecords('print', template)
     })
 
     expect(messageErrorMock).toHaveBeenCalledWith(
@@ -376,7 +489,7 @@ describe('useBusinessGridPrintActions', () => {
       }),
     )
     await act(async () => {
-      await result.current.handlePrintSelectedRecords(false, template)
+      await result.current.handlePrintSelectedRecords('print', template)
     })
 
     expect(messageErrorMock).toHaveBeenCalled()

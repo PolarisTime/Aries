@@ -158,8 +158,8 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
                 moduleKey={moduleKey}
                 disabled={!state.selectedRowKeys.length}
                 loading={false}
-                onPrint={(preview, template) => {
-                  void state.handlePrintSelectedRecords(preview, template)
+                onPrint={(mode, template) => {
+                  void state.handlePrintSelectedRecords(mode, template)
                 }}
               />
             ) : null}

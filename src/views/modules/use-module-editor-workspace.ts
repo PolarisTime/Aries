@@ -499,6 +499,7 @@ export function useModuleEditorWorkspace({
 
       setSaving(true)
       const draftRecord: ModuleRecord = {
+        ...(record || {}),
         ...values,
         id: record?.id || '',
         _preallocatedId:

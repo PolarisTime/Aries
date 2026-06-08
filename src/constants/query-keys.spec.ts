@@ -31,9 +31,11 @@ describe('QUERY_KEYS', () => {
       'refreshTokens',
       'refreshTokensBase',
       'refreshTokensSummary',
+      'statementLinkOptionsBase',
       'statementLinkOptions',
       'printTemplate',
       'printTemplateByType',
+      'parentSelectorListBase',
       'parentSelectorConfig',
       'parentSelectorList',
       'freightPickup',
@@ -133,6 +135,9 @@ describe('QUERY_KEYS', () => {
   })
 
   it('statementLinkOptions returns key with type', () => {
+    expect(QUERY_KEYS.statementLinkOptionsBase).toEqual([
+      'statement-link-options',
+    ])
     const key = QUERY_KEYS.statementLinkOptions('supplier')
     expect(key).toEqual(['statement-link-options', 'supplier'])
   })
@@ -145,6 +150,7 @@ describe('QUERY_KEYS', () => {
   })
 
   it('parentSelectorConfig and parentSelectorList return keys', () => {
+    expect(QUERY_KEYS.parentSelectorListBase).toEqual(['parent-selector-list'])
     expect(QUERY_KEYS.parentSelectorConfig('purchase-order')).toEqual([
       'parent-selector-config',
       'purchase-order',

@@ -61,6 +61,13 @@ export function getMaterialCategoryOptions() {
   return _categoryOptions
 }
 
+export function replaceMaterialCategoryOptions(
+  options: MaterialCategoryOption[],
+) {
+  _categoryOptions = options.length > 0 ? options : materialCategoryFallbackOptions
+  categoryOptionsLoading = false
+}
+
 export function isPurchaseWeighRequiredCategory(category: unknown) {
   ensureMaterialCategoriesLoaded()
   const normalized = asString(category).trim()
@@ -99,6 +106,13 @@ function ensureMaterialGradesLoaded() {
 export function materialGradeOptions() {
   ensureMaterialGradesLoaded()
   return _gradeOptions
+}
+
+export function replaceMaterialGradeOptions(
+  options: ReturnType<typeof createOptionList>,
+) {
+  _gradeOptions = options.length > 0 ? options : materialGradeFallbackOptions
+  gradeOptionsLoading = false
 }
 
 // ── Supplier ───────────────────────────────────────────────────────────────────

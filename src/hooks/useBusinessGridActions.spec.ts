@@ -11,7 +11,6 @@ const {
     handleSelectedAuditRecords: vi.fn(),
     handleSelectedDeleteRecords: vi.fn(),
     handleSelectedReverseAuditRecords: vi.fn(),
-    markSelectedFreightDelivered: vi.fn(),
   }),
   useBusinessGridFreightActionsMock: vi.fn().mockReturnValue({
     openFreightSummary: vi.fn(),
@@ -62,7 +61,6 @@ describe('useBusinessGridActions', () => {
       handleSelectedAuditRecords: vi.fn(),
       handleSelectedDeleteRecords: vi.fn(),
       handleSelectedReverseAuditRecords: vi.fn(),
-      markSelectedFreightDelivered: vi.fn(),
     })
     useBusinessGridFreightActionsMock.mockReturnValue({
       openFreightSummary: vi.fn(),
@@ -82,7 +80,6 @@ describe('useBusinessGridActions', () => {
     expect(result.current.handleSelectedAuditRecords).toBeDefined()
     expect(result.current.handleSelectedDeleteRecords).toBeDefined()
     expect(result.current.handleSelectedReverseAuditRecords).toBeDefined()
-    expect(result.current.markSelectedFreightDelivered).toBeDefined()
     expect(result.current.openFreightSummary).toBeDefined()
     expect(result.current.handleStatementGenerate).toBeDefined()
   })

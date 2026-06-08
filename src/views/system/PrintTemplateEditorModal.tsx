@@ -89,6 +89,12 @@ const layoutFields = [
   'footerDateTop',
 ]
 
+function defaultEngineForTemplateType(templateType: string) {
+  if (templateType === 'COORD') return 'LODOP'
+  if (templateType === 'PDF_FORM') return 'PDF_FORM'
+  return 'BROWSER_HTML'
+}
+
 function FieldTags({ title, fields }: { title: string; fields: string[] }) {
   return (
     <div>
@@ -160,11 +166,30 @@ export function PrintTemplateEditorModal({
           </Col>
           <Col xs={24} md={8}>
             <Form.Item
+              name="templateCode"
+              label={t('system.printTemplateEditor.templateCode')}
+            >
+              <Input
+                placeholder={t(
+                  'system.printTemplateEditor.templateCodePlaceholder',
+                )}
+                maxLength={96}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item
               name="templateType"
               label={t('system.printTemplateEditor.templateType')}
               required
             >
               <Select
+                onChange={(value) =>
+                  form.setFieldValue(
+                    'engine',
+                    defaultEngineForTemplateType(value),
+                  )
+                }
                 options={[
                   {
                     value: 'HTML',
@@ -177,6 +202,70 @@ export function PrintTemplateEditorModal({
                   {
                     value: 'PDF_FORM',
                     label: t('system.printTemplateEditor.templateTypePdfForm'),
+                  },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item
+              name="engine"
+              label={t('system.printTemplateEditor.engine')}
+              required
+            >
+              <Select
+                disabled
+                options={[
+                  {
+                    value: 'BROWSER_HTML',
+                    label: t('system.printTemplateEditor.engineBrowserHtml'),
+                  },
+                  {
+                    value: 'LODOP',
+                    label: t('system.printTemplateEditor.engineLodop'),
+                  },
+                  {
+                    value: 'PDF_FORM',
+                    label: t('system.printTemplateEditor.enginePdfForm'),
+                  },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item
+              name="assetRef"
+              label={t('system.printTemplateEditor.assetRef')}
+            >
+              <Input
+                placeholder={t('system.printTemplateEditor.assetRefPlaceholder')}
+                maxLength={255}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item
+              name="versionNo"
+              label={t('system.printTemplateEditor.versionNo')}
+            >
+              <Input type="number" min={1} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item
+              name="status"
+              label={t('system.printTemplateEditor.status')}
+              required
+            >
+              <Select
+                options={[
+                  {
+                    value: 'ACTIVE',
+                    label: t('system.printTemplateEditor.statusActive'),
+                  },
+                  {
+                    value: 'DISABLED',
+                    label: t('system.printTemplateEditor.statusDisabled'),
                   },
                 ]}
               />
@@ -231,7 +320,7 @@ export function PrintTemplateEditorModal({
           />
         </Form.Item>
         <Typography.Text type="secondary">
-          {t('system.printTemplateEditor.htmlHint')}
+          {t('system.printTemplateEditor.templateHint')}
         </Typography.Text>
       </Form>
     </FormModal>

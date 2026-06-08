@@ -63,7 +63,6 @@ describe('module-behavior-normalizers', () => {
     expect(record.projectName).toBe('多项目')
     expect(record.totalWeight).toBe(100)
     expect(record.totalFreight).toBe(200)
-    expect(record.deliveryStatus).toBe('未送达')
   })
 
   it('freight-bill normalize handles single customer and project', () => {
@@ -104,19 +103,6 @@ describe('module-behavior-normalizers', () => {
     expect(record.outboundNo).toBe('EXISTING')
     expect(record.customerName).toBeUndefined()
     expect(record.projectName).toBeUndefined()
-  })
-
-  it('freight-bill normalize keeps existing deliveryStatus', () => {
-    const config = moduleBehaviorRegistry.get('freight-bill')
-    const normalize = config!.normalizeDraftRecord as (
-      record: any,
-      items: ModuleLineItem[],
-      ctx: any,
-    ) => void
-
-    const record: any = { deliveryStatus: '已送达' }
-    normalize(record, [], { sumLineItemsBy: () => 0 } as any)
-    expect(record.deliveryStatus).toBe('已送达')
   })
 
   it('registers freight-statement normalizeDraftRecord', () => {

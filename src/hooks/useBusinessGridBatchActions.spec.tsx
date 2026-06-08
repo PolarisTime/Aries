@@ -7,16 +7,12 @@ const {
   successMock,
   updateBusinessModuleStatusMock,
   deleteBusinessModuleMock,
-  getBusinessModuleDetailMock,
-  saveBusinessModuleMock,
 } = vi.hoisted(() => ({
   confirmMock: vi.fn(),
   warningMock: vi.fn(),
   successMock: vi.fn(),
   updateBusinessModuleStatusMock: vi.fn(),
   deleteBusinessModuleMock: vi.fn(),
-  getBusinessModuleDetailMock: vi.fn(),
-  saveBusinessModuleMock: vi.fn(),
 }))
 
 vi.mock('@/utils/antd-app', () => ({
@@ -31,8 +27,6 @@ vi.mock('@/utils/antd-app', () => ({
 
 vi.mock('@/api/business', () => ({
   deleteBusinessModule: deleteBusinessModuleMock,
-  getBusinessModuleDetail: getBusinessModuleDetailMock,
-  saveBusinessModule: saveBusinessModuleMock,
   updateBusinessModuleStatus: updateBusinessModuleStatusMock,
 }))
 
@@ -49,8 +43,6 @@ describe('useBusinessGridBatchActions', () => {
     successMock.mockReset()
     updateBusinessModuleStatusMock.mockReset()
     deleteBusinessModuleMock.mockReset()
-    getBusinessModuleDetailMock.mockReset()
-    saveBusinessModuleMock.mockReset()
   })
 
   it('uses selected rows from preserved cross-page selection for audit', async () => {
@@ -377,98 +369,6 @@ describe('useBusinessGridBatchActions', () => {
     expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
   })
 
-  it('shows warning when no rows selected for freight delivery', () => {
-    const { result } = renderHook(() =>
-      useBusinessGridBatchActions({
-        moduleKey: 'freight-bill',
-        selectedRowKeys: [],
-        selectedRows: [],
-        listAuditTarget: null,
-        listReverseAuditTarget: null,
-        refreshAndClearSelection: vi.fn(),
-      }),
-    )
-
-    act(() => {
-      result.current.markSelectedFreightDelivered()
-    })
-
-    expect(warningMock).toHaveBeenCalledWith(
-      'hooks.batchActions.pleaseSelectFreight',
-    )
-  })
-
-  it('handles freight delivery operations', async () => {
-    getBusinessModuleDetailMock.mockResolvedValue({
-      data: { id: '101', deliveryStatus: '运输中' },
-    })
-    saveBusinessModuleMock.mockResolvedValue(undefined)
-
-    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
-
-    const { result } = renderHook(() =>
-      useBusinessGridBatchActions({
-        moduleKey: 'freight-bill',
-        selectedRowKeys: ['101'],
-        selectedRows: [{ id: '101', deliveryStatus: '运输中' }],
-        listAuditTarget: null,
-        listReverseAuditTarget: null,
-        refreshAndClearSelection,
-      }),
-    )
-
-    act(() => {
-      result.current.markSelectedFreightDelivered()
-    })
-
-    const confirmArg = confirmMock.mock.calls[0]?.[0]
-    await act(async () => {
-      await confirmArg.onOk()
-    })
-
-    expect(getBusinessModuleDetailMock).toHaveBeenCalledWith(
-      'freight-bill',
-      '101',
-    )
-    expect(saveBusinessModuleMock).toHaveBeenCalledWith('freight-bill', {
-      id: '101',
-      deliveryStatus: '已送达',
-    })
-    expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
-  })
-
-  it('handles partially failed freight delivery operations', async () => {
-    getBusinessModuleDetailMock.mockResolvedValue({
-      data: { id: '101', deliveryStatus: '运输中' },
-    })
-    saveBusinessModuleMock.mockRejectedValue(new Error('保存失败'))
-
-    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
-
-    const { result } = renderHook(() =>
-      useBusinessGridBatchActions({
-        moduleKey: 'freight-bill',
-        selectedRowKeys: ['101'],
-        selectedRows: [{ id: '101', deliveryStatus: '运输中' }],
-        listAuditTarget: null,
-        listReverseAuditTarget: null,
-        refreshAndClearSelection,
-      }),
-    )
-
-    act(() => {
-      result.current.markSelectedFreightDelivered()
-    })
-
-    const confirmArg = confirmMock.mock.calls[0]?.[0]
-    await act(async () => {
-      await confirmArg.onOk()
-    })
-
-    expect(warningMock).toHaveBeenCalled()
-    expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
-  })
-
   it('handles eligible reverse audit operation', async () => {
     updateBusinessModuleStatusMock.mockResolvedValue(undefined)
 
@@ -626,38 +526,6 @@ describe('useBusinessGridBatchActions', () => {
     expect(refreshAndClearSelection).toHaveBeenCalled()
   })
 
-  it('handles non-Error rejection in freight delivery', async () => {
-    getBusinessModuleDetailMock.mockResolvedValue({
-      data: { id: '101', deliveryStatus: '运输中' },
-    })
-    saveBusinessModuleMock.mockRejectedValue('string error')
-
-    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
-
-    const { result } = renderHook(() =>
-      useBusinessGridBatchActions({
-        moduleKey: 'freight-bill',
-        selectedRowKeys: ['101'],
-        selectedRows: [{ id: '101', deliveryStatus: '运输中' }],
-        listAuditTarget: null,
-        listReverseAuditTarget: null,
-        refreshAndClearSelection,
-      }),
-    )
-
-    act(() => {
-      result.current.markSelectedFreightDelivered()
-    })
-
-    const confirmArg = confirmMock.mock.calls[0]?.[0]
-    await act(async () => {
-      await confirmArg.onOk()
-    })
-
-    expect(warningMock).toHaveBeenCalled()
-    expect(refreshAndClearSelection).toHaveBeenCalled()
-  })
-
   it('handles successful audit with all rows', async () => {
     updateBusinessModuleStatusMock.mockResolvedValue(undefined)
 
@@ -719,35 +587,4 @@ describe('useBusinessGridBatchActions', () => {
     expect(refreshAndClearSelection).toHaveBeenCalled()
   })
 
-  it('handles successful freight delivery', async () => {
-    getBusinessModuleDetailMock.mockResolvedValue({
-      data: { id: '101', deliveryStatus: '运输中' },
-    })
-    saveBusinessModuleMock.mockResolvedValue(undefined)
-
-    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
-
-    const { result } = renderHook(() =>
-      useBusinessGridBatchActions({
-        moduleKey: 'freight-bill',
-        selectedRowKeys: ['101'],
-        selectedRows: [{ id: '101', deliveryStatus: '运输中' }],
-        listAuditTarget: null,
-        listReverseAuditTarget: null,
-        refreshAndClearSelection,
-      }),
-    )
-
-    act(() => {
-      result.current.markSelectedFreightDelivered()
-    })
-
-    const confirmArg = confirmMock.mock.calls[0]?.[0]
-    await act(async () => {
-      await confirmArg.onOk()
-    })
-
-    expect(successMock).toHaveBeenCalled()
-    expect(refreshAndClearSelection).toHaveBeenCalled()
-  })
 })

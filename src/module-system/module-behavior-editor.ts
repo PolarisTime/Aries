@@ -12,7 +12,7 @@ registerModuleBehavior('carrier', {
 })
 
 registerModuleBehavior('sales-order', {
-  editableLockedFields: [],
+  editableLockedFields: ['deliveryDate', 'remark'],
   editableLockedItemColumns: ['unitPrice'],
   locksLineItemsWhenRecordLocked: true,
   lineItemLockSourceModule: 'sales-outbound',
@@ -20,7 +20,7 @@ registerModuleBehavior('sales-order', {
   lineItemLockTargetField: 'orderNo',
   lineItemLockStatuses: ['已审核'],
   lockedLineItemsNotice:
-    '当前销售订单已存在已审核的销售出库，数量、重量和单据信息已锁定，仅允许调整单价。',
+    '当前销售订单已审核，订单编号、客户、项目和明细非价格字段已锁定，仅允许调整送货日期、备注和单价。',
   protectedEditStatuses: ['完成销售'],
 })
 

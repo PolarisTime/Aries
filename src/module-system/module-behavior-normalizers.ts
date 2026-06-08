@@ -46,9 +46,6 @@ registerModuleBehavior('freight-bill', {
         2,
       ),
     )
-    if (!record.deliveryStatus) {
-      record.deliveryStatus = '未送达'
-    }
   },
 })
 

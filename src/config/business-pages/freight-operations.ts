@@ -46,11 +46,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         label: i18next.t('modules.pages.freightOperations.generatePickupList'),
         type: 'default',
       },
-      {
-        key: 'mark_delivered',
-        label: i18next.t('modules.pages.freightOperations.markDelivered'),
-        type: 'default',
-      },
     ],
     filters: [
       {
@@ -184,11 +179,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         type: 'status',
       },
       {
-        label: i18next.t('modules.pages.freightOperations.deliveryStatus'),
-        key: 'deliveryStatus',
-        type: 'status',
-      },
-      {
         label: i18next.t('modules.pages.freightOperations.remark'),
         key: 'remark',
       },
@@ -291,6 +281,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
     data: [],
     buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalFreight'),
     statusMap,
-    rowHighlightStatuses: ['未审核', '未送达'],
+    rowHighlightStatuses: ['未审核'],
   },
 }

@@ -22,3 +22,8 @@ export async function fetchMaterialGrades(): Promise<MaterialGradeOption[]> {
     return []
   }
 }
+
+export async function reloadMaterialGrades(): Promise<MaterialGradeOption[]> {
+  cachedGrades = null
+  return fetchMaterialGrades()
+}

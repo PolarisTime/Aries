@@ -1,8 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import {
   deleteBusinessModule,
-  getBusinessModuleDetail,
-  saveBusinessModule,
   updateBusinessModuleStatus,
 } from '@/api/business'
 import {
@@ -303,67 +301,9 @@ export function useBusinessGridBatchActions({
     })
   }
 
-  const markSelectedFreightDelivered = () => {
-    if (!selectedRowKeys.length) {
-      message.warning(t('hooks.batchActions.pleaseSelectFreight'))
-      return
-    }
-
-    modal.confirm({
-      title: t('hooks.batchActions.batchMarkDelivered'),
-      content: t('hooks.batchActions.batchMarkDeliveredConfirm', {
-        count: selectedRowKeys.length,
-      }),
-      onOk: async () => {
-        const deliveredResults = await Promise.allSettled(
-          selectedRowKeys.map((id) =>
-            getBusinessModuleDetail('freight-bill', id).then((detail) =>
-              saveBusinessModule('freight-bill', {
-                ...detail.data,
-                deliveryStatus: '已送达',
-              }),
-            ),
-          ),
-        )
-        let successCount = 0
-        let failedCount = 0
-        let firstError = ''
-        for (const result of deliveredResults) {
-          if (result.status === 'fulfilled') {
-            successCount += 1
-          } else {
-            failedCount += 1
-            if (!firstError) {
-              firstError =
-                result.reason instanceof Error
-                  ? result.reason.message
-                  : t('hooks.batchActions.markDeliveredFailed')
-            }
-          }
-        }
-
-        if (failedCount > 0) {
-          message.warning(
-            t('hooks.batchActions.markDeliveredCompletedWithFailures', {
-              successCount,
-              failedCount,
-              errorPart: firstError ? `；${firstError}` : '',
-            }),
-          )
-        } else {
-          message.success(
-            t('hooks.batchActions.markDeliveredSuccess', { successCount }),
-          )
-        }
-        await refreshAndClearSelection()
-      },
-    })
-  }
-
   return {
     handleSelectedAuditRecords,
     handleSelectedDeleteRecords,
     handleSelectedReverseAuditRecords,
-    markSelectedFreightDelivered,
   }
 }

@@ -53,4 +53,37 @@ describe('salesOrdersPageConfig', () => {
   it('has defaultHiddenColumnKeys', () => {
     expect(salesOrdersPageConfig.defaultHiddenColumnKeys).toBeDefined()
   })
+
+  it('renders totalWeight for unchanged sales order rows', () => {
+    const totalWeightColumn = salesOrdersPageConfig.columns.find(
+      (column) => column.dataIndex === 'totalWeight',
+    )
+
+    expect(totalWeightColumn?.render?.(12.5, { items: [] })).toBe('12.5')
+  })
+
+  it('renders fallback for invalid totalWeight values', () => {
+    const totalWeightColumn = salesOrdersPageConfig.columns.find(
+      (column) => column.dataIndex === 'totalWeight',
+    )
+
+    expect(totalWeightColumn?.render?.(undefined, { items: [] })).toBe('-')
+  })
+
+  it('renders warning tooltip for overwritten totalWeight rows', () => {
+    const totalWeightColumn = salesOrdersPageConfig.columns.find(
+      (column) => column.dataIndex === 'totalWeight',
+    )
+
+    const rendered = totalWeightColumn?.render?.(8, {
+      items: [{ originalWeightTon: 10, weightTon: 8 }],
+    })
+
+    expect(rendered).toMatchObject({
+      props: {
+        title: '原始计划 10 吨',
+        children: '8 ⚠️',
+      },
+    })
+  })
 })

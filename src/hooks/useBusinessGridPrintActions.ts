@@ -5,9 +5,10 @@ import { assertApiSuccess, http } from '@/api/client'
 import { listPrintTemplates } from '@/api/print-template'
 import { PrintTemplateSelector } from '@/components/PrintTemplateSelector'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
-import type { PrintTemplateRecord } from '@/types/print-template'
+import type { PrintActionMode, PrintTemplateRecord } from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
 import { execPrintCode, loadCLodop, printHtml } from '@/utils/clodop'
+import { downloadBlob } from '@/utils/download'
 import { renderPrintTemplate } from '@/utils/print-template'
 
 interface Props {
@@ -72,12 +73,23 @@ function printPdfBlob(blob: Blob) {
   }, 60_000)
 }
 
-function handlePdfBlob(blob: Blob, preview: boolean) {
-  if (preview) {
+function handlePdfBlob(blob: Blob, mode: PrintActionMode, fileName: string) {
+  if (mode === 'preview') {
     openPdfBlob(blob)
     return
   }
+  if (mode === 'download') {
+    downloadBlob(blob, fileName)
+    return
+  }
   printPdfBlob(blob)
+}
+
+function normalizePdfFileName(fileName: string) {
+  const normalized = fileName.trim() || 'print.pdf'
+  return normalized.toLowerCase().endsWith('.pdf')
+    ? normalized
+    : `${normalized}.pdf`
 }
 
 async function normalizePdfError(err: unknown, fallbackMessage: string) {
@@ -105,7 +117,11 @@ async function pickPrintTemplate(
 ): Promise<PrintTemplateRecord | null> {
   if (!Object.hasOwn(printTemplateTargetMap, moduleKey)) return null
   const response = await listPrintTemplates(moduleKey)
-  const templates = (response?.data || []).filter((t) => t.templateHtml?.trim())
+  const templates = (response?.data || []).filter(
+    (t) =>
+      (t.status == null || t.status === 'ACTIVE') &&
+      (t.templateType === 'PDF_FORM' || t.templateHtml?.trim()),
+  )
 
   if (templates.length === 0) return null
   if (templates.length === 1) return templates[0]
@@ -142,7 +158,7 @@ export function useBusinessGridPrintActions({
 }: Props) {
   const { t } = useTranslation()
   const handlePrintSelectedRecords = async (
-    preview: boolean,
+    mode: PrintActionMode,
     selectedTemplate?: PrintTemplateRecord,
   ) => {
     if (!selectedRowKeys.length) {
@@ -158,11 +174,6 @@ export function useBusinessGridPrintActions({
     }
 
     try {
-      // 确保 CLodop 脚本已加载（main.tsx 预加载 + 此处兜底）
-      if (template.templateType !== 'PDF_FORM') {
-        await loadCLodop()
-      }
-
       const results = await Promise.all(
         selectedRowKeys.map((recordId) =>
           http.post<{
@@ -187,7 +198,22 @@ export function useBusinessGridPrintActions({
             d?.templateType === 'PDF_FORM' && Boolean(d.pdfBase64),
         )
       for (const d of pdfResults) {
-        handlePdfBlob(blobFromBase64(d.pdfBase64 || '', d.contentType), preview)
+        handlePdfBlob(
+          blobFromBase64(d.pdfBase64 || '', d.contentType),
+          mode,
+          normalizePdfFileName(
+            d.fileName || d.templateName || template.templateName,
+          ),
+        )
+      }
+
+      if (mode === 'download' && pdfResults.length) {
+        return
+      }
+
+      if (mode === 'download') {
+        message.warning(t('hooks.printActions.noPrintContent'))
+        return
       }
 
       const rendered = results
@@ -210,10 +236,15 @@ export function useBusinessGridPrintActions({
       const coordResults = rendered.filter((r) => r.result.type === 'COORD')
       const htmlResults = rendered.filter((r) => r.result.type === 'HTML')
 
+      if (coordResults.length || htmlResults.length) {
+        // 确保 CLodop 脚本已加载（main.tsx 预加载 + 此处兜底）
+        await loadCLodop()
+      }
+
       for (const r of coordResults) {
         if (!r.result.script) continue
         const success = execPrintCode(r.result.script, {
-          preview,
+          preview: mode === 'preview',
           title: r.title,
         })
         requirePrintService(
@@ -229,7 +260,7 @@ export function useBusinessGridPrintActions({
         const success = printHtml(
           htmlContents.join('<div class="print-page"></div>'),
           {
-            preview,
+            preview: mode === 'preview',
             title: htmlResults[0]?.title,
           },
         )
@@ -240,7 +271,7 @@ export function useBusinessGridPrintActions({
           )
       }
 
-      if (!coordResults.length && !htmlResults.length) {
+      if (!pdfResults.length && !coordResults.length && !htmlResults.length) {
         message.warning(t('hooks.printActions.noPrintContent'))
       }
     } catch (err) {

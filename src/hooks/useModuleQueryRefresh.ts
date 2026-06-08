@@ -18,6 +18,12 @@ export function useModuleQueryRefresh(moduleKey: string) {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.businessGridAll(moduleKey),
       }),
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.parentSelectorListBase,
+      }),
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.statementLinkOptionsBase,
+      }),
     ]
 
     if (masterOptionQueryKey) {

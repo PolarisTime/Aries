@@ -2,6 +2,7 @@ import { reloadCarrierOptions } from '@/api/carrier-options'
 import { reloadCustomerOptions } from '@/api/customer-options'
 import { reloadMaterialCategories } from '@/api/material-categories'
 import { fetchMaterialSearch } from '@/api/materials'
+import { replaceMaterialCategoryOptions } from '@/api/option-resolvers'
 import { reloadSupplierOptions } from '@/api/supplier-options'
 import { reloadWarehouseOptions } from '@/api/warehouse-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -28,7 +29,10 @@ export async function reloadMasterOptionsForModule(moduleKey: string) {
     case 'material':
       return fetchMaterialSearch('', 500)
     case 'material-categories':
-      return reloadMaterialCategories()
+      return reloadMaterialCategories().then((options) => {
+        replaceMaterialCategoryOptions(options)
+        return options
+      })
     case 'supplier':
       return reloadSupplierOptions()
     case 'warehouse':
