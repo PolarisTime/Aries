@@ -154,9 +154,9 @@ vi.mock('@/views/system/PrintTemplateEditorModal', () => ({
         <span data-testid="template-html">{templateHtml}</span>
         <button
           type="button"
-          onClick={() => onTemplateHtmlChange('<div>ok</div>')}
+          onClick={() => onTemplateHtmlChange('LODOP.PRINT_INIT("ok");')}
         >
-          html
+          coord
         </button>
         <button type="button" onClick={onSave}>
           save
@@ -199,9 +199,9 @@ const template: PrintTemplateRecord = {
   billType: 'purchase-order',
   templateName: '采购模板',
   templateCode: 'PURCHASE_TEMPLATE',
-  templateHtml: '<div>采购</div>',
-  templateType: 'HTML',
-  engine: 'BROWSER_HTML',
+  templateHtml: 'LODOP.PRINT_INIT("采购");',
+  templateType: 'COORD',
+  engine: 'LODOP',
   assetRef: null,
   versionNo: 1,
   status: 'ACTIVE',
@@ -226,8 +226,8 @@ describe('PrintTemplateView', () => {
       billType: 'purchase-order',
       templateName: '  新模板  ',
       templateCode: '  NEW_TEMPLATE  ',
-      templateType: 'HTML',
-      engine: 'BROWSER_HTML',
+      templateType: 'COORD',
+      engine: 'LODOP',
       assetRef: '',
       versionNo: 1,
       status: 'ACTIVE',
@@ -301,8 +301,8 @@ describe('PrintTemplateView', () => {
       billType: 'purchase-order',
       templateName: '',
       templateCode: '',
-      templateType: 'HTML',
-      engine: 'BROWSER_HTML',
+      templateType: 'COORD',
+      engine: 'LODOP',
       assetRef: '',
       versionNo: 1,
       status: 'ACTIVE',
@@ -322,7 +322,7 @@ describe('PrintTemplateView', () => {
     fireEvent.click(screen.getByText('edit'))
     expect(screen.getByTestId('editing')).toHaveTextContent('true')
     expect(screen.getByTestId('template-html')).toHaveTextContent(
-      '<div>采购</div>',
+      'LODOP.PRINT_INIT("采购");',
     )
     expect(mockForm.setFieldsValue).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -330,15 +330,15 @@ describe('PrintTemplateView', () => {
         billType: 'purchase-order',
         templateName: '采购模板',
         templateCode: 'PURCHASE_TEMPLATE',
-        templateType: 'HTML',
-        engine: 'BROWSER_HTML',
+        templateType: 'COORD',
+        engine: 'LODOP',
         assetRef: '',
         versionNo: 1,
         status: 'ACTIVE',
       }),
     )
 
-    fireEvent.click(screen.getByText('html'))
+    fireEvent.click(screen.getByText('coord'))
     fireEvent.click(screen.getByText('save'))
 
     await waitFor(() => {
@@ -347,9 +347,9 @@ describe('PrintTemplateView', () => {
         billType: 'purchase-order',
         templateName: '新模板',
         templateCode: 'NEW_TEMPLATE',
-        templateHtml: '<div>ok</div>',
-        templateType: 'HTML',
-        engine: 'BROWSER_HTML',
+        templateHtml: 'LODOP.PRINT_INIT("ok");',
+        templateType: 'COORD',
+        engine: 'LODOP',
         assetRef: undefined,
         versionNo: 1,
         status: 'ACTIVE',
@@ -364,7 +364,7 @@ describe('PrintTemplateView', () => {
     render(<PrintTemplateView />)
 
     fireEvent.click(screen.getByText('copy'))
-    fireEvent.click(screen.getByText('html'))
+    fireEvent.click(screen.getByText('coord'))
     fireEvent.click(screen.getByText('save'))
 
     await waitFor(() => {
@@ -373,9 +373,9 @@ describe('PrintTemplateView', () => {
         billType: 'purchase-order',
         templateName: '新模板',
         templateCode: 'NEW_TEMPLATE',
-        templateHtml: '<div>ok</div>',
-        templateType: 'HTML',
-        engine: 'BROWSER_HTML',
+        templateHtml: 'LODOP.PRINT_INIT("ok");',
+        templateType: 'COORD',
+        engine: 'LODOP',
         assetRef: undefined,
         versionNo: 1,
         status: 'ACTIVE',
@@ -394,15 +394,15 @@ describe('PrintTemplateView', () => {
         billType: 'purchase-order',
         templateName: 'Copy',
         templateCode: '',
-        templateType: 'HTML',
-        engine: 'BROWSER_HTML',
+        templateType: 'COORD',
+        engine: 'LODOP',
         assetRef: '',
         versionNo: 1,
         status: 'ACTIVE',
       }),
     )
     expect(screen.getByTestId('template-html')).toHaveTextContent(
-      '<div>采购</div>',
+      'LODOP.PRINT_INIT("采购");',
     )
   })
 

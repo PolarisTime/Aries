@@ -11,9 +11,9 @@ describe('print-template schemas', () => {
         id: '1',
         templateName: '模板1',
         templateCode: 'TPL_1',
-        templateHtml: '<div>模板</div>',
-        templateType: 'HTML',
-        engine: 'BROWSER_HTML',
+        templateHtml: 'LODOP.PRINT_INIT("模板");',
+        templateType: 'COORD',
+        engine: 'LODOP',
         assetRef: null,
         versionNo: 1,
         status: 'ACTIVE',
@@ -71,8 +71,8 @@ describe('print-template schemas', () => {
       const data = {
         billType: 'purchase',
         templateName: '模板1',
-        templateHtml: '<div>模板</div>',
-        templateType: 'HTML',
+        templateHtml: 'LODOP.PRINT_INIT("模板");',
+        templateType: 'COORD',
       }
       const result = savePrintTemplatePayloadSchema.safeParse(data)
       expect(result.success).toBe(true)
@@ -89,7 +89,7 @@ describe('print-template schemas', () => {
         id: '1',
         billType: 'purchase',
         templateName: '模板1',
-        templateHtml: '<div>模板</div>',
+        templateHtml: 'LODOP.PRINT_INIT("模板");',
         templateType: 'COORD',
       }
       const result = savePrintTemplatePayloadSchema.safeParse(data)
@@ -108,7 +108,7 @@ describe('print-template schemas', () => {
       expect(result.success).toBe(true)
     })
 
-    it('should reject PDF_FORM without assetRef', () => {
+    it('should allow PDF_FORM without assetRef', () => {
       const data = {
         billType: 'purchase',
         templateName: '模板1',
@@ -116,14 +116,14 @@ describe('print-template schemas', () => {
         templateType: 'PDF_FORM',
       }
       const result = savePrintTemplatePayloadSchema.safeParse(data)
-      expect(result.success).toBe(false)
+      expect(result.success).toBe(true)
     })
 
     it('should reject invalid templateType', () => {
       const data = {
         billType: 'purchase',
         templateName: '模板1',
-        templateHtml: '<div>模板</div>',
+        templateHtml: 'LODOP.PRINT_INIT("模板");',
         templateType: 'INVALID',
       }
       const result = savePrintTemplatePayloadSchema.safeParse(data)

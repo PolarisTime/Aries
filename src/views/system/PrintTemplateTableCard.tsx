@@ -126,7 +126,7 @@ export function PrintTemplateTableCard({
       dataIndex: 'templateType',
       title: t('system.printTemplate.templateType'),
       width: 120,
-      render: (value: string) => value || 'HTML',
+      render: (value: string) => value || 'COORD',
     },
     {
       dataIndex: 'engine',

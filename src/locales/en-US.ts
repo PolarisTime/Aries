@@ -1976,7 +1976,6 @@ export const enUS: MessageSchema = {
       statusDisabled: 'Disabled',
       deleteContent: 'Delete template "{{name}}"?',
       inputTemplateContent: 'Please enter template content',
-      inputAssetRef: 'Please enter PDF asset reference',
     },
     numberRules: {
       title: 'Number Rules',
@@ -2377,15 +2376,13 @@ export const enUS: MessageSchema = {
       templateCode: 'Template Code',
       templateCodePlaceholder: 'Leave empty to auto-generate',
       templateType: 'Template Type',
-      templateTypeHtml: 'HTML Template',
       templateTypeCoord: 'Coordinate Overlay',
       templateTypePdfForm: 'PDF Form',
       engine: 'Engine',
-      engineBrowserHtml: 'Browser HTML',
       engineLodop: 'Lodop Coordinate Overlay',
       enginePdfForm: 'PDF Form Fill',
-      assetRef: 'PDF Asset',
-      assetRefPlaceholder: 'e.g. print-forms/yingjie-a4-remark.pdf',
+      assetRef: 'PDF Asset (Optional)',
+      assetRefPlaceholder: 'Leave empty for pure JSON templates',
       versionNo: 'Version',
       status: 'Status',
       statusActive: 'Active',
@@ -2393,10 +2390,10 @@ export const enUS: MessageSchema = {
       templateContent: 'Template Content',
       templateContentPlaceholder: 'Enter template content',
       templateHint:
-        'HTML/COORD use template content. PDF_FORM uses only the PDF asset and backend field mapping config.',
+        'COORD uses overlay script or shared layout JSON. PDF_FORM generates PDF from pure JSON and can optionally reference a PDF asset.',
       helpTitle: 'Print Template Guide',
       unifiedPrintApi:
-        'All templates use POST /print/record. HTML/COORD returns template data, PDF_FORM returns PDF content. The frontend only renders, previews, and prints.',
+        'All templates use POST /print/record. COORD returns overlay script and data, PDF_FORM returns PDF content. The frontend only previews and prints.',
       syntaxHint:
         'Use {{fieldName}} for fields, {{#each details}}...{{/each}} for detail rows, and {{#if fieldName}}...{{else}}...{{/if}} for conditional blocks.',
       commonFields: 'Header fields',

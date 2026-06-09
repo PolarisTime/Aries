@@ -44,34 +44,41 @@ export function PrintTemplateDropdown({
       templates.filter((tpl) => tpl.status == null || tpl.status === 'ACTIVE'),
     [templates],
   )
+  const printableTemplates = useMemo(
+    () =>
+      activeTemplates.filter(
+        (tpl) => tpl.templateType === 'COORD' || tpl.templateType === 'PDF_FORM',
+      ),
+    [activeTemplates],
+  )
 
   useEffect(() => {
     if (!open) return
     setSelectedTemplateId((current) => {
-      if (current && activeTemplates.some((tpl) => tpl.id === current)) {
+      if (current && printableTemplates.some((tpl) => tpl.id === current)) {
         return current
       }
-      return activeTemplates[0]?.id
+      return printableTemplates[0]?.id
     })
-  }, [activeTemplates, open])
+  }, [open, printableTemplates])
 
   const selectedTemplate = useMemo(
-    () => activeTemplates.find((tpl) => tpl.id === selectedTemplateId),
-    [activeTemplates, selectedTemplateId],
+    () => printableTemplates.find((tpl) => tpl.id === selectedTemplateId),
+    [printableTemplates, selectedTemplateId],
   )
 
   const templateOptions = useMemo(
     () =>
-      activeTemplates.map((tpl) => ({
+      printableTemplates.map((tpl) => ({
         label: (
           <Space size={8}>
             <span>{tpl.templateName}</span>
-            <Tag>{tpl.templateType || 'HTML'}</Tag>
+            <Tag>{tpl.templateType || 'COORD'}</Tag>
           </Space>
         ),
         value: tpl.id,
       })),
-    [activeTemplates],
+    [printableTemplates],
   )
 
   const handlePrint = (mode: PrintActionMode, template: PrintTemplateRecord) => {
@@ -101,7 +108,7 @@ export function PrintTemplateDropdown({
         title={t('modules.print.print')}
         width={680}
       >
-        {activeTemplates.length ? (
+        {printableTemplates.length ? (
           <div className="flex flex-wrap items-center gap-3">
             <Select
               className="min-w-80 flex-1"

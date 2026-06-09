@@ -1889,7 +1889,6 @@ export interface MessageSchema {
       statusDisabled: string
       deleteContent: string
       inputTemplateContent: string
-      inputAssetRef: string
     }
     numberRules: {
       title: string
@@ -2270,11 +2269,9 @@ export interface MessageSchema {
       templateCode: string
       templateCodePlaceholder: string
       templateType: string
-      templateTypeHtml: string
       templateTypeCoord: string
       templateTypePdfForm: string
       engine: string
-      engineBrowserHtml: string
       engineLodop: string
       enginePdfForm: string
       assetRef: string

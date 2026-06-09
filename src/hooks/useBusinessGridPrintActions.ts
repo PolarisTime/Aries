@@ -7,7 +7,7 @@ import { PrintTemplateSelector } from '@/components/PrintTemplateSelector'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
 import type { PrintActionMode, PrintTemplateRecord } from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
-import { execPrintCode, loadCLodop, printHtml } from '@/utils/clodop'
+import { execPrintCode, loadCLodop } from '@/utils/clodop'
 import { downloadBlob } from '@/utils/download'
 import { renderPrintTemplate } from '@/utils/print-template'
 
@@ -118,9 +118,10 @@ async function pickPrintTemplate(
   if (!Object.hasOwn(printTemplateTargetMap, moduleKey)) return null
   const response = await listPrintTemplates(moduleKey)
   const templates = (response?.data || []).filter(
-    (t) =>
-      (t.status == null || t.status === 'ACTIVE') &&
-      (t.templateType === 'PDF_FORM' || t.templateHtml?.trim()),
+      (t) =>
+        (t.status == null || t.status === 'ACTIVE') &&
+        (t.templateType === 'COORD' || t.templateType === 'PDF_FORM') &&
+        (t.templateType === 'PDF_FORM' || t.templateHtml?.trim()),
   )
 
   if (templates.length === 0) return null
@@ -225,7 +226,7 @@ export function useBusinessGridPrintActions({
             title: d.templateName || template.templateName,
             result: renderPrintTemplate(
               d.templateHtml,
-              d.templateType || 'HTML',
+              d.templateType || 'COORD',
               d.data || {},
               d.items || [],
             ),
@@ -234,9 +235,8 @@ export function useBusinessGridPrintActions({
         .filter((r): r is NonNullable<typeof r> => Boolean(r))
 
       const coordResults = rendered.filter((r) => r.result.type === 'COORD')
-      const htmlResults = rendered.filter((r) => r.result.type === 'HTML')
 
-      if (coordResults.length || htmlResults.length) {
+      if (coordResults.length) {
         // 确保 CLodop 脚本已加载（main.tsx 预加载 + 此处兜底）
         await loadCLodop()
       }
@@ -253,25 +253,7 @@ export function useBusinessGridPrintActions({
         )
       }
 
-      const htmlContents = htmlResults
-        .map((r) => r.result.html)
-        .filter((html): html is string => Boolean(html))
-      if (htmlContents.length) {
-        const success = printHtml(
-          htmlContents.join('<div class="print-page"></div>'),
-          {
-            preview: mode === 'preview',
-            title: htmlResults[0]?.title,
-          },
-        )
-        if (!success)
-          requirePrintService(
-            success,
-            t('hooks.printActions.printServiceUnavailable'),
-          )
-      }
-
-      if (!pdfResults.length && !coordResults.length && !htmlResults.length) {
+      if (!pdfResults.length && !coordResults.length) {
         message.warning(t('hooks.printActions.noPrintContent'))
       }
     } catch (err) {

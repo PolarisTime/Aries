@@ -92,7 +92,7 @@ const layoutFields = [
 function defaultEngineForTemplateType(templateType: string) {
   if (templateType === 'COORD') return 'LODOP'
   if (templateType === 'PDF_FORM') return 'PDF_FORM'
-  return 'BROWSER_HTML'
+  return 'LODOP'
 }
 
 function FieldTags({ title, fields }: { title: string; fields: string[] }) {
@@ -192,10 +192,6 @@ export function PrintTemplateEditorModal({
                 }
                 options={[
                   {
-                    value: 'HTML',
-                    label: t('system.printTemplateEditor.templateTypeHtml'),
-                  },
-                  {
                     value: 'COORD',
                     label: t('system.printTemplateEditor.templateTypeCoord'),
                   },
@@ -216,10 +212,6 @@ export function PrintTemplateEditorModal({
               <Select
                 disabled
                 options={[
-                  {
-                    value: 'BROWSER_HTML',
-                    label: t('system.printTemplateEditor.engineBrowserHtml'),
-                  },
                   {
                     value: 'LODOP',
                     label: t('system.printTemplateEditor.engineLodop'),

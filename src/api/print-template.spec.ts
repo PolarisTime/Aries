@@ -53,7 +53,7 @@ describe('print-template', () => {
       const payload = {
         billType: 'purchase-order',
         templateName: '新模板',
-        templateHtml: '<div>test</div>',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
       }
       const result = await savePrintTemplate(payload)
 
@@ -61,9 +61,9 @@ describe('print-template', () => {
         billType: 'purchase-order',
         templateName: '新模板',
         templateCode: undefined,
-        templateHtml: '<div>test</div>',
-        templateType: 'HTML',
-        engine: 'BROWSER_HTML',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
+        templateType: 'COORD',
+        engine: 'LODOP',
         assetRef: undefined,
         versionNo: 1,
         status: 'ACTIVE',
@@ -82,7 +82,7 @@ describe('print-template', () => {
         id: '1',
         billType: 'purchase-order',
         templateName: '更新模板',
-        templateHtml: '<div>updated</div>',
+        templateHtml: 'LODOP.PRINT_INIT("updated");',
       }
       const result = await savePrintTemplate(payload)
 
@@ -90,9 +90,9 @@ describe('print-template', () => {
         billType: 'purchase-order',
         templateName: '更新模板',
         templateCode: undefined,
-        templateHtml: '<div>updated</div>',
-        templateType: 'HTML',
-        engine: 'BROWSER_HTML',
+        templateHtml: 'LODOP.PRINT_INIT("updated");',
+        templateType: 'COORD',
+        engine: 'LODOP',
         assetRef: undefined,
         versionNo: 1,
         status: 'ACTIVE',
@@ -100,20 +100,20 @@ describe('print-template', () => {
       expect(result).toEqual(mockResponse)
     })
 
-    it('defaults templateType to HTML when not provided', async () => {
+    it('defaults templateType to COORD when not provided', async () => {
       restPostMock.mockResolvedValue({ code: 0, data: {} })
 
       await savePrintTemplate({
         billType: 'test',
         templateName: 'test',
-        templateHtml: '<div/>',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
       })
 
       expect(restPostMock).toHaveBeenCalledWith(
         '/print-templates',
         expect.objectContaining({
-          templateType: 'HTML',
-          engine: 'BROWSER_HTML',
+          templateType: 'COORD',
+          engine: 'LODOP',
         }),
       )
     })
@@ -127,7 +127,6 @@ describe('print-template', () => {
         templateCode: 'SALES_ORDER_PDF',
         templateHtml: '',
         templateType: 'PDF_FORM',
-        assetRef: 'print-forms/yingjie-a4-remark.pdf',
         versionNo: 2,
         status: 'ACTIVE',
       })
@@ -139,7 +138,7 @@ describe('print-template', () => {
         templateHtml: '',
         templateType: 'PDF_FORM',
         engine: 'PDF_FORM',
-        assetRef: 'print-forms/yingjie-a4-remark.pdf',
+        assetRef: undefined,
         versionNo: 2,
         status: 'ACTIVE',
       })
@@ -152,7 +151,7 @@ describe('print-template', () => {
         id: 'id with spaces',
         billType: 'test',
         templateName: 'test',
-        templateHtml: '<div/>',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
       })
 
       expect(restPutMock).toHaveBeenCalledWith(
