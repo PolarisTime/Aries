@@ -79,6 +79,7 @@ vi.mock('@/views/system/PrintTemplateTableCard', () => ({
     canCreate: boolean
     canEdit: boolean
     canDelete: boolean
+    uploadPending: boolean
     onBillTypeChange: (value: string) => void
     onRefresh: () => void
     onCreate: () => void
@@ -99,6 +100,7 @@ vi.mock('@/views/system/PrintTemplateTableCard', () => ({
       <span data-testid="can-create">{String(props.canCreate)}</span>
       <span data-testid="can-edit">{String(props.canEdit)}</span>
       <span data-testid="can-delete">{String(props.canDelete)}</span>
+      <span data-testid="upload-pending">{String(props.uploadPending)}</span>
       <button
         type="button"
         onClick={() => props.onBillTypeChange('sales-order')}
@@ -271,10 +273,10 @@ describe('PrintTemplateView', () => {
     mockUseMutation.mockImplementation((options: any) => ({
       isPending: false,
       mutate: vi.fn((payload: unknown) => {
-        options.onSuccess?.(payload)
+        options.onSuccess?.(undefined, payload)
       }),
       mutateAsync: vi.fn((payload: unknown) => {
-        options.onSuccess?.(payload)
+        options.onSuccess?.(undefined, payload)
         return Promise.resolve(payload)
       }),
     }))
@@ -299,6 +301,7 @@ describe('PrintTemplateView', () => {
     expect(screen.getByTestId('can-create')).toHaveTextContent('true')
     expect(screen.getByTestId('can-edit')).toHaveTextContent('true')
     expect(screen.getByTestId('can-delete')).toHaveTextContent('true')
+    expect(screen.getByTestId('upload-pending')).toHaveTextContent('false')
   })
 
   it('does not render editor modal by default', () => {
@@ -392,8 +395,53 @@ describe('PrintTemplateView', () => {
       })
     })
     expect(mockMessageSuccess).toHaveBeenCalledWith('common.saveSuccess')
-    expect(mockInvalidateQueries).toHaveBeenCalled()
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['print-template'],
+    })
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['print-templates', 'purchase-order'],
+    })
     expect(screen.queryByTestId('editor-modal')).not.toBeInTheDocument()
+  })
+
+  it('invalidates the previous bill type after moving a template', async () => {
+    mockForm.validateFields.mockResolvedValue({
+      billType: 'sales-order',
+      templateName: '销售模板',
+      templateCode: 'SALES_TEMPLATE',
+      templateType: 'COORD',
+      engine: 'LODOP',
+      assetRef: '',
+      versionNo: 1,
+      status: 'ACTIVE',
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('edit'))
+    fireEvent.click(screen.getByText('coord'))
+    fireEvent.click(screen.getByText('save'))
+
+    await waitFor(() => {
+      expect(mutationPayloads()).toContainEqual({
+        id: 'tpl-1',
+        billType: 'sales-order',
+        templateName: '销售模板',
+        templateCode: 'SALES_TEMPLATE',
+        templateHtml: 'LODOP.PRINT_INIT("ok");',
+        templateType: 'COORD',
+        engine: 'LODOP',
+        assetRef: undefined,
+        versionNo: 1,
+        status: 'ACTIVE',
+        previousBillType: 'purchase-order',
+      })
+    })
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['print-templates', 'sales-order'],
+    })
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['print-templates', 'purchase-order'],
+    })
   })
 
   it('saves a copied template without active id', async () => {
@@ -467,11 +515,16 @@ describe('PrintTemplateView', () => {
     expect(
       mutationResults().some((mutation) =>
         mutation.mutateAsync.mock.calls.some(
-          ([templateId]: [unknown]) => templateId === 'tpl-1',
+          ([payload]: [unknown]) =>
+            JSON.stringify(payload) ===
+            JSON.stringify({ id: 'tpl-1', billType: 'purchase-order' }),
         ),
       ),
     ).toBe(true)
     expect(mockMessageSuccess).toHaveBeenCalledWith('common.deleteSuccess')
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['print-templates', 'purchase-order'],
+    })
   })
 
   it('uploads PDF form json template', async () => {
@@ -487,6 +540,7 @@ describe('PrintTemplateView', () => {
       expect(mutationPayloads()).toContainEqual({
         id: 'pdf-1',
         file: expect.any(File),
+        billType: 'purchase-order',
       })
     })
     expect(mockMessageSuccess).toHaveBeenCalledWith(
@@ -538,15 +592,21 @@ describe('PrintTemplateView', () => {
     expect(screen.queryByTestId('editor-modal')).not.toBeInTheDocument()
   })
 
-  it('reports save and delete errors through request error handler', () => {
+  it('reports mutation errors through request error handler', () => {
     const saveError = new Error('save failed')
     const deleteError = new Error('delete failed')
+    const uploadError = new Error('upload failed')
     render(<PrintTemplateView />)
 
     mockUseMutation.mock.calls[0][0].onError(saveError)
     mockUseMutation.mock.calls[1][0].onError(deleteError)
+    mockUseMutation.mock.calls[2][0].onError(uploadError)
 
     expect(mockShowError).toHaveBeenCalledWith(saveError, 'api.saveFailed')
     expect(mockShowError).toHaveBeenCalledWith(deleteError, 'api.deleteFailed')
+    expect(mockShowError).toHaveBeenCalledWith(
+      uploadError,
+      'system.printTemplate.uploadJsonFailed',
+    )
   })
 })

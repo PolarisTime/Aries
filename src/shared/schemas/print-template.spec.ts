@@ -27,6 +27,21 @@ describe('print-template schemas', () => {
       expect(result.success).toBe(true)
     })
 
+    it('should normalize numeric backend id to string', () => {
+      const data = {
+        id: 1,
+        templateName: '模板1',
+        templateHtml: '<div>模板</div>',
+      }
+
+      const result = printTemplateRecordSchema.safeParse(data)
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.id).toBe('1')
+      }
+    })
+
     it('should require id, templateName, templateHtml', () => {
       const data = { id: '1' }
       const result = printTemplateRecordSchema.safeParse(data)

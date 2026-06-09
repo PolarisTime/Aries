@@ -2,6 +2,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { bindAntdAppApi, message, modal } from '../antd-app'
 
 const staticModalDestroyAll = vi.fn()
+const staticMessageSuccess = vi.fn()
+
+vi.mock('antd/es/message', () => ({
+  default: {
+    success: (...args: unknown[]) => staticMessageSuccess(...args),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    loading: vi.fn(),
+    destroy: vi.fn(),
+  },
+}))
 
 vi.mock('antd/es/modal', () => ({
   default: {
@@ -104,9 +116,9 @@ describe('antd-app', () => {
       expect(mockMessageApi.destroy).toHaveBeenCalled()
     })
 
-    it('returns undefined when no API bound (falls back to dynamic import)', () => {
-      const result = message.success('test')
-      expect(result).toBeUndefined()
+    it('falls back to static message API when no API bound', () => {
+      message.success('test')
+      expect(staticMessageSuccess).toHaveBeenCalledWith('test')
     })
   })
 

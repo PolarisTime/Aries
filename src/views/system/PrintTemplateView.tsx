@@ -19,19 +19,26 @@ import { PrintTemplateEditorModal } from '@/views/system/PrintTemplateEditorModa
 import { PrintTemplatePreviewModal } from '@/views/system/PrintTemplatePreviewModal'
 import { PrintTemplateTableCard } from '@/views/system/PrintTemplateTableCard'
 import { buildPrintTemplateCopyName } from '@/views/system/print-template-view-utils'
+import type { SavePrintTemplatePayload } from '@/shared/schemas'
 
 interface PrintTemplateState {
   selectedBillType: string
   activeTemplateId: string | undefined
+  editingBillType: string | undefined
   editorOpen: boolean
   previewOpen: boolean
   previewTemplate: PrintTemplateRecord | null
   templateHtml: string
 }
 
+type SavePrintTemplateMutationPayload = SavePrintTemplatePayload & {
+  previousBillType?: string
+}
+
 const printTemplateInitialState: PrintTemplateState = {
   selectedBillType: printTemplateTargetOptions[0]?.value || 'purchase-order',
   activeTemplateId: undefined,
+  editingBillType: undefined,
   editorOpen: false,
   previewOpen: false,
   previewTemplate: null,
@@ -64,6 +71,7 @@ export function PrintTemplateView() {
   const {
     selectedBillType,
     activeTemplateId,
+    editingBillType,
     editorOpen,
     previewOpen,
     previewTemplate,
@@ -78,35 +86,58 @@ export function PrintTemplateView() {
   const templates = templatesResponse?.data || []
 
   const saveMutation = useMutation({
-    mutationFn: savePrintTemplate,
-    onSuccess: () => {
+    mutationFn: ({
+      previousBillType: _previousBillType,
+      ...payload
+    }: SavePrintTemplateMutationPayload) => savePrintTemplate(payload),
+    onSuccess: (_data, variables) => {
       message.success(t('common.saveSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.printableTemplates(variables.billType),
+      })
+      if (
+        variables.previousBillType &&
+        variables.previousBillType !== variables.billType
+      ) {
+        void queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.printableTemplates(variables.previousBillType),
+        })
+      }
       setState({ editorOpen: false })
     },
     onError: (error: Error) => showError(error, t('api.saveFailed')),
   })
 
   const deleteMutation = useMutation({
-    mutationFn: deletePrintTemplate,
-    onSuccess: () => {
+    mutationFn: ({ id }: { id: string; billType?: string }) =>
+      deletePrintTemplate(id),
+    onSuccess: (_data, variables) => {
       message.success(t('common.deleteSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
+      void queryClient.invalidateQueries({
+        queryKey: variables.billType
+          ? QUERY_KEYS.printableTemplates(variables.billType)
+          : QUERY_KEYS.printableTemplatesBase,
+      })
     },
     onError: (error: Error) => showError(error, t('api.deleteFailed')),
   })
 
   const uploadMutation = useMutation({
-    mutationFn: ({ id, file }: { id: string; file: File }) =>
+    mutationFn: ({ id, file }: { id: string; file: File; billType?: string }) =>
       uploadPrintTemplateJson(id, file),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       message.success(t('system.printTemplate.uploadJsonSuccess'))
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.printableTemplates(selectedBillType),
+        queryKey: variables.billType
+          ? QUERY_KEYS.printableTemplates(variables.billType)
+          : QUERY_KEYS.printableTemplatesBase,
       })
     },
-    onError: (error: Error) => showError(error, t('api.saveFailed')),
+    onError: (error: Error) =>
+      showError(error, t('system.printTemplate.uploadJsonFailed')),
   })
 
   const refresh = useRefreshQuery('print-template')
@@ -130,6 +161,7 @@ export function PrintTemplateView() {
     setState({
       templateHtml: '',
       activeTemplateId: undefined,
+      editingBillType: undefined,
       editorOpen: true,
     })
   }
@@ -159,6 +191,7 @@ export function PrintTemplateView() {
     setState({
       templateHtml: record.templateHtml || '',
       activeTemplateId: record.id,
+      editingBillType: record.billType || selectedBillType,
       editorOpen: true,
     })
   }
@@ -187,6 +220,7 @@ export function PrintTemplateView() {
     setState({
       templateHtml: record.templateHtml || '',
       activeTemplateId: undefined,
+      editingBillType: undefined,
       editorOpen: true,
     })
   }
@@ -204,7 +238,11 @@ export function PrintTemplateView() {
       okText: t('common.confirm'),
       cancelText: t('common.cancel'),
       okButtonProps: { danger: true },
-      onOk: () => deleteMutation.mutateAsync(record.id),
+      onOk: () =>
+        deleteMutation.mutateAsync({
+          id: record.id,
+          billType: record.billType || selectedBillType,
+        }),
     })
   }
 
@@ -225,7 +263,11 @@ export function PrintTemplateView() {
       message.warning(t('system.printTemplate.uploadJsonSizeLimit'))
       return
     }
-    uploadMutation.mutate({ id: record.id, file })
+    uploadMutation.mutate({
+      id: record.id,
+      file,
+      billType: record.billType || selectedBillType,
+    })
   }
 
   const handleSave = async () => {
@@ -249,6 +291,9 @@ export function PrintTemplateView() {
         assetRef: normalizedAssetRef || undefined,
         versionNo: Number(values.versionNo || 1),
         status: values.status || 'ACTIVE',
+        ...(editingBillType && editingBillType !== values.billType
+          ? { previousBillType: editingBillType }
+          : {}),
       })
     } catch {
       // validation failed
@@ -265,6 +310,7 @@ export function PrintTemplateView() {
         canCreate={canCreate}
         canEdit={canEdit}
         canDelete={canDelete}
+        uploadPending={uploadMutation.isPending}
         onBillTypeChange={(value) => setState({ selectedBillType: value })}
         onRefresh={refresh}
         onCreate={openCreate}
