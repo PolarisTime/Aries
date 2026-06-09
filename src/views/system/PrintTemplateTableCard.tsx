@@ -5,6 +5,7 @@ import {
   EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
+  UploadOutlined,
 } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
@@ -13,6 +14,8 @@ import Space from 'antd/es/space'
 import type { TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
 import Tag from 'antd/es/tag'
+import Upload from 'antd/es/upload'
+import type { RcFile } from 'antd/es/upload/interface'
 import { useTranslation } from 'react-i18next'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/types/print-template'
@@ -33,6 +36,7 @@ interface Props {
   onPreview: (record: PrintTemplateRecord) => void
   onEdit: (record: PrintTemplateRecord) => void
   onCopy: (record: PrintTemplateRecord) => void
+  onUploadJson: (record: PrintTemplateRecord, file: File) => void
   onDelete: (record: PrintTemplateRecord) => void
   onActiveChange: (id: string) => void
 }
@@ -51,12 +55,15 @@ export function PrintTemplateTableCard({
   onPreview,
   onEdit,
   onCopy,
+  onUploadJson,
   onDelete,
   onActiveChange,
 }: Props) {
   const { t } = useTranslation()
   const isFileManagedTemplate = (record: PrintTemplateRecord) =>
     record.syncMode === 'FILE'
+  const canUploadJson = (record: PrintTemplateRecord) =>
+    canEdit && record.templateType === 'PDF_FORM'
   const columns: TableProps<PrintTemplateRecord>['columns'] = [
     {
       title: t('common.operation'),
@@ -83,6 +90,20 @@ export function PrintTemplateTableCard({
             >
               {t('common.edit')}
             </Button>
+          )}
+          {canUploadJson(record) && (
+            <Upload
+              accept=".json,application/json"
+              beforeUpload={(file: RcFile) => {
+                onUploadJson(record, file)
+                return false
+              }}
+              showUploadList={false}
+            >
+              <Button type="link" size="small" icon={<UploadOutlined />}>
+                {t('system.printTemplate.uploadJson')}
+              </Button>
+            </Upload>
           )}
           {canCreate && (
             <Button

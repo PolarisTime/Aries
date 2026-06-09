@@ -1,4 +1,11 @@
-import { restDelete, restGet, restPost, restPut } from '@/api/client'
+import {
+  assertApiSuccess,
+  http,
+  restDelete,
+  restGet,
+  restPost,
+  restPut,
+} from '@/api/client'
 import type {
   PrintTemplateRecord,
   PrintTemplateResponse,
@@ -51,4 +58,18 @@ export function deletePrintTemplate(id: string) {
   return restDelete<PrintTemplateResponse<string>>(
     `/print-templates/${encodeURIComponent(id)}`,
   )
+}
+
+export async function uploadPrintTemplateJson(id: string, file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await http.post<PrintTemplateResponse<PrintTemplateRecord>>(
+    `/print-templates/${encodeURIComponent(id)}/upload-json`,
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    },
+  )
+  return assertApiSuccess(response, '上传模板 JSON 失败')
 }

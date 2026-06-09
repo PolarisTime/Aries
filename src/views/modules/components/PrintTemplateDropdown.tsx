@@ -1,6 +1,6 @@
 import { EyeOutlined, PrinterOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Button from 'antd/es/button'
 import Empty from 'antd/es/empty'
 import Modal from 'antd/es/modal'
@@ -10,6 +10,7 @@ import Tag from 'antd/es/tag'
 import { useTranslation } from 'react-i18next'
 import { listPrintTemplates } from '@/api/print-template'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintActionMode, PrintTemplateRecord } from '@/types/print-template'
 
 interface Props {
@@ -30,7 +31,7 @@ export function PrintTemplateDropdown({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>()
   const supportsPrintTemplate = moduleKey in printTemplateTargetMap
   const { data: templates = [] } = useQuery<PrintTemplateRecord[]>({
-    queryKey: ['print-templates', moduleKey],
+    queryKey: QUERY_KEYS.printableTemplates(moduleKey),
     queryFn: async () => {
       const response = await listPrintTemplates(moduleKey)
       const data = (response as { data?: PrintTemplateRecord[] })?.data
@@ -52,19 +53,19 @@ export function PrintTemplateDropdown({
     [activeTemplates],
   )
 
-  useEffect(() => {
-    if (!open) return
-    setSelectedTemplateId((current) => {
-      if (current && printableTemplates.some((tpl) => tpl.id === current)) {
-        return current
-      }
-      return printableTemplates[0]?.id
-    })
-  }, [open, printableTemplates])
+  const effectiveSelectedTemplateId = useMemo(() => {
+    if (
+      selectedTemplateId &&
+      printableTemplates.some((tpl) => tpl.id === selectedTemplateId)
+    ) {
+      return selectedTemplateId
+    }
+    return open ? printableTemplates[0]?.id : selectedTemplateId
+  }, [open, printableTemplates, selectedTemplateId])
 
   const selectedTemplate = useMemo(
-    () => printableTemplates.find((tpl) => tpl.id === selectedTemplateId),
-    [printableTemplates, selectedTemplateId],
+    () => printableTemplates.find((tpl) => tpl.id === effectiveSelectedTemplateId),
+    [effectiveSelectedTemplateId, printableTemplates],
   )
 
   const templateOptions = useMemo(
@@ -114,7 +115,7 @@ export function PrintTemplateDropdown({
               className="min-w-80 flex-1"
               onChange={setSelectedTemplateId}
               options={templateOptions}
-              value={selectedTemplateId}
+              value={effectiveSelectedTemplateId}
             />
             <Space wrap>
               <Button

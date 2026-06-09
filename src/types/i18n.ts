@@ -1892,6 +1892,11 @@ export interface MessageSchema {
       syncModeFile: string
       sourceRef: string
       fileManagedEditHint: string
+      uploadJson: string
+      uploadJsonSuccess: string
+      uploadPdfFormOnly: string
+      uploadJsonFileOnly: string
+      uploadJsonSizeLimit: string
       deleteContent: string
       inputTemplateContent: string
     }

@@ -18,6 +18,7 @@ const mockMessageWarning = vi.fn()
 const mockModalConfirm = vi.fn()
 const mockSavePrintTemplate = vi.fn()
 const mockDeletePrintTemplate = vi.fn()
+const mockUploadPrintTemplateJson = vi.fn()
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -59,6 +60,8 @@ vi.mock('@/api/print-template', () => ({
   listPrintTemplates: vi.fn(),
   savePrintTemplate: (...args: unknown[]) => mockSavePrintTemplate(...args),
   deletePrintTemplate: (...args: unknown[]) => mockDeletePrintTemplate(...args),
+  uploadPrintTemplateJson: (...args: unknown[]) =>
+    mockUploadPrintTemplateJson(...args),
 }))
 
 vi.mock('antd/es/form', () => ({
@@ -82,6 +85,7 @@ vi.mock('@/views/system/PrintTemplateTableCard', () => ({
     onPreview: (record: PrintTemplateRecord) => void
     onEdit: (record: PrintTemplateRecord) => void
     onCopy: (record: PrintTemplateRecord) => void
+    onUploadJson: (record: PrintTemplateRecord, file: File) => void
     onDelete: (record: PrintTemplateRecord) => void
     onActiveChange: (id: string) => void
   }) => (
@@ -115,6 +119,28 @@ vi.mock('@/views/system/PrintTemplateTableCard', () => ({
       </button>
       <button type="button" onClick={() => props.onCopy(props.templates[0])}>
         copy
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          props.onUploadJson(
+            props.templates[0],
+            new File(['{}'], 'layout.json', { type: 'application/json' }),
+          )
+        }
+      >
+        upload-json
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          props.onUploadJson(
+            props.templates[0],
+            new File(['{}'], 'layout.txt', { type: 'text/plain' }),
+          )
+        }
+      >
+        upload-txt
       </button>
       <button type="button" onClick={() => props.onDelete(props.templates[0])}>
         delete
@@ -206,6 +232,16 @@ const template: PrintTemplateRecord = {
   versionNo: 1,
   status: 'ACTIVE',
   updateTime: '2026-06-05 10:00:00',
+}
+
+const pdfTemplate: PrintTemplateRecord = {
+  ...template,
+  id: 'pdf-1',
+  templateName: 'PDF 模板',
+  templateCode: 'PDF_TEMPLATE',
+  templateHtml: '{"pages":[]}',
+  templateType: 'PDF_FORM',
+  engine: 'PDF_FORM',
 }
 
 function mutationResults() {
@@ -436,6 +472,56 @@ describe('PrintTemplateView', () => {
       ),
     ).toBe(true)
     expect(mockMessageSuccess).toHaveBeenCalledWith('common.deleteSuccess')
+  })
+
+  it('uploads PDF form json template', async () => {
+    mockUseQuery.mockReturnValue({
+      data: { data: [pdfTemplate] },
+      isLoading: false,
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('upload-json'))
+
+    await waitFor(() => {
+      expect(mutationPayloads()).toContainEqual({
+        id: 'pdf-1',
+        file: expect.any(File),
+      })
+    })
+    expect(mockMessageSuccess).toHaveBeenCalledWith(
+      'system.printTemplate.uploadJsonSuccess',
+    )
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['print-template'],
+    })
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['print-templates', 'purchase-order'],
+    })
+  })
+
+  it('warns when uploading non-json file', () => {
+    mockUseQuery.mockReturnValue({
+      data: { data: [pdfTemplate] },
+      isLoading: false,
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('upload-txt'))
+
+    expect(mockMessageWarning).toHaveBeenCalledWith(
+      'system.printTemplate.uploadJsonFileOnly',
+    )
+  })
+
+  it('warns when uploading json for non-PDF template', () => {
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('upload-json'))
+
+    expect(mockMessageWarning).toHaveBeenCalledWith(
+      'system.printTemplate.uploadPdfFormOnly',
+    )
   })
 
   it('warns when create, edit, copy or delete permission is missing', () => {

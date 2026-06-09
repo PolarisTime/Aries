@@ -4,8 +4,12 @@ const restGetMock = vi.hoisted(() => vi.fn())
 const restPostMock = vi.hoisted(() => vi.fn())
 const restPutMock = vi.hoisted(() => vi.fn())
 const restDeleteMock = vi.hoisted(() => vi.fn())
+const httpPostMock = vi.hoisted(() => vi.fn())
+const assertApiSuccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/api/client', () => ({
+  assertApiSuccess: assertApiSuccessMock,
+  http: { post: httpPostMock },
   restGet: restGetMock,
   restPost: restPostMock,
   restPut: restPutMock,
@@ -16,11 +20,13 @@ import {
   deletePrintTemplate,
   listPrintTemplates,
   savePrintTemplate,
+  uploadPrintTemplateJson,
 } from './print-template'
 
 describe('print-template', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    assertApiSuccessMock.mockImplementation((response) => response)
   })
 
   describe('listPrintTemplates', () => {
@@ -179,6 +185,51 @@ describe('print-template', () => {
 
       expect(restDeleteMock).toHaveBeenCalledWith(
         '/print-templates/id%2Fwith%2Fslash',
+      )
+    })
+  })
+
+  describe('uploadPrintTemplateJson', () => {
+    it('uploads json via multipart endpoint', async () => {
+      const mockResponse = { code: 0, data: { id: 'tpl-1' } }
+      const file = new File(['{}'], 'layout.json', {
+        type: 'application/json',
+      })
+      httpPostMock.mockResolvedValue(mockResponse)
+
+      const result = await uploadPrintTemplateJson('id/with/slash', file)
+
+      expect(httpPostMock).toHaveBeenCalledWith(
+        '/print-templates/id%2Fwith%2Fslash/upload-json',
+        expect.any(FormData),
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      )
+      const formData = httpPostMock.mock.calls[0][1] as FormData
+      expect(formData.get('file')).toBe(file)
+      expect(assertApiSuccessMock).toHaveBeenCalledWith(
+        mockResponse,
+        '上传模板 JSON 失败',
+      )
+      expect(result).toEqual(mockResponse)
+    })
+
+    it('throws when upload response has failed business code', async () => {
+      const file = new File(['{}'], 'layout.json', {
+        type: 'application/json',
+      })
+      const mockResponse = { code: 4000, message: 'bad json', data: null }
+      const error = new Error('bad json')
+      httpPostMock.mockResolvedValue(mockResponse)
+      assertApiSuccessMock.mockImplementation(() => {
+        throw error
+      })
+
+      await expect(uploadPrintTemplateJson('tpl-1', file)).rejects.toThrow(
+        error,
+      )
+      expect(assertApiSuccessMock).toHaveBeenCalledWith(
+        mockResponse,
+        '上传模板 JSON 失败',
       )
     })
   })
