@@ -1974,6 +1974,12 @@ export const enUS: MessageSchema = {
       status: 'Status',
       statusActive: 'Active',
       statusDisabled: 'Disabled',
+      syncMode: 'Sync Mode',
+      syncModeManual: 'Manual',
+      syncModeFile: 'File Managed',
+      sourceRef: 'Source File',
+      fileManagedEditHint:
+        'File managed templates should be changed in the source file and synced after backend restart',
       deleteContent: 'Delete template "{{name}}"?',
       inputTemplateContent: 'Please enter template content',
     },

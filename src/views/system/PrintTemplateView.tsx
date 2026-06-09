@@ -125,6 +125,10 @@ export function PrintTemplateView() {
       message.warning(t('common.noPermission'))
       return
     }
+    if (record.syncMode === 'FILE') {
+      message.warning(t('system.printTemplate.fileManagedEditHint'))
+      return
+    }
     form.setFieldsValue({
       id: record.id,
       billType: record.billType || selectedBillType,

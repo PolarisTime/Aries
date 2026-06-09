@@ -1887,6 +1887,11 @@ export interface MessageSchema {
       status: string
       statusActive: string
       statusDisabled: string
+      syncMode: string
+      syncModeManual: string
+      syncModeFile: string
+      sourceRef: string
+      fileManagedEditHint: string
       deleteContent: string
       inputTemplateContent: string
     }
