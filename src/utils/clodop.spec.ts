@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { execPrintCode, printHtml } from './clodop'
+import { execPrintCode } from './clodop'
 
 function makeLodop(overrides: Record<string, unknown> = {}) {
   return {
@@ -283,56 +283,5 @@ describe('loadCLodop', () => {
     const p1 = loadCLodop()
     const p2 = loadCLodop()
     expect(p1).toBe(p2)
-  })
-})
-
-describe('printHtml', () => {
-  afterEach(() => {
-    delete window.getCLodop
-    vi.restoreAllMocks()
-  })
-
-  it('returns false when lodop is not available', () => {
-    const result = printHtml('<p>test</p>')
-    expect(result).toBe(false)
-  })
-
-  it('prints HTML with preview=true', () => {
-    const lodop = setupLodop()
-    const result = printHtml('<p>test</p>', { preview: true, title: 'Test' })
-    expect(result).toBe(true)
-    expect(lodop.PRINT_INIT).toHaveBeenCalledWith('Test')
-    expect(lodop.PREVIEW).toHaveBeenCalled()
-    expect(lodop.PRINT).not.toHaveBeenCalled()
-  })
-
-  it('prints HTML with preview=false', () => {
-    const lodop = setupLodop()
-    const result = printHtml('<p>test</p>', { preview: false })
-    expect(result).toBe(true)
-    expect(lodop.PRINT).toHaveBeenCalled()
-    expect(lodop.PREVIEW).not.toHaveBeenCalled()
-  })
-
-  it('handles printer and copies options', () => {
-    const lodop = setupLodop()
-    const result = printHtml('<p>test</p>', {
-      printer: 'HP',
-      copies: 3,
-      pageSize: 'A3',
-    })
-    expect(result).toBe(true)
-    expect(lodop.SET_PRINTER_INDEX).toHaveBeenCalledWith('HP')
-    expect(lodop.SET_PRINT_COPIES).toHaveBeenCalledWith(3)
-    expect(lodop.SET_PRINT_PAGESIZE).toHaveBeenCalledWith(1, 0, 0, 'A3')
-  })
-
-  it('handles errors gracefully', () => {
-    const lodop = setupLodop()
-    lodop.PRINT_INIT = vi.fn(() => {
-      throw new Error('mock')
-    })
-    const result = printHtml('<p>test</p>')
-    expect(result).toBe(false)
   })
 })

@@ -27,16 +27,14 @@ describe('print-template/index', () => {
     expect(escapeJs(undefined as any)).toBe('')
   })
 
-  it('renderPrintTemplate renders HTML template', async () => {
+  it('renderPrintTemplate rejects HTML template', async () => {
     const { renderPrintTemplate } = await import('./index')
     const template = '<div>{{name}}</div>'
     const data = { name: 'Test' }
     const items = [{}]
-    const result = renderPrintTemplate(template, 'HTML', data, items)
-    expect(result).toEqual({
-      type: 'HTML',
-      html: '<div>Test</div>',
-    })
+    expect(() => renderPrintTemplate(template, 'HTML', data, items)).toThrow(
+      'Unsupported print template type',
+    )
   })
 
   it('renderPrintTemplate renders COORD template', async () => {

@@ -9,7 +9,6 @@ const {
   messageErrorMock,
   loadCLodopMock,
   execPrintCodeMock,
-  printHtmlMock,
   downloadBlobMock,
   renderPrintTemplateMock,
   modalConfirmMock,
@@ -23,11 +22,10 @@ const {
   messageErrorMock: vi.fn(),
   loadCLodopMock: vi.fn().mockResolvedValue(undefined),
   execPrintCodeMock: vi.fn().mockReturnValue(true),
-  printHtmlMock: vi.fn().mockReturnValue(true),
   downloadBlobMock: vi.fn(),
   renderPrintTemplateMock: vi
     .fn()
-    .mockReturnValue({ type: 'HTML', html: '<div>test</div>' }),
+    .mockReturnValue({ type: 'COORD', script: 'LODOP.PRINT_INIT("test");' }),
   modalConfirmMock: vi.fn(),
   tMock: vi.fn((key: string) => key),
   windowOpenMock: vi.fn(),
@@ -50,7 +48,6 @@ vi.mock('@/utils/antd-app', () => ({
 vi.mock('@/utils/clodop', () => ({
   loadCLodop: loadCLodopMock,
   execPrintCode: execPrintCodeMock,
-  printHtml: printHtmlMock,
 }))
 
 vi.mock('@/utils/print-template', () => ({
@@ -155,14 +152,14 @@ describe('useBusinessGridPrintActions', () => {
     const template = {
       id: 'template-1',
       templateName: 'Test Template',
-      templateHtml: '<div>{{name}}</div>',
-      templateType: 'HTML',
+      templateHtml: 'LODOP.PRINT_INIT("{{name}}");',
+      templateType: 'COORD',
     }
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
-        templateType: 'HTML',
-        templateHtml: '<div>Test</div>',
+        templateType: 'COORD',
+        templateHtml: 'LODOP.PRINT_INIT("Test");',
         data: { name: 'Test' },
       },
     })
@@ -188,14 +185,14 @@ describe('useBusinessGridPrintActions', () => {
     const template = {
       id: 'template-1',
       templateName: 'Test Template',
-      templateHtml: '<div>{{name}}</div>',
-      templateType: 'HTML',
+      templateHtml: 'LODOP.PRINT_INIT("{{name}}");',
+      templateType: 'COORD',
     }
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
-        templateType: 'HTML',
-        templateHtml: '<div>Test</div>',
+        templateType: 'COORD',
+        templateHtml: 'LODOP.PRINT_INIT("Test");',
         data: { name: 'Test' },
       },
     })
@@ -217,8 +214,8 @@ describe('useBusinessGridPrintActions', () => {
     const template = {
       id: 'template-1',
       templateName: 'Test Template',
-      templateHtml: '<div>{{name}}</div>',
-      templateType: 'HTML',
+      templateHtml: 'LODOP.PRINT_INIT("{{name}}");',
+      templateType: 'COORD',
     }
     httpMock.post.mockRejectedValue(new Error('Print failed'))
 
@@ -334,15 +331,15 @@ describe('useBusinessGridPrintActions', () => {
   it('blocks download mode for non-PDF templates', async () => {
     const template = {
       id: 'template-1',
-      templateName: 'HTML Template',
-      templateHtml: '<div>test</div>',
-      templateType: 'HTML',
+      templateName: 'Coord Template',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
+      templateType: 'COORD',
     }
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
-        templateType: 'HTML',
-        templateHtml: '<div>test</div>',
+        templateType: 'COORD',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
       },
     })
 
@@ -366,14 +363,14 @@ describe('useBusinessGridPrintActions', () => {
     const template = {
       id: 'template-1',
       templateName: 'Coord Template',
-      templateHtml: '<div>test</div>',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
       templateType: 'COORD',
     }
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
         templateType: 'COORD',
-        templateHtml: '<div>test</div>',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
         templateName: 'Coord Template',
         data: {},
       },
@@ -401,17 +398,17 @@ describe('useBusinessGridPrintActions', () => {
     const template = {
       id: 'template-1',
       templateName: 'Empty Template',
-      templateHtml: '<div>test</div>',
-      templateType: 'HTML',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
+      templateType: 'COORD',
     }
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
-        templateType: 'HTML',
+        templateType: 'COORD',
         templateHtml: null,
       },
     })
-    renderPrintTemplateMock.mockReturnValue({ type: 'HTML', html: null })
+    renderPrintTemplateMock.mockReturnValue({ type: 'COORD', script: '' })
 
     const { result } = renderHook(() =>
       useBusinessGridPrintActions({
@@ -428,27 +425,27 @@ describe('useBusinessGridPrintActions', () => {
     )
   })
 
-  it('handles printHtml returning false', async () => {
+  it('handles execPrintCode returning false', async () => {
     const template = {
       id: 'template-1',
-      templateName: 'HTML Template',
-      templateHtml: '<div>test</div>',
-      templateType: 'HTML',
+      templateName: 'Coord Template',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
+      templateType: 'COORD',
     }
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
-        templateType: 'HTML',
-        templateHtml: '<div>test</div>',
-        templateName: 'HTML Template',
+        templateType: 'COORD',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
+        templateName: 'Coord Template',
         data: {},
       },
     })
     renderPrintTemplateMock.mockReturnValue({
-      type: 'HTML',
-      html: '<div>test</div>',
+      type: 'COORD',
+      script: 'LODOP.PRINT_INIT("test");',
     })
-    printHtmlMock.mockReturnValue(false)
+    execPrintCodeMock.mockReturnValue(false)
 
     const { result } = renderHook(() =>
       useBusinessGridPrintActions({
@@ -469,8 +466,8 @@ describe('useBusinessGridPrintActions', () => {
     const template = {
       id: 'template-1',
       templateName: 'Test',
-      templateHtml: '<div>test</div>',
-      templateType: 'HTML',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
+      templateType: 'COORD',
     }
     const axiosError = Object.assign(new Error('Request failed'), {
       isAxiosError: true,

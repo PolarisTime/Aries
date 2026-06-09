@@ -1949,7 +1949,6 @@ export const zhCN: MessageSchema = {
       statusDisabled: '停用',
       deleteContent: '确定删除模板「{{name}}」吗？',
       inputTemplateContent: '请输入模板内容',
-      inputAssetRef: '请输入 PDF 底版资源',
     },
     numberRules: {
       title: '编号规则',
@@ -2338,15 +2337,13 @@ export const zhCN: MessageSchema = {
       templateCode: '模板编码',
       templateCodePlaceholder: '留空时系统自动生成',
       templateType: '模板类型',
-      templateTypeHtml: 'HTML 模板',
       templateTypeCoord: '坐标套打',
       templateTypePdfForm: 'PDF 表单',
       engine: '渲染引擎',
-      engineBrowserHtml: '浏览器 HTML',
       engineLodop: 'Lodop 坐标套打',
       enginePdfForm: 'PDF 表单填充',
-      assetRef: 'PDF 底版资源',
-      assetRefPlaceholder: '如 print-forms/yingjie-a4-remark.pdf',
+      assetRef: 'PDF 底版资源（可选）',
+      assetRefPlaceholder: '纯 JSON 模板可留空',
       versionNo: '版本号',
       status: '状态',
       statusActive: '启用',
@@ -2354,10 +2351,10 @@ export const zhCN: MessageSchema = {
       templateContent: '模板内容',
       templateContentPlaceholder: '请输入模板内容',
       templateHint:
-        'HTML/COORD 使用模板内容；PDF_FORM 只使用 PDF 底版资源和后端字段映射配置。',
+        'COORD 使用套打脚本或通用布局 JSON；PDF_FORM 使用纯 JSON 生成 PDF，可选引用 PDF 底版资源。',
       helpTitle: '打印模板说明',
       unifiedPrintApi:
-        '所有模板统一调用 POST /print/record。HTML/COORD 返回模板和数据，PDF_FORM 返回 PDF 内容；前端只负责渲染、预览和打印。',
+        '所有模板统一调用 POST /print/record。COORD 返回套打脚本和数据，PDF_FORM 返回 PDF 内容；前端只负责预览和打印。',
       syntaxHint:
         '字段使用 {{fieldName}}，明细使用 {{#each details}}...{{/each}}，条件块使用 {{#if fieldName}}...{{else}}...{{/if}}。',
       commonFields: '主表字段',

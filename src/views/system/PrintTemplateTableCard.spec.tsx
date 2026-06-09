@@ -30,7 +30,7 @@ describe('PrintTemplateTableCard', () => {
         id: '1',
         templateName: 'Template 1',
         billType: 'PURCHASE_ORDER',
-        templateType: 'HTML',
+        templateType: 'COORD',
         updateTime: '2024-01-01',
       },
     ],

@@ -1,11 +1,7 @@
 import { z } from 'zod'
 
-export const printTemplateTypeSchema = z.enum(['HTML', 'COORD', 'PDF_FORM'])
-export const printTemplateEngineSchema = z.enum([
-  'BROWSER_HTML',
-  'LODOP',
-  'PDF_FORM',
-])
+export const printTemplateTypeSchema = z.enum(['COORD', 'PDF_FORM'])
+export const printTemplateEngineSchema = z.enum(['LODOP', 'PDF_FORM'])
 export const printTemplateStatusSchema = z.enum(['ACTIVE', 'DISABLED'])
 
 export const printTemplateRecordSchema = z.object({
@@ -38,18 +34,8 @@ export const savePrintTemplatePayloadSchema = z.object({
   versionNo: z.number().int().positive().optional(),
   status: printTemplateStatusSchema.optional(),
 }).superRefine((payload, ctx) => {
-  const templateType = payload.templateType || 'HTML'
-  if (templateType === 'PDF_FORM') {
-    if (!payload.assetRef?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['assetRef'],
-        message: 'PDF_FORM requires assetRef',
-      })
-    }
-    return
-  }
-  if (!payload.templateHtml?.trim()) {
+  const templateType = payload.templateType || 'COORD'
+  if (templateType !== 'PDF_FORM' && !payload.templateHtml?.trim()) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['templateHtml'],

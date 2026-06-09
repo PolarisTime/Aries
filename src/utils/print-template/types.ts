@@ -3,7 +3,6 @@ export interface PrintDataRow {
 }
 
 export interface RenderResult {
-  type: 'COORD' | 'HTML'
+  type: 'COORD'
   script?: string
-  html?: string
 }

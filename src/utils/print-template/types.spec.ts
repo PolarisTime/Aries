@@ -30,21 +30,11 @@ describe('print-template types', () => {
       expect(result.script).toBe('console.log("test")')
     })
 
-    it('accepts HTML type with html', () => {
-      const result: RenderResult = {
-        type: 'HTML',
-        html: '<div>test</div>',
-      }
-      expect(result.type).toBe('HTML')
-      expect(result.html).toBe('<div>test</div>')
-    })
-
-    it('allows optional script and html fields', () => {
+    it('allows optional script field', () => {
       const result: RenderResult = {
         type: 'COORD',
       }
       expect(result.script).toBeUndefined()
-      expect(result.html).toBeUndefined()
     })
   })
 })

@@ -40,7 +40,7 @@ const printTemplateInitialState: PrintTemplateState = {
 function defaultEngineForTemplateType(templateType: string | undefined) {
   if (templateType === 'COORD') return 'LODOP'
   if (templateType === 'PDF_FORM') return 'PDF_FORM'
-  return 'BROWSER_HTML'
+  return 'LODOP'
 }
 
 export function PrintTemplateView() {
@@ -107,8 +107,8 @@ export function PrintTemplateView() {
       billType: selectedBillType,
       templateName: '',
       templateCode: '',
-      templateType: 'HTML',
-      engine: 'BROWSER_HTML',
+      templateType: 'COORD',
+      engine: 'LODOP',
       assetRef: '',
       versionNo: 1,
       status: 'ACTIVE',
@@ -130,7 +130,8 @@ export function PrintTemplateView() {
       billType: record.billType || selectedBillType,
       templateName: record.templateName,
       templateCode: record.templateCode || '',
-      templateType: record.templateType || 'HTML',
+      templateType:
+        record.templateType === 'PDF_FORM' ? 'PDF_FORM' : 'COORD',
       engine:
         record.engine || defaultEngineForTemplateType(record.templateType),
       assetRef: record.assetRef || '',
@@ -157,7 +158,8 @@ export function PrintTemplateView() {
       billType: record.billType || selectedBillType,
       templateName: buildPrintTemplateCopyName(record),
       templateCode: '',
-      templateType: record.templateType || 'HTML',
+      templateType:
+        record.templateType === 'PDF_FORM' ? 'PDF_FORM' : 'COORD',
       engine:
         record.engine || defaultEngineForTemplateType(record.templateType),
       assetRef: record.assetRef || '',
@@ -191,15 +193,10 @@ export function PrintTemplateView() {
   const handleSave = async () => {
     try {
       const values = await form.validateFields()
-      const templateType = values.templateType || 'HTML'
+      const templateType = values.templateType || 'COORD'
       const normalizedTemplateHtml = templateHtml.trim()
       const normalizedAssetRef = values.assetRef?.trim?.() || ''
-      if (templateType === 'PDF_FORM') {
-        if (!normalizedAssetRef) {
-          message.warning(t('system.printTemplate.inputAssetRef'))
-          return
-        }
-      } else if (!normalizedTemplateHtml) {
+      if (templateType !== 'PDF_FORM' && !normalizedTemplateHtml) {
         message.warning(t('system.printTemplate.inputTemplateContent'))
         return
       }

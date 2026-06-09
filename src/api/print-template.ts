@@ -10,7 +10,7 @@ function defaultEngineForTemplateType(
 ) {
   if (templateType === 'COORD') return 'LODOP'
   if (templateType === 'PDF_FORM') return 'PDF_FORM'
-  return 'BROWSER_HTML'
+  return 'LODOP'
 }
 
 export function listPrintTemplates(billType: string) {
@@ -23,7 +23,7 @@ export function listPrintTemplates(billType: string) {
 }
 
 export function savePrintTemplate(payload: SavePrintTemplatePayload) {
-  const templateType = payload.templateType || 'HTML'
+  const templateType = payload.templateType || 'COORD'
   const requestBody = {
     billType: payload.billType,
     templateName: payload.templateName,

@@ -123,7 +123,7 @@ describe('PrintTemplateDropdown', () => {
       id: 'tpl-1',
       templateName: '出库单模板',
       targetType: 'test-module',
-      templateType: 'HTML',
+      templateType: 'COORD',
     }
     vi.mocked(useQuery).mockReturnValue({ data: [template] } as never)
 
@@ -146,7 +146,7 @@ describe('PrintTemplateDropdown', () => {
       id: 'tpl-1',
       templateName: 'A 模板',
       targetType: 'test-module',
-      templateType: 'HTML',
+      templateType: 'COORD',
     }
     const secondTemplate = {
       id: 'tpl-2',
