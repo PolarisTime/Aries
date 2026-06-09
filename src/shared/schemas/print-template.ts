@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const printTemplateTypeSchema = z.enum(['COORD', 'PDF_FORM'])
 export const printTemplateEngineSchema = z.enum(['LODOP', 'PDF_FORM'])
 export const printTemplateStatusSchema = z.enum(['ACTIVE', 'DISABLED'])
+export const printTemplateSyncModeSchema = z.enum(['MANUAL', 'FILE'])
 
 export const printTemplateRecordSchema = z.object({
   id: z.string(),
@@ -14,6 +15,9 @@ export const printTemplateRecordSchema = z.object({
   assetRef: z.string().optional().nullable(),
   versionNo: z.number().int().positive().optional().nullable(),
   status: printTemplateStatusSchema.optional().nullable(),
+  syncMode: printTemplateSyncModeSchema.optional().nullable(),
+  sourceRef: z.string().optional().nullable(),
+  sourceChecksum: z.string().optional().nullable(),
   source: z.enum(['db', 'file']).optional(),
   fileName: z.string().optional(),
   billType: z.string().optional(),

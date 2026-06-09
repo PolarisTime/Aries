@@ -55,6 +55,8 @@ export function PrintTemplateTableCard({
   onActiveChange,
 }: Props) {
   const { t } = useTranslation()
+  const isFileManagedTemplate = (record: PrintTemplateRecord) =>
+    record.syncMode === 'FILE'
   const columns: TableProps<PrintTemplateRecord>['columns'] = [
     {
       title: t('common.operation'),
@@ -76,6 +78,7 @@ export function PrintTemplateTableCard({
               type="link"
               size="small"
               icon={<EditOutlined />}
+              disabled={isFileManagedTemplate(record)}
               onClick={() => onEdit(record)}
             >
               {t('common.edit')}
@@ -151,6 +154,25 @@ export function PrintTemplateTableCard({
             : t('system.printTemplate.statusActive')}
         </Tag>
       ),
+    },
+    {
+      dataIndex: 'syncMode',
+      title: t('system.printTemplate.syncMode'),
+      width: 140,
+      render: (value: string | null | undefined, record) =>
+        value === 'FILE' ? (
+          <Tag color="blue" title={record.sourceRef || undefined}>
+            {t('system.printTemplate.syncModeFile')}
+          </Tag>
+        ) : (
+          <Tag>{t('system.printTemplate.syncModeManual')}</Tag>
+        ),
+    },
+    {
+      dataIndex: 'sourceRef',
+      title: t('system.printTemplate.sourceRef'),
+      width: 260,
+      render: (value: string | null | undefined) => value || '--',
     },
     {
       dataIndex: 'updateTime',
