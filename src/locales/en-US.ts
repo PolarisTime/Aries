@@ -1982,6 +1982,7 @@ export const enUS: MessageSchema = {
         'File managed templates should be changed in the source file and synced after backend restart',
       uploadJson: 'Upload JSON',
       uploadJsonSuccess: 'Template JSON uploaded',
+      uploadJsonFailed: 'Failed to upload template JSON',
       uploadPdfFormOnly: 'Only PDF form templates support JSON upload',
       uploadJsonFileOnly: 'Please upload a JSON file',
       uploadJsonSizeLimit: 'JSON file must be 1MB or smaller',

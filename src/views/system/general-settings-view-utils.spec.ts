@@ -71,12 +71,12 @@ describe('general-settings-view-utils', () => {
       expect(DETAILED_OPERATION_ACTION_VALUES).toHaveLength(8)
     })
 
-    it('HIDE_AUDITED_STATUS_OPTIONS has 10 items', () => {
-      expect(HIDE_AUDITED_STATUS_OPTIONS).toHaveLength(10)
+    it('HIDE_AUDITED_STATUS_OPTIONS has 9 items', () => {
+      expect(HIDE_AUDITED_STATUS_OPTIONS).toHaveLength(9)
     })
 
-    it('HIDE_AUDITED_STATUS_VALUES has 10 items', () => {
-      expect(HIDE_AUDITED_STATUS_VALUES).toHaveLength(10)
+    it('HIDE_AUDITED_STATUS_VALUES has 9 items', () => {
+      expect(HIDE_AUDITED_STATUS_VALUES).toHaveLength(9)
       expect(HIDE_AUDITED_STATUS_VALUES).toContain('已确认')
     })
 

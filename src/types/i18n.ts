@@ -1894,6 +1894,7 @@ export interface MessageSchema {
       fileManagedEditHint: string
       uploadJson: string
       uploadJsonSuccess: string
+      uploadJsonFailed: string
       uploadPdfFormOnly: string
       uploadJsonFileOnly: string
       uploadJsonSizeLimit: string

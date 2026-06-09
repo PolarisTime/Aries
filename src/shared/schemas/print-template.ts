@@ -4,9 +4,12 @@ export const printTemplateTypeSchema = z.enum(['COORD', 'PDF_FORM'])
 export const printTemplateEngineSchema = z.enum(['LODOP', 'PDF_FORM'])
 export const printTemplateStatusSchema = z.enum(['ACTIVE', 'DISABLED'])
 export const printTemplateSyncModeSchema = z.enum(['MANUAL', 'FILE'])
+const responseIdSchema = z
+  .union([z.string(), z.number().int().positive()])
+  .transform((value) => String(value))
 
 export const printTemplateRecordSchema = z.object({
-  id: z.string(),
+  id: responseIdSchema,
   templateName: z.string(),
   templateCode: z.string().optional().nullable(),
   templateHtml: z.string(),

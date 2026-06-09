@@ -38,6 +38,7 @@ describe('PrintTemplateTableCard', () => {
     canCreate: true,
     canEdit: true,
     canDelete: true,
+    uploadPending: false,
     onBillTypeChange: vi.fn(),
     onRefresh: vi.fn(),
     onCreate: vi.fn(),
@@ -126,6 +127,29 @@ describe('PrintTemplateTableCard', () => {
     )
 
     expect(screen.getByText('system.printTemplate.uploadJson')).toBeInTheDocument()
+  })
+
+  it('disables upload json button while upload is pending', () => {
+    render(
+      <PrintTemplateTableCard
+        {...defaultProps}
+        templates={[
+          {
+            id: 'pdf-1',
+            templateName: 'PDF Template',
+            billType: 'PURCHASE_ORDER',
+            templateType: 'PDF_FORM',
+            updateTime: '2024-01-01',
+          },
+        ]}
+        canEdit={true}
+        uploadPending={true}
+      />,
+    )
+
+    expect(
+      screen.getByText('system.printTemplate.uploadJson').closest('button'),
+    ).toBeDisabled()
   })
 
   it('does not render upload json button for COORD templates', () => {

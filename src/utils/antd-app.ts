@@ -1,4 +1,5 @@
 import type AntdApp from 'antd/es/app'
+import messageApi from 'antd/es/message'
 import modalApi from 'antd/es/modal'
 
 type AntdAppApi = ReturnType<typeof AntdApp.useApp>
@@ -12,7 +13,7 @@ function callMethod<Api, K extends keyof Api>(
   api: Api | undefined,
   method: K,
   args: unknown[],
-  fallbackImport?: () => Promise<{ default: Api }>,
+  fallbackApi?: Api,
 ): unknown {
   if (api) {
     const callable = api[method]
@@ -20,13 +21,11 @@ function callMethod<Api, K extends keyof Api>(
       return callable(...args)
     }
   }
-  if (fallbackImport) {
-    void fallbackImport().then((mod) => {
-      const callable = mod.default[method]
-      if (isUnknownMethod(callable)) {
-        callable(...args)
-      }
-    })
+  if (fallbackApi) {
+    const callable = fallbackApi[method]
+    if (isUnknownMethod(callable)) {
+      return callable(...args)
+    }
   }
   return undefined
 }
@@ -50,37 +49,17 @@ type ModMethod = Parameters<AntdAppApi['modal'][keyof AntdAppApi['modal']]>
 
 export const message = {
   success: (...args: MsgMethod) =>
-    callMethod(
-      getMessageApi(),
-      'success',
-      args,
-      () => import('antd/es/message'),
-    ),
+    callMethod(getMessageApi(), 'success', args, messageApi),
   error: (...args: MsgMethod) =>
-    callMethod(getMessageApi(), 'error', args, () => import('antd/es/message')),
+    callMethod(getMessageApi(), 'error', args, messageApi),
   warning: (...args: MsgMethod) =>
-    callMethod(
-      getMessageApi(),
-      'warning',
-      args,
-      () => import('antd/es/message'),
-    ),
+    callMethod(getMessageApi(), 'warning', args, messageApi),
   info: (...args: MsgMethod) =>
-    callMethod(getMessageApi(), 'info', args, () => import('antd/es/message')),
+    callMethod(getMessageApi(), 'info', args, messageApi),
   loading: (...args: MsgMethod) =>
-    callMethod(
-      getMessageApi(),
-      'loading',
-      args,
-      () => import('antd/es/message'),
-    ),
+    callMethod(getMessageApi(), 'loading', args, messageApi),
   destroy: (...args: MsgMethod) =>
-    callMethod(
-      getMessageApi(),
-      'destroy',
-      args,
-      () => import('antd/es/message'),
-    ),
+    callMethod(getMessageApi(), 'destroy', args, messageApi),
 }
 
 export const modal = {

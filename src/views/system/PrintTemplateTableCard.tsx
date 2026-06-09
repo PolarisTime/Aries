@@ -30,6 +30,7 @@ interface Props {
   canCreate: boolean
   canEdit: boolean
   canDelete: boolean
+  uploadPending: boolean
   onBillTypeChange: (value: string) => void
   onRefresh: () => void
   onCreate: () => void
@@ -49,6 +50,7 @@ export function PrintTemplateTableCard({
   canCreate,
   canEdit,
   canDelete,
+  uploadPending,
   onBillTypeChange,
   onRefresh,
   onCreate,
@@ -95,12 +97,19 @@ export function PrintTemplateTableCard({
             <Upload
               accept=".json,application/json"
               beforeUpload={(file: RcFile) => {
+                if (uploadPending) return false
                 onUploadJson(record, file)
                 return false
               }}
               showUploadList={false}
             >
-              <Button type="link" size="small" icon={<UploadOutlined />}>
+              <Button
+                type="link"
+                size="small"
+                icon={<UploadOutlined />}
+                loading={uploadPending}
+                disabled={uploadPending}
+              >
                 {t('system.printTemplate.uploadJson')}
               </Button>
             </Upload>

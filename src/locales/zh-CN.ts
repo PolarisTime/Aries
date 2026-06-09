@@ -1954,6 +1954,7 @@ export const zhCN: MessageSchema = {
       fileManagedEditHint: '文件托管模板请修改源文件后重启同步',
       uploadJson: '上传 JSON',
       uploadJsonSuccess: '模板 JSON 上传成功',
+      uploadJsonFailed: '模板 JSON 上传失败',
       uploadPdfFormOnly: '仅 PDF 表单模板支持上传 JSON',
       uploadJsonFileOnly: '请上传 JSON 文件',
       uploadJsonSizeLimit: 'JSON 文件不能超过 1MB',
