@@ -6,6 +6,7 @@ import {
   deletePrintTemplate,
   listPrintTemplates,
   savePrintTemplate,
+  uploadPrintTemplateJson,
 } from '@/api/print-template'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -93,6 +94,19 @@ export function PrintTemplateView() {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
     },
     onError: (error: Error) => showError(error, t('api.deleteFailed')),
+  })
+
+  const uploadMutation = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      uploadPrintTemplateJson(id, file),
+    onSuccess: () => {
+      message.success(t('system.printTemplate.uploadJsonSuccess'))
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.printTemplate })
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.printableTemplates(selectedBillType),
+      })
+    },
+    onError: (error: Error) => showError(error, t('api.saveFailed')),
   })
 
   const refresh = useRefreshQuery('print-template')
@@ -194,6 +208,26 @@ export function PrintTemplateView() {
     })
   }
 
+  const handleUploadJson = (record: PrintTemplateRecord, file: File) => {
+    if (!canEdit) {
+      message.warning(t('common.noPermission'))
+      return
+    }
+    if (record.templateType !== 'PDF_FORM') {
+      message.warning(t('system.printTemplate.uploadPdfFormOnly'))
+      return
+    }
+    if (!file.name.toLowerCase().endsWith('.json')) {
+      message.warning(t('system.printTemplate.uploadJsonFileOnly'))
+      return
+    }
+    if (file.size > 1024 * 1024) {
+      message.warning(t('system.printTemplate.uploadJsonSizeLimit'))
+      return
+    }
+    uploadMutation.mutate({ id: record.id, file })
+  }
+
   const handleSave = async () => {
     try {
       const values = await form.validateFields()
@@ -237,6 +271,7 @@ export function PrintTemplateView() {
         onPreview={openPreview}
         onEdit={openEdit}
         onCopy={handleCopy}
+        onUploadJson={handleUploadJson}
         onDelete={handleDelete}
         onActiveChange={(value) => setState({ activeTemplateId: value })}
       />

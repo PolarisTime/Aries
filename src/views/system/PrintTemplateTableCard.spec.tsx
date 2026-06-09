@@ -44,6 +44,7 @@ describe('PrintTemplateTableCard', () => {
     onPreview: vi.fn(),
     onEdit: vi.fn(),
     onCopy: vi.fn(),
+    onUploadJson: vi.fn(),
     onDelete: vi.fn(),
     onActiveChange: vi.fn(),
   }
@@ -105,5 +106,33 @@ describe('PrintTemplateTableCard', () => {
   it('renders delete button when canDelete', () => {
     render(<PrintTemplateTableCard {...defaultProps} canDelete={true} />)
     expect(screen.getByText('common.delete')).toBeInTheDocument()
+  })
+
+  it('renders upload json button for PDF_FORM templates only', () => {
+    render(
+      <PrintTemplateTableCard
+        {...defaultProps}
+        templates={[
+          {
+            id: 'pdf-1',
+            templateName: 'PDF Template',
+            billType: 'PURCHASE_ORDER',
+            templateType: 'PDF_FORM',
+            updateTime: '2024-01-01',
+          },
+        ]}
+        canEdit={true}
+      />,
+    )
+
+    expect(screen.getByText('system.printTemplate.uploadJson')).toBeInTheDocument()
+  })
+
+  it('does not render upload json button for COORD templates', () => {
+    render(<PrintTemplateTableCard {...defaultProps} canEdit={true} />)
+
+    expect(
+      screen.queryByText('system.printTemplate.uploadJson'),
+    ).not.toBeInTheDocument()
   })
 })

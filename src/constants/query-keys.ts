@@ -80,6 +80,8 @@ export const QUERY_KEYS = {
   printTemplate: ['print-template'] as const,
   printTemplateByType: (billType: string) =>
     ['print-template', billType] as const,
+  printableTemplates: (moduleKey: string) =>
+    ['print-templates', moduleKey] as const,
 
   // Parent selector
   parentSelectorListBase: ['parent-selector-list'] as const,
