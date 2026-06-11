@@ -64,7 +64,8 @@ export function getMaterialCategoryOptions() {
 export function replaceMaterialCategoryOptions(
   options: MaterialCategoryOption[],
 ) {
-  _categoryOptions = options.length > 0 ? options : materialCategoryFallbackOptions
+  _categoryOptions =
+    options.length > 0 ? options : materialCategoryFallbackOptions
   categoryOptionsLoading = false
 }
 

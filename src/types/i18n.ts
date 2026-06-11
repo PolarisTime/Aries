@@ -1878,6 +1878,9 @@ export interface MessageSchema {
       deleteTemplate: string
       preview: string
       copy: string
+      searchPlaceholder: string
+      emptyList: string
+      templateContent: string
       templateName: string
       templateCode: string
       billType: string
@@ -2274,6 +2277,8 @@ export interface MessageSchema {
     printTemplateEditor: {
       editTitle: string
       createTitle: string
+      basicInfo: string
+      availableFields: string
       billType: string
       templateName: string
       templateNamePlaceholder: string

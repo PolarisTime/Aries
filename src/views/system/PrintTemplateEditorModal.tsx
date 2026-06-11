@@ -1,14 +1,23 @@
+import {
+  ArrowLeftOutlined,
+  CodeOutlined,
+  FileTextOutlined,
+  SaveOutlined,
+} from '@ant-design/icons'
 import type { FormInstance } from 'antd'
 import Alert from 'antd/es/alert'
+import Button from 'antd/es/button'
+import Card from 'antd/es/card'
 import Col from 'antd/es/col'
+import Divider from 'antd/es/divider'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
 import Row from 'antd/es/row'
 import Select from 'antd/es/select'
+import Space from 'antd/es/space'
 import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
-import { FormModal } from '@/components/FormModal'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
@@ -99,9 +108,9 @@ function FieldTags({ title, fields }: { title: string; fields: string[] }) {
   return (
     <div>
       <Typography.Text strong>{title}</Typography.Text>
-      <div className="mt-2">
+      <div className="mt-8">
         {fields.map((field) => (
-          <Tag key={field} className="mb-1 font-mono">
+          <Tag key={field} className="mb-4 font-mono">
             {field}
           </Tag>
         ))}
@@ -126,195 +135,266 @@ export function PrintTemplateEditorModal({
     'template-html',
   )
 
+  if (!open) return null
+
   return (
-    <FormModal
-      title={
-        editing
-          ? t('system.printTemplateEditor.editTitle')
-          : t('system.printTemplateEditor.createTitle')
-      }
-      open={open}
-      onClose={onClose}
-      onSave={onSave}
-      confirmLoading={saving}
-      width={900}
-    >
-      <Form form={form} layout="vertical">
-        <Row gutter={[16, 0]}>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="billType"
-              label={t('system.printTemplateEditor.billType')}
-              required
+    <div className="page-stack">
+      <Card
+        title={
+          <Space>
+            <Button type="text" icon={<ArrowLeftOutlined />} onClick={onClose}>
+              {t('common.back')}
+            </Button>
+            <Divider orientation="vertical" />
+            <span>
+              {editing
+                ? t('system.printTemplateEditor.editTitle')
+                : t('system.printTemplateEditor.createTitle')}
+            </span>
+          </Space>
+        }
+        extra={
+          <Space>
+            <Button onClick={onClose}>{t('common.cancel')}</Button>
+            <Button
+              type="primary"
+              icon={<SaveOutlined />}
+              loading={saving}
+              onClick={onSave}
             >
-              <Select options={printTemplateTargetOptions} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="templateName"
-              label={t('system.printTemplateEditor.templateName')}
-              required
-            >
-              <Input
-                placeholder={t(
-                  'system.printTemplateEditor.templateNamePlaceholder',
-                )}
-                maxLength={64}
-              />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="templateCode"
-              label={t('system.printTemplateEditor.templateCode')}
-            >
-              <Input
-                placeholder={t(
-                  'system.printTemplateEditor.templateCodePlaceholder',
-                )}
-                maxLength={96}
-              />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="templateType"
-              label={t('system.printTemplateEditor.templateType')}
-              required
-            >
-              <Select
-                onChange={(value) =>
-                  form.setFieldValue(
-                    'engine',
-                    defaultEngineForTemplateType(value),
-                  )
+              {t('common.save')}
+            </Button>
+          </Space>
+        }
+      >
+        <Form form={form} layout="vertical">
+          <Row gutter={[16, 0]}>
+            <Col xs={24} lg={16}>
+              <Card
+                size="small"
+                title={
+                  <Space>
+                    <FileTextOutlined />
+                    <span>{t('system.printTemplateEditor.basicInfo')}</span>
+                  </Space>
                 }
-                options={[
-                  {
-                    value: 'COORD',
-                    label: t('system.printTemplateEditor.templateTypeCoord'),
-                  },
-                  {
-                    value: 'PDF_FORM',
-                    label: t('system.printTemplateEditor.templateTypePdfForm'),
-                  },
-                ]}
+              >
+                <Row gutter={[16, 0]}>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="billType"
+                      label={t('system.printTemplateEditor.billType')}
+                      required
+                    >
+                      <Select options={printTemplateTargetOptions} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="templateName"
+                      label={t('system.printTemplateEditor.templateName')}
+                      required
+                    >
+                      <Input
+                        placeholder={t(
+                          'system.printTemplateEditor.templateNamePlaceholder',
+                        )}
+                        maxLength={64}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="templateCode"
+                      label={t('system.printTemplateEditor.templateCode')}
+                    >
+                      <Input
+                        placeholder={t(
+                          'system.printTemplateEditor.templateCodePlaceholder',
+                        )}
+                        maxLength={96}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="templateType"
+                      label={t('system.printTemplateEditor.templateType')}
+                      required
+                    >
+                      <Select
+                        onChange={(value) =>
+                          form.setFieldValue(
+                            'engine',
+                            defaultEngineForTemplateType(value),
+                          )
+                        }
+                        options={[
+                          {
+                            value: 'COORD',
+                            label: t(
+                              'system.printTemplateEditor.templateTypeCoord',
+                            ),
+                          },
+                          {
+                            value: 'PDF_FORM',
+                            label: t(
+                              'system.printTemplateEditor.templateTypePdfForm',
+                            ),
+                          },
+                        ]}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="engine"
+                      label={t('system.printTemplateEditor.engine')}
+                      required
+                    >
+                      <Select
+                        disabled
+                        options={[
+                          {
+                            value: 'LODOP',
+                            label: t('system.printTemplateEditor.engineLodop'),
+                          },
+                          {
+                            value: 'PDF_FORM',
+                            label: t(
+                              'system.printTemplateEditor.enginePdfForm',
+                            ),
+                          },
+                        ]}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="assetRef"
+                      label={t('system.printTemplateEditor.assetRef')}
+                    >
+                      <Input
+                        placeholder={t(
+                          'system.printTemplateEditor.assetRefPlaceholder',
+                        )}
+                        maxLength={255}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="versionNo"
+                      label={t('system.printTemplateEditor.versionNo')}
+                    >
+                      <Input type="number" min={1} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="status"
+                      label={t('system.printTemplateEditor.status')}
+                      required
+                    >
+                      <Select
+                        options={[
+                          {
+                            value: 'ACTIVE',
+                            label: t('system.printTemplateEditor.statusActive'),
+                          },
+                          {
+                            value: 'DISABLED',
+                            label: t(
+                              'system.printTemplateEditor.statusDisabled',
+                            ),
+                          },
+                        ]}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+
+              <Card
+                size="small"
+                className="mt-16"
+                title={
+                  <Space>
+                    <CodeOutlined />
+                    <span>
+                      {t('system.printTemplateEditor.templateContent')}
+                    </span>
+                  </Space>
+                }
+              >
+                <Form.Item
+                  {...buildLabeledFormItemProps({
+                    label: t('system.printTemplateEditor.templateContent'),
+                    htmlFor: templateHtmlId,
+                  })}
+                  required
+                  className="mb-8"
+                >
+                  <Input.TextArea
+                    id={templateHtmlId}
+                    name="template-html"
+                    value={templateHtml}
+                    onChange={(event) =>
+                      onTemplateHtmlChange(event.target.value)
+                    }
+                    rows={22}
+                    placeholder={t(
+                      'system.printTemplateEditor.templateContentPlaceholder',
+                    )}
+                    className="text-xs font-mono"
+                  />
+                </Form.Item>
+                <Typography.Text type="secondary">
+                  {t('system.printTemplateEditor.templateHint')}
+                </Typography.Text>
+              </Card>
+            </Col>
+
+            <Col xs={24} lg={8}>
+              <Alert
+                type="info"
+                showIcon
+                title={t('system.printTemplateEditor.helpTitle')}
+                description={
+                  <div className="space-y-3">
+                    <Typography.Paragraph className="mb-0">
+                      {t('system.printTemplateEditor.unifiedPrintApi')}
+                    </Typography.Paragraph>
+                    <Typography.Paragraph className="mb-0">
+                      {t('system.printTemplateEditor.syntaxHint')}
+                    </Typography.Paragraph>
+                  </div>
+                }
               />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="engine"
-              label={t('system.printTemplateEditor.engine')}
-              required
-            >
-              <Select
-                disabled
-                options={[
-                  {
-                    value: 'LODOP',
-                    label: t('system.printTemplateEditor.engineLodop'),
-                  },
-                  {
-                    value: 'PDF_FORM',
-                    label: t('system.printTemplateEditor.enginePdfForm'),
-                  },
-                ]}
-              />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="assetRef"
-              label={t('system.printTemplateEditor.assetRef')}
-            >
-              <Input
-                placeholder={t('system.printTemplateEditor.assetRefPlaceholder')}
-                maxLength={255}
-              />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="versionNo"
-              label={t('system.printTemplateEditor.versionNo')}
-            >
-              <Input type="number" min={1} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item
-              name="status"
-              label={t('system.printTemplateEditor.status')}
-              required
-            >
-              <Select
-                options={[
-                  {
-                    value: 'ACTIVE',
-                    label: t('system.printTemplateEditor.statusActive'),
-                  },
-                  {
-                    value: 'DISABLED',
-                    label: t('system.printTemplateEditor.statusDisabled'),
-                  },
-                ]}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-        <Alert
-          className="mb-4"
-          type="info"
-          showIcon
-          message={t('system.printTemplateEditor.helpTitle')}
-          description={
-            <div className="space-y-3">
-              <Typography.Paragraph className="mb-0">
-                {t('system.printTemplateEditor.unifiedPrintApi')}
-              </Typography.Paragraph>
-              <Typography.Paragraph className="mb-0">
-                {t('system.printTemplateEditor.syntaxHint')}
-              </Typography.Paragraph>
-              <FieldTags
-                title={t('system.printTemplateEditor.commonFields')}
-                fields={commonFields}
-              />
-              <FieldTags
-                title={t('system.printTemplateEditor.detailFields')}
-                fields={detailFields}
-              />
-              <FieldTags
-                title={t('system.printTemplateEditor.layoutFields')}
-                fields={layoutFields}
-              />
-            </div>
-          }
-        />
-        <Form.Item
-          {...buildLabeledFormItemProps({
-            label: t('system.printTemplateEditor.templateContent'),
-            htmlFor: templateHtmlId,
-          })}
-          required
-        >
-          <Input.TextArea
-            id={templateHtmlId}
-            name="template-html"
-            value={templateHtml}
-            onChange={(event) => onTemplateHtmlChange(event.target.value)}
-            rows={16}
-            placeholder={t(
-              'system.printTemplateEditor.templateContentPlaceholder',
-            )}
-            className="text-xs font-mono"
-          />
-        </Form.Item>
-        <Typography.Text type="secondary">
-          {t('system.printTemplateEditor.templateHint')}
-        </Typography.Text>
-      </Form>
-    </FormModal>
+              <Card
+                size="small"
+                className="mt-16"
+                title={t('system.printTemplateEditor.availableFields')}
+              >
+                <Space orientation="vertical" size={16} className="w-full">
+                  <FieldTags
+                    title={t('system.printTemplateEditor.commonFields')}
+                    fields={commonFields}
+                  />
+                  <FieldTags
+                    title={t('system.printTemplateEditor.detailFields')}
+                    fields={detailFields}
+                  />
+                  <FieldTags
+                    title={t('system.printTemplateEditor.layoutFields')}
+                    fields={layoutFields}
+                  />
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+        </Form>
+      </Card>
+    </div>
   )
 }

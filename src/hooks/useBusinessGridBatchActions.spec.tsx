@@ -586,5 +586,4 @@ describe('useBusinessGridBatchActions', () => {
     expect(successMock).toHaveBeenCalled()
     expect(refreshAndClearSelection).toHaveBeenCalled()
   })
-
 })

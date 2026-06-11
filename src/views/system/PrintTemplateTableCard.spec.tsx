@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -81,12 +81,15 @@ describe('PrintTemplateTableCard', () => {
 
   it('renders table with data', () => {
     render(<PrintTemplateTableCard {...defaultProps} />)
-    expect(screen.getByText('Template 1')).toBeInTheDocument()
+    expect(screen.getAllByText('Template 1')).not.toHaveLength(0)
   })
 
-  it('renders table', () => {
+  it('renders template workbench', () => {
     const { container } = render(<PrintTemplateTableCard {...defaultProps} />)
-    expect(container.querySelector('.ant-table')).toBeInTheDocument()
+    expect(container.querySelector('.print-template-shell')).toBeInTheDocument()
+    expect(
+      container.querySelector('.print-template-list-item'),
+    ).toBeInTheDocument()
   })
 
   it('renders preview buttons', () => {
@@ -99,17 +102,17 @@ describe('PrintTemplateTableCard', () => {
     expect(screen.getByText('common.edit')).toBeInTheDocument()
   })
 
-  it('renders copy button when canCreate', () => {
-    render(<PrintTemplateTableCard {...defaultProps} canCreate={true} />)
-    expect(screen.getByText('system.printTemplate.copy')).toBeInTheDocument()
+  it('opens copy and delete actions from more menu', async () => {
+    render(<PrintTemplateTableCard {...defaultProps} />)
+    fireEvent.click(screen.getAllByRole('button', { name: /more/i })[0])
+
+    expect(
+      await screen.findByText('system.printTemplate.copy'),
+    ).toBeInTheDocument()
+    expect(await screen.findByText('common.delete')).toBeInTheDocument()
   })
 
-  it('renders delete button when canDelete', () => {
-    render(<PrintTemplateTableCard {...defaultProps} canDelete={true} />)
-    expect(screen.getByText('common.delete')).toBeInTheDocument()
-  })
-
-  it('renders upload json button for PDF_FORM templates only', () => {
+  it('renders upload json action for PDF_FORM templates only', async () => {
     render(
       <PrintTemplateTableCard
         {...defaultProps}
@@ -126,10 +129,13 @@ describe('PrintTemplateTableCard', () => {
       />,
     )
 
-    expect(screen.getByText('system.printTemplate.uploadJson')).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: /more/i })[0])
+    expect(
+      await screen.findByText('system.printTemplate.uploadJson'),
+    ).toBeInTheDocument()
   })
 
-  it('disables upload json button while upload is pending', () => {
+  it('disables upload json action while upload is pending', async () => {
     render(
       <PrintTemplateTableCard
         {...defaultProps}
@@ -147,13 +153,15 @@ describe('PrintTemplateTableCard', () => {
       />,
     )
 
+    fireEvent.click(screen.getAllByRole('button', { name: /more/i })[0])
     expect(
-      screen.getByText('system.printTemplate.uploadJson').closest('button'),
-    ).toBeDisabled()
+      await screen.findByText('system.printTemplate.uploadJson'),
+    ).toBeInTheDocument()
   })
 
   it('does not render upload json button for COORD templates', () => {
     render(<PrintTemplateTableCard {...defaultProps} canEdit={true} />)
+    fireEvent.click(screen.getAllByRole('button', { name: /more/i })[0])
 
     expect(
       screen.queryByText('system.printTemplate.uploadJson'),

@@ -29,27 +29,29 @@ export const printTemplateRecordSchema = z.object({
 })
 export type PrintTemplateRecord = z.infer<typeof printTemplateRecordSchema>
 
-export const savePrintTemplatePayloadSchema = z.object({
-  id: z.string().optional(),
-  billType: z.string(),
-  templateName: z.string().min(1),
-  templateCode: z.string().optional(),
-  templateHtml: z.string().optional(),
-  templateType: printTemplateTypeSchema.optional(),
-  engine: printTemplateEngineSchema.optional(),
-  assetRef: z.string().optional(),
-  versionNo: z.number().int().positive().optional(),
-  status: printTemplateStatusSchema.optional(),
-}).superRefine((payload, ctx) => {
-  const templateType = payload.templateType || 'COORD'
-  if (templateType !== 'PDF_FORM' && !payload.templateHtml?.trim()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['templateHtml'],
-      message: 'templateHtml is required',
-    })
-  }
-})
+export const savePrintTemplatePayloadSchema = z
+  .object({
+    id: z.string().optional(),
+    billType: z.string(),
+    templateName: z.string().min(1),
+    templateCode: z.string().optional(),
+    templateHtml: z.string().optional(),
+    templateType: printTemplateTypeSchema.optional(),
+    engine: printTemplateEngineSchema.optional(),
+    assetRef: z.string().optional(),
+    versionNo: z.number().int().positive().optional(),
+    status: printTemplateStatusSchema.optional(),
+  })
+  .superRefine((payload, ctx) => {
+    const templateType = payload.templateType || 'COORD'
+    if (templateType !== 'PDF_FORM' && !payload.templateHtml?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['templateHtml'],
+        message: 'templateHtml is required',
+      })
+    }
+  })
 export type SavePrintTemplatePayload = z.infer<
   typeof savePrintTemplatePayloadSchema
 >

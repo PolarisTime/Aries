@@ -1,17 +1,20 @@
 import { EyeOutlined, PrinterOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
 import Button from 'antd/es/button'
 import Empty from 'antd/es/empty'
 import Modal from 'antd/es/modal'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Tag from 'antd/es/tag'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listPrintTemplates } from '@/api/print-template'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import type { PrintActionMode, PrintTemplateRecord } from '@/types/print-template'
+import type {
+  PrintActionMode,
+  PrintTemplateRecord,
+} from '@/types/print-template'
 
 interface Props {
   moduleKey: string
@@ -48,7 +51,8 @@ export function PrintTemplateDropdown({
   const printableTemplates = useMemo(
     () =>
       activeTemplates.filter(
-        (tpl) => tpl.templateType === 'COORD' || tpl.templateType === 'PDF_FORM',
+        (tpl) =>
+          tpl.templateType === 'COORD' || tpl.templateType === 'PDF_FORM',
       ),
     [activeTemplates],
   )
@@ -64,7 +68,8 @@ export function PrintTemplateDropdown({
   }, [open, printableTemplates, selectedTemplateId])
 
   const selectedTemplate = useMemo(
-    () => printableTemplates.find((tpl) => tpl.id === effectiveSelectedTemplateId),
+    () =>
+      printableTemplates.find((tpl) => tpl.id === effectiveSelectedTemplateId),
     [effectiveSelectedTemplateId, printableTemplates],
   )
 
@@ -82,7 +87,10 @@ export function PrintTemplateDropdown({
     [printableTemplates],
   )
 
-  const handlePrint = (mode: PrintActionMode, template: PrintTemplateRecord) => {
+  const handlePrint = (
+    mode: PrintActionMode,
+    template: PrintTemplateRecord,
+  ) => {
     setOpen(false)
     onPrint(mode, template)
   }

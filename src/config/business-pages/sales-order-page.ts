@@ -111,9 +111,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       render: (value, record) => {
         const fmt = (v: unknown) => {
           const n = Number(v)
-          return Number.isFinite(n)
-            ? n.toFixed(3).replace(/\.?0+$/, '')
-            : '-'
+          return Number.isFinite(n) ? n.toFixed(3).replace(/\.?0+$/, '') : '-'
         }
         const hasOverwritten = (record.items || []).some(
           (item: Record<string, unknown>) =>

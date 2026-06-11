@@ -1938,6 +1938,9 @@ export const zhCN: MessageSchema = {
       deleteTemplate: '删除打印模板',
       preview: '预览',
       copy: '复制',
+      searchPlaceholder: '搜索模板名称、编码、类型',
+      emptyList: '暂无打印模板',
+      templateContent: '模板内容',
       templateName: '模板名称',
       templateCode: '模板编码',
       billType: '单据类型',
@@ -2342,6 +2345,8 @@ export const zhCN: MessageSchema = {
     printTemplateEditor: {
       editTitle: '编辑模板',
       createTitle: '新建模板',
+      basicInfo: '基础信息',
+      availableFields: '可用字段',
       billType: '单据类型',
       templateName: '模板名称',
       templateNamePlaceholder: '请输入模板名称',
