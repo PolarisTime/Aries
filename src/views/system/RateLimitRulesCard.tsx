@@ -12,6 +12,7 @@ import Typography from 'antd/es/typography'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePermissionStore } from '@/stores/permissionStore'
 
 interface RawRateLimitRule {
@@ -61,7 +62,7 @@ export function RateLimitRulesCard() {
     isFetching,
     refetch,
   } = useQuery({
-    queryKey: ['rate-limit-rules'],
+    queryKey: QUERY_KEYS.rateLimitRules,
     queryFn: async () => {
       const r = await http.get<{
         code: number

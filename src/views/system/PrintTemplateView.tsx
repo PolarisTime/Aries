@@ -12,6 +12,7 @@ import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
+import type { SavePrintTemplatePayload } from '@/shared/schemas'
 import { usePermissionStore } from '@/stores/permissionStore'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
@@ -19,7 +20,6 @@ import { PrintTemplateEditorModal } from '@/views/system/PrintTemplateEditorModa
 import { PrintTemplatePreviewModal } from '@/views/system/PrintTemplatePreviewModal'
 import { PrintTemplateTableCard } from '@/views/system/PrintTemplateTableCard'
 import { buildPrintTemplateCopyName } from '@/views/system/print-template-view-utils'
-import type { SavePrintTemplatePayload } from '@/shared/schemas'
 
 interface PrintTemplateState {
   selectedBillType: string
@@ -140,7 +140,7 @@ export function PrintTemplateView() {
       showError(error, t('system.printTemplate.uploadJsonFailed')),
   })
 
-  const refresh = useRefreshQuery('print-template')
+  const refresh = useRefreshQuery(QUERY_KEYS.printTemplate)
 
   const openCreate = () => {
     if (!canCreate) {
@@ -180,8 +180,7 @@ export function PrintTemplateView() {
       billType: record.billType || selectedBillType,
       templateName: record.templateName,
       templateCode: record.templateCode || '',
-      templateType:
-        record.templateType === 'PDF_FORM' ? 'PDF_FORM' : 'COORD',
+      templateType: record.templateType === 'PDF_FORM' ? 'PDF_FORM' : 'COORD',
       engine:
         record.engine || defaultEngineForTemplateType(record.templateType),
       assetRef: record.assetRef || '',
@@ -209,8 +208,7 @@ export function PrintTemplateView() {
       billType: record.billType || selectedBillType,
       templateName: buildPrintTemplateCopyName(record),
       templateCode: '',
-      templateType:
-        record.templateType === 'PDF_FORM' ? 'PDF_FORM' : 'COORD',
+      templateType: record.templateType === 'PDF_FORM' ? 'PDF_FORM' : 'COORD',
       engine:
         record.engine || defaultEngineForTemplateType(record.templateType),
       assetRef: record.assetRef || '',
@@ -300,6 +298,23 @@ export function PrintTemplateView() {
     }
   }
 
+  if (editorOpen) {
+    return (
+      <PrintTemplateEditorModal
+        open={editorOpen}
+        editing={Boolean(activeTemplateId)}
+        form={form}
+        templateHtml={templateHtml}
+        saving={saveMutation.isPending}
+        onTemplateHtmlChange={(value) => setState({ templateHtml: value })}
+        onSave={() => {
+          void handleSave()
+        }}
+        onClose={() => setState({ editorOpen: false })}
+      />
+    )
+  }
+
   return (
     <div className="page-stack">
       <PrintTemplateTableCard
@@ -321,22 +336,6 @@ export function PrintTemplateView() {
         onDelete={handleDelete}
         onActiveChange={(value) => setState({ activeTemplateId: value })}
       />
-
-      {editorOpen ? (
-        <PrintTemplateEditorModal
-          open={editorOpen}
-          editing={Boolean(activeTemplateId)}
-          form={form}
-          templateHtml={templateHtml}
-          saving={saveMutation.isPending}
-          onTemplateHtmlChange={(value) => setState({ templateHtml: value })}
-          onSave={() => {
-            void handleSave()
-          }}
-          onClose={() => setState({ editorOpen: false })}
-        />
-      ) : null}
-
       {previewOpen ? (
         <PrintTemplatePreviewModal
           open={previewOpen}

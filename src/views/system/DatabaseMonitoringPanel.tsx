@@ -21,6 +21,8 @@ import {
   type RedisMonitoring,
   type TableHealthItem,
 } from '@/api/database-admin'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { DB_MONITORING_STATUS } from '@/constants/status-constants'
 import { formatDatabaseMemory } from '@/views/system/database-backup-view-utils'
 
 interface Props {
@@ -30,7 +32,7 @@ interface Props {
 export function DatabaseMonitoringPanel({ visible }: Props) {
   const { t } = useTranslation()
   const { data, isFetching, refetch } = useQuery<DatabaseMonitoring>({
-    queryKey: ['database-monitoring', 'readonly-v2'],
+    queryKey: QUERY_KEYS.databaseMonitoring,
     queryFn: getDatabaseMonitoring,
     enabled: visible,
   })
@@ -114,7 +116,7 @@ interface PostgresDiagnosticProps {
 
 function PostgresDiagnostic({ monitoring }: PostgresDiagnosticProps) {
   const { t } = useTranslation()
-  const isHealthy = monitoring.status === '正常'
+  const isHealthy = monitoring.status === DB_MONITORING_STATUS.NORMAL
   const overview = monitoring.overview ?? EMPTY_POSTGRES_OVERVIEW
   const activity = monitoring.activity ?? EMPTY_POSTGRES_ACTIVITY
 
@@ -167,7 +169,7 @@ const EMPTY_POSTGRES_OVERVIEW: PostgresOverview = {
   tempFiles: 0,
   tempBytes: 0,
   cacheHitRate: 0,
-  databaseSize: '未知',
+  databaseSize: DB_MONITORING_STATUS.UNKNOWN,
   uptimeSeconds: 0,
 }
 
@@ -183,7 +185,7 @@ const EMPTY_POSTGRES_ACTIVITY: PostgresActivity = {
 
 const EMPTY_QUERY_STATS = {
   available: false,
-  status: '未启用 pg_stat_statements',
+  status: DB_MONITORING_STATUS.PG_STAT_NOT_ENABLED,
   items: [],
 }
 
@@ -569,7 +571,8 @@ interface RedisMonitoringSummaryProps {
 function RedisMonitoringSummary({ redis }: RedisMonitoringSummaryProps) {
   const { t } = useTranslation()
   const isHealthy =
-    redis.status === '正常' || redis.status.toUpperCase() === 'UP'
+    redis.status === DB_MONITORING_STATUS.NORMAL ||
+    redis.status.toUpperCase() === 'UP'
   const metrics = [
     {
       label: t('system.databaseMonitor.redisMemUsage'),
@@ -673,9 +676,13 @@ function bloatColor(pct: number) {
 }
 
 function autovacuumStatusColor(status: string) {
-  if (status === '需 VACUUM') return 'red'
-  if (status === '关注' || status === '需 ANALYZE') return 'orange'
-  if (status === '干净') return 'blue'
+  if (status === DB_MONITORING_STATUS.NEED_VACUUM) return 'red'
+  if (
+    status === DB_MONITORING_STATUS.ATTENTION ||
+    status === DB_MONITORING_STATUS.NEED_ANALYZE
+  )
+    return 'orange'
+  if (status === DB_MONITORING_STATUS.CLEAN) return 'blue'
   return 'green'
 }
 

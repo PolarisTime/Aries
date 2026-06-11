@@ -37,7 +37,7 @@ export function useUserAccountListState(enabled = true) {
   const users = usersData?.records || []
   const totalElements = Number(usersData?.totalElements) || 0
 
-  const refresh = useRefreshQuery('user-account')
+  const refresh = useRefreshQuery(QUERY_KEYS.userAccountBase)
 
   const handleSearch = () => {
     setCurrentPage(1)

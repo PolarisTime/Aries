@@ -29,6 +29,7 @@ export const QUERY_KEYS = {
 
   // Database
   databaseStatus: ['database-status'] as const,
+  databaseMonitoring: ['database-monitoring', 'readonly-v2'] as const,
 
   // Master data
   masterOptions: {
@@ -39,6 +40,12 @@ export const QUERY_KEYS = {
     supplier: ['master-options', 'supplier'] as const,
     warehouse: ['master-options', 'warehouse'] as const,
   },
+
+  // Role templates
+  roleTemplates: ['role-templates'] as const,
+
+  // Rate limit rules
+  rateLimitRules: ['rate-limit-rules'] as const,
 
   // Auth / Users
   apiKeys: ['api-keys'] as const,
