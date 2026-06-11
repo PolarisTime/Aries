@@ -11,6 +11,7 @@ import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
+import { STATUS } from '@/constants/status-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import {
@@ -211,7 +212,7 @@ export function NumberRulesTableCard({
               rows.filter(
                 (row) =>
                   asString(row.ruleType) === 'UPLOAD_RULE' &&
-                  asString(row.status) === '禁用',
+                  asString(row.status) === STATUS.DISABLED,
               ).length
             }
           />

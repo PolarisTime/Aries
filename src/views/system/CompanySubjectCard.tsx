@@ -7,6 +7,7 @@ import Input from 'antd/es/input'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
+import { STATUS } from '@/constants/status-constants'
 import { getFormString } from '@/lib/antd-form'
 
 interface Props {
@@ -53,8 +54,14 @@ export function CompanySubjectCard({
         <Select
           disabled={!canSave}
           options={[
-            { label: t('system.companySubject.statusNormal'), value: '正常' },
-            { label: t('system.companySubject.statusDisabled'), value: '禁用' },
+            {
+              label: t('system.companySubject.statusNormal'),
+              value: STATUS.NORMAL,
+            },
+            {
+              label: t('system.companySubject.statusDisabled'),
+              value: STATUS.DISABLED,
+            },
           ]}
         />
       </Form.Item>

@@ -18,12 +18,17 @@ import {
   listApiKeyActionOptions,
   listApiKeyResourceOptions,
 } from '@/api/api-keys'
+import { API_KEY_STATUS } from '@/constants/status-constants'
 import { formatDateTime } from '@/utils/formatters'
 
 function getStatusColor(status: string) {
-  if (status === '有效' || status === 'active') return 'green'
-  if (status === '已过期' || status === 'expired') return 'orange'
-  if (status === '已禁用' || status === 'revoked' || status === 'inactive')
+  if (status === API_KEY_STATUS.VALID || status === 'active') return 'green'
+  if (status === API_KEY_STATUS.EXPIRED || status === 'expired') return 'orange'
+  if (
+    status === API_KEY_STATUS.DISABLED ||
+    status === 'revoked' ||
+    status === 'inactive'
+  )
     return 'red'
   return 'default'
 }

@@ -13,6 +13,7 @@ import {
   saveCompanySettingProfile,
 } from '@/api/company-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { SETTLEMENT_TYPE, STATUS } from '@/constants/status-constants'
 import { useRequestError } from '@/hooks/useRequestError'
 import { validateForm } from '@/lib/antd-form'
 import { usePermissionStore } from '@/stores/permissionStore'
@@ -42,7 +43,7 @@ function buildCompanySettingFormValues(
     id: profile?.id,
     companyName: profile?.companyName ?? '',
     taxNo: profile?.taxNo ?? '',
-    status: profile?.status || '正常',
+    status: profile?.status || STATUS.NORMAL,
     remark: profile?.remark || '',
     settlementAccounts: normalizeSettlementAccounts(
       profile?.settlementAccounts,
@@ -121,11 +122,11 @@ function CompanySettingsForm({
           accountName: account.accountName.trim(),
           bankName: account.bankName.trim(),
           bankAccount: account.bankAccount.trim(),
-          usageType: account.usageType || '通用',
-          status: account.status || '正常',
+          usageType: account.usageType || SETTLEMENT_TYPE.GENERAL,
+          status: account.status || STATUS.NORMAL,
           remark: account.remark?.trim() || '',
         })),
-        status: values.status || '正常',
+        status: values.status || STATUS.NORMAL,
         remark: values.remark?.trim() || '',
       })
     } catch {

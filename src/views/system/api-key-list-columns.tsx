@@ -9,6 +9,7 @@ import type {
   ApiKeyRecord,
   ApiKeyResourceOption,
 } from '@/api/api-keys'
+import { API_KEY_STATUS } from '@/constants/status-constants'
 import { formatDateTime } from '@/utils/formatters'
 import {
   getApiKeyAllowedActionText,
@@ -47,7 +48,7 @@ export function buildApiKeyListColumns({
           >
             {i18next.t('system.apiKeyColumns.view')}
           </Button>
-          {canEdit && record.status === '有效' && (
+          {canEdit && record.status === API_KEY_STATUS.VALID && (
             <Button
               type="link"
               size="small"

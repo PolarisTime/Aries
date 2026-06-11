@@ -14,6 +14,7 @@ import { listStatementCandidatePage } from '@/api/statements'
 import { StatusTag } from '@/components/StatusTag'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { SearchParams } from '@/types/api-raw'
 import type {
@@ -72,35 +73,35 @@ const DEFAULT_PAGE_SIZE = 15
 
 function getOverlayStatusMap() {
   return {
-    草稿: {
+    [DOCUMENT_STATUS.DRAFT]: {
       color: 'default',
       text: i18next.t('modules.parentSelector.status.draft'),
     },
-    未审核: {
+    [DOCUMENT_STATUS.UNAUDITED]: {
       color: 'default',
       text: i18next.t('modules.parentSelector.status.unaudited'),
     },
-    已审核: {
+    [DOCUMENT_STATUS.AUDITED]: {
       color: 'processing',
       text: i18next.t('modules.parentSelector.status.audited'),
     },
-    已收票: {
+    [DOCUMENT_STATUS.INVOICED_RECEIVED]: {
       color: 'success',
       text: i18next.t('modules.parentSelector.status.invoiceReceived'),
     },
-    已开票: {
+    [DOCUMENT_STATUS.INVOICED_ISSUED]: {
       color: 'success',
       text: i18next.t('modules.parentSelector.status.invoiceIssued'),
     },
-    完成采购: {
+    [DOCUMENT_STATUS.PURCHASE_COMPLETED]: {
       color: 'success',
       text: i18next.t('modules.parentSelector.status.purchaseComplete'),
     },
-    完成销售: {
+    [DOCUMENT_STATUS.SALES_COMPLETED]: {
       color: 'success',
       text: i18next.t('modules.parentSelector.status.salesComplete'),
     },
-    完成入库: {
+    [DOCUMENT_STATUS.INBOUND_COMPLETED]: {
       color: 'success',
       text: i18next.t('modules.parentSelector.status.inboundComplete'),
     },
