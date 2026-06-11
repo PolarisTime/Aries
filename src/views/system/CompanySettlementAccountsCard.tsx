@@ -8,6 +8,7 @@ import Row from 'antd/es/row'
 import Select from 'antd/es/select'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
+import { SETTLEMENT_TYPE, STATUS } from '@/constants/status-constants'
 import { createEmptySettlementAccount } from '@/views/system/company-settings-view-utils'
 
 interface Props {
@@ -109,15 +110,15 @@ export function CompanySettlementAccountsCard({ canSave }: Props) {
                         options={[
                           {
                             label: t('system.company.usageGeneral'),
-                            value: '通用',
+                            value: SETTLEMENT_TYPE.GENERAL,
                           },
                           {
                             label: t('system.company.usageReceive'),
-                            value: '收款',
+                            value: SETTLEMENT_TYPE.RECEIPT,
                           },
                           {
                             label: t('system.company.usagePay'),
-                            value: '付款',
+                            value: SETTLEMENT_TYPE.PAYMENT,
                           },
                         ]}
                       />
@@ -177,11 +178,11 @@ export function CompanySettlementAccountsCard({ canSave }: Props) {
                         options={[
                           {
                             label: t('system.company.statusNormal'),
-                            value: '正常',
+                            value: STATUS.NORMAL,
                           },
                           {
                             label: t('system.company.statusDisabled'),
-                            value: '禁用',
+                            value: STATUS.DISABLED,
                           },
                         ]}
                       />

@@ -12,6 +12,7 @@ import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
+import { STATUS } from '@/constants/status-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import {
@@ -98,7 +99,7 @@ export function GeneralSettingsTableCard({
       width: 160,
       align: 'center',
       render: (_value, record) => {
-        const enabled = asString(record.status) === '正常'
+        const enabled = asString(record.status) === STATUS.NORMAL
         return (
           <Space>
             <Switch
@@ -169,8 +170,9 @@ export function GeneralSettingsTableCard({
           <Statistic
             title={t('system.generalSettingsTable.currentEnabled')}
             value={
-              filteredRows.filter((row) => asString(row.status) === '正常')
-                .length
+              filteredRows.filter(
+                (row) => asString(row.status) === STATUS.NORMAL,
+              ).length
             }
           />
         </Col>

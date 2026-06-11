@@ -9,6 +9,7 @@ import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
 import type { DatabaseStatus } from '@/api/database-admin'
+import { DB_MONITORING_STATUS } from '@/constants/status-constants'
 import {
   formatDatabaseDateTime,
   formatDatabaseMemory,
@@ -33,7 +34,8 @@ function DatabaseServiceCard({
   summary,
   details,
 }: ServiceCardProps) {
-  const isHealthy = status === '正常' || status.toUpperCase() === 'UP'
+  const isHealthy =
+    status === DB_MONITORING_STATUS.NORMAL || status.toUpperCase() === 'UP'
 
   return (
     <Card size="small" className="database-service-card">

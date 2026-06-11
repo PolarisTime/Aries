@@ -4,6 +4,7 @@ import Table from 'antd/es/table'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
+import { MATERIAL_TYPE } from '@/constants/status-constants'
 
 interface PieceWeight {
   pieceNo: number
@@ -74,7 +75,8 @@ export function PieceWeightPopover({
         Boolean(normalizedPurchaseOrderItemId)),
   })
 
-  const isWeighCategory = category === '盘螺' || category === '线材'
+  const isWeighCategory =
+    category === MATERIAL_TYPE.COIL_REBAR || category === MATERIAL_TYPE.WIRE_ROD
 
   if (!isWeighCategory) {
     return (

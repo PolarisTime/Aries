@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table'
 import Tag from 'antd/es/tag'
 import type { TFunction } from 'i18next'
 import type { RefreshTokenRecord } from '@/api/session-management'
+import { SESSION_STATUS } from '@/constants/status-constants'
 import { formatDateTime } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 
@@ -11,11 +12,16 @@ type SessionStatus = 'valid' | 'disabled' | 'unknown'
 
 function normalizeSessionStatus(status: unknown): SessionStatus {
   const normalized = asString(status).trim().toLowerCase()
-  if (['有效', 'valid', 'active'].includes(normalized)) return 'valid'
+  if ([SESSION_STATUS.VALID, 'valid', 'active'].includes(normalized))
+    return 'valid'
   if (
-    ['已禁用', 'disabled', 'revoked', 'inactive', 'invalid'].includes(
-      normalized,
-    )
+    [
+      SESSION_STATUS.DISABLED,
+      'disabled',
+      'revoked',
+      'inactive',
+      'invalid',
+    ].includes(normalized)
   )
     return 'disabled'
   return 'unknown'

@@ -1,0 +1,59 @@
+/**
+ * 后端状态值常量映射
+ * 用于统一管理硬编码的中文状态值
+ */
+
+// 通用状态
+export const STATUS = {
+  NORMAL: '正常',
+  DISABLED: '禁用',
+} as const
+
+// API Key 状态
+export const API_KEY_STATUS = {
+  VALID: '有效',
+  EXPIRED: '已过期',
+  DISABLED: '已禁用',
+} as const
+
+// 会话状态
+export const SESSION_STATUS = {
+  VALID: '有效',
+  DISABLED: '已禁用',
+} as const
+
+// 结算账户类型
+export const SETTLEMENT_TYPE = {
+  GENERAL: '通用',
+  RECEIPT: '收款',
+  PAYMENT: '付款',
+} as const
+
+// 数据库监控状态
+export const DB_MONITORING_STATUS = {
+  NORMAL: '正常',
+  UNKNOWN: '未知',
+  PG_STAT_NOT_ENABLED: '未启用 pg_stat_statements',
+  NEED_VACUUM: '需 VACUUM',
+  ATTENTION: '关注',
+  NEED_ANALYZE: '需 ANALYZE',
+  CLEAN: '干净',
+} as const
+
+// 业务单据状态
+export const DOCUMENT_STATUS = {
+  DRAFT: '草稿',
+  UNAUDITED: '未审核',
+  AUDITED: '已审核',
+  INVOICED_RECEIVED: '已收票',
+  INVOICED_ISSUED: '已开票',
+  PURCHASE_COMPLETED: '完成采购',
+  SALES_COMPLETED: '完成销售',
+  INBOUND_COMPLETED: '完成入库',
+} as const
+
+// 物料类型
+export const MATERIAL_TYPE = {
+  COIL_REBAR: '盘螺',
+  WIRE_ROD: '线材',
+} as const
