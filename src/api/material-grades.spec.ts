@@ -40,8 +40,10 @@ describe('material-grades', () => {
 
   it('reloads cached results', async () => {
     vi.resetModules()
-    const { fetchMaterialGrades: fetchFresh, reloadMaterialGrades: reloadFresh } =
-      await import('./material-grades')
+    const {
+      fetchMaterialGrades: fetchFresh,
+      reloadMaterialGrades: reloadFresh,
+    } = await import('./material-grades')
     httpGetMock
       .mockResolvedValueOnce({ code: 0, data: ['HRB400'] })
       .mockResolvedValueOnce({ code: 0, data: ['HRB600'] })

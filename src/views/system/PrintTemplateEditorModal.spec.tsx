@@ -7,24 +7,6 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('@/components/FormModal', () => ({
-  FormModal: ({
-    children,
-    title,
-    open,
-  }: {
-    children: React.ReactNode
-    title: string
-    open: boolean
-  }) =>
-    open ? (
-      <div data-testid="form-modal">
-        <div>{title}</div>
-        {children}
-      </div>
-    ) : null,
-}))
-
 vi.mock('antd/es/form', () => {
   const Form = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
@@ -57,13 +39,15 @@ vi.mock('antd/es/select', () => ({
 vi.mock('antd/es/alert', () => ({
   default: ({
     message,
+    title,
     description,
   }: {
-    message: string
+    message?: string
+    title?: string
     description?: React.ReactNode
   }) => (
     <div>
-      <div>{message}</div>
+      <div>{title ?? message}</div>
       {description && <div>{description}</div>}
     </div>
   ),
@@ -138,9 +122,10 @@ describe('PrintTemplateEditorModal', () => {
     expect(typeof PrintTemplateEditorModal).toBe('function')
   })
 
-  it('renders modal when open', () => {
+  it('renders editor workspace when open', () => {
     render(<PrintTemplateEditorModal {...defaultProps} />)
-    expect(screen.getByTestId('form-modal')).toBeInTheDocument()
+    expect(screen.getByText('common.back')).toBeInTheDocument()
+    expect(screen.getByText('common.save')).toBeInTheDocument()
   })
 
   it('renders create title when not editing', () => {
@@ -171,27 +156,44 @@ describe('PrintTemplateEditorModal', () => {
     expect(
       screen.getByText('system.printTemplateEditor.templateCode'),
     ).toBeInTheDocument()
-    expect(screen.getByText('system.printTemplateEditor.engine')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.engine'),
+    ).toBeInTheDocument()
     expect(
       screen.getByText('system.printTemplateEditor.assetRef'),
     ).toBeInTheDocument()
     expect(
       screen.getByText('system.printTemplateEditor.versionNo'),
     ).toBeInTheDocument()
-    expect(screen.getByText('system.printTemplateEditor.status')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.status'),
+    ).toBeInTheDocument()
   })
 
   it('renders template content field', () => {
     render(<PrintTemplateEditorModal {...defaultProps} />)
     expect(
-      screen.getByText('system.printTemplateEditor.templateContent'),
+      screen.getAllByText('system.printTemplateEditor.templateContent'),
+    ).not.toHaveLength(0)
+  })
+
+  it('renders basic info and available fields sections', () => {
+    render(<PrintTemplateEditorModal {...defaultProps} />)
+    expect(
+      screen.getByText('system.printTemplateEditor.basicInfo'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.availableFields'),
     ).toBeInTheDocument()
   })
 
   it('renders help alert', () => {
-    render(<PrintTemplateEditorModal {...defaultProps} />)
+    const { container } = render(<PrintTemplateEditorModal {...defaultProps} />)
+    expect(container.textContent).toContain(
+      'system.printTemplateEditor.helpTitle',
+    )
     expect(
-      screen.getByText('system.printTemplateEditor.helpTitle'),
+      screen.getByText('system.printTemplateEditor.unifiedPrintApi'),
     ).toBeInTheDocument()
   })
 

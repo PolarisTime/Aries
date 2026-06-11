@@ -1965,6 +1965,9 @@ export const enUS: MessageSchema = {
       deleteTemplate: 'Delete Print Template',
       preview: 'Preview',
       copy: 'Copy',
+      searchPlaceholder: 'Search template name, code, or type',
+      emptyList: 'No print templates',
+      templateContent: 'Template Content',
       templateName: 'Template Name',
       templateCode: 'Template Code',
       billType: 'Bill Type',
@@ -2382,6 +2385,8 @@ export const enUS: MessageSchema = {
     printTemplateEditor: {
       editTitle: 'Edit Template',
       createTitle: 'New Template',
+      basicInfo: 'Basic Info',
+      availableFields: 'Available Fields',
       billType: 'Bill Type',
       templateName: 'Template Name',
       templateNamePlaceholder: 'Enter template name',

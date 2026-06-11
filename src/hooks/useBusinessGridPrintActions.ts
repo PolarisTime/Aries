@@ -5,7 +5,10 @@ import { assertApiSuccess, http } from '@/api/client'
 import { listPrintTemplates } from '@/api/print-template'
 import { PrintTemplateSelector } from '@/components/PrintTemplateSelector'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
-import type { PrintActionMode, PrintTemplateRecord } from '@/types/print-template'
+import type {
+  PrintActionMode,
+  PrintTemplateRecord,
+} from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
 import { execPrintCode, loadCLodop } from '@/utils/clodop'
 import { downloadBlob } from '@/utils/download'
@@ -118,10 +121,10 @@ async function pickPrintTemplate(
   if (!Object.hasOwn(printTemplateTargetMap, moduleKey)) return null
   const response = await listPrintTemplates(moduleKey)
   const templates = (response?.data || []).filter(
-      (t) =>
-        (t.status == null || t.status === 'ACTIVE') &&
-        (t.templateType === 'COORD' || t.templateType === 'PDF_FORM') &&
-        (t.templateType === 'PDF_FORM' || t.templateHtml?.trim()),
+    (t) =>
+      (t.status == null || t.status === 'ACTIVE') &&
+      (t.templateType === 'COORD' || t.templateType === 'PDF_FORM') &&
+      (t.templateType === 'PDF_FORM' || t.templateHtml?.trim()),
   )
 
   if (templates.length === 0) return null

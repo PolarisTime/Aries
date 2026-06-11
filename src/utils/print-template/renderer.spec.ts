@@ -69,7 +69,12 @@ describe('renderPrintTemplate', () => {
 
   it('rejects unsupported HTML templates', () => {
     expect(() =>
-      renderPrintTemplate('<p>{{message}}</p>', 'HTML', { message: 'Hello' }, []),
+      renderPrintTemplate(
+        '<p>{{message}}</p>',
+        'HTML',
+        { message: 'Hello' },
+        [],
+      ),
     ).toThrow('Unsupported print template type')
   })
 
