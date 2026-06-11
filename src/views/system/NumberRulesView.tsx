@@ -8,6 +8,7 @@ import {
   updateSystemUploadRule,
 } from '@/api/system-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { STATUS } from '@/constants/status-constants'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
@@ -71,7 +72,7 @@ export function NumberRulesView() {
   const numberRuleRows = filteredRows.filter(isNumberRule)
   const uploadRuleRows = filteredRows.filter(isUploadRule)
 
-  const refresh = useRefreshQuery('number-rules')
+  const refresh = useRefreshQuery(QUERY_KEYS.numberRules)
 
   const openNumberRuleEditor = (record: ModuleRecord) => {
     if (!canEdit) {
@@ -88,7 +89,7 @@ export function NumberRulesView() {
       dateRule: record.dateRule || 'yyyy',
       serialLength: record.serialLength || 6,
       resetRule: record.resetRule || 'YEARLY',
-      status: record.status || '正常',
+      status: record.status || STATUS.NORMAL,
       remark: record.remark || '',
     })
     setState({ editorOpen: true })
@@ -107,7 +108,7 @@ export function NumberRulesView() {
       ruleCode: record.ruleCode || record.settingCode,
       ruleName: record.ruleName || record.settingName,
       renamePattern: record.renamePattern || record.prefix || '',
-      status: record.status || '正常',
+      status: record.status || STATUS.NORMAL,
       remark: record.remark || '',
     })
     setState({ editorOpen: true })

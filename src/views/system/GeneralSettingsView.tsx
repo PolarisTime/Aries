@@ -4,6 +4,7 @@ import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listSystemSettings, saveSystemSetting } from '@/api/system-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { STATUS } from '@/constants/status-constants'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
@@ -61,7 +62,7 @@ export function buildSystemSettingPayload(
     serialLength: record.serialLength || 1,
     resetRule: record.resetRule || 'NEVER',
     sampleNo: record.sampleNo || 'ON',
-    status: asString(record.status) || '正常',
+    status: asString(record.status) || STATUS.NORMAL,
     remark: record.remark,
     ...patch,
   }
@@ -98,7 +99,7 @@ export function GeneralSettingsView() {
   const basicSettingRows = filteredRows.filter(isNumericSetting)
   const switchRows = filteredRows.filter(isToggleSetting)
 
-  const refresh = useRefreshQuery('general-setting')
+  const refresh = useRefreshQuery(QUERY_KEYS.generalSetting)
 
   const openEditor = (record: ModuleRecord) => {
     if (!canEdit) {
@@ -111,7 +112,7 @@ export function GeneralSettingsView() {
       settingName: record.settingName,
       billName: record.billName,
       remark: record.remark,
-      enabled: asString(record.status) === '正常',
+      enabled: asString(record.status) === STATUS.NORMAL,
       numericValue: isWatermarkContentSetting(record)
         ? asString(record.sampleNo)
         : isWatermarkPropSetting(record) || isDefaultTaxRateSetting(record)
@@ -128,7 +129,10 @@ export function GeneralSettingsView() {
 
   const handleToggle = async (record: ModuleRecord) => {
     setState({ toggling: true })
-    const nextStatus = asString(record.status) === '正常' ? '禁用' : '正常'
+    const nextStatus =
+      asString(record.status) === STATUS.NORMAL
+        ? STATUS.DISABLED
+        : STATUS.NORMAL
     try {
       await saveSystemSetting(
         buildSystemSettingPayload(record, {
@@ -137,7 +141,7 @@ export function GeneralSettingsView() {
         }),
       )
       message.success(
-        nextStatus === '正常'
+        nextStatus === STATUS.NORMAL
           ? t('system.generalSettings.enabled')
           : t('system.generalSettings.closed'),
       )
@@ -196,9 +200,9 @@ export function GeneralSettingsView() {
           remark: values.remark,
           status: isToggle
             ? values.enabled
-              ? '正常'
-              : '禁用'
-            : asString(editingRecord.status) || '正常',
+              ? STATUS.NORMAL
+              : STATUS.DISABLED
+            : asString(editingRecord.status) || STATUS.NORMAL,
           sampleNo: sampleNo || 'ON',
         }),
       )
