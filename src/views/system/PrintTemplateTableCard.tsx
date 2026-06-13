@@ -25,6 +25,7 @@ import Upload from 'antd/es/upload'
 import type { RcFile } from 'antd/es/upload/interface'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { StatusTag } from '@/components/StatusTag'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { formatDateTime } from '@/utils/formatters'
@@ -52,10 +53,6 @@ interface Props {
 
 function templateTypeLabel(record: PrintTemplateRecord) {
   return record.templateType === 'PDF_FORM' ? 'PDF_FORM' : 'COORD'
-}
-
-function statusColor(status: string | null | undefined) {
-  return status === 'DISABLED' ? 'default' : 'green'
 }
 
 export function PrintTemplateTableCard({
@@ -106,13 +103,24 @@ export function PrintTemplateTableCard({
   const canEditRecord = (record: PrintTemplateRecord) =>
     canEdit && record.syncMode !== 'FILE'
 
-  const renderStatusTag = (record: PrintTemplateRecord) => (
-    <Tag color={statusColor(record.status)}>
-      {record.status === 'DISABLED'
-        ? t('system.printTemplate.statusDisabled')
-        : t('system.printTemplate.statusActive')}
-    </Tag>
-  )
+  const renderStatusTag = (record: PrintTemplateRecord) => {
+    const status = record.status === 'DISABLED' ? 'disabled' : 'active'
+    return (
+      <StatusTag
+        status={status}
+        statusMap={{
+          active: {
+            color: 'green',
+            label: t('system.printTemplate.statusActive'),
+          },
+          disabled: {
+            color: 'default',
+            label: t('system.printTemplate.statusDisabled'),
+          },
+        }}
+      />
+    )
+  }
 
   const renderSyncTag = (record: PrintTemplateRecord) =>
     record.syncMode === 'FILE' ? (

@@ -2,10 +2,10 @@ import { PlusOutlined } from '@ant-design/icons'
 import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Empty from 'antd/es/empty'
-import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
 import type { RoleRecord } from '@/api/role-actions'
+import { StatusTag } from '@/components/StatusTag'
 import { enabledStatusValues } from '@/constants/module-options'
 
 interface Props {
@@ -56,12 +56,17 @@ export function RoleActionRoleListCard({
         >
           <div className="flex justify-between mb-4">
             <Typography.Text strong>{role.roleName}</Typography.Text>
-            <Tag
-              color={role.status === enabledStatusValues[0] ? 'green' : 'red'}
+            <StatusTag
+              status={role.status}
+              statusMap={{
+                [role.status]: {
+                  color:
+                    role.status === enabledStatusValues[0] ? 'green' : 'red',
+                  label: role.status,
+                },
+              }}
               className="ml-8"
-            >
-              {role.status}
-            </Tag>
+            />
           </div>
           <div className="flex gap-8 text-xs text-secondary">
             <span>{role.roleCode}</span>

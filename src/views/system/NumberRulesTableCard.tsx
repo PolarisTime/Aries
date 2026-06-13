@@ -1,5 +1,4 @@
 import { EditOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
 import Row from 'antd/es/row'
@@ -7,10 +6,11 @@ import Select from 'antd/es/select'
 import Statistic from 'antd/es/statistic'
 import type { TableProps } from 'antd/es/table'
 import Table from 'antd/es/table'
-import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
+import { StatusTag } from '@/components/StatusTag'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
+import { TableActions } from '@/components/TableActions'
 import { STATUS } from '@/constants/status-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -51,23 +51,41 @@ export function NumberRulesTableCard({
   onEditUploadRule,
 }: Props) {
   const { t } = useTranslation()
+  const renderEditAction = (
+    record: ModuleRecord,
+    onClick: (record: ModuleRecord) => void,
+  ) => (
+    <TableActions
+      items={[
+        {
+          key: 'edit',
+          label: t('common.edit'),
+          icon: <EditOutlined />,
+          disabled: !canEdit,
+          onClick: () => onClick(record),
+        },
+      ]}
+    />
+  )
+  const renderStatusTag = (value: string) => (
+    <StatusTag
+      status={value}
+      statusMap={{
+        [value]: {
+          color: formatNumberRuleStatusColor(value),
+          label: formatNumberRuleStatusText(value),
+        },
+      }}
+      fallback="--"
+    />
+  )
   const numberRuleColumns: TableProps<ModuleRecord>['columns'] = [
     {
       title: t('common.operation'),
       key: 'action',
       width: 90,
       align: 'center',
-      render: (_value, record) => (
-        <Button
-          type="link"
-          size="small"
-          icon={<EditOutlined />}
-          disabled={!canEdit}
-          onClick={() => onEditNumberRule(record)}
-        >
-          {t('common.edit')}
-        </Button>
-      ),
+      render: (_value, record) => renderEditAction(record, onEditNumberRule),
     },
     {
       dataIndex: 'billName',
@@ -113,11 +131,7 @@ export function NumberRulesTableCard({
       title: t('common.status'),
       width: 100,
       align: 'center',
-      render: (value: string) => (
-        <Tag color={formatNumberRuleStatusColor(value)}>
-          {formatNumberRuleStatusText(value)}
-        </Tag>
-      ),
+      render: renderStatusTag,
     },
   ]
   const uploadRuleColumns: TableProps<ModuleRecord>['columns'] = [
@@ -126,17 +140,7 @@ export function NumberRulesTableCard({
       key: 'action',
       width: 90,
       align: 'center',
-      render: (_value, record) => (
-        <Button
-          type="link"
-          size="small"
-          icon={<EditOutlined />}
-          disabled={!canEdit}
-          onClick={() => onEditUploadRule(record)}
-        >
-          {t('common.edit')}
-        </Button>
-      ),
+      render: (_value, record) => renderEditAction(record, onEditUploadRule),
     },
     {
       dataIndex: 'billName',
@@ -163,11 +167,7 @@ export function NumberRulesTableCard({
       title: t('common.status'),
       width: 100,
       align: 'center',
-      render: (value: string) => (
-        <Tag color={formatNumberRuleStatusColor(value)}>
-          {formatNumberRuleStatusText(value)}
-        </Tag>
-      ),
+      render: renderStatusTag,
     },
   ]
   return (

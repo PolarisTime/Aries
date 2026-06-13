@@ -49,6 +49,22 @@ describe('SystemTableToolbar', () => {
     expect(onCreate).toHaveBeenCalledTimes(1)
   })
 
+  it('uses custom action labels and create disabled state', () => {
+    const onCreate = vi.fn()
+    render(
+      <SystemTableToolbar
+        {...defaultProps}
+        onCreate={onCreate}
+        refreshLabel="重新加载"
+        createLabel="生成密钥"
+        createDisabled
+      />,
+    )
+
+    expect(screen.getByText('重新加载')).toBeTruthy()
+    expect(screen.getByText('生成密钥').closest('button')).toBeDisabled()
+  })
+
   it('hides create button when onCreate is not provided', () => {
     render(<SystemTableToolbar {...defaultProps} />)
     expect(screen.queryByText('toolbar.create')).toBeNull()

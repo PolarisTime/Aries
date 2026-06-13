@@ -13,6 +13,9 @@ interface Props {
   onSearch?: () => void
   onRefresh: () => void
   onCreate?: () => void
+  refreshLabel?: string
+  createLabel?: string
+  createDisabled?: boolean
   children?: ReactNode
 }
 
@@ -24,6 +27,9 @@ export function SystemTableToolbar({
   onSearch,
   onRefresh,
   onCreate,
+  refreshLabel,
+  createLabel,
+  createDisabled = false,
   children,
 }: Props) {
   const { t } = useTranslation()
@@ -41,11 +47,16 @@ export function SystemTableToolbar({
       />
       {children}
       <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-        {t('toolbar.refresh')}
+        {refreshLabel ?? t('toolbar.refresh')}
       </Button>
       {onCreate && (
-        <Button type="primary" icon={<PlusOutlined />} onClick={onCreate}>
-          {t('toolbar.create')}
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          disabled={createDisabled}
+          onClick={onCreate}
+        >
+          {createLabel ?? t('toolbar.create')}
         </Button>
       )}
     </Space>

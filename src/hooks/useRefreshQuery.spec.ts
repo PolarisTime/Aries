@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRefreshQuery } from './useRefreshQuery'
 
 const invalidateQueriesMock = vi.fn()
@@ -20,20 +20,24 @@ vi.mock('@/constants/query-keys', () => ({
 }))
 
 describe('useRefreshQuery', () => {
+  beforeEach(() => {
+    invalidateQueriesMock.mockClear()
+  })
+
   it('returns a function that invalidates the given query key', () => {
-    const { result } = renderHook(() => useRefreshQuery('orders'))
+    const { result } = renderHook(() => useRefreshQuery(['orders']))
     result.current()
     expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['orders'] })
   })
 
   it('works with different query keys', () => {
-    const { result } = renderHook(() => useRefreshQuery('users'))
+    const { result } = renderHook(() => useRefreshQuery(['users']))
     result.current()
     expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['users'] })
   })
 
   it('invalidates client settings when refreshing general settings', () => {
-    const { result } = renderHook(() => useRefreshQuery('general-setting'))
+    const { result } = renderHook(() => useRefreshQuery(['general-setting']))
     result.current()
 
     expect(invalidateQueriesMock).toHaveBeenCalledWith({
@@ -51,7 +55,7 @@ describe('useRefreshQuery', () => {
   })
 
   it('invalidates shared system setting caches when refreshing number rules', () => {
-    const { result } = renderHook(() => useRefreshQuery('number-rules'))
+    const { result } = renderHook(() => useRefreshQuery(['number-rules']))
     result.current()
 
     expect(invalidateQueriesMock).toHaveBeenCalledWith({
