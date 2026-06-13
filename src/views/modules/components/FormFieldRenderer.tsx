@@ -1,3 +1,4 @@
+import AutoComplete from 'antd/es/auto-complete'
 import DatePicker from 'antd/es/date-picker'
 import Form from 'antd/es/form'
 import Input from 'antd/es/input'
@@ -163,17 +164,11 @@ export function FormFieldRenderer({ field, disabled }: Props) {
 
     case 'autoComplete':
       return renderFormItem(
-        <Select
+        <AutoComplete
           id={fieldId}
           placeholder={placeholder}
           allowClear={allowClear}
           disabled={disabledValue}
-          showSearch
-          filterOption={(input, option) =>
-            String(option?.label || '')
-              .toLowerCase()
-              .includes(input.toLowerCase())
-          }
           options={
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
@@ -181,10 +176,15 @@ export function FormFieldRenderer({ field, disabled }: Props) {
                   value:
                     typeof opt.value === 'number' ||
                     typeof opt.value === 'boolean'
-                      ? opt.value
+                      ? String(opt.value)
                       : asString(opt.value),
                 }))
               : []
+          }
+          filterOption={(input, option) =>
+            String(option?.label || '')
+              .toLowerCase()
+              .includes(input.toLowerCase())
           }
         />,
       )
