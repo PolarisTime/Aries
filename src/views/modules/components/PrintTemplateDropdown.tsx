@@ -6,7 +6,7 @@ import Modal from 'antd/es/modal'
 import Select from 'antd/es/select'
 import Space from 'antd/es/space'
 import Tag from 'antd/es/tag'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listPrintTemplates } from '@/api/print-template'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
@@ -43,21 +43,14 @@ export function PrintTemplateDropdown({
     staleTime: 5 * 60 * 1000,
     enabled: supportsPrintTemplate,
   })
-  const activeTemplates = useMemo(
-    () =>
-      templates.filter((tpl) => tpl.status == null || tpl.status === 'ACTIVE'),
-    [templates],
+  const activeTemplates = templates.filter(
+    (tpl) => tpl.status == null || tpl.status === 'ACTIVE',
   )
-  const printableTemplates = useMemo(
-    () =>
-      activeTemplates.filter(
-        (tpl) =>
-          tpl.templateType === 'COORD' || tpl.templateType === 'PDF_FORM',
-      ),
-    [activeTemplates],
+  const printableTemplates = activeTemplates.filter(
+    (tpl) => tpl.templateType === 'COORD' || tpl.templateType === 'PDF_FORM',
   )
 
-  const effectiveSelectedTemplateId = useMemo(() => {
+  const effectiveSelectedTemplateId = (() => {
     if (
       selectedTemplateId &&
       printableTemplates.some((tpl) => tpl.id === selectedTemplateId)
@@ -65,27 +58,21 @@ export function PrintTemplateDropdown({
       return selectedTemplateId
     }
     return open ? printableTemplates[0]?.id : selectedTemplateId
-  }, [open, printableTemplates, selectedTemplateId])
+  })()
 
-  const selectedTemplate = useMemo(
-    () =>
-      printableTemplates.find((tpl) => tpl.id === effectiveSelectedTemplateId),
-    [effectiveSelectedTemplateId, printableTemplates],
+  const selectedTemplate = printableTemplates.find(
+    (tpl) => tpl.id === effectiveSelectedTemplateId,
   )
 
-  const templateOptions = useMemo(
-    () =>
-      printableTemplates.map((tpl) => ({
-        label: (
-          <Space size={8}>
-            <span>{tpl.templateName}</span>
-            <Tag>{tpl.templateType || 'COORD'}</Tag>
-          </Space>
-        ),
-        value: tpl.id,
-      })),
-    [printableTemplates],
-  )
+  const templateOptions = printableTemplates.map((tpl) => ({
+    label: (
+      <Space size={8}>
+        <span>{tpl.templateName}</span>
+        <Tag>{tpl.templateType || 'COORD'}</Tag>
+      </Space>
+    ),
+    value: tpl.id,
+  }))
 
   const handlePrint = (
     mode: PrintActionMode,

@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useIdleActivation } from '@/hooks/useIdleActivation'
 import type { ModulePageConfig } from '@/types/module-page'
 import {
@@ -19,23 +20,19 @@ export function useBusinessGridOverlayPreload({
 }: Options) {
   const idleReady = useIdleActivation(Boolean(config), 2000)
 
-  useEffect(() => {
-    if (!config) {
-      return
-    }
+  useQuery({
+    queryKey: QUERY_KEYS.businessGridOverlayPreload('editor-workspace'),
+    queryFn: loadModuleEditorWorkspace,
+    enabled: Boolean(config && !config.readOnly && canUpdateRecord),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  })
 
-    if (!config.readOnly && canUpdateRecord) {
-      void loadModuleEditorWorkspace()
-    }
-  }, [canUpdateRecord, config])
-
-  useEffect(() => {
-    if (!idleReady || !config) {
-      return
-    }
-
-    if (canViewRecords) {
-      void loadModuleRecordDetailOverlay()
-    }
-  }, [canViewRecords, config, idleReady])
+  useQuery({
+    queryKey: QUERY_KEYS.businessGridOverlayPreload('record-detail-overlay'),
+    queryFn: loadModuleRecordDetailOverlay,
+    enabled: Boolean(idleReady && config && canViewRecords),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  })
 }

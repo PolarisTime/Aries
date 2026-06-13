@@ -22,19 +22,18 @@ export function DashboardView() {
   const navigate = useNavigate()
   const isPageVisible = usePageVisibility()
   const canMountFlowCard = useIdleActivation(Boolean(isPageVisible), 1400)
-  const summaryQuery = useQuery({
+  const { data: summary, isError: summaryIsError } = useQuery({
     queryKey: QUERY_KEYS.dashboardSummary,
     queryFn: getDashboardSummary,
     refetchInterval: isPageVisible ? 120000 : false,
   })
 
-  const summary = summaryQuery.data
   const animatedServerTime = useDashboardServerTime(summary?.serverTime)
   const infoItems = buildDashboardInfoItems(t, summary)
 
   return (
     <div className="page-stack dashboard-root">
-      {summaryQuery.isError ? (
+      {summaryIsError ? (
         <Alert
           type="error"
           showIcon

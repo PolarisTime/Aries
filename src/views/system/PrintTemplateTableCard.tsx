@@ -23,7 +23,7 @@ import Tooltip from 'antd/es/tooltip'
 import Typography from 'antd/es/typography'
 import Upload from 'antd/es/upload'
 import type { RcFile } from 'antd/es/upload/interface'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
@@ -55,6 +55,160 @@ function templateTypeLabel(record: PrintTemplateRecord) {
   return record.templateType === 'PDF_FORM' ? 'PDF_FORM' : 'COORD'
 }
 
+interface PrintTemplateStatusTagProps {
+  record: PrintTemplateRecord
+  statusMap: Parameters<typeof StatusTag>[0]['statusMap']
+}
+
+function PrintTemplateStatusTag({
+  record,
+  statusMap,
+}: PrintTemplateStatusTagProps) {
+  const status = record.status === 'DISABLED' ? 'disabled' : 'active'
+  return <StatusTag status={status} statusMap={statusMap} />
+}
+
+interface PrintTemplateSyncTagProps {
+  record: PrintTemplateRecord
+  fileLabel: string
+  manualLabel: string
+}
+
+function PrintTemplateSyncTag({
+  record,
+  fileLabel,
+  manualLabel,
+}: PrintTemplateSyncTagProps) {
+  return record.syncMode === 'FILE' ? (
+    <Tag color="blue" title={record.sourceRef || undefined}>
+      {fileLabel}
+    </Tag>
+  ) : (
+    <Tag>{manualLabel}</Tag>
+  )
+}
+
+interface PrintTemplateActionsProps {
+  record: PrintTemplateRecord
+  canCreate: boolean
+  canEdit: boolean
+  canDelete: boolean
+  uploadPending: boolean
+  labels: {
+    copy: string
+    delete: string
+    edit: string
+    editHint: string
+    preview: string
+    uploadJson: string
+  }
+  onCopy: (record: PrintTemplateRecord) => void
+  onDelete: (record: PrintTemplateRecord) => void
+  onEdit: (record: PrintTemplateRecord) => void
+  onPreview: (record: PrintTemplateRecord) => void
+  onUploadJson: (record: PrintTemplateRecord, file: File) => void
+}
+
+function PrintTemplateActions({
+  record,
+  canCreate,
+  canEdit,
+  canDelete,
+  uploadPending,
+  labels,
+  onCopy,
+  onDelete,
+  onEdit,
+  onPreview,
+  onUploadJson,
+}: PrintTemplateActionsProps) {
+  const canUploadJson = canEdit && record.templateType === 'PDF_FORM'
+  const canEditRecord = canEdit && record.syncMode !== 'FILE'
+
+  return (
+    <Space size={4}>
+      <Tooltip title={labels.preview}>
+        <Button
+          type="text"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={(event) => {
+            event.stopPropagation()
+            onPreview(record)
+          }}
+        />
+      </Tooltip>
+      {canEdit && (
+        <Tooltip title={canEditRecord ? labels.edit : labels.editHint}>
+          <Button
+            type="text"
+            size="small"
+            icon={<EditOutlined />}
+            disabled={!canEditRecord}
+            onClick={(event) => {
+              event.stopPropagation()
+              onEdit(record)
+            }}
+          />
+        </Tooltip>
+      )}
+      <Dropdown
+        trigger={['click']}
+        menu={{
+          items: [
+            canCreate
+              ? {
+                  key: 'copy',
+                  icon: <CopyOutlined />,
+                  label: labels.copy,
+                  onClick: () => onCopy(record),
+                }
+              : null,
+            canUploadJson
+              ? {
+                  key: 'upload',
+                  label: (
+                    <Upload
+                      accept=".json,application/json"
+                      beforeUpload={(file: RcFile) => {
+                        if (uploadPending) return false
+                        onUploadJson(record, file)
+                        return false
+                      }}
+                      showUploadList={false}
+                    >
+                      <span>
+                        <UploadOutlined className="mr-8" />
+                        {labels.uploadJson}
+                      </span>
+                    </Upload>
+                  ),
+                  disabled: uploadPending,
+                }
+              : null,
+            canDelete
+              ? {
+                  key: 'delete',
+                  danger: true,
+                  icon: <DeleteOutlined />,
+                  label: labels.delete,
+                  onClick: () => onDelete(record),
+                }
+              : null,
+          ].filter(Boolean),
+        }}
+      >
+        <Button
+          type="text"
+          size="small"
+          icon={<MoreOutlined />}
+          onClick={(event) => event.stopPropagation()}
+        />
+      </Dropdown>
+    </Space>
+  )
+}
+
 export function PrintTemplateTableCard({
   selectedBillType,
   activeTemplateId,
@@ -80,7 +234,7 @@ export function PrintTemplateTableCard({
     templates.find((template) => template.id === activeTemplateId) ??
     templates[0] ??
     null
-  const filteredTemplates = useMemo(() => {
+  const filteredTemplates = (() => {
     const normalizedKeyword = keyword.trim().toLowerCase()
     if (!normalizedKeyword) return templates
     return templates.filter((template) =>
@@ -96,130 +250,32 @@ export function PrintTemplateTableCard({
           String(value).toLowerCase().includes(normalizedKeyword),
         ),
     )
-  }, [keyword, templates])
+  })()
 
-  const canUploadJson = (record: PrintTemplateRecord) =>
-    canEdit && record.templateType === 'PDF_FORM'
   const canEditRecord = (record: PrintTemplateRecord) =>
     canEdit && record.syncMode !== 'FILE'
-
-  const renderStatusTag = (record: PrintTemplateRecord) => {
-    const status = record.status === 'DISABLED' ? 'disabled' : 'active'
-    return (
-      <StatusTag
-        status={status}
-        statusMap={{
-          active: {
-            color: 'green',
-            label: t('system.printTemplate.statusActive'),
-          },
-          disabled: {
-            color: 'default',
-            label: t('system.printTemplate.statusDisabled'),
-          },
-        }}
-      />
-    )
+  const statusMap = {
+    active: {
+      color: 'green',
+      label: t('system.printTemplate.statusActive'),
+    },
+    disabled: {
+      color: 'default',
+      label: t('system.printTemplate.statusDisabled'),
+    },
   }
-
-  const renderSyncTag = (record: PrintTemplateRecord) =>
-    record.syncMode === 'FILE' ? (
-      <Tag color="blue" title={record.sourceRef || undefined}>
-        {t('system.printTemplate.syncModeFile')}
-      </Tag>
-    ) : (
-      <Tag>{t('system.printTemplate.syncModeManual')}</Tag>
-    )
-
-  const renderTemplateActions = (record: PrintTemplateRecord) => (
-    <Space size={4}>
-      <Tooltip title={t('system.printTemplate.preview')}>
-        <Button
-          type="text"
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={(event) => {
-            event.stopPropagation()
-            onPreview(record)
-          }}
-        />
-      </Tooltip>
-      {canEdit && (
-        <Tooltip
-          title={
-            canEditRecord(record)
-              ? t('common.edit')
-              : t('system.printTemplate.fileManagedEditHint')
-          }
-        >
-          <Button
-            type="text"
-            size="small"
-            icon={<EditOutlined />}
-            disabled={!canEditRecord(record)}
-            onClick={(event) => {
-              event.stopPropagation()
-              onEdit(record)
-            }}
-          />
-        </Tooltip>
-      )}
-      <Dropdown
-        trigger={['click']}
-        menu={{
-          items: [
-            canCreate
-              ? {
-                  key: 'copy',
-                  icon: <CopyOutlined />,
-                  label: t('system.printTemplate.copy'),
-                  onClick: () => onCopy(record),
-                }
-              : null,
-            canUploadJson(record)
-              ? {
-                  key: 'upload',
-                  label: (
-                    <Upload
-                      accept=".json,application/json"
-                      beforeUpload={(file: RcFile) => {
-                        if (uploadPending) return false
-                        onUploadJson(record, file)
-                        return false
-                      }}
-                      showUploadList={false}
-                    >
-                      <span>
-                        <UploadOutlined className="mr-8" />
-                        {t('system.printTemplate.uploadJson')}
-                      </span>
-                    </Upload>
-                  ),
-                  disabled: uploadPending,
-                }
-              : null,
-            canDelete
-              ? {
-                  key: 'delete',
-                  danger: true,
-                  icon: <DeleteOutlined />,
-                  label: t('common.delete'),
-                  onClick: () => onDelete(record),
-                }
-              : null,
-          ].filter(Boolean),
-        }}
-      >
-        <Button
-          type="text"
-          size="small"
-          icon={<MoreOutlined />}
-          onClick={(event) => event.stopPropagation()}
-        />
-      </Dropdown>
-    </Space>
-  )
-
+  const actionLabels = {
+    copy: t('system.printTemplate.copy'),
+    delete: t('common.delete'),
+    edit: t('common.edit'),
+    editHint: t('system.printTemplate.fileManagedEditHint'),
+    preview: t('system.printTemplate.preview'),
+    uploadJson: t('system.printTemplate.uploadJson'),
+  }
+  const syncLabels = {
+    file: t('system.printTemplate.syncModeFile'),
+    manual: t('system.printTemplate.syncModeManual'),
+  }
   return (
     <div className="print-template-workbench">
       <Card
@@ -263,21 +319,31 @@ export function PrintTemplateTableCard({
                         className={`print-template-list-item ${
                           active ? 'is-active' : ''
                         }`}
-                        onClick={() => onActiveChange(record.id)}
                       >
-                        <div className="print-template-list-main">
-                          <div className="flex items-center justify-between gap-8">
+                        <button
+                          type="button"
+                          className="print-template-list-main"
+                          aria-pressed={active}
+                          onClick={() => onActiveChange(record.id)}
+                        >
+                          <div className="flex items-center gap-8">
                             <Typography.Text strong className="truncate">
                               {record.templateName}
                             </Typography.Text>
-                            {renderTemplateActions(record)}
                           </div>
                           <div className="mt-8 flex flex-wrap gap-4">
                             <Tag color="processing">
                               {templateTypeLabel(record)}
                             </Tag>
-                            {renderStatusTag(record)}
-                            {renderSyncTag(record)}
+                            <PrintTemplateStatusTag
+                              record={record}
+                              statusMap={statusMap}
+                            />
+                            <PrintTemplateSyncTag
+                              record={record}
+                              fileLabel={syncLabels.file}
+                              manualLabel={syncLabels.manual}
+                            />
                           </div>
                           <Typography.Text
                             type="secondary"
@@ -285,7 +351,20 @@ export function PrintTemplateTableCard({
                           >
                             {record.templateCode || t('common.noData')}
                           </Typography.Text>
-                        </div>
+                        </button>
+                        <PrintTemplateActions
+                          record={record}
+                          canCreate={canCreate}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          uploadPending={uploadPending}
+                          labels={actionLabels}
+                          onCopy={onCopy}
+                          onDelete={onDelete}
+                          onEdit={onEdit}
+                          onPreview={onPreview}
+                          onUploadJson={onUploadJson}
+                        />
                       </div>
                     )
                   })
@@ -346,12 +425,19 @@ export function PrintTemplateTableCard({
                       {activeTemplate.engine || '--'}
                     </Descriptions.Item>
                     <Descriptions.Item label={t('system.printTemplate.status')}>
-                      {renderStatusTag(activeTemplate)}
+                      <PrintTemplateStatusTag
+                        record={activeTemplate}
+                        statusMap={statusMap}
+                      />
                     </Descriptions.Item>
                     <Descriptions.Item
                       label={t('system.printTemplate.syncMode')}
                     >
-                      {renderSyncTag(activeTemplate)}
+                      <PrintTemplateSyncTag
+                        record={activeTemplate}
+                        fileLabel={syncLabels.file}
+                        manualLabel={syncLabels.manual}
+                      />
                     </Descriptions.Item>
                     <Descriptions.Item
                       label={t('system.printTemplate.sourceRef')}

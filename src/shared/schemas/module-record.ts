@@ -5,9 +5,9 @@ const snowflakeIdSchema = z.union([z.string(), z.number()])
 
 // ── 行项目 Schema ──────────────────────────────────────
 
-/** 行项目通用字段 — .passthrough() 保留模块特有字段兼容存量 */
+/** 行项目通用字段 — looseObject 保留模块特有字段兼容存量 */
 const lineItemSchema = z
-  .object({
+  .looseObject({
     id: z.string(),
     sourceNo: z.string().optional(),
     sourcePurchaseOrderItemId: snowflakeIdSchema.optional(),
@@ -23,27 +23,24 @@ const lineItemSchema = z
     weightAdjustmentTon: z.union([z.string(), z.number()]).optional(),
     weightAdjustmentAmount: z.union([z.string(), z.number()]).optional(),
   })
-  .merge(materialInfoSchema)
-  .merge(weightPriceSchema)
-  .passthrough()
+  .extend(materialInfoSchema.shape)
+  .extend(weightPriceSchema.shape)
 
 export type LineItem = z.infer<typeof lineItemSchema>
 
 // ── 模块记录 Schema ────────────────────────────────────
 
 /** 模块记录通用字段 */
-export const moduleRecordSchema = z
-  .object({
-    id: z.string(),
-    status: z.string().optional(),
-    remark: z.string().optional(),
-    items: z.array(lineItemSchema).optional(),
-    attachmentIds: z.array(z.string()).optional(),
-    createdBy: z.union([z.string(), z.number()]).optional(),
-    createdAt: z.string().optional(),
-    updatedAt: z.string().optional(),
-  })
-  .passthrough()
+export const moduleRecordSchema = z.looseObject({
+  id: z.string(),
+  status: z.string().optional(),
+  remark: z.string().optional(),
+  items: z.array(lineItemSchema).optional(),
+  attachmentIds: z.array(z.string()).optional(),
+  createdBy: z.union([z.string(), z.number()]).optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+})
 
 export type ModuleRecord = z.infer<typeof moduleRecordSchema>
 

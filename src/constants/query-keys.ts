@@ -26,6 +26,8 @@ export const QUERY_KEYS = {
   ) => ['business-grid', moduleKey, filters, page, pageSize] as const,
   businessPageConfig: (moduleKey: string) =>
     ['business-page-config', moduleKey] as const,
+  businessGridOverlayPreload: (name: string) =>
+    ['business-grid-overlay-preload', name] as const,
 
   // Database
   databaseStatus: ['database-status'] as const,

@@ -111,8 +111,10 @@ registerModuleBehavior('supplier-statement', {
       )
       record.sourceInboundNos = collectUniqueSourceNos(items)
       const sourceDates = items
-        .map((item) => asString(item._parentBillTime).trim())
-        .filter(Boolean)
+        .flatMap((item) => {
+          const sourceDate = asString(item._parentBillTime).trim()
+          return sourceDate ? [sourceDate] : []
+        })
         .toSorted()
       if (sourceDates.length) {
         record.startDate = sourceDates[0]
@@ -132,8 +134,10 @@ registerModuleBehavior('customer-statement', {
       )
       record.sourceOrderNos = collectUniqueSourceNos(items)
       const sourceDates = items
-        .map((item) => asString(item._parentBillTime).trim())
-        .filter(Boolean)
+        .flatMap((item) => {
+          const sourceDate = asString(item._parentBillTime).trim()
+          return sourceDate ? [sourceDate] : []
+        })
         .toSorted()
       if (sourceDates.length) {
         record.startDate = sourceDates[0]

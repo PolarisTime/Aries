@@ -36,13 +36,13 @@ export function MaterialImportActions({
     setDownloading(true)
     try {
       await downloadMaterialImportTemplate()
+      setDownloading(false)
     } catch (error) {
       message.error(
         error instanceof Error
           ? error.message
           : t('modules.pages.material.templateDownloadFailed'),
       )
-    } finally {
       setDownloading(false)
     }
   }
@@ -66,13 +66,13 @@ export function MaterialImportActions({
           failedCount: result.failCount,
         }),
       )
+      setImporting(false)
     } catch (error) {
       message.error(
         error instanceof Error
           ? error.message
           : t('modules.pages.material.importFailed'),
       )
-    } finally {
       setImporting(false)
     }
   }

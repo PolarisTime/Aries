@@ -56,6 +56,10 @@ import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view
 const SNOWFLAKE_BUSINESS_NO_SWITCH_CODE =
   DISPLAY_SWITCH_CODES.useSnowflakeBusinessNo
 
+function sumLineItemsBy(nextItems: ModuleLineItem[], key: string) {
+  return nextItems.reduce((sum, item) => sum + Number(item[key] || 0), 0)
+}
+
 interface AuditTarget {
   key: string
   value: string
@@ -293,9 +297,6 @@ export function useModuleEditorWorkspace({
     clientSettings,
     SNOWFLAKE_BUSINESS_NO_SWITCH_CODE,
   )
-
-  const sumLineItemsBy = (nextItems: ModuleLineItem[], key: string) =>
-    nextItems.reduce((sum, item) => sum + Number(item[key] || 0), 0)
 
   useEffect(() => {
     if (!open) {

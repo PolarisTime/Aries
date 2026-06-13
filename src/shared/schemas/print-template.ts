@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
-export const printTemplateTypeSchema = z.enum(['COORD', 'PDF_FORM'])
-export const printTemplateEngineSchema = z.enum(['LODOP', 'PDF_FORM'])
-export const printTemplateStatusSchema = z.enum(['ACTIVE', 'DISABLED'])
-export const printTemplateSyncModeSchema = z.enum(['MANUAL', 'FILE'])
+const printTemplateTypeSchema = z.enum(['COORD', 'PDF_FORM'])
+const printTemplateEngineSchema = z.enum(['LODOP', 'PDF_FORM'])
+const printTemplateStatusSchema = z.enum(['ACTIVE', 'DISABLED'])
+const printTemplateSyncModeSchema = z.enum(['MANUAL', 'FILE'])
 const responseIdSchema = z
   .union([z.string(), z.number().int().positive()])
   .transform((value) => String(value))

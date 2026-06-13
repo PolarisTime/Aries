@@ -1,6 +1,7 @@
 import Typography from 'antd/es/typography'
 import i18next from 'i18next'
 import { createElement } from 'react'
+import { STATUS } from '@/constants/status-constants'
 import {
   DEFAULT_LIST_PAGE_SIZE_SETTING_CODE,
   isToggleSetting,
@@ -160,6 +161,26 @@ export const GENERAL_SETTING_STATUS_OPTIONS = [
 
 export function isDefaultTaxRateSetting(record: ModuleRecord) {
   return asString(record.settingCode).trim() === DEFAULT_TAX_RATE_SETTING_CODE
+}
+
+export function buildSystemSettingPayload(
+  record: ModuleRecord,
+  patch: Partial<ModuleRecord>,
+): ModuleRecord {
+  return {
+    id: record.id,
+    settingCode: record.settingCode,
+    settingName: record.settingName,
+    billName: record.billName,
+    prefix: record.prefix || 'SYS',
+    dateRule: record.dateRule || 'NONE',
+    serialLength: record.serialLength || 1,
+    resetRule: record.resetRule || 'NEVER',
+    sampleNo: record.sampleNo || 'ON',
+    status: asString(record.status) || STATUS.NORMAL,
+    remark: record.remark,
+    ...patch,
+  }
 }
 
 function isMaxConcurrentSetting(record: ModuleRecord) {

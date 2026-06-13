@@ -55,13 +55,14 @@ function buildPinyinSearchTokens(value: string) {
   if (!value) {
     return []
   }
-  const tokens = pinyin(value, { toneType: 'none', type: 'array' })
-    .map((token) =>
-      String(token || '')
+  const tokens = pinyin(value, { toneType: 'none', type: 'array' }).flatMap(
+    (token) => {
+      const normalizedToken = String(token || '')
         .trim()
-        .toLowerCase(),
-    )
-    .filter(Boolean)
+        .toLowerCase()
+      return normalizedToken ? [normalizedToken] : []
+    },
+  )
   if (tokens.length === 0) {
     return []
   }

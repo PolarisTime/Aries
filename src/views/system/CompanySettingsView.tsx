@@ -221,21 +221,25 @@ export function CompanySettingsView() {
   const canView = permissionStore.can('company-setting', 'read')
   const canSave = permissionStore.can('company-setting', 'update')
 
-  const profileQuery = useQuery({
+  const {
+    data: profile,
+    dataUpdatedAt: profileDataUpdatedAt,
+    isLoading: profileLoading,
+  } = useQuery({
     queryKey: QUERY_KEYS.companySetting,
     queryFn: getCompanySettingProfile,
     enabled: canView,
   })
 
-  const profileVersion = canView ? profileQuery.dataUpdatedAt : 'no-view'
+  const profileVersion = canView ? profileDataUpdatedAt : 'no-view'
 
   return (
     <CompanySettingsForm
       key={profileVersion}
       canView={canView}
       canSave={canSave}
-      isLoading={profileQuery.isLoading}
-      profile={profileQuery.data ?? null}
+      isLoading={profileLoading}
+      profile={profile ?? null}
       onRefresh={() => {
         void queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.companySetting,

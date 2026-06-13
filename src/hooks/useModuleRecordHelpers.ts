@@ -19,16 +19,20 @@ interface Props {
   config: ModulePageConfig
 }
 
-export function useModuleRecordHelpers({ moduleKey, config }: Props) {
-  const getCurrentOperatorName = () => {
-    const user = getStoredUser()
-    return String(
-      user?.userName ||
-        user?.loginName ||
-        i18next.t('hooks.recordHelpers.currentUser'),
-    )
-  }
+function getCurrentOperatorName() {
+  const user = getStoredUser()
+  return String(
+    user?.userName ||
+      user?.loginName ||
+      i18next.t('hooks.recordHelpers.currentUser'),
+  )
+}
 
+function sumLineItemsBy(items: ModuleLineItem[], key: string) {
+  return items.reduce((sum, item) => sum + Number(item[key] || 0), 0)
+}
+
+export function useModuleRecordHelpers({ moduleKey, config }: Props) {
   const generatePrimaryNo = () => {
     const serial = String(Date.now()).slice(-6)
     const year = dayjs().format('YYYY')
@@ -57,9 +61,6 @@ export function useModuleRecordHelpers({ moduleKey, config }: Props) {
       ? 'table-row-emphasis'
       : ''
   }
-
-  const sumLineItemsBy = (items: ModuleLineItem[], key: string) =>
-    items.reduce((sum, item) => sum + Number(item[key] || 0), 0)
 
   return {
     generatePrimaryNo,

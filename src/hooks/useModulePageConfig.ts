@@ -68,7 +68,7 @@ interface Props {
 }
 
 function useStatementLinkCatalog(enabled: boolean) {
-  const customerStatementsQuery = useQuery({
+  const { data: customerStatements = [] } = useQuery({
     queryKey: QUERY_KEYS.statementLinkOptions('customer-statement'),
     queryFn: () => listAllBusinessModuleRows('customer-statement', {}),
     enabled,
@@ -77,7 +77,7 @@ function useStatementLinkCatalog(enabled: boolean) {
     gcTime: 5 * 60_000,
   })
 
-  const supplierStatementsQuery = useQuery({
+  const { data: supplierStatements = [] } = useQuery({
     queryKey: QUERY_KEYS.statementLinkOptions('supplier-statement'),
     queryFn: () => listAllBusinessModuleRows('supplier-statement', {}),
     enabled,
@@ -86,7 +86,7 @@ function useStatementLinkCatalog(enabled: boolean) {
     gcTime: 5 * 60_000,
   })
 
-  const freightStatementsQuery = useQuery({
+  const { data: freightStatements = [] } = useQuery({
     queryKey: QUERY_KEYS.statementLinkOptions('freight-statement'),
     queryFn: () => listAllBusinessModuleRows('freight-statement', {}),
     enabled,
@@ -96,9 +96,9 @@ function useStatementLinkCatalog(enabled: boolean) {
   })
 
   return {
-    customerStatements: customerStatementsQuery.data || [],
-    supplierStatements: supplierStatementsQuery.data || [],
-    freightStatements: freightStatementsQuery.data || [],
+    customerStatements,
+    supplierStatements,
+    freightStatements,
   } satisfies StatementLinkCatalog
 }
 
@@ -131,40 +131,41 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
   const needsStatementLinkCatalog =
     moduleKey === 'receipt' || moduleKey === 'payment'
 
-  const moduleConfigQuery = useQuery({
+  const { data: moduleConfig, isLoading: moduleConfigLoading } = useQuery({
     queryKey: QUERY_KEYS.businessPageConfig(moduleKey),
     queryFn: () => loadBusinessPageConfig(moduleKey),
     placeholderData: initialConfig ? () => initialConfig : keepPreviousData,
     staleTime: 5 * 60_000,
   })
 
-  const displaySwitchesQuery = useQuery({
-    queryKey: QUERY_KEYS.clientSettings,
-    queryFn: async () => {
-      try {
-        return await listClientSettings()
-      } catch {
-        return []
-      }
+  const { data: displaySwitches, isLoading: displaySwitchesLoading } = useQuery(
+    {
+      queryKey: QUERY_KEYS.clientSettings,
+      queryFn: async () => {
+        try {
+          return await listClientSettings()
+        } catch {
+          return []
+        }
+      },
+      enabled: true,
+      placeholderData: keepPreviousData,
+      staleTime: 30_000,
     },
-    enabled: true,
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
-  })
+  )
 
   const statementLinkCatalog = useStatementLinkCatalog(
     needsStatementLinkCatalog,
   )
 
   const config = (() => {
-    const found = moduleConfigQuery.data
+    const found = moduleConfig
     if (!found || found.key !== moduleKey) {
       return initialConfig
     }
 
     const isWeightOnlyViewEnabled = Boolean(
-      switchCode &&
-        isDisplaySwitchEnabled(displaySwitchesQuery.data, switchCode),
+      switchCode && isDisplaySwitchEnabled(displaySwitches, switchCode),
     )
 
     const baseConfig = isWeightOnlyViewEnabled
@@ -179,7 +180,7 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
   })() satisfies ModulePageConfig | undefined
 
   const showSnowflakeId = isDisplaySwitchEnabled(
-    displaySwitchesQuery.data,
+    displaySwitches,
     DISPLAY_SWITCH_CODES.showSnowflakeId,
   )
 
@@ -189,6 +190,6 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
     config,
     showSnowflakeId,
     supportsInvoiceAssist,
-    isLoading: moduleConfigQuery.isLoading || displaySwitchesQuery.isLoading,
+    isLoading: moduleConfigLoading || displaySwitchesLoading,
   }
 }

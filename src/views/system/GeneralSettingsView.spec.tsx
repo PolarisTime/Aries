@@ -251,8 +251,8 @@ describe('GeneralSettingsView', () => {
     expect(screen.getByTestId('rate-limit-card')).toBeInTheDocument()
   })
 
-  it('exports buildSystemSettingPayload', async () => {
-    const mod = await import('@/views/system/GeneralSettingsView')
+  it('builds system setting payload', async () => {
+    const mod = await import('@/views/system/general-settings-view-utils')
     expect(mod.buildSystemSettingPayload).toBeDefined()
     expect(typeof mod.buildSystemSettingPayload).toBe('function')
     expect(

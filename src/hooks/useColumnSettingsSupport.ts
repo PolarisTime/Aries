@@ -119,12 +119,19 @@ export function useColumnSettingsSupport(
   const [loaded, setLoaded] = useState(false)
   const remotePagesRef = useRef<UserColumnSettingsPayload['pages']>({})
   const syncWarningShownRef = useRef(false)
-  const defaultSettingsRef = useRef<ListColumnSettings | null>(
-    buildDefaultSettings(defaultHiddenKeys),
+  const defaultSettingsRef = useRef<ListColumnSettings | null | undefined>(
+    undefined,
   )
+  if (defaultSettingsRef.current === undefined) {
+    defaultSettingsRef.current = buildDefaultSettings(defaultHiddenKeys)
+  }
   const remoteLoadedRef = useRef(false)
   const userChangedRef = useRef(false)
-  const retryTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
+  const retryTimersRef = useRef<Set<ReturnType<typeof setTimeout>> | null>(null)
+  if (retryTimersRef.current === null) {
+    retryTimersRef.current = new Set()
+  }
+  const retryTimers = retryTimersRef.current
 
   useEffect(() => {
     defaultSettingsRef.current = buildDefaultSettings(defaultHiddenKeys)
@@ -227,10 +234,10 @@ export function useColumnSettingsSupport(
     const waitForRetry = (delay: number) =>
       new Promise<void>((resolve) => {
         const retryTimer = setTimeout(() => {
-          retryTimersRef.current.delete(retryTimer)
+          retryTimers.delete(retryTimer)
           resolve()
         }, delay)
-        retryTimersRef.current.add(retryTimer)
+        retryTimers.add(retryTimer)
       })
 
     const persistWithRetry = async (attempt: number): Promise<void> => {
@@ -260,12 +267,15 @@ export function useColumnSettingsSupport(
   }
 
   useEffect(() => {
-    const retryTimers = retryTimersRef.current
+    const currentRetryTimers = retryTimersRef.current
     return () => {
-      for (const retryTimer of retryTimers) {
+      if (!currentRetryTimers) {
+        return
+      }
+      for (const retryTimer of currentRetryTimers) {
         clearTimeout(retryTimer)
       }
-      retryTimers.clear()
+      currentRetryTimers.clear()
     }
   }, [])
 

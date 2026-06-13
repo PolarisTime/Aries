@@ -228,6 +228,32 @@ describe('useOpenPages', () => {
     expect(navigate).not.toHaveBeenCalled()
   })
 
+  it('can reopen a non-current page immediately after closing it', () => {
+    const navigate = vi.fn()
+
+    mockPathname = '/page-a'
+    const { result, rerender } = renderHook(() => useOpenPages())
+
+    mockPathname = '/page-b'
+    rerender()
+
+    act(() => {
+      result.current.closePage('/page-a', navigate)
+    })
+
+    expect(result.current.pages.some((page) => page.key === '/page-a')).toBe(
+      false,
+    )
+
+    mockPathname = '/page-a'
+    rerender()
+
+    expect(result.current.pages.some((page) => page.key === '/page-a')).toBe(
+      true,
+    )
+    expect(navigate).not.toHaveBeenCalled()
+  })
+
   it('navigates to fallback when closing current page with fallbackPath', () => {
     mockPathname = '/orders'
     const navigate = vi.fn()

@@ -6,10 +6,24 @@ const mocks = vi.hoisted(() => ({
   loadModuleEditorWorkspace: vi.fn(),
   loadModuleRecordDetailOverlay: vi.fn(),
   useIdleActivation: vi.fn(),
+  useQuery: vi.fn(),
+}))
+
+vi.mock('@tanstack/react-query', () => ({
+  useQuery: mocks.useQuery,
 }))
 
 vi.mock('@/hooks/useIdleActivation', () => ({
   useIdleActivation: mocks.useIdleActivation,
+}))
+
+vi.mock('@/constants/query-keys', () => ({
+  QUERY_KEYS: {
+    businessGridOverlayPreload: (name: string) => [
+      'business-grid-overlay-preload',
+      name,
+    ],
+  },
 }))
 
 vi.mock('@/views/modules/components/business-grid-overlay-loaders', () => ({
@@ -26,6 +40,12 @@ describe('useBusinessGridOverlayPreload', () => {
     mocks.useIdleActivation.mockReturnValue(true)
     mocks.loadModuleEditorWorkspace.mockResolvedValue({})
     mocks.loadModuleRecordDetailOverlay.mockResolvedValue({})
+    mocks.useQuery.mockImplementation(({ enabled, queryFn }) => {
+      if (enabled) {
+        void queryFn()
+      }
+      return {}
+    })
   })
 
   it('preloads editor and detail overlays for editable modules', () => {

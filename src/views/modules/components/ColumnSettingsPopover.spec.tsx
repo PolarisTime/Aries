@@ -44,9 +44,14 @@ vi.mock('antd/es/button', () => ({
 }))
 
 vi.mock('antd/es/checkbox', () => ({
-  default: ({ children, checked, ...props }: any) => (
+  default: ({ children, checked, onChange, ...props }: any) => (
     <label>
-      <input type="checkbox" checked={checked} {...props} />
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange ?? (() => undefined)}
+        {...props}
+      />
       {children}
     </label>
   ),
