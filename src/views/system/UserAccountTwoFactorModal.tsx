@@ -3,10 +3,10 @@ import Form from 'antd/es/form'
 import Image from 'antd/es/image'
 import Input from 'antd/es/input'
 import Spin from 'antd/es/spin'
-import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
+import { StatusTag } from '@/components/StatusTag'
 import type { TotpSetupResponse } from '@/types/auth'
 import type { UserAccountRecord } from '@/types/user-account'
 import { toDataImageUrl } from '@/utils/data-url'
@@ -60,14 +60,20 @@ export function UserAccountTwoFactorModal({
         {record && (
           <>
             <div className="mb-4">
-              <Tag
-                color={record.totpEnabled ? 'success' : 'info'}
+              <StatusTag
+                status={record.totpEnabled ? 'enabled' : 'disabled'}
+                statusMap={{
+                  enabled: {
+                    color: 'success',
+                    label: t('auth.user2fa.enabledTag'),
+                  },
+                  disabled: {
+                    color: 'info',
+                    label: t('auth.user2fa.disabledTag'),
+                  },
+                }}
                 className="px-3 py-1"
-              >
-                {record.totpEnabled
-                  ? t('auth.user2fa.enabledTag')
-                  : t('auth.user2fa.disabledTag')}
-              </Tag>
+              />
               <Typography.Text type="secondary" className="ml-2">
                 {t('auth.user2fa.userLabel', { loginName: record.loginName })}
               </Typography.Text>

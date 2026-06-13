@@ -1,5 +1,4 @@
 import { EditOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
 import Card from 'antd/es/card'
 import Col from 'antd/es/col'
 import Row from 'antd/es/row'
@@ -12,6 +11,7 @@ import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
+import { TableActions } from '@/components/TableActions'
 import { STATUS } from '@/constants/status-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -58,15 +58,17 @@ export function GeneralSettingsTableCard({
       width: 90,
       align: 'center',
       render: (_value, record) => (
-        <Button
-          type="link"
-          size="small"
-          icon={<EditOutlined />}
-          disabled={!canEdit}
-          onClick={() => onEdit(record)}
-        >
-          {t('system.generalSettingsTable.edit')}
-        </Button>
+        <TableActions
+          items={[
+            {
+              key: 'edit',
+              label: t('system.generalSettingsTable.edit'),
+              icon: <EditOutlined />,
+              disabled: !canEdit,
+              onClick: () => onEdit(record),
+            },
+          ]}
+        />
       ),
     },
     {

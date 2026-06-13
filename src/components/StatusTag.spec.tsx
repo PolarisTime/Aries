@@ -42,4 +42,15 @@ describe('StatusTag', () => {
     render(<StatusTag status="active" statusMap={map} />)
     expect(screen.getByText('active')).toBeTruthy()
   })
+
+  it('passes className to rendered tag', () => {
+    render(
+      <StatusTag
+        status="pending"
+        statusMap={statusMap}
+        className="status-tag-extra"
+      />,
+    )
+    expect(screen.getByText('待审核')).toHaveClass('status-tag-extra')
+  })
 })

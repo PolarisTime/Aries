@@ -6,7 +6,6 @@ import Descriptions from 'antd/es/descriptions'
 import Empty from 'antd/es/empty'
 import Flex from 'antd/es/flex'
 import Spin from 'antd/es/spin'
-import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +17,7 @@ import {
   listApiKeyActionOptions,
   listApiKeyResourceOptions,
 } from '@/api/api-keys'
+import { StatusTag } from '@/components/StatusTag'
 import { API_KEY_STATUS } from '@/constants/status-constants'
 import { formatDateTime } from '@/utils/formatters'
 
@@ -159,7 +159,15 @@ export function ApiKeyDetailView() {
                 </Typography.Paragraph>
               </Descriptions.Item>
               <Descriptions.Item label={t('system.apiKeyDetail.status')}>
-                <Tag color={getStatusColor(record.status)}>{record.status}</Tag>
+                <StatusTag
+                  status={record.status}
+                  statusMap={{
+                    [record.status]: {
+                      color: getStatusColor(record.status),
+                      label: record.status,
+                    },
+                  }}
+                />
               </Descriptions.Item>
               <Descriptions.Item label={t('system.apiKeyDetail.createdAt')}>
                 {formatDateTime(record.createdAt, '--')}

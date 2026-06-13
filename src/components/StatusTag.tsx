@@ -12,15 +12,16 @@ interface Props {
   status: string
   statusMap: Record<string, StatusMeta>
   fallback?: string
+  className?: string
 }
 
-export function StatusTag({ status, statusMap, fallback }: Props) {
+export function StatusTag({ status, statusMap, fallback, className }: Props) {
   const meta = statusMap[status]
   if (!meta) {
-    return <Tag>{fallback || status}</Tag>
+    return <Tag className={className}>{fallback || status}</Tag>
   }
   return (
-    <Tag color={meta.color} icon={meta.icon}>
+    <Tag color={meta.color} icon={meta.icon} className={className}>
       {meta.label || meta.text || status}
     </Tag>
   )

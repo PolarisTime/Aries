@@ -1,8 +1,8 @@
 import Descriptions from 'antd/es/descriptions'
 import Modal from 'antd/es/modal'
 import Spin from 'antd/es/spin'
-import Tag from 'antd/es/tag'
 import { useTranslation } from 'react-i18next'
+import { StatusTag } from '@/components/StatusTag'
 import type { UserAccountRecord } from '@/types/user-account'
 import { formatDateTime } from '@/utils/formatters'
 
@@ -63,14 +63,30 @@ export function UserAccountDetailModal({
               {record.permissionSummary || '--'}
             </Descriptions.Item>
             <Descriptions.Item label={t('system.userAccountDetail.status')}>
-              <Tag color={getStatusColor(record.status)}>{record.status}</Tag>
+              <StatusTag
+                status={record.status}
+                statusMap={{
+                  [record.status]: {
+                    color: getStatusColor(record.status),
+                    label: record.status,
+                  },
+                }}
+              />
             </Descriptions.Item>
             <Descriptions.Item label={t('system.userAccountDetail.totpStatus')}>
-              <Tag color={getTotpColor(record.totpEnabled)}>
-                {record.totpEnabled
-                  ? t('system.userAccountDetail.totpEnabled')
-                  : t('system.userAccountDetail.totpDisabled')}
-              </Tag>
+              <StatusTag
+                status={record.totpEnabled ? 'enabled' : 'disabled'}
+                statusMap={{
+                  enabled: {
+                    color: getTotpColor(true),
+                    label: t('system.userAccountDetail.totpEnabled'),
+                  },
+                  disabled: {
+                    color: getTotpColor(false),
+                    label: t('system.userAccountDetail.totpDisabled'),
+                  },
+                }}
+              />
             </Descriptions.Item>
             <Descriptions.Item
               label={t('system.userAccountDetail.lastLogin')}

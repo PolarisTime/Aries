@@ -7,11 +7,12 @@ import InputNumber from 'antd/es/input-number'
 import Modal from 'antd/es/modal'
 import Switch from 'antd/es/switch'
 import Table from 'antd/es/table'
-import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
+import { StatusTag } from '@/components/StatusTag'
+import { TableActions } from '@/components/TableActions'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { usePermissionStore } from '@/stores/permissionStore'
 
@@ -144,9 +145,15 @@ export function RateLimitRulesCard() {
               title: t('system.rateLimit.colType'),
               width: 80,
               render: (v: string) => (
-                <Tag color={TYPE_COLOR[v] || 'default'}>
-                  {TYPE_LABEL[v] || v}
-                </Tag>
+                <StatusTag
+                  status={v}
+                  statusMap={{
+                    [v]: {
+                      color: TYPE_COLOR[v] || 'default',
+                      label: TYPE_LABEL[v] || v,
+                    },
+                  }}
+                />
               ),
             },
             {
@@ -179,11 +186,19 @@ export function RateLimitRulesCard() {
               title: t('system.rateLimit.colStatus'),
               width: 50,
               render: (v: boolean) => (
-                <Tag color={v ? 'success' : 'default'}>
-                  {v
-                    ? t('system.rateLimit.statusOn')
-                    : t('system.rateLimit.statusOff')}
-                </Tag>
+                <StatusTag
+                  status={v ? 'enabled' : 'disabled'}
+                  statusMap={{
+                    enabled: {
+                      color: 'success',
+                      label: t('system.rateLimit.statusOn'),
+                    },
+                    disabled: {
+                      color: 'default',
+                      label: t('system.rateLimit.statusOff'),
+                    },
+                  }}
+                />
               ),
             },
             {
@@ -191,11 +206,15 @@ export function RateLimitRulesCard() {
               width: 50,
               align: 'center',
               render: (_: unknown, record: RateLimitRule) => (
-                <Button
-                  type="link"
-                  size="small"
-                  icon={<EditOutlined />}
-                  onClick={() => handleEdit(record)}
+                <TableActions
+                  items={[
+                    {
+                      key: 'edit',
+                      label: t('common.edit'),
+                      icon: <EditOutlined />,
+                      onClick: () => handleEdit(record),
+                    },
+                  ]}
                 />
               ),
             },

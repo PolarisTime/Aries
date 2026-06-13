@@ -1,10 +1,7 @@
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Input from 'antd/es/input'
 import Select from 'antd/es/select'
-import Space from 'antd/es/space'
 import { useTranslation } from 'react-i18next'
 import type { ApiKeyUserOption } from '@/api/api-keys'
+import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import {
   apiKeyStatusOptions,
   apiKeyUsageScopeOptions,
@@ -46,15 +43,18 @@ export function ApiKeyListToolbar({
 }: Props) {
   const { t } = useTranslation()
   return (
-    <Space wrap>
-      <Input.Search
-        placeholder={t('system.apiKey.searchPlaceholder')}
-        className="w-280"
-        allowClear
-        value={keyword}
-        onChange={(event) => onKeywordChange(event.target.value)}
-        onSearch={onSearch}
-      />
+    <SystemTableToolbar
+      keyword={keyword}
+      keywordPlaceholder={t('system.apiKey.searchPlaceholder')}
+      keywordWidth={280}
+      onKeywordChange={onKeywordChange}
+      onSearch={onSearch}
+      onRefresh={onRefresh}
+      onCreate={canCreate ? onCreate : undefined}
+      refreshLabel={t('common.refresh')}
+      createLabel={t('system.apiKey.generateButton')}
+      createDisabled={totpDisabled}
+    >
       <Select
         showSearch
         allowClear
@@ -88,19 +88,6 @@ export function ApiKeyListToolbar({
         onChange={onUsageScopeFilterChange}
         options={apiKeyUsageScopeOptions}
       />
-      <Button icon={<ReloadOutlined />} onClick={onRefresh}>
-        {t('common.refresh')}
-      </Button>
-      {canCreate && (
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          disabled={totpDisabled}
-          onClick={onCreate}
-        >
-          {t('system.apiKey.generateButton')}
-        </Button>
-      )}
-    </Space>
+    </SystemTableToolbar>
   )
 }

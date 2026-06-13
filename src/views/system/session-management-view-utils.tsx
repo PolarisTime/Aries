@@ -1,9 +1,9 @@
 import { StopOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
 import type { ColumnsType } from 'antd/es/table'
-import Tag from 'antd/es/tag'
 import type { TFunction } from 'i18next'
 import type { RefreshTokenRecord } from '@/api/session-management'
+import { StatusTag } from '@/components/StatusTag'
+import { TableActions } from '@/components/TableActions'
 import { SESSION_STATUS } from '@/constants/status-constants'
 import { formatDateTime } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
@@ -82,15 +82,17 @@ export function buildSessionTableColumns({
       align: 'center',
       render: (_: unknown, record) =>
         canEdit && isSessionValidStatus(record.status) ? (
-          <Button
-            type="link"
-            size="small"
-            danger
-            icon={<StopOutlined />}
-            onClick={() => onRevoke(record)}
-          >
-            {t('system.session.disable')}
-          </Button>
+          <TableActions
+            items={[
+              {
+                key: 'disable',
+                label: t('system.session.disable'),
+                icon: <StopOutlined />,
+                danger: true,
+                onClick: () => onRevoke(record),
+              },
+            ]}
+          />
         ) : null,
     },
     {
@@ -145,9 +147,19 @@ export function buildSessionTableColumns({
       width: 100,
       align: 'center',
       render: (_: unknown, record) => (
-        <Tag color={getSessionOnlineColor(record)}>
-          {getSessionOnlineLabel(record, t)}
-        </Tag>
+        <StatusTag
+          status={record.online ? 'online' : 'offline'}
+          statusMap={{
+            online: {
+              color: getSessionOnlineColor(record),
+              label: getSessionOnlineLabel(record, t),
+            },
+            offline: {
+              color: getSessionOnlineColor(record),
+              label: getSessionOnlineLabel(record, t),
+            },
+          }}
+        />
       ),
     },
     {
@@ -156,9 +168,15 @@ export function buildSessionTableColumns({
       width: 100,
       align: 'center',
       render: (value: unknown) => (
-        <Tag color={getSessionStatusColor(value)}>
-          {getSessionStatusLabel(value, t)}
-        </Tag>
+        <StatusTag
+          status={asString(value) || 'unknown'}
+          statusMap={{
+            [asString(value) || 'unknown']: {
+              color: getSessionStatusColor(value),
+              label: getSessionStatusLabel(value, t),
+            },
+          }}
+        />
       ),
     },
   ]

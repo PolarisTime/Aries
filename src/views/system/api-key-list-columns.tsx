@@ -1,14 +1,13 @@
 import { EyeOutlined, StopOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
-import Button from 'antd/es/button'
-import Space from 'antd/es/space'
-import Tag from 'antd/es/tag'
 import i18next from 'i18next'
 import type {
   ApiKeyActionOption,
   ApiKeyRecord,
   ApiKeyResourceOption,
 } from '@/api/api-keys'
+import { StatusTag } from '@/components/StatusTag'
+import { TableActions } from '@/components/TableActions'
 import { API_KEY_STATUS } from '@/constants/status-constants'
 import { formatDateTime } from '@/utils/formatters'
 import {
@@ -16,6 +15,12 @@ import {
   getApiKeyAllowedResourceText,
   getApiKeyStatusColor,
 } from '@/views/system/api-key-view-utils'
+
+const API_KEY_STATUS_MAP = {
+  [API_KEY_STATUS.VALID]: { color: 'green' },
+  [API_KEY_STATUS.EXPIRED]: { color: 'orange' },
+  [API_KEY_STATUS.DISABLED]: { color: 'red' },
+} as const
 
 interface Options {
   canEdit: boolean
@@ -39,27 +44,24 @@ export function buildApiKeyListColumns({
       width: 150,
       fixed: 'left',
       render: (_, record) => (
-        <Space size={0}>
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => onView(record)}
-          >
-            {i18next.t('system.apiKeyColumns.view')}
-          </Button>
-          {canEdit && record.status === API_KEY_STATUS.VALID && (
-            <Button
-              type="link"
-              size="small"
-              danger
-              icon={<StopOutlined />}
-              onClick={() => onRevoke(record)}
-            >
-              {i18next.t('system.apiKeyColumns.disable')}
-            </Button>
-          )}
-        </Space>
+        <TableActions
+          items={[
+            {
+              key: 'view',
+              label: i18next.t('system.apiKeyColumns.view'),
+              icon: <EyeOutlined />,
+              onClick: () => onView(record),
+            },
+            {
+              key: 'disable',
+              label: i18next.t('system.apiKeyColumns.disable'),
+              icon: <StopOutlined />,
+              danger: true,
+              visible: canEdit && record.status === API_KEY_STATUS.VALID,
+              onClick: () => onRevoke(record),
+            },
+          ]}
+        />
       ),
     },
     {
@@ -135,7 +137,13 @@ export function buildApiKeyListColumns({
       width: 110,
       align: 'center',
       render: (value: string) => (
-        <Tag color={getApiKeyStatusColor(value)}>{value}</Tag>
+        <StatusTag
+          status={value}
+          statusMap={{
+            ...API_KEY_STATUS_MAP,
+            [value]: { color: getApiKeyStatusColor(value), label: value },
+          }}
+        />
       ),
     },
   ]

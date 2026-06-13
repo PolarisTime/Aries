@@ -5,10 +5,10 @@ import Descriptions from 'antd/es/descriptions'
 import Row from 'antd/es/row'
 import Skeleton from 'antd/es/skeleton'
 import Statistic from 'antd/es/statistic'
-import Tag from 'antd/es/tag'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
 import type { DatabaseStatus } from '@/api/database-admin'
+import { StatusTag } from '@/components/StatusTag'
 import { DB_MONITORING_STATUS } from '@/constants/status-constants'
 import {
   formatDatabaseDateTime,
@@ -51,12 +51,13 @@ function DatabaseServiceCard({
           <div className="database-service-name">{title}</div>
           <div className="database-service-version">{version}</div>
         </div>
-        <Tag
-          color={isHealthy ? 'green' : 'red'}
+        <StatusTag
+          status={status}
+          statusMap={{
+            [status]: { color: isHealthy ? 'green' : 'red', label: status },
+          }}
           className="database-status-tag"
-        >
-          {status}
-        </Tag>
+        />
       </div>
 
       <div className="database-service-metrics">
