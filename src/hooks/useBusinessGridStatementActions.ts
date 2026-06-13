@@ -27,6 +27,15 @@ interface Props {
   refreshModuleQueries: () => Promise<void>
 }
 
+function buildDraftLineItemId(prefix: string) {
+  let index = 0
+  return () => {
+    const currentIndex = index
+    index += 1
+    return `${prefix}-${Date.now()}-${currentIndex}`
+  }
+}
+
 export function useBusinessGridStatementActions({
   refreshModuleQueries,
 }: Props) {
@@ -45,14 +54,6 @@ export function useBusinessGridStatementActions({
     displaySwitches,
     'SYS_SUPPLIER_STATEMENT_FULL_PAYMENT_FROM_PURCHASE',
   )
-  const buildDraftLineItemId = (prefix: string) => {
-    let index = 0
-    return () => {
-      const currentIndex = index
-      index += 1
-      return `${prefix}-${Date.now()}-${currentIndex}`
-    }
-  }
 
   const handleStatementGenerate = async (
     type: StatementType,

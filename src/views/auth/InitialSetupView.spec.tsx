@@ -64,8 +64,8 @@ vi.mock('antd/es/spin', () => ({
 vi.mock('antd/es/steps', () => ({
   default: ({ items, ...props }: any) => (
     <div {...props}>
-      {items?.map((item: any, i: number) => (
-        <div key={i}>{item.title}</div>
+      {items?.map((item: any) => (
+        <div key={item.key ?? item.title}>{item.title}</div>
       ))}
     </div>
   ),

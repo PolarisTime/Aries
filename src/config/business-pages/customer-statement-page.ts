@@ -318,9 +318,10 @@ export const customerStatementPageConfig: ModulePageConfig = {
           [
             currentRecord.projectName,
             ...currentItems.map((item) => item.projectName),
-          ]
-            .map((value) => asString(value).trim())
-            .filter(Boolean),
+          ].flatMap((value) => {
+            const projectName = asString(value).trim()
+            return projectName ? [projectName] : []
+          }),
         ),
       )
       const nextProjectName = asString(parentRecord.projectName).trim()

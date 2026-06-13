@@ -55,6 +55,11 @@ function isSameFilterPreset(left: SearchParams, right: SearchParams) {
   )
 }
 
+function getFilterFieldLabelTargetId(field: ModuleFilterDefinition) {
+  const fieldId = buildFormControlId('module-filter', field.key)
+  return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
+}
+
 function ModuleFilterField({
   field,
   filters,
@@ -167,11 +172,6 @@ export function ModuleFilterToolbar({
   onReset,
 }: Props) {
   const { t } = useTranslation()
-
-  const getFilterFieldLabelTargetId = (field: ModuleFilterDefinition) => {
-    const fieldId = buildFormControlId('module-filter', field.key)
-    return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
-  }
 
   const hasConfigKeywordFilter = config.filters.some(
     (field) => field.key === 'keyword',

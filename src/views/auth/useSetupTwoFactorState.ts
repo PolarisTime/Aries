@@ -20,6 +20,19 @@ type UseSetupTwoFactorStateResult = {
   totpData: TotpSetupResponse | null
 }
 
+function resolveRedirectTarget(): string {
+  if (typeof window === 'undefined') {
+    return '/dashboard'
+  }
+
+  const redirect =
+    new URLSearchParams(window.location.search).get('redirect') || '/dashboard'
+  if (!redirect.startsWith('/') || /^https?:\/\//i.test(redirect)) {
+    return '/dashboard'
+  }
+  return redirect
+}
+
 export function useSetupTwoFactorState(): UseSetupTwoFactorStateResult {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -27,20 +40,6 @@ export function useSetupTwoFactorState(): UseSetupTwoFactorStateResult {
   const [enabling, setEnabling] = useState(false)
   const [totpData, setTotpData] = useState<TotpSetupResponse | null>(null)
   const [form] = Form.useForm<TotpCodeFormValues>()
-
-  const resolveRedirectTarget = (): string => {
-    if (typeof window === 'undefined') {
-      return '/dashboard'
-    }
-
-    const redirect =
-      new URLSearchParams(window.location.search).get('redirect') ||
-      '/dashboard'
-    if (!redirect.startsWith('/') || /^https?:\/\//i.test(redirect)) {
-      return '/dashboard'
-    }
-    return redirect
-  }
 
   const fetchTotpSetup = async (): Promise<void> => {
     setLoading(true)

@@ -36,6 +36,22 @@ interface Props {
   onEditNumberRule: (record: ModuleRecord) => void
   onEditUploadRule: (record: ModuleRecord) => void
 }
+
+function NumberRuleStatusTag({ value }: { value: string }) {
+  return (
+    <StatusTag
+      status={value}
+      statusMap={{
+        [value]: {
+          color: formatNumberRuleStatusColor(value),
+          label: formatNumberRuleStatusText(value),
+        },
+      }}
+      fallback="--"
+    />
+  )
+}
+
 export function NumberRulesTableCard({
   keyword,
   statusFilter,
@@ -65,18 +81,6 @@ export function NumberRulesTableCard({
           onClick: () => onClick(record),
         },
       ]}
-    />
-  )
-  const renderStatusTag = (value: string) => (
-    <StatusTag
-      status={value}
-      statusMap={{
-        [value]: {
-          color: formatNumberRuleStatusColor(value),
-          label: formatNumberRuleStatusText(value),
-        },
-      }}
-      fallback="--"
     />
   )
   const numberRuleColumns: TableProps<ModuleRecord>['columns'] = [
@@ -131,7 +135,7 @@ export function NumberRulesTableCard({
       title: t('common.status'),
       width: 100,
       align: 'center',
-      render: renderStatusTag,
+      render: (value) => <NumberRuleStatusTag value={asString(value)} />,
     },
   ]
   const uploadRuleColumns: TableProps<ModuleRecord>['columns'] = [
@@ -167,7 +171,7 @@ export function NumberRulesTableCard({
       title: t('common.status'),
       width: 100,
       align: 'center',
-      render: renderStatusTag,
+      render: (value) => <NumberRuleStatusTag value={asString(value)} />,
     },
   ]
   return (

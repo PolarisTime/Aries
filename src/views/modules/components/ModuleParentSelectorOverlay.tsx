@@ -70,6 +70,17 @@ type SelectedSummaryField = {
 }
 
 const DEFAULT_PAGE_SIZE = 15
+const EMPTY_FIXED_FILTERS: SearchParams = {}
+
+type ParentSelectorTranslator = (
+  key: string,
+  options?: Record<string, unknown>,
+) => string
+
+type ParentSelectorFormatCellValue = (
+  value: unknown,
+  type?: 'date' | 'amount' | 'weight' | 'status',
+) => string
 
 function getOverlayStatusMap() {
   return {
@@ -582,15 +593,12 @@ const parentSelectorInitialState: ParentSelectorState = {
 
 interface ParentSelectorSelectedPanelProps {
   displayFieldKey: string
-  formatCellValue: (
-    value: unknown,
-    type?: 'date' | 'amount' | 'weight' | 'status',
-  ) => string
+  formatCellValue: ParentSelectorFormatCellValue
   onClear: () => void
   onRemove: (recordId: string) => void
   parentModuleKey: string
   selectedRows: ModuleRecord[]
-  t: (key: string, options?: Record<string, unknown>) => string
+  t: ParentSelectorTranslator
 }
 
 function ParentSelectorSelectedPanel({
@@ -687,6 +695,179 @@ function ParentSelectorSelectedPanel({
   )
 }
 
+interface ParentSelectorFooterProps {
+  disabled: boolean
+  onCancel: () => void
+  onConfirm: () => void
+  selectedCount: number
+  t: ParentSelectorTranslator
+}
+
+function ParentSelectorFooter({
+  disabled,
+  onCancel,
+  onConfirm,
+  selectedCount,
+  t,
+}: ParentSelectorFooterProps) {
+  return (
+    <div className="flex justify-between items-center gap-12">
+      <span className="text-secondary">
+        {t('modules.parentSelector.selectedCount', {
+          count: selectedCount,
+        })}
+      </span>
+      <div className="flex gap-8">
+        <Button onClick={onCancel}>{t('modules.parentSelector.cancel')}</Button>
+        <Button
+          type="primary"
+          icon={<CheckOutlined />}
+          disabled={disabled}
+          onClick={onConfirm}
+        >
+          {t('modules.parentSelector.confirmImport')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+interface ParentSelectorTopProps {
+  allowMultipleSelection: boolean
+  displayFieldKey: string
+  draftFilters: SearchParams
+  formatCellValue: ParentSelectorFormatCellValue
+  onClearSelectedRecords: () => void
+  onRemoveSelectedRecord: (recordId: string) => void
+  onResetFilters: () => void
+  onSubmitFilters: () => void
+  onUpdateFilter: (key: string, value: unknown) => void
+  overlayFilterConfig?: ModulePageConfig
+  parentModuleKey: string
+  selectedRows: ModuleRecord[]
+  t: ParentSelectorTranslator
+}
+
+function ParentSelectorTop({
+  allowMultipleSelection,
+  displayFieldKey,
+  draftFilters,
+  formatCellValue,
+  onClearSelectedRecords,
+  onRemoveSelectedRecord,
+  onResetFilters,
+  onSubmitFilters,
+  onUpdateFilter,
+  overlayFilterConfig,
+  parentModuleKey,
+  selectedRows,
+  t,
+}: ParentSelectorTopProps) {
+  return (
+    <div className="parent-selector-top">
+      {overlayFilterConfig ? (
+        <ModuleFilterToolbar
+          config={overlayFilterConfig}
+          filters={draftFilters}
+          onUpdateFilter={onUpdateFilter}
+          onSearch={onSubmitFilters}
+          onReset={onResetFilters}
+        />
+      ) : null}
+      {allowMultipleSelection ? (
+        <ParentSelectorSelectedPanel
+          displayFieldKey={displayFieldKey}
+          formatCellValue={formatCellValue}
+          onClear={onClearSelectedRecords}
+          onRemove={onRemoveSelectedRecord}
+          parentModuleKey={parentModuleKey}
+          selectedRows={selectedRows}
+          t={t}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+interface ParentSelectorTableProps {
+  allowMultipleSelection: boolean
+  columns: ColumnsType<ModuleRecord>
+  loading: boolean
+  onImportRecord: (record: ModuleRecord) => void
+  onPageChange: (page: number, pageSize: number) => void
+  onSelectedRowsChange: (keys: React.Key[], rows: ModuleRecord[]) => void
+  onToggleRecordSelection: (record: ModuleRecord) => void
+  page: number
+  pageSize: number
+  records: ModuleRecord[]
+  selectedRowKeys: string[]
+  t: ParentSelectorTranslator
+  total: number
+}
+
+function ParentSelectorTable({
+  allowMultipleSelection,
+  columns,
+  loading,
+  onImportRecord,
+  onPageChange,
+  onSelectedRowsChange,
+  onToggleRecordSelection,
+  page,
+  pageSize,
+  records,
+  selectedRowKeys,
+  t,
+  total,
+}: ParentSelectorTableProps) {
+  return (
+    <Table
+      rowKey="id"
+      columns={columns}
+      dataSource={records}
+      loading={loading}
+      scroll={{ x: 'max-content' }}
+      rowSelection={
+        allowMultipleSelection
+          ? {
+              preserveSelectedRowKeys: true,
+              selectedRowKeys,
+              onChange: onSelectedRowsChange,
+            }
+          : undefined
+      }
+      onRow={(record) => ({
+        onClick: (event) => {
+          if (allowMultipleSelection) {
+            const target = event.target as HTMLElement | null
+            if (
+              target?.closest(
+                '.ant-table-selection-column, .parent-selector-selected-chip-remove',
+              )
+            ) {
+              return
+            }
+            onToggleRecordSelection(record)
+            return
+          }
+          onImportRecord(record)
+        },
+        style: { cursor: 'pointer' },
+      })}
+      pagination={{
+        current: page,
+        pageSize,
+        total,
+        showSizeChanger: true,
+        pageSizeOptions: ['15', '30', '50'],
+        showTotal: (count) =>
+          t('modules.parentSelector.paginationTotal', { count }),
+        onChange: onPageChange,
+      }}
+    />
+  )
+}
+
 export function ModuleParentSelectorOverlay({
   open,
   parentModuleKey,
@@ -695,7 +876,7 @@ export function ModuleParentSelectorOverlay({
   candidateStatementModuleKey,
   candidateQueryType,
   candidateUsage,
-  fixedFilters = {},
+  fixedFilters = EMPTY_FIXED_FILTERS,
   title,
   onSelect,
   onClose,
@@ -726,7 +907,7 @@ function ModuleParentSelectorOverlayContent({
   candidateStatementModuleKey,
   candidateQueryType,
   candidateUsage,
-  fixedFilters = {},
+  fixedFilters = EMPTY_FIXED_FILTERS,
   title,
   onSelect,
   onClose,
@@ -968,28 +1149,15 @@ function ModuleParentSelectorOverlayContent({
       className="workspace-overlay-panel--parent-selector"
       footer={
         allowMultipleSelection ? (
-          <div className="flex justify-between items-center gap-12">
-            <span className="text-secondary">
-              {t('modules.parentSelector.selectedCount', {
-                count: selectedRows.length,
-              })}
-            </span>
-            <div className="flex gap-8">
-              <Button onClick={onClose}>
-                {t('modules.parentSelector.cancel')}
-              </Button>
-              <Button
-                type="primary"
-                icon={<CheckOutlined />}
-                disabled={!selectedRows.length}
-                onClick={() => {
-                  void handleImportRecords(selectedRows)
-                }}
-              >
-                {t('modules.parentSelector.confirmImport')}
-              </Button>
-            </div>
-          </div>
+          <ParentSelectorFooter
+            disabled={!selectedRows.length}
+            onCancel={onClose}
+            onConfirm={() => {
+              void handleImportRecords(selectedRows)
+            }}
+            selectedCount={selectedRows.length}
+            t={t}
+          />
         ) : undefined
       }
       variant="workspace"
@@ -997,71 +1165,37 @@ function ModuleParentSelectorOverlayContent({
       height="100%"
       zIndex={1100}
     >
-      <div className="parent-selector-top">
-        {overlayFilterConfig ? (
-          <ModuleFilterToolbar
-            config={overlayFilterConfig}
-            filters={draftFilters}
-            onUpdateFilter={updateFilter}
-            onSearch={submitFilters}
-            onReset={resetFilters}
-          />
-        ) : null}
-        {allowMultipleSelection ? (
-          <ParentSelectorSelectedPanel
-            displayFieldKey={displayFieldKey}
-            formatCellValue={formatCellValue}
-            onClear={handleClearSelectedRecords}
-            onRemove={removeSelectedRecord}
-            parentModuleKey={parentModuleKey}
-            selectedRows={selectedRows}
-            t={t}
-          />
-        ) : null}
-      </div>
-      <Table
-        rowKey="id"
+      <ParentSelectorTop
+        allowMultipleSelection={allowMultipleSelection}
+        displayFieldKey={displayFieldKey}
+        draftFilters={draftFilters}
+        formatCellValue={formatCellValue}
+        onClearSelectedRecords={handleClearSelectedRecords}
+        onRemoveSelectedRecord={removeSelectedRecord}
+        onResetFilters={resetFilters}
+        onSubmitFilters={submitFilters}
+        onUpdateFilter={updateFilter}
+        overlayFilterConfig={overlayFilterConfig}
+        parentModuleKey={parentModuleKey}
+        selectedRows={selectedRows}
+        t={t}
+      />
+      <ParentSelectorTable
+        allowMultipleSelection={allowMultipleSelection}
         columns={columns}
-        dataSource={records}
         loading={isLoading || isFetching || isConfigLoading}
-        scroll={{ x: 'max-content' }}
-        rowSelection={
-          allowMultipleSelection
-            ? {
-                preserveSelectedRowKeys: true,
-                selectedRowKeys,
-                onChange: handleSelectedRowsChange,
-              }
-            : undefined
-        }
-        onRow={(record) => ({
-          onClick: (event) => {
-            if (allowMultipleSelection) {
-              const target = event.target as HTMLElement | null
-              if (
-                target?.closest(
-                  '.ant-table-selection-column, .parent-selector-selected-chip-remove',
-                )
-              ) {
-                return
-              }
-              toggleRecordSelection(record)
-              return
-            }
-            void handleImportRecords([record])
-          },
-          style: { cursor: 'pointer' },
-        })}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          pageSizeOptions: ['15', '30', '50'],
-          showTotal: (count) =>
-            t('modules.parentSelector.paginationTotal', { count }),
-          onChange: handlePageChange,
+        onImportRecord={(record) => {
+          void handleImportRecords([record])
         }}
+        onPageChange={handlePageChange}
+        onSelectedRowsChange={handleSelectedRowsChange}
+        onToggleRecordSelection={toggleRecordSelection}
+        page={page}
+        pageSize={pageSize}
+        records={records}
+        selectedRowKeys={selectedRowKeys}
+        t={t}
+        total={total}
       />
     </WorkspaceOverlay>
   )

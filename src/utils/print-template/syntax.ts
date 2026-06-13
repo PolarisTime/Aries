@@ -1,7 +1,7 @@
 import { escapeJs } from './escape'
 import type { PrintDataRow } from './types'
 
-export const PLACEHOLDER_RE = /\{\{(\w+)\}\}/g
+const PLACEHOLDER_RE = /\{\{(\w+)\}\}/g
 
 const EACH_BLOCK_RE = /\{\{#each\s+(\w+)\}\}([\s\S]*?)\{\{\/each\}\}/g
 const IF_BLOCK_RE =

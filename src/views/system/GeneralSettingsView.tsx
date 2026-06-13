@@ -14,6 +14,7 @@ import { asString } from '@/utils/type-narrowing'
 import { GeneralSettingsEditorModal } from '@/views/system/GeneralSettingsEditorModal'
 import { GeneralSettingsTableCard } from '@/views/system/GeneralSettingsTableCard'
 import {
+  buildSystemSettingPayload,
   DETAILED_OPERATION_ACTION_VALUES,
   HIDE_AUDITED_STATUS_VALUES,
   isDefaultTaxRateSetting,
@@ -46,26 +47,6 @@ const generalSettingsInitialState: GeneralSettingsState = {
   editingRecord: null,
   saving: false,
   toggling: false,
-}
-
-export function buildSystemSettingPayload(
-  record: ModuleRecord,
-  patch: Partial<ModuleRecord>,
-): ModuleRecord {
-  return {
-    id: record.id,
-    settingCode: record.settingCode,
-    settingName: record.settingName,
-    billName: record.billName,
-    prefix: record.prefix || 'SYS',
-    dateRule: record.dateRule || 'NONE',
-    serialLength: record.serialLength || 1,
-    resetRule: record.resetRule || 'NEVER',
-    sampleNo: record.sampleNo || 'ON',
-    status: asString(record.status) || STATUS.NORMAL,
-    remark: record.remark,
-    ...patch,
-  }
 }
 
 export function GeneralSettingsView() {

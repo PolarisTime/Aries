@@ -26,6 +26,16 @@ interface Props {
   onSave: (audit: boolean) => void
 }
 
+function getFieldSpan(field: ModuleFormFieldDefinition) {
+  if (typeof field.colSpan === 'number' && Number.isFinite(field.colSpan)) {
+    return Math.max(6, Math.min(24, Math.trunc(field.colSpan)))
+  }
+  if (field.fullRow || field.type === 'textarea') {
+    return 24
+  }
+  return 6
+}
+
 export function ModuleEditorFormSection({
   config,
   moduleKey,
@@ -45,16 +55,6 @@ export function ModuleEditorFormSection({
 
   if (!formFieldRows.length) {
     return null
-  }
-
-  const getFieldSpan = (field: ModuleFormFieldDefinition) => {
-    if (typeof field.colSpan === 'number' && Number.isFinite(field.colSpan)) {
-      return Math.max(6, Math.min(24, Math.trunc(field.colSpan)))
-    }
-    if (field.fullRow || field.type === 'textarea') {
-      return 24
-    }
-    return 6
   }
 
   return (

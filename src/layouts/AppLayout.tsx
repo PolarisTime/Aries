@@ -41,6 +41,10 @@ import type { ThemeMode } from '@/utils/storage'
 
 const { Header, Sider, Content } = Layout
 
+function handleRefreshSession() {
+  void useAuthStore.getState().restoreSession()
+}
+
 type SideNavigationProps = {
   collapsed: boolean
   onCollapse: (collapsed: boolean) => void
@@ -265,9 +269,6 @@ export function AppLayout() {
 
   useAuthHeartbeat()
 
-  const handleRefreshSession = () => {
-    void useAuthStore.getState().restoreSession()
-  }
   useAuthRefreshTimer(handleRefreshSession)
   useAppLayoutSessionGuards({
     locationPathname: location.pathname,

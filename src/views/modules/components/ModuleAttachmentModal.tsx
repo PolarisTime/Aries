@@ -41,6 +41,26 @@ async function fetchAttachmentList(moduleKey: string, recordId: string) {
   return res.data?.attachments || []
 }
 
+function getAttachmentFileName(attachment: AttachmentRecord) {
+  return String(
+    attachment.originalFileName || attachment.fileName || attachment.name || '',
+  ).toLowerCase()
+}
+
+function isImageAttachment(attachment: AttachmentRecord) {
+  if (attachment.previewType === 'image') return true
+  if (attachment.contentType?.startsWith('image/')) return true
+  return /\.(png|jpe?g|gif|bmp|webp|svg)$/.test(
+    getAttachmentFileName(attachment),
+  )
+}
+
+function isPdfAttachment(attachment: AttachmentRecord) {
+  if (attachment.previewType === 'pdf') return true
+  if (attachment.contentType === 'application/pdf') return true
+  return getAttachmentFileName(attachment).endsWith('.pdf')
+}
+
 interface AttachmentModalState {
   attachments: AttachmentRecord[]
   loading: boolean
@@ -363,30 +383,6 @@ export function ModuleAttachmentModal({
       setState({ uploading: false })
     }
     return false
-  }
-
-  const isImageAttachment = (attachment: AttachmentRecord) => {
-    if (attachment.previewType === 'image') return true
-    if (attachment.contentType?.startsWith('image/')) return true
-    const fileName = String(
-      attachment.originalFileName ||
-        attachment.fileName ||
-        attachment.name ||
-        '',
-    ).toLowerCase()
-    return /\.(png|jpe?g|gif|bmp|webp|svg)$/.test(fileName)
-  }
-
-  const isPdfAttachment = (attachment: AttachmentRecord) => {
-    if (attachment.previewType === 'pdf') return true
-    if (attachment.contentType === 'application/pdf') return true
-    const fileName = String(
-      attachment.originalFileName ||
-        attachment.fileName ||
-        attachment.name ||
-        '',
-    ).toLowerCase()
-    return fileName.endsWith('.pdf')
   }
 
   const openImagePreview = (attachment: AttachmentRecord) => {
