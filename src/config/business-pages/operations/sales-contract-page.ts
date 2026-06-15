@@ -1,0 +1,248 @@
+import i18next from 'i18next'
+import { getCustomerOptions } from '@/constants/module-options'
+import type { ModulePageConfig } from '@/types/module-page'
+import {
+  BILL_STATUS_LABEL,
+  CONTRACT_NO_FILTER_LABEL,
+  CUSTOMER_NAME_LABEL,
+} from '../shared/filter-labels'
+import {
+  actionSet,
+  buildAmountWeightOverview,
+  compactOrderItemColumns,
+  statusMap,
+} from '../shared/shared'
+import { contractStatusOptions } from './contract-shared'
+
+export const salesContractsPageConfig: ModulePageConfig = {
+  key: 'sales-contract',
+  title: i18next.t('modules.pages.salesContract.salesContract'),
+  kicker: 'Contracts',
+  description: i18next.t('modules.pages.salesContract.salesContractDesc'),
+  primaryNoKey: 'contractNo',
+  actions: actionSet,
+  filters: [
+    {
+      key: 'keyword',
+      label: CONTRACT_NO_FILTER_LABEL,
+      type: 'input',
+      placeholder: i18next.t(
+        'modules.pages.salesContract.salesContractPlaceholder',
+      ),
+    },
+    {
+      key: 'customerName',
+      label: CUSTOMER_NAME_LABEL,
+      type: 'select',
+      options: getCustomerOptions,
+    },
+    {
+      key: 'status',
+      label: BILL_STATUS_LABEL,
+      type: 'select',
+      options: contractStatusOptions,
+    },
+    {
+      key: 'signDate',
+      label: i18next.t('modules.pages.salesContract.signDate'),
+      type: 'dateRange',
+    },
+  ],
+  columns: [
+    {
+      title: i18next.t('modules.pages.salesContract.contractNo'),
+      dataIndex: 'contractNo',
+      width: 170,
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.customerName'),
+      dataIndex: 'customerName',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.projectName'),
+      dataIndex: 'projectName',
+      width: 180,
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.signDate'),
+      dataIndex: 'signDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.effectiveDate'),
+      dataIndex: 'effectiveDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.expireDate'),
+      dataIndex: 'expireDate',
+      width: 120,
+      type: 'date',
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.salesperson'),
+      dataIndex: 'salesName',
+      width: 110,
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.totalWeight'),
+      dataIndex: 'totalWeight',
+      width: 116,
+      align: 'right',
+      type: 'weight',
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.totalAmount'),
+      dataIndex: 'totalAmount',
+      width: 110,
+      align: 'right',
+      type: 'amount',
+    },
+    {
+      title: i18next.t('modules.pages.salesContract.status'),
+      dataIndex: 'status',
+      width: 110,
+      type: 'status',
+      align: 'center',
+    },
+  ],
+  detailFields: [
+    {
+      label: i18next.t('modules.pages.salesContract.contractNo'),
+      key: 'contractNo',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.customerName'),
+      key: 'customerName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.projectName'),
+      key: 'projectName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.signDate'),
+      key: 'signDate',
+      type: 'date',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.effectiveDate'),
+      key: 'effectiveDate',
+      type: 'date',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.expireDate'),
+      key: 'expireDate',
+      type: 'date',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.salesperson'),
+      key: 'salesName',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.status'),
+      key: 'status',
+      type: 'status',
+      row: 2,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.totalWeight'),
+      key: 'totalWeight',
+      type: 'weight',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.totalAmount'),
+      key: 'totalAmount',
+      type: 'amount',
+      row: 3,
+    },
+    {
+      label: i18next.t('modules.pages.salesContract.remark'),
+      key: 'remark',
+      row: 4,
+      fullRow: true,
+    },
+  ],
+  formFields: [
+    {
+      key: 'contractNo',
+      label: i18next.t('modules.pages.salesContract.contractNo'),
+      type: 'input',
+      required: true,
+      row: 1,
+    },
+    {
+      key: 'customerName',
+      label: i18next.t('modules.pages.salesContract.customerName'),
+      type: 'select',
+      required: true,
+      options: getCustomerOptions,
+      row: 1,
+    },
+    {
+      key: 'projectName',
+      label: i18next.t('modules.pages.salesContract.projectName'),
+      type: 'input',
+      required: true,
+      row: 1,
+    },
+    {
+      key: 'signDate',
+      label: i18next.t('modules.pages.salesContract.signDate'),
+      type: 'date',
+      required: true,
+      row: 1,
+    },
+    {
+      key: 'effectiveDate',
+      label: i18next.t('modules.pages.salesContract.effectiveDate'),
+      type: 'date',
+      required: true,
+      row: 2,
+    },
+    {
+      key: 'expireDate',
+      label: i18next.t('modules.pages.salesContract.expireDate'),
+      type: 'date',
+      required: true,
+      row: 2,
+    },
+    {
+      key: 'salesName',
+      label: i18next.t('modules.pages.salesContract.salesperson'),
+      type: 'input',
+      required: true,
+      row: 2,
+    },
+    {
+      key: 'status',
+      label: i18next.t('modules.pages.salesContract.status'),
+      type: 'select',
+      defaultValue: '草稿',
+      options: contractStatusOptions,
+      row: 2,
+    },
+    {
+      key: 'remark',
+      label: i18next.t('modules.pages.salesContract.remark'),
+      type: 'textarea',
+      row: 3,
+      fullRow: true,
+    },
+  ],
+  itemColumns: compactOrderItemColumns,
+  data: [],
+  buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
+  statusMap,
+  rowHighlightStatuses: ['草稿'],
+}
