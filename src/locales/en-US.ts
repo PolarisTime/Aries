@@ -2673,6 +2673,11 @@ export const enUS: MessageSchema = {
     requestTimeout: 'Request timed out, please try again later',
     serverResponseError: 'Server response error, please try again later',
     unknownError: 'An unknown error occurred, please click retry',
+    serverError: {
+      title: 'Cannot Connect to Server',
+      subTitle:
+        'The server is temporarily unavailable. Please check your network connection or try again later.',
+    },
   },
   navigation: {
     master: 'Master Data',

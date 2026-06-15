@@ -2629,6 +2629,10 @@ export const zhCN: MessageSchema = {
     requestTimeout: '请求超时，请稍后重试',
     serverResponseError: '服务器响应异常，请稍后重试',
     unknownError: '发生了未知错误，请点击重试按钮',
+    serverError: {
+      title: '无法连接到服务器',
+      subTitle: '服务器暂时不可用，请检查网络连接或稍后重试',
+    },
   },
   navigation: {
     master: '基础数据',

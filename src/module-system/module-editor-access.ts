@@ -84,11 +84,16 @@ export function isEditorFieldDisabledForModule(
   fieldDisabled: boolean,
   canSaveCurrentEditor: boolean,
   lineItemsLocked: boolean,
-  _primaryNoKey?: string,
+  primaryNoKey?: string,
   parentFieldKey?: string,
   record?: ModuleRecord,
+  authoritativePrimaryNo?: string,
 ) {
   if (!canSaveCurrentEditor) {
+    return true
+  }
+
+  if (primaryNoKey && fieldKey === primaryNoKey && authoritativePrimaryNo) {
     return true
   }
 

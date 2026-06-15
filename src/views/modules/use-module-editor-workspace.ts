@@ -56,6 +56,24 @@ import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view
 const SNOWFLAKE_BUSINESS_NO_SWITCH_CODE =
   DISPLAY_SWITCH_CODES.useSnowflakeBusinessNo
 
+const SYSTEM_GENERATED_PRIMARY_NO_MODULES = new Set([
+  'purchase-order',
+  'purchase-inbound',
+  'sales-order',
+  'sales-outbound',
+  'freight-bill',
+  'purchase-contract',
+  'sales-contract',
+  'supplier-statement',
+  'customer-statement',
+  'freight-statement',
+  'receipt',
+  'payment',
+  'invoice-receipt',
+  'invoice-issue',
+  'ledger-adjustment',
+])
+
 function sumLineItemsBy(nextItems: ModuleLineItem[], key: string) {
   return nextItems.reduce((sum, item) => sum + Number(item[key] || 0), 0)
 }
@@ -68,12 +86,13 @@ interface AuditTarget {
 interface EditorWorkspaceState {
   items: ModuleLineItem[]
   primaryNoLoading: boolean
+  authoritativePrimaryNo: string
 }
 
 interface WorkspaceFormApi {
   validateFields: () => Promise<ModuleRecord>
   getFieldsValue: (all?: boolean) => ModuleRecord
-  setFieldsValue: (values: ModuleRecord) => void
+  setFieldsValue: (values: Partial<ModuleRecord>) => void
   resetFields: () => void
 }
 
@@ -143,6 +162,42 @@ function getCurrentOperatorName() {
 
 function normalizeOptionalString(value: unknown) {
   return asString(value).trim()
+}
+
+function shouldUseAuthoritativePrimaryNo(
+  moduleKey: string,
+  primaryNoKey?: string,
+) {
+  return Boolean(
+    primaryNoKey && SYSTEM_GENERATED_PRIMARY_NO_MODULES.has(moduleKey),
+  )
+}
+
+function getAuthoritativePrimaryNo(
+  moduleKey: string,
+  primaryNoKey: string | undefined,
+  record: ModuleRecord | null | undefined,
+) {
+  if (
+    !record ||
+    !primaryNoKey ||
+    !shouldUseAuthoritativePrimaryNo(moduleKey, primaryNoKey)
+  ) {
+    return ''
+  }
+  return normalizeOptionalString(record[primaryNoKey])
+}
+
+function applyAuthoritativePrimaryNo(
+  record: ModuleRecord,
+  primaryNoKey: string | undefined,
+  authoritativePrimaryNo: string,
+) {
+  if (!primaryNoKey || !authoritativePrimaryNo) {
+    return record
+  }
+  record[primaryNoKey] = authoritativePrimaryNo
+  return record
 }
 
 function editorWorkspaceReducer(
@@ -274,9 +329,10 @@ export function useModuleEditorWorkspace({
     {
       items: [],
       primaryNoLoading: false,
+      authoritativePrimaryNo: '',
     },
   )
-  const { items, primaryNoLoading } = workspaceState
+  const { items, primaryNoLoading, authoritativePrimaryNo } = workspaceState
   const { t } = useTranslation()
   const [saveResult, setSaveResult] = useState<{
     status: 'success' | 'error' | 'warning'
@@ -306,10 +362,16 @@ export function useModuleEditorWorkspace({
     let active = true
 
     if (record) {
+      const nextAuthoritativePrimaryNo = getAuthoritativePrimaryNo(
+        moduleKey,
+        config.primaryNoKey,
+        record,
+      )
       form.setFieldsValue(normalizeRecordForEditor(config, record))
       setWorkspaceState({
         items: record.items || [],
         primaryNoLoading: false,
+        authoritativePrimaryNo: nextAuthoritativePrimaryNo,
       })
     } else {
       form.resetFields()
@@ -325,7 +387,11 @@ export function useModuleEditorWorkspace({
         ? [buildDefaultEditorLineItem(undefined, moduleKey)]
         : []
       if (config.primaryNoKey) {
-        setWorkspaceState({ items: draftItems, primaryNoLoading: true })
+        setWorkspaceState({
+          items: draftItems,
+          primaryNoLoading: true,
+          authoritativePrimaryNo: '',
+        })
         if (snowflakeBusinessNoEnabled) {
           void allocateBusinessPrimaryNo(moduleKey)
             .then(({ generatedNo, generatedId }) => {
@@ -336,6 +402,14 @@ export function useModuleEditorWorkspace({
                 ...defaultDraft,
                 _preallocatedId: generatedId || '',
                 [asString(config.primaryNoKey)]: generatedNo,
+              })
+              setWorkspaceState({
+                authoritativePrimaryNo: shouldUseAuthoritativePrimaryNo(
+                  moduleKey,
+                  config.primaryNoKey,
+                )
+                  ? generatedNo
+                  : '',
               })
             })
             .catch((err) => {
@@ -363,6 +437,14 @@ export function useModuleEditorWorkspace({
                 ...defaultDraft,
                 [asString(config.primaryNoKey)]: generatedNo,
               })
+              setWorkspaceState({
+                authoritativePrimaryNo: shouldUseAuthoritativePrimaryNo(
+                  moduleKey,
+                  config.primaryNoKey,
+                )
+                  ? generatedNo
+                  : '',
+              })
             })
             .catch((err) => {
               if (!active) {
@@ -381,7 +463,11 @@ export function useModuleEditorWorkspace({
             })
         }
       } else {
-        setWorkspaceState({ items: draftItems, primaryNoLoading: false })
+        setWorkspaceState({
+          items: draftItems,
+          primaryNoLoading: false,
+          authoritativePrimaryNo: '',
+        })
       }
     }
     return () => {
@@ -423,7 +509,21 @@ export function useModuleEditorWorkspace({
         return
       }
 
-      const values = await form.validateFields()
+      const effectiveAuthoritativePrimaryNo =
+        authoritativePrimaryNo ||
+        getAuthoritativePrimaryNo(moduleKey, config.primaryNoKey, record)
+
+      if (config.primaryNoKey && effectiveAuthoritativePrimaryNo) {
+        form.setFieldsValue({
+          [config.primaryNoKey]: effectiveAuthoritativePrimaryNo,
+        })
+      }
+
+      const values = applyAuthoritativePrimaryNo(
+        await form.validateFields(),
+        config.primaryNoKey,
+        effectiveAuthoritativePrimaryNo,
+      )
       const trimmedItems = trimEditorItemsForModule(moduleKey, items)
 
       let occupiedParentMap: Record<string, ModuleRecord> = {}
@@ -509,6 +609,11 @@ export function useModuleEditorWorkspace({
             : undefined,
         items: trimmedItems,
       }
+      applyAuthoritativePrimaryNo(
+        draftRecord,
+        config.primaryNoKey,
+        effectiveAuthoritativePrimaryNo,
+      )
 
       normalizeDraftRecordForModule({
         moduleKey,
@@ -729,6 +834,7 @@ export function useModuleEditorWorkspace({
     parentSelectorFilters,
     parentSelectorOpen,
     primaryNoLoading,
+    authoritativePrimaryNo,
     saveResult,
     clearSaveResult: () => setSaveResult(null),
     saving,

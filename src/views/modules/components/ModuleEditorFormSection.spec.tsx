@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { isEditorFieldDisabledForModule } from '@/module-system/module-adapter-editor'
 import { groupFieldsByRow } from '@/module-system/module-field-layout'
 
 vi.mock('react-i18next', () => ({
@@ -109,5 +110,43 @@ describe('ModuleEditorFormSection', () => {
     ])
     render(<ModuleEditorFormSection {...defaultProps} config={config} />)
     expect(screen.getByText('modules.editorForm.documentInfo')).toBeTruthy()
+  })
+
+  it('passes authoritative primary number to disabled resolver', () => {
+    const config = {
+      ...defaultProps.config,
+      primaryNoKey: 'orderNo',
+      formFields: [
+        {
+          key: 'orderNo',
+          label: 'Order No',
+          type: 'input' as const,
+          required: true,
+        },
+      ],
+    }
+    vi.mocked(groupFieldsByRow).mockReturnValue([
+      [{ key: 'orderNo', label: 'Order No', type: 'input', required: true }],
+    ])
+
+    render(
+      <ModuleEditorFormSection
+        {...defaultProps}
+        config={config}
+        authoritativePrimaryNo="ORD-001"
+      />,
+    )
+
+    expect(isEditorFieldDisabledForModule).toHaveBeenCalledWith(
+      'test-module',
+      'orderNo',
+      false,
+      true,
+      false,
+      'orderNo',
+      undefined,
+      {},
+      'ORD-001',
+    )
   })
 })

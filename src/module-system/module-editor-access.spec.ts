@@ -176,6 +176,35 @@ describe('isEditorFieldDisabledForModule', () => {
     ).toBe(true)
   })
 
+  it('returns true when field is the authoritative primary number', () => {
+    expect(
+      isEditorFieldDisabledForModule(
+        'test',
+        'orderNo',
+        false,
+        true,
+        false,
+        'orderNo',
+        undefined,
+        { id: '', orderNo: 'ORD-001' } as any,
+        'ORD-001',
+      ),
+    ).toBe(true)
+  })
+
+  it('does not lock primary number without an authoritative value', () => {
+    expect(
+      isEditorFieldDisabledForModule(
+        'test',
+        'orderNo',
+        false,
+        true,
+        false,
+        'orderNo',
+      ),
+    ).toBe(false)
+  })
+
   it('returns true when field is in readonlyEditorFields', () => {
     register('test', { readonlyEditorFields: ['name'] })
     expect(
