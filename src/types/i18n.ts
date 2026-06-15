@@ -2541,6 +2541,10 @@ export interface MessageSchema {
     requestTimeout: string
     serverResponseError: string
     unknownError: string
+    serverError: {
+      title: string
+      subTitle: string
+    }
   }
   navigation: {
     master: string

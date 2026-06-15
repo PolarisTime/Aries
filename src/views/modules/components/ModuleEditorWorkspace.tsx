@@ -125,6 +125,7 @@ export function ModuleEditorWorkspace({
     parentImporting,
     parentSelectorFilters,
     parentSelectorOpen,
+    authoritativePrimaryNo,
     saveResult,
     saving,
     setItems,
@@ -187,6 +188,7 @@ export function ModuleEditorWorkspace({
             showActions={!config.itemColumns?.length}
             lineItemsLocked={lineItemsLocked}
             lockedLineItemsNotice={lockedLineItemsNotice}
+            authoritativePrimaryNo={authoritativePrimaryNo}
             onCancel={onClose}
             onSave={(audit) => {
               void handleSave(audit)

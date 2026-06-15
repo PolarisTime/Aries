@@ -56,6 +56,7 @@ const mockUseModuleEditorWorkspace = vi.fn().mockReturnValue({
   parentSelectorFilters: {},
   parentSelectorOpen: false,
   primaryNoLoading: false,
+  authoritativePrimaryNo: '',
   saveResult: null,
   saving: false,
   setItems: vi.fn(),
@@ -195,6 +196,18 @@ describe('ModuleEditorWorkspace', () => {
     })
     render(<ModuleEditorWorkspace {...defaultProps} />)
     expect(screen.getByTestId('form-section')).toBeTruthy()
+  })
+
+  it('passes authoritative primary number to form section', () => {
+    mockUseModuleEditorWorkspace.mockReturnValueOnce({
+      ...mockUseModuleEditorWorkspace(),
+      authoritativePrimaryNo: 'ORD-001',
+    })
+    render(<ModuleEditorWorkspace {...defaultProps} />)
+    expect(screen.getByTestId('form-section')).toHaveAttribute(
+      'authoritativePrimaryNo',
+      'ORD-001',
+    )
   })
 
   it('renders with lineItemsLocked', () => {

@@ -256,6 +256,7 @@ describe('useModuleEditorWorkspace', () => {
       'parentSelectorFilters',
       'parentSelectorOpen',
       'primaryNoLoading',
+      'authoritativePrimaryNo',
       'saveResult',
       'clearSaveResult',
       'saving',
@@ -349,18 +350,20 @@ describe('useModuleEditorWorkspace', () => {
     const form = frm()
     const { result } = renderWorkspace({
       form,
+      moduleKey: 'purchase-order',
       autoInsertBlankItemOnCreate: true,
     })
 
     expect(form.resetFields).toHaveBeenCalled()
     expect(result.current.primaryNoLoading).toBe(true)
     await waitFor(() => {
-      expect(generateBusinessPrimaryNo).toHaveBeenCalledWith('test-module')
+      expect(generateBusinessPrimaryNo).toHaveBeenCalledWith('purchase-order')
       expect(form.setFieldsValue).toHaveBeenCalledWith(
         expect.objectContaining({ orderNo: 'GEN-001' }),
       )
       expect(result.current.primaryNoLoading).toBe(false)
     })
+    expect(result.current.authoritativePrimaryNo).toBe('GEN-001')
     expect(result.current.items).toEqual([{ id: 'new-item' }])
   })
 
@@ -368,16 +371,17 @@ describe('useModuleEditorWorkspace', () => {
     vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
     const form = frm()
 
-    renderWorkspace({ form })
+    const { result } = renderWorkspace({ form, moduleKey: 'purchase-order' })
 
     await waitFor(() => {
-      expect(allocateBusinessPrimaryNo).toHaveBeenCalledWith('test-module')
+      expect(allocateBusinessPrimaryNo).toHaveBeenCalledWith('purchase-order')
       expect(form.setFieldsValue).toHaveBeenCalledWith(
         expect.objectContaining({
           _preallocatedId: 'pre-id-1',
           orderNo: 'PRE-001',
         }),
       )
+      expect(result.current.authoritativePrimaryNo).toBe('PRE-001')
     })
   })
 
@@ -402,6 +406,66 @@ describe('useModuleEditorWorkspace', () => {
     )
     expect(result.current.isEdit).toBe(true)
     expect(result.current.items).toEqual([{ id: 'line-1' }])
+  })
+
+  it('uses the original server primary number when saving an edited document', async () => {
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      orderNo: 'TAMPERED',
+      customerName: '客户A',
+    })
+
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+      moduleKey: 'sales-order',
+      record: {
+        id: 'record-1',
+        orderNo: 'SO-001',
+        customerName: '客户A',
+        items: [],
+      },
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(form.setFieldsValue).toHaveBeenCalledWith({ orderNo: 'SO-001' })
+    expect(saveBusinessModule).toHaveBeenCalledWith(
+      'sales-order',
+      expect.objectContaining({
+        id: 'record-1',
+        orderNo: 'SO-001',
+      }),
+    )
+  })
+
+  it('uses the generated server primary number when saving a new document', async () => {
+    const form = frm()
+    form.validateFields.mockResolvedValue({ orderNo: 'TAMPERED' })
+    const { result } = renderWorkspace({
+      open: true,
+      form,
+      moduleKey: 'purchase-order',
+    })
+
+    await waitFor(() => {
+      expect(result.current.authoritativePrimaryNo).toBe('GEN-001')
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(form.setFieldsValue).toHaveBeenCalledWith({ orderNo: 'GEN-001' })
+    expect(saveBusinessModule).toHaveBeenCalledWith(
+      'purchase-order',
+      expect.objectContaining({
+        id: '',
+        orderNo: 'GEN-001',
+      }),
+    )
   })
 
   it('saves a valid draft and exposes success result', async () => {

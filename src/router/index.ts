@@ -22,36 +22,83 @@ import {
   checkAccessResources,
   usePermissionStore,
 } from '@/stores/permissionStore'
+import { useSetupStore } from '@/stores/setupStore'
 import { asString } from '@/utils/type-narrowing'
 import { LazyLoginView } from '@/views/auth/LazyLoginView'
 import { LazyDashboardView } from '@/views/dashboard/LazyDashboardView'
 
 const SETUP_ROUTE_PATH = '/setup'
+const SERVER_ERROR_ROUTE = '/server-error'
+
+/** 判断错误是否为网络连接失败（后端不可达） */
+function isNetworkError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const err = error as Record<string, unknown>
+  // Axios 网络错误
+  if (err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED') return true
+  // fetch 网络错误
+  if (err.name === 'TypeError' && String(err.message).includes('fetch'))
+    return true
+  // 包含网络相关关键词
+  const message = String(err.message || '')
+  return (
+    message.includes('Network Error') ||
+    message.includes('fetch') ||
+    message.includes('ECONNREFUSED') ||
+    message.includes('timeout')
+  )
+}
 
 const rootRoute = createRootRoute({
   component: Outlet,
   beforeLoad: async ({ location }) => {
     const pathname = location.pathname
     const isSetupPage = pathname === SETUP_ROUTE_PATH
+    const isErrorPage = pathname === SERVER_ERROR_ROUTE
 
-    try {
-      const response = await getInitialSetupStatus()
-      if (response.data.setupRequired && !isSetupPage) {
-        // eslint-disable-next-line @typescript-eslint/only-throw-error
-        throw redirect({ to: SETUP_ROUTE_PATH })
+    // 错误页面不需要检查 setup 状态
+    if (isErrorPage) return
+
+    // 优先使用缓存的 setup 状态，避免每次导航都请求
+    const cachedStatus = useSetupStore.getState().status
+    let setupRequired = cachedStatus?.setupRequired ?? null
+
+    // 如果没有缓存，则请求 API
+    if (setupRequired === null) {
+      try {
+        const response = await getInitialSetupStatus()
+        setupRequired = response.data.setupRequired
+        useSetupStore.getState().setStatus(response.data)
+      } catch (error) {
+        // 重定向错误直接抛出
+        if (error && typeof error === 'object' && 'to' in error) {
+          throw error
+        }
+        // 网络错误（后端不可达）→ 显示服务器错误页面
+        if (isNetworkError(error)) {
+          if (!isErrorPage) {
+            // eslint-disable-next-line @typescript-eslint/only-throw-error
+            throw redirect({ to: SERVER_ERROR_ROUTE })
+          }
+          return
+        }
+        // 其他错误（如 500）→ 也显示服务器错误页面
+        if (!isErrorPage) {
+          // eslint-disable-next-line @typescript-eslint/only-throw-error
+          throw redirect({ to: SERVER_ERROR_ROUTE })
+        }
+        return
       }
-      if (!response.data.setupRequired && isSetupPage) {
-        // eslint-disable-next-line @typescript-eslint/only-throw-error
-        throw redirect({ to: '/login' })
-      }
-    } catch (error) {
-      if (error && typeof error === 'object' && 'to' in error) {
-        throw error
-      }
-      if (!isSetupPage) {
-        // eslint-disable-next-line @typescript-eslint/only-throw-error
-        throw redirect({ to: SETUP_ROUTE_PATH })
-      }
+    }
+
+    // 严格判断：只有后端明确返回 setupRequired=true 时才跳转
+    if (setupRequired === true && !isSetupPage) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: SETUP_ROUTE_PATH })
+    }
+    if (setupRequired === false && isSetupPage) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: '/login' })
     }
   },
 })
@@ -60,6 +107,16 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
   component: LazyLoginView,
+})
+
+const serverErrorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/server-error',
+  component: lazy(() =>
+    import('@/views/error/ServerErrorView').then((m) => ({
+      default: m.ServerErrorView,
+    })),
+  ),
 })
 
 const setupRoute = createRoute({
@@ -177,7 +234,7 @@ const moduleRoutes = appPageDefinitions.map((def) => {
                       { currentPage: 1, pageSize: 20 },
                       { signal },
                     ),
-                  staleTime: 5_000,
+                  staleTime: 60_000,
                 })
               } catch {
                 // 预取失败不影响页面渲染，组件内 useQuery 会自行重试
@@ -248,6 +305,7 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   setupRoute,
   setup2faRoute,
+  serverErrorRoute,
   notFoundRoute,
   authenticatedLayoutRoute.addChildren([...moduleRoutes, apiKeyDetailRoute]),
 ])

@@ -6,7 +6,7 @@ vi.mock('@/api/client', () => ({
   http: { get: httpGetMock },
 }))
 
-import { fetchMaterialGrades, reloadMaterialGrades } from './material-grades'
+import { fetchMaterialGrades } from './material-grades'
 
 describe('material-grades', () => {
   beforeEach(() => {

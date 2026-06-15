@@ -3,7 +3,7 @@ import { apiBaseUrl } from '@/utils/env'
 
 const defaultConfig = {
   baseURL: apiBaseUrl,
-  timeout: 300_000,
+  timeout: 30_000,
   withCredentials: true,
 }
 

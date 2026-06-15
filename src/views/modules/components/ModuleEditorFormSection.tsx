@@ -22,6 +22,7 @@ interface Props {
   showActions: boolean
   lineItemsLocked: boolean
   lockedLineItemsNotice: string
+  authoritativePrimaryNo?: string
   onCancel: () => void
   onSave: (audit: boolean) => void
 }
@@ -45,6 +46,7 @@ export function ModuleEditorFormSection({
   showActions,
   lineItemsLocked,
   lockedLineItemsNotice,
+  authoritativePrimaryNo,
   onCancel,
   onSave,
 }: Props) {
@@ -107,6 +109,7 @@ export function ModuleEditorFormSection({
                   config.primaryNoKey,
                   config.parentImport?.parentFieldKey,
                   formValues,
+                  authoritativePrimaryNo,
                 )}
               />
             </Col>
