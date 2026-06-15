@@ -347,7 +347,7 @@ describe('router', () => {
       ).rejects.toMatchObject({ to: '/somewhere' })
     })
 
-    it('redirects to /setup on API error when not on setup page', async () => {
+    it('redirects to /server-error on API error when not on setup page', async () => {
       mockGetInitialSetupStatus.mockRejectedValue(new Error('network error'))
       await importRouter()
 
@@ -355,10 +355,10 @@ describe('router', () => {
         rootRouteOptions.current!.beforeLoad({
           location: { pathname: '/dashboard' },
         }),
-      ).rejects.toMatchObject({ to: '/setup' })
+      ).rejects.toMatchObject({ to: '/server-error' })
     })
 
-    it('does not redirect on API error when on setup page', async () => {
+    it('redirects to /server-error on API error when on setup page', async () => {
       mockGetInitialSetupStatus.mockRejectedValue(new Error('network error'))
       await importRouter()
 
@@ -366,7 +366,7 @@ describe('router', () => {
         rootRouteOptions.current!.beforeLoad({
           location: { pathname: '/setup' },
         }),
-      ).resolves.toBeUndefined()
+      ).rejects.toMatchObject({ to: '/server-error' })
     })
   })
 
@@ -554,7 +554,7 @@ describe('router', () => {
       expect(queryClient.ensureQueryData).toHaveBeenCalledWith(
         expect.objectContaining({
           queryKey: ['business-grid', 'customer'],
-          staleTime: 5_000,
+          staleTime: 60_000,
         }),
       )
     })
