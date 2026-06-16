@@ -1,5 +1,5 @@
 import type { TableColumnsType } from 'antd'
-import { pinyin } from 'pinyin-pro'
+import { buildPinyinSearchTokens } from '@/utils/pinyin-search'
 import { fetchMaterialSearch } from '@/api/materials'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
@@ -49,24 +49,6 @@ type MaterialSelectSearchFields = {
   material: string
   spec: string
   length: string
-}
-
-function buildPinyinSearchTokens(value: string) {
-  if (!value) {
-    return []
-  }
-  const tokens = pinyin(value, { toneType: 'none', type: 'array' }).flatMap(
-    (token) => {
-      const normalizedToken = String(token || '')
-        .trim()
-        .toLowerCase()
-      return normalizedToken ? [normalizedToken] : []
-    },
-  )
-  if (tokens.length === 0) {
-    return []
-  }
-  return [tokens.join(''), tokens.map((token) => token.charAt(0)).join('')]
 }
 
 function buildMaterialSelectSearchText({

@@ -10,6 +10,7 @@ import type { ModuleFormFieldDefinition } from '@/types/module-page'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 import { padLabel } from '@/utils/label-utils'
+import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import { asString } from '@/utils/type-narrowing'
 
 interface Props {
@@ -91,6 +92,8 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           placeholder={placeholder}
           allowClear={allowClear}
           disabled={disabledValue}
+          showSearch
+          filterOption={createPinyinFilterOption()}
           options={
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
@@ -115,11 +118,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           disabled={disabledValue}
           mode="multiple"
           showSearch
-          filterOption={(input, option) =>
-            String(option?.label || '')
-              .toLowerCase()
-              .includes(input.toLowerCase())
-          }
+          filterOption={createPinyinFilterOption()}
           options={
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
@@ -181,11 +180,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
                 }))
               : []
           }
-          filterOption={(input, option) =>
-            String(option?.label || '')
-              .toLowerCase()
-              .includes(input.toLowerCase())
-          }
+          filterOption={createPinyinFilterOption()}
         />,
       )
 

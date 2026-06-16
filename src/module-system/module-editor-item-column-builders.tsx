@@ -4,6 +4,7 @@ import Checkbox from 'antd/es/checkbox'
 import Input from 'antd/es/input'
 import InputNumber from 'antd/es/input-number'
 import Select from 'antd/es/select'
+import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   getEditorItemMin,
   getEditorItemPrecision,
@@ -125,11 +126,7 @@ function buildEditableColumnRender({
             allowClear
             className="w-full"
             placeholder="选择码头"
-            filterOption={(input, option) =>
-              String(option?.label || '')
-                .toLowerCase()
-                .includes(input.toLowerCase())
-            }
+            filterOption={createPinyinFilterOption()}
             onChange={(selectedValue: string) =>
               handleWarehouseSelect(record.id, selectedValue)
             }
