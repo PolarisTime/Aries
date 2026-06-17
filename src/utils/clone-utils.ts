@@ -1,4 +1,4 @@
-import { cloneDeep } from 'lodash-es'
+import { cloneDeep } from 'es-toolkit'
 import type { ModuleLineItem } from '@/types/module-page'
 
 export function cloneLineItems(
