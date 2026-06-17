@@ -1,8 +1,5 @@
+import { cloneDeep } from 'lodash-es'
 import type { ModuleLineItem } from '@/types/module-page'
-
-function cloneRecord<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value))
-}
 
 export function cloneLineItems(
   items: unknown,
@@ -13,13 +10,13 @@ export function cloneLineItems(
   }
 
   if (prefix) {
-    return cloneRecord(items).map((item: ModuleLineItem, index: number) => ({
+    return cloneDeep(items).map((item: ModuleLineItem, index: number) => ({
       ...item,
       id: buildLineItemId(prefix, index),
     }))
   }
 
-  return cloneRecord(items) as ModuleLineItem[]
+  return cloneDeep(items) as ModuleLineItem[]
 }
 
 function buildLineItemId(prefix: string, index: number) {
