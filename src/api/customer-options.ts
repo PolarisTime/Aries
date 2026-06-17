@@ -1,3 +1,4 @@
+import { uniqBy } from 'lodash-es'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { createCachedOptions } from '@/lib/create-cached-options'
 import type { ModuleRecordInput } from '@/types/module-page'
@@ -66,14 +67,12 @@ export function getCustomerProjectOptions(
 }
 
 export function uniqueCustomerNameOptions(rows: CustomerOption[]) {
-  const seen = new Set<string>()
-  return rows.flatMap((row) => {
+  return uniqBy(
+    rows.filter((row) => Boolean(normalizeText(row.customerName || row.value))),
+    (row) => normalizeText(row.customerName || row.value),
+  ).map((row) => {
     const customerName = normalizeText(row.customerName || row.value)
-    if (!customerName || seen.has(customerName)) {
-      return []
-    }
-    seen.add(customerName)
-    return [{ label: customerName, value: customerName }]
+    return { label: customerName, value: customerName }
   })
 }
 
@@ -81,27 +80,23 @@ export function uniqueProjectOptions(
   rows: CustomerOption[],
   includeCustomerInLabel: boolean,
 ) {
-  const seen = new Set<string>()
-  return rows.flatMap((row) => {
+  return uniqBy(
+    rows.filter((row) => Boolean(normalizeText(row.projectName))),
+    (row) => normalizeText(row.projectName),
+  ).map((row) => {
     const projectName = normalizeText(row.projectName)
-    if (!projectName || seen.has(projectName)) {
-      return []
-    }
-    seen.add(projectName)
     const customerName = normalizeText(row.customerName || row.value)
     const projectLabel = formatProjectOptionLabel(row, projectName)
-    return [
-      {
-        label: includeCustomerInLabel
-          ? `${projectLabel} / ${customerName}`
-          : projectLabel,
-        value: projectName,
-        customerName,
-        projectName,
-        customerCode: row.customerCode,
-        projectNameAbbr: row.projectNameAbbr,
-      },
-    ]
+    return {
+      label: includeCustomerInLabel
+        ? `${projectLabel} / ${customerName}`
+        : projectLabel,
+      value: projectName,
+      customerName,
+      projectName,
+      customerCode: row.customerCode,
+      projectNameAbbr: row.projectNameAbbr,
+    }
   })
 }
 
