@@ -95,14 +95,14 @@ function toArray<T>(value: T[] | undefined) {
 
 function pickDefinedFields(record: ModuleRecord, fields: readonly string[]) {
   const next: Record<string, unknown> = {}
-  fields.forEach((field) => {
-    if (record[field] !== undefined) {
-      const value = record[field]
+  for (const field of fields) {
+    const value = record[field]
+    if (value !== undefined) {
       next[field] = dayjs.isDayjs(value)
         ? value.format('YYYY-MM-DD HH:mm:ss')
         : value
     }
-  })
+  }
   return next
 }
 
