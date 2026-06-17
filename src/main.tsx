@@ -3,6 +3,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { createRoot } from 'react-dom/client'
 import { ensureApiClientSetup } from '@/api/client'
 import { getInitialSetupStatus } from '@/api/setup'
+import { initSentry } from '@/lib/sentry'
 import { queryClient } from '@/lib/query-client'
 import { router } from '@/router'
 import { useAuthStore } from '@/stores/authStore'
@@ -30,6 +31,7 @@ function App() {
 async function bootstrap() {
   ensureApiClientSetup()
   initWebVitals()
+  initSentry()
 
   void import('dayjs').then(async ({ default: dayjs }) => {
     await import('dayjs/locale/zh-cn')
