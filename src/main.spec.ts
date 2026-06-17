@@ -19,6 +19,10 @@ vi.mock('@/utils/web-vitals', () => ({
   initWebVitals: initWebVitalsMock,
 }))
 
+vi.mock('@/lib/sentry', () => ({
+  initSentry: () => false,
+}))
+
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: {
     getState: () => ({

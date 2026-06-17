@@ -1,4 +1,4 @@
-import { uniqBy } from 'lodash-es'
+import { uniqBy } from 'es-toolkit'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { createCachedOptions } from '@/lib/create-cached-options'
 import type { ModuleRecordInput } from '@/types/module-page'
