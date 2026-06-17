@@ -1,3 +1,4 @@
+import { uniqBy } from 'es-toolkit'
 import type { ModulePageMeta } from '@/config/module-page-meta'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -143,25 +144,25 @@ export async function searchAccessibleModules(
         //   }
         // }
 
-        const seenKeys = new Set<string>()
-        return rows.flatMap((record) => {
-          const key = String(
-            record.id || asString(record[config.primaryNoKey || 'id']),
-          )
-          if (!key || seenKeys.has(key)) {
-            return []
-          }
-          seenKeys.add(key)
-          return [
-            buildGlobalSearchResult(
-              moduleKey,
-              config,
-              record,
-              normalizedKeyword,
-              options.buildSummary,
-            ),
-          ]
-        })
+        const deduped = uniqBy(
+          rows.filter((record) => {
+            const key = String(
+              record.id || asString(record[config.primaryNoKey || 'id']),
+            )
+            return Boolean(key)
+          }),
+          (record) =>
+            String(record.id || asString(record[config.primaryNoKey || 'id'])),
+        )
+        return deduped.map((record) =>
+          buildGlobalSearchResult(
+            moduleKey,
+            config,
+            record,
+            normalizedKeyword,
+            options.buildSummary,
+          ),
+        )
       } catch {
         return []
       }
