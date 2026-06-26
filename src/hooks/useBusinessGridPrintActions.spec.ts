@@ -114,10 +114,18 @@ describe('useBusinessGridPrintActions', () => {
     )
 
     await act(async () => {
-      await result.current.handleExportSalesOrderPrintXlsx()
+      await result.current.handleExportSalesOrderPrintXlsx({
+        hideUnitPrice: true,
+        hideRemark: true,
+        brandOverridesByItemId: { '1': '抚新' },
+      })
     })
 
-    expect(exportSalesOrderPrintXlsxMock).toHaveBeenCalledWith('1')
+    expect(exportSalesOrderPrintXlsxMock).toHaveBeenCalledWith('1', {
+      hideUnitPrice: true,
+      hideRemark: true,
+      brandOverridesByItemId: { '1': '抚新' },
+    })
     expect(downloadBlobMock).toHaveBeenCalledWith(blob, 'SO_001.xlsx')
   })
 
@@ -287,6 +295,7 @@ describe('useBusinessGridPrintActions', () => {
     await act(async () => {
       await result.current.handlePrintSelectedRecords('print', template, {
         hideUnitPrice: true,
+        hideRemark: true,
         brandOverride: '沙钢',
       })
     })
@@ -295,7 +304,11 @@ describe('useBusinessGridPrintActions', () => {
       templateId: 'template-1',
       moduleKey: 'sales-order',
       recordId: '1',
-      printOptions: { hideUnitPrice: true, brandOverride: '沙钢' },
+      printOptions: {
+        hideUnitPrice: true,
+        hideRemark: true,
+        brandOverride: '沙钢',
+      },
     })
   })
 

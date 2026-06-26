@@ -807,12 +807,18 @@ export interface MessageSchema {
       printOptions: string
       exportXlsx: string
       hideUnitPrice: string
+      hideRemark: string
       enableBrandOverride: string
       brandOverrideTo: string
       brandOverridePlaceholder: string
       noBrands: string
       selectedPrintItems: string
       noPrintItems: string
+      recordRemark: string
+      totalQuantity: string
+      totalWeight: string
+      itemBrand: string
+      dragItem: string
       itemCategory: string
       itemMaterial: string
       itemSpec: string

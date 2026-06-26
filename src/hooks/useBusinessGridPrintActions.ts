@@ -26,9 +26,11 @@ interface Props {
 
 export interface PrintOptions {
   hideUnitPrice?: boolean
+  hideRemark?: boolean
   brandOverride?: string
   brandOverrides?: Record<string, string>
   brandOverridesByItemId?: Record<string, string>
+  itemOrder?: string[]
 }
 
 interface PrintRecordResponse {
@@ -184,7 +186,9 @@ export function useBusinessGridPrintActions({
 }: Props) {
   const { t } = useTranslation()
 
-  const handleExportSalesOrderPrintXlsx = async () => {
+  const handleExportSalesOrderPrintXlsx = async (
+    printOptions?: PrintOptions,
+  ) => {
     if (moduleKey !== 'sales-order') return
 
     if (!selectedRowKeys.length) {
@@ -199,8 +203,10 @@ export function useBusinessGridPrintActions({
 
     try {
       const recordId = selectedRowKeys[0]
-      const blob = await exportSalesOrderPrintXlsx(recordId)
-      const selectedRow = selectedRows.find((row) => String(row.id) === recordId)
+      const blob = await exportSalesOrderPrintXlsx(recordId, printOptions)
+      const selectedRow = selectedRows.find(
+        (row) => String(row.id) === recordId,
+      )
       downloadBlob(
         blob,
         normalizeXlsxFileName(selectedRow?.orderNo || recordId),
