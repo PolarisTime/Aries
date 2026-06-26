@@ -8,13 +8,10 @@ const {
   listPrintTemplatesMock,
   messageWarningMock,
   messageErrorMock,
-  loadCLodopMock,
-  execPrintCodeMock,
   downloadBlobMock,
-  renderPrintTemplateMock,
+  runPrintOutputsMock,
   modalConfirmMock,
   tMock,
-  windowOpenMock,
 } = vi.hoisted(() => ({
   httpMock: { post: vi.fn() },
   assertApiSuccessMock: vi.fn(),
@@ -22,15 +19,10 @@ const {
   listPrintTemplatesMock: vi.fn(),
   messageWarningMock: vi.fn(),
   messageErrorMock: vi.fn(),
-  loadCLodopMock: vi.fn().mockResolvedValue(undefined),
-  execPrintCodeMock: vi.fn().mockReturnValue(true),
   downloadBlobMock: vi.fn(),
-  renderPrintTemplateMock: vi
-    .fn()
-    .mockReturnValue({ type: 'COORD', script: 'LODOP.PRINT_INIT("test");' }),
+  runPrintOutputsMock: vi.fn(),
   modalConfirmMock: vi.fn(),
   tMock: vi.fn((key: string) => key),
-  windowOpenMock: vi.fn(),
 }))
 
 vi.mock('@/api/client', () => ({
@@ -48,17 +40,12 @@ vi.mock('@/utils/antd-app', () => ({
   modal: { confirm: modalConfirmMock },
 }))
 
-vi.mock('@/utils/clodop', () => ({
-  loadCLodop: loadCLodopMock,
-  execPrintCode: execPrintCodeMock,
-}))
-
-vi.mock('@/utils/print-template', () => ({
-  renderPrintTemplate: renderPrintTemplateMock,
-}))
-
 vi.mock('@/utils/download', () => ({
   downloadBlob: downloadBlobMock,
+}))
+
+vi.mock('@/utils/print-output-runner', () => ({
+  runPrintOutputs: runPrintOutputsMock,
 }))
 
 vi.mock('@/config/print-template-targets', () => ({
@@ -74,7 +61,8 @@ import { useBusinessGridPrintActions } from './useBusinessGridPrintActions'
 describe('useBusinessGridPrintActions', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    vi.spyOn(window, 'open').mockImplementation(windowOpenMock)
+    tMock.mockImplementation((key: string) => key)
+    runPrintOutputsMock.mockResolvedValue({ coordCount: 1, pdfCount: 0 })
   })
 
   it('returns handlePrintSelectedRecords function', () => {
@@ -216,6 +204,7 @@ describe('useBusinessGridPrintActions', () => {
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
+        kind: 'PDF',
         templateType: 'PDF_FORM',
         pdfBase64: btoa('pdf-content'),
         contentType: 'application/pdf',
@@ -249,6 +238,7 @@ describe('useBusinessGridPrintActions', () => {
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
+        kind: 'LODOP_SCRIPT',
         templateType: 'COORD',
         templateHtml: 'LODOP.PRINT_INIT("Test");',
         data: { name: 'Test' },
@@ -282,6 +272,7 @@ describe('useBusinessGridPrintActions', () => {
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
+        kind: 'LODOP_SCRIPT',
         templateType: 'COORD',
         templateHtml: 'LODOP.PRINT_INIT("Test");',
         data: { name: 'Test' },
@@ -324,6 +315,7 @@ describe('useBusinessGridPrintActions', () => {
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
+        kind: 'LODOP_SCRIPT',
         templateType: 'COORD',
         templateHtml: 'LODOP.PRINT_INIT("Test");',
         data: { name: 'Test' },
@@ -368,20 +360,22 @@ describe('useBusinessGridPrintActions', () => {
     expect(messageErrorMock).toHaveBeenCalled()
   })
 
-  it('handles PDF_FORM template type', async () => {
+  it('delegates PDF_FORM output to runner', async () => {
     const template = {
       id: 'template-1',
       templateName: 'PDF Template',
       templateHtml: '',
       templateType: 'PDF_FORM',
     }
+    const output = {
+      kind: 'PDF',
+      templateType: 'PDF_FORM',
+      pdfBase64: btoa('pdf-content'),
+      contentType: 'application/pdf',
+    }
     httpMock.post.mockResolvedValue({
       code: 200,
-      data: {
-        templateType: 'PDF_FORM',
-        pdfBase64: btoa('pdf-content'),
-        contentType: 'application/pdf',
-      },
+      data: output,
     })
 
     const { result } = renderHook(() =>
@@ -395,10 +389,15 @@ describe('useBusinessGridPrintActions', () => {
     })
 
     expect(httpMock.post).toHaveBeenCalled()
-    expect(loadCLodopMock).not.toHaveBeenCalled()
+    expect(runPrintOutputsMock).toHaveBeenCalledWith([output], {
+      fallbackTemplateName: 'PDF Template',
+      mode: 'print',
+      printServiceUnavailableMessage:
+        'hooks.printActions.printServiceUnavailable',
+    })
   })
 
-  it('handles preview mode for PDF', async () => {
+  it('passes preview mode to runner', async () => {
     const template = {
       id: 'template-1',
       templateName: 'PDF Template',
@@ -408,6 +407,7 @@ describe('useBusinessGridPrintActions', () => {
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
+        kind: 'PDF',
         templateType: 'PDF_FORM',
         pdfBase64: btoa('pdf-content'),
         contentType: 'application/pdf',
@@ -425,11 +425,25 @@ describe('useBusinessGridPrintActions', () => {
     })
 
     expect(httpMock.post).toHaveBeenCalled()
-    expect(windowOpenMock).toHaveBeenCalled()
-    expect(loadCLodopMock).not.toHaveBeenCalled()
+    expect(runPrintOutputsMock).toHaveBeenCalledWith(
+      [
+        {
+          kind: 'PDF',
+          templateType: 'PDF_FORM',
+          pdfBase64: btoa('pdf-content'),
+          contentType: 'application/pdf',
+        },
+      ],
+      {
+        fallbackTemplateName: 'PDF Template',
+        mode: 'preview',
+        printServiceUnavailableMessage:
+          'hooks.printActions.printServiceUnavailable',
+      },
+    )
   })
 
-  it('downloads PDF_FORM template output', async () => {
+  it('does not warn when download mode runner returns PDF output', async () => {
     const template = {
       id: 'template-1',
       templateName: 'PDF Template',
@@ -439,12 +453,14 @@ describe('useBusinessGridPrintActions', () => {
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
+        kind: 'PDF',
         templateType: 'PDF_FORM',
         pdfBase64: btoa('pdf-content'),
         contentType: 'application/pdf',
         fileName: 'sales-order',
       },
     })
+    runPrintOutputsMock.mockResolvedValue({ coordCount: 0, pdfCount: 1 })
 
     const { result } = renderHook(() =>
       useBusinessGridPrintActions({
@@ -456,15 +472,29 @@ describe('useBusinessGridPrintActions', () => {
       await result.current.handlePrintSelectedRecords('download', template)
     })
 
-    expect(downloadBlobMock).toHaveBeenCalledWith(
-      expect.any(Blob),
-      'sales-order.pdf',
+    expect(runPrintOutputsMock).toHaveBeenCalledWith(
+      [
+        {
+          kind: 'PDF',
+          templateType: 'PDF_FORM',
+          pdfBase64: btoa('pdf-content'),
+          contentType: 'application/pdf',
+          fileName: 'sales-order',
+        },
+      ],
+      {
+        fallbackTemplateName: 'PDF Template',
+        mode: 'download',
+        printServiceUnavailableMessage:
+          'hooks.printActions.printServiceUnavailable',
+      },
     )
-    expect(loadCLodopMock).not.toHaveBeenCalled()
-    expect(renderPrintTemplateMock).not.toHaveBeenCalled()
+    expect(messageWarningMock).not.toHaveBeenCalledWith(
+      'hooks.printActions.noPrintContent',
+    )
   })
 
-  it('blocks download mode for non-PDF templates', async () => {
+  it('shows warning when download mode runner returns no PDF output', async () => {
     const template = {
       id: 'template-1',
       templateName: 'Coord Template',
@@ -474,10 +504,12 @@ describe('useBusinessGridPrintActions', () => {
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
+        kind: 'LODOP_SCRIPT',
         templateType: 'COORD',
         templateHtml: 'LODOP.PRINT_INIT("test");',
       },
     })
+    runPrintOutputsMock.mockResolvedValue({ coordCount: 0, pdfCount: 0 })
 
     const { result } = renderHook(() =>
       useBusinessGridPrintActions({
@@ -495,25 +527,23 @@ describe('useBusinessGridPrintActions', () => {
     )
   })
 
-  it('handles COORD template type', async () => {
+  it('delegates COORD output to runner', async () => {
     const template = {
       id: 'template-1',
       templateName: 'Coord Template',
       templateHtml: 'LODOP.PRINT_INIT("test");',
       templateType: 'COORD',
     }
+    const output = {
+      kind: 'LODOP_SCRIPT',
+      templateType: 'COORD',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
+      templateName: 'Coord Template',
+      data: {},
+    }
     httpMock.post.mockResolvedValue({
       code: 200,
-      data: {
-        templateType: 'COORD',
-        templateHtml: 'LODOP.PRINT_INIT("test");',
-        templateName: 'Coord Template',
-        data: {},
-      },
-    })
-    renderPrintTemplateMock.mockReturnValue({
-      type: 'COORD',
-      script: 'test-script',
+      data: output,
     })
 
     const { result } = renderHook(() =>
@@ -526,8 +556,12 @@ describe('useBusinessGridPrintActions', () => {
       await result.current.handlePrintSelectedRecords('print', template)
     })
 
-    expect(execPrintCodeMock).toHaveBeenCalled()
-    expect(loadCLodopMock).toHaveBeenCalled()
+    expect(runPrintOutputsMock).toHaveBeenCalledWith([output], {
+      fallbackTemplateName: 'Coord Template',
+      mode: 'print',
+      printServiceUnavailableMessage:
+        'hooks.printActions.printServiceUnavailable',
+    })
   })
 
   it('shows warning when no print content generated', async () => {
@@ -540,11 +574,12 @@ describe('useBusinessGridPrintActions', () => {
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
+        kind: 'LODOP_SCRIPT',
         templateType: 'COORD',
-        templateHtml: null,
+        templateHtml: 'LODOP.PRINT_INIT("test");',
       },
     })
-    renderPrintTemplateMock.mockReturnValue({ type: 'COORD', script: '' })
+    runPrintOutputsMock.mockResolvedValue({ coordCount: 0, pdfCount: 0 })
 
     const { result } = renderHook(() =>
       useBusinessGridPrintActions({
@@ -561,7 +596,7 @@ describe('useBusinessGridPrintActions', () => {
     )
   })
 
-  it('handles execPrintCode returning false', async () => {
+  it('shows runner error message', async () => {
     const template = {
       id: 'template-1',
       templateName: 'Coord Template',
@@ -571,17 +606,16 @@ describe('useBusinessGridPrintActions', () => {
     httpMock.post.mockResolvedValue({
       code: 200,
       data: {
+        kind: 'LODOP_SCRIPT',
         templateType: 'COORD',
         templateHtml: 'LODOP.PRINT_INIT("test");',
         templateName: 'Coord Template',
         data: {},
       },
     })
-    renderPrintTemplateMock.mockReturnValue({
-      type: 'COORD',
-      script: 'LODOP.PRINT_INIT("test");',
-    })
-    execPrintCodeMock.mockReturnValue(false)
+    runPrintOutputsMock.mockRejectedValue(
+      new Error('hooks.printActions.printServiceUnavailable'),
+    )
 
     const { result } = renderHook(() =>
       useBusinessGridPrintActions({
