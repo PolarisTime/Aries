@@ -60,7 +60,9 @@ function isListExportAction(action: ModuleActionDefinition) {
 function withoutListExportActions(config: ModulePageConfig) {
   if (!config.actions?.length) return config
   const actions = config.actions.filter((action) => !isListExportAction(action))
-  return actions.length === config.actions.length ? config : { ...config, actions }
+  return actions.length === config.actions.length
+    ? config
+    : { ...config, actions }
 }
 
 export function useBusinessGridPage({

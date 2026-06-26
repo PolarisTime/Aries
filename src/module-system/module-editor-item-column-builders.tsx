@@ -4,7 +4,6 @@ import Checkbox from 'antd/es/checkbox'
 import Input from 'antd/es/input'
 import InputNumber from 'antd/es/input-number'
 import Select from 'antd/es/select'
-import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import {
   getEditorItemMin,
   getEditorItemPrecision,
@@ -16,6 +15,7 @@ import type {
   ModuleLineItem,
   ModulePageConfig,
 } from '@/types/module-page'
+import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import { asNumber, asString } from '@/utils/type-narrowing'
 
 interface MaterialOption {

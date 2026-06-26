@@ -1,6 +1,6 @@
+import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModuleLineItem } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
-import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import { toRoundedNumber } from './module-editor-shared'
 
 function calculateWeightByPieceWeightTon(
@@ -155,7 +155,10 @@ export function recalculateEditorLineItem(
       item.weightTon !== null &&
       item.weightTon !== ''
     if (hasWeightTon) {
-      item.weightTon = toRoundedNumber(item.weightTon, INTERNAL_WEIGHT_PRECISION)
+      item.weightTon = toRoundedNumber(
+        item.weightTon,
+        INTERNAL_WEIGHT_PRECISION,
+      )
       item.weighWeightTon = item.weightTon
     } else {
       item.weighWeightTon = undefined

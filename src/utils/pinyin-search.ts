@@ -40,15 +40,19 @@ export function buildPinyinSearchTokens(value: string): string[] {
  */
 export function createPinyinFilterOption(
   searchTextProp?: string,
-): (input: string, option?: { label?: string; searchText?: string; [key: string]: unknown }) => boolean {
+): (
+  input: string,
+  option?: { label?: string; searchText?: string; [key: string]: unknown },
+) => boolean {
   return (input: string, option) => {
     if (!input) return true
     const keywords = input.trim().toLowerCase().split(/\s+/)
     if (keywords.length === 0) return true
 
     const label = String(option?.label || '')
-    const customSearchText =
-      searchTextProp ? String(option?.[searchTextProp] || '') : ''
+    const customSearchText = searchTextProp
+      ? String(option?.[searchTextProp] || '')
+      : ''
 
     // 构建搜索文本：label + 自定义 searchText + 拼音 tokens
     const tokens = [label, customSearchText, ...buildPinyinSearchTokens(label)]

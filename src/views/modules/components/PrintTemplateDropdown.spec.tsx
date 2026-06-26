@@ -111,14 +111,15 @@ import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateD
 const EMPTY_QUERY_DATA: unknown[] = []
 
 function mockPrintableTemplates(templates: unknown[]) {
-  vi.mocked(useQuery).mockImplementation(
-    ((options: { queryKey?: readonly unknown[] }) => ({
-      data:
-        Array.isArray(options.queryKey) && options.queryKey[0] === 'print-templates'
-          ? templates
-          : EMPTY_QUERY_DATA,
-    })) as never,
-  )
+  vi.mocked(useQuery).mockImplementation(((options: {
+    queryKey?: readonly unknown[]
+  }) => ({
+    data:
+      Array.isArray(options.queryKey) &&
+      options.queryKey[0] === 'print-templates'
+        ? templates
+        : EMPTY_QUERY_DATA,
+  })) as never)
 }
 
 function openPrintModal() {

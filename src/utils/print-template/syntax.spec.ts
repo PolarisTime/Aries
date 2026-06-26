@@ -107,10 +107,7 @@ describe('expandEachBlocks', () => {
       '{{#each items}}{{#if needsNewPage}}P{{projectNameTop}}:{{customerName}}/{{brand}};{{/if}}{{/each}}'
     const result = expandEachBlocks(
       template,
-      [
-        { brand: '亚新' },
-        { needsNewPage: 'true', brand: '中杭' },
-      ],
+      [{ brand: '亚新' }, { needsNewPage: 'true', brand: '中杭' }],
       { customerName: '客户A', projectNameTop: '83', brand: '默认品牌' },
     )
 

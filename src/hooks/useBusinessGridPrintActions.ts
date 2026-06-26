@@ -17,8 +17,8 @@ import type {
 import { message, modal } from '@/utils/antd-app'
 import { downloadBlob } from '@/utils/download'
 import {
-  runPrintOutputs,
   type PrintOutputResponse,
+  runPrintOutputs,
 } from '@/utils/print-output-runner'
 
 interface Props {

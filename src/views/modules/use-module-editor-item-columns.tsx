@@ -1,5 +1,4 @@
 import type { TableColumnsType } from 'antd'
-import { buildPinyinSearchTokens } from '@/utils/pinyin-search'
 import { fetchMaterialSearch } from '@/api/materials'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
@@ -17,6 +16,7 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import { buildPinyinSearchTokens } from '@/utils/pinyin-search'
 
 interface Props {
   moduleKey: string

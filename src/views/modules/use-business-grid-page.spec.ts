@@ -334,7 +334,9 @@ describe('useBusinessGridPage', () => {
 
     const toolbarOptions = mocks.useModuleToolbarActions.mock.calls[0][0]
     expect(result.current.canExportData).toBe(false)
-    expect(toolbarOptions.config.actions).toEqual([{ key: 'create', label: '新增' }])
+    expect(toolbarOptions.config.actions).toEqual([
+      { key: 'create', label: '新增' },
+    ])
     expect(mocks.handleExport).not.toHaveBeenCalled()
   })
 

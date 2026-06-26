@@ -39,8 +39,8 @@ import {
 } from '@/api/print-template'
 import { getCustomerProjectOptions } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { shouldDisplayPieceWeightAsDash } from '@/module-system/module-line-item-display'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
+import { shouldDisplayPieceWeightAsDash } from '@/module-system/module-line-item-display'
 import type { ModuleRecord } from '@/types/module-page'
 import type {
   PrintActionMode,
@@ -697,7 +697,9 @@ export function PrintJobModal({
 
   const currentBrandOverridesByItemId = () => {
     const normalizedBrandOverridesByItemId: Record<string, string> = {}
-    for (const [itemId, value] of Object.entries(state.brandOverridesByItemId)) {
+    for (const [itemId, value] of Object.entries(
+      state.brandOverridesByItemId,
+    )) {
       const trimmed = value.trim()
       if (trimmed) {
         normalizedBrandOverridesByItemId[itemId] = trimmed
@@ -722,19 +724,18 @@ export function PrintJobModal({
     }
   }
 
-  const currentSalesOrderPrintXlsxOptions =
-    (): SalesOrderPrintXlsxOptions => {
-      const itemOrder = currentItemOrder()
-      const normalizedBrandOverridesByItemId = currentBrandOverridesByItemId()
-      return {
-        hideUnitPrice: state.hideUnitPrice,
-        hideRemark: state.hideRemark,
-        ...(itemOrder ? { itemOrder } : {}),
-        ...(normalizedBrandOverridesByItemId
-          ? { brandOverridesByItemId: normalizedBrandOverridesByItemId }
-          : {}),
-      }
+  const currentSalesOrderPrintXlsxOptions = (): SalesOrderPrintXlsxOptions => {
+    const itemOrder = currentItemOrder()
+    const normalizedBrandOverridesByItemId = currentBrandOverridesByItemId()
+    return {
+      hideUnitPrice: state.hideUnitPrice,
+      hideRemark: state.hideRemark,
+      ...(itemOrder ? { itemOrder } : {}),
+      ...(normalizedBrandOverridesByItemId
+        ? { brandOverridesByItemId: normalizedBrandOverridesByItemId }
+        : {}),
     }
+  }
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
