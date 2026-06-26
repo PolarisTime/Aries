@@ -28,7 +28,7 @@ interface Props {
     template?: PrintTemplateRecord,
     printOptions?: PrintOptions,
   ) => void
-  onExportPrintXlsx?: () => void
+  onExportPrintXlsx?: (printOptions?: PrintOptions) => void
 }
 
 export function PrintTemplateDropdown({

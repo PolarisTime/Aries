@@ -87,6 +87,8 @@ vi.mock('antd/es/typography', () => ({
 vi.mock('@ant-design/icons', () => ({
   DownloadOutlined: () => <span>DownloadOutlined</span>,
   EyeOutlined: () => <span>EyeOutlined</span>,
+  FileExcelOutlined: () => <span>FileExcelOutlined</span>,
+  HolderOutlined: () => <span>HolderOutlined</span>,
   PrinterOutlined: () => <span>PrinterOutlined</span>,
 }))
 
@@ -105,6 +107,19 @@ vi.mock('@/utils/antd-app', () => ({
 }))
 
 import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateDropdown'
+
+const EMPTY_QUERY_DATA: unknown[] = []
+
+function mockPrintableTemplates(templates: unknown[]) {
+  vi.mocked(useQuery).mockImplementation(
+    ((options: { queryKey?: readonly unknown[] }) => ({
+      data:
+        Array.isArray(options.queryKey) && options.queryKey[0] === 'print-templates'
+          ? templates
+          : EMPTY_QUERY_DATA,
+    })) as never,
+  )
+}
 
 function openPrintModal() {
   fireEvent.click(screen.getAllByText('modules.print.print')[0])
@@ -159,7 +174,7 @@ describe('PrintTemplateDropdown', () => {
       targetType: 'test-module',
       templateType: 'COORD',
     }
-    vi.mocked(useQuery).mockReturnValue({ data: [template] } as never)
+    mockPrintableTemplates([template])
 
     render(<PrintTemplateDropdown {...defaultProps} onPrint={onPrint} />)
 
@@ -172,9 +187,11 @@ describe('PrintTemplateDropdown', () => {
 
     expect(onPrint).toHaveBeenCalledWith('preview', template, {
       hideUnitPrice: false,
+      hideRemark: false,
     })
     expect(onPrint).toHaveBeenCalledWith('print', template, {
       hideUnitPrice: false,
+      hideRemark: false,
     })
     expect(screen.getByTestId('print-modal')).toBeTruthy()
   })
@@ -193,9 +210,7 @@ describe('PrintTemplateDropdown', () => {
       targetType: 'test-module',
       templateType: 'COORD',
     }
-    vi.mocked(useQuery).mockReturnValue({
-      data: [firstTemplate, secondTemplate],
-    } as never)
+    mockPrintableTemplates([firstTemplate, secondTemplate])
 
     render(<PrintTemplateDropdown {...defaultProps} onPrint={onPrint} />)
 
@@ -207,6 +222,7 @@ describe('PrintTemplateDropdown', () => {
 
     expect(onPrint).toHaveBeenCalledWith('preview', secondTemplate, {
       hideUnitPrice: false,
+      hideRemark: false,
     })
   })
 
@@ -218,7 +234,7 @@ describe('PrintTemplateDropdown', () => {
       targetType: 'test-module',
       templateType: 'COORD',
     }
-    vi.mocked(useQuery).mockReturnValue({ data: [template] } as never)
+    mockPrintableTemplates([template])
 
     render(<PrintTemplateDropdown {...defaultProps} onPrint={onPrint} />)
 
@@ -228,6 +244,7 @@ describe('PrintTemplateDropdown', () => {
 
     expect(onPrint).toHaveBeenCalledWith('preview', template, {
       hideUnitPrice: true,
+      hideRemark: false,
     })
     expect(screen.getByTestId('print-modal')).toBeTruthy()
   })
@@ -246,7 +263,10 @@ describe('PrintTemplateDropdown', () => {
     openPrintModal()
     fireEvent.click(screen.getByText('modules.print.exportXlsx'))
 
-    expect(onExportPrintXlsx).toHaveBeenCalledTimes(1)
+    expect(onExportPrintXlsx).toHaveBeenCalledWith({
+      hideUnitPrice: false,
+      hideRemark: false,
+    })
   })
 
   it('does not open modal when multiple records are selected', () => {

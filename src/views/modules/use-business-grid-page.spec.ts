@@ -304,12 +304,43 @@ describe('useBusinessGridPage', () => {
     expect(result.current.selectedRowKeys).toEqual([])
   })
 
-  it('exports submitted filters and exposes delegated actions', async () => {
+  it('exports submitted filters for master data pages', async () => {
+    const { result } = renderHook(() => useBusinessGridPage(masterProps()))
+
+    await act(async () => {
+      await result.current.handleExport()
+    })
+
+    expect(result.current.canExportData).toBe(true)
+    expect(mocks.handleExport).toHaveBeenCalledWith({ keyword: 'submitted' })
+  })
+
+  it('removes list export outside master data pages', async () => {
+    mocks.useModulePageConfig.mockReturnValue({
+      config: {
+        ...config(),
+        actions: [
+          { key: 'create', label: '新增' },
+          { key: 'export', label: '导出' },
+          { key: 'export_balance', label: '导出账款' },
+        ],
+      },
+    })
     const { result } = renderHook(() => useBusinessGridPage(props()))
 
     await act(async () => {
       await result.current.handleExport()
     })
+
+    const toolbarOptions = mocks.useModuleToolbarActions.mock.calls[0][0]
+    expect(result.current.canExportData).toBe(false)
+    expect(toolbarOptions.config.actions).toEqual([{ key: 'create', label: '新增' }])
+    expect(mocks.handleExport).not.toHaveBeenCalled()
+  })
+
+  it('exposes delegated actions', () => {
+    const { result } = renderHook(() => useBusinessGridPage(props()))
+
     result.current.handleAction('exportRows')
     result.current.handleSearch()
     result.current.handleReset()
@@ -319,7 +350,6 @@ describe('useBusinessGridPage', () => {
     result.current.toggleColumn('projectName')
     result.current.onColumnOrderChange(['projectName'])
 
-    expect(mocks.handleExport).toHaveBeenCalledWith({ keyword: 'submitted' })
     expect(mocks.handleAction).toHaveBeenCalledWith('exportRows')
     expect(mocks.handleSearch).toHaveBeenCalled()
     expect(mocks.handleReset).toHaveBeenCalled()
@@ -398,6 +428,17 @@ function props() {
       title: '采购入库',
     } as AppPageDefinition,
     initialConfig: config(),
+  }
+}
+
+function masterProps() {
+  const base = props()
+  return {
+    ...base,
+    pageDef: {
+      ...base.pageDef,
+      menuParent: 'master',
+    } as AppPageDefinition,
   }
 }
 

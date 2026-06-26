@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { PrintJobModal } from '@/views/modules/components/PrintJobModal'
+import {
+  PrintJobModal,
+  reorderPrintItemIds,
+} from '@/views/modules/components/PrintJobModal'
 
 vi.mock('@tanstack/react-query', () => ({
   useQuery: vi.fn().mockReturnValue({ data: [] }),
@@ -18,6 +21,36 @@ vi.mock('react-i18next', () => ({
       return params?.count == null ? text : `${text}:${params.count}`
     },
   }),
+}))
+
+vi.mock('@dnd-kit/core', () => ({
+  closestCenter: vi.fn(),
+  DndContext: ({ children }: any) => <div>{children}</div>,
+  KeyboardSensor: vi.fn(),
+  PointerSensor: vi.fn(),
+  useSensor: vi.fn(),
+  useSensors: vi.fn().mockReturnValue([]),
+}))
+
+vi.mock('@dnd-kit/sortable', () => ({
+  SortableContext: ({ children }: any) => <div>{children}</div>,
+  useSortable: vi.fn().mockReturnValue({
+    attributes: {},
+    listeners: {},
+    setNodeRef: vi.fn(),
+    transform: null,
+    transition: null,
+    isDragging: false,
+  }),
+  verticalListSortingStrategy: vi.fn(),
+}))
+
+vi.mock('@dnd-kit/utilities', () => ({
+  CSS: {
+    Transform: {
+      toString: vi.fn().mockReturnValue(undefined),
+    },
+  },
 }))
 
 vi.mock('antd/es/button', () => ({
@@ -96,8 +129,10 @@ vi.mock('antd/es/tag', () => ({
 
 vi.mock('antd/es/typography', () => ({
   default: {
-    Text: ({ children, className }: any) => (
-      <span className={className}>{children}</span>
+    Text: ({ children, className, ...props }: any) => (
+      <span className={className} {...props}>
+        {children}
+      </span>
     ),
   },
 }))
@@ -105,6 +140,8 @@ vi.mock('antd/es/typography', () => ({
 vi.mock('@ant-design/icons', () => ({
   DownloadOutlined: () => <span>DownloadOutlined</span>,
   EyeOutlined: () => <span>EyeOutlined</span>,
+  FileExcelOutlined: () => <span>FileExcelOutlined</span>,
+  HolderOutlined: () => <span>HolderOutlined</span>,
   PrinterOutlined: () => <span>PrinterOutlined</span>,
 }))
 
@@ -175,6 +212,7 @@ describe('PrintJobModal', () => {
 
     expect(onPrint).toHaveBeenCalledWith('preview', coordTemplate, {
       hideUnitPrice: false,
+      hideRemark: false,
     })
     expect(onClose).not.toHaveBeenCalled()
   })
@@ -206,6 +244,11 @@ describe('PrintJobModal', () => {
       'SO-001 / 客户甲 / 绿建（浙江大东吴杭萧绿建科技有限公司）',
     )
     expect(summary).toBeTruthy()
+    expect(summary).not.toHaveClass('truncate')
+    expect(summary).toHaveAttribute(
+      'title',
+      'SO-001 / 客户甲 / 绿建（浙江大东吴杭萧绿建科技有限公司）',
+    )
     expect(screen.queryByText(/modules\.print\.project：/)).toBeNull()
   })
 
@@ -272,6 +315,7 @@ describe('PrintJobModal', () => {
 
     expect(onPrint).toHaveBeenCalledWith('preview', coordTemplate, {
       hideUnitPrice: true,
+      hideRemark: false,
     })
   })
 
@@ -303,13 +347,28 @@ describe('PrintJobModal', () => {
         moduleKey="sales-order"
         selectedCount={1}
         selectedRowKeys={['1']}
-        selectedRows={[{ id: '1', orderNo: 'SO-001' }]}
+        selectedRows={[
+          {
+            id: '1',
+            orderNo: 'SO-001',
+            remark: '急送',
+            totalWeight: '1.476',
+          },
+        ]}
         templates={[coordTemplate]}
       />,
     )
 
     expect(screen.getByText('抚顺新钢')).toBeTruthy()
-    expect(screen.getByText('modules.print.itemCategory：')).toBeTruthy()
+    expect(screen.getByText('modules.print.recordRemark：')).toBeTruthy()
+    expect(screen.getByText('急送')).toBeTruthy()
+    expect(screen.getByText('modules.print.totalQuantity：')).toBeTruthy()
+    expect(screen.getAllByText('12').length).toBeGreaterThan(0)
+    expect(screen.getByText('modules.print.totalWeight：')).toBeTruthy()
+    expect(screen.getAllByText('1.476').length).toBeGreaterThan(0)
+    expect(screen.getByText('modules.print.itemBrand')).toBeTruthy()
+    expect(screen.getByText('modules.print.itemCategory')).toBeTruthy()
+    expect(screen.queryByText('modules.print.itemCategory：')).toBeNull()
     expect(screen.getByText('螺纹钢')).toBeTruthy()
     expect(screen.getByText('HRB400E')).toBeTruthy()
     expect(screen.getByText('Ф18')).toBeTruthy()
@@ -368,7 +427,10 @@ describe('PrintJobModal', () => {
     expect(screen.getAllByText('抚顺新钢')).toHaveLength(2)
     expect(
       screen.getAllByLabelText('modules.print.brandOverridePlaceholder')[0],
-    ).toHaveClass('h-32')
+    ).toHaveClass('h-8')
+    expect(
+      screen.getAllByLabelText('modules.print.brandOverridePlaceholder')[0],
+    ).toHaveClass('w-[120px]')
     fireEvent.change(
       screen.getAllByLabelText('modules.print.brandOverridePlaceholder')[0],
       {
@@ -379,9 +441,11 @@ describe('PrintJobModal', () => {
 
     expect(onPrint).toHaveBeenCalledWith('preview', coordTemplate, {
       hideUnitPrice: false,
+      hideRemark: false,
       brandOverridesByItemId: {
         'item-1': '抚新',
       },
+      itemOrder: ['item-1', 'item-2'],
     })
   })
 
@@ -423,6 +487,8 @@ describe('PrintJobModal', () => {
 
     expect(onPrint).toHaveBeenCalledWith('preview', coordTemplate, {
       hideUnitPrice: false,
+      hideRemark: false,
+      itemOrder: ['item-1'],
     })
   })
 
@@ -449,6 +515,7 @@ describe('PrintJobModal', () => {
 
     expect(onPrint).toHaveBeenCalledWith('print', pdfTemplate, {
       hideUnitPrice: false,
+      hideRemark: false,
     })
   })
 
@@ -472,11 +539,29 @@ describe('PrintJobModal', () => {
 
     expect(onPrint).toHaveBeenCalledWith('download', pdfTemplate, {
       hideUnitPrice: false,
+      hideRemark: false,
     })
   })
 
   it('shows sales order print xlsx export action', () => {
     const onExportPrintXlsx = vi.fn()
+    vi.mocked(useQuery).mockReturnValue({
+      data: [
+        {
+          id: 'item-1',
+          recordId: '1',
+          brand: '抚顺新钢',
+          category: '',
+          material: '',
+          spec: '',
+          quantity: '',
+          pieceWeightTon: '',
+          weightTon: '',
+          unitPrice: '',
+          amount: '',
+        },
+      ],
+    } as never)
 
     render(
       <PrintJobModal
@@ -492,9 +577,25 @@ describe('PrintJobModal', () => {
       />,
     )
 
+    fireEvent.click(screen.getByLabelText('modules.print.hideUnitPrice'))
+    fireEvent.click(screen.getByLabelText('modules.print.hideRemark'))
+    fireEvent.click(screen.getByLabelText('modules.print.enableBrandOverride'))
+    fireEvent.change(
+      screen.getByLabelText('modules.print.brandOverridePlaceholder'),
+      {
+        target: { value: '抚新' },
+      },
+    )
     fireEvent.click(screen.getByText('modules.print.exportXlsx'))
 
-    expect(onExportPrintXlsx).toHaveBeenCalledTimes(1)
+    expect(onExportPrintXlsx).toHaveBeenCalledWith({
+      hideUnitPrice: true,
+      hideRemark: true,
+      brandOverridesByItemId: {
+        'item-1': '抚新',
+      },
+      itemOrder: ['item-1'],
+    })
   })
 
   it('hides print xlsx export action outside sales order module', () => {
@@ -532,5 +633,14 @@ describe('PrintJobModal', () => {
     expect(screen.getByTestId('empty')).toBeTruthy()
     expect(screen.getByText('modules.print.noTemplate')).toBeTruthy()
     expect(screen.getByText('modules.print.noPrintItems')).toBeTruthy()
+  })
+
+  it('reorders print item ids by drag source and target', () => {
+    expect(
+      reorderPrintItemIds(['item-1', 'item-2', 'item-3'], 'item-1', 'item-3'),
+    ).toEqual(['item-2', 'item-3', 'item-1'])
+    expect(
+      reorderPrintItemIds(['item-1', 'item-2'], 'missing', 'item-2'),
+    ).toEqual(['item-1', 'item-2'])
   })
 })

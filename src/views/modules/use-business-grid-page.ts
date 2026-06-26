@@ -21,7 +21,11 @@ import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import { useModuleToolbarActions } from '@/hooks/useModuleToolbarActions'
 import { resolveStatusOptions } from '@/module-system/module-adapter-actions'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleActionDefinition,
+  ModulePageConfig,
+  ModuleRecord,
+} from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overlays'
@@ -45,6 +49,20 @@ const EMPTY_CONFIG: ModulePageConfig = {
   buildOverview: () => [],
 }
 
+function isListExportAction(action: ModuleActionDefinition) {
+  return (
+    action.key === 'export' ||
+    action.key === 'export_balance' ||
+    action.label.includes('导出')
+  )
+}
+
+function withoutListExportActions(config: ModulePageConfig) {
+  if (!config.actions?.length) return config
+  const actions = config.actions.filter((action) => !isListExportAction(action))
+  return actions.length === config.actions.length ? config : { ...config, actions }
+}
+
 export function useBusinessGridPage({
   moduleKey,
   pageDef,
@@ -64,6 +82,10 @@ export function useBusinessGridPage({
     resolvedResource,
     // react-doctor: intentional callback, not event handler
   } = useModulePermissions({ moduleKey, resourceKey: pageDef.resourceKey })
+  const canUseListExport = pageDef.menuParent === 'master' && canExportData
+  const toolbarConfig = canUseListExport
+    ? resolvedConfig
+    : withoutListExportActions(resolvedConfig)
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [selectedRowMap, setSelectedRowMap] = useState<
@@ -108,6 +130,7 @@ export function useBusinessGridPage({
   const { exporting, handleExport: exportModuleRows } =
     useExcelExport(moduleKey)
   const handleExport = async () => {
+    if (!canUseListExport) return
     await exportModuleRows(submittedFilters)
   }
   const { detailOpen, detailRecord, detailLoading, openDetail, closeDetail } =
@@ -216,7 +239,7 @@ export function useBusinessGridPage({
 
   const { visibleToolbarActions, handleAction } = useModuleToolbarActions({
     moduleKey,
-    config: resolvedConfig,
+    config: toolbarConfig,
     formFields,
     isMaterialModule: false,
     selectedRowCount: selectedRowKeys.length,
@@ -292,7 +315,7 @@ export function useBusinessGridPage({
   return {
     canAuditRecord,
     canCreateRecord,
-    canExportData,
+    canExportData: canUseListExport,
     canUpdateRecord,
     canViewRecords,
     clearSelection,

@@ -173,8 +173,8 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
                 }}
                 onExportPrintXlsx={
                   moduleKey === 'sales-order'
-                    ? () => {
-                        void state.handleExportSalesOrderPrintXlsx()
+                    ? (printOptions) => {
+                        void state.handleExportSalesOrderPrintXlsx(printOptions)
                       }
                     : undefined
                 }

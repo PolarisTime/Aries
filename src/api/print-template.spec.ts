@@ -4,13 +4,12 @@ const restGetMock = vi.hoisted(() => vi.fn())
 const restPostMock = vi.hoisted(() => vi.fn())
 const restPutMock = vi.hoisted(() => vi.fn())
 const restDeleteMock = vi.hoisted(() => vi.fn())
-const httpGetMock = vi.hoisted(() => vi.fn())
 const httpPostMock = vi.hoisted(() => vi.fn())
 const assertApiSuccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/api/client', () => ({
   assertApiSuccess: assertApiSuccessMock,
-  http: { get: httpGetMock, post: httpPostMock },
+  http: { post: httpPostMock },
   restGet: restGetMock,
   restPost: restPostMock,
   restPut: restPutMock,
@@ -88,12 +87,25 @@ describe('print-template', () => {
   describe('exportSalesOrderPrintXlsx', () => {
     it('downloads sales order locked print xlsx as blob', async () => {
       const blob = new Blob(['xlsx'])
-      httpGetMock.mockResolvedValue(blob)
+      httpPostMock.mockResolvedValue(blob)
 
-      const result = await exportSalesOrderPrintXlsx('id/1')
+      const result = await exportSalesOrderPrintXlsx('id/1', {
+        hideUnitPrice: true,
+        hideRemark: true,
+        brandOverridesByItemId: { '11': '抚新' },
+        itemOrder: ['12', '11'],
+      })
 
-      expect(httpGetMock).toHaveBeenCalledWith(
+      expect(httpPostMock).toHaveBeenCalledWith(
         '/sales-orders/id%2F1/print-xlsx',
+        {
+          printOptions: {
+            hideUnitPrice: true,
+            hideRemark: true,
+            brandOverridesByItemId: { '11': '抚新' },
+            itemOrder: ['12', '11'],
+          },
+        },
         {
           responseType: 'blob',
         },
