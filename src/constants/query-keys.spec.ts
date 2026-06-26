@@ -149,6 +149,22 @@ describe('QUERY_KEYS', () => {
     ])
   })
 
+  it('printRecordBrands returns key with module and joined ids', () => {
+    expect(QUERY_KEYS.printRecordBrands('sales-order', ['2', '1'])).toEqual([
+      'print-record-brands',
+      'sales-order',
+      '2,1',
+    ])
+  })
+
+  it('printRecordItems returns key with module and joined ids', () => {
+    expect(QUERY_KEYS.printRecordItems('sales-order', ['2', '1'])).toEqual([
+      'print-record-items',
+      'sales-order',
+      '2,1',
+    ])
+  })
+
   it('parentSelectorConfig and parentSelectorList return keys', () => {
     expect(QUERY_KEYS.parentSelectorListBase).toEqual(['parent-selector-list'])
     expect(QUERY_KEYS.parentSelectorConfig('purchase-order')).toEqual([

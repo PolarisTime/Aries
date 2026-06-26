@@ -18,6 +18,8 @@ vi.mock('@/api/client', () => ({
 
 import {
   deletePrintTemplate,
+  listPrintRecordBrands,
+  listPrintRecordItems,
   listPrintTemplates,
   savePrintTemplate,
   uploadPrintTemplateJson,
@@ -43,6 +45,39 @@ describe('print-template', () => {
 
       expect(restGetMock).toHaveBeenCalledWith('/print-templates', {
         billType: 'purchase-order',
+      })
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('listPrintRecordBrands', () => {
+    it('fetches brands by module and record ids', async () => {
+      const mockResponse = { code: 0, data: ['抚顺新钢', '沙钢'] }
+      restPostMock.mockResolvedValue(mockResponse)
+
+      const result = await listPrintRecordBrands('sales-order', ['1', '2'])
+
+      expect(restPostMock).toHaveBeenCalledWith('/print/brands', {
+        moduleKey: 'sales-order',
+        recordIds: ['1', '2'],
+      })
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('listPrintRecordItems', () => {
+    it('fetches print items by module and record ids', async () => {
+      const mockResponse = {
+        code: 0,
+        data: [{ id: '11', brand: '中杭', category: '螺纹钢' }],
+      }
+      restPostMock.mockResolvedValue(mockResponse)
+
+      const result = await listPrintRecordItems('sales-order', ['1', '2'])
+
+      expect(restPostMock).toHaveBeenCalledWith('/print/items', {
+        moduleKey: 'sales-order',
+        recordIds: ['1', '2'],
       })
       expect(result).toEqual(mockResponse)
     })

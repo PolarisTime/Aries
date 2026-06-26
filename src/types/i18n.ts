@@ -800,6 +800,30 @@ export interface MessageSchema {
       directPrint: string
       downloadPdf: string
       print: string
+      jobTitle: string
+      currentModule: string
+      selectedRecords: string
+      selectTemplate: string
+      printOptions: string
+      hideUnitPrice: string
+      enableBrandOverride: string
+      brandOverrideTo: string
+      brandOverridePlaceholder: string
+      noBrands: string
+      selectedPrintItems: string
+      noPrintItems: string
+      itemCategory: string
+      itemMaterial: string
+      itemSpec: string
+      itemQuantity: string
+      itemPieceWeight: string
+      itemWeight: string
+      itemUnitPrice: string
+      itemAmount: string
+      selectedRecordList: string
+      onlySelectedIds: string
+      moreSelectedRows: string
+      unloadedSelectedRows: string
     }
     itemsPanel: {
       defaultTitle: string

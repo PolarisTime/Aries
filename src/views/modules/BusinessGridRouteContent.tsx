@@ -156,10 +156,20 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
             {state.canUseBulkPrintActions ? (
               <PrintTemplateDropdown
                 moduleKey={moduleKey}
+                moduleTitle={state.config.title}
                 disabled={!state.selectedRowKeys.length}
                 loading={false}
-                onPrint={(mode, template) => {
-                  void state.handlePrintSelectedRecords(mode, template)
+                selectedCount={state.selectedRowKeys.length}
+                selectedRowKeys={state.selectedRowKeys}
+                selectedRows={state.records.filter((r) =>
+                  state.selectedRowKeys.includes(String(r.id)),
+                )}
+                onPrint={(mode, template, printOptions) => {
+                  void state.handlePrintSelectedRecords(
+                    mode,
+                    template,
+                    printOptions,
+                  )
                 }}
               />
             ) : null}

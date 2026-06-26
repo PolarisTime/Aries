@@ -92,6 +92,10 @@ export const QUERY_KEYS = {
   printableTemplatesBase: ['print-templates'] as const,
   printableTemplates: (moduleKey: string) =>
     ['print-templates', moduleKey] as const,
+  printRecordBrands: (moduleKey: string, recordIds: string[]) =>
+    ['print-record-brands', moduleKey, recordIds.join(',')] as const,
+  printRecordItems: (moduleKey: string, recordIds: string[]) =>
+    ['print-record-items', moduleKey, recordIds.join(',')] as const,
 
   // Parent selector
   parentSelectorListBase: ['parent-selector-list'] as const,

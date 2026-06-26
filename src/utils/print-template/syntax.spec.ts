@@ -101,6 +101,21 @@ describe('expandEachBlocks', () => {
     const result = expandEachBlocks(template, items)
     expect(result).toBe('<b>yes</b><i>no</i><b>maybe</b>')
   })
+
+  it('allows each blocks to read parent data while item fields take priority', () => {
+    const template =
+      '{{#each items}}{{#if needsNewPage}}P{{projectNameTop}}:{{customerName}}/{{brand}};{{/if}}{{/each}}'
+    const result = expandEachBlocks(
+      template,
+      [
+        { brand: '亚新' },
+        { needsNewPage: 'true', brand: '中杭' },
+      ],
+      { customerName: '客户A', projectNameTop: '83', brand: '默认品牌' },
+    )
+
+    expect(result).toBe('P83:客户A/中杭;')
+  })
 })
 
 describe('expandIfBlocks', () => {

@@ -12,6 +12,20 @@ import type {
   SavePrintTemplatePayload,
 } from '@/types/print-template'
 
+export interface PrintRecordItem {
+  id: string
+  recordId: string
+  brand: string
+  category: string
+  material: string
+  spec: string
+  quantity: string
+  pieceWeightTon: string
+  weightTon: string
+  unitPrice: string
+  amount: string
+}
+
 function defaultEngineForTemplateType(
   templateType: SavePrintTemplatePayload['templateType'],
 ) {
@@ -27,6 +41,20 @@ export function listPrintTemplates(billType: string) {
       billType,
     },
   )
+}
+
+export function listPrintRecordBrands(moduleKey: string, recordIds: string[]) {
+  return restPost<PrintTemplateResponse<string[]>>('/print/brands', {
+    moduleKey,
+    recordIds,
+  })
+}
+
+export function listPrintRecordItems(moduleKey: string, recordIds: string[]) {
+  return restPost<PrintTemplateResponse<PrintRecordItem[]>>('/print/items', {
+    moduleKey,
+    recordIds,
+  })
 }
 
 export function savePrintTemplate(payload: SavePrintTemplatePayload) {

@@ -19,6 +19,13 @@ interface Props {
   selectedRowKeys: string[]
 }
 
+export interface PrintOptions {
+  hideUnitPrice?: boolean
+  brandOverride?: string
+  brandOverrides?: Record<string, string>
+  brandOverridesByItemId?: Record<string, string>
+}
+
 interface PrintRecordResponse {
   templateName?: string
   templateHtml?: string
@@ -164,6 +171,7 @@ export function useBusinessGridPrintActions({
   const handlePrintSelectedRecords = async (
     mode: PrintActionMode,
     selectedTemplate?: PrintTemplateRecord,
+    printOptions?: PrintOptions,
   ) => {
     if (!selectedRowKeys.length) {
       message.warning(t('common.pleaseSelect'))
@@ -188,6 +196,7 @@ export function useBusinessGridPrintActions({
             templateId: template.id,
             moduleKey,
             recordId,
+            ...(printOptions ? { printOptions } : {}),
           }),
         ),
       )
