@@ -15,9 +15,11 @@ import type {
   PrintTemplateRecord,
 } from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
-import { execPrintCode, loadCLodop } from '@/utils/clodop'
 import { downloadBlob } from '@/utils/download'
-import { renderPrintTemplate } from '@/utils/print-template'
+import {
+  runPrintOutputs,
+  type PrintOutputResponse,
+} from '@/utils/print-output-runner'
 
 interface Props {
   moduleKey: string
@@ -32,82 +34,6 @@ export interface PrintRenderOptions {
   brandOverrides?: Record<string, string>
   brandOverridesByItemId?: Record<string, string>
   itemOrder?: string[]
-}
-
-interface PrintRecordResponse {
-  templateName?: string
-  templateHtml?: string
-  templateType: string
-  data?: Record<string, string>
-  items?: Record<string, string>[]
-  contentType?: string
-  fileName?: string
-  pdfBase64?: string
-}
-
-function requirePrintService(success: boolean, message: string) {
-  if (!success) {
-    throw new Error(message)
-  }
-}
-
-function openPdfBlob(blob: Blob) {
-  const url = URL.createObjectURL(blob)
-  window.open(url, '_blank', 'noopener,noreferrer')
-  window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
-}
-
-function blobFromBase64(base64: string, contentType = 'application/pdf') {
-  const binary = window.atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return new Blob([bytes], { type: contentType })
-}
-
-function printPdfBlob(blob: Blob) {
-  const url = URL.createObjectURL(blob)
-  const frame = document.createElement('iframe')
-  frame.src = url
-  frame.style.position = 'fixed'
-  frame.style.right = '0'
-  frame.style.bottom = '0'
-  frame.style.width = '0'
-  frame.style.height = '0'
-  frame.style.border = '0'
-  frame.addEventListener(
-    'load',
-    () => {
-      frame.contentWindow?.focus()
-      frame.contentWindow?.print()
-    },
-    { once: true },
-  )
-  document.body.appendChild(frame)
-  window.setTimeout(() => {
-    frame.remove()
-    URL.revokeObjectURL(url)
-  }, 60_000)
-}
-
-function handlePdfBlob(blob: Blob, mode: PrintActionMode, fileName: string) {
-  if (mode === 'preview') {
-    openPdfBlob(blob)
-    return
-  }
-  if (mode === 'download') {
-    downloadBlob(blob, fileName)
-    return
-  }
-  printPdfBlob(blob)
-}
-
-function normalizePdfFileName(fileName: string) {
-  const normalized = fileName.trim() || 'print.pdf'
-  return normalized.toLowerCase().endsWith('.pdf')
-    ? normalized
-    : `${normalized}.pdf`
 }
 
 function normalizeXlsxFileName(value: unknown) {
@@ -249,7 +175,7 @@ export function useBusinessGridPrintActions({
         selectedRowKeys.map((recordId) =>
           http.post<{
             code: number
-            data: PrintRecordResponse
+            data: PrintOutputResponse
             message?: string
           }>('/print/record', {
             templateId: template.id,
@@ -263,23 +189,18 @@ export function useBusinessGridPrintActions({
         assertApiSuccess(r, t('hooks.printActions.printScriptGenerationFailed'))
       }
 
-      const pdfResults = results
-        .map((r) => r.data)
-        .filter(
-          (d): d is PrintRecordResponse =>
-            d?.templateType === 'PDF_FORM' && Boolean(d.pdfBase64),
-        )
-      for (const d of pdfResults) {
-        handlePdfBlob(
-          blobFromBase64(d.pdfBase64 || '', d.contentType),
+      const runResult = await runPrintOutputs(
+        results.map((r) => r.data),
+        {
+          fallbackTemplateName: template.templateName,
           mode,
-          normalizePdfFileName(
-            d.fileName || d.templateName || template.templateName,
+          printServiceUnavailableMessage: t(
+            'hooks.printActions.printServiceUnavailable',
           ),
-        )
-      }
+        },
+      )
 
-      if (mode === 'download' && pdfResults.length) {
+      if (mode === 'download' && runResult.pdfCount) {
         return
       }
 
@@ -288,43 +209,7 @@ export function useBusinessGridPrintActions({
         return
       }
 
-      const rendered = results
-        .map((r) => {
-          const d = r.data
-          if (d?.templateType === 'PDF_FORM') return null
-          if (!d?.templateHtml) return null
-          return {
-            title: d.templateName || template.templateName,
-            result: renderPrintTemplate(
-              d.templateHtml,
-              d.templateType || 'COORD',
-              d.data || {},
-              d.items || [],
-            ),
-          }
-        })
-        .filter((r): r is NonNullable<typeof r> => Boolean(r))
-
-      const coordResults = rendered.filter((r) => r.result.type === 'COORD')
-
-      if (coordResults.length) {
-        // 确保 CLodop 脚本已加载（main.tsx 预加载 + 此处兜底）
-        await loadCLodop()
-      }
-
-      for (const r of coordResults) {
-        if (!r.result.script) continue
-        const success = execPrintCode(r.result.script, {
-          preview: mode === 'preview',
-          title: r.title,
-        })
-        requirePrintService(
-          success,
-          t('hooks.printActions.printServiceUnavailable'),
-        )
-      }
-
-      if (!pdfResults.length && !coordResults.length) {
+      if (!runResult.pdfCount && !runResult.coordCount) {
         message.warning(t('hooks.printActions.noPrintContent'))
       }
     } catch (err) {
