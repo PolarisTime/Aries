@@ -5,6 +5,7 @@ import { assertApiSuccess, http } from '@/api/client'
 import {
   exportSalesOrderPrintXlsx,
   listPrintTemplates,
+  type SalesOrderPrintXlsxOptions,
 } from '@/api/print-template'
 import { PrintTemplateSelector } from '@/components/PrintTemplateSelector'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
@@ -24,7 +25,7 @@ interface Props {
   selectedRows?: ModuleRecord[]
 }
 
-export interface PrintOptions {
+export interface PrintRenderOptions {
   hideUnitPrice?: boolean
   hideRemark?: boolean
   brandOverride?: string
@@ -187,7 +188,7 @@ export function useBusinessGridPrintActions({
   const { t } = useTranslation()
 
   const handleExportSalesOrderPrintXlsx = async (
-    printOptions?: PrintOptions,
+    printOptions?: SalesOrderPrintXlsxOptions,
   ) => {
     if (moduleKey !== 'sales-order') return
 
@@ -203,7 +204,10 @@ export function useBusinessGridPrintActions({
 
     try {
       const recordId = selectedRowKeys[0]
-      const blob = await exportSalesOrderPrintXlsx(recordId, printOptions)
+      const blob = await exportSalesOrderPrintXlsx(
+        recordId,
+        printOptions ? { printOptions } : {},
+      )
       const selectedRow = selectedRows.find(
         (row) => String(row.id) === recordId,
       )
@@ -221,7 +225,7 @@ export function useBusinessGridPrintActions({
   const handlePrintSelectedRecords = async (
     mode: PrintActionMode,
     selectedTemplate?: PrintTemplateRecord,
-    printOptions?: PrintOptions,
+    printOptions?: PrintRenderOptions,
   ) => {
     if (!selectedRowKeys.length) {
       message.warning(t('common.pleaseSelect'))
