@@ -119,6 +119,22 @@ describe('useBusinessGridPrintActions', () => {
     expect(downloadBlobMock).toHaveBeenCalledWith(blob, 'SO_001.xlsx')
   })
 
+  it('shows warning when exporting print xlsx without selected rows', async () => {
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: [],
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleExportSalesOrderPrintXlsx()
+    })
+
+    expect(messageWarningMock).toHaveBeenCalledWith('common.pleaseSelect')
+    expect(exportSalesOrderPrintXlsxMock).not.toHaveBeenCalled()
+  })
+
   it('does not export print xlsx for non-sales-order modules', async () => {
     const { result } = renderHook(() =>
       useBusinessGridPrintActions({
@@ -132,6 +148,23 @@ describe('useBusinessGridPrintActions', () => {
     })
 
     expect(exportSalesOrderPrintXlsxMock).not.toHaveBeenCalled()
+  })
+
+  it('shows error message when exporting print xlsx fails', async () => {
+    exportSalesOrderPrintXlsxMock.mockRejectedValue(new Error('Export failed'))
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleExportSalesOrderPrintXlsx()
+    })
+
+    expect(messageErrorMock).toHaveBeenCalledWith('Export failed')
   })
 
   it('shows warning when exporting print xlsx with multiple selected rows', async () => {

@@ -1,10 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  PrintJobModal,
-  reorderPrintItemIds,
-} from '@/views/modules/components/PrintJobModal'
+import { PrintJobModal } from '@/views/modules/components/PrintJobModal'
+import { reorderPrintItemIds } from '@/views/modules/components/print-job-modal-utils'
 
 vi.mock('@tanstack/react-query', () => ({
   useQuery: vi.fn().mockReturnValue({ data: [] }),

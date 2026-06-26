@@ -26,20 +26,6 @@ export function buildPinyinSearchTokens(value: string): string[] {
 }
 
 /**
- * 构建增强搜索文本：原始文本 + 拼音全拼 + 拼音首字母。
- * 用于 Select/AutoComplete 的 option 自定义属性。
- */
-export function buildPinyinSearchText(label: string): string {
-  if (!label) {
-    return ''
-  }
-  return [label, ...buildPinyinSearchTokens(label)]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase()
-}
-
-/**
  * Ant Design Select/AutoComplete 的 filterOption 工厂函数。
  * 支持：
  * - 中文原文匹配
