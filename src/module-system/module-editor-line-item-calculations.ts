@@ -3,22 +3,6 @@ import { asString } from '@/utils/type-narrowing'
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import { toRoundedNumber } from './module-editor-shared'
 
-function calculateAveragePieceWeightTon(quantity: unknown, weightTon: unknown) {
-  const numericQuantity = Number(quantity || 0)
-  const numericWeightTon = Number(weightTon || 0)
-  if (
-    !Number.isFinite(numericQuantity) ||
-    numericQuantity <= 0 ||
-    !Number.isFinite(numericWeightTon)
-  ) {
-    return 0
-  }
-  return toRoundedNumber(
-    numericWeightTon / numericQuantity + Number.EPSILON,
-    INTERNAL_WEIGHT_PRECISION,
-  )
-}
-
 function calculateWeightByPieceWeightTon(
   quantity: unknown,
   pieceWeightTon: unknown,
@@ -122,7 +106,6 @@ export function recalculateEditorLineItem(
   ) {
     item.weightTon = undefined
     item.weighWeightTon = undefined
-    item.pieceWeightTon = 0
     item.amount = 0
     item.weightAdjustmentTon = undefined
     item.weightAdjustmentAmount = undefined
@@ -141,13 +124,9 @@ export function recalculateEditorLineItem(
       String(changedKey),
     )
   ) {
-    item.pieceWeightTon = calculateAveragePieceWeightTon(
-      item.quantity,
+    item.weightTon = toRoundedNumber(
       item.weighWeightTon,
-    )
-    item.weightTon = calculateWeightByPieceWeightTon(
-      item.quantity,
-      item.pieceWeightTon,
+      INTERNAL_WEIGHT_PRECISION,
     )
   } else if (
     changedKey === 'quantity' ||
@@ -178,13 +157,8 @@ export function recalculateEditorLineItem(
     if (hasWeightTon) {
       item.weightTon = toRoundedNumber(item.weightTon, INTERNAL_WEIGHT_PRECISION)
       item.weighWeightTon = item.weightTon
-      item.pieceWeightTon = calculateAveragePieceWeightTon(
-        item.quantity,
-        item.weightTon,
-      )
     } else {
       item.weighWeightTon = undefined
-      item.pieceWeightTon = 0
     }
   }
 

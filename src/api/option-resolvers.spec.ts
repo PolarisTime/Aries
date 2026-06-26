@@ -66,9 +66,27 @@ describe('option-resolvers', () => {
 
       const options = materialCategoryOptions()
       expect(options).toEqual([
-        { label: '螺纹钢', value: '螺纹钢', purchaseWeighRequired: false },
-        { label: '盘螺', value: '盘螺', purchaseWeighRequired: true },
-        { label: '线材', value: '线材', purchaseWeighRequired: true },
+        {
+          label: '螺纹钢',
+          value: '螺纹钢',
+          purchaseWeighRequired: false,
+          purchaseWeighOverTolerancePercent: 5,
+          purchaseWeighUnderTolerancePercent: 5,
+        },
+        {
+          label: '盘螺',
+          value: '盘螺',
+          purchaseWeighRequired: true,
+          purchaseWeighOverTolerancePercent: 5,
+          purchaseWeighUnderTolerancePercent: 5,
+        },
+        {
+          label: '线材',
+          value: '线材',
+          purchaseWeighRequired: true,
+          purchaseWeighOverTolerancePercent: 5,
+          purchaseWeighUnderTolerancePercent: 5,
+        },
       ])
       expect(fetchMaterialCategoriesMock).toHaveBeenCalledTimes(1)
     })

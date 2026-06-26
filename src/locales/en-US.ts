@@ -1078,6 +1078,8 @@ export const enUS: MessageSchema = {
         categoryName: 'categoryName',
         sortOrder: 'sortOrder',
         purchaseWeigh: 'purchaseWeigh',
+        overTolerance: 'overTolerance',
+        underTolerance: 'underTolerance',
         status: 'status',
         remark: 'remark',
         required: 'required',

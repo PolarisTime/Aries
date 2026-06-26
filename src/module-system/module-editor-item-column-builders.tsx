@@ -10,6 +10,7 @@ import {
   getEditorItemPrecision,
   isNumberEditorColumn,
 } from '@/module-system/module-adapter-editor'
+import { shouldDisplayPieceWeightAsDash } from '@/module-system/module-line-item-display'
 import type {
   ModuleColumnDefinition,
   ModuleLineItem,
@@ -51,7 +52,12 @@ function renderReadOnlyValue(
   type: string | undefined,
   statusMap: ModulePageConfig['statusMap'],
   formatCellValue: (value: unknown, columnType?: string) => string,
+  record?: ModuleLineItem,
+  key?: string,
 ) {
+  if (key === 'pieceWeightTon' && shouldDisplayPieceWeightAsDash(record)) {
+    return '-'
+  }
   if (type === 'status') {
     const statusValue = typeof value === 'string' ? value : ''
     const meta = statusMap?.[statusValue]
@@ -86,6 +92,19 @@ function buildEditableColumnRender({
           type,
           config.statusMap,
           formatCellValue,
+          record,
+          key,
+        )
+      }
+
+      if (key === 'pieceWeightTon' && shouldDisplayPieceWeightAsDash(record)) {
+        return renderReadOnlyValue(
+          value,
+          type,
+          config.statusMap,
+          formatCellValue,
+          record,
+          key,
         )
       }
 
@@ -149,6 +168,8 @@ function buildEditableColumnRender({
             type,
             config.statusMap,
             formatCellValue,
+            record,
+            key,
           )
         }
         return (

@@ -41,7 +41,7 @@ describe('recalculateEditorLineItem', () => {
     recalculateEditorLineItem(item, 'weighWeightTon')
     expect(item.weightTon).toBeUndefined()
     expect(item.weighWeightTon).toBeUndefined()
-    expect(item.pieceWeightTon).toBe(0)
+    expect(item.pieceWeightTon).toBe(0.5)
     expect(item.amount).toBe(0)
     expect(item.weightAdjustmentTon).toBeUndefined()
     expect(item.weightAdjustmentAmount).toBeUndefined()
@@ -62,15 +62,16 @@ describe('recalculateEditorLineItem', () => {
     expect(item.weighWeightTon).toBe(5)
   })
 
-  it('calculates pieceWeightTon from weighWeightTon in weigh settlement', () => {
+  it('keeps pieceWeightTon when weighWeightTon changes in weigh settlement', () => {
     const item = makeItem({
       settlementMode: '过磅',
       quantity: 10,
+      pieceWeightTon: 0.5,
       weighWeightTon: 50,
       unitPrice: 10,
     })
     recalculateEditorLineItem(item, 'weighWeightTon')
-    expect(item.pieceWeightTon).toBe(5)
+    expect(item.pieceWeightTon).toBe(0.5)
     expect(item.weightTon).toBe(50)
   })
 
@@ -209,7 +210,7 @@ describe('recalculateEditorLineItem', () => {
     })
     recalculateEditorLineItem(item, 'weightTon')
     expect(item.weighWeightTon).toBe(50)
-    expect(item.pieceWeightTon).toBe(5)
+    expect(item.pieceWeightTon).toBe(0)
   })
 
   it('clears weighWeightTon when weightTon is cleared in weigh settlement', () => {

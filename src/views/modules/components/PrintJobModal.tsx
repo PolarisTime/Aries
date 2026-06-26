@@ -38,6 +38,7 @@ import {
 } from '@/api/print-template'
 import { getCustomerProjectOptions } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { shouldDisplayPieceWeightAsDash } from '@/module-system/module-line-item-display'
 import type { PrintOptions } from '@/hooks/useBusinessGridPrintActions'
 import type { ModuleRecord } from '@/types/module-page'
 import type {
@@ -205,6 +206,13 @@ function normalizePrintItemOrder(
   ]
 }
 
+function printItemFieldText(item: PrintRecordItem, key: keyof PrintRecordItem) {
+  if (key === 'pieceWeightTon' && shouldDisplayPieceWeightAsDash(item)) {
+    return '-'
+  }
+  return fieldText(item[key])
+}
+
 interface SortablePrintItemRowProps {
   brandOverrideEnabled: boolean
   brandOverrideValue: string
@@ -273,9 +281,9 @@ function SortablePrintItemRow({
           <Typography.Text
             key={field.key}
             className="block truncate"
-            title={`${t(field.labelKey)}：${fieldText(item[field.key])}`}
+            title={`${t(field.labelKey)}：${printItemFieldText(item, field.key)}`}
           >
-            {fieldText(item[field.key])}
+            {printItemFieldText(item, field.key)}
           </Typography.Text>
         ))}
       </div>

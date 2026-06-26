@@ -47,6 +47,8 @@ export interface ModuleFormFieldOption {
   projectName?: string
   projectNameAbbr?: string
   purchaseWeighRequired?: boolean
+  purchaseWeighOverTolerancePercent?: number
+  purchaseWeighUnderTolerancePercent?: number
 }
 
 export type ModuleFormFieldOptionResolver = (

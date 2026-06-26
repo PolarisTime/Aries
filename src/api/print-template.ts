@@ -17,6 +17,7 @@ export interface PrintRecordItem {
   recordId: string
   brand: string
   category: string
+  settlementMode?: string
   material: string
   spec: string
   quantity: string

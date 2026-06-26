@@ -29,11 +29,27 @@ describe('materialCategoriesPageConfig', () => {
   it('has columns', () => {
     expect(materialCategoriesPageConfig.columns).toBeDefined()
     expect(materialCategoriesPageConfig.columns.length).toBeGreaterThan(0)
+    expect(
+      materialCategoriesPageConfig.columns.map((column) => column.dataIndex),
+    ).toEqual(
+      expect.arrayContaining([
+        'purchaseWeighOverTolerancePercent',
+        'purchaseWeighUnderTolerancePercent',
+      ]),
+    )
   })
 
   it('has formFields', () => {
     expect(materialCategoriesPageConfig.formFields).toBeDefined()
     expect(materialCategoriesPageConfig.formFields!.length).toBeGreaterThan(0)
+    expect(
+      materialCategoriesPageConfig.formFields!.map((field) => field.key),
+    ).toEqual(
+      expect.arrayContaining([
+        'purchaseWeighOverTolerancePercent',
+        'purchaseWeighUnderTolerancePercent',
+      ]),
+    )
   })
 
   it('buildOverview returns result for empty rows', () => {
