@@ -2,6 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const { messageWarningMock } = vi.hoisted(() => ({
+  messageWarningMock: vi.fn(),
+}))
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -94,6 +98,10 @@ vi.mock('@/config/print-template-targets', () => ({
   printTemplateTargetMap: {
     'test-module': 'test-target',
   },
+}))
+
+vi.mock('@/utils/antd-app', () => ({
+  message: { warning: messageWarningMock },
 }))
 
 import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateDropdown'
@@ -222,6 +230,44 @@ describe('PrintTemplateDropdown', () => {
       hideUnitPrice: true,
     })
     expect(screen.getByTestId('print-modal')).toBeTruthy()
+  })
+
+  it('passes sales order xlsx export callback to print modal', () => {
+    const onExportPrintXlsx = vi.fn()
+
+    render(
+      <PrintTemplateDropdown
+        {...defaultProps}
+        moduleKey="sales-order"
+        onExportPrintXlsx={onExportPrintXlsx}
+      />,
+    )
+
+    openPrintModal()
+    fireEvent.click(screen.getByText('modules.print.exportXlsx'))
+
+    expect(onExportPrintXlsx).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not open modal when multiple records are selected', () => {
+    const onPrint = vi.fn()
+
+    render(
+      <PrintTemplateDropdown
+        {...defaultProps}
+        onPrint={onPrint}
+        selectedCount={2}
+        selectedRowKeys={['row-1', 'row-2']}
+      />,
+    )
+
+    openPrintModal()
+
+    expect(screen.queryByTestId('print-modal')).toBeNull()
+    expect(onPrint).not.toHaveBeenCalled()
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.singleRecordOnly',
+    )
   })
 
   it('disables query for unsupported module key', () => {

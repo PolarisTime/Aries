@@ -844,6 +844,7 @@ export const enUS: MessageSchema = {
       selectedRecords: '{{count}} document(s) selected',
       selectTemplate: 'Print Template',
       printOptions: 'Print Options',
+      exportXlsx: 'Export Print Excel',
       hideUnitPrice: 'Hide unit price',
       enableBrandOverride: 'Replace print brand',
       brandOverrideTo: 'Replace with',
@@ -859,6 +860,7 @@ export const enUS: MessageSchema = {
       itemWeight: 'Total Wt.',
       itemUnitPrice: 'Unit Price',
       itemAmount: 'Amount',
+      project: 'Project',
       selectedRecordList: 'Selected Documents',
       onlySelectedIds:
         'Selected record IDs are retained. No current-page summary is available.',
@@ -1802,11 +1804,13 @@ export const enUS: MessageSchema = {
       noPrintTemplateConfigured:
         'No print template configured for this document',
       noPrintableRecords: 'No printable records found in selection',
+      singleRecordOnly: 'Printing supports one document at a time only',
       printScriptGenerationFailed: 'Print script generation failed',
       printServiceUnavailable:
         'Print service unavailable. Please check CLodop or print template configuration',
       noPrintContent: 'No print content generated',
       printFailed: 'Print failed',
+      exportXlsxFailed: 'Print Excel export failed',
     },
     freightActions: {
       noFreightData: 'No freight statement data in the current list',

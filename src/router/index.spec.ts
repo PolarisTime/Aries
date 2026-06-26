@@ -358,6 +358,24 @@ describe('router', () => {
       ).rejects.toMatchObject({ to: '/server-error' })
     })
 
+    it('keeps source path when redirecting to /server-error', async () => {
+      mockGetInitialSetupStatus.mockRejectedValue(new Error('network error'))
+      await importRouter()
+
+      await expect(
+        rootRouteOptions.current!.beforeLoad({
+          location: {
+            pathname: '/access-control',
+            searchStr: 'tab=roles',
+            hash: 'section',
+          },
+        }),
+      ).rejects.toMatchObject({
+        to: '/server-error',
+        search: { from: '/access-control?tab=roles#section' },
+      })
+    })
+
     it('redirects to /server-error on API error when on setup page', async () => {
       mockGetInitialSetupStatus.mockRejectedValue(new Error('network error'))
       await importRouter()

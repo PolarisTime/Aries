@@ -19,6 +19,7 @@ import {
   listPrintRecordItems,
   type PrintRecordItem,
 } from '@/api/print-template'
+import { getCustomerProjectOptions } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintOptions } from '@/hooks/useBusinessGridPrintActions'
 import type { ModuleRecord } from '@/types/module-page'
@@ -41,6 +42,7 @@ interface Props {
     template: PrintTemplateRecord,
     printOptions?: PrintOptions,
   ) => void
+  onExportPrintXlsx?: () => void
 }
 
 const SUMMARY_FIELDS = [
@@ -54,12 +56,15 @@ const SUMMARY_FIELDS = [
   'paymentNo',
 ]
 
-const COUNTERPARTY_FIELDS = [
-  'customerName',
-  'supplierName',
-  'carrierName',
-  'projectName',
+const COUNTERPARTY_FIELDS = ['customerName', 'supplierName', 'carrierName']
+
+const PROJECT_ABBR_FIELDS = [
+  'projectNameAbbr',
+  'projectAbbr',
+  'projectShortName',
+  'projectShort',
 ]
+const PROJECT_NAME_FIELDS = ['projectName']
 
 function firstText(record: ModuleRecord, keys: string[]) {
   for (const key of keys) {
@@ -78,8 +83,43 @@ function recordSummary(record: ModuleRecord) {
   return no || counterparty || String(record.id)
 }
 
+function lookupProjectNameAbbr(record: ModuleRecord) {
+  const projectName = firstText(record, PROJECT_NAME_FIELDS)
+  if (!projectName) return ''
+
+  const customerName = firstText(record, ['customerName'])
+  const options = getCustomerProjectOptions(
+    customerName ? { customerName } : {},
+  )
+  const matched = options.find(
+    (option) =>
+      String(option.projectName || option.value).trim() === projectName,
+  )
+  const value = matched?.projectNameAbbr
+  return value == null ? '' : String(value).trim()
+}
+
+function projectSummary(record?: ModuleRecord) {
+  if (!record) return ''
+  const projectNameAbbr =
+    firstText(record, PROJECT_ABBR_FIELDS) || lookupProjectNameAbbr(record)
+  const projectName = firstText(record, PROJECT_NAME_FIELDS)
+  if (projectNameAbbr && projectName)
+    return `${projectNameAbbr}（${projectName}）`
+  return projectNameAbbr || projectName
+}
+
 function isPdfTemplate(template?: PrintTemplateRecord) {
   return template?.templateType === 'PDF_FORM'
+}
+
+function templateTypeLabel(
+  template: PrintTemplateRecord | undefined,
+  t: (key: string) => string,
+) {
+  return isPdfTemplate(template)
+    ? t('system.printTemplateEditor.templateTypePdfForm')
+    : t('system.printTemplateEditor.templateTypeCoord')
 }
 
 function fieldText(value: unknown) {
@@ -102,12 +142,12 @@ export function PrintJobModal({
   open,
   moduleKey,
   moduleTitle,
-  selectedCount,
   selectedRowKeys,
   selectedRows,
   templates,
   onClose,
   onPrint,
+  onExportPrintXlsx,
 }: Props) {
   const { t } = useTranslation()
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>()
@@ -128,21 +168,25 @@ export function PrintJobModal({
   const selectedTemplate = templates.find(
     (template) => template.id === selectedTemplateId,
   )
-  const unloadedCount = Math.max(0, selectedCount - selectedRows.length)
+  const primaryRecord = selectedRows[0]
+  const primaryRecordSummary = primaryRecord ? recordSummary(primaryRecord) : ''
+  const primaryProjectSummary = projectSummary(primaryRecord)
+  const primaryHeaderSummary = [primaryRecordSummary, primaryProjectSummary]
+    .filter(Boolean)
+    .join(' / ')
   const templateOptions = useMemo(
     () =>
       templates.map((template) => ({
         label: (
           <Space size={8}>
             <span>{template.templateName}</span>
-            <Tag>{template.templateType || 'COORD'}</Tag>
+            <Tag>{templateTypeLabel(template, t)}</Tag>
           </Space>
         ),
         value: template.id,
       })),
-    [templates],
+    [t, templates],
   )
-  const visibleRows = selectedRows.slice(0, 8)
 
   useEffect(() => {
     if (!open) return
@@ -170,37 +214,47 @@ export function PrintJobModal({
     })
   }
 
+  const canExportPrintXlsx = moduleKey === 'sales-order' && onExportPrintXlsx
+
   return (
     <Modal
       destroyOnHidden
       footer={null}
       onCancel={onClose}
       open={open}
-      title={t('modules.print.jobTitle')}
-      width={840}
+      title={
+        <div className="text-center font-semibold">
+          {t('modules.print.jobTitle')}
+        </div>
+      }
+      width="92vw"
     >
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 pb-4">
-          <div>
-            <Typography.Text strong>
-              {moduleTitle || t('modules.print.currentModule')}
-            </Typography.Text>
-            <Typography.Text type="secondary" className="ml-12">
-              {t('modules.print.selectedRecords', { count: selectedCount })}
-            </Typography.Text>
+      <div className="space-y-4 text-base">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 pb-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <Typography.Text strong className="text-lg">
+                {moduleTitle || t('modules.print.currentModule')}
+              </Typography.Text>
+              {primaryHeaderSummary ? (
+                <Typography.Text className="max-w-[720px] truncate">
+                  {primaryHeaderSummary}
+                </Typography.Text>
+              ) : null}
+            </div>
           </div>
           {selectedTemplate ? (
             <Tag color={isPdfTemplate(selectedTemplate) ? 'blue' : 'green'}>
-              {selectedTemplate.templateType || 'COORD'}
+              {templateTypeLabel(selectedTemplate, t)}
             </Tag>
           ) : null}
         </div>
 
-        <div>
-          <Typography.Text strong>
+        <div className="grid grid-cols-[96px_minmax(0,520px)] items-center gap-3">
+          <Typography.Text strong className="whitespace-nowrap">
             {t('modules.print.selectTemplate')}
           </Typography.Text>
-          <div className="mt-8">
+          <div>
             {templates.length ? (
               <Select
                 className="w-full"
@@ -214,27 +268,25 @@ export function PrintJobModal({
           </div>
         </div>
 
-        <div>
-          <Typography.Text strong>
+        <div className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-3">
+          <Typography.Text strong className="whitespace-nowrap">
             {t('modules.print.printOptions')}
           </Typography.Text>
-          <div className="mt-8">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-base">
             <Checkbox
               checked={hideUnitPrice}
               onChange={(event) => setHideUnitPrice(event.target.checked)}
             >
               {t('modules.print.hideUnitPrice')}
             </Checkbox>
-            <div className="mt-8 flex flex-wrap items-center gap-2">
-              <Checkbox
-                checked={brandOverrideEnabled}
-                onChange={(event) =>
-                  setBrandOverrideEnabled(event.target.checked)
-                }
-              >
-                {t('modules.print.enableBrandOverride')}
-              </Checkbox>
-            </div>
+            <Checkbox
+              checked={brandOverrideEnabled}
+              onChange={(event) =>
+                setBrandOverrideEnabled(event.target.checked)
+              }
+            >
+              {t('modules.print.enableBrandOverride')}
+            </Checkbox>
           </div>
         </div>
 
@@ -242,16 +294,16 @@ export function PrintJobModal({
           <Typography.Text strong>
             {t('modules.print.selectedPrintItems')}
           </Typography.Text>
-          <div className="mt-8 max-h-[260px] overflow-auto rounded border border-gray-200 bg-gray-50">
+          <div className="mt-8 max-h-[320px] overflow-auto rounded border border-gray-200 bg-gray-50">
             {printItems.length ? (
               <div className="divide-y divide-gray-200">
                 {printItems.map((item, index) => (
-                  <div key={item.id} className="px-3 py-2">
+                  <div key={item.id} className="px-3 py-3">
                     <div
                       className={
                         brandOverrideEnabled
-                          ? 'grid grid-cols-[32px_minmax(80px,120px)_minmax(140px,180px)_minmax(0,1fr)] items-center gap-3'
-                          : 'grid grid-cols-[32px_minmax(96px,150px)_minmax(0,1fr)] items-center gap-3'
+                          ? 'grid min-w-[1220px] grid-cols-[44px_minmax(100px,130px)_minmax(160px,210px)_minmax(92px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
+                          : 'grid min-w-[1040px] grid-cols-[44px_minmax(120px,150px)_minmax(92px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(110px,1fr)] items-center gap-4 text-base'
                       }
                     >
                       <Typography.Text type="secondary">
@@ -263,6 +315,7 @@ export function PrintJobModal({
                       {brandOverrideEnabled ? (
                         <Input
                           maxLength={64}
+                          className="h-32 w-[168px]"
                           onChange={(event) =>
                             setBrandOverridesByItemId((prev) => ({
                               ...prev,
@@ -275,21 +328,20 @@ export function PrintJobModal({
                           value={brandOverridesByItemId[item.id] || ''}
                         />
                       ) : null}
-                      <div className="grid grid-cols-4 gap-x-3 gap-y-1">
-                        {PRINT_ITEM_FIELDS.map((field) => (
-                          <div key={field.key} className="min-w-0">
-                            <Typography.Text
-                              className="block text-xs"
-                              type="secondary"
-                            >
-                              {t(field.labelKey)}
-                            </Typography.Text>
-                            <Typography.Text className="block truncate">
-                              {fieldText(item[field.key])}
-                            </Typography.Text>
-                          </div>
-                        ))}
-                      </div>
+                      {PRINT_ITEM_FIELDS.map((field) => (
+                        <Typography.Text
+                          key={field.key}
+                          className="block truncate"
+                          title={`${t(field.labelKey)}：${fieldText(
+                            item[field.key],
+                          )}`}
+                        >
+                          <Typography.Text type="secondary">
+                            {t(field.labelKey)}：
+                          </Typography.Text>
+                          {fieldText(item[field.key])}
+                        </Typography.Text>
+                      ))}
                     </div>
                   </div>
                 ))}
@@ -302,51 +354,13 @@ export function PrintJobModal({
           </div>
         </div>
 
-        <div>
-          <Typography.Text strong>
-            {t('modules.print.selectedRecordList')}
-          </Typography.Text>
-          <div className="mt-8 rounded border border-gray-200">
-            {visibleRows.length ? (
-              <div className="divide-y divide-gray-200">
-                {visibleRows.map((record, index) => (
-                  <div
-                    key={String(record.id)}
-                    className="flex items-center justify-between gap-3 px-3 py-2"
-                  >
-                    <Typography.Text className="truncate">
-                      {recordSummary(record)}
-                    </Typography.Text>
-                    <Typography.Text type="secondary">
-                      #{index + 1}
-                    </Typography.Text>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="px-3 py-6 text-center text-gray-500">
-                {t('modules.print.onlySelectedIds')}
-              </div>
-            )}
-          </div>
-          {selectedRows.length > visibleRows.length ? (
-            <Typography.Text type="secondary" className="mt-8 block">
-              {t('modules.print.moreSelectedRows', {
-                count: selectedRows.length - visibleRows.length,
-              })}
-            </Typography.Text>
-          ) : null}
-          {unloadedCount ? (
-            <Typography.Text type="secondary" className="mt-4 block">
-              {t('modules.print.unloadedSelectedRows', {
-                count: unloadedCount,
-              })}
-            </Typography.Text>
-          ) : null}
-        </div>
-
         <div className="flex flex-wrap justify-end gap-2 border-t border-gray-200 pt-4">
           <Button onClick={onClose}>{t('common.cancel')}</Button>
+          {canExportPrintXlsx ? (
+            <Button icon={<DownloadOutlined />} onClick={onExportPrintXlsx}>
+              {t('modules.print.exportXlsx')}
+            </Button>
+          ) : null}
           {isPdfTemplate(selectedTemplate) ? (
             <Button
               disabled={!selectedTemplate}

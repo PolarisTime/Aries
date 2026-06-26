@@ -36,10 +36,12 @@ export function useBusinessGridActions({
     await refreshModuleQueries()
   }
 
-  const { handlePrintSelectedRecords } = useBusinessGridPrintActions({
-    moduleKey,
-    selectedRowKeys,
-  })
+  const { handlePrintSelectedRecords, handleExportSalesOrderPrintXlsx } =
+    useBusinessGridPrintActions({
+      moduleKey,
+      selectedRowKeys,
+      selectedRows,
+    })
 
   const {
     handleSelectedAuditRecords,
@@ -65,6 +67,7 @@ export function useBusinessGridActions({
 
   return {
     handlePrintSelectedRecords,
+    handleExportSalesOrderPrintXlsx,
     handleSelectedAuditRecords,
     handleSelectedDeleteRecords,
     handleSelectedReverseAuditRecords,

@@ -2,9 +2,13 @@ import axios from 'axios'
 import { createElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
-import { listPrintTemplates } from '@/api/print-template'
+import {
+  exportSalesOrderPrintXlsx,
+  listPrintTemplates,
+} from '@/api/print-template'
 import { PrintTemplateSelector } from '@/components/PrintTemplateSelector'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
+import type { ModuleRecord } from '@/types/module-page'
 import type {
   PrintActionMode,
   PrintTemplateRecord,
@@ -17,6 +21,7 @@ import { renderPrintTemplate } from '@/utils/print-template'
 interface Props {
   moduleKey: string
   selectedRowKeys: string[]
+  selectedRows?: ModuleRecord[]
 }
 
 export interface PrintOptions {
@@ -102,6 +107,15 @@ function normalizePdfFileName(fileName: string) {
     : `${normalized}.pdf`
 }
 
+function normalizeXlsxFileName(value: unknown) {
+  const text = value == null ? '' : String(value).trim()
+  const baseName = text || 'sales-order-print'
+  const safeName = baseName.replace(/[\\/:*?"<>|]/g, '_')
+  return safeName.toLowerCase().endsWith('.xlsx')
+    ? safeName
+    : `${safeName}.xlsx`
+}
+
 async function normalizePdfError(err: unknown, fallbackMessage: string) {
   if (!axios.isAxiosError(err)) {
     return err instanceof Error ? err.message : fallbackMessage
@@ -166,8 +180,38 @@ async function pickPrintTemplate(
 export function useBusinessGridPrintActions({
   moduleKey,
   selectedRowKeys,
+  selectedRows = [],
 }: Props) {
   const { t } = useTranslation()
+
+  const handleExportSalesOrderPrintXlsx = async () => {
+    if (moduleKey !== 'sales-order') return
+
+    if (!selectedRowKeys.length) {
+      message.warning(t('common.pleaseSelect'))
+      return
+    }
+
+    if (selectedRowKeys.length > 1) {
+      message.warning(t('hooks.printActions.singleRecordOnly'))
+      return
+    }
+
+    try {
+      const recordId = selectedRowKeys[0]
+      const blob = await exportSalesOrderPrintXlsx(recordId)
+      const selectedRow = selectedRows.find((row) => String(row.id) === recordId)
+      downloadBlob(
+        blob,
+        normalizeXlsxFileName(selectedRow?.orderNo || recordId),
+      )
+    } catch (err) {
+      message.error(
+        await normalizePdfError(err, t('hooks.printActions.exportXlsxFailed')),
+      )
+    }
+  }
+
   const handlePrintSelectedRecords = async (
     mode: PrintActionMode,
     selectedTemplate?: PrintTemplateRecord,
@@ -175,6 +219,11 @@ export function useBusinessGridPrintActions({
   ) => {
     if (!selectedRowKeys.length) {
       message.warning(t('common.pleaseSelect'))
+      return
+    }
+
+    if (selectedRowKeys.length > 1) {
+      message.warning(t('hooks.printActions.singleRecordOnly'))
       return
     }
 
@@ -275,5 +324,5 @@ export function useBusinessGridPrintActions({
     }
   }
 
-  return { handlePrintSelectedRecords }
+  return { handlePrintSelectedRecords, handleExportSalesOrderPrintXlsx }
 }

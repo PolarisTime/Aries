@@ -12,6 +12,7 @@ import type {
   PrintActionMode,
   PrintTemplateRecord,
 } from '@/types/print-template'
+import { message } from '@/utils/antd-app'
 import { PrintJobModal } from '@/views/modules/components/PrintJobModal'
 
 interface Props {
@@ -27,6 +28,7 @@ interface Props {
     template?: PrintTemplateRecord,
     printOptions?: PrintOptions,
   ) => void
+  onExportPrintXlsx?: () => void
 }
 
 export function PrintTemplateDropdown({
@@ -38,6 +40,7 @@ export function PrintTemplateDropdown({
   disabled,
   loading,
   onPrint,
+  onExportPrintXlsx,
 }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -67,13 +70,21 @@ export function PrintTemplateDropdown({
     onPrint(mode, template, printOptions)
   }
 
+  const handleOpen = () => {
+    if (selectedRowKeys.length > 1) {
+      message.warning(t('hooks.printActions.singleRecordOnly'))
+      return
+    }
+    setOpen(true)
+  }
+
   return (
     <>
       <Button
         disabled={disabled}
         icon={<PrinterOutlined />}
         loading={loading}
-        onClick={() => setOpen(true)}
+        onClick={handleOpen}
       >
         {t('modules.print.print')}
       </Button>
@@ -81,6 +92,7 @@ export function PrintTemplateDropdown({
         moduleKey={moduleKey}
         moduleTitle={moduleTitle || printTemplateTargetMap[moduleKey]}
         onClose={() => setOpen(false)}
+        onExportPrintXlsx={onExportPrintXlsx}
         onPrint={handlePrint}
         open={open}
         selectedCount={selectedCount}

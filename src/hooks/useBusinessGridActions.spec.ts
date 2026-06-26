@@ -90,6 +90,7 @@ describe('useBusinessGridActions', () => {
     expect(useBusinessGridPrintActionsMock).toHaveBeenCalledWith({
       moduleKey: 'sales-order',
       selectedRowKeys: ['1', '2'],
+      selectedRows: [{ id: '1' }, { id: '2' }],
     })
   })
 

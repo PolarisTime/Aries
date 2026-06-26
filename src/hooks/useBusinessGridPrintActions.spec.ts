@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   httpMock,
   assertApiSuccessMock,
+  exportSalesOrderPrintXlsxMock,
   listPrintTemplatesMock,
   messageWarningMock,
   messageErrorMock,
@@ -17,6 +18,7 @@ const {
 } = vi.hoisted(() => ({
   httpMock: { post: vi.fn() },
   assertApiSuccessMock: vi.fn(),
+  exportSalesOrderPrintXlsxMock: vi.fn(),
   listPrintTemplatesMock: vi.fn(),
   messageWarningMock: vi.fn(),
   messageErrorMock: vi.fn(),
@@ -37,6 +39,7 @@ vi.mock('@/api/client', () => ({
 }))
 
 vi.mock('@/api/print-template', () => ({
+  exportSalesOrderPrintXlsx: exportSalesOrderPrintXlsxMock,
   listPrintTemplates: listPrintTemplatesMock,
 }))
 
@@ -79,6 +82,7 @@ describe('useBusinessGridPrintActions', () => {
       useBusinessGridPrintActions({
         moduleKey: 'sales-order',
         selectedRowKeys: ['1'],
+        selectedRows: [{ id: '1', orderNo: 'SO/001' }],
       }),
     )
     expect(result.current.handlePrintSelectedRecords).toBeDefined()
@@ -95,6 +99,83 @@ describe('useBusinessGridPrintActions', () => {
       await result.current.handlePrintSelectedRecords('print')
     })
     expect(messageWarningMock).toHaveBeenCalledWith('common.pleaseSelect')
+  })
+
+  it('exports sales order print xlsx for a single selected row', async () => {
+    const blob = new Blob(['xlsx'])
+    exportSalesOrderPrintXlsxMock.mockResolvedValue(blob)
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+        selectedRows: [{ id: '1', orderNo: 'SO/001' }],
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleExportSalesOrderPrintXlsx()
+    })
+
+    expect(exportSalesOrderPrintXlsxMock).toHaveBeenCalledWith('1')
+    expect(downloadBlobMock).toHaveBeenCalledWith(blob, 'SO_001.xlsx')
+  })
+
+  it('does not export print xlsx for non-sales-order modules', async () => {
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'purchase-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleExportSalesOrderPrintXlsx()
+    })
+
+    expect(exportSalesOrderPrintXlsxMock).not.toHaveBeenCalled()
+  })
+
+  it('shows warning when exporting print xlsx with multiple selected rows', async () => {
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1', '2'],
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleExportSalesOrderPrintXlsx()
+    })
+
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.singleRecordOnly',
+    )
+    expect(exportSalesOrderPrintXlsxMock).not.toHaveBeenCalled()
+  })
+
+  it('shows warning when multiple rows selected', async () => {
+    const template = {
+      id: 'template-1',
+      templateName: 'Test Template',
+      templateHtml: 'LODOP.PRINT_INIT("{{name}}");',
+      templateType: 'COORD',
+    }
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1', '2'],
+      }),
+    )
+    await act(async () => {
+      await result.current.handlePrintSelectedRecords('print', template)
+    })
+
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.singleRecordOnly',
+    )
+    expect(httpMock.post).not.toHaveBeenCalled()
   })
 
   it('shows warning when no template configured', async () => {
@@ -218,7 +299,7 @@ describe('useBusinessGridPrintActions', () => {
     })
   })
 
-  it('handles multiple selected rows', async () => {
+  it('blocks multiple selected rows', async () => {
     const template = {
       id: 'template-1',
       templateName: 'Test Template',
@@ -244,7 +325,10 @@ describe('useBusinessGridPrintActions', () => {
       await result.current.handlePrintSelectedRecords('print', template)
     })
 
-    expect(httpMock.post).toHaveBeenCalledTimes(3)
+    expect(httpMock.post).not.toHaveBeenCalled()
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.singleRecordOnly',
+    )
   })
 
   it('shows error message on failure', async () => {

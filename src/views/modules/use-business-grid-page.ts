@@ -196,6 +196,7 @@ export function useBusinessGridPage({
 
   const {
     handlePrintSelectedRecords,
+    handleExportSalesOrderPrintXlsx,
     handleSelectedAuditRecords,
     handleSelectedDeleteRecords,
     handleSelectedReverseAuditRecords,
@@ -343,5 +344,6 @@ export function useBusinessGridPage({
     closeEditor,
     canUseBulkPrintActions,
     handlePrintSelectedRecords,
+    handleExportSalesOrderPrintXlsx,
   }
 }
