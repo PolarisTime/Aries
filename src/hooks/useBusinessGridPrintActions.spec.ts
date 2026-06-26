@@ -122,9 +122,11 @@ describe('useBusinessGridPrintActions', () => {
     })
 
     expect(exportSalesOrderPrintXlsxMock).toHaveBeenCalledWith('1', {
-      hideUnitPrice: true,
-      hideRemark: true,
-      brandOverridesByItemId: { '1': '抚新' },
+      printOptions: {
+        hideUnitPrice: true,
+        hideRemark: true,
+        brandOverridesByItemId: { '1': '抚新' },
+      },
     })
     expect(downloadBlobMock).toHaveBeenCalledWith(blob, 'SO_001.xlsx')
   })

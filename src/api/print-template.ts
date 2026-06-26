@@ -30,10 +30,12 @@ export interface PrintRecordItem {
 export interface SalesOrderPrintXlsxOptions {
   hideUnitPrice?: boolean
   hideRemark?: boolean
-  brandOverride?: string
-  brandOverrides?: Record<string, string>
   brandOverridesByItemId?: Record<string, string>
   itemOrder?: string[]
+}
+
+export interface ExportSalesOrderPrintXlsxPayload {
+  printOptions?: SalesOrderPrintXlsxOptions
 }
 
 function defaultEngineForTemplateType(
@@ -69,11 +71,11 @@ export function listPrintRecordItems(moduleKey: string, recordIds: string[]) {
 
 export function exportSalesOrderPrintXlsx(
   recordId: string,
-  printOptions?: SalesOrderPrintXlsxOptions,
+  payload: ExportSalesOrderPrintXlsxPayload = {},
 ) {
   return http.post<Blob>(
     `/sales-orders/${encodeURIComponent(recordId)}/print-xlsx`,
-    printOptions ? { printOptions } : {},
+    payload,
     {
       responseType: 'blob',
     },

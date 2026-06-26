@@ -90,10 +90,12 @@ describe('print-template', () => {
       httpPostMock.mockResolvedValue(blob)
 
       const result = await exportSalesOrderPrintXlsx('id/1', {
-        hideUnitPrice: true,
-        hideRemark: true,
-        brandOverridesByItemId: { '11': '抚新' },
-        itemOrder: ['12', '11'],
+        printOptions: {
+          hideUnitPrice: true,
+          hideRemark: true,
+          brandOverridesByItemId: { '11': '抚新' },
+          itemOrder: ['12', '11'],
+        },
       })
 
       expect(httpPostMock).toHaveBeenCalledWith(
@@ -106,6 +108,22 @@ describe('print-template', () => {
             itemOrder: ['12', '11'],
           },
         },
+        {
+          responseType: 'blob',
+        },
+      )
+      expect(result).toBe(blob)
+    })
+
+    it('sends empty payload when print options are omitted', async () => {
+      const blob = new Blob(['xlsx'])
+      httpPostMock.mockResolvedValue(blob)
+
+      const result = await exportSalesOrderPrintXlsx('1')
+
+      expect(httpPostMock).toHaveBeenCalledWith(
+        '/sales-orders/1/print-xlsx',
+        {},
         {
           responseType: 'blob',
         },

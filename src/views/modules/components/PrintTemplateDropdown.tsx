@@ -3,10 +3,13 @@ import { useQuery } from '@tanstack/react-query'
 import Button from 'antd/es/button'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { listPrintTemplates } from '@/api/print-template'
+import {
+  listPrintTemplates,
+  type SalesOrderPrintXlsxOptions,
+} from '@/api/print-template'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import type { PrintOptions } from '@/hooks/useBusinessGridPrintActions'
+import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
 import type { ModuleRecord } from '@/types/module-page'
 import type {
   PrintActionMode,
@@ -26,9 +29,9 @@ interface Props {
   onPrint: (
     mode: PrintActionMode,
     template?: PrintTemplateRecord,
-    printOptions?: PrintOptions,
+    printOptions?: PrintRenderOptions,
   ) => void
-  onExportPrintXlsx?: (printOptions?: PrintOptions) => void
+  onExportPrintXlsx?: (printOptions?: SalesOrderPrintXlsxOptions) => void
 }
 
 export function PrintTemplateDropdown({
@@ -65,7 +68,7 @@ export function PrintTemplateDropdown({
   const handlePrint = (
     mode: PrintActionMode,
     template: PrintTemplateRecord,
-    printOptions?: PrintOptions,
+    printOptions?: PrintRenderOptions,
   ) => {
     onPrint(mode, template, printOptions)
   }

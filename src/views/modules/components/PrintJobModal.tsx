@@ -35,11 +35,12 @@ import { useTranslation } from 'react-i18next'
 import {
   listPrintRecordItems,
   type PrintRecordItem,
+  type SalesOrderPrintXlsxOptions,
 } from '@/api/print-template'
 import { getCustomerProjectOptions } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { shouldDisplayPieceWeightAsDash } from '@/module-system/module-line-item-display'
-import type { PrintOptions } from '@/hooks/useBusinessGridPrintActions'
+import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
 import type { ModuleRecord } from '@/types/module-page'
 import type {
   PrintActionMode,
@@ -60,9 +61,9 @@ interface Props {
   onPrint: (
     mode: PrintActionMode,
     template: PrintTemplateRecord,
-    printOptions?: PrintOptions,
+    printOptions?: PrintRenderOptions,
   ) => void
-  onExportPrintXlsx?: (printOptions?: PrintOptions) => void
+  onExportPrintXlsx?: (printOptions?: SalesOrderPrintXlsxOptions) => void
 }
 
 const SUMMARY_FIELDS = [
@@ -379,24 +380,49 @@ export function PrintJobModal({
       .filter((item): item is PrintRecordItem => Boolean(item))
   }, [orderedPrintItemIds, printItems])
 
-  const currentPrintOptions = () => {
+  const currentItemOrder = () =>
+    orderedPrintItems.length
+      ? orderedPrintItems.map((item) => item.id)
+      : undefined
+
+  const currentBrandOverridesByItemId = () => {
     const normalizedBrandOverridesByItemId = Object.fromEntries(
       Object.entries(brandOverridesByItemId)
         .map(([itemId, value]) => [itemId, value.trim()])
         .filter(([, value]) => value),
     )
+    return brandOverrideEnabled &&
+      Object.keys(normalizedBrandOverridesByItemId).length
+      ? normalizedBrandOverridesByItemId
+      : undefined
+  }
+
+  const currentPrintRenderOptions = (): PrintRenderOptions => {
+    const itemOrder = currentItemOrder()
+    const normalizedBrandOverridesByItemId = currentBrandOverridesByItemId()
     return {
       hideUnitPrice,
       hideRemark,
-      ...(orderedPrintItems.length
-        ? { itemOrder: orderedPrintItems.map((item) => item.id) }
-        : {}),
-      ...(brandOverrideEnabled &&
-      Object.keys(normalizedBrandOverridesByItemId).length
+      ...(itemOrder ? { itemOrder } : {}),
+      ...(normalizedBrandOverridesByItemId
         ? { brandOverridesByItemId: normalizedBrandOverridesByItemId }
         : {}),
     }
   }
+
+  const currentSalesOrderPrintXlsxOptions =
+    (): SalesOrderPrintXlsxOptions => {
+      const itemOrder = currentItemOrder()
+      const normalizedBrandOverridesByItemId = currentBrandOverridesByItemId()
+      return {
+        hideUnitPrice,
+        hideRemark,
+        ...(itemOrder ? { itemOrder } : {}),
+        ...(normalizedBrandOverridesByItemId
+          ? { brandOverridesByItemId: normalizedBrandOverridesByItemId }
+          : {}),
+      }
+    }
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -421,11 +447,11 @@ export function PrintJobModal({
 
   const handlePrint = (mode: PrintActionMode) => {
     if (!selectedTemplate) return
-    onPrint(mode, selectedTemplate, currentPrintOptions())
+    onPrint(mode, selectedTemplate, currentPrintRenderOptions())
   }
 
   const handleExportPrintXlsx = () => {
-    onExportPrintXlsx?.(currentPrintOptions())
+    onExportPrintXlsx?.(currentSalesOrderPrintXlsxOptions())
   }
 
   const canExportPrintXlsx = moduleKey === 'sales-order' && onExportPrintXlsx
