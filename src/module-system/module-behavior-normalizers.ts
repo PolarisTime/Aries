@@ -1,3 +1,4 @@
+import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 import { collectUniqueSourceNos } from '@/module-system/module-behavior-registry-utils'
 import type { ModuleRecord } from '@/types/module-page'
@@ -39,7 +40,7 @@ registerModuleBehavior('freight-bill', {
       record.projectName = projectNames[0]
     }
     record.totalWeight = Number(
-      ctx.sumLineItemsBy(items, 'weightTon').toFixed(3),
+      ctx.sumLineItemsBy(items, 'weightTon').toFixed(INTERNAL_WEIGHT_PRECISION),
     )
     record.totalFreight = Number(
       (Number(record.unitPrice || 0) * Number(record.totalWeight || 0)).toFixed(
@@ -57,7 +58,9 @@ registerModuleBehavior('freight-statement', {
     }
     if (items.length) {
       record.totalWeight = Number(
-        ctx.sumLineItemsBy(items, 'weightTon').toFixed(3),
+        ctx
+          .sumLineItemsBy(items, 'weightTon')
+          .toFixed(INTERNAL_WEIGHT_PRECISION),
       )
       const sourceFreightMap = new Map<string, number>()
       const sourceBillDates: string[] = []

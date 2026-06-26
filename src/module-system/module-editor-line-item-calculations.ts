@@ -1,5 +1,6 @@
 import type { ModuleLineItem } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
+import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import { toRoundedNumber } from './module-editor-shared'
 
 function calculateAveragePieceWeightTon(quantity: unknown, weightTon: unknown) {
@@ -12,14 +13,20 @@ function calculateAveragePieceWeightTon(quantity: unknown, weightTon: unknown) {
   ) {
     return 0
   }
-  return toRoundedNumber(numericWeightTon / numericQuantity + Number.EPSILON, 3)
+  return toRoundedNumber(
+    numericWeightTon / numericQuantity + Number.EPSILON,
+    INTERNAL_WEIGHT_PRECISION,
+  )
 }
 
 function calculateWeightByPieceWeightTon(
   quantity: unknown,
   pieceWeightTon: unknown,
 ) {
-  return toRoundedNumber(Number(quantity || 0) * Number(pieceWeightTon || 0), 3)
+  return toRoundedNumber(
+    Number(quantity || 0) * Number(pieceWeightTon || 0),
+    INTERNAL_WEIGHT_PRECISION,
+  )
 }
 
 function resolveTheoreticalWeightTon(item: ModuleLineItem) {
@@ -41,7 +48,7 @@ function resolveTheoreticalWeightTon(item: ModuleLineItem) {
     ) {
       return toRoundedNumber(
         Number(item.weightTon || 0) - weightAdjustmentTon,
-        3,
+        INTERNAL_WEIGHT_PRECISION,
       )
     }
   }
@@ -85,7 +92,10 @@ function resolveSourceInboundResidualWeightTon(
   )
   return Math.max(
     0,
-    toRoundedNumber(sourceWeighWeightTon - allocatedWeightTon, 3),
+    toRoundedNumber(
+      sourceWeighWeightTon - allocatedWeightTon,
+      INTERNAL_WEIGHT_PRECISION,
+    ),
   )
 }
 
@@ -166,7 +176,7 @@ export function recalculateEditorLineItem(
       item.weightTon !== null &&
       item.weightTon !== ''
     if (hasWeightTon) {
-      item.weightTon = toRoundedNumber(item.weightTon, 3)
+      item.weightTon = toRoundedNumber(item.weightTon, INTERNAL_WEIGHT_PRECISION)
       item.weighWeightTon = item.weightTon
       item.pieceWeightTon = calculateAveragePieceWeightTon(
         item.quantity,
@@ -210,7 +220,7 @@ export function recalculateEditorLineItem(
   ) {
     item.weightAdjustmentTon = toRoundedNumber(
       Number(item.weightTon || 0) - theoreticalWeightTon,
-      3,
+      INTERNAL_WEIGHT_PRECISION,
     )
     item.weightAdjustmentAmount = toRoundedNumber(
       Number(item.weightAdjustmentTon || 0) * Number(item.unitPrice || 0),

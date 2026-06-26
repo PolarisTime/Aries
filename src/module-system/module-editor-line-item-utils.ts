@@ -1,4 +1,5 @@
 import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
+import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
@@ -138,7 +139,10 @@ export function applyMaterialToEditorLineItem(
     item.batchNo = generatePlaceholderBatchNo()
   }
   item.quantityUnit = inferQuantityUnit(materialRecord)
-  item.pieceWeightTon = toRoundedNumber(materialRecord.pieceWeightTon || 0, 3)
+  item.pieceWeightTon = toRoundedNumber(
+    materialRecord.pieceWeightTon || 0,
+    INTERNAL_WEIGHT_PRECISION,
+  )
   item.piecesPerBundle = toRoundedNumber(materialRecord.piecesPerBundle || 0, 0)
   item.unitPrice = toRoundedNumber(materialRecord.unitPrice || 0, 2)
   item.settlementMode = isPurchaseWeighRequiredCategory(item.category)
@@ -173,7 +177,7 @@ export function getEditorItemPrecision(columnKey: string) {
       'weightAdjustmentTon',
     ].includes(columnKey)
   ) {
-    return 3
+    return INTERNAL_WEIGHT_PRECISION
   }
   if (['unitPrice', 'amount', 'weightAdjustmentAmount'].includes(columnKey)) {
     return 2

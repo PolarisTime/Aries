@@ -1,4 +1,5 @@
 import dayjs, { type Dayjs } from 'dayjs'
+import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 
 const DATE_FORMAT = 'YYYY-MM-DD'
 const DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'
@@ -21,7 +22,7 @@ export function formatAmount(value: number): string {
  * 格式化重量（保留3位小数）
  */
 export function formatWeight(value: number): string {
-  return value.toFixed(3)
+  return value.toFixed(DISPLAY_WEIGHT_PRECISION)
 }
 
 /**

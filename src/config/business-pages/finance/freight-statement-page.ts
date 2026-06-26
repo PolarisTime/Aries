@@ -1,5 +1,6 @@
 import i18next from 'i18next'
 import { getCarrierOptions } from '@/constants/module-options'
+import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import {
@@ -241,7 +242,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'number',
       required: true,
       min: 0,
-      precision: 3,
+      precision: INTERNAL_WEIGHT_PRECISION,
       defaultValue: 0,
       row: 2,
     },

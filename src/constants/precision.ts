@@ -1,0 +1,2 @@
+export const INTERNAL_WEIGHT_PRECISION = 8
+export const DISPLAY_WEIGHT_PRECISION = 3

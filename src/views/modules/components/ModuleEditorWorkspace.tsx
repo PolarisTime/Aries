@@ -12,6 +12,7 @@ import Space from 'antd/es/space'
 import Table from 'antd/es/table'
 import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
+import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
@@ -370,7 +371,8 @@ function SaveResultOverlay({
       title: t('modules.itemColumns.weightTon'),
       dataIndex: 'weightTon',
       align: 'center' as const,
-      render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-'),
+      render: (v: unknown) =>
+        v != null ? Number(v).toFixed(DISPLAY_WEIGHT_PRECISION) : '-',
     },
   ]
   const financeItemColumns = [
@@ -418,7 +420,8 @@ function SaveResultOverlay({
       title: t('modules.itemColumns.weightTon'),
       dataIndex: 'weightTon',
       align: 'center' as const,
-      render: (v: unknown) => (v != null ? Number(v).toFixed(3) : '-'),
+      render: (v: unknown) =>
+        v != null ? Number(v).toFixed(DISPLAY_WEIGHT_PRECISION) : '-',
     },
   ]
   const itemColumns =

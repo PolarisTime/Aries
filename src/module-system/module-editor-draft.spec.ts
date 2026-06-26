@@ -91,7 +91,7 @@ describe('normalizeDraftRecordForModule', () => {
       sumLineItemsBy,
     })
 
-    expect(record.totalWeight).toBe(30.691)
+    expect(record.totalWeight).toBe(30.6912)
     expect(record.totalAmount).toBe(1500)
   })
 

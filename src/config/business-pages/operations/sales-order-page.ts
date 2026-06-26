@@ -6,6 +6,10 @@ import {
   getCustomerOptions,
   getCustomerProjectOptions,
 } from '@/constants/module-options'
+import {
+  DISPLAY_WEIGHT_PRECISION,
+  INTERNAL_WEIGHT_PRECISION,
+} from '@/constants/precision'
 import type { ModulePageConfig } from '@/types/module-page'
 import {
   BILL_STATUS_LABEL,
@@ -111,7 +115,9 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       render: (value, record) => {
         const fmt = (v: unknown) => {
           const n = Number(v)
-          return Number.isFinite(n) ? n.toFixed(3).replace(/\.?0+$/, '') : '-'
+          return Number.isFinite(n)
+            ? n.toFixed(DISPLAY_WEIGHT_PRECISION).replace(/\.?0+$/, '')
+            : '-'
         }
         const hasOverwritten = (record.items || []).some(
           (item: Record<string, unknown>) =>
@@ -293,7 +299,11 @@ export const salesOrdersPageConfig: ModulePageConfig = {
               )
               const rawPieceWeightTon =
                 rawTotalQuantity > 0 && rawTotalWeightTon > 0
-                  ? Number((rawTotalWeightTon / rawTotalQuantity).toFixed(3))
+                  ? Number(
+                      (rawTotalWeightTon / rawTotalQuantity).toFixed(
+                        INTERNAL_WEIGHT_PRECISION,
+                      ),
+                    )
                   : Number(item.pieceWeightTon || 0)
               const rawUnitPrice = Number(item.unitPrice || 0)
               const remainingQuantity = Number.isFinite(rawRemainingQuantity)
@@ -305,12 +315,20 @@ export const salesOrdersPageConfig: ModulePageConfig = {
               const unitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0
               const remainingWeightTon =
                 rawRemainingWeightTon > 0
-                  ? Number(rawRemainingWeightTon.toFixed(3))
+                  ? Number(
+                      rawRemainingWeightTon.toFixed(INTERNAL_WEIGHT_PRECISION),
+                    )
                   : rawTotalQuantity > 0 &&
                       rawTotalWeightTon > 0 &&
                       remainingQuantity === rawTotalQuantity
-                    ? Number(rawTotalWeightTon.toFixed(3))
-                    : Number((remainingQuantity * pieceWeightTon).toFixed(3))
+                    ? Number(
+                        rawTotalWeightTon.toFixed(INTERNAL_WEIGHT_PRECISION),
+                      )
+                    : Number(
+                        (remainingQuantity * pieceWeightTon).toFixed(
+                          INTERNAL_WEIGHT_PRECISION,
+                        ),
+                      )
               return {
                 ...item,
                 sourcePurchaseOrderItemId: item.id,

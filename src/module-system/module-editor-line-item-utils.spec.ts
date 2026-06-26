@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import {
   applyMaterialToEditorLineItem,
   getEditorItemMin,
@@ -22,9 +23,11 @@ describe('isNumberEditorColumn', () => {
 })
 
 describe('getEditorItemPrecision', () => {
-  it('returns 3 for weight columns', () => {
-    expect(getEditorItemPrecision('weightTon')).toBe(3)
-    expect(getEditorItemPrecision('pieceWeightTon')).toBe(3)
+  it('returns internal precision for weight columns', () => {
+    expect(getEditorItemPrecision('weightTon')).toBe(INTERNAL_WEIGHT_PRECISION)
+    expect(getEditorItemPrecision('pieceWeightTon')).toBe(
+      INTERNAL_WEIGHT_PRECISION,
+    )
   })
 
   it('returns 2 for price/amount columns', () => {
@@ -457,5 +460,29 @@ describe('applyMaterialToEditorLineItem', () => {
     expect(result.pieceWeightTon).toBe(0.5)
     expect(result.piecesPerBundle).toBe(10)
     expect(result.unitPrice).toBe(200)
+  })
+
+  it('keeps high precision piece weight when applying material', () => {
+    const item = {
+      id: '1',
+      quantity: 1,
+      pieceWeightTon: 0,
+      weightTon: 0,
+      unitPrice: 0,
+      amount: 0,
+    } as any
+    const material = {
+      brand: 'A',
+      category: 'B',
+      material: 'C',
+      spec: 'D',
+      length: 'E',
+      pieceWeightTon: 0.005555,
+    }
+
+    const result = applyMaterialToEditorLineItem(item, material)
+
+    expect(result.pieceWeightTon).toBe(0.005555)
+    expect(result.weightTon).toBe(0.005555)
   })
 })
