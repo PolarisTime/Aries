@@ -57,6 +57,15 @@ export function listPrintRecordItems(moduleKey: string, recordIds: string[]) {
   })
 }
 
+export function exportSalesOrderPrintXlsx(recordId: string) {
+  return http.get<Blob>(
+    `/sales-orders/${encodeURIComponent(recordId)}/print-xlsx`,
+    {
+      responseType: 'blob',
+    },
+  )
+}
+
 export function savePrintTemplate(payload: SavePrintTemplatePayload) {
   const templateType = payload.templateType || 'COORD'
   const requestBody = {

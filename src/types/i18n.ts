@@ -805,6 +805,7 @@ export interface MessageSchema {
       selectedRecords: string
       selectTemplate: string
       printOptions: string
+      exportXlsx: string
       hideUnitPrice: string
       enableBrandOverride: string
       brandOverrideTo: string
@@ -820,6 +821,7 @@ export interface MessageSchema {
       itemWeight: string
       itemUnitPrice: string
       itemAmount: string
+      project: string
       selectedRecordList: string
       onlySelectedIds: string
       moreSelectedRows: string
@@ -1726,10 +1728,12 @@ export interface MessageSchema {
       selectPrintTemplate: string
       noPrintTemplateConfigured: string
       noPrintableRecords: string
+      singleRecordOnly: string
       printScriptGenerationFailed: string
       printServiceUnavailable: string
       noPrintContent: string
       printFailed: string
+      exportXlsxFailed: string
     }
     freightActions: {
       noFreightData: string

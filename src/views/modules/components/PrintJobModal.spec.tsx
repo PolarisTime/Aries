@@ -9,8 +9,14 @@ vi.mock('@tanstack/react-query', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>) =>
-      params?.count == null ? key : `${key}:${params.count}`,
+    t: (key: string, params?: Record<string, unknown>) => {
+      const map: Record<string, string> = {
+        'system.printTemplateEditor.templateTypeCoord': '坐标套打',
+        'system.printTemplateEditor.templateTypePdfForm': 'PDF 表单',
+      }
+      const text = map[key] ?? key
+      return params?.count == null ? text : `${text}:${params.count}`
+    },
   }),
 }))
 
@@ -43,9 +49,10 @@ vi.mock('antd/es/empty', () => ({
 }))
 
 vi.mock('antd/es/input', () => ({
-  default: ({ disabled, onChange, placeholder, value }: any) => (
+  default: ({ className, disabled, onChange, placeholder, value }: any) => (
     <input
       aria-label={placeholder}
+      className={className}
       disabled={disabled}
       onChange={(event) => onChange(event)}
       value={value}
@@ -54,10 +61,10 @@ vi.mock('antd/es/input', () => ({
 }))
 
 vi.mock('antd/es/modal', () => ({
-  default: ({ children, open, title }: any) =>
+  default: ({ children, open, title, width }: any) =>
     open ? (
-      <div data-testid="print-job-modal">
-        <h2>{title}</h2>
+      <div data-testid="print-job-modal" data-width={width}>
+        <h2 data-testid="print-job-title">{title}</h2>
         {children}
       </div>
     ) : null,
@@ -72,7 +79,7 @@ vi.mock('antd/es/select', () => ({
     >
       {options.map((option: any) => (
         <option key={option.value} value={option.value}>
-          {option.value}
+          {option.label}
         </option>
       ))}
     </select>
@@ -89,7 +96,9 @@ vi.mock('antd/es/tag', () => ({
 
 vi.mock('antd/es/typography', () => ({
   default: {
-    Text: ({ children }: any) => <span>{children}</span>,
+    Text: ({ children, className }: any) => (
+      <span className={className}>{children}</span>
+    ),
   },
 }))
 
@@ -103,6 +112,12 @@ vi.mock('@/api/print-template', () => ({
   listPrintRecordBrands: vi.fn(),
   listPrintRecordItems: vi.fn(),
 }))
+
+vi.mock('@/constants/module-options', () => ({
+  getCustomerProjectOptions: vi.fn(() => []),
+}))
+
+import { getCustomerProjectOptions } from '@/constants/module-options'
 
 const coordTemplate = {
   id: 'tpl-coord',
@@ -122,6 +137,7 @@ describe('PrintJobModal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useQuery).mockReturnValue({ data: [] } as never)
+    vi.mocked(getCustomerProjectOptions).mockReturnValue([])
   })
 
   it('renders selected records and triggers preview', () => {
@@ -142,9 +158,18 @@ describe('PrintJobModal', () => {
       />,
     )
 
-    expect(screen.getByText('modules.print.jobTitle')).toBeTruthy()
+    expect(screen.getByTestId('print-job-title')).toHaveTextContent(
+      'modules.print.jobTitle',
+    )
+    expect(screen.getByTestId('print-job-modal')).toHaveAttribute(
+      'data-width',
+      '92vw',
+    )
     expect(screen.getByText('销售订单')).toBeTruthy()
     expect(screen.getByText('SO-001 / 客户甲')).toBeTruthy()
+    expect(screen.queryByText('modules.print.selectedRecords:1')).toBeNull()
+    expect(screen.queryByText('modules.print.selectedRecordList')).toBeNull()
+    expect(screen.getAllByText('坐标套打').length).toBeGreaterThan(0)
 
     fireEvent.click(screen.getByText('modules.print.preview'))
 
@@ -152,6 +177,78 @@ describe('PrintJobModal', () => {
       hideUnitPrice: false,
     })
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('shows selected project summary in modal header', () => {
+    render(
+      <PrintJobModal
+        moduleTitle="销售订单"
+        onClose={vi.fn()}
+        onPrint={vi.fn()}
+        open
+        moduleKey="sales-order"
+        selectedCount={1}
+        selectedRowKeys={['1']}
+        selectedRows={[
+          {
+            id: '1',
+            orderNo: 'SO-001',
+            customerName: '客户甲',
+            projectNameAbbr: '绿建',
+            projectName: '浙江大东吴杭萧绿建科技有限公司',
+          },
+        ]}
+        templates={[coordTemplate]}
+      />,
+    )
+
+    const summary = screen.getByText(
+      'SO-001 / 客户甲 / 绿建（浙江大东吴杭萧绿建科技有限公司）',
+    )
+    expect(summary).toBeTruthy()
+    expect(screen.queryByText(/modules\.print\.project：/)).toBeNull()
+  })
+
+  it('fills project abbreviation from customer project options', () => {
+    vi.mocked(getCustomerProjectOptions).mockReturnValue([
+      {
+        value: '浙江大东吴杭萧绿建科技有限公司',
+        label: '绿建（浙江大东吴杭萧绿建科技有限公司）',
+        customerName: '客户甲',
+        projectName: '浙江大东吴杭萧绿建科技有限公司',
+        projectNameAbbr: '绿建',
+      },
+    ])
+
+    render(
+      <PrintJobModal
+        moduleTitle="销售订单"
+        onClose={vi.fn()}
+        onPrint={vi.fn()}
+        open
+        moduleKey="sales-order"
+        selectedCount={1}
+        selectedRowKeys={['1']}
+        selectedRows={[
+          {
+            id: '1',
+            orderNo: 'SO-001',
+            customerName: '客户甲',
+            projectName: '浙江大东吴杭萧绿建科技有限公司',
+          },
+        ]}
+        templates={[coordTemplate]}
+      />,
+    )
+
+    expect(getCustomerProjectOptions).toHaveBeenCalledWith({
+      customerName: '客户甲',
+    })
+    expect(
+      screen.getByText(
+        'SO-001 / 客户甲 / 绿建（浙江大东吴杭萧绿建科技有限公司）',
+      ),
+    ).toBeTruthy()
   })
 
   it('passes hide unit price option', () => {
@@ -212,6 +309,7 @@ describe('PrintJobModal', () => {
     )
 
     expect(screen.getByText('抚顺新钢')).toBeTruthy()
+    expect(screen.getByText('modules.print.itemCategory：')).toBeTruthy()
     expect(screen.getByText('螺纹钢')).toBeTruthy()
     expect(screen.getByText('HRB400E')).toBeTruthy()
     expect(screen.getByText('Ф18')).toBeTruthy()
@@ -268,6 +366,9 @@ describe('PrintJobModal', () => {
 
     fireEvent.click(screen.getByLabelText('modules.print.enableBrandOverride'))
     expect(screen.getAllByText('抚顺新钢')).toHaveLength(2)
+    expect(
+      screen.getAllByLabelText('modules.print.brandOverridePlaceholder')[0],
+    ).toHaveClass('h-32')
     fireEvent.change(
       screen.getAllByLabelText('modules.print.brandOverridePlaceholder')[0],
       {
@@ -374,6 +475,46 @@ describe('PrintJobModal', () => {
     })
   })
 
+  it('shows sales order print xlsx export action', () => {
+    const onExportPrintXlsx = vi.fn()
+
+    render(
+      <PrintJobModal
+        onClose={vi.fn()}
+        onExportPrintXlsx={onExportPrintXlsx}
+        onPrint={vi.fn()}
+        open
+        moduleKey="sales-order"
+        selectedCount={1}
+        selectedRowKeys={['1']}
+        selectedRows={[{ id: '1' }]}
+        templates={[]}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('modules.print.exportXlsx'))
+
+    expect(onExportPrintXlsx).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides print xlsx export action outside sales order module', () => {
+    render(
+      <PrintJobModal
+        onClose={vi.fn()}
+        onExportPrintXlsx={vi.fn()}
+        onPrint={vi.fn()}
+        open
+        moduleKey="purchase-order"
+        selectedCount={1}
+        selectedRowKeys={['1']}
+        selectedRows={[{ id: '1' }]}
+        templates={[]}
+      />,
+    )
+
+    expect(screen.queryByText('modules.print.exportXlsx')).toBeNull()
+  })
+
   it('shows empty template state', () => {
     render(
       <PrintJobModal
@@ -390,6 +531,6 @@ describe('PrintJobModal', () => {
 
     expect(screen.getByTestId('empty')).toBeTruthy()
     expect(screen.getByText('modules.print.noTemplate')).toBeTruthy()
-    expect(screen.getByText('modules.print.onlySelectedIds')).toBeTruthy()
+    expect(screen.getByText('modules.print.noPrintItems')).toBeTruthy()
   })
 })

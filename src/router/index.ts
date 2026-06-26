@@ -23,12 +23,29 @@ import {
   usePermissionStore,
 } from '@/stores/permissionStore'
 import { useSetupStore } from '@/stores/setupStore'
+import {
+  getServerErrorReturnPath,
+  SERVER_ERROR_ROUTE,
+} from '@/utils/server-error-navigation'
 import { asString } from '@/utils/type-narrowing'
 import { LazyLoginView } from '@/views/auth/LazyLoginView'
 import { LazyDashboardView } from '@/views/dashboard/LazyDashboardView'
 
 const SETUP_ROUTE_PATH = '/setup'
-const SERVER_ERROR_ROUTE = '/server-error'
+
+function toServerErrorRedirect(
+  location: Parameters<typeof getServerErrorReturnPath>[0],
+) {
+  const from = getServerErrorReturnPath(location)
+  return redirect(
+    from
+      ? {
+          to: SERVER_ERROR_ROUTE,
+          search: { from },
+        }
+      : { to: SERVER_ERROR_ROUTE },
+  )
+}
 
 /** 判断错误是否为网络连接失败（后端不可达） */
 function isNetworkError(error: unknown): boolean {
@@ -78,14 +95,14 @@ const rootRoute = createRootRoute({
         if (isNetworkError(error)) {
           if (!isErrorPage) {
             // eslint-disable-next-line @typescript-eslint/only-throw-error
-            throw redirect({ to: SERVER_ERROR_ROUTE })
+            throw toServerErrorRedirect(location)
           }
           return
         }
         // 其他错误（如 500）→ 也显示服务器错误页面
         if (!isErrorPage) {
           // eslint-disable-next-line @typescript-eslint/only-throw-error
-          throw redirect({ to: SERVER_ERROR_ROUTE })
+          throw toServerErrorRedirect(location)
         }
         return
       }
