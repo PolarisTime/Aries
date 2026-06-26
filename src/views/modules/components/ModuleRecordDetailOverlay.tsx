@@ -7,6 +7,7 @@ import Row from 'antd/es/row'
 import Spin from 'antd/es/spin'
 import { useTranslation } from 'react-i18next'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import { shouldDisplayPieceWeightAsDash } from '@/module-system/module-line-item-display'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import type {
@@ -75,7 +76,11 @@ export function ModuleRecordDetailOverlay({
                 />
               )
             }
-          : (value: unknown) => formatCellValue(value, column.type),
+          : (value: unknown, record: ModuleLineItem) =>
+              column.dataIndex === 'pieceWeightTon' &&
+              shouldDisplayPieceWeightAsDash(record)
+                ? '-'
+                : formatCellValue(value, column.type),
     }))
   const detailFields = config.detailFields || []
   const colSpan = Math.max(

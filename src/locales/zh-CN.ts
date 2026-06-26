@@ -1054,6 +1054,8 @@ export const zhCN: MessageSchema = {
         categoryName: '类别名称',
         sortOrder: '排序',
         purchaseWeigh: '采购过磅',
+        overTolerance: '上差%',
+        underTolerance: '下差%',
         status: '状态',
         remark: '备注',
         required: '需要',

@@ -46,6 +46,18 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       type: 'boolean',
     },
     {
+      title: i18next.t('modules.pages.materialCategories.overTolerance'),
+      dataIndex: 'purchaseWeighOverTolerancePercent',
+      width: 120,
+      align: 'right',
+    },
+    {
+      title: i18next.t('modules.pages.materialCategories.underTolerance'),
+      dataIndex: 'purchaseWeighUnderTolerancePercent',
+      width: 120,
+      align: 'right',
+    },
+    {
       title: i18next.t('modules.pages.materialCategories.status'),
       dataIndex: 'status',
       width: 100,
@@ -74,6 +86,14 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.materialCategories.purchaseWeigh'),
       key: 'purchaseWeighRequired',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.overTolerance'),
+      key: 'purchaseWeighOverTolerancePercent',
+    },
+    {
+      label: i18next.t('modules.pages.materialCategories.underTolerance'),
+      key: 'purchaseWeighUnderTolerancePercent',
     },
     {
       label: i18next.t('modules.pages.materialCategories.status'),
@@ -116,7 +136,6 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       type: 'select',
       defaultValue: false,
       row: 2,
-      colSpan: 4,
       options: [
         {
           label: i18next.t('modules.pages.materialCategories.required'),
@@ -129,19 +148,41 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       ],
     },
     {
+      key: 'purchaseWeighOverTolerancePercent',
+      label: i18next.t('modules.pages.materialCategories.overTolerance'),
+      type: 'number',
+      required: true,
+      min: 0,
+      precision: 2,
+      step: 0.5,
+      defaultValue: 5,
+      row: 2,
+    },
+    {
+      key: 'purchaseWeighUnderTolerancePercent',
+      label: i18next.t('modules.pages.materialCategories.underTolerance'),
+      type: 'number',
+      required: true,
+      min: 0,
+      precision: 2,
+      step: 0.5,
+      defaultValue: 5,
+      row: 2,
+    },
+    {
       key: 'status',
       label: i18next.t('modules.pages.materialCategories.status'),
       type: 'select',
       required: true,
       defaultValue: '正常',
       options: enabledStatusOptions,
-      row: 2,
+      row: 3,
     },
     {
       key: 'remark',
       label: i18next.t('modules.pages.materialCategories.remark'),
       type: 'textarea',
-      row: 3,
+      row: 4,
       fullRow: true,
     },
   ],

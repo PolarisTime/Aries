@@ -1029,6 +1029,8 @@ export interface MessageSchema {
         categoryName: string
         sortOrder: string
         purchaseWeigh: string
+        overTolerance: string
+        underTolerance: string
         status: string
         remark: string
         required: string

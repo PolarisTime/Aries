@@ -9,7 +9,9 @@ vi.mock('./module-adapter-editor', () => ({
   getEditorItemMin: vi.fn(() => 0),
   getEditorItemPrecision: vi.fn(() => 2),
   isNumberEditorColumn: vi.fn((key) =>
-    ['quantity', 'unitPrice', 'weightTon', 'amount'].includes(key),
+    ['quantity', 'unitPrice', 'weightTon', 'amount', 'pieceWeightTon'].includes(
+      key,
+    ),
   ),
 }))
 
@@ -24,6 +26,7 @@ const mockConfig = {
 const mockItemColumns = [
   { title: '数量', dataIndex: 'quantity', type: 'number', width: 100 },
   { title: '单价', dataIndex: 'unitPrice', type: 'number', width: 100 },
+  { title: '件重', dataIndex: 'pieceWeightTon', type: 'number', width: 100 },
   { title: '名称', dataIndex: 'name', type: 'string', width: 150 },
   { title: '状态', dataIndex: 'status', type: 'status', width: 100 },
 ]
@@ -244,6 +247,33 @@ describe('buildModuleEditorDataColumns', () => {
       </table>,
     )
     expect(container.querySelector('input')).toBeInTheDocument()
+  })
+
+  it('renders dash instead of number input for editable weigh piece weight', () => {
+    const editableProps = {
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+    }
+    const columns = buildModuleEditorDataColumns(editableProps)
+    const pieceWeightColumn = columns.find(
+      (c) => c.dataIndex === 'pieceWeightTon',
+    )
+    const renderFn = pieceWeightColumn?.render as Function
+    const { container } = render(
+      <table>
+        <tbody>
+          <tr>
+            {renderFn(
+              0.5,
+              { ...mockItems[0], pieceWeightTon: 0.5, settlementMode: '过磅' },
+              0,
+            )}
+          </tr>
+        </tbody>
+      </table>,
+    )
+    expect(container.textContent).toContain('-')
+    expect(container.querySelector('input')).not.toBeInTheDocument()
   })
 
   it('calls handleItemInputChange on input change', () => {

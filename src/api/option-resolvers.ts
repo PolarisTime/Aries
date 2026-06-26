@@ -34,6 +34,8 @@ const materialCategoryFallbackOptions: MaterialCategoryOption[] =
     label: value,
     value,
     purchaseWeighRequired: value === '盘螺' || value === '线材',
+    purchaseWeighOverTolerancePercent: 5,
+    purchaseWeighUnderTolerancePercent: 5,
   }))
 
 let _categoryOptions: MaterialCategoryOption[] = materialCategoryFallbackOptions

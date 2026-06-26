@@ -152,6 +152,9 @@ vi.mock('@/api/print-template', () => ({
 
 vi.mock('@/constants/module-options', () => ({
   getCustomerProjectOptions: vi.fn(() => []),
+  isPurchaseWeighRequiredCategory: vi.fn(
+    (category: unknown) => category === '盘螺' || category === '线材',
+  ),
 }))
 
 import { getCustomerProjectOptions } from '@/constants/module-options'

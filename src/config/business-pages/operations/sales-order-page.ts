@@ -297,14 +297,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
               const rawRemainingWeightTon = Number(
                 item.salesRemainingWeightTon ?? 0,
               )
-              const rawPieceWeightTon =
-                rawTotalQuantity > 0 && rawTotalWeightTon > 0
-                  ? Number(
-                      (rawTotalWeightTon / rawTotalQuantity).toFixed(
-                        INTERNAL_WEIGHT_PRECISION,
-                      ),
-                    )
-                  : Number(item.pieceWeightTon || 0)
+              const rawPieceWeightTon = Number(item.pieceWeightTon || 0)
               const rawUnitPrice = Number(item.unitPrice || 0)
               const remainingQuantity = Number.isFinite(rawRemainingQuantity)
                 ? rawRemainingQuantity
