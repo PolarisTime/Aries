@@ -4,6 +4,7 @@ import Table from 'antd/es/table'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'
+import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import { MATERIAL_TYPE } from '@/constants/status-constants'
 
 interface PieceWeight {
@@ -81,7 +82,9 @@ export function PieceWeightPopover({
   if (!isWeighCategory) {
     return (
       <span>
-        {typeof weightTon === 'number' ? weightTon.toFixed(3) : weightTon}
+        {typeof weightTon === 'number'
+          ? weightTon.toFixed(DISPLAY_WEIGHT_PRECISION)
+          : weightTon}
       </span>
     )
   }
@@ -97,7 +100,7 @@ export function PieceWeightPopover({
         data.length > 0
           ? t('modules.pieceWeight.detailTitle', {
               count: data.length,
-              weight: total.toFixed(3),
+              weight: total.toFixed(DISPLAY_WEIGHT_PRECISION),
             })
           : t('modules.pieceWeight.detailTitleFallback')
       }
@@ -133,7 +136,7 @@ export function PieceWeightPopover({
                 dataIndex: 'weightTon',
                 width: 70,
                 align: 'right' as const,
-                render: (v: number) => v.toFixed(3),
+                render: (v: number) => v.toFixed(DISPLAY_WEIGHT_PRECISION),
               },
               {
                 title: t('modules.pieceWeight.relatedOrderNo'),
@@ -147,7 +150,9 @@ export function PieceWeightPopover({
       }
     >
       <span className="cursor-pointer text-blue-600 underline decoration-dashed underline-offset-2">
-        {typeof weightTon === 'number' ? weightTon.toFixed(3) : weightTon}
+        {typeof weightTon === 'number'
+          ? weightTon.toFixed(DISPLAY_WEIGHT_PRECISION)
+          : weightTon}
       </span>
     </Popover>
   )

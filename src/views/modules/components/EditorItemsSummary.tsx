@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModuleRecord } from '@/types/module-page'
 
 interface Props {
@@ -48,7 +49,8 @@ export function EditorItemsSummary({
       )}
       {totalWeight > 0 && (
         <span>
-          {t('modules.itemsSummary.weight')} {totalWeight.toFixed(3)}
+          {t('modules.itemsSummary.weight')}{' '}
+          {totalWeight.toFixed(DISPLAY_WEIGHT_PRECISION)}
         </span>
       )}
       {showAmount && totalAmount > 0 && (

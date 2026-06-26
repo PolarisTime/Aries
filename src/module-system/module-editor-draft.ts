@@ -1,3 +1,4 @@
+import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import {
@@ -27,7 +28,9 @@ export function normalizeDraftRecordForModule(options: {
   applyModuleDefaultEditorDraft(moduleKey, record, currentOperatorName)
 
   if (hasBehavior(moduleKey, 'computesAmounts')) {
-    record.totalWeight = Number(sumLineItemsBy(items, 'weightTon').toFixed(3))
+    record.totalWeight = Number(
+      sumLineItemsBy(items, 'weightTon').toFixed(INTERNAL_WEIGHT_PRECISION),
+    )
     record.totalAmount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
   }
 
@@ -60,7 +63,9 @@ export function syncDerivedEditorFormValuesForModule(options: {
   const { moduleKey, record, items, sumLineItemsBy, changedKeys } = options
 
   if (hasBehavior(moduleKey, 'computesAmounts')) {
-    record.totalWeight = Number(sumLineItemsBy(items, 'weightTon').toFixed(3))
+    record.totalWeight = Number(
+      sumLineItemsBy(items, 'weightTon').toFixed(INTERNAL_WEIGHT_PRECISION),
+    )
     record.totalAmount = Number(sumLineItemsBy(items, 'amount').toFixed(2))
   }
 

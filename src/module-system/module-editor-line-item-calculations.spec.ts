@@ -96,6 +96,42 @@ describe('recalculateEditorLineItem', () => {
     expect(item.weightTon).toBe(5)
   })
 
+  it('keeps high precision small piece weight when calculating weightTon', () => {
+    const item = makeItem({
+      settlementMode: '理算',
+      quantity: 1,
+      pieceWeightTon: 0.005555,
+    })
+
+    recalculateEditorLineItem(item, 'pieceWeightTon')
+
+    expect(item.weightTon).toBe(0.005555)
+  })
+
+  it('rounds half of the minimum internal weight unit up', () => {
+    const item = makeItem({
+      settlementMode: '理算',
+      quantity: 1,
+      pieceWeightTon: 0.000000005,
+    })
+
+    recalculateEditorLineItem(item, 'pieceWeightTon')
+
+    expect(item.weightTon).toBe(0.00000001)
+  })
+
+  it('rounds below the minimum internal weight unit down', () => {
+    const item = makeItem({
+      settlementMode: '理算',
+      quantity: 1,
+      pieceWeightTon: 0.000000004,
+    })
+
+    recalculateEditorLineItem(item, 'pieceWeightTon')
+
+    expect(item.weightTon).toBe(0)
+  })
+
   it('calculates unitPrice from amount and weightTon when amount changes', () => {
     const item = makeItem({
       weightTon: 10,

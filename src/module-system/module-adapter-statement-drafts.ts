@@ -1,3 +1,4 @@
+import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import type {
   CustomerStatementDraftOptions,
   FreightStatementDraftOptions,
@@ -209,7 +210,7 @@ export function buildFreightStatementDraftData({
   const totalWeight = Number(
     sortedBills
       .reduce((sum, bill) => sum + Number(bill.totalWeight || 0), 0)
-      .toFixed(3),
+      .toFixed(INTERNAL_WEIGHT_PRECISION),
   )
   const totalFreight = Number(
     sortedBills
