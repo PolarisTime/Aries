@@ -130,10 +130,23 @@ describe('runPrintOutputs', () => {
     )
 
     const frame = document.body.querySelector('iframe')
+    const focusMock = vi.fn()
+    const printMock = vi.fn()
+    Object.defineProperty(frame, 'contentWindow', {
+      configurable: true,
+      value: {
+        focus: focusMock,
+        print: printMock,
+      },
+    })
+    frame?.dispatchEvent(new Event('load'))
+
     expect(result).toEqual({ coordCount: 0, pdfCount: 1 })
     expect(frame).not.toBeNull()
     expect(frame?.getAttribute('src')).toBe('blob:print-output')
     expect(frame?.style.position).toBe('fixed')
+    expect(focusMock).toHaveBeenCalled()
+    expect(printMock).toHaveBeenCalled()
     expect(downloadBlobMock).not.toHaveBeenCalled()
     expect(windowOpenMock).not.toHaveBeenCalled()
     expect(loadCLodopMock).not.toHaveBeenCalled()

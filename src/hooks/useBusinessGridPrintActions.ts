@@ -45,6 +45,14 @@ function normalizeXlsxFileName(value: unknown) {
     : `${safeName}.xlsx`
 }
 
+function extractErrorMessage(value: unknown) {
+  if (!value || typeof value !== 'object' || !('message' in value)) {
+    return undefined
+  }
+  const { message } = value
+  return typeof message === 'string' && message.trim() ? message : undefined
+}
+
 async function normalizePdfError(err: unknown, fallbackMessage: string) {
   if (!axios.isAxiosError(err)) {
     return err instanceof Error ? err.message : fallbackMessage
@@ -54,8 +62,8 @@ async function normalizePdfError(err: unknown, fallbackMessage: string) {
   if (data instanceof Blob) {
     try {
       const text = await data.text()
-      const parsed = JSON.parse(text) as { message?: string }
-      if (parsed.message) return parsed.message
+      const message = extractErrorMessage(JSON.parse(text))
+      if (message) return message
     } catch {
       // fall through to axios message
     }

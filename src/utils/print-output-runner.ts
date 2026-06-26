@@ -134,20 +134,25 @@ export async function runPrintOutputs(
     return { coordCount: 0, pdfCount: pdfOutputs.length }
   }
 
-  const coordOutputs = outputs
-    .filter(isCoordOutput)
-    .map((output) => {
-      return {
+  const coordOutputs: Array<{
+    title: string
+    result: ReturnType<typeof renderPrintTemplate>
+  }> = []
+  for (const output of outputs) {
+    if (!isCoordOutput(output)) continue
+    const result = renderPrintTemplate(
+      output.templateHtml,
+      output.templateType || 'COORD',
+      output.data || {},
+      output.items || [],
+    )
+    if (result.type === 'COORD') {
+      coordOutputs.push({
         title: output.templateName || options.fallbackTemplateName,
-        result: renderPrintTemplate(
-          output.templateHtml,
-          output.templateType || 'COORD',
-          output.data || {},
-          output.items || [],
-        ),
-      }
-    })
-    .filter((output) => output.result.type === 'COORD')
+        result,
+      })
+    }
+  }
 
   if (coordOutputs.length) {
     await loadCLodop()

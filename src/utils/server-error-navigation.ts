@@ -1,5 +1,5 @@
 export const SERVER_ERROR_ROUTE = '/server-error'
-export const SERVER_ERROR_RETRY_FALLBACK_ROUTE = '/'
+const SERVER_ERROR_RETRY_FALLBACK_ROUTE = '/'
 
 interface ServerErrorSourceLocation {
   pathname?: unknown

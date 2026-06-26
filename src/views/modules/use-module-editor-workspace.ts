@@ -324,7 +324,7 @@ export function useModuleEditorWorkspace({
   const [parentSelectorFilters, setParentSelectorFilters] =
     useState<SearchParams>({})
   const [parentImporting, setParentImporting] = useState(false)
-  const [workspaceState, setWorkspaceState] = useReducer(
+  const [workspaceState, dispatchWorkspaceState] = useReducer(
     editorWorkspaceReducer,
     {
       items: [],
@@ -368,7 +368,7 @@ export function useModuleEditorWorkspace({
         record,
       )
       form.setFieldsValue(normalizeRecordForEditor(config, record))
-      setWorkspaceState({
+      dispatchWorkspaceState({
         items: record.items || [],
         primaryNoLoading: false,
         authoritativePrimaryNo: nextAuthoritativePrimaryNo,
@@ -387,7 +387,7 @@ export function useModuleEditorWorkspace({
         ? [buildDefaultEditorLineItem(undefined, moduleKey)]
         : []
       if (config.primaryNoKey) {
-        setWorkspaceState({
+        dispatchWorkspaceState({
           items: draftItems,
           primaryNoLoading: true,
           authoritativePrimaryNo: '',
@@ -403,7 +403,7 @@ export function useModuleEditorWorkspace({
                 _preallocatedId: generatedId || '',
                 [asString(config.primaryNoKey)]: generatedNo,
               })
-              setWorkspaceState({
+              dispatchWorkspaceState({
                 authoritativePrimaryNo: shouldUseAuthoritativePrimaryNo(
                   moduleKey,
                   config.primaryNoKey,
@@ -424,7 +424,7 @@ export function useModuleEditorWorkspace({
             })
             .finally(() => {
               if (active) {
-                setWorkspaceState({ primaryNoLoading: false })
+                dispatchWorkspaceState({ primaryNoLoading: false })
               }
             })
         } else {
@@ -437,7 +437,7 @@ export function useModuleEditorWorkspace({
                 ...defaultDraft,
                 [asString(config.primaryNoKey)]: generatedNo,
               })
-              setWorkspaceState({
+              dispatchWorkspaceState({
                 authoritativePrimaryNo: shouldUseAuthoritativePrimaryNo(
                   moduleKey,
                   config.primaryNoKey,
@@ -458,12 +458,12 @@ export function useModuleEditorWorkspace({
             })
             .finally(() => {
               if (active) {
-                setWorkspaceState({ primaryNoLoading: false })
+                dispatchWorkspaceState({ primaryNoLoading: false })
               }
             })
         }
       } else {
-        setWorkspaceState({
+        dispatchWorkspaceState({
           items: draftItems,
           primaryNoLoading: false,
           authoritativePrimaryNo: '',
@@ -749,7 +749,7 @@ export function useModuleEditorWorkspace({
         changedValues: nextValues,
         systemSettings: clientSettings,
       })
-      setWorkspaceState({ items: nextItems })
+      dispatchWorkspaceState({ items: nextItems })
       setParentSelectorSessionKey(null)
       message.success(
         importedParentCount > 1
@@ -791,7 +791,7 @@ export function useModuleEditorWorkspace({
   const addItem = () => {
     const newItem = buildDefaultEditorLineItem(undefined, moduleKey)
     const nextItems = [...items, newItem]
-    setWorkspaceState({ items: nextItems })
+    dispatchWorkspaceState({ items: nextItems })
     if (open && config.itemColumns?.length) {
       syncEditorFormValues({
         config,
@@ -809,7 +809,7 @@ export function useModuleEditorWorkspace({
   ) => {
     const resolvedItems =
       typeof nextItems === 'function' ? nextItems(items) : nextItems
-    setWorkspaceState({ items: resolvedItems })
+    dispatchWorkspaceState({ items: resolvedItems })
     if (open && config.itemColumns?.length) {
       syncEditorFormValues({
         config,
