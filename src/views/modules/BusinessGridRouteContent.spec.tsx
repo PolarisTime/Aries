@@ -341,6 +341,11 @@ describe('BusinessGridRouteContent', () => {
   it('renders material import and print actions when enabled', () => {
     const state = createGridState({
       canUseBulkPrintActions: true,
+      config: { readOnly: false, title: '物料' },
+      records: [
+        { id: '1', orderNo: 'SO-001' },
+        { id: '2', orderNo: 'SO-002' },
+      ],
       selectedRowKeys: ['1'],
     })
     mocks.useBusinessGridPage.mockReturnValue(state)
@@ -356,7 +361,13 @@ describe('BusinessGridRouteContent', () => {
     expect(screen.getByTestId('print-template-dropdown')).toBeTruthy()
 
     mocks.materialImportProps!.onImported()
-    mocks.printDropdownProps!.onPrint('preview', { id: 'tpl-1' })
+    mocks.printDropdownProps!.onPrint(
+      'preview',
+      { id: 'tpl-1' },
+      {
+        hideUnitPrice: true,
+      },
+    )
 
     expect(mocks.materialImportProps).toEqual(
       expect.objectContaining({
@@ -368,12 +379,18 @@ describe('BusinessGridRouteContent', () => {
       expect.objectContaining({
         disabled: false,
         moduleKey: 'material',
+        moduleTitle: '物料',
+        selectedCount: 1,
+        selectedRowKeys: ['1'],
+        selectedRows: [{ id: '1', orderNo: 'SO-001' }],
       }),
     )
     expect(state.refreshModuleQueries).toHaveBeenCalled()
-    expect(state.handlePrintSelectedRecords).toHaveBeenCalledWith('preview', {
-      id: 'tpl-1',
-    })
+    expect(state.handlePrintSelectedRecords).toHaveBeenCalledWith(
+      'preview',
+      { id: 'tpl-1' },
+      { hideUnitPrice: true },
+    )
   })
 
   it('renders grid overlays', () => {

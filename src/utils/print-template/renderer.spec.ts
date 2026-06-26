@@ -56,6 +56,37 @@ describe('renderPrintTemplate', () => {
     expect(result.script).not.toContain('{{else}}')
   })
 
+  it('renders parent totals inside A5 page break blocks', () => {
+    const result = renderPrintTemplate(
+      [
+        '{{#each details}}',
+        '{{#if needsNewPage}}',
+        'LODOP.ADD_PRINT_TEXT({{sumTop}},295,41,24,"{{totalQuantity}}");',
+        'LODOP.ADD_PRINT_TEXT({{sumTop}},415,71,24,"{{totalWeight}}");',
+        'LODOP.NewPage();',
+        '{{/if}}',
+        'LODOP.ADD_PRINT_TEXT({{rowTop}},295,41,24,"{{quantity}}");',
+        '{{/each}}',
+      ].join('\n'),
+      'COORD',
+      { sumTop: '453', totalQuantity: '394', totalWeight: '1040.052' },
+      [
+        { rowTop: '407', quantity: '4' },
+        { rowTop: '161', quantity: '13', needsNewPage: 'true' },
+      ],
+    )
+
+    expect(result.script).toContain(
+      'LODOP.ADD_PRINT_TEXT(453,295,41,24,"394");',
+    )
+    expect(result.script).toContain(
+      'LODOP.ADD_PRINT_TEXT(453,415,71,24,"1040.052");',
+    )
+    expect(result.script.indexOf('"1040.052"')).toBeLessThan(
+      result.script.indexOf('LODOP.NewPage();'),
+    )
+  })
+
   it('does not derive backend print fields in the renderer', () => {
     const result = renderPrintTemplate(
       'LODOP.ADD_PRINT_TEXT({{rowTop}},10,80,16,"{{pieceWeightTon}}");',

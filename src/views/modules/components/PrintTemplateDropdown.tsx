@@ -1,37 +1,46 @@
-import { EyeOutlined, PrinterOutlined } from '@ant-design/icons'
+import { PrinterOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import Button from 'antd/es/button'
-import Empty from 'antd/es/empty'
-import Modal from 'antd/es/modal'
-import Select from 'antd/es/select'
-import Space from 'antd/es/space'
-import Tag from 'antd/es/tag'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listPrintTemplates } from '@/api/print-template'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import type { PrintOptions } from '@/hooks/useBusinessGridPrintActions'
+import type { ModuleRecord } from '@/types/module-page'
 import type {
   PrintActionMode,
   PrintTemplateRecord,
 } from '@/types/print-template'
+import { PrintJobModal } from '@/views/modules/components/PrintJobModal'
 
 interface Props {
   moduleKey: string
+  moduleTitle?: string
+  selectedCount: number
+  selectedRowKeys: string[]
+  selectedRows: ModuleRecord[]
   disabled: boolean
   loading: boolean
-  onPrint: (mode: PrintActionMode, template?: PrintTemplateRecord) => void
+  onPrint: (
+    mode: PrintActionMode,
+    template?: PrintTemplateRecord,
+    printOptions?: PrintOptions,
+  ) => void
 }
 
 export function PrintTemplateDropdown({
   moduleKey,
+  moduleTitle,
+  selectedCount,
+  selectedRowKeys,
+  selectedRows,
   disabled,
   loading,
   onPrint,
 }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>()
   const supportsPrintTemplate = moduleKey in printTemplateTargetMap
   const { data: templates = [] } = useQuery<PrintTemplateRecord[]>({
     queryKey: QUERY_KEYS.printableTemplates(moduleKey),
@@ -50,41 +59,12 @@ export function PrintTemplateDropdown({
     (tpl) => tpl.templateType === 'COORD' || tpl.templateType === 'PDF_FORM',
   )
 
-  const effectiveSelectedTemplateId = (() => {
-    if (
-      selectedTemplateId &&
-      printableTemplates.some((tpl) => tpl.id === selectedTemplateId)
-    ) {
-      return selectedTemplateId
-    }
-    return open ? printableTemplates[0]?.id : selectedTemplateId
-  })()
-
-  const selectedTemplate = printableTemplates.find(
-    (tpl) => tpl.id === effectiveSelectedTemplateId,
-  )
-
-  const templateOptions = printableTemplates.map((tpl) => ({
-    label: (
-      <Space size={8}>
-        <span>{tpl.templateName}</span>
-        <Tag>{tpl.templateType || 'COORD'}</Tag>
-      </Space>
-    ),
-    value: tpl.id,
-  }))
-
   const handlePrint = (
     mode: PrintActionMode,
     template: PrintTemplateRecord,
+    printOptions?: PrintOptions,
   ) => {
-    setOpen(false)
-    onPrint(mode, template)
-  }
-
-  const handleSelectedPrint = (mode: PrintActionMode) => {
-    if (!selectedTemplate) return
-    handlePrint(mode, selectedTemplate)
+    onPrint(mode, template, printOptions)
   }
 
   return (
@@ -97,43 +77,17 @@ export function PrintTemplateDropdown({
       >
         {t('modules.print.print')}
       </Button>
-      <Modal
-        footer={null}
-        onCancel={() => setOpen(false)}
+      <PrintJobModal
+        moduleKey={moduleKey}
+        moduleTitle={moduleTitle || printTemplateTargetMap[moduleKey]}
+        onClose={() => setOpen(false)}
+        onPrint={handlePrint}
         open={open}
-        title={t('modules.print.print')}
-        width={680}
-      >
-        {printableTemplates.length ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <Select
-              className="min-w-80 flex-1"
-              onChange={setSelectedTemplateId}
-              options={templateOptions}
-              value={effectiveSelectedTemplateId}
-            />
-            <Space wrap>
-              <Button
-                disabled={!selectedTemplate}
-                icon={<EyeOutlined />}
-                onClick={() => handleSelectedPrint('preview')}
-                type="primary"
-              >
-                {t('modules.print.preview')}
-              </Button>
-              <Button
-                disabled={!selectedTemplate}
-                icon={<PrinterOutlined />}
-                onClick={() => handleSelectedPrint('print')}
-              >
-                {t('modules.print.directPrint')}
-              </Button>
-            </Space>
-          </div>
-        ) : (
-          <Empty description={t('modules.print.noTemplate')} />
-        )}
-      </Modal>
+        selectedCount={selectedCount}
+        selectedRowKeys={selectedRowKeys}
+        selectedRows={selectedRows}
+        templates={printableTemplates}
+      />
     </>
   )
 }

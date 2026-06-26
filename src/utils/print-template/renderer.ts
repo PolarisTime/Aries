@@ -7,7 +7,7 @@ function renderCoordTemplate(
   items: PrintDataRow[],
 ): string {
   let source = templateHtml
-  source = expandEachBlocks(source, items)
+  source = expandEachBlocks(source, items, data)
   source = expandIfBlocks(source, data)
   return renderPlaceholders(source, data)
 }

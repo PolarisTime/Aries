@@ -17,10 +17,30 @@
 }
 .module-table-shell
   .ant-table-tbody
+  .ant-table-row:hover
+  > .sticky-actions-col {
+  background: var(
+    --ant-table-row-hover-bg,
+    var(--theme-surface-hover)
+  ) !important;
+}
+.module-table-shell
+  .ant-table-tbody
   .ant-table-row-selected
-  .sticky-actions-col,
-.module-table-shell .ant-table-tbody .ant-table-row:hover .sticky-actions-col {
-  background: transparent !important;
+  > .sticky-actions-col {
+  background: var(
+    --ant-table-row-selected-bg,
+    var(--theme-highlight-bg)
+  ) !important;
+}
+.module-table-shell
+  .ant-table-tbody
+  .ant-table-row-selected:hover
+  > .sticky-actions-col {
+  background: var(
+    --ant-table-row-selected-hover-bg,
+    var(--theme-highlight-bg)
+  ) !important;
 }
 
 .module-table-shell .ant-table-tbody > tr > td,

@@ -181,6 +181,43 @@ describe('useBusinessGridPrintActions', () => {
     })
   })
 
+  it('passes print options to backend', async () => {
+    const template = {
+      id: 'template-1',
+      templateName: 'Test Template',
+      templateHtml: 'LODOP.PRINT_INIT("{{name}}");',
+      templateType: 'COORD',
+    }
+    httpMock.post.mockResolvedValue({
+      code: 200,
+      data: {
+        templateType: 'COORD',
+        templateHtml: 'LODOP.PRINT_INIT("Test");',
+        data: { name: 'Test' },
+      },
+    })
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+    await act(async () => {
+      await result.current.handlePrintSelectedRecords('print', template, {
+        hideUnitPrice: true,
+        brandOverride: '沙钢',
+      })
+    })
+
+    expect(httpMock.post).toHaveBeenCalledWith('/print/record', {
+      templateId: 'template-1',
+      moduleKey: 'sales-order',
+      recordId: '1',
+      printOptions: { hideUnitPrice: true, brandOverride: '沙钢' },
+    })
+  })
+
   it('handles multiple selected rows', async () => {
     const template = {
       id: 'template-1',

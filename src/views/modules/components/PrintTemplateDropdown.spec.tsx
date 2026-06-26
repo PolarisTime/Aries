@@ -21,6 +21,19 @@ vi.mock('antd/es/button', () => ({
   ),
 }))
 
+vi.mock('antd/es/checkbox', () => ({
+  default: ({ checked, children, onChange }: any) => (
+    <label>
+      <input
+        checked={checked}
+        onChange={(event) => onChange(event)}
+        type="checkbox"
+      />
+      {children}
+    </label>
+  ),
+}))
+
 vi.mock('antd/es/empty', () => ({
   default: ({ description }: any) => (
     <div data-testid="empty">{description}</div>
@@ -61,7 +74,14 @@ vi.mock('antd/es/tag', () => ({
   default: ({ children }: any) => <span data-testid="tag">{children}</span>,
 }))
 
+vi.mock('antd/es/typography', () => ({
+  default: {
+    Text: ({ children }: any) => <span>{children}</span>,
+  },
+}))
+
 vi.mock('@ant-design/icons', () => ({
+  DownloadOutlined: () => <span>DownloadOutlined</span>,
   EyeOutlined: () => <span>EyeOutlined</span>,
   PrinterOutlined: () => <span>PrinterOutlined</span>,
 }))
@@ -85,6 +105,10 @@ function openPrintModal() {
 describe('PrintTemplateDropdown', () => {
   const defaultProps = {
     moduleKey: 'test-module',
+    moduleTitle: '测试模块',
+    selectedCount: 1,
+    selectedRowKeys: ['row-1'],
+    selectedRows: [{ id: 'row-1', orderNo: 'SO-001', customerName: '客户甲' }],
     disabled: false,
     loading: false,
     onPrint: vi.fn(),
@@ -100,12 +124,14 @@ describe('PrintTemplateDropdown', () => {
     expect(screen.getAllByText('modules.print.print')[0]).toBeTruthy()
   })
 
-  it('opens template modal', () => {
+  it('opens print job modal', () => {
     render(<PrintTemplateDropdown {...defaultProps} />)
 
     openPrintModal()
 
     expect(screen.getByTestId('print-modal')).toBeTruthy()
+    expect(screen.getByText('modules.print.jobTitle')).toBeTruthy()
+    expect(screen.getByText('测试模块')).toBeTruthy()
   })
 
   it('renders empty state when templates are empty', () => {
@@ -136,8 +162,13 @@ describe('PrintTemplateDropdown', () => {
     openPrintModal()
     fireEvent.click(screen.getByText('modules.print.directPrint'))
 
-    expect(onPrint).toHaveBeenCalledWith('preview', template)
-    expect(onPrint).toHaveBeenCalledWith('print', template)
+    expect(onPrint).toHaveBeenCalledWith('preview', template, {
+      hideUnitPrice: false,
+    })
+    expect(onPrint).toHaveBeenCalledWith('print', template, {
+      hideUnitPrice: false,
+    })
+    expect(screen.getByTestId('print-modal')).toBeTruthy()
   })
 
   it('prints the selected template after switching selection', () => {
@@ -166,7 +197,31 @@ describe('PrintTemplateDropdown', () => {
     })
     fireEvent.click(screen.getByText('modules.print.preview'))
 
-    expect(onPrint).toHaveBeenCalledWith('preview', secondTemplate)
+    expect(onPrint).toHaveBeenCalledWith('preview', secondTemplate, {
+      hideUnitPrice: false,
+    })
+  })
+
+  it('passes print options without closing the modal', () => {
+    const onPrint = vi.fn()
+    const template = {
+      id: 'tpl-1',
+      templateName: 'A 模板',
+      targetType: 'test-module',
+      templateType: 'COORD',
+    }
+    vi.mocked(useQuery).mockReturnValue({ data: [template] } as never)
+
+    render(<PrintTemplateDropdown {...defaultProps} onPrint={onPrint} />)
+
+    openPrintModal()
+    fireEvent.click(screen.getByLabelText('modules.print.hideUnitPrice'))
+    fireEvent.click(screen.getByText('modules.print.preview'))
+
+    expect(onPrint).toHaveBeenCalledWith('preview', template, {
+      hideUnitPrice: true,
+    })
+    expect(screen.getByTestId('print-modal')).toBeTruthy()
   })
 
   it('disables query for unsupported module key', () => {
