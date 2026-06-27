@@ -17,9 +17,23 @@ describe('freightOperationsPageConfigs', () => {
     expect(config.buildOverview).toBeTypeOf('function')
   })
 
+  it('shows audit status in list columns', () => {
+    const statusColumn = config.columns.find(
+      (column) => column.dataIndex === 'status',
+    )
+
+    expect(statusColumn).toMatchObject({
+      type: 'status',
+      align: 'center',
+      width: 110,
+    })
+    expect(config.columns.map((column) => column.dataIndex)).toContain('status')
+  })
+
   it('has parentImport with validation', () => {
     const pi = config.parentImport
     expect(pi?.parentModuleKey).toBe('sales-outbound')
+    expect(pi?.candidateQueryType).toBe('freight-bill-import')
     expect(pi?.enforceUniqueRelation).toBe(true)
     expect(pi?.allowMultipleSelection).toBe(true)
 

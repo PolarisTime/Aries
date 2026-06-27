@@ -8,7 +8,7 @@ import { getBusinessModuleDetail } from '@/api/business'
 import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { ModuleRecord } from '@/types/module-page'
-import { asId } from '@/utils/type-narrowing'
+import { asId, asString } from '@/utils/type-narrowing'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props {
@@ -21,9 +21,10 @@ interface Props {
 function getItemColumns(t: (key: string) => string) {
   return [
     {
-      title: t('modules.itemColumns.sourceNo'),
-      dataIndex: 'sourceNo',
+      title: t('modules.freightPickup.pickupLocation'),
+      dataIndex: 'warehouseName',
       width: 140,
+      render: (v: unknown) => resolveDisplayText(v),
     },
     {
       title: t('modules.itemColumns.brand'),
@@ -64,12 +65,41 @@ function getItemColumns(t: (key: string) => string) {
   ]
 }
 
+function resolveDisplayText(value: unknown, fallback = '-') {
+  const text = asString(value).trim()
+  return text || fallback
+}
+
+function groupItemsByProject(
+  items: ModuleRecord[],
+  fallbackProjectName: unknown,
+) {
+  const groups: Array<{ projectName: string; items: ModuleRecord[] }> = []
+  const groupMap = new Map<string, ModuleRecord[]>()
+  const fallback = resolveDisplayText(fallbackProjectName)
+
+  for (const item of items) {
+    const projectName = resolveDisplayText(item.projectName, fallback)
+    const groupItems = groupMap.get(projectName)
+    if (groupItems) {
+      groupItems.push(item)
+    } else {
+      const nextItems = [item]
+      groupMap.set(projectName, nextItems)
+      groups.push({ projectName, items: nextItems })
+    }
+  }
+
+  return groups
+}
+
 function DetailCard({ record }: { record: ModuleRecord }) {
   const { t } = useTranslation()
   const itemColumns = getItemColumns(t)
   const items = (
     Array.isArray(record.items) ? record.items : []
   ) as ModuleRecord[]
+  const itemGroups = groupItemsByProject(items, record.projectName)
 
   return (
     <Card size="small" className="mb-3">
@@ -81,22 +111,6 @@ function DetailCard({ record }: { record: ModuleRecord }) {
           <Typography.Text strong>
             {String(record.billNo ?? '-')}
           </Typography.Text>
-        </div>
-        <div className="mb-1">
-          <Typography.Text type="secondary">
-            {t('modules.freightPickup.customer')}：
-          </Typography.Text>
-          <Typography.Text strong>
-            {String(record.customerName ?? '-')}
-          </Typography.Text>
-          <span className="ml-6">
-            <Typography.Text type="secondary">
-              {t('modules.freightPickup.project')}：
-            </Typography.Text>
-            <Typography.Text strong>
-              {String(record.projectName ?? '-')}
-            </Typography.Text>
-          </span>
         </div>
         <div>
           <Typography.Text type="secondary">
@@ -135,15 +149,23 @@ function DetailCard({ record }: { record: ModuleRecord }) {
           </span>
         </div>
       </div>
-      {items.length > 0 ? (
-        <Table
-          rowKey="id"
-          columns={itemColumns}
-          dataSource={items}
-          size="small"
-          pagination={false}
-        />
-      ) : null}
+      {itemGroups.map((group) => (
+        <div key={group.projectName} className="mb-3 last:mb-0">
+          <div className="mb-2">
+            <Typography.Text type="secondary">
+              {t('modules.freightPickup.project')}：
+            </Typography.Text>
+            <Typography.Text strong>{group.projectName}</Typography.Text>
+          </div>
+          <Table
+            rowKey="id"
+            columns={itemColumns}
+            dataSource={group.items}
+            size="small"
+            pagination={false}
+          />
+        </div>
+      ))}
     </Card>
   )
 }

@@ -879,6 +879,7 @@ export const zhCN: MessageSchema = {
       vehiclePlate: '车牌号',
       totalWeight: '总重(吨)',
       totalFreight: '总运费',
+      pickupLocation: '提货地点',
     },
     table: {
       noData: '暂无数据',
@@ -2086,9 +2087,10 @@ export const zhCN: MessageSchema = {
       userId: '所属用户',
       keyName: '密钥名称',
       keyNamePlaceholder: '例如：订单同步密钥',
+      presetTemplate: '预制模板',
       usageScope: '使用范围',
       allowedResources: '允许访问资源',
-      allowedResourcesPlaceholder: '不选则按使用范围放行',
+      allowedResourcesPlaceholder: '请选择允许访问的资源',
       allowedActions: '允许动作',
       allowedActionsPlaceholder: '请选择允许动作',
       expireDays: '有效期（天）',
@@ -2168,6 +2170,7 @@ export const zhCN: MessageSchema = {
     },
     apiKeyDetail: {
       fallbackUnlimited: '未限制',
+      fallbackByUsageScope: '按使用范围',
       fallbackUnset: '未设置',
       back: '返回',
       title: 'API Key 详情',
@@ -2189,18 +2192,26 @@ export const zhCN: MessageSchema = {
       title: 'API Key 管理',
     },
     apiKeyUsage: {
-      title: 'API Key 使用说明',
-      item1: '生成后会返回完整密钥，仅显示一次，关闭弹窗后无法再次查看。',
-      item2: '调用接口时请在请求头中传入 X-API-Key，值为完整 API Key。',
-      item3:
-        '使用范围说明：只读接口仅允许 GET / HEAD / OPTIONS，请求写接口会被拒绝。',
-      item4: '业务接口仅允许访问业务数据接口，不允许访问系统管理类接口。',
-      item5:
-        '允许访问资源留空时，按使用范围放行；选择资源后，只允许访问白名单资源接口。',
-      item6:
-        '仅允许为已启用 2FA 的账号生成 API Key，且生成时需要验证当前操作人的 2FA。',
-      item7: '建议按用途分开创建，例如订单同步、报表读取，便于后续排查和禁用。',
-      item8: '禁用后立即失效，已过期或已禁用的密钥无法继续调用接口。',
+      message:
+        'API Key 仅显示一次，生成前需确认所属用户已启用 2FA，并按实际用途选择资源和动作。',
+    },
+    apiKeyPresets: {
+      mcpReadonly: 'MCP 只读查询',
+      mcpReadonlyDesc: '适合 AI 工具读取业务数据，不包含写入和系统维护动作。',
+      businessRead: '业务只读集成',
+      businessReadDesc: '开放业务、主数据、报表和财务资源的查看权限。',
+      businessWrite: '业务单据同步',
+      businessWriteDesc:
+        '适合采购、销售、物流单据同步，包含新增、编辑、审核和删除。',
+      financeReconcile: '财务对账集成',
+      financeReconcileDesc:
+        '适合对账单、收付款、收票开票和台账调整的业务集成。',
+      systemAudit: '系统审计读取',
+      systemAuditDesc:
+        '用于读取操作日志、数据库状态、会话和 API Key 管理信息。',
+      custom: '自定义',
+      customDesc: '手动选择使用范围、资源和动作。',
+      ungrouped: '未分组',
     },
     companyHeader: {
       title: '公司信息',
@@ -2536,6 +2547,7 @@ export const zhCN: MessageSchema = {
     },
     apiKeyUtils: {
       unlimited: '未限制',
+      byUsageScope: '按使用范围',
       unset: '未设置',
     },
     generalSettingsUtils: {
@@ -2622,6 +2634,7 @@ export const zhCN: MessageSchema = {
       totpRequired: '当前账号未启用 2FA，禁止生成 API Key',
       fillRequired: '请选择用户、使用范围并填写密钥名称',
       selectOneAction: '请至少选择一个允许动作',
+      selectOneResource: '请至少选择一个允许访问资源',
       generatedSuccess: 'API Key 已生成',
       generateFailed: '生成失败',
       noManagePermission: '暂无 API Key 管理权限',

@@ -155,4 +155,37 @@ describe('ModuleEditorItemsSection', () => {
       undefined,
     )
   })
+
+  it('passes freight bill candidate settings to parent selector', () => {
+    const config = {
+      ...defaultProps.config,
+      parentImport: {
+        parentModuleKey: 'sales-outbound',
+        parentFieldKey: 'outboundNo',
+        parentDisplayFieldKey: 'outboundNo',
+        label: '销售出库单',
+        candidateQueryType: 'freight-bill-import' as const,
+      },
+    }
+
+    render(
+      <ModuleEditorItemsSection
+        {...defaultProps}
+        config={config}
+        parentSelectorOpen
+        permissions={{
+          ...defaultProps.permissions,
+          importParentItems: true,
+        }}
+      />,
+    )
+
+    expect(mocks.ModuleParentSelectorOverlay).toHaveBeenCalledWith(
+      expect.objectContaining({
+        candidateQueryType: 'freight-bill-import',
+        parentModuleKey: 'sales-outbound',
+      }),
+      undefined,
+    )
+  })
 })

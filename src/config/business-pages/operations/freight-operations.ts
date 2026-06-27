@@ -126,6 +126,13 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         align: 'right',
         type: 'amount',
       },
+      {
+        title: i18next.t('modules.pages.freightOperations.auditStatus'),
+        dataIndex: 'status',
+        width: 110,
+        type: 'status',
+        align: 'center',
+      },
     ],
     defaultHiddenColumnKeys: ['vehiclePlate', 'unitPrice'],
     detailFields: [
@@ -245,6 +252,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       label: i18next.t('modules.pages.freightOperations.parentSalesOutbound'),
       parentFieldKey: 'outboundNo',
       parentDisplayFieldKey: 'outboundNo',
+      candidateQueryType: 'freight-bill-import',
       buttonText: i18next.t(
         'modules.pages.freightOperations.importParentSalesOutbound',
       ),

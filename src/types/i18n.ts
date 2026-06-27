@@ -861,6 +861,7 @@ export interface MessageSchema {
       vehiclePlate: string
       totalWeight: string
       totalFreight: string
+      pickupLocation: string
     }
     table: {
       noData: string
@@ -2024,6 +2025,7 @@ export interface MessageSchema {
       userId: string
       keyName: string
       keyNamePlaceholder: string
+      presetTemplate: string
       usageScope: string
       allowedResources: string
       allowedResourcesPlaceholder: string
@@ -2104,6 +2106,7 @@ export interface MessageSchema {
     }
     apiKeyDetail: {
       fallbackUnlimited: string
+      fallbackByUsageScope: string
       fallbackUnset: string
       back: string
       title: string
@@ -2125,15 +2128,22 @@ export interface MessageSchema {
       title: string
     }
     apiKeyUsage: {
-      title: string
-      item1: string
-      item2: string
-      item3: string
-      item4: string
-      item5: string
-      item6: string
-      item7: string
-      item8: string
+      message: string
+    }
+    apiKeyPresets: {
+      mcpReadonly: string
+      mcpReadonlyDesc: string
+      businessRead: string
+      businessReadDesc: string
+      businessWrite: string
+      businessWriteDesc: string
+      financeReconcile: string
+      financeReconcileDesc: string
+      systemAudit: string
+      systemAuditDesc: string
+      custom: string
+      customDesc: string
+      ungrouped: string
     }
     companyHeader: {
       title: string
@@ -2464,6 +2474,7 @@ export interface MessageSchema {
     }
     apiKeyUtils: {
       unlimited: string
+      byUsageScope: string
       unset: string
     }
     generalSettingsUtils: {
@@ -2535,6 +2546,7 @@ export interface MessageSchema {
       totpRequired: string
       fillRequired: string
       selectOneAction: string
+      selectOneResource: string
       generatedSuccess: string
       generateFailed: string
       noManagePermission: string

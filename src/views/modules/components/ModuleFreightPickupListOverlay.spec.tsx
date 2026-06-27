@@ -23,7 +23,31 @@ vi.mock('antd/es/spin', () => ({
 }))
 
 vi.mock('antd/es/table', () => ({
-  default: ({ ...props }: any) => <table {...props} />,
+  default: ({ columns, dataSource, rowKey }: any) => (
+    <table>
+      <thead>
+        <tr>
+          {columns?.map((column: any) => (
+            <th key={column.dataIndex}>{column.title}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {dataSource?.map((row: any, index: number) => (
+          <tr key={String(row[rowKey] ?? index)}>
+            {columns?.map((column: any) => {
+              const value = row[column.dataIndex]
+              return (
+                <td key={column.dataIndex}>
+                  {column.render ? column.render(value, row) : String(value)}
+                </td>
+              )
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  ),
 }))
 
 vi.mock('antd/es/typography', () => ({
@@ -44,6 +68,10 @@ vi.mock('@/constants/query-keys', () => ({
 
 vi.mock('@/utils/type-narrowing', () => ({
   asId: (v: any) => String(v),
+  asString: (v: any) =>
+    typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean'
+      ? String(v)
+      : '',
 }))
 
 vi.mock('./WorkspaceOverlay', () => ({
@@ -72,7 +100,30 @@ describe('ModuleFreightPickupListOverlay', () => {
         vehiclePlate: 'ABC123',
         totalWeight: 1000,
         totalFreight: 5000,
-        items: [],
+        items: [
+          {
+            id: 'i1',
+            projectName: 'Project X',
+            warehouseName: 'Dock A',
+            brand: 'Brand A',
+            material: 'Q235',
+            spec: '10#',
+            length: '12m',
+            quantity: 10,
+            weightTon: 1.234,
+          },
+          {
+            id: 'i2',
+            projectName: 'Project Y',
+            warehouseName: 'Dock B',
+            brand: 'Brand B',
+            material: 'Q355',
+            spec: '12#',
+            length: '9m',
+            quantity: 20,
+            weightTon: 2.345,
+          },
+        ],
       },
     ],
     onClose: vi.fn(),
@@ -91,6 +142,19 @@ describe('ModuleFreightPickupListOverlay', () => {
   it('renders record details', () => {
     render(<ModuleFreightPickupListOverlay {...defaultProps} />)
     expect(screen.getByText(/FB-001/)).toBeTruthy()
-    expect(screen.getByText(/Customer A/)).toBeTruthy()
+    expect(screen.getByText(/Carrier A/)).toBeTruthy()
+    expect(screen.queryByText(/Customer A/)).toBeNull()
+  })
+
+  it('renders pickup location instead of outbound number and groups by project', () => {
+    render(<ModuleFreightPickupListOverlay {...defaultProps} />)
+
+    expect(
+      screen.getAllByText('modules.freightPickup.pickupLocation'),
+    ).toHaveLength(2)
+    expect(screen.queryByText('modules.itemColumns.sourceNo')).toBeNull()
+    expect(screen.getAllByText(/Project X|Project Y/)).toHaveLength(2)
+    expect(screen.getByText('Dock A')).toBeTruthy()
+    expect(screen.getByText('Dock B')).toBeTruthy()
   })
 })

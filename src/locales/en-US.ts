@@ -903,6 +903,7 @@ export const enUS: MessageSchema = {
       vehiclePlate: 'Plate No',
       totalWeight: 'Weight(ton)',
       totalFreight: 'Total Freight',
+      pickupLocation: 'Pickup Location',
     },
     table: {
       noData: 'No data',
@@ -2117,9 +2118,10 @@ export const enUS: MessageSchema = {
       userId: 'Owner User',
       keyName: 'Key Name',
       keyNamePlaceholder: 'e.g. Order Sync Key',
+      presetTemplate: 'Preset Template',
       usageScope: 'Usage Scope',
       allowedResources: 'Allowed Resources',
-      allowedResourcesPlaceholder: 'Leave empty to allow by usage scope',
+      allowedResourcesPlaceholder: 'Please select allowed resources',
       allowedActions: 'Allowed Actions',
       allowedActionsPlaceholder: 'Please select allowed actions',
       expireDays: 'Expiration (days)',
@@ -2202,6 +2204,7 @@ export const enUS: MessageSchema = {
     },
     apiKeyDetail: {
       fallbackUnlimited: 'Unlimited',
+      fallbackByUsageScope: 'By usage scope',
       fallbackUnset: 'Unset',
       back: 'Back',
       title: 'API Key Detail',
@@ -2223,22 +2226,28 @@ export const enUS: MessageSchema = {
       title: 'API Key Management',
     },
     apiKeyUsage: {
-      title: 'API Key Usage Guide',
-      item1:
-        'The full key is returned only once upon generation and cannot be viewed again after closing the dialog.',
-      item2:
-        'Pass the API Key in the X-API-Key request header when calling endpoints.',
-      item3:
-        'Usage scope: Read-only endpoints only allow GET / HEAD / OPTIONS; write requests will be rejected.',
-      item4:
-        'Business endpoints only allow access to business data APIs; system management APIs are not allowed.',
-      item5:
-        'When allowed resources is empty, access is based on usage scope; after selecting resources, only whitelisted resource endpoints are allowed.',
-      item6:
-        'API Keys can only be generated for accounts with 2FA enabled, and the operator must verify their 2FA at generation time.',
-      item7: '建议按用途分开创建，例如订单同步、报表读取，便于后续排查和禁用。',
-      item8:
-        'Disabled keys are immediately invalidated; expired or disabled keys cannot continue calling endpoints.',
+      message:
+        'API Keys are shown only once. Before generating, confirm the owner has 2FA enabled and select resources and actions for the actual use case.',
+    },
+    apiKeyPresets: {
+      mcpReadonly: 'MCP Read-only Query',
+      mcpReadonlyDesc:
+        'For AI tools reading business data, without write or system maintenance actions.',
+      businessRead: 'Business Read Integration',
+      businessReadDesc:
+        'Grants read access to business, master data, report and finance resources.',
+      businessWrite: 'Business Document Sync',
+      businessWriteDesc:
+        'For purchase, sales and logistics document sync with create, edit, audit and delete actions.',
+      financeReconcile: 'Finance Reconciliation',
+      financeReconcileDesc:
+        'For statement, receipt, payment, invoice and ledger adjustment integrations.',
+      systemAudit: 'System Audit Read',
+      systemAuditDesc:
+        'Reads operation logs, database status, sessions and API Key management information.',
+      custom: 'Custom',
+      customDesc: 'Manually select usage scope, resources and actions.',
+      ungrouped: 'Ungrouped',
     },
     companyHeader: {
       title: 'Company Information',
@@ -2579,6 +2588,7 @@ export const enUS: MessageSchema = {
     },
     apiKeyUtils: {
       unlimited: 'Unlimited',
+      byUsageScope: 'By usage scope',
       unset: 'Unset',
     },
     generalSettingsUtils: {
@@ -2668,6 +2678,7 @@ export const enUS: MessageSchema = {
         'Current account does not have 2FA enabled, API Key generation is prohibited',
       fillRequired: 'Please select user, usage scope and fill in key name',
       selectOneAction: 'Please select at least one allowed action',
+      selectOneResource: 'Please select at least one allowed resource',
       generatedSuccess: 'API Key generated',
       generateFailed: 'Generation failed',
       noManagePermission: 'No API Key management permission',

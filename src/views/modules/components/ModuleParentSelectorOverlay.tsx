@@ -8,6 +8,7 @@ import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
 import { buildFilterParams } from '@/api/business-listing-filtering'
+import { listFreightBillImportCandidatePage } from '@/api/freight-bill-candidates'
 import { getModuleConfig } from '@/api/module-contracts'
 import { listPurchaseOrderImportCandidatePage } from '@/api/purchase-order-candidates'
 import { listStatementCandidatePage } from '@/api/statements'
@@ -411,6 +412,9 @@ function resolveParentSelectorSourceModule(
 ) {
   if (candidateQueryType === 'purchase-order-import') {
     return 'purchase-order-import'
+  }
+  if (candidateQueryType === 'freight-bill-import') {
+    return 'freight-bill-import'
   }
   return candidateStatementModuleKey || parentModuleKey
 }
@@ -973,6 +977,13 @@ function ModuleParentSelectorOverlayContent({
       if (candidateQueryType === 'purchase-order-import') {
         return listPurchaseOrderImportCandidatePage(
           candidateUsage || 'purchase-inbound',
+          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          Math.max(page - 1, 0),
+          pageSize,
+        )
+      }
+      if (candidateQueryType === 'freight-bill-import') {
+        return listFreightBillImportCandidatePage(
           buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
           Math.max(page - 1, 0),
           pageSize,
