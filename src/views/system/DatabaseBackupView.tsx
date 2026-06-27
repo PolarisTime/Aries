@@ -1,7 +1,6 @@
 import { ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import Button from 'antd/es/button'
-import Typography from 'antd/es/typography'
+import { Button, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { getDatabaseStatus } from '@/api/database-admin'
 import { QUERY_KEYS } from '@/constants/query-keys'

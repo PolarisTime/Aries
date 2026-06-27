@@ -6,15 +6,17 @@ import {
   UnorderedListOutlined,
 } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
-import Alert from 'antd/es/alert'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Checkbox from 'antd/es/checkbox'
-import Empty from 'antd/es/empty'
-import Radio from 'antd/es/radio'
-import Space from 'antd/es/space'
-import Table from 'antd/es/table'
-import Typography from 'antd/es/typography'
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  Empty,
+  Radio,
+  Space,
+  Table,
+  Typography,
+} from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { MenuNode, RoleRecord } from '@/api/role-actions'
 import type { ModuleRecord } from '@/types/module-page'
@@ -135,7 +137,7 @@ export function RoleActionPermissionCard({
             type="info"
             showIcon
             className="mb-4"
-            message={t('system.rolePermission.attachmentPermTitle')}
+            title={t('system.rolePermission.attachmentPermTitle')}
             description={t('system.rolePermission.attachmentPermDesc')}
           />
           {viewMode === 'list' ? (

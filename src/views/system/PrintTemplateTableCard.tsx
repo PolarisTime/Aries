@@ -9,19 +9,21 @@ import {
   ReloadOutlined,
   UploadOutlined,
 } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Descriptions from 'antd/es/descriptions'
-import Dropdown from 'antd/es/dropdown'
-import Empty from 'antd/es/empty'
-import Input from 'antd/es/input'
-import Select from 'antd/es/select'
-import Space from 'antd/es/space'
-import Spin from 'antd/es/spin'
-import Tag from 'antd/es/tag'
-import Tooltip from 'antd/es/tooltip'
-import Typography from 'antd/es/typography'
-import Upload from 'antd/es/upload'
+import {
+  Button,
+  Card,
+  Descriptions,
+  Dropdown,
+  Empty,
+  Input,
+  Select,
+  Space,
+  Spin,
+  Tag,
+  Tooltip,
+  Typography,
+  Upload,
+} from 'antd'
 import type { RcFile } from 'antd/es/upload/interface'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'

@@ -1,9 +1,11 @@
-import AutoComplete from 'antd/es/auto-complete'
-import DatePicker from 'antd/es/date-picker'
-import Form from 'antd/es/form'
-import Input from 'antd/es/input'
-import InputNumber from 'antd/es/input-number'
-import Select from 'antd/es/select'
+import {
+  AutoComplete,
+  DatePicker,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+} from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ModuleFormFieldDefinition } from '@/types/module-page'
@@ -92,8 +94,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           placeholder={placeholder}
           allowClear={allowClear}
           disabled={disabledValue}
-          showSearch
-          filterOption={createPinyinFilterOption()}
+          showSearch={{ filterOption: createPinyinFilterOption() }}
           options={
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
@@ -117,8 +118,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           allowClear={allowClear}
           disabled={disabledValue}
           mode="multiple"
-          showSearch
-          filterOption={createPinyinFilterOption()}
+          showSearch={{ filterOption: createPinyinFilterOption() }}
           options={
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
@@ -168,6 +168,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           placeholder={placeholder}
           allowClear={allowClear}
           disabled={disabledValue}
+          showSearch={{ filterOption: createPinyinFilterOption() }}
           options={
             Array.isArray(resolvedOptions)
               ? resolvedOptions.map((opt) => ({
@@ -180,7 +181,6 @@ export function FormFieldRenderer({ field, disabled }: Props) {
                 }))
               : []
           }
-          filterOption={createPinyinFilterOption()}
         />,
       )
 

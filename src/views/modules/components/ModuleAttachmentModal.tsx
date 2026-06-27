@@ -5,16 +5,18 @@ import {
   PaperClipOutlined,
   UploadOutlined,
 } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Empty from 'antd/es/empty'
-import Flex from 'antd/es/flex'
-import Image from 'antd/es/image'
-import Modal from 'antd/es/modal'
-import Space from 'antd/es/space'
-import Spin from 'antd/es/spin'
-import Typography from 'antd/es/typography'
-import Upload from 'antd/es/upload'
+import {
+  Button,
+  Card,
+  Empty,
+  Flex,
+  Image,
+  Modal,
+  Space,
+  Spin,
+  Typography,
+  Upload,
+} from 'antd'
 import { type RefObject, useEffect, useReducer, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {

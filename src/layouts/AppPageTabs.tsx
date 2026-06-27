@@ -1,4 +1,4 @@
-import Tabs from 'antd/es/tabs'
+import { Tabs } from 'antd'
 import type { CSSProperties, MouseEvent } from 'react'
 import type { ClosePageOptions, OpenPage } from '@/hooks/useOpenPages'
 

@@ -1,7 +1,6 @@
 import { DownOutlined, ReloadOutlined } from '@ant-design/icons'
-import Dropdown from 'antd/es/dropdown'
+import { Dropdown, Menu } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
-import Menu from 'antd/es/menu'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import {

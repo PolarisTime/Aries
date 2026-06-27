@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import Form from 'antd/es/form'
+import { Form } from 'antd'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({

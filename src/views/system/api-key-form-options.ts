@@ -1,13 +1,17 @@
-import i18next from 'i18next'
+import type { TFunction } from 'i18next'
 
-export const apiKeyStatusOptions = [
-  { label: i18next.t('system.apiKeyForm.statusValid'), value: '有效' },
-  { label: i18next.t('system.apiKeyForm.statusExpired'), value: '已过期' },
-  { label: i18next.t('system.apiKeyForm.statusRevoked'), value: '已禁用' },
-]
+export function buildApiKeyStatusOptions(t: TFunction) {
+  return [
+    { label: t('system.apiKeyForm.statusValid'), value: '有效' },
+    { label: t('system.apiKeyForm.statusExpired'), value: '已过期' },
+    { label: t('system.apiKeyForm.statusRevoked'), value: '已禁用' },
+  ]
+}
 
-export const apiKeyUsageScopeOptions = [
-  { label: i18next.t('system.apiKeyForm.scopeAll'), value: '全部接口' },
-  { label: i18next.t('system.apiKeyForm.scopeReadonly'), value: '只读接口' },
-  { label: i18next.t('system.apiKeyForm.scopeBusiness'), value: '业务接口' },
-]
+export function buildApiKeyUsageScopeOptions(t: TFunction) {
+  return [
+    { label: t('system.apiKeyForm.scopeAll'), value: '全部接口' },
+    { label: t('system.apiKeyForm.scopeReadonly'), value: '只读接口' },
+    { label: t('system.apiKeyForm.scopeBusiness'), value: '业务接口' },
+  ]
+}

@@ -1,8 +1,6 @@
 import { DownloadOutlined, UploadOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
-import Button from 'antd/es/button'
-import Space from 'antd/es/space'
-import Upload from 'antd/es/upload'
+import { Button, Space, Upload } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {

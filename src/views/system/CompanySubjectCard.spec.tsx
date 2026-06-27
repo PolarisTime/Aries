@@ -7,20 +7,6 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('@/lib/antd-form', () => ({
-  getFormString: () => '',
-}))
-
-const formInstance = {
-  getFieldValue: vi.fn(),
-  getFieldsValue: vi.fn(() => ({})),
-  setFieldsValue: vi.fn(),
-  setFieldValue: vi.fn(),
-  resetFields: vi.fn(),
-  validateFields: vi.fn(),
-  getFieldInstance: vi.fn(),
-}
-
 import { CompanySubjectCard } from '@/views/system/CompanySubjectCard'
 
 describe('CompanySubjectCard', () => {
@@ -30,48 +16,19 @@ describe('CompanySubjectCard', () => {
   })
 
   it('renders the card with content', () => {
-    const { container } = render(
-      <CompanySubjectCard
-        form={formInstance as never}
-        canSave={true}
-        settlementAccountCount={2}
-      />,
-    )
+    const { container } = render(<CompanySubjectCard canSave={true} />)
     expect(container).toBeInTheDocument()
   })
 
-  it('displays settlement account count', () => {
-    const { container } = render(
-      <CompanySubjectCard
-        form={formInstance as never}
-        canSave={true}
-        settlementAccountCount={5}
-      />,
-    )
-    expect(container.textContent).toContain('5')
-  })
-
   it('renders form items', () => {
-    const { container } = render(
-      <CompanySubjectCard
-        form={formInstance as never}
-        canSave={true}
-        settlementAccountCount={0}
-      />,
-    )
+    const { container } = render(<CompanySubjectCard canSave={true} />)
     expect(container.querySelectorAll('.ant-form-item').length).toBeGreaterThan(
       0,
     )
   })
 
-  it('renders descriptions component', () => {
-    const { container } = render(
-      <CompanySubjectCard
-        form={formInstance as never}
-        canSave={true}
-        settlementAccountCount={0}
-      />,
-    )
-    expect(container.querySelector('.ant-descriptions')).toBeInTheDocument()
+  it('does not render duplicated descriptions summary', () => {
+    const { container } = render(<CompanySubjectCard canSave={true} />)
+    expect(container.querySelector('.ant-descriptions')).not.toBeInTheDocument()
   })
 })

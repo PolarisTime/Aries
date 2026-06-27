@@ -817,6 +817,10 @@
   flex: 0 0 auto;
 }
 
+.page-workspace-stack > .page-workspace-tabs.ant-tabs {
+  flex: 1 1 auto;
+}
+
 .page-workspace-stack > .ant-tabs > .ant-tabs-nav .ant-tabs-nav-wrap {
   padding: 0 var(--page-workspace-padding-x);
 }
@@ -864,6 +868,105 @@
   background: var(--theme-card-bg);
   border: 1px solid var(--theme-card-border);
   border-radius: 8px;
+}
+
+.system-list-card {
+  min-width: 0;
+  border-color: var(--theme-card-border);
+}
+
+.system-list-card > .ant-card-head {
+  min-width: 0;
+}
+
+.system-list-card > .ant-card-head .ant-card-head-wrapper,
+.system-list-card > .ant-card-head .ant-card-extra {
+  min-width: 0;
+}
+
+.system-list-card > .ant-card-head .ant-card-extra {
+  margin-inline-start: 16px;
+}
+
+.system-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.system-table-toolbar-search {
+  flex: 0 1 auto;
+  min-width: 220px;
+}
+
+.system-table-toolbar .ant-select {
+  flex: 0 0 auto;
+}
+
+.system-table-toolbar > .ant-btn,
+.system-table-toolbar-action {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 960px) {
+  .system-list-card > .ant-card-head .ant-card-head-wrapper {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .system-list-card > .ant-card-head .ant-card-title {
+    flex: 0 0 auto;
+    padding-bottom: 0;
+  }
+
+  .system-list-card > .ant-card-head .ant-card-extra {
+    width: 100%;
+    margin-inline-start: 0;
+    padding-top: 10px;
+    padding-bottom: 12px;
+  }
+
+  .system-table-toolbar {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .system-table-toolbar-search,
+  .system-table-toolbar-search.ant-input-search {
+    flex: 1 1 100%;
+    width: 100% !important;
+    min-width: 0;
+  }
+
+  .system-table-toolbar .ant-select {
+    flex: 1 1 160px;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-workspace-stack,
+  .page-workspace-tabs {
+    --page-workspace-padding-x: 8px;
+    --page-workspace-padding-y: 8px;
+  }
+
+  .system-list-card > .ant-card-body {
+    padding: 12px;
+  }
+
+  .system-table-toolbar > .ant-btn,
+  .system-table-toolbar-action {
+    flex: 1 1 auto;
+  }
+
+  .system-table-toolbar > .ant-btn,
+  .system-table-toolbar-action.ant-btn {
+    justify-content: center;
+  }
 }
 
 .module-page-stack {

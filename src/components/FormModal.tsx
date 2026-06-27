@@ -1,5 +1,5 @@
+import { Modal } from 'antd'
 import type { ModalProps } from 'antd/es/modal'
-import Modal from 'antd/es/modal'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 

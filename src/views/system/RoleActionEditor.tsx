@@ -1,5 +1,4 @@
-import Col from 'antd/es/col'
-import Row from 'antd/es/row'
+import { Col, Row } from 'antd'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { RoleActionEditorModal } from '@/views/system/RoleActionEditorModal'

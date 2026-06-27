@@ -1,6 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import Card from 'antd/es/card'
-import Table from 'antd/es/table'
+import { Card, Table } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type {
   ApiKeyActionOption,
@@ -79,6 +78,7 @@ export function ApiKeyListCard({
 
   return (
     <Card
+      className="system-list-card"
       title={t('system.apiKeyList.title')}
       extra={
         <ApiKeyListToolbar

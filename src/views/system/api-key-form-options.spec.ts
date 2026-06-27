@@ -1,19 +1,25 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  apiKeyStatusOptions,
-  apiKeyUsageScopeOptions,
+  buildApiKeyStatusOptions,
+  buildApiKeyUsageScopeOptions,
 } from '@/views/system/api-key-form-options'
 
 describe('api-key-form-options', () => {
-  describe('apiKeyStatusOptions', () => {
+  const t = (key: string) => `translated:${key}`
+
+  describe('buildApiKeyStatusOptions', () => {
     it('is an array with 3 items', () => {
-      expect(Array.isArray(apiKeyStatusOptions)).toBe(true)
-      expect(apiKeyStatusOptions).toHaveLength(3)
+      const options = buildApiKeyStatusOptions(t as never)
+
+      expect(Array.isArray(options)).toBe(true)
+      expect(options).toHaveLength(3)
     })
 
     it('each item has label and value', () => {
-      for (const option of apiKeyStatusOptions) {
+      const options = buildApiKeyStatusOptions(t as never)
+
+      for (const option of options) {
         expect(option).toHaveProperty('label')
         expect(option).toHaveProperty('value')
         expect(typeof option.label).toBe('string')
@@ -22,21 +28,32 @@ describe('api-key-form-options', () => {
     })
 
     it('contains expected status values', () => {
-      const values = apiKeyStatusOptions.map((o) => o.value)
+      const values = buildApiKeyStatusOptions(t as never).map((o) => o.value)
+
       expect(values).toContain('有效')
       expect(values).toContain('已过期')
       expect(values).toContain('已禁用')
     })
+
+    it('uses the provided translator at build time', () => {
+      expect(buildApiKeyStatusOptions(t as never)[0].label).toBe(
+        'translated:system.apiKeyForm.statusValid',
+      )
+    })
   })
 
-  describe('apiKeyUsageScopeOptions', () => {
+  describe('buildApiKeyUsageScopeOptions', () => {
     it('is an array with 3 items', () => {
-      expect(Array.isArray(apiKeyUsageScopeOptions)).toBe(true)
-      expect(apiKeyUsageScopeOptions).toHaveLength(3)
+      const options = buildApiKeyUsageScopeOptions(t as never)
+
+      expect(Array.isArray(options)).toBe(true)
+      expect(options).toHaveLength(3)
     })
 
     it('each item has label and value', () => {
-      for (const option of apiKeyUsageScopeOptions) {
+      const options = buildApiKeyUsageScopeOptions(t as never)
+
+      for (const option of options) {
         expect(option).toHaveProperty('label')
         expect(option).toHaveProperty('value')
         expect(typeof option.label).toBe('string')
@@ -45,7 +62,10 @@ describe('api-key-form-options', () => {
     })
 
     it('contains expected scope values', () => {
-      const values = apiKeyUsageScopeOptions.map((o) => o.value)
+      const values = buildApiKeyUsageScopeOptions(t as never).map(
+        (o) => o.value,
+      )
+
       expect(values).toContain('全部接口')
       expect(values).toContain('只读接口')
       expect(values).toContain('业务接口')

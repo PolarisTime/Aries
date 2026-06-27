@@ -1972,6 +1972,10 @@ export interface MessageSchema {
       noEditPermission: string
       saveFailed: string
     }
+    systemParameters: {
+      generalTab: string
+      numberRulesTab: string
+    }
     userAccount: {
       title: string
       searchPlaceholder: string
@@ -2095,7 +2099,15 @@ export interface MessageSchema {
       totpLastRotation: string
       rotateJwt: string
       rotateTotp: string
+      rotateConfirmTitle: string
+      rotateConfirmContent: string
+      rotateConfirmOk: string
       confirmRotation: string
+    }
+    securityCenter: {
+      sessionsTab: string
+      apiKeysTab: string
+      securityKeysTab: string
     }
     accessControl: {
       title: string
@@ -2170,6 +2182,11 @@ export interface MessageSchema {
       sectionTitle: string
       sectionDesc: string
       refresh: string
+      overviewTab: string
+      tableHealthTab: string
+      indexHealthTab: string
+      slowSqlTab: string
+      redisTab: string
       pgDiagnostics: string
       pgUnavailable: string
       unknown: string
@@ -2464,6 +2481,8 @@ export interface MessageSchema {
       colUsageScope: string
       colAllowedResources: string
       colAllowedActions: string
+      resourceSummary: string
+      actionSummary: string
       colOwnerUser: string
       colPrefix: string
       colCreatedAt: string

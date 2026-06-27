@@ -32,6 +32,9 @@ describe('systemPageDefinitions', () => {
     expect(page!.title).toBe('编号规则')
     expect(page!.menuParent).toBe('system')
     expect(page!.accessResources).toEqual(['general-setting'])
+    expect(page!.hiddenInMenu).toBe(true)
+    expect(page!.activeMenuKey).toBe('/system-parameters')
+    expect(page!.openPageKey).toBe('/system-parameters')
   })
 
   it('defines general-setting page', () => {
@@ -41,6 +44,21 @@ describe('systemPageDefinitions', () => {
     expect(page!.menuParent).toBe('system')
     expect(page!.moduleKey).toBe('general-setting')
     expect(page!.resourceKey).toBe('general-setting')
+    expect(page!.hiddenInMenu).toBe(true)
+    expect(page!.activeMenuKey).toBe('/system-parameters')
+    expect(page!.openPageKey).toBe('/system-parameters')
+  })
+
+  it('defines system-parameters page as merged settings entry', () => {
+    const page = systemPageDefinitions.find(
+      (d) => d.key === 'system-parameters',
+    )
+    expect(page).toBeDefined()
+    expect(page!.title).toBe('系统参数')
+    expect(page!.menuParent).toBe('system')
+    expect(page!.view).toBe('system-parameters')
+    expect(page!.accessResources).toEqual(['general-setting'])
+    expect(page!.hiddenInMenu).toBeUndefined()
   })
 
   it('defines company-setting page', () => {
@@ -75,6 +93,9 @@ describe('systemPageDefinitions', () => {
     expect(page!.title).toBe('会话管理')
     expect(page!.menuParent).toBe('system')
     expect(page!.resourceKey).toBe('session')
+    expect(page!.hiddenInMenu).toBe(true)
+    expect(page!.activeMenuKey).toBe('/security-center')
+    expect(page!.openPageKey).toBe('/security-center')
   })
 
   it('defines api-key page', () => {
@@ -83,6 +104,9 @@ describe('systemPageDefinitions', () => {
     expect(page!.title).toBe('API Key 管理')
     expect(page!.menuParent).toBe('system')
     expect(page!.resourceKey).toBe('api-key')
+    expect(page!.hiddenInMenu).toBe(true)
+    expect(page!.activeMenuKey).toBe('/security-center')
+    expect(page!.openPageKey).toBe('/security-center')
   })
 
   it('defines security-key page', () => {
@@ -91,6 +115,23 @@ describe('systemPageDefinitions', () => {
     expect(page!.title).toBe('安全密钥管理')
     expect(page!.menuParent).toBe('system')
     expect(page!.resourceKey).toBe('security-key')
+    expect(page!.hiddenInMenu).toBe(true)
+    expect(page!.activeMenuKey).toBe('/security-center')
+    expect(page!.openPageKey).toBe('/security-center')
+  })
+
+  it('defines security-center page as merged security entry', () => {
+    const page = systemPageDefinitions.find((d) => d.key === 'security-center')
+    expect(page).toBeDefined()
+    expect(page!.title).toBe('安全中心')
+    expect(page!.menuParent).toBe('system')
+    expect(page!.view).toBe('security-center')
+    expect(page!.accessResources).toEqual([
+      'session',
+      'api-key',
+      'security-key',
+    ])
+    expect(page!.hiddenInMenu).toBeUndefined()
   })
 
   it('uses the database resource for the database management page', () => {

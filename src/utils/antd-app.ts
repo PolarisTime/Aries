@@ -1,6 +1,5 @@
+import { message as messageApi, Modal as modalApi } from 'antd'
 import type AntdApp from 'antd/es/app'
-import messageApi from 'antd/es/message'
-import modalApi from 'antd/es/modal'
 
 type AntdAppApi = ReturnType<typeof AntdApp.useApp>
 type UnknownMethod = (...args: unknown[]) => unknown

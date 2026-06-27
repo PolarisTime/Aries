@@ -1,12 +1,6 @@
 import { EditOutlined } from '@ant-design/icons'
-import Card from 'antd/es/card'
-import Col from 'antd/es/col'
-import Row from 'antd/es/row'
-import Select from 'antd/es/select'
-import Statistic from 'antd/es/statistic'
+import { Card, Col, Row, Select, Statistic, Table, Typography } from 'antd'
 import type { TableProps } from 'antd/es/table'
-import Table from 'antd/es/table'
-import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
@@ -176,6 +170,7 @@ export function NumberRulesTableCard({
   ]
   return (
     <Card
+      className="system-list-card"
       title={t('system.numberRules.title')}
       extra={
         <SystemTableToolbar

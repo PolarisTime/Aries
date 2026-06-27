@@ -1,13 +1,15 @@
 import { EditOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Form from 'antd/es/form'
-import InputNumber from 'antd/es/input-number'
-import Modal from 'antd/es/modal'
-import Switch from 'antd/es/switch'
-import Table from 'antd/es/table'
-import Typography from 'antd/es/typography'
+import {
+  Button,
+  Card,
+  Form,
+  InputNumber,
+  Modal,
+  Switch,
+  Table,
+  Typography,
+} from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'

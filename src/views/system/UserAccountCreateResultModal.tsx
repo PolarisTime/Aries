@@ -1,6 +1,5 @@
 import { CopyOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Typography from 'antd/es/typography'
+import { Button, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
 import type { UserAccountCreateResult } from '@/types/user-account'

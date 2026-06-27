@@ -142,6 +142,7 @@ export const operationLogsPageConfig: ModulePageConfig = {
       title: i18next.t('modules.pages.operationLog.operationTime'),
       dataIndex: 'operationTime',
       width: 170,
+      type: 'datetime',
     },
     {
       title: i18next.t('modules.pages.operationLog.remark'),
@@ -196,6 +197,7 @@ export const operationLogsPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.operationLog.operationTime'),
       key: 'operationTime',
+      type: 'datetime',
     },
     { label: i18next.t('modules.pages.operationLog.remark'), key: 'remark' },
   ],

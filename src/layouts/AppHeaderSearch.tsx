@@ -1,8 +1,6 @@
 import { SearchOutlined } from '@ant-design/icons'
+import { AutoComplete, Button, Input } from 'antd'
 import type { AutoCompleteProps } from 'antd/es/auto-complete'
-import AutoComplete from 'antd/es/auto-complete'
-import Button from 'antd/es/button'
-import Input from 'antd/es/input'
 import { useTranslation } from 'react-i18next'
 import { buildFormControlId } from '@/utils/form-control-id'
 
@@ -46,9 +44,11 @@ export function AppHeaderSearch({
           value={keyword}
           options={options}
           open={open && options.length > 0}
-          onSearch={(value) => {
-            onOpen()
-            void onSearch(value)
+          showSearch={{
+            onSearch: (value) => {
+              onOpen()
+              void onSearch(value)
+            },
           }}
           onChange={(value) => {
             const nextValue = String(value)

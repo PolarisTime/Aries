@@ -1,5 +1,4 @@
-import Modal from 'antd/es/modal'
-import Tabs from 'antd/es/tabs'
+import { Modal, Tabs } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PersonalSettingsDisplayTab } from '@/layouts/PersonalSettingsDisplayTab'

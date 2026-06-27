@@ -1,6 +1,4 @@
-import Button from 'antd/es/button'
-import Divider from 'antd/es/divider'
-import Popconfirm from 'antd/es/popconfirm'
+import { Button, Divider, Popconfirm } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'

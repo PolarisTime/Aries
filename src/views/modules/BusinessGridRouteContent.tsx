@@ -1,5 +1,5 @@
 import { useLocation } from '@tanstack/react-router'
-import Empty from 'antd/es/empty'
+import { Empty } from 'antd'
 import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'

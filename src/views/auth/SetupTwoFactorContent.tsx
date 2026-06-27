@@ -1,18 +1,20 @@
 import { ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
-import Alert from 'antd/es/alert'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Col from 'antd/es/col'
-import Flex from 'antd/es/flex'
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Flex,
+  Form,
+  Image,
+  Input,
+  Row,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+} from 'antd'
 import type { FormInstance } from 'antd/es/form'
-import Form from 'antd/es/form'
-import Image from 'antd/es/image'
-import Input from 'antd/es/input'
-import Row from 'antd/es/row'
-import Space from 'antd/es/space'
-import Spin from 'antd/es/spin'
-import Tag from 'antd/es/tag'
-import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
 import { toDataImageUrl } from '@/utils/data-url'
 import { buildSetupTwoFactorSteps } from '@/views/auth/setup-two-factor-constants'

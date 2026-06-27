@@ -1,4 +1,5 @@
 import { StopOutlined } from '@ant-design/icons'
+import { Tooltip, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { TFunction } from 'i18next'
 import type { RefreshTokenRecord } from '@/api/session-management'
@@ -57,10 +58,22 @@ function getSessionOnlineLabel(record: RefreshTokenRecord, t: TFunction) {
     : t('system.session.offline')
 }
 
-function truncateSessionDeviceInfo(text: unknown) {
-  const normalized = asString(text)
+function truncateMiddle(text: string, maxLength: number) {
+  if (text.length <= maxLength) return text
+  const edgeLength = Math.max(4, Math.floor((maxLength - 3) / 2))
+  return `${text.slice(0, edgeLength)}...${text.slice(-edgeLength)}`
+}
+
+function renderCompactCopyText(value: unknown, maxLength: number) {
+  const normalized = asString(value)
   if (!normalized) return '--'
-  return normalized.length > 60 ? `${normalized.slice(0, 60)}...` : normalized
+  return (
+    <Tooltip title={normalized}>
+      <Typography.Text copyable={{ text: normalized }}>
+        {truncateMiddle(normalized, maxLength)}
+      </Typography.Text>
+    </Tooltip>
+  )
 }
 
 interface SessionColumnsOptions {
@@ -98,8 +111,9 @@ export function buildSessionTableColumns({
     {
       dataIndex: 'tokenId',
       title: t('system.session.tokenId'),
-      width: 200,
+      width: 180,
       ellipsis: true,
+      render: (value: unknown) => renderCompactCopyText(value, 22),
     },
     {
       dataIndex: 'loginName',
@@ -119,9 +133,9 @@ export function buildSessionTableColumns({
     {
       dataIndex: 'deviceInfo',
       title: t('system.session.deviceInfo'),
-      width: 280,
+      width: 240,
       ellipsis: true,
-      render: (value: unknown) => truncateSessionDeviceInfo(value),
+      render: (value: unknown) => renderCompactCopyText(value, 42),
     },
     {
       dataIndex: 'createdAt',

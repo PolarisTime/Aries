@@ -1,5 +1,4 @@
-import Flex from 'antd/es/flex'
-import Typography from 'antd/es/typography'
+import { Flex, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { listAllBusinessModuleRows } from '@/api/business'
 import type { SearchParams } from '@/types/api-raw'

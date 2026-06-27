@@ -1,8 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
-import Button from 'antd/es/button'
+import { Button, Result, Typography } from 'antd'
 import type { ResultProps } from 'antd/es/result'
-import Result from 'antd/es/result'
-import Typography from 'antd/es/typography'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 

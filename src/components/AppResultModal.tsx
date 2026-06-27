@@ -1,4 +1,4 @@
-import Modal from 'antd/es/modal'
+import { Modal } from 'antd'
 import type { ResultProps } from 'antd/es/result'
 import { AppResult } from '@/components/AppResult'
 

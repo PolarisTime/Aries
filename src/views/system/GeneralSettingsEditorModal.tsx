@@ -1,11 +1,13 @@
 import type { FormInstance } from 'antd'
-import ColorPicker from 'antd/es/color-picker'
-import Form from 'antd/es/form'
-import Input from 'antd/es/input'
-import Select from 'antd/es/select'
-import Space from 'antd/es/space'
-import Switch from 'antd/es/switch'
-import Typography from 'antd/es/typography'
+import {
+  ColorPicker,
+  Form,
+  Input,
+  Select,
+  Space,
+  Switch,
+  Typography,
+} from 'antd'
 import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
 import type { ModuleRecord } from '@/types/module-page'
@@ -53,6 +55,25 @@ function WatermarkColorInput({
         placeholder="rgba(0,0,0,0.08)"
         maxLength={50}
       />
+    </Space.Compact>
+  )
+}
+
+function NumericInputWithAddon({
+  addon,
+  max,
+  min,
+  step,
+}: {
+  addon: string
+  max?: number
+  min?: number
+  step?: number
+}) {
+  return (
+    <Space.Compact className="w-full">
+      <Input type="number" min={min} max={max} step={step} />
+      <Space.Addon>{addon}</Space.Addon>
     </Space.Compact>
   )
 }
@@ -157,40 +178,36 @@ export function GeneralSettingsEditorModal({
                 required
               >
                 {isDefaultTaxRateSetting(record) ? (
-                  <Input
-                    type="number"
+                  <NumericInputWithAddon
+                    addon="%"
                     min={0}
                     max={1}
                     step={0.01}
-                    addonAfter="%"
                   />
                 ) : isDefaultListPageSizeSetting(record) ? (
                   <Input type="number" min={1} max={200} step={1} />
                 ) : isWatermarkPropSetting(record) ? (
                   asString(record.settingCode) === WATERMARK_FONT_SIZE_CODE ? (
-                    <Input
-                      type="number"
+                    <NumericInputWithAddon
+                      addon="px"
                       min={8}
                       max={72}
                       step={1}
-                      addonAfter="px"
                     />
                   ) : asString(record.settingCode) ===
                     WATERMARK_DENSITY_CODE ? (
-                    <Input
-                      type="number"
+                    <NumericInputWithAddon
+                      addon="px"
                       min={50}
                       max={400}
                       step={10}
-                      addonAfter="px"
                     />
                   ) : (
-                    <Input
-                      type="number"
+                    <NumericInputWithAddon
+                      addon="°"
                       min={-90}
                       max={90}
                       step={1}
-                      addonAfter="°"
                     />
                   )
                 ) : (

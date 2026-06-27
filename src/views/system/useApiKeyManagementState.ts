@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import Form from 'antd/es/form'
+import { Form } from 'antd'
 import i18next from 'i18next'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -22,10 +22,17 @@ import { asString } from '@/utils/type-narrowing'
 interface ApiKeyCreateFormValues {
   userId?: string
   keyName?: string
+  presetKey?: string
   usageScope?: string
   allowedResources?: string[]
   allowedActions?: string[]
   expireDays?: number | null
+}
+
+function getDefaultAllowedActions(
+  actionOptions: Array<{ code: string }>,
+): string[] {
+  return actionOptions.some((item) => item.code === 'read') ? ['read'] : []
 }
 
 export function useApiKeyManagementState(enabled = true) {
@@ -110,7 +117,7 @@ export function useApiKeyManagementState(enabled = true) {
     }
     form.setFieldValue(
       'allowedActions',
-      actionOptions.map((item) => item.code),
+      getDefaultAllowedActions(actionOptions),
     )
   }, [actionOptions, form, generateModalOpen])
 
@@ -141,8 +148,9 @@ export function useApiKeyManagementState(enabled = true) {
     setGeneratedKey(null)
     form.resetFields()
     form.setFieldsValue({
+      presetKey: 'custom',
       usageScope: '全部接口',
-      allowedActions: actionOptions.map((item) => item.code),
+      allowedActions: getDefaultAllowedActions(actionOptions),
     })
     setGenerateModalOpen(true)
   }
@@ -156,6 +164,10 @@ export function useApiKeyManagementState(enabled = true) {
       }
       if (!values.allowedActions?.length) {
         message.warning(i18next.t('system.apiKeyState.selectOneAction'))
+        return
+      }
+      if (!values.allowedResources?.length) {
+        message.warning(i18next.t('system.apiKeyState.selectOneResource'))
         return
       }
       setTotpModalOpen(true)

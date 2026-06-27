@@ -182,6 +182,10 @@ const viewLoaders: Record<
     import('@/views/modules/BusinessGridView').then((m) => ({
       default: m.BusinessGridView,
     })),
+  'system-parameters': () =>
+    import('@/views/system/SystemParametersView').then((m) => ({
+      default: m.SystemParametersView,
+    })),
   'number-rules': () =>
     import('@/views/system/NumberRulesView').then((m) => ({
       default: m.NumberRulesView,
@@ -209,6 +213,10 @@ const viewLoaders: Record<
   'access-control': () =>
     import('@/views/system/AccessControlView').then((m) => ({
       default: m.AccessControlView,
+    })),
+  'security-center': () =>
+    import('@/views/system/SecurityCenterView').then((m) => ({
+      default: m.SecurityCenterView,
     })),
   'security-key': () =>
     import('@/views/system/SecurityKeyManagementView').then((m) => ({

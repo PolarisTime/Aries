@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import Form from 'antd/es/form'
+import { Form } from 'antd'
 import i18next from 'i18next'
 import { useState } from 'react'
 import {

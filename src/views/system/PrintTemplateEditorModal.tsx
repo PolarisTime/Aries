@@ -5,18 +5,20 @@ import {
   SaveOutlined,
 } from '@ant-design/icons'
 import type { FormInstance } from 'antd'
-import Alert from 'antd/es/alert'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Col from 'antd/es/col'
-import Divider from 'antd/es/divider'
-import Form from 'antd/es/form'
-import Input from 'antd/es/input'
-import Row from 'antd/es/row'
-import Select from 'antd/es/select'
-import Space from 'antd/es/space'
-import Tag from 'antd/es/tag'
-import Typography from 'antd/es/typography'
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Divider,
+  Form,
+  Input,
+  Row,
+  Select,
+  Space,
+  Tag,
+  Typography,
+} from 'antd'
 import { useTranslation } from 'react-i18next'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'

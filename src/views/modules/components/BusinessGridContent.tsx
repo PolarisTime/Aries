@@ -1,5 +1,4 @@
-import Alert from 'antd/es/alert'
-import Card from 'antd/es/card'
+import { Alert, Card } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import { useState } from 'react'
 import type { SearchParams } from '@/types/api-raw'

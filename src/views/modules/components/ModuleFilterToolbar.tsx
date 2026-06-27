@@ -1,12 +1,14 @@
-import Button from 'antd/es/button'
-import Col from 'antd/es/col'
-import DatePicker from 'antd/es/date-picker'
-import Form from 'antd/es/form'
-import Input from 'antd/es/input'
-import Row from 'antd/es/row'
-import Segmented from 'antd/es/segmented'
-import Select from 'antd/es/select'
-import Space from 'antd/es/space'
+import {
+  Button,
+  Col,
+  DatePicker,
+  Form,
+  Input,
+  Row,
+  Segmented,
+  Select,
+  Space,
+} from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'

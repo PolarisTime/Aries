@@ -15,6 +15,15 @@ const mockModalConfirm = vi.fn()
 const mockUseQuery = vi.fn()
 const mockUseMutation = vi.fn()
 const mockUseQueryClient = vi.fn()
+const mockFormInstance = vi.hoisted(() => ({
+  resetFields: vi.fn(),
+  setFieldsValue: vi.fn(),
+  getFieldValue: vi.fn().mockReturnValue([]),
+  setFieldValue: vi.fn(),
+  getFieldsValue: vi.fn(() => ({})),
+  validateFields: vi.fn(),
+  getFieldValues: vi.fn(),
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -76,18 +85,9 @@ vi.mock('@/utils/type-narrowing', () => ({
 }))
 
 vi.mock('antd/es/form', () => {
-  const formInstance = {
-    resetFields: vi.fn(),
-    setFieldsValue: vi.fn(),
-    getFieldValue: vi.fn().mockReturnValue([]),
-    setFieldValue: vi.fn(),
-    getFieldsValue: vi.fn(() => ({})),
-    validateFields: vi.fn(),
-    getFieldValues: vi.fn(),
-  }
   return {
     default: {
-      useForm: vi.fn(() => [formInstance]),
+      useForm: vi.fn(() => [mockFormInstance]),
     },
   }
 })
@@ -97,6 +97,9 @@ import { useApiKeyManagementState } from '@/views/system/useApiKeyManagementStat
 describe('useApiKeyManagementState', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFormInstance.getFieldValue.mockReturnValue([])
+    mockFormInstance.getFieldsValue.mockReturnValue({})
+    mockFormInstance.validateFields.mockReset()
     mockCan.mockReturnValue(true)
     mockUseQueryClient.mockReturnValue({
       invalidateQueries: vi.fn(),
@@ -197,6 +200,38 @@ describe('useApiKeyManagementState', () => {
       result.current.openGenerateModal()
     })
     expect(result.current.generateModalOpen).toBe(true)
+  })
+
+  it('openGenerateModal defaults allowed actions to read only', () => {
+    const { result } = renderHook(() => useApiKeyManagementState())
+    act(() => {
+      result.current.openGenerateModal()
+    })
+    expect(mockFormInstance.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowedActions: ['read'],
+      }),
+    )
+  })
+
+  it('handleGenerate requires at least one resource', async () => {
+    mockFormInstance.validateFields.mockResolvedValue({
+      userId: '1',
+      keyName: '集成密钥',
+      usageScope: '全部接口',
+      allowedActions: ['read'],
+      allowedResources: [],
+    })
+
+    const { result } = renderHook(() => useApiKeyManagementState())
+    await act(async () => {
+      await result.current.handleGenerate()
+    })
+
+    expect(mockMessageWarning).toHaveBeenCalledWith(
+      '请至少选择一个允许访问资源',
+    )
+    expect(result.current.totpModalOpen).toBe(false)
   })
 
   it('setGenerateModalOpen updates state', () => {

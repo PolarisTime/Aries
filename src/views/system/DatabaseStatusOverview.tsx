@@ -1,11 +1,13 @@
 import { CloudServerOutlined, DatabaseOutlined } from '@ant-design/icons'
-import Card from 'antd/es/card'
-import Col from 'antd/es/col'
-import Descriptions from 'antd/es/descriptions'
-import Row from 'antd/es/row'
-import Skeleton from 'antd/es/skeleton'
-import Statistic from 'antd/es/statistic'
-import Typography from 'antd/es/typography'
+import {
+  Card,
+  Col,
+  Descriptions,
+  Row,
+  Skeleton,
+  Statistic,
+  Typography,
+} from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { DatabaseStatus } from '@/api/database-admin'
 import { StatusTag } from '@/components/StatusTag'

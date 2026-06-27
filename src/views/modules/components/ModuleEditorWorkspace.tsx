@@ -5,12 +5,7 @@ import {
   WarningFilled,
 } from '@ant-design/icons'
 import { useNavigate } from '@tanstack/react-router'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Form from 'antd/es/form'
-import Space from 'antd/es/space'
-import Table from 'antd/es/table'
-import Typography from 'antd/es/typography'
+import { Button, Card, Form, Space, Table, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import {
@@ -447,7 +442,7 @@ function SaveResultOverlay({
 
       {saveResult.record ? (
         <Card size="small" className="mb-16">
-          <Space direction="vertical" size={4}>
+          <Space orientation="vertical" size={4}>
             {(config.formFields || []).map((field) => {
               const val = saveResult.record?.[field.key]
               if (val == null || val === '') return null

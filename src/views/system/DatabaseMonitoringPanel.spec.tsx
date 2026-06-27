@@ -298,7 +298,7 @@ describe('DatabaseMonitoringPanel', () => {
     )
   })
 
-  it('renders postgres, table, index, query and redis metrics', () => {
+  it('renders postgres diagnostics across database tabs', () => {
     mockUseQuery.mockReturnValue({
       data: fullMonitoring,
       isFetching: false,
@@ -316,30 +316,53 @@ describe('DatabaseMonitoringPanel', () => {
     expect(
       screen.getByText('system.databaseMonitor.currentActivity'),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText('system.databaseMonitor.tableHealth'),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('system.databaseMonitor.indexHealth'),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('system.databaseMonitor.slowSqlSummary'),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('system.databaseMonitor.redisMonitor'),
-    ).toBeInTheDocument()
-
     expect(screen.getByText('4 / 10')).toBeInTheDocument()
     expect(screen.getByText('98.50%')).toBeInTheDocument()
     expect(screen.getByText('2d')).toBeInTheDocument()
-    expect(screen.getAllByText('purchase_order')).toHaveLength(2)
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.tableHealthTab',
+      }),
+    )
+    expect(
+      screen.getByText('system.databaseMonitor.tableHealth'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('purchase_order')).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.indexHealthTab',
+      }),
+    )
+    expect(
+      screen.getByText('system.databaseMonitor.indexHealth'),
+    ).toBeInTheDocument()
     expect(screen.getByText('idx_purchase_order_no')).toBeInTheDocument()
     expect(
       screen.getByText('system.databaseMonitor.invalid'),
     ).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.slowSqlTab',
+      }),
+    )
+    expect(
+      screen.getByText('system.databaseMonitor.slowSqlSummary'),
+    ).toBeInTheDocument()
     expect(screen.getByText('select * from purchase_order')).toBeInTheDocument()
     expect(screen.getByText('123.46')).toBeInTheDocument()
     expect(screen.getByText('17.64')).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.redisTab',
+      }),
+    )
+    expect(
+      screen.getByText('system.databaseMonitor.redisMonitor'),
+    ).toBeInTheDocument()
     expect(screen.getByText('DB 0')).toBeInTheDocument()
     expect(screen.getByText('120 keys')).toBeInTheDocument()
     expect(screen.getByText('45')).toBeInTheDocument()
@@ -354,7 +377,13 @@ describe('DatabaseMonitoringPanel', () => {
 
     render(<DatabaseMonitoringPanel visible={true} />)
 
-    expect(screen.getAllByText('连接失败')).toHaveLength(2)
+    expect(screen.getByText('连接失败')).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.redisTab',
+      }),
+    )
 
     const redisSection = screen
       .getByText('system.databaseMonitor.redisMonitor')
@@ -390,6 +419,12 @@ describe('DatabaseMonitoringPanel', () => {
     })
 
     render(<DatabaseMonitoringPanel visible={true} />)
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.slowSqlTab',
+      }),
+    )
 
     expect(
       screen.getByText('system.databaseMonitor.pgStatNotEnabled'),

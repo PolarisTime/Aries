@@ -1,5 +1,6 @@
 import { EyeOutlined, StopOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
+import { Tooltip } from 'antd'
 import i18next from 'i18next'
 import type {
   ApiKeyActionOption,
@@ -28,6 +29,27 @@ interface Options {
   resourceOptions: ApiKeyResourceOption[]
   onView: (record: ApiKeyRecord) => void
   onRevoke: (record: ApiKeyRecord) => void
+}
+
+function renderApiKeyScopeSummary({
+  count,
+  emptyText,
+  fullText,
+  summaryKey,
+}: {
+  count: number
+  emptyText: string
+  fullText: string
+  summaryKey: string
+}) {
+  if (count <= 0) {
+    return emptyText
+  }
+  return (
+    <Tooltip title={fullText}>
+      <span>{i18next.t(summaryKey, { count })}</span>
+    </Tooltip>
+  )
 }
 
 export function buildApiKeyListColumns({
@@ -77,18 +99,32 @@ export function buildApiKeyListColumns({
     {
       dataIndex: 'allowedResources',
       title: i18next.t('system.apiKeyColumns.colAllowedResources'),
-      width: 240,
+      width: 150,
       ellipsis: true,
-      render: (value: string[]) =>
-        getApiKeyAllowedResourceText(value, resourceOptions),
+      render: (value: string[]) => {
+        const fullText = getApiKeyAllowedResourceText(value, resourceOptions)
+        return renderApiKeyScopeSummary({
+          count: value?.length || 0,
+          emptyText: fullText,
+          fullText,
+          summaryKey: 'system.apiKeyColumns.resourceSummary',
+        })
+      },
     },
     {
       dataIndex: 'allowedActions',
       title: i18next.t('system.apiKeyColumns.colAllowedActions'),
-      width: 180,
+      width: 140,
       ellipsis: true,
-      render: (value: string[]) =>
-        getApiKeyAllowedActionText(value, actionOptions),
+      render: (value: string[]) => {
+        const fullText = getApiKeyAllowedActionText(value, actionOptions)
+        return renderApiKeyScopeSummary({
+          count: value?.length || 0,
+          emptyText: fullText,
+          fullText,
+          summaryKey: 'system.apiKeyColumns.actionSummary',
+        })
+      },
     },
     {
       title: i18next.t('system.apiKeyColumns.colOwnerUser'),

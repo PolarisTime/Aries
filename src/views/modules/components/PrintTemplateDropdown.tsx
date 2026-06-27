@@ -1,6 +1,6 @@
 import { PrinterOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import Button from 'antd/es/button'
+import { Button } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {

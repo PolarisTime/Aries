@@ -85,26 +85,24 @@ describe('api-key-list-columns', () => {
       status: '已过期',
     })
 
-    expect(
-      renderColumn(
-        columns,
-        'allowedResources',
-        record.allowedResources,
-        record,
-      ),
-    ).toBe('收款单、unknown-resource')
-    expect(
-      renderColumn(columns, 'allowedActions', record.allowedActions, record),
-    ).toBe('读取、unknown-action')
     expect(renderColumn(columns, 'expiresAt', null, record)).toBe('永不过期')
     expect(renderColumn(columns, 'lastUsedAt', '', record)).toBe('--')
 
     render(
       <>
+        {renderColumn(
+          columns,
+          'allowedResources',
+          record.allowedResources,
+          record,
+        )}
+        {renderColumn(columns, 'allowedActions', record.allowedActions, record)}
         {renderColumn(columns, 'userName', null, record)}
         {renderColumn(columns, 'status', '已过期', record)}
       </>,
     )
+    expect(screen.getByText('2 个资源')).toBeInTheDocument()
+    expect(screen.getByText('2 个动作')).toBeInTheDocument()
     expect(screen.getByText('测试员')).toBeInTheDocument()
     expect(screen.getByText('tester')).toBeInTheDocument()
     expect(screen.getByText('已过期')).toBeInTheDocument()

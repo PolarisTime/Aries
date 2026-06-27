@@ -4,9 +4,7 @@ import {
   EyeOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
-import Card from 'antd/es/card'
-import Select from 'antd/es/select'
-import Table from 'antd/es/table'
+import { Card, Select, Table } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
@@ -185,6 +183,7 @@ export function UserAccountTableCard({
   ]
   return (
     <Card
+      className="system-list-card"
       title={t('system.userAccountTable.title')}
       extra={
         <SystemTableToolbar

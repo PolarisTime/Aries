@@ -1,6 +1,5 @@
-import Empty from 'antd/es/empty'
+import { Empty, Table } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
-import Table from 'antd/es/table'
 import {
   type CSSProperties,
   type MouseEvent,

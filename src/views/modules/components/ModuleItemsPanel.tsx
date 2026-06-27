@@ -1,4 +1,4 @@
-import Typography from 'antd/es/typography'
+import { Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ModuleColumnDefinition, ModuleRecord } from '@/types/module-page'
 import { EditorItemsSummary } from './EditorItemsSummary'

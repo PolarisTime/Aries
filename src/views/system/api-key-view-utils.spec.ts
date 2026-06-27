@@ -56,12 +56,12 @@ describe('api-key-view-utils', () => {
       { code: 'product', title: '商品管理', group: '业务' },
     ]
 
-    it('returns unlimited text when allowedResources is empty', () => {
+    it('returns usage scope fallback text when allowedResources is empty', () => {
       const result = getApiKeyAllowedResourceText([], resourceOptions)
       expect(result).toBeDefined()
     })
 
-    it('returns unlimited text when allowedResources is null/undefined', () => {
+    it('returns usage scope fallback text when allowedResources is null/undefined', () => {
       expect(
         getApiKeyAllowedResourceText(null as never, resourceOptions),
       ).toBeDefined()

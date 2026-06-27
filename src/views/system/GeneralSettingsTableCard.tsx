@@ -1,14 +1,16 @@
 import { EditOutlined } from '@ant-design/icons'
-import Card from 'antd/es/card'
-import Col from 'antd/es/col'
-import Row from 'antd/es/row'
-import Select from 'antd/es/select'
-import Space from 'antd/es/space'
-import Statistic from 'antd/es/statistic'
-import Switch from 'antd/es/switch'
+import {
+  Card,
+  Col,
+  Row,
+  Select,
+  Space,
+  Statistic,
+  Switch,
+  Table,
+  Typography,
+} from 'antd'
 import type { TableProps } from 'antd/es/table'
-import Table from 'antd/es/table'
-import Typography from 'antd/es/typography'
 import { useTranslation } from 'react-i18next'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { TableActions } from '@/components/TableActions'
@@ -133,6 +135,7 @@ export function GeneralSettingsTableCard({
   ]
   return (
     <Card
+      className="system-list-card"
       title={t('system.generalSettingsTable.title')}
       extra={
         <SystemTableToolbar

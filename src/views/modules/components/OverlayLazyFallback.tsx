@@ -1,5 +1,4 @@
-import Flex from 'antd/es/flex'
-import Spin from 'antd/es/spin'
+import { Flex, Spin } from 'antd'
 
 export function OverlayLazyFallback() {
   return (

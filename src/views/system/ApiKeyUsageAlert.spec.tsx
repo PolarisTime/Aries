@@ -21,8 +21,9 @@ describe('ApiKeyUsageAlert', () => {
     expect(alert).toBeInTheDocument()
   })
 
-  it('renders usage items', () => {
+  it('renders compact usage message', () => {
     const { container } = render(<ApiKeyUsageAlert />)
-    expect(container.textContent).toContain('system.apiKeyUsage.title')
+    expect(container.textContent).toContain('system.apiKeyUsage.message')
+    expect(container.textContent).not.toContain('system.apiKeyUsage.item1')
   })
 })

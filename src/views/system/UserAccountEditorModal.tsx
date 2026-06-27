@@ -1,13 +1,15 @@
 import type { FormInstance } from 'antd'
-import Col from 'antd/es/col'
-import Form from 'antd/es/form'
-import Input from 'antd/es/input'
-import Row from 'antd/es/row'
-import Select from 'antd/es/select'
-import Space from 'antd/es/space'
-import Spin from 'antd/es/spin'
-import Tag from 'antd/es/tag'
-import Typography from 'antd/es/typography'
+import {
+  Col,
+  Form,
+  Input,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+} from 'antd'
 import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
 import {
@@ -195,8 +197,7 @@ export function UserAccountEditorModal({
                   required
                 >
                   <Select
-                    showSearch
-                    optionFilterProp="label"
+                    showSearch={{ optionFilterProp: 'label' }}
                     placeholder={t(
                       'system.userAccountEditor.departmentPlaceholder',
                     )}

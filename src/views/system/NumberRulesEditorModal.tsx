@@ -1,10 +1,5 @@
 import type { FormInstance } from 'antd'
-import Col from 'antd/es/col'
-import Form from 'antd/es/form'
-import Input from 'antd/es/input'
-import Row from 'antd/es/row'
-import Select from 'antd/es/select'
-import Typography from 'antd/es/typography'
+import { Col, Form, Input, Row, Select, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
 import {

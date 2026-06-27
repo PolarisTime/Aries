@@ -14,12 +14,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import Button from 'antd/es/button'
-import Checkbox from 'antd/es/checkbox'
-import Divider from 'antd/es/divider'
-import Popover from 'antd/es/popover'
-import Space from 'antd/es/space'
-import Typography from 'antd/es/typography'
+import { Button, Checkbox, Divider, Popover, Space, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ModuleColumnDefinition } from '@/types/module-page'

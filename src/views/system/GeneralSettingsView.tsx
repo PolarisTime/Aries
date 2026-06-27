@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import Form from 'antd/es/form'
+import { Form } from 'antd'
 import { useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listSystemSettings, saveSystemSetting } from '@/api/system-settings'

@@ -3,10 +3,7 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Flex from 'antd/es/flex'
-import Pagination from 'antd/es/pagination'
-import Space from 'antd/es/space'
+import { Button, Flex, Pagination, Space } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ModuleActionDefinition } from '@/types/module-page'

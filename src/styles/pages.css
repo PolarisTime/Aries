@@ -235,6 +235,14 @@
   padding: 20px;
 }
 
+.database-monitor-tabs > .ant-tabs-nav {
+  margin-bottom: 12px;
+}
+
+.database-monitor-tabs > .ant-tabs-content-holder {
+  min-height: 0;
+}
+
 .database-section-heading {
   display: flex;
   align-items: flex-start;
@@ -316,6 +324,15 @@
 
 .database-monitor-card .ant-table-wrapper {
   border-radius: 0 0 8px 8px;
+}
+
+.database-monitor-card .ant-table {
+  line-height: 1.35;
+}
+
+.database-monitor-card .ant-table-thead > tr > th,
+.database-monitor-card .ant-table-tbody > tr > td {
+  padding-block: 7px;
 }
 
 .database-monitor-stack {
@@ -402,6 +419,23 @@
 
   .database-service-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .database-status-section {
+    padding: 12px;
+  }
+
+  .database-monitor-tabs > .ant-tabs-nav {
+    margin-bottom: 10px;
+  }
+
+  .database-monitor-card .ant-table-thead > tr > th,
+  .database-monitor-card .ant-table-tbody > tr > td {
+    padding-block: 6px;
+  }
+
+  .database-metric-tile {
+    padding: 9px 10px;
   }
 }
 

@@ -3,12 +3,7 @@ import {
   SafetyCertificateOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Form from 'antd/es/form'
-import Image from 'antd/es/image'
-import Input from 'antd/es/input'
-import Space from 'antd/es/space'
-import Typography from 'antd/es/typography'
+import { Button, Form, Image, Input, Space, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { InitialSetupTotpResult } from '@/types/setup'
 import { toDataImageUrl } from '@/utils/data-url'

@@ -21,15 +21,17 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useQuery } from '@tanstack/react-query'
-import Button from 'antd/es/button'
-import Checkbox from 'antd/es/checkbox'
-import Empty from 'antd/es/empty'
-import Input from 'antd/es/input'
-import Modal from 'antd/es/modal'
-import Select from 'antd/es/select'
-import Space from 'antd/es/space'
-import Tag from 'antd/es/tag'
-import Typography from 'antd/es/typography'
+import {
+  Button,
+  Checkbox,
+  Empty,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Tag,
+  Typography,
+} from 'antd'
 import { useMemo, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import {

@@ -19,8 +19,8 @@ describe('resolveRoutePageContext', () => {
 
   it('reuses api key list tab for detail pages', () => {
     expect(resolveRoutePageContext('/api-key/123', mockT)).toEqual({
-      activeMenuKey: '/api-key',
-      openPageKey: '/api-key',
+      activeMenuKey: '/security-center',
+      openPageKey: '/security-center',
       title: 'API Key 详情',
     })
   })

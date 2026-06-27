@@ -1,4 +1,4 @@
-import Alert from 'antd/es/alert'
+import { Alert } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
 import { usePageVisibility } from '@/hooks/usePageVisibility'

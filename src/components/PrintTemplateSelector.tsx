@@ -1,5 +1,4 @@
-import Radio from 'antd/es/radio'
-import Space from 'antd/es/space'
+import { Radio, Space } from 'antd'
 import type { PrintTemplateRecord } from '@/types/print-template'
 
 interface Props {
@@ -18,7 +17,7 @@ export function PrintTemplateSelector({
       defaultValue={defaultId}
       onChange={(e) => onSelect(e.target.value)}
     >
-      <Space direction="vertical" className="w-full">
+      <Space orientation="vertical" className="w-full">
         {templates.map((item) => (
           <Radio key={item.id} value={item.id}>
             {item.templateName}

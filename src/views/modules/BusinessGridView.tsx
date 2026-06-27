@@ -1,5 +1,5 @@
 import { useLoaderData, useLocation } from '@tanstack/react-router'
-import Empty from 'antd/es/empty'
+import { Empty } from 'antd'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { primeBusinessPageConfig } from '@/config/business-page-loader'

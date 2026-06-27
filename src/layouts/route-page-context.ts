@@ -37,8 +37,8 @@ export function resolveRoutePageContext(
   if (normalizedPath.startsWith('/api-key/')) {
     return {
       title: t('layouts.routePage.apiKeyDetail'),
-      activeMenuKey: '/api-key',
-      openPageKey: '/api-key',
+      activeMenuKey: '/security-center',
+      openPageKey: '/security-center',
     }
   }
 

@@ -3,10 +3,7 @@ import {
   ClockCircleOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
-import Alert from 'antd/es/alert'
-import Button from 'antd/es/button'
-import Input from 'antd/es/input'
-import Space from 'antd/es/space'
+import { Alert, Button, Input, Space } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { buildFormControlId } from '@/utils/form-control-id'
 

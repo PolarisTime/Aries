@@ -1,4 +1,4 @@
-import Form from 'antd/es/form'
+import { Form } from 'antd'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {

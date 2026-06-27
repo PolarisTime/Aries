@@ -1,9 +1,6 @@
 import { MenuOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
-import Checkbox from 'antd/es/checkbox'
-import Input from 'antd/es/input'
-import InputNumber from 'antd/es/input-number'
-import Select from 'antd/es/select'
+import { Checkbox, Input, InputNumber, Select } from 'antd'
 import {
   getEditorItemMin,
   getEditorItemPrecision,
@@ -116,15 +113,16 @@ function buildEditableColumnRender({
                 ? record.materialCode
                 : undefined
             }
-            showSearch
+            showSearch={{
+              filterOption: (input, option) => {
+                const keywords = input.trim().toLowerCase().split(/\s+/)
+                const searchText = (option?.searchText || '').toLowerCase()
+                return keywords.every((kw) => searchText.includes(kw))
+              },
+            }}
             allowClear
             className="w-full"
             placeholder="搜索品牌 / 类别 / 材质 / 规格 / 长度"
-            filterOption={(input, option) => {
-              const keywords = input.trim().toLowerCase().split(/\s+/)
-              const searchText = (option?.searchText || '').toLowerCase()
-              return keywords.every((kw) => searchText.includes(kw))
-            }}
             onChange={(selectedValue) =>
               handleMaterialSelect(record.id, String(selectedValue || ''))
             }
@@ -141,11 +139,10 @@ function buildEditableColumnRender({
                 ? record.warehouseName
                 : undefined
             }
-            showSearch
+            showSearch={{ filterOption: createPinyinFilterOption() }}
             allowClear
             className="w-full"
             placeholder="选择码头"
-            filterOption={createPinyinFilterOption()}
             onChange={(selectedValue: string) =>
               handleWarehouseSelect(record.id, selectedValue)
             }

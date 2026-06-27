@@ -1,6 +1,4 @@
-import Button from 'antd/es/button'
-import Radio from 'antd/es/radio'
-import Select from 'antd/es/select'
+import { Button, Radio, Select } from 'antd'
 import { useTranslation } from 'react-i18next'
 import {
   fontSizeOptions,

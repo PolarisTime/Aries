@@ -1,14 +1,16 @@
 import type { FormInstance } from 'antd'
-import Alert from 'antd/es/alert'
-import Button from 'antd/es/button'
-import Descriptions from 'antd/es/descriptions'
-import Divider from 'antd/es/divider'
-import Flex from 'antd/es/flex'
-import Form from 'antd/es/form'
-import Image from 'antd/es/image'
-import Input from 'antd/es/input'
-import Tag from 'antd/es/tag'
-import Typography from 'antd/es/typography'
+import {
+  Alert,
+  Button,
+  Descriptions,
+  Divider,
+  Flex,
+  Form,
+  Image,
+  Input,
+  Tag,
+  Typography,
+} from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { LoginUser } from '@/types/auth'
 import { toDataImageUrl } from '@/utils/data-url'

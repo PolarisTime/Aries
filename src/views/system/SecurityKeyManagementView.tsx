@@ -5,15 +5,18 @@ import {
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import Alert from 'antd/es/alert'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Col from 'antd/es/col'
-import Descriptions from 'antd/es/descriptions'
-import Row from 'antd/es/row'
-import Statistic from 'antd/es/statistic'
-import Tag from 'antd/es/tag'
-import Typography from 'antd/es/typography'
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Row,
+  Statistic,
+  Tag,
+  Typography,
+} from 'antd'
+import type { TFunction } from 'i18next'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -24,7 +27,7 @@ import {
 } from '@/api/security-keys'
 import { TwoFactorConfirmModal } from '@/components/TwoFactorConfirmModal'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
-import { message } from '@/utils/antd-app'
+import { message, modal } from '@/utils/antd-app'
 import { formatDateTime } from '@/utils/formatters'
 
 const SECURITY_KEY_QUERY_KEY = ['security-key'] as const
@@ -143,7 +146,13 @@ function SecurityKeyCard({
   )
 }
 
-export function SecurityKeyManagementView(): React.JSX.Element {
+interface SecurityKeyManagementViewProps {
+  active?: boolean
+}
+
+export function SecurityKeyManagementView({
+  active = true,
+}: SecurityKeyManagementViewProps): React.JSX.Element {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [totpOpen, setTotpOpen] = useState(false)
@@ -158,7 +167,7 @@ export function SecurityKeyManagementView(): React.JSX.Element {
   } = useQuery({
     queryKey: SECURITY_KEY_QUERY_KEY,
     queryFn: getSecurityKeyOverview,
-    enabled: isPageVisible,
+    enabled: active && isPageVisible,
   })
   const overview = keys?.data
   const keyItems = [overview?.jwt, overview?.totp].filter(
@@ -174,8 +183,19 @@ export function SecurityKeyManagementView(): React.JSX.Element {
   )
 
   const handleRotate = (type: RotateType): void => {
-    setRotateType(type)
-    setTotpOpen(true)
+    modal.confirm({
+      title: t('system.securityKey.rotateConfirmTitle', {
+        type: getRotateTypeLabel(type, t),
+      }),
+      content: t('system.securityKey.rotateConfirmContent'),
+      okText: t('system.securityKey.rotateConfirmOk'),
+      cancelText: t('common.cancel'),
+      okButtonProps: { danger: true },
+      onOk: () => {
+        setRotateType(type)
+        setTotpOpen(true)
+      },
+    })
   }
 
   const handleRotateConfirm = async (code: string): Promise<void> => {
@@ -228,7 +248,7 @@ export function SecurityKeyManagementView(): React.JSX.Element {
         showIcon
         type="warning"
         className="security-key-alert"
-        message={t('system.securityKey.riskTitle')}
+        title={t('system.securityKey.riskTitle')}
         description={t('system.securityKey.riskDescription')}
       />
 
@@ -291,4 +311,10 @@ export function SecurityKeyManagementView(): React.JSX.Element {
       ) : null}
     </div>
   )
+}
+
+function getRotateTypeLabel(type: RotateType, t: TFunction): string {
+  return type === 'jwt'
+    ? t('system.securityKey.jwtName')
+    : t('system.securityKey.totpName')
 }

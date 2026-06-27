@@ -7,6 +7,7 @@ export type ModuleColumnType =
   | 'weight'
   | 'status'
   | 'date'
+  | 'datetime'
   | 'count'
   | 'boolean'
 

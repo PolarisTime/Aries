@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import Popover from 'antd/es/popover'
-import Table from 'antd/es/table'
+import { Popover, Table } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { assertApiSuccess, http } from '@/api/client'

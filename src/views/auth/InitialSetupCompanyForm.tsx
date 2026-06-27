@@ -1,10 +1,5 @@
 import { BankOutlined } from '@ant-design/icons'
-import Alert from 'antd/es/alert'
-import Button from 'antd/es/button'
-import Form from 'antd/es/form'
-import Input from 'antd/es/input'
-import InputNumber from 'antd/es/input-number'
-import Space from 'antd/es/space'
+import { Alert, Button, Form, Input, InputNumber, Space } from 'antd'
 import { useTranslation } from 'react-i18next'
 
 interface Props {

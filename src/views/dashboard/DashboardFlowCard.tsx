@@ -1,5 +1,5 @@
 import type { NavigateFn } from '@tanstack/react-router'
-import Card from 'antd/es/card'
+import { Card } from 'antd'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DashboardSummary } from '@/api/dashboard'

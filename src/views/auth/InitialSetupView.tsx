@@ -1,11 +1,4 @@
-import Card from 'antd/es/card'
-import Flex from 'antd/es/flex'
-import Form from 'antd/es/form'
-import Result from 'antd/es/result'
-import Space from 'antd/es/space'
-import Spin from 'antd/es/spin'
-import Steps from 'antd/es/steps'
-import Typography from 'antd/es/typography'
+import { Card, Flex, Form, Result, Space, Spin, Steps, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { appTitle } from '@/utils/env'
@@ -33,7 +26,7 @@ export function InitialSetupView() {
 
   const content = checking ? (
     <Flex align="center" justify="center" className="min-h-screen">
-      <Spin size="large" tip={t('auth.initialsetup.checking')} />
+      <Spin size="large" description={t('auth.initialsetup.checking')} />
     </Flex>
   ) : status && !status.setupRequired ? (
     <Flex align="center" justify="center" className="min-h-screen p-6">

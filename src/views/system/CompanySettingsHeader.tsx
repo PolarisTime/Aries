@@ -1,9 +1,5 @@
 import { ReloadOutlined, SaveOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Descriptions from 'antd/es/descriptions'
-import Space from 'antd/es/space'
-import Typography from 'antd/es/typography'
+import { Button, Card, Descriptions, Space, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 
 interface OverviewItem {

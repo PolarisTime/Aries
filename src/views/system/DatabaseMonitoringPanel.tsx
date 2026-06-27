@@ -1,14 +1,17 @@
 import { ReloadOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Col from 'antd/es/col'
-import Empty from 'antd/es/empty'
-import Progress from 'antd/es/progress'
-import Row from 'antd/es/row'
-import Table from 'antd/es/table'
-import Tag from 'antd/es/tag'
-import Typography from 'antd/es/typography'
+import {
+  Button,
+  Card,
+  Col,
+  Empty,
+  Progress,
+  Row,
+  Table,
+  Tabs,
+  Tag,
+  Typography,
+} from 'antd'
 import { useTranslation } from 'react-i18next'
 import {
   type ApiNumeric,
@@ -62,10 +65,7 @@ export function DatabaseMonitoringPanel({ visible }: Props) {
       />
 
       {data ? (
-        <div className="database-monitor-stack">
-          <PostgresDiagnostic monitoring={data} />
-          <RedisMonitoringSummary redis={data.redis} />
-        </div>
+        <DatabaseDiagnosticTabs monitoring={data} />
       ) : (
         <Card className="database-monitor-card">
           <Empty
@@ -110,15 +110,95 @@ function DatabaseMonitoringHeader({
   )
 }
 
-interface PostgresDiagnosticProps {
+interface DatabaseDiagnosticTabsProps {
   monitoring: DatabaseMonitoring
 }
 
-function PostgresDiagnostic({ monitoring }: PostgresDiagnosticProps) {
+function DatabaseDiagnosticTabs({
+  monitoring,
+}: DatabaseDiagnosticTabsProps): React.JSX.Element {
   const { t } = useTranslation()
-  const isHealthy = monitoring.status === DB_MONITORING_STATUS.NORMAL
+  const unavailable = !monitoring.available
   const overview = monitoring.overview ?? EMPTY_POSTGRES_OVERVIEW
   const activity = monitoring.activity ?? EMPTY_POSTGRES_ACTIVITY
+  const renderUnavailable = () => (
+    <PostgresUnavailable status={monitoring.status || undefined} />
+  )
+
+  return (
+    <Tabs
+      className="database-monitor-tabs"
+      destroyOnHidden
+      items={[
+        {
+          key: 'overview',
+          label: t('system.databaseMonitor.overviewTab'),
+          children: unavailable ? (
+            renderUnavailable()
+          ) : (
+            <PostgresOverviewPanel
+              monitoring={monitoring}
+              overview={overview}
+              activity={activity}
+            />
+          ),
+        },
+        {
+          key: 'table-health',
+          label: t('system.databaseMonitor.tableHealthTab'),
+          children: unavailable ? (
+            renderUnavailable()
+          ) : (
+            <PostgresTableHealthTable
+              tableHealth={monitoring.tableHealth ?? []}
+            />
+          ),
+        },
+        {
+          key: 'index-health',
+          label: t('system.databaseMonitor.indexHealthTab'),
+          children: unavailable ? (
+            renderUnavailable()
+          ) : (
+            <PostgresIndexHealthTable
+              indexHealth={monitoring.indexHealth ?? []}
+            />
+          ),
+        },
+        {
+          key: 'slow-sql',
+          label: t('system.databaseMonitor.slowSqlTab'),
+          children: unavailable ? (
+            renderUnavailable()
+          ) : (
+            <PostgresQueryStats
+              queryStats={monitoring.queryStats ?? EMPTY_QUERY_STATS}
+            />
+          ),
+        },
+        {
+          key: 'redis',
+          label: t('system.databaseMonitor.redisTab'),
+          children: <RedisMonitoringSummary redis={monitoring.redis} />,
+        },
+      ]}
+    />
+  )
+}
+
+interface PostgresOverviewPanelProps {
+  monitoring: DatabaseMonitoring
+  overview: PostgresOverview
+  activity: PostgresActivity
+}
+
+function PostgresOverviewPanel({
+  monitoring,
+  overview,
+  activity,
+}: PostgresOverviewPanelProps): React.JSX.Element {
+  const { t } = useTranslation()
+  const isHealthy = monitoring.status === DB_MONITORING_STATUS.NORMAL
 
   return (
     <div className="database-monitor-subsection">
@@ -128,29 +208,27 @@ function PostgresDiagnostic({ monitoring }: PostgresDiagnosticProps) {
         </div>
         <Tag color={isHealthy ? 'green' : 'red'}>{monitoring.status}</Tag>
       </div>
-      {monitoring.available ? (
-        <div className="database-monitor-stack">
-          <PostgresOverviewCards overview={overview} />
-          <PostgresActivityCards activity={activity} />
-          <PostgresHealthTables
-            tableHealth={monitoring.tableHealth ?? []}
-            indexHealth={monitoring.indexHealth ?? []}
-          />
-          <PostgresQueryStats
-            queryStats={monitoring.queryStats ?? EMPTY_QUERY_STATS}
-          />
-        </div>
-      ) : (
-        <Card className="database-monitor-card">
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              monitoring.status || t('system.databaseMonitor.pgUnavailable')
-            }
-          />
-        </Card>
-      )}
+      <div className="database-monitor-stack">
+        <PostgresOverviewCards overview={overview} />
+        <PostgresActivityCards activity={activity} />
+      </div>
     </div>
+  )
+}
+
+interface PostgresUnavailableProps {
+  status?: string
+}
+
+function PostgresUnavailable({ status }: PostgresUnavailableProps) {
+  const { t } = useTranslation()
+  return (
+    <Card className="database-monitor-card">
+      <Empty
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+        description={status || t('system.databaseMonitor.pgUnavailable')}
+      />
+    </Card>
   )
 }
 
@@ -215,7 +293,7 @@ function PostgresOverviewCards({ overview }: PostgresOverviewCardsProps) {
     {
       label: t('system.databaseMonitor.metricLockWait'),
       value: formatInteger(overview.lockWaitSessions),
-      extra: `${t('system.databaseMonitor.blockedSessions')} ${formatInteger(overview.blockedSessions)}`,
+      extra: `${t('system.databaseMonitor.metricBlockedSessions')} ${formatInteger(overview.blockedSessions)}`,
     },
     {
       label: t('system.databaseMonitor.metricLongTx'),
@@ -308,175 +386,179 @@ function PostgresActivityCards({ activity }: PostgresActivityCardsProps) {
   )
 }
 
-interface PostgresHealthTablesProps {
+interface PostgresTableHealthTableProps {
   tableHealth: TableHealthItem[]
+}
+
+function PostgresTableHealthTable({
+  tableHealth,
+}: PostgresTableHealthTableProps) {
+  const { t } = useTranslation()
+  return (
+    <Card
+      size="small"
+      title={t('system.databaseMonitor.tableHealth')}
+      className="database-monitor-card"
+    >
+      <Table
+        rowKey="tableName"
+        dataSource={tableHealth}
+        scroll={{ x: 820, y: 460 }}
+        columns={[
+          {
+            dataIndex: 'tableName',
+            title: t('system.databaseMonitor.colTable'),
+            width: 220,
+            ellipsis: true,
+          },
+          {
+            dataIndex: 'deadPct',
+            title: t('system.databaseMonitor.colDeadTupleRate'),
+            width: 110,
+            align: 'right',
+            render: (v: number) => (
+              <Progress
+                percent={v}
+                size="small"
+                strokeColor={bloatColor(v)}
+                format={() => formatPercent(v)}
+              />
+            ),
+          },
+          {
+            dataIndex: 'deadRows',
+            title: t('system.databaseMonitor.colDeadTuples'),
+            width: 90,
+            align: 'right',
+            render: formatInteger,
+          },
+          {
+            dataIndex: 'autovacuumStatus',
+            title: t('system.databaseMonitor.colAutovacuum'),
+            width: 110,
+            render: (status: string) => (
+              <Tag color={autovacuumStatusColor(status)}>
+                {status || t('system.databaseMonitor.unknownStatus')}
+              </Tag>
+            ),
+          },
+          {
+            dataIndex: 'vacuumTriggerRows',
+            title: t('system.databaseMonitor.colVacuumThreshold'),
+            width: 90,
+            align: 'right',
+            render: formatInteger,
+          },
+          {
+            dataIndex: 'nModSinceAnalyze',
+            title: t('system.databaseMonitor.colPendingAnalyze'),
+            width: 80,
+            align: 'right',
+            render: formatInteger,
+          },
+          {
+            dataIndex: 'seqScan',
+            title: t('system.databaseMonitor.colSeqScan'),
+            width: 80,
+            align: 'right',
+            render: formatInteger,
+          },
+          {
+            dataIndex: 'heapCachePct',
+            title: t('system.databaseMonitor.colCache'),
+            width: 80,
+            align: 'right',
+            render: formatPercent,
+          },
+          {
+            dataIndex: 'lastAutovacuum',
+            title: t('system.databaseMonitor.colLastVacuum'),
+            width: 120,
+            render: formatNullableDateTime,
+          },
+          {
+            dataIndex: 'lastAutovacuumAgeSeconds',
+            title: t('system.databaseMonitor.colVacuumInterval'),
+            width: 90,
+            render: formatDurationNullable,
+          },
+          {
+            dataIndex: 'autovacuumAdvice',
+            title: t('system.databaseMonitor.colAdvice'),
+            width: 260,
+            ellipsis: true,
+          },
+        ]}
+        size="small"
+        pagination={false}
+        locale={{ emptyText: t('system.databaseMonitor.noTableHealth') }}
+      />
+    </Card>
+  )
+}
+
+interface PostgresIndexHealthTableProps {
   indexHealth: IndexHealthItem[]
 }
 
-function PostgresHealthTables({
-  tableHealth,
+function PostgresIndexHealthTable({
   indexHealth,
-}: PostgresHealthTablesProps) {
+}: PostgresIndexHealthTableProps) {
   const { t } = useTranslation()
   return (
-    <Row gutter={[16, 16]}>
-      <Col xs={24} xl={12}>
-        <Card
-          size="small"
-          title={t('system.databaseMonitor.tableHealth')}
-          className="database-monitor-card"
-        >
-          <Table
-            rowKey="tableName"
-            dataSource={tableHealth}
-            scroll={{ x: 820 }}
-            columns={[
-              {
-                dataIndex: 'tableName',
-                title: t('system.databaseMonitor.colTable'),
-                width: 220,
-                ellipsis: true,
-              },
-              {
-                dataIndex: 'deadPct',
-                title: t('system.databaseMonitor.colDeadTupleRate'),
-                width: 110,
-                align: 'right',
-                render: (v: number) => (
-                  <Progress
-                    percent={v}
-                    size="small"
-                    strokeColor={bloatColor(v)}
-                    format={() => formatPercent(v)}
-                  />
-                ),
-              },
-              {
-                dataIndex: 'deadRows',
-                title: t('system.databaseMonitor.colDeadTuples'),
-                width: 90,
-                align: 'right',
-                render: formatInteger,
-              },
-              {
-                dataIndex: 'autovacuumStatus',
-                title: t('system.databaseMonitor.colAutovacuum'),
-                width: 110,
-                render: (status: string) => (
-                  <Tag color={autovacuumStatusColor(status)}>
-                    {status || t('system.databaseMonitor.unknownStatus')}
-                  </Tag>
-                ),
-              },
-              {
-                dataIndex: 'vacuumTriggerRows',
-                title: t('system.databaseMonitor.colVacuumThreshold'),
-                width: 90,
-                align: 'right',
-                render: formatInteger,
-              },
-              {
-                dataIndex: 'nModSinceAnalyze',
-                title: t('system.databaseMonitor.colPendingAnalyze'),
-                width: 80,
-                align: 'right',
-                render: formatInteger,
-              },
-              {
-                dataIndex: 'seqScan',
-                title: t('system.databaseMonitor.colSeqScan'),
-                width: 80,
-                align: 'right',
-                render: formatInteger,
-              },
-              {
-                dataIndex: 'heapCachePct',
-                title: t('system.databaseMonitor.colCache'),
-                width: 80,
-                align: 'right',
-                render: formatPercent,
-              },
-              {
-                dataIndex: 'lastAutovacuum',
-                title: t('system.databaseMonitor.colLastVacuum'),
-                width: 120,
-                render: formatNullableDateTime,
-              },
-              {
-                dataIndex: 'lastAutovacuumAgeSeconds',
-                title: t('system.databaseMonitor.colVacuumInterval'),
-                width: 90,
-                render: formatDurationNullable,
-              },
-              {
-                dataIndex: 'autovacuumAdvice',
-                title: t('system.databaseMonitor.colAdvice'),
-                width: 260,
-                ellipsis: true,
-              },
-            ]}
-            size="small"
-            pagination={false}
-            locale={{ emptyText: t('system.databaseMonitor.noTableHealth') }}
-          />
-        </Card>
-      </Col>
-      <Col xs={24} xl={12}>
-        <Card
-          size="small"
-          title={t('system.databaseMonitor.indexHealth')}
-          className="database-monitor-card"
-        >
-          <Table
-            rowKey="indexName"
-            dataSource={indexHealth}
-            scroll={{ x: 760 }}
-            columns={[
-              {
-                dataIndex: 'indexName',
-                title: t('system.databaseMonitor.colIndex'),
-                width: 260,
-                ellipsis: true,
-              },
-              {
-                dataIndex: 'tableName',
-                title: t('system.databaseMonitor.colTable'),
-                width: 160,
-                ellipsis: true,
-              },
-              {
-                dataIndex: 'size',
-                title: t('system.databaseMonitor.colSize'),
-                width: 80,
-                align: 'right',
-              },
-              {
-                dataIndex: 'scans',
-                title: t('system.databaseMonitor.colScans'),
-                width: 80,
-                align: 'right',
-                render: formatInteger,
-              },
-              {
-                dataIndex: 'valid',
-                title: t('system.databaseMonitor.colStatus'),
-                width: 80,
-                render: (valid: boolean) => (
-                  <Tag color={valid ? 'green' : 'red'}>
-                    {valid
-                      ? t('system.databaseMonitor.valid')
-                      : t('system.databaseMonitor.invalid')}
-                  </Tag>
-                ),
-              },
-            ]}
-            size="small"
-            pagination={false}
-            locale={{ emptyText: t('system.databaseMonitor.noIndexHealth') }}
-          />
-        </Card>
-      </Col>
-    </Row>
+    <Card
+      size="small"
+      title={t('system.databaseMonitor.indexHealth')}
+      className="database-monitor-card"
+    >
+      <Table
+        rowKey="indexName"
+        dataSource={indexHealth}
+        scroll={{ x: 760, y: 460 }}
+        columns={[
+          {
+            dataIndex: 'indexName',
+            title: t('system.databaseMonitor.colIndex'),
+            width: 260,
+            ellipsis: true,
+          },
+          {
+            dataIndex: 'tableName',
+            title: t('system.databaseMonitor.colTable'),
+            width: 160,
+            ellipsis: true,
+          },
+          {
+            dataIndex: 'size',
+            title: t('system.databaseMonitor.colSize'),
+            width: 80,
+            align: 'right',
+          },
+          {
+            dataIndex: 'scans',
+            title: t('system.databaseMonitor.colScans'),
+            width: 80,
+            align: 'right',
+            render: formatInteger,
+          },
+          {
+            dataIndex: 'valid',
+            title: t('system.databaseMonitor.colStatus'),
+            width: 80,
+            render: (valid: boolean) => (
+              <Tag color={valid ? 'green' : 'red'}>
+                {valid
+                  ? t('system.databaseMonitor.valid')
+                  : t('system.databaseMonitor.invalid')}
+              </Tag>
+            ),
+          },
+        ]}
+        size="small"
+        pagination={false}
+        locale={{ emptyText: t('system.databaseMonitor.noIndexHealth') }}
+      />
+    </Card>
   )
 }
 
@@ -501,7 +583,7 @@ function PostgresQueryStats({ queryStats }: PostgresQueryStatsProps) {
           <Table
             rowKey="queryId"
             dataSource={queryStats.items}
-            scroll={{ x: 880 }}
+            scroll={{ x: 880, y: 360 }}
             columns={[
               {
                 dataIndex: 'queryPreview',

@@ -1,7 +1,9 @@
+import { formatDateTime } from '@/utils/formatters'
+
 export function formatDatabaseDateTime(
   value: string | undefined | null,
 ): string {
-  return value || '--'
+  return formatDateTime(value, '--')
 }
 
 const DATABASE_MEMORY_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'] as const

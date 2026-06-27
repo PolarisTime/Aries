@@ -72,6 +72,9 @@ vi.mock('@/views/system/NumberRulesView', () => ({
 vi.mock('@/views/system/GeneralSettingsView', () => ({
   GeneralSettingsView: () => null,
 }))
+vi.mock('@/views/system/SystemParametersView', () => ({
+  SystemParametersView: () => null,
+}))
 vi.mock('@/views/system/CompanySettingsView', () => ({
   CompanySettingsView: () => null,
 }))
@@ -83,6 +86,9 @@ vi.mock('@/views/system/SessionManagementView', () => ({
 }))
 vi.mock('@/views/system/ApiKeyManagementView', () => ({
   ApiKeyManagementView: () => null,
+}))
+vi.mock('@/views/system/SecurityCenterView', () => ({
+  SecurityCenterView: () => null,
 }))
 vi.mock('@/views/system/AccessControlView', () => ({
   AccessControlView: () => null,
@@ -135,6 +141,15 @@ const mockPageDefinitions = [
     icon: 'setting',
   },
   {
+    key: 'system-parameters',
+    view: 'system-parameters' as const,
+    accessResources: ['general-setting'],
+    path: 'system-parameters',
+    title: 'System Parameters',
+    menuKey: '/system-parameters',
+    icon: 'setting',
+  },
+  {
     key: 'access-control',
     view: 'access-control' as const,
     accessResources: ['permission:read', 'role:read'],
@@ -142,6 +157,15 @@ const mockPageDefinitions = [
     title: 'Access Control',
     menuKey: '/access-control',
     icon: 'lock',
+  },
+  {
+    key: 'security-center',
+    view: 'security-center' as const,
+    accessResources: ['session', 'api-key', 'security-key'],
+    path: 'security-center',
+    title: 'Security Center',
+    menuKey: '/security-center',
+    icon: 'safety',
   },
 ]
 
@@ -272,7 +296,9 @@ describe('router', () => {
     expect(routeOptionsByPath.has('/dashboard')).toBe(true)
     expect(routeOptionsByPath.has('/customer')).toBe(true)
     expect(routeOptionsByPath.has('/general-setting')).toBe(true)
+    expect(routeOptionsByPath.has('/system-parameters')).toBe(true)
     expect(routeOptionsByPath.has('/access-control')).toBe(true)
+    expect(routeOptionsByPath.has('/security-center')).toBe(true)
   })
 
   it('creates api-key detail route', async () => {
@@ -688,6 +714,18 @@ describe('router', () => {
       expect(accessComponent).toBeDefined()
       const accessMod = await accessComponent()
       expect(accessMod).toHaveProperty('default')
+
+      const systemParametersComponent =
+        routeOptionsByPath.get('/system-parameters')!.component
+      expect(systemParametersComponent).toBeDefined()
+      const systemParametersMod = await systemParametersComponent()
+      expect(systemParametersMod).toHaveProperty('default')
+
+      const securityCenterComponent =
+        routeOptionsByPath.get('/security-center')!.component
+      expect(securityCenterComponent).toBeDefined()
+      const securityCenterMod = await securityCenterComponent()
+      expect(securityCenterMod).toHaveProperty('default')
     })
   })
 

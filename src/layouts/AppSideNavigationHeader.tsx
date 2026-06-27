@@ -4,10 +4,8 @@ import {
   ReloadOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Dropdown from 'antd/es/dropdown'
+import { Button, Dropdown, Tag } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
-import Tag from 'antd/es/tag'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import {

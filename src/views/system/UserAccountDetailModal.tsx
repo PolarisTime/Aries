@@ -1,6 +1,4 @@
-import Descriptions from 'antd/es/descriptions'
-import Modal from 'antd/es/modal'
-import Spin from 'antd/es/spin'
+import { Descriptions, Modal, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import type { UserAccountRecord } from '@/types/user-account'

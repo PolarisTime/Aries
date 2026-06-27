@@ -1,5 +1,4 @@
-import Modal from 'antd/es/modal'
-import Typography from 'antd/es/typography'
+import { Modal, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { PrintTemplateRecord } from '@/types/print-template'
 import { getPrintTemplateBillTypeLabel } from '@/views/system/print-template-view-utils'

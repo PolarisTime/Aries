@@ -1,10 +1,10 @@
-import Select from 'antd/es/select'
+import { Select } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ApiKeyUserOption } from '@/api/api-keys'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import {
-  apiKeyStatusOptions,
-  apiKeyUsageScopeOptions,
+  buildApiKeyStatusOptions,
+  buildApiKeyUsageScopeOptions,
 } from '@/views/system/api-key-form-options'
 import { getApiKeyUserDisplayName } from '@/views/system/api-key-view-utils'
 
@@ -42,6 +42,9 @@ export function ApiKeyListToolbar({
   onCreate,
 }: Props) {
   const { t } = useTranslation()
+  const statusOptions = buildApiKeyStatusOptions(t)
+  const usageScopeOptions = buildApiKeyUsageScopeOptions(t)
+
   return (
     <SystemTableToolbar
       keyword={keyword}
@@ -56,7 +59,12 @@ export function ApiKeyListToolbar({
       createDisabled={totpDisabled}
     >
       <Select
-        showSearch
+        showSearch={{
+          filterOption: (input, option) =>
+            String(option?.label || '')
+              .toLowerCase()
+              .includes(input.toLowerCase()),
+        }}
         allowClear
         placeholder={t('system.apiKey.filterUserPlaceholder')}
         className="w-260"
@@ -66,11 +74,6 @@ export function ApiKeyListToolbar({
           label: getApiKeyUserDisplayName(item),
           value: String(item.id || ''),
         }))}
-        filterOption={(input, option) =>
-          String(option?.label || '')
-            .toLowerCase()
-            .includes(input.toLowerCase())
-        }
       />
       <Select
         allowClear
@@ -78,7 +81,7 @@ export function ApiKeyListToolbar({
         className="w-140"
         value={statusFilter}
         onChange={onStatusFilterChange}
-        options={apiKeyStatusOptions}
+        options={statusOptions}
       />
       <Select
         allowClear
@@ -86,7 +89,7 @@ export function ApiKeyListToolbar({
         className="w-150"
         value={usageScopeFilter}
         onChange={onUsageScopeFilterChange}
-        options={apiKeyUsageScopeOptions}
+        options={usageScopeOptions}
       />
     </SystemTableToolbar>
   )

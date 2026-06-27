@@ -1,4 +1,4 @@
-import Form from 'antd/es/form'
+import { Form } from 'antd'
 import { useEffect } from 'react'
 import type { RoleOptionRecord } from '@/types/user-account'
 import type { UserAccountEditorFormValues } from '@/views/system/user-account-editor-types'

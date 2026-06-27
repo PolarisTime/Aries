@@ -193,10 +193,14 @@ describe('session-management-view-utils', () => {
       const createdCol = columns.find(
         (col) => 'dataIndex' in col && col.dataIndex === 'createdAt',
       )
+      const longDeviceInfo = 'x'.repeat(70)
 
+      render(
+        <div>{deviceCol?.render?.(longDeviceInfo, sessionRecord(), 0)}</div>,
+      )
       expect(
-        String(deviceCol?.render?.('x'.repeat(70), sessionRecord(), 0)),
-      ).toHaveLength(63)
+        screen.getByText(`${'x'.repeat(19)}...${'x'.repeat(19)}`),
+      ).toBeInTheDocument()
       expect(deviceCol?.render?.('', sessionRecord(), 0)).toBe('--')
       expect(createdCol?.render?.('', sessionRecord(), 0)).toBe('--')
     })

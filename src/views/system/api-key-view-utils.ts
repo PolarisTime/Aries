@@ -25,7 +25,7 @@ export function getApiKeyAllowedResourceText(
   resourceOptions: ApiKeyResourceOption[],
 ) {
   if (!allowedResources?.length)
-    return i18next.t('system.apiKeyUtils.unlimited')
+    return i18next.t('system.apiKeyUtils.byUsageScope')
   const titleByCode = new Map(
     resourceOptions.map((item) => [item.code, item.title]),
   )

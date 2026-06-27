@@ -1,6 +1,6 @@
 import { DeleteOutlined, ImportOutlined, PlusOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
-import Button from 'antd/es/button'
+import { Button } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SearchParams } from '@/types/api-raw'

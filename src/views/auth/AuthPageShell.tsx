@@ -1,6 +1,4 @@
-import Flex from 'antd/es/flex'
-import Layout from 'antd/es/layout'
-import Typography from 'antd/es/typography'
+import { Flex, Layout, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppAntdProvider } from '@/components/AppAntdProvider'

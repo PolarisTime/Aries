@@ -7,8 +7,8 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('antd/es/date-picker', () => ({
-  default: ({
+vi.mock('antd', () => {
+  const DatePicker = ({
     id,
     placeholder,
     allowClear,
@@ -25,28 +25,22 @@ vi.mock('antd/es/date-picker', () => ({
       placeholder={placeholder}
       disabled={disabled}
     />
-  ),
-}))
+  )
 
-vi.mock('antd/es/form', () => {
   const formInstance = {
     getFieldValue: vi.fn(),
     getFieldsValue: vi.fn(),
   }
-  return {
-    default: {
-      useFormInstance: () => formInstance,
-      useWatch: () => ({}),
-      Item: ({ children, name, ...props }: any) => (
-        <div data-testid={`form-item-${name}`} {...props}>
-          {children}
-        </div>
-      ),
-    },
+  const Form = {
+    useFormInstance: () => formInstance,
+    useWatch: () => ({}),
+    Item: ({ children, name, ...props }: any) => (
+      <div data-testid={`form-item-${name}`} {...props}>
+        {children}
+      </div>
+    ),
   }
-})
 
-vi.mock('antd/es/input', () => {
   const Input = ({ id, placeholder, allowClear, disabled, maxLength }: any) => (
     <input
       data-testid="input"
@@ -77,55 +71,60 @@ vi.mock('antd/es/input', () => {
       maxLength={maxLength}
     />
   )
+
   return {
-    default: Input,
-    TextArea: Input.TextArea,
+    AutoComplete: ({ id, placeholder, allowClear, disabled }: any) => (
+      <input
+        data-testid="autocomplete"
+        data-allow-clear={String(Boolean(allowClear))}
+        id={id}
+        placeholder={placeholder}
+        disabled={disabled}
+      />
+    ),
+    DatePicker,
+    Form,
+    Input,
+    InputNumber: ({
+      id,
+      placeholder,
+      controls,
+      disabled,
+      min,
+      precision,
+      step,
+    }: any) => (
+      <input
+        data-testid="input-number"
+        data-controls={String(controls)}
+        data-min={String(min || '')}
+        data-precision={String(precision || '')}
+        data-step={String(step || '')}
+        id={id}
+        placeholder={placeholder}
+        disabled={disabled}
+      />
+    ),
+    Select: ({
+      id,
+      placeholder,
+      allowClear,
+      disabled,
+      mode,
+      showSearch,
+    }: any) => (
+      <select
+        data-testid="select"
+        data-allow-clear={String(Boolean(allowClear))}
+        data-mode={String(mode || '')}
+        data-show-search={String(Boolean(showSearch))}
+        id={id}
+        disabled={disabled}
+        aria-label={placeholder}
+      />
+    ),
   }
 })
-
-vi.mock('antd/es/input-number', () => ({
-  default: ({
-    id,
-    placeholder,
-    controls,
-    disabled,
-    min,
-    precision,
-    step,
-  }: any) => (
-    <input
-      data-testid="input-number"
-      data-controls={String(controls)}
-      data-min={String(min || '')}
-      data-precision={String(precision || '')}
-      data-step={String(step || '')}
-      id={id}
-      placeholder={placeholder}
-      disabled={disabled}
-    />
-  ),
-}))
-
-vi.mock('antd/es/select', () => ({
-  default: ({
-    id,
-    placeholder,
-    allowClear,
-    disabled,
-    mode,
-    showSearch,
-  }: any) => (
-    <select
-      data-testid="select"
-      data-allow-clear={String(Boolean(allowClear))}
-      data-mode={String(mode || '')}
-      data-show-search={String(Boolean(showSearch))}
-      id={id}
-      disabled={disabled}
-      aria-label={placeholder}
-    />
-  ),
-}))
 
 vi.mock('@/utils/form-control-a11y', () => ({
   buildLabeledFormItemProps: ({ label, htmlFor }: any) => ({

@@ -1,11 +1,6 @@
 import { DeleteOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Col from 'antd/es/col'
-import Row from 'antd/es/row'
-import Statistic from 'antd/es/statistic'
+import { Button, Card, Col, Row, Statistic, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import Table from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import type {
   RefreshTokenRecord,
@@ -50,6 +45,7 @@ export function SessionManagementCard({
   const { t } = useTranslation()
   return (
     <Card
+      className="system-list-card"
       title={t('system.session.title')}
       extra={
         <SystemTableToolbar

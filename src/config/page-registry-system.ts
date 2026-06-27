@@ -11,6 +11,15 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     resourceKey: 'print-template',
   },
   {
+    key: 'system-parameters',
+    title: '系统参数',
+    menuKey: '/system-parameters',
+    view: 'system-parameters',
+    icon: 'SettingOutlined',
+    menuParent: 'system',
+    accessResources: ['general-setting'],
+  },
+  {
     key: 'number-rules',
     title: '编号规则',
     menuKey: '/number-rules',
@@ -18,6 +27,9 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     icon: 'ProfileOutlined',
     menuParent: 'system',
     accessResources: ['general-setting'],
+    hiddenInMenu: true,
+    activeMenuKey: '/system-parameters',
+    openPageKey: '/system-parameters',
   },
   {
     key: 'general-setting',
@@ -28,6 +40,9 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     menuParent: 'system',
     moduleKey: 'general-setting',
     resourceKey: 'general-setting',
+    hiddenInMenu: true,
+    activeMenuKey: '/system-parameters',
+    openPageKey: '/system-parameters',
   },
   {
     key: 'company-setting',
@@ -59,6 +74,15 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     accessResources: ['access-control'],
   },
   {
+    key: 'security-center',
+    title: '安全中心',
+    menuKey: '/security-center',
+    view: 'security-center',
+    icon: 'SafetyCertificateOutlined',
+    menuParent: 'system',
+    accessResources: ['session', 'api-key', 'security-key'],
+  },
+  {
     key: 'session',
     title: '会话管理',
     menuKey: '/session',
@@ -66,6 +90,9 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     icon: 'SafetyCertificateOutlined',
     menuParent: 'system',
     resourceKey: 'session',
+    hiddenInMenu: true,
+    activeMenuKey: '/security-center',
+    openPageKey: '/security-center',
   },
   {
     key: 'api-key',
@@ -75,6 +102,9 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     icon: 'SafetyCertificateOutlined',
     menuParent: 'system',
     resourceKey: 'api-key',
+    hiddenInMenu: true,
+    activeMenuKey: '/security-center',
+    openPageKey: '/security-center',
   },
   {
     key: 'security-key',
@@ -84,6 +114,9 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     icon: 'SafetyCertificateOutlined',
     menuParent: 'system',
     resourceKey: 'security-key',
+    hiddenInMenu: true,
+    activeMenuKey: '/security-center',
+    openPageKey: '/security-center',
   },
   {
     key: 'database-backup',

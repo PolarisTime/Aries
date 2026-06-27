@@ -1,7 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import BorderBeam from 'antd/es/border-beam'
-import Card from 'antd/es/card'
-import Form from 'antd/es/form'
+import { BorderBeam, Card, Form } from 'antd'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRequestError } from '@/hooks/useRequestError'

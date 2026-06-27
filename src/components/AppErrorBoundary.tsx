@@ -1,4 +1,4 @@
-import Button from 'antd/es/button'
+import { Button } from 'antd'
 import i18next from 'i18next'
 import type { ErrorInfo, ReactNode } from 'react'
 import { Component } from 'react'

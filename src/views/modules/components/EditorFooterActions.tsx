@@ -1,6 +1,5 @@
 import { AuditOutlined, CloseOutlined, SaveOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Space from 'antd/es/space'
+import { Button, Space } from 'antd'
 import { useTranslation } from 'react-i18next'
 
 interface Props {

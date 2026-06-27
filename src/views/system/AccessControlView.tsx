@@ -1,6 +1,5 @@
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import Empty from 'antd/es/empty'
-import Tabs from 'antd/es/tabs'
+import { Empty, Tabs } from 'antd'
 import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'

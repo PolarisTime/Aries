@@ -1,7 +1,5 @@
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Input from 'antd/es/input'
-import Space from 'antd/es/space'
+import { Button, Input } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -35,8 +33,9 @@ export function SystemTableToolbar({
   const { t } = useTranslation()
 
   return (
-    <Space wrap>
+    <div className="system-table-toolbar">
       <Input.Search
+        className="system-table-toolbar-search"
         placeholder={keywordPlaceholder ?? t('toolbar.searchPlaceholder')}
         /* 动态宽度：keywordWidth 由父组件传入，无法映射为固定 Tailwind 类 */
         style={{ width: keywordWidth, maxWidth: '100%' }}
@@ -46,11 +45,16 @@ export function SystemTableToolbar({
         onSearch={onSearch}
       />
       {children}
-      <Button icon={<ReloadOutlined />} onClick={onRefresh}>
+      <Button
+        className="system-table-toolbar-action"
+        icon={<ReloadOutlined />}
+        onClick={onRefresh}
+      >
         {refreshLabel ?? t('toolbar.refresh')}
       </Button>
       {onCreate && (
         <Button
+          className="system-table-toolbar-action"
           type="primary"
           icon={<PlusOutlined />}
           disabled={createDisabled}
@@ -59,6 +63,6 @@ export function SystemTableToolbar({
           {createLabel ?? t('toolbar.create')}
         </Button>
       )}
-    </Space>
+    </div>
   )
 }

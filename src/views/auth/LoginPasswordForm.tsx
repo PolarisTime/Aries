@@ -1,9 +1,6 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
-import Button from 'antd/es/button'
-import Checkbox from 'antd/es/checkbox'
+import { Button, Checkbox, Form, Input } from 'antd'
 import type { FormInstance } from 'antd/es/form'
-import Form from 'antd/es/form'
-import Input from 'antd/es/input'
 import { useTranslation } from 'react-i18next'
 import type { LoginPayload } from '@/types/auth'
 

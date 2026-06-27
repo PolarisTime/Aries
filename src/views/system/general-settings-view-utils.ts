@@ -1,4 +1,4 @@
-import Typography from 'antd/es/typography'
+import { Typography } from 'antd'
 import i18next from 'i18next'
 import { createElement } from 'react'
 import { STATUS } from '@/constants/status-constants'

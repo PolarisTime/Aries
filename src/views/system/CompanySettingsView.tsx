@@ -1,11 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import Alert from 'antd/es/alert'
-import Card from 'antd/es/card'
-import Col from 'antd/es/col'
-import Form from 'antd/es/form'
-import Input from 'antd/es/input'
-import Row from 'antd/es/row'
-import Skeleton from 'antd/es/skeleton'
+import { Alert, Card, Col, Form, Input, Row, Skeleton } from 'antd'
 import { useTranslation } from 'react-i18next'
 import {
   type CompanySettingProfile,
@@ -186,11 +180,7 @@ function CompanySettingsForm({
         <Form form={form} layout="vertical" initialValues={initialValues}>
           <Row gutter={[16, 16]}>
             <Col xs={24} lg={8}>
-              <CompanySubjectCard
-                form={form}
-                canSave={canSave}
-                settlementAccountCount={settlementAccountCount}
-              />
+              <CompanySubjectCard canSave={canSave} />
             </Col>
             <Col xs={24} lg={16}>
               <CompanySettlementAccountsCard canSave={canSave} />

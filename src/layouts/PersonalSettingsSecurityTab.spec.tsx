@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import Form from 'antd/es/form'
+import { Form } from 'antd'
 import { describe, expect, it, vi } from 'vitest'
 import { PersonalSettingsSecurityTab } from '@/layouts/PersonalSettingsSecurityTab'
 

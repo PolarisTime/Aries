@@ -1,12 +1,6 @@
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import Button from 'antd/es/button'
-import Card from 'antd/es/card'
-import Descriptions from 'antd/es/descriptions'
-import Empty from 'antd/es/empty'
-import Flex from 'antd/es/flex'
-import Spin from 'antd/es/spin'
-import Typography from 'antd/es/typography'
+import { Button, Card, Descriptions, Empty, Flex, Spin, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -100,7 +94,7 @@ export function ApiKeyDetailView() {
   const allowedResourceText = formatAllowedCodes(
     record?.allowedResources,
     resourceOptions,
-    t('system.apiKeyDetail.fallbackUnlimited'),
+    t('system.apiKeyDetail.fallbackByUsageScope'),
   )
   const allowedActionText = formatAllowedCodes(
     record?.allowedActions,
