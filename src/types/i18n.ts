@@ -2336,6 +2336,11 @@ export interface MessageSchema {
       currentEnabled: string
       basicParamsTitle: string
       systemSwitchesTitle: string
+      groupTax: string
+      groupPagination: string
+      groupWatermark: string
+      groupSession: string
+      groupOther: string
     }
     printTemplateEditor: {
       editTitle: string
@@ -2381,6 +2386,7 @@ export interface MessageSchema {
       loadFailed: string
       title: string
       refresh: string
+      allTypes: string
       colRuleKey: string
       colType: string
       colRate: string

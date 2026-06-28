@@ -29,6 +29,8 @@ vi.mock('@/styles/antd-theme', () => ({
   buildAntdTheme: vi.fn(() => ({})),
 }))
 
+import { buildAntdTheme } from '@/styles/antd-theme'
+
 describe('AppAntdProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -77,5 +79,11 @@ describe('AppAntdProvider', () => {
       </AppAntdProvider>,
     )
     expect(screen.getByText('默认字体测试')).toBeTruthy()
+    expect(buildAntdTheme).toHaveBeenCalledWith(
+      expect.objectContaining({
+        borderRadius: 6,
+        fontSize: 14,
+      }),
+    )
   })
 })

@@ -81,8 +81,8 @@ describe('GeneralSettingsTableCard', () => {
         switchRows={[{ id: '3' } as never]}
       />,
     )
-    expect(screen.getByText('2')).toBeInTheDocument()
-    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders toolbar', () => {
@@ -90,8 +90,81 @@ describe('GeneralSettingsTableCard', () => {
     expect(screen.getByTestId('toolbar')).toBeInTheDocument()
   })
 
-  it('renders tables', () => {
+  it('does not render parameter table chrome', () => {
     const { container } = render(<GeneralSettingsTableCard {...defaultProps} />)
-    expect(container.querySelectorAll('.ant-table')).toHaveLength(2)
+    expect(container.querySelectorAll('.ant-table')).toHaveLength(0)
+  })
+
+  it('groups basic parameters by configuration domain', () => {
+    render(
+      <GeneralSettingsTableCard
+        {...defaultProps}
+        basicSettingRows={[
+          {
+            id: '1',
+            settingCode: 'SYS_DEFAULT_TAX_RATE',
+            settingName: '默认税率',
+            sampleNo: '0.13',
+          } as never,
+          {
+            id: '2',
+            settingCode: 'SYS_WATERMARK_FONT_SIZE',
+            settingName: '水印字体大小',
+            sampleNo: '20',
+          } as never,
+        ]}
+      />,
+    )
+
+    expect(
+      screen.getByText('system.generalSettingsTable.groupTax'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.generalSettingsTable.groupWatermark'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('默认税率')).toBeInTheDocument()
+    expect(screen.getByText('水印字体大小')).toBeInTheDocument()
+  })
+
+  it('renders switch settings as action list items', () => {
+    const { container } = render(
+      <GeneralSettingsTableCard
+        {...defaultProps}
+        filteredRows={[
+          { id: '1', status: '正常' } as never,
+          { id: '2', status: '禁用' } as never,
+        ]}
+        switchRows={[
+          {
+            id: '1',
+            settingName: '登录验证码',
+            status: '正常',
+            remark: '登录安全',
+          } as never,
+          {
+            id: '2',
+            settingName: '显示雪花 ID',
+            status: '禁用',
+            remark: '排查数据',
+          } as never,
+        ]}
+      />,
+    )
+
+    expect(
+      container.querySelectorAll('.general-settings-switch-item'),
+    ).toHaveLength(2)
+    expect(screen.getByText('登录验证码')).toBeInTheDocument()
+    expect(screen.queryByText('system.generalSettingsTable.enabled')).toBeNull()
+    expect(
+      screen.getByLabelText('登录验证码 system.generalSettingsTable.enabled'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders empty state when there are no switches', () => {
+    render(<GeneralSettingsTableCard {...defaultProps} switchRows={[]} />)
+    expect(screen.getAllByText('common.noData').length).toBeGreaterThanOrEqual(
+      1,
+    )
   })
 })

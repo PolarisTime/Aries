@@ -39,7 +39,7 @@
   display: inline-flex;
   align-items: center;
   height: var(--app-header-height);
-  margin: 0 2px;
+  margin: 0;
   line-height: var(--app-header-height);
   border-bottom: 2px solid transparent !important;
   border-radius: 0;
@@ -47,14 +47,14 @@
 }
 
 .leo-top-menu.ant-menu-horizontal > .ant-menu-item {
-  padding-inline: 16px;
+  padding-inline: 12px;
 }
 
 .leo-top-menu.ant-menu-horizontal
   > .ant-menu-submenu
   > .ant-menu-submenu-title {
   height: var(--app-header-height);
-  padding-inline: 16px !important;
+  padding-inline: 12px !important;
   margin: 0;
   line-height: var(--app-header-height);
   border-radius: 0;
@@ -62,8 +62,8 @@
 
 .leo-top-menu.ant-menu-horizontal > .ant-menu-item::after,
 .leo-top-menu.ant-menu-horizontal > .ant-menu-submenu::after {
-  left: 16px;
-  right: 16px;
+  left: 12px;
+  right: 12px;
   border-bottom: 2px solid transparent !important;
   transition: border-color 0.2s ease;
 }

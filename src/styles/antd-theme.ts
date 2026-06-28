@@ -16,7 +16,7 @@ export function buildAntdTheme(options: BuildAntdThemeOptions): ThemeConfig {
     ...(options.cssVarKey ? { cssVar: { key: options.cssVarKey } } : {}),
     algorithm: options.darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
     token: {
-      colorPrimary: '#2458e6',
+      colorPrimary: '#1677ff',
       borderRadius: options.borderRadius,
       fontSize: options.fontSize,
       fontFamily: ANT_DESIGN_FONT_FAMILY,

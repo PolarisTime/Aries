@@ -24,10 +24,6 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('@/utils/form-control-id', () => ({
-  buildFormControlId: (prefix: string, name: string) => `${prefix}-${name}`,
-}))
-
 import { LoginTotpPanel } from '@/views/auth/LoginTotpPanel'
 
 describe('LoginTotpPanel', () => {
@@ -102,8 +98,10 @@ describe('LoginTotpPanel', () => {
     render(
       <LoginTotpPanel {...defaultProps} onTotpCodeChange={onTotpCodeChange} />,
     )
-    const input = screen.getByLabelText('验证码')
-    fireEvent.change(input, { target: { value: '123' } })
+    const otp = screen.getByLabelText('验证码')
+    fireEvent.input(otp.querySelector('input')!, {
+      target: { value: '123' },
+    })
     expect(onTotpCodeChange).toHaveBeenCalledWith('123')
   })
 
@@ -167,34 +165,29 @@ describe('LoginTotpPanel', () => {
     expect(timerRing?.className).not.toContain('is-expiring')
   })
 
-  it('sets input maxLength to 6', () => {
+  it('renders 6 otp inputs', () => {
     render(<LoginTotpPanel {...defaultProps} />)
-    const input = screen.getByLabelText('验证码') as HTMLInputElement
-    expect(input.maxLength).toBe(6)
+    const otp = screen.getByLabelText('验证码')
+    expect(otp.querySelectorAll('input').length).toBe(6)
   })
 
-  it('sets input mode to numeric', () => {
+  it('sets otp input type to tel', () => {
     render(<LoginTotpPanel {...defaultProps} />)
-    const input = screen.getByLabelText('验证码')
-    expect(input.getAttribute('inputmode')).toBe('numeric')
+    const otp = screen.getByLabelText('验证码')
+    expect(otp.querySelector('input')?.getAttribute('type')).toBe('tel')
   })
 
   it('sets autoComplete to one-time-code', () => {
     render(<LoginTotpPanel {...defaultProps} />)
-    const input = screen.getByLabelText('验证码')
-    expect(input.getAttribute('autocomplete')).toBe('one-time-code')
+    const otp = screen.getByLabelText('验证码')
+    expect(otp.querySelector('input')?.getAttribute('autocomplete')).toBe(
+      'one-time-code',
+    )
   })
 
-  it('sets input name attribute', () => {
+  it('sets otp test id', () => {
     render(<LoginTotpPanel {...defaultProps} />)
-    const input = screen.getByLabelText('验证码')
-    expect(input.getAttribute('name')).toBe('login-totp-code')
-  })
-
-  it('sets input id from buildFormControlId', () => {
-    render(<LoginTotpPanel {...defaultProps} />)
-    const input = screen.getByLabelText('验证码')
-    expect(input.getAttribute('id')).toBe('login-totp-code')
+    expect(screen.getByTestId('login-totp-code')).toBeTruthy()
   })
 
   it('calls onVerify when Enter key is pressed in input', () => {
@@ -206,8 +199,8 @@ describe('LoginTotpPanel', () => {
         onVerify={onVerify}
       />,
     )
-    const input = screen.getByLabelText('验证码')
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })
+    const otp = screen.getByLabelText('验证码')
+    fireEvent.keyDown(otp, { key: 'Enter', code: 'Enter' })
     expect(onVerify).toHaveBeenCalled()
   })
 
@@ -262,14 +255,17 @@ describe('LoginTotpPanel', () => {
 
   it('displays empty totpCode value in input', () => {
     render(<LoginTotpPanel {...defaultProps} totpCode="" />)
-    const input = screen.getByLabelText('验证码') as HTMLInputElement
-    expect(input.value).toBe('')
+    const otp = screen.getByLabelText('验证码')
+    expect((otp.querySelector('input') as HTMLInputElement).value).toBe('')
   })
 
   it('displays totpCode value in input', () => {
     render(<LoginTotpPanel {...defaultProps} totpCode="123456" />)
-    const input = screen.getByLabelText('验证码') as HTMLInputElement
-    expect(input.value).toBe('123456')
+    const otp = screen.getByLabelText('验证码')
+    const values = Array.from(otp.querySelectorAll('input'))
+      .map((input) => input.value)
+      .join('')
+    expect(values).toBe('123456')
   })
 
   it('disables verify button when code has more than 6 digits', () => {
@@ -284,7 +280,9 @@ describe('LoginTotpPanel', () => {
 
   it('back button has icon', () => {
     const { container } = render(<LoginTotpPanel {...defaultProps} />)
-    const backButton = container.querySelector('.h-12') as HTMLButtonElement
+    const backButton = container.querySelector(
+      '.login-secondary-btn',
+    ) as HTMLButtonElement
     expect(backButton.querySelector('.anticon-arrow-left')).toBeTruthy()
   })
 })

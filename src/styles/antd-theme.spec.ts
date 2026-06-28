@@ -40,9 +40,9 @@ describe('buildAntdTheme', () => {
     expect(result.cssVar).toBeUndefined()
   })
 
-  it('sets colorPrimary to #2458e6', () => {
+  it('sets colorPrimary to the Ant Design default primary color', () => {
     const result = buildAntdTheme({ borderRadius: 6, fontSize: 14 })
-    expect(result.token?.colorPrimary).toBe('#2458e6')
+    expect(result.token?.colorPrimary).toBe('#1677ff')
   })
 
   it('passes borderRadius to token', () => {

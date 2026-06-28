@@ -454,7 +454,7 @@
   }
 
   .app-top-menu-shell {
-    padding: 0 8px;
+    padding: 0 4px;
   }
 
   .header-global-search {
@@ -462,6 +462,11 @@
     max-width: 360px;
     min-width: 220px;
     margin-left: 14px;
+  }
+
+  .header-global-search-top {
+    flex-basis: 260px;
+    width: 260px;
   }
 
   .user-wrapper .action {
@@ -484,7 +489,7 @@
   }
 
   .header-global-search-top {
-    width: 260px;
+    width: 240px;
   }
 
   .app-top-header-meta-label,
@@ -598,17 +603,78 @@
   }
 }
 
-/* ── Login card flip ── */
+.auth-page-shell {
+  min-height: 100vh;
+  background: var(--theme-shell-bg);
+}
 
-/* ── Login form card ── */
+.auth-page-content {
+  min-height: 100vh;
+  padding: 48px 24px;
+}
 
-/* ── Login form panel ── */
+.auth-page-brand {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.auth-page-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0;
+  background: var(--theme-primary);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 var(--theme-shadow-sm);
+}
+
+.auth-page-brand-title.ant-typography {
+  margin-bottom: 4px;
+  font-size: 20px;
+  line-height: 28px;
+}
+
+.auth-page-brand-subtitle {
+  font-size: 14px;
+  line-height: 22px;
+}
 
 .login-form-card {
   width: 100%;
-  max-width: 420px;
-  border-radius: calc(var(--app-border-radius) * 2);
-  box-shadow: 0 24px 64px var(--theme-shadow-md);
+  max-width: 400px;
+  border-color: var(--theme-card-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+.initial-setup-card {
+  max-width: 720px;
+}
+
+.login-form .ant-input-affix-wrapper,
+.login-form .ant-input,
+.login-form .ant-input-password {
+  border-radius: var(--ant-border-radius);
+}
+
+.auth-setup-highlight-list {
+  width: 100%;
+}
+
+.auth-setup-highlight {
+  width: 100%;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--theme-border-subtle);
+}
+
+.auth-setup-highlight:last-child {
+  border-bottom: 0;
 }
 
 .login-skeleton-card {
@@ -619,7 +685,7 @@
 }
 
 .login-form-card .ant-card-body {
-  padding: 36px 32px;
+  padding: 24px;
 }
 
 .login-skeleton-form {
@@ -638,49 +704,61 @@
 .login-skeleton-form-line {
   width: 100%;
   height: 48px;
-  border-radius: 14px;
+  border-radius: var(--ant-border-radius);
 }
 
 .login-skeleton-form-button {
   width: 100%;
   height: 48px;
   margin-top: 8px;
-  border-radius: 999px;
+  border-radius: var(--ant-border-radius);
 }
 
 .login-step-tag {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 14px;
+  padding: 2px 8px;
+  margin-bottom: 16px;
   font-size: 12px;
-  font-weight: 500;
-  border-radius: 999px;
-  margin-bottom: 20px;
+  line-height: 20px;
+  border: 1px solid var(--theme-card-border);
+  border-radius: 4px;
 }
 
 .login-step-tag.is-password {
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.08);
+  color: var(--theme-primary);
+  background: var(--theme-highlight-bg);
 }
 
 .login-step-tag.is-totp {
-  color: #8b5cf6;
-  background: rgba(139, 92, 246, 0.08);
+  color: var(--theme-primary);
+  background: var(--theme-highlight-bg);
 }
 
 .login-form-title {
-  margin: 0 0 6px;
-  font-size: 22px;
-  font-weight: 700;
+  margin: 0 0 4px;
   color: var(--theme-sider-text);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
 }
 
 .login-form-desc {
-  margin: 0 0 28px;
+  margin: 0 0 24px;
   font-size: 14px;
   color: var(--theme-sider-muted);
-  line-height: 1.6;
+  line-height: 22px;
+}
+
+.login-form .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.login-form .ant-form-item-label > label {
+  color: var(--theme-sider-text);
+  font-size: 14px;
+  font-weight: 400;
 }
 
 .login-totp-timer {
@@ -688,18 +766,18 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .login-totp-timer-ring {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  border: 3px solid var(--theme-card-border);
-  font-size: 18px;
+  border: 2px solid var(--theme-card-border);
+  font-size: 16px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--theme-sider-text);
@@ -707,15 +785,34 @@
 }
 
 .login-totp-timer-ring.is-expiring {
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: var(--theme-error);
+  color: var(--theme-error);
+}
+
+.login-totp-actions {
+  width: 100%;
+}
+
+.login-totp-otp {
+  width: 100%;
+  justify-content: center;
+}
+
+.login-totp-otp .ant-input {
+  text-align: center;
 }
 
 .login-submit-btn {
-  height: 48px;
-  font-weight: 600;
-  font-size: 15px;
-  border-radius: 10px;
+  height: 40px;
+  font-size: 14px;
+  font-weight: 400;
+  border-radius: 6px;
+}
+
+.login-secondary-btn {
+  height: 40px;
+  font-weight: 400;
+  border-radius: 6px;
 }
 
 .modal-top-20 .ant-modal {

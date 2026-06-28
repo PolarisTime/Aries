@@ -27,6 +27,40 @@ vi.mock('@/utils/env', () => ({
   appTitle: '测试应用',
 }))
 
+vi.mock('antd', () => {
+  const Form = ({ children, ...props }: any) => (
+    <form {...props}>{children}</form>
+  )
+  Form.useForm = () => [{ __INTERNAL__: { name: '' } }]
+  Form.Item = ({ children, ...props }: any) => <div {...props}>{children}</div>
+
+  return {
+    Card: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    Flex: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    Form,
+    Layout: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    Result: ({ title, ...props }: any) => <div {...props}>{title}</div>,
+    Space: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    Spin: ({ children, description, tip, ...props }: any) => (
+      <div {...props}>
+        {description ?? tip}
+        {children}
+      </div>
+    ),
+    Steps: ({ items, ...props }: any) => (
+      <div {...props}>
+        {items?.map((item: any) => (
+          <div key={item.key ?? item.title}>{item.title}</div>
+        ))}
+      </div>
+    ),
+    Typography: {
+      Title: ({ children, ...props }: any) => <h2 {...props}>{children}</h2>,
+      Text: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+    },
+  }
+})
+
 vi.mock('antd/es/form', () => {
   const Form = ({ children, ...props }: any) => (
     <form {...props}>{children}</form>

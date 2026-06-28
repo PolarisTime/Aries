@@ -39,7 +39,7 @@ describe('usePersonalSettings', () => {
 
   it('uses default settings when storage returns null', () => {
     const { result } = renderHook(() => usePersonalSettings())
-    expect(result.current.fontSize).toBe(12)
+    expect(result.current.fontSize).toBe(14)
     expect(result.current.layoutMode).toBe('top')
     expect(result.current.themeMode).toBe('system')
   })
@@ -77,7 +77,7 @@ describe('usePersonalSettings', () => {
 
     act(() => result.current.close())
 
-    expect(result.current.fontSize).toBe(12)
+    expect(result.current.fontSize).toBe(14)
     expect(result.current.layoutMode).toBe('top')
   })
 
@@ -92,7 +92,7 @@ describe('usePersonalSettings', () => {
 
     act(() => result.current.reset())
 
-    expect(result.current.fontSize).toBe(12)
+    expect(result.current.fontSize).toBe(14)
     expect(result.current.layoutMode).toBe('top')
     expect(result.current.themeMode).toBe('system')
   })

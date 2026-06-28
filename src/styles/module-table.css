@@ -98,7 +98,7 @@
   margin-bottom: 12px;
   background: var(--theme-accent-bg);
   border: 1px dashed var(--theme-accent-border);
-  border-radius: 12px;
+  border-radius: var(--ant-border-radius-lg);
 }
 
 .module-attachment-upload-hint {
@@ -117,7 +117,7 @@
   cursor: pointer;
   background: var(--theme-sider-surface);
   border: 1px solid var(--theme-card-border);
-  border-radius: 10px;
+  border-radius: var(--ant-border-radius-lg);
 }
 
 .module-attachment-preview-thumb .ant-image,
@@ -139,9 +139,9 @@
   height: 56px;
   color: #fff;
   font-size: 13px;
-  font-weight: 700;
-  background: #e74c3c;
-  border-radius: 10px;
+  font-weight: 600;
+  background: var(--ant-color-error);
+  border-radius: var(--ant-border-radius-lg);
 }
 
 .module-attachment-file-icon {
@@ -154,7 +154,7 @@
   color: var(--theme-primary);
   font-size: 18px;
   background: var(--theme-primary-soft);
-  border-radius: 10px;
+  border-radius: var(--ant-border-radius-lg);
 }
 
 .table-action-btn:hover {

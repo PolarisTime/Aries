@@ -304,6 +304,8 @@ export function PrintTemplateTableCard({
         <div className="print-template-shell">
           <div className="print-template-list-pane">
             <Input.Search
+              id="print-template-search"
+              name="print-template-search"
               allowClear
               value={keyword}
               placeholder={t('system.printTemplate.searchPlaceholder')}

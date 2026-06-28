@@ -4,8 +4,8 @@ import {
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import { Alert, Button, Input, Space } from 'antd'
+import type { KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { buildFormControlId } from '@/utils/form-control-id'
 
 interface Props {
   countdownText: string
@@ -31,7 +31,11 @@ export function LoginTotpPanel({
   activeLoginName,
 }: Props) {
   const { t } = useTranslation()
-  const totpInputId = buildFormControlId('login-totp', 'code')
+  const handleOtpKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter') {
+      onVerify()
+    }
+  }
 
   return (
     <div>
@@ -66,22 +70,23 @@ export function LoginTotpPanel({
         />
       )}
 
-      <Space orientation="vertical" size="middle" className="w-full">
-        <Input
-          id={totpInputId}
-          name="login-totp-code"
+      <Space
+        orientation="vertical"
+        size="middle"
+        className="w-full login-totp-actions"
+      >
+        <Input.OTP
+          length={6}
+          data-testid="login-totp-code"
           aria-label={t('auth.totppanel.inputAria')}
           size="large"
-          prefix={<SafetyCertificateOutlined />}
-          placeholder={t('auth.totppanel.placeholder')}
-          maxLength={6}
           value={totpCode}
-          onChange={(event) => onTotpCodeChange(event.target.value)}
-          onPressEnter={onVerify}
+          onInput={(value) => onTotpCodeChange(value.join(''))}
+          onKeyDown={handleOtpKeyDown}
           autoFocus
-          inputMode="numeric"
+          type="tel"
           autoComplete="one-time-code"
-          className="text-center text-lg tracking-[4px]"
+          className="login-totp-otp"
         />
 
         <Button
@@ -99,7 +104,7 @@ export function LoginTotpPanel({
           onClick={onBackToPassword}
           block
           icon={<ArrowLeftOutlined />}
-          className="h-12 rounded-[10px] font-medium"
+          className="login-secondary-btn"
         >
           {t('auth.totppanel.back')}
         </Button>

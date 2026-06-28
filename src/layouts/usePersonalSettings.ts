@@ -64,7 +64,7 @@ function applyPersonalFontSize(fontSize: number, cssVarName: string) {
 }
 
 export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
-  const defaultFontSize = options.defaultFontSize ?? 12
+  const defaultFontSize = options.defaultFontSize ?? 14
   const defaultLayoutMode = options.defaultLayoutMode ?? 'top'
   const fontSizeCssVar = options.fontSizeCssVar ?? '--app-font-size'
   const initialSettings = normalizePersonalSettings(

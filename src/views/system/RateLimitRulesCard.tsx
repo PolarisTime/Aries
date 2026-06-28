@@ -6,6 +6,8 @@ import {
   Form,
   InputNumber,
   Modal,
+  Select,
+  Space,
   Switch,
   Table,
   Typography,
@@ -57,6 +59,7 @@ export function RateLimitRulesCard() {
   const can = usePermissionStore((s) => s.can)
   const queryClient = useQueryClient()
   const [editingRule, setEditingRule] = useState<RateLimitRule | null>(null)
+  const [typeFilter, setTypeFilter] = useState<string | undefined>()
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
 
@@ -90,6 +93,14 @@ export function RateLimitRulesCard() {
 
   if (!can('general-setting', 'read')) return null
 
+  const typeOptions = Object.entries(TYPE_LABEL).map(([value, label]) => ({
+    value,
+    label,
+  }))
+  const filteredRules = typeFilter
+    ? rules.filter((rule) => rule.ruleType === typeFilter)
+    : rules
+
   const handleEdit = (rule: RateLimitRule) => {
     form.setFieldsValue(rule)
     setEditingRule(rule)
@@ -119,33 +130,43 @@ export function RateLimitRulesCard() {
     <Card
       title={t('system.rateLimit.title')}
       extra={
-        <Button
-          size="small"
-          loading={isFetching}
-          icon={<ReloadOutlined />}
-          onClick={() => void refetch()}
-        >
-          {t('system.rateLimit.refresh')}
-        </Button>
+        <Space wrap className="rate-limit-toolbar">
+          <Select
+            allowClear
+            className="w-180"
+            placeholder={t('system.rateLimit.allTypes')}
+            value={typeFilter}
+            options={typeOptions}
+            onChange={setTypeFilter}
+          />
+          <Button
+            size="small"
+            loading={isFetching}
+            icon={<ReloadOutlined />}
+            onClick={() => void refetch()}
+          >
+            {t('system.rateLimit.refresh')}
+          </Button>
+        </Space>
       }
-      className="mb-16"
+      className="system-list-card rate-limit-card"
     >
-      {rules.length > 0 ? (
+      {filteredRules.length > 0 ? (
         <Table
           rowKey="id"
-          dataSource={rules}
-          scroll={{ x: 750 }}
+          dataSource={filteredRules}
+          scroll={{ x: 860 }}
           columns={[
             {
               dataIndex: 'ruleKey',
               title: t('system.rateLimit.colRuleKey'),
-              width: 200,
+              width: 280,
               ellipsis: true,
             },
             {
               dataIndex: 'ruleType',
               title: t('system.rateLimit.colType'),
-              width: 80,
+              width: 110,
               render: (v: string) => (
                 <StatusTag
                   status={v}
@@ -161,32 +182,32 @@ export function RateLimitRulesCard() {
             {
               dataIndex: 'rate',
               title: t('system.rateLimit.colRate'),
-              width: 80,
+              width: 90,
               align: 'right',
               render: (v: number) => v.toFixed(2),
             },
             {
               dataIndex: 'capacity',
               title: t('system.rateLimit.colBurst'),
-              width: 55,
+              width: 70,
               align: 'right',
             },
             {
               dataIndex: 'tokensPerRequest',
               title: t('system.rateLimit.colCost'),
-              width: 55,
+              width: 70,
               align: 'right',
             },
             {
               dataIndex: 'priority',
               title: t('system.rateLimit.colPriority'),
-              width: 55,
+              width: 80,
               align: 'right',
             },
             {
               dataIndex: 'enabled',
               title: t('system.rateLimit.colStatus'),
-              width: 50,
+              width: 70,
               render: (v: boolean) => (
                 <StatusTag
                   status={v ? 'enabled' : 'disabled'}
@@ -205,7 +226,7 @@ export function RateLimitRulesCard() {
             },
             {
               title: t('system.rateLimit.colOperation'),
-              width: 50,
+              width: 90,
               align: 'center',
               render: (_: unknown, record: RateLimitRule) => (
                 <TableActions

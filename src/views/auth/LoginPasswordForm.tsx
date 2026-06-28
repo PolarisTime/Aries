@@ -34,6 +34,7 @@ export function LoginPasswordForm({
         initialValues={{ loginName: savedLoginName, remember: true }}
         layout="vertical"
         size="large"
+        className="login-form"
       >
         <Form.Item
           name="loginName"

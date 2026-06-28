@@ -2,6 +2,7 @@ import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { Button, Input } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { buildFormControlId } from '@/utils/form-control-id'
 
 interface Props {
   keyword: string
@@ -14,6 +15,8 @@ interface Props {
   refreshLabel?: string
   createLabel?: string
   createDisabled?: boolean
+  searchId?: string
+  searchName?: string
   children?: ReactNode
 }
 
@@ -28,13 +31,20 @@ export function SystemTableToolbar({
   refreshLabel,
   createLabel,
   createDisabled = false,
+  searchId,
+  searchName,
   children,
 }: Props) {
   const { t } = useTranslation()
+  const inputId =
+    searchId ?? buildFormControlId('system-table-toolbar', 'search')
+  const inputName = searchName ?? inputId
 
   return (
     <div className="system-table-toolbar">
       <Input.Search
+        id={inputId}
+        name={inputName}
         className="system-table-toolbar-search"
         placeholder={keywordPlaceholder ?? t('toolbar.searchPlaceholder')}
         /* 动态宽度：keywordWidth 由父组件传入，无法映射为固定 Tailwind 类 */

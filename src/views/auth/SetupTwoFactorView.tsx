@@ -1,4 +1,4 @@
-import { Card, Flex, Space, Tag, Typography } from 'antd'
+import { Flex, Space, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/authStore'
 import { appTitle } from '@/utils/env'
@@ -32,21 +32,23 @@ export function SetupTwoFactorView(): React.JSX.Element {
       <Typography.Paragraph type="secondary" className="mb-0">
         {t('auth.setup2fa.heroDescription')}
       </Typography.Paragraph>
-      <Flex vertical gap={12}>
+      <Flex vertical gap={12} className="auth-setup-highlight-list">
         {setupSecurityHighlights.map((item, index) => (
-          <Card key={item.title} size="small">
-            <Space align="start">
-              <Tag color="blue" variant="filled">
-                {index + 1}
-              </Tag>
-              <Space orientation="vertical" size={2}>
-                <Typography.Text strong>{item.title}</Typography.Text>
-                <Typography.Text type="secondary">
-                  {item.description}
-                </Typography.Text>
-              </Space>
+          <Space
+            key={item.title}
+            align="start"
+            className="auth-setup-highlight"
+          >
+            <Tag color="blue" variant="filled">
+              {index + 1}
+            </Tag>
+            <Space orientation="vertical" size={2}>
+              <Typography.Text strong>{item.title}</Typography.Text>
+              <Typography.Text type="secondary">
+                {item.description}
+              </Typography.Text>
             </Space>
-          </Card>
+          </Space>
         ))}
       </Flex>
     </Flex>

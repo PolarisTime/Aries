@@ -13,22 +13,23 @@ export function AuthPageShell({ children, hero }: Props) {
   const { t } = useTranslation()
   return (
     <AppAntdProvider>
-      <Layout className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <Layout className="auth-page-shell">
         <Flex
           vertical
           align="center"
           justify="center"
-          className="min-h-screen px-6 py-12"
+          className="auth-page-content"
         >
           {hero || (
-            <div className="mb-8 text-center">
-              <div className="inline-flex items-center justify-center size-14 mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-400 text-white text-2xl font-bold shadow-lg shadow-blue-500/20">
-                L
-              </div>
-              <Typography.Title level={3} className="!mb-1">
+            <div className="auth-page-brand">
+              <div className="auth-page-brand-mark">L</div>
+              <Typography.Title level={3} className="auth-page-brand-title">
                 {appTitle}
               </Typography.Title>
-              <Typography.Text type="secondary">
+              <Typography.Text
+                type="secondary"
+                className="auth-page-brand-subtitle"
+              >
                 {t('common.brandSubtitle')}
               </Typography.Text>
             </div>

@@ -12,7 +12,7 @@ interface Props {
 }
 
 function readPersonalFontSize() {
-  return getPersonalSettings()?.fontSize ?? 12
+  return getPersonalSettings()?.fontSize ?? 14
 }
 
 function AntdAppRuntimeBridge({ children }: Props) {
@@ -45,7 +45,7 @@ export function AppAntdProvider({ children }: Props) {
   }, [])
 
   const themeConfig = buildAntdTheme({
-    borderRadius: 8,
+    borderRadius: 6,
     cssVarKey: 'ant',
     fontSize,
     darkMode: resolvedTheme === 'dark',

@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { BorderBeam, Card, Form } from 'antd'
+import { Card, Form } from 'antd'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRequestError } from '@/hooks/useRequestError'
@@ -114,34 +114,32 @@ export function LoginView() {
   })()
   return (
     <AuthPageShell>
-      <BorderBeam>
-        <Card className="login-form-card">
-          {flipped ? (
-            <LoginTotpPanel
-              countdownText={countdownText}
-              isExpired={isExpired}
-              isExpiring={isExpiring}
-              onBackToPassword={handleBackToPassword}
-              onTotpCodeChange={setTotpCode}
-              onVerify={() => {
-                void handleTotpVerify()
-              }}
-              totpCode={totpCode}
-              totpLoading={totpLoading}
-              activeLoginName={activeLoginName}
-            />
-          ) : (
-            <LoginPasswordForm
-              loading={loading}
-              onSubmit={(values) => {
-                void handleLogin(values)
-              }}
-              savedLoginName={savedSession?.loginName || ''}
-              form={form}
-            />
-          )}
-        </Card>
-      </BorderBeam>
+      <Card className="login-form-card" variant="outlined">
+        {flipped ? (
+          <LoginTotpPanel
+            countdownText={countdownText}
+            isExpired={isExpired}
+            isExpiring={isExpiring}
+            onBackToPassword={handleBackToPassword}
+            onTotpCodeChange={setTotpCode}
+            onVerify={() => {
+              void handleTotpVerify()
+            }}
+            totpCode={totpCode}
+            totpLoading={totpLoading}
+            activeLoginName={activeLoginName}
+          />
+        ) : (
+          <LoginPasswordForm
+            loading={loading}
+            onSubmit={(values) => {
+              void handleLogin(values)
+            }}
+            savedLoginName={savedSession?.loginName || ''}
+            form={form}
+          />
+        )}
+      </Card>
     </AuthPageShell>
   )
 }
