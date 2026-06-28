@@ -6,12 +6,18 @@ const HEALTH_CHECK_MAX_RETRIES = 5
 const HEALTH_CHECK_MAX_BACKOFF_MS = 30_000
 const INITIAL_BOOT_DELAY_MS = 1200
 
-export function useBackendStatus(token: string): { backendOnline: boolean } {
+export function useBackendStatus(token: string): {
+  backendOnline: boolean
+  backendVersion: string | null
+} {
   const [healthState, setHealthState] = useState<{
     backendOnline: boolean
+    backendVersion: string | null
     token: string
-  }>({ backendOnline: false, token })
-  const backendOnline = token ? healthState.backendOnline : false
+  }>({ backendOnline: false, backendVersion: null, token })
+  const isCurrentToken = Boolean(token) && healthState.token === token
+  const backendOnline = isCurrentToken ? healthState.backendOnline : false
+  const backendVersion = isCurrentToken ? healthState.backendVersion : null
   const healthRetriesRef = useRef(0)
 
   useEffect(() => {
@@ -25,10 +31,19 @@ export function useBackendStatus(token: string): { backendOnline: boolean } {
     const checkBackendHealth = async (): Promise<void> => {
       try {
         const body = await fetchBackendHealth()
-        setHealthState({ backendOnline: body.status === 'UP', token })
+        setHealthState({
+          backendOnline: body.status === 'UP',
+          backendVersion: body.version || null,
+          token,
+        })
         healthRetriesRef.current = 0
       } catch {
-        setHealthState({ backendOnline: false, token })
+        setHealthState((current) => ({
+          backendOnline: false,
+          backendVersion:
+            current.token === token ? current.backendVersion : null,
+          token,
+        }))
         healthRetriesRef.current += 1
         if (healthRetriesRef.current <= HEALTH_CHECK_MAX_RETRIES) {
           const delay = Math.min(
@@ -67,5 +82,6 @@ export function useBackendStatus(token: string): { backendOnline: boolean } {
 
   return {
     backendOnline,
+    backendVersion,
   }
 }

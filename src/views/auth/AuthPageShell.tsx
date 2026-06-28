@@ -2,6 +2,7 @@ import { Flex, Layout, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
+import { AppVersionFooter } from '@/layouts/AppVersionFooter'
 import { appTitle } from '@/utils/env'
 
 interface Props {
@@ -36,6 +37,7 @@ export function AuthPageShell({ children, hero }: Props) {
           )}
           {children}
         </Flex>
+        <AppVersionFooter backendVersion={null} />
       </Layout>
     </AppAntdProvider>
   )

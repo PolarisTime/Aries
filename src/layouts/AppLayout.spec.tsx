@@ -10,7 +10,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => {
+    t: (key: string, options?: Record<string, string>) => {
       const map: Record<string, string> = {
         'hooks.openPages.unnamedPage': '未命名页面',
         'hooks.openPages.workbench': '工作台',
@@ -43,6 +43,10 @@ vi.mock('react-i18next', () => ({
         'common.confirmLogoutContent': '确定要退出吗？',
         'common.cancel': '取消',
         'common.displaySettingsSaved': '显示设置已保存',
+        'common.productCopyright': '© 2026C Leo',
+        'common.frontendVersion': '前端 v{{version}}',
+        'common.backendVersion': '后端 v{{version}}',
+        'common.versionUnknown': '--',
         'layouts.sideNav.breadcrumbPrefix': '首页 / ',
         'layouts.sideNav.apiOnline': '在线',
         'layouts.sideNav.apiOffline': '离线',
@@ -64,7 +68,7 @@ vi.mock('react-i18next', () => ({
         'layouts.routePage.workbench': '工作台',
         'layouts.routePage.material': '商品资料',
       }
-      return map[key] ?? key
+      return (map[key] ?? key).replace('{{version}}', options?.version ?? '')
     },
   }),
 }))
@@ -168,7 +172,10 @@ vi.mock('@/layouts/useAppWatermark', () => ({
 }))
 
 vi.mock('@/layouts/useBackendStatus', () => ({
-  useBackendStatus: vi.fn().mockReturnValue({ backendOnline: true }),
+  useBackendStatus: vi.fn().mockReturnValue({
+    backendOnline: true,
+    backendVersion: '0.1.0',
+  }),
 }))
 
 vi.mock('@/layouts/useGlobalSearchSupport', () => ({
@@ -236,6 +243,7 @@ vi.mock('@/utils/antd-app', () => ({
 
 vi.mock('@/utils/env', () => ({
   appTitle: 'LEO 管理系统',
+  frontendVersion: '0.2.0',
 }))
 
 vi.mock('@/utils/storage', () => ({
@@ -309,5 +317,12 @@ describe('AppLayout', () => {
   it('renders content area', () => {
     render(<AppLayout />)
     expect(document.querySelector('.leo-content')).toBeDefined()
+  })
+
+  it('renders version footer', () => {
+    render(<AppLayout />)
+    expect(screen.getByText('© 2026C Leo')).toBeDefined()
+    expect(screen.getByText('前端 v0.2.0')).toBeDefined()
+    expect(screen.getByText('后端 v0.1.0')).toBeDefined()
   })
 })

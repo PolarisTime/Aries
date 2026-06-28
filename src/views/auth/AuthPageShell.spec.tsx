@@ -3,11 +3,15 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => {
+    t: (key: string, options?: Record<string, string>) => {
       const map: Record<string, string> = {
         'common.brandSubtitle': '测试副标题',
+        'common.productCopyright': '© 2026C Leo',
+        'common.frontendVersion': '前端 v{{version}}',
+        'common.backendVersion': '后端 v{{version}}',
+        'common.versionUnknown': '--',
       }
-      return map[key] ?? key
+      return (map[key] ?? key).replace('{{version}}', options?.version ?? '')
     },
   }),
 }))
@@ -20,6 +24,7 @@ vi.mock('@/components/AppAntdProvider', () => ({
 
 vi.mock('@/utils/env', () => ({
   appTitle: '测试应用',
+  frontendVersion: '0.2.0',
 }))
 
 import { AuthPageShell } from '@/views/auth/AuthPageShell'
@@ -62,5 +67,16 @@ describe('AuthPageShell', () => {
       </AuthPageShell>,
     )
     expect(screen.getByTestId('antd-provider')).toBeTruthy()
+  })
+
+  it('renders version footer', () => {
+    render(
+      <AuthPageShell>
+        <div>内容</div>
+      </AuthPageShell>,
+    )
+    expect(screen.getByText('© 2026C Leo')).toBeTruthy()
+    expect(screen.getByText('前端 v0.2.0')).toBeTruthy()
+    expect(screen.getByText('后端 v--')).toBeTruthy()
   })
 })

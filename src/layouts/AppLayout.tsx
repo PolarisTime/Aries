@@ -12,6 +12,7 @@ import { useAuthRefreshTimer } from '@/hooks/useAuthRefreshTimer'
 import { useOpenPages } from '@/hooks/useOpenPages'
 import { AppLayoutHeader } from '@/layouts/AppLayoutHeader'
 import { AppPageTabs } from '@/layouts/AppPageTabs'
+import { AppVersionFooter } from '@/layouts/AppVersionFooter'
 import {
   buildAppLayoutStyles,
   buildAppLayoutUserInfo,
@@ -98,16 +99,21 @@ function SideNavigation({
 }
 
 type AppContentOutletProps = {
+  backendVersion: string | null
   openPageKey: string
 }
 
-function AppContentOutlet({ openPageKey }: AppContentOutletProps) {
+function AppContentOutlet({
+  backendVersion,
+  openPageKey,
+}: AppContentOutletProps) {
   return (
     <Content className="leo-content">
       <div className="leo-content-inner">
         <AppErrorBoundary>
           <Outlet key={openPageKey} />
         </AppErrorBoundary>
+        <AppVersionFooter backendVersion={backendVersion} />
       </div>
     </Content>
   )
@@ -172,7 +178,7 @@ export function AppLayout() {
   const clock = useAppLayoutClock()
 
   const routePageContext = resolveRoutePageContext(location.pathname, t)
-  const { backendOnline } = useBackendStatus(token)
+  const { backendOnline, backendVersion } = useBackendStatus(token)
 
   const {
     visible: personalSettingsOpen,
@@ -426,7 +432,10 @@ export function AppLayout() {
               onNavigateToPath={(path) => navigate({ to: path as '/' })}
             />
 
-            <AppContentOutlet openPageKey={routePageContext.openPageKey} />
+            <AppContentOutlet
+              backendVersion={backendVersion}
+              openPageKey={routePageContext.openPageKey}
+            />
           </Layout>
 
           <PersonalSettingsHost

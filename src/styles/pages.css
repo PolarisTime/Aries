@@ -604,12 +604,15 @@
 }
 
 .auth-page-shell {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: var(--theme-shell-bg);
 }
 
 .auth-page-content {
-  min-height: 100vh;
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 48px 24px;
 }
 

@@ -24,6 +24,7 @@ export type HealthCheck = {
 export type HealthResponse = {
   status: string
   app: string
+  version?: string
   traceId: string
   timestamp: string
   db?: HealthCheck

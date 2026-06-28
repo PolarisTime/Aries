@@ -3,12 +3,15 @@
 interface ImportMetaEnv {
   readonly VITE_APP_TITLE: string
   readonly VITE_API_BASE_URL: string
+  readonly VITE_API_VERSION?: string
   readonly VITE_PROXY_TARGET?: string
 }
 
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+declare const __APP_VERSION__: string
 
 interface CLodopLicenseConfig {
   companyName?: string

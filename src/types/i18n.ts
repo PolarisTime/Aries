@@ -262,6 +262,10 @@ export interface MessageSchema {
     confirmLogoutContent: string
     displaySettingsSaved: string
     brandSubtitle: string
+    productCopyright: string
+    frontendVersion: string
+    backendVersion: string
+    versionUnknown: string
     confirmAudit: string
     saveFailed: string
     saveFailedRetry: string

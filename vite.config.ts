@@ -1,7 +1,13 @@
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
+
+const packageJson = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+) as { version?: string }
+const appVersion = packageJson.version || '0.0.0'
 
 const INITIAL_HTML_ANTD_PRELOAD_ALLOWLIST = new Set([
   'antd-button',
@@ -93,6 +99,9 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+    },
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion),
     },
     server: {
       host: '0.0.0.0',

@@ -23,7 +23,10 @@ describe('useBackendStatus', () => {
   })
 
   it('checks backend health after initial delay', async () => {
-    vi.mocked(fetchBackendHealth).mockResolvedValue({ status: 'UP' })
+    vi.mocked(fetchBackendHealth).mockResolvedValue({
+      status: 'UP',
+      version: '0.1.0',
+    })
 
     const { result } = renderHook(() => useBackendStatus('token'))
 
@@ -35,6 +38,7 @@ describe('useBackendStatus', () => {
     })
 
     expect(result.current.backendOnline).toBe(true)
+    expect(result.current.backendVersion).toBe('0.1.0')
   })
 
   it('sets backendOnline to false when health check fails', async () => {
@@ -61,12 +65,13 @@ describe('useBackendStatus', () => {
     })
 
     expect(result.current.backendOnline).toBe(false)
+    expect(result.current.backendVersion).toBeNull()
   })
 
   it('retries health check on failure', async () => {
     vi.mocked(fetchBackendHealth)
       .mockRejectedValueOnce(new Error('Network error'))
-      .mockResolvedValueOnce({ status: 'UP' })
+      .mockResolvedValueOnce({ status: 'UP', version: '0.1.0' })
 
     const { result } = renderHook(() => useBackendStatus('token'))
 
@@ -83,6 +88,7 @@ describe('useBackendStatus', () => {
     })
 
     expect(result.current.backendOnline).toBe(true)
+    expect(result.current.backendVersion).toBe('0.1.0')
   })
 
   it('stops retrying after max retries', async () => {
@@ -159,6 +165,31 @@ describe('useBackendStatus', () => {
     })
 
     expect(result.current.backendOnline).toBe(true)
+  })
+
+  it('hides stale health state while token changes', async () => {
+    vi.mocked(fetchBackendHealth).mockResolvedValue({
+      status: 'UP',
+      version: '0.1.0',
+    })
+
+    const { result, rerender } = renderHook(
+      ({ token }) => useBackendStatus(token),
+      { initialProps: { token: 'token1' } },
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1200)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(result.current.backendOnline).toBe(true)
+    expect(result.current.backendVersion).toBe('0.1.0')
+
+    rerender({ token: 'token2' })
+
+    expect(result.current.backendOnline).toBe(false)
+    expect(result.current.backendVersion).toBeNull()
   })
 
   it('uses exponential backoff for retries', async () => {

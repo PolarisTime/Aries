@@ -186,6 +186,7 @@ describe('auth', () => {
       const healthData = {
         status: 'UP',
         app: 'aries',
+        version: '0.1.0',
         traceId: 't1',
         timestamp: '2024-01-01',
       }
