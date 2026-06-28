@@ -47,6 +47,8 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     records: state.records,
     setPage: () => {},
     clearSelection: state.clearSelection,
+    defaultFilters: state.defaultFilters,
+    setFilters: state.setFilters,
     setSubmittedFilters: state.setSubmittedFilters,
     updateFilter: state.updateFilter,
     openDetail: state.openDetail,
@@ -68,6 +70,8 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         moduleKey={moduleKey}
         config={state.config}
         filters={state.filters}
+        defaultFilters={state.defaultFilters}
+        submittedFilters={state.submittedFilters}
         loading={state.isLoading || state.editorLockLoading}
         exporting={state.exporting}
         records={state.records}
@@ -82,7 +86,6 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         rowClassName={state.getRowClassName}
         onUpdateFilter={state.updateFilter}
         onApplyFilters={state.applyFilters}
-        onSearch={state.handleSearch}
         onReset={state.handleReset}
         onCreate={() => {
           void state.openEditor(null)

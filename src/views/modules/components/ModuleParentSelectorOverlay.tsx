@@ -367,15 +367,6 @@ function resolveParentSelectorColumns(
   ]
 }
 
-function normalizeFilterValues(filters: SearchParams) {
-  return Object.fromEntries(
-    Object.entries(filters).map(([key, value]) => [
-      key,
-      typeof value === 'string' ? value.trim() : value,
-    ]),
-  )
-}
-
 function needsParentDetail(record: ModuleRecord) {
   return !Array.isArray(record.items) || record.items.length === 0
 }
@@ -740,10 +731,11 @@ interface ParentSelectorTopProps {
   displayFieldKey: string
   draftFilters: SearchParams
   formatCellValue: ParentSelectorFormatCellValue
+  submittedFilters: SearchParams
   onClearSelectedRecords: () => void
+  onApplyFilters: (filters: SearchParams) => void
   onRemoveSelectedRecord: (recordId: string) => void
   onResetFilters: () => void
-  onSubmitFilters: () => void
   onUpdateFilter: (key: string, value: unknown) => void
   overlayFilterConfig?: ModulePageConfig
   parentModuleKey: string
@@ -756,10 +748,11 @@ function ParentSelectorTop({
   displayFieldKey,
   draftFilters,
   formatCellValue,
+  submittedFilters,
   onClearSelectedRecords,
+  onApplyFilters,
   onRemoveSelectedRecord,
   onResetFilters,
-  onSubmitFilters,
   onUpdateFilter,
   overlayFilterConfig,
   parentModuleKey,
@@ -772,8 +765,10 @@ function ParentSelectorTop({
         <ModuleFilterToolbar
           config={overlayFilterConfig}
           filters={draftFilters}
+          defaultFilters={{}}
+          submittedFilters={submittedFilters}
           onUpdateFilter={onUpdateFilter}
-          onSearch={onSubmitFilters}
+          onApplyFilters={onApplyFilters}
           onReset={onResetFilters}
         />
       ) : null}
@@ -1062,21 +1057,11 @@ function ModuleParentSelectorOverlayContent({
     })
   }
 
-  const buildSubmittedFilters = () =>
-    Object.fromEntries(
-      Object.entries(normalizeFilterValues(draftFilters)).filter(
-        ([, value]) => {
-          if (value === undefined || value === null) return false
-          if (typeof value === 'string') return value.length > 0
-          return true
-        },
-      ),
-    )
-
-  const submitFilters = () => {
+  const applyFilters = (nextFilters: SearchParams) => {
     setState({
+      draftFilters: { ...nextFilters },
+      submittedFilters: { ...nextFilters },
       page: 1,
-      submittedFilters: buildSubmittedFilters(),
     })
   }
 
@@ -1180,10 +1165,11 @@ function ModuleParentSelectorOverlayContent({
         displayFieldKey={displayFieldKey}
         draftFilters={draftFilters}
         formatCellValue={formatCellValue}
+        submittedFilters={submittedFilters}
         onClearSelectedRecords={handleClearSelectedRecords}
+        onApplyFilters={applyFilters}
         onRemoveSelectedRecord={removeSelectedRecord}
         onResetFilters={resetFilters}
-        onSubmitFilters={submitFilters}
         onUpdateFilter={updateFilter}
         overlayFilterConfig={overlayFilterConfig}
         parentModuleKey={parentModuleKey}

@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { resolveAutoOpenDetailTarget } from './use-business-grid-route-sync'
+import {
+  resolveAutoOpenDetailTarget,
+  useBusinessGridRouteSync,
+} from './use-business-grid-route-sync'
 
 const purchaseOrderConfig: ModulePageConfig = {
   key: 'purchase-order',
@@ -141,5 +145,59 @@ describe('resolveAutoOpenDetailTarget', () => {
       autoOpenedRouteKey: '',
     })
     expect(result).toBeNull()
+  })
+})
+
+describe('useBusinessGridRouteSync', () => {
+  function renderRouteSync(searchStr: string) {
+    const handlers = {
+      clearSelection: vi.fn(),
+      openDetail: vi.fn(),
+      setFilters: vi.fn(),
+      setPage: vi.fn(),
+      setSubmittedFilters: vi.fn(),
+      updateFilter: vi.fn(),
+    }
+
+    renderHook(() =>
+      useBusinessGridRouteSync({
+        location: {
+          searchStr,
+        } as never,
+        config: purchaseOrderConfig,
+        records: [],
+        defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
+        ...handlers,
+      }),
+    )
+
+    return handlers
+  }
+
+  it('keeps default filters when URL has no route keyword', () => {
+    const handlers = renderRouteSync('')
+
+    expect(handlers.setPage).toHaveBeenCalledWith(1)
+    expect(handlers.clearSelection).toHaveBeenCalled()
+    expect(handlers.setFilters).toHaveBeenCalledWith({
+      orderDate: ['2026-05-29', '2026-06-28'],
+    })
+    expect(handlers.setSubmittedFilters).toHaveBeenCalledWith({
+      orderDate: ['2026-05-29', '2026-06-28'],
+    })
+    expect(handlers.updateFilter).not.toHaveBeenCalled()
+  })
+
+  it('merges route keyword with default filters', () => {
+    const handlers = renderRouteSync('?docNo=PO2026000032')
+
+    expect(handlers.setFilters).toHaveBeenCalledWith({
+      orderDate: ['2026-05-29', '2026-06-28'],
+      keyword: 'PO2026000032',
+    })
+    expect(handlers.setSubmittedFilters).toHaveBeenCalledWith({
+      orderDate: ['2026-05-29', '2026-06-28'],
+      keyword: 'PO2026000032',
+    })
   })
 })

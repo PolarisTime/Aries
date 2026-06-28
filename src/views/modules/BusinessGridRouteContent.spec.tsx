@@ -52,6 +52,8 @@ function createGridState(overrides: Record<string, unknown> = {}) {
     canUseBulkPrintActions: false,
     handlePrintSelectedRecords: vi.fn(),
     clearSelection: vi.fn(),
+    defaultFilters: {},
+    setFilters: vi.fn(),
     setSubmittedFilters: vi.fn(),
     editRecord: null,
     editorOpen: false,
@@ -78,9 +80,8 @@ function createGridState(overrides: Record<string, unknown> = {}) {
     handleEditorSaved: vi.fn(),
     closeDetail: vi.fn(),
     handleStatementGenerate: vi.fn(),
-    filters: [],
-    setFilters: vi.fn(),
-    submittedFilters: [],
+    filters: {},
+    submittedFilters: {},
     ...overrides,
   }
 }
@@ -185,6 +186,13 @@ describe('BusinessGridRouteContent', () => {
   })
 
   it('renders grid content', () => {
+    const state = createGridState({
+      defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
+      filters: { orderDate: ['2026-05-29', '2026-06-28'] },
+      submittedFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
+    })
+    mocks.useBusinessGridPage.mockReturnValue(state)
+
     render(<BusinessGridRouteContent {...defaultProps} />)
     expect(screen.getByTestId('grid-content')).toBeTruthy()
     expect(mocks.useBusinessGridPage).toHaveBeenCalledWith({
@@ -195,7 +203,16 @@ describe('BusinessGridRouteContent', () => {
     expect(mocks.useBusinessGridRouteSync).toHaveBeenCalledWith(
       expect.objectContaining({
         config: expect.objectContaining({ readOnly: false }),
+        defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
         location: expect.objectContaining({ pathname: '/test' }),
+        setFilters: state.setFilters,
+      }),
+    )
+    expect(mocks.gridContentProps).toEqual(
+      expect.objectContaining({
+        defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
+        filters: { orderDate: ['2026-05-29', '2026-06-28'] },
+        submittedFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
       }),
     )
     expect(mocks.useBusinessGridOverlayPreload).toHaveBeenCalledWith({

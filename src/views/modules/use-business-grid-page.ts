@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
@@ -12,7 +12,10 @@ import {
 } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
-import { useModuleFilters } from '@/hooks/useModuleFilters'
+import {
+  buildDefaultModuleFilters,
+  useModuleFilters,
+} from '@/hooks/useModuleFilters'
 import { useModulePageConfig } from '@/hooks/useModulePageConfig'
 import { useModulePermissions } from '@/hooks/useModulePermissions'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
@@ -88,6 +91,10 @@ export function useBusinessGridPage({
   const toolbarConfig = canUseListExport
     ? resolvedConfig
     : withoutListExportActions(resolvedConfig)
+  const defaultFilters = useMemo(
+    () => buildDefaultModuleFilters(config),
+    [config],
+  )
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [selectedRowMap, setSelectedRowMap] = useState<
@@ -110,8 +117,10 @@ export function useBusinessGridPage({
     handleSearch,
     handleReset,
     updateFilter,
+    setFilters,
     setSubmittedFilters,
   } = useModuleFilters({
+    defaultFilters,
     setCurrentPage: (page: number) => setCurrentPage(page),
   })
 
@@ -327,6 +336,7 @@ export function useBusinessGridPage({
     onColumnOrderChange,
     config,
     currentPage,
+    defaultFilters,
     detailLoading,
     detailOpen,
     detailRecord,
@@ -359,7 +369,9 @@ export function useBusinessGridPage({
     selectedRowKeys,
     setSelectedRowKeys,
     setSelectedRowMap,
+    setFilters,
     setSubmittedFilters,
+    submittedFilters,
     antdColumns,
     toggleColumn,
     updateFilter,

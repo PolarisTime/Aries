@@ -10,10 +10,14 @@ interface Props {
   records: ModuleRecord[]
   setPage: (page: number) => void
   clearSelection: () => void
+  defaultFilters?: SearchParams
+  setFilters?: (filters: SearchParams) => void
   setSubmittedFilters: (filters: SearchParams) => void
   updateFilter: (key: string, value: unknown) => void
   openDetail: (target: string | ModuleRecord) => Promise<void>
 }
+
+const EMPTY_FILTERS: SearchParams = {}
 
 function parseRouteParams(searchStr: string) {
   const params = new URLSearchParams(searchStr)
@@ -94,6 +98,8 @@ export function useBusinessGridRouteSync({
   records,
   setPage,
   clearSelection,
+  defaultFilters = EMPTY_FILTERS,
+  setFilters,
   setSubmittedFilters,
   updateFilter,
   openDetail,
@@ -111,20 +117,34 @@ export function useBusinessGridRouteSync({
 
     if (!routeParams.routeKeyword) {
       // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 过滤状态由父级列表持有，这里只同步路由入口。
-      updateFilter('keyword', '')
+      if (setFilters) {
+        setFilters({ ...defaultFilters })
+      } else {
+        updateFilter('keyword', '')
+      }
       // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 同步已提交过滤条件，保证详情跳转后的列表立即收敛到目标单据。
-      setSubmittedFilters({})
+      setSubmittedFilters({ ...defaultFilters })
       return
     }
 
+    const nextRouteFilters = {
+      ...defaultFilters,
+      keyword: routeParams.routeKeyword,
+    }
     // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 过滤状态由父级列表持有，这里只同步路由入口。
-    updateFilter('keyword', routeParams.routeKeyword)
+    if (setFilters) {
+      setFilters(nextRouteFilters)
+    } else {
+      updateFilter('keyword', routeParams.routeKeyword)
+    }
     // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 同步已提交过滤条件，保证详情跳转后的列表立即收敛到目标单据。
-    setSubmittedFilters({ keyword: routeParams.routeKeyword })
+    setSubmittedFilters(nextRouteFilters)
   }, [
     clearSelection,
+    defaultFilters,
     routeParams.routeKeyword,
     setPage,
+    setFilters,
     setSubmittedFilters,
     updateFilter,
   ])

@@ -7,10 +7,10 @@ import {
   Row,
   Segmented,
   Select,
-  Space,
 } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import type { SearchParams } from '@/types/api-raw'
@@ -28,9 +28,10 @@ import { asString } from '@/utils/type-narrowing'
 interface Props {
   config: ModulePageConfig
   filters: SearchParams
+  defaultFilters?: SearchParams
+  submittedFilters: SearchParams
   onUpdateFilter: (key: string, value: unknown) => void
-  onApplyFilters?: (filters: SearchParams) => void
-  onSearch: () => void
+  onApplyFilters: (filters: SearchParams) => void
   onReset: () => void
 }
 
@@ -62,16 +63,38 @@ function getFilterFieldLabelTargetId(field: ModuleFilterDefinition) {
   return field.type === 'dateRange' ? `${fieldId}-start` : fieldId
 }
 
+function buildNextFilters(
+  baseFilters: SearchParams,
+  key: string,
+  value: unknown,
+) {
+  const nextFilters = { ...baseFilters }
+  if (value === undefined || value === null || value === '') {
+    delete nextFilters[key]
+    return nextFilters
+  }
+  nextFilters[key] = value
+  return normalizeFilters(nextFilters)
+}
+
+function hasSecondaryFilters(filters: ModuleFilterDefinition[]) {
+  return filters.some((field) => (field.row || 1) > 1)
+}
+
 function ModuleFilterField({
   field,
   filters,
+  submittedFilters,
   onUpdateFilter,
-  onSearch,
+  onCommitFilter,
+  onCommitTextFilter,
 }: {
   field: ModuleFilterDefinition
   filters: SearchParams
+  submittedFilters: SearchParams
   onUpdateFilter: (key: string, value: unknown) => void
-  onSearch: () => void
+  onCommitFilter: (key: string, value: unknown) => void
+  onCommitTextFilter: (key: string, value: unknown) => void
 }) {
   const { t } = useTranslation()
   const fieldId = buildFormControlId('module-filter', field.key)
@@ -117,7 +140,7 @@ function ModuleFilterField({
             ? asString(filters[field.key])
             : undefined
         }
-        onChange={(value) => onUpdateFilter(field.key, value)}
+        onChange={(value) => onCommitFilter(field.key, value)}
         options={resolveOptions()}
       />
     )
@@ -139,15 +162,18 @@ function ModuleFilterField({
         aria-label={field.label}
         value={rangeValue}
         className="w-full"
-        onChange={(_, dateStrings) =>
-          onUpdateFilter(
-            field.key,
-            dateStrings[0] && dateStrings[1] ? dateStrings : undefined,
-          )
-        }
+        onChange={(_, dateStrings) => {
+          const nextValue =
+            Array.isArray(dateStrings) && dateStrings[0] && dateStrings[1]
+              ? dateStrings
+              : undefined
+          onCommitFilter(field.key, nextValue)
+        }}
       />
     )
   }
+
+  const committedValue = asString(submittedFilters[field.key])
 
   return (
     <Input
@@ -160,7 +186,13 @@ function ModuleFilterField({
       }
       value={asString(filters[field.key])}
       onChange={(event) => onUpdateFilter(field.key, event.target.value)}
-      onPressEnter={onSearch}
+      onBlur={(event) => {
+        if (event.target.value.trim() === committedValue.trim()) return
+        onCommitTextFilter(field.key, event.target.value)
+      }}
+      onPressEnter={(event) =>
+        onCommitTextFilter(field.key, event.currentTarget.value)
+      }
     />
   )
 }
@@ -168,26 +200,68 @@ function ModuleFilterField({
 export function ModuleFilterToolbar({
   config,
   filters,
+  defaultFilters = {},
+  submittedFilters,
   onUpdateFilter,
   onApplyFilters,
-  onSearch,
   onReset,
 }: Props) {
   const { t } = useTranslation()
+  const [expanded, setExpanded] = useState(false)
+  const lastTextCommitAtRef = useRef(0)
 
   const hasConfigKeywordFilter = config.filters.some(
     (field) => field.key === 'keyword',
   )
-  const visibleFilters = config.filters.toSorted(
+  const sortedFilters = config.filters.toSorted(
     (left, right) => (left.row || 1) - (right.row || 1),
   )
+  const visibleFilters = expanded
+    ? sortedFilters
+    : sortedFilters.filter((field) => (field.row || 1) <= 1)
+  const canExpand = hasSecondaryFilters(sortedFilters)
   const quickFilters = config.quickFilters || []
   const activeQuickFilterKey = quickFilters.find((filter) =>
-    isSameFilterPreset(filters, filter.values),
+    isSameFilterPreset(submittedFilters, {
+      ...defaultFilters,
+      ...filter.values,
+    }),
   )?.key
+  const commitFilter = (key: string, value: unknown) => {
+    onUpdateFilter(key, value)
+    onApplyFilters(buildNextFilters(submittedFilters, key, value))
+  }
+
+  const commitTextFilter = (key: string, value: unknown) => {
+    const now = Date.now()
+    if (now - lastTextCommitAtRef.current < 100) return
+    lastTextCommitAtRef.current = now
+
+    const normalizedValue =
+      typeof value === 'string' ? value.trim() : String(value ?? '').trim()
+    onUpdateFilter(key, normalizedValue)
+    onApplyFilters(
+      buildNextFilters(
+        {
+          ...submittedFilters,
+          ...normalizeFilters(
+            Object.fromEntries(
+              Object.entries(filters).filter(
+                ([filterKey]) =>
+                  config.filters.find((field) => field.key === filterKey)
+                    ?.type !== 'input',
+              ),
+            ),
+          ),
+        },
+        key,
+        normalizedValue,
+      ),
+    )
+  }
 
   return (
-    <Form onFinish={onSearch} colon={false} className="mb-4">
+    <Form colon={false} className="mb-4">
       <Row gutter={[16, 8]}>
         {quickFilters.length ? (
           <Col xs={24}>
@@ -203,7 +277,12 @@ export function ModuleFilterToolbar({
                   (filter) => filter.key === String(value),
                 )
                 if (selected) {
-                  onApplyFilters?.(normalizeFilters(selected.values))
+                  onApplyFilters(
+                    normalizeFilters({
+                      ...defaultFilters,
+                      ...selected.values,
+                    }),
+                  )
                 }
               }}
             />
@@ -227,7 +306,18 @@ export function ModuleFilterToolbar({
                 onChange={(event) =>
                   onUpdateFilter('keyword', event.target.value)
                 }
-                onPressEnter={onSearch}
+                onBlur={(event) => {
+                  if (
+                    event.target.value.trim() ===
+                    asString(submittedFilters.keyword).trim()
+                  ) {
+                    return
+                  }
+                  commitTextFilter('keyword', event.target.value)
+                }}
+                onPressEnter={(event) =>
+                  commitTextFilter('keyword', event.currentTarget.value)
+                }
               />
             </Form.Item>
           </Col>
@@ -244,26 +334,28 @@ export function ModuleFilterToolbar({
               <ModuleFilterField
                 field={field}
                 filters={filters}
+                submittedFilters={submittedFilters}
                 onUpdateFilter={onUpdateFilter}
-                onSearch={onSearch}
+                onCommitFilter={commitFilter}
+                onCommitTextFilter={commitTextFilter}
               />
             </Form.Item>
           </Col>
         ))}
         <Col xs={24}>
-          <Form.Item>
-            <Space wrap>
+          <Form.Item className="module-filter-actions">
+            {canExpand ? (
               <Button
-                type="primary"
-                htmlType="submit"
-                icon={resolveModuleActionIcon('查询')}
+                type="text"
+                icon={resolveModuleActionIcon(expanded ? '收起' : '展开')}
+                onClick={() => setExpanded((value) => !value)}
               >
-                {t('common.query')}
+                {expanded ? t('common.collapse') : t('common.expand')}
               </Button>
-              <Button icon={resolveModuleActionIcon('重置')} onClick={onReset}>
-                {t('common.reset')}
-              </Button>
-            </Space>
+            ) : null}
+            <Button icon={resolveModuleActionIcon('重置')} onClick={onReset}>
+              {t('common.reset')}
+            </Button>
           </Form.Item>
         </Col>
       </Row>

@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { useModuleFilters } from './useModuleFilters'
+import { buildDefaultModuleFilters, useModuleFilters } from './useModuleFilters'
 
 describe('useModuleFilters', () => {
   const defaultProps = {
@@ -67,6 +67,103 @@ describe('useModuleFilters', () => {
     expect(result.current.filters).toEqual({})
     expect(result.current.submittedFilters).toEqual({})
     expect(setCurrentPage).toHaveBeenCalledWith(1)
+  })
+
+  it('initializes with default filters', () => {
+    const defaultFilters = { orderDate: ['2026-05-29', '2026-06-28'] }
+    const { result } = renderHook(() =>
+      useModuleFilters({ ...defaultProps, defaultFilters }),
+    )
+
+    expect(result.current.filters).toEqual(defaultFilters)
+    expect(result.current.submittedFilters).toEqual(defaultFilters)
+    expect(result.current.filters).not.toBe(defaultFilters)
+    expect(result.current.submittedFilters).not.toBe(defaultFilters)
+  })
+
+  it('resets to default filters', () => {
+    const setCurrentPage = vi.fn()
+    const defaultFilters = { orderDate: ['2026-05-29', '2026-06-28'] }
+    const { result } = renderHook(() =>
+      useModuleFilters({ setCurrentPage, defaultFilters }),
+    )
+
+    act(() => {
+      result.current.updateFilter('keyword', 'PO-001')
+    })
+    act(() => {
+      result.current.handleReset()
+    })
+
+    expect(result.current.filters).toEqual(defaultFilters)
+    expect(result.current.submittedFilters).toEqual(defaultFilters)
+    expect(setCurrentPage).toHaveBeenCalledWith(1)
+  })
+
+  it('merges changed default filters without dropping user filters', () => {
+    const { result, rerender } = renderHook(
+      ({ defaultFilters }) =>
+        useModuleFilters({ ...defaultProps, defaultFilters }),
+      {
+        initialProps: {
+          defaultFilters: {},
+        },
+      },
+    )
+
+    act(() => {
+      result.current.updateFilter('keyword', 'PO-001')
+    })
+
+    rerender({
+      defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
+    })
+
+    expect(result.current.filters).toEqual({
+      orderDate: ['2026-05-29', '2026-06-28'],
+      keyword: 'PO-001',
+    })
+    expect(result.current.submittedFilters).toEqual({
+      orderDate: ['2026-05-29', '2026-06-28'],
+    })
+  })
+
+  it('builds date range defaults from the first dateRange filter', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-28T12:00:00+08:00'))
+
+    const defaults = buildDefaultModuleFilters({
+      key: 'purchase-order',
+      title: '采购订单',
+      kicker: '',
+      description: '',
+      filters: [{ key: 'orderDate', label: '订单日期', type: 'dateRange' }],
+      columns: [],
+      detailFields: [],
+      data: [],
+      buildOverview: () => [],
+    })
+
+    expect(defaults).toEqual({
+      orderDate: ['2026-05-29', '2026-06-28'],
+    })
+    vi.useRealTimers()
+  })
+
+  it('does not build defaults without dateRange filters', () => {
+    expect(
+      buildDefaultModuleFilters({
+        key: 'material',
+        title: '商品',
+        kicker: '',
+        description: '',
+        filters: [{ key: 'keyword', label: '关键字', type: 'input' }],
+        columns: [],
+        detailFields: [],
+        data: [],
+        buildOverview: () => [],
+      }),
+    ).toEqual({})
   })
 
   it('sets filters directly', () => {

@@ -16,6 +16,8 @@ interface Props {
   moduleKey: string
   config: ModulePageConfig
   filters: SearchParams
+  defaultFilters: SearchParams
+  submittedFilters: SearchParams
   loading: boolean
   exporting: boolean
   records: ModuleRecord[]
@@ -30,7 +32,6 @@ interface Props {
   rowClassName: (record: ModuleRecord) => string
   onUpdateFilter: (key: string, value: unknown) => void
   onApplyFilters: (filters: SearchParams) => void
-  onSearch: () => void
   onReset: () => void
   onCreate: () => void
   onExport: () => void
@@ -52,6 +53,8 @@ export function BusinessGridContent({
   moduleKey,
   config,
   filters,
+  defaultFilters,
+  submittedFilters,
   loading,
   exporting,
   records,
@@ -66,7 +69,6 @@ export function BusinessGridContent({
   rowClassName,
   onUpdateFilter,
   onApplyFilters,
-  onSearch,
   onReset,
   onCreate,
   onExport,
@@ -95,9 +97,10 @@ export function BusinessGridContent({
       <ModuleFilterToolbar
         config={config}
         filters={filters}
+        defaultFilters={defaultFilters}
+        submittedFilters={submittedFilters}
         onUpdateFilter={onUpdateFilter}
         onApplyFilters={onApplyFilters}
-        onSearch={onSearch}
         onReset={onReset}
       />
 

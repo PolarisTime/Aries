@@ -239,6 +239,8 @@ export const zhCN: MessageSchema = {
     yes: '是',
     no: '否',
     more: '更多',
+    expand: '展开',
+    collapse: '收起',
     actions: '操作',
     status: '状态',
     remark: '备注',

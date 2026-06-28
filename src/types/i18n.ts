@@ -235,6 +235,8 @@ export interface MessageSchema {
     yes: string
     no: string
     more: string
+    expand: string
+    collapse: string
     actions: string
     status: string
     remark: string

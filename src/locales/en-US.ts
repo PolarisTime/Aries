@@ -240,6 +240,8 @@ export const enUS: MessageSchema = {
     yes: 'Yes',
     no: 'No',
     more: 'More',
+    expand: 'Expand',
+    collapse: 'Collapse',
     actions: 'Actions',
     status: 'Status',
     remark: 'Remark',

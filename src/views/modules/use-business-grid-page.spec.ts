@@ -6,7 +6,9 @@ import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 
 const mocks = vi.hoisted(() => ({
+  applyFilters: vi.fn(),
   buildActions: vi.fn(),
+  buildDefaultModuleFilters: vi.fn(),
   can: vi.fn(),
   closeDetail: vi.fn(),
   closeEditor: vi.fn(),
@@ -37,6 +39,7 @@ const mocks = vi.hoisted(() => ({
   resolveMasterOptionRequirements: vi.fn(),
   resolveStatusOptions: vi.fn(),
   setSubmittedFilters: vi.fn(),
+  setFilters: vi.fn(),
   toggleColumn: vi.fn(),
   updateFilter: vi.fn(),
   useBusinessGridActions: vi.fn(),
@@ -97,6 +100,7 @@ vi.mock('@/hooks/useModuleEditorCapabilities', () => ({
 }))
 
 vi.mock('@/hooks/useModuleFilters', () => ({
+  buildDefaultModuleFilters: mocks.buildDefaultModuleFilters,
   useModuleFilters: mocks.useModuleFilters,
 }))
 
@@ -154,6 +158,9 @@ describe('useBusinessGridPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.buildActions.mockReturnValue([{ key: 'edit', label: '编辑' }])
+    mocks.buildDefaultModuleFilters.mockReturnValue({
+      orderDate: ['2026-05-29', '2026-06-28'],
+    })
     mocks.can.mockReturnValue(false)
     mocks.getBehaviorValue.mockReturnValue(null)
     mocks.getRowClassName.mockReturnValue('')
@@ -224,10 +231,11 @@ describe('useBusinessGridPage', () => {
     mocks.useModuleFilters.mockReturnValue({
       filters: { keyword: 'draft' },
       submittedFilters: { keyword: 'submitted' },
-      applyFilters: { status: '草稿' },
+      applyFilters: mocks.applyFilters,
       handleSearch: mocks.handleSearch,
       handleReset: mocks.handleReset,
       updateFilter: mocks.updateFilter,
+      setFilters: mocks.setFilters,
       setSubmittedFilters: mocks.setSubmittedFilters,
     })
     mocks.useModulePageConfig.mockReturnValue({
@@ -265,6 +273,20 @@ describe('useBusinessGridPage', () => {
     expect(result.current.total).toBe(2)
     expect(result.current.visibleToolbarActions).toHaveLength(1)
     expect(result.current.canUseBulkPrintActions).toBe(true)
+    expect(result.current.defaultFilters).toEqual({
+      orderDate: ['2026-05-29', '2026-06-28'],
+    })
+    expect(result.current.submittedFilters).toEqual({ keyword: 'submitted' })
+    expect(mocks.buildDefaultModuleFilters).toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: 'purchase-inbound',
+        filters: [{ key: 'keyword', label: '关键字', type: 'text' }],
+      }),
+    )
+    expect(mocks.useModuleFilters).toHaveBeenCalledWith({
+      defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
+      setCurrentPage: expect.any(Function),
+    })
     expect(mocks.useInfiniteBusinessItems).toHaveBeenCalledWith(
       expect.objectContaining({
         moduleKey: 'purchase-inbound',
@@ -344,18 +366,22 @@ describe('useBusinessGridPage', () => {
     const { result } = renderHook(() => useBusinessGridPage(props()))
 
     result.current.handleAction('exportRows')
+    result.current.applyFilters({ status: '草稿' })
     result.current.handleSearch()
     result.current.handleReset()
     result.current.updateFilter('keyword', '钢材')
+    result.current.setFilters({ keyword: '钢材' })
     result.current.setSubmittedFilters({ keyword: '钢材' })
     result.current.refreshModuleQueries()
     result.current.toggleColumn('projectName')
     result.current.onColumnOrderChange(['projectName'])
 
     expect(mocks.handleAction).toHaveBeenCalledWith('exportRows')
+    expect(mocks.applyFilters).toHaveBeenCalledWith({ status: '草稿' })
     expect(mocks.handleSearch).toHaveBeenCalled()
     expect(mocks.handleReset).toHaveBeenCalled()
     expect(mocks.updateFilter).toHaveBeenCalledWith('keyword', '钢材')
+    expect(mocks.setFilters).toHaveBeenCalledWith({ keyword: '钢材' })
     expect(mocks.setSubmittedFilters).toHaveBeenCalledWith({ keyword: '钢材' })
     expect(mocks.refreshModuleQueries).toHaveBeenCalled()
     expect(mocks.toggleColumn).toHaveBeenCalledWith('projectName')

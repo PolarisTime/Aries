@@ -1,46 +1,29 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import type { ComponentProps, ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: any) => {
+    t: (key: string, opts?: Record<string, unknown>) => {
       if (opts) return `${key}:${JSON.stringify(opts)}`
       return key
     },
   }),
 }))
 
-vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
-  ),
-}))
-
-vi.mock('antd/es/col', () => ({
-  default: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-}))
-
-vi.mock('antd/es/date-picker', () => {
-  const RangePicker = ({ onChange, ...props }: any) => (
-    <input
-      data-testid="range-picker"
-      onChange={(e) => onChange?.(null, [e.target.value, e.target.value])}
-      {...props}
-    />
+vi.mock('antd', () => {
+  const Button = ({ children, icon, type: _type, ...props }: any) => (
+    <button type="button" {...props}>
+      {icon}
+      {children}
+    </button>
   )
-  return {
-    default: Object.assign(
-      (props: any) => <input data-testid="date-picker" {...props} />,
-      { RangePicker },
-    ),
-  }
-})
-
-vi.mock('antd/es/form', () => {
+  const Col = ({ children }: any) => <div>{children}</div>
+  const Row = ({ children }: any) => <div>{children}</div>
   const Form = ({ children, onFinish, ...props }: any) => (
     <form
-      onSubmit={(e) => {
-        e.preventDefault()
+      onSubmit={(event) => {
+        event.preventDefault()
         onFinish?.()
       }}
       {...props}
@@ -48,27 +31,78 @@ vi.mock('antd/es/form', () => {
       {children}
     </form>
   )
-  Form.Item = ({ children, ...props }: any) => <div {...props}>{children}</div>
-  return { default: Form }
-})
-
-vi.mock('antd/es/input', () => ({
-  default: ({ onChange, onPressEnter, ...props }: any) => (
+  Form.Item = ({ children, className, htmlFor, label }: any) => (
+    <div className={className}>
+      {label ? <label htmlFor={htmlFor}>{label}</label> : null}
+      {children}
+    </div>
+  )
+  const Input = ({
+    allowClear: _allowClear,
+    onBlur,
+    onChange,
+    onPressEnter,
+    value,
+    ...props
+  }: any) => (
     <input
       data-testid="input"
-      onChange={(e) => onChange?.(e)}
-      onKeyDown={(e) => e.key === 'Enter' && onPressEnter?.()}
+      value={value ?? ''}
+      onBlur={(event) => onBlur?.(event)}
+      onChange={(event) => onChange?.(event)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') onPressEnter?.(event)
+      }}
       {...props}
     />
-  ),
-}))
+  )
+  const Select = ({
+    allowClear: _allowClear,
+    onChange,
+    options = [],
+    value,
+    ...props
+  }: any) => {
+    const renderOptions = (items: any[]): ReactNode[] =>
+      items.flatMap((option) =>
+        Array.isArray(option.options)
+          ? renderOptions(option.options)
+          : [
+              <option key={String(option.value)} value={option.value}>
+                {option.label}
+              </option>,
+            ],
+      )
 
-vi.mock('antd/es/row', () => ({
-  default: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-}))
-
-vi.mock('antd/es/segmented', () => ({
-  default: ({ options, onChange, value, ...props }: any) => (
+    return (
+      <select
+        data-testid="select"
+        value={value ?? ''}
+        onChange={(event) => onChange?.(event.target.value || undefined)}
+        {...props}
+      >
+        <option value="" />
+        {renderOptions(options)}
+      </select>
+    )
+  }
+  const RangePicker = ({ id: _id, onChange, value: _value, ...props }: any) => (
+    <input
+      data-testid="range-picker"
+      onChange={(event) => {
+        const value = event.target.value
+        onChange?.(null, value ? [value, value] : ['', ''])
+      }}
+      {...props}
+    />
+  )
+  const DatePicker = Object.assign(
+    ({ value: _value, ...props }: any) => (
+      <input data-testid="date-picker" {...props} />
+    ),
+    { RangePicker },
+  )
+  const Segmented = ({ onChange, options, value, ...props }: any) => (
     <div data-testid="segmented" data-value={value || ''} {...props}>
       {options.map((option: any) => (
         <button
@@ -80,25 +114,22 @@ vi.mock('antd/es/segmented', () => ({
         </button>
       ))}
     </div>
-  ),
-}))
+  )
 
-vi.mock('antd/es/select', () => ({
-  default: ({ onChange, ...props }: any) => (
-    <select
-      data-testid="select"
-      onChange={(e) => onChange?.(e.target.value)}
-      {...props}
-    />
-  ),
-}))
-
-vi.mock('antd/es/space', () => ({
-  default: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-}))
+  return {
+    Button,
+    Col,
+    DatePicker,
+    Form,
+    Input,
+    Row,
+    Segmented,
+    Select,
+  }
+})
 
 vi.mock('dayjs', () => {
-  const dayjs = (_v?: any) => ({
+  const dayjs = (_value?: unknown) => ({
     isValid: () => true,
     format: () => '',
     valueOf: () => 0,
@@ -108,7 +139,7 @@ vi.mock('dayjs', () => {
 })
 
 vi.mock('@/utils/form-control-a11y', () => ({
-  buildLabeledFormItemProps: ({ label, htmlFor }: any) => ({ label, htmlFor }),
+  buildLabeledFormItemProps: ({ htmlFor, label }: any) => ({ htmlFor, label }),
 }))
 
 vi.mock('@/utils/form-control-id', () => ({
@@ -120,352 +151,300 @@ vi.mock('@/utils/label-utils', () => ({
 }))
 
 vi.mock('@/utils/type-narrowing', () => ({
-  asString: (v: any) => String(v ?? ''),
+  asString: (value: unknown) => String(value ?? ''),
 }))
 
 vi.mock('@/module-system/module-action-icons', () => ({
   resolveModuleActionIcon: () => null,
 }))
 
+import type { ModulePageConfig } from '@/types/module-page'
 import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterToolbar'
 
-describe('ModuleFilterToolbar', () => {
-  const defaultProps = {
-    config: {
-      key: 'test',
-      title: 'Test',
-      kicker: '',
-      description: '',
-      filters: [],
-      columns: [],
-      detailFields: [],
-      data: [],
-      buildOverview: () => [],
-    },
+function config(overrides: Partial<ModulePageConfig> = {}): ModulePageConfig {
+  return {
+    key: 'test',
+    title: 'Test',
+    kicker: '',
+    description: '',
+    filters: [],
+    columns: [],
+    detailFields: [],
+    data: [],
+    buildOverview: () => [],
+    ...overrides,
+  }
+}
+
+function renderToolbar(
+  props: Partial<ComponentProps<typeof ModuleFilterToolbar>> = {},
+) {
+  const defaultProps: ComponentProps<typeof ModuleFilterToolbar> = {
+    config: config(),
     filters: {},
+    defaultFilters: {},
+    submittedFilters: {},
     onUpdateFilter: vi.fn(),
     onApplyFilters: vi.fn(),
-    onSearch: vi.fn(),
     onReset: vi.fn(),
   }
 
-  it('renders keyword input by default', () => {
-    render(<ModuleFilterToolbar {...defaultProps} />)
-    expect(screen.getByText('common.query')).toBeTruthy()
+  return render(<ModuleFilterToolbar {...defaultProps} {...props} />)
+}
+
+describe('ModuleFilterToolbar', () => {
+  it('renders default keyword input and reset without query button', () => {
+    renderToolbar()
+
+    expect(screen.getByLabelText('common.keyword')).toBeTruthy()
     expect(screen.getByText('common.reset')).toBeTruthy()
+    expect(screen.queryByText('common.query')).toBeNull()
   })
 
-  it('does not render keyword input when config has keyword filter', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [{ key: 'keyword', label: 'Keyword', type: 'input' as const }],
-    }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} />)
-    expect(screen.getByText('common.query')).toBeTruthy()
+  it('does not render fallback keyword when config provides keyword filter', () => {
+    renderToolbar({
+      config: config({
+        filters: [{ key: 'keyword', label: 'Keyword', type: 'input' }],
+      }),
+    })
+
+    expect(screen.getByLabelText('Keyword')).toBeTruthy()
+    expect(screen.queryByLabelText('common.keyword')).toBeNull()
   })
 
-  it('renders select filter field', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        {
-          key: 'status',
-          label: 'Status',
-          type: 'select' as const,
-          options: [{ label: 'Active', value: 'active' }],
-        },
-      ],
-    }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} />)
-    expect(screen.getByTestId('select')).toBeTruthy()
-  })
-
-  it('renders dateRange filter field', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        { key: 'dateRange', label: 'Date Range', type: 'dateRange' as const },
-      ],
-    }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} />)
-    expect(screen.getByTestId('range-picker')).toBeTruthy()
-  })
-
-  it('renders input filter field', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [{ key: 'name', label: 'Name', type: 'input' as const }],
-    }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} />)
-    expect(screen.getAllByTestId('input').length).toBeGreaterThanOrEqual(1)
-  })
-
-  it('renders select with function options', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        {
-          key: 'status',
-          label: 'Status',
-          type: 'select' as const,
-          options: () => [{ label: 'Active', value: 'active' }],
-        },
-      ],
-    }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} />)
-    expect(screen.getByTestId('select')).toBeTruthy()
-  })
-
-  it('renders select with group options', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        {
-          key: 'status',
-          label: 'Status',
-          type: 'select' as const,
-          options: [
-            {
-              label: 'Group 1',
-              options: [{ label: 'Option 1', value: 'opt1' }],
-            },
-          ],
-        },
-      ],
-    }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} />)
-    expect(screen.getByTestId('select')).toBeTruthy()
-  })
-
-  it('calls onSearch when form submitted', () => {
-    const onSearch = vi.fn()
-    render(<ModuleFilterToolbar {...defaultProps} onSearch={onSearch} />)
-    fireEvent.click(screen.getByText('common.query'))
-    expect(onSearch).toHaveBeenCalled()
-  })
-
-  it('calls onReset when reset button clicked', () => {
-    const onReset = vi.fn()
-    render(<ModuleFilterToolbar {...defaultProps} onReset={onReset} />)
-    fireEvent.click(screen.getByText('common.reset'))
-    expect(onReset).toHaveBeenCalled()
-  })
-
-  it('renders multiple filter fields', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        {
-          key: 'status',
-          label: 'Status',
-          type: 'select' as const,
-          options: [],
-        },
-        { key: 'name', label: 'Name', type: 'input' as const },
-        { key: 'dateRange', label: 'Date Range', type: 'dateRange' as const },
-      ],
-    }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} />)
-    expect(screen.getByTestId('select')).toBeTruthy()
-    expect(screen.getByTestId('range-picker')).toBeTruthy()
-    expect(screen.getAllByTestId('input').length).toBeGreaterThanOrEqual(1)
-  })
-
-  it('renders with filter values', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        {
-          key: 'status',
-          label: 'Status',
-          type: 'select' as const,
-          options: [],
-        },
-      ],
-    }
-    const filters = { status: 'active' }
-    render(
-      <ModuleFilterToolbar
-        {...defaultProps}
-        config={config}
-        filters={filters}
-      />,
-    )
-    expect(screen.getByTestId('select')).toBeTruthy()
-  })
-
-  it('renders dateRange with existing values', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        { key: 'dateRange', label: 'Date Range', type: 'dateRange' as const },
-      ],
-    }
-    const filters = { dateRange: ['2024-01-01', '2024-01-31'] }
-    render(
-      <ModuleFilterToolbar
-        {...defaultProps}
-        config={config}
-        filters={filters}
-      />,
-    )
-    expect(screen.getByTestId('range-picker')).toBeTruthy()
-  })
-
-  it('renders dateRange with empty array value', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        { key: 'dateRange', label: 'Date Range', type: 'dateRange' as const },
-      ],
-    }
-    const filters = { dateRange: [] }
-    render(
-      <ModuleFilterToolbar
-        {...defaultProps}
-        config={config}
-        filters={filters}
-      />,
-    )
-    expect(screen.getByTestId('range-picker')).toBeTruthy()
-  })
-
-  it('renders with placeholder for select', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        {
-          key: 'status',
-          label: 'Status',
-          type: 'select' as const,
-          options: [],
-          placeholder: 'Select status',
-        },
-      ],
-    }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} />)
-    expect(screen.getByTestId('select')).toBeTruthy()
-  })
-
-  it('renders with placeholder for input', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        {
-          key: 'name',
-          label: 'Name',
-          type: 'input' as const,
-          placeholder: 'Enter name',
-        },
-      ],
-    }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} />)
-    expect(screen.getAllByTestId('input').length).toBeGreaterThanOrEqual(1)
-  })
-
-  it('renders filters sorted by row', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        { key: 'b', label: 'B', type: 'input' as const, row: 2 },
-        { key: 'a', label: 'A', type: 'input' as const, row: 1 },
-      ],
-    }
-    render(<ModuleFilterToolbar {...defaultProps} config={config} />)
-    expect(screen.getByText('common.query')).toBeTruthy()
-  })
-
-  it('renders select with string value in filters', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        {
-          key: 'status',
-          label: 'Status',
-          type: 'select' as const,
-          options: [],
-        },
-      ],
-    }
-    const filters = { status: 'active' }
-    render(
-      <ModuleFilterToolbar
-        {...defaultProps}
-        config={config}
-        filters={filters}
-      />,
-    )
-    expect(screen.getByTestId('select')).toBeTruthy()
-  })
-
-  it('renders select with non-string value in filters', () => {
-    const config = {
-      ...defaultProps.config,
-      filters: [
-        {
-          key: 'status',
-          label: 'Status',
-          type: 'select' as const,
-          options: [],
-        },
-      ],
-    }
-    const filters = { status: 123 }
-    render(
-      <ModuleFilterToolbar
-        {...defaultProps}
-        config={config}
-        filters={filters}
-      />,
-    )
-    expect(screen.getByTestId('select')).toBeTruthy()
-  })
-
-  it('renders quick filters and applies selected preset', () => {
+  it('applies select filter immediately on change', () => {
     const onApplyFilters = vi.fn()
-    const config = {
-      ...defaultProps.config,
-      quickFilters: [
-        { key: 'all', label: 'All', values: {} },
-        { key: 'open', label: 'Open', values: { status: 'open' } },
-      ],
-    }
+    const onUpdateFilter = vi.fn()
+    renderToolbar({
+      config: config({
+        filters: [
+          {
+            key: 'status',
+            label: 'Status',
+            type: 'select',
+            options: [{ label: 'Active', value: 'active' }],
+          },
+        ],
+      }),
+      onApplyFilters,
+      onUpdateFilter,
+    })
 
-    render(
-      <ModuleFilterToolbar
-        {...defaultProps}
-        config={config}
-        onApplyFilters={onApplyFilters}
-      />,
-    )
+    fireEvent.change(screen.getByTestId('select'), {
+      target: { value: 'active' },
+    })
 
-    expect(screen.getByTestId('segmented')).toBeTruthy()
-    fireEvent.click(screen.getByText('Open'))
-    expect(onApplyFilters).toHaveBeenCalledWith({ status: 'open' })
+    expect(onUpdateFilter).toHaveBeenCalledWith('status', 'active')
+    expect(onApplyFilters).toHaveBeenCalledWith({ status: 'active' })
   })
 
-  it('removes empty quick filter preset values before applying', () => {
+  it('removes select filter immediately when cleared', () => {
     const onApplyFilters = vi.fn()
-    const config = {
-      ...defaultProps.config,
-      quickFilters: [
-        {
-          key: 'open',
-          label: 'Open',
-          values: { status: 'open', direction: '', keyword: undefined },
-        },
-      ],
-    }
+    renderToolbar({
+      config: config({
+        filters: [
+          {
+            key: 'status',
+            label: 'Status',
+            type: 'select',
+            options: [{ label: 'Active', value: 'active' }],
+          },
+        ],
+      }),
+      filters: { status: 'active' },
+      submittedFilters: { status: 'active' },
+      onApplyFilters,
+    })
 
-    render(
-      <ModuleFilterToolbar
-        {...defaultProps}
-        config={config}
-        onApplyFilters={onApplyFilters}
-      />,
-    )
+    fireEvent.change(screen.getByTestId('select'), { target: { value: '' } })
 
+    expect(onApplyFilters).toHaveBeenCalledWith({})
+  })
+
+  it('applies date range immediately on change', () => {
+    const onApplyFilters = vi.fn()
+    renderToolbar({
+      config: config({
+        filters: [{ key: 'orderDate', label: 'Order Date', type: 'dateRange' }],
+      }),
+      onApplyFilters,
+    })
+
+    fireEvent.change(screen.getByTestId('range-picker'), {
+      target: { value: '2026-06-28' },
+    })
+
+    expect(onApplyFilters).toHaveBeenCalledWith({
+      orderDate: ['2026-06-28', '2026-06-28'],
+    })
+  })
+
+  it('does not apply input filter while typing', () => {
+    const onApplyFilters = vi.fn()
+    const onUpdateFilter = vi.fn()
+    renderToolbar({
+      onApplyFilters,
+      onUpdateFilter,
+    })
+
+    fireEvent.change(screen.getByTestId('input'), {
+      target: { value: 'PO-001' },
+    })
+
+    expect(onUpdateFilter).toHaveBeenCalledWith('keyword', 'PO-001')
+    expect(onApplyFilters).not.toHaveBeenCalled()
+  })
+
+  it('applies input filter on enter', () => {
+    const onApplyFilters = vi.fn()
+    renderToolbar({
+      filters: { keyword: 'PO-001' },
+      onApplyFilters,
+    })
+
+    fireEvent.keyDown(screen.getByTestId('input'), {
+      key: 'Enter',
+      target: { value: 'PO-001' },
+    })
+
+    expect(onApplyFilters).toHaveBeenCalledWith({ keyword: 'PO-001' })
+  })
+
+  it('applies input filter on blur when value changed', () => {
+    const onApplyFilters = vi.fn()
+    renderToolbar({
+      filters: { keyword: 'PO-001' },
+      submittedFilters: {},
+      onApplyFilters,
+    })
+
+    fireEvent.blur(screen.getByTestId('input'), {
+      target: { value: 'PO-001' },
+    })
+
+    expect(onApplyFilters).toHaveBeenCalledWith({ keyword: 'PO-001' })
+  })
+
+  it('does not apply input filter on blur when committed value is unchanged', () => {
+    const onApplyFilters = vi.fn()
+    renderToolbar({
+      filters: { keyword: 'PO-001' },
+      submittedFilters: { keyword: 'PO-001' },
+      onApplyFilters,
+    })
+
+    fireEvent.blur(screen.getByTestId('input'), {
+      target: { value: 'PO-001' },
+    })
+
+    expect(onApplyFilters).not.toHaveBeenCalled()
+  })
+
+  it('deduplicates enter followed by blur within 100ms', () => {
+    let now = 1000
+    const dateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now)
+    const onApplyFilters = vi.fn()
+    renderToolbar({
+      filters: { keyword: 'PO-001' },
+      submittedFilters: {},
+      onApplyFilters,
+    })
+    const input = screen.getByTestId('input')
+
+    fireEvent.keyDown(input, {
+      key: 'Enter',
+      target: { value: 'PO-001' },
+    })
+    now = 1050
+    fireEvent.blur(input, {
+      target: { value: 'PO-001' },
+    })
+
+    expect(onApplyFilters).toHaveBeenCalledTimes(1)
+    dateNowSpy.mockRestore()
+  })
+
+  it('applies empty input on blur to reset submitted keyword', () => {
+    const onApplyFilters = vi.fn()
+    renderToolbar({
+      filters: { keyword: '' },
+      submittedFilters: { keyword: 'PO-001' },
+      onApplyFilters,
+    })
+
+    fireEvent.blur(screen.getByTestId('input'), { target: { value: '' } })
+
+    expect(onApplyFilters).toHaveBeenCalledWith({})
+  })
+
+  it('keeps non-input draft filters when committing a text filter', () => {
+    const onApplyFilters = vi.fn()
+    renderToolbar({
+      config: config({
+        filters: [
+          {
+            key: 'status',
+            label: 'Status',
+            type: 'select',
+            options: [{ label: 'Active', value: 'active' }],
+          },
+          { key: 'batchNo', label: 'Batch No', type: 'input' },
+        ],
+      }),
+      filters: { status: 'active', batchNo: 'B-001' },
+      submittedFilters: {},
+      onApplyFilters,
+    })
+
+    fireEvent.keyDown(screen.getByLabelText('Batch No'), {
+      key: 'Enter',
+      target: { value: 'B-001' },
+    })
+
+    expect(onApplyFilters).toHaveBeenCalledWith({
+      status: 'active',
+      batchNo: 'B-001',
+    })
+  })
+
+  it('renders row two filters only after expansion', () => {
+    renderToolbar({
+      config: config({
+        filters: [
+          { key: 'primary', label: 'Primary', type: 'input', row: 1 },
+          { key: 'secondary', label: 'Secondary', type: 'input', row: 2 },
+        ],
+      }),
+    })
+
+    expect(screen.getByLabelText('Primary')).toBeTruthy()
+    expect(screen.queryByLabelText('Secondary')).toBeNull()
+
+    fireEvent.click(screen.getByText('common.expand'))
+
+    expect(screen.getByLabelText('Secondary')).toBeTruthy()
+  })
+
+  it('applies quick filters with default filters preserved', () => {
+    const onApplyFilters = vi.fn()
+    renderToolbar({
+      config: config({
+        quickFilters: [
+          { key: 'all', label: 'All', values: {} },
+          { key: 'open', label: 'Open', values: { status: 'open' } },
+        ],
+      }),
+      defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
+      submittedFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
+      onApplyFilters,
+    })
+
+    expect(screen.getByTestId('segmented')).toHaveAttribute('data-value', 'all')
     fireEvent.click(screen.getByText('Open'))
-    expect(onApplyFilters).toHaveBeenCalledWith({ status: 'open' })
+
+    expect(onApplyFilters).toHaveBeenCalledWith({
+      orderDate: ['2026-05-29', '2026-06-28'],
+      status: 'open',
+    })
   })
 })
