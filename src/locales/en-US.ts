@@ -195,6 +195,7 @@ export const enUS: MessageSchema = {
       overview: 'Overview',
       signals: 'Live Signals',
       interfaceHealth: 'API Status',
+      businessFlow: 'Business Flow',
     },
     alerts: {
       title: 'Current Focus',

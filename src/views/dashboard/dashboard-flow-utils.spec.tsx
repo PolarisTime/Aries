@@ -125,14 +125,6 @@ describe('dashboard-flow-utils', () => {
       expect(sections[3].title).toBe('物流链')
     })
 
-    it('returns correct section accents', () => {
-      const sections = buildWorkflowSections(t)
-      expect(sections[0].accent).toBe('#0f766e')
-      expect(sections[1].accent).toBe('#2563eb')
-      expect(sections[2].accent).toBe('#d97706')
-      expect(sections[3].accent).toBe('#7c3aed')
-    })
-
     it('returns material node with correct properties', () => {
       const sections = buildWorkflowSections(t)
       const masterSection = sections.find((s) => s.key === 'master')
@@ -154,12 +146,12 @@ describe('dashboard-flow-utils', () => {
       })
     })
 
-    it('returns nodes with tones', () => {
+    it('returns nodes without presentation colors', () => {
       const sections = buildWorkflowSections(t)
       sections.forEach((section) => {
+        expect('accent' in section).toBe(false)
         section.nodes.forEach((node) => {
-          expect(node.tone).toBeDefined()
-          expect(node.tone).toMatch(/^#[0-9a-f]{6}$/)
+          expect('tone' in node).toBe(false)
         })
       })
     })

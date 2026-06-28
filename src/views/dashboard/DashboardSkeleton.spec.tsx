@@ -22,21 +22,21 @@ describe('DashboardSkeleton', () => {
     expect(skeleton).toBeTruthy()
   })
 
-  it('renders hero skeleton section', () => {
+  it('renders workplace skeleton section', () => {
     render(<DashboardSkeleton />)
-    const hero = document.querySelector('.dashboard-hero-skeleton')
-    expect(hero).toBeTruthy()
+    const workplace = document.querySelector('.dashboard-workplace-skeleton')
+    expect(workplace).toBeTruthy()
   })
 
-  it('renders hero title skeleton block', () => {
+  it('renders status title skeleton block', () => {
     render(<DashboardSkeleton />)
-    const block = document.querySelector('.dashboard-skeleton-hero-title')
+    const block = document.querySelector('.dashboard-skeleton-status-title')
     expect(block).toBeTruthy()
   })
 
-  it('renders hero description skeleton block', () => {
+  it('renders status meta skeleton block', () => {
     render(<DashboardSkeleton />)
-    const block = document.querySelector('.dashboard-skeleton-hero-desc')
+    const block = document.querySelector('.dashboard-skeleton-status-meta')
     expect(block).toBeTruthy()
   })
 
@@ -46,18 +46,28 @@ describe('DashboardSkeleton', () => {
     expect(avatar).toBeTruthy()
   })
 
-  it('renders user line skeleton blocks', () => {
+  it('renders workplace time skeleton block', () => {
     render(<DashboardSkeleton />)
-    const line = document.querySelector('.dashboard-skeleton-user-line')
-    const subline = document.querySelector('.dashboard-skeleton-user-subline')
-    expect(line).toBeTruthy()
-    expect(subline).toBeTruthy()
+    const time = document.querySelector('.dashboard-skeleton-time')
+    expect(time).toBeTruthy()
   })
 
-  it('renders panels grid', () => {
+  it('renders workplace stats', () => {
     render(<DashboardSkeleton />)
-    const grid = document.querySelector('.dashboard-panels-grid')
-    expect(grid).toBeTruthy()
+    const stats = document.querySelectorAll('.dashboard-workplace-stat')
+    expect(stats.length).toBe(3)
+  })
+
+  it('renders workplace layout', () => {
+    render(<DashboardSkeleton />)
+    const layout = document.querySelector('.dashboard-workplace-layout')
+    expect(layout).toBeTruthy()
+  })
+
+  it('renders sidebar panels', () => {
+    render(<DashboardSkeleton />)
+    const panels = document.querySelector('.dashboard-sidebar-panels')
+    expect(panels).toBeTruthy()
   })
 
   it('renders skeleton panels', () => {
@@ -75,13 +85,13 @@ describe('DashboardSkeleton', () => {
   it('renders skeleton lines in first panel', () => {
     render(<DashboardSkeleton />)
     const lines = document.querySelectorAll('.dashboard-skeleton-line')
-    expect(lines.length).toBe(3)
+    expect(lines.length).toBe(6)
   })
 
   it('renders skeleton stats in second panel', () => {
     render(<DashboardSkeleton />)
     const stats = document.querySelectorAll('.dashboard-skeleton-stat')
-    expect(stats.length).toBe(3)
+    expect(stats.length).toBe(6)
   })
 
   it('renders flow card skeleton section', () => {
@@ -90,15 +100,15 @@ describe('DashboardSkeleton', () => {
     expect(flowCard).toBeTruthy()
   })
 
-  it('renders flow grid', () => {
+  it('renders flow lanes', () => {
     render(<DashboardSkeleton />)
-    const flowGrid = document.querySelector('.dashboard-flow-grid')
-    expect(flowGrid).toBeTruthy()
+    const lanes = document.querySelector('.dashboard-flow-lanes')
+    expect(lanes).toBeTruthy()
   })
 
-  it('renders 4 flow sections', () => {
+  it('renders 4 flow lanes', () => {
     render(<DashboardSkeleton />)
-    const sections = document.querySelectorAll('.dashboard-flow-section')
+    const sections = document.querySelectorAll('.dashboard-flow-lane')
     expect(sections.length).toBe(4)
   })
 

@@ -191,6 +191,7 @@ export interface MessageSchema {
       overview: string
       signals: string
       interfaceHealth: string
+      businessFlow: string
     }
     alerts: {
       title: string

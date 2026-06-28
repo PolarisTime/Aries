@@ -7,7 +7,10 @@ import { getDashboardSummary } from '@/api/dashboard'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useIdleActivation } from '@/hooks/useIdleActivation'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
-import { DashboardInfoPanels } from '@/views/dashboard/DashboardInfoPanels'
+import {
+  DashboardSidebarPanels,
+  DashboardWorkplaceHeader,
+} from '@/views/dashboard/DashboardInfoPanels'
 import { buildDashboardInfoItems } from '@/views/dashboard/dashboard-info-utils'
 import { useDashboardServerTime } from '@/views/dashboard/useDashboardServerTime'
 
@@ -42,23 +45,30 @@ export function DashboardView() {
         />
       ) : null}
 
-      <DashboardInfoPanels
+      <DashboardWorkplaceHeader
         animatedServerTime={animatedServerTime}
-        infoItems={infoItems}
         summary={summary}
       />
 
-      {canMountFlowCard ? (
-        <Suspense
-          fallback={
+      <div className="dashboard-workplace-layout">
+        <main className="dashboard-workplace-main">
+          {canMountFlowCard ? (
+            <Suspense
+              fallback={
+                <div className="dashboard-flow-card-placeholder" aria-hidden />
+              }
+            >
+              <LazyDashboardFlowCard navigate={navigate} summary={summary} />
+            </Suspense>
+          ) : (
             <div className="dashboard-flow-card-placeholder" aria-hidden />
-          }
-        >
-          <LazyDashboardFlowCard navigate={navigate} summary={summary} />
-        </Suspense>
-      ) : (
-        <div className="dashboard-flow-card-placeholder" aria-hidden />
-      )}
+          )}
+        </main>
+
+        <aside className="dashboard-workplace-sidebar">
+          <DashboardSidebarPanels infoItems={infoItems} summary={summary} />
+        </aside>
+      </div>
     </div>
   )
 }

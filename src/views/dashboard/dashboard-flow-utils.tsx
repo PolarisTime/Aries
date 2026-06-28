@@ -25,14 +25,12 @@ export function buildWorkflowSections(
       key: 'master',
       title: t('common.masterData'),
       description: t('common.masterDataDesc'),
-      accent: '#0f766e',
       nodes: [
         {
           key: 'material',
           title: t('dashboard.flow.material.title'),
           path: '/material',
           icon: DatabaseOutlined,
-          tone: '#1677ff',
           hint: t('dashboard.flow.material.hint'),
           metric: t('dashboard.flow.material.metric', {
             count: summary?.materialCount ?? 0,
@@ -43,7 +41,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.supplier.title'),
           path: '/supplier',
           icon: ShopOutlined,
-          tone: '#52c41a',
           hint: t('dashboard.flow.supplier.hint'),
           metric: t('dashboard.flow.supplier.metric', {
             count: summary?.supplierCount ?? 0,
@@ -54,7 +51,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.customer.title'),
           path: '/customer',
           icon: TeamOutlined,
-          tone: '#fa8c16',
           hint: t('dashboard.flow.customer.hint'),
           metric: t('dashboard.flow.customer.metric', {
             count: summary?.customerCount ?? 0,
@@ -65,7 +61,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.warehouse.title'),
           path: '/warehouse',
           icon: BankOutlined,
-          tone: '#13c2c2',
           hint: t('dashboard.flow.warehouse.hint'),
         },
       ],
@@ -74,14 +69,12 @@ export function buildWorkflowSections(
       key: 'purchase',
       title: t('common.purchaseChain'),
       description: t('common.purchaseChainDesc'),
-      accent: '#2563eb',
       nodes: [
         {
           key: 'purchase-contract',
           title: t('dashboard.flow.purchaseContract.title'),
           path: '/purchase-contract',
           icon: ProfileOutlined,
-          tone: '#2563eb',
           hint: t('dashboard.flow.purchaseContract.hint'),
         },
         {
@@ -89,7 +82,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.purchaseOrder.title'),
           path: '/purchase-order',
           icon: ProfileOutlined,
-          tone: '#1677ff',
           hint: t('dashboard.flow.purchaseOrder.hint'),
         },
         {
@@ -97,7 +89,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.purchaseInbound.title'),
           path: '/purchase-inbound',
           icon: InboxOutlined,
-          tone: '#2f54eb',
           hint: t('dashboard.flow.purchaseInbound.hint'),
         },
         {
@@ -105,7 +96,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.supplierStatement.title'),
           path: '/supplier-statement',
           icon: FileSearchOutlined,
-          tone: '#1d39c4',
           hint: t('dashboard.flow.supplierStatement.hint'),
         },
         {
@@ -113,7 +103,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.payment.title'),
           path: '/payment',
           icon: AccountBookOutlined,
-          tone: '#10239e',
           hint: t('dashboard.flow.payment.hint'),
         },
       ],
@@ -122,14 +111,12 @@ export function buildWorkflowSections(
       key: 'sales',
       title: t('common.salesChain'),
       description: t('common.salesChainDesc'),
-      accent: '#d97706',
       nodes: [
         {
           key: 'sales-contract',
           title: t('dashboard.flow.salesContract.title'),
           path: '/sales-contract',
           icon: FileDoneOutlined,
-          tone: '#fa8c16',
           hint: t('dashboard.flow.salesContract.hint'),
         },
         {
@@ -137,7 +124,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.salesOrder.title'),
           path: '/sales-order',
           icon: FileDoneOutlined,
-          tone: '#faad14',
           hint: t('dashboard.flow.salesOrder.hint'),
         },
         {
@@ -145,7 +131,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.salesOutbound.title'),
           path: '/sales-outbound',
           icon: SwapOutlined,
-          tone: '#d48806',
           hint: t('dashboard.flow.salesOutbound.hint'),
         },
         {
@@ -153,7 +138,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.customerStatement.title'),
           path: '/customer-statement',
           icon: FileTextOutlined,
-          tone: '#ad6800',
           hint: t('dashboard.flow.customerStatement.hint'),
         },
         {
@@ -161,7 +145,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.receipt.title'),
           path: '/receipt',
           icon: AccountBookOutlined,
-          tone: '#874d00',
           hint: t('dashboard.flow.receipt.hint'),
         },
       ],
@@ -170,14 +153,12 @@ export function buildWorkflowSections(
       key: 'freight',
       title: t('common.logisticsChain'),
       description: t('common.logisticsChainDesc'),
-      accent: '#7c3aed',
       nodes: [
         {
           key: 'carrier',
           title: t('dashboard.flow.carrier.title'),
           path: '/carrier',
           icon: CarOutlined,
-          tone: '#722ed1',
           hint: t('dashboard.flow.carrier.hint'),
         },
         {
@@ -185,7 +166,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.freightBill.title'),
           path: '/freight-bill',
           icon: CarOutlined,
-          tone: '#9254de',
           hint: t('dashboard.flow.freightBill.hint'),
         },
         {
@@ -193,7 +173,6 @@ export function buildWorkflowSections(
           title: t('dashboard.flow.freightStatement.title'),
           path: '/freight-statement',
           icon: FileSearchOutlined,
-          tone: '#531dab',
           hint: t('dashboard.flow.freightStatement.hint'),
         },
       ],

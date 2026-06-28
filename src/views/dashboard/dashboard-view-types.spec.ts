@@ -12,13 +12,11 @@ describe('dashboard-view-types', () => {
         key: 'master',
         title: '主数据',
         description: '管理基础数据',
-        accent: '#0f766e',
         nodes: [],
       }
       expect(section.key).toBe('master')
       expect(section.title).toBe('主数据')
       expect(section.description).toBe('管理基础数据')
-      expect(section.accent).toBe('#0f766e')
       expect(section.nodes).toEqual([])
     })
 
@@ -27,14 +25,12 @@ describe('dashboard-view-types', () => {
         key: 'master',
         title: '主数据',
         description: '管理基础数据',
-        accent: '#0f766e',
         nodes: [
           {
             key: 'material',
             title: '物料',
             path: '/material',
             icon: () => null,
-            tone: '#1677ff',
             hint: '管理物料信息',
             metric: '100 个物料',
           },
@@ -43,7 +39,6 @@ describe('dashboard-view-types', () => {
       expect(section.nodes[0].key).toBe('material')
       expect(section.nodes[0].title).toBe('物料')
       expect(section.nodes[0].path).toBe('/material')
-      expect(section.nodes[0].tone).toBe('#1677ff')
       expect(section.nodes[0].hint).toBe('管理物料信息')
       expect(section.nodes[0].metric).toBe('100 个物料')
     })
@@ -53,14 +48,12 @@ describe('dashboard-view-types', () => {
         key: 'master',
         title: '主数据',
         description: '管理基础数据',
-        accent: '#0f766e',
         nodes: [
           {
             key: 'warehouse',
             title: '仓库',
             path: '/warehouse',
             icon: () => null,
-            tone: '#13c2c2',
             hint: '管理仓库信息',
           },
         ],
@@ -73,14 +66,12 @@ describe('dashboard-view-types', () => {
         key: 'master',
         title: '主数据',
         description: '管理基础数据',
-        accent: '#0f766e',
         nodes: [
           {
             key: 'material',
             title: '物料',
             path: '/material',
             icon: () => null,
-            tone: '#1677ff',
             hint: '管理物料信息',
           },
           {
@@ -88,7 +79,6 @@ describe('dashboard-view-types', () => {
             title: '供应商',
             path: '/supplier',
             icon: () => null,
-            tone: '#52c41a',
             hint: '管理供应商信息',
           },
         ],

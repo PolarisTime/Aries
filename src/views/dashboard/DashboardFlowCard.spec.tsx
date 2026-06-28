@@ -5,7 +5,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const map: Record<string, string> = {
-        'dashboard.title': '工作流程',
+        'dashboard.sections.businessFlow': '业务流程',
         'common.masterData': '主数据',
         'common.masterDataDesc': '管理基础数据',
         'common.purchaseChain': '采购链',
@@ -63,14 +63,12 @@ vi.mock('@/views/dashboard/dashboard-flow-utils', () => ({
       key: 'master',
       title: '主数据',
       description: '管理基础数据',
-      accent: '#0f766e',
       nodes: [
         {
           key: 'material',
           title: '物料',
           path: '/material',
           icon: () => <div>物料图标</div>,
-          tone: '#1677ff',
           hint: '管理物料信息',
           metric: '100 个物料',
         },
@@ -89,7 +87,7 @@ describe('DashboardFlowCard', () => {
 
   it('renders card title', () => {
     render(<DashboardFlowCard {...defaultProps} />)
-    expect(screen.getByText('工作流程')).toBeTruthy()
+    expect(screen.getByText('业务流程')).toBeTruthy()
   })
 
   it('renders workflow sections', () => {
@@ -116,13 +114,10 @@ describe('DashboardFlowCard', () => {
     expect(navigate).toHaveBeenCalledWith({ to: '/material' })
   })
 
-  it('renders arrow between nodes when multiple nodes exist', () => {
-    const multipleNodesProps = {
-      ...defaultProps,
-      summary: {},
-    }
-    render(<DashboardFlowCard {...multipleNodesProps} />)
-    const arrows = document.querySelectorAll('.dashboard-flow-arrow')
-    expect(arrows.length).toBeGreaterThanOrEqual(0)
+  it('renders business flow lanes with arrows', () => {
+    render(<DashboardFlowCard {...defaultProps} />)
+    expect(document.querySelector('.dashboard-flow-lanes')).toBeTruthy()
+    expect(document.querySelector('.dashboard-flow-lane')).toBeTruthy()
+    expect(document.querySelector('.dashboard-flow-arrow')).toBeNull()
   })
 })

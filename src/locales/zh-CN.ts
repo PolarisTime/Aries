@@ -194,6 +194,7 @@ export const zhCN: MessageSchema = {
       overview: '系统概览',
       signals: '实时信号',
       interfaceHealth: '接口状态',
+      businessFlow: '业务流程',
     },
     alerts: {
       title: '当前重点',

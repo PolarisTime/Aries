@@ -60,6 +60,12 @@ vi.mock('@/hooks/usePageVisibility', () => ({
 
 vi.mock('@/views/dashboard/DashboardInfoPanels', () => ({
   DashboardInfoPanels: () => <div data-testid="info-panels">Info Panels</div>,
+  DashboardSidebarPanels: () => (
+    <div data-testid="sidebar-panels">Sidebar Panels</div>
+  ),
+  DashboardWorkplaceHeader: () => (
+    <div data-testid="workplace-header">Workplace Header</div>
+  ),
 }))
 
 vi.mock('@/views/dashboard/dashboard-info-utils', () => ({
@@ -103,7 +109,9 @@ describe('DashboardView', () => {
 
   it('renders dashboard view', () => {
     render(<DashboardView />)
-    expect(screen.getByTestId('info-panels')).toBeTruthy()
+    expect(screen.getByTestId('workplace-header')).toBeTruthy()
+    expect(screen.getByTestId('sidebar-panels')).toBeTruthy()
+    expect(document.querySelector('.dashboard-workplace-layout')).toBeTruthy()
   })
 
   it('renders error alert when query fails', () => {

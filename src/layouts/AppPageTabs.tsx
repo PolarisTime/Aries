@@ -1,4 +1,4 @@
-import { Tabs } from 'antd'
+import { CloseOutlined } from '@ant-design/icons'
 import type { CSSProperties, MouseEvent } from 'react'
 import type { ClosePageOptions, OpenPage } from '@/hooks/useOpenPages'
 
@@ -40,8 +40,8 @@ export function AppPageTabs({
     return pages.find((item) => item.key !== page.key)?.path
   }
 
-  const handleTabDoubleClick = (
-    event: MouseEvent<HTMLSpanElement>,
+  const handlePageClose = (
+    event: MouseEvent<HTMLButtonElement>,
     page: OpenPage,
   ) => {
     event.preventDefault()
@@ -54,36 +54,42 @@ export function AppPageTabs({
     })
   }
 
-  const tabItems = pages.map((page) => ({
-    key: page.key,
-    label: (
-      <span
-        className="app-page-tab-label"
-        onDoubleClick={(event) => handleTabDoubleClick(event, page)}
-      >
-        {page.title}
-      </span>
-    ),
-  }))
-
-  const handleTabChange = (key: string) => {
-    const page = pages.find((item) => item.key === key)
-    if (page) {
-      onNavigateToPath(page.path)
-    }
-  }
-
   return (
     <div
-      className={`tab-layout-tabs${isTopNavigationLayout ? ' tab-layout-tabs-top-nav' : ''}`}
+      className={`tab-layout-tabs open-page-strip${isTopNavigationLayout ? ' tab-layout-tabs-top-nav' : ''}`}
       style={shellFontStyle}
     >
-      <Tabs
-        activeKey={activeKey}
-        items={tabItems}
-        onChange={handleTabChange}
-        size="small"
-      />
+      <ul className="open-page-strip-list">
+        {pages.map((page) => {
+          const active = page.key === activeKey
+          return (
+            <li
+              className={`open-page-strip-item${active ? ' is-active' : ''}`}
+              key={page.key}
+            >
+              <button
+                type="button"
+                className="open-page-strip-trigger"
+                aria-current={active ? 'page' : undefined}
+                onClick={() => onNavigateToPath(page.path)}
+                onDoubleClick={(event) => handlePageClose(event, page)}
+              >
+                {page.title}
+              </button>
+              {page.closable ? (
+                <button
+                  type="button"
+                  className="open-page-strip-close"
+                  aria-label={`关闭 ${page.title}`}
+                  onClick={(event) => handlePageClose(event, page)}
+                >
+                  <CloseOutlined />
+                </button>
+              ) : null}
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }

@@ -1,17 +1,8 @@
 import type { NavigateFn } from '@tanstack/react-router'
 import { Card } from 'antd'
-import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DashboardSummary } from '@/api/dashboard'
 import { buildWorkflowSections } from '@/views/dashboard/dashboard-flow-utils'
-
-type FlowSectionStyle = CSSProperties & {
-  '--flow-accent': string
-}
-
-function flowSectionStyle(accent: string): FlowSectionStyle {
-  return { '--flow-accent': accent }
-}
 
 interface Props {
   navigate: NavigateFn
@@ -23,19 +14,16 @@ export function DashboardFlowCard({ navigate, summary }: Props) {
   const workflowSections = buildWorkflowSections(t, summary)
 
   return (
-    <Card title={t('dashboard.title')} className="dashboard-flow-card">
-      <div className="dashboard-flow-grid">
+    <Card
+      title={t('dashboard.sections.businessFlow')}
+      className="dashboard-flow-card"
+    >
+      <div className="dashboard-flow-lanes">
         {workflowSections.map((section) => (
-          <section
-            key={section.key}
-            className="dashboard-flow-section"
-            style={flowSectionStyle(section.accent)}
-          >
-            <div className="dashboard-flow-section-head">
-              <div className="dashboard-flow-section-title">
-                {section.title}
-              </div>
-              <div className="dashboard-flow-section-desc">
+          <section key={section.key} className="dashboard-flow-lane">
+            <div className="dashboard-flow-lane-head">
+              <div className="dashboard-flow-lane-title">{section.title}</div>
+              <div className="dashboard-flow-lane-desc">
                 {section.description}
               </div>
             </div>
@@ -44,18 +32,14 @@ export function DashboardFlowCard({ navigate, summary }: Props) {
               {section.nodes.map((node, index) => {
                 const Icon = node.icon
                 return (
-                  <div key={node.key} className="dashboard-flow-chain-item">
+                  <div key={node.key} className="dashboard-flow-step">
                     <button
                       type="button"
                       className="dashboard-flow-node"
-                      // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
+                      // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Router navigate returns a promise in app handlers
                       onClick={() => navigate({ to: node.path as '/' })}
                     >
-                      <span
-                        className="dashboard-flow-node-icon"
-                        /* 动态背景色：node.tone 由业务数据决定 */
-                        style={{ background: node.tone }}
-                      >
+                      <span className="dashboard-flow-node-icon">
                         <Icon />
                       </span>
                       <span className="dashboard-flow-node-copy">
@@ -65,7 +49,9 @@ export function DashboardFlowCard({ navigate, summary }: Props) {
                       </span>
                     </button>
                     {index < section.nodes.length - 1 ? (
-                      <span className="dashboard-flow-arrow">→</span>
+                      <span className="dashboard-flow-arrow" aria-hidden>
+                        →
+                      </span>
                     ) : null}
                   </div>
                 )
