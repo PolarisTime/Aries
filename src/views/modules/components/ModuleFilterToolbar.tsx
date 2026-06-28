@@ -1,13 +1,5 @@
-import {
-  Button,
-  Col,
-  DatePicker,
-  Form,
-  Input,
-  Row,
-  Segmented,
-  Select,
-} from 'antd'
+import { DownOutlined, UpOutlined } from '@ant-design/icons'
+import { Button, DatePicker, Form, Input, Segmented, Select } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
 import { useRef, useState } from 'react'
@@ -34,6 +26,8 @@ interface Props {
   onApplyFilters: (filters: SearchParams) => void
   onReset: () => void
 }
+
+const EMPTY_FILTERS: SearchParams = {}
 
 function normalizeFilters(filters: SearchParams) {
   const normalized: SearchParams = {}
@@ -77,8 +71,8 @@ function buildNextFilters(
   return normalizeFilters(nextFilters)
 }
 
-function hasSecondaryFilters(filters: ModuleFilterDefinition[]) {
-  return filters.some((field) => (field.row || 1) > 1)
+function isPrimaryFilter(field: ModuleFilterDefinition) {
+  return (field.row || 1) <= 1
 }
 
 function ModuleFilterField({
@@ -200,14 +194,14 @@ function ModuleFilterField({
 export function ModuleFilterToolbar({
   config,
   filters,
-  defaultFilters = {},
+  defaultFilters = EMPTY_FILTERS,
   submittedFilters,
   onUpdateFilter,
   onApplyFilters,
   onReset,
 }: Props) {
   const { t } = useTranslation()
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const lastTextCommitAtRef = useRef(0)
 
   const hasConfigKeywordFilter = config.filters.some(
@@ -216,10 +210,15 @@ export function ModuleFilterToolbar({
   const sortedFilters = config.filters.toSorted(
     (left, right) => (left.row || 1) - (right.row || 1),
   )
-  const visibleFilters = expanded
-    ? sortedFilters
-    : sortedFilters.filter((field) => (field.row || 1) <= 1)
-  const canExpand = hasSecondaryFilters(sortedFilters)
+  const primaryCapacity = hasConfigKeywordFilter ? 4 : 3
+  const primaryCandidateFilters = sortedFilters.filter(isPrimaryFilter)
+  const firstRowFilters = primaryCandidateFilters.slice(0, primaryCapacity)
+  const overflowFilters = primaryCandidateFilters.slice(primaryCapacity)
+  const secondaryFilters = [
+    ...overflowFilters,
+    ...sortedFilters.filter((field) => !isPrimaryFilter(field)),
+  ]
+  const canExpand = secondaryFilters.length > 0
   const quickFilters = config.quickFilters || []
   const activeQuickFilterKey = quickFilters.find((filter) =>
     isSameFilterPreset(submittedFilters, {
@@ -260,105 +259,122 @@ export function ModuleFilterToolbar({
     )
   }
 
+  const renderFilterItem = (field: ModuleFilterDefinition) => (
+    <div key={field.key} className="module-filter-field">
+      <Form.Item
+        {...buildLabeledFormItemProps({
+          label: padLabel(field.label),
+          htmlFor: getFilterFieldLabelTargetId(field),
+        })}
+        className="module-filter-item"
+      >
+        <ModuleFilterField
+          field={field}
+          filters={filters}
+          submittedFilters={submittedFilters}
+          onUpdateFilter={onUpdateFilter}
+          onCommitFilter={commitFilter}
+          onCommitTextFilter={commitTextFilter}
+        />
+      </Form.Item>
+    </div>
+  )
+
   return (
-    <Form colon={false} className="mb-4">
-      <Row gutter={[16, 8]}>
-        {quickFilters.length ? (
-          <Col xs={24}>
-            <Segmented
-              aria-label={t('modules.filter.quickFilters')}
-              value={activeQuickFilterKey}
-              options={quickFilters.map((filter) => ({
-                label: filter.label,
-                value: filter.key,
-              }))}
-              onChange={(value) => {
-                const selected = quickFilters.find(
-                  (filter) => filter.key === String(value),
+    <Form colon={false} className="module-filter-toolbar mb-4">
+      {quickFilters.length ? (
+        <div className="module-filter-quick-row">
+          <Segmented
+            aria-label={t('modules.filter.quickFilters')}
+            value={activeQuickFilterKey}
+            options={quickFilters.map((filter) => ({
+              label: filter.label,
+              value: filter.key,
+            }))}
+            onChange={(value) => {
+              const selected = quickFilters.find(
+                (filter) => filter.key === String(value),
+              )
+              if (selected) {
+                onApplyFilters(
+                  normalizeFilters({
+                    ...defaultFilters,
+                    ...selected.values,
+                  }),
                 )
-                if (selected) {
-                  onApplyFilters(
-                    normalizeFilters({
-                      ...defaultFilters,
-                      ...selected.values,
-                    }),
-                  )
-                }
-              }}
-            />
-          </Col>
-        ) : null}
-        {!hasConfigKeywordFilter ? (
-          <Col xs={24} sm={12} lg={8} xl={6}>
-            <Form.Item
-              {...buildLabeledFormItemProps({
-                label: padLabel(t('common.keyword')),
-                htmlFor: buildFormControlId('module-filter', 'keyword'),
-              })}
-              className="module-filter-item"
-            >
-              <Input
-                id={buildFormControlId('module-filter', 'keyword')}
-                name="keyword"
-                allowClear
-                placeholder={t('common.pleaseInput')}
-                value={asString(filters.keyword)}
-                onChange={(event) =>
-                  onUpdateFilter('keyword', event.target.value)
-                }
-                onBlur={(event) => {
-                  if (
-                    event.target.value.trim() ===
-                    asString(submittedFilters.keyword).trim()
-                  ) {
-                    return
-                  }
-                  commitTextFilter('keyword', event.target.value)
-                }}
-                onPressEnter={(event) =>
-                  commitTextFilter('keyword', event.currentTarget.value)
-                }
-              />
-            </Form.Item>
-          </Col>
-        ) : null}
-        {visibleFilters.map((field) => (
-          <Col key={field.key} xs={24} sm={12} lg={8} xl={6}>
-            <Form.Item
-              {...buildLabeledFormItemProps({
-                label: padLabel(field.label),
-                htmlFor: getFilterFieldLabelTargetId(field),
-              })}
-              className="module-filter-item"
-            >
-              <ModuleFilterField
-                field={field}
-                filters={filters}
-                submittedFilters={submittedFilters}
-                onUpdateFilter={onUpdateFilter}
-                onCommitFilter={commitFilter}
-                onCommitTextFilter={commitTextFilter}
-              />
-            </Form.Item>
-          </Col>
-        ))}
-        <Col xs={24}>
-          <Form.Item className="module-filter-actions">
-            {canExpand ? (
-              <Button
-                type="text"
-                icon={resolveModuleActionIcon(expanded ? '收起' : '展开')}
-                onClick={() => setExpanded((value) => !value)}
+              }
+            }}
+          />
+        </div>
+      ) : null}
+      <div className="module-filter-main-row">
+        <div className="module-filter-fields-grid">
+          {!hasConfigKeywordFilter ? (
+            <div className="module-filter-field">
+              <Form.Item
+                {...buildLabeledFormItemProps({
+                  label: padLabel(t('common.keyword')),
+                  htmlFor: buildFormControlId('module-filter', 'keyword'),
+                })}
+                className="module-filter-item"
               >
-                {expanded ? t('common.collapse') : t('common.expand')}
-              </Button>
-            ) : null}
-            <Button icon={resolveModuleActionIcon('重置')} onClick={onReset}>
-              {t('common.reset')}
+                <Input
+                  id={buildFormControlId('module-filter', 'keyword')}
+                  name="keyword"
+                  allowClear
+                  placeholder={t('common.pleaseInput')}
+                  value={asString(filters.keyword)}
+                  onChange={(event) =>
+                    onUpdateFilter('keyword', event.target.value)
+                  }
+                  onBlur={(event) => {
+                    if (
+                      event.target.value.trim() ===
+                      asString(submittedFilters.keyword).trim()
+                    ) {
+                      return
+                    }
+                    commitTextFilter('keyword', event.target.value)
+                  }}
+                  onPressEnter={(event) =>
+                    commitTextFilter('keyword', event.currentTarget.value)
+                  }
+                />
+              </Form.Item>
+            </div>
+          ) : null}
+          {firstRowFilters.map(renderFilterItem)}
+        </div>
+        <Form.Item className="module-filter-actions">
+          {canExpand ? (
+            <Button
+              type="text"
+              icon={expanded ? <UpOutlined /> : <DownOutlined />}
+              iconPlacement="end"
+              onClick={() => setExpanded((value) => !value)}
+            >
+              {expanded ? t('common.collapse') : t('common.expand')}
             </Button>
-          </Form.Item>
-        </Col>
-      </Row>
+          ) : null}
+          <Button
+            className="module-filter-reset-button"
+            icon={resolveModuleActionIcon('重置')}
+            onClick={onReset}
+          >
+            {t('common.reset')}
+          </Button>
+        </Form.Item>
+      </div>
+      {expanded && secondaryFilters.length ? (
+        <div className="module-filter-secondary-row">
+          <div className="module-filter-main-row">
+            <div className="module-filter-fields-grid module-filter-secondary-grid">
+              {secondaryFilters.map(renderFilterItem)}
+            </div>
+            <div className="module-filter-actions-placeholder" />
+          </div>
+        </div>
+      ) : null}
     </Form>
   )
 }

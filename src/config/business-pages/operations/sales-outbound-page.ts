@@ -65,14 +65,12 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       label: CUSTOMER_NAME_LABEL,
       type: 'select',
       options: getCustomerOptions,
-      row: 2,
     },
     {
       key: 'projectName',
       label: i18next.t('modules.pages.salesOutbound.filterProjectName'),
       type: 'select',
       options: getCustomerProjectOptions,
-      row: 2,
     },
   ],
   columns: [

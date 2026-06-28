@@ -407,7 +407,7 @@ describe('ModuleFilterToolbar', () => {
     })
   })
 
-  it('renders row two filters only after expansion', () => {
+  it('renders row two filters by default and hides them after collapse', () => {
     renderToolbar({
       config: config({
         filters: [
@@ -418,11 +418,32 @@ describe('ModuleFilterToolbar', () => {
     })
 
     expect(screen.getByLabelText('Primary')).toBeTruthy()
-    expect(screen.queryByLabelText('Secondary')).toBeNull()
-
-    fireEvent.click(screen.getByText('common.expand'))
-
     expect(screen.getByLabelText('Secondary')).toBeTruthy()
+
+    fireEvent.click(screen.getByText('common.collapse'))
+
+    expect(screen.queryByLabelText('Secondary')).toBeNull()
+  })
+
+  it('moves filters after the fourth primary field into the second row', () => {
+    renderToolbar({
+      config: config({
+        filters: [
+          { key: 'keyword', label: 'Keyword', type: 'input' },
+          { key: 'two', label: 'Two', type: 'input' },
+          { key: 'three', label: 'Three', type: 'input' },
+          { key: 'four', label: 'Four', type: 'input' },
+          { key: 'five', label: 'Five', type: 'input' },
+        ],
+      }),
+    })
+
+    expect(screen.getByLabelText('Five')).toBeTruthy()
+
+    fireEvent.click(screen.getByText('common.collapse'))
+
+    expect(screen.getByLabelText('Four')).toBeTruthy()
+    expect(screen.queryByLabelText('Five')).toBeNull()
   })
 
   it('applies quick filters with default filters preserved', () => {

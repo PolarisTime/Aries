@@ -1864,6 +1864,34 @@
   }
 }
 
+.module-filter-toolbar {
+  --module-filter-actions-width: 216px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ant-color-border-secondary);
+}
+
+.module-filter-quick-row {
+  margin-bottom: 8px;
+}
+
+.module-filter-main-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px 12px;
+}
+
+.module-filter-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.module-filter-field {
+  min-width: 0;
+}
+
 .module-filter-item {
   margin-bottom: 0;
 }

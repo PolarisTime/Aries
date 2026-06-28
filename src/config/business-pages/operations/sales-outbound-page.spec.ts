@@ -13,6 +13,18 @@ describe('salesOutboundPageConfig', () => {
     expect(salesOutboundsPageConfig.buildOverview).toBeTypeOf('function')
   })
 
+  it('does not force customer and project into manual rows', () => {
+    const customerFilter = salesOutboundsPageConfig.filters!.find(
+      (filter) => filter.key === 'customerName',
+    )
+    const projectFilter = salesOutboundsPageConfig.filters!.find(
+      (filter) => filter.key === 'projectName',
+    )
+
+    expect(customerFilter?.row).toBeUndefined()
+    expect(projectFilter?.row).toBeUndefined()
+  })
+
   describe('parentImport', () => {
     it('mapParentToDraft maps fields from parent record', () => {
       const draft = pi.mapParentToDraft!({

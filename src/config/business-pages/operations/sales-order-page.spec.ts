@@ -27,6 +27,18 @@ describe('salesOrdersPageConfig', () => {
     expect(salesOrdersPageConfig.filters!.length).toBeGreaterThanOrEqual(6)
   })
 
+  it('does not force customer and project into manual rows', () => {
+    const customerFilter = salesOrdersPageConfig.filters!.find(
+      (filter) => filter.key === 'customerName',
+    )
+    const projectFilter = salesOrdersPageConfig.filters!.find(
+      (filter) => filter.key === 'projectName',
+    )
+
+    expect(customerFilter?.row).toBeUndefined()
+    expect(projectFilter?.row).toBeUndefined()
+  })
+
   it('has columns', () => {
     expect(salesOrdersPageConfig.columns).toBeDefined()
     expect(salesOrdersPageConfig.columns.length).toBeGreaterThan(0)
