@@ -24,6 +24,18 @@ const config = {
   buildOverview: () => [],
 } satisfies ModulePageConfig
 
+const configWithStatus = {
+  ...config,
+  columns: [
+    { title: '订单号', dataIndex: 'orderNo', width: 160 },
+    { title: '客户', dataIndex: 'customerName', width: 180 },
+    { title: '状态', dataIndex: 'status', type: 'status' },
+  ],
+  statusMap: {
+    草稿: { text: '草稿', color: 'warning' },
+  },
+} satisfies ModulePageConfig
+
 function useTestBusinessGridTable(currentConfig: ModulePageConfig | undefined) {
   return useBusinessGridTable({
     moduleKey: 'sales-order',
@@ -65,6 +77,19 @@ describe('useBusinessGridTable', () => {
     ])
   })
 
+  it('moves the status column right after the action column', () => {
+    const { result } = renderHook(() =>
+      useTestBusinessGridTable(configWithStatus),
+    )
+
+    expect(result.current.antdColumns.map((column) => column.key)).toEqual([
+      'actions',
+      'status',
+      'orderNo',
+      'customerName',
+    ])
+  })
+
   it('keeps the action column first while applying saved column order', () => {
     window.localStorage.setItem(
       'aries-list-column-settings:anonymous:sales-order',
@@ -78,6 +103,27 @@ describe('useBusinessGridTable', () => {
 
     expect(result.current.antdColumns.map((column) => column.key)).toEqual([
       'actions',
+      'customerName',
+      'orderNo',
+    ])
+  })
+
+  it('keeps status after action while applying saved column order', () => {
+    window.localStorage.setItem(
+      'aries-list-column-settings:anonymous:sales-order',
+      JSON.stringify({
+        orderedKeys: ['customerName', 'actions', 'orderNo', 'status'],
+        hiddenKeys: [],
+      }),
+    )
+
+    const { result } = renderHook(() =>
+      useTestBusinessGridTable(configWithStatus),
+    )
+
+    expect(result.current.antdColumns.map((column) => column.key)).toEqual([
+      'actions',
+      'status',
       'customerName',
       'orderNo',
     ])

@@ -245,13 +245,13 @@
 }
 
 .editor-form-shell .ant-form-item-label {
-  flex: 0 0 var(--app-label-width);
-  width: var(--app-label-width);
+  flex: 0 0 var(--app-editor-label-width);
+  width: var(--app-editor-label-width);
   max-width: none;
   min-width: 0;
   height: var(--app-control-height);
   padding: 0;
-  margin-right: 8px;
+  margin-right: 4px;
   overflow: hidden;
   text-align: right;
   white-space: nowrap;

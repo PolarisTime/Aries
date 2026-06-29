@@ -185,6 +185,14 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
+      key: 'settlementCompanyId',
+      label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
+      type: 'select',
+      required: true,
+      options: getSettlementCompanyOptions,
+      row: 2,
+    },
+    {
       key: 'totalWeight',
       label: i18next.t('modules.pages.purchaseOrder.formTotalWeight'),
       type: 'input',
@@ -196,14 +204,6 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.purchaseOrder.formTotalAmount'),
       type: 'input',
       disabled: true,
-      row: 2,
-    },
-    {
-      key: 'settlementCompanyId',
-      label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
-      type: 'select',
-      required: true,
-      options: getSettlementCompanyOptions,
       row: 2,
     },
     {

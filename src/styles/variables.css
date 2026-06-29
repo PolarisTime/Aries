@@ -6,6 +6,7 @@
   --app-control-height-sm: 28px;
   --app-control-height-lg: 44px;
   --app-label-width: 6em;
+  --app-editor-label-width: 8.5em;
   --app-border-radius: var(--ant-border-radius-lg, 8px);
 
   --theme-primary: var(--ant-color-primary, #1677ff);

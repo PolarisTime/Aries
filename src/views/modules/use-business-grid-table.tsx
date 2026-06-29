@@ -24,6 +24,9 @@ interface Props {
   showActions?: boolean
 }
 
+const ACTIONS_COLUMN_ID = 'actions'
+const STATUS_COLUMN_ID = 'status'
+
 function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
   const ordered = new Set(savedOrder)
   const merged = [...savedOrder]
@@ -31,10 +34,17 @@ function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
     if (!ordered.has(id)) merged.push(id)
   }
   // 强制操作列始终排在数据列第一位（勾选框之后）
-  const idx = merged.indexOf('actions')
+  const idx = merged.indexOf(ACTIONS_COLUMN_ID)
   if (idx > 0) {
     merged.splice(idx, 1)
-    merged.unshift('actions')
+    merged.unshift(ACTIONS_COLUMN_ID)
+  }
+
+  const actionIndex = merged.indexOf(ACTIONS_COLUMN_ID)
+  const statusIndex = merged.indexOf(STATUS_COLUMN_ID)
+  if (actionIndex >= 0 && statusIndex >= 0 && statusIndex !== actionIndex + 1) {
+    merged.splice(statusIndex, 1)
+    merged.splice(actionIndex + 1, 0, STATUS_COLUMN_ID)
   }
   return merged
 }

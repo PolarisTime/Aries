@@ -46,12 +46,12 @@ describe('purchaseOrdersPageConfig', () => {
     ).toContain('settlementCompanyId')
   })
 
-  it('keeps settlement company in header before remark instead of tables', () => {
+  it('keeps settlement company in header after supplier instead of tables', () => {
     const formFieldKeys = purchaseOrdersPageConfig.formFields?.map(
       (field) => field.key,
     )
-    expect(formFieldKeys?.indexOf('settlementCompanyId')).toBeLessThan(
-      formFieldKeys?.indexOf('remark') ?? -1,
+    expect(formFieldKeys?.indexOf('settlementCompanyId')).toBe(
+      (formFieldKeys?.indexOf('supplierName') ?? -2) + 1,
     )
     expect(
       purchaseOrdersPageConfig.columns.map((column) => column.dataIndex),
