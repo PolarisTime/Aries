@@ -30,6 +30,7 @@ describe('module-contracts-reports', () => {
     expect(config.nativeFilterKeys).toContain('keyword')
     expect(config.nativeFilterKeys).toContain('warehouseName')
     expect(config.nativeFilterKeys).toContain('category')
+    expect(config.nativeFilterKeys).toContain('includeOutbound')
   })
 
   it('contains io-report config', () => {

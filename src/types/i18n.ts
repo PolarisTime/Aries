@@ -1488,6 +1488,8 @@ export interface MessageSchema {
       inventoryReport: {
         inventoryReport: string
         export: string
+        flow: string
+        flowDetail: string
         keyword: string
         materialPlaceholder: string
         warehouse: string
@@ -1498,12 +1500,17 @@ export interface MessageSchema {
         spec: string
         length: string
         batchNo: string
+        outboundNo: string
+        outboundDate: string
         quantity: string
         qtyUnit: string
         stockWeight: string
         pieceWeight: string
         unit: string
         stockRecordCount: string
+        stockScope: string
+        currentStockOnly: string
+        includeOutbound: string
         inventoryReportDesc: string
       }
       pendingInvoiceReceiptReport: {

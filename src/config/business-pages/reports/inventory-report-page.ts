@@ -12,6 +12,8 @@ export const inventoryReportPageConfig: ModulePageConfig = {
   kicker: 'Reports',
   description: i18next.t('modules.pages.inventoryReport.inventoryReportDesc'),
   readOnly: true,
+  detailActionLabel: i18next.t('modules.pages.inventoryReport.flow'),
+  detailItemTitle: i18next.t('modules.pages.inventoryReport.flowDetail'),
   actions: [
     {
       key: 'export',
@@ -39,6 +41,22 @@ export const inventoryReportPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.inventoryReport.category'),
       type: 'select',
       options: materialCategoryOptions,
+    },
+    {
+      key: 'includeOutbound',
+      label: i18next.t('modules.pages.inventoryReport.stockScope'),
+      type: 'select',
+      row: 2,
+      options: [
+        {
+          label: i18next.t('modules.pages.inventoryReport.currentStockOnly'),
+          value: 'false',
+        },
+        {
+          label: i18next.t('modules.pages.inventoryReport.includeOutbound'),
+          value: 'true',
+        },
+      ],
     },
   ],
   columns: [
@@ -73,13 +91,75 @@ export const inventoryReportPageConfig: ModulePageConfig = {
       width: 100,
     },
     {
+      title: i18next.t('modules.pages.inventoryReport.quantity'),
+      dataIndex: 'quantity',
+      width: 100,
+      align: 'right',
+      type: 'count',
+    },
+    {
+      title: i18next.t('modules.pages.inventoryReport.qtyUnit'),
+      dataIndex: 'quantityUnit',
+      width: 90,
+    },
+    {
+      title: i18next.t('modules.pages.inventoryReport.stockWeight'),
+      dataIndex: 'weightTon',
+      width: 124,
+      align: 'right',
+      type: 'weight',
+    },
+  ],
+  detailFields: [],
+  detailItemColumns: [
+    {
+      title: i18next.t('modules.pages.inventoryReport.materialCode'),
+      dataIndex: 'materialCode',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.inventoryReport.brand'),
+      dataIndex: 'brand',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.pages.inventoryReport.material'),
+      dataIndex: 'material',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.pages.inventoryReport.category'),
+      dataIndex: 'category',
+      width: 110,
+    },
+    {
+      title: i18next.t('modules.pages.inventoryReport.spec'),
+      dataIndex: 'spec',
+      width: 110,
+    },
+    {
+      title: i18next.t('modules.pages.inventoryReport.length'),
+      dataIndex: 'length',
+      width: 90,
+    },
+    {
       title: i18next.t('modules.pages.inventoryReport.warehouse'),
       dataIndex: 'warehouseName',
-      width: 110,
+      width: 120,
     },
     {
       title: i18next.t('modules.pages.inventoryReport.batchNo'),
       dataIndex: 'batchNo',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.inventoryReport.outboundNo'),
+      dataIndex: 'outboundNo',
+      width: 150,
+    },
+    {
+      title: i18next.t('modules.pages.inventoryReport.outboundDate'),
+      dataIndex: 'outboundDate',
       width: 140,
     },
     {
@@ -101,51 +181,18 @@ export const inventoryReportPageConfig: ModulePageConfig = {
       align: 'right',
       type: 'weight',
     },
-  ],
-  detailFields: [
     {
-      label: i18next.t('modules.pages.inventoryReport.materialCode'),
-      key: 'materialCode',
-    },
-    { label: i18next.t('modules.pages.inventoryReport.brand'), key: 'brand' },
-    {
-      label: i18next.t('modules.pages.inventoryReport.material'),
-      key: 'material',
-    },
-    {
-      label: i18next.t('modules.pages.inventoryReport.category'),
-      key: 'category',
-    },
-    { label: i18next.t('modules.pages.inventoryReport.spec'), key: 'spec' },
-    { label: i18next.t('modules.pages.inventoryReport.length'), key: 'length' },
-    {
-      label: i18next.t('modules.pages.inventoryReport.warehouse'),
-      key: 'warehouseName',
-    },
-    {
-      label: i18next.t('modules.pages.inventoryReport.batchNo'),
-      key: 'batchNo',
-    },
-    {
-      label: i18next.t('modules.pages.inventoryReport.quantity'),
-      key: 'quantity',
-      type: 'count',
-    },
-    {
-      label: i18next.t('modules.pages.inventoryReport.qtyUnit'),
-      key: 'quantityUnit',
-    },
-    {
-      label: i18next.t('modules.pages.inventoryReport.stockWeight'),
-      key: 'weightTon',
+      title: i18next.t('modules.pages.inventoryReport.pieceWeight'),
+      dataIndex: 'pieceWeightTon',
+      width: 124,
+      align: 'right',
       type: 'weight',
     },
     {
-      label: i18next.t('modules.pages.inventoryReport.pieceWeight'),
-      key: 'pieceWeightTon',
-      type: 'weight',
+      title: i18next.t('modules.pages.inventoryReport.unit'),
+      dataIndex: 'unit',
+      width: 90,
     },
-    { label: i18next.t('modules.pages.inventoryReport.unit'), key: 'unit' },
   ],
   data: [],
   buildOverview: (rows) => [
