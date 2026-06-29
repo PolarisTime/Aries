@@ -7,6 +7,7 @@ vi.mock('i18next', () => ({
 vi.mock('@/constants/module-options', () => ({
   getSupplierOptions: [],
   getCustomerOptions: [],
+  getSettlementCompanyOptions: [],
   buildValueOptions: (...args: string[]) =>
     args.map((v) => ({ label: v, value: v })),
   isPurchaseWeighRequiredCategory: () => false,

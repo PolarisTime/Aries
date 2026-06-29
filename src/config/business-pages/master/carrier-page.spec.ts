@@ -6,6 +6,7 @@ vi.mock('i18next', () => ({
 
 vi.mock('@/constants/module-options', () => ({
   enabledStatusOptions: [],
+  getSettlementCompanyOptions: vi.fn(),
 }))
 
 import { carriersPageConfig } from './carrier-page'
@@ -32,6 +33,18 @@ describe('carriersPageConfig', () => {
   it('has formFields', () => {
     expect(carriersPageConfig.formFields).toBeDefined()
     expect(carriersPageConfig.formFields!.length).toBeGreaterThan(0)
+  })
+
+  it('has default settlement company field', () => {
+    expect(
+      carriersPageConfig.columns.map((column) => column.dataIndex),
+    ).toContain('defaultSettlementCompanyName')
+    expect(carriersPageConfig.formFields?.map((field) => field.key)).toContain(
+      'defaultSettlementCompanyId',
+    )
+    expect(carriersPageConfig.saveFields?.scalar).toContain(
+      'defaultSettlementCompanyName',
+    )
   })
 
   it('buildOverview returns result', () => {

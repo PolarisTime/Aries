@@ -9,6 +9,10 @@ import {
   saveBusinessModule,
 } from '@/api/business'
 import {
+  fetchSettlementCompanyOptions,
+  getCompanySettingProfile,
+} from '@/api/company-settings'
+import {
   isDisplaySwitchEnabled,
   listClientSettings,
   listSystemSettings,
@@ -66,6 +70,11 @@ vi.mock('@/api/business', () => ({
   saveBusinessModule: vi
     .fn()
     .mockResolvedValue({ data: { id: 'saved-1', orderNo: 'ORD-001' } }),
+}))
+
+vi.mock('@/api/company-settings', () => ({
+  fetchSettlementCompanyOptions: vi.fn().mockResolvedValue([]),
+  getCompanySettingProfile: vi.fn().mockResolvedValue(null),
 }))
 
 vi.mock('@/api/system-settings', () => ({
@@ -202,6 +211,8 @@ describe('useModuleEditorWorkspace', () => {
     vi.mocked(getBusinessModuleDetail).mockResolvedValue({
       data: { id: '1', items: [] },
     })
+    vi.mocked(fetchSettlementCompanyOptions).mockResolvedValue([])
+    vi.mocked(getCompanySettingProfile).mockResolvedValue(null)
     vi.mocked(listAllBusinessModuleRows).mockResolvedValue([])
     vi.mocked(saveBusinessModule).mockResolvedValue({
       data: { id: 'saved-1', orderNo: 'ORD-001' },
@@ -382,6 +393,51 @@ describe('useModuleEditorWorkspace', () => {
         }),
       )
       expect(result.current.authoritativePrimaryNo).toBe('PRE-001')
+    })
+  })
+
+  it('defaults purchase order settlement company from current company', async () => {
+    vi.mocked(getCompanySettingProfile).mockResolvedValue({
+      id: '8',
+      companyName: '结算主体A',
+      taxNo: 'T',
+      settlementAccounts: [],
+      status: '正常',
+    })
+    const form = frm()
+    form.getFieldsValue.mockReturnValue({ id: 'fv', orderNo: 'ORD-001' })
+
+    renderWorkspace({ form, moduleKey: 'purchase-order' })
+
+    await waitFor(() => {
+      expect(form.setFieldsValue).toHaveBeenCalledWith({
+        settlementCompanyId: 8,
+        settlementCompanyName: '结算主体A',
+      })
+    })
+    expect(fetchSettlementCompanyOptions).not.toHaveBeenCalled()
+  })
+
+  it('falls back to first settlement company option for purchase order default', async () => {
+    vi.mocked(getCompanySettingProfile).mockResolvedValue(null)
+    vi.mocked(fetchSettlementCompanyOptions).mockResolvedValue([
+      {
+        id: 9,
+        value: 9,
+        label: '结算主体B',
+        companyName: '结算主体B',
+      },
+    ])
+    const form = frm()
+    form.getFieldsValue.mockReturnValue({ id: 'fv', orderNo: 'ORD-001' })
+
+    renderWorkspace({ form, moduleKey: 'purchase-order' })
+
+    await waitFor(() => {
+      expect(form.setFieldsValue).toHaveBeenCalledWith({
+        settlementCompanyId: 9,
+        settlementCompanyName: '结算主体B',
+      })
     })
   })
 

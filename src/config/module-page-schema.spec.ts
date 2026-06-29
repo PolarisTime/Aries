@@ -16,7 +16,8 @@ describe('module-page-schema', () => {
       expect(schema.filters![2].type).toBe('select')
       expect(schema.filters![3].key).toBe('orderDate')
       expect(schema.filters![3].type).toBe('dateRange')
-      expect(schema.saveFields).toBeUndefined()
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyName')
     })
 
     it('returns schema for purchase-inbound', () => {

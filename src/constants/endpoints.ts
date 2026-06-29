@@ -55,6 +55,7 @@ export const ENDPOINTS = {
   // Company settings (business entity → plural)
   COMPANY_SETTINGS: '/company-settings',
   COMPANY_SETTINGS_CURRENT: '/company-settings/current',
+  COMPANY_SETTINGS_OPTIONS: '/company-settings/options',
   COMPANY_NAME: '/company-settings/name',
 
   // Health (pure action → singular)

@@ -7,6 +7,7 @@ const apiGetCustomerOptionsMock = vi.hoisted(() => vi.fn())
 const apiGetCustomerProjectOptionsMock = vi.hoisted(() => vi.fn())
 const apiGetCarrierOptionsMock = vi.hoisted(() => vi.fn())
 const apiGetCarrierVehiclePlateOptionsMock = vi.hoisted(() => vi.fn())
+const apiGetSettlementCompanyOptionsMock = vi.hoisted(() => vi.fn())
 const apiGetWarehouseOptionsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/api/material-categories', () => ({
@@ -26,6 +27,10 @@ vi.mock('@/api/customer-options', () => ({
   getCustomerProjectOptions: apiGetCustomerProjectOptionsMock,
 }))
 
+vi.mock('@/api/company-settings', () => ({
+  getSettlementCompanyOptions: apiGetSettlementCompanyOptionsMock,
+}))
+
 vi.mock('@/api/carrier-options', () => ({
   getCarrierOptions: apiGetCarrierOptionsMock,
   getCarrierVehiclePlateOptions: apiGetCarrierVehiclePlateOptionsMock,
@@ -42,6 +47,7 @@ import {
   getCustomerOptions,
   getCustomerProjectOptions,
   getMaterialCategoryOptions,
+  getSettlementCompanyOptions,
   getSupplierOptions,
   getWarehouseOptions,
   isPurchaseWeighRequiredCategory,
@@ -215,6 +221,28 @@ describe('option-resolvers', () => {
         carrierName: '承运商A',
       })
       expect(result).toEqual([{ label: '京A12345', value: '京A12345' }])
+    })
+  })
+
+  describe('settlement company options', () => {
+    it('returns dynamic options when available', () => {
+      apiGetSettlementCompanyOptionsMock.mockReturnValue([
+        { value: 1, label: '结算主体A', companyName: '结算主体A' },
+      ])
+
+      const result = getSettlementCompanyOptions()
+
+      expect(result).toEqual([
+        { value: 1, label: '结算主体A', companyName: '结算主体A' },
+      ])
+    })
+
+    it('returns fallback (empty) when no options', () => {
+      apiGetSettlementCompanyOptionsMock.mockReturnValue([])
+
+      const result = getSettlementCompanyOptions()
+
+      expect(result).toEqual([])
     })
   })
 

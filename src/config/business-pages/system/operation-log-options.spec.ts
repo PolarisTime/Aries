@@ -37,6 +37,17 @@ describe('operation-log-options', () => {
       )
       expect(business).toBeDefined()
     })
+
+    it('keeps company log value while using settlement entity label key', () => {
+      const system = operationLogModuleOptions.find((g) =>
+        g.options.some((o) => o.value === '公司信息'),
+      )
+      const company = system?.options.find((o) => o.value === '公司信息')
+      expect(company).toEqual({
+        label: 'modules.pages.operationLogOptions.companyInfo',
+        value: '公司信息',
+      })
+    })
   })
 
   describe('resolveOperationLogActionOptions', () => {

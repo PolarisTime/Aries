@@ -6,6 +6,7 @@ vi.mock('i18next', () => ({
 
 vi.mock('@/constants/module-options', () => ({
   enabledStatusOptions: [],
+  getSettlementCompanyOptions: [],
   buildValueOptions: (...args: string[]) =>
     args.map((v) => ({ label: v, value: v })),
 }))

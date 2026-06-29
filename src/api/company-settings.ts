@@ -1,5 +1,7 @@
 import { assertApiSuccess, http } from '@/api/client'
+import { pageContent } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { createCachedOptions } from '@/lib/create-cached-options'
 import { getApiMessage } from '@/utils/api-messages'
 import { asNumber, asString } from '@/utils/type-narrowing'
 
@@ -25,10 +27,25 @@ export interface CompanySettingProfile {
   remark?: string
 }
 
+export interface SettlementCompanyOption {
+  id: number
+  value: number
+  label: string
+  companyName: string
+  taxNo?: string
+  status?: string
+}
+
 interface CompanyResponse<T> {
   code: number
   message?: string
   data: T
+}
+
+interface CompanyPageData {
+  content?: RawCompanyProfile[]
+  records?: RawCompanyProfile[]
+  totalElements?: number
 }
 
 export type RawSettlementAccount = {
@@ -51,6 +68,35 @@ export type RawCompanyProfile = {
   settlementAccounts?: RawSettlementAccount[]
   status?: string
   remark?: string
+}
+
+export type RawSettlementCompanyOption = {
+  id?: string | number
+  companyName?: string
+  taxNo?: string
+  status?: string
+}
+
+export function normalizeSettlementCompanyOptions(
+  rows: RawSettlementCompanyOption[],
+): SettlementCompanyOption[] {
+  return rows.flatMap((row) => {
+    const id = asNumber(row.id)
+    const companyName = asString(row.companyName).trim()
+    if (!id || !companyName) {
+      return []
+    }
+    return [
+      {
+        id,
+        value: id,
+        label: companyName,
+        companyName,
+        taxNo: asString(row.taxNo).trim() || undefined,
+        status: asString(row.status).trim() || undefined,
+      },
+    ]
+  })
 }
 
 export function normalizeProfile(
@@ -90,6 +136,37 @@ export async function getCompanySettingProfile() {
   return normalizeProfile(r.data)
 }
 
+export async function listCompanySettings() {
+  const r = assertApiSuccess(
+    await http.get<CompanyResponse<CompanyPageData>>(
+      ENDPOINTS.COMPANY_SETTINGS,
+      {
+        params: { page: 0, size: 200, sortBy: 'id', direction: 'asc' },
+      },
+    ),
+    getApiMessage('loadCompanyInfoFailed'),
+  )
+  return pageContent(r.data).flatMap((item) => {
+    const profile = normalizeProfile(item)
+    return profile ? [profile] : []
+  })
+}
+
+const settlementCompanyOptions = createCachedOptions<
+  SettlementCompanyOption,
+  RawSettlementCompanyOption
+>({
+  endpoint: ENDPOINTS.COMPANY_SETTINGS_OPTIONS,
+  normalizer: normalizeSettlementCompanyOptions,
+})
+
+export const fetchSettlementCompanyOptions = settlementCompanyOptions.fetch
+export const reloadSettlementCompanyOptions = settlementCompanyOptions.reload
+
+export function getSettlementCompanyOptions(): SettlementCompanyOption[] {
+  return settlementCompanyOptions.get()
+}
+
 export async function saveCompanySettingProfile(
   payload: Omit<CompanySettingProfile, 'id'>,
 ) {
@@ -101,4 +178,40 @@ export async function saveCompanySettingProfile(
     getApiMessage('saveCompanyInfoFailed'),
   )
   return normalizeProfile(r.data)
+}
+
+export async function createCompanySetting(
+  payload: Omit<CompanySettingProfile, 'id'>,
+) {
+  const r = assertApiSuccess(
+    await http.post<CompanyResponse<RawCompanyProfile>>(
+      ENDPOINTS.COMPANY_SETTINGS,
+      payload,
+    ),
+    getApiMessage('saveCompanyInfoFailed'),
+  )
+  return normalizeProfile(r.data)
+}
+
+export async function updateCompanySetting(
+  id: string,
+  payload: Omit<CompanySettingProfile, 'id'>,
+) {
+  const r = assertApiSuccess(
+    await http.put<CompanyResponse<RawCompanyProfile>>(
+      `${ENDPOINTS.COMPANY_SETTINGS}/${id}`,
+      payload,
+    ),
+    getApiMessage('saveCompanyInfoFailed'),
+  )
+  return normalizeProfile(r.data)
+}
+
+export async function deleteCompanySetting(id: string) {
+  return assertApiSuccess(
+    await http.delete<CompanyResponse<null>>(
+      `${ENDPOINTS.COMPANY_SETTINGS}/${id}`,
+    ),
+    getApiMessage('requestFailed'),
+  )
 }

@@ -46,7 +46,7 @@ export const systemPageDefinitions: AppPageDefinition[] = [
   },
   {
     key: 'company-setting',
-    title: '公司信息',
+    title: '结算主体管理',
     menuKey: '/company-setting',
     view: 'company-setting',
     icon: 'AccountBookOutlined',

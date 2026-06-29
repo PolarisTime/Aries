@@ -4,6 +4,7 @@ export type {
   BusinessNoResult,
   DocumentStatus,
   EnabledStatus,
+  SettlementCompanyOption,
 } from './api'
 // ── 认证 ────────────────────────────────────────────────
 export type {

@@ -43,6 +43,18 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       },
       { key: 'orderDate', label: '订单日期', type: 'dateRange' },
     ],
+    saveFields: {
+      scalar: [
+        'orderNo',
+        'supplierName',
+        'settlementCompanyId',
+        'settlementCompanyName',
+        'orderDate',
+        'buyerName',
+        'status',
+        'remark',
+      ],
+    },
   },
   'purchase-inbound': {
     filters: [

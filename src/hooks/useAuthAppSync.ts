@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { reloadCarrierOptions } from '@/api/carrier-options'
+import { reloadSettlementCompanyOptions } from '@/api/company-settings'
 import { reloadCustomerOptions } from '@/api/customer-options'
 import { reloadMaterialCategories } from '@/api/material-categories'
 import { reloadSupplierOptions } from '@/api/supplier-options'
@@ -46,6 +47,7 @@ function refreshMasterDataCaches() {
   void reloadSupplierOptions()
   void reloadCustomerOptions()
   void reloadCarrierOptions()
+  void reloadSettlementCompanyOptions()
   void reloadWarehouseOptions()
   void reloadMaterialCategories()
 }

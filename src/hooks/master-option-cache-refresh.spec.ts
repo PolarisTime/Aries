@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 const {
   fetchMaterialSearchMock,
   reloadCarrierOptionsMock,
+  reloadSettlementCompanyOptionsMock,
   reloadCustomerOptionsMock,
   reloadMaterialCategoriesMock,
   reloadSupplierOptionsMock,
@@ -11,6 +12,7 @@ const {
 } = vi.hoisted(() => ({
   fetchMaterialSearchMock: vi.fn(),
   reloadCarrierOptionsMock: vi.fn(),
+  reloadSettlementCompanyOptionsMock: vi.fn(),
   reloadCustomerOptionsMock: vi.fn(),
   reloadMaterialCategoriesMock: vi.fn(),
   reloadSupplierOptionsMock: vi.fn(),
@@ -20,6 +22,9 @@ const {
 
 vi.mock('@/api/carrier-options', () => ({
   reloadCarrierOptions: reloadCarrierOptionsMock,
+}))
+vi.mock('@/api/company-settings', () => ({
+  reloadSettlementCompanyOptions: reloadSettlementCompanyOptionsMock,
 }))
 vi.mock('@/api/customer-options', () => ({
   reloadCustomerOptions: reloadCustomerOptionsMock,
@@ -46,6 +51,7 @@ vi.mock('@/constants/query-keys', () => ({
       customer: ['master-options', 'customer'],
       material: ['master-options', 'material'],
       materialCategories: ['master-options', 'material-categories'],
+      settlementCompany: ['master-options', 'settlement-company'],
       supplier: ['master-options', 'supplier'],
       warehouse: ['master-options', 'warehouse'],
     },
@@ -91,16 +97,19 @@ describe('master-option-cache-refresh', () => {
     reloadCustomerOptionsMock.mockResolvedValue([])
     reloadSupplierOptionsMock.mockResolvedValue([])
     reloadCarrierOptionsMock.mockResolvedValue([])
+    reloadSettlementCompanyOptionsMock.mockResolvedValue([])
     reloadWarehouseOptionsMock.mockResolvedValue([])
 
     await reloadMasterOptionsForModule('customer')
     await reloadMasterOptionsForModule('supplier')
     await reloadMasterOptionsForModule('carrier')
+    await reloadMasterOptionsForModule('settlement-company')
     await reloadMasterOptionsForModule('warehouse')
 
     expect(reloadCustomerOptionsMock).toHaveBeenCalled()
     expect(reloadSupplierOptionsMock).toHaveBeenCalled()
     expect(reloadCarrierOptionsMock).toHaveBeenCalled()
+    expect(reloadSettlementCompanyOptionsMock).toHaveBeenCalled()
     expect(reloadWarehouseOptionsMock).toHaveBeenCalled()
   })
 })

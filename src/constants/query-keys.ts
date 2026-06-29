@@ -6,6 +6,7 @@ export const QUERY_KEYS = {
   generalSetting: ['general-setting'] as const,
   clientSettings: ['general-setting', 'client-settings'] as const,
   companySetting: ['company-setting'] as const,
+  companySettings: ['company-settings'] as const,
   displaySwitches: ['display-switches'] as const,
   numberRules: ['number-rules'] as const,
 
@@ -40,6 +41,7 @@ export const QUERY_KEYS = {
     customer: ['master-options', 'customer'] as const,
     material: ['master-options', 'material'] as const,
     materialCategories: ['master-options', 'material-categories'] as const,
+    settlementCompany: ['master-options', 'settlement-company'] as const,
     supplier: ['master-options', 'supplier'] as const,
     warehouse: ['master-options', 'warehouse'] as const,
   },

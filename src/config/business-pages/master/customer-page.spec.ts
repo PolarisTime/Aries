@@ -6,6 +6,7 @@ vi.mock('i18next', () => ({
 
 vi.mock('@/constants/module-options', () => ({
   enabledStatusOptions: [],
+  getSettlementCompanyOptions: vi.fn(),
 }))
 
 import { customersPageConfig } from './customer-page'
@@ -35,6 +36,18 @@ describe('customersPageConfig', () => {
 
   it('has formFields', () => {
     expect(customersPageConfig.formFields).toBeDefined()
+  })
+
+  it('has default settlement company field', () => {
+    expect(
+      customersPageConfig.columns.map((column) => column.dataIndex),
+    ).toContain('defaultSettlementCompanyName')
+    expect(customersPageConfig.formFields?.map((field) => field.key)).toContain(
+      'defaultSettlementCompanyId',
+    )
+    expect(customersPageConfig.saveFields?.scalar).toContain(
+      'defaultSettlementCompanyName',
+    )
   })
 
   it('buildOverview returns result', () => {

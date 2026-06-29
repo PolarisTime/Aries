@@ -20,17 +20,21 @@ export function CompanySubjectCard({ canSave }: Props) {
       <Form.Item
         name="companyName"
         label={t('system.companySubject.companyName')}
-        required
+        rules={[{ required: true, whitespace: true }]}
       >
         <Input
-          disabled
+          disabled={!canSave}
           placeholder={t('system.companySubject.companyNamePlaceholder')}
         />
       </Form.Item>
-      <Form.Item name="taxNo" label={t('system.companySubject.taxNo')} required>
+      <Form.Item
+        name="taxNo"
+        label={t('system.companySubject.taxNo')}
+        rules={[{ required: true, whitespace: true }]}
+      >
         <Input
-          disabled
-          placeholder={t('system.companySubject.companyNamePlaceholder')}
+          disabled={!canSave}
+          placeholder={t('system.companySubject.taxNoPlaceholder')}
         />
       </Form.Item>
       <Form.Item

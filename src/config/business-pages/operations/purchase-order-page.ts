@@ -1,6 +1,7 @@
 import i18next from 'i18next'
 import {
   buildValueOptions,
+  getSettlementCompanyOptions,
   getSupplierOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
@@ -61,6 +62,11 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       width: 140,
     },
     {
+      title: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
+      dataIndex: 'settlementCompanyName',
+      width: 180,
+    },
+    {
       title: i18next.t('modules.pages.purchaseOrder.colBuyer'),
       dataIndex: 'buyerName',
       width: 110,
@@ -103,6 +109,11 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.purchaseOrder.colSupplier'),
       key: 'supplierName',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
+      key: 'settlementCompanyName',
       row: 1,
     },
     {
@@ -170,6 +181,14 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       type: 'select',
       required: true,
       options: getSupplierOptions,
+      row: 2,
+    },
+    {
+      key: 'settlementCompanyId',
+      label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
+      type: 'select',
+      required: true,
+      options: getSettlementCompanyOptions,
       row: 2,
     },
     {

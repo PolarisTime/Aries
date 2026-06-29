@@ -1250,6 +1250,8 @@ export interface MessageSchema {
         colContactPhone: string
         colVehicleType: string
         colPriceMode: string
+        colDefaultSettlementCompany: string
+        colDefaultSettlementCompanyId: string
         colVehiclePlate: string
         colVehicleContact: string
         colVehiclePhone: string
@@ -1288,6 +1290,8 @@ export interface MessageSchema {
         colContactPhone: string
         colCity: string
         colSettlementMode: string
+        colDefaultSettlementCompany: string
+        colDefaultSettlementCompanyId: string
         settlementCash: string
         settlementMonthly: string
         settlementCredit: string
@@ -1299,6 +1303,8 @@ export interface MessageSchema {
         filterOrderDate: string
         colOrderNo: string
         colSupplier: string
+        colSettlementCompany: string
+        colSettlementCompanyId: string
         colBuyer: string
         colOrderDate: string
         formTotalWeight: string
@@ -1873,6 +1879,12 @@ export interface MessageSchema {
       subjectStatus: string
       settlementBanks: string
       supplementNote: string
+      subjectList: string
+      addSubject: string
+      noSubjects: string
+      deleteSubject: string
+      deleteSubjectConfirm: string
+      activeSubjects: string
       atLeastOneSettlementAccount: string
       inputAccountName: string
       inputBankName: string

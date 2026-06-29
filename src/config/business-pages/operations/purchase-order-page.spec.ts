@@ -6,6 +6,7 @@ vi.mock('i18next', () => ({
 
 vi.mock('@/constants/module-options', () => ({
   getSupplierOptions: [],
+  getSettlementCompanyOptions: [],
   buildValueOptions: (...args: string[]) =>
     args.map((v) => ({ label: v, value: v })),
 }))
@@ -37,6 +38,15 @@ describe('purchaseOrdersPageConfig', () => {
 
   it('has formFields', () => {
     expect(purchaseOrdersPageConfig.formFields).toBeDefined()
+  })
+
+  it('has settlement company field', () => {
+    expect(
+      purchaseOrdersPageConfig.columns.map((column) => column.dataIndex),
+    ).toContain('settlementCompanyName')
+    expect(
+      purchaseOrdersPageConfig.formFields?.map((field) => field.key),
+    ).toContain('settlementCompanyId')
   })
 
   it('has itemColumns', () => {

@@ -15,6 +15,7 @@ vi.mock('@/constants/module-options', () => ({
   getCustomerOptions: [],
   getCustomerProjectOptions: [],
   getMaterialCategoryOptions: [],
+  getSettlementCompanyOptions: [],
   getSupplierOptions: [],
   getWarehouseOptions: [],
   materialCategoryOptions: [],

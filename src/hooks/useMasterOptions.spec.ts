@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   useQueryMock,
   fetchSupplierOptionsMock,
+  fetchSettlementCompanyOptionsMock,
   fetchCustomerOptionsMock,
   fetchCarrierOptionsMock,
   fetchWarehouseOptionsMock,
@@ -15,11 +16,13 @@ const {
   getCustomerProjectOptionsFn,
   getCarrierOptionsFn,
   getCarrierVehiclePlateOptionsFn,
+  getSettlementCompanyOptionsFn,
   getWarehouseOptionsFn,
   materialCategoryOptionsFn,
 } = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
   fetchSupplierOptionsMock: vi.fn(),
+  fetchSettlementCompanyOptionsMock: vi.fn(),
   fetchCustomerOptionsMock: vi.fn(),
   fetchCarrierOptionsMock: vi.fn(),
   fetchWarehouseOptionsMock: vi.fn(),
@@ -31,6 +34,7 @@ const {
   getCustomerProjectOptionsFn: vi.fn(),
   getCarrierOptionsFn: vi.fn(),
   getCarrierVehiclePlateOptionsFn: vi.fn(),
+  getSettlementCompanyOptionsFn: vi.fn(),
   getWarehouseOptionsFn: vi.fn(),
   materialCategoryOptionsFn: vi.fn(),
 }))
@@ -45,6 +49,10 @@ vi.mock('@/api/carrier-options', () => ({
 
 vi.mock('@/api/customer-options', () => ({
   fetchCustomerOptions: fetchCustomerOptionsMock,
+}))
+
+vi.mock('@/api/company-settings', () => ({
+  fetchSettlementCompanyOptions: fetchSettlementCompanyOptionsMock,
 }))
 
 vi.mock('@/api/material-categories', () => ({
@@ -69,6 +77,7 @@ vi.mock('@/constants/module-options', () => ({
   getCustomerProjectOptions: getCustomerProjectOptionsFn,
   getCarrierOptions: getCarrierOptionsFn,
   getCarrierVehiclePlateOptions: getCarrierVehiclePlateOptionsFn,
+  getSettlementCompanyOptions: getSettlementCompanyOptionsFn,
   getWarehouseOptions: getWarehouseOptionsFn,
   materialCategoryOptions: materialCategoryOptionsFn,
 }))
@@ -79,6 +88,7 @@ vi.mock('@/constants/query-keys', () => ({
       supplier: ['supplier'],
       customer: ['customer'],
       carrier: ['carrier'],
+      settlementCompany: ['settlementCompany'],
       warehouse: ['warehouse'],
       materialCategories: ['materialCategories'],
       material: ['material'],
@@ -116,6 +126,7 @@ describe('useMasterOptions', () => {
     const suppliers = [{ id: '1', name: 'Supplier A' }]
     const customers = [{ id: '1', name: 'Customer A' }]
     const carriers = [{ id: '1', name: 'Carrier A' }]
+    const settlementCompanies = [{ id: 1, companyName: '结算主体A' }]
     const warehouses = [{ value: '1', label: 'Warehouse A' }]
     const materialCategories = [{ value: '1', label: 'Category A' }]
     const materials = [{ id: '1', materialCode: 'M001' }]
@@ -124,6 +135,7 @@ describe('useMasterOptions', () => {
       .mockReturnValueOnce({ data: suppliers, isLoading: false })
       .mockReturnValueOnce({ data: customers, isLoading: false })
       .mockReturnValueOnce({ data: carriers, isLoading: false })
+      .mockReturnValueOnce({ data: settlementCompanies, isLoading: false })
       .mockReturnValueOnce({ data: warehouses, isLoading: false })
       .mockReturnValueOnce({ data: materialCategories, isLoading: false })
       .mockReturnValueOnce({ data: materials, isLoading: false })
@@ -133,6 +145,7 @@ describe('useMasterOptions', () => {
         suppliers: true,
         customers: true,
         carriers: true,
+        settlementCompanies: true,
         warehouses: true,
         materialCategories: true,
         materials: true,
@@ -142,6 +155,7 @@ describe('useMasterOptions', () => {
     expect(result.current.suppliers).toEqual(suppliers)
     expect(result.current.customers).toEqual(customers)
     expect(result.current.carriers).toEqual(carriers)
+    expect(result.current.settlementCompanies).toEqual(settlementCompanies)
     expect(result.current.warehouses).toEqual(warehouses)
     expect(result.current.materialCategories).toEqual(materialCategories)
     expect(result.current.materials).toEqual(materials)
@@ -202,6 +216,7 @@ describe('resolveMasterOptionRequirements', () => {
       customers: false,
       carriers: false,
       warehouses: false,
+      settlementCompanies: false,
       materialCategories: false,
       materials: false,
     })
@@ -247,6 +262,13 @@ describe('resolveMasterOptionRequirements', () => {
       { options: getWarehouseOptionsFn },
     ])
     expect(result.warehouses).toBe(true)
+  })
+
+  it('detects settlement company options', () => {
+    const result = resolveMasterOptionRequirements([
+      { options: getSettlementCompanyOptionsFn },
+    ])
+    expect(result.settlementCompanies).toBe(true)
   })
 
   it('detects material category options', () => {

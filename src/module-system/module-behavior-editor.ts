@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import { getSettlementCompanyOptions } from '@/api/company-settings'
 import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 import { parseDateTimeValue } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
@@ -7,8 +8,37 @@ const currentDateTime = () => dayjs()
 const currentDate = () => dayjs().startOf('day')
 const addOneYear = (value: dayjs.Dayjs) => value.add(1, 'year')
 
+function findSettlementCompanyName(id: unknown) {
+  const normalizedId = Number(id)
+  if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
+    return ''
+  }
+  return (
+    getSettlementCompanyOptions().find(
+      (option) => option.value === normalizedId,
+    )?.companyName || ''
+  )
+}
+
 registerModuleBehavior('carrier', {
   defaultDraftValues: { priceMode: '按吨' },
+  syncEditorForm(editorForm, ctx) {
+    if (ctx.changedKeys.has('defaultSettlementCompanyId')) {
+      editorForm.defaultSettlementCompanyName = findSettlementCompanyName(
+        editorForm.defaultSettlementCompanyId,
+      )
+    }
+  },
+})
+
+registerModuleBehavior('customer', {
+  syncEditorForm(editorForm, ctx) {
+    if (ctx.changedKeys.has('defaultSettlementCompanyId')) {
+      editorForm.defaultSettlementCompanyName = findSettlementCompanyName(
+        editorForm.defaultSettlementCompanyId,
+      )
+    }
+  },
 })
 
 registerModuleBehavior('sales-order', {
@@ -27,6 +57,13 @@ registerModuleBehavior('sales-order', {
 registerModuleBehavior('purchase-order', { defaultOperatorField: 'buyerName' })
 registerModuleBehavior('purchase-order', {
   defaultDraftValues: () => ({ orderDate: currentDateTime() }),
+  syncEditorForm(editorForm, ctx) {
+    if (ctx.changedKeys.has('settlementCompanyId')) {
+      editorForm.settlementCompanyName = findSettlementCompanyName(
+        editorForm.settlementCompanyId,
+      )
+    }
+  },
 })
 registerModuleBehavior('purchase-inbound', {
   defaultOperatorField: 'buyerName',

@@ -9,6 +9,7 @@ import {
   getCarrierOptions as apiGetCarrierOptions,
   getCarrierVehiclePlateOptions as apiGetCarrierVehiclePlateOptions,
 } from '@/api/carrier-options'
+import { getSettlementCompanyOptions as apiGetSettlementCompanyOptions } from '@/api/company-settings'
 import {
   getCustomerOptions as apiGetCustomerOptions,
   getCustomerProjectOptions as apiGetCustomerProjectOptions,
@@ -165,6 +166,17 @@ export function getCarrierOptions() {
 
 export function getCarrierVehiclePlateOptions(form?: ModuleRecordInput) {
   return apiGetCarrierVehiclePlateOptions(form)
+}
+
+// ── Settlement Company ────────────────────────────────────────────────────────
+
+const settlementCompanyFallbackOptions: ReturnType<typeof createOptionList> = []
+
+const _settlementCompanyOptions = settlementCompanyFallbackOptions
+
+export function getSettlementCompanyOptions() {
+  const dynamic = apiGetSettlementCompanyOptions()
+  return dynamic.length > 0 ? dynamic : _settlementCompanyOptions
 }
 
 // ── Warehouse ──────────────────────────────────────────────────────────────────

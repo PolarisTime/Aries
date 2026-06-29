@@ -49,6 +49,7 @@ export {
   getCustomerOptions,
   getCustomerProjectOptions,
   getMaterialCategoryOptions,
+  getSettlementCompanyOptions,
   getSupplierOptions,
   getWarehouseOptions,
   isPurchaseWeighRequiredCategory,

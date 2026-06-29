@@ -81,12 +81,15 @@ describe('CompanySettingsView', () => {
       isPending: false,
     })
     mockUseQuery.mockReturnValue({
-      data: {
-        companyName: 'Test Company',
-        taxNo: '123456',
-        status: '正常',
-        settlementAccounts: [],
-      },
+      data: [
+        {
+          id: '1',
+          companyName: 'Test Company',
+          taxNo: '123456',
+          status: '正常',
+          settlementAccounts: [],
+        },
+      ],
       isLoading: false,
       dataUpdatedAt: Date.now(),
     })
@@ -105,6 +108,12 @@ describe('CompanySettingsView', () => {
   it('renders header component', () => {
     render(<CompanySettingsView />)
     expect(screen.getByTestId('header')).toBeInTheDocument()
+  })
+
+  it('renders settlement subject list', () => {
+    render(<CompanySettingsView />)
+    expect(screen.getByText('system.company.subjectList')).toBeInTheDocument()
+    expect(screen.getByText('Test Company')).toBeInTheDocument()
   })
 
   it('renders subject card', () => {

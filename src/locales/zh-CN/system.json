@@ -46,13 +46,19 @@
     "preview": "预览"
   },
   "company": {
-    "title": "公司信息",
-    "saveSuccess": "公司信息已保存",
-    "enterpriseMode": "企业模式",
-    "singleEnterprise": "单企业",
+    "title": "结算主体管理",
+    "saveSuccess": "结算主体信息已保存",
+    "enterpriseMode": "主体维护",
+    "singleEnterprise": "支持多结算主体",
     "subjectStatus": "主体状态",
     "settlementBanks": "结算银行",
-    "supplementNote": "补充说明"
+    "supplementNote": "补充说明",
+    "subjectList": "结算主体",
+    "addSubject": "新增主体",
+    "noSubjects": "暂无结算主体",
+    "deleteSubject": "删除结算主体",
+    "deleteSubjectConfirm": "确定删除该结算主体吗？已被客户、物流商或采购订单引用的主体不可删除。",
+    "activeSubjects": "正常主体"
   },
   "database": {
     "title": "数据库管理",

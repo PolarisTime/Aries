@@ -1,5 +1,8 @@
 import i18next from 'i18next'
-import { enabledStatusOptions } from '@/constants/module-options'
+import {
+  enabledStatusOptions,
+  getSettlementCompanyOptions,
+} from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, buildMasterOverview, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
@@ -51,6 +54,11 @@ export const carriersPageConfig: ModulePageConfig = {
       dataIndex: 'priceMode',
       width: 100,
       align: 'center',
+    },
+    {
+      title: i18next.t('modules.pages.carrier.colDefaultSettlementCompany'),
+      dataIndex: 'defaultSettlementCompanyName',
+      width: 180,
     },
     {
       title: i18next.t('modules.columns.status'),
@@ -121,6 +129,10 @@ export const carriersPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.carrier.colPriceMode'),
       key: 'priceMode',
+    },
+    {
+      label: i18next.t('modules.pages.carrier.colDefaultSettlementCompany'),
+      key: 'defaultSettlementCompanyName',
     },
     {
       label: i18next.t('modules.columns.status'),
@@ -230,6 +242,14 @@ export const carriersPageConfig: ModulePageConfig = {
       row: 4,
     },
     {
+      key: 'defaultSettlementCompanyId',
+      label: i18next.t('modules.pages.carrier.colDefaultSettlementCompany'),
+      type: 'select',
+      required: true,
+      options: getSettlementCompanyOptions,
+      row: 5,
+    },
+    {
       key: 'status',
       label: i18next.t('modules.columns.status'),
       type: 'select',
@@ -249,4 +269,29 @@ export const carriersPageConfig: ModulePageConfig = {
   buildOverview: (rows) => buildMasterOverview(rows),
   statusMap,
   rowHighlightStatuses: ['禁用'],
+  saveFields: {
+    scalar: [
+      'carrierCode',
+      'carrierName',
+      'contactName',
+      'contactPhone',
+      'vehiclePlate',
+      'vehicleContact',
+      'vehiclePhone',
+      'vehicleRemark',
+      'vehiclePlate2',
+      'vehicleContact2',
+      'vehiclePhone2',
+      'vehicleRemark2',
+      'vehiclePlate3',
+      'vehicleContact3',
+      'vehiclePhone3',
+      'vehicleRemark3',
+      'priceMode',
+      'defaultSettlementCompanyId',
+      'defaultSettlementCompanyName',
+      'status',
+      'remark',
+    ],
+  },
 }

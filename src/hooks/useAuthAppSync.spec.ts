@@ -7,6 +7,7 @@ const {
   loadMenusMock,
   clearMenusMock,
   reloadSupplierOptionsMock,
+  reloadSettlementCompanyOptionsMock,
   reloadCustomerOptionsMock,
   reloadCarrierOptionsMock,
   reloadWarehouseOptionsMock,
@@ -18,6 +19,7 @@ const {
   loadMenusMock: vi.fn().mockResolvedValue(undefined),
   clearMenusMock: vi.fn(),
   reloadSupplierOptionsMock: vi.fn(),
+  reloadSettlementCompanyOptionsMock: vi.fn(),
   reloadCustomerOptionsMock: vi.fn(),
   reloadCarrierOptionsMock: vi.fn(),
   reloadWarehouseOptionsMock: vi.fn(),
@@ -57,6 +59,9 @@ vi.mock('@/api/carrier-options', () => ({
 }))
 vi.mock('@/api/customer-options', () => ({
   reloadCustomerOptions: reloadCustomerOptionsMock,
+}))
+vi.mock('@/api/company-settings', () => ({
+  reloadSettlementCompanyOptions: reloadSettlementCompanyOptionsMock,
 }))
 vi.mock('@/api/material-categories', () => ({
   reloadMaterialCategories: reloadMaterialCategoriesMock,
@@ -134,6 +139,7 @@ describe('useAuthAppSync', () => {
     expect(reloadSupplierOptionsMock).toHaveBeenCalled()
     expect(reloadCustomerOptionsMock).toHaveBeenCalled()
     expect(reloadCarrierOptionsMock).toHaveBeenCalled()
+    expect(reloadSettlementCompanyOptionsMock).toHaveBeenCalled()
     expect(reloadWarehouseOptionsMock).toHaveBeenCalled()
     expect(reloadMaterialCategoriesMock).toHaveBeenCalled()
   })

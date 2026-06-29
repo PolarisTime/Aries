@@ -17,6 +17,10 @@ import {
   saveBusinessModule,
 } from '@/api/business'
 import {
+  fetchSettlementCompanyOptions,
+  getCompanySettingProfile,
+} from '@/api/company-settings'
+import {
   DISPLAY_SWITCH_CODES,
   isDisplaySwitchEnabled,
   listClientSettings,
@@ -198,6 +202,56 @@ function applyAuthoritativePrimaryNo(
   }
   record[primaryNoKey] = authoritativePrimaryNo
   return record
+}
+
+async function resolveDefaultSettlementCompany() {
+  const currentProfile = await getCompanySettingProfile().catch(() => null)
+  const currentId = Number(currentProfile?.id || 0)
+  if (
+    currentProfile?.companyName &&
+    Number.isFinite(currentId) &&
+    currentId > 0
+  ) {
+    return {
+      settlementCompanyId: currentId,
+      settlementCompanyName: currentProfile.companyName,
+    }
+  }
+
+  const options = await fetchSettlementCompanyOptions()
+  const firstOption = options[0]
+  if (!firstOption) {
+    return {}
+  }
+  return {
+    settlementCompanyId: firstOption.value,
+    settlementCompanyName: firstOption.companyName,
+  }
+}
+
+function applyPurchaseOrderDefaultSettlementCompany(
+  moduleKey: string,
+  form: WorkspaceFormApi,
+  isActive: () => boolean,
+) {
+  if (moduleKey !== 'purchase-order') {
+    return
+  }
+
+  void resolveDefaultSettlementCompany()
+    .then((defaults) => {
+      if (!isActive() || !defaults.settlementCompanyId) {
+        return
+      }
+      const currentValues = form.getFieldsValue(true)
+      if (currentValues.settlementCompanyId) {
+        return
+      }
+      form.setFieldsValue(defaults)
+    })
+    .catch(() => {
+      // 结算主体默认值不是创建草稿的硬依赖，保留必填校验兜底。
+    })
 }
 
 function editorWorkspaceReducer(
@@ -383,6 +437,7 @@ export function useModuleEditorWorkspace({
         getCurrentOperatorName(),
       )
       form.setFieldsValue(defaultDraft)
+      applyPurchaseOrderDefaultSettlementCompany(moduleKey, form, () => active)
       const draftItems = autoInsertBlankItemOnCreate
         ? [buildDefaultEditorLineItem(undefined, moduleKey)]
         : []

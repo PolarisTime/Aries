@@ -2,6 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 
 import { type CarrierOption, fetchCarrierOptions } from '@/api/carrier-options'
 import {
+  fetchSettlementCompanyOptions,
+  type SettlementCompanyOption,
+} from '@/api/company-settings'
+import {
   type CustomerOption,
   fetchCustomerOptions,
 } from '@/api/customer-options'
@@ -17,6 +21,7 @@ import {
   getCarrierVehiclePlateOptions,
   getCustomerOptions,
   getCustomerProjectOptions,
+  getSettlementCompanyOptions,
   getSupplierOptions,
   getWarehouseOptions,
   materialCategoryOptions,
@@ -28,6 +33,7 @@ interface MasterOptions {
   suppliers: SupplierOption[]
   customers: CustomerOption[]
   carriers: CarrierOption[]
+  settlementCompanies: SettlementCompanyOption[]
   warehouses: { value: string; label: string }[]
   materialCategories: { value: string; label: string }[]
   materials: Array<{
@@ -53,6 +59,7 @@ export interface MasterOptionRequirements {
   suppliers?: boolean
   customers?: boolean
   carriers?: boolean
+  settlementCompanies?: boolean
   warehouses?: boolean
   materialCategories?: boolean
   materials?: boolean
@@ -67,6 +74,7 @@ function emptyRequirements(): MasterOptionRequirements {
     suppliers: false,
     customers: false,
     carriers: false,
+    settlementCompanies: false,
     warehouses: false,
     materialCategories: false,
     materials: false,
@@ -110,6 +118,11 @@ export function resolveMasterOptionRequirements(
       continue
     }
 
+    if (options === getSettlementCompanyOptions) {
+      requirements.settlementCompanies = true
+      continue
+    }
+
     if (options === materialCategoryOptions) {
       requirements.materialCategories = true
     }
@@ -127,6 +140,7 @@ export function useMasterOptions(
     suppliers: Boolean(requirements.suppliers),
     customers: Boolean(requirements.customers),
     carriers: Boolean(requirements.carriers),
+    settlementCompanies: Boolean(requirements.settlementCompanies),
     warehouses: Boolean(requirements.warehouses),
     materialCategories: Boolean(requirements.materialCategories),
     materials: Boolean(requirements.materials),
@@ -152,6 +166,16 @@ export function useMasterOptions(
     queryKey: QUERY_KEYS.masterOptions.carrier,
     queryFn: fetchCarrierOptions,
     enabled: queryEnabled && normalizedRequirements.carriers,
+    staleTime: 300_000,
+  })
+
+  const {
+    data: settlementCompanies = [],
+    isLoading: settlementCompaniesLoading,
+  } = useQuery({
+    queryKey: QUERY_KEYS.masterOptions.settlementCompany,
+    queryFn: fetchSettlementCompanyOptions,
+    enabled: queryEnabled && normalizedRequirements.settlementCompanies,
     staleTime: 300_000,
   })
 
@@ -183,6 +207,7 @@ export function useMasterOptions(
     suppliers,
     customers,
     carriers,
+    settlementCompanies,
     warehouses,
     materialCategories,
     materials,
@@ -190,6 +215,7 @@ export function useMasterOptions(
       suppliersLoading ||
       customersLoading ||
       carriersLoading ||
+      settlementCompaniesLoading ||
       warehousesLoading ||
       materialCategoriesLoading ||
       materialsLoading,

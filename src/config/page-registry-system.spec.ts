@@ -64,7 +64,7 @@ describe('systemPageDefinitions', () => {
   it('defines company-setting page', () => {
     const page = systemPageDefinitions.find((d) => d.key === 'company-setting')
     expect(page).toBeDefined()
-    expect(page!.title).toBe('公司信息')
+    expect(page!.title).toBe('结算主体管理')
     expect(page!.menuParent).toBe('system')
     expect(page!.moduleKey).toBe('company-setting')
     expect(page!.resourceKey).toBe('company-setting')

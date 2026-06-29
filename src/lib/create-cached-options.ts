@@ -1,9 +1,9 @@
 import { http } from '@/api/client'
 import type { ApiResponse } from '@/types/api'
 
-export type CachedOptionsConfig<T> = {
+export type CachedOptionsConfig<T, TRaw = T> = {
   endpoint: string
-  normalizer?: (data: T[]) => T[]
+  normalizer?: (data: TRaw[]) => T[]
 }
 
 export type CachedOptionsReturn<T> = {
@@ -12,8 +12,8 @@ export type CachedOptionsReturn<T> = {
   reload: () => Promise<T[]>
 }
 
-export function createCachedOptions<T>(
-  config: CachedOptionsConfig<T>,
+export function createCachedOptions<T, TRaw = T>(
+  config: CachedOptionsConfig<T, TRaw>,
 ): CachedOptionsReturn<T> {
   const { endpoint, normalizer } = config
 
@@ -26,9 +26,9 @@ export function createCachedOptions<T>(
     if (loading) return loading
 
     loading = (async () => {
-      const response = await http.get<ApiResponse<T[]>>(endpoint)
+      const response = await http.get<ApiResponse<TRaw[]>>(endpoint)
       const data = response.data || []
-      cached = normalizer ? normalizer(data) : data
+      cached = normalizer ? normalizer(data) : (data as unknown as T[])
       fetchFailed = false
       return cached
     })()

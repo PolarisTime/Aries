@@ -58,6 +58,7 @@ describe('ENDPOINTS', () => {
 
   it('has all required settings endpoints', () => {
     expect(ENDPOINTS.COMPANY_SETTINGS).toBe('/company-settings')
+    expect(ENDPOINTS.COMPANY_SETTINGS_OPTIONS).toBe('/company-settings/options')
     expect(ENDPOINTS.COMPANY_NAME).toBe('/company-settings/name')
     expect(ENDPOINTS.GENERAL_SETTING_CLIENT_SETTINGS).toBe(
       '/general-settings/client-setting',
@@ -104,6 +105,7 @@ describe('ENDPOINTS', () => {
       'SYSTEM_MENUS_TREE',
       'COMPANY_SETTINGS',
       'COMPANY_SETTINGS_CURRENT',
+      'COMPANY_SETTINGS_OPTIONS',
       'COMPANY_NAME',
       'HEALTH',
       'DASHBOARD_SUMMARY',

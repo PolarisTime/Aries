@@ -104,6 +104,10 @@ describe('QUERY_KEYS', () => {
       'master-options',
       'material-categories',
     ])
+    expect(QUERY_KEYS.masterOptions.settlementCompany).toEqual([
+      'master-options',
+      'settlement-company',
+    ])
     expect(QUERY_KEYS.masterOptions.supplier).toEqual([
       'master-options',
       'supplier',
