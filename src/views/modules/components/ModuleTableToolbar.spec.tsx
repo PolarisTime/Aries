@@ -32,7 +32,7 @@ vi.mock('antd', () => ({
     gap: _gap,
     ...props
   }: any) => <div {...props}>{children}</div>,
-  Pagination: ({ showTotal, onChange, itemRender, total, ...props }: any) => (
+  Pagination: ({ showTotal, onChange, itemRender, total }: any) => (
     <div data-testid="pagination">
       {showTotal?.(total)}
       <button data-testid="page-change" onClick={() => onChange?.(2, 20)} />

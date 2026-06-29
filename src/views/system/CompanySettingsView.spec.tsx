@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 const mockUseQuery = vi.fn()
@@ -40,32 +40,6 @@ vi.mock('@/lib/antd-form', () => ({
   getFormString: () => '',
 }))
 
-vi.mock('@/views/system/CompanySettingsHeader', () => ({
-  CompanySettingsHeader: ({
-    overviewItems,
-  }: {
-    overviewItems: Array<{ label: string; value: string }>
-  }) => (
-    <div data-testid="header">
-      {overviewItems.map((item: { label: string; value: string }) => (
-        <div key={item.label}>
-          {item.label}: {item.value}
-        </div>
-      ))}
-    </div>
-  ),
-}))
-
-vi.mock('@/views/system/CompanySubjectCard', () => ({
-  CompanySubjectCard: () => <div data-testid="subject-card">Subject</div>,
-}))
-
-vi.mock('@/views/system/CompanySettlementAccountsCard', () => ({
-  CompanySettlementAccountsCard: () => (
-    <div data-testid="settlement-card">Settlement</div>
-  ),
-}))
-
 import { CompanySettingsView } from '@/views/system/CompanySettingsView'
 
 describe('CompanySettingsView', () => {
@@ -100,14 +74,12 @@ describe('CompanySettingsView', () => {
     expect(typeof CompanySettingsView).toBe('function')
   })
 
-  it('renders the info alert', () => {
+  it('renders page header actions without summary cards', () => {
     render(<CompanySettingsView />)
-    expect(screen.getByText('system.company.title')).toBeInTheDocument()
-  })
-
-  it('renders header component', () => {
-    render(<CompanySettingsView />)
-    expect(screen.getByTestId('header')).toBeInTheDocument()
+    expect(screen.getByText('system.companyHeader.title')).toBeInTheDocument()
+    expect(screen.getByText('common.refresh')).toBeInTheDocument()
+    expect(screen.getAllByText('common.save').length).toBeGreaterThan(0)
+    expect(screen.queryByText('system.company.enterpriseMode')).toBeNull()
   })
 
   it('renders settlement subject list', () => {
@@ -116,14 +88,48 @@ describe('CompanySettingsView', () => {
     expect(screen.getByText('Test Company')).toBeInTheDocument()
   })
 
-  it('renders subject card', () => {
-    render(<CompanySettingsView />)
-    expect(screen.getByTestId('subject-card')).toBeInTheDocument()
+  it('switches selected subject and syncs form values', () => {
+    mockUseQuery.mockReturnValue({
+      data: [
+        {
+          id: '1',
+          companyName: 'Test Company',
+          taxNo: '123456',
+          status: '正常',
+          settlementAccounts: [],
+        },
+        {
+          id: '2',
+          companyName: 'Second Company',
+          taxNo: '654321',
+          status: '正常',
+          settlementAccounts: [],
+        },
+      ],
+      isLoading: false,
+      dataUpdatedAt: Date.now(),
+    })
+
+    const { container } = render(<CompanySettingsView />)
+    fireEvent.click(screen.getByRole('button', { name: /Second Company/ }))
+
+    const activeItem = container.querySelector(
+      '.company-subject-selector-item.is-active',
+    )
+    expect(activeItem).toHaveTextContent('Second Company')
+    expect(screen.getByDisplayValue('Second Company')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('654321')).toBeInTheDocument()
   })
 
-  it('renders settlement card', () => {
+  it('renders collapse sections for profile, banks and remark', () => {
     render(<CompanySettingsView />)
-    expect(screen.getByTestId('settlement-card')).toBeInTheDocument()
+    expect(screen.getByText('system.companySubject.sectionTitle')).toBeTruthy()
+    expect(screen.getByText('system.company.settlementBanks')).toBeTruthy()
+    expect(screen.getByText('system.company.supplementNote')).toBeTruthy()
+    expect(screen.getByText('system.companySubject.companyName')).toBeTruthy()
+    expect(
+      screen.getAllByText('system.company.bankAccount').length,
+    ).toBeGreaterThan(0)
   })
 
   it('shows skeleton when loading', () => {

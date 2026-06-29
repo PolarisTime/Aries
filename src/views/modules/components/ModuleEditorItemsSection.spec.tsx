@@ -34,7 +34,7 @@ vi.mock('./EditorFooterActions', () => ({
 }))
 
 vi.mock('./ModuleItemsPanel', () => ({
-  ModuleItemsPanel: ({ children, actions, ...props }: any) => (
+  ModuleItemsPanel: ({ children, actions }: any) => (
     <div data-testid="items-panel">
       <div>{actions}</div>
       {children}

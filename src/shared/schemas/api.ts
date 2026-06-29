@@ -66,12 +66,9 @@ export const enabledStatusSchema = z.enum(['正常', '禁用'])
 export type EnabledStatus = z.infer<typeof enabledStatusSchema>
 
 /** 结算主体下拉选项 */
-export const settlementCompanyOptionSchema = z.object({
-  id: z.number(),
-  companyName: z.string(),
-  taxNo: z.string().optional(),
-  status: z.string().optional(),
-})
-export type SettlementCompanyOption = z.infer<
-  typeof settlementCompanyOptionSchema
->
+export interface SettlementCompanyOption {
+  id: number
+  companyName: string
+  taxNo?: string
+  status?: string
+}

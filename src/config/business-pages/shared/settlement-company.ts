@@ -3,7 +3,7 @@ import { asString } from '@/utils/type-narrowing'
 
 export const SETTLEMENT_COMPANY_LABEL = '结算主体'
 
-export function normalizeSettlementCompanyId(value: unknown) {
+function normalizeSettlementCompanyId(value: unknown) {
   return asString(value).trim()
 }
 

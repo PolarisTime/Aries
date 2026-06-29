@@ -4,6 +4,15 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
+const nonProjectServiceFiles = [
+  '**/*.spec.{ts,tsx}',
+  'src/api/idempotency.ts',
+  'src/api/module-save-payload.ts',
+  'src/api/system-settings.ts',
+  'src/layouts/global-search.ts',
+  'src/config/page-registry-finance.ts',
+]
+
 export default tseslint.config(
   {
     ignores: [
@@ -68,6 +77,17 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+    },
+  },
+
+  // ── tsconfig.app.json 明确排除的测试/兼容文件 ───────────
+  {
+    extends: [tseslint.configs.disableTypeChecked],
+    files: nonProjectServiceFiles,
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+      },
     },
   },
 
@@ -143,9 +163,44 @@ export default tseslint.config(
   {
     files: ['**/*.spec.{ts,tsx}'],
     rules: {
+      '@typescript-eslint/ban-ts-comment': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+      'no-loss-of-precision': 'off',
+    },
+  },
+
+  {
+    files: ['src/test/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'off',
+    },
+  },
+
+  // ── 历史兼容桥接文件 ─────────────────────────────────
+  {
+    files: [
+      'src/api/idempotency.ts',
+      'src/api/module-save-payload.ts',
+      'src/api/system-settings.ts',
+      'src/config/page-registry-finance.ts',
+      'src/layouts/global-search.ts',
+    ],
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 )

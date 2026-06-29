@@ -61,14 +61,7 @@ vi.mock('antd/es/typography', () => ({
 }))
 
 vi.mock('@/components/AppResultModal', () => ({
-  AppResultModal: ({
-    open,
-    subTitle,
-    traceId,
-    footer,
-    onClose,
-    ...props
-  }: any) =>
+  AppResultModal: ({ open, subTitle, traceId, footer }: any) =>
     open ? (
       <div data-testid="result-modal">
         <div>{subTitle}</div>

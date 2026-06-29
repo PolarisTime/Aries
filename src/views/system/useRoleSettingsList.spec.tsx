@@ -45,11 +45,7 @@ describe('useRoleSettingsList', () => {
   })
 
   it('passes query function that fetches all pages', async () => {
-    mockUseQuery.mockImplementation(
-      ({ queryFn }: { queryFn: () => Promise<unknown> }) => {
-        return { data: [] }
-      },
-    )
+    mockUseQuery.mockImplementation(() => ({ data: [] }))
     renderHook(() => useRoleSettingsList())
     expect(mockUseQuery).toHaveBeenCalled()
   })

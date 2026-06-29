@@ -82,7 +82,7 @@ vi.mock('./piece-weight-source', () => ({
 }))
 
 vi.mock('./WorkspaceOverlay', () => ({
-  WorkspaceOverlay: ({ children, title, open, ...props }: any) =>
+  WorkspaceOverlay: ({ children, title, open }: any) =>
     open ? (
       <div data-testid="workspace-overlay">
         <div>{title}</div>

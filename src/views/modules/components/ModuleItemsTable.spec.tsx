@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('antd', () => {
-  const Table = ({ columns, dataSource, emptyText, ...props }: any) => (
+  const Table = ({ columns, dataSource, emptyText }: any) => (
     <table data-testid="table">
       <thead>
         <tr>

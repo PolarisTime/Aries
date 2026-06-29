@@ -75,7 +75,7 @@ vi.mock('@/utils/type-narrowing', () => ({
 }))
 
 vi.mock('./WorkspaceOverlay', () => ({
-  WorkspaceOverlay: ({ children, title, open, ...props }: any) =>
+  WorkspaceOverlay: ({ children, title, open }: any) =>
     open ? (
       <div data-testid="overlay">
         <div>{title}</div>

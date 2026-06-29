@@ -7,6 +7,8 @@ import { Alert, Button, Input, Space } from 'antd'
 import type { KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
+const InputOtp = Input.OTP
+
 interface Props {
   countdownText: string
   isExpired: boolean
@@ -75,7 +77,7 @@ export function LoginTotpPanel({
         size="middle"
         className="w-full login-totp-actions"
       >
-        <Input.OTP
+        <InputOtp
           length={6}
           data-testid="login-totp-code"
           aria-label={t('auth.totppanel.inputAria')}

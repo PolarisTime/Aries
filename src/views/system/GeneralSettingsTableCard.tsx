@@ -70,7 +70,7 @@ function resolveBasicGroupKey(record: ModuleRecord): BasicGroupKey {
   return 'other'
 }
 
-function renderSettingValue(value: ReactNode) {
+function SettingValue({ value }: { value: ReactNode }) {
   return <span className="general-settings-config-value">{value}</span>
 }
 
@@ -206,7 +206,7 @@ export function GeneralSettingsTableCard({
                           ) : null}
                         </div>
                         <div className="general-settings-config-side">
-                          {renderSettingValue(formatSettingValue(record))}
+                          <SettingValue value={formatSettingValue(record)} />
                           <Tooltip
                             title={t('system.generalSettingsTable.edit')}
                           >
