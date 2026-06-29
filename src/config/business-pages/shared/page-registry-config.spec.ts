@@ -3,6 +3,7 @@ import { invoicePageConfigs } from '../finance/invoice-pages'
 import { paymentPageConfigs } from '../finance/payment-pages'
 import { masterMaterialPageConfigs } from '../master/master-material-pages'
 import { masterPartyPageConfigs } from '../master/master-party-pages'
+import { masterSettlementCompanyPageConfigs } from '../master/master-settlement-company-pages'
 import { masterWarehousePageConfigs } from '../master/master-warehouse-pages'
 import { contractOperationsPageConfigs } from '../operations/contract-operations'
 import { purchaseOperationsPageConfigs } from '../operations/purchase-operations'
@@ -69,6 +70,13 @@ describe('masterWarehousePageConfigs', () => {
     expect(warehouse.primaryNoKey).toBe('warehouseCode')
     expect(Array.isArray(warehouse.filters)).toBe(true)
     expect(warehouse.filters.length).toBeGreaterThanOrEqual(2)
+  })
+})
+
+describe('masterSettlementCompanyPageConfigs', () => {
+  it('contains settlement company config', () => {
+    const config = masterSettlementCompanyPageConfigs['company-setting']
+    expect(config.key).toBe('company-setting')
   })
 })
 

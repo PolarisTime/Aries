@@ -5,6 +5,7 @@ import {
   buildValueOptions,
   getCustomerOptions,
   getCustomerProjectOptions,
+  getSettlementCompanyOptions,
 } from '@/constants/module-options'
 import {
   DISPLAY_WEIGHT_PRECISION,
@@ -16,6 +17,7 @@ import {
   CUSTOMER_NAME_LABEL,
   ORDER_NO_FILTER_LABEL,
 } from '../shared/filter-labels'
+import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import {
   actionSet,
   buildAmountWeightOverview,
@@ -75,6 +77,12 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.salesOrder.filterProjectName'),
       type: 'select',
       options: getCustomerProjectOptions,
+    },
+    {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
     },
   ],
   columns: [
@@ -184,6 +192,11 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
+      label: SETTLEMENT_COMPANY_LABEL,
+      key: 'settlementCompanyName',
+      row: 2,
+    },
+    {
       label: i18next.t('modules.pages.salesOrder.colDeliveryDate'),
       key: 'deliveryDate',
       type: 'date',
@@ -257,6 +270,13 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
+      row: 2,
+    },
+    {
       key: 'deliveryDate',
       label: i18next.t('modules.pages.salesOrder.colDeliveryDate'),
       type: 'date',
@@ -280,6 +300,9 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     remainingQuantityKey: 'salesRemainingQuantity',
     candidateQueryType: 'purchase-order-import',
     candidateUsage: 'sales-order',
+    mapParentToDraft: (parentRecord) => ({
+      purchaseOrderNo: parentRecord.orderNo || '',
+    }),
     transformItems: (parentRecord) =>
       cloneLineItems(
         Array.isArray(parentRecord.items)

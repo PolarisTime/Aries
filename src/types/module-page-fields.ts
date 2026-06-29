@@ -24,7 +24,7 @@ export type ModuleFormFieldType =
 
 export interface ModuleFilterOption {
   label: string
-  value: string
+  value: string | number | boolean
 }
 
 export interface ModuleFilterOptionGroup {
@@ -47,6 +47,8 @@ export interface ModuleFormFieldOption {
   customerName?: string
   projectName?: string
   projectNameAbbr?: string
+  settlementCompanyId?: string | number
+  settlementCompanyName?: string
   purchaseWeighRequired?: boolean
   purchaseWeighOverTolerancePercent?: number
   purchaseWeighUnderTolerancePercent?: number

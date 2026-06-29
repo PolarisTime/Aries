@@ -51,4 +51,12 @@ describe('module-contracts-master', () => {
     expect(config.path).toBe('/warehouses')
     expect(config.nativeFilterKeys).toContain('warehouseType')
   })
+
+  it('contains settlement company config', () => {
+    const config = masterModuleEndpointContracts['company-setting']
+    expect(config).toBeDefined()
+    expect(config.path).toBe('/company-settings')
+    expect(config.nativeFilterKeys).toContain('keyword')
+    expect(config.nativeFilterKeys).toContain('status')
+  })
 })

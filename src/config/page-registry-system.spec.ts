@@ -61,15 +61,6 @@ describe('systemPageDefinitions', () => {
     expect(page!.hiddenInMenu).toBeUndefined()
   })
 
-  it('defines company-setting page', () => {
-    const page = systemPageDefinitions.find((d) => d.key === 'company-setting')
-    expect(page).toBeDefined()
-    expect(page!.title).toBe('结算主体管理')
-    expect(page!.menuParent).toBe('system')
-    expect(page!.moduleKey).toBe('company-setting')
-    expect(page!.resourceKey).toBe('company-setting')
-  })
-
   it('defines operation-log page', () => {
     const page = systemPageDefinitions.find((d) => d.key === 'operation-log')
     expect(page).toBeDefined()
@@ -151,5 +142,11 @@ describe('systemPageDefinitions', () => {
     for (const page of systemPageDefinitions) {
       expect(page.menuParent).toBe('system')
     }
+  })
+
+  it('does not include settlement company management in system settings', () => {
+    expect(
+      systemPageDefinitions.some((page) => page.key === 'company-setting'),
+    ).toBe(false)
   })
 })

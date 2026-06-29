@@ -1,7 +1,11 @@
 import i18next from 'i18next'
-import { customerOptions } from '@/constants/module-options'
+import {
+  customerOptions,
+  getSettlementCompanyOptions,
+} from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from '../shared/filter-labels'
+import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import { buildFinanceOverview, statusMap } from '../shared/shared'
 
 export const receiptsPageConfig: ModulePageConfig = {
@@ -32,6 +36,12 @@ export const receiptsPageConfig: ModulePageConfig = {
         { label: i18next.t('modules.pages.receipt.draft'), value: '草稿' },
         { label: i18next.t('modules.pages.receipt.received'), value: '已收款' },
       ],
+    },
+    {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
     },
     {
       key: 'receiptDate',
@@ -112,6 +122,11 @@ export const receiptsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.receipt.relatedStatement'),
       key: 'sourceStatementId',
       row: 1,
+    },
+    {
+      label: SETTLEMENT_COMPANY_LABEL,
+      key: 'settlementCompanyName',
+      row: 2,
     },
     {
       label: i18next.t('modules.pages.receipt.receiptDate'),
@@ -256,6 +271,8 @@ export const receiptsPageConfig: ModulePageConfig = {
       'customerCode',
       'customerName',
       'projectName',
+      'settlementCompanyId',
+      'settlementCompanyName',
       'sourceStatementId',
       'receiptDate',
       'payType',

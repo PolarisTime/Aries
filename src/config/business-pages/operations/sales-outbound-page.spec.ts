@@ -34,6 +34,8 @@ describe('salesOutboundPageConfig', () => {
       expect(draft).toEqual({
         customerName: '客户A',
         projectName: '项目X',
+        settlementCompanyId: undefined,
+        settlementCompanyName: '',
       })
     })
 

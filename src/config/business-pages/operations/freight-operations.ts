@@ -2,6 +2,7 @@ import i18next from 'i18next'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
+  getSettlementCompanyOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -10,6 +11,7 @@ import {
   CARRIER_NAME_LABEL,
   FREIGHT_NO_FILTER_LABEL,
 } from '../shared/filter-labels'
+import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import {
   buildAmountWeightOverview,
   compactFreightItemColumns,
@@ -61,6 +63,12 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         label: CARRIER_NAME_LABEL,
         type: 'select',
         options: getCarrierOptions,
+      },
+      {
+        key: 'settlementCompanyId',
+        label: SETTLEMENT_COMPANY_LABEL,
+        type: 'select',
+        options: getSettlementCompanyOptions,
       },
       {
         key: 'status',
@@ -149,6 +157,10 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         key: 'carrierName',
       },
       {
+        label: SETTLEMENT_COMPANY_LABEL,
+        key: 'settlementCompanyName',
+      },
+      {
         label: i18next.t('modules.pages.freightOperations.vehiclePlate'),
         key: 'vehiclePlate',
       },
@@ -214,6 +226,13 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         type: 'select',
         required: true,
         options: getCarrierOptions,
+        row: 1,
+      },
+      {
+        key: 'settlementCompanyId',
+        label: SETTLEMENT_COMPANY_LABEL,
+        type: 'select',
+        options: getSettlementCompanyOptions,
         row: 1,
       },
       {

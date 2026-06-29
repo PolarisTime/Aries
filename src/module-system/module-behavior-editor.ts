@@ -8,7 +8,7 @@ const currentDateTime = () => dayjs()
 const currentDate = () => dayjs().startOf('day')
 const addOneYear = (value: dayjs.Dayjs) => value.add(1, 'year')
 
-function findSettlementCompanyName(id: unknown) {
+function findSettlementCompanyName(id: unknown, fallback = '') {
   const normalizedId = Number(id)
   if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
     return ''
@@ -16,7 +16,7 @@ function findSettlementCompanyName(id: unknown) {
   return (
     getSettlementCompanyOptions().find(
       (option) => option.value === normalizedId,
-    )?.companyName || ''
+    )?.companyName || fallback
   )
 }
 
@@ -65,6 +65,31 @@ registerModuleBehavior('purchase-order', {
     }
   },
 })
+const settlementCompanySnapshotModules = [
+  'purchase-inbound',
+  'sales-order',
+  'sales-outbound',
+  'freight-bill',
+  'supplier-statement',
+  'customer-statement',
+  'freight-statement',
+  'receipt',
+  'invoice-issue',
+]
+
+for (const key of settlementCompanySnapshotModules) {
+  registerModuleBehavior(key, {
+    syncEditorForm(editorForm, ctx) {
+      if (ctx.changedKeys.has('settlementCompanyId')) {
+        editorForm.settlementCompanyName = findSettlementCompanyName(
+          editorForm.settlementCompanyId,
+          asString(editorForm.settlementCompanyName),
+        )
+      }
+    },
+  })
+}
+
 registerModuleBehavior('purchase-inbound', {
   defaultOperatorField: 'buyerName',
   defaultDraftValues: () => ({ inboundDate: currentDateTime() }),

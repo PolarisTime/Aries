@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
+import dayjs from 'dayjs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   allocateBusinessPrimaryNo,
@@ -39,16 +40,6 @@ const mockFns = vi.hoisted(() => ({
 vi.mock('@tanstack/react-query', () => ({
   useQuery: vi.fn().mockReturnValue({ data: [] }),
 }))
-
-vi.mock('dayjs', () => {
-  const dayjs = (_v?: unknown) => ({
-    isValid: () => true,
-    format: () => '',
-    valueOf: () => 0,
-  })
-  dayjs.isDayjs = () => false
-  return { default: dayjs }
-})
 
 vi.mock('i18next', () => ({
   default: { t: mockFns.translate },
@@ -462,6 +453,112 @@ describe('useModuleEditorWorkspace', () => {
     )
     expect(result.current.isEdit).toBe(true)
     expect(result.current.items).toEqual([{ id: 'line-1' }])
+  })
+
+  it('keeps original time when saving an edited date-only field', async () => {
+    vi.mocked(parseDateTimeValue).mockImplementation((value) => dayjs(value))
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      orderNo: 'ORD-001',
+      billDate: dayjs('2026-01-02'),
+    })
+
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+      record: {
+        id: 'r-1',
+        orderNo: 'ORD-001',
+        billDate: '2026-01-01 12:34:56',
+      },
+      config: cfg({
+        primaryNoKey: '',
+        formFields: [{ key: 'billDate', label: '单据日期', type: 'date' }],
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(saveBusinessModule).toHaveBeenCalledWith(
+      'test-module',
+      expect.objectContaining({
+        billDate: expect.objectContaining({
+          format: expect.any(Function),
+        }),
+      }),
+    )
+    const savedRecord = vi.mocked(saveBusinessModule).mock.calls[0]?.[1]
+    expect(savedRecord?.billDate).toBeDefined()
+    expect(dayjs.isDayjs(savedRecord?.billDate)).toBe(true)
+    expect(dayjs(savedRecord?.billDate).format('YYYY-MM-DD HH:mm:ss')).toBe(
+      '2026-01-02 12:34:56',
+    )
+  })
+
+  it('fills current time when saving a new date-only field', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-04T09:08:07+08:00'))
+    vi.mocked(parseDateTimeValue).mockImplementation((value) => dayjs(value))
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      orderNo: 'ORD-001',
+      billDate: dayjs('2026-01-02'),
+    })
+
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+      config: cfg({
+        primaryNoKey: '',
+        formFields: [{ key: 'billDate', label: '单据日期', type: 'date' }],
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    const savedRecord = vi.mocked(saveBusinessModule).mock.calls[0]?.[1]
+    expect(dayjs(savedRecord?.billDate).format('YYYY-MM-DD HH:mm:ss')).toBe(
+      '2026-01-02 09:08:07',
+    )
+    vi.useRealTimers()
+  })
+
+  it('preserves explicitly selected time when date field enables showTime', async () => {
+    vi.mocked(parseDateTimeValue).mockImplementation((value) => dayjs(value))
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      orderNo: 'ORD-001',
+      billDate: dayjs('2026-01-02 03:04:05'),
+    })
+
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+      record: {
+        id: 'r-1',
+        orderNo: 'ORD-001',
+        billDate: '2026-01-01 12:34:56',
+      },
+      config: cfg({
+        primaryNoKey: '',
+        formFields: [
+          { key: 'billDate', label: '单据时间', type: 'date', showTime: true },
+        ],
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    const savedRecord = vi.mocked(saveBusinessModule).mock.calls[0]?.[1]
+    expect(dayjs(savedRecord?.billDate).format('YYYY-MM-DD HH:mm:ss')).toBe(
+      '2026-01-02 03:04:05',
+    )
   })
 
   it('uses the original server primary number when saving an edited document', async () => {

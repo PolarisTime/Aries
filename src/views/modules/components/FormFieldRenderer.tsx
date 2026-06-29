@@ -141,8 +141,11 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           placeholder={placeholder}
           allowClear={allowClear}
           disabled={disabledValue}
-          format={field.dateFormat || 'YYYY-MM-DD HH:mm:ss'}
-          showTime={field.showTime === false ? false : { format: 'HH:mm:ss' }}
+          format={
+            field.dateFormat ||
+            (field.showTime === true ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD')
+          }
+          showTime={field.showTime === true ? { format: 'HH:mm:ss' } : false}
           className="w-full"
         />,
       )

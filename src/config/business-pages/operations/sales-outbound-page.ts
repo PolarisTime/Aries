@@ -3,6 +3,7 @@ import {
   buildValueOptions,
   getCustomerOptions,
   getCustomerProjectOptions,
+  getSettlementCompanyOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import {
@@ -71,6 +72,12 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.salesOutbound.filterProjectName'),
       type: 'select',
       options: getCustomerProjectOptions,
+    },
+    {
+      key: 'settlementCompanyId',
+      label: '结算主体',
+      type: 'select',
+      options: getSettlementCompanyOptions,
     },
   ],
   columns: [
@@ -145,6 +152,11 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
+      label: '结算主体',
+      key: 'settlementCompanyName',
+      row: 2,
+    },
+    {
       label: i18next.t('modules.pages.salesOutbound.colOutboundDate'),
       key: 'outboundDate',
       type: 'date',
@@ -204,6 +216,13 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
+      key: 'settlementCompanyId',
+      label: '结算主体',
+      type: 'select',
+      options: getSettlementCompanyOptions,
+      row: 2,
+    },
+    {
       key: 'outboundDate',
       label: i18next.t('modules.pages.salesOutbound.colOutboundDate'),
       type: 'date',
@@ -227,6 +246,8 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
     mapParentToDraft: (parentRecord) => ({
       customerName: parentRecord.customerName || '',
       projectName: parentRecord.projectName || '',
+      settlementCompanyId: parentRecord.settlementCompanyId,
+      settlementCompanyName: parentRecord.settlementCompanyName || '',
     }),
     transformItems: (parentRecord) =>
       cloneLineItems(

@@ -34,16 +34,22 @@ describe('freightStatementPageConfig', () => {
     it('buildParentFilters filters by carrier and status', () => {
       const filters = pi.buildParentFilters!({
         carrierName: ' 承运商A ',
+        settlementCompanyId: 9,
       } as any)
       expect(filters).toEqual({
         carrierName: '承运商A',
+        settlementCompanyId: 9,
         status: '已审核',
       })
     })
 
     it('buildParentFilters handles empty carrierName', () => {
       const filters = pi.buildParentFilters!({ carrierName: '' } as any)
-      expect(filters).toEqual({ carrierName: '', status: '已审核' })
+      expect(filters).toEqual({
+        carrierName: '',
+        settlementCompanyId: undefined,
+        status: '已审核',
+      })
     })
 
     it('validateBeforeOpen returns null when carrierName is present', () => {
@@ -62,9 +68,13 @@ describe('freightStatementPageConfig', () => {
       const draft = pi.mapParentToDraft!({
         carrierName: '承运商A',
         billTime: '2024-01-15',
+        settlementCompanyId: 9,
+        settlementCompanyName: '主体C',
       } as any)
       expect(draft).toEqual({
         carrierName: '承运商A',
+        settlementCompanyId: 9,
+        settlementCompanyName: '主体C',
         startDate: '2024-01-15',
         endDate: '2024-01-15',
         paidAmount: 0,
@@ -101,6 +111,18 @@ describe('freightStatementPageConfig', () => {
         parentRecord: { status: '已审核', carrierName: '承运商B' },
       } as any)
       expect(result).toBe('只能选择同一物流商的物流单生成物流对账单')
+    })
+
+    it('validateParentImport rejects mismatched settlement company', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: { carrierName: '承运商A', settlementCompanyId: 1 },
+        parentRecord: {
+          status: '已审核',
+          carrierName: '承运商A',
+          settlementCompanyId: 2,
+        },
+      } as any)
+      expect(result).toBe('只能选择同一结算主体的物流单生成物流对账单')
     })
 
     it('transformItems maps items with freight-specific fields', () => {

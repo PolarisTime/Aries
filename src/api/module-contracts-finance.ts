@@ -6,7 +6,12 @@ export const financeModuleEndpointContracts: Record<
 > = {
   'supplier-statement': {
     path: '/supplier-statements',
-    nativeFilterKeys: ['keyword', 'supplierName', 'status'],
+    nativeFilterKeys: [
+      'keyword',
+      'supplierName',
+      'settlementCompanyId',
+      'status',
+    ],
     dateRangeMapping: {
       endDate: {
         startKey: 'periodStart',
@@ -16,7 +21,12 @@ export const financeModuleEndpointContracts: Record<
   },
   'customer-statement': {
     path: '/customer-statements',
-    nativeFilterKeys: ['keyword', 'customerName', 'status'],
+    nativeFilterKeys: [
+      'keyword',
+      'customerName',
+      'settlementCompanyId',
+      'status',
+    ],
     dateRangeMapping: {
       endDate: {
         startKey: 'periodStart',
@@ -26,7 +36,13 @@ export const financeModuleEndpointContracts: Record<
   },
   'freight-statement': {
     path: '/freight-statements',
-    nativeFilterKeys: ['keyword', 'carrierName', 'status', 'signStatus'],
+    nativeFilterKeys: [
+      'keyword',
+      'carrierName',
+      'settlementCompanyId',
+      'status',
+      'signStatus',
+    ],
     dateRangeMapping: {
       endDate: {
         startKey: 'periodStart',
@@ -39,6 +55,7 @@ export const financeModuleEndpointContracts: Record<
     nativeFilterKeys: [
       'keyword',
       'customerName',
+      'settlementCompanyId',
       'status',
       'startDate',
       'endDate',
@@ -87,6 +104,7 @@ export const financeModuleEndpointContracts: Record<
     nativeFilterKeys: [
       'keyword',
       'customerName',
+      'settlementCompanyId',
       'status',
       'startDate',
       'endDate',

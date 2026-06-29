@@ -8,6 +8,7 @@ vi.mock('@/constants/module-options', () => ({
   buildValueOptions: (...args: string[]) =>
     args.map((v) => ({ label: v, value: v })),
   getSupplierOptions: [],
+  getSettlementCompanyOptions: [],
   isPurchaseWeighRequiredCategory: () => false,
 }))
 
@@ -25,6 +26,9 @@ describe('purchaseInboundsPageConfig', () => {
   it('has filters', () => {
     expect(purchaseInboundsPageConfig.filters).toBeDefined()
     expect(purchaseInboundsPageConfig.filters!.length).toBeGreaterThanOrEqual(4)
+    expect(
+      purchaseInboundsPageConfig.filters!.map((filter) => filter.key),
+    ).toContain('settlementCompanyId')
   })
 
   it('has columns', () => {

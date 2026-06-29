@@ -11,6 +11,9 @@ export function transformFreightItems(
     (item, index) => ({
       id: item.id || `freight-item-${Date.now()}-${index + 1}`,
       sourceNo: parentRecord.outboundNo || '',
+      sourceSalesOutboundItemId: item.id,
+      settlementCompanyId: item.settlementCompanyId,
+      settlementCompanyName: item.settlementCompanyName,
       customerName: parentRecord.customerName || '',
       projectName: parentRecord.projectName || '',
       materialCode: item.materialCode || '',

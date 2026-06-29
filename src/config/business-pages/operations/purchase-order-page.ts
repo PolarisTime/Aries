@@ -39,6 +39,12 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       options: getSupplierOptions,
     },
     {
+      key: 'settlementCompanyId',
+      label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
+      type: 'select',
+      options: getSettlementCompanyOptions,
+    },
+    {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
@@ -60,11 +66,6 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       title: i18next.t('modules.pages.purchaseOrder.colSupplier'),
       dataIndex: 'supplierName',
       width: 140,
-    },
-    {
-      title: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
-      dataIndex: 'settlementCompanyName',
-      width: 180,
     },
     {
       title: i18next.t('modules.pages.purchaseOrder.colBuyer'),
@@ -184,14 +185,6 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
-      key: 'settlementCompanyId',
-      label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
-      type: 'select',
-      required: true,
-      options: getSettlementCompanyOptions,
-      row: 2,
-    },
-    {
       key: 'totalWeight',
       label: i18next.t('modules.pages.purchaseOrder.formTotalWeight'),
       type: 'input',
@@ -203,6 +196,14 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.purchaseOrder.formTotalAmount'),
       type: 'input',
       disabled: true,
+      row: 2,
+    },
+    {
+      key: 'settlementCompanyId',
+      label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
+      type: 'select',
+      required: true,
+      options: getSettlementCompanyOptions,
       row: 2,
     },
     {

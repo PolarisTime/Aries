@@ -17,10 +17,14 @@ describe('invoiceIssuePageConfig', () => {
       const draft = pi.mapParentToDraft!({
         customerName: '客户A',
         projectName: '项目X',
+        settlementCompanyId: 8,
+        settlementCompanyName: '主体B',
       } as any)
       expect(draft).toEqual({
         customerName: '客户A',
         projectName: '项目X',
+        settlementCompanyId: 8,
+        settlementCompanyName: '主体B',
       })
     })
 
@@ -28,6 +32,18 @@ describe('invoiceIssuePageConfig', () => {
       const draft = pi.mapParentToDraft!({} as any)
       expect(draft.customerName).toBe('')
       expect(draft.projectName).toBe('')
+      expect(draft.settlementCompanyId).toBeUndefined()
+      expect(draft.settlementCompanyName).toBe('')
+    })
+
+    it('validateParentImport rejects mismatched settlement company', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: { settlementCompanyId: 1 },
+        currentItems: [],
+        parentRecord: { settlementCompanyId: 2 },
+      } as any)
+
+      expect(result).toContain('结算主体')
     })
 
     it('transformItems maps items with invoice-issue fields', () => {

@@ -16,7 +16,7 @@ export function createEmptySettlementAccount(): SettlementAccountFormRow {
 export function normalizeSettlementAccounts(
   accounts: CompanySettlementAccount[] | undefined | null,
 ): SettlementAccountFormRow[] {
-  if (!accounts?.length) return [createEmptySettlementAccount()]
+  if (!accounts?.length) return []
   return accounts.map((account) => ({
     ...account,
     id: account.id == null || account.id === '' ? undefined : account.id,

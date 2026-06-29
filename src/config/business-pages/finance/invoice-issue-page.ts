@@ -1,7 +1,16 @@
 import i18next from 'i18next'
-import { buildValueOptions, customerOptions } from '@/constants/module-options'
+import {
+  buildValueOptions,
+  customerOptions,
+  getSettlementCompanyOptions,
+} from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from '../shared/filter-labels'
+import {
+  SETTLEMENT_COMPANY_LABEL,
+  validateSameSettlementCompany,
+} from '../shared/settlement-company'
 import {
   buildFinanceOverview,
   compactInvoiceIssueItemColumns,
@@ -33,6 +42,12 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       label: BILL_STATUS_LABEL,
       type: 'select',
       options: buildValueOptions('草稿', '已开票'),
+    },
+    {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
     },
     {
       key: 'invoiceDate',
@@ -117,6 +132,10 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.invoiceIssue.project'),
       key: 'projectName',
+    },
+    {
+      label: SETTLEMENT_COMPANY_LABEL,
+      key: 'settlementCompanyName',
     },
     {
       label: i18next.t('modules.pages.invoiceIssue.invoiceDate'),
@@ -276,7 +295,34 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     mapParentToDraft: (parentRecord) => ({
       customerName: parentRecord.customerName || '',
       projectName: parentRecord.projectName || '',
+      settlementCompanyId: parentRecord.settlementCompanyId,
+      settlementCompanyName: parentRecord.settlementCompanyName || '',
     }),
+    validateParentImport: ({ currentRecord, parentRecord }) => {
+      if (
+        asString(currentRecord.customerName).trim() &&
+        asString(currentRecord.customerName).trim() !==
+          asString(parentRecord.customerName).trim()
+      ) {
+        return '只能选择同一客户的销售订单生成开票单'
+      }
+      if (
+        asString(currentRecord.projectName).trim() &&
+        asString(currentRecord.projectName).trim() !==
+          asString(parentRecord.projectName).trim()
+      ) {
+        return '只能选择同一项目的销售订单生成开票单'
+      }
+      const settlementCompanyError = validateSameSettlementCompany(
+        currentRecord,
+        parentRecord,
+        '只能选择同一结算主体的销售订单生成开票单',
+      )
+      if (settlementCompanyError) {
+        return settlementCompanyError
+      }
+      return null
+    },
     transformItems: (parentRecord) =>
       Array.isArray(parentRecord.items)
         ? parentRecord.items.map((item, index) => ({
@@ -298,6 +344,8 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       'sourceSalesOrderNos',
       'customerName',
       'projectName',
+      'settlementCompanyId',
+      'settlementCompanyName',
       'invoiceDate',
       'invoiceType',
       'amount',

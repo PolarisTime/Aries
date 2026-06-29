@@ -6,6 +6,7 @@ vi.mock('i18next', () => ({
 
 vi.mock('@/constants/module-options', () => ({
   customerOptions: [],
+  getSettlementCompanyOptions: () => [],
 }))
 
 import { receiptsPageConfig } from './receipt-page'
@@ -36,6 +37,9 @@ describe('receiptsPageConfig', () => {
   it('has saveFields', () => {
     expect(receiptsPageConfig.saveFields).toBeDefined()
     expect(receiptsPageConfig.saveFields!.scalar).toContain('receiptNo')
+    expect(receiptsPageConfig.saveFields!.scalar).toContain(
+      'settlementCompanyId',
+    )
   })
 
   it('buildOverview returns result', () => {

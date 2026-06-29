@@ -1,11 +1,16 @@
 import i18next from 'i18next'
 import {
   customerOptions,
+  getSettlementCompanyOptions,
   statementStatusOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from '../shared/filter-labels'
+import {
+  SETTLEMENT_COMPANY_LABEL,
+  validateSameSettlementCompany,
+} from '../shared/settlement-company'
 import {
   buildStatementOverview,
   compactBatchCustomerStatementItemColumns,
@@ -33,6 +38,12 @@ export const customerStatementPageConfig: ModulePageConfig = {
       label: CUSTOMER_NAME_LABEL,
       type: 'select',
       options: customerOptions,
+    },
+    {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
     },
     {
       key: 'status',
@@ -127,6 +138,10 @@ export const customerStatementPageConfig: ModulePageConfig = {
       key: 'projectName',
     },
     {
+      label: SETTLEMENT_COMPANY_LABEL,
+      key: 'settlementCompanyName',
+    },
+    {
       label: i18next.t('modules.pages.customerStatement.startDate'),
       key: 'startDate',
       type: 'date',
@@ -192,6 +207,13 @@ export const customerStatementPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
+      row: 1,
+    },
+    {
       key: 'startDate',
       label: i18next.t('modules.pages.customerStatement.startDate'),
       type: 'date',
@@ -250,6 +272,8 @@ export const customerStatementPageConfig: ModulePageConfig = {
       'customerCode',
       'customerName',
       'projectName',
+      'settlementCompanyId',
+      'settlementCompanyName',
       'startDate',
       'endDate',
       'salesAmount',
@@ -289,6 +313,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
     buildParentFilters: (currentRecord) => ({
       customerName: asString(currentRecord.customerName).trim(),
       projectName: asString(currentRecord.projectName).trim(),
+      settlementCompanyId: currentRecord.settlementCompanyId,
       status: '完成销售',
     }),
     validateBeforeOpen: (currentRecord) =>
@@ -298,6 +323,8 @@ export const customerStatementPageConfig: ModulePageConfig = {
     mapParentToDraft: (parentRecord) => ({
       customerName: parentRecord.customerName || '',
       projectName: parentRecord.projectName || '',
+      settlementCompanyId: parentRecord.settlementCompanyId,
+      settlementCompanyName: parentRecord.settlementCompanyName || '',
       startDate: parentRecord.deliveryDate || '',
       endDate: parentRecord.deliveryDate || '',
       receiptAmount: 0,
@@ -331,6 +358,14 @@ export const customerStatementPageConfig: ModulePageConfig = {
         !existingProjectNames.includes(nextProjectName)
       ) {
         return '只能选择同一项目的销售订单生成客户对账单'
+      }
+      const settlementCompanyError = validateSameSettlementCompany(
+        currentRecord,
+        parentRecord,
+        '只能选择同一结算主体的销售订单生成客户对账单',
+      )
+      if (settlementCompanyError) {
+        return settlementCompanyError
       }
       return null
     },

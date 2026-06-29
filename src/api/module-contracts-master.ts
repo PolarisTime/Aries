@@ -34,4 +34,8 @@ export const masterModuleEndpointContracts: Record<
     supportsSearch: false,
     nativeFilterKeys: ['keyword', 'warehouseType', 'status'],
   },
+  'company-setting': {
+    path: '/company-settings',
+    nativeFilterKeys: ['keyword', 'status'],
+  },
 }

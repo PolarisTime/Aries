@@ -142,6 +142,66 @@ function normalizeRecordForEditor(
   return normalized
 }
 
+function hasExplicitTimePart(value: unknown): boolean {
+  if (dayjs.isDayjs(value) || value instanceof Date) {
+    return true
+  }
+
+  if (typeof value === 'number') {
+    return String(Math.trunc(value)).length !== 8
+  }
+
+  if (typeof value !== 'string') {
+    return false
+  }
+
+  const normalized = value.trim()
+  return /\d{1,2}:\d{2}/.test(normalized) || /^\d{14}$/.test(normalized)
+}
+
+function parseValidDateTime(value: unknown) {
+  if (dayjs.isDayjs(value)) {
+    return value.isValid() ? value : null
+  }
+  return parseDateTimeValue(value)
+}
+
+function mergeDateOnlyFieldTimesForSave(
+  config: ModulePageConfig,
+  values: ModuleRecord,
+  sourceRecord: ModuleRecord | null,
+): ModuleRecord {
+  if (!config.formFields?.length) {
+    return values
+  }
+
+  const fallbackTime = dayjs()
+  const next: ModuleRecord = { ...values }
+
+  for (const field of config.formFields) {
+    if (field.type !== 'date' || field.showTime === true) {
+      continue
+    }
+
+    const value = next[field.key]
+    if (!dayjs.isDayjs(value) || !value.isValid()) {
+      continue
+    }
+
+    const sourceValue = sourceRecord?.[field.key]
+    const sourceTime = hasExplicitTimePart(sourceValue)
+      ? parseValidDateTime(sourceValue)
+      : null
+    const timeSource = sourceTime || fallbackTime
+    next[field.key] = value
+      .hour(timeSource.hour())
+      .minute(timeSource.minute())
+      .second(timeSource.second())
+  }
+
+  return next
+}
+
 function isAntdFormValidationError(err: unknown): boolean {
   if (err == null || typeof err !== 'object') return false
   const obj = err as Record<string, unknown>
@@ -574,10 +634,15 @@ export function useModuleEditorWorkspace({
         })
       }
 
-      const values = applyAuthoritativePrimaryNo(
+      const validatedValues = applyAuthoritativePrimaryNo(
         await form.validateFields(),
         config.primaryNoKey,
         effectiveAuthoritativePrimaryNo,
+      )
+      const values = mergeDateOnlyFieldTimesForSave(
+        config,
+        validatedValues,
+        record,
       )
       const trimmedItems = trimEditorItemsForModule(moduleKey, items)
 

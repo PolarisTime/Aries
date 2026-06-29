@@ -1,11 +1,16 @@
 import i18next from 'i18next'
 import {
+  getSettlementCompanyOptions,
   getSupplierOptions,
   statementStatusOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, SUPPLIER_NAME_LABEL } from '../shared/filter-labels'
+import {
+  SETTLEMENT_COMPANY_LABEL,
+  validateSameSettlementCompany,
+} from '../shared/settlement-company'
 import {
   buildStatementOverview,
   compactBatchSupplierStatementItemColumns,
@@ -33,6 +38,12 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       label: SUPPLIER_NAME_LABEL,
       type: 'select',
       options: getSupplierOptions,
+    },
+    {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
     },
     {
       key: 'status',
@@ -118,6 +129,10 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       key: 'supplierCode',
     },
     {
+      label: SETTLEMENT_COMPANY_LABEL,
+      key: 'settlementCompanyName',
+    },
+    {
       label: i18next.t('modules.pages.supplierStatement.startDate'),
       key: 'startDate',
       type: 'date',
@@ -173,6 +188,13 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.supplierStatement.supplierCode'),
       type: 'input',
       disabled: true,
+      row: 1,
+    },
+    {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
       row: 1,
     },
     {
@@ -233,6 +255,8 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       'sourceInboundNos',
       'supplierCode',
       'supplierName',
+      'settlementCompanyId',
+      'settlementCompanyName',
       'startDate',
       'endDate',
       'purchaseAmount',
@@ -274,6 +298,7 @@ export const supplierStatementPageConfig: ModulePageConfig = {
     allowMultipleSelection: true,
     buildParentFilters: (currentRecord) => ({
       supplierName: asString(currentRecord.supplierName).trim(),
+      settlementCompanyId: currentRecord.settlementCompanyId,
       status: '完成采购',
     }),
     validateBeforeOpen: (currentRecord) =>
@@ -282,6 +307,8 @@ export const supplierStatementPageConfig: ModulePageConfig = {
         : '请先选择供应商，再选择采购入库单',
     mapParentToDraft: (parentRecord) => ({
       supplierName: parentRecord.supplierName || '',
+      settlementCompanyId: parentRecord.settlementCompanyId,
+      settlementCompanyName: parentRecord.settlementCompanyName || '',
       startDate: parentRecord.inboundDate || '',
       endDate: parentRecord.inboundDate || '',
       paymentAmount: 0,
@@ -296,6 +323,14 @@ export const supplierStatementPageConfig: ModulePageConfig = {
         asString(parentRecord.supplierName).trim()
       ) {
         return '只能选择同一供应商的采购入库单生成供应商对账单'
+      }
+      const settlementCompanyError = validateSameSettlementCompany(
+        currentRecord,
+        parentRecord,
+        '只能选择同一结算主体的采购入库单生成供应商对账单',
+      )
+      if (settlementCompanyError) {
+        return settlementCompanyError
       }
       return null
     },

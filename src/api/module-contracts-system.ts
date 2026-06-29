@@ -8,10 +8,6 @@ export const systemModuleEndpointContracts: Record<
     path: '/general-settings',
     nativeFilterKeys: ['keyword', 'status'],
   },
-  'company-setting': {
-    path: '/company-settings',
-    nativeFilterKeys: ['keyword', 'status'],
-  },
   'operation-log': {
     path: '/operation-logs',
     readOnly: true,

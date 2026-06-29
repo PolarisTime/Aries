@@ -11,6 +11,8 @@ const sampleStatements = [
     statementNo: 'KHDZ20260001',
     customerName: '客户A',
     projectName: '项目X',
+    settlementCompanyId: 1,
+    settlementCompanyName: '主体A',
     closingAmount: 5000,
     endDate: '2026-03-15',
   },
@@ -19,6 +21,8 @@ const sampleStatements = [
     statementNo: 'KHDZ20260002',
     customerName: '客户B',
     projectName: '项目Y',
+    settlementCompanyId: 2,
+    settlementCompanyName: '主体B',
     closingAmount: 0,
     endDate: '2026-03-20',
   },
@@ -27,6 +31,8 @@ const sampleStatements = [
     statementNo: 'KHDZ20260003',
     customerName: '客户A',
     projectName: '项目Z',
+    settlementCompanyId: 2,
+    settlementCompanyName: '主体B',
     closingAmount: 3000,
     endDate: '2026-03-10',
   },
@@ -61,6 +67,17 @@ describe('buildCustomerStatementOptions', () => {
     })
     expect(result).toHaveLength(1)
     expect(result[0].value).toBe('1')
+  })
+
+  it('filters by settlementCompanyId when provided', () => {
+    const result = buildCustomerStatementOptions(sampleStatements, {
+      customerName: '客户A',
+      settlementCompanyId: '1',
+    })
+
+    expect(result).toHaveLength(1)
+    expect(result[0].value).toBe('1')
+    expect(result[0].settlementCompanyName).toBe('主体A')
   })
 
   it('sorts by endDate descending', () => {
@@ -173,6 +190,7 @@ describe('buildStatementLinkOptions', () => {
       {
         customerName: '客户A',
         projectName: '项目X',
+        settlementCompanyId: '1',
       },
       catalog,
     )

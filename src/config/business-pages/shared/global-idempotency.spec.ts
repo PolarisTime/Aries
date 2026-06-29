@@ -31,6 +31,7 @@ import { paymentPageConfigs } from '../finance/payment-pages'
 import { statementPageConfigs } from '../finance/statement-pages'
 import { masterMaterialPageConfigs } from '../master/master-material-pages'
 import { masterPartyPageConfigs } from '../master/master-party-pages'
+import { masterSettlementCompanyPageConfigs } from '../master/master-settlement-company-pages'
 import { masterWarehousePageConfigs } from '../master/master-warehouse-pages'
 import { contractOperationsPageConfigs } from '../operations/contract-operations'
 import { freightOperationsPageConfigs } from '../operations/freight-operations'
@@ -49,6 +50,7 @@ const pageConfigs: ModulePageConfig[] = Object.values({
   ...invoicePageConfigs,
   ...masterMaterialPageConfigs,
   ...masterPartyPageConfigs,
+  ...masterSettlementCompanyPageConfigs,
   ...masterWarehousePageConfigs,
   ...paymentPageConfigs,
   ...purchaseOperationsPageConfigs,

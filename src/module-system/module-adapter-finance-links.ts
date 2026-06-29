@@ -9,6 +9,7 @@ interface CustomerStatementOptionArgs {
   currentStatementId?: string | null
   customerName?: string
   projectName?: string
+  settlementCompanyId?: string
 }
 
 interface CounterpartyStatementOptionArgs {
@@ -75,6 +76,7 @@ export function buildCustomerStatementOptions(
 ) {
   const customerName = normalizeText(args.customerName)
   const projectName = normalizeText(args.projectName)
+  const settlementCompanyId = normalizeText(args.settlementCompanyId)
 
   return [...statements]
     .filter(
@@ -85,12 +87,15 @@ export function buildCustomerStatementOptions(
           args.currentStatementId,
         ) &&
         matchesFilter(record.customerName, customerName) &&
-        matchesFilter(record.projectName, projectName),
+        matchesFilter(record.projectName, projectName) &&
+        matchesFilter(record.settlementCompanyId, settlementCompanyId),
     )
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
       value: String(record.id || ''),
       label: `${asString(record.statementNo)} | ${asString(record.customerName)} / ${asString(record.projectName)} | 待收 ${formatAmountLabel(record.closingAmount)}`,
+      settlementCompanyId: asString(record.settlementCompanyId),
+      settlementCompanyName: asString(record.settlementCompanyName),
     }))
 }
 
@@ -163,6 +168,7 @@ export function buildStatementLinkOptions(
       currentStatementId,
       customerName: normalizeText(form?.customerName),
       projectName: normalizeText(form?.projectName),
+      settlementCompanyId: normalizeText(form?.settlementCompanyId),
     })
   }
 

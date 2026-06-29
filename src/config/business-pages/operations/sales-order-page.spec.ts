@@ -9,6 +9,7 @@ vi.mock('@/constants/module-options', () => ({
     args.map((v) => ({ label: v, value: v })),
   getCustomerOptions: [],
   getCustomerProjectOptions: [],
+  getSettlementCompanyOptions: [],
 }))
 
 import { salesOrdersPageConfig } from './sales-order-page'
@@ -25,6 +26,9 @@ describe('salesOrdersPageConfig', () => {
   it('has filters', () => {
     expect(salesOrdersPageConfig.filters).toBeDefined()
     expect(salesOrdersPageConfig.filters!.length).toBeGreaterThanOrEqual(6)
+    expect(
+      salesOrdersPageConfig.filters!.map((filter) => filter.key),
+    ).toContain('settlementCompanyId')
   })
 
   it('does not force customer and project into manual rows', () => {

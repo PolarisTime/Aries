@@ -1944,7 +1944,7 @@ export const zhCN: MessageSchema = {
       deleteSubjectConfirm:
         '确定删除该结算主体吗？已被客户、物流商或采购订单引用的主体不可删除。',
       activeSubjects: '正常主体',
-      atLeastOneSettlementAccount: '至少需要保留一个结算账户',
+      atLeastOneSettlementAccount: '结算账户为可选信息',
       inputAccountName: '请输入第 {{index}} 个结算账户的账户名称',
       inputBankName: '请输入第 {{index}} 个结算账户的开户银行',
       inputBankAccount: '请输入第 {{index}} 个结算账户的银行账号',
@@ -1955,6 +1955,9 @@ export const zhCN: MessageSchema = {
       noViewPermission: '当前账号没有结算主体查看权限。',
       settlementInfo: '结算信息',
       addBank: '新增银行',
+      noSettlementAccounts: '未维护结算账户，可按需新增',
+      settlementAccountOptionalHint:
+        '结算账户为可选信息；不填写时仍可保存主体资料。',
       settlementAccount: '结算账户',
       accountName: '账户名称',
       accountNamePlaceholder: '如：基本户 / 收款户',

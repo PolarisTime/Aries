@@ -12,6 +12,8 @@ export type CustomerOption = {
   customerName?: string
   projectName?: string
   projectNameAbbr?: string
+  defaultSettlementCompanyId?: string | number
+  defaultSettlementCompanyName?: string
 }
 
 export function normalizeText(value: unknown) {

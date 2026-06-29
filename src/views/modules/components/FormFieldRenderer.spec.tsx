@@ -212,7 +212,10 @@ describe('FormFieldRenderer', () => {
       field: { ...defaultProps.field, type: 'date' },
     }
     render(<FormFieldRenderer {...props} />)
-    expect(screen.getByTestId('date-picker')).toBeTruthy()
+    const datePicker = screen.getByTestId('date-picker')
+    expect(datePicker).toBeTruthy()
+    expect(datePicker).toHaveAttribute('data-format', 'YYYY-MM-DD')
+    expect(datePicker).toHaveAttribute('data-show-time', 'false')
   })
 
   it('passes date field display options', () => {
@@ -232,6 +235,22 @@ describe('FormFieldRenderer', () => {
     expect(datePicker).toHaveAttribute('data-format', 'YYYY-MM-DD')
     expect(datePicker).toHaveAttribute('data-show-time', 'false')
     expect(datePicker).toHaveAttribute('data-allow-clear', 'false')
+  })
+
+  it('enables time selection only when explicitly configured', () => {
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        type: 'date',
+        showTime: true,
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    const datePicker = screen.getByTestId('date-picker')
+    expect(datePicker).toHaveAttribute('data-format', 'YYYY-MM-DD HH:mm:ss')
+    expect(datePicker).toHaveAttribute('data-show-time', 'true')
   })
 
   it('renders textarea for textarea type', () => {

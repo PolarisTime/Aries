@@ -16,11 +16,6 @@ describe('systemCorePageConfigs', () => {
     expect(systemCorePageConfigs['general-setting'].key).toBe('general-setting')
   })
 
-  it('contains company-setting config', () => {
-    expect(systemCorePageConfigs['company-setting']).toBeDefined()
-    expect(systemCorePageConfigs['company-setting'].key).toBe('company-setting')
-  })
-
   it('general-setting has filters', () => {
     expect(systemCorePageConfigs['general-setting'].filters).toBeDefined()
     expect(
@@ -45,14 +40,7 @@ describe('systemCorePageConfigs', () => {
     expect(result.length).toBe(2)
   })
 
-  it('company-setting has columns', () => {
-    expect(systemCorePageConfigs['company-setting'].columns).toBeDefined()
-    expect(
-      systemCorePageConfigs['company-setting'].columns.length,
-    ).toBeGreaterThan(0)
-  })
-
-  it('company-setting has formFields', () => {
-    expect(systemCorePageConfigs['company-setting'].formFields).toBeDefined()
+  it('does not contain settlement company config', () => {
+    expect(systemCorePageConfigs['company-setting']).toBeUndefined()
   })
 })

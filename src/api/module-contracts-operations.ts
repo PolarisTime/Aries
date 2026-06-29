@@ -9,6 +9,7 @@ export const operationModuleEndpointContracts: Record<
     nativeFilterKeys: [
       'keyword',
       'supplierName',
+      'settlementCompanyId',
       'status',
       'startDate',
       'endDate',
@@ -25,6 +26,7 @@ export const operationModuleEndpointContracts: Record<
     nativeFilterKeys: [
       'keyword',
       'supplierName',
+      'settlementCompanyId',
       'status',
       'startDate',
       'endDate',
@@ -42,6 +44,7 @@ export const operationModuleEndpointContracts: Record<
       'keyword',
       'customerName',
       'projectName',
+      'settlementCompanyId',
       'status',
       'startDate',
       'endDate',
@@ -59,6 +62,7 @@ export const operationModuleEndpointContracts: Record<
       'keyword',
       'customerName',
       'projectName',
+      'settlementCompanyId',
       'status',
       'startDate',
       'endDate',
@@ -75,6 +79,7 @@ export const operationModuleEndpointContracts: Record<
     nativeFilterKeys: [
       'keyword',
       'carrierName',
+      'settlementCompanyId',
       'status',
       'startDate',
       'endDate',

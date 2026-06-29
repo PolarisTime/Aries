@@ -130,8 +130,9 @@ function ModuleFilterField({
           t('modules.filter.selectPlaceholder', { label: field.label })
         }
         value={
-          typeof filters[field.key] === 'string'
-            ? asString(filters[field.key])
+          typeof filters[field.key] === 'string' ||
+          typeof filters[field.key] === 'number'
+            ? filters[field.key]
             : undefined
         }
         onChange={(value) => onCommitFilter(field.key, value)}

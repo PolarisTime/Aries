@@ -57,6 +57,16 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     moduleKey: 'warehouse',
   },
   {
+    key: 'company-setting',
+    title: '结算主体管理',
+    menuKey: '/company-setting',
+    view: 'company-setting',
+    icon: 'AccountBookOutlined',
+    menuParent: 'master',
+    moduleKey: 'company-setting',
+    resourceKey: 'company-setting',
+  },
+  {
     key: 'department',
     title: '部门管理',
     menuKey: '/department',

@@ -4,13 +4,11 @@ import {
   Alert,
   Button,
   Card,
-  Col,
   Empty,
   Form,
   Input,
   List,
   Popconfirm,
-  Row,
   Skeleton,
   Space,
   Tag,
@@ -66,25 +64,41 @@ function buildCompanySettingFormValues(
 }
 
 function buildPayload(values: CompanySettingFormValues) {
-  const settlementAccounts = values.settlementAccounts || []
+  const settlementAccounts = normalizeSubmittedSettlementAccounts(
+    values.settlementAccounts || [],
+  )
   return {
     companyName: values.companyName.trim(),
     taxNo: values.taxNo.trim(),
-    settlementAccounts: settlementAccounts.map((account) => ({
+    settlementAccounts,
+    status: values.status || STATUS.NORMAL,
+    remark: values.remark?.trim() || '',
+  }
+}
+
+function normalizeSubmittedSettlementAccounts(
+  accounts: SettlementAccountFormRow[],
+) {
+  return accounts
+    .filter((account) => {
+      const accountName = asString(account.accountName).trim()
+      const bankName = asString(account.bankName).trim()
+      const bankAccount = asString(account.bankAccount).trim()
+      const remark = asString(account.remark).trim()
+      return Boolean(accountName || bankName || bankAccount || remark)
+    })
+    .map((account) => ({
       id:
         account.id == null || account.id === ''
           ? undefined
           : String(account.id),
-      accountName: account.accountName.trim(),
-      bankName: account.bankName.trim(),
-      bankAccount: account.bankAccount.trim(),
-      usageType: account.usageType || SETTLEMENT_TYPE.GENERAL,
-      status: account.status || STATUS.NORMAL,
-      remark: account.remark?.trim() || '',
-    })),
-    status: values.status || STATUS.NORMAL,
-    remark: values.remark?.trim() || '',
-  }
+      accountName: asString(account.accountName).trim(),
+      bankName: asString(account.bankName).trim(),
+      bankAccount: asString(account.bankAccount).trim(),
+      usageType: asString(account.usageType).trim() || SETTLEMENT_TYPE.GENERAL,
+      status: asString(account.status).trim() || STATUS.NORMAL,
+      remark: asString(account.remark).trim(),
+    }))
 }
 
 interface CompanySubjectListProps {
@@ -111,6 +125,7 @@ function CompanySubjectList({
   const { t } = useTranslation()
   return (
     <Card
+      className="system-list-card company-subject-selector-card"
       size="small"
       title={t('system.company.subjectList')}
       extra={
@@ -128,6 +143,9 @@ function CompanySubjectList({
     >
       <List
         size="small"
+        split={false}
+        rowKey="id"
+        grid={{ gutter: 12, xs: 1, sm: 2, md: 2, lg: 3, xl: 4, xxl: 4 }}
         dataSource={companies}
         locale={{
           emptyText: (
@@ -162,10 +180,7 @@ function CompanySubjectList({
             : []
           return (
             <List.Item
-              className="rounded cursor-pointer px-8"
-              style={
-                active ? { background: 'var(--theme-primary-soft)' } : undefined
-              }
+              className={`company-subject-selector-item${active ? ' is-active' : ''}`}
               actions={actions}
               onClick={() => onSelect(item.id)}
             >
@@ -237,9 +252,11 @@ function CompanySettingsForm({
   const initialValues = buildCompanySettingFormValues(selectedProfile)
   const statusValue = Form.useWatch('status', form)
   const watchedSettlementAccounts = Form.useWatch('settlementAccounts', form)
-  const settlementAccountCount = Array.isArray(watchedSettlementAccounts)
-    ? watchedSettlementAccounts.length
-    : initialValues.settlementAccounts.length
+  const settlementAccountCount = normalizeSubmittedSettlementAccounts(
+    Array.isArray(watchedSettlementAccounts)
+      ? watchedSettlementAccounts
+      : initialValues.settlementAccounts,
+  ).length
   const activeCount = companies.filter(
     (item) => item.status === STATUS.NORMAL,
   ).length
@@ -298,10 +315,15 @@ function CompanySettingsForm({
 
     try {
       const values = await validateForm<CompanySettingFormValues>(form)
-      const settlementAccounts = values.settlementAccounts || []
+      const settlementAccounts = normalizeSubmittedSettlementAccounts(
+        values.settlementAccounts || [],
+      )
       const usedBankAccounts = new Set<string>()
       for (const account of settlementAccounts) {
         const bankAccount = account.bankAccount.trim()
+        if (!bankAccount) {
+          continue
+        }
         if (usedBankAccounts.has(bankAccount)) {
           message.warning(
             t('system.company.duplicateBankAccount', { account: bankAccount }),
@@ -369,83 +391,78 @@ function CompanySettingsForm({
           <Skeleton active />
         </Card>
       ) : (
-        <Row gutter={[16, 16]} align="top">
-          <Col xs={24} lg={7} xl={6}>
-            <CompanySubjectList
-              companies={companies}
-              selectedId={selectedId}
-              canCreate={canCreate}
-              canDelete={canDelete}
-              deletingId={
-                deleteMutation.isPending
-                  ? String(deleteMutation.variables ?? '')
-                  : null
-              }
-              onCreate={onCreateDraft}
-              onDelete={(id) => deleteMutation.mutate(id)}
-              onSelect={onSelect}
-            />
-          </Col>
-          <Col xs={24} lg={17} xl={18}>
-            {selectedId ? (
-              <Form form={form} layout="vertical" initialValues={initialValues}>
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} lg={8}>
-                    <CompanySubjectCard canSave={canEditCurrent} />
-                  </Col>
-                  <Col xs={24} lg={16}>
-                    <CompanySettlementAccountsCard canSave={canEditCurrent} />
-                  </Col>
-                </Row>
-                <Card
-                  size="small"
-                  className="mt-16"
-                  title={t('system.company.supplementNote')}
-                  extra={
-                    canEditCurrent ? (
-                      <Button
-                        type="primary"
-                        size="small"
-                        loading={saveMutation.isPending}
-                        icon={<SaveOutlined />}
-                        onClick={() => {
-                          void handleSave()
-                        }}
-                      >
-                        {t('common.save')}
-                      </Button>
-                    ) : null
-                  }
-                >
-                  <Form.Item name="remark" label={t('common.remark')}>
-                    <Input.TextArea
-                      disabled={!canEditCurrent}
-                      rows={4}
-                      placeholder={t('system.company.subjectRemarkPlaceholder')}
-                    />
-                  </Form.Item>
-                </Card>
-              </Form>
-            ) : (
-              <Card>
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={t('system.company.noSubjects')}
-                >
-                  {canCreate ? (
+        <div className="company-settings-flow">
+          <CompanySubjectList
+            companies={companies}
+            selectedId={selectedId}
+            canCreate={canCreate}
+            canDelete={canDelete}
+            deletingId={
+              deleteMutation.isPending
+                ? String(deleteMutation.variables ?? '')
+                : null
+            }
+            onCreate={onCreateDraft}
+            onDelete={(id) => deleteMutation.mutate(id)}
+            onSelect={onSelect}
+          />
+          {selectedId ? (
+            <Form
+              form={form}
+              layout="vertical"
+              initialValues={initialValues}
+              className="company-settings-editor"
+            >
+              <CompanySubjectCard canSave={canEditCurrent} />
+              <CompanySettlementAccountsCard canSave={canEditCurrent} />
+              <Card
+                size="small"
+                className="system-list-card"
+                title={t('system.company.supplementNote')}
+                extra={
+                  canEditCurrent ? (
                     <Button
                       type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={onCreateDraft}
+                      size="small"
+                      loading={saveMutation.isPending}
+                      icon={<SaveOutlined />}
+                      onClick={() => {
+                        void handleSave()
+                      }}
                     >
-                      {t('system.company.addSubject')}
+                      {t('common.save')}
                     </Button>
-                  ) : null}
-                </Empty>
+                  ) : null
+                }
+              >
+                <Form.Item name="remark" label={t('common.remark')}>
+                  <Input.TextArea
+                    disabled={!canEditCurrent}
+                    rows={4}
+                    placeholder={t('system.company.subjectRemarkPlaceholder')}
+                  />
+                </Form.Item>
               </Card>
-            )}
-          </Col>
-        </Row>
+            </Form>
+          ) : (
+            <Card>
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={t('system.company.noSubjects')}
+              >
+                {canCreate ? (
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={onCreateDraft}
+                  >
+                    {t('system.company.addSubject')}
+                  </Button>
+                ) : null}
+              </Empty>
+            </Card>
+          )}
+        </div>
       )}
     </div>
   )

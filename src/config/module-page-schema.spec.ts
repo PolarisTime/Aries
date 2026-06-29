@@ -6,16 +6,18 @@ describe('module-page-schema', () => {
     it('returns schema for purchase-order', () => {
       const schema = getModulePageSchema('purchase-order')
       expect(schema).toBeDefined()
-      expect(schema.filters).toHaveLength(4)
+      expect(schema.filters).toHaveLength(5)
       expect(schema.filters![0].key).toBe('keyword')
       expect(schema.filters![0].label).toBe('订单编号')
       expect(schema.filters![0].type).toBe('input')
       expect(schema.filters![1].key).toBe('supplierName')
       expect(schema.filters![1].type).toBe('select')
-      expect(schema.filters![2].key).toBe('status')
+      expect(schema.filters![2].key).toBe('settlementCompanyId')
       expect(schema.filters![2].type).toBe('select')
-      expect(schema.filters![3].key).toBe('orderDate')
-      expect(schema.filters![3].type).toBe('dateRange')
+      expect(schema.filters![3].key).toBe('status')
+      expect(schema.filters![3].type).toBe('select')
+      expect(schema.filters![4].key).toBe('orderDate')
+      expect(schema.filters![4].type).toBe('dateRange')
       expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
       expect(schema.saveFields!.scalar).toContain('settlementCompanyName')
     })
@@ -23,22 +25,32 @@ describe('module-page-schema', () => {
     it('returns schema for purchase-inbound', () => {
       const schema = getModulePageSchema('purchase-inbound')
       expect(schema).toBeDefined()
-      expect(schema.filters).toHaveLength(4)
+      expect(schema.filters).toHaveLength(5)
       expect(schema.filters![0].key).toBe('keyword')
       expect(schema.filters![0].label).toBe('入库单号')
-      expect(schema.filters![3].key).toBe('inboundDate')
-      expect(schema.filters![3].label).toBe('入库日期')
+      expect(schema.filters!.map((filter) => filter.key)).toContain(
+        'settlementCompanyId',
+      )
+      expect(schema.filters![4].key).toBe('inboundDate')
+      expect(schema.filters![4].label).toBe('入库日期')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
+      expect(schema.saveFields!.lineItem).toContain('settlementCompanyId')
     })
 
     it('returns schema for sales-order with productKeyword filter', () => {
       const schema = getModulePageSchema('sales-order')
       expect(schema).toBeDefined()
-      expect(schema.filters).toHaveLength(6)
+      expect(schema.filters).toHaveLength(7)
       expect(schema.filters![0].key).toBe('keyword')
       expect(schema.filters![0].clientSearchKeys).toEqual(['orderNo'])
       expect(schema.filters![1].key).toBe('productKeyword')
       expect(schema.filters![1].label).toBe('商品信息')
       expect(schema.filters![1].clientSearchLineItemKeys).toBeDefined()
+      expect(schema.filters!.map((filter) => filter.key)).toContain(
+        'settlementCompanyId',
+      )
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
+      expect(schema.saveFields!.lineItem).toContain('settlementCompanyId')
     })
 
     it('returns schema for sales-outbound with saveFields', () => {
@@ -52,13 +64,20 @@ describe('module-page-schema', () => {
       expect(schema.saveFields!.lineItem).toContain('unitPrice')
       expect(schema.saveFields!.lineItem).toContain('amount')
       expect(schema.filters).toBeDefined()
-      expect(schema.filters).toHaveLength(6)
+      expect(schema.filters).toHaveLength(7)
+      expect(schema.filters!.map((filter) => filter.key)).toContain(
+        'settlementCompanyId',
+      )
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
+      expect(schema.saveFields!.lineItem).toContain('settlementCompanyId')
     })
 
     it('returns schema for receipt with saveFields only', () => {
       const schema = getModulePageSchema('receipt')
       expect(schema).toBeDefined()
       expect(schema.saveFields!.scalar).toContain('receiptNo')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyName')
       expect(schema.saveFields!.scalar).toContain('customerName')
       expect(schema.saveFields!.scalar).toContain('payType')
       expect(schema.saveFields!.scalar).toContain('amount')
@@ -90,6 +109,7 @@ describe('module-page-schema', () => {
       expect(schema.saveFields!.scalar).toContain('statementNo')
       expect(schema.saveFields!.scalar).toContain('sourceInboundNos')
       expect(schema.saveFields!.scalar).toContain('supplierName')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
       expect(schema.saveFields!.lineItem).toContain('sourceNo')
       expect(schema.saveFields!.lineItem).toContain('weighWeightTon')
       expect(schema.saveFields!.lineItem).toContain('weightAdjustmentTon')
@@ -102,6 +122,7 @@ describe('module-page-schema', () => {
       expect(schema.saveFields!.scalar).toContain('sourceOrderNos')
       expect(schema.saveFields!.scalar).toContain('customerName')
       expect(schema.saveFields!.scalar).toContain('projectName')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
       expect(schema.saveFields!.lineItem).toContain('sourceNo')
     })
 
@@ -124,7 +145,10 @@ describe('module-page-schema', () => {
       expect(schema.saveFields!.scalar).toContain('totalWeight')
       expect(schema.saveFields!.scalar).toContain('totalFreight')
       expect(schema.saveFields!.scalar).toContain('signStatus')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
       expect(schema.saveFields!.lineItem).toContain('sourceNo')
+      expect(schema.saveFields!.lineItem).toContain('sourceSalesOutboundItemId')
+      expect(schema.saveFields!.lineItem).toContain('settlementCompanyId')
       expect(schema.saveFields!.lineItem).toContain('customerName')
     })
 
@@ -144,6 +168,8 @@ describe('module-page-schema', () => {
       expect(schema.saveFields!.scalar).toContain('issueNo')
       expect(schema.saveFields!.scalar).toContain('invoiceNo')
       expect(schema.saveFields!.scalar).toContain('sourceSalesOrderNos')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyName')
       expect(schema.saveFields!.scalar).toContain('targetAmount')
     })
 

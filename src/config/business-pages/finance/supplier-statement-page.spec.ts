@@ -29,16 +29,22 @@ describe('supplierStatementPageConfig', () => {
     it('buildParentFilters filters by supplier and status', () => {
       const filters = pi.buildParentFilters!({
         supplierName: ' 供应商A ',
+        settlementCompanyId: 7,
       } as any)
       expect(filters).toEqual({
         supplierName: '供应商A',
+        settlementCompanyId: 7,
         status: '完成采购',
       })
     })
 
     it('buildParentFilters handles empty supplierName', () => {
       const filters = pi.buildParentFilters!({ supplierName: '' } as any)
-      expect(filters).toEqual({ supplierName: '', status: '完成采购' })
+      expect(filters).toEqual({
+        supplierName: '',
+        settlementCompanyId: undefined,
+        status: '完成采购',
+      })
     })
 
     it('validateBeforeOpen returns null when supplierName is present', () => {
@@ -57,9 +63,13 @@ describe('supplierStatementPageConfig', () => {
       const draft = pi.mapParentToDraft!({
         supplierName: '供应商A',
         inboundDate: '2024-01-15',
+        settlementCompanyId: 7,
+        settlementCompanyName: '主体A',
       } as any)
       expect(draft).toEqual({
         supplierName: '供应商A',
+        settlementCompanyId: 7,
+        settlementCompanyName: '主体A',
         startDate: '2024-01-15',
         endDate: '2024-01-15',
         paymentAmount: 0,
@@ -96,6 +106,18 @@ describe('supplierStatementPageConfig', () => {
         parentRecord: { status: '完成采购', supplierName: '供应商B' },
       } as any)
       expect(result).toBe('只能选择同一供应商的采购入库单生成供应商对账单')
+    })
+
+    it('validateParentImport rejects mismatched settlement company', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: { supplierName: '供应商A', settlementCompanyId: 1 },
+        parentRecord: {
+          status: '完成采购',
+          supplierName: '供应商A',
+          settlementCompanyId: 2,
+        },
+      } as any)
+      expect(result).toBe('只能选择同一结算主体的采购入库单生成供应商对账单')
     })
 
     it('transformItems maps items with source info', () => {

@@ -42,11 +42,23 @@ describe('purchaseOrdersPageConfig', () => {
 
   it('has settlement company field', () => {
     expect(
-      purchaseOrdersPageConfig.columns.map((column) => column.dataIndex),
-    ).toContain('settlementCompanyName')
-    expect(
       purchaseOrdersPageConfig.formFields?.map((field) => field.key),
     ).toContain('settlementCompanyId')
+  })
+
+  it('keeps settlement company in header before remark instead of tables', () => {
+    const formFieldKeys = purchaseOrdersPageConfig.formFields?.map(
+      (field) => field.key,
+    )
+    expect(formFieldKeys?.indexOf('settlementCompanyId')).toBeLessThan(
+      formFieldKeys?.indexOf('remark') ?? -1,
+    )
+    expect(
+      purchaseOrdersPageConfig.columns.map((column) => column.dataIndex),
+    ).not.toContain('settlementCompanyName')
+    expect(
+      purchaseOrdersPageConfig.itemColumns?.map((column) => column.dataIndex),
+    ).not.toContain('settlementCompanyName')
   })
 
   it('has itemColumns', () => {

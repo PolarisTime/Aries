@@ -1974,8 +1974,7 @@ export const enUS: MessageSchema = {
       deleteSubjectConfirm:
         'Delete this settlement entity? Entities referenced by customers, carriers, or purchase orders cannot be deleted.',
       activeSubjects: 'Active Entities',
-      atLeastOneSettlementAccount:
-        'At least one settlement account is required',
+      atLeastOneSettlementAccount: 'Settlement accounts are optional',
       inputAccountName:
         'Please enter account name for settlement account {{index}}',
       inputBankName: 'Please enter bank name for settlement account {{index}}',
@@ -1989,6 +1988,10 @@ export const enUS: MessageSchema = {
         'Current account does not have settlement entity view permission.',
       settlementInfo: 'Settlement Information',
       addBank: 'Add Bank',
+      noSettlementAccounts:
+        'No settlement accounts maintained. Add one when needed.',
+      settlementAccountOptionalHint:
+        'Settlement accounts are optional. Entity profile can be saved without them.',
       settlementAccount: 'Settlement Account',
       accountName: 'Account Name',
       accountNamePlaceholder: 'e.g. Basic Account / Collection Account',

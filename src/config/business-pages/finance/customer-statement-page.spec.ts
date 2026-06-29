@@ -33,10 +33,12 @@ describe('customerStatementPageConfig', () => {
       const filters = pi.buildParentFilters!({
         customerName: ' 客户A ',
         projectName: ' 项目X ',
+        settlementCompanyId: 8,
       } as any)
       expect(filters).toEqual({
         customerName: '客户A',
         projectName: '项目X',
+        settlementCompanyId: 8,
         status: '完成销售',
       })
     })
@@ -49,6 +51,7 @@ describe('customerStatementPageConfig', () => {
       expect(filters).toEqual({
         customerName: '',
         projectName: '',
+        settlementCompanyId: undefined,
         status: '完成销售',
       })
     })
@@ -76,10 +79,14 @@ describe('customerStatementPageConfig', () => {
         customerName: '客户A',
         projectName: '项目X',
         deliveryDate: '2024-01-15',
+        settlementCompanyId: 8,
+        settlementCompanyName: '主体B',
       } as any)
       expect(draft).toEqual({
         customerName: '客户A',
         projectName: '项目X',
+        settlementCompanyId: 8,
+        settlementCompanyName: '主体B',
         startDate: '2024-01-15',
         endDate: '2024-01-15',
         receiptAmount: 0,
@@ -133,6 +140,19 @@ describe('customerStatementPageConfig', () => {
         },
       } as any)
       expect(result).toBe('只能选择同一项目的销售订单生成客户对账单')
+    })
+
+    it('validateParentImport rejects mismatched settlement company', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: { customerName: '客户A', settlementCompanyId: 1 },
+        currentItems: [],
+        parentRecord: {
+          status: '完成销售',
+          customerName: '客户A',
+          settlementCompanyId: 2,
+        },
+      } as any)
+      expect(result).toBe('只能选择同一结算主体的销售订单生成客户对账单')
     })
 
     it('validateParentImport allows empty current project context', () => {

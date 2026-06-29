@@ -75,6 +75,23 @@ describe('masterPageDefinitions', () => {
     expect(page!.icon).toBe('BankOutlined')
   })
 
+  it('places settlement company management under master data', () => {
+    const page = masterPageDefinitions.find((d) => d.key === 'company-setting')
+
+    expect(page).toEqual(
+      expect.objectContaining({
+        title: '结算主体管理',
+        menuParent: 'master',
+        menuKey: '/company-setting',
+        moduleKey: 'company-setting',
+        resourceKey: 'company-setting',
+      }),
+    )
+    expect(
+      systemPageDefinitions.some((item) => item.key === 'company-setting'),
+    ).toBe(false)
+  })
+
   it('places department management under master data', () => {
     const departmentPage = masterPageDefinitions.find(
       (page) => page.key === 'department',

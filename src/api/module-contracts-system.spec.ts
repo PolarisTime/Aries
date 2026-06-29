@@ -16,13 +16,6 @@ describe('module-contracts-system', () => {
     expect(config.nativeFilterKeys).toContain('status')
   })
 
-  it('contains company-setting config', () => {
-    const config = systemModuleEndpointContracts['company-setting']
-    expect(config).toBeDefined()
-    expect(config.path).toBe('/company-settings')
-    expect(config.nativeFilterKeys).toContain('keyword')
-  })
-
   it('contains operation-log config as read-only', () => {
     const config = systemModuleEndpointContracts['operation-log']
     expect(config).toBeDefined()
@@ -58,5 +51,9 @@ describe('module-contracts-system', () => {
     const config = systemModuleEndpointContracts.departments
     expect(config).toBeDefined()
     expect(config.path).toBe('/departments')
+  })
+
+  it('does not contain settlement company contract', () => {
+    expect(systemModuleEndpointContracts['company-setting']).toBeUndefined()
   })
 })

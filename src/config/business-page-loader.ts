@@ -80,8 +80,8 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
     (await import('@/config/business-pages/system-core-pages'))
       .systemCorePageConfigs,
   'company-setting': async () =>
-    (await import('@/config/business-pages/system-core-pages'))
-      .systemCorePageConfigs,
+    (await import('@/config/business-pages/master-settlement-company-pages'))
+      .masterSettlementCompanyPageConfigs,
   'operation-log': async () =>
     (await import('@/config/business-pages/system-audit-pages'))
       .systemAuditPageConfigs,

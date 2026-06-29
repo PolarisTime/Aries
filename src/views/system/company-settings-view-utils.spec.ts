@@ -26,20 +26,19 @@ describe('company-settings-view-utils', () => {
   })
 
   describe('normalizeSettlementAccounts', () => {
-    it('returns a default empty account when input is null', () => {
+    it('returns an empty array when input is null', () => {
       const result = normalizeSettlementAccounts(null)
-      expect(result).toHaveLength(1)
-      expect(result[0].accountName).toBe('')
+      expect(result).toEqual([])
     })
 
-    it('returns a default empty account when input is undefined', () => {
+    it('returns an empty array when input is undefined', () => {
       const result = normalizeSettlementAccounts(undefined)
-      expect(result).toHaveLength(1)
+      expect(result).toEqual([])
     })
 
-    it('returns a default empty account when input is empty array', () => {
+    it('returns an empty array when input is empty array', () => {
       const result = normalizeSettlementAccounts([])
-      expect(result).toHaveLength(1)
+      expect(result).toEqual([])
     })
 
     it('normalizes account fields to strings', () => {

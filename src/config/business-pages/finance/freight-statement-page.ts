@@ -1,5 +1,8 @@
 import i18next from 'i18next'
-import { getCarrierOptions } from '@/constants/module-options'
+import {
+  getCarrierOptions,
+  getSettlementCompanyOptions,
+} from '@/constants/module-options'
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -8,6 +11,10 @@ import {
   CARRIER_NAME_LABEL,
   SIGN_STATUS_LABEL,
 } from '../shared/filter-labels'
+import {
+  SETTLEMENT_COMPANY_LABEL,
+  validateSameSettlementCompany,
+} from '../shared/settlement-company'
 import {
   buildStatementOverview,
   freightItemColumns,
@@ -40,6 +47,12 @@ export const freightStatementPageConfig: ModulePageConfig = {
       label: CARRIER_NAME_LABEL,
       type: 'select',
       options: getCarrierOptions,
+    },
+    {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
     },
     {
       key: 'status',
@@ -156,6 +169,10 @@ export const freightStatementPageConfig: ModulePageConfig = {
       key: 'carrierCode',
     },
     {
+      label: SETTLEMENT_COMPANY_LABEL,
+      key: 'settlementCompanyName',
+    },
+    {
       label: i18next.t('modules.pages.freightStatement.startDate'),
       key: 'startDate',
       type: 'date',
@@ -220,6 +237,13 @@ export const freightStatementPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.freightStatement.carrierCode'),
       type: 'input',
       disabled: true,
+      row: 1,
+    },
+    {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
       row: 1,
     },
     {
@@ -304,6 +328,8 @@ export const freightStatementPageConfig: ModulePageConfig = {
       'sourceBillNos',
       'carrierCode',
       'carrierName',
+      'settlementCompanyId',
+      'settlementCompanyName',
       'startDate',
       'endDate',
       'totalWeight',
@@ -317,6 +343,9 @@ export const freightStatementPageConfig: ModulePageConfig = {
     ],
     lineItem: [
       'sourceNo',
+      'sourceSalesOutboundItemId',
+      'settlementCompanyId',
+      'settlementCompanyName',
       'customerName',
       'projectName',
       'materialCode',
@@ -346,6 +375,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
     allowMultipleSelection: true,
     buildParentFilters: (currentRecord) => ({
       carrierName: asString(currentRecord.carrierName).trim(),
+      settlementCompanyId: currentRecord.settlementCompanyId,
       status: '已审核',
     }),
     validateBeforeOpen: (currentRecord) =>
@@ -354,6 +384,8 @@ export const freightStatementPageConfig: ModulePageConfig = {
         : '请先选择物流商，再选择物流单',
     mapParentToDraft: (parentRecord) => ({
       carrierName: parentRecord.carrierName || '',
+      settlementCompanyId: parentRecord.settlementCompanyId,
+      settlementCompanyName: parentRecord.settlementCompanyName || '',
       startDate: parentRecord.billTime || '',
       endDate: parentRecord.billTime || '',
       paidAmount: 0,
@@ -369,6 +401,14 @@ export const freightStatementPageConfig: ModulePageConfig = {
         asString(parentRecord.carrierName).trim()
       ) {
         return '只能选择同一物流商的物流单生成物流对账单'
+      }
+      const settlementCompanyError = validateSameSettlementCompany(
+        currentRecord,
+        parentRecord,
+        '只能选择同一结算主体的物流单生成物流对账单',
+      )
+      if (settlementCompanyError) {
+        return settlementCompanyError
       }
       return null
     },

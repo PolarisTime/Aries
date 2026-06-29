@@ -1895,6 +1895,8 @@ export interface MessageSchema {
       noViewPermission: string
       settlementInfo: string
       addBank: string
+      noSettlementAccounts: string
+      settlementAccountOptionalHint: string
       settlementAccount: string
       accountName: string
       accountNamePlaceholder: string

@@ -45,16 +45,6 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     openPageKey: '/system-parameters',
   },
   {
-    key: 'company-setting',
-    title: '结算主体管理',
-    menuKey: '/company-setting',
-    view: 'company-setting',
-    icon: 'AccountBookOutlined',
-    menuParent: 'system',
-    moduleKey: 'company-setting',
-    resourceKey: 'company-setting',
-  },
-  {
     key: 'operation-log',
     title: '操作日志',
     menuKey: '/operation-log',

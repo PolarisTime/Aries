@@ -1,6 +1,7 @@
 import i18next from 'i18next'
 import {
   buildValueOptions,
+  getSettlementCompanyOptions,
   getSupplierOptions,
   isPurchaseWeighRequiredCategory,
 } from '@/constants/module-options'
@@ -39,6 +40,12 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       label: SUPPLIER_NAME_LABEL,
       type: 'select',
       options: getSupplierOptions,
+    },
+    {
+      key: 'settlementCompanyId',
+      label: '结算主体',
+      type: 'select',
+      options: getSettlementCompanyOptions,
     },
     {
       key: 'status',
@@ -128,6 +135,11 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
+      label: '结算主体',
+      key: 'settlementCompanyName',
+      row: 1,
+    },
+    {
       label: i18next.t('modules.pages.purchaseInbound.colInboundDate'),
       key: 'inboundDate',
       type: 'date',
@@ -207,6 +219,13 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
+      key: 'settlementCompanyId',
+      label: '结算主体',
+      type: 'select',
+      options: getSettlementCompanyOptions,
+      row: 2,
+    },
+    {
       key: 'totalWeight',
       label: i18next.t('modules.pages.purchaseInbound.formTotalWeight'),
       type: 'input',
@@ -239,6 +258,8 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     mapParentToDraft: (parentRecord) => ({
       purchaseOrderNo: parentRecord.orderNo || '',
       supplierName: parentRecord.supplierName || '',
+      settlementCompanyId: parentRecord.settlementCompanyId,
+      settlementCompanyName: parentRecord.settlementCompanyName || '',
     }),
     transformItems: (parentRecord) =>
       cloneLineItems(
