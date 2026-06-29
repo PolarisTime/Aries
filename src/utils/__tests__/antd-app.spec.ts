@@ -4,8 +4,8 @@ import { bindAntdAppApi, message, modal } from '../antd-app'
 const staticModalDestroyAll = vi.fn()
 const staticMessageSuccess = vi.fn()
 
-vi.mock('antd/es/message', () => ({
-  default: {
+vi.mock('antd', () => ({
+  message: {
     success: (...args: unknown[]) => staticMessageSuccess(...args),
     error: vi.fn(),
     warning: vi.fn(),
@@ -13,10 +13,7 @@ vi.mock('antd/es/message', () => ({
     loading: vi.fn(),
     destroy: vi.fn(),
   },
-}))
-
-vi.mock('antd/es/modal', () => ({
-  default: {
+  Modal: {
     confirm: vi.fn(),
     info: vi.fn(),
     success: vi.fn(),

@@ -57,3 +57,9 @@ export type SavePrintTemplatePayload = z.infer<
 >
 
 export type PrintActionMode = 'preview' | 'print' | 'download'
+
+export type PrintTemplateResponse<T> = {
+  code?: number
+  message?: string
+  data: T
+}

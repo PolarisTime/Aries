@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { LoginUser } from '@/types/auth'
+import type { LoginUser } from '@/shared/schemas'
 
 const ensureApiClientSetupMock = vi.hoisted(() => vi.fn())
 const initWebVitalsMock = vi.hoisted(() => vi.fn())

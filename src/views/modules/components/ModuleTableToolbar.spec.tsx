@@ -10,18 +10,29 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
+vi.mock('antd', () => ({
+  Button: ({
+    children,
+    icon,
+    loading: _loading,
+    type: _type,
+    danger: _danger,
+    ...props
+  }: any) => (
+    <button {...props}>
+      {icon}
+      {children}
+    </button>
   ),
-}))
-
-vi.mock('antd/es/flex', () => ({
-  default: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-}))
-
-vi.mock('antd/es/pagination', () => ({
-  default: ({ showTotal, onChange, itemRender, total, ...props }: any) => (
+  Flex: ({
+    children,
+    align: _align,
+    justify: _justify,
+    wrap: _wrap,
+    gap: _gap,
+    ...props
+  }: any) => <div {...props}>{children}</div>,
+  Pagination: ({ showTotal, onChange, itemRender, total, ...props }: any) => (
     <div data-testid="pagination">
       {showTotal?.(total)}
       <button data-testid="page-change" onClick={() => onChange?.(2, 20)} />
@@ -30,10 +41,9 @@ vi.mock('antd/es/pagination', () => ({
       {itemRender?.(1, 'page', <span>page</span>)}
     </div>
   ),
-}))
-
-vi.mock('antd/es/space', () => ({
-  default: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  Space: ({ children, size: _size, wrap: _wrap, ...props }: any) => (
+    <div {...props}>{children}</div>
+  ),
 }))
 
 vi.mock('@ant-design/icons', () => ({

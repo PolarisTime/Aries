@@ -31,7 +31,7 @@ vi.mock('@/components/FormModal', () => ({
     ) : null,
 }))
 
-vi.mock('antd/es/form', () => {
+vi.mock('antd', () => {
   const Form = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   )
@@ -47,26 +47,20 @@ vi.mock('antd/es/form', () => {
       {children}
     </div>
   )
-  return { default: Form }
-})
-
-vi.mock('antd/es/input', () => {
   const Input = () => <input />
   Input.TextArea = () => <textarea />
-  return { default: Input }
+
+  return {
+    Form,
+    Input,
+    Select: () => <div>Select</div>,
+    Typography: {
+      Text: ({ children }: { children: React.ReactNode }) => (
+        <span>{children}</span>
+      ),
+    },
+  }
 })
-
-vi.mock('antd/es/select', () => ({
-  default: () => <div>Select</div>,
-}))
-
-vi.mock('antd/es/typography', () => ({
-  default: {
-    Text: ({ children }: { children: React.ReactNode }) => (
-      <span>{children}</span>
-    ),
-  },
-}))
 
 vi.mock('@/api/client', () => ({
   http: { get: vi.fn() },
@@ -84,6 +78,15 @@ vi.mock('@/utils/type-narrowing', () => ({
 import { RoleActionEditorModal } from '@/views/system/RoleActionEditorModal'
 
 describe('RoleActionEditorModal', () => {
+  const formInstance = {
+    getFieldValue: vi.fn(),
+    getFieldsValue: vi.fn(() => ({})),
+    setFieldsValue: vi.fn(),
+    setFieldValue: vi.fn(),
+    resetFields: vi.fn(),
+    validateFields: vi.fn(),
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockUseQuery.mockReturnValue({ data: [], isLoading: false })
@@ -99,7 +102,7 @@ describe('RoleActionEditorModal', () => {
       <RoleActionEditorModal
         open={true}
         editingRole={null}
-        form={{} as never}
+        form={formInstance as never}
         saving={false}
         onSave={vi.fn()}
         onClose={vi.fn()}
@@ -113,7 +116,7 @@ describe('RoleActionEditorModal', () => {
       <RoleActionEditorModal
         open={true}
         editingRole={null}
-        form={{} as never}
+        form={formInstance as never}
         saving={false}
         onSave={vi.fn()}
         onClose={vi.fn()}
@@ -129,7 +132,7 @@ describe('RoleActionEditorModal', () => {
       <RoleActionEditorModal
         open={true}
         editingRole={{ id: '1', roleName: 'Admin', roleCode: 'admin' } as never}
-        form={{} as never}
+        form={formInstance as never}
         saving={false}
         onSave={vi.fn()}
         onClose={vi.fn()}
@@ -143,7 +146,7 @@ describe('RoleActionEditorModal', () => {
       <RoleActionEditorModal
         open={false}
         editingRole={null}
-        form={{} as never}
+        form={formInstance as never}
         saving={false}
         onSave={vi.fn()}
         onClose={vi.fn()}
@@ -157,7 +160,7 @@ describe('RoleActionEditorModal', () => {
       <RoleActionEditorModal
         open={true}
         editingRole={null}
-        form={{} as never}
+        form={formInstance as never}
         saving={false}
         onSave={vi.fn()}
         onClose={vi.fn()}

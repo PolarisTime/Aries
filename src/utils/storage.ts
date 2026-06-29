@@ -1,5 +1,5 @@
 import { STORAGE_KEYS } from '@/constants/storage'
-import type { LoginUser } from '@/types/auth'
+import type { LoginUser } from '@/shared/schemas'
 import type { ListColumnSettings } from '@/types/module-page'
 
 export type ThemeMode = 'light' | 'dark' | 'system'

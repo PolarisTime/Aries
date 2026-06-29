@@ -1,6 +1,7 @@
 import { MenuOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
 import { Checkbox, Input, InputNumber, Select } from 'antd'
+import { StatusTag } from '@/components/StatusTag'
 import {
   getEditorItemMin,
   getEditorItemPrecision,
@@ -57,11 +58,12 @@ function renderReadOnlyValue(
   }
   if (type === 'status') {
     const statusValue = typeof value === 'string' ? value : ''
-    const meta = statusMap?.[statusValue]
     return (
-      <span className={`ant-tag ant-tag-${meta?.color || 'default'}`}>
-        {meta?.text || statusValue || '--'}
-      </span>
+      <StatusTag
+        status={statusValue}
+        statusMap={statusMap ?? {}}
+        fallback={statusValue || '--'}
+      />
     )
   }
   return formatCellValue(value, type)

@@ -1,6 +1,6 @@
 import i18next from 'i18next'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
-import type { PrintTemplateRecord } from '@/types/print-template'
+import type { PrintTemplateRecord } from '@/shared/schemas'
 
 export function getPrintTemplateBillTypeLabel(value?: string) {
   if (!value) return '--'

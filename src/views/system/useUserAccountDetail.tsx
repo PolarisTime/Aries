@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getUserAccountDetail } from '@/api/user-accounts'
 import { useRequestError } from '@/hooks/useRequestError'
-import type { UserAccountRecord } from '@/types/user-account'
+import type { UserAccountRecord } from '@/shared/schemas'
 
 export function useUserAccountDetail() {
   const { t } = useTranslation()

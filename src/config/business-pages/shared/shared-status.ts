@@ -2,7 +2,7 @@ import i18next from 'i18next'
 import type { ModuleStatusMeta } from '@/types/module-page'
 
 export const statusMap: Record<string, ModuleStatusMeta> = {
-  草稿: { text: i18next.t('modules.status.draft'), color: 'default' },
+  草稿: { text: i18next.t('modules.status.draft'), color: 'warning' },
   完成采购: {
     text: i18next.t('modules.status.completedPurchase'),
     color: 'success',
@@ -38,7 +38,7 @@ export const statusMap: Record<string, ModuleStatusMeta> = {
   已确认: { text: i18next.t('modules.status.confirmed'), color: 'success' },
   待审核: { text: i18next.t('modules.status.pendingAudit'), color: 'warning' },
   已签署: { text: i18next.t('modules.status.signed'), color: 'success' },
-  未签署: { text: i18next.t('modules.status.unsigned'), color: 'default' },
+  未签署: { text: i18next.t('modules.status.unsigned'), color: 'warning' },
   已收款: { text: i18next.t('modules.status.received'), color: 'success' },
   已付款: { text: i18next.t('modules.status.paid'), color: 'success' },
   已收票: {
@@ -57,7 +57,7 @@ export const statusMap: Record<string, ModuleStatusMeta> = {
   执行中: { text: i18next.t('modules.status.executing'), color: 'processing' },
   已归档: { text: i18next.t('modules.status.archived'), color: 'success' },
   正常: { text: i18next.t('modules.status.normal'), color: 'success' },
-  禁用: { text: i18next.t('modules.status.disabled'), color: 'warning' },
+  禁用: { text: i18next.t('modules.status.disabled'), color: 'error' },
   成功: { text: i18next.t('modules.status.success'), color: 'success' },
   失败: { text: i18next.t('modules.status.failed'), color: 'error' },
 }

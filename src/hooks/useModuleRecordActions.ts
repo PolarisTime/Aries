@@ -11,6 +11,7 @@ interface Props {
   onEdit: (record: ModuleRecord) => void
   onAttach: (record: ModuleRecord) => void
   onDetail?: (record: ModuleRecord) => void
+  detailActionLabel?: string
 }
 
 export function useModuleRecordActions({
@@ -20,6 +21,7 @@ export function useModuleRecordActions({
   onEdit,
   onAttach,
   onDetail,
+  detailActionLabel,
 }: Props) {
   const { t } = useTranslation()
   const can = usePermissionStore((s) => s.can)
@@ -31,7 +33,7 @@ export function useModuleRecordActions({
     if (onDetail && can(resource, 'read')) {
       items.push({
         key: 'detail',
-        label: t('hooks.recordActions.view'),
+        label: detailActionLabel || t('hooks.recordActions.view'),
         onClick: () => onDetail(record),
       })
     }

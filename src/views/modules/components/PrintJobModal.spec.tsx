@@ -51,6 +51,64 @@ vi.mock('@dnd-kit/utilities', () => ({
   },
 }))
 
+vi.mock('antd', () => ({
+  Button: ({ children, icon, ...props }: any) => (
+    <button {...props}>
+      {icon}
+      {children}
+    </button>
+  ),
+  Checkbox: ({ checked, children, onChange }: any) => (
+    <label>
+      <input
+        checked={checked}
+        onChange={(event) => onChange(event)}
+        type="checkbox"
+      />
+      {children}
+    </label>
+  ),
+  Empty: ({ description }: any) => <div data-testid="empty">{description}</div>,
+  Input: ({ className, disabled, onChange, placeholder, value }: any) => (
+    <input
+      aria-label={placeholder}
+      className={className}
+      disabled={disabled}
+      onChange={(event) => onChange(event)}
+      value={value}
+    />
+  ),
+  Modal: ({ children, open, title, width }: any) =>
+    open ? (
+      <div data-testid="print-job-modal" data-width={width}>
+        <h2 data-testid="print-job-title">{title}</h2>
+        {children}
+      </div>
+    ) : null,
+  Select: ({ onChange, options = [], value }: any) => (
+    <select
+      data-testid="template-select"
+      onChange={(event) => onChange(event.target.value)}
+      value={value}
+    >
+      {options.map((option: any) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  ),
+  Space: ({ children }: any) => <span>{children}</span>,
+  Tag: ({ children }: any) => <span data-testid="tag">{children}</span>,
+  Typography: {
+    Text: ({ children, className, ...props }: any) => (
+      <span className={className} {...props}>
+        {children}
+      </span>
+    ),
+  },
+}))
+
 vi.mock('antd/es/button', () => ({
   default: ({ children, icon, ...props }: any) => (
     <button {...props}>

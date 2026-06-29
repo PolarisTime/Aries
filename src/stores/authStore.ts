@@ -6,7 +6,7 @@ import type {
   LoginPayload,
   LoginResponseData,
   LoginUser,
-} from '@/types/auth'
+} from '@/shared/schemas'
 import {
   type AuthPersistenceMode,
   clearStoredUser,

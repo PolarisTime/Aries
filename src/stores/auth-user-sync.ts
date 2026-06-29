@@ -1,5 +1,5 @@
+import type { LoginUser } from '@/shared/schemas'
 import { useAuthStore } from '@/stores/authStore'
-import type { LoginUser } from '@/types/auth'
 import { setStoredUser } from '@/utils/storage'
 
 function patchCurrentAuthUser(updater: (user: LoginUser) => LoginUser) {

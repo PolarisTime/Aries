@@ -19,6 +19,7 @@ interface Props {
   inboundItemId?: string | number
   purchaseOrderItemId?: string | number
   salesOrderItemId?: string | number
+  allowItemIdFallback?: boolean
 }
 
 function normalizeLookupId(value: string | number | undefined) {
@@ -34,6 +35,7 @@ export function PieceWeightPopover({
   inboundItemId,
   purchaseOrderItemId,
   salesOrderItemId,
+  allowItemIdFallback = true,
 }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -41,9 +43,14 @@ export function PieceWeightPopover({
   const normalizedSalesOrderItemId = normalizeLookupId(salesOrderItemId)
   const normalizedInboundItemId = normalizeLookupId(inboundItemId)
   const normalizedPurchaseOrderItemId =
-    normalizeLookupId(purchaseOrderItemId) || normalizeLookupId(itemId)
+    normalizeLookupId(purchaseOrderItemId) ||
+    (allowItemIdFallback ? normalizeLookupId(itemId) : '')
   const hasSalesOrderItemLookup = Boolean(normalizedSalesOrderItemId)
   const hasInboundItemLookup = Boolean(normalizedInboundItemId)
+  const hasPieceWeightLookup =
+    hasSalesOrderItemLookup ||
+    hasInboundItemLookup ||
+    Boolean(normalizedPurchaseOrderItemId)
 
   const apiPath = hasSalesOrderItemLookup
     ? `/purchase-orders/items/piece-weights/by-sales-order-item?salesOrderItemId=${encodeURIComponent(normalizedSalesOrderItemId)}`
@@ -68,17 +75,13 @@ export function PieceWeightPopover({
       assertApiSuccess(r, t('modules.pieceWeight.loadFailed'))
       return r.data || []
     },
-    enabled:
-      open &&
-      (hasSalesOrderItemLookup ||
-        hasInboundItemLookup ||
-        Boolean(normalizedPurchaseOrderItemId)),
+    enabled: open && hasPieceWeightLookup,
   })
 
   const isWeighCategory =
     category === MATERIAL_TYPE.COIL_REBAR || category === MATERIAL_TYPE.WIRE_ROD
 
-  if (!isWeighCategory) {
+  if (!isWeighCategory || !hasPieceWeightLookup) {
     return (
       <span>
         {typeof weightTon === 'number'

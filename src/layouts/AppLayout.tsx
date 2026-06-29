@@ -12,7 +12,6 @@ import { useAuthRefreshTimer } from '@/hooks/useAuthRefreshTimer'
 import { useOpenPages } from '@/hooks/useOpenPages'
 import { AppLayoutHeader } from '@/layouts/AppLayoutHeader'
 import { AppPageTabs } from '@/layouts/AppPageTabs'
-import { AppVersionFooter } from '@/layouts/AppVersionFooter'
 import {
   buildAppLayoutStyles,
   buildAppLayoutUserInfo,
@@ -99,21 +98,16 @@ function SideNavigation({
 }
 
 type AppContentOutletProps = {
-  backendVersion: string | null
   openPageKey: string
 }
 
-function AppContentOutlet({
-  backendVersion,
-  openPageKey,
-}: AppContentOutletProps) {
+function AppContentOutlet({ openPageKey }: AppContentOutletProps) {
   return (
     <Content className="leo-content">
       <div className="leo-content-inner">
         <AppErrorBoundary>
           <Outlet key={openPageKey} />
         </AppErrorBoundary>
-        <AppVersionFooter backendVersion={backendVersion} />
       </div>
     </Content>
   )
@@ -160,6 +154,13 @@ function PersonalSettingsHost({
   )
 }
 
+function hasWatermarkContent(content: string | string[] | undefined) {
+  if (Array.isArray(content)) {
+    return content.some((line) => line.trim())
+  }
+  return Boolean(content?.trim())
+}
+
 export function AppLayout() {
   useAuthAppSync()
 
@@ -178,7 +179,7 @@ export function AppLayout() {
   const clock = useAppLayoutClock()
 
   const routePageContext = resolveRoutePageContext(location.pathname, t)
-  const { backendOnline, backendVersion } = useBackendStatus(token)
+  const { backendOnline } = useBackendStatus(token)
 
   const {
     visible: personalSettingsOpen,
@@ -333,125 +334,130 @@ export function AppLayout() {
   })
 
   const wm = useAppWatermark(currentUserLoginName)
+  const layoutShell = (
+    <Layout className={rootClassName} style={shellFontStyle}>
+      <div className="leo-page-loader" />
 
-  return (
-    <AppAntdProvider>
+      {!isTopNavigationLayout ? (
+        <SideNavigation
+          collapsed={collapsed}
+          onCollapse={setCollapsed}
+          onMenuClick={handleMenuClick}
+          onOpenChange={setSiderOpenKeys}
+          openKeys={siderOpenKeys}
+          selectedKeys={selectedKeys}
+          sideMenuItems={sideMenuItems}
+          t={t}
+        />
+      ) : null}
+
+      <Layout
+        className={`leo-main${isTopNavigationLayout ? ' leo-main-top-nav' : ''}`}
+        style={mainStyle}
+      >
+        <Header className={headerClassName} style={fixedWidthStyle}>
+          {isTopNavigationLayout ? (
+            <AppLayoutHeader
+              kind="top"
+              selectedKeys={selectedKeys}
+              topMenuItems={topMenuItems}
+              onMenuClick={handleMenuClick}
+              // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
+              onDashboardClick={() => navigate({ to: '/dashboard' as '/' })}
+              topBrandMark={topBrandMark}
+              shellFontStyle={shellFontStyle}
+              clockText={clockText}
+              currentUserName={currentUserName}
+              currentUserLoginName={currentUserLoginName}
+              onOpenPersonalSettings={handleOpenPersonalSettings}
+              onSignOut={handleSignOut}
+              search={{
+                keyword: globalSearchKeyword,
+                options: globalSearchOptions,
+                open: searchOpen,
+                loading: globalSearchLoading,
+                onBlur: handleGlobalSearchBlur,
+                onKeywordChange: setGlobalSearchKeyword,
+                onOpen: () => setSearchOpen(true),
+                onOpenChange: setSearchOpen,
+                onSearch: handleGlobalSearch,
+                onSelect: handleGlobalSearchSelect,
+                onSubmit: handleGlobalSearchSubmit,
+              }}
+            />
+          ) : (
+            <AppLayoutHeader
+              kind="side"
+              collapsed={collapsed}
+              onToggleCollapsed={() => setCollapsed((value) => !value)}
+              title={routePageContext.title}
+              backendOnline={backendOnline}
+              shellFontStyle={shellFontStyle}
+              clockText={clockText}
+              currentUserName={currentUserName}
+              onOpenPersonalSettings={handleOpenPersonalSettings}
+              onSignOut={handleSignOut}
+              search={{
+                keyword: globalSearchKeyword,
+                options: globalSearchOptions,
+                open: searchOpen,
+                loading: globalSearchLoading,
+                onBlur: handleGlobalSearchBlur,
+                onKeywordChange: setGlobalSearchKeyword,
+                onOpen: () => setSearchOpen(true),
+                onOpenChange: setSearchOpen,
+                onSearch: handleGlobalSearch,
+                onSelect: handleGlobalSearchSelect,
+                onSubmit: handleGlobalSearchSubmit,
+              }}
+            />
+          )}
+        </Header>
+
+        <AppPageTabs
+          activeKey={activeTabKey}
+          pages={pages}
+          isTopNavigationLayout={isTopNavigationLayout}
+          shellFontStyle={{ ...fixedWidthStyle, ...shellFontStyle }}
+          closePage={closePage}
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
+          onNavigateToPath={(path) => navigate({ to: path as '/' })}
+        />
+
+        <AppContentOutlet openPageKey={routePageContext.openPageKey} />
+      </Layout>
+
+      <PersonalSettingsHost
+        open={personalSettingsOpen}
+        onClose={closePersonalSettings}
+        onSaveDisplay={handleSavePersonalSettings}
+        onResetDisplay={resetPersonalSettings}
+        fontSize={fontSize}
+        onFontSizeChange={setFontSize}
+        layoutMode={layoutMode}
+        onLayoutModeChange={setLayoutMode}
+        themeMode={themeMode}
+        onThemeModeChange={setThemeMode}
+      />
+    </Layout>
+  )
+
+  const watermarkedLayout =
+    wm.enabled && hasWatermarkContent(wm.text) ? (
       <Watermark
         content={wm.text}
         font={{ fontSize: wm.fontSize, color: wm.color }}
         rotate={wm.rotate}
         gap={[wm.density, wm.density]}
+        width={wm.width}
+        height={wm.height}
         className="min-h-[100dvh]"
       >
-        <Layout className={rootClassName} style={shellFontStyle}>
-          <div className="leo-page-loader" />
-
-          {!isTopNavigationLayout ? (
-            <SideNavigation
-              collapsed={collapsed}
-              onCollapse={setCollapsed}
-              onMenuClick={handleMenuClick}
-              onOpenChange={setSiderOpenKeys}
-              openKeys={siderOpenKeys}
-              selectedKeys={selectedKeys}
-              sideMenuItems={sideMenuItems}
-              t={t}
-            />
-          ) : null}
-
-          <Layout
-            className={`leo-main${isTopNavigationLayout ? ' leo-main-top-nav' : ''}`}
-            style={mainStyle}
-          >
-            <Header className={headerClassName} style={fixedWidthStyle}>
-              {isTopNavigationLayout ? (
-                <AppLayoutHeader
-                  kind="top"
-                  selectedKeys={selectedKeys}
-                  topMenuItems={topMenuItems}
-                  onMenuClick={handleMenuClick}
-                  // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
-                  onDashboardClick={() => navigate({ to: '/dashboard' as '/' })}
-                  topBrandMark={topBrandMark}
-                  shellFontStyle={shellFontStyle}
-                  clockText={clockText}
-                  currentUserName={currentUserName}
-                  currentUserLoginName={currentUserLoginName}
-                  onOpenPersonalSettings={handleOpenPersonalSettings}
-                  onSignOut={handleSignOut}
-                  search={{
-                    keyword: globalSearchKeyword,
-                    options: globalSearchOptions,
-                    open: searchOpen,
-                    loading: globalSearchLoading,
-                    onBlur: handleGlobalSearchBlur,
-                    onKeywordChange: setGlobalSearchKeyword,
-                    onOpen: () => setSearchOpen(true),
-                    onOpenChange: setSearchOpen,
-                    onSearch: handleGlobalSearch,
-                    onSelect: handleGlobalSearchSelect,
-                    onSubmit: handleGlobalSearchSubmit,
-                  }}
-                />
-              ) : (
-                <AppLayoutHeader
-                  kind="side"
-                  collapsed={collapsed}
-                  onToggleCollapsed={() => setCollapsed((value) => !value)}
-                  title={routePageContext.title}
-                  backendOnline={backendOnline}
-                  shellFontStyle={shellFontStyle}
-                  clockText={clockText}
-                  currentUserName={currentUserName}
-                  onOpenPersonalSettings={handleOpenPersonalSettings}
-                  onSignOut={handleSignOut}
-                  search={{
-                    keyword: globalSearchKeyword,
-                    options: globalSearchOptions,
-                    open: searchOpen,
-                    loading: globalSearchLoading,
-                    onBlur: handleGlobalSearchBlur,
-                    onKeywordChange: setGlobalSearchKeyword,
-                    onOpen: () => setSearchOpen(true),
-                    onOpenChange: setSearchOpen,
-                    onSearch: handleGlobalSearch,
-                    onSelect: handleGlobalSearchSelect,
-                    onSubmit: handleGlobalSearchSubmit,
-                  }}
-                />
-              )}
-            </Header>
-
-            <AppPageTabs
-              activeKey={activeTabKey}
-              pages={pages}
-              isTopNavigationLayout={isTopNavigationLayout}
-              shellFontStyle={{ ...fixedWidthStyle, ...shellFontStyle }}
-              closePage={closePage}
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
-              onNavigateToPath={(path) => navigate({ to: path as '/' })}
-            />
-
-            <AppContentOutlet
-              backendVersion={backendVersion}
-              openPageKey={routePageContext.openPageKey}
-            />
-          </Layout>
-
-          <PersonalSettingsHost
-            open={personalSettingsOpen}
-            onClose={closePersonalSettings}
-            onSaveDisplay={handleSavePersonalSettings}
-            onResetDisplay={resetPersonalSettings}
-            fontSize={fontSize}
-            onFontSizeChange={setFontSize}
-            layoutMode={layoutMode}
-            onLayoutModeChange={setLayoutMode}
-            themeMode={themeMode}
-            onThemeModeChange={setThemeMode}
-          />
-        </Layout>
+        {layoutShell}
       </Watermark>
-    </AppAntdProvider>
-  )
+    ) : (
+      layoutShell
+    )
+
+  return <AppAntdProvider>{watermarkedLayout}</AppAntdProvider>
 }

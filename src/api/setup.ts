@@ -1,5 +1,4 @@
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
 import type {
   InitialSetupAdminSubmitPayload,
   InitialSetupCompanyPayload,
@@ -7,7 +6,8 @@ import type {
   InitialSetupSubmitResponse,
   InitialSetupTotpPayload,
   InitialSetupTotpResult,
-} from '@/types/setup'
+} from '@/shared/schemas'
+import type { ApiResponse } from '@/types/api'
 import { getApiMessage } from '@/utils/api-messages'
 import { assertApiSuccess, http } from './client'
 

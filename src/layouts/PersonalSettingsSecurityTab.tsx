@@ -12,7 +12,7 @@ import {
   Typography,
 } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { LoginUser } from '@/types/auth'
+import type { LoginUser } from '@/shared/schemas'
 import { toDataImageUrl } from '@/utils/data-url'
 import { buildFormControlId } from '@/utils/form-control-id'
 

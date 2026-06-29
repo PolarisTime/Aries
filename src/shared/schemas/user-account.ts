@@ -50,6 +50,11 @@ export type UserAccountCreateResult = z.infer<
   typeof userAccountCreateResultSchema
 >
 
+export type UserAccountLoginNameAvailability = {
+  available: boolean
+  message?: string
+}
+
 export const departmentOptionRecordSchema = z.object({
   id: z.union([z.string(), z.number()]),
   departmentCode: z.string().optional(),

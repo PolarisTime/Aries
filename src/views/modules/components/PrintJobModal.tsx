@@ -43,11 +43,8 @@ import { getCustomerProjectOptions } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
 import { shouldDisplayPieceWeightAsDash } from '@/module-system/module-line-item-display'
+import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
-import type {
-  PrintActionMode,
-  PrintTemplateRecord,
-} from '@/types/print-template'
 import { reorderPrintItemIds } from '@/views/modules/components/print-job-modal-utils'
 
 const EMPTY_PRINT_ITEMS: PrintRecordItem[] = []

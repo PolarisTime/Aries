@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { PrintTemplateRecord } from '@/types/print-template'
+import type { PrintTemplateRecord } from '@/shared/schemas'
 
 const mockUseQuery = vi.fn()
 const mockCan = vi.fn()
@@ -64,8 +64,8 @@ vi.mock('@/api/print-template', () => ({
     mockUploadPrintTemplateJson(...args),
 }))
 
-vi.mock('antd/es/form', () => ({
-  default: {
+vi.mock('antd', () => ({
+  Form: {
     useForm: () => [mockForm],
   },
 }))

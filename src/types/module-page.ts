@@ -105,6 +105,8 @@ export interface ModulePageConfig {
   defaultHiddenColumnKeys?: string[]
   detailFields: ModuleDetailField[]
   detailColumnCount?: number
+  detailActionLabel?: string
+  detailItemTitle?: string
   formFields?: ModuleFormFieldDefinition[]
   parentImport?: ModuleParentImportDefinition
   itemColumns?: ModuleColumnDefinition[]

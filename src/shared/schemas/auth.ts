@@ -58,6 +58,7 @@ export const loginStep1ResponseSchema = z.object({
   tempToken: z.string(),
 })
 export type LoginStep1Response = z.infer<typeof loginStep1ResponseSchema>
+export type LoginResult = LoginResponseData | LoginStep1Response
 
 export const totpSetupResponseSchema = z.object({
   qrCodeBase64: z.string(),

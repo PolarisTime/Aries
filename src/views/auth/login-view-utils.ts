@@ -1,4 +1,4 @@
-import type { LoginUser } from '@/types/auth'
+import type { LoginUser } from '@/shared/schemas'
 
 const TOTP_SESSION_KEY = 'aries-totp-session'
 

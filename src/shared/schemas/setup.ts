@@ -43,3 +43,16 @@ export const initialSetupCompanyPayloadSchema = z.object({
 export type InitialSetupCompanyPayload = z.infer<
   typeof initialSetupCompanyPayloadSchema
 >
+
+export type InitialSetupAdminSubmitPayload = {
+  admin: InitialSetupAdminPayload
+  totpSecret?: string
+  totpCode?: string
+}
+
+export type InitialSetupResult = InitialSetupStatus
+
+export interface InitialSetupSubmitResponse {
+  adminLoginName: string
+  companyName: string
+}

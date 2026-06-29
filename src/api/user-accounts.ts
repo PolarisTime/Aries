@@ -1,15 +1,15 @@
 import { pageContent } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
-import type { TotpSetupResponse } from '@/types/auth'
 import type {
   DepartmentOptionRecord,
   RoleOptionRecord,
+  TotpSetupResponse,
   UserAccountCreateResult,
   UserAccountFormPayload,
   UserAccountLoginNameAvailability,
   UserAccountRecord,
-} from '@/types/user-account'
+} from '@/shared/schemas'
+import type { ApiResponse } from '@/types/api'
 import { getApiMessage } from '@/utils/api-messages'
 import { assertApiSuccess, http } from './client'
 

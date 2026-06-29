@@ -37,14 +37,14 @@ vi.mock('@dnd-kit/utilities', () => ({
   },
 }))
 
-vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
+vi.mock('antd', () => ({
+  Button: ({ children, icon, ...props }: any) => (
+    <button {...props}>
+      {icon}
+      {children}
+    </button>
   ),
-}))
-
-vi.mock('antd/es/checkbox', () => ({
-  default: ({ children, checked, onChange, ...props }: any) => (
+  Checkbox: ({ children, checked, onChange, ...props }: any) => (
     <label>
       <input
         type="checkbox"
@@ -55,30 +55,32 @@ vi.mock('antd/es/checkbox', () => ({
       {children}
     </label>
   ),
-}))
-
-vi.mock('antd/es/divider', () => ({
-  default: ({ ...props }: any) => <hr {...props} />,
-}))
-
-vi.mock('antd/es/popover', () => ({
-  default: ({ children, content, open, ...props }: any) =>
-    open ? (
-      <div data-testid="popover" {...props}>
-        {content}
-      </div>
-    ) : (
-      <div {...props}>{children}</div>
+  Divider: ({ ...props }: any) => <hr {...props} />,
+  Popover: ({
+    children,
+    content,
+    open,
+    onOpenChange: _onOpenChange,
+    placement: _placement,
+    styles: _styles,
+    trigger: _trigger,
+    ...props
+  }: any) => (
+    <div {...props}>
+      {children}
+      {open ? <div data-testid="popover">{content}</div> : null}
+    </div>
+  ),
+  Space: ({
+    children,
+    orientation: _orientation,
+    size: _size,
+    ...props
+  }: any) => <div {...props}>{children}</div>,
+  Typography: {
+    Text: ({ children, strong, ...props }: any) => (
+      <span {...props}>{strong ? <strong>{children}</strong> : children}</span>
     ),
-}))
-
-vi.mock('antd/es/space', () => ({
-  default: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-}))
-
-vi.mock('antd/es/typography', () => ({
-  default: {
-    Text: ({ children, ...props }: any) => <span {...props}>{children}</span>,
   },
 }))
 

@@ -121,5 +121,11 @@ describe('piece-weight-source', () => {
       const result = resolvePieceWeightLookupSource('freight-bill', item)
       expect(result).toEqual({ purchaseOrderItemId: 'po-999' })
     })
+
+    it('does not use inventory report synthetic row id as purchase order item id', () => {
+      const item = { id: 'M-001|品牌A|规格A|一号仓|B-001' }
+      const result = resolvePieceWeightLookupSource('inventory-report', item)
+      expect(result).toEqual({})
+    })
   })
 })

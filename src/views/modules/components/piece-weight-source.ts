@@ -40,5 +40,9 @@ export function resolvePieceWeightLookupSource(
     return { purchaseOrderItemId: sourcePurchaseOrderItemId }
   }
 
+  if (moduleKey === 'inventory-report') {
+    return {}
+  }
+
   return itemId !== undefined ? { purchaseOrderItemId: itemId } : {}
 }

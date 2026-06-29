@@ -69,14 +69,14 @@ describe('AuthPageShell', () => {
     expect(screen.getByTestId('antd-provider')).toBeTruthy()
   })
 
-  it('renders version footer', () => {
+  it('does not render version footer', () => {
     render(
       <AuthPageShell>
         <div>内容</div>
       </AuthPageShell>,
     )
-    expect(screen.getByText('© 2026C Leo')).toBeTruthy()
-    expect(screen.getByText('前端 v0.2.0')).toBeTruthy()
-    expect(screen.getByText('后端 v--')).toBeTruthy()
+    expect(screen.queryByText('© 2026C Leo')).toBeNull()
+    expect(screen.queryByText('前端 v0.2.0')).toBeNull()
+    expect(screen.queryByText('后端 v--')).toBeNull()
   })
 })

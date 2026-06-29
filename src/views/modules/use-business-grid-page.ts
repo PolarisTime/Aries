@@ -186,6 +186,11 @@ export function useBusinessGridPage({
   const lockedLineItemsNotice = String(
     getBehaviorValue(moduleKey, 'lockedLineItemsNotice') || '',
   )
+  const shouldUseDetailAction = Boolean(
+    detailRoutePath ||
+      moduleKey === 'receivable-payable' ||
+      config?.detailActionLabel,
+  )
 
   const formFields = config?.formFields || []
   const statusFields = [...formFields, ...(config?.filters || [])]
@@ -220,12 +225,12 @@ export function useBusinessGridPage({
     isReadOnly: Boolean(config?.readOnly),
     onEdit: handleEdit,
     onAttach: overlays.openAttachment,
-    onDetail:
-      detailRoutePath || moduleKey === 'receivable-payable'
-        ? detailRoutePath
-          ? handleDetail
-          : openDetail
-        : undefined,
+    detailActionLabel: config?.detailActionLabel,
+    onDetail: shouldUseDetailAction
+      ? detailRoutePath
+        ? handleDetail
+        : openDetail
+      : undefined,
   })
 
   const {

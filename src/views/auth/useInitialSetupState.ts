@@ -8,7 +8,10 @@ import {
   submitInitialAdmin,
   submitInitialCompany,
 } from '@/api/setup'
-import type { InitialSetupStatus, InitialSetupTotpResult } from '@/types/setup'
+import type {
+  InitialSetupStatus,
+  InitialSetupTotpResult,
+} from '@/shared/schemas'
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 

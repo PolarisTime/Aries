@@ -6,8 +6,8 @@ import {
   enableOwn2fa,
   setupOwn2fa,
 } from '@/api/account-security'
+import type { TotpSetupResponse } from '@/shared/schemas'
 import { syncCurrentUserTotpState } from '@/stores/auth-user-sync'
-import type { TotpSetupResponse } from '@/types/auth'
 import { message } from '@/utils/antd-app'
 
 interface Props {

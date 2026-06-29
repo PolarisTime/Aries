@@ -319,10 +319,10 @@ describe('AppLayout', () => {
     expect(document.querySelector('.leo-content')).toBeDefined()
   })
 
-  it('renders version footer', () => {
+  it('does not render global version footer', () => {
     render(<AppLayout />)
-    expect(screen.getByText('© 2026C Leo')).toBeDefined()
-    expect(screen.getByText('前端 v0.2.0')).toBeDefined()
-    expect(screen.getByText('后端 v0.1.0')).toBeDefined()
+    expect(screen.queryByText('© 2026C Leo')).toBeNull()
+    expect(screen.queryByText('前端 v0.2.0')).toBeNull()
+    expect(screen.queryByText('后端 v0.1.0')).toBeNull()
   })
 })

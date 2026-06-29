@@ -2,14 +2,17 @@ import { useQuery } from '@tanstack/react-query'
 
 import { listClientSettings } from '@/api/system-settings'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import type { ModuleRecord } from '@/types/module-page'
 
-interface WatermarkConfig {
+export interface WatermarkConfig {
   enabled: boolean
   text: string | string[] | undefined
   fontSize: number
   color: string
   rotate: number
   density: number
+  width: number
+  height: number
 }
 
 export function buildWatermarkContent(
@@ -23,6 +26,27 @@ export function buildWatermarkContent(
     .replace(/\{date\}/g, now.toLocaleDateString('zh-CN'))
   const lines = rendered.split(/\r\n|\r|\n/)
   return lines.length > 1 ? lines : rendered
+}
+
+function findSettingValue(systemSettings: ModuleRecord[], settingCode: string) {
+  return systemSettings.find(
+    (s) => String(s.settingCode).trim() === settingCode,
+  )?.sampleNo
+}
+
+function readFiniteNumber(
+  systemSettings: ModuleRecord[],
+  settingCode: string,
+  fallbackValue: number,
+) {
+  const rawValue = findSettingValue(systemSettings, settingCode)
+  if (rawValue == null || String(rawValue).trim() === '') return fallbackValue
+  const value = Number(rawValue)
+  return Number.isFinite(value) ? value : fallbackValue
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
 }
 
 export function useAppWatermark(currentUserLoginName: string): WatermarkConfig {
@@ -46,28 +70,25 @@ export function useAppWatermark(currentUserLoginName: string): WatermarkConfig {
   const contentSetting = systemSettings.find(
     (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_CONTENT',
   )
-  const fontSize =
-    Number(
-      systemSettings.find(
-        (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_FONT_SIZE',
-      )?.sampleNo,
-    ) || 18
-  const rotate = Number(
-    systemSettings.find(
-      (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_ROTATE',
-    )?.sampleNo,
+  const fontSize = clampNumber(
+    readFiniteNumber(systemSettings, 'SYS_WATERMARK_FONT_SIZE', 18),
+    10,
+    48,
+  )
+  const rotate = clampNumber(
+    readFiniteNumber(systemSettings, 'SYS_WATERMARK_ROTATE', -22),
+    -90,
+    90,
   )
   const color = String(
-    systemSettings.find(
-      (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_COLOR',
-    )?.sampleNo || 'rgba(0,0,0,0.08)',
+    findSettingValue(systemSettings, 'SYS_WATERMARK_COLOR') ||
+      'rgba(0,0,0,0.08)',
   ).trim()
-  const density =
-    Number(
-      systemSettings.find(
-        (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_DENSITY',
-      )?.sampleNo,
-    ) || 200
+  const density = clampNumber(
+    readFiniteNumber(systemSettings, 'SYS_WATERMARK_DENSITY', 200),
+    50,
+    400,
+  )
 
   const text = (() => {
     if (!enabled) return undefined
@@ -76,5 +97,14 @@ export function useAppWatermark(currentUserLoginName: string): WatermarkConfig {
     return buildWatermarkContent(template, currentUserLoginName)
   })()
 
-  return { enabled, text, fontSize, color, rotate, density }
+  return {
+    enabled,
+    text,
+    fontSize,
+    color: color || 'rgba(0,0,0,0.08)',
+    rotate,
+    density,
+    width: Math.max(120, density),
+    height: Math.max(64, fontSize * 4),
+  }
 }

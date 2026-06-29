@@ -1,7 +1,7 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import type { TotpSetupResponse } from '@/shared/schemas'
 import type { ApiResponse } from '@/types/api'
-import type { TotpSetupResponse } from '@/types/auth'
 import { getApiMessage } from '@/utils/api-messages'
 
 export interface ChangeOwnPasswordPayload {

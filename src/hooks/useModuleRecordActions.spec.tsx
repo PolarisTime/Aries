@@ -57,6 +57,24 @@ describe('useModuleRecordActions', () => {
     ).toEqual(['detail', 'edit', 'attach'])
   })
 
+  it('uses custom detail action label when provided', () => {
+    const { result } = renderHook(() =>
+      useModuleRecordActions({
+        moduleKey: 'sales-order',
+        onEdit: vi.fn(),
+        onAttach: vi.fn(),
+        onDetail: vi.fn(),
+        detailActionLabel: '流水',
+      }),
+    )
+
+    const detailAction = result.current
+      .buildActions({ id: '303', status: '草稿' })
+      .find((item) => item.key === 'detail')
+
+    expect(detailAction?.label).toBe('流水')
+  })
+
   it('returns empty actions when isReadOnly is true', () => {
     const { result } = renderHook(() =>
       useModuleRecordActions({

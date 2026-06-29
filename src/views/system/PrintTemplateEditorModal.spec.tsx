@@ -7,7 +7,7 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('antd/es/form', () => {
+vi.mock('antd', () => {
   const Form = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   )
@@ -23,64 +23,66 @@ vi.mock('antd/es/form', () => {
       {children}
     </div>
   )
-  return { default: Form }
-})
-
-vi.mock('antd/es/input', () => {
   const Input = () => <input />
   Input.TextArea = () => <textarea />
-  return { default: Input }
-})
 
-vi.mock('antd/es/select', () => ({
-  default: () => <div>Select</div>,
-}))
-
-vi.mock('antd/es/alert', () => ({
-  default: ({
-    message,
-    title,
-    description,
-  }: {
-    message?: string
-    title?: string
-    description?: React.ReactNode
-  }) => (
-    <div>
-      <div>{title ?? message}</div>
-      {description && <div>{description}</div>}
-    </div>
-  ),
-}))
-
-vi.mock('antd/es/row', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
+  const Space = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
-  ),
-}))
+  )
 
-vi.mock('antd/es/col', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}))
-
-vi.mock('antd/es/tag', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <span>{children}</span>
-  ),
-}))
-
-vi.mock('antd/es/typography', () => ({
-  default: {
-    Text: ({ children }: { children: React.ReactNode }) => (
+  return {
+    Alert: ({
+      message,
+      title,
+      description,
+    }: {
+      message?: string
+      title?: string
+      description?: React.ReactNode
+    }) => (
+      <div>
+        <div>{title ?? message}</div>
+        {description && <div>{description}</div>}
+      </div>
+    ),
+    Button: ({ children }: { children: React.ReactNode }) => (
+      <button>{children}</button>
+    ),
+    Card: ({
+      children,
+      extra,
+      title,
+    }: {
+      children: React.ReactNode
+      extra?: React.ReactNode
+      title?: React.ReactNode
+    }) => (
+      <section>
+        {title}
+        {extra}
+        {children}
+      </section>
+    ),
+    Col: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Divider: () => <hr />,
+    Form,
+    Input,
+    Row: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Select: () => <div>Select</div>,
+    Space,
+    Tag: ({ children }: { children: React.ReactNode }) => (
       <span>{children}</span>
     ),
-    Paragraph: ({ children }: { children: React.ReactNode }) => (
-      <p>{children}</p>
-    ),
-  },
-}))
+    Typography: {
+      Paragraph: ({ children }: { children: React.ReactNode }) => (
+        <p>{children}</p>
+      ),
+      Text: ({ children }: { children: React.ReactNode }) => (
+        <span>{children}</span>
+      ),
+    },
+  }
+})
 
 vi.mock('@/config/print-template-targets', () => ({
   printTemplateTargetOptions: [{ label: '采购订单', value: 'purchase-order' }],

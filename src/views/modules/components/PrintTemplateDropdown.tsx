@@ -10,11 +10,8 @@ import {
 import { printTemplateTargetMap } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
+import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
-import type {
-  PrintActionMode,
-  PrintTemplateRecord,
-} from '@/types/print-template'
 import { message } from '@/utils/antd-app'
 import { PrintJobModal } from '@/views/modules/components/PrintJobModal'
 

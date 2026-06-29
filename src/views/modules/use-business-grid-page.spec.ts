@@ -419,6 +419,22 @@ describe('useBusinessGridPage', () => {
     })
   })
 
+  it('uses configured detail action as overlay action', () => {
+    mocks.useModulePageConfig.mockReturnValue({
+      config: {
+        ...config(),
+        readOnly: true,
+        detailActionLabel: '流水',
+      },
+    })
+
+    renderHook(() => useBusinessGridPage(props()))
+
+    const recordActionsArg = mocks.useModuleRecordActions.mock.calls.at(-1)?.[0]
+    expect(recordActionsArg.detailActionLabel).toBe('流水')
+    expect(recordActionsArg.onDetail).toBe(mocks.openDetail)
+  })
+
   it('wires toolbar handlers for statement and freight actions', () => {
     renderHook(() => useBusinessGridPage(props()))
     const toolbarOptions = mocks.useModuleToolbarActions.mock.calls[0][0]

@@ -1,4 +1,4 @@
-import type { PrintActionMode } from '@/types/print-template'
+import type { PrintActionMode } from '@/shared/schemas'
 import { execPrintCode, loadCLodop } from '@/utils/clodop'
 import { downloadBlob } from '@/utils/download'
 import { renderPrintTemplate } from '@/utils/print-template'

@@ -3,7 +3,7 @@ import {
   normalizeAction,
   resolveResourceKey,
 } from '@/constants/resource-permissions'
-import type { LoginUser, ResourcePermission } from '@/types/auth'
+import type { LoginUser, ResourcePermission } from '@/shared/schemas'
 
 function normalizePermissionKey(value: string | null | undefined) {
   return String(value || '')

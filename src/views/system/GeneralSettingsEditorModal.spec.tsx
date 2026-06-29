@@ -25,7 +25,7 @@ vi.mock('@/components/FormModal', () => ({
     ) : null,
 }))
 
-vi.mock('antd/es/form', () => {
+vi.mock('antd', () => {
   const Form = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   )
@@ -41,43 +41,29 @@ vi.mock('antd/es/form', () => {
       {children}
     </div>
   )
-  Form.useForm = () => [{}]
-  return { default: Form }
-})
-
-vi.mock('antd/es/input', () => {
   const Input = () => <input />
   Input.TextArea = () => <textarea />
-  return { default: Input }
-})
 
-vi.mock('antd/es/select', () => ({
-  default: () => <div>Select</div>,
-}))
-
-vi.mock('antd/es/switch', () => ({
-  default: () => <div>Switch</div>,
-}))
-
-vi.mock('antd/es/color-picker', () => ({
-  default: () => <div>ColorPicker</div>,
-}))
-
-vi.mock('antd/es/space', () => {
   const Space = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   )
   Space.Compact = Space
-  return { default: Space }
-})
+  Space.Addon = Space
 
-vi.mock('antd/es/typography', () => ({
-  default: {
-    Text: ({ children }: { children: React.ReactNode }) => (
-      <span>{children}</span>
-    ),
-  },
-}))
+  return {
+    ColorPicker: () => <div>ColorPicker</div>,
+    Form,
+    Input,
+    Select: () => <div>Select</div>,
+    Space,
+    Switch: () => <div>Switch</div>,
+    Typography: {
+      Text: ({ children }: { children: React.ReactNode }) => (
+        <span>{children}</span>
+      ),
+    },
+  }
+})
 
 vi.mock('@/utils/type-narrowing', () => ({
   asString: (v: unknown) => String(v ?? ''),

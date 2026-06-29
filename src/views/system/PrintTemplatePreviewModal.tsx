@@ -1,6 +1,6 @@
 import { Modal, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { PrintTemplateRecord } from '@/types/print-template'
+import type { PrintTemplateRecord } from '@/shared/schemas'
 import { getPrintTemplateBillTypeLabel } from '@/views/system/print-template-view-utils'
 
 interface Props {

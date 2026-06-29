@@ -20,7 +20,12 @@ export const reportModuleEndpointContracts: Record<
     path: '/inventory-report',
     readOnly: true,
     sortDirectionParam: 'sortDirection',
-    nativeFilterKeys: ['keyword', 'warehouseName', 'category', 'includeOutbound'],
+    nativeFilterKeys: [
+      'keyword',
+      'warehouseName',
+      'category',
+      'includeOutbound',
+    ],
   },
   'io-report': {
     path: '/io-report',

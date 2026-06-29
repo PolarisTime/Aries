@@ -1,7 +1,7 @@
 import { Descriptions, Modal, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
-import type { UserAccountRecord } from '@/types/user-account'
+import type { UserAccountRecord } from '@/shared/schemas'
 import { formatDateTime } from '@/utils/formatters'
 
 interface Props {

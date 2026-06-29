@@ -49,7 +49,7 @@ export function resolveModuleActionIcon(label: string): ReactNode | undefined {
   if (label.includes('编辑')) {
     return <SaveOutlined />
   }
-  if (label.includes('查看')) {
+  if (label.includes('查看') || label.includes('流水')) {
     return <EyeOutlined />
   }
   if (label.includes('生成')) {

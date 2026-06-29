@@ -2,7 +2,7 @@ import { CopyOutlined } from '@ant-design/icons'
 import { Button, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { FormModal } from '@/components/FormModal'
-import type { UserAccountCreateResult } from '@/types/user-account'
+import type { UserAccountCreateResult } from '@/shared/schemas'
 
 interface Props {
   open: boolean

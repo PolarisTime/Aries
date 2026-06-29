@@ -11,7 +11,7 @@ import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { TableActions } from '@/components/TableActions'
 import { enabledStatusOptions } from '@/constants/module-options'
 import { createPaginationConfig } from '@/hooks/usePaginationConfig'
-import type { UserAccountRecord } from '@/types/user-account'
+import type { UserAccountRecord } from '@/shared/schemas'
 import { formatDateTime } from '@/utils/formatters'
 
 interface Props {

@@ -40,8 +40,9 @@ vi.mock('@/module-system/module-action-icons', () => ({
 }))
 
 vi.mock('./ModuleItemsPanel', () => ({
-  ModuleItemsPanel: ({ children, actions, ...props }: any) => (
+  ModuleItemsPanel: ({ children, actions, title }: any) => (
     <div data-testid="items-panel">
+      {title ? <div data-testid="items-panel-title">{title}</div> : null}
       {actions}
       {children}
     </div>
@@ -51,13 +52,29 @@ vi.mock('./ModuleItemsPanel', () => ({
 vi.mock('./ModuleItemsTable', () => ({
   ModuleItemsTable: ({ columns, dataSource, emptyText }: any) => (
     <div data-testid="items-table">
-      {dataSource?.length === 0 ? emptyText : `${dataSource?.length} items`}
+      {dataSource?.length === 0
+        ? emptyText
+        : dataSource?.map((record: any, rowIndex: number) => (
+            <div key={record.id || rowIndex}>
+              {columns.map((column: any) => (
+                <span key={column.key || column.dataIndex}>
+                  {column.render
+                    ? column.render(record[column.dataIndex], record, rowIndex)
+                    : record[column.dataIndex]}
+                </span>
+              ))}
+            </div>
+          ))}
     </div>
   ),
 }))
 
 vi.mock('./PieceWeightPopover', () => ({
-  PieceWeightPopover: ({ weightTon }: any) => <span>{weightTon}</span>,
+  PieceWeightPopover: ({ allowItemIdFallback, weightTon }: any) => (
+    <span data-allow-item-id-fallback={String(allowItemIdFallback)}>
+      {weightTon}
+    </span>
+  ),
 }))
 
 vi.mock('./piece-weight-source', () => ({
@@ -159,8 +176,10 @@ describe('ModuleRecordDetailOverlay', () => {
   })
 
   it('renders loading spinner when loading', () => {
-    render(<ModuleRecordDetailOverlay {...defaultProps} loading={true} />)
-    expect(screen.getByTestId('spin')).toBeTruthy()
+    const { container } = render(
+      <ModuleRecordDetailOverlay {...defaultProps} loading={true} />,
+    )
+    expect(container.querySelector('[aria-busy="true"]')).toBeTruthy()
   })
 
   it('renders empty state when no record', () => {
@@ -202,6 +221,7 @@ describe('ModuleRecordDetailOverlay', () => {
   it('renders record with detail item columns', () => {
     const configWithItemColumns = {
       ...defaultProps.config,
+      detailItemTitle: '库存流水',
       detailItemColumns: [
         { dataIndex: 'brand', title: 'Brand', width: 100 },
         { dataIndex: 'quantity', title: 'Qty', width: 80 },
@@ -219,7 +239,8 @@ describe('ModuleRecordDetailOverlay', () => {
         record={record}
       />,
     )
-    expect(screen.getByText('1 items')).toBeTruthy()
+    expect(screen.getByTestId('items-panel-title').textContent).toBe('库存流水')
+    expect(screen.getByText('Brand A')).toBeTruthy()
   })
 
   it('renders record with empty items', () => {
@@ -298,7 +319,79 @@ describe('ModuleRecordDetailOverlay', () => {
         record={record}
       />,
     )
-    expect(screen.getByText('1 items')).toBeTruthy()
+    expect(screen.getByText('2.5')).toBeTruthy()
+  })
+
+  it('disables piece weight item id fallback for inventory report rows', () => {
+    const configWithWeight = {
+      ...defaultProps.config,
+      key: 'inventory-report',
+      detailItemColumns: [
+        { dataIndex: 'weightTon', title: 'Weight', width: 100 },
+      ],
+    }
+    const record = {
+      id: '1',
+      billNo: 'BILL-001',
+      items: [
+        {
+          id: 'M-001|品牌A|规格A|一号仓|B-001',
+          weightTon: 2.5,
+          category: '盘螺',
+        },
+      ],
+    }
+
+    render(
+      <ModuleRecordDetailOverlay
+        {...defaultProps}
+        config={configWithWeight}
+        record={record}
+      />,
+    )
+
+    expect(screen.getByText('2.5')).toHaveAttribute(
+      'data-allow-item-id-fallback',
+      'false',
+    )
+  })
+
+  it('hides piece weight for weigh calculated detail fields and rows', () => {
+    const configWithPieceWeight = {
+      ...defaultProps.config,
+      columns: [
+        ...defaultProps.config.columns,
+        { dataIndex: 'pieceWeightTon', title: 'Piece Weight', type: 'weight' },
+      ],
+      detailFields: [{ key: 'pieceWeightTon', label: 'Piece Weight' }],
+      detailItemColumns: [
+        {
+          dataIndex: 'pieceWeightTon',
+          title: 'Piece Weight',
+          width: 100,
+          type: 'weight' as const,
+          align: 'right' as const,
+        },
+      ],
+    }
+    const record = {
+      id: '1',
+      billNo: 'BILL-001',
+      category: '盘螺',
+      pieceWeightTon: 0.525,
+      items: [{ id: 'i1', category: '盘螺', pieceWeightTon: 0.525 }],
+    }
+
+    render(
+      <ModuleRecordDetailOverlay
+        {...defaultProps}
+        config={configWithPieceWeight}
+        record={record}
+      />,
+    )
+
+    expect(screen.getAllByText('-')).toHaveLength(2)
+    expect(screen.queryByText('0.525 吨')).toBeNull()
   })
 
   it('renders record with fullRow detail fields', () => {
@@ -340,7 +433,7 @@ describe('ModuleRecordDetailOverlay', () => {
         record={record}
       />,
     )
-    expect(screen.getByText('1 items')).toBeTruthy()
+    expect(screen.getByText('Brand A')).toBeTruthy()
   })
 
   it('renders with no items and no print', () => {

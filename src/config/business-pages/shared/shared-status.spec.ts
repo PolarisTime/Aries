@@ -71,11 +71,13 @@ describe('statusMap', () => {
       '待确认',
       '待审核',
       '未收票',
-      '禁用',
+      '草稿',
+      '未签署',
     ]
     for (const key of warningStatuses) {
       expect(statusMap[key].color).toBe('warning')
     }
+    expect(statusMap.禁用.color).toBe('error')
     expect(statusMap.失败.color).toBe('error')
   })
 })

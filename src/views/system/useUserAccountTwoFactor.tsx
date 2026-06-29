@@ -9,10 +9,9 @@ import {
 } from '@/api/user-accounts'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRequestError } from '@/hooks/useRequestError'
+import type { TotpSetupResponse, UserAccountRecord } from '@/shared/schemas'
 import { syncCurrentUserTotpStateById } from '@/stores/auth-user-sync'
 import { useAuthStore } from '@/stores/authStore'
-import type { TotpSetupResponse } from '@/types/auth'
-import type { UserAccountRecord } from '@/types/user-account'
 import { message, modal } from '@/utils/antd-app'
 
 export function useUserAccountTwoFactor() {

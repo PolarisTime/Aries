@@ -25,7 +25,7 @@ vi.mock('@/components/FormModal', () => ({
     ) : null,
 }))
 
-vi.mock('antd/es/form', () => {
+vi.mock('antd', () => {
   const Form = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   )
@@ -41,59 +41,34 @@ vi.mock('antd/es/form', () => {
       {children}
     </div>
   )
-  return { default: Form }
-})
-
-vi.mock('antd/es/input', () => {
   const Input = (props: Record<string, unknown>) => <input {...props} />
   Input.Password = (props: Record<string, unknown>) => (
     <input type="password" {...props} />
   )
   Input.TextArea = (props: Record<string, unknown>) => <textarea {...props} />
-  return { default: Input }
-})
 
-vi.mock('antd/es/select', () => ({
-  default: () => <div>Select</div>,
-}))
-
-vi.mock('antd/es/spin', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}))
-
-vi.mock('antd/es/tag', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <span>{children}</span>
-  ),
-}))
-
-vi.mock('antd/es/typography', () => ({
-  default: {
-    Text: ({ children }: { children: React.ReactNode }) => (
+  return {
+    Col: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Form,
+    Input,
+    Row: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Select: () => <div>Select</div>,
+    Space: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+    ),
+    Spin: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+    ),
+    Tag: ({ children }: { children: React.ReactNode }) => (
       <span>{children}</span>
     ),
-  },
-}))
-
-vi.mock('antd/es/space', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}))
-
-vi.mock('antd/es/row', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}))
-
-vi.mock('antd/es/col', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}))
+    Typography: {
+      Text: ({ children }: { children: React.ReactNode }) => (
+        <span>{children}</span>
+      ),
+    },
+  }
+})
 
 vi.mock('@/constants/module-options', () => ({
   enabledStatusOptions: [

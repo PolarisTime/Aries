@@ -17,10 +17,7 @@ import {
   enabledStatusValues,
 } from '@/constants/module-options'
 import { getFormString } from '@/lib/antd-form'
-import type {
-  DepartmentOptionRecord,
-  RoleOptionRecord,
-} from '@/types/user-account'
+import type { DepartmentOptionRecord, RoleOptionRecord } from '@/shared/schemas'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
 

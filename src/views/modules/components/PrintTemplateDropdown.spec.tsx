@@ -16,6 +16,51 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: vi.fn().mockReturnValue({ data: [] }),
 }))
 
+vi.mock('antd', () => ({
+  Button: ({ children, icon, loading: _loading, ...props }: any) => (
+    <button {...props}>
+      {icon}
+      {children}
+    </button>
+  ),
+  Checkbox: ({ checked, children, onChange }: any) => (
+    <label>
+      <input
+        checked={checked}
+        onChange={(event) => onChange(event)}
+        type="checkbox"
+      />
+      {children}
+    </label>
+  ),
+  Empty: ({ description }: any) => <div data-testid="empty">{description}</div>,
+  Modal: ({ children, open, title }: any) =>
+    open ? (
+      <div data-testid="print-modal">
+        <h2>{title}</h2>
+        {children}
+      </div>
+    ) : null,
+  Select: ({ onChange, options = [], value }: any) => (
+    <select
+      data-testid="template-select"
+      onChange={(event) => onChange(event.target.value)}
+      value={value}
+    >
+      {options.map((option: any) => (
+        <option key={option.value} value={option.value}>
+          {option.value}
+        </option>
+      ))}
+    </select>
+  ),
+  Space: ({ children }: any) => <div data-testid="space">{children}</div>,
+  Tag: ({ children }: any) => <span data-testid="tag">{children}</span>,
+  Typography: {
+    Text: ({ children }: any) => <span>{children}</span>,
+  },
+}))
+
 vi.mock('antd/es/button', () => ({
   default: ({ children, icon, loading: _loading, ...props }: any) => (
     <button {...props}>

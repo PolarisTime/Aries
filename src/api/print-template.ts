@@ -10,7 +10,7 @@ import type {
   PrintTemplateRecord,
   PrintTemplateResponse,
   SavePrintTemplatePayload,
-} from '@/types/print-template'
+} from '@/shared/schemas'
 
 export interface PrintRecordItem {
   id: string

@@ -12,6 +12,7 @@ export type {
   Login2faPayload,
   LoginPayload,
   LoginResponseData,
+  LoginResult,
   LoginStep1Response,
   LoginUser,
   ResourcePermission,
@@ -36,13 +37,17 @@ export type {
 export type {
   PrintActionMode,
   PrintTemplateRecord,
+  PrintTemplateResponse,
   SavePrintTemplatePayload,
 } from './print-template'
 
 export type {
   InitialSetupAdminPayload,
+  InitialSetupAdminSubmitPayload,
   InitialSetupCompanyPayload,
+  InitialSetupResult,
   InitialSetupStatus,
+  InitialSetupSubmitResponse,
   InitialSetupTotpPayload,
   InitialSetupTotpResult,
 } from './setup'
@@ -52,5 +57,6 @@ export type {
   RoleOptionRecord,
   UserAccountCreateResult,
   UserAccountFormPayload,
+  UserAccountLoginNameAvailability,
   UserAccountRecord,
 } from './user-account'

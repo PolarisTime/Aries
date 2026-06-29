@@ -25,7 +25,7 @@ vi.mock('@/components/FormModal', () => ({
     ) : null,
 }))
 
-vi.mock('antd/es/form', () => {
+vi.mock('antd', () => {
   const Form = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   )
@@ -42,38 +42,22 @@ vi.mock('antd/es/form', () => {
     </div>
   )
   Form.useWatch = () => ''
-  return { default: Form }
-})
-
-vi.mock('antd/es/input', () => {
   const Input = () => <input />
   Input.TextArea = () => <textarea />
-  return { default: Input }
+
+  return {
+    Col: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Form,
+    Input,
+    Row: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Select: () => <div>Select</div>,
+    Typography: {
+      Text: ({ children }: { children: React.ReactNode }) => (
+        <span>{children}</span>
+      ),
+    },
+  }
 })
-
-vi.mock('antd/es/select', () => ({
-  default: () => <div>Select</div>,
-}))
-
-vi.mock('antd/es/row', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}))
-
-vi.mock('antd/es/col', () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}))
-
-vi.mock('antd/es/typography', () => ({
-  default: {
-    Text: ({ children }: { children: React.ReactNode }) => (
-      <span>{children}</span>
-    ),
-  },
-}))
 
 const formInstance = {
   getFieldValue: vi.fn(),

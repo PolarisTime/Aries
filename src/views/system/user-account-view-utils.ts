@@ -1,5 +1,5 @@
 import { enabledStatusValues } from '@/constants/module-options'
-import type { RoleOptionRecord } from '@/types/user-account'
+import type { RoleOptionRecord } from '@/shared/schemas'
 
 export type UserAccountEditorMode = 'create' | 'edit'
 

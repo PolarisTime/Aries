@@ -10,6 +10,23 @@ const mockMessageSuccess = vi.fn()
 const mockMessageWarning = vi.fn()
 const mockUseMutation = vi.fn()
 const mockUseQueryClient = vi.fn()
+const mockFormInstance = vi.hoisted(() => ({
+  resetFields: vi.fn(),
+  setFieldsValue: vi.fn(),
+  getFieldValue: vi.fn(),
+  getFieldsValue: vi.fn(),
+  validateFields: vi.fn(),
+}))
+
+const defaultFormValues = {
+  loginName: 'testuser',
+  password: 'pass123',
+  userName: 'Test User',
+  mobile: '1234567890',
+  roleIds: ['700520000000000001', '700520000000000002'],
+  dataScope: '本人',
+  status: 'enabled',
+}
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -74,42 +91,19 @@ vi.mock('@/views/system/useUserAccountEditorRoleState', () => ({
   }),
 }))
 
-vi.mock('antd/es/form', () => {
-  const formInstance = {
-    resetFields: vi.fn(),
-    setFieldsValue: vi.fn(),
-    getFieldValue: vi.fn(),
-    getFieldsValue: vi.fn(() => ({
-      loginName: 'testuser',
-      password: 'pass123',
-      userName: 'Test User',
-      mobile: '1234567890',
-      roleIds: ['700520000000000001', '700520000000000002'],
-      dataScope: '本人',
-      status: 'enabled',
-    })),
-    validateFields: vi.fn(() => ({
-      loginName: 'testuser',
-      password: 'pass123',
-      userName: 'Test User',
-      mobile: '1234567890',
-      roleIds: ['700520000000000001', '700520000000000002'],
-      dataScope: '本人',
-      status: 'enabled',
-    })),
-  }
-  return {
-    default: {
-      useForm: vi.fn(() => [formInstance]),
-    },
-  }
-})
+vi.mock('antd', () => ({
+  Form: {
+    useForm: vi.fn(() => [mockFormInstance]),
+  },
+}))
 
 import { useUserAccountEditor } from '@/views/system/useUserAccountEditor'
 
 describe('useUserAccountEditor', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFormInstance.getFieldsValue.mockReturnValue(defaultFormValues)
+    mockFormInstance.validateFields.mockResolvedValue(defaultFormValues)
     mockUseQueryClient.mockReturnValue({
       invalidateQueries: vi.fn(),
     })

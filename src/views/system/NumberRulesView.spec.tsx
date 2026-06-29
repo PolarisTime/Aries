@@ -51,8 +51,8 @@ vi.mock('@/utils/type-narrowing', () => ({
   asString: (v: unknown) => String(v ?? ''),
 }))
 
-vi.mock('antd/es/form', () => ({
-  default: {
+vi.mock('antd', () => ({
+  Form: {
     useForm: () => [mockForm],
   },
 }))

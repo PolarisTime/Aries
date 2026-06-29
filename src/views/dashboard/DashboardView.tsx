@@ -3,10 +3,12 @@ import { useNavigate } from '@tanstack/react-router'
 import { Alert } from 'antd'
 import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
+import { fetchBackendHealth } from '@/api/auth'
 import { getDashboardSummary } from '@/api/dashboard'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useIdleActivation } from '@/hooks/useIdleActivation'
 import { usePageVisibility } from '@/hooks/usePageVisibility'
+import { AppVersionFooter } from '@/layouts/AppVersionFooter'
 import {
   DashboardSidebarPanels,
   DashboardWorkplaceHeader,
@@ -28,6 +30,11 @@ export function DashboardView() {
   const { data: summary, isError: summaryIsError } = useQuery({
     queryKey: QUERY_KEYS.dashboardSummary,
     queryFn: getDashboardSummary,
+    refetchInterval: isPageVisible ? 120000 : false,
+  })
+  const { data: backendHealth } = useQuery({
+    queryKey: QUERY_KEYS.dashboardBackendHealth,
+    queryFn: fetchBackendHealth,
     refetchInterval: isPageVisible ? 120000 : false,
   })
 
@@ -69,6 +76,8 @@ export function DashboardView() {
           <DashboardSidebarPanels infoItems={infoItems} summary={summary} />
         </aside>
       </div>
+
+      <AppVersionFooter backendVersion={backendHealth?.version || null} />
     </div>
   )
 }

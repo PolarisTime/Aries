@@ -12,6 +12,10 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 })
 
+const getComputedStyle = window.getComputedStyle.bind(window)
+window.getComputedStyle = (elt, pseudoElt) =>
+  getComputedStyle(elt, pseudoElt ? undefined : pseudoElt)
+
 class ResizeObserverMock {
   observe() {}
   unobserve() {}

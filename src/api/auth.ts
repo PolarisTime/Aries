@@ -1,14 +1,14 @@
 import type { AxiosResponse } from 'axios'
 import { assertApiSuccess } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { ApiResponse } from '@/types/api'
 import type {
   CaptchaData,
   Login2faPayload,
   LoginPayload,
   LoginResponseData,
   LoginResult,
-} from '@/types/auth'
+} from '@/shared/schemas'
+import type { ApiResponse } from '@/types/api'
 import { getApiMessage } from '@/utils/api-messages'
 import {
   isRefreshTokenReuseConflict,

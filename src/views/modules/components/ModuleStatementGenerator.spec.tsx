@@ -10,6 +10,25 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
+vi.mock('antd', () => ({
+  Modal: ({ children, title, open, footer, ...props }: any) =>
+    open ? (
+      <div data-testid="modal" {...props}>
+        <div>{title}</div>
+        {children}
+        {footer}
+      </div>
+    ) : null,
+  Button: ({ children, ...props }: any) => (
+    <button {...props}>{children}</button>
+  ),
+  Space: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  Tag: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+  Typography: {
+    Text: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+  },
+}))
+
 vi.mock('antd/es/modal', () => ({
   default: ({ children, title, open, footer, ...props }: any) =>
     open ? (

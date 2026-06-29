@@ -48,7 +48,7 @@ export function ModuleRecordDetailOverlay({
       dataIndex: column.dataIndex,
       key: column.dataIndex,
       width: column.width,
-      align: column.align,
+      align: 'center',
       render:
         column.dataIndex === 'weightTon'
           ? (value: unknown, record: ModuleLineItem) => {
@@ -68,6 +68,7 @@ export function ModuleRecordDetailOverlay({
                   inboundItemId={lookupSource.inboundItemId}
                   purchaseOrderItemId={lookupSource.purchaseOrderItemId}
                   salesOrderItemId={lookupSource.salesOrderItemId}
+                  allowItemIdFallback={config.key !== 'inventory-report'}
                 />
               )
             }
@@ -101,36 +102,42 @@ export function ModuleRecordDetailOverlay({
         <Empty description={t('modules.detail.noData')} />
       ) : (
         <>
-          <Row gutter={[12, 12]}>
-            {detailFields.map((field) => {
-              const colDef = config.columns.find(
-                (c) => c.dataIndex === field.key,
-              )
-              return (
-                <Col
-                  key={field.key}
-                  xs={field.fullRow ? 24 : 24}
-                  sm={field.fullRow ? 24 : 12}
-                  lg={field.fullRow ? 24 : colSpan}
-                >
-                  <div className="bill-detail-item">
-                    <span className="bill-detail-label">
-                      {padLabel(field.label)}
-                    </span>
-                    <span className="bill-detail-value">
-                      {formatCellValue(
-                        record[field.key],
-                        colDef?.type || field.type,
-                      )}
-                    </span>
-                  </div>
-                </Col>
-              )
-            })}
-          </Row>
+          {detailFields.length ? (
+            <Row gutter={[12, 12]}>
+              {detailFields.map((field) => {
+                const colDef = config.columns.find(
+                  (c) => c.dataIndex === field.key,
+                )
+                return (
+                  <Col
+                    key={field.key}
+                    xs={field.fullRow ? 24 : 24}
+                    sm={field.fullRow ? 24 : 12}
+                    lg={field.fullRow ? 24 : colSpan}
+                  >
+                    <div className="bill-detail-item">
+                      <span className="bill-detail-label">
+                        {padLabel(field.label)}
+                      </span>
+                      <span className="bill-detail-value">
+                        {field.key === 'pieceWeightTon' &&
+                        shouldDisplayPieceWeightAsDash(record)
+                          ? '-'
+                          : formatCellValue(
+                              record[field.key],
+                              colDef?.type || field.type,
+                            )}
+                      </span>
+                    </div>
+                  </Col>
+                )
+              })}
+            </Row>
+          ) : null}
 
           {detailItemColumns.length ? (
             <ModuleItemsPanel
+              title={config.detailItemTitle}
               className="module-detail-items-panel"
               items={record.items || []}
               itemColumns={detailItemColumns}

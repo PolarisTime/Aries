@@ -56,6 +56,115 @@ vi.mock('@/utils/type-narrowing', () => ({
   asString: vi.fn((value: unknown) => String(value ?? '')),
 }))
 
+vi.mock('antd', () => {
+  const Empty = ({ description, ...props }: any) => (
+    <div {...props}>{description}</div>
+  )
+  Empty.PRESENTED_IMAGE_SIMPLE = 'PRESENTED_IMAGE_SIMPLE'
+
+  const PreviewGroup = ({ children, preview }: any) => (
+    <div
+      data-current={String(preview?.current)}
+      data-testid="preview-group"
+      data-visible={String(preview?.visible)}
+      onClick={() => preview?.onVisibleChange?.(false)}
+    >
+      {children}
+    </div>
+  )
+  const Image = ({
+    alt = 'attachment preview',
+    preview: _preview,
+    ...props
+  }: any) => <img alt={alt} {...props} />
+  Image.PreviewGroup = PreviewGroup
+
+  return {
+    Button: ({
+      children,
+      danger: _danger,
+      icon,
+      loading: _loading,
+      ...props
+    }: any) => (
+      <button {...props}>
+        {icon}
+        {children}
+      </button>
+    ),
+    Card: ({ children, size: _size, ...props }: any) => (
+      <div {...props}>{children}</div>
+    ),
+    Empty,
+    Flex: ({
+      align: _align,
+      children,
+      gap: _gap,
+      justify: _justify,
+      vertical: _vertical,
+      ...props
+    }: any) => <div {...props}>{children}</div>,
+    Image,
+    Modal: ({
+      afterOpenChange,
+      children,
+      destroyOnHidden: _destroyOnHidden,
+      footer,
+      onCancel,
+      open,
+      title,
+      width: _width,
+      ...props
+    }: any) => {
+      const modalProps = { afterOpenChange, onCancel, open, title, ...props }
+      if (title === 'modules.attachment.pdfPreview') {
+        mocks.pdfModalProps = modalProps
+      } else {
+        mocks.modalProps = modalProps
+      }
+      return open ? (
+        <div data-testid={`modal-${title}`} {...props}>
+          <div>{title}</div>
+          <button type="button" onClick={onCancel}>
+            cancel
+          </button>
+          {children}
+          {footer}
+        </div>
+      ) : null
+    },
+    Space: ({
+      align: _align,
+      children,
+      orientation: _orientation,
+      size: _size,
+      ...props
+    }: any) => <div {...props}>{children}</div>,
+    Spin: ({ children, spinning: _spinning, ...props }: any) => (
+      <div data-testid="spin" {...props}>
+        {children}
+      </div>
+    ),
+    Typography: {
+      Text: ({
+        children,
+        ellipsis: _ellipsis,
+        strong: _strong,
+        type: _type,
+        ...props
+      }: any) => <span {...props}>{children}</span>,
+    },
+    Upload: ({ beforeUpload, children, customRequest, ...props }: any) => {
+      mocks.uploadProps = { beforeUpload, customRequest, ...props }
+      return (
+        <div data-testid="upload" {...props}>
+          {children}
+        </div>
+      )
+    },
+  }
+})
+
 vi.mock('antd/es/button', () => ({
   default: ({
     children,

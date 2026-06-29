@@ -1,5 +1,5 @@
 import { Radio, Space } from 'antd'
-import type { PrintTemplateRecord } from '@/types/print-template'
+import type { PrintTemplateRecord } from '@/shared/schemas'
 
 interface Props {
   templates: PrintTemplateRecord[]

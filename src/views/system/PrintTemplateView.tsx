@@ -12,9 +12,11 @@ import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useRefreshQuery } from '@/hooks/useRefreshQuery'
 import { useRequestError } from '@/hooks/useRequestError'
-import type { SavePrintTemplatePayload } from '@/shared/schemas'
+import type {
+  PrintTemplateRecord,
+  SavePrintTemplatePayload,
+} from '@/shared/schemas'
 import { usePermissionStore } from '@/stores/permissionStore'
-import type { PrintTemplateRecord } from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
 import { PrintTemplateEditorModal } from '@/views/system/PrintTemplateEditorModal'
 import { PrintTemplatePreviewModal } from '@/views/system/PrintTemplatePreviewModal'

@@ -14,7 +14,7 @@ import type {
   UserAccountCreateResult,
   UserAccountFormPayload,
   UserAccountRecord,
-} from '@/types/user-account'
+} from '@/shared/schemas'
 import { message } from '@/utils/antd-app'
 import type {
   LoginNameValidationResult,

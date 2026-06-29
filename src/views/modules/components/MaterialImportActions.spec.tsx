@@ -17,23 +17,17 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('antd/es/button', () => ({
-  default: ({ children, icon, loading: _loading, ...props }: any) => (
+vi.mock('antd', () => ({
+  Button: ({ children, icon, loading: _loading, ...props }: any) => (
     <button {...props}>
       {icon}
       {children}
     </button>
   ),
-}))
-
-vi.mock('antd/es/space', () => ({
-  default: ({ children, wrap: _wrap, ...props }: any) => (
+  Space: ({ children, wrap: _wrap, ...props }: any) => (
     <div {...props}>{children}</div>
   ),
-}))
-
-vi.mock('antd/es/upload', () => ({
-  default: ({ beforeUpload, children, ...props }: any) => {
+  Upload: ({ beforeUpload, children, ...props }: any) => {
     mocks.uploadProps = { beforeUpload, ...props }
     return <div {...props}>{children}</div>
   },

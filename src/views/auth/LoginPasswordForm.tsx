@@ -2,7 +2,7 @@ import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, Checkbox, Form, Input } from 'antd'
 import type { FormInstance } from 'antd/es/form'
 import { useTranslation } from 'react-i18next'
-import type { LoginPayload } from '@/types/auth'
+import type { LoginPayload } from '@/shared/schemas'
 
 interface Props {
   loading: boolean

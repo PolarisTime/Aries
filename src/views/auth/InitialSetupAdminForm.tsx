@@ -5,7 +5,7 @@ import {
 } from '@ant-design/icons'
 import { Button, Form, Image, Input, Space, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { InitialSetupTotpResult } from '@/types/setup'
+import type { InitialSetupTotpResult } from '@/shared/schemas'
 import { toDataImageUrl } from '@/utils/data-url'
 
 interface Props {

@@ -1,5 +1,13 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mocks = vi.hoisted(() => ({
+  useQuery: vi.fn().mockReturnValue({
+    data: [],
+    isError: false,
+    isFetching: false,
+  }),
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -8,11 +16,7 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: vi.fn().mockReturnValue({
-    data: [],
-    isError: false,
-    isFetching: false,
-  }),
+  useQuery: mocks.useQuery,
 }))
 
 vi.mock('antd/es/popover', () => ({
@@ -38,6 +42,15 @@ vi.mock('@/api/client', () => ({
 import { PieceWeightPopover } from '@/views/modules/components/PieceWeightPopover'
 
 describe('PieceWeightPopover', () => {
+  beforeEach(() => {
+    mocks.useQuery.mockClear()
+    mocks.useQuery.mockReturnValue({
+      data: [],
+      isError: false,
+      isFetching: false,
+    })
+  })
+
   it('renders weight value for non-weigh category', () => {
     render(<PieceWeightPopover itemId="1" weightTon={1.234} category="钢材" />)
     expect(screen.getByText('1.234')).toBeTruthy()
@@ -48,8 +61,32 @@ describe('PieceWeightPopover', () => {
     expect(screen.getByText('2.500')).toBeTruthy()
   })
 
-  it('renders popover for line material category', () => {
+  it('prepares piece weight lookup for line material category', () => {
     render(<PieceWeightPopover itemId="1" weightTon={3.0} category="线材" />)
-    expect(screen.getByTestId('popover')).toBeTruthy()
+    expect(screen.getByText('3.000')).toBeTruthy()
+    expect(mocks.useQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['piece-weights', 'purchase-order-item', '1'],
+      }),
+    )
+  })
+
+  it('does not use synthetic item id when fallback is disabled', () => {
+    render(
+      <PieceWeightPopover
+        itemId="M-001|一号仓|B-001"
+        weightTon={3.0}
+        category="线材"
+        allowItemIdFallback={false}
+      />,
+    )
+
+    expect(screen.queryByTestId('popover')).toBeNull()
+    expect(screen.getByText('3.000')).toBeTruthy()
+    expect(mocks.useQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: false,
+      }),
+    )
   })
 })

@@ -84,13 +84,11 @@ vi.mock('@/utils/type-narrowing', () => ({
   asString: (v: unknown) => String(v ?? ''),
 }))
 
-vi.mock('antd/es/form', () => {
-  return {
-    default: {
-      useForm: vi.fn(() => [mockFormInstance]),
-    },
-  }
-})
+vi.mock('antd', () => ({
+  Form: {
+    useForm: vi.fn(() => [mockFormInstance]),
+  },
+}))
 
 import { useApiKeyManagementState } from '@/views/system/useApiKeyManagementState'
 

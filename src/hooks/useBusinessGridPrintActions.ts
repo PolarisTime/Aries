@@ -9,11 +9,8 @@ import {
 } from '@/api/print-template'
 import { PrintTemplateSelector } from '@/components/PrintTemplateSelector'
 import { printTemplateTargetMap } from '@/config/print-template-targets'
+import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
-import type {
-  PrintActionMode,
-  PrintTemplateRecord,
-} from '@/types/print-template'
 import { message, modal } from '@/utils/antd-app'
 import { downloadBlob } from '@/utils/download'
 import {
