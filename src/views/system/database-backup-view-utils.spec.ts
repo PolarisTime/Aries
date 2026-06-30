@@ -14,7 +14,9 @@ describe('database-backup-view-utils', () => {
     })
 
     it('formats millisecond timestamps', () => {
-      expect(formatDatabaseDateTime('1704110400000')).toBe(
+      const localMillis = new Date(2024, 0, 1, 20, 0, 0).getTime()
+
+      expect(formatDatabaseDateTime(String(localMillis))).toBe(
         '2024-01-01 20:00:00',
       )
     })

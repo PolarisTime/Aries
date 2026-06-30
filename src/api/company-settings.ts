@@ -3,7 +3,7 @@ import { pageContent } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { createCachedOptions } from '@/lib/create-cached-options'
 import { getApiMessage } from '@/utils/api-messages'
-import { asNumber, asString } from '@/utils/type-narrowing'
+import { asId, asNumber, asString } from '@/utils/type-narrowing'
 
 export interface CompanySettlementAccount {
   id?: string | number
@@ -28,8 +28,8 @@ export interface CompanySettingProfile {
 }
 
 export interface SettlementCompanyOption {
-  id: number
-  value: number
+  id: string
+  value: string
   label: string
   companyName: string
   taxNo?: string
@@ -81,7 +81,7 @@ export function normalizeSettlementCompanyOptions(
   rows: RawSettlementCompanyOption[],
 ): SettlementCompanyOption[] {
   return rows.flatMap((row) => {
-    const id = asNumber(row.id)
+    const id = asId(row.id)
     const companyName = asString(row.companyName).trim()
     if (!id || !companyName) {
       return []

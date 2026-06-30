@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { e2eApiUrl } from './support/api-key'
 import { waitForFirstDetailRow } from './support/business-e2e'
 import { expect, test } from './support/test'
 
@@ -277,7 +278,10 @@ async function createSalesOutboundChain(page: Page, suffix: string) {
 
   const token = await getCurrentAccessToken(page)
   const outboundSearch = await page.request.get(
-    `${API_BASE_URL}/sales-outbound/search?keyword=${encodeURIComponent(salesOutboundNo)}&limit=5`,
+    e2eApiUrl(
+      'sales-outbound',
+      `search?keyword=${encodeURIComponent(salesOutboundNo)}&limit=5`,
+    ),
     { headers: { Authorization: `Bearer ${token}` } },
   )
   const outboundSearchJson = (await outboundSearch.json()) as {
@@ -289,7 +293,7 @@ async function createSalesOutboundChain(page: Page, suffix: string) {
   expect(salesOutboundId).toBeTruthy()
 
   const outboundDetailRes = await page.request.get(
-    `${API_BASE_URL}/sales-outbound/${salesOutboundId}`,
+    e2eApiUrl('sales-outbound', salesOutboundId),
     { headers: { Authorization: `Bearer ${token}` } },
   )
   const outboundDetailJson = (await outboundDetailRes.json()) as {
@@ -347,7 +351,10 @@ test('creates freight statement and freight payment from sales outbound flow', a
 
   const token = await getCurrentAccessToken(page)
   const billSearch = await page.request.get(
-    `${API_BASE_URL}/freight-bill/search?keyword=${encodeURIComponent(billNo)}&limit=5`,
+    e2eApiUrl(
+      'freight-bill',
+      `search?keyword=${encodeURIComponent(billNo)}&limit=5`,
+    ),
     { headers: { Authorization: `Bearer ${token}` } },
   )
   const billSearchJson = (await billSearch.json()) as {
@@ -359,7 +366,7 @@ test('creates freight statement and freight payment from sales outbound flow', a
   expect(billId).toBeTruthy()
 
   const billDetailRes = await page.request.get(
-    `${API_BASE_URL}/freight-bill/${billId}`,
+    e2eApiUrl('freight-bill', billId),
     { headers: { Authorization: `Bearer ${token}` } },
   )
   const billDetailJson = (await billDetailRes.json()) as {
@@ -386,7 +393,10 @@ test('creates freight statement and freight payment from sales outbound flow', a
   const fetchFreightStatementByKeyword = async () => {
     const currentToken = await getCurrentAccessToken(page)
     const response = await page.request.get(
-      `${API_BASE_URL}/freight-statement/search?keyword=${encodeURIComponent(billNo)}&limit=10`,
+      e2eApiUrl(
+        'freight-statement',
+        `search?keyword=${encodeURIComponent(billNo)}&limit=10`,
+      ),
       { headers: { Authorization: `Bearer ${currentToken}` } },
     )
     const json = (await response.json()) as {
@@ -440,7 +450,10 @@ test('creates freight statement and freight payment from sales outbound flow', a
 
   const latestToken = await getCurrentAccessToken(page)
   const paymentSearch = await page.request.get(
-    `${API_BASE_URL}/payment/search?keyword=${encodeURIComponent(paymentNo)}&limit=5`,
+    e2eApiUrl(
+      'payment',
+      `search?keyword=${encodeURIComponent(paymentNo)}&limit=5`,
+    ),
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
   const paymentSearchJson = (await paymentSearch.json()) as {
@@ -452,7 +465,7 @@ test('creates freight statement and freight payment from sales outbound flow', a
   expect(paymentId).toBeTruthy()
 
   const paymentDetailRes = await page.request.get(
-    `${API_BASE_URL}/payment/${paymentId}`,
+    e2eApiUrl('payment', paymentId),
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
   const paymentDetailJson = (await paymentDetailRes.json()) as {
@@ -482,7 +495,7 @@ test('creates freight statement and freight payment from sales outbound flow', a
   ).toBeGreaterThan(0)
 
   const refreshedStatementDetailRes = await page.request.get(
-    `${API_BASE_URL}/freight-statement/${statementId}`,
+    e2eApiUrl('freight-statement', statementId),
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
   const refreshedStatementDetailJson =

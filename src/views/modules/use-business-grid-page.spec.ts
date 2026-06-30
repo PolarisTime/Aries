@@ -157,7 +157,7 @@ vi.mock('@/views/modules/use-business-grid-table', () => ({
 describe('useBusinessGridPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.buildActions.mockReturnValue([{ key: 'edit', label: '编辑' }])
+    mocks.buildActions.mockReturnValue([{ key: 'attach', label: '附件' }])
     mocks.buildDefaultModuleFilters.mockReturnValue({
       orderDate: ['2026-05-29', '2026-06-28'],
     })

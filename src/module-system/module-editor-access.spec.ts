@@ -306,6 +306,30 @@ describe('isEditorItemColumnEditableForModule', () => {
     ).toBe(false)
   })
 
+  it('returns false for materialCode on purchase-inbound source rows', () => {
+    expect(
+      isEditorItemColumnEditableForModule(
+        'purchase-inbound',
+        'materialCode',
+        true,
+        false,
+        { id: 'line-1', sourcePurchaseOrderItemId: 'po-item-1' } as any,
+      ),
+    ).toBe(false)
+  })
+
+  it('keeps materialCode editable on purchase-inbound rows without source', () => {
+    expect(
+      isEditorItemColumnEditableForModule(
+        'purchase-inbound',
+        'materialCode',
+        true,
+        false,
+        { id: 'line-1' } as any,
+      ),
+    ).toBe(true)
+  })
+
   it('returns false for batchNo on purchase-order', () => {
     expect(
       isEditorItemColumnEditableForModule(

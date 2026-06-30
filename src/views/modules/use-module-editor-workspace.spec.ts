@@ -402,7 +402,7 @@ describe('useModuleEditorWorkspace', () => {
 
     await waitFor(() => {
       expect(form.setFieldsValue).toHaveBeenCalledWith({
-        settlementCompanyId: 8,
+        settlementCompanyId: '8',
         settlementCompanyName: '结算主体A',
       })
     })
@@ -413,8 +413,8 @@ describe('useModuleEditorWorkspace', () => {
     vi.mocked(getCompanySettingProfile).mockResolvedValue(null)
     vi.mocked(fetchSettlementCompanyOptions).mockResolvedValue([
       {
-        id: 9,
-        value: 9,
+        id: '9',
+        value: '9',
         label: '结算主体B',
         companyName: '结算主体B',
       },
@@ -426,7 +426,7 @@ describe('useModuleEditorWorkspace', () => {
 
     await waitFor(() => {
       expect(form.setFieldsValue).toHaveBeenCalledWith({
-        settlementCompanyId: 9,
+        settlementCompanyId: '9',
         settlementCompanyName: '结算主体B',
       })
     })
@@ -499,7 +499,7 @@ describe('useModuleEditorWorkspace', () => {
 
   it('fills current time when saving a new date-only field', async () => {
     vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-03-04T09:08:07+08:00'))
+    vi.setSystemTime(new Date(2026, 2, 4, 9, 8, 7))
     vi.mocked(parseDateTimeValue).mockImplementation((value) => dayjs(value))
     const form = frm()
     form.validateFields.mockResolvedValue({

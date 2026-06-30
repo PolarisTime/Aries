@@ -127,12 +127,13 @@ export function useModuleEditorItemColumns({
     handleWarehouseSelect,
   } = useModuleEditorItemColumnHandlers({ setItems })
 
-  const isItemColumnEditable = (columnKey: string) =>
+  const isItemColumnEditable = (columnKey: string, record?: ModuleLineItem) =>
     isEditorItemColumnEditableForModule(
       moduleKey,
       columnKey,
       canEditItemColumns,
       lineItemsLocked,
+      record,
     )
 
   const materialLookup = (() => {

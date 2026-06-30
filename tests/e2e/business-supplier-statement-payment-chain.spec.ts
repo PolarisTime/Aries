@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { e2eApiUrl } from './support/api-key'
 import { waitForFirstDetailRow } from './support/business-e2e'
 import { expect, test } from './support/test'
 
@@ -251,7 +252,10 @@ async function createPurchaseInboundAuditedChain(page: Page, suffix: string) {
 
   const token = await getCurrentAccessToken(page)
   const inboundSearch = await page.request.get(
-    `${API_BASE_URL}/purchase-inbound/search?keyword=${encodeURIComponent(purchaseInboundNo)}&limit=5`,
+    e2eApiUrl(
+      'purchase-inbound',
+      `search?keyword=${encodeURIComponent(purchaseInboundNo)}&limit=5`,
+    ),
     { headers: { Authorization: `Bearer ${token}` } },
   )
   const inboundSearchJson = (await inboundSearch.json()) as {
@@ -263,7 +267,7 @@ async function createPurchaseInboundAuditedChain(page: Page, suffix: string) {
   expect(purchaseInboundId).toBeTruthy()
 
   const inboundDetailRes = await page.request.get(
-    `${API_BASE_URL}/purchase-inbound/${purchaseInboundId}`,
+    e2eApiUrl('purchase-inbound', purchaseInboundId),
     { headers: { Authorization: `Bearer ${token}` } },
   )
   const inboundDetailJson = (await inboundDetailRes.json()) as {
@@ -308,7 +312,10 @@ test('creates supplier statement and payment from audited purchase inbound flow'
   const fetchSupplierStatementByKeyword = async () => {
     const currentToken = await getCurrentAccessToken(page)
     const response = await page.request.get(
-      `${API_BASE_URL}/supplier-statement/search?keyword=${encodeURIComponent(purchaseInboundNo)}&limit=10`,
+      e2eApiUrl(
+        'supplier-statement',
+        `search?keyword=${encodeURIComponent(purchaseInboundNo)}&limit=10`,
+      ),
       { headers: { Authorization: `Bearer ${currentToken}` } },
     )
     const json = (await response.json()) as {
@@ -362,7 +369,10 @@ test('creates supplier statement and payment from audited purchase inbound flow'
 
   const latestToken = await getCurrentAccessToken(page)
   const paymentSearch = await page.request.get(
-    `${API_BASE_URL}/payment/search?keyword=${encodeURIComponent(paymentNo)}&limit=5`,
+    e2eApiUrl(
+      'payment',
+      `search?keyword=${encodeURIComponent(paymentNo)}&limit=5`,
+    ),
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
   const paymentSearchJson = (await paymentSearch.json()) as {
@@ -374,7 +384,7 @@ test('creates supplier statement and payment from audited purchase inbound flow'
   expect(paymentId).toBeTruthy()
 
   const paymentDetailRes = await page.request.get(
-    `${API_BASE_URL}/payment/${paymentId}`,
+    e2eApiUrl('payment', paymentId),
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
   const paymentDetailJson = (await paymentDetailRes.json()) as {
@@ -404,7 +414,7 @@ test('creates supplier statement and payment from audited purchase inbound flow'
   ).toBeGreaterThan(0)
 
   const refreshedStatementDetailRes = await page.request.get(
-    `${API_BASE_URL}/supplier-statement/${statementId}`,
+    e2eApiUrl('supplier-statement', statementId),
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
   const refreshedStatementDetailJson =

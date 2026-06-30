@@ -62,10 +62,17 @@ pnpm build-only
 pnpm test:e2e
 ```
 
-如需运行依赖登录态的 E2E 调试脚本，请通过环境变量注入测试账号：
+默认 E2E 套件不包含 `debug-*.spec.ts` 和 `*-debug.spec.ts` 诊断脚本。
+如需运行依赖登录态的 E2E 套件，请通过环境变量注入测试账号：
 
 ```bash
 E2E_LOGIN_NAME=your_user E2E_LOGIN_PASSWORD=your_password pnpm test:e2e
+```
+
+如需运行诊断脚本，请显式启用 debug 项目：
+
+```bash
+E2E_INCLUDE_DEBUG=1 E2E_LOGIN_NAME=your_user E2E_LOGIN_PASSWORD=your_password pnpm exec playwright test --project=debug-chromium
 ```
 
 ## 环境变量

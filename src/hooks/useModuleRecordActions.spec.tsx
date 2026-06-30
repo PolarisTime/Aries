@@ -16,7 +16,6 @@ describe('useModuleRecordActions', () => {
     const { result } = renderHook(() =>
       useModuleRecordActions({
         moduleKey: 'sales-order',
-        onEdit: vi.fn(),
         onAttach: vi.fn(),
       }),
     )
@@ -30,21 +29,23 @@ describe('useModuleRecordActions', () => {
       status: '已审核',
     })
 
-    expect(draftActions.map((item) => item.key)).toEqual(['edit', 'attach'])
-    expect(auditedActions.map((item) => item.key)).toEqual(['edit', 'attach'])
+    expect(draftActions.map((item) => item.key)).toEqual(['attach'])
+    expect(auditedActions.map((item) => item.key)).toEqual(['attach'])
     expect(
       [...draftActions, ...auditedActions].some(
-        (item) => item.key === 'audit' || item.key === 'reverseAudit',
+        (item) =>
+          item.key === 'edit' ||
+          item.key === 'audit' ||
+          item.key === 'reverseAudit',
       ),
     ).toBe(false)
   })
 
-  it('can still show view, edit and attachment actions by permission', () => {
+  it('can still show view and attachment actions by permission', () => {
     const onDetail = vi.fn()
     const { result } = renderHook(() =>
       useModuleRecordActions({
         moduleKey: 'sales-order',
-        onEdit: vi.fn(),
         onAttach: vi.fn(),
         onDetail,
       }),
@@ -54,14 +55,13 @@ describe('useModuleRecordActions', () => {
       result.current
         .buildActions({ id: '303', status: '草稿' })
         .map((item) => item.key),
-    ).toEqual(['detail', 'edit', 'attach'])
+    ).toEqual(['detail', 'attach'])
   })
 
   it('uses custom detail action label when provided', () => {
     const { result } = renderHook(() =>
       useModuleRecordActions({
         moduleKey: 'sales-order',
-        onEdit: vi.fn(),
         onAttach: vi.fn(),
         onDetail: vi.fn(),
         detailActionLabel: '流水',
@@ -80,7 +80,6 @@ describe('useModuleRecordActions', () => {
       useModuleRecordActions({
         moduleKey: 'sales-order',
         isReadOnly: true,
-        onEdit: vi.fn(),
         onAttach: vi.fn(),
       }),
     )
@@ -100,7 +99,6 @@ describe('useModuleRecordActions', () => {
     const { result } = renderHook(() =>
       useModuleRecordActions({
         moduleKey: 'sales-order',
-        onEdit: vi.fn(),
         onAttach: vi.fn(),
       }),
     )
@@ -120,7 +118,6 @@ describe('useModuleRecordActions', () => {
     const { result } = renderHook(() =>
       useModuleRecordActions({
         moduleKey: 'sales-order',
-        onEdit: vi.fn(),
         onAttach: vi.fn(),
         onDetail: vi.fn(),
       }),
@@ -133,28 +130,10 @@ describe('useModuleRecordActions', () => {
     expect(actions.map((item) => item.key)).toEqual(['detail', 'attach'])
   })
 
-  it('disables edit button when edit is blocked by status', () => {
-    const { result } = renderHook(() =>
-      useModuleRecordActions({
-        moduleKey: 'sales-order',
-        onEdit: vi.fn(),
-        onAttach: vi.fn(),
-      }),
-    )
-
-    const actions = result.current.buildActions({
-      id: '101',
-      status: '已审核',
-    })
-    const editAction = actions.find((a) => a.key === 'edit')
-    expect(editAction?.disabled).toBeDefined()
-  })
-
   it('does not return detail action when onDetail is not provided', () => {
     const { result } = renderHook(() =>
       useModuleRecordActions({
         moduleKey: 'sales-order',
-        onEdit: vi.fn(),
         onAttach: vi.fn(),
       }),
     )
@@ -175,7 +154,6 @@ describe('useModuleRecordActions', () => {
       useModuleRecordActions({
         moduleKey: 'sales-order',
         resourceKey: 'order',
-        onEdit: vi.fn(),
         onAttach: vi.fn(),
       }),
     )
@@ -184,7 +162,7 @@ describe('useModuleRecordActions', () => {
       id: '101',
       status: '草稿',
     })
-    expect(actions.find((a) => a.key === 'edit')).toBeDefined()
+    expect(actions.map((a) => a.key)).toEqual(['attach'])
   })
 
   it('returns only attach action when user has read but not update', () => {
@@ -195,7 +173,6 @@ describe('useModuleRecordActions', () => {
     const { result } = renderHook(() =>
       useModuleRecordActions({
         moduleKey: 'sales-order',
-        onEdit: vi.fn(),
         onAttach: vi.fn(),
       }),
     )
@@ -213,7 +190,6 @@ describe('useModuleRecordActions', () => {
     const { result } = renderHook(() =>
       useModuleRecordActions({
         moduleKey: 'sales-order',
-        onEdit: vi.fn(),
         onAttach: vi.fn(),
       }),
     )
@@ -234,7 +210,6 @@ describe('useModuleRecordActions', () => {
       useModuleRecordActions({
         moduleKey: 'sales-order',
         isReadOnly: true,
-        onEdit: vi.fn(),
         onAttach: vi.fn(),
         onDetail: vi.fn(),
       }),

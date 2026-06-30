@@ -67,7 +67,7 @@ export type EnabledStatus = z.infer<typeof enabledStatusSchema>
 
 /** 结算主体下拉选项 */
 export interface SettlementCompanyOption {
-  id: number
+  id: string
   companyName: string
   taxNo?: string
   status?: string

@@ -36,6 +36,10 @@ vi.mock('@/utils/api-messages', () => ({
 
 vi.mock('@/utils/type-narrowing', () => ({
   asArray: <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []),
+  asId: (v: unknown): string => {
+    const value = String(v ?? '').trim()
+    return /^\d+$/.test(value) && value !== '0' ? value : ''
+  },
   asNumber: (v: unknown) => Number(v) || 0,
   asString: (v: unknown) => String(v ?? ''),
 }))
@@ -241,7 +245,12 @@ describe('company-settings', () => {
       httpGetMock.mockResolvedValue({
         code: 0,
         data: [
-          { id: 1, companyName: '结算主体A', taxNo: 'T1', status: '正常' },
+          {
+            id: '307698191887761408',
+            companyName: '结算主体A',
+            taxNo: 'T1',
+            status: '正常',
+          },
           { id: 0, companyName: '无效主体' },
           { id: 2, companyName: '' },
         ],
@@ -252,8 +261,8 @@ describe('company-settings', () => {
       expect(httpGetMock).toHaveBeenCalledWith('/company-settings/options')
       expect(result).toEqual([
         {
-          id: 1,
-          value: 1,
+          id: '307698191887761408',
+          value: '307698191887761408',
           label: '结算主体A',
           companyName: '结算主体A',
           taxNo: 'T1',
@@ -376,8 +385,8 @@ describe('company-settings', () => {
         ]),
       ).toEqual([
         {
-          id: 2,
-          value: 2,
+          id: '2',
+          value: '2',
           label: '主体B',
           companyName: '主体B',
           taxNo: 'T2',

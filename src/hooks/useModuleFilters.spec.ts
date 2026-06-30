@@ -145,7 +145,29 @@ describe('useModuleFilters', () => {
     })
 
     expect(defaults).toEqual({
-      orderDate: ['2026-05-29', '2026-06-28'],
+      orderDate: ['2026-05-28', '2026-06-28'],
+    })
+    vi.useRealTimers()
+  })
+
+  it('keeps one-month date range defaults valid at month end', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-31T12:00:00+08:00'))
+
+    const defaults = buildDefaultModuleFilters({
+      key: 'purchase-order',
+      title: '采购订单',
+      kicker: '',
+      description: '',
+      filters: [{ key: 'orderDate', label: '订单日期', type: 'dateRange' }],
+      columns: [],
+      detailFields: [],
+      data: [],
+      buildOverview: () => [],
+    })
+
+    expect(defaults).toEqual({
+      orderDate: ['2026-02-28', '2026-03-31'],
     })
     vi.useRealTimers()
   })

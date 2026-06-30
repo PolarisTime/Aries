@@ -169,10 +169,6 @@ export function useBusinessGridPage({
   const navigate = useNavigate()
   const detailRoutePath = getBehaviorValue(moduleKey, 'detailRoutePath')
 
-  const handleEdit = (record: ModuleRecord) => {
-    void openEditor(record)
-  }
-
   const handleDetail = (record: ModuleRecord) => {
     if (detailRoutePath) {
       const path = detailRoutePath.replace(
@@ -223,7 +219,6 @@ export function useBusinessGridPage({
     moduleKey,
     resourceKey: pageDef.resourceKey,
     isReadOnly: Boolean(config?.readOnly),
-    onEdit: handleEdit,
     onAttach: overlays.openAttachment,
     detailActionLabel: config?.detailActionLabel,
     onDetail: shouldUseDetailAction

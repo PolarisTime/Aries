@@ -27,7 +27,7 @@ interface EditableRenderOptions {
   materialOptions: MaterialOption[]
   warehouses: Array<{ label: string; value: string }>
   formatCellValue: (value: unknown, columnType?: string) => string
-  isItemColumnEditable: (columnKey: string) => boolean
+  isItemColumnEditable: (columnKey: string, record?: ModuleLineItem) => boolean
   handleItemNumberChange: (itemId: string, key: string, value: unknown) => void
   handleItemInputChange: (itemId: string, key: string, value: string) => void
   handleMaterialSelect: (itemId: string, materialCode: string) => void
@@ -85,7 +85,7 @@ function buildEditableColumnRender({
 
   return (key: string, type: string | undefined) =>
     (value: unknown, record: ModuleLineItem) => {
-      if (!isItemColumnEditable(key)) {
+      if (!isItemColumnEditable(key, record)) {
         return renderReadOnlyValue(
           value,
           type,

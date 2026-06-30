@@ -134,8 +134,17 @@ export function isEditorItemColumnEditableForModule(
   columnKey: string,
   canEditLineItems: boolean,
   lineItemsLocked: boolean,
+  record?: ModuleRecord,
 ) {
   if (!canEditLineItems) {
+    return false
+  }
+
+  if (
+    moduleKey === 'purchase-inbound' &&
+    columnKey === 'materialCode' &&
+    record?.sourcePurchaseOrderItemId
+  ) {
     return false
   }
 

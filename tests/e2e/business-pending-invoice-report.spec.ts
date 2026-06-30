@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import {
-  API_BASE_URL,
   buildSuffix,
+  e2eApiUrl,
   fillDateInput,
   getCurrentAccessToken,
   importParentByKeyword,
@@ -54,7 +54,7 @@ test('pending invoice receipt report shrinks after invoice receipt is created', 
   const fetchPendingRows = async () => {
     const token = await getCurrentAccessToken(page)
     const response = await page.request.get(
-      `${API_BASE_URL}/pending-invoice-receipt-report`,
+      e2eApiUrl('pending-invoice-receipt-report'),
       {
         headers: { Authorization: `Bearer ${token}` },
         params: {

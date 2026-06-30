@@ -9,8 +9,8 @@ const currentDate = () => dayjs().startOf('day')
 const addOneYear = (value: dayjs.Dayjs) => value.add(1, 'year')
 
 function findSettlementCompanyName(id: unknown, fallback = '') {
-  const normalizedId = Number(id)
-  if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
+  const normalizedId = asString(id).trim()
+  if (!normalizedId) {
     return ''
   }
   return (
@@ -93,6 +93,11 @@ for (const key of settlementCompanySnapshotModules) {
 registerModuleBehavior('purchase-inbound', {
   defaultOperatorField: 'buyerName',
   defaultDraftValues: () => ({ inboundDate: currentDateTime() }),
+  resolveReadonlyEditorFields(record) {
+    return asString(record.purchaseOrderNo).trim()
+      ? ['supplierName', 'settlementCompanyId']
+      : []
+  },
   readonlyItemColumns: [
     'warehouseName',
     'quantity',

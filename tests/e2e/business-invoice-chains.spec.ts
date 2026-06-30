@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import {
-  API_BASE_URL,
   buildSuffix,
+  e2eApiUrl,
   fillDateInput,
   getCurrentAccessToken,
   importParentByKeyword,
@@ -126,7 +126,10 @@ test('creates invoice receipt from imported purchase order items', async ({
   const token = await getCurrentAccessToken(page)
   const fetchInvoiceReceiptId = async () => {
     const searchRes = await page.request.get(
-      `${API_BASE_URL}/invoice-receipt/search?keyword=${encodeURIComponent(receiveNo)}&limit=5`,
+      e2eApiUrl(
+        'invoice-receipt',
+        `search?keyword=${encodeURIComponent(receiveNo)}&limit=5`,
+      ),
       { headers: { Authorization: `Bearer ${token}` } },
     )
     const searchJson = (await searchRes.json()) as {
@@ -145,7 +148,7 @@ test('creates invoice receipt from imported purchase order items', async ({
   const invoiceReceiptId = await fetchInvoiceReceiptId()
 
   const detailRes = await page.request.get(
-    `${API_BASE_URL}/invoice-receipt/${invoiceReceiptId}`,
+    e2eApiUrl('invoice-receipt', invoiceReceiptId),
     { headers: { Authorization: `Bearer ${token}` } },
   )
   const detailJson = (await detailRes.json()) as {
@@ -247,7 +250,10 @@ test('creates invoice issue from imported sales order items', async ({
   const token = await getCurrentAccessToken(page)
   const fetchInvoiceIssueId = async () => {
     const searchRes = await page.request.get(
-      `${API_BASE_URL}/invoice-issue/search?keyword=${encodeURIComponent(issueNo)}&limit=5`,
+      e2eApiUrl(
+        'invoice-issue',
+        `search?keyword=${encodeURIComponent(issueNo)}&limit=5`,
+      ),
       { headers: { Authorization: `Bearer ${token}` } },
     )
     const searchJson = (await searchRes.json()) as {
@@ -266,7 +272,7 @@ test('creates invoice issue from imported sales order items', async ({
   const invoiceIssueId = await fetchInvoiceIssueId()
 
   const detailRes = await page.request.get(
-    `${API_BASE_URL}/invoice-issue/${invoiceIssueId}`,
+    e2eApiUrl('invoice-issue', invoiceIssueId),
     { headers: { Authorization: `Bearer ${token}` } },
   )
   const detailJson = (await detailRes.json()) as {

@@ -40,6 +40,19 @@ describe('module-behavior-editor', () => {
     expect(dayjs.isDayjs(values.inboundDate)).toBe(true)
   })
 
+  it('purchase-inbound locks supplier and settlement company after purchase order import', () => {
+    const config = moduleBehaviorRegistry.get('purchase-inbound')
+    const resolveReadonly = config!.resolveReadonlyEditorFields as (
+      record: any,
+    ) => string[]
+
+    expect(resolveReadonly({ purchaseOrderNo: 'PO202600001' })).toEqual([
+      'supplierName',
+      'settlementCompanyId',
+    ])
+    expect(resolveReadonly({ purchaseOrderNo: '   ' })).toEqual([])
+  })
+
   it('purchase-contract syncEditorForm handles signDate changes', () => {
     const config = moduleBehaviorRegistry.get('purchase-contract')
     expect(config?.readonlyLineItems).toBe(true)

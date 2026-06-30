@@ -26,6 +26,21 @@ function formatLocalDate(date: Date) {
   return `${year}-${month}-${day}`
 }
 
+function subtractCalendarMonths(date: Date, months: number) {
+  const result = new Date(date)
+  const targetMonth = result.getMonth() - months
+  result.setDate(1)
+  result.setMonth(targetMonth)
+
+  const lastDayOfTargetMonth = new Date(
+    result.getFullYear(),
+    result.getMonth() + 1,
+    0,
+  ).getDate()
+  result.setDate(Math.min(date.getDate(), lastDayOfTargetMonth))
+  return result
+}
+
 function mergeDefaultFilters(
   currentFilters: SearchParams,
   previousDefaults: SearchParams,
@@ -50,8 +65,7 @@ export function buildDefaultModuleFilters(
   if (!dateRangeField) return {}
 
   const today = new Date()
-  const start = new Date(today)
-  start.setDate(today.getDate() - 30)
+  const start = subtractCalendarMonths(today, 1)
 
   return {
     [dateRangeField.key]: [formatLocalDate(start), formatLocalDate(today)],

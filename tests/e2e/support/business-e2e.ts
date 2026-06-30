@@ -1,8 +1,10 @@
 import type { Locator, Page } from '@playwright/test'
+import { e2eApiUrl } from './api-key'
 import { expect } from './test'
 
 export const API_BASE_URL = 'http://127.0.0.1:11211/api'
 export const APP_BASE_URL = 'http://127.0.0.1:3100'
+export { e2eApiUrl }
 
 export function buildSuffix() {
   return `${Date.now()}${Math.floor(Math.random() * 1000)}`

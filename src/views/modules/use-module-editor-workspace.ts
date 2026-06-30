@@ -266,12 +266,8 @@ function applyAuthoritativePrimaryNo(
 
 async function resolveDefaultSettlementCompany() {
   const currentProfile = await getCompanySettingProfile().catch(() => null)
-  const currentId = Number(currentProfile?.id || 0)
-  if (
-    currentProfile?.companyName &&
-    Number.isFinite(currentId) &&
-    currentId > 0
-  ) {
+  const currentId = currentProfile?.id?.trim()
+  if (currentProfile?.companyName && currentId) {
     return {
       settlementCompanyId: currentId,
       settlementCompanyName: currentProfile.companyName,

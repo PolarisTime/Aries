@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { e2eApiUrl } from './support/api-key'
 import { waitForFirstDetailRow } from './support/business-e2e'
 import { expect, test } from './support/test'
 
@@ -329,9 +330,10 @@ test.describe('purchase to sales chain', () => {
     expect(token).toBeTruthy()
 
     const purchaseOrderSearch = await page.request.get(
-      `http://127.0.0.1:11211/api/purchase-order/search?keyword=${encodeURIComponent(
-        purchaseOrderNo,
-      )}&limit=5`,
+      e2eApiUrl(
+        'purchase-order',
+        `search?keyword=${encodeURIComponent(purchaseOrderNo)}&limit=5`,
+      ),
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -349,7 +351,7 @@ test.describe('purchase to sales chain', () => {
     expect(purchaseOrderId).toBeTruthy()
 
     const purchaseOrderDetailRes = await page.request.get(
-      `http://127.0.0.1:11211/api/purchase-order/${purchaseOrderId}`,
+      e2eApiUrl('purchase-order', purchaseOrderId),
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -376,9 +378,10 @@ test.describe('purchase to sales chain', () => {
     expect(Number(coilItem?.salesRemainingQuantity || 0)).toBe(4)
 
     const salesOrderSearch = await page.request.get(
-      `http://127.0.0.1:11211/api/sales-order/search?keyword=${encodeURIComponent(
-        salesOrderNo,
-      )}&limit=5`,
+      e2eApiUrl(
+        'sales-order',
+        `search?keyword=${encodeURIComponent(salesOrderNo)}&limit=5`,
+      ),
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -395,7 +398,7 @@ test.describe('purchase to sales chain', () => {
     expect(salesOrderId).toBeTruthy()
 
     const salesOrderDetailRes = await page.request.get(
-      `http://127.0.0.1:11211/api/sales-order/${salesOrderId}`,
+      e2eApiUrl('sales-order', salesOrderId),
       {
         headers: {
           Authorization: `Bearer ${token}`,

@@ -1,11 +1,15 @@
 /* 操作列宽度固定 + 背景色（fixed 定位由 antd 处理） */
+.module-table-shell {
+  --module-table-border-color: var(--ant-color-border, #d9d9d9);
+}
+
 .module-table-shell .sticky-actions-col,
 .module-table-shell col.sticky-actions-col,
 .module-table-shell .ant-table-fixed-left .sticky-actions-col,
 .module-table-shell .ant-table-fixed-left col.sticky-actions-col {
-  width: 155px !important;
-  min-width: 155px !important;
-  max-width: 155px !important;
+  width: 50px !important;
+  min-width: 50px !important;
+  max-width: 50px !important;
 }
 .module-table-shell .ant-table-thead .sticky-actions-col,
 .module-table-shell .ant-table-fixed-left .ant-table-thead .sticky-actions-col {
@@ -52,7 +56,7 @@
   text-align: center !important;
   vertical-align: middle !important;
   white-space: nowrap;
-  border-color: var(--theme-card-border) !important;
+  border-color: var(--module-table-border-color) !important;
   border-style: dashed !important;
 }
 
@@ -60,14 +64,30 @@
   vertical-align: middle;
 }
 
+.module-table-shell .ant-table-bordered .ant-table,
+.module-table-shell .ant-table-bordered .ant-table-container,
+.module-table-shell .ant-table-bordered .ant-table-content,
+.module-table-shell .ant-table-bordered .ant-table-body {
+  border-color: var(--module-table-border-color) !important;
+  border-style: dashed !important;
+}
+
 .module-table-shell .ant-table-bordered .ant-table-thead .ant-table-cell,
 .module-table-shell .ant-table-bordered .ant-table-tbody .ant-table-cell {
-  border-inline-end: 1px dashed var(--theme-card-border) !important;
-  border-bottom: 1px dashed var(--theme-card-border) !important;
+  border-inline-end: 1px dashed var(--module-table-border-color) !important;
+  border-bottom: 1px dashed var(--module-table-border-color) !important;
+}
+
+.module-table-shell .ant-table-bordered .ant-table-container::before,
+.module-table-shell .ant-table-bordered .ant-table-container::after,
+.module-table-shell .ant-table-bordered .ant-table-cell-fix-left-last::after,
+.module-table-shell .ant-table-bordered .ant-table-cell-fix-right-first::after {
+  border-color: var(--module-table-border-color) !important;
+  border-style: dashed !important;
 }
 
 .module-table-shell .ant-table-bordered .ant-table-thead .ant-table-cell {
-  border-bottom: 1px dashed var(--theme-card-border) !important;
+  border-bottom: 1px dashed var(--module-table-border-color) !important;
 }
 
 .table-action-group {

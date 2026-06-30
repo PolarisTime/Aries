@@ -164,6 +164,27 @@ describe('useModuleEditorItemColumns', () => {
     )
   })
 
+  it('passes row record when checking item column editability', () => {
+    renderHook(() => useModuleEditorItemColumns(defaultProps()))
+    const dataOptions = mocks.buildModuleEditorDataColumns.mock.calls[0][0]
+
+    dataOptions.isItemColumnEditable('materialCode', {
+      id: 'line-1',
+      sourcePurchaseOrderItemId: 'po-item-1',
+    })
+
+    expect(mocks.isEditorItemColumnEditableForModule).toHaveBeenCalledWith(
+      'purchase-inbound',
+      'materialCode',
+      true,
+      false,
+      expect.objectContaining({
+        id: 'line-1',
+        sourcePurchaseOrderItemId: 'po-item-1',
+      }),
+    )
+  })
+
   it('toggles item column visibility and exposes column order handler', () => {
     const { result } = renderHook(() =>
       useModuleEditorItemColumns(defaultProps()),

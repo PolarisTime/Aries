@@ -16,6 +16,7 @@ const hasLocalChromium =
   fs.existsSync(localChromiumLauncher) && fs.existsSync(localChromiumBinary)
 const e2eBackendMode = process.env.E2E_BACKEND_MODE === 'mock' ? 'mock' : 'real'
 const isRealBackendMode = e2eBackendMode === 'real'
+const includeDebugProject = process.env.E2E_INCLUDE_DEBUG === '1'
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -41,7 +42,17 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: [/debug-.*\.spec\.ts/, /.*-debug\.spec\.ts/],
       use: { ...devices['Desktop Chrome'] },
     },
+    ...(includeDebugProject
+      ? [
+          {
+            name: 'debug-chromium',
+            testMatch: [/debug-.*\.spec\.ts/, /.*-debug\.spec\.ts/],
+            use: { ...devices['Desktop Chrome'] },
+          },
+        ]
+      : []),
   ],
 })

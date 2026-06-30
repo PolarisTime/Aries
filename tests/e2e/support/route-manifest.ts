@@ -12,6 +12,11 @@ export interface SystemRouteManifest {
   marker: string
 }
 
+export const dashboardRoute = {
+  path: '/dashboard',
+  title: '工作台',
+} as const
+
 export const businessRoutes: BusinessRouteManifest[] = [
   {
     path: '/material',
@@ -91,14 +96,14 @@ export const businessRoutes: BusinessRouteManifest[] = [
     searchKeys: ['billNo', 'carrierName'],
   },
   {
-    path: '/purchase-contracts',
+    path: '/purchase-contract',
     title: '采购合同',
     apiPath: 'purchase-contracts',
     supportsDetail: true,
     searchKeys: ['contractNo'],
   },
   {
-    path: '/sales-contracts',
+    path: '/sales-contract',
     title: '销售合同',
     apiPath: 'sales-contracts',
     supportsDetail: true,
@@ -172,6 +177,13 @@ export const businessRoutes: BusinessRouteManifest[] = [
     supportsDetail: false,
   },
   {
+    path: '/ledger-adjustment',
+    title: '台账调整单',
+    apiPath: 'ledger-adjustment',
+    supportsDetail: true,
+    searchKeys: ['adjustmentNo'],
+  },
+  {
     path: '/receivable-payable',
     title: '应收应付',
     apiPath: 'receivable-payable',
@@ -193,14 +205,20 @@ export const businessRoutes: BusinessRouteManifest[] = [
 ]
 
 export const systemRoutes: SystemRouteManifest[] = [
+  { path: '/system-parameters', title: '通用设置', marker: '系统开关' },
   { path: '/general-setting', title: '通用设置', marker: '系统开关' },
-  { path: '/company-setting', title: '公司信息', marker: '公司名称' },
+  {
+    path: '/company-setting',
+    title: '结算主体管理',
+    marker: '结算主体名称',
+  },
   { path: '/number-rules', title: '单号规则', marker: '模块' },
+  { path: '/security-center', title: '会话管理', marker: '登录名' },
   { path: '/access-control', title: '访问控制', marker: '用户账户' },
   {
     path: '/database',
-    title: '数据库状态',
-    marker: '数据库备份管理',
+    title: '数据库管理',
+    marker: 'PostgreSQL',
   },
   { path: '/session', title: '会话管理', marker: '登录名' },
   {

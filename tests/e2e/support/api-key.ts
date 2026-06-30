@@ -27,6 +27,29 @@ const LOGIN_PASSWORD = String(
 ).trim()
 const LOGIN_MAX_RETRIES = 5
 const LOGIN_RETRY_DELAYS_MS = [0, 2_000, 5_000, 10_000, 15_000] as const
+const E2E_API_PATHS_BY_MODULE: Record<string, string> = {
+  carrier: 'carriers',
+  customer: 'customers',
+  'customer-statement': 'customer-statements',
+  department: 'departments',
+  'freight-bill': 'freight-bills',
+  'freight-statement': 'freight-statements',
+  'invoice-issue': 'invoice-issues',
+  'invoice-receipt': 'invoice-receipts',
+  'ledger-adjustment': 'ledger-adjustments',
+  material: 'materials',
+  'operation-log': 'operation-logs',
+  payment: 'payments',
+  'purchase-inbound': 'purchase-inbounds',
+  'purchase-order': 'purchase-orders',
+  receipt: 'receipts',
+  'receivable-payable': 'receivable-payables',
+  'sales-order': 'sales-orders',
+  'sales-outbound': 'sales-outbounds',
+  supplier: 'suppliers',
+  'supplier-statement': 'supplier-statements',
+  warehouse: 'warehouses',
+}
 
 const FALLBACK_PERMISSION_RESOURCES = [
   'access-control',
@@ -45,6 +68,7 @@ const FALLBACK_PERMISSION_RESOURCES = [
   'invoice-issue',
   'invoice-receipt',
   'io-report',
+  'ledger-adjustment',
   'material',
   'operation-log',
   'payment',
@@ -61,6 +85,7 @@ const FALLBACK_PERMISSION_RESOURCES = [
   'sales-order',
   'sales-outbound',
   'security-key',
+  'system-parameters',
   'session',
   'supplier',
   'supplier-statement',
@@ -88,22 +113,24 @@ const FALLBACK_MENU_CODES_BY_RESOURCE: Record<
   'invoice-issue': ['/invoice-issue'],
   'invoice-receipt': ['/invoice-receipt'],
   'io-report': ['/io-report'],
+  'ledger-adjustment': ['/ledger-adjustment'],
   material: ['/material', '/material-categories'],
   'operation-log': ['/operation-log'],
   payment: ['/payment'],
   'pending-invoice-receipt-report': ['/pending-invoice-receipt-report'],
   permission: ['/access-control'],
   'print-template': ['/print-template'],
-  'purchase-contract': ['/purchase-contracts'],
+  'purchase-contract': ['/purchase-contract'],
   'purchase-inbound': ['/purchase-inbound'],
   'purchase-order': ['/purchase-order'],
   receipt: ['/receipt'],
   'receivable-payable': ['/receivable-payable'],
   role: ['/access-control'],
-  'sales-contract': ['/sales-contracts'],
+  'sales-contract': ['/sales-contract'],
   'sales-order': ['/sales-order'],
   'sales-outbound': ['/sales-outbound'],
   'security-key': ['/security-key'],
+  'system-parameters': ['/system-parameters'],
   session: ['/session'],
   supplier: ['/supplier'],
   'supplier-statement': ['/supplier-statement'],
@@ -182,6 +209,21 @@ interface BrowserSession {
 let cachedSessionPromise: Promise<BrowserSession> | null = null
 type RequestHeaders = Record<string, string>
 const EMPTY_RECORDS: Array<Record<string, unknown>> = []
+
+export function resolveE2eApiPath(apiPath: string) {
+  return E2E_API_PATHS_BY_MODULE[apiPath] || apiPath
+}
+
+export function e2eApiUrl(apiPath: string, suffix = '') {
+  const resolvedPath = resolveE2eApiPath(apiPath).replace(/^\/+/, '')
+  const normalizedSuffix = suffix.replace(/^\/+/, '')
+  if (normalizedSuffix.startsWith('?')) {
+    return `${API_BASE_URL}/${resolvedPath}${normalizedSuffix}`
+  }
+  return normalizedSuffix
+    ? `${API_BASE_URL}/${resolvedPath}/${normalizedSuffix}`
+    : `${API_BASE_URL}/${resolvedPath}`
+}
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -673,7 +715,7 @@ export async function fetchCollection(
   })
 
   const response = await request.get(
-    `${API_BASE_URL}/${apiPath}?${params.toString()}`,
+    e2eApiUrl(apiPath, `?${params.toString()}`),
     {
       headers: buildAuthorizationHeaders(session.accessToken),
     },
@@ -736,8 +778,8 @@ export async function fetchData(
   })
   const queryString = params.toString()
   const url = queryString
-    ? `${API_BASE_URL}/${apiPath}?${queryString}`
-    : `${API_BASE_URL}/${apiPath}`
+    ? e2eApiUrl(apiPath, `?${queryString}`)
+    : e2eApiUrl(apiPath)
 
   const response = await request.get(url, {
     headers: buildAuthorizationHeaders(session.accessToken),
@@ -778,7 +820,7 @@ export async function fetchDetail(
   }
 
   const session = await getApiKeySession(request)
-  const response = await request.get(`${API_BASE_URL}/${apiPath}/${id}`, {
+  const response = await request.get(e2eApiUrl(apiPath, String(id)), {
     headers: buildAuthorizationHeaders(session.accessToken),
   })
 

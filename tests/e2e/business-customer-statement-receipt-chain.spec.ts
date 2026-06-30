@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { e2eApiUrl } from './support/api-key'
 import { waitForFirstDetailRow } from './support/business-e2e'
 import { expect, test } from './support/test'
 
@@ -302,7 +303,10 @@ test('creates customer statement and receipt from completed sales flow', async (
   const fetchSalesOrderId = async () => {
     const token = await getCurrentAccessToken(page)
     const salesOrderSearch = await page.request.get(
-      `${API_BASE_URL}/sales-order/search?keyword=${encodeURIComponent(salesOrderNo)}&limit=5`,
+      e2eApiUrl(
+        'sales-order',
+        `search?keyword=${encodeURIComponent(salesOrderNo)}&limit=5`,
+      ),
       { headers: { Authorization: `Bearer ${token}` } },
     )
     const salesOrderSearchJson = (await salesOrderSearch.json()) as {
@@ -331,7 +335,7 @@ test('creates customer statement and receipt from completed sales flow', async (
   const currentToken = await getCurrentAccessToken(page)
 
   const salesOrderDetailRes = await page.request.get(
-    `${API_BASE_URL}/sales-order/${salesOrderId}`,
+    e2eApiUrl('sales-order', salesOrderId),
     { headers: { Authorization: `Bearer ${currentToken}` } },
   )
   const salesOrderDetailJson = (await salesOrderDetailRes.json()) as {
@@ -362,7 +366,10 @@ test('creates customer statement and receipt from completed sales flow', async (
   const fetchCustomerStatementByKeyword = async () => {
     const currentToken = await getCurrentAccessToken(page)
     const customerStatementSearch = await page.request.get(
-      `${API_BASE_URL}/customer-statement/search?keyword=${encodeURIComponent(salesOrderNo)}&limit=10`,
+      e2eApiUrl(
+        'customer-statement',
+        `search?keyword=${encodeURIComponent(salesOrderNo)}&limit=10`,
+      ),
       { headers: { Authorization: `Bearer ${currentToken}` } },
     )
     const customerStatementSearchJson =
@@ -425,7 +432,10 @@ test('creates customer statement and receipt from completed sales flow', async (
 
   const latestToken = await getCurrentAccessToken(page)
   const receiptSearch = await page.request.get(
-    `${API_BASE_URL}/receipt/search?keyword=${encodeURIComponent(receiptNo)}&limit=5`,
+    e2eApiUrl(
+      'receipt',
+      `search?keyword=${encodeURIComponent(receiptNo)}&limit=5`,
+    ),
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
   const receiptSearchJson = (await receiptSearch.json()) as {
@@ -437,7 +447,7 @@ test('creates customer statement and receipt from completed sales flow', async (
   expect(receiptId).toBeTruthy()
 
   const receiptDetailRes = await page.request.get(
-    `${API_BASE_URL}/receipt/${receiptId}`,
+    e2eApiUrl('receipt', receiptId),
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
   const receiptDetailJson = (await receiptDetailRes.json()) as {
@@ -465,7 +475,7 @@ test('creates customer statement and receipt from completed sales flow', async (
   ).toBeGreaterThan(0)
 
   const refreshedStatementDetailRes = await page.request.get(
-    `${API_BASE_URL}/customer-statement/${statementId}`,
+    e2eApiUrl('customer-statement', statementId),
     { headers: { Authorization: `Bearer ${latestToken}` } },
   )
   const refreshedStatementDetailJson =

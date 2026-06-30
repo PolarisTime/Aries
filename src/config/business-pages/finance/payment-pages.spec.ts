@@ -7,6 +7,7 @@ vi.mock('i18next', () => ({
 vi.mock('@/constants/module-options', () => ({
   customerOptions: [],
   enabledStatusOptions: [],
+  getSettlementCompanyOptions: vi.fn(() => []),
 }))
 
 import { paymentPageConfigs } from './payment-pages'
