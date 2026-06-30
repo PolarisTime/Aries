@@ -1,5 +1,3 @@
-// TODO: remove @ts-nocheck — fix resolveIgnoredScalarFields/ignoredScalarFieldCache (renamed by biome auto-fix)
-// @ts-nocheck
 import dayjs from 'dayjs'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { getModulePageSchema } from '@/config/module-page-schema'
@@ -75,18 +73,6 @@ function getScalarFields(moduleKey: string): Promise<readonly string[]> {
   )
   scalarFieldCache.set(moduleKey, fieldsPromise)
   return fieldsPromise
-}
-
-function _getIgnoredScalarFields(moduleKey: string): readonly string[] {
-  const cached = ignoredScalarFieldCache.get(moduleKey)
-  if (cached) {
-    return cached
-  }
-  const fields: readonly string[] = Object.freeze(
-    resolveIgnoredScalarFields(moduleKey),
-  )
-  ignoredScalarFieldCache.set(moduleKey, fields)
-  return fields
 }
 
 function toArray<T>(value: T[] | undefined) {

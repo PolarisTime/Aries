@@ -1,6 +1,3 @@
-// TODO: remove @ts-nocheck — properly define StatementGeneratorRules interface and ApiResponse import
-// @ts-nocheck
-
 import {
   listAllBusinessModuleRows,
   saveBusinessModule,
@@ -10,6 +7,7 @@ import type { UploadRulePayload } from '@/api/business-types'
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { isToggleSetting } from '@/module-system/settings-constants'
+import type { ApiResponse } from '@/types/api'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
@@ -21,6 +19,15 @@ export const DISPLAY_SWITCH_CODES = {
   showSnowflakeId: 'UI_SHOW_SNOWFLAKE_ID',
   useSnowflakeBusinessNo: 'SYS_USE_SNOWFLAKE_ID_AS_BUSINESS_NO',
 } as const
+
+interface DisplaySwitchResponse {
+  [key: string]: unknown
+}
+
+export interface StatementGeneratorRules {
+  customerStatementReceiptAmountZero: boolean
+  supplierStatementFullPayment: boolean
+}
 
 export function listSystemSettings() {
   return listAllBusinessModuleRows(MODULE_KEY, {})

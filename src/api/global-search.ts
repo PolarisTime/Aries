@@ -1,7 +1,7 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { ENDPOINTS } from '@/constants/endpoints'
-import type { GlobalSearchResult } from '@/layouts/global-search'
 import type { ApiResponse } from '@/types/api'
+import type { GlobalSearchResult } from '@/types/global-search'
 import { asString } from '@/utils/type-narrowing'
 
 export interface GlobalSearchResponse {

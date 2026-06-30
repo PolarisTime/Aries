@@ -1,6 +1,8 @@
-// TODO: remove @ts-nocheck — fix AxiosRequestConfig headers type to use AxiosRequestHeaders instead of Record<string, unknown>
-// @ts-nocheck
-import type { AxiosRequestConfig } from 'axios'
+import {
+  AxiosHeaders,
+  type AxiosRequestConfig,
+  type RawAxiosRequestHeaders,
+} from 'axios'
 
 export const IDEMPOTENCY_HEADER = 'X-Idempotency-Key'
 
@@ -17,12 +19,24 @@ export function createIdempotencyKey() {
     .slice(2)}`
 }
 
+function cloneRequestHeaders(
+  headers: AxiosRequestConfig['headers'],
+): RawAxiosRequestHeaders {
+  if (!headers) {
+    return {}
+  }
+
+  if (headers instanceof AxiosHeaders) {
+    return { ...headers.toJSON() }
+  }
+
+  return { ...headers }
+}
+
 export function withIdempotencyKey(
   config?: AxiosRequestConfig,
 ): AxiosRequestConfig {
-  const headers = {
-    ...(config?.headers || {}),
-  } as Record<string, unknown>
+  const headers = cloneRequestHeaders(config?.headers)
 
   if (!headers[IDEMPOTENCY_HEADER]) {
     headers[IDEMPOTENCY_HEADER] = createIdempotencyKey()
