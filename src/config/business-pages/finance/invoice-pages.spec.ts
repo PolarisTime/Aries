@@ -8,6 +8,7 @@ vi.mock('@/constants/module-options', () => ({
   invoiceIssuePageConfig: { key: 'invoice-issue' },
   invoiceReceiptPageConfig: { key: 'invoice-receipt' },
   customerOptions: [],
+  getSettlementCompanyOptions: [],
   getSupplierOptions: [],
   enabledStatusOptions: [],
   buildValueOptions: (...args: string[]) =>
