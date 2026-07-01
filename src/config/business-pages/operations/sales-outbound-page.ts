@@ -241,8 +241,11 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
     label: i18next.t('modules.pages.salesOutbound.parentImportLabel'),
     parentFieldKey: 'salesOrderNo',
     parentDisplayFieldKey: 'orderNo',
+    candidateQueryType: 'sales-order-outbound-import',
     buttonText: i18next.t('modules.pages.salesOutbound.parentImportButton'),
     enforceUniqueRelation: true,
+    buildParentFilters: () => ({ status: '已审核' }),
+    hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({
       customerName: parentRecord.customerName || '',
       projectName: parentRecord.projectName || '',

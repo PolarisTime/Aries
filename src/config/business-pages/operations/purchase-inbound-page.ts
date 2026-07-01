@@ -255,6 +255,8 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     buttonText: i18next.t('modules.pages.purchaseInbound.parentImportButton'),
     candidateQueryType: 'purchase-order-import',
     candidateUsage: 'purchase-inbound',
+    buildParentFilters: () => ({ status: '已审核' }),
+    hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({
       purchaseOrderNo: parentRecord.orderNo || '',
       supplierName: parentRecord.supplierName || '',

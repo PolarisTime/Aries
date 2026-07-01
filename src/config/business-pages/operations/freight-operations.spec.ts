@@ -36,6 +36,10 @@ describe('freightOperationsPageConfigs', () => {
     expect(pi?.candidateQueryType).toBe('freight-bill-import')
     expect(pi?.enforceUniqueRelation).toBe(true)
     expect(pi?.allowMultipleSelection).toBe(true)
+    expect(pi?.buildParentFilters?.({ id: '1' })).toEqual({
+      status: '已审核',
+    })
+    expect(pi?.hiddenSelectorColumnKeys).toContain('status')
 
     const validation = pi?.validateBeforeOpen?.({ carrierName: '' })
     expect(validation).toBe('请先选择物流商，再导入销售出库单')

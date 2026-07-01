@@ -47,6 +47,12 @@ describe('purchaseInboundsPageConfig', () => {
     expect(purchaseInboundsPageConfig.parentImport!.candidateUsage).toBe(
       'purchase-inbound',
     )
+    expect(
+      purchaseInboundsPageConfig.parentImport!.buildParentFilters?.({ id: '1' }),
+    ).toEqual({ status: '已审核' })
+    expect(
+      purchaseInboundsPageConfig.parentImport!.hiddenSelectorColumnKeys,
+    ).toContain('status')
   })
 
   it('has itemColumns', () => {

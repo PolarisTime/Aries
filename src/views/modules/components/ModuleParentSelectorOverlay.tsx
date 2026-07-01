@@ -10,6 +10,7 @@ import { buildFilterParams } from '@/api/business-listing-filtering'
 import { listFreightBillImportCandidatePage } from '@/api/freight-bill-candidates'
 import { getModuleConfig } from '@/api/module-contracts'
 import { listPurchaseOrderImportCandidatePage } from '@/api/purchase-order-candidates'
+import { listSalesOrderOutboundImportCandidatePage } from '@/api/sales-order-candidates'
 import { listStatementCandidatePage } from '@/api/statements'
 import { StatusTag } from '@/components/StatusTag'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
@@ -27,6 +28,7 @@ import { asString } from '@/utils/type-narrowing'
 import { ModuleFilterToolbar } from './ModuleFilterToolbar'
 import {
   filterImportableParentRecords,
+  resolveVisibleParentSelectorColumns,
   resolveSelectedParentRows,
 } from './module-parent-selector-utils'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
@@ -42,6 +44,7 @@ interface Props {
     | 'freight-statement'
   candidateQueryType?: ModuleParentImportDefinition['candidateQueryType']
   candidateUsage?: ModuleParentImportDefinition['candidateUsage']
+  hiddenSelectorColumnKeys?: ModuleParentImportDefinition['hiddenSelectorColumnKeys']
   fixedFilters?: SearchParams
   title?: string
   onSelect: (records: ModuleRecord[]) => void
@@ -405,6 +408,9 @@ function resolveParentSelectorSourceModule(
   }
   if (candidateQueryType === 'freight-bill-import') {
     return 'freight-bill-import'
+  }
+  if (candidateQueryType === 'sales-order-outbound-import') {
+    return 'sales-order-outbound-import'
   }
   return candidateStatementModuleKey || parentModuleKey
 }
@@ -874,6 +880,7 @@ export function ModuleParentSelectorOverlay({
   candidateStatementModuleKey,
   candidateQueryType,
   candidateUsage,
+  hiddenSelectorColumnKeys,
   fixedFilters = EMPTY_FIXED_FILTERS,
   title,
   onSelect,
@@ -890,6 +897,7 @@ export function ModuleParentSelectorOverlay({
       candidateStatementModuleKey={candidateStatementModuleKey}
       candidateQueryType={candidateQueryType}
       candidateUsage={candidateUsage}
+      hiddenSelectorColumnKeys={hiddenSelectorColumnKeys}
       fixedFilters={fixedFilters}
       title={title}
       onSelect={onSelect}
@@ -905,6 +913,7 @@ function ModuleParentSelectorOverlayContent({
   candidateStatementModuleKey,
   candidateQueryType,
   candidateUsage,
+  hiddenSelectorColumnKeys,
   fixedFilters = EMPTY_FIXED_FILTERS,
   title,
   onSelect,
@@ -983,6 +992,13 @@ function ModuleParentSelectorOverlayContent({
           pageSize,
         )
       }
+      if (candidateQueryType === 'sales-order-outbound-import') {
+        return listSalesOrderOutboundImportCandidatePage(
+          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          Math.max(page - 1, 0),
+          pageSize,
+        )
+      }
       return listBusinessModule(
         parentModuleKey,
         effectiveSubmittedFilters,
@@ -1004,9 +1020,9 @@ function ModuleParentSelectorOverlayContent({
   )
   const total = Number(data?.data?.total || 0)
 
-  const columns: ColumnsType<ModuleRecord> = resolveParentSelectorColumns(
-    parentModuleKey,
-    displayFieldKey,
+  const columns: ColumnsType<ModuleRecord> = resolveVisibleParentSelectorColumns(
+    resolveParentSelectorColumns(parentModuleKey, displayFieldKey),
+    hiddenSelectorColumnKeys,
   ).map((column) => ({
     dataIndex: column.dataIndex,
     title: column.title,

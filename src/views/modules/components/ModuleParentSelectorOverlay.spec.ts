@@ -3,6 +3,7 @@ import type { ModuleRecord } from '@/types/module-page'
 import {
   filterImportableParentRecords,
   hasImportableQuantity,
+  resolveVisibleParentSelectorColumns,
   resolveSelectedParentRows,
 } from './module-parent-selector-utils'
 
@@ -135,5 +136,19 @@ describe('resolveSelectedParentRows', () => {
     expect(resolveSelectedParentRows(['2'], { '2': cached }, [])).toEqual([
       cached,
     ])
+  })
+})
+
+describe('resolveVisibleParentSelectorColumns', () => {
+  it('removes hidden selector columns', () => {
+    const columns = resolveVisibleParentSelectorColumns(
+      [
+        { dataIndex: 'orderNo', title: '单号' },
+        { dataIndex: 'status', title: '单据状态' },
+      ],
+      ['status'],
+    )
+
+    expect(columns.map((column) => column.dataIndex)).toEqual(['orderNo'])
   })
 })

@@ -59,6 +59,12 @@ describe('salesOrdersPageConfig', () => {
     expect(salesOrdersPageConfig.parentImport!.candidateUsage).toBe(
       'sales-order',
     )
+    expect(
+      salesOrdersPageConfig.parentImport!.buildParentFilters?.({ id: '1' }),
+    ).toEqual({ status: '已审核' })
+    expect(
+      salesOrdersPageConfig.parentImport!.hiddenSelectorColumnKeys,
+    ).toContain('status')
   })
 
   it('buildOverview returns result', () => {

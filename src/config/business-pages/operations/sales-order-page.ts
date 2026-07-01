@@ -300,6 +300,8 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     remainingQuantityKey: 'salesRemainingQuantity',
     candidateQueryType: 'purchase-order-import',
     candidateUsage: 'sales-order',
+    buildParentFilters: () => ({ status: '已审核' }),
+    hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({
       purchaseOrderNo: parentRecord.orderNo || '',
     }),

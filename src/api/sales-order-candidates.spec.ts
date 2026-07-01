@@ -8,45 +8,41 @@ vi.mock('@/api/client', () => ({
   http: { get: httpGetMock },
 }))
 
-import { listPurchaseOrderImportCandidatePage } from './purchase-order-candidates'
+import { listSalesOrderOutboundImportCandidatePage } from './sales-order-candidates'
 
-describe('purchase-order-candidates', () => {
+describe('sales-order-candidates', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     assertApiSuccessMock.mockImplementation(<T>(response: T) => response)
   })
 
-  it('lists purchase order import candidates with usage', async () => {
+  it('lists sales order outbound import candidates', async () => {
     httpGetMock.mockResolvedValue({
       code: 0,
       data: {
         content: [
           {
             id: '321698660075175936',
-            orderNo: '321698660075175936',
+            orderNo: 'SO2026000001',
             status: '已审核',
-            totalWeight: 12.345,
-            totalAmount: 67890.12,
-            importableQuantity: 60,
           },
         ],
         totalElements: 1,
       },
     })
 
-    const result = await listPurchaseOrderImportCandidatePage(
-      'purchase-inbound',
-      { keyword: ' 321698660075175936 ' },
+    const result = await listSalesOrderOutboundImportCandidatePage(
+      { keyword: ' SO2026000001 ', customerName: '客户甲' },
       0,
       15,
     )
 
     expect(httpGetMock).toHaveBeenCalledWith(
-      '/purchase-orders/import-candidate',
+      '/sales-orders/outbound-import-candidate',
       {
         params: {
-          keyword: '321698660075175936',
-          usage: 'purchase-inbound',
+          keyword: 'SO2026000001',
+          customerName: '客户甲',
           page: 0,
           size: 15,
         },
@@ -56,9 +52,7 @@ describe('purchase-order-candidates', () => {
     expect(result.data?.rows?.[0]).toEqual(
       expect.objectContaining({
         id: '321698660075175936',
-        totalWeight: 12.345,
-        totalAmount: 67890.12,
-        importableQuantity: 60,
+        orderNo: 'SO2026000001',
       }),
     )
   })

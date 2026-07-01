@@ -1,6 +1,10 @@
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
+export type ParentSelectorColumn = {
+  dataIndex: string
+}
+
 const AUDITED_STATUS = '已审核'
 const PURCHASE_COMPLETED_STATUS = '完成采购'
 const SALES_COMPLETED_STATUS = '完成销售'
@@ -93,4 +97,15 @@ export function resolveSelectedParentRows(
       currentRecordMap.get(normalizedKey) || selectedRecordMap[normalizedKey]
     return record ? [record] : []
   })
+}
+
+export function resolveVisibleParentSelectorColumns<T extends ParentSelectorColumn>(
+  columns: T[],
+  hiddenColumnKeys?: string[],
+) {
+  if (!hiddenColumnKeys?.length) {
+    return columns
+  }
+  const hiddenKeySet = new Set(hiddenColumnKeys)
+  return columns.filter((column) => !hiddenKeySet.has(column.dataIndex))
 }

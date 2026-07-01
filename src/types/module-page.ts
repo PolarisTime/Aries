@@ -79,8 +79,12 @@ export interface ModuleParentImportDefinition {
   buildParentFilters?: (currentRecord: ModuleRecord) => Record<string, unknown>
   validateBeforeOpen?: (currentRecord: ModuleRecord) => string | null
   remainingQuantityKey?: string
-  candidateQueryType?: 'purchase-order-import' | 'freight-bill-import'
+  candidateQueryType?:
+    | 'purchase-order-import'
+    | 'freight-bill-import'
+    | 'sales-order-outbound-import'
   candidateUsage?: 'purchase-inbound' | 'sales-order'
+  hiddenSelectorColumnKeys?: string[]
   mapParentToDraft?: (parentRecord: ModuleRecord) => Partial<ModuleRecord>
   transformItems?: (parentRecord: ModuleRecord) => ModuleLineItem[]
   validateParentImport?: (args: {

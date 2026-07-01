@@ -26,6 +26,14 @@ describe('salesOutboundPageConfig', () => {
   })
 
   describe('parentImport', () => {
+    it('filters audited parent sales orders and hides the status selector column', () => {
+      expect(pi.candidateQueryType).toBe('sales-order-outbound-import')
+      expect(pi.buildParentFilters?.({ id: '1' } as any)).toEqual({
+        status: '已审核',
+      })
+      expect(pi.hiddenSelectorColumnKeys).toContain('status')
+    })
+
     it('mapParentToDraft maps fields from parent record', () => {
       const draft = pi.mapParentToDraft!({
         customerName: '客户A',

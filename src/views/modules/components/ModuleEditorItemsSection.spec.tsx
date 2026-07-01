@@ -131,6 +131,7 @@ describe('ModuleEditorItemsSection', () => {
         label: '采购订单',
         candidateQueryType: 'purchase-order-import' as const,
         candidateUsage: 'purchase-inbound' as const,
+        hiddenSelectorColumnKeys: ['status'],
       },
     }
 
@@ -150,6 +151,7 @@ describe('ModuleEditorItemsSection', () => {
       expect.objectContaining({
         candidateQueryType: 'purchase-order-import',
         candidateUsage: 'purchase-inbound',
+        hiddenSelectorColumnKeys: ['status'],
         parentModuleKey: 'purchase-order',
       }),
       undefined,
@@ -184,6 +186,39 @@ describe('ModuleEditorItemsSection', () => {
       expect.objectContaining({
         candidateQueryType: 'freight-bill-import',
         parentModuleKey: 'sales-outbound',
+      }),
+      undefined,
+    )
+  })
+
+  it('passes sales order outbound candidate settings to parent selector', () => {
+    const config = {
+      ...defaultProps.config,
+      parentImport: {
+        parentModuleKey: 'sales-order',
+        parentFieldKey: 'salesOrderNo',
+        parentDisplayFieldKey: 'orderNo',
+        label: '销售订单',
+        candidateQueryType: 'sales-order-outbound-import' as const,
+      },
+    }
+
+    render(
+      <ModuleEditorItemsSection
+        {...defaultProps}
+        config={config}
+        parentSelectorOpen
+        permissions={{
+          ...defaultProps.permissions,
+          importParentItems: true,
+        }}
+      />,
+    )
+
+    expect(mocks.ModuleParentSelectorOverlay).toHaveBeenCalledWith(
+      expect.objectContaining({
+        candidateQueryType: 'sales-order-outbound-import',
+        parentModuleKey: 'sales-order',
       }),
       undefined,
     )
