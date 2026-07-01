@@ -44,6 +44,25 @@ export interface AttachmentBindingRecord {
   attachments: AttachmentRecord[]
 }
 
+export interface AttachmentDirectUploadPrepareRecord {
+  attachmentId: string | number
+  token: string
+  objectKey?: string
+  storagePath?: string
+  uploadUrl: string
+  method?: string
+  headers?: Record<string, string>
+  expiresAt?: string | number
+}
+
+export interface AttachmentDirectUploadPreparePayload {
+  fileName: string
+  contentType: string
+  fileSize: number
+  sourceType: string
+  sha256Hex: string
+}
+
 export interface LeoPageData<T> {
   content?: T[]
   records?: T[]
