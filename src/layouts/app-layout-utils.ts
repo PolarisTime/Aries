@@ -22,6 +22,11 @@ export interface AppLayoutUserInfo {
   currentUserName: string
 }
 
+export interface AppLayoutClockDisplay {
+  dateText: string
+  timeText: string
+}
+
 export function buildAppLayoutUserInfo(
   t: TFunction,
   user?: {
@@ -37,8 +42,13 @@ export function buildAppLayoutUserInfo(
   }
 }
 
-export function buildClockText(value: { format: (token: string) => string }) {
-  return value.format('HH:mm:ss')
+export function buildClockDisplay(value: {
+  format: (token: string) => string
+}): AppLayoutClockDisplay {
+  return {
+    dateText: value.format('YYYY年MM月DD日'),
+    timeText: value.format('HH时mm分ss秒'),
+  }
 }
 
 export function buildAppLayoutStyles(

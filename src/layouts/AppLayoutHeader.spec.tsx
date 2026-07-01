@@ -8,7 +8,6 @@ vi.mock('react-i18next', () => ({
       const map: Record<string, string> = {
         'layouts.userMenu.personalSettings': '个人设置',
         'layouts.userMenu.logout': '退出登录',
-        'layouts.topNav.serverTime': '服务器时间',
         'layouts.sideNav.breadcrumbPrefix': '首页 / ',
         'layouts.sideNav.apiOnline': '在线',
         'layouts.sideNav.apiOffline': '离线',
@@ -64,7 +63,7 @@ describe('AppLayoutHeader', () => {
       <AppLayoutHeader
         {...sharedProps}
         kind="top"
-        clockText="14:30:00"
+        clockDisplay={{ dateText: '2026年07月01日', timeText: '14时30分00秒' }}
         currentUserLoginName="zhangsan"
         onDashboardClick={vi.fn()}
         onMenuClick={vi.fn()}
@@ -84,7 +83,7 @@ describe('AppLayoutHeader', () => {
         {...sharedProps}
         kind="side"
         backendOnline={true}
-        clockText="14:30:00"
+        clockDisplay={{ dateText: '2026年07月01日', timeText: '14时30分00秒' }}
         collapsed={false}
         onToggleCollapsed={vi.fn()}
         title="工作台"

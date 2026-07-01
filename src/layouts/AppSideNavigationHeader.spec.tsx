@@ -25,7 +25,10 @@ vi.mock('@/layouts/LazyAppHeaderSearch', () => ({
 
 const defaultProps = {
   backendOnline: true,
-  clockText: '14:30:00',
+  clockDisplay: {
+    dateText: '2026年07月01日',
+    timeText: '14时30分00秒',
+  },
   collapsed: false,
   currentUserName: '张三',
   onToggleCollapsed: vi.fn(),
@@ -69,8 +72,16 @@ describe('AppSideNavigationHeader', () => {
   })
 
   it('displays clock text', () => {
-    render(<AppSideNavigationHeader {...defaultProps} clockText="15:00:00" />)
-    expect(screen.getByText('15:00:00')).toBeDefined()
+    render(
+      <AppSideNavigationHeader
+        {...defaultProps}
+        clockDisplay={{
+          dateText: '2026年07月02日',
+          timeText: '15时00分00秒',
+        }}
+      />,
+    )
+    expect(screen.getByText('15时00分00秒')).toBeDefined()
   })
 
   it('calls onToggleCollapsed when trigger button is clicked', () => {

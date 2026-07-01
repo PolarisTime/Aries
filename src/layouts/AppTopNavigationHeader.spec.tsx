@@ -6,7 +6,6 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const map: Record<string, string> = {
-        'layouts.topNav.serverTime': '服务器时间',
         'common.refresh': '刷新',
         'layouts.headerSearch.placeholder': '搜索单号/关键字',
       }
@@ -22,7 +21,10 @@ vi.mock('@/layouts/LazyAppHeaderSearch', () => ({
 }))
 
 const defaultProps = {
-  clockText: '14:30:00',
+  clockDisplay: {
+    dateText: '2026年07月01日',
+    timeText: '14时30分00秒',
+  },
   currentUserLoginName: 'zhangsan',
   currentUserName: '张三',
   onDashboardClick: vi.fn(),
@@ -69,14 +71,30 @@ describe('AppTopNavigationHeader', () => {
     expect(screen.getByText('zhangsan')).toBeDefined()
   })
 
-  it('renders clock text', () => {
-    render(<AppTopNavigationHeader {...defaultProps} clockText="15:00:00" />)
-    expect(screen.getByText('15:00:00')).toBeDefined()
+  it('renders date on the first clock line', () => {
+    render(
+      <AppTopNavigationHeader
+        {...defaultProps}
+        clockDisplay={{
+          dateText: '2026年07月02日',
+          timeText: '15时00分00秒',
+        }}
+      />,
+    )
+    expect(screen.getByText('2026年07月02日')).toBeDefined()
   })
 
-  it('renders server time label', () => {
-    render(<AppTopNavigationHeader {...defaultProps} />)
-    expect(screen.getByText('服务器时间')).toBeDefined()
+  it('renders time on the second clock line', () => {
+    render(
+      <AppTopNavigationHeader
+        {...defaultProps}
+        clockDisplay={{
+          dateText: '2026年07月02日',
+          timeText: '15时00分00秒',
+        }}
+      />,
+    )
+    expect(screen.getByText('15时00分00秒')).toBeDefined()
   })
 
   it('calls onDashboardClick when brand button is clicked', () => {

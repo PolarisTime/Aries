@@ -1340,7 +1340,7 @@ export const zhCN: MessageSchema = {
         filterOrderDate: '订单日期',
         colOrderNo: '订单编号',
         colSupplier: '供应商',
-        colSettlementCompany: '采购结算主体',
+        colSettlementCompany: '结算主体',
         colSettlementCompanyId: '采购结算主体ID',
         colBuyer: '采购员',
         colOrderDate: '订单日期',
@@ -1907,9 +1907,6 @@ export const zhCN: MessageSchema = {
         siderDesc: '保留侧边菜单，更适合高频表格录入和多模块切换。',
         topDesc: '采用顶部菜单栏，整体风格与当前 Vue 版保持一致。',
       },
-    },
-    topNav: {
-      serverTime: '服务器时间',
     },
     sideNav: {
       breadcrumbPrefix: '业务中心 / ',

@@ -3,6 +3,7 @@ import { Dropdown, Menu } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { AppLayoutClockDisplay } from '@/layouts/app-layout-utils'
 import {
   LazyAppHeaderSearch,
   type LazyAppHeaderSearchProps,
@@ -11,7 +12,7 @@ import {
 type LayoutHeaderSearchProps = Omit<LazyAppHeaderSearchProps, 'className'>
 
 interface Props {
-  clockText: string
+  clockDisplay: AppLayoutClockDisplay
   currentUserLoginName: string
   currentUserName: string
   onDashboardClick: () => void
@@ -25,7 +26,7 @@ interface Props {
 }
 
 export function AppTopNavigationHeader({
-  clockText,
+  clockDisplay,
   currentUserLoginName,
   currentUserName,
   onDashboardClick,
@@ -88,10 +89,10 @@ export function AppTopNavigationHeader({
 
         <div className="user-wrapper user-wrapper-top" style={shellFontStyle}>
           <div className="app-top-header-meta">
-            <span className="app-top-header-meta-label">
-              {t('layouts.topNav.serverTime')}
-            </span>
-            <strong>{clockText}</strong>
+            <span className="app-top-header-date">{clockDisplay.dateText}</span>
+            <strong className="app-top-header-time">
+              {clockDisplay.timeText}
+            </strong>
           </div>
           <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
             <button type="button" className="app-top-user-trigger">

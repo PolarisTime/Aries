@@ -1938,9 +1938,6 @@ export const enUS: MessageSchema = {
           'Uses a top menu bar, consistent with the current Vue version layout.',
       },
     },
-    topNav: {
-      serverTime: 'Server Time',
-    },
     sideNav: {
       breadcrumbPrefix: 'Business Center / ',
       apiOnline: 'API Online',

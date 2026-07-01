@@ -15,7 +15,7 @@ import { AppPageTabs } from '@/layouts/AppPageTabs'
 import {
   buildAppLayoutStyles,
   buildAppLayoutUserInfo,
-  buildClockText,
+  buildClockDisplay,
 } from '@/layouts/app-layout-utils'
 import type { GlobalSearchResult } from '@/layouts/global-search'
 import { LazyPersonalSettingsModal } from '@/layouts/LazyPersonalSettingsModal'
@@ -319,7 +319,7 @@ export function AppLayout() {
     t,
     user,
   )
-  const clockText = buildClockText(clock)
+  const clockDisplay = buildClockDisplay(clock)
   const {
     fixedWidthStyle,
     headerClassName,
@@ -366,7 +366,7 @@ export function AppLayout() {
               onDashboardClick={() => navigate({ to: '/dashboard' as '/' })}
               topBrandMark={topBrandMark}
               shellFontStyle={shellFontStyle}
-              clockText={clockText}
+              clockDisplay={clockDisplay}
               currentUserName={currentUserName}
               currentUserLoginName={currentUserLoginName}
               onOpenPersonalSettings={handleOpenPersonalSettings}
@@ -393,7 +393,7 @@ export function AppLayout() {
               title={routePageContext.title}
               backendOnline={backendOnline}
               shellFontStyle={shellFontStyle}
-              clockText={clockText}
+              clockDisplay={clockDisplay}
               currentUserName={currentUserName}
               onOpenPersonalSettings={handleOpenPersonalSettings}
               onSignOut={handleSignOut}

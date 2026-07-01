@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import type { AppHeaderSearchProps } from '@/layouts/AppHeaderSearch'
 import { AppSideNavigationHeader } from '@/layouts/AppSideNavigationHeader'
 import { AppTopNavigationHeader } from '@/layouts/AppTopNavigationHeader'
+import type { AppLayoutClockDisplay } from '@/layouts/app-layout-utils'
 
 type LayoutHeaderSearchProps = Omit<AppHeaderSearchProps, 'className'>
 
@@ -20,7 +21,7 @@ interface SharedHeaderProps {
 interface TopNavigationHeaderProps extends SharedHeaderProps {
   currentUserLoginName: string
   kind: 'top'
-  clockText: string
+  clockDisplay: AppLayoutClockDisplay
   onDashboardClick: () => void
   onMenuClick: MenuProps['onClick']
   selectedKeys: string[]
@@ -30,7 +31,7 @@ interface TopNavigationHeaderProps extends SharedHeaderProps {
 
 interface SideNavigationHeaderProps extends SharedHeaderProps {
   backendOnline: boolean
-  clockText: string
+  clockDisplay: AppLayoutClockDisplay
   collapsed: boolean
   kind: 'side'
   onToggleCollapsed: () => void

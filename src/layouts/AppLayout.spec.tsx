@@ -50,7 +50,6 @@ vi.mock('react-i18next', () => ({
         'layouts.sideNav.breadcrumbPrefix': '首页 / ',
         'layouts.sideNav.apiOnline': '在线',
         'layouts.sideNav.apiOffline': '离线',
-        'layouts.topNav.serverTime': '服务器时间',
         'auth.personalsecurity.accountTitle': '账号',
         'auth.personalsecurity.disabledDescription': '2FA 未启用',
         'auth.personalsecurity.loginName': '登录名',
@@ -125,7 +124,10 @@ vi.mock('@/layouts/app-layout-utils', () => ({
     currentUserName: '张三',
     currentUserLoginName: 'zhangsan',
   }),
-  buildClockText: vi.fn().mockReturnValue('14:30:00'),
+  buildClockDisplay: vi.fn().mockReturnValue({
+    dateText: '2026年07月01日',
+    timeText: '14时30分00秒',
+  }),
 }))
 
 vi.mock('@/layouts/global-search', () => ({
@@ -142,7 +144,7 @@ vi.mock('@/layouts/route-page-context', () => ({
 
 vi.mock('@/layouts/useAppLayoutClock', () => ({
   useAppLayoutClock: vi.fn().mockReturnValue({
-    format: vi.fn().mockReturnValue('14:30:00'),
+    format: vi.fn().mockReturnValue('2026-07-01'),
   }),
 }))
 

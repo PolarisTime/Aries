@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   buildAppLayoutStyles,
   buildAppLayoutUserInfo,
-  buildClockText,
+  buildClockDisplay,
 } from '@/layouts/app-layout-utils'
 
 vi.mock('@/utils/env', () => ({
@@ -52,11 +52,19 @@ describe('buildAppLayoutUserInfo', () => {
   })
 })
 
-describe('buildClockText', () => {
-  it('formats time as HH:mm:ss', () => {
-    const clock = { format: vi.fn().mockReturnValue('14:30:00') }
-    expect(buildClockText(clock)).toBe('14:30:00')
-    expect(clock.format).toHaveBeenCalledWith('HH:mm:ss')
+describe('buildClockDisplay', () => {
+  it('formats date and time separately', () => {
+    const clock = {
+      format: vi.fn((token: string) =>
+        token === 'YYYY年MM月DD日' ? '2026年07月01日' : '14时30分00秒',
+      ),
+    }
+    expect(buildClockDisplay(clock)).toEqual({
+      dateText: '2026年07月01日',
+      timeText: '14时30分00秒',
+    })
+    expect(clock.format).toHaveBeenCalledWith('YYYY年MM月DD日')
+    expect(clock.format).toHaveBeenCalledWith('HH时mm分ss秒')
   })
 })
 

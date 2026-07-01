@@ -8,6 +8,7 @@ import { Button, Dropdown, Tag } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { AppLayoutClockDisplay } from '@/layouts/app-layout-utils'
 import {
   LazyAppHeaderSearch,
   type LazyAppHeaderSearchProps,
@@ -17,7 +18,7 @@ type LayoutHeaderSearchProps = Omit<LazyAppHeaderSearchProps, 'className'>
 
 interface Props {
   backendOnline: boolean
-  clockText: string
+  clockDisplay: AppLayoutClockDisplay
   collapsed: boolean
   currentUserName: string
   onToggleCollapsed: () => void
@@ -29,7 +30,7 @@ interface Props {
 
 export function AppSideNavigationHeader({
   backendOnline,
-  clockText,
+  clockDisplay,
   collapsed,
   currentUserName,
   onToggleCollapsed,
@@ -64,7 +65,7 @@ export function AppSideNavigationHeader({
               ? t('layouts.sideNav.apiOnline')
               : t('layouts.sideNav.apiOffline')}
           </Tag>
-          <Tag color="default">{clockText}</Tag>
+          <Tag color="default">{clockDisplay.timeText}</Tag>
         </span>
         <span className="action user-name">{currentUserName}</span>
         <span className="action">

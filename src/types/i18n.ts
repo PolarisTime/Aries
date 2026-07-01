@@ -1850,9 +1850,6 @@ export interface MessageSchema {
         topDesc: string
       }
     }
-    topNav: {
-      serverTime: string
-    }
     sideNav: {
       breadcrumbPrefix: string
       apiOnline: string
