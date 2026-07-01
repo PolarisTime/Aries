@@ -7,6 +7,7 @@ interface Props {
   moduleKey: string
   resourceKey?: string
   isReadOnly?: boolean
+  attachmentCounts?: Record<string, number>
   onAttach: (record: ModuleRecord) => void
   onDetail?: (record: ModuleRecord) => void
   detailActionLabel?: string
@@ -16,6 +17,7 @@ export function useModuleRecordActions({
   moduleKey,
   resourceKey,
   isReadOnly = false,
+  attachmentCounts = {},
   onAttach,
   onDetail,
   detailActionLabel,
@@ -23,6 +25,20 @@ export function useModuleRecordActions({
   const { t } = useTranslation()
   const can = usePermissionStore((s) => s.can)
   const resource = resourceKey || moduleKey
+
+  const resolveAttachmentCount = (record: ModuleRecord) => {
+    const mappedCount = attachmentCounts[String(record.id)]
+    if (typeof mappedCount === 'number') {
+      return mappedCount
+    }
+    if (Array.isArray(record.attachments)) {
+      return record.attachments.length
+    }
+    if (Array.isArray(record.attachmentIds)) {
+      return record.attachmentIds.length
+    }
+    return 0
+  }
 
   const buildActions = (record: ModuleRecord): ActionItem[] => {
     const items: ActionItem[] = []
@@ -37,9 +53,14 @@ export function useModuleRecordActions({
       return items
     }
     if (can(resource, 'read') || can(resource, 'update')) {
+      const attachmentLabel = t('hooks.recordActions.attachment')
+      const attachmentCount = resolveAttachmentCount(record)
       items.push({
         key: 'attach',
-        label: t('hooks.recordActions.attachment'),
+        label:
+          attachmentCount > 0
+            ? `${attachmentLabel}(${attachmentCount})`
+            : attachmentLabel,
         onClick: () => onAttach(record),
       })
     }

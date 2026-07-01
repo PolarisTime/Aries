@@ -40,8 +40,11 @@ describe('business-types', () => {
       fileName: 'file.pdf',
       contentType: 'application/pdf',
       fileSize: 1024,
+      storageType: 's3',
+      storageLabel: 'S3存储',
     }
     expect(record.fileName).toBe('file.pdf')
+    expect(record.storageLabel).toBe('S3存储')
   })
 
   it('AttachmentBindingRecord type is usable', () => {

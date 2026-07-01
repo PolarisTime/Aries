@@ -125,6 +125,16 @@
   line-height: 1.4;
 }
 
+.module-attachment-upload-shell .ant-progress {
+  margin-block-start: 2px;
+}
+
+.module-attachment-storage-tag {
+  align-self: flex-start;
+  margin-inline-end: 0;
+  line-height: 20px;
+}
+
 .module-attachment-preview-thumb {
   display: inline-flex;
   align-items: center;

@@ -36,12 +36,25 @@ export interface AttachmentRecord {
   previewType?: string
   previewUrl?: string
   downloadUrl?: string
+  storageType?: 'local' | 's3' | string
+  storageLabel?: string
 }
 
 export interface AttachmentBindingRecord {
   moduleKey: string
   recordId: string
   attachments: AttachmentRecord[]
+}
+
+export interface AttachmentBindingCountRecord {
+  moduleKey: string
+  counts: Record<string, number>
+}
+
+export interface AttachmentAccessUrlRecord {
+  url?: string | null
+  inline: boolean
+  presigned: boolean
 }
 
 export interface AttachmentDirectUploadPrepareRecord {

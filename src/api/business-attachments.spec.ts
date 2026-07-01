@@ -14,7 +14,11 @@ vi.mock('@/api/client', () => ({
 }))
 
 import {
+  fetchAttachmentCounts,
   getAttachmentBindings,
+  getAttachmentBlob,
+  getPresignedAttachmentBlob,
+  resolveAttachmentAccessUrl,
   updateAttachmentBindings,
   updatePageUploadRule,
   uploadAttachment,
@@ -30,10 +34,9 @@ describe('business-attachments', () => {
           .fn()
           .mockResolvedValue(
             new Uint8Array([
-              0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23,
-              0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67,
-              0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab,
-              0xcd, 0xef,
+              0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45,
+              0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab,
+              0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
             ]).buffer,
           ),
       },
@@ -66,6 +69,21 @@ describe('business-attachments', () => {
           },
         })
         .mockResolvedValueOnce({ code: 0, data: { id: '1' } })
+      vi.stubGlobal(
+        'XMLHttpRequest',
+        class {
+          status = 200
+          statusText = 'OK'
+          upload = {}
+          open = vi.fn()
+          setRequestHeader = vi.fn()
+          onload: (() => void) | null = null
+          onerror: (() => void) | null = null
+          send = vi.fn(() => {
+            this.onload?.()
+          })
+        },
+      )
 
       const result = await uploadAttachment(file, 'purchase-order')
 
@@ -82,18 +100,6 @@ describe('business-attachments', () => {
         },
         { params: { moduleKey: 'purchase-order' } },
       )
-      expect(fetchMock).toHaveBeenCalledWith(
-        'https://upload.example.com/test.pdf',
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/pdf',
-            'x-amz-checksum-sha256':
-              'ASNFZ4mrze8BI0VniavN7wEjRWeJq83vASNFZ4mrze8=',
-          },
-          body: file,
-        },
-      )
       expect(httpPostMock).toHaveBeenNthCalledWith(
         2,
         '/attachments/direct-upload/complete',
@@ -101,15 +107,72 @@ describe('business-attachments', () => {
         { params: { moduleKey: 'purchase-order' } },
       )
       expect(result).toEqual({ code: 0, data: { id: '1' } })
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    it('reports direct upload progress through XMLHttpRequest', async () => {
+      const file = new File(['content'], 'test.pdf', {
+        type: 'application/pdf',
+      })
+      const progressValues: number[] = []
+      httpPostMock
+        .mockResolvedValueOnce({
+          code: 0,
+          data: {
+            attachmentId: '1',
+            token: 'token',
+            uploadUrl: 'https://upload.example.com/test.pdf',
+            method: 'PUT',
+          },
+        })
+        .mockResolvedValueOnce({ code: 0, data: { id: '1' } })
+      vi.stubGlobal(
+        'XMLHttpRequest',
+        class {
+          status = 200
+          statusText = 'OK'
+          upload: {
+            onprogress?: (event: {
+              lengthComputable: boolean
+              loaded: number
+              total: number
+            }) => void
+          } = {}
+          open = vi.fn()
+          setRequestHeader = vi.fn()
+          onload: (() => void) | null = null
+          onerror: (() => void) | null = null
+          send = vi.fn(() => {
+            this.upload.onprogress?.({
+              lengthComputable: true,
+              loaded: 5,
+              total: 10,
+            })
+            this.onload?.()
+          })
+        },
+      )
+
+      await uploadAttachment(file, 'purchase-order', 'PAGE_UPLOAD', {
+        onProgress: (percent) => progressValues.push(percent),
+      })
+
+      expect(progressValues).toEqual([50, 100])
     })
 
     it('falls back to multipart upload when direct upload is unsupported', async () => {
       const file = new File(['content'], 'test.pdf', {
         type: 'application/pdf',
       })
-      const unsupportedError = Object.assign(new Error('当前附件存储不支持直传'), {
-        response: { status: 400, data: { message: '当前附件存储不支持直传' } },
-      })
+      const unsupportedError = Object.assign(
+        new Error('当前附件存储不支持直传'),
+        {
+          response: {
+            status: 400,
+            data: { message: '当前附件存储不支持直传' },
+          },
+        },
+      )
       httpPostMock
         .mockRejectedValueOnce(unsupportedError)
         .mockResolvedValueOnce({ code: 0, data: { id: '1' } })
@@ -119,7 +182,10 @@ describe('business-attachments', () => {
       expect(httpPostMock).toHaveBeenCalledWith(
         '/attachments/upload',
         expect.any(FormData),
-        { headers: { 'Content-Type': 'multipart/form-data' } },
+        expect.objectContaining({
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: expect.any(Function),
+        }),
       )
       const formData = httpPostMock.mock.calls[1][1] as FormData
       expect(formData.get('file')).toBe(file)
@@ -129,14 +195,51 @@ describe('business-attachments', () => {
       expect(fetchMock).not.toHaveBeenCalled()
     })
 
+    it('reports multipart upload progress when direct upload is unsupported', async () => {
+      const file = new File(['content'], 'test.pdf', {
+        type: 'application/pdf',
+      })
+      const progressValues: number[] = []
+      const unsupportedError = Object.assign(
+        new Error('当前附件存储不支持直传'),
+        {
+          response: {
+            status: 400,
+            data: { message: '当前附件存储不支持直传' },
+          },
+        },
+      )
+      httpPostMock
+        .mockRejectedValueOnce(unsupportedError)
+        .mockResolvedValueOnce({ code: 0, data: { id: '1' } })
+
+      await uploadAttachment(file, 'purchase-order', 'PAGE_UPLOAD', {
+        onProgress: (percent) => progressValues.push(percent),
+      })
+
+      const multipartConfig = httpPostMock.mock.calls[1][2] as {
+        onUploadProgress?: (event: { loaded: number; total?: number }) => void
+      }
+      multipartConfig.onUploadProgress?.({ loaded: 7, total: 10 })
+      expect(progressValues).toContain(70)
+    })
+
     it('uses custom sourceType', async () => {
       const file = new File(['content'], 'test.pdf', {
         type: 'application/pdf',
       })
-      const unsupportedError = Object.assign(new Error('当前附件存储不支持直传'), {
-        response: { status: 400, data: { message: '当前附件存储不支持直传' } },
-      })
-      httpPostMock.mockRejectedValueOnce(unsupportedError).mockResolvedValueOnce({})
+      const unsupportedError = Object.assign(
+        new Error('当前附件存储不支持直传'),
+        {
+          response: {
+            status: 400,
+            data: { message: '当前附件存储不支持直传' },
+          },
+        },
+      )
+      httpPostMock
+        .mockRejectedValueOnce(unsupportedError)
+        .mockResolvedValueOnce({})
 
       await uploadAttachment(file, 'sales-order', 'CUSTOM_UPLOAD')
 
@@ -163,6 +266,186 @@ describe('business-attachments', () => {
       expect(httpGetMock).toHaveBeenCalledWith('/attachments/bindings', {
         params: { moduleKey: 'sales-order', recordId: 456 },
       })
+    })
+  })
+
+  describe('fetchAttachmentCounts', () => {
+    it('requests attachment counts for current page records', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: { moduleKey: 'purchase-order', counts: { '1': 2, '2': 0 } },
+      })
+
+      const result = await fetchAttachmentCounts('purchase-order', [
+        '1',
+        2,
+        '',
+        'abc',
+      ])
+
+      expect(httpGetMock).toHaveBeenCalledWith('/attachments/bindings/counts', {
+        params: {
+          moduleKey: 'purchase-order',
+          recordIds: '1,2',
+        },
+      })
+      expect(result.data?.counts).toEqual({ '1': 2, '2': 0 })
+    })
+
+    it('skips request when there are no valid record ids', async () => {
+      const result = await fetchAttachmentCounts('purchase-order', [
+        '',
+        'abc',
+        0,
+      ])
+
+      expect(httpGetMock).not.toHaveBeenCalled()
+      expect(result.data?.counts).toEqual({})
+    })
+  })
+
+  describe('resolveAttachmentAccessUrl', () => {
+    it('requests presigned preview url with module and access key params', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: {
+          inline: true,
+          presigned: true,
+          url: 'https://cdn.example.com/preview.pdf',
+        },
+      })
+
+      const result = await resolveAttachmentAccessUrl(
+        '/api/attachments/1/preview?accessKey=abc&moduleKey=purchase-order',
+        'purchase-order',
+        true,
+      )
+
+      expect(httpGetMock).toHaveBeenCalledWith('/attachments/1/access-url', {
+        params: {
+          accessKey: 'abc',
+          inline: true,
+          moduleKey: 'purchase-order',
+        },
+      })
+      expect(result).toEqual({
+        inline: true,
+        presigned: true,
+        url: 'https://cdn.example.com/preview.pdf',
+      })
+    })
+
+    it('keeps moduleKey from original url when explicit moduleKey is empty', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: {
+          inline: false,
+          presigned: true,
+          url: 'https://cdn.example.com/download.pdf',
+        },
+      })
+
+      await resolveAttachmentAccessUrl(
+        '/api/attachments/1/download?accessKey=abc&moduleKey=sales-order',
+        '',
+        false,
+      )
+
+      expect(httpGetMock).toHaveBeenCalledWith('/attachments/1/access-url', {
+        params: {
+          accessKey: 'abc',
+          inline: false,
+          moduleKey: 'sales-order',
+        },
+      })
+    })
+
+    it('returns original non-backend url without requesting access url', async () => {
+      const result = await resolveAttachmentAccessUrl(
+        'https://cdn.example.com/file.pdf',
+        'purchase-order',
+        false,
+      )
+
+      expect(result).toEqual({
+        inline: false,
+        presigned: true,
+        url: 'https://cdn.example.com/file.pdf',
+      })
+      expect(httpGetMock).not.toHaveBeenCalled()
+    })
+
+    it('downloads local attachment as blob with auth headers when no presigned url is available', async () => {
+      const blob = new Blob(['file'], { type: 'application/pdf' })
+      httpGetMock
+        .mockResolvedValueOnce({
+          code: 0,
+          data: {
+            inline: true,
+            presigned: false,
+            url: null,
+          },
+        })
+        .mockResolvedValueOnce(blob)
+
+      const access = await resolveAttachmentAccessUrl(
+        '/api/attachments/1/preview?accessKey=abc&moduleKey=purchase-order',
+        'purchase-order',
+        true,
+      )
+      const result = await getAttachmentBlob(
+        '/api/attachments/1/preview?accessKey=abc&moduleKey=purchase-order',
+      )
+
+      expect(access).toEqual({
+        inline: true,
+        presigned: false,
+        url: null,
+      })
+      expect(result).toBe(blob)
+      expect(httpGetMock).toHaveBeenNthCalledWith(2, '/attachments/1/preview', {
+        params: {
+          accessKey: 'abc',
+          moduleKey: 'purchase-order',
+        },
+        responseType: 'blob',
+      })
+    })
+
+    it('fetches blob from resolved presigned url for iframe PDF preview', async () => {
+      const blob = new Blob(['file'], { type: 'application/pdf' })
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: {
+          inline: true,
+          presigned: true,
+          url: 'https://cdn.example.com/preview.pdf',
+        },
+      })
+      fetchMock.mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        blob: vi.fn().mockResolvedValue(blob),
+      })
+
+      const result = await getPresignedAttachmentBlob(
+        '/api/attachments/1/preview?accessKey=abc&moduleKey=purchase-order',
+        'purchase-order',
+        true,
+      )
+
+      expect(result).toBe(blob)
+      expect(httpGetMock).toHaveBeenCalledWith('/attachments/1/access-url', {
+        params: {
+          accessKey: 'abc',
+          inline: true,
+          moduleKey: 'purchase-order',
+        },
+      })
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://cdn.example.com/preview.pdf',
+      )
     })
   })
 

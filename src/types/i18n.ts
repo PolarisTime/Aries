@@ -755,9 +755,12 @@ export interface MessageSchema {
       noPermissionHint: string
       noPreviewUrl: string
       noDownloadUrl: string
+      previewFailed: string
+      downloadFailed: string
       uploadBindSuccess: string
       uploadFailed: string
       uploadNoId: string
+      uploadingProgress: string
       unbindSuccess: string
       deleteFailed: string
       noAttachments: string

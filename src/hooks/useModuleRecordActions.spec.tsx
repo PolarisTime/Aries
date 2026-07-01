@@ -75,6 +75,44 @@ describe('useModuleRecordActions', () => {
     expect(detailAction?.label).toBe('流水')
   })
 
+  it('shows attachment count next to attachment action label', () => {
+    const { result } = renderHook(() =>
+      useModuleRecordActions({
+        moduleKey: 'sales-order',
+        attachmentCounts: { '101': 2 },
+        onAttach: vi.fn(),
+      }),
+    )
+
+    const attachAction = result.current
+      .buildActions({
+        id: '101',
+        status: '草稿',
+      })
+      .find((item) => item.key === 'attach')
+
+    expect(attachAction?.label).toBe('hooks.recordActions.attachment(2)')
+  })
+
+  it('falls back to attachments array length when count map has no entry', () => {
+    const { result } = renderHook(() =>
+      useModuleRecordActions({
+        moduleKey: 'sales-order',
+        onAttach: vi.fn(),
+      }),
+    )
+
+    const attachAction = result.current
+      .buildActions({
+        id: '101',
+        status: '草稿',
+        attachments: [{ id: 'a-1' }, { id: 'a-2' }],
+      })
+      .find((item) => item.key === 'attach')
+
+    expect(attachAction?.label).toBe('hooks.recordActions.attachment(2)')
+  })
+
   it('returns empty actions when isReadOnly is true', () => {
     const { result } = renderHook(() =>
       useModuleRecordActions({

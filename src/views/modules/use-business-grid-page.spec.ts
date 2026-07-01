@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AppPageDefinition } from '@/config/page-registry'
@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   handleSelectedDeleteRecords: vi.fn(),
   handleSelectedReverseAuditRecords: vi.fn(),
   handleStatementGenerate: vi.fn(),
+  fetchAttachmentCounts: vi.fn(),
   navigate: vi.fn(),
   onColumnOrderChange: vi.fn(),
   openAttachment: vi.fn(),
@@ -66,6 +67,10 @@ vi.mock('@tanstack/react-router', () => ({
 
 vi.mock('@/hooks/useBusinessGridActions', () => ({
   useBusinessGridActions: mocks.useBusinessGridActions,
+}))
+
+vi.mock('@/api/business', () => ({
+  fetchAttachmentCounts: mocks.fetchAttachmentCounts,
 }))
 
 vi.mock('@/hooks/useDefaultPageSize', () => ({
@@ -163,6 +168,9 @@ describe('useBusinessGridPage', () => {
     })
     mocks.can.mockReturnValue(false)
     mocks.getBehaviorValue.mockReturnValue(null)
+    mocks.fetchAttachmentCounts.mockResolvedValue({
+      data: { moduleKey: 'purchase-inbound', counts: { '1': 2, '2': 0 } },
+    })
     mocks.getRowClassName.mockReturnValue('')
     mocks.resolveMasterOptionRequirements.mockReturnValue(['customers'])
     mocks.useBusinessGridActions.mockReturnValue({
@@ -306,6 +314,24 @@ describe('useBusinessGridPage', () => {
         showActions: true,
       }),
     )
+  })
+
+  it('loads attachment counts for current page records and passes them to row actions', async () => {
+    renderHook(() => useBusinessGridPage(props()))
+
+    await waitFor(() => {
+      expect(mocks.fetchAttachmentCounts).toHaveBeenCalledWith(
+        'purchase-inbound',
+        ['1', '2'],
+      )
+    })
+    await waitFor(() => {
+      expect(mocks.useModuleRecordActions).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          attachmentCounts: { '1': 2, '2': 0 },
+        }),
+      )
+    })
   })
 
   it('updates pagination and clears selected rows', () => {

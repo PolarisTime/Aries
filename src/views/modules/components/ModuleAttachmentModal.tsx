@@ -12,21 +12,33 @@ import {
   Flex,
   Image,
   Modal,
+  Progress,
   Space,
   Spin,
+  Tag,
   Typography,
   Upload,
 } from 'antd'
-import { type RefObject, useEffect, useReducer, useRef } from 'react'
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   type AttachmentRecord,
   getAttachmentBindings,
+  getAttachmentBlob,
+  getPresignedAttachmentBlob,
+  resolveAttachmentAccessUrl,
   updateAttachmentBindings,
   uploadAttachment,
 } from '@/api/business'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
+import { downloadBlob } from '@/utils/download'
 import { formatDateTime } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 
@@ -63,12 +75,34 @@ function isPdfAttachment(attachment: AttachmentRecord) {
   return getAttachmentFileName(attachment).endsWith('.pdf')
 }
 
+function getStorageLabel(attachment: AttachmentRecord) {
+  if (attachment.storageLabel?.trim()) {
+    return attachment.storageLabel.trim()
+  }
+  return attachment.storageType === 's3' ? 'S3存储' : '本机存储'
+}
+
+function getStorageTagColor(attachment: AttachmentRecord) {
+  return attachment.storageType === 's3' ? 'blue' : 'default'
+}
+
+function getAttachmentDisplayName(attachment: AttachmentRecord) {
+  return attachment.originalFileName || attachment.fileName || attachment.name
+}
+
+function getPreviewCandidateUrl(attachment: AttachmentRecord) {
+  return attachment.previewUrl || attachment.downloadUrl || ''
+}
+
 interface AttachmentModalState {
   attachments: AttachmentRecord[]
   loading: boolean
   uploading: boolean
+  uploadFileName: string
+  uploadProgress: number
   previewOpen: boolean
   previewSource: string
+  previewUrlByAttachmentId: Record<string, string>
   pdfPreviewUrl: string
   pdfPreviewOpen: boolean
 }
@@ -77,23 +111,34 @@ const attachmentModalInitialState: AttachmentModalState = {
   attachments: [],
   loading: false,
   uploading: false,
+  uploadFileName: '',
+  uploadProgress: 0,
   previewOpen: false,
   previewSource: '',
+  previewUrlByAttachmentId: {},
   pdfPreviewUrl: '',
   pdfPreviewOpen: false,
 }
 
+type AttachmentModalPatch =
+  | Partial<AttachmentModalState>
+  | ((prev: AttachmentModalState) => Partial<AttachmentModalState>)
+
 interface AttachmentUploadZoneProps {
   canCreateAttachment: boolean
   uploading: boolean
+  uploadFileName: string
+  uploadProgress: number
   pasteZoneRef: RefObject<HTMLDivElement | null>
   onUpload: (file: File) => Promise<boolean>
-  t: (key: string) => string
+  t: (key: string, options?: Record<string, unknown>) => string
 }
 
 function AttachmentUploadZone({
   canCreateAttachment,
   uploading,
+  uploadFileName,
+  uploadProgress,
   pasteZoneRef,
   onUpload,
   t,
@@ -117,10 +162,22 @@ function AttachmentUploadZone({
         type="secondary"
         className="module-attachment-upload-hint"
       >
-        {canCreateAttachment
-          ? t('modules.attachment.uploadHint')
-          : t('modules.attachment.noPermissionHint')}
+        {uploading
+          ? t('modules.attachment.uploadingProgress', {
+              fileName: uploadFileName,
+              percent: uploadProgress,
+            })
+          : canCreateAttachment
+            ? t('modules.attachment.uploadHint')
+            : t('modules.attachment.noPermissionHint')}
       </Typography.Text>
+      {uploading ? (
+        <Progress
+          percent={uploadProgress}
+          size="small"
+          status={uploadProgress >= 100 ? 'success' : 'active'}
+        />
+      ) : null}
     </div>
   )
 }
@@ -131,9 +188,9 @@ interface AttachmentListProps {
   isImageAttachment: (attachment: AttachmentRecord) => boolean
   isPdfAttachment: (attachment: AttachmentRecord) => boolean
   onDelete: (id: string) => void
-  onDownload: (attachment: AttachmentRecord) => void
-  onOpenImagePreview: (attachment: AttachmentRecord) => void
-  onOpenPdfPreview: (attachment: AttachmentRecord) => void
+  onDownload: (attachment: AttachmentRecord) => Promise<void>
+  onOpenImagePreview: (attachment: AttachmentRecord) => Promise<void>
+  onOpenPdfPreview: (attachment: AttachmentRecord) => Promise<void>
   t: (key: string) => string
 }
 
@@ -167,21 +224,21 @@ function AttachmentList({
                 <button
                   type="button"
                   className="module-attachment-preview-thumb"
-                  onClick={() => onOpenImagePreview(item)}
+                  onClick={() => {
+                    void onOpenImagePreview(item)
+                  }}
                 >
-                  <Image
-                    preview={false}
-                    src={item.previewUrl || item.downloadUrl}
-                    alt={item.originalFileName || item.fileName || item.name}
-                    width={56}
-                    height={56}
-                  />
+                  <span className="module-attachment-file-icon">
+                    <PaperClipOutlined />
+                  </span>
                 </button>
               ) : isPdfAttachment(item) ? (
                 <button
                   type="button"
                   className="module-attachment-preview-thumb"
-                  onClick={() => onOpenPdfPreview(item)}
+                  onClick={() => {
+                    void onOpenPdfPreview(item)
+                  }}
                 >
                   <span className="module-attachment-pdf-icon">PDF</span>
                 </button>
@@ -192,12 +249,18 @@ function AttachmentList({
               )}
               <Space orientation="vertical" size={0} className="min-w-0">
                 <Typography.Text strong ellipsis>
-                  {item.originalFileName || item.fileName || item.name}
+                  {getAttachmentDisplayName(item)}
                 </Typography.Text>
                 <Typography.Text type="secondary">
                   {((item.fileSize || 0) / 1024).toFixed(1)} KB ·{' '}
                   {formatDateTime(item.uploadTime, '--')}
                 </Typography.Text>
+                <Tag
+                  color={getStorageTagColor(item)}
+                  className="module-attachment-storage-tag"
+                >
+                  {getStorageLabel(item)}
+                </Tag>
               </Space>
             </Space>
             <Space size={0}>
@@ -207,8 +270,8 @@ function AttachmentList({
                   type="link"
                   icon={<EyeOutlined />}
                   onClick={() => {
-                    if (isPdfAttachment(item)) onOpenPdfPreview(item)
-                    else onOpenImagePreview(item)
+                    if (isPdfAttachment(item)) void onOpenPdfPreview(item)
+                    else void onOpenImagePreview(item)
                   }}
                 />
               ) : null}
@@ -216,7 +279,9 @@ function AttachmentList({
                 key="download"
                 type="link"
                 icon={<DownloadOutlined />}
-                onClick={() => onDownload(item)}
+                onClick={() => {
+                  void onDownload(item)
+                }}
               />
               {canDeleteAttachment ? (
                 <Button
@@ -243,6 +308,7 @@ interface AttachmentPreviewLayersProps {
   pdfPreviewUrl: string
   previewOpen: boolean
   previewSource: string
+  previewUrlByAttachmentId: Record<string, string>
   onPdfPreviewOpenChange: (visible: boolean) => void
   onImagePreviewChange: (visible: boolean) => void
   t: (key: string) => string
@@ -254,20 +320,24 @@ function AttachmentPreviewLayers({
   pdfPreviewUrl,
   previewOpen,
   previewSource,
+  previewUrlByAttachmentId,
   onPdfPreviewOpenChange,
   onImagePreviewChange,
   t,
 }: AttachmentPreviewLayersProps) {
+  const previewableImageAttachments = imageAttachments.filter((item) =>
+    Boolean(previewUrlByAttachmentId[item.id]),
+  )
+
   return (
     <>
-      {imageAttachments.length ? (
+      {previewOpen && previewSource && previewableImageAttachments.length ? (
         <Image.PreviewGroup
           preview={{
             visible: previewOpen,
             current: Math.max(
-              imageAttachments.findIndex(
-                (item) =>
-                  (item.previewUrl || item.downloadUrl || '') === previewSource,
+              previewableImageAttachments.findIndex(
+                (item) => previewUrlByAttachmentId[item.id] === previewSource,
               ),
               0,
             ),
@@ -275,11 +345,11 @@ function AttachmentPreviewLayers({
           }}
         >
           <div className="hidden">
-            {imageAttachments.map((item) => (
+            {previewableImageAttachments.map((item) => (
               <Image
                 key={item.id}
-                src={item.previewUrl || item.downloadUrl}
-                alt={item.originalFileName || item.fileName || item.name}
+                src={previewUrlByAttachmentId[item.id]}
+                alt={getAttachmentDisplayName(item)}
               />
             ))}
           </div>
@@ -299,7 +369,6 @@ function AttachmentPreviewLayers({
             src={pdfPreviewUrl}
             className="w-full border-none pdf-preview-iframe"
             title="PDF Preview"
-            sandbox="allow-same-origin"
           />
         ) : null}
       </Modal>
@@ -318,9 +387,9 @@ export function ModuleAttachmentModal({
   const can = usePermissionStore((state) => state.can)
   const resolvedResource = resourceKey || moduleKey
   const [state, setState] = useReducer(
-    (prev: AttachmentModalState, patch: Partial<AttachmentModalState>) => ({
+    (prev: AttachmentModalState, patch: AttachmentModalPatch) => ({
       ...prev,
-      ...patch,
+      ...(typeof patch === 'function' ? patch(prev) : patch),
     }),
     attachmentModalInitialState,
   )
@@ -328,91 +397,224 @@ export function ModuleAttachmentModal({
     attachments,
     loading,
     uploading,
+    uploadFileName,
+    uploadProgress,
     previewOpen,
     previewSource,
+    previewUrlByAttachmentId,
     pdfPreviewUrl,
     pdfPreviewOpen,
   } = state
   const pasteZoneRef = useRef<HTMLDivElement | null>(null)
+  const objectUrlRef = useRef<Set<string>>(new Set())
   const canCreateAttachment = can(resolvedResource, 'update')
   const canDeleteAttachment = can(resolvedResource, 'delete')
 
-  const fetchAttachments = async () => {
+  const createTrackedObjectUrl = useCallback((blob: Blob) => {
+    const objectUrl = URL.createObjectURL(blob)
+    objectUrlRef.current.add(objectUrl)
+    return objectUrl
+  }, [])
+
+  const revokeTrackedObjectUrls = useCallback(() => {
+    for (const objectUrl of objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrl)
+    }
+    objectUrlRef.current.clear()
+  }, [])
+
+  const resolveAttachmentUrl = useCallback(
+    async (attachment: AttachmentRecord, inline: boolean) => {
+      const sourceUrl = inline
+        ? getPreviewCandidateUrl(attachment)
+        : attachment.downloadUrl || ''
+      if (!sourceUrl) {
+        return ''
+      }
+
+      const access = await resolveAttachmentAccessUrl(
+        sourceUrl,
+        moduleKey,
+        inline,
+      )
+      if (access.url) {
+        return access.url
+      }
+
+      const blob = await getAttachmentBlob(sourceUrl)
+      return createTrackedObjectUrl(blob)
+    },
+    [createTrackedObjectUrl, moduleKey],
+  )
+
+  const cachePreviewUrl = useCallback((attachmentId: string, url: string) => {
+    setState((prev) => ({
+      previewUrlByAttachmentId: {
+        ...prev.previewUrlByAttachmentId,
+        [attachmentId]: url,
+      },
+    }))
+  }, [])
+
+  const ensurePreviewUrl = async (attachment: AttachmentRecord) => {
+    const cachedUrl = previewUrlByAttachmentId[attachment.id]
+    if (cachedUrl) {
+      return cachedUrl
+    }
+
+    const url = await resolveAttachmentUrl(attachment, true)
+    if (url) {
+      cachePreviewUrl(attachment.id, url)
+    }
+    return url
+  }
+
+  const fetchAttachments = useCallback(async () => {
     if (!recordId) return
     setState({ loading: true })
     try {
       setState({
         attachments: await fetchAttachmentList(moduleKey, recordId),
         loading: false,
+        previewUrlByAttachmentId: {},
       })
     } catch {
       /* ignore */
       setState({ loading: false })
     }
-  }
+  }, [moduleKey, recordId])
 
-  const bindAttachment = async (attachmentId: string) => {
-    const latestBindings = await getAttachmentBindings(moduleKey, recordId)
-    const latestAttachmentIds = (latestBindings.data?.attachments || []).map(
-      (item) => item.id,
-    )
-    await updateAttachmentBindings(moduleKey, recordId, [
-      ...latestAttachmentIds,
-      attachmentId,
-    ])
-  }
+  const bindAttachment = useCallback(
+    async (attachmentId: string) => {
+      const latestBindings = await getAttachmentBindings(moduleKey, recordId)
+      const latestAttachmentIds = (latestBindings.data?.attachments || []).map(
+        (item) => item.id,
+      )
+      await updateAttachmentBindings(moduleKey, recordId, [
+        ...latestAttachmentIds,
+        attachmentId,
+      ])
+    },
+    [moduleKey, recordId],
+  )
 
-  const handleUpload = async (file: File) => {
-    setState({ uploading: true })
-    try {
-      const uploadRes = await uploadAttachment(file, moduleKey)
-      const attachmentId = asString(uploadRes.data?.id).trim()
-      if (!attachmentId) {
-        message.error(t('modules.attachment.uploadNoId'))
-        setState({ uploading: false })
-        return false
+  const uploadAndBindAttachment = useCallback(
+    async (file: File) => {
+      setState({
+        uploading: true,
+        uploadFileName: file.name,
+        uploadProgress: 0,
+      })
+      try {
+        const uploadRes = await uploadAttachment(
+          file,
+          moduleKey,
+          'PAGE_UPLOAD',
+          {
+            onProgress: (percent) => {
+              setState({ uploadProgress: percent })
+            },
+          },
+        )
+        const attachmentId = asString(uploadRes.data?.id).trim()
+        if (!attachmentId) {
+          message.error(t('modules.attachment.uploadNoId'))
+          setState({ uploading: false, uploadFileName: '', uploadProgress: 0 })
+          return false
+        }
+        await bindAttachment(attachmentId)
+        message.success(t('modules.attachment.uploadBindSuccess'))
+        await fetchAttachments()
+        setState({ uploading: false, uploadFileName: '', uploadProgress: 0 })
+      } catch (err) {
+        message.error(
+          err instanceof Error
+            ? err.message
+            : t('modules.attachment.uploadFailed'),
+        )
+        setState({ uploading: false, uploadFileName: '', uploadProgress: 0 })
       }
-      await bindAttachment(attachmentId)
-      message.success(t('modules.attachment.uploadBindSuccess'))
-      await fetchAttachments()
-      setState({ uploading: false })
+      return false
+    },
+    [bindAttachment, fetchAttachments, moduleKey, t],
+  )
+
+  const handleUpload = useCallback(
+    async (file: File) => {
+      return uploadAndBindAttachment(file)
+    },
+    [uploadAndBindAttachment],
+  )
+
+  const openImagePreview = async (attachment: AttachmentRecord) => {
+    const src = getPreviewCandidateUrl(attachment)
+    if (!src) {
+      message.warning(t('modules.attachment.noPreviewUrl'))
+      return
+    }
+    try {
+      const resolvedUrl = await ensurePreviewUrl(attachment)
+      if (!resolvedUrl) {
+        message.warning(t('modules.attachment.noPreviewUrl'))
+        return
+      }
+      setState({ previewSource: resolvedUrl, previewOpen: true })
     } catch (err) {
       message.error(
         err instanceof Error
           ? err.message
-          : t('modules.attachment.uploadFailed'),
+          : t('modules.attachment.previewFailed'),
       )
-      setState({ uploading: false })
     }
-    return false
   }
 
-  const openImagePreview = (attachment: AttachmentRecord) => {
-    const src = attachment.previewUrl || attachment.downloadUrl || ''
+  const openPdfPreview = async (attachment: AttachmentRecord) => {
+    const src = getPreviewCandidateUrl(attachment)
     if (!src) {
       message.warning(t('modules.attachment.noPreviewUrl'))
       return
     }
-    setState({ previewSource: src, previewOpen: true })
-  }
-
-  const openPdfPreview = (attachment: AttachmentRecord) => {
-    const src = attachment.previewUrl || attachment.downloadUrl || ''
-    if (!src) {
-      message.warning(t('modules.attachment.noPreviewUrl'))
-      return
+    try {
+      const blob = await getPresignedAttachmentBlob(src, moduleKey, true)
+      setState({
+        pdfPreviewUrl: createTrackedObjectUrl(blob),
+        pdfPreviewOpen: true,
+      })
+    } catch (err) {
+      message.error(
+        err instanceof Error
+          ? err.message
+          : t('modules.attachment.previewFailed'),
+      )
     }
-    setState({ pdfPreviewUrl: src, pdfPreviewOpen: true })
   }
 
   const imageAttachments = attachments.filter(isImageAttachment)
 
-  const handleDownload = (attachment: AttachmentRecord) => {
+  const handleDownload = async (attachment: AttachmentRecord) => {
     if (!attachment.downloadUrl) {
       message.warning(t('modules.attachment.noDownloadUrl'))
       return
     }
-    window.open(attachment.downloadUrl, '_blank', 'noopener,noreferrer')
+    try {
+      const access = await resolveAttachmentAccessUrl(
+        attachment.downloadUrl,
+        moduleKey,
+        false,
+      )
+      if (access.url) {
+        window.open(access.url, '_blank', 'noopener,noreferrer')
+        return
+      }
+      const blob = await getAttachmentBlob(attachment.downloadUrl)
+      downloadBlob(blob, getAttachmentDisplayName(attachment) || 'attachment')
+    } catch (err) {
+      message.error(
+        err instanceof Error
+          ? err.message
+          : t('modules.attachment.downloadFailed'),
+      )
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -440,39 +642,6 @@ export function ModuleAttachmentModal({
       return
     }
 
-    const uploadPastedFile = async (file: File) => {
-      setState({ uploading: true })
-      try {
-        const uploadRes = await uploadAttachment(file, moduleKey)
-        const attachmentId = asString(uploadRes.data?.id).trim()
-        if (!attachmentId) {
-          message.error(t('modules.attachment.uploadNoId'))
-          setState({ uploading: false })
-          return
-        }
-        const latestBindings = await getAttachmentBindings(moduleKey, recordId)
-        const latestAttachmentIds = (
-          latestBindings.data?.attachments || []
-        ).map((item) => item.id)
-        await updateAttachmentBindings(moduleKey, recordId, [
-          ...latestAttachmentIds,
-          attachmentId,
-        ])
-        message.success(t('modules.attachment.uploadBindSuccess'))
-        setState({
-          attachments: await fetchAttachmentList(moduleKey, recordId),
-          uploading: false,
-        })
-      } catch (err) {
-        message.error(
-          err instanceof Error
-            ? err.message
-            : t('modules.attachment.uploadFailed'),
-        )
-        setState({ uploading: false })
-      }
-    }
-
     const handlePaste = (event: ClipboardEvent) => {
       const target = event.target as HTMLElement | null
       if (!pasteZoneRef.current?.contains(target)) {
@@ -490,7 +659,9 @@ export function ModuleAttachmentModal({
 
       event.preventDefault()
       void (async () => {
-        await Promise.allSettled(files.map((file) => uploadPastedFile(file)))
+        await Promise.allSettled(
+          files.map((file) => uploadAndBindAttachment(file)),
+        )
       })()
     }
 
@@ -498,7 +669,23 @@ export function ModuleAttachmentModal({
     return () => {
       window.removeEventListener('paste', handlePaste)
     }
-  }, [canCreateAttachment, moduleKey, open, recordId, t])
+  }, [canCreateAttachment, open, uploadAndBindAttachment])
+
+  useEffect(() => {
+    if (!open) {
+      if (previewSource || Object.keys(previewUrlByAttachmentId).length > 0) {
+        setState({ previewUrlByAttachmentId: {}, previewSource: '' })
+      }
+      revokeTrackedObjectUrls()
+      return
+    }
+  }, [open, previewSource, previewUrlByAttachmentId, revokeTrackedObjectUrls])
+
+  useEffect(() => {
+    return () => {
+      revokeTrackedObjectUrls()
+    }
+  }, [revokeTrackedObjectUrls])
 
   return (
     <Modal
@@ -514,6 +701,8 @@ export function ModuleAttachmentModal({
       <AttachmentUploadZone
         canCreateAttachment={canCreateAttachment}
         uploading={uploading}
+        uploadFileName={uploadFileName}
+        uploadProgress={uploadProgress}
         pasteZoneRef={pasteZoneRef}
         onUpload={handleUpload}
         t={t}
@@ -539,8 +728,12 @@ export function ModuleAttachmentModal({
         pdfPreviewUrl={pdfPreviewUrl}
         previewOpen={previewOpen}
         previewSource={previewSource}
+        previewUrlByAttachmentId={previewUrlByAttachmentId}
         onPdfPreviewOpenChange={(visible) =>
-          setState({ pdfPreviewOpen: visible })
+          setState({
+            pdfPreviewOpen: visible,
+            pdfPreviewUrl: visible ? pdfPreviewUrl : '',
+          })
         }
         onImagePreviewChange={(visible) => {
           setState({

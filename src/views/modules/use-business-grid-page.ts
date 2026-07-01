@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { fetchAttachmentCounts } from '@/api/business'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
@@ -100,6 +101,9 @@ export function useBusinessGridPage({
   const [selectedRowMap, setSelectedRowMap] = useState<
     Record<string, ModuleRecord>
   >({})
+  const [attachmentCounts, setAttachmentCounts] = useState<
+    Record<string, number>
+  >({})
   const [currentPage, setCurrentPage] = useState(1)
   const defaultPageSize = useDefaultPageSize()
   const [pageSize, setPageSize] = useState(defaultPageSize)
@@ -136,6 +140,7 @@ export function useBusinessGridPage({
       // react-doctor: intentional callback, not event handler
       pageSize,
     })
+  const recordIdsKey = records.map((record) => record.id).join(',')
 
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const { exporting, handleExport: exportModuleRows } =
@@ -160,6 +165,31 @@ export function useBusinessGridPage({
     moduleKey,
     config: resolvedConfig,
   })
+
+  useEffect(() => {
+    const recordIds = recordIdsKey.split(',').filter(Boolean)
+    if (!canViewRecords || !recordIds.length) {
+      setAttachmentCounts({})
+      return
+    }
+
+    let cancelled = false
+    void fetchAttachmentCounts(moduleKey, recordIds)
+      .then((response) => {
+        if (!cancelled) {
+          setAttachmentCounts(response.data?.counts || {})
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAttachmentCounts({})
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [canViewRecords, moduleKey, recordIdsKey])
 
   const clearSelection = () => {
     setSelectedRowKeys([])
@@ -219,6 +249,7 @@ export function useBusinessGridPage({
     moduleKey,
     resourceKey: pageDef.resourceKey,
     isReadOnly: Boolean(config?.readOnly),
+    attachmentCounts,
     onAttach: overlays.openAttachment,
     detailActionLabel: config?.detailActionLabel,
     onDetail: shouldUseDetailAction

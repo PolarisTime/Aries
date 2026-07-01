@@ -6,6 +6,10 @@ const mocks = vi.hoisted(() => ({
   getAttachmentBindings: vi
     .fn()
     .mockResolvedValue({ data: { attachments: [] } }),
+  getAttachmentBlob: vi.fn(),
+  getPresignedAttachmentBlob: vi.fn(),
+  createObjectURL: vi.fn(),
+  revokeObjectURL: vi.fn(),
   message: {
     success: vi.fn(),
     error: vi.fn(),
@@ -13,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   },
   modalProps: undefined as Record<string, any> | undefined,
   pdfModalProps: undefined as Record<string, any> | undefined,
+  resolveAttachmentAccessUrl: vi.fn(),
   updateAttachmentBindings: vi.fn().mockResolvedValue({}),
   uploadAttachment: vi.fn().mockResolvedValue({ data: { id: '123' } }),
   uploadProps: undefined as Record<string, any> | undefined,
@@ -30,6 +35,11 @@ vi.mock('react-i18next', () => ({
 vi.mock('@/api/business', () => ({
   getAttachmentBindings: (...args: any[]) =>
     mocks.getAttachmentBindings(...args),
+  getAttachmentBlob: (...args: any[]) => mocks.getAttachmentBlob(...args),
+  getPresignedAttachmentBlob: (...args: any[]) =>
+    mocks.getPresignedAttachmentBlob(...args),
+  resolveAttachmentAccessUrl: (...args: any[]) =>
+    mocks.resolveAttachmentAccessUrl(...args),
   updateAttachmentBindings: (...args: any[]) =>
     mocks.updateAttachmentBindings(...args),
   uploadAttachment: (...args: any[]) => mocks.uploadAttachment(...args),
@@ -144,6 +154,14 @@ vi.mock('antd', () => {
       <div data-testid="spin" {...props}>
         {children}
       </div>
+    ),
+    Progress: ({ percent, status: _status, ...props }: any) => (
+      <div aria-valuenow={percent} role="progressbar" {...props}>
+        {percent}
+      </div>
+    ),
+    Tag: ({ children, color: _color, ...props }: any) => (
+      <span {...props}>{children}</span>
     ),
     Typography: {
       Text: ({
@@ -272,6 +290,20 @@ vi.mock('antd/es/spin', () => ({
   ),
 }))
 
+vi.mock('antd/es/progress', () => ({
+  default: ({ percent, status: _status, ...props }: any) => (
+    <div aria-valuenow={percent} role="progressbar" {...props}>
+      {percent}
+    </div>
+  ),
+}))
+
+vi.mock('antd/es/tag', () => ({
+  default: ({ children, color: _color, ...props }: any) => (
+    <span {...props}>{children}</span>
+  ),
+}))
+
 vi.mock('antd/es/typography', () => ({
   default: {
     Text: ({
@@ -317,11 +349,30 @@ describe('ModuleAttachmentModal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.can.mockReturnValue(true)
+    mocks.getAttachmentBlob.mockReset()
+    mocks.getPresignedAttachmentBlob.mockReset()
+    mocks.getPresignedAttachmentBlob.mockResolvedValue(
+      new Blob(['pdf'], { type: 'application/pdf' }),
+    )
     mocks.getAttachmentBindings.mockResolvedValue({ data: { attachments: [] } })
     mocks.modalProps = undefined
     mocks.pdfModalProps = undefined
+    mocks.resolveAttachmentAccessUrl.mockImplementation(
+      async (url: string, _moduleKey: string, inline: boolean) => ({
+        inline,
+        presigned: true,
+        url,
+      }),
+    )
     mocks.uploadProps = undefined
     mocks.uploadAttachment.mockResolvedValue({ data: { id: '123' } })
+    mocks.createObjectURL.mockReset()
+    mocks.revokeObjectURL.mockReset()
+    mocks.createObjectURL.mockReturnValue(
+      'https://blob.example.test/attachment-preview',
+    )
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(mocks.createObjectURL)
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(mocks.revokeObjectURL)
     window.open = vi.fn()
   })
 
@@ -359,11 +410,15 @@ describe('ModuleAttachmentModal', () => {
             contentType: 'application/pdf',
             id: 'pdf-1',
             originalFileName: 'contract.pdf',
+            storageLabel: 'S3存储',
+            storageType: 's3',
           }),
           attachment({
             contentType: 'text/plain',
             id: 'txt-1',
             originalFileName: 'readme.txt',
+            storageLabel: '本机存储',
+            storageType: 'local',
           }),
         ],
       },
@@ -381,8 +436,36 @@ describe('ModuleAttachmentModal', () => {
     expect(await screen.findByText('photo.png')).toBeTruthy()
     expect(screen.getByText('contract.pdf')).toBeTruthy()
     expect(screen.getByText('readme.txt')).toBeTruthy()
+    expect(screen.getByText('S3存储')).toBeTruthy()
+    expect(screen.getAllByText('本机存储')).toHaveLength(2)
     expect(screen.getByText('PDF')).toBeTruthy()
-    expect(screen.getByText('PaperClipOutlined')).toBeTruthy()
+    expect(screen.getAllByText('PaperClipOutlined')).toHaveLength(2)
+  })
+
+  it('does not load image thumbnails when attachment modal opens', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            downloadUrl:
+              '/api/attachments/img-1/download?accessKey=img-key&moduleKey=test-module',
+            id: 'img-1',
+            originalFileName: 'photo.png',
+            previewUrl:
+              '/api/attachments/img-1/preview?accessKey=img-key&moduleKey=test-module',
+          }),
+        ],
+      },
+    })
+    render(<ModuleAttachmentModal {...defaultProps} />)
+
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    expect(await screen.findByText('photo.png')).toBeTruthy()
+    expect(screen.queryByAltText('photo.png')).toBeNull()
+    expect(mocks.resolveAttachmentAccessUrl).not.toHaveBeenCalled()
   })
 
   it('uploads a file and binds it to the current record', async () => {
@@ -397,7 +480,12 @@ describe('ModuleAttachmentModal', () => {
     })
 
     await waitFor(() => {
-      expect(mocks.uploadAttachment).toHaveBeenCalledWith(file, 'test-module')
+      expect(mocks.uploadAttachment).toHaveBeenCalledWith(
+        file,
+        'test-module',
+        'PAGE_UPLOAD',
+        expect.objectContaining({ onProgress: expect.any(Function) }),
+      )
       expect(mocks.updateAttachmentBindings).toHaveBeenCalledWith(
         'test-module',
         '123',
@@ -407,6 +495,44 @@ describe('ModuleAttachmentModal', () => {
     expect(mocks.message.success).toHaveBeenCalledWith(
       'modules.attachment.uploadBindSuccess',
     )
+  })
+
+  it('shows upload progress and status text while upload is running', async () => {
+    let resolveUpload: ((value: { data: { id: string } }) => void) | undefined
+    mocks.uploadAttachment.mockImplementationOnce(
+      async (
+        _file: File,
+        _moduleKey: string,
+        _sourceType: string,
+        options?: { onProgress?: (percent: number) => void },
+      ) => {
+        options?.onProgress?.(35)
+        return new Promise((resolve) => {
+          resolveUpload = resolve
+        })
+      },
+    )
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    const file = new File(['hello'], 'proof.pdf', { type: 'application/pdf' })
+
+    await act(async () => {
+      mocks.uploadProps!.beforeUpload(file)
+      await Promise.resolve()
+    })
+
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '35',
+    )
+    expect(
+      screen.getByText(
+        'modules.attachment.uploadingProgress:{"fileName":"proof.pdf","percent":35}',
+      ),
+    ).toBeTruthy()
+
+    await act(async () => {
+      resolveUpload?.({ data: { id: '123' } })
+    })
   })
 
   it('shows upload error when uploaded response has no id', async () => {
@@ -427,52 +553,128 @@ describe('ModuleAttachmentModal', () => {
     expect(mocks.updateAttachmentBindings).not.toHaveBeenCalled()
   })
 
-  it('previews image and pdf attachments and downloads files', async () => {
+  it('previews image and pdf attachments and downloads files through resolved access urls', async () => {
     mocks.getAttachmentBindings.mockResolvedValue({
       data: {
         attachments: [
           attachment({
-            downloadUrl: 'https://cdn.example.com/photo.png',
+            downloadUrl:
+              '/api/attachments/img-1/download?accessKey=img-key&moduleKey=test-module',
             id: 'img-1',
             originalFileName: 'photo.png',
-            previewUrl: 'https://cdn.example.com/photo-preview.png',
+            previewUrl:
+              '/api/attachments/img-1/preview?accessKey=img-key&moduleKey=test-module',
           }),
           attachment({
             contentType: 'application/pdf',
-            downloadUrl: 'https://cdn.example.com/contract.pdf',
+            downloadUrl:
+              '/api/attachments/pdf-1/download?accessKey=pdf-key&moduleKey=test-module',
             id: 'pdf-1',
             originalFileName: 'contract.pdf',
-            previewUrl: 'https://cdn.example.com/contract-preview.pdf',
+            previewUrl:
+              '/api/attachments/pdf-1/preview?accessKey=pdf-key&moduleKey=test-module',
           }),
         ],
       },
     })
+    mocks.resolveAttachmentAccessUrl.mockImplementation(
+      async (url: string, _moduleKey: string, inline: boolean) => ({
+        inline,
+        presigned: true,
+        url: `https://cdn.example.com${url}`,
+      }),
+    )
     render(<ModuleAttachmentModal {...defaultProps} />)
     await act(async () => {
       mocks.modalProps!.afterOpenChange(true)
     })
 
-    fireEvent.click((await screen.findAllByAltText('photo.png'))[0])
-    expect(screen.getByTestId('preview-group')).toHaveAttribute(
-      'data-visible',
-      'true',
-    )
+    fireEvent.click((await screen.findAllByText('EyeOutlined'))[0])
+    await waitFor(() => {
+      expect(mocks.resolveAttachmentAccessUrl).toHaveBeenCalledWith(
+        '/api/attachments/img-1/preview?accessKey=img-key&moduleKey=test-module',
+        'test-module',
+        true,
+      )
+      expect(screen.getByTestId('preview-group')).toHaveAttribute(
+        'data-visible',
+        'true',
+      )
+    })
 
-    fireEvent.click(screen.getByText('PDF'))
-    expect(
-      screen.getByTestId('modal-modules.attachment.pdfPreview'),
-    ).toBeTruthy()
-    expect(screen.getByTitle('PDF Preview')).toHaveAttribute(
-      'src',
-      'https://cdn.example.com/contract-preview.pdf',
-    )
+    await act(async () => {
+      fireEvent.click(screen.getByText('PDF'))
+    })
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('modal-modules.attachment.pdfPreview'),
+      ).toBeTruthy()
+      expect(mocks.getPresignedAttachmentBlob).toHaveBeenCalledWith(
+        '/api/attachments/pdf-1/preview?accessKey=pdf-key&moduleKey=test-module',
+        'test-module',
+        true,
+      )
+      expect(screen.getByTitle('PDF Preview')).toHaveAttribute(
+        'src',
+        'https://blob.example.test/attachment-preview',
+      )
+      expect(screen.getByTitle('PDF Preview')).not.toHaveAttribute('sandbox')
+    })
 
-    fireEvent.click(screen.getAllByText('DownloadOutlined')[0])
-    expect(window.open).toHaveBeenCalledWith(
-      'https://cdn.example.com/photo.png',
-      '_blank',
-      'noopener,noreferrer',
-    )
+    await act(async () => {
+      fireEvent.click(screen.getAllByText('DownloadOutlined')[0])
+    })
+    await waitFor(() => {
+      expect(mocks.resolveAttachmentAccessUrl).toHaveBeenCalledWith(
+        '/api/attachments/img-1/download?accessKey=img-key&moduleKey=test-module',
+        'test-module',
+        false,
+      )
+      expect(window.open).toHaveBeenCalledWith(
+        'https://cdn.example.com/api/attachments/img-1/download?accessKey=img-key&moduleKey=test-module',
+        '_blank',
+        'noopener,noreferrer',
+      )
+    })
+  })
+
+  it('uses authenticated blob fallback when access url cannot be presigned', async () => {
+    const blob = new Blob(['file'], { type: 'application/pdf' })
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            contentType: 'application/pdf',
+            id: 'pdf-1',
+            originalFileName: 'contract.pdf',
+            previewUrl:
+              '/api/attachments/pdf-1/preview?accessKey=pdf-key&moduleKey=test-module',
+          }),
+        ],
+      },
+    })
+    mocks.getPresignedAttachmentBlob.mockResolvedValue(blob)
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('PDF'))
+    })
+
+    await waitFor(() => {
+      expect(mocks.getPresignedAttachmentBlob).toHaveBeenCalledWith(
+        '/api/attachments/pdf-1/preview?accessKey=pdf-key&moduleKey=test-module',
+        'test-module',
+        true,
+      )
+      expect(mocks.createObjectURL).toHaveBeenCalledWith(blob)
+      expect(screen.getByTitle('PDF Preview')).toHaveAttribute(
+        'src',
+        'https://blob.example.test/attachment-preview',
+      )
+    })
   })
 
   it('warns when preview or download url is missing', async () => {
@@ -493,7 +695,7 @@ describe('ModuleAttachmentModal', () => {
       mocks.modalProps!.afterOpenChange(true)
     })
 
-    fireEvent.click((await screen.findAllByAltText('photo.png'))[0])
+    fireEvent.click(await screen.findByText('EyeOutlined'))
     fireEvent.click(screen.getByText('DownloadOutlined'))
 
     expect(mocks.message.warning).toHaveBeenCalledWith(
