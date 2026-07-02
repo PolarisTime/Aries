@@ -16,6 +16,8 @@ export const printTemplateRecordSchema = z.object({
   templateType: printTemplateTypeSchema.optional(),
   engine: printTemplateEngineSchema.optional().nullable(),
   assetRef: z.string().optional().nullable(),
+  settlementCompanyId: responseIdSchema.optional().nullable(),
+  settlementCompanyName: z.string().optional().nullable(),
   versionNo: z.number().int().positive().optional().nullable(),
   status: printTemplateStatusSchema.optional().nullable(),
   syncMode: printTemplateSyncModeSchema.optional().nullable(),
@@ -39,6 +41,8 @@ export const savePrintTemplatePayloadSchema = z
     templateType: printTemplateTypeSchema.optional(),
     engine: printTemplateEngineSchema.optional(),
     assetRef: z.string().optional(),
+    settlementCompanyId: z.string().optional(),
+    settlementCompanyName: z.string().optional(),
     versionNo: z.number().int().positive().optional(),
     status: printTemplateStatusSchema.optional(),
   })

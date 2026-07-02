@@ -267,6 +267,8 @@ describe('PrintTemplateView', () => {
       templateType: 'COORD',
       engine: 'LODOP',
       assetRef: '',
+      settlementCompanyId: undefined,
+      settlementCompanyName: '',
       versionNo: 1,
       status: 'ACTIVE',
     })
@@ -343,6 +345,8 @@ describe('PrintTemplateView', () => {
       templateType: 'COORD',
       engine: 'LODOP',
       assetRef: '',
+      settlementCompanyId: undefined,
+      settlementCompanyName: '',
       versionNo: 1,
       status: 'ACTIVE',
     })
@@ -390,6 +394,8 @@ describe('PrintTemplateView', () => {
         templateType: 'COORD',
         engine: 'LODOP',
         assetRef: undefined,
+        settlementCompanyId: undefined,
+        settlementCompanyName: undefined,
         versionNo: 1,
         status: 'ACTIVE',
       })
@@ -402,6 +408,54 @@ describe('PrintTemplateView', () => {
       queryKey: ['print-templates', 'purchase-order'],
     })
     expect(screen.queryByTestId('editor-modal')).not.toBeInTheDocument()
+  })
+
+  it('normalizes settlement company id before saving', async () => {
+    mockUseQuery.mockImplementation((options: { queryKey?: unknown[] }) => {
+      if (options.queryKey?.[0] === 'master-options') {
+        return {
+          data: [
+            {
+              id: '330050675528433664',
+              value: '330050675528433664',
+              label: 'TEST9',
+              companyName: 'TEST9',
+            },
+          ],
+          isLoading: false,
+        }
+      }
+      return {
+        data: { data: [template] },
+        isLoading: false,
+      }
+    })
+    mockForm.validateFields.mockResolvedValue({
+      billType: 'sales-order',
+      templateName: 'TEST9 A4',
+      templateCode: 'TEST9_A4',
+      templateType: 'COORD',
+      engine: 'LODOP',
+      assetRef: '',
+      settlementCompanyId: 330050675528433664,
+      settlementCompanyName: ' TEST9 ',
+      versionNo: 1,
+      status: 'ACTIVE',
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('edit'))
+    fireEvent.click(screen.getByText('coord'))
+    fireEvent.click(screen.getByText('save'))
+
+    await waitFor(() => {
+      expect(mutationPayloads()).toContainEqual(
+        expect.objectContaining({
+          settlementCompanyId: '330050675528433664',
+          settlementCompanyName: 'TEST9',
+        }),
+      )
+    })
   })
 
   it('invalidates the previous bill type after moving a template', async () => {
@@ -431,6 +485,8 @@ describe('PrintTemplateView', () => {
         templateType: 'COORD',
         engine: 'LODOP',
         assetRef: undefined,
+        settlementCompanyId: undefined,
+        settlementCompanyName: undefined,
         versionNo: 1,
         status: 'ACTIVE',
         previousBillType: 'purchase-order',
@@ -461,6 +517,8 @@ describe('PrintTemplateView', () => {
         templateType: 'COORD',
         engine: 'LODOP',
         assetRef: undefined,
+        settlementCompanyId: undefined,
+        settlementCompanyName: undefined,
         versionNo: 1,
         status: 'ACTIVE',
       })

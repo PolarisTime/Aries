@@ -13,6 +13,7 @@ import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
+import { filterPrintTemplatesBySettlementCompany } from '@/utils/print-template-settlement'
 import { PrintJobModal } from '@/views/modules/components/PrintJobModal'
 
 interface Props {
@@ -58,8 +59,16 @@ export function PrintTemplateDropdown({
   const activeTemplates = templates.filter(
     (tpl) => tpl.status == null || tpl.status === 'ACTIVE',
   )
-  const printableTemplates = activeTemplates.filter(
-    (tpl) => tpl.templateType === 'COORD' || tpl.templateType === 'PDF_FORM',
+  const selectedRecord = selectedRows.find(
+    (row) => String(row.id) === selectedRowKeys[0],
+  )
+  const printableTemplates = filterPrintTemplatesBySettlementCompany(
+    activeTemplates.filter(
+      (tpl) =>
+        (tpl.templateType === 'COORD' || tpl.templateType === 'PDF_FORM') &&
+        (tpl.templateType === 'PDF_FORM' || tpl.templateHtml?.trim()),
+    ),
+    selectedRecord,
   )
 
   const handlePrint = (

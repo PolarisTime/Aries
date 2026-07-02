@@ -92,6 +92,8 @@ export function savePrintTemplate(payload: SavePrintTemplatePayload) {
     templateType,
     engine: payload.engine || defaultEngineForTemplateType(templateType),
     assetRef: templateType === 'PDF_FORM' ? payload.assetRef : undefined,
+    settlementCompanyId: payload.settlementCompanyId,
+    settlementCompanyName: payload.settlementCompanyName,
     versionNo: payload.versionNo || 1,
     status: payload.status || 'ACTIVE',
   }

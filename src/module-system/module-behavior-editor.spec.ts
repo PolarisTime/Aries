@@ -40,6 +40,16 @@ describe('module-behavior-editor', () => {
     expect(dayjs.isDayjs(values.inboundDate)).toBe(true)
   })
 
+  it('sales-outbound defaultDraftValues returns outboundDate for today', () => {
+    const config = moduleBehaviorRegistry.get('sales-outbound')
+    const values = (config!.defaultDraftValues as () => any)()
+
+    expect(dayjs.isDayjs(values.outboundDate)).toBe(true)
+    expect(values.outboundDate.format('YYYY-MM-DD')).toBe(
+      dayjs().format('YYYY-MM-DD'),
+    )
+  })
+
   it('purchase-inbound locks supplier and settlement company after purchase order import', () => {
     const config = moduleBehaviorRegistry.get('purchase-inbound')
     const resolveReadonly = config!.resolveReadonlyEditorFields as (

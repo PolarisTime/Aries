@@ -20,6 +20,7 @@ import {
   Typography,
 } from 'antd'
 import { useTranslation } from 'react-i18next'
+import type { SettlementCompanyOption } from '@/api/company-settings'
 import { printTemplateTargetOptions } from '@/config/print-template-targets'
 import { buildLabeledFormItemProps } from '@/utils/form-control-a11y'
 import { buildFormControlId } from '@/utils/form-control-id'
@@ -29,6 +30,7 @@ interface Props {
   editing: boolean
   form: FormInstance
   templateHtml: string
+  settlementCompanyOptions: SettlementCompanyOption[]
   saving: boolean
   onTemplateHtmlChange: (value: string) => void
   onSave: () => void
@@ -106,6 +108,20 @@ function defaultEngineForTemplateType(templateType: string) {
   return 'LODOP'
 }
 
+function findSettlementCompanyOption(
+  options: SettlementCompanyOption[],
+  value: unknown,
+) {
+  const normalizedValue = value == null ? '' : String(value).trim()
+  if (!normalizedValue) return undefined
+  return (
+    options.find((option) => String(option.value).trim() === normalizedValue) ??
+    (typeof value === 'number'
+      ? options.find((option) => Number(option.value) === value)
+      : undefined)
+  )
+}
+
 function FieldTags({ title, fields }: { title: string; fields: string[] }) {
   return (
     <div>
@@ -126,6 +142,7 @@ export function PrintTemplateEditorModal({
   editing,
   form,
   templateHtml,
+  settlementCompanyOptions,
   saving,
   onTemplateHtmlChange,
   onSave,
@@ -282,6 +299,38 @@ export function PrintTemplateEditorModal({
                         )}
                         maxLength={255}
                       />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="settlementCompanyId"
+                      label={t('system.printTemplateEditor.settlementCompany')}
+                    >
+                      <Select
+                        allowClear
+                        options={settlementCompanyOptions}
+                        placeholder={t(
+                          'system.printTemplateEditor.settlementCompanyPlaceholder',
+                        )}
+                        showSearch={{ optionFilterProp: 'label' }}
+                        onChange={(value) => {
+                          const matched = findSettlementCompanyOption(
+                            settlementCompanyOptions,
+                            value,
+                          )
+                          form.setFieldValue(
+                            'settlementCompanyId',
+                            matched?.value ?? undefined,
+                          )
+                          form.setFieldValue(
+                            'settlementCompanyName',
+                            matched?.companyName || '',
+                          )
+                        }}
+                      />
+                    </Form.Item>
+                    <Form.Item name="settlementCompanyName" hidden>
+                      <Input />
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={12}>

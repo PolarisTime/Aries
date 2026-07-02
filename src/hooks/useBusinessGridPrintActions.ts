@@ -17,6 +17,7 @@ import {
   type PrintOutputResponse,
   runPrintOutputs,
 } from '@/utils/print-output-runner'
+import { filterPrintTemplatesBySettlementCompany } from '@/utils/print-template-settlement'
 
 interface Props {
   moduleKey: string
@@ -72,14 +73,18 @@ async function normalizePdfError(err: unknown, fallbackMessage: string) {
 async function pickPrintTemplate(
   moduleKey: string,
   t: (key: string) => string,
+  selectedRecord?: ModuleRecord,
 ): Promise<PrintTemplateRecord | null> {
   if (!Object.hasOwn(printTemplateTargetMap, moduleKey)) return null
   const response = await listPrintTemplates(moduleKey)
-  const templates = (response?.data || []).filter(
-    (t) =>
-      (t.status == null || t.status === 'ACTIVE') &&
-      (t.templateType === 'COORD' || t.templateType === 'PDF_FORM') &&
-      (t.templateType === 'PDF_FORM' || t.templateHtml?.trim()),
+  const templates = filterPrintTemplatesBySettlementCompany(
+    (response?.data || []).filter(
+      (t) =>
+        (t.status == null || t.status === 'ACTIVE') &&
+        (t.templateType === 'COORD' || t.templateType === 'PDF_FORM') &&
+        (t.templateType === 'PDF_FORM' || t.templateHtml?.trim()),
+    ),
+    selectedRecord,
   )
 
   if (templates.length === 0) return null
@@ -168,7 +173,12 @@ export function useBusinessGridPrintActions({
       return
     }
 
-    const template = selectedTemplate || (await pickPrintTemplate(moduleKey, t))
+    const selectedRecord = selectedRows.find(
+      (row) => String(row.id) === selectedRowKeys[0],
+    )
+    const template =
+      selectedTemplate ||
+      (await pickPrintTemplate(moduleKey, t, selectedRecord))
 
     if (!template) {
       message.warning(t('hooks.printActions.noPrintTemplateConfigured'))

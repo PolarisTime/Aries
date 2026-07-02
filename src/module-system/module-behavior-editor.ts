@@ -15,7 +15,7 @@ function findSettlementCompanyName(id: unknown, fallback = '') {
   }
   return (
     getSettlementCompanyOptions().find(
-      (option) => option.value === normalizedId,
+      (option) => asString(option.value).trim() === normalizedId,
     )?.companyName || fallback
   )
 }
@@ -110,6 +110,9 @@ registerModuleBehavior('purchase-inbound', {
 registerModuleBehavior('sales-order', { defaultOperatorField: 'salesName' })
 registerModuleBehavior('sales-order', {
   defaultDraftValues: () => ({ deliveryDate: currentDateTime() }),
+})
+registerModuleBehavior('sales-outbound', {
+  defaultDraftValues: () => ({ outboundDate: currentDateTime() }),
 })
 registerModuleBehavior('purchase-contract', {
   defaultOperatorField: 'buyerName',

@@ -15,6 +15,8 @@ describe('print-template schemas', () => {
         templateType: 'COORD',
         engine: 'LODOP',
         assetRef: null,
+        settlementCompanyId: '330050675528433664',
+        settlementCompanyName: 'TEST9',
         versionNo: 1,
         status: 'ACTIVE',
         source: 'db',
@@ -25,6 +27,10 @@ describe('print-template schemas', () => {
       }
       const result = printTemplateRecordSchema.safeParse(data)
       expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.settlementCompanyId).toBe('330050675528433664')
+        expect(result.data.settlementCompanyName).toBe('TEST9')
+      }
     })
 
     it('should normalize numeric backend id to string', () => {
@@ -106,6 +112,8 @@ describe('print-template schemas', () => {
         templateName: '模板1',
         templateHtml: 'LODOP.PRINT_INIT("模板");',
         templateType: 'COORD',
+        settlementCompanyId: '330050675528433664',
+        settlementCompanyName: 'TEST9',
       }
       const result = savePrintTemplatePayloadSchema.safeParse(data)
       expect(result.success).toBe(true)

@@ -11,6 +11,7 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { logger } from '@/utils/logger'
+import { asString } from '@/utils/type-narrowing'
 
 // Computed fields that the server calculates — never included in save payloads.
 const COMPUTED_FIELD_KEYS = new Set([
@@ -21,6 +22,11 @@ const COMPUTED_FIELD_KEYS = new Set([
   'amount',
   'permissionSummary',
   'userCount',
+])
+
+const SETTLEMENT_COMPANY_ID_KEYS = new Set([
+  'settlementCompanyId',
+  'defaultSettlementCompanyId',
 ])
 
 async function loadModuleConfig(
@@ -84,12 +90,17 @@ function pickDefinedFields(record: ModuleRecord, fields: readonly string[]) {
   for (const field of fields) {
     const value = record[field]
     if (value !== undefined) {
-      next[field] = dayjs.isDayjs(value)
-        ? value.format('YYYY-MM-DD HH:mm:ss')
-        : value
+      next[field] = serializeFieldValue(field, value)
     }
   }
   return next
+}
+
+function serializeFieldValue(field: string, value: unknown) {
+  if (SETTLEMENT_COMPANY_ID_KEYS.has(field)) {
+    return asString(value).trim() || undefined
+  }
+  return dayjs.isDayjs(value) ? value.format('YYYY-MM-DD HH:mm:ss') : value
 }
 
 function toPersistedLineItemId(value: unknown) {
@@ -203,7 +214,9 @@ function serializeLineItem(
     }
     const value = item[field.key]
     if (value !== undefined) {
-      result[field.key] = field.numeric ? Number(value || 0) : value
+      result[field.key] = field.numeric
+        ? Number(value || 0)
+        : serializeFieldValue(field.key, value)
     }
   }
   return result

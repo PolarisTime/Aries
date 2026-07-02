@@ -60,7 +60,7 @@ describe('module-save-payload', () => {
       customerCode: 'C-001',
       customerName: '测试客户',
       projectName: '测试项目',
-      settlementCompanyId: 8,
+      settlementCompanyId: '8',
       settlementCompanyName: '主体B',
       sourceStatementId: '308251467645452288',
       receiptDate: '2026-05-09',
@@ -76,7 +76,7 @@ describe('module-save-payload', () => {
       customerCode: 'C-001',
       customerName: '测试客户',
       projectName: '测试项目',
-      settlementCompanyId: 8,
+      settlementCompanyId: '8',
       settlementCompanyName: '主体B',
       sourceStatementId: '308251467645452288',
       receiptDate: '2026-05-09',
@@ -86,6 +86,64 @@ describe('module-save-payload', () => {
       remark: 'ok',
     })
     expect(payload).not.toHaveProperty('totalAmount')
+  })
+
+  it('normalizes settlement company ids in save payload', async () => {
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+      key: 'customer',
+      detailFields: [{ key: 'customerName', type: 'input', label: '客户' }],
+      saveFields: {
+        scalar: [
+          'customerName',
+          'settlementCompanyId',
+          'settlementCompanyName',
+          'defaultSettlementCompanyId',
+          'defaultSettlementCompanyName',
+        ],
+        lineItem: [
+          'materialCode',
+          'settlementCompanyId',
+          'settlementCompanyName',
+        ],
+      },
+    } as ModulePageConfig)
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadLineItems',
+    )
+    vi.mocked(getBehaviorValue).mockReturnValue([])
+
+    const payload = await serializeBusinessRecordForSave('customer', {
+      id: '',
+      customerName: '客户A',
+      settlementCompanyId: 8,
+      settlementCompanyName: '主体A',
+      defaultSettlementCompanyId: 9,
+      defaultSettlementCompanyName: '主体B',
+      items: [
+        {
+          id: '1',
+          materialCode: 'M001',
+          settlementCompanyId: 10,
+          settlementCompanyName: '主体C',
+        },
+      ],
+    })
+
+    expect(payload).toMatchObject({
+      settlementCompanyId: '8',
+      defaultSettlementCompanyId: '9',
+      items: [
+        expect.objectContaining({
+          settlementCompanyId: '10',
+        }),
+      ],
+    })
   })
 
   it('keeps payment scalar fields in save payload', async () => {
@@ -149,6 +207,8 @@ describe('module-save-payload', () => {
           'customerName',
           'projectId',
           'projectName',
+          'settlementCompanyId',
+          'settlementCompanyName',
           'deliveryDate',
           'salesName',
           'status',
@@ -157,6 +217,8 @@ describe('module-save-payload', () => {
         lineItem: [
           'sourceInboundItemId',
           'sourcePurchaseOrderItemId',
+          'settlementCompanyId',
+          'settlementCompanyName',
           'materialCode',
           'warehouseName',
           'batchNo',
@@ -220,6 +282,75 @@ describe('module-save-payload', () => {
           unitPrice: 3300,
         },
       ],
+    })
+  })
+
+  it('keeps settlement company fields for purchase order, sales order and freight bill', async () => {
+    const { getModulePageSchema } = await vi.importActual<
+      typeof import('@/config/module-page-schema')
+    >('@/config/module-page-schema')
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    getModulePageSchemaMock.mockImplementation((moduleKey: string) =>
+      getModulePageSchema(moduleKey),
+    )
+    vi.mocked(hasBehavior).mockImplementation(
+      (_moduleKey, flag) => flag === 'savePayloadLineItems',
+    )
+    vi.mocked(getBehaviorValue).mockReturnValue([])
+
+    const baseRecord = {
+      id: '',
+      settlementCompanyId: 9,
+      settlementCompanyName: 'TEST9',
+      items: [],
+    }
+
+    await expect(
+      serializeBusinessRecordForSave('purchase-order', {
+        ...baseRecord,
+        orderNo: 'PO-TEST9',
+        supplierName: '供应商A',
+        orderDate: dayjs('2026-06-01'),
+        buyerName: '李四',
+        status: '草稿',
+      }),
+    ).resolves.toMatchObject({
+      settlementCompanyId: '9',
+      settlementCompanyName: 'TEST9',
+    })
+
+    await expect(
+      serializeBusinessRecordForSave('sales-order', {
+        ...baseRecord,
+        orderNo: 'SO-TEST9',
+        customerName: '客户A',
+        projectName: '项目A',
+        deliveryDate: dayjs('2026-06-01'),
+        salesName: '张三',
+        status: '草稿',
+      }),
+    ).resolves.toMatchObject({
+      settlementCompanyId: '9',
+      settlementCompanyName: 'TEST9',
+    })
+
+    await expect(
+      serializeBusinessRecordForSave('freight-bill', {
+        ...baseRecord,
+        billNo: 'FB-TEST9',
+        carrierName: '物流甲',
+        vehiclePlate: '浙A12345',
+        customerName: '客户A',
+        projectName: '项目A',
+        billTime: dayjs('2026-06-01'),
+        unitPrice: 20,
+        status: '未审核',
+      }),
+    ).resolves.toMatchObject({
+      settlementCompanyId: '9',
+      settlementCompanyName: 'TEST9',
     })
   })
 

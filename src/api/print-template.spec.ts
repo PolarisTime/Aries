@@ -155,6 +155,8 @@ describe('print-template', () => {
         templateType: 'COORD',
         engine: 'LODOP',
         assetRef: undefined,
+        settlementCompanyId: undefined,
+        settlementCompanyName: undefined,
         versionNo: 1,
         status: 'ACTIVE',
       })
@@ -184,6 +186,8 @@ describe('print-template', () => {
         templateType: 'COORD',
         engine: 'LODOP',
         assetRef: undefined,
+        settlementCompanyId: undefined,
+        settlementCompanyName: undefined,
         versionNo: 1,
         status: 'ACTIVE',
       })
@@ -204,6 +208,26 @@ describe('print-template', () => {
         expect.objectContaining({
           templateType: 'COORD',
           engine: 'LODOP',
+        }),
+      )
+    })
+
+    it('sends settlement company metadata when provided', async () => {
+      restPostMock.mockResolvedValue({ code: 0, data: {} })
+
+      await savePrintTemplate({
+        billType: 'sales-order',
+        templateName: 'TEST9 A4',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
+        settlementCompanyId: '330050675528433664',
+        settlementCompanyName: 'TEST9',
+      })
+
+      expect(restPostMock).toHaveBeenCalledWith(
+        '/print-templates',
+        expect.objectContaining({
+          settlementCompanyId: '330050675528433664',
+          settlementCompanyName: 'TEST9',
         }),
       )
     })
@@ -229,6 +253,8 @@ describe('print-template', () => {
         templateType: 'PDF_FORM',
         engine: 'PDF_FORM',
         assetRef: undefined,
+        settlementCompanyId: undefined,
+        settlementCompanyName: undefined,
         versionNo: 2,
         status: 'ACTIVE',
       })

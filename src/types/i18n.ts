@@ -1952,6 +1952,8 @@ export interface MessageSchema {
       templateType: string
       engine: string
       assetRef: string
+      settlementCompany: string
+      unassignedCompany: string
       status: string
       statusActive: string
       statusDisabled: string
@@ -2422,6 +2424,8 @@ export interface MessageSchema {
       enginePdfForm: string
       assetRef: string
       assetRefPlaceholder: string
+      settlementCompany: string
+      settlementCompanyPlaceholder: string
       versionNo: string
       status: string
       statusActive: string

@@ -219,6 +219,7 @@ describe('PrintTemplateDropdown', () => {
       templateName: '出库单模板',
       targetType: 'test-module',
       templateType: 'COORD',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
     }
     mockPrintableTemplates([template])
 
@@ -249,12 +250,14 @@ describe('PrintTemplateDropdown', () => {
       templateName: 'A 模板',
       targetType: 'test-module',
       templateType: 'COORD',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
     }
     const secondTemplate = {
       id: 'tpl-2',
       templateName: 'B 模板',
       targetType: 'test-module',
       templateType: 'COORD',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
     }
     mockPrintableTemplates([firstTemplate, secondTemplate])
 
@@ -272,6 +275,82 @@ describe('PrintTemplateDropdown', () => {
     })
   })
 
+  it('only shows templates matching the selected settlement company', () => {
+    const test9Template = {
+      id: 'tpl-test9',
+      templateName: 'TEST9 模板',
+      targetType: 'test-module',
+      templateType: 'COORD',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
+      settlementCompanyId: '9',
+      settlementCompanyName: 'TEST9',
+    }
+    mockPrintableTemplates([
+      {
+        id: 'tpl-yingjie',
+        templateName: '颖捷模板',
+        targetType: 'test-module',
+        templateType: 'COORD',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
+        settlementCompanyId: '7',
+        settlementCompanyName: '嘉兴颖捷建材有限公司',
+      },
+      test9Template,
+    ])
+
+    render(
+      <PrintTemplateDropdown
+        {...defaultProps}
+        selectedRows={[
+          {
+            id: 'row-1',
+            orderNo: 'SO-001',
+            settlementCompanyId: '9',
+            settlementCompanyName: 'TEST9',
+          },
+        ]}
+      />,
+    )
+
+    openPrintModal()
+
+    expect(screen.getByTestId('template-select')).toHaveValue('tpl-test9')
+    expect(screen.queryByText('tpl-yingjie')).toBeNull()
+  })
+
+  it('shows no template state when settlement company has no matching template', () => {
+    mockPrintableTemplates([
+      {
+        id: 'tpl-yingjie',
+        templateName: '颖捷模板',
+        targetType: 'test-module',
+        templateType: 'COORD',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
+        settlementCompanyId: '7',
+        settlementCompanyName: '嘉兴颖捷建材有限公司',
+      },
+    ])
+
+    render(
+      <PrintTemplateDropdown
+        {...defaultProps}
+        selectedRows={[
+          {
+            id: 'row-1',
+            orderNo: 'SO-001',
+            settlementCompanyId: '9',
+            settlementCompanyName: 'TEST9',
+          },
+        ]}
+      />,
+    )
+
+    openPrintModal()
+
+    expect(screen.getByText('modules.print.noTemplate')).toBeTruthy()
+    expect(screen.getByTestId('empty')).toBeTruthy()
+  })
+
   it('passes print options without closing the modal', () => {
     const onPrint = vi.fn()
     const template = {
@@ -279,6 +358,7 @@ describe('PrintTemplateDropdown', () => {
       templateName: 'A 模板',
       targetType: 'test-module',
       templateType: 'COORD',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
     }
     mockPrintableTemplates([template])
 

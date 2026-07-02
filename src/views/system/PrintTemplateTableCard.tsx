@@ -57,6 +57,13 @@ function templateTypeLabel(record: PrintTemplateRecord) {
   return record.templateType === 'PDF_FORM' ? 'PDF_FORM' : 'COORD'
 }
 
+function settlementCompanyLabel(
+  record: PrintTemplateRecord,
+  unassignedLabel: string,
+) {
+  return record.settlementCompanyName?.trim() || unassignedLabel
+}
+
 interface PrintTemplateStatusTagProps {
   record: PrintTemplateRecord
   statusMap: Parameters<typeof StatusTag>[0]['statusMap']
@@ -246,6 +253,7 @@ export function PrintTemplateTableCard({
         template.templateType,
         template.engine,
         template.sourceRef,
+        template.settlementCompanyName,
       ]
         .filter(Boolean)
         .some((value) =>
@@ -348,6 +356,12 @@ export function PrintTemplateTableCard({
                               fileLabel={syncLabels.file}
                               manualLabel={syncLabels.manual}
                             />
+                            <Tag>
+                              {settlementCompanyLabel(
+                                record,
+                                t('system.printTemplate.unassignedCompany'),
+                              )}
+                            </Tag>
                           </div>
                           <Typography.Text
                             type="secondary"
@@ -452,6 +466,14 @@ export function PrintTemplateTableCard({
                       label={t('system.printTemplate.assetRef')}
                     >
                       {activeTemplate.assetRef || '--'}
+                    </Descriptions.Item>
+                    <Descriptions.Item
+                      label={t('system.printTemplate.settlementCompany')}
+                    >
+                      {settlementCompanyLabel(
+                        activeTemplate,
+                        t('system.printTemplate.unassignedCompany'),
+                      )}
                     </Descriptions.Item>
                     <Descriptions.Item label={t('common.updatedAt')}>
                       {formatDateTime(activeTemplate.updateTime, '--')}

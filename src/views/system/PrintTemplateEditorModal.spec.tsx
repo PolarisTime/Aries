@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -68,7 +68,26 @@ vi.mock('antd', () => {
     Form,
     Input,
     Row: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Select: () => <div>Select</div>,
+    Select: ({
+      onChange,
+      options = [],
+    }: {
+      onChange?: (value: unknown) => void
+      options?: Array<{ label: string; value: string | number }>
+    }) => (
+      <div>
+        <span>Select</span>
+        {options.map((option) => (
+          <button
+            key={String(option.value)}
+            type="button"
+            onClick={() => onChange?.(Number(option.value))}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    ),
     Space,
     Tag: ({ children }: { children: React.ReactNode }) => (
       <span>{children}</span>
@@ -113,6 +132,7 @@ describe('PrintTemplateEditorModal', () => {
     editing: false,
     form: formInstance as never,
     templateHtml: '',
+    settlementCompanyOptions: [],
     saving: false,
     onTemplateHtmlChange: vi.fn(),
     onSave: vi.fn(),
@@ -163,6 +183,9 @@ describe('PrintTemplateEditorModal', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText('system.printTemplateEditor.assetRef'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplateEditor.settlementCompany'),
     ).toBeInTheDocument()
     expect(
       screen.getByText('system.printTemplateEditor.versionNo'),
@@ -223,5 +246,28 @@ describe('PrintTemplateEditorModal', () => {
   it('does not render when closed', () => {
     render(<PrintTemplateEditorModal {...defaultProps} open={false} />)
     expect(screen.queryByTestId('form-modal')).not.toBeInTheDocument()
+  })
+
+  it('resolves settlement company name when select emits numeric id', () => {
+    render(
+      <PrintTemplateEditorModal
+        {...defaultProps}
+        settlementCompanyOptions={[
+          {
+            id: '330050675528433664',
+            value: '330050675528433664',
+            label: 'TEST9',
+            companyName: 'TEST9',
+          },
+        ]}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('TEST9'))
+
+    expect(formInstance.setFieldValue).toHaveBeenCalledWith(
+      'settlementCompanyName',
+      'TEST9',
+    )
   })
 })
