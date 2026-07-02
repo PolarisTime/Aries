@@ -104,6 +104,7 @@ export function OssSettingsView(): React.JSX.Element {
     },
   })
 
+  // react-doctor-disable-next-line react-doctor/query-mutation-missing-invalidation -- 测试存储只返回操作结果，刷新设置查询会覆盖未保存表单。
   const testStorageMutation = useMutation({
     mutationFn: testOssStorage,
     onSuccess: (result) => {
@@ -116,6 +117,7 @@ export function OssSettingsView(): React.JSX.Element {
     },
   })
 
+  // react-doctor-disable-next-line react-doctor/query-mutation-missing-invalidation -- CORS 配置改的是外部 OSS 服务，不改变本地设置缓存。
   const configureCorsMutation = useMutation({
     mutationFn: configureOssCors,
     onSuccess: (result) => {
