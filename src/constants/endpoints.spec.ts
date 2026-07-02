@@ -42,6 +42,7 @@ describe('ENDPOINTS', () => {
     expect(ENDPOINTS.DATABASE_STATUS).toBe('/system/databases/status')
     expect(ENDPOINTS.DATABASE_MONITORING).toBe('/system/databases/monitoring')
     expect(ENDPOINTS.SECURITY_KEYS).toBe('/system/security-keys')
+    expect(ENDPOINTS.OSS_SETTINGS).toBe('/system/oss-settings')
   })
 
   it('has all setup endpoints', () => {
@@ -113,6 +114,7 @@ describe('ENDPOINTS', () => {
       'DATABASE_STATUS',
       'DATABASE_MONITORING',
       'SECURITY_KEYS',
+      'OSS_SETTINGS',
       'PRINT_TEMPLATES',
       'SETUP_STATUS',
       'SETUP_INITIALIZE',

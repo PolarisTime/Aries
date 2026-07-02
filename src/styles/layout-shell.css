@@ -990,6 +990,39 @@
   min-width: 0;
 }
 
+.oss-settings-card > .ant-card-body {
+  padding: 16px;
+}
+
+.oss-settings-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.oss-settings-title-block {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.oss-settings-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  column-gap: 16px;
+  row-gap: 4px;
+}
+
+.oss-settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--theme-border-subtle);
+}
+
 .company-settings-page {
   display: flex;
   flex-direction: column;
@@ -1338,6 +1371,16 @@
 
   .general-settings-flow {
     gap: 16px;
+  }
+
+  .oss-settings-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oss-settings-header,
+  .oss-settings-actions {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .general-settings-stat {

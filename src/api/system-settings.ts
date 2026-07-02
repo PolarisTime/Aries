@@ -13,6 +13,34 @@ import { asString } from '@/utils/type-narrowing'
 
 const MODULE_KEY = 'general-setting'
 
+export interface OssSetting {
+  storageMode: 'server-s3' | 'server-local'
+  provider: 's3-compatible' | 'tencent-cos' | 'aliyun-oss'
+  endpoint: string
+  bucket: string
+  region: string
+  accessKey: string
+  secretKeyConfigured: boolean
+  keyPrefix: string
+  pathStyleAccess: boolean
+  encryptedStorage: boolean
+  serverProxyOnly: boolean
+}
+
+export interface OssSettingPayload {
+  storageMode: string
+  provider: string
+  endpoint: string
+  bucket: string
+  region: string
+  accessKey: string
+  secretKey?: string
+  keyPrefix: string
+  pathStyleAccess: boolean
+  encryptedStorage: boolean
+  serverProxyOnly: boolean
+}
+
 export const DISPLAY_SWITCH_CODES = {
   weightOnlyPurchaseInbounds: 'UI_WEIGHT_ONLY_PURCHASE_INBOUNDS',
   weightOnlySalesOutbounds: 'UI_WEIGHT_ONLY_SALES_OUTBOUNDS',
@@ -39,6 +67,24 @@ export function saveSystemSetting(record: ModuleRecord) {
 
 export function updateSystemUploadRule(record: UploadRulePayload) {
   return updatePageUploadRule(MODULE_KEY, record)
+}
+
+export async function getOssSetting(): Promise<OssSetting> {
+  const response = assertApiSuccess(
+    await http.get<ApiResponse<OssSetting>>(ENDPOINTS.OSS_SETTINGS),
+    '加载 OSS 设置失败',
+  )
+  return response.data
+}
+
+export async function saveOssSetting(
+  payload: OssSettingPayload,
+): Promise<OssSetting> {
+  const response = assertApiSuccess(
+    await http.put<ApiResponse<OssSetting>>(ENDPOINTS.OSS_SETTINGS, payload),
+    '保存 OSS 设置失败',
+  )
+  return response.data
 }
 
 export async function listDisplaySwitches() {

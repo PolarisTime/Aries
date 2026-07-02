@@ -5,6 +5,7 @@ const saveBusinessModuleMock = vi.hoisted(() => vi.fn())
 const updatePageUploadRuleMock = vi.hoisted(() => vi.fn())
 const isToggleSettingMock = vi.hoisted(() => vi.fn())
 const httpGetMock = vi.hoisted(() => vi.fn())
+const httpPutMock = vi.hoisted(() => vi.fn())
 const assertApiSuccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/api/business', () => ({
@@ -21,16 +22,19 @@ vi.mock('@/api/client', () => ({
   assertApiSuccess: assertApiSuccessMock,
   http: {
     get: httpGetMock,
+    put: httpPutMock,
   },
 }))
 
 import {
   DISPLAY_SWITCH_CODES,
+  getOssSetting,
   getStatementGeneratorRules,
   isDisplaySwitchEnabled,
   listClientSettings,
   listDisplaySwitches,
   listSystemSettings,
+  saveOssSetting,
   saveSystemSetting,
   updateSystemUploadRule,
 } from './system-settings'
@@ -79,6 +83,57 @@ describe('system-settings', () => {
         'general-setting',
         payload,
       )
+    })
+  })
+
+  describe('oss settings', () => {
+    it('loads oss settings from system endpoint', async () => {
+      const setting = {
+        storageMode: 'server-s3',
+        provider: 's3-compatible',
+        endpoint: 'https://cos.example.com',
+        bucket: 'bucket',
+        region: 'ap-guangzhou',
+        accessKey: 'ak',
+        secretKeyConfigured: true,
+        keyPrefix: 'attachments',
+        pathStyleAccess: true,
+        encryptedStorage: false,
+        serverProxyOnly: true,
+      }
+      httpGetMock.mockResolvedValue({ code: 0, data: setting })
+      assertApiSuccessMock.mockImplementation(
+        <T extends { code?: number }>(response: T) => response,
+      )
+
+      const result = await getOssSetting()
+
+      expect(httpGetMock).toHaveBeenCalledWith('/system/oss-settings')
+      expect(result).toEqual(setting)
+    })
+
+    it('saves oss settings to system endpoint', async () => {
+      const payload = {
+        storageMode: 'server-s3',
+        provider: 's3-compatible',
+        endpoint: 'https://cos.example.com',
+        bucket: 'bucket',
+        region: 'ap-guangzhou',
+        accessKey: 'ak',
+        secretKey: 'secret',
+        keyPrefix: 'attachments',
+        pathStyleAccess: true,
+        encryptedStorage: false,
+        serverProxyOnly: true,
+      }
+      httpPutMock.mockResolvedValue({ code: 0, data: { ...payload } })
+      assertApiSuccessMock.mockImplementation(
+        <T extends { code?: number }>(response: T) => response,
+      )
+
+      await saveOssSetting(payload)
+
+      expect(httpPutMock).toHaveBeenCalledWith('/system/oss-settings', payload)
     })
   })
 

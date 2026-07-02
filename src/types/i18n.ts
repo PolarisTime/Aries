@@ -2003,6 +2003,39 @@ export interface MessageSchema {
     systemParameters: {
       generalTab: string
       numberRulesTab: string
+      ossTab: string
+    }
+    ossSettings: {
+      title: string
+      description: string
+      pendingApi: string
+      pendingApiHint: string
+      saveFailed: string
+      storageMode: string
+      storageModeServerS3: string
+      storageModeServerLocal: string
+      provider: string
+      providerS3Compatible: string
+      providerTencentCos: string
+      providerAliyunOss: string
+      endpoint: string
+      endpointPlaceholder: string
+      bucket: string
+      bucketPlaceholder: string
+      region: string
+      regionPlaceholder: string
+      accessKey: string
+      accessKeyPlaceholder: string
+      secretKey: string
+      secretKeyPlaceholder: string
+      secretKeyConfiguredPlaceholder: string
+      secretKeyKeepHint: string
+      secretKeyRequiredHint: string
+      keyPrefix: string
+      keyPrefixPlaceholder: string
+      pathStyleAccess: string
+      encryptedStorage: string
+      serverProxyOnly: string
     }
     userAccount: {
       title: string

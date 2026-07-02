@@ -73,6 +73,7 @@ export const ENDPOINTS = {
 
   // Security keys (business entity → plural)
   SECURITY_KEYS: '/system/security-keys',
+  OSS_SETTINGS: '/system/oss-settings',
 
   // Print templates (business entity → plural)
   PRINT_TEMPLATES: '/print-templates',

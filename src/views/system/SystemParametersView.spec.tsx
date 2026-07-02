@@ -15,6 +15,10 @@ vi.mock('@/views/system/NumberRulesView', () => ({
   NumberRulesView: () => <div data-testid="number-rules-view" />,
 }))
 
+vi.mock('@/views/system/OssSettingsView', () => ({
+  OssSettingsView: () => <div data-testid="oss-settings-view" />,
+}))
+
 import { SystemParametersView } from '@/views/system/SystemParametersView'
 
 describe('SystemParametersView', () => {
@@ -31,6 +35,11 @@ describe('SystemParametersView', () => {
         name: 'system.systemParameters.numberRulesTab',
       }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('tab', {
+        name: 'system.systemParameters.ossTab',
+      }),
+    ).toBeInTheDocument()
     expect(screen.getByTestId('general-settings-view')).toBeInTheDocument()
   })
 
@@ -44,5 +53,17 @@ describe('SystemParametersView', () => {
     )
 
     expect(screen.getByTestId('number-rules-view')).toBeInTheDocument()
+  })
+
+  it('switches to oss settings tab', () => {
+    render(<SystemParametersView />)
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.systemParameters.ossTab',
+      }),
+    )
+
+    expect(screen.getByTestId('oss-settings-view')).toBeInTheDocument()
   })
 })
