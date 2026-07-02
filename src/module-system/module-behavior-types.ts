@@ -30,6 +30,8 @@ export interface ModuleBehaviorConfig {
   editableLockedItemColumns?: string[]
   readonlyItemColumns?: string[]
   readonlyEditorFields?: string[]
+  parentImportedEditableFields?: string[]
+  parentImportedItemEditableColumns?: string[]
   resolveReadonlyEditorFields?: (record: ModuleRecord) => string[]
   defaultOperatorField?: string
   locksLineItemsWhenRecordLocked?: boolean

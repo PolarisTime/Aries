@@ -2018,8 +2018,19 @@ export interface MessageSchema {
       storageModeServerLocal: string
       provider: string
       providerS3Compatible: string
+      providerAwsS3: string
       providerTencentCos: string
       providerAliyunOss: string
+      providerHuaweiObs: string
+      providerCloudflareR2: string
+      providerGoogleCloudStorage: string
+      providerIbmCos: string
+      providerOracleOci: string
+      providerBackblazeB2: string
+      providerWasabi: string
+      providerDigitalOceanSpaces: string
+      providerScaleway: string
+      providerMinio: string
       endpoint: string
       endpointPlaceholder: string
       bucket: string

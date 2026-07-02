@@ -26,6 +26,7 @@ interface Props {
   canManageItems: boolean
   lineItemsLocked: boolean
   canEditItemColumns: boolean
+  parentImportedItemEditLocked: boolean
   selectedItemIds: string[]
   onSelectAll: (checked: boolean) => void
   onSelectItem: (itemId: string, checked: boolean) => void
@@ -96,6 +97,7 @@ export function useModuleEditorItemColumns({
   canManageItems,
   lineItemsLocked,
   canEditItemColumns,
+  parentImportedItemEditLocked,
   selectedItemIds,
   onSelectAll,
   onSelectItem,
@@ -134,6 +136,7 @@ export function useModuleEditorItemColumns({
       canEditItemColumns,
       lineItemsLocked,
       record,
+      parentImportedItemEditLocked,
     )
 
   const materialLookup = (() => {

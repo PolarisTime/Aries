@@ -2,9 +2,13 @@ import {
   CloudServerOutlined,
   LockOutlined,
   SaveOutlined,
+  SettingOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { FormInstance } from 'antd'
 import {
+  Alert,
   Button,
   Card,
   Form,
@@ -15,21 +19,30 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  configureOssCors,
   getOssSetting,
+  type OssOperationResult,
   type OssSetting,
   type OssSettingPayload,
   saveOssSetting,
+  testOssStorage,
 } from '@/api/system-settings'
 import { useRequestError } from '@/hooks/useRequestError'
 import { usePermissionStore } from '@/stores/permissionStore'
 import { message } from '@/utils/antd-app'
+import {
+  getOssProviderEndpointPlaceholder,
+  OSS_PROVIDER_PRESETS,
+  type OssProvider,
+  resolveOssProviderPresetDefaults,
+} from './oss-provider-presets'
 
 interface OssSettingsFormValues {
   storageMode: 'server-s3' | 'server-local'
-  provider: 's3-compatible' | 'tencent-cos' | 'aliyun-oss'
+  provider: OssProvider
   endpoint: string
   bucket: string
   region: string
@@ -52,7 +65,7 @@ const initialValues: OssSettingsFormValues = {
   accessKey: '',
   secretKey: '',
   keyPrefix: 'attachments',
-  pathStyleAccess: true,
+  pathStyleAccess: false,
   encryptedStorage: false,
   serverProxyOnly: true,
 }
@@ -63,8 +76,12 @@ export function OssSettingsView(): React.JSX.Element {
   const queryClient = useQueryClient()
   const canSave = usePermissionStore().can('general-setting', 'update')
   const [form] = Form.useForm<OssSettingsFormValues>()
+  const [operationResult, setOperationResult] =
+    useState<OssOperationResult | null>(null)
   const storageMode =
     Form.useWatch('storageMode', form) ?? initialValues.storageMode
+  const provider = Form.useWatch('provider', form) ?? initialValues.provider
+  const region = Form.useWatch('region', form) ?? initialValues.region
   const isS3Mode = storageMode === 'server-s3'
 
   const { data, isFetching } = useQuery({
@@ -87,6 +104,30 @@ export function OssSettingsView(): React.JSX.Element {
     },
   })
 
+  const testStorageMutation = useMutation({
+    mutationFn: testOssStorage,
+    onSuccess: (result) => {
+      setOperationResult(result)
+      message.success(result.message || t('system.ossSettings.testSuccess'))
+    },
+    onError: (error) => {
+      setOperationResult(null)
+      showError(error, t('system.ossSettings.testFailed'))
+    },
+  })
+
+  const configureCorsMutation = useMutation({
+    mutationFn: configureOssCors,
+    onSuccess: (result) => {
+      setOperationResult(result)
+      message.success(result.message || t('system.ossSettings.corsSuccess'))
+    },
+    onError: (error) => {
+      setOperationResult(null)
+      showError(error, t('system.ossSettings.corsFailed'))
+    },
+  })
+
   useEffect(() => {
     if (!data) {
       return
@@ -95,21 +136,17 @@ export function OssSettingsView(): React.JSX.Element {
   }, [data, form])
 
   const providerOptions = useMemo(
-    () => [
-      {
-        label: t('system.ossSettings.providerS3Compatible'),
-        value: 's3-compatible',
-      },
-      {
-        label: t('system.ossSettings.providerTencentCos'),
-        value: 'tencent-cos',
-      },
-      {
-        label: t('system.ossSettings.providerAliyunOss'),
-        value: 'aliyun-oss',
-      },
-    ],
+    () =>
+      OSS_PROVIDER_PRESETS.map((preset) => ({
+        label: t(`system.ossSettings.${preset.labelKey}`),
+        value: preset.value,
+      })),
     [t],
+  )
+
+  const endpointPlaceholder = useMemo(
+    () => getOssProviderEndpointPlaceholder(provider, region),
+    [provider, region],
   )
 
   const storageModeOptions = useMemo(
@@ -147,6 +184,24 @@ export function OssSettingsView(): React.JSX.Element {
           </div>
         }
       >
+        {operationResult ? (
+          <Alert
+            className="oss-settings-result"
+            showIcon
+            type={operationResult.success ? 'success' : 'error'}
+            title={operationResult.message}
+            description={
+              operationResult.details?.length ? (
+                <ul className="oss-settings-result-list">
+                  {operationResult.details.map((detail) => (
+                    <li key={detail}>{detail}</li>
+                  ))}
+                </ul>
+              ) : undefined
+            }
+          />
+        ) : null}
+
         <Form<OssSettingsFormValues>
           form={form}
           name="oss-settings"
@@ -171,16 +226,20 @@ export function OssSettingsView(): React.JSX.Element {
                   name="provider"
                   label={t('system.ossSettings.provider')}
                 >
-                  <Select options={providerOptions} />
+                  <Select
+                    options={providerOptions}
+                    virtual={false}
+                    onChange={(value) => {
+                      applyProviderPreset(form, value)
+                    }}
+                  />
                 </Form.Item>
 
                 <Form.Item
                   name="endpoint"
                   label={t('system.ossSettings.endpoint')}
                 >
-                  <Input
-                    placeholder={t('system.ossSettings.endpointPlaceholder')}
-                  />
+                  <Input placeholder={endpointPlaceholder} />
                 </Form.Item>
 
                 <Form.Item name="bucket" label={t('system.ossSettings.bucket')}>
@@ -267,6 +326,32 @@ export function OssSettingsView(): React.JSX.Element {
                   : t('system.ossSettings.secretKeyRequiredHint')}
             </Typography.Text>
             <Button
+              htmlType="button"
+              icon={<ThunderboltOutlined aria-hidden />}
+              loading={testStorageMutation.isPending}
+              disabled={!canSave}
+              onClick={() => {
+                testStorageMutation.mutate(toPayload(form.getFieldsValue(true)))
+              }}
+            >
+              {t('system.ossSettings.testStorage')}
+            </Button>
+            <Button
+              htmlType="button"
+              icon={<SettingOutlined aria-hidden />}
+              loading={configureCorsMutation.isPending}
+              disabled={!canSave || !isS3Mode}
+              onClick={() => {
+                configureCorsMutation.mutate({
+                  setting: toPayload(form.getFieldsValue(true)),
+                  origin: resolveCurrentOrigin(),
+                  methods: ['GET', 'PUT', 'HEAD'],
+                })
+              }}
+            >
+              {t('system.ossSettings.configureCors')}
+            </Button>
+            <Button
               type="primary"
               htmlType="submit"
               icon={<SaveOutlined aria-hidden />}
@@ -296,6 +381,21 @@ function toFormValues(setting: OssSetting): OssSettingsFormValues {
     encryptedStorage: setting.encryptedStorage,
     serverProxyOnly: setting.serverProxyOnly,
   }
+}
+
+function resolveCurrentOrigin(): string {
+  if (typeof window === 'undefined' || !window.location?.origin) {
+    return ''
+  }
+  return window.location.origin
+}
+
+function applyProviderPreset(
+  form: FormInstance<OssSettingsFormValues>,
+  provider: OssProvider,
+): void {
+  const defaults = resolveOssProviderPresetDefaults(provider)
+  form.setFieldsValue(defaults)
 }
 
 function toPayload(values: OssSettingsFormValues): OssSettingPayload {

@@ -5,6 +5,7 @@ const saveBusinessModuleMock = vi.hoisted(() => vi.fn())
 const updatePageUploadRuleMock = vi.hoisted(() => vi.fn())
 const isToggleSettingMock = vi.hoisted(() => vi.fn())
 const httpGetMock = vi.hoisted(() => vi.fn())
+const httpPostMock = vi.hoisted(() => vi.fn())
 const httpPutMock = vi.hoisted(() => vi.fn())
 const assertApiSuccessMock = vi.hoisted(() => vi.fn())
 
@@ -22,11 +23,13 @@ vi.mock('@/api/client', () => ({
   assertApiSuccess: assertApiSuccessMock,
   http: {
     get: httpGetMock,
+    post: httpPostMock,
     put: httpPutMock,
   },
 }))
 
 import {
+  configureOssCors,
   DISPLAY_SWITCH_CODES,
   getOssSetting,
   getStatementGeneratorRules,
@@ -36,6 +39,7 @@ import {
   listSystemSettings,
   saveOssSetting,
   saveSystemSetting,
+  testOssStorage,
   updateSystemUploadRule,
 } from './system-settings'
 
@@ -134,6 +138,79 @@ describe('system-settings', () => {
       await saveOssSetting(payload)
 
       expect(httpPutMock).toHaveBeenCalledWith('/system/oss-settings', payload)
+    })
+
+    it('tests oss storage with current settings payload', async () => {
+      const payload = {
+        storageMode: 'server-s3',
+        provider: 's3-compatible',
+        endpoint: 'https://cos.example.com',
+        bucket: 'bucket',
+        region: 'ap-guangzhou',
+        accessKey: 'ak',
+        keyPrefix: 'attachments',
+        pathStyleAccess: false,
+        encryptedStorage: false,
+        serverProxyOnly: true,
+      }
+      const result = {
+        success: true,
+        stage: 'DELETE',
+        message: 'OSS 存储读写删除测试通过',
+        objectKey: 'attachments/diagnostics/test.txt',
+        details: ['写入测试对象成功'],
+      }
+      httpPostMock.mockResolvedValue({ code: 0, data: result })
+      assertApiSuccessMock.mockImplementation(
+        <T extends { code?: number }>(response: T) => response,
+      )
+
+      const response = await testOssStorage(payload)
+
+      expect(httpPostMock).toHaveBeenCalledWith(
+        '/system/oss-settings/storage-test',
+        payload,
+      )
+      expect(response).toEqual(result)
+    })
+
+    it('configures oss cors with explicit origin', async () => {
+      const setting = {
+        storageMode: 'server-s3',
+        provider: 's3-compatible',
+        endpoint: 'https://cos.example.com',
+        bucket: 'bucket',
+        region: 'ap-guangzhou',
+        accessKey: 'ak',
+        keyPrefix: 'attachments',
+        pathStyleAccess: false,
+        encryptedStorage: false,
+        serverProxyOnly: false,
+      }
+      const result = {
+        success: true,
+        stage: 'CORS',
+        message: 'OSS CORS 配置完成',
+        objectKey: null,
+        details: ['Origin: https://erp.example.com'],
+      }
+      httpPostMock.mockResolvedValue({ code: 0, data: result })
+      assertApiSuccessMock.mockImplementation(
+        <T extends { code?: number }>(response: T) => response,
+      )
+
+      const response = await configureOssCors({
+        setting,
+        origin: 'https://erp.example.com',
+        methods: ['GET', 'PUT', 'HEAD'],
+      })
+
+      expect(httpPostMock).toHaveBeenCalledWith('/system/oss-settings/cors', {
+        setting,
+        origin: 'https://erp.example.com',
+        methods: ['GET', 'PUT', 'HEAD'],
+      })
+      expect(response).toEqual(result)
     })
   })
 

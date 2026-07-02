@@ -4,9 +4,11 @@ import {
   applyFormFieldDefaultDraftValues,
   applyModuleDefaultEditorDraft,
   canManageEditorLineItems,
+  hasParentImportValue,
   isEditorFieldDisabledForModule,
   isEditorItemColumnEditableForModule,
   isModuleLineItemsLocked,
+  isParentImportedEditorLocked,
 } from './module-editor-access'
 
 beforeEach(() => {
@@ -250,9 +252,117 @@ describe('isEditorFieldDisabledForModule', () => {
     ).toBe(false)
   })
 
+  it('only keeps configured fields editable after parent import', () => {
+    register('sales-outbound', {
+      parentImportedEditableFields: ['outboundDate', 'remark'],
+    })
+
+    expect(
+      isEditorFieldDisabledForModule(
+        'sales-outbound',
+        'outboundDate',
+        false,
+        true,
+        false,
+        undefined,
+        'salesOrderNo',
+        { id: '1', salesOrderNo: 'SO202600001' } as any,
+      ),
+    ).toBe(false)
+    expect(
+      isEditorFieldDisabledForModule(
+        'sales-outbound',
+        'remark',
+        false,
+        true,
+        false,
+        undefined,
+        'salesOrderNo',
+        { id: '1', salesOrderNo: 'SO202600001' } as any,
+      ),
+    ).toBe(false)
+    expect(
+      isEditorFieldDisabledForModule(
+        'sales-outbound',
+        'customerName',
+        false,
+        true,
+        false,
+        undefined,
+        'salesOrderNo',
+        { id: '1', salesOrderNo: 'SO202600001' } as any,
+      ),
+    ).toBe(true)
+    expect(
+      isEditorFieldDisabledForModule(
+        'sales-outbound',
+        'customerName',
+        false,
+        true,
+        false,
+        undefined,
+        'salesOrderNo',
+        { id: '1', salesOrderNo: '   ' } as any,
+      ),
+    ).toBe(false)
+  })
+
   it('returns false when all conditions pass', () => {
     expect(
       isEditorFieldDisabledForModule('test', 'remark', false, true, false),
+    ).toBe(false)
+  })
+})
+
+describe('hasParentImportValue', () => {
+  it('returns true when parent import field has a value', () => {
+    expect(
+      hasParentImportValue(
+        { id: '1', salesOrderNo: 'SO202600001' } as any,
+        'salesOrderNo',
+      ),
+    ).toBe(true)
+  })
+
+  it('returns false when parent import field is blank or missing', () => {
+    expect(
+      hasParentImportValue(
+        { id: '1', salesOrderNo: '   ' } as any,
+        'salesOrderNo',
+      ),
+    ).toBe(false)
+    expect(hasParentImportValue({ id: '1' } as any, 'salesOrderNo')).toBe(false)
+    expect(hasParentImportValue({ id: '1' } as any, undefined)).toBe(false)
+  })
+})
+
+describe('isParentImportedEditorLocked', () => {
+  it('returns true only when parent import field has value and module opts into parent import lock', () => {
+    register('sales-outbound', {
+      parentImportedEditableFields: ['outboundDate', 'remark'],
+      parentImportedItemEditableColumns: ['quantity'],
+    })
+
+    expect(
+      isParentImportedEditorLocked(
+        'sales-outbound',
+        { id: '1', salesOrderNo: 'SO202600001' } as any,
+        'salesOrderNo',
+      ),
+    ).toBe(true)
+    expect(
+      isParentImportedEditorLocked(
+        'sales-outbound',
+        { id: '1', salesOrderNo: '   ' } as any,
+        'salesOrderNo',
+      ),
+    ).toBe(false)
+    expect(
+      isParentImportedEditorLocked(
+        'purchase-inbound',
+        { id: '1', purchaseOrderNo: 'PO202600001' } as any,
+        'purchaseOrderNo',
+      ),
     ).toBe(false)
   })
 })
@@ -350,6 +460,43 @@ describe('isEditorItemColumnEditableForModule', () => {
         false,
       ),
     ).toBe(true)
+  })
+
+  it('only keeps quantity editable for parent-imported sales outbound rows', () => {
+    register('sales-outbound', {
+      parentImportedItemEditableColumns: ['quantity'],
+    })
+
+    expect(
+      isEditorItemColumnEditableForModule(
+        'sales-outbound',
+        'quantity',
+        true,
+        false,
+        { id: 'line-1', sourceSalesOrderItemId: 'so-item-1' } as any,
+        true,
+      ),
+    ).toBe(true)
+    expect(
+      isEditorItemColumnEditableForModule(
+        'sales-outbound',
+        'materialCode',
+        true,
+        false,
+        { id: 'line-1', sourceSalesOrderItemId: 'so-item-1' } as any,
+        true,
+      ),
+    ).toBe(false)
+    expect(
+      isEditorItemColumnEditableForModule(
+        'sales-outbound',
+        'unitPrice',
+        true,
+        false,
+        { id: 'manual-line' } as any,
+        true,
+      ),
+    ).toBe(false)
   })
 
   it('returns false when locked and column not in editableLockedItemColumns', () => {

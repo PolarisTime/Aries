@@ -50,6 +50,16 @@ describe('module-behavior-editor', () => {
     )
   })
 
+  it('sales-outbound only keeps outbound date, remark and quantity editable after parent import', () => {
+    const config = moduleBehaviorRegistry.get('sales-outbound')
+
+    expect(config?.parentImportedEditableFields).toEqual([
+      'outboundDate',
+      'remark',
+    ])
+    expect(config?.parentImportedItemEditableColumns).toEqual(['quantity'])
+  })
+
   it('purchase-inbound locks supplier and settlement company after purchase order import', () => {
     const config = moduleBehaviorRegistry.get('purchase-inbound')
     const resolveReadonly = config!.resolveReadonlyEditorFields as (

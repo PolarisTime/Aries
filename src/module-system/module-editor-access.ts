@@ -1,7 +1,9 @@
 import type {
   ModuleFormFieldDefinition,
+  ModuleLineItem,
   ModuleRecord,
 } from '@/types/module-page'
+import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'
 
@@ -105,6 +107,19 @@ export function isEditorFieldDisabledForModule(
     return true
   }
 
+  const parentImportedEditableFields = getBehaviorValue(
+    moduleKey,
+    'parentImportedEditableFields',
+  )
+  if (
+    parentFieldKey &&
+    record &&
+    parentImportedEditableFields?.length &&
+    asString(record[parentFieldKey]).trim()
+  ) {
+    return !parentImportedEditableFields.includes(fieldKey)
+  }
+
   const readonlyFields = getBehaviorValue(moduleKey, 'readonlyEditorFields')
   if ((readonlyFields || []).includes(fieldKey)) {
     return true
@@ -134,7 +149,8 @@ export function isEditorItemColumnEditableForModule(
   columnKey: string,
   canEditLineItems: boolean,
   lineItemsLocked: boolean,
-  record?: ModuleRecord,
+  record?: ModuleLineItem,
+  parentImportedItemEditLocked = false,
 ) {
   if (!canEditLineItems) {
     return false
@@ -151,6 +167,17 @@ export function isEditorItemColumnEditableForModule(
   const readonlyItemColumns = getBehaviorValue(moduleKey, 'readonlyItemColumns')
   if (readonlyItemColumns?.includes(columnKey)) {
     return false
+  }
+
+  const parentImportedItemEditableColumns = getBehaviorValue(
+    moduleKey,
+    'parentImportedItemEditableColumns',
+  )
+  if (
+    parentImportedItemEditLocked &&
+    parentImportedItemEditableColumns?.length
+  ) {
+    return parentImportedItemEditableColumns.includes(columnKey)
   }
 
   if (getBehaviorValue(moduleKey, 'readonlyLineItems') === true) {
@@ -183,4 +210,26 @@ export function isEditorItemColumnEditableForModule(
   }
 
   return true
+}
+
+export function hasParentImportValue(
+  record: ModuleRecord | undefined,
+  parentFieldKey: string | undefined,
+) {
+  return Boolean(parentFieldKey && asString(record?.[parentFieldKey]).trim())
+}
+
+export function isParentImportedEditorLocked(
+  moduleKey: string,
+  record: ModuleRecord | undefined,
+  parentFieldKey: string | undefined,
+) {
+  if (!hasParentImportValue(record, parentFieldKey)) {
+    return false
+  }
+
+  return Boolean(
+    getBehaviorValue(moduleKey, 'parentImportedEditableFields')?.length ||
+      getBehaviorValue(moduleKey, 'parentImportedItemEditableColumns')?.length,
+  )
 }

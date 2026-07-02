@@ -13,9 +13,25 @@ import { asString } from '@/utils/type-narrowing'
 
 const MODULE_KEY = 'general-setting'
 
+export type OssProvider =
+  | 's3-compatible'
+  | 'aws-s3'
+  | 'tencent-cos'
+  | 'aliyun-oss'
+  | 'huawei-obs'
+  | 'cloudflare-r2'
+  | 'google-cloud-storage'
+  | 'ibm-cos'
+  | 'oracle-oci'
+  | 'backblaze-b2'
+  | 'wasabi'
+  | 'digitalocean-spaces'
+  | 'scaleway'
+  | 'minio'
+
 export interface OssSetting {
   storageMode: 'server-s3' | 'server-local'
-  provider: 's3-compatible' | 'tencent-cos' | 'aliyun-oss'
+  provider: OssProvider
   endpoint: string
   bucket: string
   region: string
@@ -39,6 +55,20 @@ export interface OssSettingPayload {
   pathStyleAccess: boolean
   encryptedStorage: boolean
   serverProxyOnly: boolean
+}
+
+export interface OssOperationResult {
+  success: boolean
+  stage: string
+  message: string
+  objectKey: string | null
+  details: string[]
+}
+
+export interface OssCorsConfigurePayload {
+  setting: OssSettingPayload
+  origin: string
+  methods: string[]
 }
 
 export const DISPLAY_SWITCH_CODES = {
@@ -83,6 +113,32 @@ export async function saveOssSetting(
   const response = assertApiSuccess(
     await http.put<ApiResponse<OssSetting>>(ENDPOINTS.OSS_SETTINGS, payload),
     '保存 OSS 设置失败',
+  )
+  return response.data
+}
+
+export async function testOssStorage(
+  payload: OssSettingPayload,
+): Promise<OssOperationResult> {
+  const response = assertApiSuccess(
+    await http.post<ApiResponse<OssOperationResult>>(
+      `${ENDPOINTS.OSS_SETTINGS}/storage-test`,
+      payload,
+    ),
+    '测试 OSS 存储失败',
+  )
+  return response.data
+}
+
+export async function configureOssCors(
+  payload: OssCorsConfigurePayload,
+): Promise<OssOperationResult> {
+  const response = assertApiSuccess(
+    await http.post<ApiResponse<OssOperationResult>>(
+      `${ENDPOINTS.OSS_SETTINGS}/cors`,
+      payload,
+    ),
+    '配置 OSS CORS 失败',
   )
   return response.data
 }

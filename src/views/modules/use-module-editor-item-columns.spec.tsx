@@ -182,6 +182,28 @@ describe('useModuleEditorItemColumns', () => {
         id: 'line-1',
         sourcePurchaseOrderItemId: 'po-item-1',
       }),
+      false,
+    )
+  })
+
+  it('passes parent imported lock when checking item column editability', () => {
+    renderHook(() =>
+      useModuleEditorItemColumns({
+        ...defaultProps(),
+        parentImportedItemEditLocked: true,
+      }),
+    )
+    const dataOptions = mocks.buildModuleEditorDataColumns.mock.calls[0][0]
+
+    dataOptions.isItemColumnEditable('unitPrice', { id: 'line-1' })
+
+    expect(mocks.isEditorItemColumnEditableForModule).toHaveBeenCalledWith(
+      'purchase-inbound',
+      'unitPrice',
+      true,
+      false,
+      expect.objectContaining({ id: 'line-1' }),
+      true,
     )
   })
 
@@ -330,6 +352,7 @@ function defaultProps() {
     canManageItems: true,
     lineItemsLocked: false,
     canEditItemColumns: true,
+    parentImportedItemEditLocked: false,
     selectedItemIds: ['line-1'],
     onSelectAll: vi.fn(),
     onSelectItem: vi.fn(),

@@ -2,9 +2,11 @@ export {
   applyFormFieldDefaultDraftValues,
   applyModuleDefaultEditorDraft,
   canManageEditorLineItems,
+  hasParentImportValue,
   isEditorFieldDisabledForModule,
   isEditorItemColumnEditableForModule,
   isModuleLineItemsLocked,
+  isParentImportedEditorLocked,
 } from './module-editor-access'
 export {
   normalizeDraftRecordForModule,

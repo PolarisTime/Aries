@@ -91,6 +91,54 @@ describe('OssSettingsView', () => {
     expect(
       screen.getByText('system.ossSettings.serverProxyOnly'),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'system.ossSettings.testStorage' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'system.ossSettings.configureCors' }),
+    ).toBeInTheDocument()
+  })
+
+  it('renders major s3 provider presets', async () => {
+    render(<OssSettingsView />)
+
+    fireEvent.mouseDown(screen.getByLabelText('system.ossSettings.provider'))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('system.ossSettings.providerCloudflareR2'),
+      ).toBeInTheDocument()
+    })
+    expect(
+      screen.getByText('system.ossSettings.providerBackblazeB2'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.ossSettings.providerDigitalOceanSpaces'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.ossSettings.providerMinio'),
+    ).toBeInTheDocument()
+  })
+
+  it('applies provider preset defaults when changing provider', async () => {
+    render(<OssSettingsView />)
+
+    fireEvent.mouseDown(screen.getByLabelText('system.ossSettings.provider'))
+    fireEvent.click(await screen.findByText('system.ossSettings.providerMinio'))
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: 'minio',
+          endpoint: 'http://127.0.0.1:9000',
+          region: 'us-east-1',
+          pathStyleAccess: true,
+          bucket: 'bucket',
+          accessKey: 'ak',
+        }),
+      )
+    })
   })
 
   it('enables save when user has update permission', () => {
@@ -187,6 +235,24 @@ describe('OssSettingsView', () => {
           region: '',
           accessKey: '',
           secretKey: undefined,
+        }),
+      )
+    })
+  })
+
+  it('calls storage test mutation with current form payload', async () => {
+    render(<OssSettingsView />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'system.ossSettings.testStorage' }),
+    )
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          storageMode: 'server-s3',
+          endpoint: 'https://cos.example.com',
+          bucket: 'bucket',
         }),
       )
     })

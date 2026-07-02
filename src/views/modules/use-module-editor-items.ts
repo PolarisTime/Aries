@@ -10,6 +10,7 @@ interface Props {
   canManageItems: boolean
   lineItemsLocked: boolean
   canEditItemColumns: boolean
+  parentImportedItemEditLocked: boolean
 }
 
 export function useModuleEditorItems({
@@ -19,6 +20,7 @@ export function useModuleEditorItems({
   canManageItems,
   lineItemsLocked,
   canEditItemColumns,
+  parentImportedItemEditLocked,
   moduleKey,
 }: Props) {
   const {
@@ -48,6 +50,7 @@ export function useModuleEditorItems({
     canManageItems,
     lineItemsLocked,
     canEditItemColumns,
+    parentImportedItemEditLocked,
     selectedItemIds,
     onSelectAll: handleSelectAll,
     onSelectItem: handleSelectItem,

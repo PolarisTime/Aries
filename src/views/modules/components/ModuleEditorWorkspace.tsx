@@ -13,6 +13,7 @@ import {
   useMasterOptions,
 } from '@/hooks/useMasterOptions'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
+import { isParentImportedEditorLocked } from '@/module-system/module-adapter-editor'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
@@ -108,7 +109,6 @@ export function ModuleEditorWorkspace({
   const canManageItems = canManageEditorItems
   const canEditItemColumns = canSave && Boolean(config.itemColumns?.length)
   const canAddManualItems = canAddManualEditorItems
-  const canImportParentItems = Boolean(config.parentImport && canManageItems)
   const {
     addItem,
     clearSaveResult,
@@ -137,6 +137,17 @@ export function ModuleEditorWorkspace({
     autoInsertBlankItemOnCreate:
       Boolean(config.itemColumns?.length) && canAddManualItems,
   })
+  const editorFormValues = form.getFieldsValue(true)
+  const parentImportedItemEditLocked = isParentImportedEditorLocked(
+    moduleKey,
+    editorFormValues,
+    config.parentImport?.parentFieldKey,
+  )
+  const canManageCurrentItems = canManageItems && !parentImportedItemEditLocked
+  const canAddManualItemsForCurrentRecord =
+    canAddManualItems && !parentImportedItemEditLocked
+  const canImportParentItems =
+    Boolean(config.parentImport) && canManageCurrentItems
   const canSaveAndAuditInEditor = canSaveAndAuditCurrentEditor
   const {
     clearSelectedItems,
@@ -153,9 +164,10 @@ export function ModuleEditorWorkspace({
     config,
     items,
     setItems,
-    canManageItems,
+    canManageItems: canManageCurrentItems,
     lineItemsLocked,
     canEditItemColumns,
+    parentImportedItemEditLocked,
   })
 
   return (
@@ -203,7 +215,7 @@ export function ModuleEditorWorkspace({
           itemColumnOrder={itemColumnOrder}
           visibleItemColumnKeys={visibleItemColumnKeys}
           permissions={{
-            addManualItems: canAddManualItems,
+            addManualItems: canAddManualItemsForCurrentRecord,
             importParentItems: canImportParentItems,
             save: canSave,
             audit: canSaveAndAuditInEditor,

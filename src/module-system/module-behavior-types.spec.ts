@@ -40,11 +40,15 @@ describe('ModuleBehaviorConfig', () => {
       editableLockedItemColumns: ['col1'],
       readonlyItemColumns: ['col2'],
       readonlyEditorFields: ['field3'],
+      parentImportedEditableFields: ['field4'],
+      parentImportedItemEditableColumns: ['col3'],
     }
 
     expect(config.supportsLineItems).toBe(true)
     expect(config.computesAmounts).toBe(true)
     expect(config.editableLockedFields).toEqual(['field1'])
+    expect(config.parentImportedEditableFields).toEqual(['field4'])
+    expect(config.parentImportedItemEditableColumns).toEqual(['col3'])
   })
 
   it('accepts defaultDraftValues as function', () => {

@@ -113,6 +113,8 @@ registerModuleBehavior('sales-order', {
 })
 registerModuleBehavior('sales-outbound', {
   defaultDraftValues: () => ({ outboundDate: currentDateTime() }),
+  parentImportedEditableFields: ['outboundDate', 'remark'],
+  parentImportedItemEditableColumns: ['quantity'],
 })
 registerModuleBehavior('purchase-contract', {
   defaultOperatorField: 'buyerName',
