@@ -2232,6 +2232,7 @@ export const zhCN: MessageSchema = {
       secretKeyConfiguredPlaceholder: '留空则沿用已保存密钥',
       secretKeyKeepHint: 'Secret Key 留空时不会覆盖已保存密钥。',
       secretKeyRequiredHint: '首次保存 OSS 设置必须填写 Secret Key。',
+      localModeHint: '本机存储不需要填写 OSS 访问密钥。',
       keyPrefix: '对象前缀',
       keyPrefixPlaceholder: '例如 attachments',
       pathStyleAccess: 'Path-style 访问',

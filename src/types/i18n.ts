@@ -2031,6 +2031,7 @@ export interface MessageSchema {
       secretKeyConfiguredPlaceholder: string
       secretKeyKeepHint: string
       secretKeyRequiredHint: string
+      localModeHint: string
       keyPrefix: string
       keyPrefixPlaceholder: string
       pathStyleAccess: string

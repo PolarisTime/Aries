@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next'
 import {
   getOssSetting,
   type OssSetting,
+  type OssSettingPayload,
   saveOssSetting,
 } from '@/api/system-settings'
 import { useRequestError } from '@/hooks/useRequestError'
@@ -62,6 +63,9 @@ export function OssSettingsView(): React.JSX.Element {
   const queryClient = useQueryClient()
   const canSave = usePermissionStore().can('general-setting', 'update')
   const [form] = Form.useForm<OssSettingsFormValues>()
+  const storageMode =
+    Form.useWatch('storageMode', form) ?? initialValues.storageMode
+  const isS3Mode = storageMode === 'server-s3'
 
   const { data, isFetching } = useQuery({
     queryKey: OSS_SETTING_QUERY_KEY,
@@ -150,10 +154,7 @@ export function OssSettingsView(): React.JSX.Element {
           initialValues={initialValues}
           disabled={isFetching || saveMutation.isPending}
           onFinish={(values) => {
-            saveMutation.mutate({
-              ...values,
-              secretKey: values.secretKey?.trim() || undefined,
-            })
+            saveMutation.mutate(toPayload(values))
           }}
         >
           <div className="oss-settings-form-grid">
@@ -164,23 +165,37 @@ export function OssSettingsView(): React.JSX.Element {
               <Select options={storageModeOptions} />
             </Form.Item>
 
-            <Form.Item name="provider" label={t('system.ossSettings.provider')}>
-              <Select options={providerOptions} />
-            </Form.Item>
+            {isS3Mode ? (
+              <>
+                <Form.Item
+                  name="provider"
+                  label={t('system.ossSettings.provider')}
+                >
+                  <Select options={providerOptions} />
+                </Form.Item>
 
-            <Form.Item name="endpoint" label={t('system.ossSettings.endpoint')}>
-              <Input
-                placeholder={t('system.ossSettings.endpointPlaceholder')}
-              />
-            </Form.Item>
+                <Form.Item
+                  name="endpoint"
+                  label={t('system.ossSettings.endpoint')}
+                >
+                  <Input
+                    placeholder={t('system.ossSettings.endpointPlaceholder')}
+                  />
+                </Form.Item>
 
-            <Form.Item name="bucket" label={t('system.ossSettings.bucket')}>
-              <Input placeholder={t('system.ossSettings.bucketPlaceholder')} />
-            </Form.Item>
+                <Form.Item name="bucket" label={t('system.ossSettings.bucket')}>
+                  <Input
+                    placeholder={t('system.ossSettings.bucketPlaceholder')}
+                  />
+                </Form.Item>
 
-            <Form.Item name="region" label={t('system.ossSettings.region')}>
-              <Input placeholder={t('system.ossSettings.regionPlaceholder')} />
-            </Form.Item>
+                <Form.Item name="region" label={t('system.ossSettings.region')}>
+                  <Input
+                    placeholder={t('system.ossSettings.regionPlaceholder')}
+                  />
+                </Form.Item>
+              </>
+            ) : null}
 
             <Form.Item
               name="keyPrefix"
@@ -191,36 +206,40 @@ export function OssSettingsView(): React.JSX.Element {
               />
             </Form.Item>
 
-            <Form.Item
-              name="accessKey"
-              label={t('system.ossSettings.accessKey')}
-            >
-              <Input
-                placeholder={t('system.ossSettings.accessKeyPlaceholder')}
-              />
-            </Form.Item>
+            {isS3Mode ? (
+              <>
+                <Form.Item
+                  name="accessKey"
+                  label={t('system.ossSettings.accessKey')}
+                >
+                  <Input
+                    placeholder={t('system.ossSettings.accessKeyPlaceholder')}
+                  />
+                </Form.Item>
 
-            <Form.Item
-              name="secretKey"
-              label={t('system.ossSettings.secretKey')}
-            >
-              <Input.Password
-                prefix={<LockOutlined aria-hidden />}
-                placeholder={
-                  data?.secretKeyConfigured
-                    ? t('system.ossSettings.secretKeyConfiguredPlaceholder')
-                    : t('system.ossSettings.secretKeyPlaceholder')
-                }
-              />
-            </Form.Item>
+                <Form.Item
+                  name="secretKey"
+                  label={t('system.ossSettings.secretKey')}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined aria-hidden />}
+                    placeholder={
+                      data?.secretKeyConfigured
+                        ? t('system.ossSettings.secretKeyConfiguredPlaceholder')
+                        : t('system.ossSettings.secretKeyPlaceholder')
+                    }
+                  />
+                </Form.Item>
 
-            <Form.Item
-              name="pathStyleAccess"
-              label={t('system.ossSettings.pathStyleAccess')}
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
+                <Form.Item
+                  name="pathStyleAccess"
+                  label={t('system.ossSettings.pathStyleAccess')}
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+              </>
+            ) : null}
 
             <Form.Item
               name="encryptedStorage"
@@ -241,9 +260,11 @@ export function OssSettingsView(): React.JSX.Element {
 
           <div className="oss-settings-actions">
             <Typography.Text type="secondary">
-              {data?.secretKeyConfigured
-                ? t('system.ossSettings.secretKeyKeepHint')
-                : t('system.ossSettings.secretKeyRequiredHint')}
+              {!isS3Mode
+                ? t('system.ossSettings.localModeHint')
+                : data?.secretKeyConfigured
+                  ? t('system.ossSettings.secretKeyKeepHint')
+                  : t('system.ossSettings.secretKeyRequiredHint')}
             </Typography.Text>
             <Button
               type="primary"
@@ -274,5 +295,23 @@ function toFormValues(setting: OssSetting): OssSettingsFormValues {
     pathStyleAccess: setting.pathStyleAccess,
     encryptedStorage: setting.encryptedStorage,
     serverProxyOnly: setting.serverProxyOnly,
+  }
+}
+
+function toPayload(values: OssSettingsFormValues): OssSettingPayload {
+  if (values.storageMode === 'server-local') {
+    return {
+      ...values,
+      provider: 's3-compatible',
+      endpoint: '',
+      bucket: '',
+      region: '',
+      accessKey: '',
+      secretKey: undefined,
+    }
+  }
+  return {
+    ...values,
+    secretKey: values.secretKey?.trim() || undefined,
   }
 }

@@ -2273,6 +2273,7 @@ export const enUS: MessageSchema = {
       secretKeyConfiguredPlaceholder: 'Leave empty to keep saved secret',
       secretKeyKeepHint: 'Leaving Secret Key empty keeps the saved secret.',
       secretKeyRequiredHint: 'Secret Key is required on the first save.',
+      localModeHint: 'Local storage does not require OSS access keys.',
       keyPrefix: 'Object Prefix',
       keyPrefixPlaceholder: 'For example attachments',
       pathStyleAccess: 'Path-style Access',

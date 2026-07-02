@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 const mockUseQuery = vi.fn()
@@ -7,6 +7,7 @@ const mockSetQueryData = vi.fn()
 const mockCan = vi.fn()
 const mockShowError = vi.fn()
 const mockMessageSuccess = vi.fn()
+const mockMutate = vi.fn()
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -59,7 +60,7 @@ describe('OssSettingsView', () => {
       isFetching: false,
     })
     mockUseMutation.mockReturnValue({
-      mutate: vi.fn(),
+      mutate: mockMutate,
       isPending: false,
     })
   })
@@ -107,5 +108,87 @@ describe('OssSettingsView', () => {
     render(<OssSettingsView />)
 
     expect(screen.getByRole('button', { name: 'common.save' })).toBeDisabled()
+  })
+
+  it('hides s3 credential fields in local storage mode', async () => {
+    mockUseQuery.mockReturnValue({
+      data: {
+        storageMode: 'server-local',
+        provider: 's3-compatible',
+        endpoint: '',
+        bucket: '',
+        region: '',
+        accessKey: '',
+        secretKeyConfigured: false,
+        keyPrefix: 'attachments',
+        pathStyleAccess: true,
+        encryptedStorage: false,
+        serverProxyOnly: true,
+      },
+      isFetching: false,
+    })
+
+    render(<OssSettingsView />)
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('system.ossSettings.endpoint'),
+      ).not.toBeInTheDocument()
+    })
+    expect(
+      screen.queryByText('system.ossSettings.provider'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.ossSettings.bucket'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.ossSettings.region'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.ossSettings.accessKey'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.ossSettings.secretKey'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText('system.ossSettings.localModeHint'),
+    ).toBeInTheDocument()
+  })
+
+  it('clears s3 values when saving local storage mode', async () => {
+    mockUseQuery.mockReturnValue({
+      data: {
+        storageMode: 'server-local',
+        provider: 'tencent-cos',
+        endpoint: 'https://cos.example.com',
+        bucket: 'bucket',
+        region: 'ap-guangzhou',
+        accessKey: 'ak',
+        secretKeyConfigured: true,
+        keyPrefix: 'attachments',
+        pathStyleAccess: true,
+        encryptedStorage: false,
+        serverProxyOnly: true,
+      },
+      isFetching: false,
+    })
+
+    render(<OssSettingsView />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          storageMode: 'server-local',
+          provider: 's3-compatible',
+          endpoint: '',
+          bucket: '',
+          region: '',
+          accessKey: '',
+          secretKey: undefined,
+        }),
+      )
+    })
   })
 })
