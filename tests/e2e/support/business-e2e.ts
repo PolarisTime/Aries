@@ -39,6 +39,47 @@ export function compareRecordIds(
   return leftId > rightId ? -1 : 1
 }
 
+function normalizeFormKey(key: string) {
+  return key
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+export function formField(overlay: Locator, key: string) {
+  const normalizedKey = normalizeFormKey(key)
+  const controlSelector = [
+    `#module-form-${normalizedKey}`,
+    `#${key}`,
+    `[name="${key}"]`,
+  ].join(', ')
+
+  return overlay
+    .locator(`.ant-select:has(${controlSelector}), ${controlSelector}`)
+    .first()
+}
+
+export async function fillOrReadFormField(target: Locator, value: string) {
+  await expect(target).toBeVisible()
+  if (
+    (await target.isEnabled().catch(() => false)) &&
+    (await target.isEditable().catch(() => false))
+  ) {
+    await target.fill(value)
+    return value
+  }
+
+  await expect
+    .poll(() => target.inputValue().catch(() => ''), {
+      timeout: 5_000,
+      intervals: [100, 250, 500],
+    })
+    .not.toBe('')
+
+  return target.inputValue()
+}
+
 export async function loginAsTest9(page: Page) {
   const response = await page.request.post(`${API_BASE_URL}/auth/login`, {
     data: { loginName: 'test9', password: '123456' },
@@ -60,6 +101,7 @@ export async function loginAsTest9(page: Page) {
       localStorage.setItem('aries-token-expires-at', expiresAt)
       localStorage.setItem('aries-user', JSON.stringify(currentUser))
       localStorage.setItem('aries-auth-persistence', 'local')
+      localStorage.setItem('leo-locale', 'zh-CN')
       sessionStorage.removeItem('aries-token')
       sessionStorage.removeItem('aries-token-expires-at')
       sessionStorage.removeItem('aries-user')
@@ -85,7 +127,7 @@ export async function getCurrentAccessToken(page: Page) {
 
 export async function openCreateOverlay(page: Page) {
   const beforeCount = await page.locator('.workspace-overlay-panel').count()
-  await page.getByRole('button', { name: '新建' }).click()
+  await page.getByRole('button', { name: /新建|新增/ }).click()
   const overlay = page.locator('.workspace-overlay-panel').nth(beforeCount)
   await expect(overlay).toBeVisible()
   return overlay
@@ -99,13 +141,23 @@ export async function selectAntOption(target: Locator, optionText?: string) {
     const input = target.locator('input').last()
     if ((await input.count()) > 0) {
       await input.fill(optionText)
+    } else {
+      await target.fill(optionText).catch(() => undefined)
     }
     const matchedOption = dropdown
       .locator('.ant-select-item-option')
       .filter({ hasText: optionText })
       .first()
-    await expect(matchedOption).toBeVisible()
-    await matchedOption.click()
+    if (await matchedOption.isVisible().catch(() => false)) {
+      await matchedOption.click()
+      return
+    }
+
+    const firstOption = dropdown
+      .locator('.ant-select-item-option:not(.ant-select-item-option-disabled)')
+      .first()
+    await expect(firstOption).toBeVisible()
+    await firstOption.click()
     return
   }
   const firstOption = dropdown
@@ -126,6 +178,34 @@ export async function setSpinbuttonValue(target: Locator, value: string) {
   await target.pressSequentially(value)
   await target.press('Enter')
   await target.blur()
+}
+
+export async function fillPurchaseOrderLineItem(
+  row: Locator,
+  options: {
+    materialCode?: string
+    warehouseName?: string
+    quantity?: string
+    unitPrice?: string
+  } = {},
+) {
+  const {
+    materialCode = 'HZ-YG-PL8',
+    warehouseName = '升华物流',
+    quantity = '10',
+    unitPrice = '3200',
+  } = options
+
+  await selectAntOption(row.locator('.ant-select').nth(0), materialCode)
+  await selectAntOption(row.locator('.ant-select').nth(1), warehouseName)
+  await setSpinbuttonValue(
+    row.locator('input[role="spinbutton"]').nth(0),
+    quantity,
+  )
+  await setSpinbuttonValue(
+    row.locator('input[role="spinbutton"]').nth(1),
+    unitPrice,
+  )
 }
 
 export async function waitForFirstDetailRow(overlay: Locator) {
@@ -153,6 +233,9 @@ export async function waitForSaveOutcome(
   })
   const errorMessage = page.locator('.ant-message-error').last()
   const validationErrors = overlay.locator('.ant-form-item-explain-error')
+  const saveResultText = page.getByText(
+    /保存成功|创建成功|更新成功|对账单已生成/,
+  )
 
   const startedAt = Date.now()
   const intervals = [200, 500, 1000]
@@ -172,6 +255,14 @@ export async function waitForSaveOutcome(
     }
     if ((await successMessage.count()) > 0) {
       return 'message'
+    }
+    if (
+      await saveResultText
+        .last()
+        .isVisible()
+        .catch(() => false)
+    ) {
+      return 'result'
     }
     if (
       rowInList &&

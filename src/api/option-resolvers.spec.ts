@@ -53,6 +53,8 @@ import {
   isPurchaseWeighRequiredCategory,
   materialCategoryOptions,
   materialGradeOptions,
+  replaceMaterialCategoryOptions,
+  replaceMaterialGradeOptions,
 } from './option-resolvers'
 
 describe('option-resolvers', () => {
@@ -61,6 +63,10 @@ describe('option-resolvers', () => {
   })
 
   describe('material categories', () => {
+    beforeEach(() => {
+      replaceMaterialCategoryOptions([])
+    })
+
     it('returns fallback options and checks isPurchaseWeighRequired before any fetch resolves', () => {
       fetchMaterialCategoriesMock.mockResolvedValue([
         { value: '新品类', label: '新品类', purchaseWeighRequired: false },
@@ -98,8 +104,9 @@ describe('option-resolvers', () => {
     })
 
     it('does not trigger fetch on subsequent calls (loading flag set)', () => {
+      materialCategoryOptions()
       const options = materialCategoryOptions()
-      expect(fetchMaterialCategoriesMock).toHaveBeenCalledTimes(0)
+      expect(fetchMaterialCategoriesMock).toHaveBeenCalledTimes(1)
       expect(options.length).toBeGreaterThan(0)
     })
 
@@ -110,9 +117,68 @@ describe('option-resolvers', () => {
     it('isPurchaseWeighRequiredCategory handles undefined category', () => {
       expect(isPurchaseWeighRequiredCategory(undefined)).toBe(false)
     })
+
+    it('uses fetched categories after async loading resolves', async () => {
+      fetchMaterialCategoriesMock.mockResolvedValue([
+        { value: '新品类', label: '新品类', purchaseWeighRequired: true },
+      ])
+
+      materialCategoryOptions()
+      await Promise.resolve()
+
+      expect(materialCategoryOptions()).toEqual([
+        { value: '新品类', label: '新品类', purchaseWeighRequired: true },
+      ])
+      expect(isPurchaseWeighRequiredCategory('新品类')).toBe(true)
+    })
+
+    it('can replace category options and reset to fallback with an empty list', () => {
+      replaceMaterialCategoryOptions([
+        { value: '自定义', label: '自定义', purchaseWeighRequired: true },
+      ])
+      expect(materialCategoryOptions()).toEqual([
+        { value: '自定义', label: '自定义', purchaseWeighRequired: true },
+      ])
+
+      replaceMaterialCategoryOptions([])
+      expect(materialCategoryOptions().map((item) => item.value)).toEqual([
+        '螺纹钢',
+        '盘螺',
+        '线材',
+      ])
+    })
+
+    it('does not match purchase weigh category when option value is blank', () => {
+      replaceMaterialCategoryOptions([
+        {
+          value: undefined as never,
+          label: '空品类',
+          purchaseWeighRequired: true,
+        },
+      ])
+
+      expect(isPurchaseWeighRequiredCategory('空品类')).toBe(false)
+    })
+
+    it('ignores empty fetched category lists and keeps fallback options', async () => {
+      fetchMaterialCategoriesMock.mockResolvedValue([])
+
+      materialCategoryOptions()
+      await Promise.resolve()
+
+      expect(materialCategoryOptions().map((item) => item.value)).toEqual([
+        '螺纹钢',
+        '盘螺',
+        '线材',
+      ])
+    })
   })
 
   describe('material grades', () => {
+    beforeEach(() => {
+      replaceMaterialGradeOptions([])
+    })
+
     it('returns fallback options and triggers fetch on first call', () => {
       fetchMaterialGradesMock.mockResolvedValue([
         { value: 'HRB600', label: 'HRB600' },
@@ -131,7 +197,44 @@ describe('option-resolvers', () => {
       fetchMaterialGradesMock.mockResolvedValue([])
 
       materialGradeOptions()
-      expect(fetchMaterialGradesMock).toHaveBeenCalledTimes(0)
+      materialGradeOptions()
+      expect(fetchMaterialGradesMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('uses fetched material grades after async loading resolves', async () => {
+      fetchMaterialGradesMock.mockResolvedValue([
+        { value: 'HRB600', label: 'HRB600' },
+      ])
+
+      materialGradeOptions()
+      await Promise.resolve()
+
+      expect(materialGradeOptions()).toEqual([
+        { value: 'HRB600', label: 'HRB600' },
+      ])
+    })
+
+    it('can replace grade options and reset to fallback with an empty list', () => {
+      replaceMaterialGradeOptions([{ value: 'Q235', label: 'Q235' }])
+      expect(materialGradeOptions()).toEqual([{ value: 'Q235', label: 'Q235' }])
+
+      replaceMaterialGradeOptions([])
+      expect(materialGradeOptions()).toEqual([
+        { label: 'HRB400', value: 'HRB400' },
+        { label: 'HRB500', value: 'HRB500' },
+      ])
+    })
+
+    it('ignores empty fetched grade lists and keeps fallback options', async () => {
+      fetchMaterialGradesMock.mockResolvedValue([])
+
+      materialGradeOptions()
+      await Promise.resolve()
+
+      expect(materialGradeOptions()).toEqual([
+        { label: 'HRB400', value: 'HRB400' },
+        { label: 'HRB500', value: 'HRB500' },
+      ])
     })
 
     it('getSupplierOptions returns empty when dynamic returns empty', () => {
@@ -171,6 +274,13 @@ describe('option-resolvers', () => {
 
       expect(result1).toEqual([{ value: '客户A', label: '客户A' }])
       expect(result2).toEqual([{ value: '客户A', label: '客户A' }])
+    })
+
+    it('returns fallback empty customer options when API returns none', () => {
+      apiGetCustomerOptionsMock.mockReturnValue([])
+
+      expect(customerOptions()).toEqual([])
+      expect(getCustomerOptions()).toEqual([])
     })
   })
 

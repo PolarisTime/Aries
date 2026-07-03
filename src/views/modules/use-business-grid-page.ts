@@ -199,14 +199,9 @@ export function useBusinessGridPage({
   const navigate = useNavigate()
   const detailRoutePath = getBehaviorValue(moduleKey, 'detailRoutePath')
 
-  const handleDetail = (record: ModuleRecord) => {
-    if (detailRoutePath) {
-      const path = detailRoutePath.replace(
-        ':projectId',
-        String(record.projectId),
-      )
-      void navigate({ to: path as never })
-    }
+  const navigateToDetailRoute = (routePath: string, record: ModuleRecord) => {
+    const path = routePath.replace(':projectId', String(record.projectId))
+    void navigate({ to: path as never })
   }
 
   const lockedLineItemsNotice = String(
@@ -254,7 +249,7 @@ export function useBusinessGridPage({
     detailActionLabel: config?.detailActionLabel,
     onDetail: shouldUseDetailAction
       ? detailRoutePath
-        ? handleDetail
+        ? (record) => navigateToDetailRoute(detailRoutePath, record)
         : openDetail
       : undefined,
   })

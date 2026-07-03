@@ -186,6 +186,38 @@ describe('buildSupplierStatementDraftData', () => {
 
     expect(result.purchaseAmount).toBe(1000)
   })
+
+  it('ignores blank inbound numbers and normalizes invalid amounts', () => {
+    const inbounds = [
+      {
+        id: '1',
+        inboundNo: '',
+        inboundDate: '2026-01-15',
+        supplierName: '',
+        totalAmount: 'invalid',
+        items: [
+          { id: 'item-1', materialCode: 'M001' },
+          { id: 'item-2', materialCode: 'M002', amount: 200 },
+        ],
+      },
+    ] as any[]
+    const result = buildSupplierStatementDraftData({
+      baseDraft,
+      sourceInbounds: inbounds,
+      payments: [{ id: 'PAY-1', amount: 'invalid' }] as any[],
+      today: '2026-03-01',
+      statementPeriod: undefined,
+      defaultFullPayment: false,
+      cloneLineItems,
+      buildLineItemId,
+    })
+
+    expect(result.supplierName).toBe('')
+    expect(result.sourceInboundNos).toBe('')
+    expect(result.purchaseAmount).toBe(200)
+    expect(result.paymentAmount).toBe(0)
+    expect(result.items[0]).toMatchObject({ sourceNo: '' })
+  })
 })
 
 describe('buildCustomerStatementDraftData', () => {
@@ -279,6 +311,49 @@ describe('buildCustomerStatementDraftData', () => {
 
     expect(result.startDate).toBe('2026-03-01')
   })
+
+  it('sorts multiple orders and skips blank order numbers', () => {
+    const orders = [
+      {
+        id: '2',
+        orderNo: 'XS002',
+        deliveryDate: '2026-03-20',
+        orderDate: '2026-03-02',
+        customerName: '客户B',
+        projectName: '项目Y',
+        totalAmount: 2000,
+        items: [{ id: 'item-2', amount: 2000 }],
+      },
+      {
+        id: '1',
+        orderNo: '',
+        deliveryDate: '2026-03-10',
+        orderDate: '2026-03-01',
+        customerName: '客户A',
+        projectName: '项目X',
+        totalAmount: 1000,
+        items: [{ id: 'item-1', amount: 1000 }],
+      },
+    ] as any[]
+    const result = buildCustomerStatementDraftData({
+      baseDraft,
+      sourceOrders: orders,
+      today: '2026-03-25',
+      statementPeriod: undefined,
+      defaultReceiptAmountZero: false,
+      cloneLineItems,
+      buildLineItemId,
+    })
+
+    expect(result.customerName).toBe('客户A')
+    expect(result.startDate).toBe('2026-03-10')
+    expect(result.endDate).toBe('2026-03-20')
+    expect(result.sourceOrderNos).toBe('XS002')
+    expect(result.items[0]).toMatchObject({
+      sourceNo: '',
+      sourceSalesOrderItemId: 'item-1',
+    })
+  })
 })
 
 describe('buildFreightStatementDraftData', () => {
@@ -366,5 +441,39 @@ describe('buildFreightStatementDraftData', () => {
     expect(result.totalFreight).toBe(800)
     expect(result.sourceBillNos).toBe('W001, W002')
     expect(result.items).toHaveLength(2)
+  })
+
+  it('skips blank bill numbers and defaults missing freight amounts', () => {
+    const bills = [
+      {
+        id: '1',
+        billNo: '',
+        billTime: '2026-04-01',
+        carrierName: '物流商A',
+        items: [{ id: 'item-1', amount: 0 }],
+      },
+      {
+        id: '2',
+        billNo: 'W002',
+        billTime: '2026-04-02',
+        carrierName: '物流商A',
+        totalWeight: 30,
+        totalFreight: 300,
+        items: [{ id: 'item-2', weightTon: 30, amount: 300 }],
+      },
+    ] as any[]
+    const result = buildFreightStatementDraftData({
+      baseDraft,
+      sourceBills: bills,
+      today: '2026-04-10',
+      statementPeriod: undefined,
+      cloneLineItems,
+      buildLineItemId,
+    })
+
+    expect(result.sourceBillNos).toBe('W002')
+    expect(result.totalWeight).toBe(30)
+    expect(result.totalFreight).toBe(300)
+    expect(result.items[0]).toMatchObject({ sourceNo: '' })
   })
 })

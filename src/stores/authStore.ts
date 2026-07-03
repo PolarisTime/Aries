@@ -59,9 +59,7 @@ function persistSession(
   remember: boolean,
 ) {
   const mode: AuthPersistenceMode = remember ? 'local' : 'session'
-  if (typeof window !== 'undefined') {
-    window.sessionStorage.removeItem('aries-logged-out')
-  }
+  window.sessionStorage.removeItem('aries-logged-out')
   setAuthSession(user, token, expiresIn, mode)
 }
 

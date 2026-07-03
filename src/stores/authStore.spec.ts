@@ -1,6 +1,7 @@
 import { act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ERROR_CODE } from '@/constants/error-codes'
+import { STORAGE_KEYS } from '@/constants/storage'
 import { useAuthStore } from '@/stores/authStore'
 import { clearToken, setAuthSession, setStoredUser } from '@/utils/storage'
 
@@ -96,6 +97,29 @@ describe('authStore signIn', () => {
     expect(state.authReady).toBe(true)
   })
 
+  it('persists sign in to session storage when remember is false', async () => {
+    loginMock.mockResolvedValue({
+      code: ERROR_CODE.SUCCESS,
+      message: '',
+      data: {
+        requires2fa: false,
+        accessToken: 'session-token',
+        user: mockUser,
+        expiresIn: 3600,
+      },
+    })
+
+    await useAuthStore.getState().signIn({
+      loginName: 'admin',
+      password: 'pass',
+      remember: false,
+    })
+
+    expect(sessionStorage.getItem(STORAGE_KEYS.token)).toBe('session-token')
+    expect(sessionStorage.getItem(STORAGE_KEYS.authPersistence)).toBe('session')
+    expect(localStorage.getItem(STORAGE_KEYS.token)).toBeNull()
+  })
+
   it('throws on API error code', async () => {
     loginMock.mockResolvedValue({
       code: ERROR_CODE.UNAUTHORIZED,
@@ -109,6 +133,21 @@ describe('authStore signIn', () => {
         password: 'wrong',
       }),
     ).rejects.toThrow('用户名或密码错误')
+  })
+
+  it('uses default login error when API message is empty', async () => {
+    loginMock.mockResolvedValue({
+      code: ERROR_CODE.UNAUTHORIZED,
+      message: '',
+      data: null,
+    })
+
+    await expect(
+      useAuthStore.getState().signIn({
+        loginName: 'admin',
+        password: 'wrong',
+      }),
+    ).rejects.toThrow('auth.error.loginFailed')
   })
 
   it('returns requires2fa when step 2 needed', async () => {
@@ -208,6 +247,21 @@ describe('authStore verify2fa', () => {
         code: '000000',
       }),
     ).rejects.toThrow('验证码错误')
+  })
+
+  it('uses default 2fa error when API message is empty', async () => {
+    login2faMock.mockResolvedValue({
+      code: ERROR_CODE.UNAUTHORIZED,
+      message: '',
+      data: null,
+    })
+
+    await expect(
+      useAuthStore.getState().verify2fa({
+        tempToken: 'temp',
+        code: '000000',
+      }),
+    ).rejects.toThrow('auth.error.verify2faFailed')
   })
 
   it('throws when 2fa response missing token or user', async () => {
@@ -322,6 +376,29 @@ describe('authStore restoreSession', () => {
     expect(state.token).toBe('stored-token')
     expect(state.isAuthenticated).toBe(true)
     expect(state.authReady).toBe(true)
+  })
+
+  it('falls back to stored token when API response is incomplete', async () => {
+    setAuthSession(mockUser, 'stored-token', 3600, 'local')
+    useAuthStore.setState({
+      token: 'stored-token',
+      user: mockUser,
+      isAuthenticated: true,
+      authReady: false,
+    })
+
+    refreshSessionMock.mockResolvedValue({
+      accessToken: '',
+      user: null,
+      expiresIn: 0,
+    })
+
+    await act(async () => {
+      const result = await useAuthStore.getState().restoreSession()
+      expect(result).toBe(true)
+    })
+
+    expect(useAuthStore.getState().token).toBe('stored-token')
   })
 
   it('clears auth when both API and fallback fail', async () => {

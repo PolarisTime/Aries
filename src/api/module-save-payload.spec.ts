@@ -146,6 +146,28 @@ describe('module-save-payload', () => {
     })
   })
 
+  it('drops blank settlement company ids after normalization', async () => {
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+      key: 'blank-settlement-company-test',
+      saveFields: {
+        scalar: ['settlementCompanyId'],
+      },
+    } as ModulePageConfig)
+
+    const payload = await serializeBusinessRecordForSave(
+      'blank-settlement-company-test',
+      {
+        id: '',
+        settlementCompanyId: '   ',
+      },
+    )
+
+    expect(payload).toEqual({ settlementCompanyId: undefined })
+  })
+
   it('keeps payment scalar fields in save payload', async () => {
     const { loadBusinessPageConfig } = await import(
       '@/config/business-page-loader'
@@ -481,6 +503,140 @@ describe('module-save-payload', () => {
     expect(payload).not.toHaveProperty('totalAmount')
   })
 
+  it('falls back to an empty scalar list when schema saveFields omit scalar fields', async () => {
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        computed: ['totalAmount'],
+      },
+    })
+
+    const payload = await serializeBusinessRecordForSave(
+      'schema-empty-scalar-test',
+      {
+        id: '',
+        name: 'test',
+        totalAmount: 100,
+      },
+    )
+
+    expect(payload).toEqual({})
+  })
+
+  it('falls back to an empty scalar list when config saveFields omit scalar fields', async () => {
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+      key: 'config-empty-scalar-test',
+      detailFields: [{ key: 'name', type: 'input', label: '名称' }],
+      saveFields: {
+        computed: ['totalAmount'],
+      },
+    } as ModulePageConfig)
+
+    const payload = await serializeBusinessRecordForSave(
+      'config-empty-scalar-test',
+      {
+        id: '',
+        name: 'test',
+        totalAmount: 100,
+      },
+    )
+
+    expect(payload).toEqual({})
+  })
+
+  it('returns an empty payload when business page config cannot be loaded', async () => {
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    vi.mocked(loadBusinessPageConfig).mockRejectedValueOnce(
+      new Error('load failed'),
+    )
+
+    await expect(
+      serializeBusinessRecordForSave('config-load-failure-test', {
+        id: '',
+        name: 'test',
+      }),
+    ).resolves.toEqual({})
+  })
+
+  it('uses detail fields and extra scalar fields when saveFields are absent', async () => {
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    const { getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+      key: 'detail-extra-test',
+      detailFields: [
+        { key: 'name', type: 'input', label: '名称' },
+        { key: 'totalWeight', type: 'input', label: '合计' },
+      ],
+    } as ModulePageConfig)
+    vi.mocked(getBehaviorValue).mockReturnValue(['extraName'])
+
+    const payload = await serializeBusinessRecordForSave('detail-extra-test', {
+      id: '',
+      name: 'test',
+      totalWeight: 10,
+      extraName: 'extra',
+    })
+
+    expect(payload).toEqual({ name: 'test', extraName: 'extra' })
+
+    await serializeBusinessRecordForSave('detail-extra-test', {
+      id: '',
+      name: 'cached',
+      extraName: 'cached-extra',
+    })
+    expect(loadBusinessPageConfig).toHaveBeenCalledTimes(1)
+  })
+
+  it('handles configs without detail fields when saveFields are absent', async () => {
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    const { getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+      key: 'no-detail-fields-test',
+    } as ModulePageConfig)
+    vi.mocked(getBehaviorValue).mockReturnValue([])
+
+    await expect(
+      serializeBusinessRecordForSave('no-detail-fields-test', {
+        id: '',
+        name: 'test',
+      }),
+    ).resolves.toEqual({})
+  })
+
+  it('skips development-only dropped-field warnings outside dev mode', async () => {
+    vi.stubEnv('DEV', false)
+    vi.resetModules()
+    const { serializeBusinessRecordForSave: serializeWithoutDevWarnings } =
+      await import('./module-save-payload')
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+      key: 'non-dev-warning-test',
+      detailFields: [{ key: 'name', type: 'input', label: '名称' }],
+    } as ModulePageConfig)
+
+    await expect(
+      serializeWithoutDevWarnings('non-dev-warning-test', {
+        id: '',
+        name: 'test',
+        dropped: 'ignored',
+      }),
+    ).resolves.toEqual({ name: 'test' })
+  })
+
   it('skips settlementMode for non-purchase-inbound modules', async () => {
     const { loadBusinessPageConfig } = await import(
       '@/config/business-page-loader'
@@ -489,7 +645,7 @@ describe('module-save-payload', () => {
       '@/module-system/module-behavior-registry'
     )
     vi.mocked(loadBusinessPageConfig).mockResolvedValue({
-      key: 'sales-order',
+      key: 'non-inbound-test',
       detailFields: [{ key: 'orderNo', type: 'input', label: '订单号' }],
       saveFields: {
         scalar: ['orderNo'],
@@ -504,12 +660,48 @@ describe('module-save-payload', () => {
     )
     vi.mocked(getBehaviorValue).mockReturnValue([])
 
-    const payload = await serializeBusinessRecordForSave('sales-order', {
+    const payload = await serializeBusinessRecordForSave('non-inbound-test', {
       id: '',
       orderNo: 'SO001',
       items: [{ id: 'item-1', materialCode: 'M001', settlementMode: '过磅' }],
     })
     expect(payload.items![0]).not.toHaveProperty('settlementMode')
+  })
+
+  it('serializes missing line items and empty numeric values with defaults', async () => {
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+      key: 'line-item-default-test',
+      detailFields: [{ key: 'name', type: 'input', label: '名称' }],
+      saveFields: {
+        scalar: ['name'],
+        lineItem: ['quantity'],
+      },
+    } as ModulePageConfig)
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadLineItems',
+    )
+    vi.mocked(getBehaviorValue).mockReturnValue([])
+
+    await expect(
+      serializeBusinessRecordForSave('line-item-default-test', {
+        id: '',
+        name: 'without-items',
+      }),
+    ).resolves.toMatchObject({ items: [] })
+
+    await expect(
+      serializeBusinessRecordForSave('line-item-default-test', {
+        id: '',
+        name: 'with-empty-quantity',
+        items: [{ id: '1', quantity: '' }],
+      }),
+    ).resolves.toMatchObject({ items: [{ id: '1', quantity: 0 }] })
   })
 
   it('handles persisted line item id as number', async () => {

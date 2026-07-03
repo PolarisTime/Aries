@@ -17,6 +17,7 @@ dist-ssr/
 temppic/
 test-results/
 coverage/
+coverage-e2e/
 coverage-report/
 playwright-report/
 .playwright/

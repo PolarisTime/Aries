@@ -40,6 +40,24 @@ describe('systemCorePageConfigs', () => {
     expect(result.length).toBe(2)
   })
 
+  it('general-setting buildOverview counts enabled rules', () => {
+    const result = systemCorePageConfigs['general-setting'].buildOverview!([
+      { id: '1', status: '正常' },
+      { id: '2', status: '禁用' },
+    ])
+
+    expect(result).toEqual([
+      {
+        label: 'modules.pages.systemCore.ruleCount',
+        value: '2',
+      },
+      {
+        label: 'modules.pages.systemCore.enabledRuleCount',
+        value: '1',
+      },
+    ])
+  })
+
   it('does not contain settlement company config', () => {
     expect(systemCorePageConfigs['company-setting']).toBeUndefined()
   })

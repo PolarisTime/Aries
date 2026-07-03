@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { isValidElement } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import {
   buildModuleEditorDataColumns,
@@ -139,6 +140,67 @@ describe('buildModuleEditorManagementColumns', () => {
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement
     expect(checkbox.checked).toBe(true)
   })
+
+  it('selection callbacks receive checkbox state', () => {
+    const onSelectAll = vi.fn()
+    const onSelectItem = vi.fn()
+    const columns = buildModuleEditorManagementColumns({
+      ...defaultProps,
+      onSelectAll,
+      onSelectItem,
+    })
+
+    render(
+      <table>
+        <thead>
+          <tr>
+            <th>{columns[0].title as React.ReactElement}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            {(columns[0].render as Function)(null, mockItems[0], 0)}
+          </tr>
+        </tbody>
+      </table>,
+    )
+
+    const [headerCheckbox, itemCheckbox] = screen.getAllByRole('checkbox')
+    fireEvent.click(headerCheckbox)
+    fireEvent.click(itemCheckbox)
+
+    expect(onSelectAll).toHaveBeenCalledWith(true)
+    expect(onSelectItem).toHaveBeenCalledWith('1', true)
+  })
+
+  it('drag handle callbacks receive item id and event', () => {
+    const onDragStart = vi.fn()
+    const onDragOver = vi.fn()
+    const onDragEnd = vi.fn()
+    const columns = buildModuleEditorManagementColumns({
+      ...defaultProps,
+      onDragStart,
+      onDragOver,
+      onDragEnd,
+    })
+
+    render(
+      <table>
+        <tbody>
+          <tr>{(columns[1].render as Function)(null, mockItems[0], 0)}</tr>
+        </tbody>
+      </table>,
+    )
+
+    const handle = screen.getByText('1')
+    fireEvent.dragStart(handle)
+    fireEvent.dragOver(handle)
+    fireEvent.dragEnd(handle)
+
+    expect(onDragStart).toHaveBeenCalledWith('1', expect.any(Object))
+    expect(onDragOver).toHaveBeenCalledWith('1', expect.any(Object))
+    expect(onDragEnd).toHaveBeenCalled()
+  })
 })
 
 describe('buildModuleEditorDataColumns', () => {
@@ -249,6 +311,289 @@ describe('buildModuleEditorDataColumns', () => {
     expect(container.querySelector('input')).toBeInTheDocument()
   })
 
+  it('returns material select props and filters by search text', () => {
+    const handleMaterialSelect = vi.fn()
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      materialOptions: [
+        {
+          label: '益海',
+          searchText: '益海 yihai yh',
+          value: 'MAT-1',
+        },
+      ],
+      handleMaterialSelect,
+      itemColumns: [
+        {
+          title: '物料编码',
+          dataIndex: 'materialCode',
+          type: 'string',
+          width: 120,
+        },
+      ],
+    })
+    const materialColumn = columns.find((c) => c.dataIndex === 'materialCode')
+    const element = (materialColumn?.render as Function)(
+      'MAT-1',
+      { ...mockItems[0], materialCode: 'MAT-1' },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBe('MAT-1')
+    expect(
+      element.props.showSearch.filterOption('yi yh', {
+        searchText: '益海 yihai yh',
+      }),
+    ).toBe(true)
+    expect(
+      element.props.showSearch.filterOption('missing', {
+        searchText: '益海 yihai yh',
+      }),
+    ).toBe(false)
+
+    element.props.onChange(undefined)
+    expect(handleMaterialSelect).toHaveBeenCalledWith('1', '')
+  })
+
+  it('uses undefined material value and empty search text fallback', () => {
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      itemColumns: [
+        {
+          title: '物料编码',
+          dataIndex: 'materialCode',
+          type: 'string',
+          width: 120,
+        },
+      ],
+    })
+    const element = (columns[0].render as Function)(
+      undefined,
+      { ...mockItems[0], materialCode: 123 },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBeUndefined()
+    expect(element.props.showSearch.filterOption('', {})).toBe(true)
+  })
+
+  it('returns warehouse select props and maps warehouse options', () => {
+    const handleWarehouseSelect = vi.fn()
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      warehouses: [{ label: '一号码头', value: 'WH-1' }],
+      handleWarehouseSelect,
+      itemColumns: [
+        {
+          title: '仓库',
+          dataIndex: 'warehouseName',
+          type: 'string',
+          width: 120,
+        },
+      ],
+    })
+    const warehouseColumn = columns.find((c) => c.dataIndex === 'warehouseName')
+    const element = (warehouseColumn?.render as Function)(
+      'WH-1',
+      { ...mockItems[0], warehouseName: 'WH-1' },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBe('WH-1')
+    expect(element.props.options).toEqual([
+      { label: '一号码头', value: 'WH-1' },
+    ])
+
+    element.props.onChange('WH-1')
+    expect(handleWarehouseSelect).toHaveBeenCalledWith('1', 'WH-1')
+  })
+
+  it('uses undefined warehouse and settlement mode values for non-string records', () => {
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      itemColumns: [
+        {
+          title: '仓库',
+          dataIndex: 'warehouseName',
+          type: 'string',
+          width: 120,
+        },
+        {
+          title: '结算方式',
+          dataIndex: 'settlementMode',
+          type: 'string',
+          width: 100,
+        },
+      ],
+    })
+    const warehouseElement = (columns[0].render as Function)(
+      undefined,
+      { ...mockItems[0], warehouseName: 123 },
+      0,
+    )
+    const settlementElement = (columns[1].render as Function)(
+      undefined,
+      { ...mockItems[0], settlementMode: 123 },
+      0,
+    )
+
+    expect(isValidElement(warehouseElement)).toBe(true)
+    expect(isValidElement(settlementElement)).toBe(true)
+    if (!isValidElement(warehouseElement) || !isValidElement(settlementElement)) {
+      return
+    }
+    expect(warehouseElement.props.value).toBeUndefined()
+    expect(settlementElement.props.value).toBeUndefined()
+  })
+
+  it('uses weightTon read-only value for non-weigh purchase inbound rows', () => {
+    const formatCellValue = vi.fn((value) => `formatted:${value}`)
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      config: { ...mockConfig, key: 'purchase-inbound' },
+      formatCellValue,
+      isItemColumnEditable: vi.fn(() => true),
+      itemColumns: [
+        {
+          title: '过磅重量',
+          dataIndex: 'weighWeightTon',
+          type: 'number',
+          width: 100,
+        },
+      ],
+    })
+    const renderFn = columns[0].render as Function
+
+    expect(
+      renderFn(
+        12,
+        { ...mockItems[0], settlementMode: '理算', weightTon: 3.5 },
+        0,
+      ),
+    ).toBe('formatted:3.5')
+  })
+
+  it('returns weigh weight input for purchase inbound weigh rows', () => {
+    const handleItemNumberChange = vi.fn()
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      config: { ...mockConfig, key: 'purchase-inbound' },
+      isItemColumnEditable: vi.fn(() => true),
+      handleItemNumberChange,
+      itemColumns: [
+        {
+          title: '过磅重量',
+          dataIndex: 'weighWeightTon',
+          type: 'number',
+          width: 100,
+        },
+      ],
+    })
+    const element = (columns[0].render as Function)(
+      6.25,
+      { ...mockItems[0], settlementMode: '过磅' },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBe(6.25)
+    expect(element.props.precision).toBe(3)
+
+    element.props.onChange(7)
+    expect(handleItemNumberChange).toHaveBeenCalledWith(
+      '1',
+      'weighWeightTon',
+      7,
+    )
+  })
+
+  it('returns settlement mode select props and callback', () => {
+    const handleSettlementModeChange = vi.fn()
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      handleSettlementModeChange,
+      itemColumns: [
+        {
+          title: '结算方式',
+          dataIndex: 'settlementMode',
+          type: 'string',
+          width: 100,
+        },
+      ],
+    })
+    const element = (columns[0].render as Function)(
+      '过磅',
+      { ...mockItems[0], settlementMode: '过磅' },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBe('过磅')
+    expect(element.props.options).toEqual([
+      { label: '理算', value: '理算' },
+      { label: '过磅', value: '过磅' },
+    ])
+
+    element.props.onChange('理算')
+    expect(handleSettlementModeChange).toHaveBeenCalledWith('1', '理算')
+  })
+
+  it('passes number editor constraints and change callback', () => {
+    const handleItemNumberChange = vi.fn()
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      handleItemNumberChange,
+    })
+    const amountColumn = columns.find((c) => c.dataIndex === 'amount')
+    const fallbackColumn = amountColumn ?? {
+      render: buildModuleEditorDataColumns({
+        ...defaultProps,
+        isItemColumnEditable: vi.fn(() => true),
+        handleItemNumberChange,
+        itemColumns: [
+          { title: '金额', dataIndex: 'amount', type: 'number', width: 100 },
+        ],
+      })[0].render,
+    }
+    const element = (fallbackColumn.render as Function)(100, mockItems[0], 0)
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.min).toBe(0)
+    expect(element.props.precision).toBe(2)
+    expect(element.props.controls).toBe(true)
+
+    element.props.onChange(101)
+    expect(handleItemNumberChange).toHaveBeenCalledWith('1', 'amount', 101)
+  })
+
+  it('hides controls for quantity-like number columns', () => {
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+    })
+    const quantityColumn = columns.find((c) => c.dataIndex === 'quantity')
+    const element = (quantityColumn?.render as Function)(10, mockItems[0], 0)
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.controls).toBe(false)
+  })
+
   it('renders dash instead of number input for editable weigh piece weight', () => {
     const editableProps = {
       ...defaultProps,
@@ -286,17 +631,25 @@ describe('buildModuleEditorDataColumns', () => {
     const columns = buildModuleEditorDataColumns(editableProps)
     const nameColumn = columns.find((c) => c.dataIndex === 'name')
     const renderFn = nameColumn?.render as Function
-    const { container } = render(
-      <table>
-        <tbody>
-          <tr>{renderFn('Test', mockItems[0], 0)}</tr>
-        </tbody>
-      </table>,
-    )
-    const input = container.querySelector('input')
-    if (input) {
-      input.dispatchEvent(new Event('change', { bubbles: true }))
-    }
+    const element = renderFn('Test', mockItems[0], 0)
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    element.props.onChange({ target: { value: 'Updated' } })
+    expect(handleItemInputChange).toHaveBeenCalledWith('1', 'name', 'Updated')
+  })
+
+  it('uses empty input value for non-string editable text values', () => {
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+    })
+    const nameColumn = columns.find((c) => c.dataIndex === 'name')
+    const element = (nameColumn?.render as Function)(123, mockItems[0], 0)
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBe('')
   })
 
   it('handles status column with unknown status', () => {
@@ -325,5 +678,24 @@ describe('buildModuleEditorDataColumns', () => {
       </table>,
     )
     expect(screen.getByText('--')).toBeInTheDocument()
+  })
+
+  it('uses an empty status map when config does not provide one', () => {
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      config: { ...mockConfig, statusMap: undefined },
+    })
+    const statusColumn = columns.find((c) => c.dataIndex === 'status')
+    const renderFn = statusColumn?.render as Function
+
+    render(
+      <table>
+        <tbody>
+          <tr>{renderFn('draft', mockItems[0], 0)}</tr>
+        </tbody>
+      </table>,
+    )
+
+    expect(screen.getByText('draft')).toBeInTheDocument()
   })
 })

@@ -11,6 +11,7 @@ interface BusinessActionRoute {
   title: string
   apiPath: string
   searchKeys?: string[]
+  searchInputName: RegExp
 }
 
 const businessActionRoutes: BusinessActionRoute[] = [
@@ -19,68 +20,102 @@ const businessActionRoutes: BusinessActionRoute[] = [
     title: '商品资料',
     apiPath: 'material',
     searchKeys: ['materialCode', 'materialName'],
+    searchInputName: /关键字|关键词/,
   },
   {
     path: '/supplier',
     title: '供应商资料',
     apiPath: 'supplier',
     searchKeys: ['supplierCode', 'supplierName'],
+    searchInputName: /关键字|关键词/,
   },
   {
     path: '/customer',
     title: '客户资料',
     apiPath: 'customer',
     searchKeys: ['customerCode', 'customerName'],
+    searchInputName: /关键字|关键词/,
   },
   {
     path: '/purchase-order',
     title: '采购订单',
     apiPath: 'purchase-order',
     searchKeys: ['orderNo'],
+    searchInputName: /单据编号|关键词/,
   },
   {
     path: '/purchase-inbound',
     title: '采购入库',
     apiPath: 'purchase-inbound',
     searchKeys: ['inboundNo'],
+    searchInputName: /入库单号|关键词/,
   },
   {
     path: '/sales-order',
     title: '销售订单',
     apiPath: 'sales-order',
     searchKeys: ['orderNo'],
+    searchInputName: /单据编号|关键词/,
   },
   {
     path: '/sales-outbound',
     title: '销售出库',
     apiPath: 'sales-outbound',
     searchKeys: ['outboundNo'],
+    searchInputName: /出库单号|关键词/,
   },
   {
     path: '/receipt',
     title: '收款单',
     apiPath: 'receipt',
     searchKeys: ['receiptNo'],
+    searchInputName: /关键词|单据编号/,
   },
   {
     path: '/payment',
     title: '付款单',
     apiPath: 'payment',
     searchKeys: ['paymentNo'],
+    searchInputName: /关键词|单据编号/,
   },
 ]
 
-async function expectBusinessPageLoaded(page: Page, title: string) {
-  const activeTab = page.getByRole('tab', {
-    selected: true,
-    name: title,
-  })
-  if ((await activeTab.count()) > 0) {
-    await expect(activeTab).toBeVisible()
-  } else {
-    await expect(page.locator('main')).toContainText(title)
+function createButton(page: Page) {
+  return page.getByRole('button', { name: /新建|新增|Create/ })
+}
+
+function searchInput(page: Page, route: BusinessActionRoute) {
+  return page
+    .locator('input[name="keyword"]')
+    .or(page.getByRole('textbox', { name: route.searchInputName }))
+    .first()
+}
+
+async function gotoBusinessRoute(page: Page, path: string) {
+  const loginUrlPattern = /\/login(?:\?|$)/
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await page.goto(path, { waitUntil: 'networkidle' })
+    if (!loginUrlPattern.test(page.url())) {
+      return
+    }
+    await primeApiKeySession(page)
   }
-  await expect(page.getByPlaceholder('搜索关键词...')).toBeVisible()
+
+  throw new Error(`登录态注入后仍被重定向到登录页：${page.url()}`)
+}
+
+async function expectBusinessPageLoaded(
+  page: Page,
+  route: BusinessActionRoute,
+) {
+  await expect(page).toHaveURL(new RegExp(`${route.path}(?:\\?|$)`))
+  await expect(
+    page.getByRole('button', { name: route.title, exact: true }),
+  ).toBeVisible()
+  await expect(searchInput(page, route)).toBeVisible()
+  await expect(createButton(page)).toBeVisible()
+  await expect(page.locator('table').first()).toBeVisible()
 }
 
 async function closeWorkspaceOverlay(page: Page) {
@@ -90,9 +125,9 @@ async function closeWorkspaceOverlay(page: Page) {
 }
 
 async function openEditor(page: Page, title: string) {
-  const createButton = page.getByRole('button', { name: '新建' })
-  await expect(createButton).toBeVisible()
-  await createButton.click()
+  const button = createButton(page)
+  await expect(button).toBeVisible()
+  await button.click()
 
   const overlay = page.locator('.workspace-overlay-panel').last()
   await expect(overlay).toBeVisible()
@@ -103,11 +138,46 @@ async function openEditor(page: Page, title: string) {
 }
 
 function queryButton(page: Page) {
-  return page.getByRole('button', { name: /查\s*询/ })
+  return page.getByRole('button', { name: /查\s*询|Search|Query/ })
 }
 
 function resetButton(page: Page) {
-  return page.getByRole('button', { name: /重\s*置/ })
+  return page.getByRole('button', { name: /重\s*置|Reset/ })
+}
+
+async function applySearch(page: Page, input: ReturnType<typeof searchInput>) {
+  const button = queryButton(page)
+  if ((await button.count()) > 0 && (await button.first().isVisible())) {
+    await button.first().click()
+    return
+  }
+
+  await input.press('Enter')
+}
+
+async function openExistingEditor(page: Page, title: string) {
+  const editButton = page
+    .locator('table')
+    .getByRole('button', { name: '编辑' })
+    .first()
+
+  if ((await editButton.count()) > 0) {
+    await expect(editButton).toBeVisible()
+    await editButton.click()
+  } else {
+    const firstRow = page
+      .locator('tbody tr:not(.ant-table-measure-row)')
+      .filter({ has: page.locator('td') })
+      .first()
+    await expect(firstRow).toBeVisible()
+    await firstRow.dblclick()
+  }
+
+  const overlay = page.locator('.workspace-overlay-panel').last()
+  await expect(overlay).toBeVisible()
+  await expect(overlay.locator('.workspace-overlay-title')).toContainText(
+    `编辑 — ${title}`,
+  )
 }
 
 test.describe('business editor action smoke', () => {
@@ -122,12 +192,12 @@ test.describe('business editor action smoke', () => {
     }) => {
       const collection = await fetchCollection(page.request, route.apiPath)
 
-      await page.goto(route.path)
-      await expectBusinessPageLoaded(page, route.title)
+      await gotoBusinessRoute(page, route.path)
+      await expectBusinessPageLoaded(page, route)
 
-      const createButton = page.getByRole('button', { name: '新建' })
-      await expect(createButton).toBeVisible()
-      await createButton.click()
+      const button = createButton(page)
+      await expect(button).toBeVisible()
+      await button.click()
 
       const createOverlay = page.locator('.workspace-overlay-panel').last()
       await expect(createOverlay).toBeVisible()
@@ -136,29 +206,18 @@ test.describe('business editor action smoke', () => {
       ).toContainText(`新建 — ${route.title}`)
       await closeWorkspaceOverlay(page)
 
-      const keywordInput = page.getByPlaceholder('搜索关键词...')
+      const keywordInput = searchInput(page, route)
       let searchTerm = ''
 
       if (collection.ok && collection.records.length > 0) {
         searchTerm = pickSearchTerm(collection.records[0], route.searchKeys)
         if (searchTerm) {
           await keywordInput.fill(searchTerm)
-          await queryButton(page).click()
+          await applySearch(page, keywordInput)
           await expect(page.locator('table')).toContainText(searchTerm)
         }
 
-        const editButton = page
-          .locator('table')
-          .getByRole('button', { name: '编辑' })
-          .first()
-        await expect(editButton).toBeVisible()
-        await editButton.click()
-
-        const editOverlay = page.locator('.workspace-overlay-panel').last()
-        await expect(editOverlay).toBeVisible()
-        await expect(
-          editOverlay.locator('.workspace-overlay-title'),
-        ).toContainText(`编辑 — ${route.title}`)
+        await openExistingEditor(page, route.title)
         await closeWorkspaceOverlay(page)
       }
 
@@ -176,8 +235,8 @@ test.describe('business editor action smoke', () => {
     page,
     assertNoFatalUiErrors,
   }) => {
-    await page.goto('/purchase-inbound')
-    await expectBusinessPageLoaded(page, '采购入库')
+    await gotoBusinessRoute(page, '/purchase-inbound')
+    await expectBusinessPageLoaded(page, businessActionRoutes[4])
 
     const overlay = await openEditor(page, '采购入库')
     const importButton = overlay.getByRole('button', {
@@ -186,18 +245,27 @@ test.describe('business editor action smoke', () => {
     await expect(importButton).toBeVisible()
     await importButton.click()
 
-    const drawer = page.locator('.ant-drawer').last()
-    await expect(drawer).toBeVisible()
-    await expect(drawer).toContainText('选择上级采购订单')
+    const selector = page
+      .locator('.workspace-overlay-panel')
+      .filter({ hasText: '选择采购订单' })
+      .last()
+    await expect(selector).toBeVisible()
+    await expect(selector.locator('.workspace-overlay-title')).toContainText(
+      '选择采购订单',
+    )
 
-    const firstRow = drawer.locator('tbody tr').first()
+    const firstRow = selector
+      .locator('tbody tr:not(.ant-table-measure-row)')
+      .filter({ hasText: /PO\d+|\d{12,}/ })
+      .first()
     await expect(firstRow).toBeVisible()
-    const firstCell = firstRow.locator('td').first()
-    const parentNo = (await firstCell.innerText()).trim()
+    const parentText = (await firstRow.innerText()).trim()
+    const parentNo = parentText.match(/PO\d+|\d{12,}/)?.[0] || ''
+    expect(parentNo).toBeTruthy()
     await firstRow.click()
 
-    await expect(page.locator('.ant-drawer')).toHaveCount(0)
-    await expect(overlay.getByLabel('关联订单')).toHaveValue(parentNo)
+    await expect(selector).not.toBeVisible()
+    await expect(overlay.getByLabel('采购订单号')).toHaveValue(parentNo)
     await expect(
       overlay.locator('tbody tr:not(.ant-table-measure-row)').first(),
     ).toBeVisible()
@@ -210,21 +278,32 @@ test.describe('business editor action smoke', () => {
     page,
     assertNoFatalUiErrors,
   }) => {
-    const collection = await fetchCollection(page.request, 'sales-order')
-    test.skip(
-      !collection.ok || collection.records.length === 0,
-      '真实环境无销售订单数据可用于附件 smoke',
-    )
+    let coveredRoute: BusinessActionRoute | null = null
 
-    await page.goto('/sales-order')
-    await expectBusinessPageLoaded(page, '销售订单')
+    for (const route of businessActionRoutes) {
+      const collection = await fetchCollection(page.request, route.apiPath)
+      if (!collection.ok || collection.records.length === 0) {
+        continue
+      }
 
-    const attachButton = page
-      .locator('table')
-      .getByRole('button', { name: '附件' })
-      .first()
-    await expect(attachButton).toBeVisible()
-    await attachButton.click()
+      await gotoBusinessRoute(page, route.path)
+      await expectBusinessPageLoaded(page, route)
+
+      const attachButton = page
+        .locator('table')
+        .getByRole('button', { name: /附件/ })
+        .first()
+      if ((await attachButton.count()) === 0) {
+        continue
+      }
+
+      await expect(attachButton).toBeVisible()
+      await attachButton.click()
+      coveredRoute = route
+      break
+    }
+
+    test.skip(!coveredRoute, '真实环境无可用于附件 smoke 的业务记录')
 
     const modal = page.locator('.ant-modal').last()
     await expect(modal).toBeVisible()

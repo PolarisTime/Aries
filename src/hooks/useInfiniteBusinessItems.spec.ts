@@ -96,6 +96,22 @@ describe('useInfiniteBusinessItems', () => {
     expect(result.current.warningMessage).toBe('Invalid request')
   })
 
+  it('returns empty warning message when response code is not 0 but message is missing', () => {
+    useQueryMock.mockReturnValue({
+      data: {
+        code: 500,
+        data: { rows: [], total: 0 },
+      },
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    })
+
+    const { result } = renderHook(() => useInfiniteBusinessItems(defaultProps))
+    expect(result.current.responseCode).toBe(500)
+    expect(result.current.warningMessage).toBe('')
+  })
+
   it('passes correct query configuration', () => {
     renderHook(() => useInfiniteBusinessItems(defaultProps))
 
@@ -112,6 +128,23 @@ describe('useInfiniteBusinessItems', () => {
         staleTime: 5_000,
         placeholderData: 'keepPreviousData',
       }),
+    )
+  })
+
+  it('calls business listing api from query function with pagination and abort signal', async () => {
+    const signal = new AbortController().signal
+    const response = { code: 0, data: { rows: [], total: 0 } }
+    listBusinessModuleMock.mockResolvedValue(response)
+
+    renderHook(() => useInfiniteBusinessItems(defaultProps))
+
+    const queryConfig = useQueryMock.mock.calls[0][0]
+    await expect(queryConfig.queryFn({ signal })).resolves.toBe(response)
+    expect(listBusinessModuleMock).toHaveBeenCalledWith(
+      'sales-order',
+      { status: 'pending' },
+      { currentPage: 1, pageSize: 20 },
+      { signal },
     )
   })
 

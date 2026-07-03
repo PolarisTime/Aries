@@ -260,6 +260,25 @@ describe('print-template', () => {
       })
     })
 
+    it('falls back to LODOP engine for unknown runtime template types', async () => {
+      restPostMock.mockResolvedValue({ code: 0, data: {} })
+
+      await savePrintTemplate({
+        billType: 'sales-order',
+        templateName: '运行时模板',
+        templateHtml: 'LODOP.PRINT_INIT("runtime");',
+        templateType: 'RUNTIME' as any,
+      })
+
+      expect(restPostMock).toHaveBeenCalledWith(
+        '/print-templates',
+        expect.objectContaining({
+          templateType: 'RUNTIME',
+          engine: 'LODOP',
+        }),
+      )
+    })
+
     it('encodes id in URL for PUT', async () => {
       restPutMock.mockResolvedValue({ code: 0, data: {} })
 

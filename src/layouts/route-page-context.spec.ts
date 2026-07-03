@@ -17,11 +17,35 @@ describe('resolveRoutePageContext', () => {
     })
   })
 
+  it('normalizes trailing slash before matching page definitions', () => {
+    expect(resolveRoutePageContext('/material/', mockT)).toEqual({
+      activeMenuKey: '/material',
+      openPageKey: '/material',
+      title: '商品资料',
+    })
+  })
+
   it('reuses api key list tab for detail pages', () => {
     expect(resolveRoutePageContext('/api-key/123', mockT)).toEqual({
       activeMenuKey: '/security-center',
       openPageKey: '/security-center',
       title: 'API Key 详情',
+    })
+  })
+
+  it('falls back to app title and normalized path for unknown routes', () => {
+    expect(resolveRoutePageContext('/unknown/', mockT)).toEqual({
+      activeMenuKey: '/unknown',
+      openPageKey: '/unknown',
+      title: 'Leo ERP',
+    })
+  })
+
+  it('normalizes an empty path to root', () => {
+    expect(resolveRoutePageContext('', mockT)).toEqual({
+      activeMenuKey: '/',
+      openPageKey: '/',
+      title: 'Leo ERP',
     })
   })
 })

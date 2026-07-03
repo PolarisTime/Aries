@@ -56,6 +56,10 @@ describe('useInitialSetupState', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useRealTimers()
+    mockGetInitialSetupStatus.mockReset()
+    mockSubmitInitialAdmin.mockReset()
+    mockSubmitInitialCompany.mockReset()
+    mockSetupInitialAdmin2fa.mockReset()
     mockGetInitialSetupStatus.mockResolvedValue({
       data: {
         setupRequired: true,
@@ -176,6 +180,81 @@ describe('useInitialSetupState', () => {
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
+  it('ignores completed setup redirect callback after unmounting', async () => {
+    let redirectCallback: (() => void) | undefined
+    const setTimeoutSpy = vi
+      .spyOn(globalThis, 'setTimeout')
+      .mockImplementation(((callback: TimerHandler) => {
+        redirectCallback = callback as () => void
+        return null as ReturnType<typeof setTimeout>
+      }) as typeof setTimeout)
+    mockGetInitialSetupStatus.mockResolvedValue({
+      data: {
+        setupRequired: false,
+        adminConfigured: true,
+        companyConfigured: true,
+      },
+    })
+
+    const { unmount } = renderHook(() => useInitialSetupState())
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+    unmount()
+    act(() => {
+      redirectCallback?.()
+    })
+
+    expect(mockNavigate).not.toHaveBeenCalled()
+    setTimeoutSpy.mockRestore()
+  })
+
+  it('ignores late initial status success after unmounting', async () => {
+    let resolveStatus: (value: unknown) => void = () => {}
+    mockGetInitialSetupStatus.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveStatus = resolve
+      }),
+    )
+
+    const { unmount } = renderHook(() => useInitialSetupState())
+    unmount()
+
+    await act(async () => {
+      resolveStatus({
+        data: {
+          setupRequired: false,
+          adminConfigured: true,
+          companyConfigured: true,
+        },
+      })
+      await Promise.resolve()
+    })
+
+    expect(message.info).not.toHaveBeenCalled()
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('ignores late initial status failure after unmounting', async () => {
+    let rejectStatus: (error: unknown) => void = () => {}
+    mockGetInitialSetupStatus.mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectStatus = reject
+      }),
+    )
+
+    const { unmount } = renderHook(() => useInitialSetupState())
+    unmount()
+
+    await act(async () => {
+      rejectStatus(new Error('late failure'))
+      await Promise.resolve()
+    })
+
+    expect(message.error).not.toHaveBeenCalled()
+  })
+
   it('shows error when status load fails', async () => {
     mockGetInitialSetupStatus.mockRejectedValue(new Error('status failed'))
 
@@ -246,6 +325,24 @@ describe('useInitialSetupState', () => {
     })
 
     expect(message.error).toHaveBeenCalledWith('TOTP 服务异常')
+    expect(result.current.loadingTotp).toBe(false)
+  })
+
+  it('uses fallback error when totp generation throws non-error value', async () => {
+    mockSetupInitialAdmin2fa.mockRejectedValue('totp failed')
+    const { result } = renderHook(() => useInitialSetupState())
+
+    await waitFor(() => {
+      expect(result.current.checking).toBe(false)
+    })
+    act(() => {
+      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+    })
+    await act(async () => {
+      await result.current.handleGenerateTotp()
+    })
+
+    expect(message.error).toHaveBeenCalledWith('操作失败')
     expect(result.current.loadingTotp).toBe(false)
   })
 
@@ -351,6 +448,174 @@ describe('useInitialSetupState', () => {
     expect(result.current.loadingAdmin).toBe(false)
   })
 
+  it('submits admin with backend message and provided username', async () => {
+    mockSetupInitialAdmin2fa.mockResolvedValue({ data: { secret: 'secret' } })
+    mockSubmitInitialAdmin.mockResolvedValue({ message: '管理员已保存' })
+    const { result } = renderHook(() => useInitialSetupState())
+
+    await waitFor(() => {
+      expect(result.current.checking).toBe(false)
+    })
+    mockGetInitialSetupStatus.mockResolvedValue({
+      data: {
+        setupRequired: true,
+        adminConfigured: true,
+        companyConfigured: false,
+      },
+    })
+    act(() => {
+      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+    })
+    await act(async () => {
+      await result.current.handleGenerateTotp()
+    })
+    act(() => {
+      result.current.form.setFieldsValue({
+        adminLoginName: ' admin ',
+        adminPassword: 'secret',
+        adminConfirmPassword: 'secret',
+        adminUserName: ' Root ',
+        totpCode: ' 654321 ',
+      })
+    })
+    await act(async () => {
+      await result.current.handleSubmitAdmin()
+    })
+
+    expect(mockSubmitInitialAdmin).toHaveBeenCalledWith({
+      admin: {
+        loginName: 'admin',
+        password: 'secret',
+        userName: 'Root',
+      },
+      totpSecret: 'secret',
+      totpCode: '654321',
+    })
+    expect(message.success).toHaveBeenCalledWith('管理员已保存')
+    expect(result.current.currentStep).toBe('company')
+  })
+
+  it('shows fallback error when admin submit throws non-error value', async () => {
+    mockSetupInitialAdmin2fa.mockResolvedValue({ data: { secret: 'secret' } })
+    mockSubmitInitialAdmin.mockRejectedValue({ code: 'ADMIN_FAILED' })
+    const { result } = renderHook(() => useInitialSetupState())
+
+    await waitFor(() => {
+      expect(result.current.checking).toBe(false)
+    })
+    act(() => {
+      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+    })
+    await act(async () => {
+      await result.current.handleGenerateTotp()
+    })
+    act(() => {
+      result.current.form.setFieldsValue({
+        adminLoginName: 'admin',
+        adminPassword: 'secret',
+        adminConfirmPassword: 'secret',
+        adminUserName: 'Admin',
+        totpCode: '123456',
+      })
+    })
+    await act(async () => {
+      await result.current.handleSubmitAdmin()
+    })
+
+    expect(message.error).toHaveBeenCalledWith('操作失败')
+    expect(result.current.loadingAdmin).toBe(false)
+  })
+
+  it('shows status load error when admin submit reload fails', async () => {
+    mockSetupInitialAdmin2fa.mockResolvedValue({ data: { secret: 'secret' } })
+    mockSubmitInitialAdmin.mockResolvedValue({ message: '管理员已保存' })
+    let statusCallCount = 0
+    mockGetInitialSetupStatus.mockImplementation(() => {
+      statusCallCount += 1
+      if (statusCallCount > 2) {
+        return Promise.reject(new Error('reload failed'))
+      }
+      return Promise.resolve({
+        data: {
+          setupRequired: true,
+          adminConfigured: false,
+          companyConfigured: false,
+        },
+      })
+    })
+    const { result } = renderHook(() => useInitialSetupState())
+
+    await waitFor(() => {
+      expect(result.current.checking).toBe(false)
+    })
+    act(() => {
+      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+    })
+    await act(async () => {
+      await result.current.handleGenerateTotp()
+    })
+    act(() => {
+      result.current.form.setFieldsValue({
+        adminLoginName: 'admin',
+        adminPassword: 'secret',
+        adminConfirmPassword: 'secret',
+        adminUserName: 'Admin',
+        totpCode: '123456',
+      })
+    })
+    await act(async () => {
+      await result.current.handleSubmitAdmin()
+    })
+
+    await waitFor(() => {
+      expect(message.error).toHaveBeenCalledWith('加载状态失败')
+    })
+    expect(result.current.loadingAdmin).toBe(false)
+  })
+
+  it('redirects to login when status reload says setup completed', async () => {
+    vi.useFakeTimers()
+    mockSetupInitialAdmin2fa.mockResolvedValue({ data: { secret: 'secret' } })
+    mockSubmitInitialAdmin.mockResolvedValue({ message: '管理员已保存' })
+    const { result } = renderHook(() => useInitialSetupState())
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+    mockGetInitialSetupStatus.mockResolvedValue({
+      data: {
+        setupRequired: false,
+        adminConfigured: true,
+        companyConfigured: true,
+      },
+    })
+    act(() => {
+      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+    })
+    await act(async () => {
+      await result.current.handleGenerateTotp()
+    })
+    act(() => {
+      result.current.form.setFieldsValue({
+        adminLoginName: 'admin',
+        adminPassword: 'secret',
+        adminConfirmPassword: 'secret',
+        adminUserName: 'Admin',
+        totpCode: '123456',
+      })
+    })
+    await act(async () => {
+      await result.current.handleSubmitAdmin()
+      await Promise.resolve()
+    })
+
+    expect(message.info).toHaveBeenCalledWith('已完成初始化')
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/login' })
+  })
+
   it('shows backend error when admin submit fails', async () => {
     mockSetupInitialAdmin2fa.mockResolvedValue({ data: { secret: 'secret' } })
     mockSubmitInitialAdmin.mockRejectedValue(new Error('管理员保存失败'))
@@ -416,6 +681,39 @@ describe('useInitialSetupState', () => {
     expect(result.current.loadingCompany).toBe(false)
   })
 
+  it('submits company setup with fallback message and optional fields', async () => {
+    mockSubmitInitialCompany.mockResolvedValue({ message: '' })
+    const { result } = renderHook(() => useInitialSetupState())
+
+    await waitFor(() => {
+      expect(result.current.checking).toBe(false)
+    })
+    vi.spyOn(result.current.form, 'validateFields').mockResolvedValue({
+      companyName: ' Leo ',
+      taxNo: ' TAX ',
+      bankName: ' Bank ',
+      bankAccount: ' 001 ',
+      taxRate: 0.07,
+      remark: ' 备注 ',
+    })
+
+    await act(async () => {
+      await result.current.handleSubmitCompany()
+    })
+
+    expect(mockSubmitInitialCompany).toHaveBeenCalledWith({
+      companyName: 'Leo',
+      taxNo: 'TAX',
+      bankName: 'Bank',
+      bankAccount: '001',
+      taxRate: 0.07,
+      remark: '备注',
+    })
+    expect(message.success).toHaveBeenCalledWith('公司创建成功')
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/login' })
+    expect(result.current.loadingCompany).toBe(false)
+  })
+
   it('shows backend error when company submit fails', async () => {
     mockSubmitInitialCompany.mockRejectedValue(new Error('公司保存失败'))
     const { result } = renderHook(() => useInitialSetupState())
@@ -436,6 +734,29 @@ describe('useInitialSetupState', () => {
     })
 
     expect(message.error).toHaveBeenCalledWith('公司保存失败')
+    expect(result.current.loadingCompany).toBe(false)
+  })
+
+  it('shows fallback error when company submit throws non-error value', async () => {
+    mockSubmitInitialCompany.mockRejectedValue({ code: 'COMPANY_FAILED' })
+    const { result } = renderHook(() => useInitialSetupState())
+
+    await waitFor(() => {
+      expect(result.current.checking).toBe(false)
+    })
+    act(() => {
+      result.current.form.setFieldsValue({
+        companyName: 'Leo',
+        taxNo: 'TAX',
+        bankName: 'Bank',
+        bankAccount: '001',
+      })
+    })
+    await act(async () => {
+      await result.current.handleSubmitCompany()
+    })
+
+    expect(message.error).toHaveBeenCalledWith('操作失败')
     expect(result.current.loadingCompany).toBe(false)
   })
 })

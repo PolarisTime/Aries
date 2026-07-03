@@ -51,11 +51,7 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
     })
   }
 
-  const resolveEditorRecord = async (record: ModuleRecord | null) => {
-    if (!record) {
-      return null
-    }
-
+  const resolveEditorRecord = async (record: ModuleRecord) => {
     const endpointConfig = getModuleConfig(moduleKey)
     if (endpointConfig.readOnly) {
       return record

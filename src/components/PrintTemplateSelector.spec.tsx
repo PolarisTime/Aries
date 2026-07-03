@@ -1,6 +1,33 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { PrintTemplateSelector } from './PrintTemplateSelector'
+
+vi.mock('antd', () => {
+  const Radio = ({ children, value }: any) => (
+    <label>
+      <input type="radio" value={value} />
+      {children}
+    </label>
+  )
+  Radio.Group = ({ children, defaultValue, onChange }: any) => (
+    <div data-default-value={defaultValue} role="radiogroup">
+      <button
+        type="button"
+        onClick={() => onChange({ target: { value: '2' } })}
+      >
+        select-template
+      </button>
+      {children}
+    </div>
+  )
+
+  const Space = ({ children, className, orientation }: any) => (
+    <div className={className} data-orientation={orientation}>
+      {children}
+    </div>
+  )
+  return { Radio, Space }
+})
 
 describe('PrintTemplateSelector', () => {
   const mockTemplates = [
@@ -32,6 +59,9 @@ describe('PrintTemplateSelector', () => {
     const onSelect = vi.fn()
     render(<PrintTemplateSelector {...defaultProps} onSelect={onSelect} />)
 
+    fireEvent.click(screen.getByText('select-template'))
+
+    expect(onSelect).toHaveBeenCalledWith('2')
     const radios = screen.getAllByRole('radio')
     expect(radios).toHaveLength(3)
     expect(radios[0]).toHaveAttribute('value', '1')

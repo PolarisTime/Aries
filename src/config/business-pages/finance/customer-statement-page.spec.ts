@@ -203,6 +203,14 @@ describe('customerStatementPageConfig', () => {
       expect(items[0].id).toBe('sales-order-1')
     })
 
+    it('transformItems uses index when item id is missing', () => {
+      const items = pi.transformItems!({
+        items: [{ materialName: '螺纹钢' }],
+      } as any)
+      expect(items[0].id).toBe('sales-order-0')
+      expect(items[0].sourceSalesOrderItemId).toBeUndefined()
+    })
+
     it('transformItems handles non-array items', () => {
       const items = pi.transformItems!({} as any)
       expect(items).toEqual([])

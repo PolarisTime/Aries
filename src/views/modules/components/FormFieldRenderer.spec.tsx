@@ -1,5 +1,9 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const formMocks = vi.hoisted(() => ({
+  watchedValues: {} as any,
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -33,9 +37,13 @@ vi.mock('antd', () => {
   }
   const Form = {
     useFormInstance: () => formInstance,
-    useWatch: () => ({}),
+    useWatch: () => formMocks.watchedValues,
     Item: ({ children, name, ...props }: any) => (
-      <div data-testid={`form-item-${name}`} {...props}>
+      <div
+        data-testid={`form-item-${name}`}
+        data-rules={JSON.stringify(props.rules ?? [])}
+        {...props}
+      >
         {children}
       </div>
     ),
@@ -73,10 +81,19 @@ vi.mock('antd', () => {
   )
 
   return {
-    AutoComplete: ({ id, placeholder, allowClear, disabled }: any) => (
+    AutoComplete: ({
+      id,
+      placeholder,
+      allowClear,
+      disabled,
+      options,
+      showSearch,
+    }: any) => (
       <input
         data-testid="autocomplete"
         data-allow-clear={String(Boolean(allowClear))}
+        data-options={JSON.stringify(options)}
+        data-show-search={String(Boolean(showSearch))}
         id={id}
         placeholder={placeholder}
         disabled={disabled}
@@ -111,12 +128,14 @@ vi.mock('antd', () => {
       allowClear,
       disabled,
       mode,
+      options,
       showSearch,
     }: any) => (
       <select
         data-testid="select"
         data-allow-clear={String(Boolean(allowClear))}
         data-mode={String(mode || '')}
+        data-options={JSON.stringify(options)}
         data-show-search={String(Boolean(showSearch))}
         id={id}
         disabled={disabled}
@@ -162,6 +181,10 @@ describe('FormFieldRenderer', () => {
     disabled: false,
   }
 
+  beforeEach(() => {
+    formMocks.watchedValues = {}
+  })
+
   it('renders text input by default', () => {
     render(<FormFieldRenderer {...defaultProps} />)
     expect(screen.getByTestId('input')).toBeTruthy()
@@ -204,6 +227,119 @@ describe('FormFieldRenderer', () => {
     }
     render(<FormFieldRenderer {...props} />)
     expect(screen.getByTestId('select')).toBeTruthy()
+  })
+
+  it('normalizes select options and required select rule', () => {
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        placeholder: '',
+        required: true,
+        type: 'select',
+        options: [
+          { label: 123, value: 1 },
+          { label: 'Enabled', value: true },
+          { label: 'Code', value: 'A001' },
+        ],
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    expect(screen.getByTestId('select')).toHaveAttribute(
+      'data-options',
+      JSON.stringify([
+        { label: '123', value: 1 },
+        { label: 'Enabled', value: true },
+        { label: 'Code', value: 'A001' },
+      ]),
+    )
+    expect(
+      screen.getByLabelText('modules.formField.inputPlaceholder'),
+    ).toBeTruthy()
+    expect(screen.getByTestId('form-item-test-field')).toHaveAttribute(
+      'data-rules',
+      JSON.stringify([
+        {
+          required: true,
+          message: 'modules.formField.selectRequired',
+        },
+      ]),
+    )
+  })
+
+  it('renders multi-select with options resolved from form values', () => {
+    const options = vi.fn(() => [
+      { label: 'Alpha', value: false },
+      { label: 'Beta', value: 'beta' },
+    ])
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        type: 'multiSelect',
+        options,
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    expect(options).toHaveBeenCalledWith({})
+    expect(screen.getByTestId('select')).toHaveAttribute(
+      'data-mode',
+      'multiple',
+    )
+    expect(screen.getByTestId('select')).toHaveAttribute(
+      'data-options',
+      JSON.stringify([
+        { label: 'Alpha', value: false },
+        { label: 'Beta', value: 'beta' },
+      ]),
+    )
+  })
+
+  it('falls back to empty select options when resolved options are not an array', () => {
+    formMocks.watchedValues = undefined
+    const options = vi.fn(() => null)
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        type: 'select',
+        options,
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    expect(options).toHaveBeenCalledWith({})
+    expect(screen.getByTestId('select')).toHaveAttribute('data-options', '[]')
+  })
+
+  it('falls back to empty select options when no options are configured', () => {
+    const { options: _options, ...fieldWithoutOptions } = defaultProps.field
+    const props = {
+      ...defaultProps,
+      field: {
+        ...fieldWithoutOptions,
+        type: 'select',
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    expect(screen.getByTestId('select')).toHaveAttribute('data-options', '[]')
+  })
+
+  it('falls back to empty multi-select options when resolved options are not an array', () => {
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        type: 'multiSelect',
+        options: () => null,
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    expect(screen.getByTestId('select')).toHaveAttribute('data-options', '[]')
   })
 
   it('renders date picker for date type', () => {
@@ -288,6 +424,74 @@ describe('FormFieldRenderer', () => {
     const textarea = screen.getByTestId('textarea')
     expect(textarea).toHaveAttribute('maxlength', '500')
     expect(textarea).toHaveAttribute('data-show-count', 'true')
+  })
+
+  it('renders auto-complete and stringifies numeric or boolean values', () => {
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        type: 'autoComplete',
+        options: [
+          { label: 'Number', value: 12 },
+          { label: 'Boolean', value: false },
+          { label: 'String', value: 'text' },
+        ],
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    expect(screen.getByTestId('autocomplete')).toHaveAttribute(
+      'data-show-search',
+      'true',
+    )
+    expect(screen.getByTestId('autocomplete')).toHaveAttribute(
+      'data-options',
+      JSON.stringify([
+        { label: 'Number', value: '12' },
+        { label: 'Boolean', value: 'false' },
+        { label: 'String', value: 'text' },
+      ]),
+    )
+  })
+
+  it('falls back to empty auto-complete options when resolved options are not an array', () => {
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        type: 'autoComplete',
+        options: () => null,
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    expect(screen.getByTestId('autocomplete')).toHaveAttribute(
+      'data-options',
+      '[]',
+    )
+  })
+
+  it('uses field disabled state and required input rule when outer disabled is absent', () => {
+    const props = {
+      field: {
+        ...defaultProps.field,
+        disabled: true,
+        required: true,
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    expect(screen.getByTestId('input')).toBeDisabled()
+    expect(screen.getByTestId('form-item-test-field')).toHaveAttribute(
+      'data-rules',
+      JSON.stringify([
+        {
+          required: true,
+          message: 'modules.formField.inputRequired',
+        },
+      ]),
+    )
   })
 
   it('renders with disabled state', () => {

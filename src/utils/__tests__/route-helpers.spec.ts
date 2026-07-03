@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   getCurrentAppRoute,
   getRequestPath,
@@ -10,10 +10,17 @@ describe('route-helpers', () => {
     const originalLocation = window.location
 
     afterEach(() => {
+      vi.unstubAllGlobals()
       Object.defineProperty(window, 'location', {
         value: originalLocation,
         writable: true,
       })
+    })
+
+    it('returns /dashboard when window is unavailable', () => {
+      vi.stubGlobal('window', undefined)
+
+      expect(getCurrentAppRoute()).toBe('/dashboard')
     })
 
     it('returns full path including search and hash', () => {
@@ -78,6 +85,12 @@ describe('route-helpers', () => {
     it('handles invalid URL by stripping hash and query', () => {
       const result = getRequestPath('/api/users?id=1#section')
       expect(result).toBe('/api/users')
+    })
+
+    it('resolves relative URLs without window', () => {
+      vi.stubGlobal('window', undefined)
+
+      expect(getRequestPath('/api/users?id=1')).toBe('/api/users')
     })
 
     it('handles URL with trailing slash', () => {

@@ -1,7 +1,52 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isEditorFieldDisabledForModule } from '@/module-system/module-adapter-editor'
 import { groupFieldsByRow } from '@/module-system/module-field-layout'
+import type {
+  ModuleFormFieldDefinition,
+  ModulePageConfig,
+} from '@/types/module-page'
+
+const mocks = vi.hoisted(() => ({
+  EditorFooterActions: vi.fn(
+    ({
+      onCancel,
+      onSave,
+    }: {
+      onCancel: () => void
+      onSave: (audit: boolean) => void
+    }) => (
+      <div data-testid="footer-actions">
+        <button type="button" onClick={onCancel}>
+          cancel
+        </button>
+        <button type="button" onClick={() => onSave(false)}>
+          save
+        </button>
+      </div>
+    ),
+  ),
+  FormFieldRenderer: vi.fn(
+    ({
+      field,
+      disabled,
+    }: {
+      field: ModuleFormFieldDefinition
+      disabled: boolean
+    }) => (
+      <div data-disabled={disabled ? 'true' : 'false'} data-testid="form-field">
+        {field.label}
+      </div>
+    ),
+  ),
+  groupFieldsByRow: vi.fn(() => [] as ModuleFormFieldDefinition[][]),
+  isEditorFieldDisabledForModule: vi.fn(() => false),
+  useFormInstance: vi.fn(() => ({
+    getFieldValue: vi.fn(),
+    getFieldsValue: vi.fn().mockReturnValue({}),
+  })),
+  useWatch: vi.fn(() => ({})),
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -9,74 +54,77 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
+vi.mock('antd', () => ({
+  Alert: ({ showIcon, title, type, ...props }: any) => (
+    <div
+      data-show-icon={showIcon ? 'true' : 'false'}
+      data-type={type}
+      {...props}
+    >
+      {title}
+    </div>
   ),
-}))
-
-vi.mock('antd/es/form', () => ({
-  default: {
-    useFormInstance: () => ({
-      getFieldValue: vi.fn(),
-      getFieldsValue: vi.fn().mockReturnValue({}),
-    }),
-    useWatch: () => ({}),
+  Col: ({ children, lg, ...props }: any) => (
+    <div data-lg={String(lg)} {...props}>
+      {children}
+    </div>
+  ),
+  Form: {
+    useFormInstance: mocks.useFormInstance,
+    useWatch: mocks.useWatch,
     Item: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   },
-}))
-
-vi.mock('antd/es/col', () => ({
-  default: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-}))
-
-vi.mock('antd/es/row', () => ({
-  default: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-}))
-
-vi.mock('antd/es/typography', () => ({
-  default: {
+  Row: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  Typography: {
     Title: ({ children, ...props }: any) => <h5 {...props}>{children}</h5>,
     Text: ({ children, ...props }: any) => <span {...props}>{children}</span>,
   },
 }))
 
-vi.mock('antd/es/alert', () => ({
-  default: ({ title, ...props }: any) => <div {...props}>{title}</div>,
-}))
-
 vi.mock('@/module-system/module-adapter-editor', () => ({
-  isEditorFieldDisabledForModule: vi.fn().mockReturnValue(false),
+  isEditorFieldDisabledForModule: mocks.isEditorFieldDisabledForModule,
 }))
 
 vi.mock('@/module-system/module-field-layout', () => ({
-  groupFieldsByRow: vi.fn().mockReturnValue([]),
+  groupFieldsByRow: mocks.groupFieldsByRow,
 }))
 
 vi.mock('./EditorFooterActions', () => ({
-  EditorFooterActions: () => <div data-testid="footer-actions" />,
+  EditorFooterActions: mocks.EditorFooterActions,
 }))
 
 vi.mock('./FormFieldRenderer', () => ({
-  FormFieldRenderer: () => <div data-testid="form-field" />,
+  FormFieldRenderer: mocks.FormFieldRenderer,
 }))
 
 import { ModuleEditorFormSection } from '@/views/modules/components/ModuleEditorFormSection'
 
 describe('ModuleEditorFormSection', () => {
+  const defaultConfig: ModulePageConfig = {
+    key: 'test',
+    title: 'Test',
+    kicker: '',
+    description: '',
+    filters: [],
+    columns: [],
+    detailFields: [],
+    data: [],
+    buildOverview: () => [],
+    formFields: [],
+  }
+
+  const createField = (
+    overrides: Partial<ModuleFormFieldDefinition> = {},
+  ): ModuleFormFieldDefinition => ({
+    key: 'field',
+    label: 'Field',
+    type: 'text',
+    required: false,
+    ...overrides,
+  })
+
   const defaultProps = {
-    config: {
-      key: 'test',
-      title: 'Test',
-      kicker: '',
-      description: '',
-      filters: [],
-      columns: [],
-      detailFields: [],
-      data: [],
-      buildOverview: () => [],
-      formFields: [],
-    },
+    config: defaultConfig,
     moduleKey: 'test-module',
     canSave: true,
     canAudit: true,
@@ -88,45 +136,57 @@ describe('ModuleEditorFormSection', () => {
     onSave: vi.fn(),
   }
 
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(groupFieldsByRow).mockImplementation((fields) =>
+      fields.length ? [fields] : [],
+    )
+    vi.mocked(isEditorFieldDisabledForModule).mockReturnValue(false)
+    mocks.useFormInstance.mockReturnValue({
+      getFieldValue: vi.fn(),
+      getFieldsValue: vi.fn().mockReturnValue({}),
+    })
+    mocks.useWatch.mockReturnValue({})
+  })
+
   it('renders nothing when no form fields', () => {
     const { container } = render(<ModuleEditorFormSection {...defaultProps} />)
     expect(container.textContent).toBe('')
   })
 
+  it('uses an empty field list when formFields is omitted', () => {
+    const { formFields: _formFields, ...config } = defaultConfig
+
+    const { container } = render(
+      <ModuleEditorFormSection {...defaultProps} config={config} />,
+    )
+
+    expect(container.textContent).toBe('')
+    expect(groupFieldsByRow).toHaveBeenCalledWith([])
+  })
+
   it('renders with form fields', () => {
     const config = {
       ...defaultProps.config,
-      formFields: [
-        {
-          key: 'field1',
-          label: 'Field 1',
-          type: 'text' as const,
-          required: false,
-        },
-      ],
+      formFields: [createField({ key: 'field1', label: 'Field 1' })],
     }
     vi.mocked(groupFieldsByRow).mockReturnValue([
-      [{ key: 'field1', label: 'Field 1', type: 'text', required: false }],
+      [createField({ key: 'field1', label: 'Field 1' })],
     ])
     render(<ModuleEditorFormSection {...defaultProps} config={config} />)
     expect(screen.getByText('modules.editorForm.documentInfo')).toBeTruthy()
+    expect(screen.getByLabelText('Preallocated ID')).toBeTruthy()
+    expect(screen.getByTestId('form-field')).toHaveTextContent('Field 1')
   })
 
   it('passes authoritative primary number to disabled resolver', () => {
     const config = {
       ...defaultProps.config,
       primaryNoKey: 'orderNo',
-      formFields: [
-        {
-          key: 'orderNo',
-          label: 'Order No',
-          type: 'input' as const,
-          required: true,
-        },
-      ],
+      formFields: [createField({ key: 'orderNo', label: 'Order No' })],
     }
     vi.mocked(groupFieldsByRow).mockReturnValue([
-      [{ key: 'orderNo', label: 'Order No', type: 'input', required: true }],
+      [createField({ key: 'orderNo', label: 'Order No' })],
     ])
 
     render(
@@ -147,6 +207,189 @@ describe('ModuleEditorFormSection', () => {
       undefined,
       {},
       'ORD-001',
+    )
+  })
+
+  it('renders the locked notice and forwards footer action props when enabled', () => {
+    render(
+      <ModuleEditorFormSection
+        {...defaultProps}
+        canAudit={false}
+        canSave={false}
+        lockedLineItemsNotice="Line items are locked"
+        saving
+        showActions
+        config={{
+          ...defaultProps.config,
+          formFields: [createField({ key: 'status', label: 'Status' })],
+        }}
+      />,
+    )
+
+    expect(screen.getByText('Line items are locked')).toHaveAttribute(
+      'data-type',
+      'warning',
+    )
+    expect(screen.getByText('Line items are locked')).toHaveAttribute(
+      'data-show-icon',
+      'true',
+    )
+    expect(screen.getByTestId('footer-actions')).toBeTruthy()
+    expect(mocks.EditorFooterActions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        canAudit: false,
+        canSave: false,
+        saving: true,
+        onCancel: defaultProps.onCancel,
+        onSave: defaultProps.onSave,
+      }),
+      undefined,
+    )
+  })
+
+  it('clamps explicit column spans and expands full-row fields', () => {
+    vi.mocked(groupFieldsByRow).mockReturnValue([
+      [
+        createField({ key: 'tooSmall', label: 'Too Small', colSpan: 3 }),
+        createField({ key: 'fractional', label: 'Fractional', colSpan: 12.8 }),
+        createField({ key: 'tooLarge', label: 'Too Large', colSpan: 30 }),
+        createField({ key: 'fullRow', label: 'Full Row', fullRow: true }),
+        createField({ key: 'notes', label: 'Notes', type: 'textarea' }),
+        createField({
+          key: 'infinite',
+          label: 'Infinite',
+          colSpan: Number.POSITIVE_INFINITY,
+        }),
+      ],
+    ])
+
+    render(
+      <ModuleEditorFormSection
+        {...defaultProps}
+        config={{
+          ...defaultProps.config,
+          formFields: [
+            createField({ key: 'tooSmall', colSpan: 3 }),
+            createField({ key: 'fractional', colSpan: 12.8 }),
+            createField({ key: 'tooLarge', colSpan: 30 }),
+            createField({ key: 'fullRow', fullRow: true }),
+            createField({ key: 'notes', type: 'textarea' }),
+            createField({
+              key: 'infinite',
+              colSpan: Number.POSITIVE_INFINITY,
+            }),
+          ],
+        }}
+      />,
+    )
+
+    expect(screen.getAllByTestId('form-field')).toHaveLength(6)
+    expect(
+      screen.getAllByTestId('form-field').map((field) => field.parentElement),
+    ).toEqual([
+      expect.objectContaining({
+        dataset: expect.objectContaining({ lg: '6' }),
+      }),
+      expect.objectContaining({
+        dataset: expect.objectContaining({ lg: '12' }),
+      }),
+      expect.objectContaining({
+        dataset: expect.objectContaining({ lg: '24' }),
+      }),
+      expect.objectContaining({
+        dataset: expect.objectContaining({ lg: '24' }),
+      }),
+      expect.objectContaining({
+        dataset: expect.objectContaining({ lg: '24' }),
+      }),
+      expect.objectContaining({
+        dataset: expect.objectContaining({ lg: '6' }),
+      }),
+    ])
+  })
+
+  it('passes parent import, lock state, field disabled state, and watched values to disabled resolver', () => {
+    const formValues = { parentNo: 'PO-001', status: 'draft' }
+    mocks.useWatch.mockReturnValue(formValues)
+    vi.mocked(isEditorFieldDisabledForModule).mockReturnValue(true)
+    vi.mocked(groupFieldsByRow).mockReturnValue([
+      [
+        createField({
+          key: 'parentNo',
+          label: 'Parent No',
+          disabled: true,
+        }),
+      ],
+    ])
+
+    render(
+      <ModuleEditorFormSection
+        {...defaultProps}
+        canSave={false}
+        lineItemsLocked
+        authoritativePrimaryNo="BILL-001"
+        config={{
+          ...defaultProps.config,
+          primaryNoKey: 'billNo',
+          parentImport: {
+            parentModuleKey: 'purchase-order',
+            parentFieldKey: 'parentNo',
+            parentDisplayFieldKey: 'orderNo',
+            label: 'Purchase Order',
+          },
+          formFields: [
+            createField({
+              key: 'parentNo',
+              disabled: true,
+            }),
+          ],
+        }}
+      />,
+    )
+
+    expect(screen.getByTestId('form-field')).toHaveAttribute(
+      'data-disabled',
+      'true',
+    )
+    expect(isEditorFieldDisabledForModule).toHaveBeenCalledWith(
+      'test-module',
+      'parentNo',
+      true,
+      false,
+      true,
+      'billNo',
+      'parentNo',
+      formValues,
+      'BILL-001',
+    )
+  })
+
+  it('falls back to an empty values object when no watched form values exist', () => {
+    mocks.useWatch.mockReturnValue(undefined)
+    vi.mocked(groupFieldsByRow).mockReturnValue([
+      [createField({ key: 'fallback', label: 'Fallback' })],
+    ])
+
+    render(
+      <ModuleEditorFormSection
+        {...defaultProps}
+        config={{
+          ...defaultProps.config,
+          formFields: [createField({ key: 'fallback' })],
+        }}
+      />,
+    )
+
+    expect(isEditorFieldDisabledForModule).toHaveBeenCalledWith(
+      'test-module',
+      'fallback',
+      false,
+      true,
+      false,
+      undefined,
+      undefined,
+      {},
+      undefined,
     )
   })
 })

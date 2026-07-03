@@ -1,7 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { createElement } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModuleRecord } from '@/types/module-page'
 import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
 import {
@@ -22,37 +22,108 @@ vi.mock('@/hooks/useDeferredColumns', () => ({
   useDeferredColumns: (columns: unknown) => columns,
 }))
 
-vi.mock('antd', () => ({
-  Empty: ({ description }: { description: ReactNode }) =>
-    createElement('div', null, description),
-  Table: ({ dataSource, onRow, rowClassName }: any) =>
-    createElement(
-      'table',
-      null,
+vi.mock('antd', () => {
+  const Empty = ({ description }: { description: ReactNode }) =>
+    createElement('div', null, description)
+  Empty.PRESENTED_IMAGE_SIMPLE = 'simple'
+
+  return {
+    Empty,
+    Table: ({
+      columns,
+      dataSource,
+      loading,
+      locale,
+      onRow,
+      rowClassName,
+      rowSelection,
+      scroll,
+      virtual,
+    }: any) =>
       createElement(
-        'tbody',
-        null,
-        dataSource.map((record: ModuleRecord) => {
-          const rowProps = onRow(record)
-          return createElement(
-            'tr',
-            {
-              key: record.id,
-              'data-testid': `row-${record.id}`,
-              className: rowClassName(record),
-              ...rowProps,
-            },
-            createElement('td', null, record.name as ReactNode),
-            createElement(
-              'td',
+        'div',
+        {
+          'data-testid': 'mock-table',
+          'data-loading': String(Boolean(loading)),
+          'data-scroll-x': scroll?.x == null ? '' : String(scroll.x),
+          'data-scroll-y': scroll?.y == null ? '' : String(scroll.y),
+          'data-selection-column-width': rowSelection?.columnWidth
+            ? String(rowSelection.columnWidth)
+            : '',
+          'data-virtual': String(Boolean(virtual)),
+        },
+        dataSource.length === 0
+          ? createElement(
+              'div',
+              { 'data-testid': 'empty-text' },
+              locale.emptyText,
+            )
+          : createElement(
+              'table',
               null,
-              createElement('button', { type: 'button' }, '行内操作'),
+              columns.length
+                ? createElement(
+                    'thead',
+                    { className: 'ant-table-thead' },
+                    createElement(
+                      'tr',
+                      null,
+                      columns.map(
+                        (column: { dataIndex?: string; title?: string }) =>
+                          createElement(
+                            'th',
+                            { key: column.dataIndex || column.title },
+                            column.title as ReactNode,
+                          ),
+                      ),
+                    ),
+                  )
+                : null,
+              createElement(
+                'tbody',
+                null,
+                dataSource.map((record: ModuleRecord) => {
+                  const rowProps = onRow(record)
+                  return createElement(
+                    'tr',
+                    {
+                      key: record.id,
+                      'data-testid': `row-${record.id}`,
+                      className: rowClassName(record),
+                      ...rowProps,
+                    },
+                    createElement('td', null, record.name as ReactNode),
+                    createElement(
+                      'td',
+                      null,
+                      createElement('button', { type: 'button' }, '行内操作'),
+                    ),
+                  )
+                }),
+              ),
             ),
-          )
-        }),
       ),
-    ),
-}))
+  }
+})
+
+const makeRect = (overrides: Partial<DOMRect> = {}) =>
+  ({
+    bottom: 0,
+    height: 0,
+    left: 0,
+    right: 0,
+    top: 0,
+    width: 0,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+    ...overrides,
+  }) as DOMRect
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 
 describe('computeTableBodyScrollY', () => {
   it('should reserve space for table header and pagination', () => {
@@ -160,6 +231,259 @@ describe('buildTableScrollConfig', () => {
   })
 })
 
+describe('BusinessGridTable layout and rendering', () => {
+  const renderGrid = ({
+    columns = [{ title: '名称', dataIndex: 'name', width: 120 }],
+    dataSource = [{ id: 'row-1', name: '第一行' }],
+    loading = false,
+    rowSelection,
+  }: {
+    columns?: Array<{ title: string; dataIndex: string; width?: number }>
+    dataSource?: ModuleRecord[]
+    loading?: boolean
+    rowSelection?: Record<string, unknown>
+  } = {}) => {
+    const onRowClick = vi.fn()
+    const onRowDoubleClick = vi.fn()
+
+    render(
+      createElement(BusinessGridTable, {
+        moduleKey: 'sales-order',
+        columns,
+        dataSource,
+        loading,
+        rowSelection,
+        rowClassName: () => 'business-row',
+        onRowClick,
+        onRowDoubleClick,
+      }),
+    )
+
+    return { onRowClick, onRowDoubleClick }
+  }
+
+  it('renders translated empty text without scroll containers for empty data', () => {
+    renderGrid({ dataSource: [] })
+
+    expect(screen.getByTestId('empty-text')).toHaveTextContent(
+      'modules.table.noData',
+    )
+    expect(screen.getByTestId('mock-table')).toHaveAttribute(
+      'data-scroll-x',
+      '',
+    )
+    expect(screen.getByTestId('mock-table')).toHaveAttribute(
+      'data-scroll-y',
+      '',
+    )
+  })
+
+  it('skips layout measurement when ResizeObserver is unavailable', async () => {
+    vi.stubGlobal('ResizeObserver', undefined)
+
+    renderGrid()
+
+    expect(typeof ResizeObserver).toBe('undefined')
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-table')).toHaveAttribute(
+        'data-scroll-y',
+        '240',
+      )
+    })
+  })
+
+  it('passes row selection width and selected row aria state', () => {
+    renderGrid({
+      rowSelection: {
+        selectedRowKeys: ['row-1'],
+        onChange: vi.fn(),
+      },
+    })
+
+    expect(screen.getByTestId('mock-table')).toHaveAttribute(
+      'data-selection-column-width',
+      '40',
+    )
+    expect(screen.getByTestId('row-row-1')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByTestId('mock-table')).toHaveAttribute(
+      'data-scroll-x',
+      '160',
+    )
+  })
+
+  it('enables virtual table mode for large data sets', () => {
+    renderGrid({
+      dataSource: Array.from({ length: 101 }, (_, index) => ({
+        id: `row-${index}`,
+        name: `第 ${index} 行`,
+      })),
+    })
+
+    expect(screen.getByTestId('mock-table')).toHaveAttribute(
+      'data-virtual',
+      'true',
+    )
+    expect(screen.getByTestId('mock-table')).toHaveAttribute(
+      'data-scroll-x',
+      '120',
+    )
+  })
+
+  it('measures shell size and keeps stable scroll values on repeated resize', async () => {
+    vi.stubGlobal('innerHeight', 800)
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+    vi.stubGlobal(
+      'ResizeObserver',
+      class ResizeObserverMock {
+        private readonly callback: ResizeObserverCallback
+
+        constructor(callback: ResizeObserverCallback) {
+          this.callback = callback
+        }
+
+        observe() {
+          this.callback([], this as unknown as ResizeObserver)
+        }
+
+        disconnect() {}
+      },
+    )
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (this.classList.contains('module-table-shell')) {
+          return makeRect({ top: 100 })
+        }
+        if (this.classList.contains('ant-table-thead')) {
+          return makeRect({ height: 42 })
+        }
+        return makeRect()
+      },
+    )
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.classList.contains('module-table-shell') ? 700 : 0
+      },
+    )
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.classList.contains('module-table-shell') ? 640 : 0
+      },
+    )
+
+    renderGrid({ loading: true })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-table')).toHaveAttribute(
+        'data-scroll-y',
+        '658',
+      )
+    })
+    expect(screen.getByTestId('mock-table')).toHaveAttribute(
+      'data-loading',
+      'true',
+    )
+    expect(screen.getByTestId('mock-table')).toHaveAttribute(
+      'data-scroll-x',
+      '',
+    )
+  })
+
+  it('keeps the minimum body height when the measured space is empty', () => {
+    vi.stubGlobal('innerHeight', 0)
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+    vi.stubGlobal(
+      'ResizeObserver',
+      class ResizeObserverMock {
+        private readonly callback: ResizeObserverCallback
+
+        constructor(callback: ResizeObserverCallback) {
+          this.callback = callback
+        }
+
+        observe() {
+          this.callback([], this as unknown as ResizeObserver)
+        }
+
+        disconnect() {}
+      },
+    )
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(0)
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(0)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      makeRect(),
+    )
+
+    renderGrid({ columns: [] })
+
+    expect(screen.getByTestId('mock-table')).toHaveAttribute(
+      'data-scroll-y',
+      '240',
+    )
+  })
+
+  it('falls back to zero header height when Ant Design header is absent', async () => {
+    vi.stubGlobal('innerHeight', 800)
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+    vi.stubGlobal(
+      'ResizeObserver',
+      class ResizeObserverMock {
+        private readonly callback: ResizeObserverCallback
+
+        constructor(callback: ResizeObserverCallback) {
+          this.callback = callback
+        }
+
+        observe() {
+          this.callback([], this as unknown as ResizeObserver)
+        }
+
+        disconnect() {}
+      },
+    )
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        return this.classList.contains('module-table-shell')
+          ? makeRect({ top: 100 })
+          : makeRect()
+      },
+    )
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.classList.contains('module-table-shell') ? 700 : 0
+      },
+    )
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.classList.contains('module-table-shell') ? 640 : 0
+      },
+    )
+
+    renderGrid({ columns: [] })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-table')).toHaveAttribute(
+        'data-scroll-y',
+        '700',
+      )
+    })
+  })
+})
+
 describe('BusinessGridTable keyboard row interactions', () => {
   const renderGrid = () => {
     const onRowClick = vi.fn()
@@ -211,6 +535,44 @@ describe('BusinessGridTable keyboard row interactions', () => {
 
     fireEvent.keyDown(inlineButton, { key: ' ', code: 'Space' })
     fireEvent.keyDown(inlineButton, { key: 'Enter', code: 'Enter' })
+
+    expect(onRowClick).not.toHaveBeenCalled()
+    expect(onRowDoubleClick).not.toHaveBeenCalled()
+  })
+
+  it('maps row click to selection and ignores clicks from inner controls', () => {
+    const { row, inlineButton, onRowClick } = renderGrid()
+
+    fireEvent.click(row)
+    fireEvent.click(inlineButton)
+
+    expect(onRowClick).toHaveBeenCalledTimes(1)
+    expect(onRowClick).toHaveBeenCalledWith({ id: 'row-1', name: '第一行' })
+  })
+
+  it('debounces row double click and ignores inner control double clicks', () => {
+    vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(1000)
+      .mockReturnValueOnce(1200)
+      .mockReturnValueOnce(1700)
+    const { row, inlineButton, onRowDoubleClick } = renderGrid()
+
+    fireEvent.doubleClick(row)
+    fireEvent.doubleClick(row)
+    fireEvent.doubleClick(row)
+    fireEvent.doubleClick(inlineButton)
+
+    expect(onRowDoubleClick).toHaveBeenCalledTimes(2)
+    expect(onRowDoubleClick).toHaveBeenCalledWith({
+      id: 'row-1',
+      name: '第一行',
+    })
+  })
+
+  it('ignores unrelated keyboard keys on rows', () => {
+    const { row, onRowClick, onRowDoubleClick } = renderGrid()
+
+    fireEvent.keyDown(row, { key: 'Escape', code: 'Escape' })
 
     expect(onRowClick).not.toHaveBeenCalled()
     expect(onRowDoubleClick).not.toHaveBeenCalled()

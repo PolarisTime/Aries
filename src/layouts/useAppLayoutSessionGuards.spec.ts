@@ -59,6 +59,24 @@ describe('useAppLayoutSessionGuards', () => {
     expect(navigate).not.toHaveBeenCalled()
   })
 
+  it('redirects to 2fa setup with pathname only when search is empty', () => {
+    const navigate = vi.fn()
+
+    renderHook(() =>
+      useAppLayoutSessionGuards({
+        authReady: true,
+        token: 'some-token',
+        locationPathname: '/dashboard',
+        navigate,
+        user: { forceTotpSetup: true, totpEnabled: false },
+      }),
+    )
+
+    expect(navigate).toHaveBeenCalledWith({
+      to: '/setup-2fa?redirect=%2Fdashboard',
+    })
+  })
+
   it('redirects to 2fa setup when forceTotpSetup is true and totp not enabled', () => {
     const navigate = vi.fn()
     Object.defineProperty(window, 'location', {

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -23,8 +23,12 @@ vi.mock('antd', () => {
       {children}
     </div>
   )
-  const Input = () => <input />
-  Input.TextArea = () => <textarea />
+  const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+    <input {...props} />
+  )
+  Input.TextArea = (
+    props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  ) => <textarea {...props} />
 
   const Space = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
@@ -45,8 +49,24 @@ vi.mock('antd', () => {
         {description && <div>{description}</div>}
       </div>
     ),
-    Button: ({ children }: { children: React.ReactNode }) => (
-      <button>{children}</button>
+    Button: ({
+      children,
+      onClick,
+      loading,
+      type,
+    }: {
+      children: React.ReactNode
+      onClick?: () => void
+      loading?: boolean
+      type?: string
+    }) => (
+      <button
+        aria-busy={loading ? 'true' : undefined}
+        data-button-type={type}
+        onClick={onClick}
+      >
+        {children}
+      </button>
     ),
     Card: ({
       children,
@@ -69,22 +89,41 @@ vi.mock('antd', () => {
     Input,
     Row: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     Select: ({
+      allowClear,
       onChange,
       options = [],
     }: {
+      allowClear?: boolean
       onChange?: (value: unknown) => void
       options?: Array<{ label: string; value: string | number }>
     }) => (
       <div>
         <span>Select</span>
-        {options.map((option) => (
-          <button
-            key={String(option.value)}
-            type="button"
-            onClick={() => onChange?.(Number(option.value))}
-          >
-            {option.label}
+        {allowClear && (
+          <button type="button" onClick={() => onChange?.(undefined)}>
+            clear
           </button>
+        )}
+        {onChange && (
+          <button type="button" onClick={() => onChange('UNKNOWN')}>
+            unknown option
+          </button>
+        )}
+        {options.map((option) => (
+          <span key={String(option.value)}>
+            <button type="button" onClick={() => onChange?.(option.value)}>
+              {option.label}
+            </button>
+            {Number.isFinite(Number(option.value)) && (
+              <button
+                data-testid={`select-numeric-${option.label}`}
+                type="button"
+                onClick={() => onChange?.(Number(option.value))}
+              >
+                {`${option.label} numeric`}
+              </button>
+            )}
+          </span>
         ))}
       </div>
     ),
@@ -139,6 +178,10 @@ describe('PrintTemplateEditorModal', () => {
     onClose: vi.fn(),
   }
 
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('renders without crashing', () => {
     expect(PrintTemplateEditorModal).toBeDefined()
     expect(typeof PrintTemplateEditorModal).toBe('function')
@@ -148,6 +191,18 @@ describe('PrintTemplateEditorModal', () => {
     render(<PrintTemplateEditorModal {...defaultProps} />)
     expect(screen.getByText('common.back')).toBeInTheDocument()
     expect(screen.getByText('common.save')).toBeInTheDocument()
+  })
+
+  it('invokes close and save actions from the header buttons', () => {
+    render(<PrintTemplateEditorModal {...defaultProps} saving={true} />)
+
+    fireEvent.click(screen.getByText('common.back'))
+    fireEvent.click(screen.getByText('common.cancel'))
+    fireEvent.click(screen.getByText('common.save'))
+
+    expect(defaultProps.onClose).toHaveBeenCalledTimes(2)
+    expect(defaultProps.onSave).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('common.save')).toHaveAttribute('aria-busy', 'true')
   })
 
   it('renders create title when not editing', () => {
@@ -246,9 +301,55 @@ describe('PrintTemplateEditorModal', () => {
   it('does not render when closed', () => {
     render(<PrintTemplateEditorModal {...defaultProps} open={false} />)
     expect(screen.queryByTestId('form-modal')).not.toBeInTheDocument()
+    expect(screen.queryByText('common.back')).not.toBeInTheDocument()
   })
 
-  it('resolves settlement company name when select emits numeric id', () => {
+  it('updates engine when the template type changes', () => {
+    render(<PrintTemplateEditorModal {...defaultProps} />)
+
+    fireEvent.click(
+      screen.getByText('system.printTemplateEditor.templateTypeCoord'),
+    )
+    fireEvent.click(
+      screen.getByText('system.printTemplateEditor.templateTypePdfForm'),
+    )
+    fireEvent.click(screen.getAllByText('unknown option')[0])
+
+    expect(formInstance.setFieldValue).toHaveBeenNthCalledWith(
+      1,
+      'engine',
+      'LODOP',
+    )
+    expect(formInstance.setFieldValue).toHaveBeenNthCalledWith(
+      2,
+      'engine',
+      'PDF_FORM',
+    )
+    expect(formInstance.setFieldValue).toHaveBeenNthCalledWith(
+      3,
+      'engine',
+      'LODOP',
+    )
+  })
+
+  it('emits template html changes from the textarea', () => {
+    render(
+      <PrintTemplateEditorModal
+        {...defaultProps}
+        templateHtml="<div>old</div>"
+      />,
+    )
+
+    fireEvent.change(screen.getByDisplayValue('<div>old</div>'), {
+      target: { value: '<div>new</div>' },
+    })
+
+    expect(defaultProps.onTemplateHtmlChange).toHaveBeenCalledWith(
+      '<div>new</div>',
+    )
+  })
+
+  it('resolves settlement company name when select emits string id', () => {
     render(
       <PrintTemplateEditorModal
         {...defaultProps}
@@ -268,6 +369,87 @@ describe('PrintTemplateEditorModal', () => {
     expect(formInstance.setFieldValue).toHaveBeenCalledWith(
       'settlementCompanyName',
       'TEST9',
+    )
+  })
+
+  it('resolves settlement company name when select emits numeric id', () => {
+    render(
+      <PrintTemplateEditorModal
+        {...defaultProps}
+        settlementCompanyOptions={[
+          {
+            id: '1001',
+            value: '001',
+            label: 'Numeric Company',
+            companyName: 'Numeric Company',
+          },
+        ]}
+      />,
+    )
+
+    fireEvent.click(screen.getByTestId('select-numeric-Numeric Company'))
+
+    expect(formInstance.setFieldValue).toHaveBeenCalledWith(
+      'settlementCompanyId',
+      '001',
+    )
+    expect(formInstance.setFieldValue).toHaveBeenCalledWith(
+      'settlementCompanyName',
+      'Numeric Company',
+    )
+  })
+
+  it('clears settlement company fields when no option matches', () => {
+    render(
+      <PrintTemplateEditorModal
+        {...defaultProps}
+        settlementCompanyOptions={[
+          {
+            id: '330050675528433664',
+            value: '330050675528433664',
+            label: 'TEST9',
+            companyName: 'TEST9',
+          },
+        ]}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('clear'))
+
+    expect(formInstance.setFieldValue).toHaveBeenCalledWith(
+      'settlementCompanyId',
+      undefined,
+    )
+    expect(formInstance.setFieldValue).toHaveBeenCalledWith(
+      'settlementCompanyName',
+      '',
+    )
+  })
+
+  it('clears settlement company fields when a nonnumeric value has no match', () => {
+    render(
+      <PrintTemplateEditorModal
+        {...defaultProps}
+        settlementCompanyOptions={[
+          {
+            id: '330050675528433664',
+            value: '330050675528433664',
+            label: 'TEST9',
+            companyName: 'TEST9',
+          },
+        ]}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByText('unknown option')[1])
+
+    expect(formInstance.setFieldValue).toHaveBeenCalledWith(
+      'settlementCompanyId',
+      undefined,
+    )
+    expect(formInstance.setFieldValue).toHaveBeenCalledWith(
+      'settlementCompanyName',
+      '',
     )
   })
 })

@@ -229,10 +229,19 @@ describe('useModuleEditorItemColumns', () => {
   })
 
   it('resolves material selection from local and remote material records', async () => {
-    mocks.fetchMaterialSearch.mockResolvedValue([
-      { materialCode: 'OTHER', materialName: '其他' },
-      { materialCode: 'REMOTE-1', materialName: '远程物料' },
-    ])
+    mocks.fetchMaterialSearch
+      .mockResolvedValueOnce([
+        { materialCode: 'OTHER', materialName: '其他' },
+        { materialCode: 'REMOTE-1', materialName: '远程物料' },
+      ])
+      .mockResolvedValueOnce([
+        { materialName: '缺少编码' },
+        { materialCode: 'OTHER', materialName: '其他' },
+      ])
+    mocks.applyMaterialToEditorLineItem.mockReturnValue({
+      id: 'line-1',
+      materialCode: 'M-001',
+    })
     renderHook(() => useModuleEditorItemColumns(defaultProps()))
     const dataOptions = mocks.buildModuleEditorDataColumns.mock.calls[0][0]
 
@@ -244,6 +253,19 @@ describe('useModuleEditorItemColumns', () => {
       expect.any(Function),
       expect.any(Function),
     )
+    const applySelectedMaterial =
+      mocks.handleMaterialSelect.mock.calls.at(-1)?.[3]
+    expect(
+      applySelectedMaterial(
+        { id: 'line-1', quantity: 1 },
+        { id: 'material-1', materialCode: 'M-001' },
+      ),
+    ).toEqual({ id: 'line-1', materialCode: 'M-001' })
+    expect(mocks.applyMaterialToEditorLineItem).toHaveBeenCalledWith(
+      { id: 'line-1', quantity: 1 },
+      { id: 'material-1', materialCode: 'M-001' },
+      'purchase-inbound',
+    )
 
     dataOptions.handleMaterialSelect('line-1', ' remote-1 ')
     const resolver = mocks.handleMaterialSelect.mock.calls.at(-1)?.[4]
@@ -251,7 +273,76 @@ describe('useModuleEditorItemColumns', () => {
       expect.objectContaining({ materialCode: 'REMOTE-1' }),
     )
     expect(mocks.fetchMaterialSearch).toHaveBeenCalledWith('remote-1', 20)
+    await expect(resolver('missing')).resolves.toBeNull()
+    expect(mocks.fetchMaterialSearch).toHaveBeenCalledWith('missing', 20)
     await expect(resolver(' ')).resolves.toBeNull()
+
+    dataOptions.handleMaterialSelect('line-1', ' ')
+    expect(mocks.handleMaterialSelect).toHaveBeenLastCalledWith(
+      'line-1',
+      ' ',
+      null,
+      expect.any(Function),
+      expect.any(Function),
+    )
+  })
+
+  it('uses module key fallback and returns no columns when item columns are absent', () => {
+    const configWithoutItemColumns = {
+      ...config(),
+      key: undefined as unknown as string,
+      itemColumns: undefined,
+    } as ModulePageConfig
+
+    const { result } = renderHook(() =>
+      useModuleEditorItemColumns({
+        ...defaultProps(),
+        config: configWithoutItemColumns,
+        moduleKey: 'fallback-module',
+      }),
+    )
+
+    expect(mocks.useColumnSettingsSupport).toHaveBeenCalledWith(
+      'fallback-module:editor-items',
+      undefined,
+      0,
+    )
+    expect(result.current.itemColumnOrder).toEqual([])
+    expect(result.current.visibleItemColumnKeys).toEqual([])
+    expect(result.current.itemColumns).toEqual([])
+    expect(mocks.buildModuleEditorManagementColumns).not.toHaveBeenCalled()
+    expect(mocks.buildModuleEditorDataColumns).not.toHaveBeenCalled()
+  })
+
+  it('builds material options from material name when optional fields are absent', () => {
+    mocks.useMasterOptions.mockReturnValue({
+      materials: [
+        {
+          brand: '无编码',
+        },
+        {
+          materialCode: 'NAME-1',
+          materialName: '命名物料',
+        },
+      ],
+      warehouses: [],
+    })
+
+    renderHook(() => useModuleEditorItemColumns(defaultProps()))
+    const dataOptions = mocks.buildModuleEditorDataColumns.mock.calls[0][0]
+    const materialOptions = dataOptions.materialOptions as Array<{
+      label: string
+      searchText: string
+      value: string
+    }>
+
+    expect(materialOptions).toEqual([
+      expect.objectContaining({
+        label: '命名物料',
+        searchText: expect.stringContaining('name-1 命名物料'),
+        value: 'NAME-1',
+      }),
+    ])
   })
 
   it('limits pinyin initial search for material code select to brand and material name', () => {

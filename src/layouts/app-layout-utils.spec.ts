@@ -117,4 +117,22 @@ describe('buildAppLayoutStyles', () => {
 
     expect(result.topBrandMark).toBe('L')
   })
+
+  it('falls back to L when appTitle is blank', async () => {
+    vi.resetModules()
+    vi.doMock('@/utils/env', () => ({
+      appTitle: '   ',
+    }))
+    const { buildAppLayoutStyles: buildStylesWithBlankTitle } = await import(
+      '@/layouts/app-layout-utils'
+    )
+
+    const result = buildStylesWithBlankTitle({
+      appliedFontSize: 12,
+      collapsed: false,
+      isTopNavigationLayout: true,
+    })
+
+    expect(result.topBrandMark).toBe('L')
+  })
 })

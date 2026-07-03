@@ -22,7 +22,7 @@ export function getRequestPath(url: string) {
         : 'http://localhost',
     ).pathname
   } catch {
-    return url.split('#')[0]?.split('?')[0] || url
+    return url.split('#')[0].split('?')[0]
   }
 }
 

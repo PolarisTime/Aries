@@ -1,6 +1,11 @@
 import type { Locator, Page } from '@playwright/test'
 import { e2eApiUrl } from './support/api-key'
-import { waitForFirstDetailRow } from './support/business-e2e'
+import {
+  fillOrReadFormField,
+  fillPurchaseOrderLineItem,
+  formField,
+  waitForFirstDetailRow,
+} from './support/business-e2e'
 import { expect, test } from './support/test'
 
 const API_BASE_URL = 'http://127.0.0.1:11211/api'
@@ -29,7 +34,7 @@ function isoNextDay() {
 
 async function openCreateOverlay(page: Page) {
   const beforeCount = await page.locator('.workspace-overlay-panel').count()
-  await page.getByRole('button', { name: '新建' }).click()
+  await page.getByRole('button', { name: /新建|新增/ }).click()
   const overlay = page.locator('.workspace-overlay-panel').nth(beforeCount)
   await expect(overlay).toBeVisible()
   return overlay
@@ -75,6 +80,7 @@ async function loginAsTest9(page: Page) {
       localStorage.setItem('aries-token-expires-at', expiresAt)
       localStorage.setItem('aries-user', JSON.stringify(currentUser))
       localStorage.setItem('aries-auth-persistence', 'local')
+      localStorage.setItem('leo-locale', 'zh-CN')
       sessionStorage.removeItem('aries-token')
       sessionStorage.removeItem('aries-token-expires-at')
       sessionStorage.removeItem('aries-user')
@@ -152,12 +158,21 @@ async function waitForSaveOutcome(
   const successMessage = page.locator('.ant-message-notice').filter({
     hasText: /创建成功|更新成功|保存成功/,
   })
+  const saveResultText = page.getByText(/保存成功|创建成功|更新成功/)
 
   await expect
     .poll(
       async () => {
         if ((await successMessage.count()) > 0) {
           return 'message'
+        }
+        if (
+          await saveResultText
+            .last()
+            .isVisible()
+            .catch(() => false)
+        ) {
+          return 'result'
         }
         if (
           rowInList &&
@@ -207,41 +222,36 @@ test.describe('purchase to sales chain', () => {
     const suffix = buildSuffix()
     const orderDate = isoToday()
     const deliveryDate = isoNextDay()
-    const purchaseOrderNo = `PO-E2E-${suffix}`
-    const purchaseInboundNo = `PI-E2E-${suffix}`
-    const salesOrderNo = `SO-E2E-${suffix}`
-    const salesOutboundNo = `SOB-E2E-${suffix}`
+    let purchaseOrderNo = `PO-E2E-${suffix}`
+    let purchaseInboundNo = `PI-E2E-${suffix}`
+    let salesOrderNo = `SO-E2E-${suffix}`
+    let salesOutboundNo = `SOB-E2E-${suffix}`
 
     await page.goto('/purchase-order')
     const purchaseOrderOverlay = await openCreateOverlay(page)
     await selectAntOption(
-      purchaseOrderOverlay.locator('#supplierName'),
+      formField(purchaseOrderOverlay, 'supplierName'),
       '益海（浙江）物联网科技有限公司',
     )
-    await purchaseOrderOverlay.locator('#orderNo').fill(purchaseOrderNo)
-    await fillDateInput(purchaseOrderOverlay.locator('#orderDate'), orderDate)
+    purchaseOrderNo = await fillOrReadFormField(
+      formField(purchaseOrderOverlay, 'orderNo'),
+      purchaseOrderNo,
+    )
+    await fillDateInput(formField(purchaseOrderOverlay, 'orderDate'), orderDate)
 
     const purchaseOrderRow = await waitForFirstDetailRow(purchaseOrderOverlay)
-    await purchaseOrderRow
-      .locator('td')
-      .nth(3)
-      .locator('input')
-      .fill('HZ-YG-PL8')
-    await page.waitForTimeout(1200)
-    await selectAntOption(
-      purchaseOrderRow.locator('td').nth(10).locator('.ant-select'),
-      '升华物流',
-    )
-    await purchaseOrderRow.locator('td').nth(12).locator('input').fill('10')
-    await purchaseOrderRow.locator('td').nth(16).locator('input').fill('3200')
+    await fillPurchaseOrderLineItem(purchaseOrderRow)
 
     await saveOverlay(page, purchaseOrderOverlay, purchaseOrderNo)
 
     await page.goto('/purchase-inbound')
     const purchaseInboundOverlay = await openCreateOverlay(page)
-    await purchaseInboundOverlay.locator('#inboundNo').fill(purchaseInboundNo)
+    purchaseInboundNo = await fillOrReadFormField(
+      formField(purchaseInboundOverlay, 'inboundNo'),
+      purchaseInboundNo,
+    )
     await fillDateInput(
-      purchaseInboundOverlay.locator('#inboundDate'),
+      formField(purchaseInboundOverlay, 'inboundDate'),
       orderDate,
     )
     await importParentByKeyword(
@@ -264,17 +274,20 @@ test.describe('purchase to sales chain', () => {
 
     await page.goto('/sales-order')
     const salesOrderOverlay = await openCreateOverlay(page)
-    await salesOrderOverlay.locator('#orderNo').fill(salesOrderNo)
+    salesOrderNo = await fillOrReadFormField(
+      formField(salesOrderOverlay, 'orderNo'),
+      salesOrderNo,
+    )
     await selectAntOption(
-      salesOrderOverlay.locator('#customerName'),
+      formField(salesOrderOverlay, 'customerName'),
       '浙江大东吴杭萧绿建科技有限公司',
     )
     await selectAntOption(
-      salesOrderOverlay.locator('#projectName'),
+      formField(salesOrderOverlay, 'projectName'),
       '恒力(大连)船厂有限公司-绿色高端装备制造项目6#曲面分段车间',
     )
     await fillDateInput(
-      salesOrderOverlay.locator('#deliveryDate'),
+      formField(salesOrderOverlay, 'deliveryDate'),
       deliveryDate,
     )
     await importParentByKeyword(
@@ -298,9 +311,12 @@ test.describe('purchase to sales chain', () => {
 
     await page.goto('/sales-outbound')
     const salesOutboundOverlay = await openCreateOverlay(page)
-    await salesOutboundOverlay.locator('#outboundNo').fill(salesOutboundNo)
+    salesOutboundNo = await fillOrReadFormField(
+      formField(salesOutboundOverlay, 'outboundNo'),
+      salesOutboundNo,
+    )
     await fillDateInput(
-      salesOutboundOverlay.locator('#outboundDate'),
+      formField(salesOutboundOverlay, 'outboundDate'),
       deliveryDate,
     )
     await importParentByKeyword(

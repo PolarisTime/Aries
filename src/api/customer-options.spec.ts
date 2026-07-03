@@ -93,6 +93,18 @@ describe('customer-options', () => {
       expect(result[1].value).toBe('项目Y')
     })
 
+    it('filters by value when customerName is missing', () => {
+      getMock.mockReturnValue([
+        { value: '客户A', label: '客户A', projectName: '项目X' },
+        { value: '客户B', label: '客户B', projectName: '项目Y' },
+      ])
+
+      const result = getCustomerProjectOptions({ customerName: '客户A' })
+
+      expect(result).toHaveLength(1)
+      expect(result[0].value).toBe('项目X')
+    })
+
     it('includes customer name in label when no filter', () => {
       getMock.mockReturnValue([{ customerName: '客户A', projectName: '项目X' }])
 
@@ -278,6 +290,20 @@ describe('customer-options', () => {
         true,
       )
       expect(result[0].label).toContain('客户A')
+    })
+
+    it('uses value in project label when customerName is missing', () => {
+      const result = uniqueProjectOptions(
+        [
+          {
+            value: '客户A',
+            label: 'L',
+            projectName: '项目X',
+          },
+        ],
+        true,
+      )
+      expect(result[0].label).toBe('项目X / 客户A')
     })
 
     it('excludes customer name from label when includeCustomerInLabel is false', () => {

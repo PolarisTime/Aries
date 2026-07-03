@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -25,24 +25,43 @@ vi.mock('@/components/FormModal', () => ({
     ) : null,
 }))
 
-vi.mock('antd', () => {
+const { mockNumericFieldValue } = vi.hoisted(() => ({
+  mockNumericFieldValue: vi.fn(() => '#000000' as string | undefined),
+}))
+
+vi.mock('antd', async () => {
+  const React = await vi.importActual<typeof import('react')>('react')
   const Form = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   )
   Form.Item = ({
     children,
+    extra,
     label,
+    name,
   }: {
     children: React.ReactNode
+    extra?: React.ReactNode
     label: string
+    name?: string
   }) => (
     <div>
       {label && <span>{label}</span>}
-      {children}
+      {name === 'numericValue' && React.isValidElement(children)
+        ? React.cloneElement(children as React.ReactElement<any>, {
+            onChange: vi.fn(),
+            value: mockNumericFieldValue(),
+          })
+        : children}
+      {extra}
     </div>
   )
-  const Input = () => <input />
-  Input.TextArea = () => <textarea />
+  const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+    <input {...props} />
+  )
+  Input.TextArea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
+    <textarea {...props} />
+  )
 
   const Space = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
@@ -51,10 +70,25 @@ vi.mock('antd', () => {
   Space.Addon = Space
 
   return {
-    ColorPicker: () => <div>ColorPicker</div>,
+    ColorPicker: ({
+      onChange,
+    }: {
+      onChange?: (_: unknown, hex: string) => void
+    }) => (
+      <button type="button" onClick={() => onChange?.(null, '#112233')}>
+        ColorPicker
+      </button>
+    ),
     Form,
     Input,
-    Select: () => <div>Select</div>,
+    Select: ({ options = [] }: { options?: Array<{ label: string }> }) => (
+      <div>
+        Select
+        {options.map((option) => (
+          <span key={option.label}>{option.label}</span>
+        ))}
+      </div>
+    ),
     Space,
     Switch: () => <div>Switch</div>,
     Typography: {
@@ -103,6 +137,11 @@ describe('GeneralSettingsEditorModal', () => {
     onSave: vi.fn(),
     onClose: vi.fn(),
   }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockNumericFieldValue.mockReturnValue('#000000')
+  })
 
   it('renders without crashing', () => {
     expect(GeneralSettingsEditorModal).toBeDefined()
@@ -160,6 +199,168 @@ describe('GeneralSettingsEditorModal', () => {
     )
     expect(
       screen.getByText('system.generalSettingsEditor.watermarkContent'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders watermark color picker for watermark color setting', () => {
+    const watermarkColorRecord = {
+      ...defaultProps.record,
+      settingCode: 'SYS_WATERMARK_COLOR',
+    }
+
+    render(
+      <GeneralSettingsEditorModal
+        {...defaultProps}
+        record={watermarkColorRecord}
+      />,
+    )
+
+    expect(
+      screen.getByText('system.generalSettingsEditor.watermarkColor'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('ColorPicker')).toBeInTheDocument()
+    expect(
+      screen.queryByText('system.generalSettingsEditor.magicVars'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('updates watermark color from picker and text input', () => {
+    render(
+      <GeneralSettingsEditorModal
+        {...defaultProps}
+        record={{
+          ...defaultProps.record,
+          settingCode: 'SYS_WATERMARK_COLOR',
+        }}
+      />,
+    )
+
+    screen.getByText('ColorPicker').click()
+    fireEvent.change(screen.getByPlaceholderText('rgba(0,0,0,0.08)'), {
+      target: { value: '#445566' },
+    })
+  })
+
+  it('renders watermark color input with empty form value', () => {
+    mockNumericFieldValue.mockReturnValue(undefined)
+
+    render(
+      <GeneralSettingsEditorModal
+        {...defaultProps}
+        record={{
+          ...defaultProps.record,
+          settingCode: 'SYS_WATERMARK_COLOR',
+        }}
+      />,
+    )
+
+    expect(screen.getByPlaceholderText('rgba(0,0,0,0.08)')).toHaveValue('')
+  })
+
+  it.each([
+    [
+      'SYS_WATERMARK_FONT_SIZE',
+      'system.generalSettingsEditor.watermarkFontSize',
+      'px',
+    ],
+    [
+      'SYS_WATERMARK_DENSITY',
+      'system.generalSettingsEditor.watermarkDensity',
+      'px',
+    ],
+    ['SYS_WATERMARK_ROTATE', 'system.generalSettingsEditor.currentValue', '°'],
+  ])('renders watermark numeric controls for %s', (settingCode, label, addon) => {
+    render(
+      <GeneralSettingsEditorModal
+        {...defaultProps}
+        record={{ ...defaultProps.record, settingCode }}
+      />,
+    )
+
+    expect(screen.getByText(label)).toBeInTheDocument()
+    expect(screen.getByText(addon)).toBeInTheDocument()
+  })
+
+  it('renders default list page size numeric input', () => {
+    render(
+      <GeneralSettingsEditorModal
+        {...defaultProps}
+        record={{
+          ...defaultProps.record,
+          settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE',
+        }}
+      />,
+    )
+
+    expect(
+      screen.getByText('system.generalSettingsEditor.currentValue'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('spinbutton')).toHaveAttribute('max', '200')
+  })
+
+  it('renders generic numeric input for other numeric setting', () => {
+    render(
+      <GeneralSettingsEditorModal
+        {...defaultProps}
+        record={{
+          ...defaultProps.record,
+          settingCode: 'SYS_MAX_CONCURRENT_SESSIONS',
+        }}
+      />,
+    )
+
+    expect(
+      screen.getByText('system.generalSettingsEditor.currentValue'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('spinbutton')).toHaveAttribute('min', '0')
+  })
+
+  it('renders detailed operation action selector', () => {
+    render(
+      <GeneralSettingsEditorModal
+        {...defaultProps}
+        record={{
+          ...defaultProps.record,
+          settingCode: 'SYS_OPERATION_LOG_DETAILED_PAGE_ACTIONS',
+        }}
+      />,
+    )
+
+    expect(
+      screen.getByText('system.generalSettingsEditor.recordedActions'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Select')).toBeInTheDocument()
+  })
+
+  it('renders hide audited statuses selector', () => {
+    render(
+      <GeneralSettingsEditorModal
+        {...defaultProps}
+        record={{
+          ...defaultProps.record,
+          settingCode: 'UI_HIDE_AUDITED_LIST_RECORDS',
+        }}
+      />,
+    )
+
+    expect(
+      screen.getByText('system.generalSettingsEditor.hiddenStatuses'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Select')).toBeInTheDocument()
+  })
+
+  it('renders default title when record name is empty', () => {
+    render(
+      <GeneralSettingsEditorModal
+        {...defaultProps}
+        record={{ ...defaultProps.record, settingName: '' }}
+      />,
+    )
+
+    expect(
+      screen.getByText(
+        'system.generalSettingsEditor.editTitle system.generalSettingsEditor.defaultTitle',
+      ),
     ).toBeInTheDocument()
   })
 })

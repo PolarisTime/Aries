@@ -1,18 +1,22 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const mockUsePageVisibility = vi.fn()
+
 vi.mock('@/hooks/usePageVisibility', () => ({
-  usePageVisibility: () => true,
+  usePageVisibility: () => mockUsePageVisibility(),
 }))
 
 import { useDashboardServerTime } from '@/views/dashboard/useDashboardServerTime'
 
 describe('useDashboardServerTime', () => {
   beforeEach(() => {
+    mockUsePageVisibility.mockReturnValue(true)
     vi.useFakeTimers()
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.useRealTimers()
   })
 
@@ -38,6 +42,24 @@ describe('useDashboardServerTime', () => {
     expect(result.current).toBe('invalid-date')
   })
 
+  it('returns dash when synced serverTime becomes empty', () => {
+    const { result, rerender } = renderHook(
+      ({ serverTime }: { serverTime?: string | null }) =>
+        useDashboardServerTime(serverTime),
+      {
+        initialProps: {
+          serverTime: '2024-01-01T12:00:00Z',
+        },
+      },
+    )
+
+    expect(result.current).toMatch(/2024-01-01/)
+
+    rerender({ serverTime: null })
+
+    expect(result.current).toBe('—')
+  })
+
   it('updates time periodically', () => {
     const { result } = renderHook(() =>
       useDashboardServerTime('2024-01-01T12:00:00Z'),
@@ -47,6 +69,18 @@ describe('useDashboardServerTime', () => {
       vi.advanceTimersByTime(2000)
     })
     expect(result.current).not.toBe(initialTime)
+  })
+
+  it('does not tick while the page is hidden', () => {
+    mockUsePageVisibility.mockReturnValue(false)
+    const setIntervalSpy = vi.spyOn(window, 'setInterval')
+
+    const { result } = renderHook(() =>
+      useDashboardServerTime('2024-01-01T12:00:00Z'),
+    )
+
+    expect(result.current).toMatch(/2024-01-01/)
+    expect(setIntervalSpy).not.toHaveBeenCalled()
   })
 
   it('formats time correctly', () => {

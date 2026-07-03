@@ -23,7 +23,41 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@dnd-kit/core', () => ({
   closestCenter: vi.fn(),
-  DndContext: ({ children }: any) => <div>{children}</div>,
+  DndContext: ({ children, onDragEnd }: any) => (
+    <div>
+      <button
+        aria-label="mock drag item-1 over item-2"
+        data-testid="mock-drag-item-1-over-item-2"
+        onClick={() =>
+          onDragEnd({ active: { id: 'item-1' }, over: { id: 'item-2' } })
+        }
+        type="button"
+      />
+      <button
+        aria-label="mock drag item-2 over item-1"
+        data-testid="mock-drag-item-2-over-item-1"
+        onClick={() =>
+          onDragEnd({ active: { id: 'item-2' }, over: { id: 'item-1' } })
+        }
+        type="button"
+      />
+      <button
+        aria-label="mock drag item-1 over itself"
+        data-testid="mock-drag-item-1-over-itself"
+        onClick={() =>
+          onDragEnd({ active: { id: 'item-1' }, over: { id: 'item-1' } })
+        }
+        type="button"
+      />
+      <button
+        aria-label="mock drag item-1 without target"
+        data-testid="mock-drag-item-1-without-target"
+        onClick={() => onDragEnd({ active: { id: 'item-1' }, over: null })}
+        type="button"
+      />
+      {children}
+    </div>
+  ),
   KeyboardSensor: vi.fn(),
   PointerSensor: vi.fn(),
   useSensor: vi.fn(),
@@ -53,8 +87,8 @@ vi.mock('@dnd-kit/utilities', () => ({
 }))
 
 vi.mock('antd', () => ({
-  Button: ({ children, icon, ...props }: any) => (
-    <button {...props}>
+  Button: ({ children, disabled, icon, ...props }: any) => (
+    <button aria-disabled={disabled} {...props}>
       {icon}
       {children}
     </button>
@@ -111,8 +145,8 @@ vi.mock('antd', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, icon, ...props }: any) => (
-    <button {...props}>
+  default: ({ children, disabled, icon, ...props }: any) => (
+    <button aria-disabled={disabled} {...props}>
       {icon}
       {children}
     </button>
@@ -215,7 +249,8 @@ vi.mock('@/constants/module-options', () => ({
 }))
 
 import { KeyboardSensor, useSensor } from '@dnd-kit/core'
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import { sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable'
+import { listPrintRecordItems } from '@/api/print-template'
 import { getCustomerProjectOptions } from '@/constants/module-options'
 
 const coordTemplate = {
@@ -356,6 +391,38 @@ describe('PrintJobModal', () => {
     ).toBeTruthy()
   })
 
+  it('falls back to project name when matched project option has no abbreviation', () => {
+    vi.mocked(getCustomerProjectOptions).mockReturnValue([
+      {
+        value: '项目甲',
+        label: '项目甲',
+      },
+    ])
+
+    render(
+      <PrintJobModal
+        moduleTitle="销售订单"
+        onClose={vi.fn()}
+        onPrint={vi.fn()}
+        open
+        moduleKey="sales-order"
+        selectedCount={1}
+        selectedRowKeys={['1']}
+        selectedRows={[
+          {
+            id: '1',
+            orderNo: 'SO-001',
+            projectName: '项目甲',
+          },
+        ]}
+        templates={[coordTemplate]}
+      />,
+    )
+
+    expect(getCustomerProjectOptions).toHaveBeenCalledWith({})
+    expect(screen.getByText('SO-001 / 项目甲')).toBeTruthy()
+  })
+
   it('passes hide unit price option', () => {
     const onPrint = vi.fn()
 
@@ -442,6 +509,53 @@ describe('PrintJobModal', () => {
     ).toBeNull()
   })
 
+  it('marks a dragging print item row as semi-transparent', () => {
+    vi.mocked(useSortable).mockReturnValueOnce({
+      attributes: {},
+      listeners: {},
+      setNodeRef: vi.fn(),
+      transform: null,
+      transition: null,
+      isDragging: true,
+    } as never)
+    vi.mocked(useQuery).mockReturnValue({
+      data: [
+        {
+          id: 'item-1',
+          recordId: '1',
+          brand: '抚顺新钢',
+          category: '螺纹钢',
+          material: 'HRB400E',
+          spec: 'Ф18',
+          quantity: '12',
+          pieceWeightTon: '0.123',
+          weightTon: '1.476',
+          unitPrice: '3300.00',
+          amount: '4870.80',
+        },
+      ],
+    } as never)
+
+    render(
+      <PrintJobModal
+        onClose={vi.fn()}
+        onPrint={vi.fn()}
+        open
+        moduleKey="sales-order"
+        selectedCount={1}
+        selectedRowKeys={['1']}
+        selectedRows={[{ id: '1' }]}
+        templates={[coordTemplate]}
+      />,
+    )
+
+    expect(
+      screen
+        .getByRole('button', { name: '拖动第 1 行打印明细' })
+        .closest('div.px-3'),
+    ).toHaveStyle({ opacity: '0.5' })
+  })
+
   it('configures keyboard sorting coordinates for print items', () => {
     render(
       <PrintJobModal
@@ -459,6 +573,50 @@ describe('PrintJobModal', () => {
     expect(useSensor).toHaveBeenCalledWith(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
+  })
+
+  it('loads print items through query function and normalizes API data', async () => {
+    const apiItem = {
+      id: 'item-1',
+      recordId: '1',
+      brand: '抚顺新钢',
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 'Ф18',
+      quantity: '12',
+      pieceWeightTon: '0.123',
+      weightTon: '1.476',
+      unitPrice: '3300.00',
+      amount: '4870.80',
+    }
+    vi.mocked(listPrintRecordItems)
+      .mockResolvedValueOnce({ data: [apiItem] } as never)
+      .mockResolvedValueOnce({ data: { id: 'not-array' } } as never)
+
+    render(
+      <PrintJobModal
+        onClose={vi.fn()}
+        onPrint={vi.fn()}
+        open
+        moduleKey="sales-order"
+        selectedCount={1}
+        selectedRowKeys={['1']}
+        selectedRows={[{ id: '1' }]}
+        templates={[coordTemplate]}
+      />,
+    )
+
+    const queryOptions = vi.mocked(useQuery).mock.calls[0]?.[0] as {
+      enabled: boolean
+      queryFn: () => Promise<unknown>
+      staleTime: number
+    }
+
+    expect(queryOptions.enabled).toBe(true)
+    expect(queryOptions.staleTime).toBe(30_000)
+    await expect(queryOptions.queryFn()).resolves.toEqual([apiItem])
+    expect(listPrintRecordItems).toHaveBeenCalledWith('sales-order', ['1'])
+    await expect(queryOptions.queryFn()).resolves.toEqual([])
   })
 
   it('passes item-level brand override option', () => {
@@ -567,12 +725,123 @@ describe('PrintJobModal', () => {
     )
 
     fireEvent.click(screen.getByLabelText('modules.print.enableBrandOverride'))
+    fireEvent.change(
+      screen.getByLabelText('modules.print.brandOverridePlaceholder'),
+      {
+        target: { value: '   ' },
+      },
+    )
     fireEvent.click(screen.getByText('modules.print.preview'))
 
     expect(onPrint).toHaveBeenCalledWith('preview', coordTemplate, {
       hideUnitPrice: false,
       hideRemark: false,
       itemOrder: ['item-1'],
+    })
+  })
+
+  it('reorders print items after drag and falls back when ordered ids are stale', () => {
+    const onPrint = vi.fn()
+    const initialPrintItems = [
+      {
+        id: 'item-1',
+        recordId: '1',
+        brand: '抚顺新钢',
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: 'Ф18',
+        quantity: '12',
+        pieceWeightTon: '0.123',
+        weightTon: '1.476',
+        unitPrice: '3300.00',
+        amount: '4870.80',
+      },
+      {
+        id: 'item-2',
+        recordId: '1',
+        brand: '西林钢铁',
+        category: '盘螺',
+        material: 'HRB400E',
+        spec: 'Ф8',
+        quantity: '4',
+        pieceWeightTon: '-',
+        weightTon: '2.000',
+        unitPrice: '3200.00',
+        amount: '6400.00',
+      },
+      {
+        id: 'item-3',
+        recordId: '1',
+        brand: '本钢',
+        category: '高线',
+        material: 'HPB300',
+        spec: 'Ф10',
+        quantity: '6',
+        pieceWeightTon: '0.100',
+        weightTon: '0.600',
+        unitPrice: '3100.00',
+        amount: '1860.00',
+      },
+    ]
+    const staleFallbackPrintItems = [
+      {
+        id: 'item-4',
+        recordId: '1',
+        brand: '鞍钢',
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: 'Ф20',
+        quantity: '8',
+        pieceWeightTon: '0.200',
+        weightTon: '1.600',
+        unitPrice: '3350.00',
+        amount: '5360.00',
+      },
+    ]
+    const renderModal = () => (
+      <PrintJobModal
+        onClose={vi.fn()}
+        onPrint={onPrint}
+        open
+        moduleKey="sales-order"
+        selectedCount={1}
+        selectedRowKeys={['1']}
+        selectedRows={[{ id: '1', orderNo: 'SO-001' }]}
+        templates={[coordTemplate]}
+      />
+    )
+    vi.mocked(useQuery).mockReturnValue({ data: initialPrintItems } as never)
+
+    const { rerender } = render(renderModal())
+
+    fireEvent.click(screen.getByTestId('mock-drag-item-1-without-target'))
+    fireEvent.click(screen.getByTestId('mock-drag-item-1-over-itself'))
+    fireEvent.click(screen.getByTestId('mock-drag-item-1-over-item-2'))
+    fireEvent.click(screen.getByText('modules.print.preview'))
+    expect(onPrint).toHaveBeenLastCalledWith('preview', coordTemplate, {
+      hideUnitPrice: false,
+      hideRemark: false,
+      itemOrder: ['item-2', 'item-1', 'item-3'],
+    })
+
+    fireEvent.click(screen.getByTestId('mock-drag-item-2-over-item-1'))
+    fireEvent.click(screen.getByText('modules.print.preview'))
+    expect(onPrint).toHaveBeenLastCalledWith('preview', coordTemplate, {
+      hideUnitPrice: false,
+      hideRemark: false,
+      itemOrder: ['item-1', 'item-2', 'item-3'],
+    })
+
+    vi.mocked(useQuery).mockReturnValue({
+      data: staleFallbackPrintItems,
+    } as never)
+    rerender(renderModal())
+    fireEvent.click(screen.getByTestId('mock-drag-item-1-over-item-2'))
+    fireEvent.click(screen.getByText('modules.print.preview'))
+    expect(onPrint).toHaveBeenLastCalledWith('preview', coordTemplate, {
+      hideUnitPrice: false,
+      hideRemark: false,
+      itemOrder: ['item-4'],
     })
   })
 
@@ -682,6 +951,32 @@ describe('PrintJobModal', () => {
     })
   })
 
+  it('exports sales order xlsx options without item-specific data', () => {
+    const onExportPrintXlsx = vi.fn()
+    vi.mocked(useQuery).mockReturnValue({} as never)
+
+    render(
+      <PrintJobModal
+        onClose={vi.fn()}
+        onExportPrintXlsx={onExportPrintXlsx}
+        onPrint={vi.fn()}
+        open
+        moduleKey="sales-order"
+        selectedCount={1}
+        selectedRowKeys={['1']}
+        selectedRows={[{ id: '1' }]}
+        templates={[]}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('modules.print.exportXlsx'))
+
+    expect(onExportPrintXlsx).toHaveBeenCalledWith({
+      hideUnitPrice: false,
+      hideRemark: false,
+    })
+  })
+
   it('hides print xlsx export action outside sales order module', () => {
     render(
       <PrintJobModal
@@ -701,10 +996,12 @@ describe('PrintJobModal', () => {
   })
 
   it('shows empty template state', () => {
+    const onPrint = vi.fn()
+
     render(
       <PrintJobModal
         onClose={vi.fn()}
-        onPrint={vi.fn()}
+        onPrint={onPrint}
         open
         moduleKey="sales-order"
         selectedCount={0}
@@ -717,6 +1014,8 @@ describe('PrintJobModal', () => {
     expect(screen.getByTestId('empty')).toBeTruthy()
     expect(screen.getByText('modules.print.noTemplate')).toBeTruthy()
     expect(screen.getByText('modules.print.noPrintItems')).toBeTruthy()
+    fireEvent.click(screen.getByText('modules.print.preview'))
+    expect(onPrint).not.toHaveBeenCalled()
   })
 
   it('reorders print item ids by drag source and target', () => {

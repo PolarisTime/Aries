@@ -37,6 +37,23 @@ describe('BusinessGridPage', () => {
     expect(screen.getByTestId('page-skeleton')).toBeTruthy()
   })
 
+  it('falls back to page key when moduleKey is missing', () => {
+    render(
+      <BusinessGridPage
+        {...defaultProps}
+        pageDef={{
+          key: 'fallback-page',
+          title: '备用页面',
+          resourceKey: 'fallback-resource',
+        }}
+      />,
+    )
+    expect(
+      screen.queryByTestId('page-skeleton') ??
+        screen.queryByTestId('route-content'),
+    ).toBeTruthy()
+  })
+
   it('exports BusinessGridPage component', () => {
     expect(BusinessGridPage).toBeDefined()
     expect(typeof BusinessGridPage).toBe('function')

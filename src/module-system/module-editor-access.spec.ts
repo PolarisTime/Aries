@@ -242,6 +242,15 @@ describe('isEditorFieldDisabledForModule', () => {
     ).toBe(true)
   })
 
+  it('returns true when record locked and no editableLockedFields configured', () => {
+    register('test', {
+      locksLineItemsWhenRecordLocked: true,
+    })
+    expect(
+      isEditorFieldDisabledForModule('test', 'remark', false, true, true),
+    ).toBe(true)
+  })
+
   it('returns false when record locked and field is in editableLockedFields', () => {
     register('test', {
       locksLineItemsWhenRecordLocked: true,
@@ -506,6 +515,15 @@ describe('isEditorItemColumnEditableForModule', () => {
     })
     expect(
       isEditorItemColumnEditableForModule('test', 'col2', true, true),
+    ).toBe(false)
+  })
+
+  it('returns false when locked and no editableLockedItemColumns configured', () => {
+    register('test', {
+      locksLineItemsWhenRecordLocked: true,
+    })
+    expect(
+      isEditorItemColumnEditableForModule('test', 'col1', true, true),
     ).toBe(false)
   })
 

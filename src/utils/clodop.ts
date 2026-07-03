@@ -235,7 +235,6 @@ function parseArgs(argsStr: string): unknown[] {
 }
 
 function coerceValue(v: string): unknown {
-  if (v === '') return ''
   if (v === 'true') return true
   if (v === 'false') return false
   const num = Number(v)
@@ -263,15 +262,6 @@ function evaluateNumericExpression(expression: string): number | null {
   ) {
     return null
   }
-  if (
-    tokens.some(
-      (token, index) =>
-        index % 2 === 1 && !['+', '-', '*', '/'].includes(token),
-    )
-  ) {
-    return null
-  }
-
   const values: number[] = [Number(tokens[0])]
   const operators: string[] = []
 

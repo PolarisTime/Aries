@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 const mockNavigate = vi.fn()
 const mockUseQuery = vi.fn()
+const mockUseIdleActivation = vi.fn()
+const mockUsePageVisibility = vi.fn()
 
 vi.mock('@tanstack/react-query', () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
@@ -60,11 +62,11 @@ vi.mock('@/api/auth', () => ({
 }))
 
 vi.mock('@/hooks/useIdleActivation', () => ({
-  useIdleActivation: () => true,
+  useIdleActivation: (...args: unknown[]) => mockUseIdleActivation(...args),
 }))
 
 vi.mock('@/hooks/usePageVisibility', () => ({
-  usePageVisibility: () => true,
+  usePageVisibility: () => mockUsePageVisibility(),
 }))
 
 vi.mock('@/views/dashboard/DashboardInfoPanels', () => ({
@@ -105,6 +107,8 @@ import { DashboardView } from '@/views/dashboard/DashboardView'
 describe('DashboardView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUseIdleActivation.mockReturnValue(true)
+    mockUsePageVisibility.mockReturnValue(true)
     mockUseQuery.mockImplementation((options) => {
       if (options.queryKey?.[0] === 'dashboardBackendHealth') {
         return {
@@ -149,6 +153,35 @@ describe('DashboardView', () => {
   it('renders flow card when mounted', () => {
     render(<DashboardView />)
     expect(screen.getByTestId('flow-card')).toBeTruthy()
+  })
+
+  it('renders placeholder before flow card activation', () => {
+    mockUseIdleActivation.mockReturnValue(false)
+    render(<DashboardView />)
+
+    expect(screen.queryByTestId('flow-card')).toBeNull()
+    expect(
+      document.querySelector('.dashboard-flow-card-placeholder'),
+    ).toBeTruthy()
+  })
+
+  it('disables polling while page is hidden', () => {
+    mockUsePageVisibility.mockReturnValue(false)
+    render(<DashboardView />)
+
+    expect(mockUseIdleActivation).toHaveBeenCalledWith(false, 1400)
+    expect(mockUseQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['dashboardSummary'],
+        refetchInterval: false,
+      }),
+    )
+    expect(mockUseQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['dashboardBackendHealth'],
+        refetchInterval: false,
+      }),
+    )
   })
 
   it('renders version footer on dashboard only', () => {

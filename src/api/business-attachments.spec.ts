@@ -160,6 +160,120 @@ describe('business-attachments', () => {
       expect(progressValues).toEqual([50, 100])
     })
 
+    it('filters forbidden direct upload headers and ignores non-computable progress', async () => {
+      const file = new File(['content'], 'test.pdf')
+      const setRequestHeader = vi.fn()
+      httpPostMock
+        .mockResolvedValueOnce({
+          code: 0,
+          data: {
+            attachmentId: '1',
+            token: 'token',
+            uploadUrl: 'https://upload.example.com/test.pdf',
+            headers: {
+              Host: 'forbidden',
+              'Content-Length': '10',
+              'x-custom': 'allowed',
+            },
+          },
+        })
+        .mockResolvedValueOnce({ code: 0, data: { id: '1' } })
+      vi.stubGlobal(
+        'XMLHttpRequest',
+        class {
+          status = 204
+          statusText = 'No Content'
+          upload: {
+            onprogress?: (event: {
+              lengthComputable: boolean
+              loaded: number
+              total: number
+            }) => void
+          } = {}
+          open = vi.fn()
+          setRequestHeader = setRequestHeader
+          onload: (() => void) | null = null
+          send = vi.fn(() => {
+            this.upload.onprogress?.({
+              lengthComputable: false,
+              loaded: 1,
+              total: 10,
+            })
+            this.upload.onprogress?.({
+              lengthComputable: true,
+              loaded: 1,
+              total: 0,
+            })
+            this.onload?.()
+          })
+        },
+      )
+      const progressValues: number[] = []
+
+      await uploadAttachment(file, 'purchase-order', 'PAGE_UPLOAD', {
+        onProgress: (percent) => progressValues.push(percent),
+      })
+
+      expect(setRequestHeader).toHaveBeenCalledWith('x-custom', 'allowed')
+      expect(setRequestHeader).not.toHaveBeenCalledWith('Host', 'forbidden')
+      expect(setRequestHeader).not.toHaveBeenCalledWith('Content-Length', '10')
+      expect(progressValues).toEqual([100])
+    })
+
+    it('throws when direct upload fails with HTTP status', async () => {
+      const file = new File(['content'], 'test.pdf')
+      httpPostMock.mockResolvedValueOnce({
+        code: 0,
+        data: {
+          attachmentId: '1',
+          token: 'token',
+          uploadUrl: 'https://upload.example.com/test.pdf',
+        },
+      })
+      vi.stubGlobal(
+        'XMLHttpRequest',
+        class {
+          status = 500
+          statusText = 'Internal Server Error'
+          upload = {}
+          open = vi.fn()
+          setRequestHeader = vi.fn()
+          onload: (() => void) | null = null
+          send = vi.fn(() => this.onload?.())
+        },
+      )
+
+      await expect(uploadAttachment(file, 'purchase-order')).rejects.toThrow(
+        'S3 直传失败: 500 Internal Server Error',
+      )
+    })
+
+    it('throws when direct upload triggers network error', async () => {
+      const file = new File(['content'], 'test.pdf')
+      httpPostMock.mockResolvedValueOnce({
+        code: 0,
+        data: {
+          attachmentId: '1',
+          token: 'token',
+          uploadUrl: 'https://upload.example.com/test.pdf',
+        },
+      })
+      vi.stubGlobal(
+        'XMLHttpRequest',
+        class {
+          upload = {}
+          open = vi.fn()
+          setRequestHeader = vi.fn()
+          onerror: (() => void) | null = null
+          send = vi.fn(() => this.onerror?.())
+        },
+      )
+
+      await expect(uploadAttachment(file, 'purchase-order')).rejects.toThrow(
+        'S3 直传失败',
+      )
+    })
+
     it('falls back to multipart upload when direct upload is unsupported', async () => {
       const file = new File(['content'], 'test.pdf', {
         type: 'application/pdf',
@@ -195,6 +309,64 @@ describe('business-attachments', () => {
       expect(fetchMock).not.toHaveBeenCalled()
     })
 
+    it('falls back when unsupported direct upload error is a plain object message', async () => {
+      const file = new File(['content'], 'test.pdf')
+      httpPostMock
+        .mockRejectedValueOnce({ message: '当前附件存储不支持直传' })
+        .mockResolvedValueOnce({ code: 0, data: { id: '1' } })
+
+      await expect(uploadAttachment(file, 'purchase-order')).resolves.toEqual({
+        code: 0,
+        data: { id: '1' },
+      })
+      expect(httpPostMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('falls back when unsupported direct upload error is only in response data', async () => {
+      const file = new File(['content'], 'test.pdf')
+      httpPostMock
+        .mockRejectedValueOnce({
+          response: {
+            data: { message: '当前附件存储不支持直传' },
+          },
+        })
+        .mockResolvedValueOnce({ code: 0, data: { id: '1' } })
+
+      await expect(uploadAttachment(file, 'purchase-order')).resolves.toEqual({
+        code: 0,
+        data: { id: '1' },
+      })
+      expect(httpPostMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('rethrows unsupported-check misses for non-string response messages', async () => {
+      const file = new File(['content'], 'test.pdf')
+      const error = { response: { data: { message: 500 } } }
+      httpPostMock.mockRejectedValueOnce(error)
+
+      await expect(uploadAttachment(file, 'purchase-order')).rejects.toBe(error)
+      expect(httpPostMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('rethrows plain object errors with empty messages', async () => {
+      const file = new File(['content'], 'test.pdf')
+      const error = { message: 0 }
+      httpPostMock.mockRejectedValueOnce(error)
+
+      await expect(uploadAttachment(file, 'purchase-order')).rejects.toBe(error)
+      expect(httpPostMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('rethrows primitive direct upload errors', async () => {
+      const file = new File(['content'], 'test.pdf')
+      httpPostMock.mockRejectedValueOnce('storage offline')
+
+      await expect(uploadAttachment(file, 'purchase-order')).rejects.toBe(
+        'storage offline',
+      )
+      expect(httpPostMock).toHaveBeenCalledTimes(1)
+    })
+
     it('reports multipart upload progress when direct upload is unsupported', async () => {
       const file = new File(['content'], 'test.pdf', {
         type: 'application/pdf',
@@ -222,6 +394,8 @@ describe('business-attachments', () => {
       }
       multipartConfig.onUploadProgress?.({ loaded: 7, total: 10 })
       expect(progressValues).toContain(70)
+      multipartConfig.onUploadProgress?.({ loaded: 7 })
+      expect(progressValues).toEqual([100, 70])
     })
 
     it('uses custom sourceType', async () => {
@@ -360,6 +534,30 @@ describe('business-attachments', () => {
       })
     })
 
+    it('decodes internal attachment ids and defaults missing query params', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: { inline: true, presigned: true, url: 'resolved' },
+      })
+
+      await resolveAttachmentAccessUrl(
+        '/attachments/file%201/preview',
+        'fallback-module',
+        true,
+      )
+
+      expect(httpGetMock).toHaveBeenCalledWith(
+        '/attachments/file 1/access-url',
+        {
+          params: {
+            accessKey: '',
+            inline: true,
+            moduleKey: 'fallback-module',
+          },
+        },
+      )
+    })
+
     it('returns original non-backend url without requesting access url', async () => {
       const result = await resolveAttachmentAccessUrl(
         'https://cdn.example.com/file.pdf',
@@ -412,6 +610,33 @@ describe('business-attachments', () => {
       })
     })
 
+    it('fetches external attachment blobs directly', async () => {
+      const blob = new Blob(['file'])
+      fetchMock.mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        blob: vi.fn().mockResolvedValue(blob),
+      })
+
+      await expect(
+        getAttachmentBlob('https://cdn.example.com/file.pdf'),
+      ).resolves.toBe(blob)
+      expect(fetchMock).toHaveBeenCalledWith('https://cdn.example.com/file.pdf')
+    })
+
+    it('throws when external blob fetch fails', async () => {
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      })
+
+      await expect(
+        getAttachmentBlob('https://cdn.example.com/missing.pdf'),
+      ).rejects.toThrow('附件读取失败: 404 Not Found')
+    })
+
     it('fetches blob from resolved presigned url for iframe PDF preview', async () => {
       const blob = new Blob(['file'], { type: 'application/pdf' })
       httpGetMock.mockResolvedValue({
@@ -445,6 +670,35 @@ describe('business-attachments', () => {
       })
       expect(fetchMock).toHaveBeenCalledWith(
         'https://cdn.example.com/preview.pdf',
+      )
+    })
+
+    it('falls back to local attachment blob when resolved access has no url', async () => {
+      const blob = new Blob(['file'])
+      httpGetMock
+        .mockResolvedValueOnce({
+          code: 0,
+          data: { inline: true, presigned: false, url: '' },
+        })
+        .mockResolvedValueOnce(blob)
+
+      await expect(
+        getPresignedAttachmentBlob(
+          '/api/attachments/1/download?moduleKey=purchase-order',
+          'purchase-order',
+          false,
+        ),
+      ).resolves.toBe(blob)
+      expect(httpGetMock).toHaveBeenNthCalledWith(
+        2,
+        '/attachments/1/download',
+        {
+          params: {
+            accessKey: '',
+            moduleKey: 'purchase-order',
+          },
+          responseType: 'blob',
+        },
       )
     })
   })

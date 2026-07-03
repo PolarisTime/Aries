@@ -67,6 +67,140 @@ describe('salesOrdersPageConfig', () => {
     ).toContain('status')
   })
 
+  it('maps parent purchase order number into a sales order draft', () => {
+    const parentImport = salesOrdersPageConfig.parentImport!
+
+    expect(parentImport.mapParentToDraft?.({ orderNo: 'PO-001' })).toEqual({
+      purchaseOrderNo: 'PO-001',
+    })
+    expect(parentImport.mapParentToDraft?.({})).toEqual({
+      purchaseOrderNo: '',
+    })
+  })
+
+  it('transforms items with explicit remaining sales weight', () => {
+    const items = salesOrdersPageConfig.parentImport!.transformItems?.({
+      items: [
+        {
+          id: 'item-1',
+          salesRemainingQuantity: '2',
+          quantity: 5,
+          weightTon: 9.876543219,
+          salesRemainingWeightTon: '1.234567899',
+          pieceWeightTon: '0.6',
+          unitPrice: 100,
+        },
+      ],
+    })
+
+    expect(items).toHaveLength(1)
+    expect(items?.[0]).toMatchObject({
+      sourcePurchaseOrderItemId: 'item-1',
+      pieceWeightTon: 0.6,
+      remainingQuantity: 2,
+      remainingWeightTon: 1.2345679,
+      remainingAmount: 123.46,
+      _sourceTotalQuantity: 5,
+      _sourceTotalWeightTon: 9.876543219,
+      _sourcePieceWeightTon: '0.6',
+    })
+    expect(items?.[0].id).toContain('sales-order-item')
+  })
+
+  it('uses parent total weight when all quantity remains available', () => {
+    const items = salesOrdersPageConfig.parentImport!.transformItems?.({
+      items: [
+        {
+          id: 'item-2',
+          remainingQuantity: 3,
+          quantity: 3,
+          weightTon: '12.345678999',
+          pieceWeightTon: 0.8,
+        },
+      ],
+    })
+
+    expect(items).toHaveLength(1)
+    expect(items?.[0]).toMatchObject({
+      sourcePurchaseOrderItemId: 'item-2',
+      remainingQuantity: 3,
+      remainingWeightTon: 12.345679,
+      remainingAmount: 0,
+    })
+  })
+
+  it('derives remaining weight from quantity and piece weight when needed', () => {
+    const items = salesOrdersPageConfig.parentImport!.transformItems?.({
+      items: [
+        {
+          id: 'item-3',
+          remainingQuantity: 2,
+          quantity: 5,
+          weightTon: 10,
+          pieceWeightTon: 0.75,
+          unitPrice: 20,
+        },
+        {
+          id: 'item-4',
+          quantity: 4,
+          weightTon: 0,
+          pieceWeightTon: 0.25,
+          unitPrice: 10,
+        },
+      ],
+    })
+
+    expect(items?.[0]).toMatchObject({
+      sourcePurchaseOrderItemId: 'item-3',
+      remainingQuantity: 2,
+      remainingWeightTon: 1.5,
+      remainingAmount: 30,
+    })
+    expect(items?.[1]).toMatchObject({
+      sourcePurchaseOrderItemId: 'item-4',
+      remainingQuantity: 4,
+      remainingWeightTon: 1,
+      remainingAmount: 10,
+    })
+  })
+
+  it('falls back to zeroes for invalid item numbers and missing items', () => {
+    const items = salesOrdersPageConfig.parentImport!.transformItems?.({
+      items: [
+        {
+          id: 'item-5',
+          salesRemainingQuantity: 'invalid',
+          pieceWeightTon: 'invalid',
+          unitPrice: 'invalid',
+        },
+        {
+          id: 'item-6',
+        },
+      ],
+    })
+
+    expect(items?.[0]).toMatchObject({
+      sourcePurchaseOrderItemId: 'item-5',
+      pieceWeightTon: 0,
+      remainingQuantity: 0,
+      remainingWeightTon: 0,
+      remainingAmount: 0,
+    })
+    expect(items?.[1]).toMatchObject({
+      sourcePurchaseOrderItemId: 'item-6',
+      pieceWeightTon: 0,
+      remainingQuantity: 0,
+      remainingWeightTon: 0,
+      remainingAmount: 0,
+    })
+    expect(salesOrdersPageConfig.parentImport!.transformItems?.({})).toEqual([])
+    expect(
+      salesOrdersPageConfig.parentImport!.transformItems?.({
+        items: 'invalid',
+      }),
+    ).toEqual([])
+  })
+
   it('buildOverview returns result', () => {
     const result = salesOrdersPageConfig.buildOverview!([])
     expect(Array.isArray(result)).toBe(true)
@@ -82,6 +216,14 @@ describe('salesOrdersPageConfig', () => {
     )
 
     expect(totalWeightColumn?.render?.(12.5, { items: [] })).toBe('12.5')
+  })
+
+  it('renders totalWeight when row items are missing', () => {
+    const totalWeightColumn = salesOrdersPageConfig.columns.find(
+      (column) => column.dataIndex === 'totalWeight',
+    )
+
+    expect(totalWeightColumn?.render?.(3, {})).toBe('3')
   })
 
   it('renders fallback for invalid totalWeight values', () => {
@@ -105,6 +247,23 @@ describe('salesOrdersPageConfig', () => {
       props: {
         title: '原始计划 10 吨',
         children: '8 ⚠️',
+      },
+    })
+  })
+
+  it('renders warning tooltip when original total weight is zero', () => {
+    const totalWeightColumn = salesOrdersPageConfig.columns.find(
+      (column) => column.dataIndex === 'totalWeight',
+    )
+
+    const rendered = totalWeightColumn?.render?.(1, {
+      items: [{ originalWeightTon: 0, weightTon: 1 }],
+    })
+
+    expect(rendered).toMatchObject({
+      props: {
+        title: '原始计划 0 吨',
+        children: '1 ⚠️',
       },
     })
   })

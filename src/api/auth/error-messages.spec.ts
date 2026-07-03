@@ -62,6 +62,10 @@ describe('error-messages', () => {
     )
   })
 
+  it('maps blank required field name to empty required message', () => {
+    expect(normalizeErrorMessage("'   ' is required")).toBe('必填项不能为空')
+  })
+
   it('maps 5xx status codes', () => {
     expect(normalizeErrorMessage('request failed with status code 500')).toBe(
       '服务暂不可用',

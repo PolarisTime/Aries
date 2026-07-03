@@ -184,6 +184,19 @@ describe('company-settings', () => {
         },
       ])
     })
+
+    it('filters empty company setting page records', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: {
+          content: [null],
+        },
+      })
+
+      const result = await listCompanySettings()
+
+      expect(result).toEqual([])
+    })
   })
 
   describe('createCompanySetting', () => {
@@ -391,6 +404,28 @@ describe('company-settings', () => {
           companyName: '主体B',
           taxNo: 'T2',
           status: '正常',
+        },
+      ])
+    })
+
+    it('omits blank optional fields', () => {
+      expect(
+        normalizeSettlementCompanyOptions([
+          {
+            id: '2',
+            companyName: '主体B',
+            taxNo: ' ',
+            status: '',
+          },
+        ]),
+      ).toEqual([
+        {
+          id: '2',
+          value: '2',
+          label: '主体B',
+          companyName: '主体B',
+          taxNo: undefined,
+          status: undefined,
         },
       ])
     })

@@ -134,23 +134,23 @@ export function GeneralSettingsView() {
     }
   }
 
-  const handleSave = async () => {
-    if (!editingRecord) return
+  const handleSave = async (record: ModuleRecord) => {
     setState({ saving: true })
     try {
       const values = await form.validateFields()
-      const isToggle = isToggleSetting(editingRecord)
+      const isNumeric = isNumericSetting(record)
+      const isToggle = !isNumeric
       let sampleNo = ''
-      if (isWatermarkContentSetting(editingRecord)) {
+      if (isWatermarkContentSetting(record)) {
         sampleNo = String(values.numericValue || '').trim()
-      } else if (isNumericSetting(editingRecord)) {
+      } else if (isNumeric) {
         sampleNo = String(values.numericValue || 0)
-      } else if (isToggle) {
+      } else {
         const selectedActions = Array.isArray(values.selectedActions)
           ? values.selectedActions
           : []
         if (
-          isDetailedOperationLogSetting(editingRecord) &&
+          isDetailedOperationLogSetting(record) &&
           selectedActions.length === 0
         ) {
           message.warning(
@@ -160,12 +160,12 @@ export function GeneralSettingsView() {
           return
         }
         if (
-          isDetailedOperationLogSetting(editingRecord) &&
+          isDetailedOperationLogSetting(record) &&
           selectedActions.length === DETAILED_OPERATION_ACTION_VALUES.length
         ) {
           sampleNo = DETAILED_OPERATION_ACTION_VALUES.join(',')
         } else if (
-          isHideAuditedListRecordsSetting(editingRecord) &&
+          isHideAuditedListRecordsSetting(record) &&
           selectedActions.length === HIDE_AUDITED_STATUS_VALUES.length
         ) {
           sampleNo = HIDE_AUDITED_STATUS_VALUES.join(',')
@@ -174,7 +174,7 @@ export function GeneralSettingsView() {
         }
       }
       await saveSystemSetting(
-        buildSystemSettingPayload(editingRecord, {
+        buildSystemSettingPayload(record, {
           settingCode: values.settingCode,
           settingName: values.settingName,
           billName: values.billName,
@@ -183,7 +183,7 @@ export function GeneralSettingsView() {
             ? values.enabled
               ? STATUS.NORMAL
               : STATUS.DISABLED
-            : asString(editingRecord.status) || STATUS.NORMAL,
+            : asString(record.status) || STATUS.NORMAL,
           sampleNo: sampleNo || 'ON',
         }),
       )
@@ -218,14 +218,14 @@ export function GeneralSettingsView() {
 
       <RateLimitRulesCard />
 
-      {editorOpen ? (
+      {editorOpen && editingRecord ? (
         <GeneralSettingsEditorModal
           open={editorOpen}
           record={editingRecord}
           form={form}
           saving={saving}
           onSave={() => {
-            void handleSave()
+            void handleSave(editingRecord)
           }}
           onClose={() => setState({ editorOpen: false })}
         />

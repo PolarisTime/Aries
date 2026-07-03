@@ -65,6 +65,11 @@ describe('isEditBlockedByStatus', () => {
     expect(isEditBlockedByStatus('草稿', 'test-module')).toBe(false)
   })
 
+  it('falls back to global edit statuses when module has no override', () => {
+    withRegistered('test-module', {})
+    expect(isEditBlockedByStatus('已审核', 'test-module')).toBe(true)
+  })
+
   it('returns false for undefined status', () => {
     expect(isEditBlockedByStatus(undefined)).toBe(false)
   })
@@ -99,6 +104,11 @@ describe('isDeleteBlockedByStatus', () => {
   it('returns false for non-blocked per-module status', () => {
     withRegistered('test-module', { protectedDeleteStatuses: ['已关闭'] })
     expect(isDeleteBlockedByStatus('草稿', 'test-module')).toBe(false)
+  })
+
+  it('falls back to global delete statuses when module has no override', () => {
+    withRegistered('test-module', {})
+    expect(isDeleteBlockedByStatus('已审核', 'test-module')).toBe(true)
   })
 
   it('returns false for undefined status', () => {

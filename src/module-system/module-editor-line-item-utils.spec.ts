@@ -231,6 +231,57 @@ describe('trimEditorItemsForModule', () => {
     expect(result[0].materialCode).toBe('A')
   })
 
+  it('trims empty draft items with blank numeric fields', () => {
+    const items = [
+      {
+        id: 'item-empty',
+        materialCode: '',
+        brand: '',
+        category: '',
+        material: '',
+        spec: '',
+        length: '',
+        batchNo: '',
+        sourceNo: '',
+        sourceStatementId: '',
+        warehouseName: '',
+        customerName: '',
+        projectName: '',
+        materialName: '',
+        settlementMode: '',
+        unit: '',
+        quantityUnit: '',
+        quantity: '',
+        pieceWeightTon: '',
+        piecesPerBundle: '',
+        weightTon: '',
+        weighWeightTon: '',
+        weightAdjustmentTon: '',
+        weightAdjustmentAmount: '',
+        unitPrice: '',
+        amount: '',
+      },
+    ] as any[]
+
+    const result = trimEditorItemsForModule('unknown', items)
+
+    expect(result).toEqual([])
+  })
+
+  it('keeps persisted numeric id items even when fields are empty', () => {
+    const persistedItem = {
+      id: 1,
+      materialCode: '',
+      quantity: 0,
+      weightTon: 0,
+      amount: 0,
+    } as any
+
+    const result = trimEditorItemsForModule('purchase-order', [persistedItem])
+
+    expect(result).toEqual([persistedItem])
+  })
+
   it('keeps items with positive amount in positiveWeightOrAmount strategy', () => {
     const items = [
       {
@@ -405,6 +456,29 @@ describe('applyMaterialToEditorLineItem', () => {
     expect(result.unit).toBe('吨')
   })
 
+  it('uses empty strings and zeroes for missing material fields', () => {
+    const item = {
+      id: '1',
+      quantity: 10,
+      pieceWeightTon: 1,
+      unitPrice: 2,
+      weightTon: 0,
+      amount: 0,
+    } as any
+
+    const result = applyMaterialToEditorLineItem(item, {})
+
+    expect(result.brand).toBe('')
+    expect(result.category).toBe('')
+    expect(result.material).toBe('')
+    expect(result.spec).toBe('')
+    expect(result.length).toBe('')
+    expect(result.unit).toBe('吨')
+    expect(result.pieceWeightTon).toBe(0)
+    expect(result.piecesPerBundle).toBe(0)
+    expect(result.unitPrice).toBe(0)
+  })
+
   it('preserves settlementMode for non-weigh-required category', () => {
     const item = {
       id: '1',
@@ -426,6 +500,34 @@ describe('applyMaterialToEditorLineItem', () => {
     }
     const result = applyMaterialToEditorLineItem(item, material)
     expect(result.settlementMode).toBe('理算')
+  })
+
+  it('sets settlementMode to 过磅 for weigh-required material category', () => {
+    const item = {
+      id: '1',
+      materialCode: 'M001',
+      batchNo: '',
+      settlementMode: '理算',
+      quantity: 10,
+      pieceWeightTon: 0,
+      unitPrice: 0,
+      weightTon: 0,
+      amount: 0,
+    } as any
+    const material = {
+      brand: 'A',
+      category: '盘螺',
+      material: 'C',
+      spec: 'D',
+      length: 'E',
+      pieceWeightTon: 0.5,
+      unitPrice: 100,
+    }
+
+    const result = applyMaterialToEditorLineItem(item, material)
+
+    expect(result.settlementMode).toBe('过磅')
+    expect(result.weightAdjustmentTon).toBe(0)
   })
 
   it('resets weighWeightTon and adjustments when applying material', () => {

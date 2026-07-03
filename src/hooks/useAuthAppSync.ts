@@ -28,11 +28,6 @@ type IdleWindow = Window &
   }
 
 function runWhenIdle(task: () => void, timeout = 1500) {
-  if (typeof window === 'undefined') {
-    task()
-    return () => {}
-  }
-
   const idleWindow: IdleWindow = window
   if (typeof idleWindow.requestIdleCallback === 'function') {
     const handle = idleWindow.requestIdleCallback(() => task(), { timeout })

@@ -48,13 +48,29 @@ vi.mock('antd', () => {
   const Select = ({
     placeholder,
     options,
+    onChange,
+    showSearch,
   }: {
     placeholder?: string
     options?: Array<{ label: string; value: string }>
+    onChange?: (value: string) => void
+    showSearch?: {
+      filterOption?: (
+        input: string,
+        option?: { label?: string; value?: string },
+      ) => boolean
+    }
   }) => (
-    <div data-options={options?.map((item) => item.label).join('|') || ''}>
+    <button
+      data-filter-empty={String(showSearch?.filterOption?.('missing'))}
+      data-filter-match={String(
+        showSearch?.filterOption?.('admin', { label: 'Admin User' }),
+      )}
+      data-options={options?.map((item) => item.label).join('|') || ''}
+      onClick={() => onChange?.('全部接口')}
+    >
       {placeholder || 'Select'}
-    </div>
+    </button>
   )
 
   const Input = () => <input />
@@ -68,15 +84,25 @@ vi.mock('antd', () => {
 
   return {
     Alert: ({ title }: { title: string }) => <div>{title}</div>,
-    Button: ({ children, ...props }: Record<string, unknown>) => (
-      <button {...props}>{children}</button>
+    Button: ({
+      children,
+      loading,
+      ...props
+    }: Record<string, unknown> & { children?: React.ReactNode }) => (
+      <button data-loading={String(Boolean(loading))} {...props}>
+        {children}
+      </button>
     ),
     Checkbox: Object.assign(
       ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
       {
-        Group: ({ children }: { children: React.ReactNode }) => (
-          <div>{children}</div>
-        ),
+        Group: ({
+          children,
+          onChange,
+        }: {
+          children: React.ReactNode
+          onChange?: () => void
+        }) => <div onClick={() => onChange?.()}>{children}</div>,
       },
     ),
     Form,
@@ -124,6 +150,7 @@ vi.mock('antd', () => {
               if (value) onChange?.({ target: { value } })
             }}
           >
+            <button data-value="missingPreset">missing preset</button>
             {children}
           </div>
         ),
@@ -174,6 +201,7 @@ describe('ApiKeyCreateModal', () => {
       { code: 'database', title: '数据库管理', group: '系统' },
       { code: 'session', title: '会话管理', group: '系统' },
       { code: 'api-key', title: 'API Key 管理', group: '系统' },
+      { code: 'misc-resource', title: '其他资源', group: '' },
     ],
     actionOptions: [
       { code: 'read', title: '读取' },
@@ -221,6 +249,11 @@ describe('ApiKeyCreateModal', () => {
     expect(screen.getByText('system.apiKey.userId')).toBeInTheDocument()
     expect(screen.getByText('system.apiKey.keyName')).toBeInTheDocument()
     expect(screen.getByText('system.apiKey.usageScope')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.apiKey.allowedResources'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('system.apiKey.allowedActions')).toBeInTheDocument()
+    expect(screen.getByText('system.apiKey.expireDays')).toBeInTheDocument()
   })
 
   it('renders preset templates and grouped permission editor', () => {
@@ -230,6 +263,9 @@ describe('ApiKeyCreateModal', () => {
       screen.getByText('system.apiKeyPresets.businessWrite'),
     ).toBeInTheDocument()
     expect(screen.getByText('采购')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.apiKeyPresets.ungrouped'),
+    ).toBeInTheDocument()
     expect(screen.getByText('采购订单')).toBeInTheDocument()
     expect(screen.getByText('读取')).toBeInTheDocument()
   })
@@ -249,6 +285,82 @@ describe('ApiKeyCreateModal', () => {
       ],
       allowedActions: ['read', 'create', 'update', 'audit', 'delete'],
     })
+  })
+
+  it('marks preset as custom when custom preset is selected', () => {
+    render(<ApiKeyCreateModal {...defaultProps} />)
+    fireEvent.click(screen.getByText('system.apiKeyPresets.custom'))
+    expect(formInstance.setFieldValue).toHaveBeenCalledWith(
+      'presetKey',
+      'custom',
+    )
+  })
+
+  it('does not update form values when selected preset is unavailable', () => {
+    render(<ApiKeyCreateModal {...defaultProps} />)
+    fireEvent.click(screen.getByText('missing preset'))
+    expect(formInstance.setFieldsValue).not.toHaveBeenCalled()
+    expect(formInstance.setFieldValue).not.toHaveBeenCalled()
+  })
+
+  it('marks preset as custom when manual permission fields change', () => {
+    render(<ApiKeyCreateModal {...defaultProps} />)
+    fireEvent.click(screen.getByText('Select'))
+    fireEvent.click(screen.getByText('采购订单'))
+    expect(formInstance.setFieldValue).toHaveBeenCalledWith(
+      'presetKey',
+      'custom',
+    )
+    expect(formInstance.setFieldValue).toHaveBeenCalledTimes(2)
+  })
+
+  it('maps user options and applies search filter branches', () => {
+    render(
+      <ApiKeyCreateModal
+        {...defaultProps}
+        userOptions={[
+          ...defaultProps.userOptions,
+          { id: undefined, userName: '', loginName: 'operator', mobile: '' },
+        ]}
+      />,
+    )
+    const userSelect = screen.getByText('system.userAccount.searchPlaceholder')
+    expect(userSelect).toHaveAttribute(
+      'data-options',
+      'Admin（admin） / 13800138000|operator',
+    )
+    expect(userSelect).toHaveAttribute('data-filter-match', 'true')
+    expect(userSelect).toHaveAttribute('data-filter-empty', 'false')
+  })
+
+  it('wires generate and cancel actions with button state', () => {
+    const onClose = vi.fn()
+    const onGenerate = vi.fn()
+    render(
+      <ApiKeyCreateModal
+        {...defaultProps}
+        generating
+        totpDisabled
+        onClose={onClose}
+        onGenerate={onGenerate}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('common.cancel'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+
+    const generateButton = screen.getByText('system.apiKey.generate')
+    expect(generateButton).toBeDisabled()
+    expect(generateButton).toHaveAttribute('data-loading', 'true')
+    fireEvent.click(generateButton)
+    expect(onGenerate).not.toHaveBeenCalled()
+  })
+
+  it('calls generate when generate button is enabled', () => {
+    const onGenerate = vi.fn()
+    render(<ApiKeyCreateModal {...defaultProps} onGenerate={onGenerate} />)
+    fireEvent.click(screen.getByText('system.apiKey.generate'))
+    expect(onGenerate).toHaveBeenCalledTimes(1)
   })
 
   it('renders generated key view when key is set', () => {

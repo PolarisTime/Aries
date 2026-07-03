@@ -1,9 +1,16 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getDatabaseStatus } from '@/api/database-admin'
+import { QUERY_KEYS } from '@/constants/query-keys'
 
-const mockUseQuery = vi.fn()
-const mockCan = vi.fn()
-const mockUseQueryClient = vi.fn()
+const mocks = vi.hoisted(() => ({
+  can: vi.fn(),
+  invalidateQueries: vi.fn(),
+  monitoringPanelProps: [] as Array<{ visible: boolean }>,
+  statusOverviewProps: [] as Array<{ dbStatus: unknown; loading: boolean }>,
+  useQuery: vi.fn(),
+  useQueryClient: vi.fn(),
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -12,17 +19,24 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useQueryClient: () => mockUseQueryClient(),
+  useQuery: (...args: unknown[]) => mocks.useQuery(...args),
+  useQueryClient: () => mocks.useQueryClient(),
 }))
 
 vi.mock('@/stores/permissionStore', () => ({
-  usePermissionStore: () => ({ can: mockCan }),
+  usePermissionStore: () => ({ can: mocks.can }),
 }))
 
 vi.mock('@/views/system/DatabaseMonitoringPanel', () => ({
-  DatabaseMonitoringPanel: ({ visible }: { visible: boolean }) =>
-    visible ? <div data-testid="monitoring-panel">Monitoring</div> : null,
+  DatabaseMonitoringPanel: ({ visible }: { visible: boolean }) => {
+    mocks.monitoringPanelProps.push({ visible })
+
+    return (
+      <div data-testid="monitoring-panel" data-visible={String(visible)}>
+        {visible ? 'Monitoring visible' : 'Monitoring hidden'}
+      </div>
+    )
+  },
 }))
 
 vi.mock('@/views/system/DatabaseStatusOverview', () => ({
@@ -32,24 +46,36 @@ vi.mock('@/views/system/DatabaseStatusOverview', () => ({
   }: {
     dbStatus: unknown
     loading: boolean
-  }) => (
-    <div data-testid="status-overview">
-      {loading ? 'Loading...' : dbStatus ? 'Loaded' : 'No data'}
-    </div>
-  ),
+  }) => {
+    mocks.statusOverviewProps.push({ dbStatus, loading })
+
+    return (
+      <div data-testid="status-overview" data-loading={String(loading)}>
+        {loading ? 'Loading...' : dbStatus ? 'Loaded' : 'No data'}
+      </div>
+    )
+  },
 }))
 
 import { DatabaseBackupView } from '@/views/system/DatabaseBackupView'
 
 describe('DatabaseBackupView', () => {
+  const databaseStatus = {
+    postgres: { status: '正常' },
+    redis: { status: '正常' },
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCan.mockReturnValue(true)
-    mockUseQueryClient.mockReturnValue({
-      invalidateQueries: vi.fn(),
+    mocks.monitoringPanelProps = []
+    mocks.statusOverviewProps = []
+    mocks.can.mockReturnValue(true)
+    mocks.invalidateQueries.mockResolvedValue(undefined)
+    mocks.useQueryClient.mockReturnValue({
+      invalidateQueries: mocks.invalidateQueries,
     })
-    mockUseQuery.mockReturnValue({
-      data: { postgres: { status: '正常' }, redis: { status: '正常' } },
+    mocks.useQuery.mockReturnValue({
+      data: databaseStatus,
       isLoading: false,
     })
   })
@@ -81,15 +107,89 @@ describe('DatabaseBackupView', () => {
     expect(screen.getByTestId('status-overview')).toBeInTheDocument()
   })
 
-  it('renders monitoring panel when user has permission', () => {
-    mockCan.mockReturnValue(true)
+  it('uses database status query configuration', () => {
     render(<DatabaseBackupView />)
-    expect(screen.getByTestId('monitoring-panel')).toBeInTheDocument()
+
+    expect(mocks.useQuery).toHaveBeenCalledWith({
+      queryKey: QUERY_KEYS.databaseStatus,
+      queryFn: getDatabaseStatus,
+    })
   })
 
-  it('does not render monitoring panel when user lacks permission', () => {
-    mockCan.mockReturnValue(false)
+  it('passes loaded status data to overview', () => {
     render(<DatabaseBackupView />)
-    expect(screen.queryByTestId('monitoring-panel')).not.toBeInTheDocument()
+
+    expect(screen.getByTestId('status-overview')).toHaveTextContent('Loaded')
+    expect(mocks.statusOverviewProps).toEqual([
+      { dbStatus: databaseStatus, loading: false },
+    ])
+  })
+
+  it('passes loading state to button and overview', () => {
+    mocks.useQuery.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    })
+
+    render(<DatabaseBackupView />)
+
+    expect(screen.getByRole('button')).toHaveClass('ant-btn-loading')
+    expect(screen.getByTestId('status-overview')).toHaveTextContent(
+      'Loading...',
+    )
+    expect(mocks.statusOverviewProps).toEqual([
+      { dbStatus: undefined, loading: true },
+    ])
+  })
+
+  it('passes empty status data to overview when the query has no result', () => {
+    mocks.useQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    })
+
+    render(<DatabaseBackupView />)
+
+    expect(screen.getByTestId('status-overview')).toHaveTextContent('No data')
+    expect(mocks.statusOverviewProps).toEqual([
+      { dbStatus: undefined, loading: false },
+    ])
+  })
+
+  it('renders monitoring panel when user has permission', () => {
+    mocks.can.mockReturnValue(true)
+    render(<DatabaseBackupView />)
+
+    expect(mocks.can).toHaveBeenCalledWith('database', 'read')
+    expect(screen.getByTestId('monitoring-panel')).toHaveAttribute(
+      'data-visible',
+      'true',
+    )
+    expect(mocks.monitoringPanelProps).toEqual([{ visible: true }])
+  })
+
+  it('passes hidden state to monitoring panel when user lacks permission', () => {
+    mocks.can.mockReturnValue(false)
+    render(<DatabaseBackupView />)
+
+    expect(screen.getByTestId('monitoring-panel')).toHaveAttribute(
+      'data-visible',
+      'false',
+    )
+    expect(mocks.monitoringPanelProps).toEqual([{ visible: false }])
+  })
+
+  it('refreshes the database status query from the toolbar button', () => {
+    render(<DatabaseBackupView />)
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /system\.database\.refreshStatus/,
+      }),
+    )
+
+    expect(mocks.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: QUERY_KEYS.databaseStatus,
+    })
   })
 })

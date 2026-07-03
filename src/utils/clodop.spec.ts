@@ -9,6 +9,7 @@ function makeLodop(overrides: Record<string, unknown> = {}) {
     SET_PRINT_PAGESIZE: vi.fn(),
     SET_PRINTER_INDEX: vi.fn(),
     SET_PRINT_COPIES: vi.fn(),
+    SET_PRINT_MODE: vi.fn(),
     ADD_PRINT_HTM: vi.fn(),
     ADD_PRINT_TEXT: vi.fn(),
     PREVIEW: vi.fn(),
@@ -238,12 +239,199 @@ describe('execPrintCode', () => {
     const success = execPrintCode(code, { preview: true, printer: 'Thermal' })
     expect(success).toBe(true)
   })
+
+  it('injects configured license once before printing', async () => {
+    vi.resetModules()
+    const lodop = makeLodop()
+    window.getCLodop = () => lodop
+    window._CONFIG = {
+      clodopLicense: {
+        companyName: 'ACME',
+        licenseA: 'A',
+        companyNameB: 'ACME-B',
+        licenseB: 'B',
+      },
+    } as any
+    const { execPrintCode } = await import('./clodop')
+
+    expect(execPrintCode('LODOP.PRINT_INIT("test");')).toBe(true)
+    expect(execPrintCode('LODOP.PRINT_INIT("test");')).toBe(true)
+
+    expect(lodop.SET_LICENSES).toHaveBeenCalledTimes(1)
+    expect(lodop.SET_LICENSES).toHaveBeenCalledWith('ACME', 'A', 'ACME-B', 'B')
+    delete window._CONFIG
+  })
+
+  it('logs warning when license injection fails', async () => {
+    vi.resetModules()
+    const warn = vi.fn()
+    vi.doMock('@/utils/logger', () => ({
+      logger: { warn, error: vi.fn() },
+    }))
+    const lodop = makeLodop({
+      SET_LICENSES: vi.fn(() => {
+        throw new Error('license failed')
+      }),
+    })
+    window.getCLodop = () => lodop
+    window._CONFIG = {
+      clodopLicense: { companyName: 'ACME', licenseA: 'A' },
+    } as any
+    const { execPrintCode } = await import('./clodop')
+
+    expect(execPrintCode('LODOP.PRINT_INIT("test");')).toBe(true)
+    expect(warn).toHaveBeenCalled()
+    vi.doUnmock('@/utils/logger')
+    delete window._CONFIG
+  })
+
+  it('returns false when getCLodop throws', async () => {
+    vi.resetModules()
+    window.getCLodop = () => {
+      throw new Error('unavailable')
+    }
+    const { execPrintCode } = await import('./clodop')
+
+    expect(execPrintCode('LODOP.PRINT_INIT("test");')).toBe(false)
+  })
+
+  it('skips unsafe and broken direct LODOP calls while executing valid ones', () => {
+    const lodop = setupLodop(
+      makeLodop({
+        SET_PRINT_STYLE: vi.fn(() => {
+          throw new Error('broken style')
+        }),
+        NewPage: vi.fn(),
+      }),
+    )
+    const code = [
+      'LODOP.UNKNOWN_METHOD(1);',
+      'LODOP.SET_PRINT_STYLE("FontSize", 12);',
+      'LODOP.NewPage();',
+      'LODOP.ADD_PRINT_TEXT(10/2, 3-1, 80, 16, "ok");',
+    ].join('\n')
+
+    expect(execPrintCode(code, { preview: true })).toBe(true)
+    expect(lodop.SET_PRINT_STYLE).toHaveBeenCalled()
+    expect(lodop.NewPage).toHaveBeenCalledWith()
+    expect(lodop.ADD_PRINT_TEXT).toHaveBeenCalledWith(5, 2, 80, 16, 'ok')
+  })
+
+  it('keeps invalid numeric expressions as raw argument values', () => {
+    const lodop = setupLodop()
+
+    expect(
+      execPrintCode(
+        'LODOP.PRINT_INIT("test");LODOP.ADD_PRINT_TEXT(10+, invalid+1, 80, 16, "raw");',
+        { preview: true },
+      ),
+    ).toBe(true)
+    expect(lodop.ADD_PRINT_TEXT).toHaveBeenCalledWith(
+      '10+',
+      'invalid+1',
+      80,
+      16,
+      'raw',
+    )
+
+    expect(
+      execPrintCode(
+        'LODOP.PRINT_INIT("test");LODOP.ADD_PRINT_TEXT(*, 1, 2, 3, "operator");',
+        { preview: true },
+      ),
+    ).toBe(true)
+    expect(lodop.ADD_PRINT_TEXT).toHaveBeenLastCalledWith(
+      '*',
+      1,
+      2,
+      3,
+      'operator',
+    )
+  })
+
+  it('parses PRINT_INITA string dimensions and preserves mixed argument values', () => {
+    const lodop = setupLodop()
+
+    expect(
+      execPrintCode(
+        [
+          'LODOP.PRINT_INITA("1mm","2mm","50%","100%","String Size");',
+          'LODOP.ADD_PRINT_TEXT(.5, 10/0, 20, 30, "ok");',
+          'LODOP.SET_PRINT_MODE("MODE"   , false);',
+          'LODOP.ADD_PRINT_TEXT(1, 2, 3, 4, foo(bar));',
+        ].join('\n'),
+        { preview: false },
+      ),
+    ).toBe(true)
+
+    expect(lodop.PRINT_INITA).toHaveBeenCalledWith(
+      '1mm',
+      '2mm',
+      '50%',
+      '100%',
+      'String Size',
+    )
+    expect(lodop.ADD_PRINT_TEXT).toHaveBeenNthCalledWith(
+      1,
+      0.5,
+      '10/0',
+      20,
+      30,
+      'ok',
+    )
+    expect(lodop.SET_PRINT_MODE).toHaveBeenCalledWith('MODE', false)
+    expect(lodop.ADD_PRINT_TEXT).toHaveBeenNthCalledWith(
+      2,
+      1,
+      2,
+      3,
+      4,
+      'foo(bar)',
+    )
+    expect(lodop.PRINT).toHaveBeenCalled()
+    expect(lodop.PREVIEW).not.toHaveBeenCalled()
+  })
+
+  it('skips missing safe methods and empty argument slots in direct calls', () => {
+    const lodop = setupLodop()
+
+    expect(
+      execPrintCode(
+        [
+          'LODOP.PRINT_INIT("test");',
+          'LODOP.ADD_PRINT_URL(1, 2, 3, 4, "https://example.com");',
+          'LODOP.ADD_PRINT_TEXT(, 1, 2, 3, "empty");',
+        ].join('\n'),
+        { preview: true },
+      ),
+    ).toBe(true)
+
+    expect(lodop.ADD_PRINT_TEXT).toHaveBeenCalledWith(1, 2, 3, 'empty')
+  })
+
+  it('removes control print calls before running sanitized control-flow script', () => {
+    const lodop = setupLodop()
+    const code = [
+      'var x = 1;',
+      'LODOP.ADD_PRINT_TEXT(1,2,3,4,String(x));',
+      'LODOP.PRINT();',
+    ].join('\n')
+
+    expect(execPrintCode(code, { preview: true })).toBe(true)
+
+    expect(lodop.ADD_PRINT_TEXT).toHaveBeenCalledWith(1, 2, 3, 4, '1')
+    expect(lodop.PRINT).not.toHaveBeenCalled()
+    expect(lodop.PREVIEW).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('loadCLodop', () => {
   afterEach(() => {
     delete window.getCLodop
     delete (window as any).CLODOP
+    document.querySelectorAll('script[data-clodop-src]').forEach((script) => {
+      script.remove()
+    })
     vi.restoreAllMocks()
     vi.useRealTimers()
   })
@@ -283,5 +471,110 @@ describe('loadCLodop', () => {
     const p1 = loadCLodop()
     const p2 = loadCLodop()
     expect(p1).toBe(p2)
+  })
+
+  it('resolves true when appended script loads', async () => {
+    vi.resetModules()
+    const { loadCLodop } = await import('./clodop')
+    const promise = loadCLodop()
+    const script = document.querySelector<HTMLScriptElement>(
+      'script[data-clodop-src]',
+    )
+
+    expect(script).toBeTruthy()
+    script?.dispatchEvent(new Event('load'))
+
+    await expect(promise).resolves.toBe(true)
+    expect(script?.dataset.loaded).toBe('true')
+  })
+
+  it('resolves false when all appended scripts fail', async () => {
+    vi.resetModules()
+    const { loadCLodop } = await import('./clodop')
+    const promise = loadCLodop()
+    const scripts = Array.from(
+      document.querySelectorAll<HTMLScriptElement>('script[data-clodop-src]'),
+    )
+
+    expect(scripts).toHaveLength(2)
+    for (const script of scripts) {
+      script.dispatchEvent(new Event('error'))
+    }
+
+    await expect(promise).resolves.toBe(false)
+  })
+
+  it('uses already loaded existing scripts without appending duplicates', async () => {
+    const existing = document.createElement('script')
+    existing.dataset.clodopSrc =
+      'http://localhost:8000/CLodopfuncs.js?priority=1'
+    existing.dataset.loaded = 'true'
+    document.head.appendChild(existing)
+
+    vi.resetModules()
+    const { loadCLodop } = await import('./clodop')
+    const promise = loadCLodop()
+
+    await expect(promise).resolves.toBe(true)
+    expect(
+      document.querySelectorAll(
+        'script[data-clodop-src="http://localhost:8000/CLodopfuncs.js?priority=1"]',
+      ),
+    ).toHaveLength(1)
+  })
+
+  it('wires load and error listeners for existing pending scripts', async () => {
+    const existing = document.createElement('script')
+    existing.dataset.clodopSrc =
+      'http://localhost:8000/CLodopfuncs.js?priority=1'
+    document.head.appendChild(existing)
+
+    vi.resetModules()
+    const { loadCLodop } = await import('./clodop')
+    const promise = loadCLodop()
+
+    existing.dispatchEvent(new Event('load'))
+
+    await expect(promise).resolves.toBe(true)
+  })
+
+  it('ignores late script failures after another script has loaded', async () => {
+    vi.useFakeTimers()
+    vi.resetModules()
+    const { loadCLodop } = await import('./clodop')
+    const promise = loadCLodop()
+    const scripts = Array.from(
+      document.querySelectorAll<HTMLScriptElement>('script[data-clodop-src]'),
+    )
+
+    scripts[0].dispatchEvent(new Event('load'))
+    scripts[1].dispatchEvent(new Event('error'))
+    await vi.advanceTimersByTimeAsync(3100)
+
+    await expect(promise).resolves.toBe(true)
+  })
+
+  it('resolves false when existing pending scripts fail', async () => {
+    for (const src of [
+      'http://localhost:8000/CLodopfuncs.js?priority=1',
+      'http://localhost:18000/CLodopfuncs.js?priority=1',
+    ]) {
+      const existing = document.createElement('script')
+      existing.dataset.clodopSrc = src
+      document.head.appendChild(existing)
+    }
+
+    vi.resetModules()
+    const { loadCLodop } = await import('./clodop')
+    const promise = loadCLodop()
+    const scripts = Array.from(
+      document.querySelectorAll<HTMLScriptElement>('script[data-clodop-src]'),
+    )
+
+    for (const script of scripts) {
+      script.dispatchEvent(new Event('error'))
+    }
+
+    await expect(promise).resolves.toBe(false)
   })
 })

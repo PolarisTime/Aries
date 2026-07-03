@@ -25,5 +25,8 @@ export function useDefaultPageSize() {
       DEFAULT_LIST_PAGE_SIZE_SETTING_CODE,
   )
   const value = Number(setting?.sampleNo)
-  return Number.isFinite(value) && value > 0 ? Math.floor(value) : DEFAULT_SIZE
+  if (!Number.isFinite(value) || value <= 0) {
+    return DEFAULT_SIZE
+  }
+  return Math.floor(value)
 }

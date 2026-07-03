@@ -157,6 +157,34 @@ describe('business-listing', () => {
         ['id', 'name'],
       )
     })
+
+    it('falls back to options pageSize when query params omit size', async () => {
+      shouldClientFilterMock.mockReturnValue(false)
+      buildQueryParamsMock.mockReturnValue({
+        keyword: 'test',
+        page: 2,
+      })
+      fetchModulePageMock.mockResolvedValue({
+        rows: [],
+        totalElements: 0,
+        hasMore: false,
+      })
+
+      await listBusinessModule(
+        'purchase-order',
+        { keyword: 'test' },
+        { currentPage: 3, pageSize: 25 },
+      )
+
+      expect(fetchModulePageMock).toHaveBeenCalledWith(
+        'purchase-order',
+        { keyword: 'test', page: 2 },
+        2,
+        25,
+        undefined,
+        undefined,
+      )
+    })
   })
 
   describe('searchBusinessModule', () => {

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -8,8 +8,33 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/components/SystemTableToolbar', () => ({
-  SystemTableToolbar: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="toolbar">{children}</div>
+  SystemTableToolbar: ({
+    children,
+    keyword,
+    onKeywordChange,
+    onRefresh,
+    onSearch,
+  }: {
+    children: React.ReactNode
+    keyword: string
+    onKeywordChange: (value: string) => void
+    onRefresh: () => void
+    onSearch: () => void
+  }) => (
+    <div data-testid="toolbar">
+      <input
+        aria-label="keyword"
+        value={keyword}
+        onChange={(event) => onKeywordChange(event.target.value)}
+      />
+      <button type="button" onClick={onSearch}>
+        search
+      </button>
+      <button type="button" onClick={onRefresh}>
+        refresh
+      </button>
+      {children}
+    </div>
   ),
 }))
 
@@ -91,5 +116,27 @@ describe('SessionManagementCard', () => {
     expect(
       screen.queryByText('system.session.revokeAll'),
     ).not.toBeInTheDocument()
+  })
+
+  it('uses zero summary values when summary is missing', () => {
+    render(<SessionManagementCard {...defaultProps} summary={undefined} />)
+
+    expect(screen.getAllByText('0')).toHaveLength(3)
+  })
+
+  it('wires toolbar and revoke callbacks', () => {
+    render(<SessionManagementCard {...defaultProps} />)
+
+    fireEvent.change(screen.getByLabelText('keyword'), {
+      target: { value: 'admin' },
+    })
+    fireEvent.click(screen.getByText('search'))
+    fireEvent.click(screen.getByText('refresh'))
+    fireEvent.click(screen.getByText('system.session.revokeAll'))
+
+    expect(defaultProps.onKeywordChange).toHaveBeenCalledWith('admin')
+    expect(defaultProps.onSearch).toHaveBeenCalled()
+    expect(defaultProps.onRefresh).toHaveBeenCalled()
+    expect(defaultProps.onRevokeAll).toHaveBeenCalled()
   })
 })

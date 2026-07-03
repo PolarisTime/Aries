@@ -82,4 +82,15 @@ describe('api-key-presets', () => {
       },
     ])
   })
+
+  it('groups resources with missing group under empty key', () => {
+    expect(
+      groupApiKeyResources([{ code: 'custom', title: '自定义' } as never]),
+    ).toEqual([
+      {
+        group: '',
+        resources: [{ code: 'custom', title: '自定义' }],
+      },
+    ])
+  })
 })

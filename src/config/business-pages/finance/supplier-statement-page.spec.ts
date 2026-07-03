@@ -25,6 +25,11 @@ describe('supplierStatementPageConfig', () => {
     expect(supplierStatementPageConfig.buildOverview).toBeTypeOf('function')
   })
 
+  it('buildOverview returns results', () => {
+    const overview = supplierStatementPageConfig.buildOverview([])
+    expect(Array.isArray(overview)).toBe(true)
+  })
+
   describe('parentImport', () => {
     it('buildParentFilters filters by supplier and status', () => {
       const filters = pi.buildParentFilters!({
@@ -137,6 +142,14 @@ describe('supplierStatementPageConfig', () => {
       } as any)
       expect(items).toHaveLength(1)
       expect(items[0].id).toBe('purchase-inbound-1')
+    })
+
+    it('transformItems uses index when item id is missing', () => {
+      const items = pi.transformItems!({
+        items: [{ materialName: '螺纹钢' }],
+      } as any)
+      expect(items[0].id).toBe('purchase-inbound-0')
+      expect(items[0].sourceInboundItemId).toBeUndefined()
     })
 
     it('transformItems handles non-array items', () => {

@@ -251,6 +251,20 @@ describe('recalculateEditorLineItem', () => {
     expect(item.weightTon).toBe(50)
   })
 
+  it('clears weighWeightTon when weightTon is an empty string', () => {
+    const item = makeItem({
+      settlementMode: '过磅',
+      quantity: 10,
+      weightTon: '' as never,
+      weighWeightTon: 50,
+      unitPrice: 10,
+    })
+
+    recalculateEditorLineItem(item, 'weightTon')
+
+    expect(item.weighWeightTon).toBeUndefined()
+  })
+
   it('handles resolveSourceInboundResidualWeightTon for sourceInboundItemId', () => {
     const item = makeItem({
       settlementMode: '理算',
@@ -277,6 +291,23 @@ describe('recalculateEditorLineItem', () => {
     })
     recalculateEditorLineItem(item, 'quantity')
     expect(item.weightTon).toBe(5)
+  })
+
+  it('uses zero weightTon when resolving weigh settlement adjustment', () => {
+    const item = makeItem({
+      settlementMode: '过磅',
+      quantity: 10,
+      pieceWeightTon: 0.5,
+      weightTon: 0,
+      weightAdjustmentTon: 1,
+      unitPrice: 10,
+    })
+
+    recalculateEditorLineItem(item, 'unitPrice')
+
+    expect(item.amount).toBe(0)
+    expect(item.weightAdjustmentTon).toBe(1)
+    expect(item.weightAdjustmentAmount).toBe(10)
   })
 
   it('handles weighSettlement with _sourcePieceWeightTon', () => {
@@ -319,6 +350,23 @@ describe('recalculateEditorLineItem', () => {
     })
     recalculateEditorLineItem(item, 'quantity')
     expect(item.weightTon).toBeGreaterThan(0)
+  })
+
+  it('keeps recalculated default weight when sourced quantity is zero', () => {
+    const item = makeItem({
+      settlementMode: '理算',
+      quantity: 0,
+      pieceWeightTon: 0.5,
+      weightTon: 3,
+      sourceInboundItemId: 'inbound-1',
+      _sourceWeighWeightTon: 100,
+      _sourceTotalQuantity: 20,
+      _maxImportQuantity: 15,
+    })
+
+    recalculateEditorLineItem(item, 'quantity')
+
+    expect(item.weightTon).toBe(0)
   })
 
   it('handles defaultWeightTon fallback when conditions not met', () => {
@@ -379,6 +427,40 @@ describe('recalculateEditorLineItem', () => {
     })
     recalculateEditorLineItem(item, 'quantity')
     expect(item.weightTon).toBeGreaterThan(0)
+  })
+
+  it('uses item pieceWeightTon when source piece weight is missing', () => {
+    const item = makeItem({
+      settlementMode: '理算',
+      quantity: 15,
+      pieceWeightTon: 2,
+      weightTon: 30,
+      sourceInboundItemId: 'inbound-1',
+      _sourceWeighWeightTon: 50,
+      _sourceTotalQuantity: 20,
+      _maxImportQuantity: 15,
+    })
+
+    recalculateEditorLineItem(item, 'quantity')
+
+    expect(item.weightTon).toBe(40)
+  })
+
+  it('uses zero piece weight when source and item piece weights are missing', () => {
+    const item = makeItem({
+      settlementMode: '理算',
+      quantity: 15,
+      pieceWeightTon: undefined as never,
+      weightTon: 0,
+      sourceInboundItemId: 'inbound-1',
+      _sourceWeighWeightTon: 50,
+      _sourceTotalQuantity: 20,
+      _maxImportQuantity: 15,
+    })
+
+    recalculateEditorLineItem(item, 'quantity')
+
+    expect(item.weightTon).toBe(50)
   })
 
   it('handles remainingAmount in source item', () => {
@@ -473,6 +555,18 @@ describe('recalculateEditorLineItem', () => {
       unitPrice: 0,
     })
     recalculateEditorLineItem(item, 'amount')
+    expect(item.unitPrice).toBe(0)
+  })
+
+  it('calculates zero unit price when amount is cleared', () => {
+    const item = makeItem({
+      weightTon: 10,
+      amount: undefined as never,
+      unitPrice: 50,
+    })
+
+    recalculateEditorLineItem(item, 'amount')
+
     expect(item.unitPrice).toBe(0)
   })
 })

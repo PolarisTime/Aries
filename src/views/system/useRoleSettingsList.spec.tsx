@@ -46,8 +46,76 @@ describe('useRoleSettingsList', () => {
 
   it('passes query function that fetches all pages', async () => {
     mockUseQuery.mockImplementation(() => ({ data: [] }))
+    mockListRoleSettingsPage
+      .mockResolvedValueOnce({
+        records: Array.from({ length: 100 }, (_, index) => ({
+          id: `role-${index}`,
+        })),
+        totalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        records: [{ id: 'role-101' }],
+        totalPages: 2,
+      })
+
     renderHook(() => useRoleSettingsList())
+    const queryOptions = mockUseQuery.mock.calls[0][0]
+    const roles = await queryOptions.queryFn()
+
     expect(mockUseQuery).toHaveBeenCalled()
+    expect(mockListRoleSettingsPage).toHaveBeenCalledWith(0, 100)
+    expect(mockListRoleSettingsPage).toHaveBeenCalledWith(1, 100)
+    expect(roles).toHaveLength(101)
+  })
+
+  it('stops fetching when a page has fewer than 100 records', async () => {
+    mockUseQuery.mockImplementation(() => ({ data: [] }))
+    mockListRoleSettingsPage.mockResolvedValue({
+      records: [{ id: 'role-1' }],
+      totalPages: 0,
+    })
+
+    renderHook(() => useRoleSettingsList())
+    const queryOptions = mockUseQuery.mock.calls[0][0]
+    const roles = await queryOptions.queryFn()
+
+    expect(mockListRoleSettingsPage).toHaveBeenCalledTimes(1)
+    expect(roles).toEqual([{ id: 'role-1' }])
+  })
+
+  it('handles missing records while fetching role pages', async () => {
+    mockUseQuery.mockImplementation(() => ({ data: [] }))
+    mockListRoleSettingsPage.mockResolvedValue({
+      totalPages: 0,
+    })
+
+    renderHook(() => useRoleSettingsList())
+    const queryOptions = mockUseQuery.mock.calls[0][0]
+    const roles = await queryOptions.queryFn()
+
+    expect(roles).toEqual([])
+  })
+
+  it('continues from a full page when totalPages is missing', async () => {
+    mockUseQuery.mockImplementation(() => ({ data: [] }))
+    mockListRoleSettingsPage
+      .mockResolvedValueOnce({
+        records: Array.from({ length: 100 }, (_, index) => ({
+          id: `role-${index}`,
+        })),
+        totalPages: 0,
+      })
+      .mockResolvedValueOnce({
+        records: [],
+        totalPages: 0,
+      })
+
+    renderHook(() => useRoleSettingsList())
+    const queryOptions = mockUseQuery.mock.calls[0][0]
+    const roles = await queryOptions.queryFn()
+
+    expect(mockListRoleSettingsPage).toHaveBeenCalledTimes(2)
+    expect(roles).toHaveLength(100)
   })
 
   it('does not fetch when enabled is false', () => {

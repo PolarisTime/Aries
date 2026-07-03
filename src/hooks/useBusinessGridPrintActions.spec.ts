@@ -58,12 +58,39 @@ vi.mock('react-i18next', () => ({
 
 import { useBusinessGridPrintActions } from './useBusinessGridPrintActions'
 
+interface PrintTemplateConfirmOptions {
+  content: {
+    props: {
+      defaultId: string
+      onSelect: (id: string) => void
+    }
+  }
+  onOk: () => void
+  onCancel: () => void
+}
+
 describe('useBusinessGridPrintActions', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     tMock.mockImplementation((key: string) => key)
     runPrintOutputsMock.mockResolvedValue({ coordCount: 1, pdfCount: 0 })
   })
+
+  async function openTemplatePicker(action: () => Promise<unknown>) {
+    let actionPromise: Promise<unknown> = Promise.resolve()
+
+    await act(async () => {
+      actionPromise = action()
+      await Promise.resolve()
+    })
+
+    const calls = modalConfirmMock.mock.calls
+    const confirmOptions = calls[
+      calls.length - 1
+    ][0] as PrintTemplateConfirmOptions
+
+    return { actionPromise, confirmOptions }
+  }
 
   it('returns handlePrintSelectedRecords function', () => {
     const { result } = renderHook(() =>
@@ -119,6 +146,64 @@ describe('useBusinessGridPrintActions', () => {
     expect(downloadBlobMock).toHaveBeenCalledWith(blob, 'SO_001.xlsx')
   })
 
+  it('keeps an existing xlsx file extension when exporting', async () => {
+    const blob = new Blob(['xlsx'])
+    exportSalesOrderPrintXlsxMock.mockResolvedValue(blob)
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+        selectedRows: [{ id: '1', orderNo: ' SO-001.XLSX ' }],
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleExportSalesOrderPrintXlsx()
+    })
+
+    expect(downloadBlobMock).toHaveBeenCalledWith(blob, 'SO-001.XLSX')
+  })
+
+  it('falls back to default xlsx file name for a null record id', async () => {
+    const blob = new Blob(['xlsx'])
+    exportSalesOrderPrintXlsxMock.mockResolvedValue(blob)
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: [null as unknown as string],
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleExportSalesOrderPrintXlsx()
+    })
+
+    expect(downloadBlobMock).toHaveBeenCalledWith(
+      blob,
+      'sales-order-print.xlsx',
+    )
+  })
+
+  it('uses the selected record id when exporting without an order number', async () => {
+    const blob = new Blob(['xlsx'])
+    exportSalesOrderPrintXlsxMock.mockResolvedValue(blob)
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['record-1'],
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleExportSalesOrderPrintXlsx()
+    })
+
+    expect(downloadBlobMock).toHaveBeenCalledWith(blob, 'record-1.xlsx')
+  })
+
   it('shows warning when exporting print xlsx without selected rows', async () => {
     const { result } = renderHook(() =>
       useBusinessGridPrintActions({
@@ -165,6 +250,25 @@ describe('useBusinessGridPrintActions', () => {
     })
 
     expect(messageErrorMock).toHaveBeenCalledWith('Export failed')
+  })
+
+  it('uses fallback export error message for non-error rejections', async () => {
+    exportSalesOrderPrintXlsxMock.mockRejectedValue('Export failed')
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleExportSalesOrderPrintXlsx()
+    })
+
+    expect(messageErrorMock).toHaveBeenCalledWith(
+      'hooks.printActions.exportXlsxFailed',
+    )
   })
 
   it('shows warning when exporting print xlsx with multiple selected rows', async () => {
@@ -221,6 +325,188 @@ describe('useBusinessGridPrintActions', () => {
     await act(async () => {
       await result.current.handlePrintSelectedRecords('print')
     })
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.noPrintTemplateConfigured',
+    )
+  })
+
+  it('skips template loading for modules without print targets', async () => {
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'purchase-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handlePrintSelectedRecords('print')
+    })
+
+    expect(listPrintTemplatesMock).not.toHaveBeenCalled()
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.noPrintTemplateConfigured',
+    )
+  })
+
+  it('treats a missing template response as no configured templates', async () => {
+    listPrintTemplatesMock.mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handlePrintSelectedRecords('print')
+    })
+
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.noPrintTemplateConfigured',
+    )
+  })
+
+  it('opens a selector and prints with the chosen template', async () => {
+    const templates = [
+      {
+        id: 'template-1',
+        templateName: 'Template One',
+        templateHtml: 'LODOP.PRINT_INIT("one");',
+        templateType: 'COORD',
+        status: 'ACTIVE',
+        settlementCompanyId: 'company-1',
+        settlementCompanyName: 'Acme',
+      },
+      {
+        id: 'template-2',
+        templateName: 'Template Two',
+        templateHtml: 'LODOP.PRINT_INIT("two");',
+        templateType: 'COORD',
+        status: 'ACTIVE',
+        settlementCompanyId: 'company-1',
+        settlementCompanyName: 'Acme',
+      },
+    ]
+    const output = {
+      kind: 'LODOP_SCRIPT',
+      templateType: 'COORD',
+      templateHtml: 'LODOP.PRINT_INIT("two");',
+      data: {},
+    }
+    listPrintTemplatesMock.mockResolvedValue({ data: templates })
+    httpMock.post.mockResolvedValue({ code: 200, data: output })
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+        selectedRows: [
+          {
+            id: '1',
+            settlementCompanyId: 'company-1',
+            settlementCompanyName: 'Acme',
+          },
+        ],
+      }),
+    )
+    const { actionPromise, confirmOptions } = await openTemplatePicker(() =>
+      result.current.handlePrintSelectedRecords('print'),
+    )
+
+    expect(confirmOptions.content.props.defaultId).toBe('template-1')
+
+    await act(async () => {
+      confirmOptions.content.props.onSelect('template-2')
+      confirmOptions.onOk()
+      await actionPromise
+    })
+
+    expect(httpMock.post).toHaveBeenCalledWith('/print/record', {
+      templateId: 'template-2',
+      moduleKey: 'sales-order',
+      recordId: '1',
+    })
+    expect(runPrintOutputsMock).toHaveBeenCalledWith([output], {
+      fallbackTemplateName: 'Template Two',
+      mode: 'print',
+      printServiceUnavailableMessage:
+        'hooks.printActions.printServiceUnavailable',
+    })
+  })
+
+  it('shows no template warning when selector is cancelled', async () => {
+    const templates = [
+      {
+        id: 'template-1',
+        templateName: 'Template One',
+        templateHtml: 'LODOP.PRINT_INIT("one");',
+        templateType: 'COORD',
+      },
+      {
+        id: 'template-2',
+        templateName: 'Template Two',
+        templateHtml: 'LODOP.PRINT_INIT("two");',
+        templateType: 'COORD',
+      },
+    ]
+    listPrintTemplatesMock.mockResolvedValue({ data: templates })
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+    const { actionPromise, confirmOptions } = await openTemplatePicker(() =>
+      result.current.handlePrintSelectedRecords('print'),
+    )
+
+    await act(async () => {
+      confirmOptions.onCancel()
+      await actionPromise
+    })
+
+    expect(httpMock.post).not.toHaveBeenCalled()
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.noPrintTemplateConfigured',
+    )
+  })
+
+  it('shows no template warning when selector confirms a missing template id', async () => {
+    const templates = [
+      {
+        id: 'template-1',
+        templateName: 'Template One',
+        templateHtml: 'LODOP.PRINT_INIT("one");',
+        templateType: 'COORD',
+      },
+      {
+        id: 'template-2',
+        templateName: 'Template Two',
+        templateHtml: 'LODOP.PRINT_INIT("two");',
+        templateType: 'COORD',
+      },
+    ]
+    listPrintTemplatesMock.mockResolvedValue({ data: templates })
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+    const { actionPromise, confirmOptions } = await openTemplatePicker(() =>
+      result.current.handlePrintSelectedRecords('print'),
+    )
+
+    await act(async () => {
+      confirmOptions.content.props.onSelect('missing')
+      confirmOptions.onOk()
+      await actionPromise
+    })
+
+    expect(httpMock.post).not.toHaveBeenCalled()
     expect(messageWarningMock).toHaveBeenCalledWith(
       'hooks.printActions.noPrintTemplateConfigured',
     )
@@ -629,6 +915,38 @@ describe('useBusinessGridPrintActions', () => {
     )
   })
 
+  it('warns and stops when download mode has only coord output', async () => {
+    const template = {
+      id: 'template-1',
+      templateName: 'Coord Template',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
+      templateType: 'COORD',
+    }
+    httpMock.post.mockResolvedValue({
+      code: 200,
+      data: {
+        kind: 'LODOP_SCRIPT',
+        templateType: 'COORD',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
+      },
+    })
+    runPrintOutputsMock.mockResolvedValue({ coordCount: 1, pdfCount: 0 })
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+    await act(async () => {
+      await result.current.handlePrintSelectedRecords('download', template)
+    })
+
+    expect(messageWarningMock).toHaveBeenCalledWith(
+      'hooks.printActions.noPrintContent',
+    )
+  })
+
   it('shows runner error message', async () => {
     const template = {
       id: 'template-1',
@@ -693,5 +1011,67 @@ describe('useBusinessGridPrintActions', () => {
     })
 
     expect(messageErrorMock).toHaveBeenCalled()
+  })
+
+  it('falls back to axios message when blob error has no message field', async () => {
+    const template = {
+      id: 'template-1',
+      templateName: 'Test',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
+      templateType: 'COORD',
+    }
+    const axiosError = Object.assign(new Error('Request failed'), {
+      isAxiosError: true,
+      response: {
+        data: new Blob([JSON.stringify({ error: 'Server error' })], {
+          type: 'application/json',
+        }),
+      },
+    })
+    httpMock.post.mockRejectedValue(axiosError)
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+    await act(async () => {
+      await result.current.handlePrintSelectedRecords('print', template)
+    })
+
+    expect(messageErrorMock).toHaveBeenCalledWith('Request failed')
+  })
+
+  it('uses fallback message when axios blob error has a blank message', async () => {
+    const template = {
+      id: 'template-1',
+      templateName: 'Test',
+      templateHtml: 'LODOP.PRINT_INIT("test");',
+      templateType: 'COORD',
+    }
+    const axiosError = Object.assign(new Error(''), {
+      isAxiosError: true,
+      response: {
+        data: new Blob([JSON.stringify({ message: '   ' })], {
+          type: 'application/json',
+        }),
+      },
+    })
+    httpMock.post.mockRejectedValue(axiosError)
+
+    const { result } = renderHook(() =>
+      useBusinessGridPrintActions({
+        moduleKey: 'sales-order',
+        selectedRowKeys: ['1'],
+      }),
+    )
+    await act(async () => {
+      await result.current.handlePrintSelectedRecords('print', template)
+    })
+
+    expect(messageErrorMock).toHaveBeenCalledWith(
+      'hooks.printActions.printFailed',
+    )
   })
 })

@@ -149,7 +149,7 @@ function resolveBlueTagTone(
   const displayTone = normalizedDisplayText
     ? resolveFallbackTone(normalizedDisplayText)
     : statusTone
-  const fallbackTone = displayTone.color ? displayTone : statusTone
+  const fallbackTone = displayTone
   if (
     isDeepBlueStatus(status) ||
     (normalizedDisplayText ? isDeepBlueStatus(normalizedDisplayText) : false)

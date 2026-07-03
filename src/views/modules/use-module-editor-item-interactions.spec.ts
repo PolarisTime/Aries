@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { moveEditorLineItemByDrag } from '@/module-system/module-adapter-editor'
 
 vi.mock('@/module-system/module-adapter-editor', () => ({
   moveEditorLineItemByDrag: vi.fn(
@@ -243,6 +244,36 @@ describe('useModuleEditorItemInteractions', () => {
       result.current.handleDragEnd()
     })
     expect(setItems).toHaveBeenCalled()
+  })
+
+  it('uses after drag position when dragging below midpoint', () => {
+    vi.mocked(moveEditorLineItemByDrag).mockClear()
+    const { result } = setupHook(createItems(['a', 'b', 'c']))
+    act(() => {
+      result.current.handleDragStart('a', {
+        dataTransfer: { effectAllowed: '', setData: vi.fn() },
+      } as any)
+    })
+    act(() => {
+      result.current.handleDragOver('c', {
+        preventDefault: vi.fn(),
+        dataTransfer: { dropEffect: '' },
+        currentTarget: {
+          getBoundingClientRect: () => ({ top: 0, height: 100 }),
+        },
+        clientY: 80,
+      } as any)
+    })
+    act(() => {
+      result.current.handleDragEnd()
+    })
+
+    expect(moveEditorLineItemByDrag).toHaveBeenCalledWith(
+      expect.any(Array),
+      'a',
+      'c',
+      'after',
+    )
   })
 
   it('handleDragEnd does nothing when source and target are same', () => {

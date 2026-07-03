@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Form } from 'antd'
 import { describe, expect, it, vi } from 'vitest'
 import { PersonalSettingsSecurityTab } from '@/layouts/PersonalSettingsSecurityTab'
@@ -161,6 +161,78 @@ describe('PersonalSettingsSecurityTab', () => {
     expect(container.querySelector('.ant-btn-primary')).toBeDefined()
   })
 
+  it('updates totp code and enables setup from QR state', () => {
+    const onSetTotpCode = vi.fn()
+    const onEnableTotp = vi.fn()
+
+    function SetupProvidedWrapper() {
+      const [form] = Form.useForm()
+      return (
+        <PersonalSettingsSecurityTab
+          user={{ userName: '张三', loginName: 'zhangsan', totpEnabled: false }}
+          pwForm={form}
+          pwSaving={false}
+          totpLoading={false}
+          totpSetup={{ qrCodeBase64: 'abc123', secret: 'JBSWY3DPEHPK3PXP' }}
+          totpCode=""
+          totpEnabling={false}
+          onChangePassword={vi.fn()}
+          onSetupTotp={vi.fn()}
+          onSetTotpCode={onSetTotpCode}
+          onEnableTotp={onEnableTotp}
+        />
+      )
+    }
+
+    const { container } = render(<SetupProvidedWrapper />)
+    fireEvent.change(screen.getByLabelText('验证码'), {
+      target: { value: '123456' },
+    })
+    const enableButton =
+      container.querySelector<HTMLButtonElement>('.ant-btn-primary')
+    expect(enableButton).toBeDefined()
+    fireEvent.click(enableButton!)
+
+    expect(onSetTotpCode).toHaveBeenCalledWith('123456')
+    expect(onEnableTotp).toHaveBeenCalled()
+  })
+
+  it('submits password form values', async () => {
+    const onChangePassword = vi.fn()
+
+    function PasswordWrapper() {
+      const [form] = Form.useForm()
+      return (
+        <PersonalSettingsSecurityTab
+          user={{ userName: '张三', loginName: 'zhangsan', totpEnabled: false }}
+          pwForm={form}
+          pwSaving={false}
+          totpLoading={false}
+          totpSetup={null}
+          totpCode=""
+          totpEnabling={false}
+          onChangePassword={onChangePassword}
+          onSetupTotp={vi.fn()}
+          onSetTotpCode={vi.fn()}
+          onEnableTotp={vi.fn()}
+        />
+      )
+    }
+
+    render(<PasswordWrapper />)
+    const passwordInputs = document.querySelectorAll('input[type="password"]')
+    fireEvent.change(passwordInputs[0], { target: { value: 'old123' } })
+    fireEvent.change(passwordInputs[1], { target: { value: 'new123' } })
+    fireEvent.click(screen.getByText('修改密码'))
+
+    await waitFor(() => {
+      expect(onChangePassword).toHaveBeenCalledWith({
+        oldPassword: 'old123',
+        newPassword: 'new123',
+      })
+    })
+  })
+
   it('renders password form fields', () => {
     render(<Wrapper />)
     expect(screen.getByText('当前密码')).toBeDefined()
@@ -189,5 +261,30 @@ describe('PersonalSettingsSecurityTab', () => {
     }
     render(<NullUserWrapper />)
     expect(screen.getByText('--')).toBeDefined()
+  })
+
+  it('falls back to login name as display name when user name is missing', () => {
+    function LoginOnlyWrapper() {
+      const [form] = Form.useForm()
+      return (
+        <PersonalSettingsSecurityTab
+          user={{ loginName: 'lisi', totpEnabled: false }}
+          pwForm={form}
+          pwSaving={false}
+          totpLoading={false}
+          totpSetup={null}
+          totpCode=""
+          totpEnabling={false}
+          onChangePassword={vi.fn()}
+          onSetupTotp={vi.fn()}
+          onSetTotpCode={vi.fn()}
+          onEnableTotp={vi.fn()}
+        />
+      )
+    }
+
+    render(<LoginOnlyWrapper />)
+
+    expect(screen.getByText(/账号: lisi \(lisi\)/)).toBeDefined()
   })
 })

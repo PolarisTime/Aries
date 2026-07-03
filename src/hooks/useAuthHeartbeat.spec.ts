@@ -100,6 +100,20 @@ describe('useAuthHeartbeat', () => {
     expect(pingAuthMock).not.toHaveBeenCalled()
   })
 
+  it('skips clearing when interval id is falsy', () => {
+    const setIntervalSpy = vi
+      .spyOn(globalThis, 'setInterval')
+      .mockReturnValue(0 as never)
+    const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval')
+
+    const { unmount } = renderHook(() => useAuthHeartbeat())
+    unmount()
+
+    expect(clearIntervalSpy).not.toHaveBeenCalled()
+    setIntervalSpy.mockRestore()
+    clearIntervalSpy.mockRestore()
+  })
+
   it('restarts heartbeat when token changes', () => {
     const { rerender } = renderHook(() => useAuthHeartbeat())
 

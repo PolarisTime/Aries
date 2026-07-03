@@ -148,6 +148,19 @@ describe('business-crud', () => {
       expect(result.data).toEqual({ id: '1', name: 'test' })
     })
 
+    it('normalizes empty detail response data', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: null,
+      })
+      normalizeRecordMock.mockReturnValue({})
+
+      const result = await getBusinessModuleDetail('purchase-order', '1')
+
+      expect(normalizeRecordMock).toHaveBeenCalledWith({})
+      expect(result.data).toEqual({})
+    })
+
     it('throws on readOnly without supportsDetail', async () => {
       getModuleConfigMock.mockReturnValue({
         path: '/read-only',
@@ -211,6 +224,19 @@ describe('business-crud', () => {
         },
       )
       expect(result.data).toEqual({ id: '1', name: 'updated' })
+    })
+
+    it('returns undefined data when save response has no data', async () => {
+      httpPostMock.mockResolvedValue({ code: 0, data: null })
+      serializeBusinessRecordForSaveMock.mockResolvedValue({ name: 'test' })
+
+      const result = await saveBusinessModule('purchase-order', {
+        id: undefined,
+        name: 'test',
+      } as never)
+
+      expect(result.data).toBeUndefined()
+      expect(normalizeRecordMock).not.toHaveBeenCalled()
     })
 
     it('includes preallocated headers for new record', async () => {
@@ -344,6 +370,22 @@ describe('business-crud', () => {
         },
       )
       expect(result.data).toEqual({ id: '1', status: '已审核' })
+    })
+
+    it('returns undefined data when status response has no data', async () => {
+      httpPatchMock.mockResolvedValue({
+        code: 0,
+        data: null,
+      })
+
+      const result = await updateBusinessModuleStatus(
+        'purchase-order',
+        '1',
+        '已审核',
+      )
+
+      expect(result.data).toBeUndefined()
+      expect(normalizeRecordMock).not.toHaveBeenCalled()
     })
 
     it('throws on readOnly module', async () => {

@@ -151,17 +151,14 @@ export function buildParentImportState(options: {
       _parentRelationNo: parentNo,
     }
     if (!sourceParentItemId) {
-      return getSourceParentItemId(nextItem) === '' ||
-        Number(nextItem.quantity || 0) > 0
-        ? [nextItem]
-        : []
+      return [nextItem]
     }
     const remainingQuantity = toSafeNumber(
       item.remainingQuantity ?? item.quantity,
     )
-    const currentAllocatedQuantity = sourceParentItemId
-      ? toSafeNumber(currentAllocatedQuantityMap.get(sourceParentItemId))
-      : 0
+    const currentAllocatedQuantity = toSafeNumber(
+      currentAllocatedQuantityMap.get(sourceParentItemId),
+    )
     const nextQuantity =
       currentAllocatedQuantity > 0
         ? currentAllocatedQuantity

@@ -186,10 +186,7 @@ export function useUserAccountEditor({
         editorMode === 'edit' ? (editingId ?? undefined) : undefined,
       )
       if (!validationResult.available) {
-        message.warning(
-          validationResult.message ||
-            i18next.t('system.userAccountEditorHook.loginNameExists'),
-        )
+        message.warning(validationResult.message)
         return
       }
       const payload: UserAccountFormPayload = {

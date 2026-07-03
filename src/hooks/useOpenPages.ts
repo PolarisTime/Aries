@@ -91,22 +91,20 @@ export function useOpenPages(
     return [...visiblePages, currentOpenPage]
   })()
 
-  if (pages !== storedPages) {
-    const samePages =
-      pages.length === storedPages.length &&
-      pages.every((page, index) => {
-        const stored = storedPages[index]
-        return (
-          stored &&
-          stored.key === page.key &&
-          stored.path === page.path &&
-          stored.title === page.title &&
-          stored.closable === page.closable
-        )
-      })
-    if (!samePages) {
-      setStoredPages(pages)
-    }
+  const samePages =
+    pages.length === storedPages.length &&
+    pages.every((page, index) => {
+      const stored = storedPages[index]
+      return (
+        stored &&
+        stored.key === page.key &&
+        stored.path === page.path &&
+        stored.title === page.title &&
+        stored.closable === page.closable
+      )
+    })
+  if (!samePages) {
+    setStoredPages(pages)
   }
 
   const closePage = (
@@ -128,7 +126,7 @@ export function useOpenPages(
       }
 
       if (currentKey === key || options.fallbackPath) {
-        const fallback = nextPages[Math.max(index - 1, 0)] || nextPages[0]
+        const fallback = nextPages[Math.max(index - 1, 0)]
         const fallbackPath =
           options.fallbackPath || fallback?.path || defaultPath
         // Use setTimeout to avoid state update during render

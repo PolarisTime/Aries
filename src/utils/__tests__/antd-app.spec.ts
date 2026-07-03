@@ -1,26 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { bindAntdAppApi, message, modal } from '../antd-app'
 
-const staticModalDestroyAll = vi.fn()
-const staticMessageSuccess = vi.fn()
-
-vi.mock('antd', () => ({
+const staticAntdApi = vi.hoisted(() => ({
   message: {
-    success: (...args: unknown[]) => staticMessageSuccess(...args),
+    success: vi.fn(),
     error: vi.fn(),
     warning: vi.fn(),
     info: vi.fn(),
     loading: vi.fn(),
     destroy: vi.fn(),
   },
-  Modal: {
+  modal: {
     confirm: vi.fn(),
     info: vi.fn(),
     success: vi.fn(),
     error: vi.fn(),
     warning: vi.fn(),
-    destroyAll: (...args: unknown[]) => staticModalDestroyAll(...args),
+    destroyAll: vi.fn(),
   },
+}))
+
+vi.mock('antd', () => ({
+  message: staticAntdApi.message,
+  Modal: staticAntdApi.modal,
 }))
 
 const mockMessageApi = {
@@ -59,6 +61,9 @@ describe('antd-app', () => {
   beforeEach(() => {
     bindAntdAppApi(null)
     vi.clearAllMocks()
+    staticAntdApi.message.success = vi.fn()
+    staticAntdApi.modal.confirm = vi.fn()
+    staticAntdApi.modal.destroyAll = vi.fn()
   })
 
   describe('bindAntdAppApi', () => {
@@ -115,7 +120,21 @@ describe('antd-app', () => {
 
     it('falls back to static message API when no API bound', () => {
       message.success('test')
-      expect(staticMessageSuccess).toHaveBeenCalledWith('test')
+      expect(staticAntdApi.message.success).toHaveBeenCalledWith('test')
+    })
+
+    it('falls back to static message API when bound method is not callable', () => {
+      bindAntdAppApi({
+        ...mockAntdAppApi,
+        message: {
+          ...mockMessageApi,
+          success: undefined,
+        },
+      } as any)
+
+      message.success('test')
+
+      expect(staticAntdApi.message.success).toHaveBeenCalledWith('test')
     })
   })
 
@@ -152,7 +171,36 @@ describe('antd-app', () => {
 
     it('calls destroyAll via static modal import', () => {
       modal.destroyAll()
-      expect(staticModalDestroyAll).toHaveBeenCalled()
+      expect(staticAntdApi.modal.destroyAll).toHaveBeenCalled()
+    })
+
+    it('falls back to static modal API when bound method is not callable', () => {
+      bindAntdAppApi({
+        ...mockAntdAppApi,
+        modal: {
+          ...mockModalApi,
+          confirm: undefined,
+        },
+      } as any)
+
+      modal.confirm({ title: 'confirm' })
+
+      expect(staticAntdApi.modal.confirm).toHaveBeenCalledWith({
+        title: 'confirm',
+      })
+    })
+
+    it('returns undefined when neither bound nor static API exposes a callable method', () => {
+      staticAntdApi.message.success = undefined as never
+      bindAntdAppApi({
+        ...mockAntdAppApi,
+        message: {
+          ...mockMessageApi,
+          success: undefined,
+        },
+      } as any)
+
+      expect(message.success('test')).toBeUndefined()
     })
   })
 })

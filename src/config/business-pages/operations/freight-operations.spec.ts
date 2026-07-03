@@ -77,4 +77,22 @@ describe('freightOperationsPageConfigs', () => {
     expect(draft?.customerName).toBe('客户A')
     expect(draft?.projectName).toBe('项目X')
   })
+
+  it('parentImport mapParentToDraft fills empty defaults', () => {
+    const draft = config.parentImport?.mapParentToDraft?.({})
+    expect(draft).toEqual({
+      customerName: '',
+      projectName: '',
+    })
+  })
+
+  it('builds freight overview', () => {
+    const overview = config.buildOverview?.([
+      { totalFreight: 100, totalWeight: 2 },
+      { totalFreight: 50, totalWeight: 3 },
+    ])
+
+    expect(overview).toBeDefined()
+    expect(overview?.length).toBeGreaterThan(0)
+  })
 })

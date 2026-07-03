@@ -47,7 +47,6 @@ export function createPinyinFilterOption(
   return (input: string, option) => {
     if (!input) return true
     const keywords = input.trim().toLowerCase().split(/\s+/)
-    if (keywords.length === 0) return true
 
     const label = String(option?.label || '')
     const customSearchText = searchTextProp

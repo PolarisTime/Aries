@@ -146,6 +146,19 @@ describe('buildParentImportState', () => {
     expect(result.nextItems).toHaveLength(0)
   })
 
+  it('handles parent records without item arrays', () => {
+    const result = buildParentImportState({
+      parentImportConfig: parentImportConfig as any,
+      parentRecord: { id: '2', orderNo: 'SO002', items: undefined } as any,
+      currentParentNos: [],
+      currentItems: [],
+      cloneLineItems,
+    })
+
+    expect(result.importedItemCount).toBe(0)
+    expect(result.nextItems).toHaveLength(0)
+  })
+
   it('allocates remaining quantities correctly', () => {
     const parentWithAllocations = {
       id: '1',
@@ -182,6 +195,51 @@ describe('buildParentImportState', () => {
     expect(result.importedItemCount).toBe(1)
     expect(result.nextItems[0].quantity).toBe(5)
     expect(result.nextItems[0]._maxImportQuantity).toBe(5)
+  })
+
+  it('uses explicit max import limits when provided', () => {
+    const record = {
+      id: '3',
+      orderNo: 'SO003',
+      items: [
+        {
+          id: 'p-item-1',
+          sourceInboundItemId: 'inbound-item-1',
+          materialCode: 'M001',
+          quantity: 8,
+          remainingQuantity: 4,
+          maxImportQuantity: 9,
+          weightTon: 6,
+          remainingWeightTon: 2,
+          maxImportWeightTon: 7,
+          amount: 800,
+          remainingAmount: 300,
+          maxImportAmount: 900,
+        },
+      ],
+    } as any
+
+    const result = buildParentImportState({
+      parentImportConfig: {
+        parentModuleKey: 'purchase-inbound',
+        label: '采购入库',
+        parentFieldKey: 'sourceOrderNos',
+        parentDisplayFieldKey: 'orderNo',
+      } as any,
+      parentRecord: record,
+      currentParentNos: [],
+      currentItems: [],
+      cloneLineItems,
+    })
+
+    expect(result.nextItems[0]).toMatchObject({
+      quantity: 4,
+      _maxImportQuantity: 9,
+      weightTon: 2,
+      _maxImportWeightTon: 7,
+      amount: 300,
+      _maxImportAmount: 900,
+    })
   })
 
   it('handles items with sourceParentItemId but zero quantity', () => {

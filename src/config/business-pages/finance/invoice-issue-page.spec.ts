@@ -46,6 +46,44 @@ describe('invoiceIssuePageConfig', () => {
       expect(result).toContain('结算主体')
     })
 
+    it('validateParentImport rejects mismatched customer', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: { customerName: '客户A' },
+        currentItems: [],
+        parentRecord: { customerName: '客户B' },
+      } as any)
+
+      expect(result).toBe('只能选择同一客户的销售订单生成开票单')
+    })
+
+    it('validateParentImport rejects mismatched project', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: { customerName: '客户A', projectName: '项目A' },
+        currentItems: [],
+        parentRecord: { customerName: ' 客户A ', projectName: '项目B' },
+      } as any)
+
+      expect(result).toBe('只能选择同一项目的销售订单生成开票单')
+    })
+
+    it('validateParentImport accepts matching parent record', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: {
+          customerName: '客户A',
+          projectName: '项目A',
+          settlementCompanyId: 1,
+        },
+        currentItems: [],
+        parentRecord: {
+          customerName: ' 客户A ',
+          projectName: ' 项目A ',
+          settlementCompanyId: '1',
+        },
+      } as any)
+
+      expect(result).toBeNull()
+    })
+
     it('transformItems maps items with invoice-issue fields', () => {
       const items = pi.transformItems!({
         orderNo: 'SO-001',
@@ -69,9 +107,27 @@ describe('invoiceIssuePageConfig', () => {
       expect(items[0].maxImportQuantity).toBe(100)
     })
 
+    it('transformItems falls back to empty source number', () => {
+      const items = pi.transformItems!({
+        id: 5,
+        items: [{ id: 1 }],
+      } as any)
+
+      expect(items[0].sourceNo).toBe('')
+    })
+
     it('transformItems returns empty array when no items', () => {
       const items = pi.transformItems!({} as any)
       expect(items).toEqual([])
     })
+  })
+
+  it('buildOverview delegates amount overview generation', () => {
+    const overview = invoiceIssuePageConfig.buildOverview([
+      { amount: 1200, status: '草稿' },
+      { amount: 300, status: '已开票' },
+    ] as any)
+
+    expect(overview.map((item) => item.value)).toContain('1500.00')
   })
 })

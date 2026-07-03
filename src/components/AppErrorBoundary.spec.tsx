@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AppErrorBoundary } from './AppErrorBoundary'
 
@@ -198,6 +198,24 @@ describe('AppErrorBoundary', () => {
     )
 
     expect(screen.getByTestId('app-result')).toBeTruthy()
+    fireEvent.click(screen.getByText(/重\s*试/))
+    consoleSpy.mockRestore()
+  })
+
+  it('handles long error messages with generic server error', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    function ThrowLongError() {
+      throw new Error('x'.repeat(100))
+    }
+
+    render(
+      <AppErrorBoundary>
+        <ThrowLongError />
+      </AppErrorBoundary>,
+    )
+
+    expect(screen.getByTestId('subTitle')).toHaveTextContent('服务器错误')
     consoleSpy.mockRestore()
   })
 })

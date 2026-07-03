@@ -28,6 +28,15 @@ const defaultFormValues = {
   status: 'enabled',
 }
 
+interface MutationOptions {
+  mutationFn: (values: Record<string, unknown>) => Promise<unknown>
+  onSuccess: (response: { data?: unknown; message?: string }) => void
+  onError: (error: Error) => void
+}
+
+const latestMutationOptions = () =>
+  mockUseMutation.mock.calls.at(-1)?.[0] as MutationOptions
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }))
@@ -287,6 +296,29 @@ describe('useUserAccountEditor', () => {
     expect(result.current.loginNameValidationMessage).toBe('Name exists')
   })
 
+  it('uses default message when unavailable login-name check has no message', async () => {
+    mockCheckUserAccountLoginName.mockResolvedValue({
+      available: false,
+      message: '',
+    })
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    const checkResult = await act(async () => {
+      return result.current.runLoginNameCheck('admin')
+    })
+
+    expect(checkResult).toEqual({
+      available: false,
+      message: '登录账号已存在',
+    })
+    expect(result.current.loginNameValidationMessage).toBe('登录账号已存在')
+  })
+
   it('runLoginNameCheck handles error', async () => {
     mockCheckUserAccountLoginName.mockRejectedValue(new Error('Check failed'))
     const { result } = renderHook(() =>
@@ -358,6 +390,361 @@ describe('useUserAccountEditor', () => {
         roleIds: ['700520000000000001', '700520000000000002'],
       }),
     )
+  })
+
+  it('fills edit form with defaults when detail omits optional fields', async () => {
+    mockGetUserAccountDetail.mockResolvedValue({ id: 'empty' })
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    await act(async () => {
+      await result.current.openEditModal({ id: 'empty' } as never)
+    })
+
+    expect(mockFormInstance.setFieldsValue).toHaveBeenLastCalledWith({
+      loginName: '',
+      password: '',
+      userName: '',
+      mobile: '',
+      departmentId: null,
+      roleIds: [],
+      dataScope: '本人',
+      permissionSummary: '',
+      status: 'enabled',
+      remark: '',
+    })
+  })
+
+  it('calls create API from mutation function in create mode', async () => {
+    const payload = { loginName: 'new-user' }
+    const response = { data: { id: 'created' } }
+    mockCreateUserAccount.mockResolvedValue(response)
+
+    renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    await expect(latestMutationOptions().mutationFn(payload)).resolves.toBe(
+      response,
+    )
+    expect(mockCreateUserAccount).toHaveBeenCalledWith(payload)
+    expect(mockUpdateUserAccount).not.toHaveBeenCalled()
+  })
+
+  it('calls update API from mutation function in edit mode', async () => {
+    const payload = { loginName: 'updated-user' }
+    const response = { message: 'updated' }
+    mockGetUserAccountDetail.mockResolvedValue({
+      id: '42',
+      loginName: 'editor',
+      userName: 'Editor',
+      roleIds: [],
+      status: 'enabled',
+    })
+    mockUpdateUserAccount.mockResolvedValue(response)
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    await act(async () => {
+      await result.current.openEditModal({ id: '42' } as never)
+    })
+
+    await expect(latestMutationOptions().mutationFn(payload)).resolves.toBe(
+      response,
+    )
+    expect(mockUpdateUserAccount).toHaveBeenCalledWith('42', payload)
+    expect(mockCreateUserAccount).not.toHaveBeenCalled()
+  })
+
+  it('opens create result and invalidates account queries after create success', () => {
+    const invalidateQueries = vi.fn()
+    mockUseQueryClient.mockReturnValue({ invalidateQueries })
+    const createResult = {
+      loginName: 'created',
+      initialPassword: 'generated-password',
+    }
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+    act(() => {
+      result.current.openCreateModal()
+    })
+
+    act(() => {
+      latestMutationOptions().onSuccess({ data: createResult })
+    })
+
+    expect(result.current.editorOpen).toBe(false)
+    expect(result.current.createResultOpen).toBe(true)
+    expect(result.current.createResult).toBe(createResult)
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['userAccount'],
+    })
+    expect(mockMessageSuccess).not.toHaveBeenCalled()
+  })
+
+  it('shows response message after edit success', async () => {
+    const invalidateQueries = vi.fn()
+    mockUseQueryClient.mockReturnValue({ invalidateQueries })
+    mockGetUserAccountDetail.mockResolvedValue({
+      id: '42',
+      loginName: 'editor',
+      userName: 'Editor',
+      roleIds: [],
+      status: 'enabled',
+    })
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+    await act(async () => {
+      await result.current.openEditModal({ id: '42' } as never)
+    })
+
+    act(() => {
+      latestMutationOptions().onSuccess({ message: '保存完成' })
+    })
+
+    expect(result.current.editorOpen).toBe(false)
+    expect(mockMessageSuccess).toHaveBeenCalledWith('保存完成')
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['userAccount'],
+    })
+  })
+
+  it('falls back to default success message when response has no message', () => {
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+    act(() => {
+      result.current.openCreateModal()
+    })
+
+    act(() => {
+      latestMutationOptions().onSuccess({})
+    })
+
+    expect(mockMessageSuccess).toHaveBeenCalledWith('保存成功')
+    expect(result.current.createResultOpen).toBe(false)
+  })
+
+  it('sets login-name validation message when save error reports duplicate login name', () => {
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    act(() => {
+      latestMutationOptions().onError(new Error('登录账号已存在'))
+    })
+
+    expect(result.current.loginNameValidationMessage).toBe('登录账号已存在')
+    expect(mockShowError).not.toHaveBeenCalled()
+  })
+
+  it('delegates non-duplicate save errors to request error handler', () => {
+    const error = new Error('server unavailable')
+    renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    act(() => {
+      latestMutationOptions().onError(error)
+    })
+
+    expect(mockShowError).toHaveBeenCalledWith(error, '保存失败')
+  })
+
+  it('warns and skips mutation when login name is unavailable during save', async () => {
+    const mutate = vi.fn()
+    mockUseMutation.mockReturnValue({
+      mutate,
+      isPending: false,
+    })
+    mockCheckUserAccountLoginName.mockResolvedValue({
+      available: false,
+      message: 'Name exists',
+    })
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(mockMessageWarning).toHaveBeenCalledWith('Name exists')
+    expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it('uses default warning when save-time login name check has no message', async () => {
+    const mutate = vi.fn()
+    mockUseMutation.mockReturnValue({
+      mutate,
+      isPending: false,
+    })
+    mockCheckUserAccountLoginName.mockResolvedValue({
+      available: false,
+      message: '',
+    })
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(mockMessageWarning).toHaveBeenCalledWith('登录账号已存在')
+    expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it('passes editing id to login-name check while saving edit form', async () => {
+    const mutate = vi.fn()
+    mockUseMutation.mockReturnValue({
+      mutate,
+      isPending: false,
+    })
+    mockGetUserAccountDetail.mockResolvedValue({
+      id: '42',
+      loginName: 'editor',
+      userName: 'Editor',
+      roleIds: [],
+      status: 'enabled',
+    })
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+    await act(async () => {
+      await result.current.openEditModal({ id: '42' } as never)
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(mockCheckUserAccountLoginName).toHaveBeenCalledWith('testuser', '42')
+    expect(mutate.mock.calls[0][0]).not.toHaveProperty('password')
+  })
+
+  it('checks login name without exclude id when edit detail failed before saving', async () => {
+    const mutate = vi.fn()
+    mockUseMutation.mockReturnValue({
+      mutate,
+      isPending: false,
+    })
+    mockGetUserAccountDetail.mockRejectedValue(new Error('Load failed'))
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+    await act(async () => {
+      await result.current.openEditModal({ id: 'missing' } as never)
+    })
+    mockShowError.mockClear()
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(mockCheckUserAccountLoginName).toHaveBeenCalledWith(
+      'testuser',
+      undefined,
+    )
+    expect(mutate.mock.calls[0][0]).not.toHaveProperty('password')
+  })
+
+  it('builds payload defaults from optional form fields before saving', async () => {
+    const mutate = vi.fn()
+    mockUseMutation.mockReturnValue({
+      mutate,
+      isPending: false,
+    })
+    mockFormInstance.validateFields.mockResolvedValue({
+      loginName: '  no-password  ',
+      password: '   ',
+      userName: '  No Password  ',
+      status: 'disabled',
+    })
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(mutate).toHaveBeenCalledWith({
+      loginName: 'no-password',
+      userName: 'No Password',
+      mobile: '',
+      departmentId: null,
+      roleIds: [],
+      dataScope: '本人',
+      permissionSummary: '',
+      status: 'disabled',
+      remark: '',
+    })
+  })
+
+  it('skips save when form validation rejects', async () => {
+    const mutate = vi.fn()
+    mockUseMutation.mockReturnValue({
+      mutate,
+      isPending: false,
+    })
+    mockFormInstance.validateFields.mockRejectedValue(new Error('invalid form'))
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(mockCheckUserAccountLoginName).not.toHaveBeenCalled()
+    expect(mutate).not.toHaveBeenCalled()
   })
 
   it('returns all expected properties', () => {

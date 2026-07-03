@@ -114,6 +114,29 @@ describe('AppPageTabs', () => {
     expect(navigate).toHaveBeenCalledWith('/material')
   })
 
+  it('closes tab when close button is clicked', () => {
+    const closePage = vi.fn()
+    const navigate = vi.fn()
+
+    render(
+      <AppPageTabs
+        activeKey="/material"
+        closePage={closePage}
+        isTopNavigationLayout={false}
+        onNavigateToPath={navigate}
+        pages={pages}
+        shellFontStyle={{}}
+      />,
+    )
+
+    fireEvent.click(screen.getByLabelText('关闭 商品资料'))
+
+    expect(closePage).toHaveBeenCalledWith('/material', navigate, {
+      fallbackPath: '/dashboard',
+    })
+    expect(navigate).not.toHaveBeenCalled()
+  })
+
   it('renders with top-nav class when isTopNavigationLayout is true', () => {
     const { container } = render(
       <AppPageTabs

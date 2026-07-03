@@ -44,6 +44,15 @@ describe('getEditorValidationMessage', () => {
     expect(result).toBeNull()
   })
 
+  it('allows required fields with editor values', () => {
+    const result = getEditorValidationMessage({
+      ...baseOptions,
+      fields: [{ key: 'name', label: '名称', required: true }] as any,
+      editorForm: { id: '', name: '模块名称' },
+    })
+    expect(result).toBeNull()
+  })
+
   it('returns minOneItem when hasItemColumns and itemCount is 0', () => {
     const result = getEditorValidationMessage({
       ...baseOptions,
@@ -101,6 +110,23 @@ describe('getEditorValidationMessage', () => {
     expect(result).toContain('modules.validation.parentRelationOccupied')
   })
 
+  it('allows unoccupied parent relations', () => {
+    const result = getEditorValidationMessage({
+      ...baseOptions,
+      parentImportConfig: {
+        parentModuleKey: 'sales-order',
+        label: '销售订单',
+        parentFieldKey: 'sourceOrderNos',
+        parentDisplayFieldKey: 'orderNo',
+        enforceUniqueRelation: true,
+      } as any,
+      editorForm: { id: '', sourceOrderNos: 'SO002' },
+      occupiedParentMap: { SO001: { id: 'existing' } },
+      getPrimaryNo: (r: any) => r.id,
+    })
+    expect(result).toBeNull()
+  })
+
   it('limits errors to 5 when collectAll', () => {
     const result = getEditorValidationMessage({
       ...baseOptions,
@@ -138,6 +164,28 @@ describe('getEditorValidationMessage', () => {
         itemColumns: [] as any,
       })
       expect(result).toBe('modules.validation.maxImportExceeded')
+    })
+
+    it('allows quantities below maxImportQuantity', () => {
+      const result = getEditorValidationMessage({
+        ...baseOptions,
+        hasItemColumns: true,
+        itemCount: 1,
+        items: [{ id: '1', _maxImportQuantity: 5, quantity: 3 }] as any,
+        itemColumns: [] as any,
+      })
+      expect(result).toBeNull()
+    })
+
+    it('treats missing quantity as zero for maxImportQuantity', () => {
+      const result = getEditorValidationMessage({
+        ...baseOptions,
+        hasItemColumns: true,
+        itemCount: 1,
+        items: [{ id: '1', _maxImportQuantity: 5 }] as any,
+        itemColumns: [] as any,
+      })
+      expect(result).toBeNull()
     })
 
     it('requires weigh settlement for certain categories on purchase-inbound', () => {

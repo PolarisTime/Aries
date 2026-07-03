@@ -36,6 +36,7 @@ describe('parseDateTimeValue', () => {
     expect(parseDateTimeValue(null)).toBeNull()
     expect(parseDateTimeValue(undefined)).toBeNull()
     expect(parseDateTimeValue('')).toBeNull()
+    expect(parseDateTimeValue('   ')).toBeNull()
   })
 
   it('parses Dayjs object', () => {
@@ -54,6 +55,10 @@ describe('parseDateTimeValue', () => {
     const d = new Date(2024, 5, 15)
     const result = parseDateTimeValue(d)
     expect(result!.format('YYYY-MM-DD')).toBe('2024-06-15')
+  })
+
+  it('returns null for invalid Date objects', () => {
+    expect(parseDateTimeValue(new Date(Number.NaN))).toBeNull()
   })
 
   it('parses numeric timestamp (seconds)', () => {
@@ -76,6 +81,11 @@ describe('parseDateTimeValue', () => {
   it('parses compact datetime yyyyMMddHHmmss', () => {
     const result = parseDateTimeValue('20240615103030')
     expect(result!.format('YYYY-MM-DD HH:mm:ss')).toBe('2024-06-15 10:30:30')
+  })
+
+  it('returns null for invalid compact date values', () => {
+    expect(parseDateTimeValue('20240230')).toBeNull()
+    expect(parseDateTimeValue('20241301')).toBeNull()
   })
 
   it('parses ISO string', () => {
@@ -202,6 +212,17 @@ describe('date formatters', () => {
     const elevenDigits = 10000000000
     const result = formatDate(elevenDigits)
     expect(result).toBeTruthy()
+  })
+
+  it('handles timestamp magnitudes that fall back to absolute value checks', () => {
+    const fifteenDigitMillis = 170_000_000_000_000
+    expect(toDateTimeMillis(fifteenDigitMillis)).toBe(fifteenDigitMillis)
+  })
+
+  it('returns fallback for out-of-range timestamp values', () => {
+    expect(formatDateTime(Number.MAX_VALUE, '--')).toBe(
+      String(Number.MAX_VALUE),
+    )
   })
 
   it('formatDateTime returns fallback for object input', () => {

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockListUserAccounts = vi.fn()
 const mockUseQuery = vi.fn()
+const mockRefresh = vi.fn()
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -19,14 +20,25 @@ vi.mock('@/api/user-accounts', () => ({
 vi.mock('@/constants/query-keys', () => ({
   QUERY_KEYS: {
     userAccount: (...args: unknown[]) => ['userAccount', ...args],
+    userAccountBase: ['userAccount'],
   },
 }))
 
 vi.mock('@/hooks/useRefreshQuery', () => ({
-  useRefreshQuery: () => vi.fn(),
+  useRefreshQuery: () => mockRefresh,
 }))
 
 import { useUserAccountListState } from '@/views/system/useUserAccountListState'
+
+type UserAccountQueryOptions = {
+  queryKey: unknown[]
+  queryFn: () => Promise<unknown>
+  enabled: boolean
+}
+
+function getLatestQueryOptions() {
+  return mockUseQuery.mock.calls.at(-1)?.[0] as UserAccountQueryOptions
+}
 
 describe('useUserAccountListState', () => {
   beforeEach(() => {
@@ -55,6 +67,45 @@ describe('useUserAccountListState', () => {
     const { result } = renderHook(() => useUserAccountListState())
     expect(result.current.users).toHaveLength(2)
     expect(result.current.totalElements).toBe(2)
+  })
+
+  it('builds query params with zero-based page and empty filters omitted', async () => {
+    const response = { records: [], totalElements: 0 }
+    mockListUserAccounts.mockResolvedValue(response)
+
+    const { result } = renderHook(() => useUserAccountListState())
+
+    act(() => {
+      result.current.handlePageChange(3, 50)
+    })
+
+    await expect(getLatestQueryOptions().queryFn()).resolves.toBe(response)
+    expect(mockListUserAccounts).toHaveBeenCalledWith({
+      page: 2,
+      size: 50,
+      keyword: undefined,
+      status: undefined,
+    })
+  })
+
+  it('builds query params with trimmed keyword and selected status', async () => {
+    const response = { records: [{ id: '1' }], totalElements: 1 }
+    mockListUserAccounts.mockResolvedValue(response)
+
+    const { result } = renderHook(() => useUserAccountListState())
+
+    act(() => {
+      result.current.setKeyword('  admin  ')
+      result.current.handleStatusFilterChange('enabled')
+    })
+
+    await expect(getLatestQueryOptions().queryFn()).resolves.toBe(response)
+    expect(mockListUserAccounts).toHaveBeenCalledWith({
+      page: 0,
+      size: 20,
+      keyword: 'admin',
+      status: 'enabled',
+    })
   })
 
   it('updates keyword via setKeyword', () => {
@@ -108,6 +159,7 @@ describe('useUserAccountListState', () => {
       result.current.handleSearch()
     })
     expect(result.current.currentPage).toBe(1)
+    expect(mockRefresh).toHaveBeenCalledOnce()
   })
 
   it('clears status filter', () => {

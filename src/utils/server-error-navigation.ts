@@ -18,7 +18,7 @@ function normalizeHash(hash: unknown): string {
 }
 
 function getPathname(path: string): string {
-  return path.split(/[?#]/, 1)[0] || ''
+  return path.split(/[?#]/, 1)[0]
 }
 
 export function isSafeServerErrorRetryPath(path: unknown): path is string {

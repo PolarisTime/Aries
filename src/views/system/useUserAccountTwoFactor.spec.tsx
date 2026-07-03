@@ -11,6 +11,10 @@ const mockMessageWarning = vi.fn()
 const mockModalConfirm = vi.fn()
 const mockSyncCurrentUserTotpStateById = vi.fn()
 const mockUseQueryClient = vi.fn()
+let mockCurrentUser: { id: string; totpEnabled: boolean } | null = {
+  id: '1',
+  totpEnabled: false,
+}
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -45,7 +49,7 @@ vi.mock('@/stores/auth-user-sync', () => ({
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: (selector: (state: Record<string, unknown>) => unknown) =>
-    selector({ user: { id: '1', totpEnabled: false } }),
+    selector({ user: mockCurrentUser }),
 }))
 
 vi.mock('@/utils/antd-app', () => ({
@@ -61,6 +65,7 @@ import { useUserAccountTwoFactor } from '@/views/system/useUserAccountTwoFactor'
 describe('useUserAccountTwoFactor', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCurrentUser = { id: '1', totpEnabled: false }
     mockUseQueryClient.mockReturnValue({
       invalidateQueries: vi.fn(),
     })
@@ -178,6 +183,25 @@ describe('useUserAccountTwoFactor', () => {
     expect(mockMessageSuccess).toHaveBeenCalledWith('Generated')
   })
 
+  it('handleGenerate2fa uses default success message when API omits message', async () => {
+    mockSetupUserAccount2fa.mockResolvedValue({
+      data: { secret: 'SECRET', qrCodeUrl: 'otpauth://totp/test' },
+    })
+    const { result } = renderHook(() => useUserAccountTwoFactor())
+    await act(async () => {
+      await result.current.open2faModal({ id: '1' } as never)
+    })
+    await waitFor(() => {
+      expect(result.current.twoFaLoading).toBe(false)
+    })
+    await act(async () => {
+      await result.current.handleGenerate2fa()
+    })
+    expect(mockMessageSuccess).toHaveBeenCalledWith(
+      'auth.user2fa.generateSuccess',
+    )
+  })
+
   it('handleGenerate2fa handles error', async () => {
     mockSetupUserAccount2fa.mockRejectedValue(new Error('Generate failed'))
     const { result } = renderHook(() => useUserAccountTwoFactor())
@@ -241,6 +265,29 @@ describe('useUserAccountTwoFactor', () => {
     expect(mockEnableUserAccount2fa).toHaveBeenCalledWith('1', '123456')
     expect(mockSyncCurrentUserTotpStateById).toHaveBeenCalledWith('1', true)
     expect(mockMessageSuccess).toHaveBeenCalledWith('Enabled')
+  })
+
+  it('handleEnable2fa uses default success message and skips sync for another user', async () => {
+    mockEnableUserAccount2fa.mockResolvedValue({
+      data: { id: '2', loginName: 'operator', totpEnabled: true },
+    })
+    const { result } = renderHook(() => useUserAccountTwoFactor())
+    await act(async () => {
+      await result.current.open2faModal({ id: '1' } as never)
+    })
+    await waitFor(() => {
+      expect(result.current.twoFaLoading).toBe(false)
+    })
+    act(() => {
+      result.current.setTwoFaCode('123456')
+    })
+    await act(async () => {
+      await result.current.handleEnable2fa()
+    })
+    expect(mockSyncCurrentUserTotpStateById).not.toHaveBeenCalled()
+    expect(mockMessageSuccess).toHaveBeenCalledWith(
+      'auth.user2fa.enableSuccess',
+    )
   })
 
   it('handleEnable2fa handles error', async () => {
@@ -309,6 +356,34 @@ describe('useUserAccountTwoFactor', () => {
     expect(mockDisableUserAccount2fa).toHaveBeenCalledWith('1')
     expect(mockSyncCurrentUserTotpStateById).toHaveBeenCalledWith('1', false)
     expect(mockMessageSuccess).toHaveBeenCalledWith('Disabled')
+  })
+
+  it('handleDisable2fa uses default success message and skips sync without current user', async () => {
+    mockCurrentUser = null
+    mockDisableUserAccount2fa.mockResolvedValue({
+      data: { id: '1', loginName: 'admin', totpEnabled: false },
+    })
+    const { result } = renderHook(() => useUserAccountTwoFactor())
+    await act(async () => {
+      await result.current.open2faModal({ id: '1' } as never)
+    })
+    await waitFor(() => {
+      expect(result.current.twoFaLoading).toBe(false)
+    })
+    let onOk: (() => void) | undefined
+    mockModalConfirm.mockImplementation((config: { onOk: () => void }) => {
+      onOk = config.onOk
+    })
+    act(() => {
+      result.current.handleDisable2fa()
+    })
+    await act(async () => {
+      await onOk!()
+    })
+    expect(mockSyncCurrentUserTotpStateById).not.toHaveBeenCalled()
+    expect(mockMessageSuccess).toHaveBeenCalledWith(
+      'auth.user2fa.disableSuccess',
+    )
   })
 
   it('handleDisable2fa handles error on confirm', async () => {

@@ -150,24 +150,14 @@ export function recalculateEditorLineItem(
   }
 
   if (changedKey === 'weightTon' && isWeighSettlement) {
-    const hasWeightTon =
-      item.weightTon !== undefined &&
-      item.weightTon !== null &&
-      item.weightTon !== ''
-    if (hasWeightTon) {
-      item.weightTon = toRoundedNumber(
-        item.weightTon,
-        INTERNAL_WEIGHT_PRECISION,
-      )
-      item.weighWeightTon = item.weightTon
-    } else {
-      item.weighWeightTon = undefined
-    }
+    item.weightTon = toRoundedNumber(item.weightTon, INTERNAL_WEIGHT_PRECISION)
+    item.weighWeightTon = item.weightTon
   }
 
-  if (changedKey === 'amount' && Number(item.weightTon || 0) > 0) {
+  const currentWeightTon = Number(item.weightTon || 0)
+  if (changedKey === 'amount' && currentWeightTon > 0) {
     item.unitPrice = toRoundedNumber(
-      Number(item.amount || 0) / Number(item.weightTon || 0),
+      Number(item.amount || 0) / currentWeightTon,
       2,
     )
     return item

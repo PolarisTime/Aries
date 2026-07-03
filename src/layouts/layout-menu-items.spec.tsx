@@ -95,6 +95,48 @@ describe('buildSideMenuItems', () => {
     expect(groupItem.children[1].key).toBe('/customer')
   })
 
+  it('falls back to menu code and omits unknown icons', () => {
+    const entries: LayoutMenuEntry[] = [
+      {
+        menuCode: 'reports',
+        title: '报表',
+        path: null,
+        icon: 'TableOutlined',
+        children: [],
+      },
+      {
+        menuCode: 'unknown-group',
+        title: '未知分组',
+        path: null,
+        icon: 'UnknownOutlined',
+        children: [
+          {
+            menuCode: 'unknown-child',
+            title: '未知子菜单',
+            path: null,
+            icon: 'UnknownOutlined',
+            children: [],
+          },
+        ],
+      },
+    ]
+
+    const items = buildSideMenuItems(entries)
+    expect(items).toHaveLength(2)
+
+    const leafItem = items![0] as any
+    expect(leafItem.key).toBe('reports')
+    expect(leafItem.icon).toBeDefined()
+
+    const groupItem = items![1] as any
+    expect(groupItem.icon).toBeUndefined()
+    expect(groupItem.children[0]).toMatchObject({
+      key: 'unknown-child',
+      icon: undefined,
+      label: '未知子菜单',
+    })
+  })
+
   it('returns empty array for empty entries', () => {
     expect(buildSideMenuItems([])).toEqual([])
   })
@@ -116,6 +158,30 @@ describe('buildTopMenuItems', () => {
     const groupItem = items![1] as any
     expect(groupItem.key).toBe('basic-data')
     expect(groupItem.children).toHaveLength(2)
+  })
+
+  it('falls back to menu code for child entries without path', () => {
+    const items = buildTopMenuItems([
+      {
+        menuCode: 'reports',
+        title: '报表',
+        path: null,
+        icon: 'TableOutlined',
+        children: [
+          {
+            menuCode: 'monthly-report',
+            title: '月报',
+            path: null,
+            icon: 'TableOutlined',
+            children: [],
+          },
+        ],
+      },
+    ])
+
+    const groupItem = items![0] as any
+    expect(groupItem.key).toBe('reports')
+    expect(groupItem.children[0].key).toBe('monthly-report')
   })
 
   it('returns empty array for empty entries', () => {

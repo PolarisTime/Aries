@@ -53,6 +53,14 @@ describe('invoiceReceiptPageConfig', () => {
       expect(items[0].quantity).toBe(100)
     })
 
+    it('transformItems uses empty sourceNo when parent orderNo is missing', () => {
+      const items = pi.transformItems!({
+        id: 5,
+        items: [{ id: 1 }],
+      } as any)
+      expect(items[0].sourceNo).toBe('')
+    })
+
     it('transformItems returns empty array when no items', () => {
       const items = pi.transformItems!({} as any)
       expect(items).toEqual([])

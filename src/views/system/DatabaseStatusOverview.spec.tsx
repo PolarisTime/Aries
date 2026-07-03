@@ -48,6 +48,15 @@ describe('DatabaseStatusOverview', () => {
     expect(container.querySelector('.ant-skeleton')).toBeInTheDocument()
   })
 
+  it('renders skeleton inside the section when not loading and no data', () => {
+    const { container } = render(
+      <DatabaseStatusOverview dbStatus={undefined} loading={false} />,
+    )
+
+    expect(container.querySelector('.database-section-heading')).toBeDefined()
+    expect(container.querySelector('.ant-skeleton')).toBeInTheDocument()
+  })
+
   it('renders service cards when data is provided', () => {
     render(<DatabaseStatusOverview dbStatus={mockDbStatus} loading={false} />)
     expect(screen.getByText('PostgreSQL')).toBeInTheDocument()
@@ -86,5 +95,31 @@ describe('DatabaseStatusOverview', () => {
     expect(
       screen.getByText('system.databaseStatus.serviceOverview'),
     ).toBeInTheDocument()
+  })
+
+  it('renders unhealthy statuses and omits missing postgres start time', () => {
+    render(
+      <DatabaseStatusOverview
+        dbStatus={
+          {
+            postgres: {
+              ...mockDbStatus.postgres,
+              status: 'DOWN',
+              serverStartTime: undefined,
+            },
+            redis: {
+              ...mockDbStatus.redis,
+              status: 'DOWN',
+            },
+          } as never
+        }
+        loading={false}
+      />,
+    )
+
+    expect(screen.getAllByText('DOWN')).toHaveLength(2)
+    expect(
+      screen.queryByText('system.databaseStatus.startTime'),
+    ).not.toBeInTheDocument()
   })
 })

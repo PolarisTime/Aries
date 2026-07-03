@@ -145,10 +145,8 @@ export function useColumnSettingsSupport(
       remoteLoadedRef.current = false
 
       if (!userKey || userKey === 'anonymous') {
-        if (!cancelled) {
-          setLoaded(true)
-          remoteLoadedRef.current = true
-        }
+        setLoaded(true)
+        remoteLoadedRef.current = true
         return
       }
 
@@ -180,10 +178,8 @@ export function useColumnSettingsSupport(
             }
           }
         }
-        if (!cancelled) {
-          remoteLoadedRef.current = true
-          setLoaded(true)
-        }
+        remoteLoadedRef.current = true
+        setLoaded(true)
       } catch (error) {
         logger.warn('Failed to load roaming column settings', error)
         if (!cancelled) {
@@ -267,17 +263,13 @@ export function useColumnSettingsSupport(
   }
 
   useEffect(() => {
-    const currentRetryTimers = retryTimersRef.current
     return () => {
-      if (!currentRetryTimers) {
-        return
-      }
-      for (const retryTimer of currentRetryTimers) {
+      for (const retryTimer of retryTimers) {
         clearTimeout(retryTimer)
       }
-      currentRetryTimers.clear()
+      retryTimers.clear()
     }
-  }, [])
+  }, [retryTimers])
 
   const handleColumnOrderChange: OnChangeFn<ColumnOrderState> = (updater) => {
     setColumnOrder((current) => {

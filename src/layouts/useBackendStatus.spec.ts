@@ -192,6 +192,37 @@ describe('useBackendStatus', () => {
     expect(result.current.backendVersion).toBeNull()
   })
 
+  it('clears stale backend version when new token health check fails', async () => {
+    vi.mocked(fetchBackendHealth)
+      .mockResolvedValueOnce({
+        status: 'UP',
+        version: '0.1.0',
+      })
+      .mockRejectedValueOnce(new Error('Network error'))
+
+    const { result, rerender } = renderHook(
+      ({ token }) => useBackendStatus(token),
+      { initialProps: { token: 'token1' } },
+    )
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1200)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(result.current.backendVersion).toBe('0.1.0')
+
+    rerender({ token: 'token2' })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1200)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(result.current.backendOnline).toBe(false)
+    expect(result.current.backendVersion).toBeNull()
+  })
+
   it('uses exponential backoff for retries', async () => {
     vi.mocked(fetchBackendHealth).mockRejectedValue(new Error('Network error'))
 

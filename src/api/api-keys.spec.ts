@@ -190,6 +190,13 @@ describe('api-keys', () => {
   })
 
   describe('listApiKeyUserOptions normalization', () => {
+    it('returns empty array when data is null', async () => {
+      httpGetMock.mockResolvedValue({ code: 0, data: null })
+
+      const result = await listApiKeyUserOptions()
+      expect(result).toEqual([])
+    })
+
     it('normalizes mobile null to null', async () => {
       httpGetMock.mockResolvedValue({
         code: 0,

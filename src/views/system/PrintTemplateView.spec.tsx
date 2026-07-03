@@ -16,6 +16,8 @@ const mockShowError = vi.fn()
 const mockMessageSuccess = vi.fn()
 const mockMessageWarning = vi.fn()
 const mockModalConfirm = vi.fn()
+const mockFetchSettlementCompanyOptions = vi.fn()
+const mockListPrintTemplates = vi.fn()
 const mockSavePrintTemplate = vi.fn()
 const mockDeletePrintTemplate = vi.fn()
 const mockUploadPrintTemplateJson = vi.fn()
@@ -56,8 +58,13 @@ vi.mock('@/config/print-template-targets', () => ({
   printTemplateTargetOptions: [{ label: '采购订单', value: 'purchase-order' }],
 }))
 
+vi.mock('@/api/company-settings', () => ({
+  fetchSettlementCompanyOptions: (...args: unknown[]) =>
+    mockFetchSettlementCompanyOptions(...args),
+}))
+
 vi.mock('@/api/print-template', () => ({
-  listPrintTemplates: vi.fn(),
+  listPrintTemplates: (...args: unknown[]) => mockListPrintTemplates(...args),
   savePrintTemplate: (...args: unknown[]) => mockSavePrintTemplate(...args),
   deletePrintTemplate: (...args: unknown[]) => mockDeletePrintTemplate(...args),
   uploadPrintTemplateJson: (...args: unknown[]) =>
@@ -143,6 +150,19 @@ vi.mock('@/views/system/PrintTemplateTableCard', () => ({
         }
       >
         upload-txt
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          props.onUploadJson(
+            props.templates[0],
+            new File([new Uint8Array(1024 * 1024 + 1)], 'layout.json', {
+              type: 'application/json',
+            }),
+          )
+        }
+      >
+        upload-large-json
       </button>
       <button type="button" onClick={() => props.onDelete(props.templates[0])}>
         delete
@@ -256,10 +276,21 @@ function mutationPayloads() {
   )
 }
 
+type MutationConfig = {
+  mutationFn?: (payload: any) => unknown
+  onSuccess?: (data: unknown, variables: any) => void
+}
+
+function mutationConfigs() {
+  return mockUseMutation.mock.calls.map(([config]: [MutationConfig]) => config)
+}
+
 describe('PrintTemplateView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCan.mockReturnValue(true)
+    mockFetchSettlementCompanyOptions.mockResolvedValue([])
+    mockListPrintTemplates.mockResolvedValue({ data: [template] })
     mockForm.validateFields.mockResolvedValue({
       billType: 'purchase-order',
       templateName: '  新模板  ',
@@ -304,6 +335,58 @@ describe('PrintTemplateView', () => {
     expect(screen.getByTestId('can-edit')).toHaveTextContent('true')
     expect(screen.getByTestId('can-delete')).toHaveTextContent('true')
     expect(screen.getByTestId('upload-pending')).toHaveTextContent('false')
+  })
+
+  it('uses an empty template list while the template query has no data', () => {
+    mockUseQuery.mockImplementation((options: { queryKey?: unknown[] }) => {
+      if (options.queryKey?.[0] === 'master-options') {
+        return { data: [], isLoading: false }
+      }
+      return { data: undefined, isLoading: true }
+    })
+
+    render(<PrintTemplateView />)
+
+    expect(screen.getByTestId('template-count')).toHaveTextContent('0')
+    expect(screen.getByTestId('loading')).toHaveTextContent('true')
+  })
+
+  it('registers query and mutation functions with stripped request payloads', async () => {
+    const file = new File(['{}'], 'layout.json', { type: 'application/json' })
+    render(<PrintTemplateView />)
+
+    await mockUseQuery.mock.calls[0][0].queryFn()
+    await mockUseQuery.mock.calls[1][0].queryFn()
+    await mutationConfigs()[0]?.mutationFn?.({
+      id: 'tpl-1',
+      billType: 'purchase-order',
+      templateName: '采购模板',
+      templateHtml: 'LODOP.PRINT_INIT("采购");',
+      previousBillType: 'sales-order',
+    })
+    await mutationConfigs()[1]?.mutationFn?.({
+      id: 'tpl-1',
+      billType: 'purchase-order',
+    })
+    await mutationConfigs()[2]?.mutationFn?.({
+      id: 'pdf-1',
+      file,
+      billType: 'purchase-order',
+    })
+
+    expect(mockListPrintTemplates).toHaveBeenCalledWith('purchase-order')
+    expect(mockFetchSettlementCompanyOptions).toHaveBeenCalled()
+    expect(mockSavePrintTemplate).toHaveBeenCalledWith({
+      id: 'tpl-1',
+      billType: 'purchase-order',
+      templateName: '采购模板',
+      templateHtml: 'LODOP.PRINT_INIT("采购");',
+    })
+    expect(mockSavePrintTemplate.mock.calls[0][0]).not.toHaveProperty(
+      'previousBillType',
+    )
+    expect(mockDeletePrintTemplate).toHaveBeenCalledWith('tpl-1')
+    expect(mockUploadPrintTemplateJson).toHaveBeenCalledWith('pdf-1', file)
   })
 
   it('does not render editor modal by default', () => {
@@ -359,6 +442,30 @@ describe('PrintTemplateView', () => {
     })
   })
 
+  it('closes the editor without saving', () => {
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('create'))
+    fireEvent.click(screen.getByText('close'))
+
+    expect(screen.queryByTestId('editor-modal')).not.toBeInTheDocument()
+  })
+
+  it('ignores rejected form validation when saving', async () => {
+    mockForm.validateFields.mockRejectedValue(new Error('invalid'))
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('create'))
+    fireEvent.click(screen.getByText('save'))
+
+    await waitFor(() => {
+      expect(mutationPayloads()).toEqual([])
+    })
+    expect(mockMessageWarning).not.toHaveBeenCalledWith(
+      'system.printTemplate.inputTemplateContent',
+    )
+  })
+
   it('opens editor, updates html and saves an existing template', async () => {
     render(<PrintTemplateView />)
 
@@ -410,6 +517,89 @@ describe('PrintTemplateView', () => {
     expect(screen.queryByTestId('editor-modal')).not.toBeInTheDocument()
   })
 
+  it('saves a COORD template with form field defaults', async () => {
+    mockUseQuery.mockImplementation((options: { queryKey?: unknown[] }) => {
+      if (options.queryKey?.[0] === 'master-options') {
+        return {
+          data: [{ value: 'other', label: 'Other' }],
+          isLoading: false,
+        }
+      }
+      return {
+        data: { data: [template] },
+        isLoading: false,
+      }
+    })
+    mockForm.validateFields.mockResolvedValue({
+      billType: 'purchase-order',
+      templateName: '  默认模板  ',
+      templateCode: '   ',
+      assetRef: undefined,
+      settlementCompanyId: ' missing-company ',
+      settlementCompanyName: null,
+      versionNo: undefined,
+      status: undefined,
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('create'))
+    fireEvent.click(screen.getByText('coord'))
+    fireEvent.click(screen.getByText('save'))
+
+    await waitFor(() => {
+      expect(mutationPayloads()).toContainEqual({
+        id: undefined,
+        billType: 'purchase-order',
+        templateName: '默认模板',
+        templateCode: undefined,
+        templateHtml: 'LODOP.PRINT_INIT("ok");',
+        templateType: 'COORD',
+        engine: 'LODOP',
+        assetRef: undefined,
+        settlementCompanyId: 'missing-company',
+        settlementCompanyName: undefined,
+        versionNo: 1,
+        status: 'ACTIVE',
+      })
+    })
+  })
+
+  it('saves a PDF form without template html and uses PDF engine default', async () => {
+    mockForm.validateFields.mockResolvedValue({
+      billType: 'purchase-order',
+      templateName: 'PDF 空模板',
+      templateCode: undefined,
+      templateType: 'PDF_FORM',
+      engine: undefined,
+      assetRef: ' pdf/layout.pdf ',
+      settlementCompanyId: null,
+      settlementCompanyName: '  ',
+      versionNo: 2,
+      status: 'DISABLED',
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('create'))
+    fireEvent.click(screen.getByText('save'))
+
+    await waitFor(() => {
+      expect(mutationPayloads()).toContainEqual({
+        id: undefined,
+        billType: 'purchase-order',
+        templateName: 'PDF 空模板',
+        templateCode: undefined,
+        templateHtml: '',
+        templateType: 'PDF_FORM',
+        engine: 'PDF_FORM',
+        assetRef: 'pdf/layout.pdf',
+        settlementCompanyId: undefined,
+        settlementCompanyName: undefined,
+        versionNo: 2,
+        status: 'DISABLED',
+      })
+    })
+  })
+
   it('normalizes settlement company id before saving', async () => {
     mockUseQuery.mockImplementation((options: { queryKey?: unknown[] }) => {
       if (options.queryKey?.[0] === 'master-options') {
@@ -453,6 +643,46 @@ describe('PrintTemplateView', () => {
         expect.objectContaining({
           settlementCompanyId: '330050675528433664',
           settlementCompanyName: 'TEST9',
+        }),
+      )
+    })
+  })
+
+  it('matches numeric settlement company id against numeric option value', async () => {
+    mockUseQuery.mockImplementation((options: { queryKey?: unknown[] }) => {
+      if (options.queryKey?.[0] === 'master-options') {
+        return {
+          data: [{ value: '07', label: 'Company 07' }],
+          isLoading: false,
+        }
+      }
+      return {
+        data: { data: [template] },
+        isLoading: false,
+      }
+    })
+    mockForm.validateFields.mockResolvedValue({
+      billType: 'purchase-order',
+      templateName: '数字结算主体',
+      templateCode: 'NUMERIC_COMPANY',
+      templateType: 'COORD',
+      engine: 'LODOP',
+      assetRef: '',
+      settlementCompanyId: 7,
+      settlementCompanyName: '',
+      versionNo: 1,
+      status: 'ACTIVE',
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('edit'))
+    fireEvent.click(screen.getByText('coord'))
+    fireEvent.click(screen.getByText('save'))
+
+    await waitFor(() => {
+      expect(mutationPayloads()).toContainEqual(
+        expect.objectContaining({
+          settlementCompanyId: '07',
         }),
       )
     })
@@ -548,6 +778,103 @@ describe('PrintTemplateView', () => {
     )
   })
 
+  it('warns instead of editing a file-managed template', () => {
+    mockUseQuery.mockReturnValue({
+      data: { data: [{ ...template, syncMode: 'FILE' }] },
+      isLoading: false,
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('edit'))
+
+    expect(mockMessageWarning).toHaveBeenCalledWith(
+      'system.printTemplate.fileManagedEditHint',
+    )
+    expect(screen.queryByTestId('editor-modal')).not.toBeInTheDocument()
+  })
+
+  it('opens sparse records with selected-bill-type and value defaults', () => {
+    const sparseTemplate: PrintTemplateRecord = {
+      ...template,
+      billType: undefined,
+      templateCode: null,
+      templateHtml: '',
+      templateType: undefined,
+      engine: null,
+      assetRef: null,
+      settlementCompanyId: null,
+      settlementCompanyName: null,
+      versionNo: null,
+      status: null,
+    }
+    mockUseQuery.mockReturnValue({
+      data: { data: [sparseTemplate] },
+      isLoading: false,
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('edit'))
+
+    expect(mockForm.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        billType: 'purchase-order',
+        templateCode: '',
+        templateType: 'COORD',
+        engine: 'LODOP',
+        assetRef: '',
+        settlementCompanyId: undefined,
+        settlementCompanyName: '',
+        versionNo: 1,
+        status: 'ACTIVE',
+      }),
+    )
+    expect(screen.getByTestId('template-html')).toHaveTextContent('')
+  })
+
+  it('opens PDF records for editing with PDF type defaults', () => {
+    mockUseQuery.mockReturnValue({
+      data: { data: [{ ...pdfTemplate, engine: null }] },
+      isLoading: false,
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('edit'))
+
+    expect(mockForm.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        templateType: 'PDF_FORM',
+        engine: 'PDF_FORM',
+      }),
+    )
+  })
+
+  it('copies PDF records with selected-bill-type and value defaults', () => {
+    const sparsePdfTemplate: PrintTemplateRecord = {
+      ...pdfTemplate,
+      billType: undefined,
+      templateHtml: '',
+      engine: null,
+      versionNo: null,
+    }
+    mockUseQuery.mockReturnValue({
+      data: { data: [sparsePdfTemplate] },
+      isLoading: false,
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('copy'))
+
+    expect(mockForm.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        billType: 'purchase-order',
+        templateType: 'PDF_FORM',
+        engine: 'PDF_FORM',
+        versionNo: 1,
+      }),
+    )
+    expect(screen.getByTestId('template-html')).toHaveTextContent('')
+  })
+
   it('opens and closes preview modal', () => {
     render(<PrintTemplateView />)
 
@@ -585,6 +912,27 @@ describe('PrintTemplateView', () => {
     })
   })
 
+  it('uses selected bill type when deleting a record without bill type', async () => {
+    mockUseQuery.mockReturnValue({
+      data: { data: [{ ...template, billType: undefined }] },
+      isLoading: false,
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('delete'))
+    await mockModalConfirm.mock.calls[0][0].onOk()
+
+    expect(
+      mutationResults().some((mutation) =>
+        mutation.mutateAsync.mock.calls.some(
+          ([payload]: [unknown]) =>
+            JSON.stringify(payload) ===
+            JSON.stringify({ id: 'tpl-1', billType: 'purchase-order' }),
+        ),
+      ),
+    ).toBe(true)
+  })
+
   it('uploads PDF form json template', async () => {
     mockUseQuery.mockReturnValue({
       data: { data: [pdfTemplate] },
@@ -612,6 +960,39 @@ describe('PrintTemplateView', () => {
     })
   })
 
+  it('uses selected bill type when uploading a PDF template without bill type', async () => {
+    mockUseQuery.mockReturnValue({
+      data: { data: [{ ...pdfTemplate, billType: undefined }] },
+      isLoading: false,
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('upload-json'))
+
+    await waitFor(() => {
+      expect(mutationPayloads()).toContainEqual({
+        id: 'pdf-1',
+        file: expect.any(File),
+        billType: 'purchase-order',
+      })
+    })
+  })
+
+  it('invalidates base printable template cache when mutation variables omit bill type', () => {
+    const file = new File(['{}'], 'layout.json', { type: 'application/json' })
+    render(<PrintTemplateView />)
+
+    mutationConfigs()[1]?.onSuccess?.(undefined, { id: 'tpl-1' })
+    mutationConfigs()[2]?.onSuccess?.(undefined, {
+      id: 'pdf-1',
+      file,
+    })
+
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['print-templates'],
+    })
+  })
+
   it('warns when uploading non-json file', () => {
     mockUseQuery.mockReturnValue({
       data: { data: [pdfTemplate] },
@@ -626,6 +1007,20 @@ describe('PrintTemplateView', () => {
     )
   })
 
+  it('warns when uploading oversized json file', () => {
+    mockUseQuery.mockReturnValue({
+      data: { data: [pdfTemplate] },
+      isLoading: false,
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('upload-large-json'))
+
+    expect(mockMessageWarning).toHaveBeenCalledWith(
+      'system.printTemplate.uploadJsonSizeLimit',
+    )
+  })
+
   it('warns when uploading json for non-PDF template', () => {
     render(<PrintTemplateView />)
 
@@ -634,6 +1029,19 @@ describe('PrintTemplateView', () => {
     expect(mockMessageWarning).toHaveBeenCalledWith(
       'system.printTemplate.uploadPdfFormOnly',
     )
+  })
+
+  it('warns when upload permission is missing', () => {
+    mockCan.mockReturnValue(false)
+    mockUseQuery.mockReturnValue({
+      data: { data: [pdfTemplate] },
+      isLoading: false,
+    })
+    render(<PrintTemplateView />)
+
+    fireEvent.click(screen.getByText('upload-json'))
+
+    expect(mockMessageWarning).toHaveBeenCalledWith('common.noPermission')
   })
 
   it('warns when create, edit, copy or delete permission is missing', () => {
@@ -666,5 +1074,16 @@ describe('PrintTemplateView', () => {
       uploadError,
       'system.printTemplate.uploadJsonFailed',
     )
+  })
+
+  it('falls back to purchase-order when target options are empty', async () => {
+    vi.resetModules()
+    vi.doMock('@/config/print-template-targets', () => ({
+      printTemplateTargetOptions: [],
+    }))
+
+    const module = await import('@/views/system/PrintTemplateView')
+
+    expect(module.PrintTemplateView).toBeTypeOf('function')
   })
 })

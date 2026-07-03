@@ -173,6 +173,31 @@ describe('useOpenPages', () => {
     expect(result.current.pages[1].title).toBe('Order #123')
   })
 
+  it('uses resolvePage callback when closing the current page', () => {
+    mockPathname = '/orders/123'
+    const navigate = vi.fn()
+    const resolvePage = vi.fn((pathname: string) => ({
+      key: pathname === '/orders/123' ? 'order-detail' : pathname,
+      path: pathname,
+      title: pathname,
+    }))
+
+    const { result } = renderHook(() =>
+      useOpenPages('/dashboard', undefined, undefined, resolvePage),
+    )
+
+    act(() => {
+      result.current.closePage('order-detail', navigate)
+    })
+
+    act(() => {
+      vi.runAllTimers()
+    })
+
+    expect(resolvePage).toHaveBeenCalledWith('/orders/123')
+    expect(navigate).toHaveBeenCalledWith('/dashboard')
+  })
+
   it('uses default title when resolvePage is not provided', () => {
     mockPathname = '/some-page'
 
@@ -252,6 +277,52 @@ describe('useOpenPages', () => {
       true,
     )
     expect(navigate).not.toHaveBeenCalled()
+  })
+
+  it('hides the closing current page until navigation changes', () => {
+    mockPathname = '/page-a'
+    const navigate = vi.fn()
+    const { result, rerender } = renderHook(() => useOpenPages())
+
+    act(() => {
+      result.current.closePage('/page-a', navigate)
+    })
+
+    expect(result.current.pages.some((page) => page.key === '/page-a')).toBe(
+      false,
+    )
+
+    mockPathname = '/dashboard'
+    rerender()
+
+    expect(result.current.pages).toHaveLength(1)
+    expect(result.current.pages[0].key).toBe('/dashboard')
+  })
+
+  it('uses default path when fallback page has no path', () => {
+    mockPathname = '/blank'
+    const navigate = vi.fn()
+    const resolvePage = vi.fn((pathname: string) => ({
+      key: pathname,
+      path: pathname === '/blank' ? '' : pathname,
+      title: pathname,
+    }))
+    const { result, rerender } = renderHook(() =>
+      useOpenPages('/dashboard', undefined, undefined, resolvePage),
+    )
+
+    mockPathname = '/orders'
+    rerender()
+
+    act(() => {
+      result.current.closePage('/orders', navigate)
+    })
+
+    act(() => {
+      vi.runAllTimers()
+    })
+
+    expect(navigate).toHaveBeenCalledWith('/dashboard')
   })
 
   it('navigates to fallback when closing current page with fallbackPath', () => {

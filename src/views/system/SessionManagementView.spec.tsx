@@ -1,16 +1,12 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const mockUsePageVisibility = vi.fn()
 const mockUseSessionManagementState = vi.fn()
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}))
+const mockSessionCard = vi.fn()
 
 vi.mock('@/hooks/usePageVisibility', () => ({
-  usePageVisibility: () => true,
+  usePageVisibility: () => mockUsePageVisibility(),
 }))
 
 vi.mock('@/views/system/useSessionManagementState', () => ({
@@ -19,41 +15,98 @@ vi.mock('@/views/system/useSessionManagementState', () => ({
 }))
 
 vi.mock('@/views/system/SessionManagementCard', () => ({
-  SessionManagementCard: () => (
-    <div data-testid="session-card">SessionCard</div>
-  ),
+  SessionManagementCard: (props: Record<string, unknown>) => {
+    mockSessionCard(props)
+    return <div data-testid="session-card">SessionCard</div>
+  },
 }))
 
 import { SessionManagementView } from '@/views/system/SessionManagementView'
 
 describe('SessionManagementView', () => {
+  const state = {
+    canEdit: true,
+    columns: [{ key: 'operation' }],
+    currentPage: 2,
+    handleRevokeAll: vi.fn(),
+    isLoading: false,
+    keyword: 'admin',
+    pageSize: 50,
+    refreshSessionData: vi.fn(),
+    setCurrentPage: vi.fn(),
+    setKeyword: vi.fn(),
+    setPageSize: vi.fn(),
+    summary: { onlineUsers: 1, onlineSessions: 2, activeSessions: 3 },
+    tokens: [{ id: 'token-1' }],
+    totalElements: 1,
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
-    mockUseSessionManagementState.mockReturnValue({
-      canEdit: true,
-      columns: [],
-      currentPage: 1,
-      handleRevokeAll: vi.fn(),
-      isLoading: false,
-      keyword: '',
-      pageSize: 20,
-      refreshSessionData: vi.fn(),
-      setCurrentPage: vi.fn(),
-      setKeyword: vi.fn(),
-      setPageSize: vi.fn(),
-      summary: { onlineUsers: 0, onlineSessions: 0, activeSessions: 0 },
-      tokens: [],
-      totalElements: 0,
+    mockUsePageVisibility.mockReturnValue(true)
+    mockUseSessionManagementState.mockReturnValue(state)
+  })
+
+  const latestCardProps = () => {
+    const props = mockSessionCard.mock.lastCall?.[0]
+    if (!props) {
+      throw new Error('missing SessionManagementCard props')
+    }
+    return props as {
+      onKeywordChange: (keyword: string) => void
+      onSearch: () => void
+      onRefresh: () => void
+      onRevokeAll: () => void
+      onPageChange: (page: number, size: number) => void
+    } & typeof state
+  }
+
+  it('passes visible active state to session state hook by default', () => {
+    render(<SessionManagementView />)
+
+    expect(screen.getByTestId('session-card')).toBeInTheDocument()
+    expect(mockUseSessionManagementState).toHaveBeenCalledWith(true)
+    expect(latestCardProps()).toMatchObject({
+      canEdit: state.canEdit,
+      columns: state.columns,
+      currentPage: state.currentPage,
+      isLoading: state.isLoading,
+      keyword: state.keyword,
+      pageSize: state.pageSize,
+      summary: state.summary,
+      tokens: state.tokens,
+      totalElements: state.totalElements,
     })
   })
 
-  it('renders without crashing', () => {
-    expect(SessionManagementView).toBeDefined()
-    expect(typeof SessionManagementView).toBe('function')
+  it('disables session state when the view is inactive', () => {
+    render(<SessionManagementView active={false} />)
+
+    expect(mockUseSessionManagementState).toHaveBeenCalledWith(false)
   })
 
-  it('renders session management card', () => {
+  it('disables session state when the page is hidden', () => {
+    mockUsePageVisibility.mockReturnValue(false)
+
     render(<SessionManagementView />)
-    expect(screen.getByTestId('session-card')).toBeInTheDocument()
+
+    expect(mockUseSessionManagementState).toHaveBeenCalledWith(false)
+  })
+
+  it('wires card callbacks to state handlers', () => {
+    render(<SessionManagementView />)
+
+    latestCardProps().onKeywordChange('alice')
+    latestCardProps().onSearch()
+    latestCardProps().onRefresh()
+    latestCardProps().onRevokeAll()
+    latestCardProps().onPageChange(3, 100)
+
+    expect(state.setKeyword).toHaveBeenCalledWith('alice')
+    expect(state.setCurrentPage).toHaveBeenCalledWith(1)
+    expect(state.refreshSessionData).toHaveBeenCalledTimes(2)
+    expect(state.handleRevokeAll).toHaveBeenCalledTimes(1)
+    expect(state.setCurrentPage).toHaveBeenCalledWith(3)
+    expect(state.setPageSize).toHaveBeenCalledWith(100)
   })
 })

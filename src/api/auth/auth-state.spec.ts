@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { HTTP_STATUS } from '@/constants/http-status'
 
@@ -45,6 +45,19 @@ vi.mock('@/utils/route-helpers', () => ({
   getCurrentAppRoute: getCurrentAppRouteMock,
 }))
 
+const createRefreshSuccessResponse = (data: Record<string, unknown> = {}) => ({
+  data: {
+    code: ERROR_CODE.SUCCESS,
+    data: {
+      accessToken: 'new-token',
+      user: { id: 1, loginName: 'admin' },
+      expiresIn: 3600,
+      refreshExpiresIn: 7200,
+      ...data,
+    },
+  },
+})
+
 import {
   getRefreshPromise,
   handleAuthFailure,
@@ -69,6 +82,17 @@ describe('auth-state', () => {
       value: { href: '' },
       writable: true,
     })
+  })
+
+  afterEach(() => {
+    if (vi.isFakeTimers()) {
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
+    vi.unstubAllGlobals()
+    globalThis.localStorage.clear()
+    setRefreshPromise(null)
+    resetAuthFailureHandling()
   })
 
   describe('handleAuthFailure', () => {
@@ -103,6 +127,15 @@ describe('auth-state', () => {
         '/login?redirect=%2Fdashboard',
       )
     })
+
+    it('does not redirect outside browser globals', () => {
+      vi.stubGlobal('window', undefined)
+
+      handleAuthFailure('登录已失效')
+
+      expect(messageErrorMock).toHaveBeenCalledWith('登录已失效')
+      expect(getCurrentAppRouteMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('resetAuthFailureHandling', () => {
@@ -116,17 +149,7 @@ describe('auth-state', () => {
   })
 
   describe('refreshAccessToken', () => {
-    const successResponse = {
-      data: {
-        code: ERROR_CODE.SUCCESS,
-        data: {
-          accessToken: 'new-token',
-          user: { id: 1, loginName: 'admin' },
-          expiresIn: 3600,
-          refreshExpiresIn: 7200,
-        },
-      },
-    }
+    const successResponse = createRefreshSuccessResponse()
 
     it('refreshes token successfully', async () => {
       authHttpPostMock.mockResolvedValue(successResponse)
@@ -141,6 +164,8 @@ describe('auth-state', () => {
         3600,
         'local',
       )
+      expect(localStorage.getItem('aries-refresh-expires-at')).toBeTruthy()
+      expect(localStorage.getItem('aries-refresh-warned')).toBeNull()
     })
 
     it('retries on refresh token reuse conflict', async () => {
@@ -157,6 +182,18 @@ describe('auth-state', () => {
 
       await refreshAccessToken()
       expect(authHttpPostMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('detects reuse conflict when backend code is serialized as a string', () => {
+      const conflictError = {
+        isAxiosError: true,
+        response: {
+          status: HTTP_STATUS.CONFLICT,
+          data: { code: String(ERROR_CODE.REFRESH_TOKEN_REUSE_CONFLICT) },
+        },
+      }
+
+      expect(isRefreshTokenReuseConflict(conflictError)).toBe(true)
     })
 
     it('throws when payload code is not success', async () => {
@@ -177,6 +214,17 @@ describe('auth-state', () => {
       })
 
       await expect(refreshAccessToken()).rejects.toThrow('登录状态已过期')
+    })
+
+    it('throws backend message when payload has no login data', async () => {
+      authHttpPostMock.mockResolvedValue({
+        data: {
+          code: ERROR_CODE.SUCCESS,
+          message: '登录状态失效',
+        },
+      })
+
+      await expect(refreshAccessToken()).rejects.toThrow('登录状态失效')
     })
 
     it('throws when payload has no user', async () => {
@@ -209,6 +257,152 @@ describe('auth-state', () => {
       })
 
       await expect(refreshAccessToken()).rejects.toThrow('刷新登录状态失败')
+    })
+
+    it('refreshes without browser globals', async () => {
+      vi.stubGlobal('window', undefined)
+      authHttpPostMock.mockResolvedValue(successResponse)
+      getAuthPersistenceModeMock.mockReturnValue('session')
+
+      await refreshAccessToken()
+
+      expect(setAuthSessionMock).toHaveBeenCalledWith(
+        { id: 1, loginName: 'admin' },
+        'new-token',
+        3600,
+        'session',
+      )
+    })
+
+    it('does not persist refresh expiry when refreshExpiresIn is absent', async () => {
+      authHttpPostMock.mockResolvedValue(
+        createRefreshSuccessResponse({ refreshExpiresIn: undefined }),
+      )
+      getAuthPersistenceModeMock.mockReturnValue('local')
+
+      await refreshAccessToken()
+
+      expect(localStorage.getItem('aries-refresh-expires-at')).toBeNull()
+    })
+
+    it.each([
+      {
+        name: 'uses one fifth of remaining lifetime for medium sessions',
+        expiresInMs: 10 * 60 * 1000,
+        expectedDelayMs: 8 * 60 * 1000,
+      },
+      {
+        name: 'caps refresh advance at five minutes for long sessions',
+        expiresInMs: 60 * 60 * 1000,
+        expectedDelayMs: 55 * 60 * 1000,
+      },
+      {
+        name: 'keeps at least one minute of refresh advance',
+        expiresInMs: 2 * 60 * 1000,
+        expectedDelayMs: 60 * 1000,
+      },
+      {
+        name: 'caps timer delay at the platform maximum',
+        expiresInMs: 10 * 365 * 24 * 60 * 60 * 1000,
+        expectedDelayMs: 2_147_483_647,
+      },
+    ])('schedules pre-refresh and $name', async ({
+      expiresInMs,
+      expectedDelayMs,
+    }) => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+      const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')
+      getTokenExpiresAtMock.mockReturnValue(Date.now() + expiresInMs)
+      authHttpPostMock.mockResolvedValue(successResponse)
+
+      await refreshAccessToken()
+
+      expect(setTimeoutSpy).toHaveBeenLastCalledWith(
+        expect.any(Function),
+        expectedDelayMs,
+      )
+    })
+
+    it('runs scheduled pre-refresh and clears the in-flight promise', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+      getTokenExpiresAtMock.mockReturnValue(Date.now() + 10 * 60 * 1000)
+      authHttpPostMock.mockResolvedValue(successResponse)
+
+      await refreshAccessToken()
+      await vi.advanceTimersByTimeAsync(8 * 60 * 1000)
+
+      expect(authHttpPostMock).toHaveBeenCalledTimes(2)
+      expect(getRefreshPromise()).toBeNull()
+    })
+
+    it('waits for an existing refresh promise when immediate pre-refresh runs', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+      const existingRefresh = Promise.resolve()
+      setRefreshPromise(existingRefresh)
+      getTokenExpiresAtMock.mockReturnValue(Date.now())
+      authHttpPostMock.mockResolvedValue(successResponse)
+
+      await refreshAccessToken()
+      await existingRefresh
+
+      expect(authHttpPostMock).toHaveBeenCalledTimes(1)
+      expect(getRefreshPromise()).toBe(existingRefresh)
+    })
+
+    it('silently clears failed scheduled pre-refresh attempts', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+      getTokenExpiresAtMock.mockReturnValue(Date.now() + 10 * 60 * 1000)
+      authHttpPostMock
+        .mockResolvedValueOnce(successResponse)
+        .mockRejectedValueOnce(new Error('offline'))
+
+      await refreshAccessToken()
+      await vi.advanceTimersByTimeAsync(8 * 60 * 1000)
+
+      expect(authHttpPostMock).toHaveBeenCalledTimes(2)
+      expect(getRefreshPromise()).toBeNull()
+    })
+
+    it('does not clear a refresh promise replaced by another caller', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+      getTokenExpiresAtMock.mockReturnValue(Date.now() + 10 * 60 * 1000)
+      let resolveScheduledRefresh: (value: typeof successResponse) => void
+      const scheduledRefreshResponse = new Promise<typeof successResponse>(
+        (resolve) => {
+          resolveScheduledRefresh = resolve
+        },
+      )
+      authHttpPostMock
+        .mockResolvedValueOnce(successResponse)
+        .mockReturnValueOnce(scheduledRefreshResponse)
+
+      await refreshAccessToken()
+      vi.advanceTimersByTime(8 * 60 * 1000)
+      const replacementRefresh = Promise.resolve()
+      setRefreshPromise(replacementRefresh)
+      resolveScheduledRefresh!(successResponse)
+      await scheduledRefreshResponse
+      await Promise.resolve()
+
+      expect(getRefreshPromise()).toBe(replacementRefresh)
+    })
+
+    it('cancels a scheduled pre-refresh when auth failure clears state', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+      getTokenExpiresAtMock.mockReturnValue(Date.now() + 10 * 60 * 1000)
+      authHttpPostMock.mockResolvedValue(successResponse)
+
+      await refreshAccessToken()
+      handleAuthFailure('登录已失效')
+
+      expect(clearTimeoutSpy).toHaveBeenCalled()
     })
   })
 
@@ -245,6 +439,10 @@ describe('auth-state', () => {
         response: { status: HTTP_STATUS.CONFLICT, data: { code: 4090 } },
       }
       expect(isRefreshTokenReuseConflict(error)).toBe(false)
+    })
+
+    it('returns false for axios errors without response details', () => {
+      expect(isRefreshTokenReuseConflict({ isAxiosError: true })).toBe(false)
     })
   })
 
@@ -312,6 +510,28 @@ describe('auth-state', () => {
 
       expect(request.headers.delete).toHaveBeenCalledWith('Authorization')
       expect(set).toHaveBeenCalledWith('X-API-Key', 'leo_key_123')
+    })
+
+    it('sets Authorization when header deletion is unavailable', () => {
+      getTokenMock.mockReturnValue('jwt-token')
+      isApiKeyTokenMock.mockReturnValue(false)
+      const set = vi.fn()
+      const request = { headers: { set } }
+
+      retryWithToken(request)
+
+      expect(set).toHaveBeenCalledWith('Authorization', 'Bearer jwt-token')
+    })
+
+    it('sets X-API-Key when header deletion is unavailable', () => {
+      getTokenMock.mockReturnValue('leo_key_789')
+      isApiKeyTokenMock.mockReturnValue(true)
+      const set = vi.fn()
+      const request = { headers: { set } }
+
+      retryWithToken(request)
+
+      expect(set).toHaveBeenCalledWith('X-API-Key', 'leo_key_789')
     })
 
     it('handles plain object headers without set function', () => {

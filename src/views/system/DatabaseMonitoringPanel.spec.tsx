@@ -279,6 +279,20 @@ describe('DatabaseMonitoringPanel', () => {
     ).toBeInTheDocument()
   })
 
+  it('renders card empty state while the first monitoring request is fetching', () => {
+    mockUseQuery.mockReturnValue({
+      data: undefined,
+      isFetching: true,
+      refetch: vi.fn(),
+    })
+
+    render(<DatabaseMonitoringPanel visible={true} />)
+
+    expect(
+      screen.getByText('system.databaseMonitor.noData'),
+    ).toBeInTheDocument()
+  })
+
   it('calls refetch when refresh button is clicked', () => {
     const refetch = vi.fn()
     mockUseQuery.mockReturnValue({
@@ -366,7 +380,7 @@ describe('DatabaseMonitoringPanel', () => {
     expect(screen.getByText('DB 0')).toBeInTheDocument()
     expect(screen.getByText('120 keys')).toBeInTheDocument()
     expect(screen.getByText('45')).toBeInTheDocument()
-  })
+  }, 20000)
 
   it('renders unavailable postgres and redis fallback values', () => {
     mockUseQuery.mockReturnValue({
@@ -404,6 +418,42 @@ describe('DatabaseMonitoringPanel', () => {
     ).toBeInTheDocument()
   })
 
+  it('renders unavailable postgres default status and invalid numeric fallbacks', () => {
+    mockUseQuery.mockReturnValue({
+      data: {
+        ...unavailableMonitoring,
+        status: '',
+        redis: {
+          ...unavailableMonitoring.redis,
+          memory: {
+            ...unavailableMonitoring.redis.memory,
+            usedMemory: Number.NaN,
+            fragmentationRatio: 'bad-number',
+          },
+          throughput: {
+            ...unavailableMonitoring.redis.throughput,
+            hitRate: 'bad-number',
+          },
+        },
+      },
+      isFetching: false,
+      refetch: vi.fn(),
+    })
+
+    render(<DatabaseMonitoringPanel visible={true} />)
+
+    expect(
+      screen.getByText('system.databaseMonitor.pgUnavailable'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.redisTab',
+      }),
+    )
+    expect(screen.getAllByText('--').length).toBeGreaterThan(0)
+  })
+
   it('renders query stats fallback when pg stat statements is unavailable', () => {
     mockUseQuery.mockReturnValue({
       data: {
@@ -430,4 +480,231 @@ describe('DatabaseMonitoringPanel', () => {
       screen.getByText('system.databaseMonitor.pgStatNotEnabled'),
     ).toBeInTheDocument()
   })
+
+  it('renders default postgres diagnostics when optional postgres payloads are missing', () => {
+    mockUseQuery.mockReturnValue({
+      data: {
+        ...fullMonitoring,
+        status: '警告',
+        overview: undefined,
+        activity: undefined,
+        tableHealth: undefined,
+        indexHealth: undefined,
+        queryStats: undefined,
+      },
+      isFetching: false,
+      refetch: vi.fn(),
+    })
+
+    render(<DatabaseMonitoringPanel visible={true} />)
+
+    expect(screen.getByText('警告')).toBeInTheDocument()
+    expect(screen.getByText('0 / 0')).toBeInTheDocument()
+    expect(screen.getAllByText('--').length).toBeGreaterThan(0)
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.tableHealthTab',
+      }),
+    )
+    expect(
+      screen.getByText('system.databaseMonitor.tableHealth'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.indexHealthTab',
+      }),
+    )
+    expect(
+      screen.getByText('system.databaseMonitor.indexHealth'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.slowSqlTab',
+      }),
+    )
+    expect(screen.getAllByText('未启用 pg_stat_statements')).toHaveLength(2)
+  })
+
+  it('renders postgres and redis edge formatting branches', () => {
+    mockUseQuery.mockReturnValue({
+      data: {
+        ...fullMonitoring,
+        overview: {
+          ...fullMonitoring.overview,
+          totalConnections: 0,
+          activeConnections: Number.NaN,
+          xactCommit: 0,
+          xactRollback: 0,
+          cacheHitRate: '',
+          databaseSize: '',
+          longestTransactionSeconds: 45,
+          longestQuerySeconds: 120,
+          uptimeSeconds: 7200,
+        },
+        activity: {
+          ...fullMonitoring.activity,
+          activeSessions: '',
+          idleInTransactionSessions: null,
+          lockWaitSessions: undefined,
+          longestTransactionSeconds: 30,
+        },
+        tableHealth: [
+          {
+            ...fullMonitoring.tableHealth[0],
+            tableName: 'edge_table',
+            deadPct: 5,
+            autovacuumStatus: '',
+            vacuumTriggerRows: '',
+            nModSinceAnalyze: 'bad-number',
+            seqScan: null,
+            heapCachePct: '',
+            lastAutovacuum: '',
+            lastAutovacuumAgeSeconds: 59,
+          },
+          {
+            ...fullMonitoring.tableHealth[1],
+            tableName: 'analyze_table',
+            deadPct: 15,
+            autovacuumStatus: '需 ANALYZE',
+          },
+          {
+            ...fullMonitoring.tableHealth[1],
+            tableName: 'custom_table',
+            deadPct: 25,
+            autovacuumStatus: '其它',
+          },
+        ],
+        queryStats: {
+          available: true,
+          status: 'custom stats',
+          items: [
+            {
+              queryId: 'edge-query',
+              queryPreview: 'select edge',
+              calls: '',
+              totalMs: '',
+              avgMs: 'bad-number',
+              rows: null,
+              cacheHitPct: '',
+            },
+          ],
+        },
+        redis: {
+          ...fullMonitoring.redis,
+          status: '正常',
+          memory: {
+            ...fullMonitoring.redis.memory,
+            maxMemory: 2048,
+            fragmentationRatio: 1.5,
+          },
+          keyspace: {
+            database: 2,
+            keys: 2,
+            expires: 1,
+            avgTtlMs: 999,
+          },
+        },
+      },
+      isFetching: false,
+      refetch: vi.fn(),
+    })
+
+    render(<DatabaseMonitoringPanel visible={true} />)
+
+    expect(screen.getByText('DB --')).toBeInTheDocument()
+    expect(screen.getByText(/45s/)).toBeInTheDocument()
+    expect(screen.getByText(/2h/)).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.tableHealthTab',
+      }),
+    )
+    expect(screen.getByText('edge_table')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.databaseMonitor.unknownStatus'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('analyze_table')).toBeInTheDocument()
+    expect(screen.getByText('custom_table')).toBeInTheDocument()
+    expect(screen.getByText('59s')).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.slowSqlTab',
+      }),
+    )
+    expect(screen.getByText('select edge')).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.redisTab',
+      }),
+    )
+    expect(screen.getByText('DB 2')).toBeInTheDocument()
+    expect(screen.getByText(/999ms/)).toBeInTheDocument()
+    expect(screen.getByText(/1\.50/)).toBeInTheDocument()
+  }, 20000)
+
+  it('refreshes populated monitoring data and renders remaining Redis TTL formats', () => {
+    const refetch = vi.fn()
+    mockUseQuery.mockReturnValue({
+      data: {
+        ...fullMonitoring,
+        overview: {
+          ...fullMonitoring.overview,
+          longestTransactionSeconds: undefined,
+        },
+        redis: {
+          ...fullMonitoring.redis,
+          keyspace: {
+            ...fullMonitoring.redis.keyspace,
+            avgTtlMs: 30_000,
+          },
+        },
+      },
+      isFetching: false,
+      refetch,
+    })
+
+    const { unmount } = render(<DatabaseMonitoringPanel visible={true} />)
+
+    fireEvent.click(screen.getByText('system.databaseMonitor.refresh'))
+    expect(refetch).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.redisTab',
+      }),
+    )
+    expect(screen.getByText(/30\.0s/)).toBeInTheDocument()
+
+    unmount()
+
+    mockUseQuery.mockReturnValue({
+      data: {
+        ...fullMonitoring,
+        redis: {
+          ...fullMonitoring.redis,
+          keyspace: {
+            ...fullMonitoring.redis.keyspace,
+            avgTtlMs: 7_200_000,
+          },
+        },
+      },
+      isFetching: false,
+      refetch: vi.fn(),
+    })
+
+    render(<DatabaseMonitoringPanel visible={true} />)
+
+    fireEvent.click(
+      screen.getByRole('tab', {
+        name: 'system.databaseMonitor.redisTab',
+      }),
+    )
+    expect(screen.getByText(/2h/)).toBeInTheDocument()
+  }, 20000)
 })

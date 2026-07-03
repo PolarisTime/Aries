@@ -3,11 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const httpGetMock = vi.hoisted(() => vi.fn())
 const httpPostMock = vi.hoisted(() => vi.fn())
 const httpPutMock = vi.hoisted(() => vi.fn())
+const httpDeleteMock = vi.hoisted(() => vi.fn())
 const assertApiSuccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/api/client', () => ({
   assertApiSuccess: assertApiSuccessMock,
-  http: { get: httpGetMock, post: httpPostMock, put: httpPutMock },
+  http: {
+    delete: httpDeleteMock,
+    get: httpGetMock,
+    post: httpPostMock,
+    put: httpPutMock,
+  },
 }))
 
 vi.mock('@/api/page-contract', () => ({
@@ -31,6 +37,7 @@ vi.mock('@/utils/api-messages', () => ({
 
 import {
   createRole,
+  deleteRole,
   getRoleActions,
   listRoleSettingsPage,
   listSystemMenus,
@@ -104,6 +111,14 @@ describe('role-actions', () => {
       expect(httpGetMock).toHaveBeenCalledWith('/roles/1/permission')
       expect(result).toEqual([{ resource: 'material', action: 'read' }])
     })
+
+    it('returns empty array when permissions data is null', async () => {
+      httpGetMock.mockResolvedValue({ code: 0, data: null })
+
+      const result = await getRoleActions('1')
+
+      expect(result).toEqual([])
+    })
   })
 
   describe('updateRoleActions', () => {
@@ -143,6 +158,18 @@ describe('role-actions', () => {
         roleCode: 'new',
         roleName: '新角色',
       })
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('deleteRole', () => {
+    it('deletes role by id', async () => {
+      const mockResponse = { code: 0, data: null }
+      httpDeleteMock.mockResolvedValue(mockResponse)
+
+      const result = await deleteRole(2)
+
+      expect(httpDeleteMock).toHaveBeenCalledWith('/roles/2')
       expect(result).toEqual(mockResponse)
     })
   })

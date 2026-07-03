@@ -12,7 +12,9 @@ const mockRefresh = vi.fn()
 const mockShowError = vi.fn()
 const mockMessageSuccess = vi.fn()
 const mockMessageWarning = vi.fn()
+const mockListSystemSettings = vi.fn()
 const mockSaveSystemSetting = vi.fn()
+const mockIsSystemSwitch = vi.fn()
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -57,7 +59,7 @@ vi.mock('antd', () => ({
 }))
 
 vi.mock('@/api/system-settings', () => ({
-  listSystemSettings: vi.fn(),
+  listSystemSettings: (...args: unknown[]) => mockListSystemSettings(...args),
   saveSystemSetting: (...args: unknown[]) => mockSaveSystemSetting(...args),
 }))
 
@@ -104,6 +106,36 @@ vi.mock('@/views/system/GeneralSettingsTableCard', () => ({
       >
         edit-basic
       </button>
+      <button
+        type="button"
+        onClick={() => props.onEdit(props.basicSettingRows[1])}
+      >
+        edit-second-basic
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          props.onEdit(
+            props.basicSettingRows.find(
+              (row) => row.settingCode === 'SYS_WATERMARK_CONTENT',
+            ) ?? props.basicSettingRows[0],
+          )
+        }
+      >
+        edit-watermark-content
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          props.onEdit(
+            props.basicSettingRows.find(
+              (row) => row.settingCode === 'SYS_WATERMARK_FONT_SIZE',
+            ) ?? props.basicSettingRows[0],
+          )
+        }
+      >
+        edit-watermark-font-size
+      </button>
       <button type="button" onClick={() => props.onEdit(props.switchRows[0])}>
         edit-switch
       </button>
@@ -119,6 +151,18 @@ vi.mock('@/views/system/GeneralSettingsTableCard', () => ({
         }
       >
         edit-operation-log
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          props.onEdit(
+            props.switchRows.find(
+              (row) => row.settingCode === 'UI_HIDE_AUDITED_LIST_RECORDS',
+            ) ?? props.switchRows[0],
+          )
+        }
+      >
+        edit-hide-audited
       </button>
       <button type="button" onClick={() => props.onToggle(props.switchRows[0])}>
         toggle-switch
@@ -160,7 +204,7 @@ vi.mock('@/views/system/RateLimitRulesCard', () => ({
 }))
 
 vi.mock('@/views/system/number-rules-view-utils', () => ({
-  isSystemSwitch: () => true,
+  isSystemSwitch: (...args: unknown[]) => mockIsSystemSwitch(...args),
 }))
 
 import { GeneralSettingsView } from '@/views/system/GeneralSettingsView'
@@ -181,6 +225,54 @@ const taxRateRecord: ModuleRecord = {
   moduleKey: '',
 }
 
+const defaultListPageSizeRecord: ModuleRecord = {
+  id: '4',
+  settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE',
+  settingName: '默认分页条数',
+  billName: '',
+  prefix: '',
+  dateRule: '',
+  serialLength: 0,
+  resetRule: '',
+  sampleNo: '',
+  status: '',
+  remark: '分页配置',
+  ruleType: '',
+  moduleKey: '',
+}
+
+const watermarkContentRecord: ModuleRecord = {
+  id: '5',
+  settingCode: 'SYS_WATERMARK_CONTENT',
+  settingName: '水印内容',
+  billName: '',
+  prefix: '',
+  dateRule: '',
+  serialLength: 0,
+  resetRule: '',
+  sampleNo: ' {username} ',
+  status: '禁用',
+  remark: '水印配置',
+  ruleType: '',
+  moduleKey: '',
+}
+
+const watermarkFontSizeRecord: ModuleRecord = {
+  id: '6',
+  settingCode: 'SYS_WATERMARK_FONT_SIZE',
+  settingName: '水印字号',
+  billName: '',
+  prefix: '',
+  dateRule: '',
+  serialLength: 0,
+  resetRule: '',
+  sampleNo: '',
+  status: '正常',
+  remark: '水印配置',
+  ruleType: '',
+  moduleKey: '',
+}
+
 const loginCaptchaRecord: ModuleRecord = {
   id: '2',
   settingCode: 'SYS_LOGIN_CAPTCHA',
@@ -195,6 +287,13 @@ const loginCaptchaRecord: ModuleRecord = {
   remark: '登录安全',
   ruleType: '',
   moduleKey: '',
+}
+
+const disabledLoginCaptchaRecord: ModuleRecord = {
+  ...loginCaptchaRecord,
+  id: '7',
+  sampleNo: 'OFF',
+  status: '禁用',
 }
 
 const operationLogRecord: ModuleRecord = {
@@ -213,10 +312,48 @@ const operationLogRecord: ModuleRecord = {
   moduleKey: '',
 }
 
+const hideAuditedRecord: ModuleRecord = {
+  id: '8',
+  settingCode: 'UI_HIDE_AUDITED_LIST_RECORDS',
+  settingName: '隐藏已审核记录',
+  billName: '',
+  prefix: '',
+  dateRule: '',
+  serialLength: 0,
+  resetRule: '',
+  sampleNo: '',
+  status: '正常',
+  remark: '列表显示配置',
+  ruleType: '',
+  moduleKey: '',
+}
+
+const externalRecord: ModuleRecord = {
+  id: '9',
+  settingCode: 'BIZ_NUMBER_RULE',
+  settingName: '业务编号规则',
+  billName: '',
+  prefix: '',
+  dateRule: '',
+  serialLength: 0,
+  resetRule: '',
+  sampleNo: '',
+  status: '正常',
+  remark: '非系统设置',
+  ruleType: '',
+  moduleKey: '',
+}
+
 describe('GeneralSettingsView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCan.mockReturnValue(true)
+    mockIsSystemSwitch.mockImplementation(
+      (record: ModuleRecord) =>
+        String(record.settingCode ?? '').startsWith('SYS_') ||
+        String(record.settingCode ?? '').startsWith('UI_'),
+    )
+    mockListSystemSettings.mockResolvedValue([])
     mockSaveSystemSetting.mockResolvedValue(undefined)
     mockForm.validateFields.mockResolvedValue({
       settingCode: taxRateRecord.settingCode,
@@ -228,7 +365,16 @@ describe('GeneralSettingsView', () => {
       selectedActions: [],
     })
     mockUseQuery.mockReturnValue({
-      data: [taxRateRecord, loginCaptchaRecord, operationLogRecord],
+      data: [
+        taxRateRecord,
+        defaultListPageSizeRecord,
+        watermarkContentRecord,
+        watermarkFontSizeRecord,
+        loginCaptchaRecord,
+        operationLogRecord,
+        hideAuditedRecord,
+        externalRecord,
+      ],
       isLoading: false,
     })
   })
@@ -241,9 +387,20 @@ describe('GeneralSettingsView', () => {
   it('renders the table card', () => {
     render(<GeneralSettingsView />)
     expect(screen.getByTestId('table-card')).toBeInTheDocument()
-    expect(screen.getByTestId('basic-count')).toHaveTextContent('1')
-    expect(screen.getByTestId('switch-count')).toHaveTextContent('2')
+    expect(screen.getByTestId('basic-count')).toHaveTextContent('4')
+    expect(screen.getByTestId('switch-count')).toHaveTextContent('3')
     expect(screen.getByTestId('can-edit')).toHaveTextContent('true')
+  })
+
+  it('loads system settings through query configuration', async () => {
+    render(<GeneralSettingsView />)
+
+    const queryOptions = mockUseQuery.mock.calls[0]?.[0] as {
+      queryFn: () => Promise<ModuleRecord[]>
+    }
+    await queryOptions.queryFn()
+
+    expect(mockListSystemSettings).toHaveBeenCalledTimes(1)
   })
 
   it('renders the rate limit card', () => {
@@ -306,6 +463,74 @@ describe('GeneralSettingsView', () => {
     )
   })
 
+  it('seeds default numeric values for empty numeric settings', () => {
+    render(<GeneralSettingsView />)
+
+    fireEvent.click(screen.getByText('edit-second-basic'))
+
+    expect(mockForm.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE',
+        enabled: false,
+        numericValue: 0,
+      }),
+    )
+  })
+
+  it('seeds watermark content as text values', () => {
+    render(<GeneralSettingsView />)
+
+    fireEvent.click(screen.getByText('edit-watermark-content'))
+
+    expect(screen.getByTestId('editing-code')).toHaveTextContent(
+      'SYS_WATERMARK_CONTENT',
+    )
+    expect(mockForm.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: false,
+        numericValue: ' {username} ',
+        selectedActions: [' {username} '],
+      }),
+    )
+  })
+
+  it('seeds watermark property values with tax-rate fallback', () => {
+    render(<GeneralSettingsView />)
+
+    fireEvent.click(screen.getByText('edit-watermark-font-size'))
+
+    expect(mockForm.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        settingCode: 'SYS_WATERMARK_FONT_SIZE',
+        numericValue: 0.13,
+      }),
+    )
+  })
+
+  it('seeds hide-audited status values with defaults', () => {
+    render(<GeneralSettingsView />)
+
+    fireEvent.click(screen.getByText('edit-hide-audited'))
+
+    expect(mockForm.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        settingCode: 'UI_HIDE_AUDITED_LIST_RECORDS',
+        selectedActions: ['已审核'],
+      }),
+    )
+  })
+
+  it('closes the editor through modal callback', () => {
+    render(<GeneralSettingsView />)
+
+    fireEvent.click(screen.getByText('edit-basic'))
+    expect(screen.getByTestId('editor-modal')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('close'))
+
+    expect(screen.queryByTestId('editor-modal')).not.toBeInTheDocument()
+  })
+
   it('warns and keeps editor closed when editing without permission', () => {
     mockCan.mockReturnValue(false)
     render(<GeneralSettingsView />)
@@ -335,6 +560,30 @@ describe('GeneralSettingsView', () => {
       'system.generalSettings.closed',
     )
     expect(mockRefresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('enables disabled switch settings and keeps existing sample value', async () => {
+    mockUseQuery.mockReturnValueOnce({
+      data: [disabledLoginCaptchaRecord],
+      isLoading: false,
+    })
+    render(<GeneralSettingsView />)
+
+    fireEvent.click(screen.getByText('toggle-switch'))
+
+    await waitFor(() => {
+      expect(mockSaveSystemSetting).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: disabledLoginCaptchaRecord.id,
+          settingCode: 'SYS_LOGIN_CAPTCHA',
+          sampleNo: 'OFF',
+          status: '正常',
+        }),
+      )
+    })
+    expect(mockMessageSuccess).toHaveBeenCalledWith(
+      'system.generalSettings.enabled',
+    )
   })
 
   it('reports toggle failures through request error handler', async () => {
@@ -370,6 +619,55 @@ describe('GeneralSettingsView', () => {
     expect(screen.queryByTestId('editor-modal')).not.toBeInTheDocument()
   })
 
+  it('saves numeric settings with default numeric and normal status fallbacks', async () => {
+    mockForm.validateFields.mockResolvedValueOnce({
+      settingCode: defaultListPageSizeRecord.settingCode,
+      settingName: defaultListPageSizeRecord.settingName,
+      billName: defaultListPageSizeRecord.billName,
+      remark: defaultListPageSizeRecord.remark,
+    })
+    render(<GeneralSettingsView />)
+
+    fireEvent.click(screen.getByText('edit-second-basic'))
+    fireEvent.click(screen.getByText('save'))
+
+    await waitFor(() => {
+      expect(mockSaveSystemSetting).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: defaultListPageSizeRecord.id,
+          settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE',
+          sampleNo: '0',
+          status: '正常',
+        }),
+      )
+    })
+  })
+
+  it('saves blank watermark content with ON fallback', async () => {
+    mockForm.validateFields.mockResolvedValueOnce({
+      settingCode: watermarkContentRecord.settingCode,
+      settingName: watermarkContentRecord.settingName,
+      billName: watermarkContentRecord.billName,
+      remark: watermarkContentRecord.remark,
+      numericValue: '',
+    })
+    render(<GeneralSettingsView />)
+
+    fireEvent.click(screen.getByText('edit-watermark-content'))
+    fireEvent.click(screen.getByText('save'))
+
+    await waitFor(() => {
+      expect(mockSaveSystemSetting).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: watermarkContentRecord.id,
+          settingCode: 'SYS_WATERMARK_CONTENT',
+          sampleNo: 'ON',
+          status: '禁用',
+        }),
+      )
+    })
+  })
+
   it('requires selected actions for detailed operation log setting', async () => {
     mockForm.validateFields.mockResolvedValueOnce({
       settingCode: operationLogRecord.settingCode,
@@ -390,6 +688,87 @@ describe('GeneralSettingsView', () => {
       )
     })
     expect(mockSaveSystemSetting).not.toHaveBeenCalled()
+  })
+
+  it('saves detailed operation log all actions in canonical order', async () => {
+    const { DETAILED_OPERATION_ACTION_VALUES } = await import(
+      '@/views/system/general-settings-view-utils'
+    )
+    mockForm.validateFields.mockResolvedValueOnce({
+      settingCode: operationLogRecord.settingCode,
+      settingName: operationLogRecord.settingName,
+      billName: operationLogRecord.billName,
+      remark: operationLogRecord.remark,
+      enabled: true,
+      selectedActions: [...DETAILED_OPERATION_ACTION_VALUES],
+    })
+    render(<GeneralSettingsView />)
+
+    fireEvent.click(screen.getByText('edit-operation-log'))
+    fireEvent.click(screen.getByText('save'))
+
+    await waitFor(() => {
+      expect(mockSaveSystemSetting).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: operationLogRecord.id,
+          sampleNo: DETAILED_OPERATION_ACTION_VALUES.join(','),
+          status: '正常',
+        }),
+      )
+    })
+  })
+
+  it('saves hide-audited all statuses in canonical order', async () => {
+    const { HIDE_AUDITED_STATUS_VALUES } = await import(
+      '@/views/system/general-settings-view-utils'
+    )
+    mockForm.validateFields.mockResolvedValueOnce({
+      settingCode: hideAuditedRecord.settingCode,
+      settingName: hideAuditedRecord.settingName,
+      billName: hideAuditedRecord.billName,
+      remark: hideAuditedRecord.remark,
+      enabled: true,
+      selectedActions: [...HIDE_AUDITED_STATUS_VALUES],
+    })
+    render(<GeneralSettingsView />)
+
+    fireEvent.click(screen.getByText('edit-hide-audited'))
+    fireEvent.click(screen.getByText('save'))
+
+    await waitFor(() => {
+      expect(mockSaveSystemSetting).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: hideAuditedRecord.id,
+          sampleNo: HIDE_AUDITED_STATUS_VALUES.join(','),
+          status: '正常',
+        }),
+      )
+    })
+  })
+
+  it('saves simple toggles with default selected actions', async () => {
+    mockForm.validateFields.mockResolvedValueOnce({
+      settingCode: loginCaptchaRecord.settingCode,
+      settingName: loginCaptchaRecord.settingName,
+      billName: loginCaptchaRecord.billName,
+      remark: loginCaptchaRecord.remark,
+      enabled: true,
+    })
+    render(<GeneralSettingsView />)
+
+    fireEvent.click(screen.getByText('edit-switch'))
+    fireEvent.click(screen.getByText('save'))
+
+    await waitFor(() => {
+      expect(mockSaveSystemSetting).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: loginCaptchaRecord.id,
+          settingCode: 'SYS_LOGIN_CAPTCHA',
+          sampleNo: 'ON',
+          status: '正常',
+        }),
+      )
+    })
   })
 
   it('saves toggle settings with selected action values', async () => {

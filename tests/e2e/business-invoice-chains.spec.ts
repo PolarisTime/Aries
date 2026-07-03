@@ -3,6 +3,9 @@ import {
   buildSuffix,
   e2eApiUrl,
   fillDateInput,
+  fillOrReadFormField,
+  fillPurchaseOrderLineItem,
+  formField,
   getCurrentAccessToken,
   importParentByKeyword,
   isoNextDay,
@@ -16,47 +19,42 @@ import {
 } from './support/business-e2e'
 import { expect, test } from './support/test'
 
-async function createPurchaseOrder(page: Page, orderNo: string) {
+async function createPurchaseOrder(page: Page, expectedOrderNo: string) {
   const orderDate = isoToday()
+  let orderNo = expectedOrderNo
   await page.goto('/purchase-order')
   const overlay = await openCreateOverlay(page)
   await selectAntOption(
-    overlay.locator('#supplierName'),
+    formField(overlay, 'supplierName'),
     '益海（浙江）物联网科技有限公司',
   )
-  await overlay.locator('#orderNo').fill(orderNo)
-  await fillDateInput(overlay.locator('#orderDate'), orderDate)
+  orderNo = await fillOrReadFormField(formField(overlay, 'orderNo'), orderNo)
+  await fillDateInput(formField(overlay, 'orderDate'), orderDate)
   const row = await waitForFirstDetailRow(overlay)
-  await row.locator('td').nth(3).locator('input').fill('HZ-YG-PL8')
-  await page.waitForTimeout(1200)
-  await selectAntOption(
-    row.locator('td').nth(10).locator('.ant-select'),
-    '升华物流',
-  )
-  await row.locator('td').nth(12).locator('input').fill('10')
-  await row.locator('td').nth(16).locator('input').fill('3200')
+  await fillPurchaseOrderLineItem(row)
   await saveOverlay(page, overlay, orderNo)
-  return { orderDate }
+  return { orderDate, orderNo }
 }
 
 async function createSalesOrder(
   page: Page,
-  orderNo: string,
+  expectedOrderNo: string,
   sourcePurchaseOrderNo: string,
 ) {
   const deliveryDate = isoNextDay()
+  let orderNo = expectedOrderNo
   await page.goto('/sales-order')
   const overlay = await openCreateOverlay(page)
-  await overlay.locator('#orderNo').fill(orderNo)
+  orderNo = await fillOrReadFormField(formField(overlay, 'orderNo'), orderNo)
   await selectAntOption(
-    overlay.locator('#customerName'),
+    formField(overlay, 'customerName'),
     '浙江大东吴杭萧绿建科技有限公司',
   )
   await selectAntOption(
-    overlay.locator('#projectName'),
+    formField(overlay, 'projectName'),
     '恒力(大连)船厂有限公司-绿色高端装备制造项目6#曲面分段车间',
   )
-  await fillDateInput(overlay.locator('#deliveryDate'), deliveryDate)
+  await fillDateInput(formField(overlay, 'deliveryDate'), deliveryDate)
   await importParentByKeyword(
     page,
     overlay,
@@ -70,7 +68,7 @@ async function createSalesOrder(
     '3600',
   )
   await saveOverlay(page, overlay, orderNo)
-  return { deliveryDate }
+  return { deliveryDate, orderNo }
 }
 
 test('creates invoice receipt from imported purchase order items', async ({
@@ -81,25 +79,35 @@ test('creates invoice receipt from imported purchase order items', async ({
   await loginAsTest9(page)
 
   const suffix = buildSuffix()
-  const purchaseOrderNo = `PO-IR-${suffix}`
-  const receiveNo = `SP-${suffix}`
-  const invoiceNo = `INV-R-${suffix}`
+  let purchaseOrderNo = `PO-IR-${suffix}`
+  let receiveNo = `SP-${suffix}`
+  let invoiceNo = `INV-R-${suffix}`
 
-  const { orderDate } = await createPurchaseOrder(page, purchaseOrderNo)
+  const purchaseOrder = await createPurchaseOrder(page, purchaseOrderNo)
+  const { orderDate } = purchaseOrder
+  purchaseOrderNo = purchaseOrder.orderNo
 
   await page.goto('/invoice-receipt')
   const overlay = await openCreateOverlay(page)
-  await overlay.locator('#receiveNo').fill(receiveNo)
-  await overlay.locator('#invoiceNo').fill(invoiceNo)
+  receiveNo = await fillOrReadFormField(
+    formField(overlay, 'receiveNo'),
+    receiveNo,
+  )
+  invoiceNo = await fillOrReadFormField(
+    formField(overlay, 'invoiceNo'),
+    invoiceNo,
+  )
   await selectAntOption(
-    overlay.locator('#supplierName'),
+    formField(overlay, 'supplierName'),
     '益海（浙江）物联网科技有限公司',
   )
-  await overlay.locator('#invoiceTitle').fill('益海（浙江）物联网科技有限公司')
-  await fillDateInput(overlay.locator('#invoiceDate'), orderDate)
-  await selectAntOption(overlay.locator('#invoiceType'), '增值税专票')
-  await selectAntOption(overlay.locator('#status'), '已收票')
-  await overlay.locator('#operatorName').fill('test9')
+  await formField(overlay, 'invoiceTitle').fill(
+    '益海（浙江）物联网科技有限公司',
+  )
+  await fillDateInput(formField(overlay, 'invoiceDate'), orderDate)
+  await selectAntOption(formField(overlay, 'invoiceType'), '增值税专票')
+  await selectAntOption(formField(overlay, 'status'), '已收票')
+  await formField(overlay, 'operatorName').fill('test9')
   await importParentByKeyword(
     page,
     overlay,
@@ -202,33 +210,35 @@ test('creates invoice issue from imported sales order items', async ({
   await loginAsTest9(page)
 
   const suffix = buildSuffix()
-  const purchaseOrderNo = `PO-II-${suffix}`
-  const salesOrderNo = `SO-II-${suffix}`
-  const issueNo = `KP-${suffix}`
-  const invoiceNo = `INV-I-${suffix}`
+  let purchaseOrderNo = `PO-II-${suffix}`
+  let salesOrderNo = `SO-II-${suffix}`
+  let issueNo = `KP-${suffix}`
+  let invoiceNo = `INV-I-${suffix}`
 
-  await createPurchaseOrder(page, purchaseOrderNo)
-  const { deliveryDate } = await createSalesOrder(
-    page,
-    salesOrderNo,
-    purchaseOrderNo,
-  )
+  const purchaseOrder = await createPurchaseOrder(page, purchaseOrderNo)
+  purchaseOrderNo = purchaseOrder.orderNo
+  const salesOrder = await createSalesOrder(page, salesOrderNo, purchaseOrderNo)
+  const { deliveryDate } = salesOrder
+  salesOrderNo = salesOrder.orderNo
 
   await page.goto('/invoice-issue')
   const overlay = await openCreateOverlay(page)
-  await overlay.locator('#issueNo').fill(issueNo)
-  await overlay.locator('#invoiceNo').fill(invoiceNo)
+  issueNo = await fillOrReadFormField(formField(overlay, 'issueNo'), issueNo)
+  invoiceNo = await fillOrReadFormField(
+    formField(overlay, 'invoiceNo'),
+    invoiceNo,
+  )
   await selectAntOption(
-    overlay.locator('#customerName'),
+    formField(overlay, 'customerName'),
     '浙江大东吴杭萧绿建科技有限公司',
   )
-  await overlay
-    .locator('#projectName')
-    .fill('恒力(大连)船厂有限公司-绿色高端装备制造项目6#曲面分段车间')
-  await fillDateInput(overlay.locator('#invoiceDate'), deliveryDate)
-  await selectAntOption(overlay.locator('#invoiceType'), '增值税专票')
-  await selectAntOption(overlay.locator('#status'), '已开票')
-  await overlay.locator('#operatorName').fill('test9')
+  await formField(overlay, 'projectName').fill(
+    '恒力(大连)船厂有限公司-绿色高端装备制造项目6#曲面分段车间',
+  )
+  await fillDateInput(formField(overlay, 'invoiceDate'), deliveryDate)
+  await selectAntOption(formField(overlay, 'invoiceType'), '增值税专票')
+  await selectAntOption(formField(overlay, 'status'), '已开票')
+  await formField(overlay, 'operatorName').fill('test9')
   await importParentByKeyword(page, overlay, '导入销售订单明细', salesOrderNo)
 
   const detailRows = overlay.locator(

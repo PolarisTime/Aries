@@ -151,9 +151,27 @@ vi.mock('@/utils/antd-app', () => ({
   message: { warning: messageWarningMock },
 }))
 
+import { listPrintTemplates } from '@/api/print-template'
 import { PrintTemplateDropdown } from '@/views/modules/components/PrintTemplateDropdown'
 
 const EMPTY_QUERY_DATA: unknown[] = []
+
+function printableTemplateQueryOptions(moduleKey = 'test-module') {
+  const calls = vi.mocked(useQuery).mock.calls
+  for (let index = calls.length - 1; index >= 0; index -= 1) {
+    const options = calls[index]?.[0] as
+      | { queryFn?: () => Promise<unknown>; queryKey?: readonly unknown[] }
+      | undefined
+    if (
+      Array.isArray(options?.queryKey) &&
+      options.queryKey[0] === 'print-templates' &&
+      options.queryKey[1] === moduleKey
+    ) {
+      return options
+    }
+  }
+  return undefined
+}
 
 function mockPrintableTemplates(templates: unknown[]) {
   vi.mocked(useQuery).mockImplementation(((options: {
@@ -203,6 +221,14 @@ describe('PrintTemplateDropdown', () => {
     expect(screen.getByText('测试模块')).toBeTruthy()
   })
 
+  it('uses configured print template target as fallback module title', () => {
+    render(<PrintTemplateDropdown {...defaultProps} moduleTitle={undefined} />)
+
+    openPrintModal()
+
+    expect(screen.getByText('test-target')).toBeTruthy()
+  })
+
   it('renders empty state when templates are empty', () => {
     render(<PrintTemplateDropdown {...defaultProps} />)
 
@@ -210,6 +236,15 @@ describe('PrintTemplateDropdown', () => {
 
     expect(screen.getByText('modules.print.noTemplate')).toBeTruthy()
     expect(screen.getByTestId('empty')).toBeTruthy()
+  })
+
+  it('closes print job modal from footer action', () => {
+    render(<PrintTemplateDropdown {...defaultProps} />)
+
+    openPrintModal()
+    fireEvent.click(screen.getByText('common.cancel'))
+
+    expect(screen.queryByTestId('print-modal')).toBeNull()
   })
 
   it('prints selected template in preview and direct modes', () => {
@@ -273,6 +308,34 @@ describe('PrintTemplateDropdown', () => {
       hideUnitPrice: false,
       hideRemark: false,
     })
+  })
+
+  it('keeps active pdf form templates without template html', () => {
+    const pdfTemplate = {
+      id: 'tpl-pdf',
+      templateName: 'PDF 模板',
+      targetType: 'test-module',
+      templateType: 'PDF_FORM',
+      status: 'ACTIVE',
+    }
+    mockPrintableTemplates([
+      {
+        id: 'tpl-disabled',
+        templateName: '停用模板',
+        targetType: 'test-module',
+        templateType: 'COORD',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
+        status: 'DISABLED',
+      },
+      pdfTemplate,
+    ])
+
+    render(<PrintTemplateDropdown {...defaultProps} />)
+
+    openPrintModal()
+
+    expect(screen.getByTestId('template-select')).toHaveValue('tpl-pdf')
+    expect(screen.queryByText('tpl-disabled')).toBeNull()
   })
 
   it('only shows templates matching the selected settlement company', () => {
@@ -429,6 +492,38 @@ describe('PrintTemplateDropdown', () => {
         enabled: false,
         queryKey: ['print-templates', 'unsupported-module'],
       }),
+    )
+  })
+
+  it('loads printable templates from query function response data', async () => {
+    const templates = [
+      {
+        id: 'tpl-1',
+        templateName: 'A 模板',
+        targetType: 'test-module',
+        templateType: 'COORD',
+        templateHtml: 'LODOP.PRINT_INIT("test");',
+      },
+    ]
+    vi.mocked(listPrintTemplates).mockResolvedValue({
+      data: templates,
+    } as never)
+
+    render(<PrintTemplateDropdown {...defaultProps} />)
+
+    await expect(printableTemplateQueryOptions()?.queryFn?.()).resolves.toBe(
+      templates,
+    )
+    expect(listPrintTemplates).toHaveBeenCalledWith('test-module')
+  })
+
+  it('returns empty templates when query response data is not an array', async () => {
+    vi.mocked(listPrintTemplates).mockResolvedValue({ data: null } as never)
+
+    render(<PrintTemplateDropdown {...defaultProps} />)
+
+    await expect(printableTemplateQueryOptions()?.queryFn?.()).resolves.toEqual(
+      [],
     )
   })
 })

@@ -104,6 +104,10 @@ function buildGlobalSearchResult(
   }
 }
 
+function getGlobalSearchRecordKey(record: ModuleRecord, primaryNoKey?: string) {
+  return String(record.id || asString(record[primaryNoKey || 'id']))
+}
+
 export async function searchAccessibleModules(
   options: AccessibleGlobalSearchOptions,
 ) {
@@ -146,13 +150,10 @@ export async function searchAccessibleModules(
 
         const deduped = uniqBy(
           rows.filter((record) => {
-            const key = String(
-              record.id || asString(record[config.primaryNoKey || 'id']),
-            )
+            const key = getGlobalSearchRecordKey(record, config.primaryNoKey)
             return Boolean(key)
           }),
-          (record) =>
-            String(record.id || asString(record[config.primaryNoKey || 'id'])),
+          (record) => getGlobalSearchRecordKey(record, config.primaryNoKey),
         )
         return deduped.map((record) =>
           buildGlobalSearchResult(

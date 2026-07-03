@@ -3,9 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockSetFieldValue = vi.fn()
 const mockGetFieldValue = vi.fn()
+const mockUseWatch = vi.hoisted(() => vi.fn(() => []))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
+}))
+
+vi.mock('antd', () => ({
+  Form: {
+    useWatch: mockUseWatch,
+  },
 }))
 
 vi.mock('@/views/system/user-account-view-utils', () => ({
@@ -28,12 +35,6 @@ vi.mock('@/views/system/user-account-view-utils', () => ({
   ),
 }))
 
-vi.mock('antd/es/form', () => ({
-  default: {
-    useWatch: vi.fn(() => []),
-  },
-}))
-
 import { useUserAccountEditorRoleState } from '@/views/system/useUserAccountEditorRoleState'
 
 function createMockForm(values: Record<string, unknown> = {}) {
@@ -48,6 +49,7 @@ function createMockForm(values: Record<string, unknown> = {}) {
 describe('useUserAccountEditorRoleState', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUseWatch.mockReturnValue([])
   })
 
   it('returns initial state with empty selections', () => {
@@ -76,5 +78,45 @@ describe('useUserAccountEditorRoleState', () => {
     )
     expect(result.current.selectedRoleDataScope).toBeDefined()
     expect(Array.isArray(result.current.selectedRoleSummaries)).toBe(true)
+  })
+
+  it('maps watched role ids to strings', () => {
+    mockUseWatch.mockReturnValue([1, '2'])
+    const form = createMockForm({ dataScope: '全部数据' })
+    const { result } = renderHook(() =>
+      useUserAccountEditorRoleState({
+        form,
+        roleOptions: [
+          {
+            id: '1',
+            roleName: '管理员',
+            roleCode: 'admin',
+            permissionSummary: '管理权限',
+          },
+          {
+            id: '2',
+            roleName: '财务',
+            roleCode: 'finance',
+            permissionSummary: '财务权限',
+          },
+        ],
+      }),
+    )
+
+    expect(result.current.selectedRoleIds).toEqual(['1', '2'])
+    expect(result.current.selectedRoleSummaries).toEqual([
+      '管理权限',
+      '财务权限',
+    ])
+  })
+
+  it('treats non-array watched role value as empty selection', () => {
+    mockUseWatch.mockReturnValue('1')
+    const form = createMockForm()
+    const { result } = renderHook(() =>
+      useUserAccountEditorRoleState({ form, roleOptions: [] }),
+    )
+
+    expect(result.current.selectedRoleIds).toEqual([])
   })
 })

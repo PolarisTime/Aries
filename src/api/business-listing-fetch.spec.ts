@@ -114,6 +114,18 @@ describe('business-listing-fetch', () => {
       })
     })
 
+    it('falls back to default fields param name', async () => {
+      getModuleConfigMock.mockReturnValue({
+        path: '/test',
+      })
+
+      await fetchModulePage('test', {}, 0, 20, undefined, ['a', 'b'])
+
+      expect(httpGetMock).toHaveBeenCalledWith('/test', {
+        params: { page: 0, size: 20, fields: 'a,b' },
+      })
+    })
+
     it('merges config params with additional params from config argument', async () => {
       const configArg = { params: { extra: 'value' } }
       await fetchModulePage(

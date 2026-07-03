@@ -204,6 +204,20 @@ describe('LoginTotpPanel', () => {
     expect(onVerify).toHaveBeenCalled()
   })
 
+  it('does not call onVerify when non-Enter key is pressed in input', () => {
+    const onVerify = vi.fn()
+    render(
+      <LoginTotpPanel
+        {...defaultProps}
+        totpCode="123456"
+        onVerify={onVerify}
+      />,
+    )
+    const otp = screen.getByLabelText('验证码')
+    fireEvent.keyDown(otp, { key: 'Escape', code: 'Escape' })
+    expect(onVerify).not.toHaveBeenCalled()
+  })
+
   it('renders step tag with totp class', () => {
     const { container } = render(<LoginTotpPanel {...defaultProps} />)
     const stepTag = container.querySelector('.login-step-tag.is-totp')

@@ -40,6 +40,12 @@ describe('header-utils', () => {
       ).toBe(false)
     })
 
+    it('returns false when matched header value is empty', () => {
+      expect(requestHadAuthorization(makeConfig({ Authorization: '' }))).toBe(
+        false,
+      )
+    })
+
     it('uses headers.get function if available', () => {
       const config = {
         headers: {

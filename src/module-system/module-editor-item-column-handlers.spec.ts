@@ -144,6 +144,23 @@ describe('useModuleEditorItemColumnHandlers', () => {
       expect(items[0].materialCode).toBe('new-code')
     })
 
+    it('keeps other items when selecting material', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [
+        { id: '1', materialCode: 'old-1' },
+        { id: '2', materialCode: 'old-2' },
+      ]
+
+      act(() => {
+        result.current.handleMaterialSelect('1', 'new-code')
+      })
+
+      expect(items[0].materialCode).toBe('new-code')
+      expect(items[1].materialCode).toBe('old-2')
+    })
+
     it('applies material when applyMaterial provided', () => {
       const { result } = renderHook(() =>
         useModuleEditorItemColumnHandlers({ setItems }),
@@ -258,6 +275,33 @@ describe('useModuleEditorItemColumnHandlers', () => {
       expect(items[0].applied).toBe(true)
     })
 
+    it('keeps non-target rows when applying resolved material', async () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [
+        { id: '1', materialCode: 'new-code' },
+        { id: '2', materialCode: 'other-code' },
+      ]
+      const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
+      const resolveMaterial = vi
+        .fn()
+        .mockResolvedValue({ name: 'Resolved Material' })
+
+      await act(async () => {
+        result.current.handleMaterialSelect(
+          '1',
+          'new-code',
+          null,
+          applyMaterial,
+          resolveMaterial,
+        )
+      })
+
+      expect(items[0].applied).toBe(true)
+      expect(items[1]).toEqual({ id: '2', materialCode: 'other-code' })
+    })
+
     it('does not call resolveMaterial when materialRecord is provided', () => {
       const { result } = renderHook(() =>
         useModuleEditorItemColumnHandlers({ setItems }),
@@ -294,6 +338,23 @@ describe('useModuleEditorItemColumnHandlers', () => {
 
       expect(items[0].warehouseName).toBe('new-warehouse')
     })
+
+    it('keeps other items when updating warehouse name', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [
+        { id: '1', warehouseName: 'old-1' },
+        { id: '2', warehouseName: 'old-2' },
+      ]
+
+      act(() => {
+        result.current.handleWarehouseSelect('1', 'new-warehouse')
+      })
+
+      expect(items[0].warehouseName).toBe('new-warehouse')
+      expect(items[1].warehouseName).toBe('old-2')
+    })
   })
 
   describe('handleSettlementModeChange', () => {
@@ -308,6 +369,23 @@ describe('useModuleEditorItemColumnHandlers', () => {
       })
 
       expect(items[0].settlementMode).toBe('过磅')
+    })
+
+    it('keeps other items when updating settlement mode', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [
+        { id: '1', settlementMode: 'old-1' },
+        { id: '2', settlementMode: 'old-2' },
+      ]
+
+      act(() => {
+        result.current.handleSettlementModeChange('1', '过磅')
+      })
+
+      expect(items[0].settlementMode).toBe('过磅')
+      expect(items[1].settlementMode).toBe('old-2')
     })
   })
 })

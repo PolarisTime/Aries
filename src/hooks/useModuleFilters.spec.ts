@@ -70,7 +70,10 @@ describe('useModuleFilters', () => {
   })
 
   it('initializes with default filters', () => {
-    const defaultFilters = { orderDate: ['2026-05-29', '2026-06-28'] }
+    const defaultFilters = {
+      status: 'open',
+      orderDate: ['2026-05-29', '2026-06-28'],
+    }
     const { result } = renderHook(() =>
       useModuleFilters({ ...defaultProps, defaultFilters }),
     )
@@ -125,6 +128,34 @@ describe('useModuleFilters', () => {
     })
     expect(result.current.submittedFilters).toEqual({
       orderDate: ['2026-05-29', '2026-06-28'],
+    })
+  })
+
+  it('replaces previous default filters when defaults change', () => {
+    const { result, rerender } = renderHook(
+      ({ defaultFilters }) =>
+        useModuleFilters({ ...defaultProps, defaultFilters }),
+      {
+        initialProps: {
+          defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
+        },
+      },
+    )
+
+    act(() => {
+      result.current.updateFilter('keyword', 'PO-001')
+    })
+
+    rerender({
+      defaultFilters: { createdAt: ['2026-06-01', '2026-06-28'] },
+    })
+
+    expect(result.current.filters).toEqual({
+      createdAt: ['2026-06-01', '2026-06-28'],
+      keyword: 'PO-001',
+    })
+    expect(result.current.submittedFilters).toEqual({
+      createdAt: ['2026-06-01', '2026-06-28'],
     })
   })
 
@@ -186,6 +217,10 @@ describe('useModuleFilters', () => {
         buildOverview: () => [],
       }),
     ).toEqual({})
+  })
+
+  it('does not build defaults without config', () => {
+    expect(buildDefaultModuleFilters(null)).toEqual({})
   })
 
   it('sets filters directly', () => {

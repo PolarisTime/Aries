@@ -21,4 +21,14 @@ describe('masterSettlementCompanyPageConfigs', () => {
     expect(config.columns.length).toBeGreaterThan(0)
     expect(config.formFields).toBeDefined()
   })
+
+  it('builds overview from settlement company rows', () => {
+    const config = masterSettlementCompanyPageConfigs['company-setting']
+
+    expect(config.buildOverview?.([{ id: '1' }, { id: '2' }])).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: expect.any(String) }),
+      ]),
+    )
+  })
 })

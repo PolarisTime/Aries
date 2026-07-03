@@ -106,12 +106,11 @@ export function RateLimitRulesCard() {
     setEditingRule(rule)
   }
 
-  const handleSave = async () => {
-    if (!editingRule) return
+  const handleSave = async (rule: RateLimitRule) => {
     const values = await form.validateFields()
     setSaving(true)
     try {
-      await http.put(`/admin/rate-limit/rules/${editingRule.id}`, {
+      await http.put(`/admin/rate-limit/rules/${rule.id}`, {
         rate: values.rate,
         capacity: values.capacity,
         tokens_per_request: values.tokensPerRequest,
@@ -120,9 +119,8 @@ export function RateLimitRulesCard() {
       await queryClient.invalidateQueries({ queryKey: ['rate-limit-rules'] })
       setEditingRule(null)
       setSaving(false)
-    } catch (error) {
+    } catch {
       setSaving(false)
-      throw error
     }
   }
 
@@ -254,7 +252,7 @@ export function RateLimitRulesCard() {
       <Modal
         title={`${t('system.rateLimit.editTitle')} — ${editingRule?.ruleKey || ''}`}
         open={!!editingRule}
-        onOk={() => void handleSave()}
+        onOk={editingRule ? () => void handleSave(editingRule) : undefined}
         onCancel={() => setEditingRule(null)}
         confirmLoading={saving}
         okText={t('system.rateLimit.save')}

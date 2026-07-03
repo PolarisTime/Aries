@@ -71,6 +71,21 @@ describe('RoleActionRoleListCard', () => {
     expect(screen.getByText('User')).toBeInTheDocument()
   })
 
+  it('renders disabled role status', () => {
+    render(
+      <RoleActionRoleListCard
+        {...defaultProps}
+        roles={[
+          {
+            ...mockRoles[0],
+            status: '禁用',
+          },
+        ]}
+      />,
+    )
+    expect(screen.getByText('禁用')).toBeInTheDocument()
+  })
+
   it('renders role codes', () => {
     render(<RoleActionRoleListCard {...defaultProps} />)
     expect(screen.getByText('admin')).toBeInTheDocument()

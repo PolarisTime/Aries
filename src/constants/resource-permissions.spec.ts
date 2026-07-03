@@ -78,6 +78,22 @@ describe('resource-permissions', () => {
   })
 
   describe('loadPermissionCatalog', () => {
+    it('reuses in-flight catalog promise', async () => {
+      let resolveCatalog: (value: { code: number; data: unknown }) => void
+      httpGetMock.mockReturnValue(
+        new Promise((resolve) => {
+          resolveCatalog = resolve
+        }),
+      )
+
+      const first = loadPermissionCatalog()
+      const second = loadPermissionCatalog()
+
+      expect(httpGetMock).toHaveBeenCalledTimes(1)
+      resolveCatalog!({ code: -1, data: [] })
+      await Promise.all([first, second])
+    })
+
     it('handles network error', async () => {
       httpGetMock.mockRejectedValue(new Error('Network error'))
       await loadPermissionCatalog()

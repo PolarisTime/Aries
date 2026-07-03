@@ -7,6 +7,7 @@ import {
   canReverseAuditFromStatus,
   resolveModuleActionKind,
   resolveModuleActionPermissionCodes,
+  resolveStatusChangeActionLabel,
   resolveStatusOptions,
 } from './module-adapter-actions'
 import { moduleBehaviorRegistry } from './module-behavior-registry-core'
@@ -27,6 +28,22 @@ describe('resolveModuleActionKind', () => {
         moduleKey: 'test',
         actionKey: 'generate',
         actionLabel: '生成',
+        hasFormFields: false,
+        isMaterialModule: false,
+      }),
+    ).toBe('openCreateEditor')
+  })
+
+  it('falls back to actionLabel mapping when actionKey mapping is missing', () => {
+    register('test', {
+      actionKindsByKey: { other: 'exportRows' },
+      actionKindsByLabel: { 生成对账单: 'openCreateEditor' },
+    })
+    expect(
+      resolveModuleActionKind({
+        moduleKey: 'test',
+        actionKey: 'generate',
+        actionLabel: '生成对账单',
         hasFormFields: false,
         isMaterialModule: false,
       }),
@@ -124,6 +141,17 @@ describe('resolveModuleActionPermissionCodes', () => {
     ).toEqual(['update'])
   })
 
+  it('falls back when actionKey mapping is empty', () => {
+    register('test', { permissionCodesByActionKey: { edit: [] } })
+    expect(
+      resolveModuleActionPermissionCodes({
+        moduleKey: 'test',
+        actionKey: 'edit',
+        actionLabel: '编辑',
+      }),
+    ).toEqual(['update'])
+  })
+
   it('returns manage_permissions for 配置权限', () => {
     expect(
       resolveModuleActionPermissionCodes({
@@ -154,6 +182,24 @@ describe('resolveModuleActionPermissionCodes', () => {
         actionLabel: '模板下载',
       }),
     ).toEqual(['export'])
+  })
+
+  it.each([
+    '确认',
+    '反确认',
+  ])('returns audit for exact %s action', (actionLabel) => {
+    expect(resolveModuleActionPermissionCodes({ actionLabel })).toEqual([
+      'audit',
+    ])
+  })
+
+  it.each([
+    '核准',
+    '反核准',
+  ])('returns audit for exact %s action', (actionLabel) => {
+    expect(resolveModuleActionPermissionCodes({ actionLabel })).toEqual([
+      'audit',
+    ])
   })
 
   it('returns export for labels containing 导出', () => {
@@ -245,6 +291,19 @@ describe('resolveModuleActionPermissionCodes', () => {
   })
 })
 
+describe('resolveStatusChangeActionLabel', () => {
+  it.each([
+    ['已确认', false, '确认'],
+    ['待确认', true, '反确认'],
+    [' 已核准 ', false, '核准'],
+    ['未核准', true, '反核准'],
+    ['已审核', false, '审核'],
+    [undefined, true, '反审核'],
+  ] as const)('returns %s status action label with reverse=%s', (targetValue, reverse, expected) => {
+    expect(resolveStatusChangeActionLabel(targetValue, reverse)).toBe(expected)
+  })
+})
+
 describe('buildEditorAuditTarget', () => {
   it('uses registered auditStatus if defined as string', () => {
     register('test', { auditStatus: '已收货' })
@@ -283,6 +342,12 @@ describe('buildEditorAuditTarget', () => {
       key: 'status',
       value: '已核准',
     })
+  })
+
+  it('returns null when current status is already 已核准', () => {
+    expect(
+      buildEditorAuditTarget('test', ['草稿', '已核准'], '已核准'),
+    ).toBeNull()
   })
 
   it('returns null when no matching audit status found', () => {
@@ -324,6 +389,18 @@ describe('buildReverseAuditTarget', () => {
     expect(
       buildReverseAuditTarget('test-module', ['待审核', '已审核']),
     ).toBeNull()
+  })
+
+  it('ignores blank module default status', () => {
+    register('test-module', { defaultStatus: '   ' })
+    expect(
+      buildReverseAuditTarget('test-module', ['待确认', '已确认']),
+    ).toEqual({ key: 'status', value: '待确认' })
+  })
+
+  it('returns null when defaultStatus is not a string and no fallback status matches', () => {
+    register('test-module', { defaultStatus: 0 })
+    expect(buildReverseAuditTarget('test-module', ['已完成'])).toBeNull()
   })
 
   it('falls back through common statuses', () => {
@@ -383,6 +460,31 @@ describe('resolveStatusOptions', () => {
                 label: '状态',
                 options: [{ value: '草稿' }, { value: '已审核' }],
               },
+            ],
+          } as any,
+        ],
+      }),
+    ).toEqual(['草稿', '已审核'])
+  })
+
+  it('extracts mixed grouped and flat filter option values with normalization', () => {
+    expect(
+      resolveStatusOptions({
+        fields: [
+          {
+            key: 'status',
+            type: 'select',
+            options: [
+              { label: '草稿', value: ' 草稿 ' },
+              {
+                label: '状态',
+                options: [
+                  { value: '草稿' },
+                  { value: undefined },
+                  { value: '已审核' },
+                ],
+              },
+              { label: '空值', value: '' },
             ],
           } as any,
         ],

@@ -104,4 +104,32 @@ describe('PersonalSettingsDisplayTab', () => {
     render(<PersonalSettingsDisplayTab {...defaultProps} layoutMode="sider" />)
     expect(screen.getByText('菜单在左侧')).toBeDefined()
   })
+
+  it('calls onLayoutModeChange with selected layout mode', () => {
+    const onLayoutModeChange = vi.fn()
+    render(
+      <PersonalSettingsDisplayTab
+        {...defaultProps}
+        onLayoutModeChange={onLayoutModeChange}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('侧边导航'))
+
+    expect(onLayoutModeChange).toHaveBeenCalledWith('sider')
+  })
+
+  it('calls onThemeModeChange with selected theme mode', () => {
+    const onThemeModeChange = vi.fn()
+    render(
+      <PersonalSettingsDisplayTab
+        {...defaultProps}
+        onThemeModeChange={onThemeModeChange}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('深色'))
+
+    expect(onThemeModeChange).toHaveBeenCalledWith('dark')
+  })
 })

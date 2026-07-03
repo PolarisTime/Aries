@@ -80,4 +80,16 @@ describe('material-grades', () => {
 
     expect(result).toEqual([])
   })
+
+  it('handles missing data response', async () => {
+    vi.resetModules()
+    const { fetchMaterialGrades: fetchEmpty } = await import(
+      './material-grades'
+    )
+    httpGetMock.mockResolvedValue({ code: 0 })
+
+    const result = await fetchEmpty()
+
+    expect(result).toEqual([])
+  })
 })

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   getAttachmentBlob: vi.fn(),
   getPresignedAttachmentBlob: vi.fn(),
   createObjectURL: vi.fn(),
+  downloadBlob: vi.fn(),
   revokeObjectURL: vi.fn(),
   message: {
     success: vi.fn(),
@@ -58,6 +59,10 @@ vi.mock('@/utils/antd-app', () => ({
   message: mocks.message,
 }))
 
+vi.mock('@/utils/download', () => ({
+  downloadBlob: (...args: any[]) => mocks.downloadBlob(...args),
+}))
+
 vi.mock('@/utils/formatters', () => ({
   formatDateTime: vi.fn().mockReturnValue('2024-01-01'),
 }))
@@ -77,6 +82,7 @@ vi.mock('antd', () => {
       data-current={String(preview?.current)}
       data-testid="preview-group"
       data-visible={String(preview?.visible)}
+      onDoubleClick={() => preview?.onVisibleChange?.(true)}
       onClick={() => preview?.onVisibleChange?.(false)}
     >
       {children}
@@ -227,6 +233,7 @@ vi.mock('antd/es/image', () => {
       data-current={String(preview?.current)}
       data-testid="preview-group"
       data-visible={String(preview?.visible)}
+      onDoubleClick={() => preview?.onVisibleChange?.(true)}
       onClick={() => preview?.onVisibleChange?.(false)}
     >
       {children}
@@ -348,9 +355,12 @@ describe('ModuleAttachmentModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.can.mockReset()
     mocks.can.mockReturnValue(true)
+    mocks.getAttachmentBindings.mockReset()
     mocks.getAttachmentBlob.mockReset()
     mocks.getPresignedAttachmentBlob.mockReset()
+    mocks.downloadBlob.mockReset()
     mocks.getPresignedAttachmentBlob.mockResolvedValue(
       new Blob(['pdf'], { type: 'application/pdf' }),
     )
@@ -365,6 +375,9 @@ describe('ModuleAttachmentModal', () => {
       }),
     )
     mocks.uploadProps = undefined
+    mocks.updateAttachmentBindings.mockReset()
+    mocks.updateAttachmentBindings.mockResolvedValue({})
+    mocks.uploadAttachment.mockReset()
     mocks.uploadAttachment.mockResolvedValue({ data: { id: '123' } })
     mocks.createObjectURL.mockReset()
     mocks.revokeObjectURL.mockReset()
@@ -393,6 +406,17 @@ describe('ModuleAttachmentModal', () => {
 
   it('renders empty state when no attachments', () => {
     render(<ModuleAttachmentModal {...defaultProps} />)
+    expect(screen.getByText('modules.attachment.noAttachments')).toBeTruthy()
+  })
+
+  it('falls back to an empty attachment list when the binding response has no data', async () => {
+    mocks.getAttachmentBindings.mockResolvedValueOnce({})
+    render(<ModuleAttachmentModal {...defaultProps} />)
+
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
     expect(screen.getByText('modules.attachment.noAttachments')).toBeTruthy()
   })
 
@@ -535,6 +559,40 @@ describe('ModuleAttachmentModal', () => {
     })
   })
 
+  it('shows completed upload progress while upload is still resolving', async () => {
+    let resolveUpload: ((value: { data: { id: string } }) => void) | undefined
+    mocks.uploadAttachment.mockImplementationOnce(
+      async (
+        _file: File,
+        _moduleKey: string,
+        _sourceType: string,
+        options?: { onProgress?: (percent: number) => void },
+      ) => {
+        options?.onProgress?.(100)
+        return new Promise((resolve) => {
+          resolveUpload = resolve
+        })
+      },
+    )
+    render(<ModuleAttachmentModal {...defaultProps} />)
+
+    await act(async () => {
+      mocks.uploadProps!.beforeUpload(
+        new File(['hello'], 'proof.pdf', { type: 'application/pdf' }),
+      )
+      await Promise.resolve()
+    })
+
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '100',
+    )
+
+    await act(async () => {
+      resolveUpload?.({ data: { id: '123' } })
+    })
+  })
+
   it('shows upload error when uploaded response has no id', async () => {
     mocks.uploadAttachment.mockResolvedValueOnce({ data: { id: '' } })
     render(<ModuleAttachmentModal {...defaultProps} />)
@@ -551,6 +609,42 @@ describe('ModuleAttachmentModal', () => {
       )
     })
     expect(mocks.updateAttachmentBindings).not.toHaveBeenCalled()
+  })
+
+  it('binds uploads when the latest binding response has no attachments', async () => {
+    mocks.getAttachmentBindings.mockResolvedValueOnce({})
+    render(<ModuleAttachmentModal {...defaultProps} />)
+
+    await act(async () => {
+      mocks.uploadProps!.beforeUpload(
+        new File(['hello'], 'proof.pdf', { type: 'application/pdf' }),
+      )
+    })
+
+    await waitFor(() => {
+      expect(mocks.updateAttachmentBindings).toHaveBeenCalledWith(
+        'test-module',
+        '123',
+        ['123'],
+      )
+    })
+  })
+
+  it('shows thrown upload errors', async () => {
+    mocks.uploadAttachment.mockRejectedValueOnce(
+      new window.Error('upload exploded'),
+    )
+    render(<ModuleAttachmentModal {...defaultProps} />)
+
+    await act(async () => {
+      mocks.uploadProps!.beforeUpload(
+        new File(['hello'], 'proof.pdf', { type: 'application/pdf' }),
+      )
+    })
+
+    await waitFor(() => {
+      expect(mocks.message.error).toHaveBeenCalledWith('upload exploded')
+    })
   })
 
   it('previews image and pdf attachments and downloads files through resolved access urls', async () => {
@@ -706,6 +800,170 @@ describe('ModuleAttachmentModal', () => {
     )
   })
 
+  it('warns when an image preview url cannot be resolved', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            id: 'img-1',
+            originalFileName: 'photo.png',
+            previewUrl: 'https://cdn.example.com/preview',
+          }),
+        ],
+      },
+    })
+    mocks.resolveAttachmentAccessUrl.mockResolvedValue({
+      presigned: false,
+      url: '',
+    })
+    mocks.getAttachmentBlob.mockResolvedValueOnce(new Blob([]))
+    mocks.createObjectURL.mockReturnValueOnce('')
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('EyeOutlined'))
+    })
+
+    await waitFor(() => {
+      expect(mocks.message.warning).toHaveBeenCalledWith(
+        'modules.attachment.noPreviewUrl',
+      )
+    })
+  })
+
+  it('warns when an image preview source disappears before url resolution', async () => {
+    const volatileAttachment = attachment({
+      downloadUrl: '',
+      id: 'img-1',
+      originalFileName: 'photo.png',
+      previewUrl: '',
+    })
+    let previewUrlReads = 0
+    Object.defineProperty(volatileAttachment, 'previewUrl', {
+      configurable: true,
+      get: () => {
+        previewUrlReads += 1
+        return previewUrlReads === 1 ? 'https://cdn.example.com/preview' : ''
+      },
+    })
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [volatileAttachment],
+      },
+    })
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('EyeOutlined'))
+    })
+
+    expect(mocks.resolveAttachmentAccessUrl).not.toHaveBeenCalled()
+    expect(mocks.message.warning).toHaveBeenCalledWith(
+      'modules.attachment.noPreviewUrl',
+    )
+  })
+
+  it('shows fallback preview errors for non-error image preview failures', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            id: 'img-1',
+            originalFileName: 'photo.png',
+            previewUrl: 'https://cdn.example.com/preview',
+          }),
+        ],
+      },
+    })
+    mocks.resolveAttachmentAccessUrl.mockRejectedValueOnce('preview failed')
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('EyeOutlined'))
+    })
+
+    await waitFor(() => {
+      expect(mocks.message.error).toHaveBeenCalledWith(
+        'modules.attachment.previewFailed',
+      )
+    })
+  })
+
+  it('opens pdf previews from the preview icon button', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            contentType: 'application/pdf',
+            id: 'pdf-1',
+            originalFileName: 'contract.pdf',
+            previewUrl: 'https://cdn.example.com/contract.pdf',
+          }),
+        ],
+      },
+    })
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('EyeOutlined'))
+    })
+
+    await waitFor(() => {
+      expect(mocks.getPresignedAttachmentBlob).toHaveBeenCalledWith(
+        'https://cdn.example.com/contract.pdf',
+        'test-module',
+        true,
+      )
+    })
+  })
+
+  it('shows fallback preview errors for non-error pdf preview failures', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            contentType: 'application/pdf',
+            id: 'pdf-1',
+            originalFileName: 'contract.pdf',
+            previewUrl: 'https://cdn.example.com/contract.pdf',
+          }),
+        ],
+      },
+    })
+    mocks.getPresignedAttachmentBlob.mockRejectedValueOnce('pdf failed')
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('PDF'))
+    })
+
+    await waitFor(() => {
+      expect(mocks.message.error).toHaveBeenCalledWith(
+        'modules.attachment.previewFailed',
+      )
+    })
+  })
+
   it('removes a binding when delete is clicked', async () => {
     mocks.getAttachmentBindings
       .mockResolvedValueOnce({
@@ -740,6 +998,71 @@ describe('ModuleAttachmentModal', () => {
     )
   })
 
+  it('shows thrown download and delete errors', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            id: 'file-1',
+            originalFileName: 'file.txt',
+          }),
+        ],
+      },
+    })
+    mocks.resolveAttachmentAccessUrl.mockRejectedValueOnce(
+      new window.Error('download exploded'),
+    )
+    mocks.updateAttachmentBindings.mockRejectedValueOnce(
+      new window.Error('delete exploded'),
+    )
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('DownloadOutlined'))
+    })
+    await waitFor(() => {
+      expect(mocks.message.error).toHaveBeenCalledWith('download exploded')
+    })
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('DeleteOutlined'))
+    })
+    await waitFor(() => {
+      expect(mocks.message.error).toHaveBeenCalledWith('delete exploded')
+    })
+  })
+
+  it('uses zero bytes when attachment size is missing', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            fileSize: undefined,
+            id: 'file-1',
+            originalFileName: 'file.txt',
+          }),
+        ],
+      },
+    })
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    expect(
+      await screen.findByText(
+        (_content, node) =>
+          node?.tagName === 'SPAN' &&
+          Boolean(node.textContent?.includes('0.0 KB')),
+      ),
+    ).toBeTruthy()
+  })
+
   it('shows no-permission hint and hides upload/delete controls', async () => {
     mocks.can.mockImplementation(
       (_resource: string, action: string) =>
@@ -761,6 +1084,480 @@ describe('ModuleAttachmentModal', () => {
     expect(screen.getByText('modules.attachment.noPermissionHint')).toBeTruthy()
     expect(screen.queryByTestId('upload')).toBeNull()
     expect(screen.queryByText('DeleteOutlined')).toBeNull()
+  })
+
+  it('resolves file type and storage fallbacks from attachment metadata', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            contentType: '',
+            id: 'preview-image',
+            originalFileName: '',
+            previewType: 'image',
+            storageLabel: '  ',
+            storageType: 's3',
+          }),
+          attachment({
+            contentType: '',
+            fileName: '',
+            id: 'preview-pdf',
+            name: 'fallback.pdf',
+            originalFileName: '',
+            previewType: 'pdf',
+          }),
+        ],
+      },
+    })
+
+    render(<ModuleAttachmentModal {...defaultProps} resourceKey={undefined} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    expect(mocks.can).toHaveBeenCalledWith('test-module', 'update')
+    expect(await screen.findByText('fallback.pdf')).toBeTruthy()
+    expect(screen.getByText('S3存储')).toBeTruthy()
+    expect(screen.getByText('PDF')).toBeTruthy()
+    expect(screen.getAllByText('EyeOutlined')).toHaveLength(2)
+  })
+
+  it('opens image previews from thumbnail buttons and reuses cached preview urls', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            downloadUrl: '',
+            id: 'img-1',
+            originalFileName: 'photo.png',
+            previewUrl: 'https://cdn.example.com/preview',
+          }),
+        ],
+      },
+    })
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    const thumbnailButton = await screen.findByText('PaperClipOutlined')
+    await act(async () => {
+      fireEvent.click(thumbnailButton.closest('button')!)
+    })
+    await waitFor(() => {
+      expect(screen.getByTestId('preview-group')).toHaveAttribute(
+        'data-current',
+        '0',
+      )
+    })
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('preview-group'))
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByText('EyeOutlined'))
+    })
+
+    await waitFor(() => {
+      expect(mocks.resolveAttachmentAccessUrl).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('falls back to authenticated blob urls for image previews and downloads', async () => {
+    const previewBlob = new Blob(['preview'], { type: 'image/png' })
+    const downloadBlob = new Blob(['download'], { type: 'text/plain' })
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            downloadUrl: 'https://cdn.example.com/download',
+            fileName: '',
+            id: 'file-1',
+            name: '',
+            originalFileName: '',
+            previewUrl: 'https://cdn.example.com/preview',
+          }),
+        ],
+      },
+    })
+    mocks.resolveAttachmentAccessUrl.mockResolvedValue({
+      presigned: false,
+      url: '',
+    })
+    mocks.getAttachmentBlob
+      .mockResolvedValueOnce(previewBlob)
+      .mockResolvedValueOnce(downloadBlob)
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('EyeOutlined'))
+    })
+    await waitFor(() => {
+      expect(mocks.getAttachmentBlob).toHaveBeenCalledWith(
+        'https://cdn.example.com/preview',
+      )
+      expect(screen.getByTestId('preview-group')).toHaveAttribute(
+        'data-visible',
+        'true',
+      )
+    })
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('DownloadOutlined'))
+    })
+    await waitFor(() => {
+      expect(mocks.getAttachmentBlob).toHaveBeenCalledWith(
+        'https://cdn.example.com/download',
+      )
+      expect(mocks.downloadBlob).toHaveBeenCalledWith(
+        downloadBlob,
+        'attachment',
+      )
+    })
+  })
+
+  it('shows fallback warnings and errors for preview, download, upload, and delete failures', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            id: 'img-1',
+            originalFileName: 'photo.png',
+            previewUrl: 'https://cdn.example.com/preview',
+          }),
+          attachment({
+            contentType: 'application/pdf',
+            downloadUrl: '',
+            id: 'pdf-1',
+            originalFileName: 'contract.pdf',
+            previewUrl: '',
+          }),
+        ],
+      },
+    })
+    mocks.resolveAttachmentAccessUrl.mockRejectedValueOnce('download failed')
+    mocks.uploadAttachment.mockRejectedValueOnce('upload failed')
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('PDF'))
+    })
+    expect(mocks.message.warning).toHaveBeenCalledWith(
+      'modules.attachment.noPreviewUrl',
+    )
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByText('DownloadOutlined')[0])
+    })
+    await waitFor(() => {
+      expect(mocks.message.error).toHaveBeenCalledWith(
+        'modules.attachment.downloadFailed',
+      )
+    })
+
+    await act(async () => {
+      mocks.uploadProps!.beforeUpload(
+        new File(['hello'], 'proof.pdf', { type: 'application/pdf' }),
+      )
+    })
+    await waitFor(() => {
+      expect(mocks.message.error).toHaveBeenCalledWith(
+        'modules.attachment.uploadFailed',
+      )
+    })
+
+    mocks.updateAttachmentBindings.mockRejectedValueOnce('delete failed')
+    await act(async () => {
+      fireEvent.click(screen.getAllByText('DeleteOutlined')[0])
+    })
+    await waitFor(() => {
+      expect(mocks.message.error).toHaveBeenCalledWith(
+        'modules.attachment.deleteFailed',
+      )
+    })
+  })
+
+  it('shows thrown error messages for preview and pdf preview failures', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            id: 'img-1',
+            originalFileName: 'photo.png',
+            previewUrl: 'https://cdn.example.com/preview',
+          }),
+          attachment({
+            contentType: 'application/pdf',
+            id: 'pdf-1',
+            originalFileName: 'contract.pdf',
+            previewUrl: 'https://cdn.example.com/contract.pdf',
+          }),
+        ],
+      },
+    })
+    mocks.resolveAttachmentAccessUrl.mockRejectedValueOnce(
+      new window.Error('preview exploded'),
+    )
+    mocks.getPresignedAttachmentBlob.mockRejectedValueOnce(
+      new window.Error('pdf exploded'),
+    )
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click((await screen.findAllByText('EyeOutlined'))[0])
+    })
+    await waitFor(() => {
+      expect(mocks.message.error).toHaveBeenCalledWith('preview exploded')
+    })
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('PDF'))
+    })
+    await waitFor(() => {
+      expect(mocks.message.error).toHaveBeenCalledWith('pdf exploded')
+    })
+  })
+
+  it('cleans preview urls when preview layers close or the modal closes', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            downloadUrl:
+              '/api/attachments/img-1/download?accessKey=img-key&moduleKey=test-module',
+            id: 'img-1',
+            originalFileName: 'photo.png',
+            previewUrl:
+              '/api/attachments/img-1/preview?accessKey=img-key&moduleKey=test-module',
+          }),
+          attachment({
+            contentType: 'application/pdf',
+            id: 'pdf-1',
+            originalFileName: 'contract.pdf',
+            previewUrl: 'https://cdn.example.com/contract.pdf',
+          }),
+        ],
+      },
+    })
+    mocks.resolveAttachmentAccessUrl.mockImplementation(
+      async (url: string, _moduleKey: string, inline: boolean) => ({
+        inline,
+        presigned: true,
+        url: `https://cdn.example.com${url}`,
+      }),
+    )
+    const { rerender } = render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click((await screen.findAllByText('EyeOutlined'))[0])
+    })
+    await waitFor(() => {
+      expect(screen.getByTestId('preview-group')).toBeTruthy()
+    })
+    await act(async () => {
+      fireEvent.doubleClick(screen.getByTestId('preview-group'))
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('preview-group'))
+    })
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('PDF'))
+    })
+    await waitFor(() => {
+      expect(screen.getByTitle('PDF Preview')).toBeTruthy()
+    })
+    await act(async () => {
+      mocks.pdfModalProps!.onCancel()
+    })
+    expect(screen.queryByTitle('PDF Preview')).toBeNull()
+
+    rerender(<ModuleAttachmentModal {...defaultProps} open={false} />)
+    await waitFor(() => {
+      expect(mocks.revokeObjectURL).toHaveBeenCalledWith(
+        'https://blob.example.test/attachment-preview',
+      )
+    })
+  })
+
+  it('uses download url as inline preview fallback when preview url is missing', async () => {
+    mocks.getAttachmentBindings.mockResolvedValue({
+      data: {
+        attachments: [
+          attachment({
+            downloadUrl: 'https://cdn.example.com/image-download',
+            id: 'img-1',
+            originalFileName: 'photo.png',
+            previewUrl: '',
+          }),
+        ],
+      },
+    })
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('EyeOutlined'))
+    })
+
+    await waitFor(() => {
+      expect(mocks.resolveAttachmentAccessUrl).toHaveBeenCalledWith(
+        'https://cdn.example.com/image-download',
+        'test-module',
+        true,
+      )
+    })
+  })
+
+  it('uploads pasted files only when paste happens inside the upload zone', async () => {
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    const file = new File(['hello'], 'pasted.png', { type: 'image/png' })
+    const preventDefault = vi.fn()
+
+    const outsidePaste = new Event('paste', {
+      bubbles: true,
+      cancelable: true,
+    }) as ClipboardEvent
+    Object.defineProperty(outsidePaste, 'clipboardData', {
+      value: {
+        items: [
+          {
+            getAsFile: () => file,
+          },
+        ],
+      },
+    })
+    Object.defineProperty(outsidePaste, 'target', {
+      value: document.body,
+    })
+    Object.defineProperty(outsidePaste, 'preventDefault', {
+      value: preventDefault,
+    })
+    window.dispatchEvent(outsidePaste)
+
+    expect(preventDefault).not.toHaveBeenCalled()
+    expect(mocks.uploadAttachment).not.toHaveBeenCalled()
+
+    const noClipboardDataPaste = new Event('paste', {
+      bubbles: true,
+      cancelable: true,
+    }) as ClipboardEvent
+    Object.defineProperty(noClipboardDataPaste, 'target', {
+      value: screen.getByTestId('upload'),
+    })
+    window.dispatchEvent(noClipboardDataPaste)
+
+    expect(mocks.uploadAttachment).not.toHaveBeenCalled()
+
+    const insidePaste = new Event('paste', {
+      bubbles: true,
+      cancelable: true,
+    }) as ClipboardEvent
+    Object.defineProperty(insidePaste, 'clipboardData', {
+      value: {
+        items: [
+          {
+            getAsFile: () => file,
+          },
+          {
+            getAsFile: () => null,
+          },
+        ],
+      },
+    })
+    Object.defineProperty(insidePaste, 'target', {
+      value: screen.getByTestId('upload'),
+    })
+    Object.defineProperty(insidePaste, 'preventDefault', {
+      value: preventDefault,
+    })
+
+    await act(async () => {
+      window.dispatchEvent(insidePaste)
+      await Promise.resolve()
+    })
+
+    await waitFor(() => {
+      expect(preventDefault).toHaveBeenCalled()
+      expect(mocks.uploadAttachment).toHaveBeenCalledWith(
+        file,
+        'test-module',
+        'PAGE_UPLOAD',
+        expect.objectContaining({ onProgress: expect.any(Function) }),
+      )
+    })
+  })
+
+  it('ignores paste events without permission or files', async () => {
+    mocks.can.mockImplementation(
+      (_resource: string, action: string) => action !== 'update',
+    )
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    const preventDefault = vi.fn()
+    const paste = new Event('paste', {
+      bubbles: true,
+      cancelable: true,
+    }) as ClipboardEvent
+    Object.defineProperty(paste, 'clipboardData', {
+      value: {
+        items: [
+          {
+            getAsFile: () => null,
+          },
+        ],
+      },
+    })
+    Object.defineProperty(paste, 'target', {
+      value: screen.getByText('modules.attachment.noPermissionHint'),
+    })
+    Object.defineProperty(paste, 'preventDefault', {
+      value: preventDefault,
+    })
+
+    window.dispatchEvent(paste)
+
+    expect(preventDefault).not.toHaveBeenCalled()
+    expect(mocks.uploadAttachment).not.toHaveBeenCalled()
+  })
+
+  it('does not fetch when an empty-record modal reports opened', async () => {
+    render(<ModuleAttachmentModal {...defaultProps} recordId="" />)
+
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    expect(mocks.getAttachmentBindings).not.toHaveBeenCalled()
+  })
+
+  it('ignores fetch failures and hidden after-open callbacks', async () => {
+    mocks.getAttachmentBindings.mockRejectedValueOnce(new Error('load failed'))
+    render(<ModuleAttachmentModal {...defaultProps} />)
+
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(false)
+      mocks.modalProps!.afterOpenChange(true)
+    })
+
+    expect(screen.getByText('modules.attachment.noAttachments')).toBeTruthy()
   })
 })
 

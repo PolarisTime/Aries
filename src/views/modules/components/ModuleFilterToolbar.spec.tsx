@@ -86,9 +86,10 @@ vi.mock('antd', () => {
       </select>
     )
   }
-  const RangePicker = ({ id: _id, onChange, value: _value, ...props }: any) => (
+  const RangePicker = ({ id: _id, onChange, value, ...props }: any) => (
     <input
       data-testid="range-picker"
+      data-has-value={Array.isArray(value) ? 'true' : 'false'}
       onChange={(event) => {
         const value = event.target.value
         onChange?.(null, value ? [value, value] : ['', ''])
@@ -113,6 +114,9 @@ vi.mock('antd', () => {
           {option.label}
         </button>
       ))}
+      <button type="button" onClick={() => onChange?.('__missing__')}>
+        Missing
+      </button>
     </div>
   )
 
@@ -279,6 +283,26 @@ describe('ModuleFilterToolbar', () => {
     })
   })
 
+  it('renders submitted date range values and removes the filter when cleared', () => {
+    const onApplyFilters = vi.fn()
+    renderToolbar({
+      config: config({
+        filters: [{ key: 'orderDate', label: 'Order Date', type: 'dateRange' }],
+      }),
+      filters: { orderDate: ['2026-06-01', '2026-06-28'] },
+      submittedFilters: { orderDate: ['2026-06-01', '2026-06-28'] },
+      onApplyFilters,
+    })
+
+    const rangePicker = screen.getByTestId('range-picker')
+    expect(rangePicker).toHaveAttribute('data-has-value', 'true')
+
+    fireEvent.change(rangePicker, { target: { value: '2026-07-01' } })
+    fireEvent.change(rangePicker, { target: { value: '' } })
+
+    expect(onApplyFilters).toHaveBeenCalledWith({})
+  })
+
   it('does not apply input filter while typing', () => {
     const onApplyFilters = vi.fn()
     const onUpdateFilter = vi.fn()
@@ -407,6 +431,46 @@ describe('ModuleFilterToolbar', () => {
     })
   })
 
+  it('updates configured input filters while typing and commits changed values on blur', () => {
+    const onApplyFilters = vi.fn()
+    const onUpdateFilter = vi.fn()
+    renderToolbar({
+      config: config({
+        filters: [{ key: 'batchNo', label: 'Batch No', type: 'input' }],
+      }),
+      filters: { batchNo: '' },
+      submittedFilters: { batchNo: 'B-001' },
+      onApplyFilters,
+      onUpdateFilter,
+    })
+
+    const batchNoInput = screen.getByLabelText('Batch No')
+    fireEvent.change(batchNoInput, { target: { value: ' B-002 ' } })
+    fireEvent.blur(batchNoInput, { target: { value: ' B-002 ' } })
+
+    expect(onUpdateFilter).toHaveBeenCalledWith('batchNo', ' B-002 ')
+    expect(onUpdateFilter).toHaveBeenCalledWith('batchNo', 'B-002')
+    expect(onApplyFilters).toHaveBeenCalledWith({ batchNo: 'B-002' })
+  })
+
+  it('skips configured input blur commits when trimmed values match', () => {
+    const onApplyFilters = vi.fn()
+    renderToolbar({
+      config: config({
+        filters: [{ key: 'batchNo', label: 'Batch No', type: 'input' }],
+      }),
+      filters: { batchNo: ' B-001 ' },
+      submittedFilters: { batchNo: 'B-001' },
+      onApplyFilters,
+    })
+
+    fireEvent.blur(screen.getByLabelText('Batch No'), {
+      target: { value: ' B-001 ' },
+    })
+
+    expect(onApplyFilters).not.toHaveBeenCalled()
+  })
+
   it('renders row two filters by default and hides them after collapse', () => {
     renderToolbar({
       config: config({
@@ -467,5 +531,56 @@ describe('ModuleFilterToolbar', () => {
       orderDate: ['2026-05-29', '2026-06-28'],
       status: 'open',
     })
+  })
+
+  it('ignores unknown quick filter selections', () => {
+    const onApplyFilters = vi.fn()
+    renderToolbar({
+      config: config({
+        quickFilters: [
+          { key: 'open', label: 'Open', values: { status: 'open' } },
+        ],
+      }),
+      onApplyFilters,
+    })
+
+    fireEvent.click(screen.getByText('Missing'))
+
+    expect(onApplyFilters).not.toHaveBeenCalled()
+  })
+
+  it('resolves function select options and grouped select options', () => {
+    const resolveOptions = vi.fn(() => [
+      {
+        label: 'Status Group',
+        options: [{ label: 'Active', value: 'active' }],
+      },
+    ])
+    renderToolbar({
+      config: config({
+        filters: [
+          {
+            key: 'status',
+            label: 'Status',
+            type: 'select',
+            options: resolveOptions,
+          },
+        ],
+      }),
+      filters: { ownerId: 'owner-1' },
+    })
+
+    expect(resolveOptions).toHaveBeenCalledWith({ ownerId: 'owner-1' })
+    expect(screen.getByRole('option', { name: 'Active' })).toBeTruthy()
+  })
+
+  it('renders select filters without configured options', () => {
+    renderToolbar({
+      config: config({
+        filters: [{ key: 'status', label: 'Status', type: 'select' }],
+      }),
+    })
+
+    expect(screen.getByLabelText('Status')).toBeTruthy()
   })
 })

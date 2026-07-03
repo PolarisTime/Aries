@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { type ComponentProps, useState } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -19,6 +19,8 @@ import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
 type WorkspaceOverlayProps = ComponentProps<typeof WorkspaceOverlay>
 
 describe('WorkspaceOverlay', () => {
+  const closeButtonLabel = 'modules.workspace.closeAria'
+
   const renderOverlay = (props: Partial<WorkspaceOverlayProps> = {}) => {
     const onClose = props.onClose ?? vi.fn()
 
@@ -41,8 +43,35 @@ describe('WorkspaceOverlay', () => {
     return { ...result, onClose }
   }
 
+  const getCloseButton = () =>
+    screen.getByLabelText(closeButtonLabel, {
+      selector: '.workspace-overlay-close',
+    })
+
+  const captureNextAnimationFrame = () => {
+    let frameCallback: FrameRequestCallback | undefined
+    vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(
+      (callback) => {
+        frameCallback = callback
+        return 1
+      },
+    )
+    vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(
+      () => undefined,
+    )
+
+    return () => {
+      expect(frameCallback).toBeDefined()
+      frameCallback?.(0)
+    }
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('renders when open', () => {
@@ -78,7 +107,7 @@ describe('WorkspaceOverlay', () => {
     const onClose = vi.fn()
     renderOverlay({ onClose })
     const mask = screen
-      .getAllByLabelText('modules.workspace.closeAria')
+      .getAllByLabelText(closeButtonLabel)
       .find((element) => element.classList.contains('workspace-overlay-mask'))
 
     fireEvent.click(mask!)
@@ -121,9 +150,7 @@ describe('WorkspaceOverlay', () => {
 
     const firstAction = screen.getByText('First Action')
     const secondAction = screen.getByText('Second Action')
-    const closeButton = screen.getByLabelText('modules.workspace.closeAria', {
-      selector: '.workspace-overlay-close',
-    })
+    const closeButton = getCloseButton()
 
     await waitFor(() => {
       expect(document.activeElement).toBe(firstAction)
@@ -140,6 +167,142 @@ describe('WorkspaceOverlay', () => {
 
     fireEvent.keyDown(document.activeElement!, { key: 'Tab', shiftKey: true })
     expect(document.activeElement).toBe(closeButton)
+  })
+
+  it('wraps Shift+Tab from the close button to the last focusable element', async () => {
+    renderOverlay({
+      children: (
+        <>
+          <button type="button">First Action</button>
+          <button type="button">Second Action</button>
+        </>
+      ),
+    })
+
+    const closeButton = getCloseButton()
+    const secondAction = screen.getByText('Second Action')
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByText('First Action'))
+    })
+    closeButton.focus()
+
+    fireEvent.keyDown(document.activeElement!, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(secondAction)
+  })
+
+  it('focuses the close button when the body has no focusable elements', async () => {
+    renderOverlay({ children: <div>Static Content</div> })
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(getCloseButton())
+    })
+  })
+
+  it('falls back to non-body focusable elements when body and close button are absent', () => {
+    const runFrame = captureNextAnimationFrame()
+    renderOverlay({
+      title: <a href="#title-link">Linked Title</a>,
+      children: <div>Static Content</div>,
+    })
+    const titleLink = screen.getByText('Linked Title')
+    const panel = screen.getByRole('dialog', { name: 'Linked Title' })
+
+    panel.querySelector('.workspace-overlay-body')?.remove()
+    panel.querySelector('.workspace-overlay-close')?.remove()
+    runFrame()
+
+    expect(document.activeElement).toBe(titleLink)
+  })
+
+  it('falls back to the panel when no focusable elements remain', () => {
+    const runFrame = captureNextAnimationFrame()
+    renderOverlay({ children: <div>Static Content</div> })
+    const panel = screen.getByRole('dialog', { name: 'Test Title' })
+
+    panel.querySelector('.workspace-overlay-body')?.remove()
+    panel.querySelector('.workspace-overlay-close')?.remove()
+    runFrame()
+    fireEvent.keyDown(document, { key: 'Tab' })
+
+    expect(document.activeElement).toBe(panel)
+  })
+
+  it('skips deferred focus when the panel unmounts before the animation frame', () => {
+    const runFrame = captureNextAnimationFrame()
+    const { unmount } = renderOverlay()
+
+    unmount()
+
+    expect(() => runFrame()).not.toThrow()
+  })
+
+  it('handles a non-HTMLElement active element before opening', () => {
+    const svgElement = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'svg',
+    )
+    vi.spyOn(document, 'activeElement', 'get').mockReturnValue(svgElement)
+
+    const { unmount } = renderOverlay()
+
+    expect(() => unmount()).not.toThrow()
+  })
+
+  it('skips focus restoration when the previous element was disconnected', () => {
+    const trigger = document.createElement('button')
+    document.body.append(trigger)
+    trigger.focus()
+    const { unmount } = renderOverlay()
+
+    trigger.remove()
+    unmount()
+
+    expect(trigger.isConnected).toBe(false)
+  })
+
+  it('ignores Escape from overlays below the topmost overlay', () => {
+    const bottomClose = vi.fn()
+    const topClose = vi.fn()
+
+    render(
+      <>
+        <WorkspaceOverlay open title="Bottom Overlay" onClose={bottomClose}>
+          <div>Bottom Content</div>
+        </WorkspaceOverlay>
+        <WorkspaceOverlay open title="Top Overlay" onClose={topClose}>
+          <div>Top Content</div>
+        </WorkspaceOverlay>
+      </>,
+    )
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(bottomClose).not.toHaveBeenCalled()
+    expect(topClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores Tab after the panel ref has been cleared', () => {
+    let keydownHandler: EventListener | undefined
+    const addEventListener = document.addEventListener.bind(document)
+    vi.spyOn(document, 'addEventListener').mockImplementation(
+      (type, listener, options) => {
+        if (type === 'keydown') {
+          keydownHandler = listener as EventListener
+        }
+        addEventListener(type, listener, options)
+      },
+    )
+    const { unmount } = renderOverlay()
+
+    unmount()
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      cancelable: true,
+    })
+    keydownHandler?.(event)
+
+    expect(event.defaultPrevented).toBe(false)
   })
 
   it('restores focus to the previously active element after close', async () => {

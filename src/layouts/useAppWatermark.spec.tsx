@@ -99,6 +99,114 @@ describe('useAppWatermark', () => {
     expect(result.current.height).toBe(64)
   })
 
+  it('falls back to disabled config when client settings request fails', async () => {
+    vi.mocked(listClientSettings).mockRejectedValue(new Error('network error'))
+
+    const { result } = renderHook(() => useAppWatermark('zhangsan'), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(listClientSettings).toHaveBeenCalledTimes(1)
+    })
+    expect(result.current.enabled).toBe(false)
+    expect(result.current.text).toBeUndefined()
+    expect(result.current.fontSize).toBe(18)
+    expect(result.current.rotate).toBe(-22)
+    expect(result.current.density).toBe(200)
+    expect(result.current.color).toBe('rgba(0,0,0,0.08)')
+  })
+
+  it('clamps numeric settings to their upper limits and trims blank color', async () => {
+    vi.mocked(listClientSettings).mockResolvedValue([
+      {
+        id: '220',
+        settingCode: ' UI_WATERMARK_ENABLED ',
+        sampleNo: 'ON',
+        status: '正常',
+      },
+      {
+        id: '221',
+        settingCode: ' SYS_WATERMARK_CONTENT ',
+        sampleNo: 'ON',
+        status: '正常',
+      },
+      {
+        id: '222',
+        settingCode: 'SYS_WATERMARK_FONT_SIZE',
+        sampleNo: '99',
+        status: '正常',
+      },
+      {
+        id: '223',
+        settingCode: 'SYS_WATERMARK_ROTATE',
+        sampleNo: '180',
+        status: '正常',
+      },
+      {
+        id: '224',
+        settingCode: 'SYS_WATERMARK_DENSITY',
+        sampleNo: '999',
+        status: '正常',
+      },
+      {
+        id: '225',
+        settingCode: 'SYS_WATERMARK_COLOR',
+        sampleNo: '   ',
+        status: '正常',
+      },
+    ])
+
+    const { result } = renderHook(() => useAppWatermark('zhangsan'), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(result.current.enabled).toBe(true)
+    })
+    expect(result.current.fontSize).toBe(48)
+    expect(result.current.rotate).toBe(90)
+    expect(result.current.density).toBe(400)
+    expect(result.current.width).toBe(400)
+    expect(result.current.height).toBe(192)
+    expect(result.current.color).toBe('rgba(0,0,0,0.08)')
+    expect(result.current.text).toContain('zhangsan')
+  })
+
+  it('falls back numeric settings when values are non-finite', async () => {
+    vi.mocked(listClientSettings).mockResolvedValue([
+      {
+        id: '220',
+        settingCode: 'UI_WATERMARK_ENABLED',
+        sampleNo: 'ON',
+        status: '正常',
+      },
+      {
+        id: '222',
+        settingCode: 'SYS_WATERMARK_FONT_SIZE',
+        sampleNo: 'not-a-number',
+        status: '正常',
+      },
+      {
+        id: '224',
+        settingCode: 'SYS_WATERMARK_DENSITY',
+        sampleNo: null,
+        status: '正常',
+      },
+    ])
+
+    const { result } = renderHook(() => useAppWatermark('zhangsan'), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => {
+      expect(result.current.enabled).toBe(true)
+    })
+    expect(result.current.fontSize).toBe(18)
+    expect(result.current.density).toBe(200)
+    expect(result.current.height).toBe(72)
+  })
+
   it('keeps watermark content lines for antd watermark rendering', () => {
     const fixedDate = new Date('2026-06-02T08:30:00+08:00')
 

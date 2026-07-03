@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -112,7 +112,7 @@ vi.mock('antd/es/typography', () => ({
   },
 }))
 
-const mockUseInitialSetupState = vi.fn().mockReturnValue({
+const createInitialSetupState = () => ({
   adminCompleted: false,
   checking: false,
   currentStep: 'admin',
@@ -128,22 +128,65 @@ const mockUseInitialSetupState = vi.fn().mockReturnValue({
   totpSetup: null,
 })
 
+const mockUseInitialSetupState = vi
+  .fn()
+  .mockReturnValue(createInitialSetupState())
+
 vi.mock('@/views/auth/useInitialSetupState', () => ({
   useInitialSetupState: (...args: unknown[]) =>
     mockUseInitialSetupState(...args),
 }))
 
 vi.mock('@/views/auth/InitialSetupAdminForm', () => ({
-  InitialSetupAdminForm: () => <div data-testid="admin-form">管理员表单</div>,
+  InitialSetupAdminForm: ({
+    loadingAdmin,
+    loadingTotp,
+    onGenerateTotp,
+    onSubmitAdmin,
+    totpSetup,
+  }: any) => (
+    <div data-testid="admin-form">
+      <span data-testid="admin-loading">{String(loadingAdmin)}</span>
+      <span data-testid="totp-loading">{String(loadingTotp)}</span>
+      <span data-testid="totp-secret">{totpSetup?.secret ?? 'none'}</span>
+      <button type="button" onClick={onGenerateTotp}>
+        生成验证码
+      </button>
+      <button type="button" onClick={onSubmitAdmin}>
+        提交管理员
+      </button>
+    </div>
+  ),
 }))
 
 vi.mock('@/views/auth/InitialSetupCompanyForm', () => ({
-  InitialSetupCompanyForm: () => <div data-testid="company-form">公司表单</div>,
+  InitialSetupCompanyForm: ({
+    adminCompleted,
+    loadingCompany,
+    onBack,
+    onSubmitCompany,
+  }: any) => (
+    <div data-testid="company-form">
+      <span data-testid="admin-completed">{String(adminCompleted)}</span>
+      <span data-testid="company-loading">{String(loadingCompany)}</span>
+      <button type="button" onClick={onBack}>
+        返回管理员
+      </button>
+      <button type="button" onClick={onSubmitCompany}>
+        提交公司
+      </button>
+    </div>
+  ),
 }))
 
 import { InitialSetupView } from '@/views/auth/InitialSetupView'
 
 describe('InitialSetupView', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUseInitialSetupState.mockReturnValue(createInitialSetupState())
+  })
+
   it('renders admin form on first step', () => {
     render(<InitialSetupView />)
     expect(screen.getByTestId('admin-form')).toBeTruthy()
@@ -168,5 +211,55 @@ describe('InitialSetupView', () => {
     })
     render(<InitialSetupView />)
     expect(screen.getByText('初始化已完成')).toBeTruthy()
+  })
+
+  it('passes admin state and wires admin actions', () => {
+    const handleGenerateTotp = vi.fn()
+    const handleSubmitAdmin = vi.fn()
+    mockUseInitialSetupState.mockReturnValueOnce({
+      ...createInitialSetupState(),
+      handleGenerateTotp,
+      handleSubmitAdmin,
+      loadingAdmin: true,
+      loadingTotp: true,
+      totpSetup: { secret: 'SECRET' },
+    })
+
+    render(<InitialSetupView />)
+
+    expect(screen.getByTestId('admin-loading')).toHaveTextContent('true')
+    expect(screen.getByTestId('totp-loading')).toHaveTextContent('true')
+    expect(screen.getByTestId('totp-secret')).toHaveTextContent('SECRET')
+
+    fireEvent.click(screen.getByText('生成验证码'))
+    fireEvent.click(screen.getByText('提交管理员'))
+
+    expect(handleGenerateTotp).toHaveBeenCalledTimes(1)
+    expect(handleSubmitAdmin).toHaveBeenCalledTimes(1)
+  })
+
+  it('renders company step and wires company actions', () => {
+    const handleSubmitCompany = vi.fn()
+    const setCurrentStep = vi.fn()
+    mockUseInitialSetupState.mockReturnValueOnce({
+      ...createInitialSetupState(),
+      adminCompleted: true,
+      currentStep: 'company',
+      handleSubmitCompany,
+      loadingCompany: true,
+      setCurrentStep,
+    })
+
+    render(<InitialSetupView />)
+
+    expect(screen.getByTestId('company-form')).toBeTruthy()
+    expect(screen.getByTestId('admin-completed')).toHaveTextContent('true')
+    expect(screen.getByTestId('company-loading')).toHaveTextContent('true')
+
+    fireEvent.click(screen.getByText('返回管理员'))
+    fireEvent.click(screen.getByText('提交公司'))
+
+    expect(setCurrentStep).toHaveBeenCalledWith('admin')
+    expect(handleSubmitCompany).toHaveBeenCalledTimes(1)
   })
 })

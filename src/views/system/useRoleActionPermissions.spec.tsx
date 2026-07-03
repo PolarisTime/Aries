@@ -48,7 +48,7 @@ vi.mock('@/utils/type-narrowing', () => ({
 }))
 
 vi.mock('@/views/system/role-action-view-utils', () => ({
-  ALL_ROLE_ACTIONS: ['create', 'read', 'update', 'delete'],
+  ALL_ROLE_ACTIONS: ['create', 'read', 'update', 'delete', 'archive'],
   ROLE_ACTION_LABELS: {
     create: '新增',
     read: '查看',
@@ -364,6 +364,31 @@ describe('useRoleActionPermissions', () => {
     expect(result.current.isActionSelected('users', 'delete')).toBe(false)
   })
 
+  it('falls back to menu code when resource lookup is missing', async () => {
+    const { result } = renderHook(() =>
+      useRoleActionPermissions({ roles, canEditPermissions: true }),
+    )
+
+    await act(async () => {
+      await result.current.selectRole(roles[0] as never)
+    })
+
+    expect(result.current.isMenuChecked('users')).toBe(false)
+
+    act(() => {
+      result.current.toggleAction('audit', 'read')
+    })
+
+    expect(result.current.isMenuChecked('audit')).toBe(true)
+    expect(result.current.isActionSelected('audit', 'read')).toBe(true)
+    expect(
+      result.current.isMenuPartiallyChecked({
+        menuCode: 'audit',
+        actions: ['read'],
+      } as never),
+    ).toBe(false)
+  })
+
   it('toggles all actions for a menu', async () => {
     const menu = {
       menuCode: 'system',
@@ -390,6 +415,21 @@ describe('useRoleActionPermissions', () => {
 
     expect(result.current.isActionSelected('system', 'read')).toBe(false)
     expect(result.current.isActionSelected('system', 'update')).toBe(false)
+  })
+
+  it('toggles all actions using menu code when resourceCode is absent', () => {
+    const { result } = renderHook(() =>
+      useRoleActionPermissions({ roles, canEditPermissions: true }),
+    )
+
+    act(() => {
+      result.current.toggleAllMenuActions({
+        menuCode: 'audit',
+        actions: ['read'],
+      } as never)
+    })
+
+    expect(result.current.isActionSelected('audit', 'read')).toBe(true)
   })
 
   it('selects and clears all flattened menu actions', () => {
@@ -451,6 +491,45 @@ describe('useRoleActionPermissions', () => {
 
     expect(disabledCell).toBeDefined()
     expect(checkboxCell).toBeDefined()
+  })
+
+  it('renders fallback matrix titles and toggles from checkbox cells', () => {
+    mockUseQuery.mockReturnValue({
+      data: [
+        {
+          menuCode: 'archive-menu',
+          menuName: '归档',
+          resource: 'archive-resource',
+          actions: ['archive'],
+        },
+      ],
+    })
+
+    const { result } = renderHook(() =>
+      useRoleActionPermissions({ roles, canEditPermissions: true }),
+    )
+
+    const archiveColumn = result.current.matrixColumns.find(
+      (column) => column.dataIndex === 'archive',
+    )
+    const checkboxCell = archiveColumn?.render?.(
+      false,
+      {
+        menuCode: 'archive-menu',
+        actions: ['archive'],
+      } as never,
+      0,
+    ) as { props: { onChange: () => void } }
+
+    expect(archiveColumn?.title).toBe('archive')
+
+    act(() => {
+      checkboxCell.props.onChange()
+    })
+
+    expect(result.current.isActionSelected('archive-menu', 'archive')).toBe(
+      true,
+    )
   })
 
   it('saves selected role actions and invalidates options', async () => {

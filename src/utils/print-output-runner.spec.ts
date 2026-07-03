@@ -112,6 +112,52 @@ describe('runPrintOutputs', () => {
     expect(loadCLodopMock).not.toHaveBeenCalled()
   })
 
+  it('uses PDF template and fallback names when fileName is missing', async () => {
+    const result = await runPrintOutputs(
+      [
+        {
+          kind: 'PDF',
+          pdfBase64: btoa('pdf-content'),
+          contentType: 'application/pdf',
+          templateName: 'Template Name',
+        },
+        {
+          kind: 'PDF',
+          pdfBase64: btoa('pdf-content'),
+          contentType: 'application/pdf',
+          fileName: '   ',
+        },
+        {
+          kind: 'PDF',
+          pdfBase64: btoa('pdf-content'),
+          contentType: 'application/pdf',
+        },
+      ],
+      {
+        fallbackTemplateName: 'Fallback',
+        mode: 'download',
+        printServiceUnavailableMessage: 'print unavailable',
+      },
+    )
+
+    expect(result).toEqual({ coordCount: 0, pdfCount: 3 })
+    expect(downloadBlobMock).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Blob),
+      'Template Name.pdf',
+    )
+    expect(downloadBlobMock).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Blob),
+      'print.pdf',
+    )
+    expect(downloadBlobMock).toHaveBeenNthCalledWith(
+      3,
+      expect.any(Blob),
+      'Fallback.pdf',
+    )
+  })
+
   it('prints PDF output through a hidden iframe', async () => {
     const result = await runPrintOutputs(
       [
@@ -217,6 +263,63 @@ describe('runPrintOutputs', () => {
     expect(loadCLodopMock).not.toHaveBeenCalled()
     expect(execPrintCodeMock).not.toHaveBeenCalled()
     expect(renderPrintTemplateMock).toHaveBeenCalled()
+  })
+
+  it('uses default COORD template data and fallback title', async () => {
+    const result = await runPrintOutputs(
+      [
+        {
+          kind: 'LODOP_SCRIPT',
+          templateHtml: 'LODOP.PRINT_INIT("{{name}}");',
+        },
+      ],
+      {
+        fallbackTemplateName: 'Fallback',
+        mode: 'print',
+        printServiceUnavailableMessage: 'print unavailable',
+      },
+    )
+
+    expect(result).toEqual({ coordCount: 1, pdfCount: 0 })
+    expect(renderPrintTemplateMock).toHaveBeenCalledWith(
+      'LODOP.PRINT_INIT("{{name}}");',
+      'COORD',
+      {},
+      [],
+    )
+    expect(execPrintCodeMock).toHaveBeenCalledWith(
+      'LODOP.PRINT_INIT("test");',
+      {
+        preview: false,
+        title: 'Fallback',
+      },
+    )
+  })
+
+  it('loads C-Lodop but skips COORD output without script', async () => {
+    renderPrintTemplateMock.mockReturnValue({
+      type: 'COORD',
+      script: '',
+    })
+
+    const result = await runPrintOutputs(
+      [
+        {
+          kind: 'LODOP_SCRIPT',
+          templateName: 'Coord Template',
+          templateHtml: 'LODOP.PRINT_INIT("{{name}}");',
+        },
+      ],
+      {
+        fallbackTemplateName: 'Fallback',
+        mode: 'print',
+        printServiceUnavailableMessage: 'print unavailable',
+      },
+    )
+
+    expect(result).toEqual({ coordCount: 1, pdfCount: 0 })
+    expect(loadCLodopMock).toHaveBeenCalledTimes(1)
+    expect(execPrintCodeMock).not.toHaveBeenCalled()
   })
 
   it('throws when C-Lodop execution fails', async () => {

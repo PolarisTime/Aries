@@ -54,6 +54,9 @@ describe('asNumber', () => {
   it('converts bigint overflow', () => {
     expect(asNumber(BigInt('9007199254740993'))).toBe(9007199254740993)
   })
+  it('returns 0 for bigint that converts to Infinity', () => {
+    expect(asNumber(BigInt(`1${'0'.repeat(400)}`))).toBe(0)
+  })
   it('returns 0 for object', () => {
     expect(asNumber({})).toBe(0)
   })

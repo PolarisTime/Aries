@@ -85,6 +85,30 @@ describe('useLoginTotpSession', () => {
     expect(result.current.now).toBeGreaterThanOrEqual(initialNow)
   })
 
+  it('clears the saved session and returns to password step when the totp deadline expires', async () => {
+    const { message } = await import('@/utils/antd-app')
+    const { clearTotpSession } = await import('@/views/auth/login-view-utils')
+    const now = new Date('2026-07-03T12:00:00.000Z')
+    vi.setSystemTime(now)
+
+    const { result } = renderHook(() => useLoginTotpSession())
+    act(() => {
+      result.current.start2faStep('temp-token', 'admin')
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(5 * 60 * 1000)
+    })
+
+    expect(clearTotpSession).toHaveBeenCalledTimes(1)
+    expect(message.warning).toHaveBeenCalledWith('验证码已过期')
+    expect(result.current.loginStep).toBe('password')
+    expect(result.current.tempToken).toBe('')
+    expect(result.current.totpCode).toBe('')
+    expect(result.current.stepDeadline).toBe(0)
+    expect(result.current.now).toBe(now.getTime() + 5 * 60 * 1000)
+  })
+
   it('shows warning message when reset2faStep is called with showMessage=true', async () => {
     const { message } = await import('@/utils/antd-app')
     const { result } = renderHook(() => useLoginTotpSession())

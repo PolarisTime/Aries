@@ -42,6 +42,7 @@ async function loginAsTest9(page: Page) {
       localStorage.setItem('aries-token-expires-at', expiresAt)
       localStorage.setItem('aries-user', JSON.stringify(currentUser))
       localStorage.setItem('aries-auth-persistence', 'local')
+      localStorage.setItem('leo-locale', 'zh-CN')
     },
     {
       token: accessToken,

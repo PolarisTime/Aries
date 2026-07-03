@@ -81,7 +81,6 @@ function getErrorMessage(
     const msg = error.message
     if (msg.includes('Failed to fetch') || msg.includes('NetworkError'))
       return t('error.networkError')
-    if (msg.includes('timeout')) return t('error.requestTimeout')
     if (msg.length < 100) return msg
     return t('error.serverResponseError')
   }

@@ -5,6 +5,7 @@
       "**",
       "!!**/dist",
       "!!**/coverage",
+      "!!**/coverage-e2e",
       "!!**/playwright-report",
       "!!**/test-results",
       "!!**/coverage-report",

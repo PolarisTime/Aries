@@ -82,6 +82,10 @@ describe('pageContract', () => {
       const page = { page: 0, totalPages: 5 }
       expect(pageLast(page)).toBe(false)
     })
+
+    it('uses page zero fallback when current page fields are missing', () => {
+      expect(pageLast({ totalPages: 2 })).toBe(false)
+    })
   })
 
   describe('pageHasMore', () => {
@@ -101,6 +105,10 @@ describe('pageContract', () => {
 
       const lastPage = { page: 4, totalPages: 5 }
       expect(pageHasMore(lastPage)).toBe(false)
+    })
+
+    it('uses page zero fallback when current page fields are missing', () => {
+      expect(pageHasMore({ totalPages: 2 })).toBe(true)
     })
 
     it('returns false when null/undefined', () => {

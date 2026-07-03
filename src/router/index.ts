@@ -93,18 +93,12 @@ const rootRoute = createRootRoute({
         }
         // 网络错误（后端不可达）→ 显示服务器错误页面
         if (isNetworkError(error)) {
-          if (!isErrorPage) {
-            // eslint-disable-next-line @typescript-eslint/only-throw-error
-            throw toServerErrorRedirect(location)
-          }
-          return
-        }
-        // 其他错误（如 500）→ 也显示服务器错误页面
-        if (!isErrorPage) {
           // eslint-disable-next-line @typescript-eslint/only-throw-error
           throw toServerErrorRedirect(location)
         }
-        return
+        // 其他错误（如 500）→ 也显示服务器错误页面
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw toServerErrorRedirect(location)
       }
     }
 

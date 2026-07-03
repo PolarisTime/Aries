@@ -181,6 +181,72 @@ describe('session-management-view-utils', () => {
       expect(screen.getByText('mystery')).toBeInTheDocument()
     })
 
+    it('normalizes disabled and empty session statuses', () => {
+      const columns = buildSessionTableColumns({
+        canEdit: true,
+        onRevoke: mockOnRevoke,
+        t: mockT,
+      })
+      const statusCol = columns.find(
+        (col) => 'dataIndex' in col && col.dataIndex === 'status',
+      )
+
+      const { rerender } = render(
+        <div>
+          {statusCol?.render?.(
+            '已禁用',
+            sessionRecord({ status: '已禁用' }),
+            0,
+          )}
+        </div>,
+      )
+      expect(screen.getByText('system.session.disabled')).toBeInTheDocument()
+
+      rerender(
+        <div>{statusCol?.render?.('', sessionRecord({ status: '' }), 0)}</div>,
+      )
+      expect(screen.getByText('--')).toBeInTheDocument()
+    })
+
+    it('renders offline label for valid sessions without online activity', () => {
+      const columns = buildSessionTableColumns({
+        canEdit: true,
+        onRevoke: mockOnRevoke,
+        t: mockT,
+      })
+      const onlineCol = columns.find(
+        (col) => 'key' in col && col.key === 'online',
+      )
+
+      render(
+        <div>
+          {onlineCol?.render?.(
+            null,
+            sessionRecord({ status: 'active', online: false }),
+            0,
+          )}
+        </div>,
+      )
+
+      expect(screen.getByText('system.session.offline')).toBeInTheDocument()
+    })
+
+    it('renders token ids with copy text and preserves short values', () => {
+      const columns = buildSessionTableColumns({
+        canEdit: true,
+        onRevoke: mockOnRevoke,
+        t: mockT,
+      })
+      const tokenCol = columns.find(
+        (col) => 'dataIndex' in col && col.dataIndex === 'tokenId',
+      )
+
+      render(<div>{tokenCol?.render?.('token-short', sessionRecord(), 0)}</div>)
+
+      expect(screen.getByText('token-short')).toBeInTheDocument()
+      expect(tokenCol?.render?.(null, sessionRecord(), 0)).toBe('--')
+    })
+
     it('renders truncated device info and date fallback', () => {
       const columns = buildSessionTableColumns({
         canEdit: true,
@@ -203,6 +269,27 @@ describe('session-management-view-utils', () => {
       ).toBeInTheDocument()
       expect(deviceCol?.render?.('', sessionRecord(), 0)).toBe('--')
       expect(createdCol?.render?.('', sessionRecord(), 0)).toBe('--')
+    })
+
+    it('renders all session date columns through the shared formatter', () => {
+      const columns = buildSessionTableColumns({
+        canEdit: true,
+        onRevoke: mockOnRevoke,
+        t: mockT,
+      })
+      const dateColumns = [
+        ['createdAt', '2026-06-01 10:00:00'],
+        ['lastActiveAt', '2026-06-02 11:30:00'],
+        ['expiresAt', '2026-07-01 12:45:00'],
+      ] as const
+
+      for (const [dataIndex, value] of dateColumns) {
+        const column = columns.find(
+          (col) => 'dataIndex' in col && col.dataIndex === dataIndex,
+        )
+
+        expect(column?.render?.(value, sessionRecord(), 0)).toBe(value)
+      }
     })
   })
 })

@@ -63,6 +63,13 @@ describe('salesOutboundPageConfig', () => {
       expect(items[0].sourceSalesOrderItemId).toBe(1)
     })
 
+    it('transformItems uses empty sourceNo when parent orderNo is missing', () => {
+      const items = pi.transformItems!({
+        items: [{ id: 1, materialName: '螺纹钢' }],
+      } as any)
+      expect(items[0].sourceNo).toBe('')
+    })
+
     it('transformItems returns empty array when no items', () => {
       const items = pi.transformItems!({} as any)
       expect(items).toEqual([])

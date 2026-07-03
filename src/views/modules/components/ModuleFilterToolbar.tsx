@@ -88,7 +88,7 @@ function ModuleFilterField({
   submittedFilters: SearchParams
   onUpdateFilter: (key: string, value: unknown) => void
   onCommitFilter: (key: string, value: unknown) => void
-  onCommitTextFilter: (key: string, value: unknown) => void
+  onCommitTextFilter: (key: string, value: string) => void
 }) {
   const { t } = useTranslation()
   const fieldId = buildFormControlId('module-filter', field.key)
@@ -232,13 +232,12 @@ export function ModuleFilterToolbar({
     onApplyFilters(buildNextFilters(submittedFilters, key, value))
   }
 
-  const commitTextFilter = (key: string, value: unknown) => {
+  const commitTextFilter = (key: string, value: string) => {
     const now = Date.now()
     if (now - lastTextCommitAtRef.current < 100) return
     lastTextCommitAtRef.current = now
 
-    const normalizedValue =
-      typeof value === 'string' ? value.trim() : String(value ?? '').trim()
+    const normalizedValue = value.trim()
     onUpdateFilter(key, normalizedValue)
     onApplyFilters(
       buildNextFilters(

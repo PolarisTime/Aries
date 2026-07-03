@@ -264,6 +264,16 @@ describe('business-listing-filtering', () => {
       ).toBe(true)
     })
 
+    it('returns true when input rawValue normalizes to an empty keyword', () => {
+      expect(
+        applyFilterDefinition(
+          { id: '1', name: 'test' },
+          { key: 'k', type: 'input', label: 'L', clientSearchKeys: ['name'] },
+          {},
+        ),
+      ).toBe(true)
+    })
+
     describe('input filter', () => {
       it('returns true when keyword is empty after trim', () => {
         expect(
@@ -470,6 +480,13 @@ describe('business-listing-filtering', () => {
   })
 
   describe('buildFilterParams', () => {
+    it('skips unsupported client-only filter keys', () => {
+      const params = buildFilterParams('purchase-order', {
+        clientField: 'value',
+      })
+      expect(params).toEqual({})
+    })
+
     it('handles array values for server filter keys', () => {
       const params = buildFilterParams('purchase-order', {
         keyword: ['a', 'b'],

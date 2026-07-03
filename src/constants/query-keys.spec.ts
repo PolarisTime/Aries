@@ -15,8 +15,11 @@ describe('QUERY_KEYS', () => {
       'businessGridPage',
       'businessGridList',
       'businessPageConfig',
+      'businessGridOverlayPreload',
       'databaseStatus',
+      'databaseMonitoring',
       'masterOptions',
+      'companySettings',
       'apiKeys',
       'apiKeyList',
       'apiKeyActionOptions',
@@ -35,6 +38,8 @@ describe('QUERY_KEYS', () => {
       'statementLinkOptions',
       'printTemplate',
       'printTemplateByType',
+      'printableTemplatesBase',
+      'printableTemplates',
       'parentSelectorListBase',
       'parentSelectorConfig',
       'parentSelectorList',
@@ -85,6 +90,13 @@ describe('QUERY_KEYS', () => {
   it('businessPageConfig returns dynamic key', () => {
     const key = QUERY_KEYS.businessPageConfig('supplier')
     expect(key).toEqual(['business-page-config', 'supplier'])
+  })
+
+  it('businessGridOverlayPreload returns dynamic key', () => {
+    expect(QUERY_KEYS.businessGridOverlayPreload('editor')).toEqual([
+      'business-grid-overlay-preload',
+      'editor',
+    ])
   })
 
   it('masterOptions has all entity keys', () => {
@@ -149,6 +161,14 @@ describe('QUERY_KEYS', () => {
   it('printTemplateByType returns key with billType', () => {
     expect(QUERY_KEYS.printTemplateByType('purchase-order')).toEqual([
       'print-template',
+      'purchase-order',
+    ])
+  })
+
+  it('printableTemplates returns key with moduleKey', () => {
+    expect(QUERY_KEYS.printableTemplatesBase).toEqual(['print-templates'])
+    expect(QUERY_KEYS.printableTemplates('purchase-order')).toEqual([
+      'print-templates',
       'purchase-order',
     ])
   })

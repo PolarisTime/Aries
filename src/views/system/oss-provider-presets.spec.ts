@@ -61,4 +61,21 @@ describe('oss provider presets', () => {
       pathStyleAccess: true,
     })
   })
+
+  it('falls back to s3 compatible defaults for unknown providers', () => {
+    expect(resolveOssProviderPresetDefaults('unknown' as never)).toEqual({
+      endpoint: 'https://s3.example.com',
+      region: 'us-east-1',
+      pathStyleAccess: true,
+    })
+    expect(getOssProviderEndpointPlaceholder('unknown' as never, '')).toBe(
+      'https://s3.example.com',
+    )
+  })
+
+  it('uses default region in endpoint placeholder when region is empty', () => {
+    expect(getOssProviderEndpointPlaceholder('aws-s3', '')).toBe(
+      'https://s3.us-east-1.amazonaws.com',
+    )
+  })
 })

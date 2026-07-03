@@ -309,7 +309,7 @@ interface AttachmentPreviewLayersProps {
   previewOpen: boolean
   previewSource: string
   previewUrlByAttachmentId: Record<string, string>
-  onPdfPreviewOpenChange: (visible: boolean) => void
+  onPdfPreviewClose: () => void
   onImagePreviewChange: (visible: boolean) => void
   t: (key: string) => string
 }
@@ -321,7 +321,7 @@ function AttachmentPreviewLayers({
   previewOpen,
   previewSource,
   previewUrlByAttachmentId,
-  onPdfPreviewOpenChange,
+  onPdfPreviewClose,
   onImagePreviewChange,
   t,
 }: AttachmentPreviewLayersProps) {
@@ -358,7 +358,7 @@ function AttachmentPreviewLayers({
       <Modal
         title={t('modules.attachment.pdfPreview')}
         open={pdfPreviewOpen}
-        onCancel={() => onPdfPreviewOpenChange(false)}
+        onCancel={onPdfPreviewClose}
         footer={null}
         width="90%"
         className="modal-top-20"
@@ -424,10 +424,8 @@ export function ModuleAttachmentModal({
   }, [])
 
   const resolveAttachmentUrl = useCallback(
-    async (attachment: AttachmentRecord, inline: boolean) => {
-      const sourceUrl = inline
-        ? getPreviewCandidateUrl(attachment)
-        : attachment.downloadUrl || ''
+    async (attachment: AttachmentRecord) => {
+      const sourceUrl = getPreviewCandidateUrl(attachment)
       if (!sourceUrl) {
         return ''
       }
@@ -435,7 +433,7 @@ export function ModuleAttachmentModal({
       const access = await resolveAttachmentAccessUrl(
         sourceUrl,
         moduleKey,
-        inline,
+        true,
       )
       if (access.url) {
         return access.url
@@ -462,7 +460,7 @@ export function ModuleAttachmentModal({
       return cachedUrl
     }
 
-    const url = await resolveAttachmentUrl(attachment, true)
+    const url = await resolveAttachmentUrl(attachment)
     if (url) {
       cachePreviewUrl(attachment.id, url)
     }
@@ -729,10 +727,10 @@ export function ModuleAttachmentModal({
         previewOpen={previewOpen}
         previewSource={previewSource}
         previewUrlByAttachmentId={previewUrlByAttachmentId}
-        onPdfPreviewOpenChange={(visible) =>
+        onPdfPreviewClose={() =>
           setState({
-            pdfPreviewOpen: visible,
-            pdfPreviewUrl: visible ? pdfPreviewUrl : '',
+            pdfPreviewOpen: false,
+            pdfPreviewUrl: '',
           })
         }
         onImagePreviewChange={(visible) => {

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { ModuleRecord } from '@/types/module-page'
 
 import {
+  buildSystemSettingPayload,
   DETAILED_OPERATION_ACTION_OPTIONS,
   DETAILED_OPERATION_ACTION_VALUES,
   formatSettingValue,
@@ -117,6 +118,54 @@ describe('general-settings-view-utils', () => {
       expect(
         isDefaultListPageSizeSetting(makeRecord({ settingCode: 'OTHER' })),
       ).toBe(false)
+    })
+  })
+
+  describe('buildSystemSettingPayload', () => {
+    it('keeps record fields and applies explicit patch values', () => {
+      expect(
+        buildSystemSettingPayload(
+          makeRecord({
+            id: 'setting-1',
+            settingCode: 'SYS_DEFAULT_TAX_RATE',
+            settingName: '默认税率',
+            billName: '系统设置',
+            prefix: 'TAX',
+            dateRule: 'yyyy',
+            serialLength: 6,
+            resetRule: 'YEARLY',
+            sampleNo: '0.13',
+            status: '禁用',
+            remark: 'old',
+          }),
+          { sampleNo: '0.09', remark: 'new' },
+        ),
+      ).toMatchObject({
+        id: 'setting-1',
+        settingCode: 'SYS_DEFAULT_TAX_RATE',
+        settingName: '默认税率',
+        billName: '系统设置',
+        prefix: 'TAX',
+        dateRule: 'yyyy',
+        serialLength: 6,
+        resetRule: 'YEARLY',
+        sampleNo: '0.09',
+        status: '禁用',
+        remark: 'new',
+      })
+    })
+
+    it('fills stable defaults for sparse records', () => {
+      expect(
+        buildSystemSettingPayload(makeRecord({ serialLength: 0 }), {}),
+      ).toMatchObject({
+        prefix: 'SYS',
+        dateRule: 'NONE',
+        serialLength: 1,
+        resetRule: 'NEVER',
+        sampleNo: 'ON',
+        status: '正常',
+      })
     })
   })
 
@@ -313,6 +362,14 @@ describe('general-settings-view-utils', () => {
       const record = makeRecord({
         settingCode: 'SYS_DEFAULT_TAX_RATE',
         sampleNo: '0',
+      })
+      expect(formatSettingValue(record)).toBe('13%')
+    })
+
+    it('returns default 13% when tax rate sample is missing', () => {
+      const record = makeRecord({
+        settingCode: 'SYS_DEFAULT_TAX_RATE',
+        sampleNo: '',
       })
       expect(formatSettingValue(record)).toBe('13%')
     })

@@ -94,6 +94,25 @@ describe('useModuleRecordActions', () => {
     expect(attachAction?.label).toBe('hooks.recordActions.attachment(2)')
   })
 
+  it('falls back to attachmentIds array length when no count or attachment list exists', () => {
+    const { result } = renderHook(() =>
+      useModuleRecordActions({
+        moduleKey: 'sales-order',
+        onAttach: vi.fn(),
+      }),
+    )
+
+    const attachAction = result.current
+      .buildActions({
+        id: '101',
+        status: '草稿',
+        attachmentIds: ['a-1', 'a-2', 'a-3'],
+      })
+      .find((item) => item.key === 'attach')
+
+    expect(attachAction?.label).toBe('hooks.recordActions.attachment(3)')
+  })
+
   it('falls back to attachments array length when count map has no entry', () => {
     const { result } = renderHook(() =>
       useModuleRecordActions({
@@ -259,5 +278,25 @@ describe('useModuleRecordActions', () => {
     })
     // isReadOnly returns early, but detail is added before the isReadOnly check
     expect(actions.map((a) => a.key)).toEqual(['detail'])
+  })
+
+  it('invokes detail and attachment callbacks with the selected record', () => {
+    const onAttach = vi.fn()
+    const onDetail = vi.fn()
+    const record = { id: '101', status: '草稿' }
+    const { result } = renderHook(() =>
+      useModuleRecordActions({
+        moduleKey: 'sales-order',
+        onAttach,
+        onDetail,
+      }),
+    )
+
+    const actions = result.current.buildActions(record)
+    actions.find((item) => item.key === 'detail')?.onClick?.()
+    actions.find((item) => item.key === 'attach')?.onClick?.()
+
+    expect(onDetail).toHaveBeenCalledWith(record)
+    expect(onAttach).toHaveBeenCalledWith(record)
   })
 })

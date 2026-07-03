@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildGlobalSearchSummary,
+  isLikelyTrackId,
+  normalizeGlobalSearchResult,
   searchAccessibleModules,
 } from '@/layouts/global-search'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
@@ -42,6 +44,68 @@ describe('buildGlobalSearchSummary', () => {
         status: '待审核',
       } satisfies ModuleRecord),
     ).toBe('甲方 / 乙方 / 待审核')
+  })
+})
+
+describe('global search helpers', () => {
+  it('detects likely track ids after trimming whitespace', () => {
+    expect(isLikelyTrackId(' 123456789012 ')).toBe(true)
+    expect(isLikelyTrackId('PO-001')).toBe(false)
+  })
+
+  it('normalizes source records with id text and summary', () => {
+    expect(
+      normalizeGlobalSearchResult({
+        moduleKey: 'purchase-order',
+        title: '采购订单',
+        trackId: '1001',
+        primaryNo: 'PO-001',
+        summary: '客户A',
+        matchedByTrackId: true,
+      }),
+    ).toMatchObject({
+      value: 'purchase-order::PO-001',
+      label: '采购订单 | PO-001 | ID 1001 | 客户A',
+      primaryNo: 'PO-001',
+      trackId: '1001',
+      matchedByTrackId: true,
+    })
+  })
+
+  it('normalizes source records with track id fallback', () => {
+    expect(
+      normalizeGlobalSearchResult({
+        moduleKey: 'purchase-order',
+        title: '采购订单',
+        trackId: '1001',
+        primaryNo: '',
+        summary: '',
+        matchedByTrackId: false,
+      }),
+    ).toMatchObject({
+      value: 'purchase-order::1001',
+      label: '采购订单 | 1001',
+      primaryNo: '1001',
+    })
+  })
+
+  it('normalizes empty source record identifiers', () => {
+    expect(
+      normalizeGlobalSearchResult({
+        moduleKey: 'purchase-order',
+        title: '采购订单',
+        trackId: '',
+        primaryNo: '',
+        summary: '',
+        matchedByTrackId: true,
+      }),
+    ).toMatchObject({
+      value: 'purchase-order::',
+      label: '采购订单 | ',
+      trackId: '',
+      primaryNo: '',
+      matchedByTrackId: true,
+    })
   })
 })
 
@@ -135,6 +199,22 @@ describe('searchAccessibleModules', () => {
     expect(results).toHaveLength(1)
   })
 
+  it('deduplicates records by primary number when id is missing', async () => {
+    const results = await searchAccessibleModules({
+      keyword: 'PO-001',
+      moduleKeys: ['purchase-order'],
+      pageConfigs: testPageConfigs,
+      canAccessModule: () => true,
+      searchModule: () =>
+        Promise.resolve({
+          data: { rows: [{ orderNo: 'PO-001' }, { orderNo: 'PO-001' }] },
+        }),
+      buildSummary: buildGlobalSearchSummary,
+    })
+
+    expect(results).toHaveLength(1)
+  })
+
   it('sorts results by primaryNo', async () => {
     const record1 = { id: '1', orderNo: 'B-001' } satisfies ModuleRecord
     const record2 = { id: '2', orderNo: 'A-002' } satisfies ModuleRecord
@@ -200,6 +280,24 @@ describe('searchAccessibleModules', () => {
       },
       buildSummary: buildGlobalSearchSummary,
     })
+    expect(results).toEqual([])
+  })
+
+  it('handles result building failures per module', async () => {
+    const results = await searchAccessibleModules({
+      keyword: 'test',
+      moduleKeys: ['purchase-order'],
+      pageConfigs: testPageConfigs,
+      canAccessModule: () => true,
+      searchModule: () =>
+        Promise.resolve({
+          data: { rows: [{ id: '1001', orderNo: 'PO-001' }] },
+        }),
+      buildSummary: () => {
+        throw new Error('summary failed')
+      },
+    })
+
     expect(results).toEqual([])
   })
 
@@ -271,6 +369,92 @@ describe('searchAccessibleModules', () => {
     })
 
     expect(results).toHaveLength(1)
+  })
+
+  it('filters records without id or primary number', async () => {
+    const results = await searchAccessibleModules({
+      keyword: 'PO-001',
+      moduleKeys: ['purchase-order'],
+      pageConfigs: testPageConfigs,
+      canAccessModule: () => true,
+      searchModule: () => Promise.resolve({ data: { rows: [{}] } }),
+      buildSummary: buildGlobalSearchSummary,
+    })
+
+    expect(results).toEqual([])
+  })
+
+  it('falls back to id when configured primary number is missing', async () => {
+    const results = await searchAccessibleModules({
+      keyword: '1001',
+      moduleKeys: ['purchase-order'],
+      pageConfigs: testPageConfigs,
+      canAccessModule: () => true,
+      searchModule: () => Promise.resolve({ data: { rows: [{ id: '1001' }] } }),
+      buildSummary: buildGlobalSearchSummary,
+    })
+
+    expect(results[0]).toMatchObject({
+      value: 'purchase-order::1001',
+      primaryNo: '1001',
+      matchedByTrackId: true,
+    })
+  })
+
+  it('uses id as primary number when config has no primary key', async () => {
+    const record = { id: '1001' } satisfies ModuleRecord
+
+    const results = await searchAccessibleModules({
+      keyword: '1001',
+      moduleKeys: ['generic-module'],
+      pageConfigs: {
+        'generic-module': {
+          key: 'generic-module',
+          title: '通用单据',
+          kicker: '',
+          description: '',
+          filters: [],
+          columns: [],
+          detailFields: [],
+          data: [],
+          buildOverview: () => [],
+        },
+      },
+      canAccessModule: () => true,
+      searchModule: () => Promise.resolve({ data: { rows: [record] } }),
+      buildSummary: buildGlobalSearchSummary,
+    })
+
+    expect(results[0]).toMatchObject({
+      value: 'generic-module::1001',
+      primaryNo: '1001',
+      matchedByTrackId: true,
+    })
+  })
+
+  it('filters records without id when config has no primary key', async () => {
+    const results = await searchAccessibleModules({
+      keyword: '1001',
+      moduleKeys: ['generic-module'],
+      pageConfigs: {
+        'generic-module': {
+          key: 'generic-module',
+          title: '通用单据',
+          kicker: '',
+          description: '',
+          filters: [],
+          columns: [],
+          detailFields: [],
+          data: [],
+          buildOverview: () => [],
+        },
+      },
+      canAccessModule: () => true,
+      searchModule: () => Promise.resolve({ data: { rows: [{}] } }),
+      buildSummary: buildGlobalSearchSummary,
+    })
+
+    expect(results).toEqual([])
   })
 
   it('includes matchedByTrackId when trackId equals keyword', async () => {

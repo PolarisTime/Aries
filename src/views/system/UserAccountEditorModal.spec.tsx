@@ -1,5 +1,8 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const getFormStringMock = vi.hoisted(() => vi.fn((): string | undefined => ''))
+const formItemEventResults = vi.hoisted(() => [] as unknown[])
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -31,13 +34,52 @@ vi.mock('antd', () => {
   )
   Form.Item = ({
     children,
+    extra,
+    getValueFromEvent,
+    help,
+    htmlFor,
     label,
+    name,
+    validateStatus,
   }: {
     children: React.ReactNode
-    label: string
+    extra?: React.ReactNode
+    getValueFromEvent?: (value?: Array<number | string>) => unknown
+    help?: React.ReactNode
+    htmlFor?: string
+    label?: React.ReactNode
+    name?: string
+    validateStatus?: string
   }) => (
-    <div>
-      {label && <span>{label}</span>}
+    <div
+      data-testid={name ? `form-item-${name}` : undefined}
+      data-validate-status={validateStatus ?? ''}
+    >
+      {label && <label htmlFor={htmlFor}>{label}</label>}
+      {help && <div data-testid={`form-item-${name}-help`}>{help}</div>}
+      {extra && <div>{extra}</div>}
+      {getValueFromEvent && (
+        <>
+          <button
+            data-testid={`normalize-${name}`}
+            onClick={() =>
+              formItemEventResults.push(getValueFromEvent([1, '2']))
+            }
+            type="button"
+          >
+            normalize
+          </button>
+          <button
+            data-testid={`normalize-${name}-empty`}
+            onClick={() =>
+              formItemEventResults.push(getValueFromEvent(undefined))
+            }
+            type="button"
+          >
+            normalize empty
+          </button>
+        </>
+      )}
       {children}
     </div>
   )
@@ -52,7 +94,39 @@ vi.mock('antd', () => {
     Form,
     Input,
     Row: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Select: () => <div>Select</div>,
+    Select: ({
+      maxTagCount,
+      mode,
+      options = [],
+      placeholder,
+    }: {
+      maxTagCount?: number
+      mode?: string
+      options?: Array<{
+        disabled?: boolean
+        label: React.ReactNode
+        value: number | string
+      }>
+      placeholder?: string
+    }) => (
+      <select
+        aria-label={placeholder}
+        data-max-tag-count={maxTagCount ?? ''}
+        data-mode={mode ?? ''}
+        data-testid={`select-${placeholder ?? 'unknown'}`}
+        multiple={mode === 'multiple'}
+      >
+        {options.map((option) => (
+          <option
+            disabled={option.disabled}
+            key={String(option.value)}
+            value={String(option.value)}
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
+    ),
     Space: ({ children }: { children: React.ReactNode }) => (
       <div>{children}</div>
     ),
@@ -79,7 +153,7 @@ vi.mock('@/constants/module-options', () => ({
 }))
 
 vi.mock('@/lib/antd-form', () => ({
-  getFormString: () => '',
+  getFormString: getFormStringMock,
 }))
 
 vi.mock('@/utils/form-control-a11y', () => ({
@@ -126,6 +200,12 @@ describe('UserAccountEditorModal', () => {
     onSave: vi.fn(),
     onClose: vi.fn(),
   }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getFormStringMock.mockReturnValue('')
+    formItemEventResults.length = 0
+  })
 
   it('renders without crashing', () => {
     expect(UserAccountEditorModal).toBeDefined()
@@ -256,5 +336,194 @@ describe('UserAccountEditorModal', () => {
     )
     expect(screen.getByText('全部权限')).toBeInTheDocument()
     expect(screen.getByText('部分权限')).toBeInTheDocument()
+  })
+
+  it('shows login name checking state before validation errors', () => {
+    render(
+      <UserAccountEditorModal
+        {...defaultProps}
+        loginNameChecking={true}
+        loginNameValidationMessage="登录名已存在"
+      />,
+    )
+
+    expect(screen.getByTestId('form-item-loginName')).toHaveAttribute(
+      'data-validate-status',
+      'validating',
+    )
+    expect(
+      screen.getByText('system.userAccountEditor.checkingLoginName'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('登录名已存在')).not.toBeInTheDocument()
+  })
+
+  it('shows login name validation errors after checking completes', () => {
+    render(
+      <UserAccountEditorModal
+        {...defaultProps}
+        loginNameValidationMessage="登录名已存在"
+      />,
+    )
+
+    expect(screen.getByTestId('form-item-loginName')).toHaveAttribute(
+      'data-validate-status',
+      'error',
+    )
+    expect(screen.getByText('登录名已存在')).toBeInTheDocument()
+  })
+
+  it('checks login name on blur in create mode without an exclude id', () => {
+    const onCheckLoginName = vi.fn()
+    getFormStringMock.mockReturnValue('alice')
+
+    render(
+      <UserAccountEditorModal
+        {...defaultProps}
+        onCheckLoginName={onCheckLoginName}
+      />,
+    )
+    fireEvent.blur(
+      screen.getByPlaceholderText(
+        'system.userAccountEditor.loginNamePlaceholder',
+      ),
+    )
+
+    expect(getFormStringMock).toHaveBeenCalledWith(formInstance, 'loginName')
+    expect(onCheckLoginName).toHaveBeenCalledWith('alice', undefined)
+  })
+
+  it('checks login name on blur in edit mode with the editing id', () => {
+    const onCheckLoginName = vi.fn()
+    getFormStringMock.mockReturnValue('bob')
+
+    render(
+      <UserAccountEditorModal
+        {...defaultProps}
+        editingId="user-1"
+        mode="edit"
+        onCheckLoginName={onCheckLoginName}
+      />,
+    )
+    fireEvent.blur(
+      screen.getByPlaceholderText(
+        'system.userAccountEditor.loginNamePlaceholder',
+      ),
+    )
+
+    expect(onCheckLoginName).toHaveBeenCalledWith('bob', 'user-1')
+  })
+
+  it('passes undefined exclude id in edit mode when editing id is absent', () => {
+    const onCheckLoginName = vi.fn()
+    getFormStringMock.mockReturnValue('carol')
+
+    render(
+      <UserAccountEditorModal
+        {...defaultProps}
+        editingId={null}
+        mode="edit"
+        onCheckLoginName={onCheckLoginName}
+      />,
+    )
+    fireEvent.blur(
+      screen.getByPlaceholderText(
+        'system.userAccountEditor.loginNamePlaceholder',
+      ),
+    )
+
+    expect(onCheckLoginName).toHaveBeenCalledWith('carol', undefined)
+  })
+
+  it('skips login name check when the field is blank or missing', () => {
+    const onCheckLoginName = vi.fn()
+    getFormStringMock.mockReturnValue('   ')
+    const { unmount } = render(
+      <UserAccountEditorModal
+        {...defaultProps}
+        onCheckLoginName={onCheckLoginName}
+      />,
+    )
+    fireEvent.blur(
+      screen.getByPlaceholderText(
+        'system.userAccountEditor.loginNamePlaceholder',
+      ),
+    )
+    unmount()
+
+    getFormStringMock.mockReturnValue(undefined)
+    render(
+      <UserAccountEditorModal
+        {...defaultProps}
+        onCheckLoginName={onCheckLoginName}
+      />,
+    )
+    fireEvent.blur(
+      screen.getByPlaceholderText(
+        'system.userAccountEditor.loginNamePlaceholder',
+      ),
+    )
+
+    expect(onCheckLoginName).not.toHaveBeenCalled()
+  })
+
+  it('normalizes role ids from select values', () => {
+    render(<UserAccountEditorModal {...defaultProps} />)
+
+    fireEvent.click(screen.getByTestId('normalize-roleIds'))
+    fireEvent.click(screen.getByTestId('normalize-roleIds-empty'))
+
+    expect(formItemEventResults).toEqual([['1', '2'], undefined])
+  })
+
+  it('renders department ids with an empty value fallback', () => {
+    render(
+      <UserAccountEditorModal
+        {...defaultProps}
+        departmentOptions={[{ id: '', departmentName: '未分配部门' }]}
+      />,
+    )
+
+    const departmentSelect = screen.getByTestId(
+      'select-system.userAccountEditor.departmentPlaceholder',
+    )
+    expect(
+      within(departmentSelect).getByRole('option', { name: '未分配部门' }),
+    ).toHaveAttribute('value', '')
+  })
+
+  it('marks disabled and conflicting role options', () => {
+    render(
+      <UserAccountEditorModal
+        {...defaultProps}
+        roleConflicts={{ source: ['conflict'] }}
+        roleOptions={[
+          { id: 'selected-disabled', roleName: '已选禁用角色', status: '禁用' },
+          { id: 'blocked', roleName: '禁用角色', status: '禁用' },
+          { id: 'conflict', roleName: '互斥角色', status: '正常' },
+          { id: 'normal', roleName: '普通角色', status: '正常' },
+        ]}
+        selectedRoleIds={['selected-disabled', 'source']}
+      />,
+    )
+
+    const roleSelect = screen.getByTestId(
+      'select-system.userAccountEditor.rolesPlaceholder',
+    )
+    expect(roleSelect).toHaveAttribute('data-mode', 'multiple')
+    expect(roleSelect).toHaveAttribute('data-max-tag-count', '5')
+    expect(
+      within(roleSelect).getByRole('option', { name: '已选禁用角色' }),
+    ).not.toBeDisabled()
+    expect(
+      within(roleSelect).getByRole('option', { name: '禁用角色' }),
+    ).toBeDisabled()
+    expect(
+      within(roleSelect).getByRole('option', {
+        name: '互斥角色 system.userAccountEditor.roleConflict',
+      }),
+    ).toBeDisabled()
+    expect(
+      within(roleSelect).getByRole('option', { name: '普通角色' }),
+    ).not.toBeDisabled()
   })
 })

@@ -60,6 +60,19 @@ describe('buildCustomerStatementOptions', () => {
     expect(buildCustomerStatementOptions([])).toEqual([])
   })
 
+  it('uses empty value when customer statement id is missing', () => {
+    const result = buildCustomerStatementOptions([
+      {
+        statementNo: 'KHDZ20260004',
+        customerName: '客户A',
+        projectName: '项目X',
+        closingAmount: 100,
+      },
+    ] as any[])
+
+    expect(result[0].value).toBe('')
+  })
+
   it('filters by projectName when provided', () => {
     const result = buildCustomerStatementOptions(sampleStatements, {
       customerName: '客户A',
@@ -215,6 +228,27 @@ describe('buildStatementLinkOptions', () => {
     expect(result.length).toBeGreaterThan(0)
   })
 
+  it('uses empty value when supplier statement id is missing', () => {
+    const result = buildStatementLinkOptions(
+      'payment',
+      {
+        businessType: '供应商',
+      },
+      {
+        ...catalog,
+        supplierStatements: [
+          {
+            statementNo: 'GYDZ20260002',
+            supplierName: '供应商A',
+            closingAmount: 100,
+          },
+        ] as any[],
+      },
+    )
+
+    expect(result[0].value).toBe('')
+  })
+
   it('filters freight statements by counterpartyName', () => {
     const result = buildStatementLinkOptions(
       'payment',
@@ -225,6 +259,27 @@ describe('buildStatementLinkOptions', () => {
       catalog,
     )
     expect(result.length).toBeGreaterThan(0)
+  })
+
+  it('uses empty value when freight statement id is missing', () => {
+    const result = buildStatementLinkOptions(
+      'payment',
+      {
+        businessType: '物流商',
+      },
+      {
+        ...catalog,
+        freightStatements: [
+          {
+            statementNo: 'WDZ20260002',
+            carrierName: '物流商A',
+            unpaidAmount: 100,
+          },
+        ] as any[],
+      },
+    )
+
+    expect(result[0].value).toBe('')
   })
 
   it('returns payment options with undefined form', () => {

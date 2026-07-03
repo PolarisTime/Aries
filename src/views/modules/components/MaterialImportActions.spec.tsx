@@ -131,6 +131,19 @@ describe('MaterialImportActions', () => {
     })
   })
 
+  it('shows fallback error when template download rejects non-error value', async () => {
+    vi.mocked(downloadMaterialImportTemplate).mockRejectedValueOnce('failed')
+    render(<MaterialImportActions {...defaultProps} />)
+
+    fireEvent.click(screen.getByText('modules.pages.material.downloadTemplate'))
+
+    await waitFor(() => {
+      expect(message.error).toHaveBeenCalledWith(
+        'modules.pages.material.templateDownloadFailed',
+      )
+    })
+  })
+
   it('imports material file and refreshes caches', async () => {
     const onImported = vi.fn().mockResolvedValue(undefined)
     render(<MaterialImportActions {...defaultProps} onImported={onImported} />)
@@ -158,6 +171,19 @@ describe('MaterialImportActions', () => {
 
     await waitFor(() => {
       expect(message.error).toHaveBeenCalledWith('导入失败')
+    })
+  })
+
+  it('shows fallback error when material import rejects non-error value', async () => {
+    vi.mocked(importMaterialFile).mockRejectedValueOnce('failed')
+    render(<MaterialImportActions {...defaultProps} />)
+
+    mocks.uploadProps!.beforeUpload(new File(['xlsx'], 'materials.xlsx'))
+
+    await waitFor(() => {
+      expect(message.error).toHaveBeenCalledWith(
+        'modules.pages.material.importFailed',
+      )
     })
   })
 })

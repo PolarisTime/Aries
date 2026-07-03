@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { STORAGE_KEYS } from '@/constants/storage'
 import {
   clearStoredUser,
@@ -24,6 +24,11 @@ beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
   clearToken()
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.useRealTimers()
 })
 
 describe('getStoredUser', () => {
@@ -54,6 +59,22 @@ describe('getStoredUser', () => {
     expect(getStoredUser()).toBeNull()
     expect(localStorage.getItem(STORAGE_KEYS.user)).toBeNull()
   })
+
+  it('reads user from session storage when session persistence is stored', () => {
+    sessionStorage.setItem(STORAGE_KEYS.authPersistence, 'session')
+    sessionStorage.setItem(STORAGE_KEYS.user, JSON.stringify(mockUser))
+
+    expect(getStoredUser()?.loginName).toBe('admin')
+  })
+
+  it('removes malformed JSON from localStorage even when session mode is selected', () => {
+    sessionStorage.setItem(STORAGE_KEYS.authPersistence, 'session')
+    sessionStorage.setItem(STORAGE_KEYS.user, '{broken json}')
+    localStorage.setItem(STORAGE_KEYS.user, 'legacy-user')
+
+    expect(getStoredUser()).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEYS.user)).toBeNull()
+  })
 })
 
 describe('getPersonalSettings', () => {
@@ -70,6 +91,11 @@ describe('getPersonalSettings', () => {
 
   it('returns null for array data', () => {
     localStorage.setItem(STORAGE_KEYS.personalSettings, '[]')
+    expect(getPersonalSettings()).toBeNull()
+  })
+
+  it('returns null for primitive settings data', () => {
+    localStorage.setItem(STORAGE_KEYS.personalSettings, '"dark"')
     expect(getPersonalSettings()).toBeNull()
   })
 
@@ -108,6 +134,14 @@ describe('getListColumnSettings', () => {
     const result = getListColumnSettings(pageKey, 'user1')
     expect(result!.orderedKeys).toEqual(['a', 'b'])
   })
+
+  it('trims userKey and falls back to anonymous when it is blank', () => {
+    setListColumnSettings(pageKey, mockColSettings, ' user1 ')
+    expect(getListColumnSettings(pageKey, 'user1')!.hiddenKeys).toEqual(['c'])
+
+    setListColumnSettings('blank-page', mockColSettings, '   ')
+    expect(getListColumnSettings('blank-page')!.orderedKeys).toEqual(['a', 'b'])
+  })
 })
 
 describe('token management', () => {
@@ -129,6 +163,11 @@ describe('token management', () => {
     expect(getTokenExpiresAt()).toBe(9876543210)
   })
 
+  it('getTokenExpiresAt returns null without window', () => {
+    vi.stubGlobal('window', undefined)
+    expect(getTokenExpiresAt()).toBeNull()
+  })
+
   it('clearTokenExpiresAt removes from both storages', () => {
     localStorage.setItem(STORAGE_KEYS.tokenExpiresAt, '123')
     sessionStorage.setItem(STORAGE_KEYS.tokenExpiresAt, '456')
@@ -138,9 +177,13 @@ describe('token management', () => {
   })
 
   it('setAuthSession stores token and user in specified mode', () => {
+    localStorage.setItem(STORAGE_KEYS.refreshToken, 'legacy-refresh')
+
     setAuthSession(mockUser, 'test-token', 3600, 'local')
     expect(localStorage.getItem(STORAGE_KEYS.token)).toBe('test-token')
     expect(localStorage.getItem(STORAGE_KEYS.user)).toBeTruthy()
+    expect(localStorage.getItem(STORAGE_KEYS.authPersistence)).toBe('local')
+    expect(localStorage.getItem(STORAGE_KEYS.refreshToken)).toBeNull()
     expect(getToken()).toBe('test-token')
     expect(getStoredUser()!.loginName).toBe('admin')
   })
@@ -148,6 +191,7 @@ describe('token management', () => {
   it('setAuthSession stores in session mode', () => {
     setAuthSession(mockUser, 'session-token', 3600, 'session')
     expect(sessionStorage.getItem(STORAGE_KEYS.token)).toBe('session-token')
+    expect(sessionStorage.getItem(STORAGE_KEYS.authPersistence)).toBe('session')
     expect(localStorage.getItem(STORAGE_KEYS.token)).toBeNull()
   })
 
@@ -167,8 +211,50 @@ describe('token management', () => {
     vi.setSystemTime(7000)
 
     expect(getToken()).toBe('')
+  })
 
-    vi.useRealTimers()
+  it('reads a stored valid token into memory', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(5000)
+
+    localStorage.setItem(STORAGE_KEYS.token, 'stored-token')
+    localStorage.setItem(STORAGE_KEYS.tokenExpiresAt, String(6000))
+
+    expect(getToken()).toBe('stored-token')
+
+    localStorage.removeItem(STORAGE_KEYS.token)
+    expect(getToken()).toBe('stored-token')
+  })
+
+  it('reads a stored token without an expiry timestamp', async () => {
+    vi.resetModules()
+    localStorage.setItem(STORAGE_KEYS.token, 'token-without-expiry')
+    const storage = await import('../storage')
+
+    expect(storage.getToken()).toBe('token-without-expiry')
+  })
+
+  it('skips storage access without window', () => {
+    vi.stubGlobal('window', undefined)
+
+    expect(getToken()).toBe('')
+    expect(() => clearToken()).not.toThrow()
+  })
+
+  it('keeps auth helpers inert when module loads without window', async () => {
+    vi.resetModules()
+    vi.stubGlobal('window', undefined)
+    const storage = await import('../storage')
+
+    expect(storage.getAuthPersistenceMode()).toBe('local')
+    expect(storage.getToken()).toBe('')
+    expect(storage.getStoredUser()).toBeNull()
+    expect(storage.getTokenExpiresAt()).toBeNull()
+    expect(() => storage.clearStoredUser()).not.toThrow()
+    expect(() => storage.setStoredUser(mockUser)).not.toThrow()
+    expect(() =>
+      storage.setAuthSession(mockUser, 'token', 3600, 'local'),
+    ).not.toThrow()
   })
 })
 
@@ -182,8 +268,31 @@ describe('getAuthPersistenceMode', () => {
     expect(getAuthPersistenceMode()).toBe('session')
   })
 
+  it('returns session when only session user exists', () => {
+    sessionStorage.setItem(STORAGE_KEYS.user, JSON.stringify(mockUser))
+    expect(getAuthPersistenceMode()).toBe('session')
+  })
+
   it('returns local when local data exists', () => {
     localStorage.setItem(STORAGE_KEYS.token, 'some-token')
+    expect(getAuthPersistenceMode()).toBe('local')
+  })
+
+  it('returns local when only local user exists', () => {
+    localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(mockUser))
+    expect(getAuthPersistenceMode()).toBe('local')
+  })
+
+  it('uses stored persistence mode over storage data probes', () => {
+    localStorage.setItem(STORAGE_KEYS.authPersistence, 'session')
+    localStorage.setItem(STORAGE_KEYS.token, 'some-token')
+
+    expect(getAuthPersistenceMode()).toBe('session')
+  })
+
+  it('ignores invalid stored persistence mode', () => {
+    localStorage.setItem(STORAGE_KEYS.authPersistence, 'invalid')
+
     expect(getAuthPersistenceMode()).toBe('local')
   })
 })
@@ -203,6 +312,16 @@ describe('setStoredUser', () => {
     const stored = sessionStorage.getItem(STORAGE_KEYS.user)
     expect(stored).toBeTruthy()
     expect(JSON.parse(stored!).loginName).toBe('user2')
+  })
+
+  it('stores user in explicitly persisted session mode', () => {
+    sessionStorage.setItem(STORAGE_KEYS.authPersistence, 'session')
+    const newUser = { id: 2, loginName: 'user2', userName: 'User 2' }
+
+    setStoredUser(newUser)
+
+    expect(sessionStorage.getItem(STORAGE_KEYS.user)).toBeTruthy()
+    expect(localStorage.getItem(STORAGE_KEYS.user)).toBeNull()
   })
 })
 

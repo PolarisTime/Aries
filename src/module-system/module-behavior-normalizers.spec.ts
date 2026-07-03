@@ -347,6 +347,30 @@ describe('module-behavior-normalizers', () => {
     expect(record.totalFreight).toBe(0)
   })
 
+  it('freight-bill normalize falls back to the first source item when collected source numbers are empty', () => {
+    const config = moduleBehaviorRegistry.get('freight-bill')
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
+
+    const item = makeItem({ customerName: '', projectName: '' })
+    let sourceNoReadCount = 0
+    Object.defineProperty(item, 'sourceNo', {
+      configurable: true,
+      get() {
+        sourceNoReadCount += 1
+        return sourceNoReadCount === 2 ? '' : 'SO-FALLBACK'
+      },
+    })
+    const record: any = {}
+    normalize(record, [item], { sumLineItemsBy: () => 0 } as any)
+
+    expect(record.outboundNo).toBe('SO-FALLBACK')
+    expect(record.totalFreight).toBe(0)
+  })
+
   it('freight-bill normalize handles no customer/project names', () => {
     const config = moduleBehaviorRegistry.get('freight-bill')
     const normalize = config!.normalizeDraftRecord as (
@@ -360,5 +384,68 @@ describe('module-behavior-normalizers', () => {
     normalize(record, items, { sumLineItemsBy: () => 0 } as any)
     expect(record.customerName).toBeUndefined()
     expect(record.projectName).toBeUndefined()
+  })
+
+  it('freight-statement normalize ignores duplicate source freight and missing bill dates', () => {
+    const config = moduleBehaviorRegistry.get('freight-statement')
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
+
+    const items = [
+      makeItem({ sourceNo: 'FB001' }),
+      makeItem({ sourceNo: 'FB001', _parentTotalFreight: 300 }),
+    ]
+    const record: any = {}
+    normalize(record, items, { sumLineItemsBy: () => 12.3456 } as any)
+
+    expect(record.sourceBillNos).toBe('FB001')
+    expect(record.totalFreight).toBe(0)
+    expect(record.startDate).toBeUndefined()
+    expect(record.endDate).toBeUndefined()
+  })
+
+  it('supplier-statement normalize handles items without source dates or payment amount', () => {
+    const config = moduleBehaviorRegistry.get('supplier-statement')
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
+
+    const record: any = {}
+    normalize(record, [makeItem({ sourceNo: 'RK001', _parentBillTime: '' })], {
+      sumLineItemsBy: () => 120,
+    } as any)
+
+    expect(record.purchaseAmount).toBe(120)
+    expect(record.sourceInboundNos).toBe('RK001')
+    expect(record.startDate).toBeUndefined()
+    expect(record.endDate).toBeUndefined()
+    expect(record.paymentAmount).toBe(0)
+    expect(record.closingAmount).toBe(120)
+  })
+
+  it('customer-statement normalize handles items without source dates or receipt amount', () => {
+    const config = moduleBehaviorRegistry.get('customer-statement')
+    const normalize = config!.normalizeDraftRecord as (
+      record: any,
+      items: ModuleLineItem[],
+      ctx: any,
+    ) => void
+
+    const record: any = {}
+    normalize(record, [makeItem({ sourceNo: 'XS001', _parentBillTime: '' })], {
+      sumLineItemsBy: () => 240,
+    } as any)
+
+    expect(record.salesAmount).toBe(240)
+    expect(record.sourceOrderNos).toBe('XS001')
+    expect(record.startDate).toBeUndefined()
+    expect(record.endDate).toBeUndefined()
+    expect(record.receiptAmount).toBe(0)
+    expect(record.closingAmount).toBe(240)
   })
 })

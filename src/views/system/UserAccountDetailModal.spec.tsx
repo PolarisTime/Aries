@@ -123,4 +123,30 @@ describe('UserAccountDetailModal', () => {
     )
     expect(screen.getAllByText('--').length).toBeGreaterThan(0)
   })
+
+  it('renders empty access fields and disabled totp status', () => {
+    const getTotpColor = vi.fn(() => 'default')
+
+    render(
+      <UserAccountDetailModal
+        {...defaultProps}
+        getTotpColor={getTotpColor}
+        record={
+          {
+            ...defaultProps.record,
+            dataScope: '',
+            roleNames: [],
+            permissionSummary: '',
+            totpEnabled: false,
+          } as never
+        }
+      />,
+    )
+
+    expect(screen.getAllByText('--')).toHaveLength(3)
+    expect(
+      screen.getByText('system.userAccountDetail.totpDisabled'),
+    ).toBeInTheDocument()
+    expect(getTotpColor).toHaveBeenCalledWith(false)
+  })
 })

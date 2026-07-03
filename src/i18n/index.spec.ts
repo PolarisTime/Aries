@@ -43,6 +43,13 @@ describe('i18n', () => {
       expect(detectLocale()).toBe('zh-CN')
     })
 
+    it('returns zh-CN when window is undefined', async () => {
+      vi.stubGlobal('window', undefined)
+      vi.stubGlobal('navigator', undefined)
+      const { detectLocale } = await import('./index')
+      expect(detectLocale()).toBe('zh-CN')
+    })
+
     it('prefers localStorage over navigator.language', async () => {
       localStorage.setItem(LOCALE_STORAGE_KEY, 'zh-CN')
       vi.stubGlobal('navigator', { language: 'en-US' })

@@ -62,14 +62,12 @@ function clearAuthState() {
 
 function applyTokenResponse(data: LoginResponseData) {
   authFailureHandled = false
-  if (data.user) {
-    setAuthSession(
-      data.user,
-      data.accessToken,
-      data.expiresIn,
-      getAuthPersistenceMode(),
-    )
-  }
+  setAuthSession(
+    data.user,
+    data.accessToken,
+    data.expiresIn,
+    getAuthPersistenceMode(),
+  )
   if (data.refreshExpiresIn) {
     const expiresAt = Date.now() + data.refreshExpiresIn * 1000
     if (typeof window !== 'undefined') {

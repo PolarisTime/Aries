@@ -209,6 +209,26 @@ describe('useDataTable', () => {
     expect(onSortingChange).toHaveBeenCalled()
   })
 
+  it('does not update internal sorting when sorting is controlled', () => {
+    const onSortingChange = vi.fn()
+    const controlledSorting = [{ id: 'name', desc: false }]
+    const { result } = renderHook(() =>
+      useDataTable({
+        data,
+        columns,
+        sorting: controlledSorting,
+        onSortingChange,
+      }),
+    )
+
+    act(() => {
+      result.current.table.setSorting([{ id: 'age', desc: true }])
+    })
+
+    expect(onSortingChange).toHaveBeenCalledWith([{ id: 'age', desc: true }])
+    expect(result.current.resolvedSorting).toBe(controlledSorting)
+  })
+
   it('handles pagination change with function updater', () => {
     const onPaginationChange = vi.fn()
     const { result } = renderHook(() =>

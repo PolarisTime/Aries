@@ -72,4 +72,32 @@ describe('useDeferredColumns', () => {
 
     expect(result.current).toHaveLength(6)
   })
+
+  it('ignores animation frame callback after cleanup', () => {
+    const callbacks: FrameRequestCallback[] = []
+    const requestAnimationFrameSpy = vi
+      .spyOn(globalThis, 'requestAnimationFrame')
+      .mockImplementation((callback) => {
+        callbacks.push(callback)
+        return 1
+      })
+    const cancelAnimationFrameSpy = vi
+      .spyOn(globalThis, 'cancelAnimationFrame')
+      .mockImplementation(() => undefined)
+    const columns = Array.from({ length: 6 }, (_, i) => ({
+      title: `Col${i}`,
+      dataIndex: `col${i}`,
+    }))
+
+    const { unmount } = renderHook(() => useDeferredColumns(columns))
+    unmount()
+
+    act(() => {
+      callbacks[0]?.(0)
+    })
+
+    expect(cancelAnimationFrameSpy).toHaveBeenCalledWith(1)
+    requestAnimationFrameSpy.mockRestore()
+    cancelAnimationFrameSpy.mockRestore()
+  })
 })

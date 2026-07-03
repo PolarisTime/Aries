@@ -1,5 +1,23 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mocks = vi.hoisted(() => ({
+  authState: {
+    user: { userName: 'testuser', loginName: 'test', totpEnabled: false } as {
+      userName?: string
+      loginName?: string
+      totpEnabled?: boolean
+    } | null,
+  },
+  setupState: {
+    enabling: false,
+    fetchTotpSetup: vi.fn(),
+    form: {},
+    handleEnable: vi.fn(),
+    loading: false,
+    totpData: { secret: 'TEST', qrCodeUrl: 'otpauth://totp/test' },
+  },
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -23,10 +41,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: (selector: (state: Record<string, unknown>) => unknown) => {
-    const state = {
-      user: { userName: 'testuser', loginName: 'test', totpEnabled: false },
-    }
-    return selector(state)
+    return selector(mocks.authState)
   },
 }))
 
@@ -35,14 +50,7 @@ vi.mock('@/utils/env', () => ({
 }))
 
 vi.mock('@/views/auth/useSetupTwoFactorState', () => ({
-  useSetupTwoFactorState: () => ({
-    enabling: false,
-    fetchTotpSetup: vi.fn(),
-    form: {},
-    handleEnable: vi.fn(),
-    loading: false,
-    totpData: { secret: 'TEST', qrCodeUrl: 'otpauth://totp/test' },
-  }),
+  useSetupTwoFactorState: () => mocks.setupState,
 }))
 
 vi.mock('@/views/auth/AuthPageShell', () => ({
@@ -61,8 +69,26 @@ vi.mock('@/views/auth/AuthPageShell', () => ({
 }))
 
 vi.mock('@/views/auth/SetupTwoFactorContent', () => ({
-  SetupTwoFactorContent: ({ currentUserName }: any) => (
-    <div data-testid="setup-content">{currentUserName}</div>
+  SetupTwoFactorContent: ({
+    currentUserName,
+    enabling,
+    loading,
+    onEnable,
+    onRefresh,
+    totpData,
+  }: any) => (
+    <div data-testid="setup-content">
+      <span>{currentUserName}</span>
+      <span data-testid="loading">{String(loading)}</span>
+      <span data-testid="enabling">{String(enabling)}</span>
+      <span data-testid="secret">{totpData?.secret}</span>
+      <button type="button" onClick={onRefresh}>
+        refresh
+      </button>
+      <button type="button" onClick={() => onEnable({ code: '123456' })}>
+        enable
+      </button>
+    </div>
   ),
 }))
 
@@ -77,6 +103,21 @@ vi.mock('@/views/auth/setup-two-factor-constants', () => ({
 import { SetupTwoFactorView } from '@/views/auth/SetupTwoFactorView'
 
 describe('SetupTwoFactorView', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.authState.user = {
+      userName: 'testuser',
+      loginName: 'test',
+      totpEnabled: false,
+    }
+    Object.assign(mocks.setupState, {
+      enabling: false,
+      form: {},
+      loading: false,
+      totpData: { secret: 'TEST', qrCodeUrl: 'otpauth://totp/test' },
+    })
+  })
+
   it('renders setup view with hero and content', { timeout: 15000 }, () => {
     render(<SetupTwoFactorView />)
     expect(screen.getByTestId('auth-shell')).toBeTruthy()
@@ -109,5 +150,45 @@ describe('SetupTwoFactorView', () => {
   it('displays current user name', () => {
     render(<SetupTwoFactorView />)
     expect(screen.getByText('testuser')).toBeTruthy()
+  })
+
+  it('falls back to login name when user name is empty', () => {
+    mocks.authState.user = { userName: '', loginName: 'login-user' }
+    render(<SetupTwoFactorView />)
+    expect(screen.getByText('login-user')).toBeTruthy()
+  })
+
+  it('falls back to translated current user label when user is missing', () => {
+    mocks.authState.user = null
+    render(<SetupTwoFactorView />)
+    expect(screen.getByText('当前用户')).toBeTruthy()
+  })
+
+  it('passes setup state to content', () => {
+    Object.assign(mocks.setupState, {
+      enabling: true,
+      loading: true,
+      totpData: { secret: 'UPDATED', qrCodeUrl: 'otpauth://totp/updated' },
+    })
+
+    render(<SetupTwoFactorView />)
+
+    expect(screen.getByTestId('loading').textContent).toBe('true')
+    expect(screen.getByTestId('enabling').textContent).toBe('true')
+    expect(screen.getByTestId('secret').textContent).toBe('UPDATED')
+  })
+
+  it('refreshes setup data from content action', () => {
+    render(<SetupTwoFactorView />)
+    fireEvent.click(screen.getByText('refresh'))
+    expect(mocks.setupState.fetchTotpSetup).toHaveBeenCalledTimes(1)
+  })
+
+  it('enables two factor from content form values', () => {
+    render(<SetupTwoFactorView />)
+    fireEvent.click(screen.getByText('enable'))
+    expect(mocks.setupState.handleEnable).toHaveBeenCalledWith({
+      code: '123456',
+    })
   })
 })

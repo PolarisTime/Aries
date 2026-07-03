@@ -152,6 +152,13 @@ describe('freightStatementPageConfig', () => {
       expect(items[0].id).toBe('freight-bill-1')
     })
 
+    it('transformItems uses index when item id is missing', () => {
+      const items = pi.transformItems!({
+        items: [{}],
+      } as any)
+      expect(items[0].id).toBe('freight-bill-0')
+    })
+
     it('transformItems handles non-array items', () => {
       const items = pi.transformItems!({} as any)
       expect(items).toEqual([])

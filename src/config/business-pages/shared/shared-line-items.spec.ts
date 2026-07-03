@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { cloneLineItems, transformFreightItems } from './shared-line-items'
 
 describe('transformFreightItems', () => {
@@ -74,6 +74,23 @@ describe('transformFreightItems', () => {
     })
 
     expect(result).toEqual([])
+  })
+
+  it('fills defaults when parent and item fields are missing', () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(123)
+
+    const result = transformFreightItems({
+      items: [{}],
+    })
+
+    expect(result[0]).toMatchObject({
+      id: 'freight-item-123-1',
+      sourceNo: '',
+      brand: '',
+      material: '',
+    })
+
+    nowSpy.mockRestore()
   })
 })
 

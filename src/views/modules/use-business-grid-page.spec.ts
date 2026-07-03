@@ -295,6 +295,10 @@ describe('useBusinessGridPage', () => {
       defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
       setCurrentPage: expect.any(Function),
     })
+    act(() => {
+      mocks.useModuleFilters.mock.calls[0][0].setCurrentPage(4)
+    })
+    expect(result.current.currentPage).toBe(4)
     expect(mocks.useInfiniteBusinessItems).toHaveBeenCalledWith(
       expect.objectContaining({
         moduleKey: 'purchase-inbound',
@@ -334,6 +338,143 @@ describe('useBusinessGridPage', () => {
     })
   })
 
+  it('skips records and attachment counts when view permission is missing', () => {
+    mocks.useModulePermissions.mockReturnValue({
+      canViewRecords: false,
+      canCreateRecord: false,
+      canUpdateRecord: false,
+      canDeleteRecord: false,
+      canExportData: false,
+      canAuditRecord: false,
+      canPrintRecord: false,
+      can: mocks.can,
+      resolvedResource: 'purchase-inbound',
+    })
+
+    renderHook(() => useBusinessGridPage(props()))
+
+    expect(mocks.useInfiniteBusinessItems).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: false,
+      }),
+    )
+    expect(mocks.fetchAttachmentCounts).not.toHaveBeenCalled()
+    expect(mocks.useModuleRecordActions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        attachmentCounts: {},
+      }),
+    )
+    expect(mocks.useModuleEditorCapabilities).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        canEditLineItems: false,
+        canSaveCurrentEditor: false,
+      }),
+    )
+  })
+
+  it('skips attachment counts when current records have no ids', () => {
+    mocks.useInfiniteBusinessItems.mockReturnValue({
+      records: [],
+      total: 0,
+      isLoading: false,
+      isFetching: false,
+      warningMessage: null,
+    })
+
+    renderHook(() => useBusinessGridPage(props()))
+
+    expect(mocks.fetchAttachmentCounts).not.toHaveBeenCalled()
+    expect(mocks.useModuleRecordActions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        attachmentCounts: {},
+      }),
+    )
+  })
+
+  it('clears attachment counts when count loading fails', async () => {
+    mocks.fetchAttachmentCounts.mockRejectedValue(new Error('load failed'))
+
+    renderHook(() => useBusinessGridPage(props()))
+
+    await waitFor(() => {
+      expect(mocks.fetchAttachmentCounts).toHaveBeenCalledWith(
+        'purchase-inbound',
+        ['1', '2'],
+      )
+    })
+    await waitFor(() => {
+      expect(mocks.useModuleRecordActions).toHaveBeenCalledTimes(2)
+    })
+    expect(mocks.useModuleRecordActions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        attachmentCounts: {},
+      }),
+    )
+  })
+
+  it('falls back to empty attachment counts when response omits counts', async () => {
+    mocks.fetchAttachmentCounts.mockResolvedValue({
+      data: {},
+    })
+
+    renderHook(() => useBusinessGridPage(props()))
+
+    await waitFor(() => {
+      expect(mocks.useModuleRecordActions).toHaveBeenCalledTimes(2)
+    })
+    expect(mocks.useModuleRecordActions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        attachmentCounts: {},
+      }),
+    )
+  })
+
+  it('ignores attachment count success after unmount', async () => {
+    let resolveCounts:
+      | ((value: { data: { counts: Record<string, number> } }) => void)
+      | undefined
+    const countsPromise = new Promise<{
+      data: { counts: Record<string, number> }
+    }>((resolve) => {
+      resolveCounts = resolve
+    })
+    mocks.fetchAttachmentCounts.mockReturnValue(countsPromise)
+
+    const { unmount } = renderHook(() => useBusinessGridPage(props()))
+
+    await waitFor(() => {
+      expect(mocks.fetchAttachmentCounts).toHaveBeenCalled()
+    })
+    unmount()
+    await act(async () => {
+      resolveCounts?.({ data: { counts: { '1': 9 } } })
+      await countsPromise
+    })
+
+    expect(mocks.useModuleRecordActions).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores attachment count failure after unmount', async () => {
+    let rejectCounts: ((reason?: unknown) => void) | undefined
+    const countsPromise = new Promise<never>((_, reject) => {
+      rejectCounts = reject
+    })
+    mocks.fetchAttachmentCounts.mockReturnValue(countsPromise)
+
+    const { unmount } = renderHook(() => useBusinessGridPage(props()))
+
+    await waitFor(() => {
+      expect(mocks.fetchAttachmentCounts).toHaveBeenCalled()
+    })
+    unmount()
+    await act(async () => {
+      rejectCounts?.(new Error('cancelled'))
+      await countsPromise.catch(() => undefined)
+    })
+
+    expect(mocks.useModuleRecordActions).toHaveBeenCalledTimes(1)
+  })
+
   it('updates pagination and clears selected rows', () => {
     const { result } = renderHook(() => useBusinessGridPage(props()))
 
@@ -371,6 +512,7 @@ describe('useBusinessGridPage', () => {
           { key: 'create', label: '新增' },
           { key: 'export', label: '导出' },
           { key: 'export_balance', label: '导出账款' },
+          { key: 'downloadAll', label: '批量导出' },
         ],
       },
     })
@@ -386,6 +528,21 @@ describe('useBusinessGridPage', () => {
       { key: 'create', label: '新增' },
     ])
     expect(mocks.handleExport).not.toHaveBeenCalled()
+  })
+
+  it('keeps non-export toolbar actions unchanged outside master data pages', () => {
+    const toolbarConfig = {
+      ...config(),
+      actions: [{ key: 'refresh', label: '刷新' }],
+    }
+    mocks.useModulePageConfig.mockReturnValue({
+      config: toolbarConfig,
+    })
+
+    renderHook(() => useBusinessGridPage(props()))
+
+    const toolbarOptions = mocks.useModuleToolbarActions.mock.calls[0][0]
+    expect(toolbarOptions.config).toBe(toolbarConfig)
   })
 
   it('exposes delegated actions', () => {
@@ -462,6 +619,7 @@ describe('useBusinessGridPage', () => {
   })
 
   it('wires toolbar handlers for statement and freight actions', () => {
+    window.history.replaceState(null, '', '/access-control?tab=roles')
     renderHook(() => useBusinessGridPage(props()))
     const toolbarOptions = mocks.useModuleToolbarActions.mock.calls[0][0]
 
@@ -474,6 +632,7 @@ describe('useBusinessGridPage', () => {
     toolbarOptions.handlers.handleSelectedDeleteRecords()
     toolbarOptions.handlers.handleSelectedReverseAuditRecords()
     toolbarOptions.handlers.openFreightPickupList()
+    toolbarOptions.handlers.navigateToRoleActionEditor()
 
     expect(mocks.openEditor).toHaveBeenCalledWith(null)
     expect(mocks.openCustomerStatement).toHaveBeenCalled()
@@ -484,6 +643,120 @@ describe('useBusinessGridPage', () => {
     expect(mocks.handleSelectedDeleteRecords).toHaveBeenCalled()
     expect(mocks.handleSelectedReverseAuditRecords).toHaveBeenCalled()
     expect(mocks.openFreightPickup).toHaveBeenCalledWith([])
+  })
+
+  it('evaluates toolbar permissions and toolbar export handlers', async () => {
+    const { result } = renderHook(() => useBusinessGridPage(masterProps()))
+    const toolbarOptions = mocks.useModuleToolbarActions.mock.calls[0][0]
+
+    mocks.can.mockReturnValueOnce(true)
+
+    expect(toolbarOptions.hasAnyModuleAction(['create'])).toBe(true)
+    expect(toolbarOptions.hasAnyModuleAction(['update'])).toBe(true)
+    expect(toolbarOptions.hasAnyModuleAction(['delete'])).toBe(false)
+    expect(toolbarOptions.hasAnyModuleAction(['audit'])).toBe(true)
+    expect(toolbarOptions.hasAnyModuleAction(['export'])).toBe(true)
+    expect(toolbarOptions.hasAnyModuleAction(['print'])).toBe(true)
+    expect(toolbarOptions.hasAnyModuleAction(['manage_permissions'])).toBe(true)
+    expect(toolbarOptions.hasAnyModuleAction(['unknown'])).toBe(false)
+
+    await act(async () => {
+      await toolbarOptions.handlers.exportRows()
+      await toolbarOptions.handlers.exportMaterialRows()
+    })
+
+    expect(mocks.can).toHaveBeenCalledWith(
+      'purchase-inbound',
+      'manage_permissions',
+    )
+    expect(mocks.handleExport).toHaveBeenCalledTimes(2)
+    expect(result.current.canExportData).toBe(true)
+  })
+
+  it('opens freight pickup with selected records and exposes action context', () => {
+    const { result } = renderHook(() => useBusinessGridPage(props()))
+
+    act(() => result.current.setSelectedRowKeys(['1']))
+    act(() =>
+      result.current.setSelectedRowMap({
+        '1': { id: '1', projectId: 'P-1' },
+      }),
+    )
+    const actionOptions = mocks.useBusinessGridActions.mock.calls.at(-1)?.[0]
+    const toolbarOptions = mocks.useModuleToolbarActions.mock.calls.at(-1)?.[0]
+
+    toolbarOptions.handlers.openFreightPickupList()
+    act(() => actionOptions.clearSelection())
+
+    expect(actionOptions.selectedRows).toEqual([{ id: '1', projectId: 'P-1' }])
+    expect(actionOptions.refreshModuleQueries).toBe(mocks.refreshModuleQueries)
+    expect(mocks.openFreightPickup).toHaveBeenCalledWith([
+      { id: '1', projectId: 'P-1' },
+    ])
+    expect(result.current.selectedRowKeys).toEqual([])
+  })
+
+  it('uses empty config and form field fallbacks while config is loading', () => {
+    mocks.useModulePageConfig.mockReturnValue({
+      config: undefined,
+    })
+    mocks.useBusinessGridEditor.mockReturnValue({
+      editRecord: null,
+      editorLockLoading: false,
+      editorLockRelatedRows: [],
+      editorOpen: false,
+      openEditor: mocks.openEditor,
+      closeEditor: mocks.closeEditor,
+      handleSaved: mocks.handleEditorSaved,
+    })
+    mocks.resolveStatusOptions.mockReturnValue([
+      { label: '草稿', value: 'draft' },
+    ])
+
+    const { result } = renderHook(() => useBusinessGridPage(props()))
+    const capabilityOptions =
+      mocks.useModuleEditorCapabilities.mock.calls.at(-1)?.[0]
+    const statusField = {
+      key: 'status',
+      label: '状态',
+      type: 'select',
+      options: [{ label: '草稿', value: 'draft' }],
+    }
+
+    expect(result.current.config).toBeUndefined()
+    expect(mocks.buildDefaultModuleFilters).toHaveBeenCalledWith(undefined)
+    expect(mocks.resolveMasterOptionRequirements).toHaveBeenCalledWith([])
+    expect(mocks.useDetailSupport).toHaveBeenCalledWith({
+      moduleKey: 'purchase-inbound',
+      config: expect.objectContaining({ key: '', columns: [] }),
+    })
+    expect(mocks.useBusinessGridEditor).toHaveBeenCalledWith({
+      moduleKey: 'purchase-inbound',
+      config: expect.objectContaining({ key: '', columns: [] }),
+    })
+    expect(
+      mocks.useDetailSupport.mock.calls.at(-1)?.[0].config.buildOverview([]),
+    ).toEqual([])
+    expect(mocks.useBusinessGridTable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        config: undefined,
+      }),
+    )
+    expect(capabilityOptions).toEqual(
+      expect.objectContaining({
+        formFields: [],
+        listStatusFields: [],
+        currentStatus: undefined,
+        isReadOnly: false,
+      }),
+    )
+    expect(capabilityOptions.resolveModuleStatusOptions({})).toEqual([])
+    expect(capabilityOptions.resolveModuleStatusOptions(statusField)).toEqual([
+      { label: '草稿', value: 'draft' },
+    ])
+    expect(mocks.resolveStatusOptions).toHaveBeenCalledWith({
+      fields: [statusField],
+    })
   })
 })
 

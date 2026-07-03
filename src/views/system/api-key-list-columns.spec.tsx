@@ -107,6 +107,59 @@ describe('api-key-list-columns', () => {
     expect(screen.getByText('tester')).toBeInTheDocument()
     expect(screen.getByText('已过期')).toBeInTheDocument()
   })
+
+  it('renders empty scope summaries and login fallback owner', () => {
+    const columns = buildApiKeyListColumns({
+      canEdit: true,
+      resourceOptions: [],
+      actionOptions: [],
+      onView: vi.fn(),
+      onRevoke: vi.fn(),
+    })
+    const record = apiKeyRecord({
+      allowedResources: undefined as unknown as string[],
+      allowedActions: undefined as unknown as string[],
+      userName: '',
+      loginName: 'fallback-login',
+      createdAt: 'invalid-date',
+      expiresAt: '',
+      status: '未知',
+    })
+
+    expect(renderColumn(columns, 'allowedResources', undefined, record)).toBe(
+      '按使用范围',
+    )
+    expect(renderColumn(columns, 'allowedActions', undefined, record)).toBe(
+      '未设置',
+    )
+    expect(renderColumn(columns, 'createdAt', record.createdAt, record)).toBe(
+      'invalid-date',
+    )
+
+    render(
+      <>
+        {renderColumn(columns, 'userName', null, record)}
+        {renderColumn(columns, 'status', '未知', record)}
+      </>,
+    )
+    expect(screen.getByText('fallback-login')).toBeInTheDocument()
+    expect(screen.getByText('未知')).toBeInTheDocument()
+  })
+
+  it('formats non-empty expiry values', () => {
+    const columns = buildApiKeyListColumns({
+      canEdit: true,
+      resourceOptions: [],
+      actionOptions: [],
+      onView: vi.fn(),
+      onRevoke: vi.fn(),
+    })
+    const record = apiKeyRecord()
+
+    expect(renderColumn(columns, 'expiresAt', record.expiresAt, record)).toBe(
+      '2026-07-01 10:00:00',
+    )
+  })
 })
 
 function renderColumn(

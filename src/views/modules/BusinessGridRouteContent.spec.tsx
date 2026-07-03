@@ -51,6 +51,7 @@ function createGridState(overrides: Record<string, unknown> = {}) {
     selectedRowKeys: [],
     canUseBulkPrintActions: false,
     handlePrintSelectedRecords: vi.fn(),
+    handleExportSalesOrderPrintXlsx: vi.fn(),
     clearSelection: vi.fn(),
     defaultFilters: {},
     setFilters: vi.fn(),
@@ -208,6 +209,7 @@ describe('BusinessGridRouteContent', () => {
         setFilters: state.setFilters,
       }),
     )
+    mocks.useBusinessGridRouteSync.mock.calls[0][0].setPage()
     expect(mocks.gridContentProps).toEqual(
       expect.objectContaining({
         defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
@@ -341,6 +343,22 @@ describe('BusinessGridRouteContent', () => {
     expect(state.openEditor).not.toHaveBeenCalled()
   })
 
+  it('does not open detail for read-only rows without view access', () => {
+    const state = createGridState({
+      canViewRecords: false,
+      config: { readOnly: true },
+    })
+    mocks.useBusinessGridPage.mockReturnValue(state)
+    const record = { id: 'row-1', status: '草稿' }
+
+    render(<BusinessGridRouteContent {...defaultProps} />)
+
+    mocks.gridContentProps!.onRowDoubleClick(record)
+
+    expect(state.openDetail).not.toHaveBeenCalled()
+    expect(state.openEditor).not.toHaveBeenCalled()
+  })
+
   it('opens detail on row double click when status blocks editing', () => {
     mocks.isEditBlockedByStatus.mockReturnValue(true)
     const state = createGridState()
@@ -352,6 +370,20 @@ describe('BusinessGridRouteContent', () => {
     mocks.gridContentProps!.onRowDoubleClick(record)
 
     expect(state.openDetail).toHaveBeenCalledWith(record)
+    expect(state.openEditor).not.toHaveBeenCalled()
+  })
+
+  it('does not open detail when editing is blocked without view access', () => {
+    mocks.isEditBlockedByStatus.mockReturnValue(true)
+    const state = createGridState({ canViewRecords: false })
+    mocks.useBusinessGridPage.mockReturnValue(state)
+    const record = { id: 'row-1', status: '已审核' }
+
+    render(<BusinessGridRouteContent {...defaultProps} />)
+
+    mocks.gridContentProps!.onRowDoubleClick(record)
+
+    expect(state.openDetail).not.toHaveBeenCalled()
     expect(state.openEditor).not.toHaveBeenCalled()
   })
 
@@ -408,6 +440,29 @@ describe('BusinessGridRouteContent', () => {
       { id: 'tpl-1' },
       { hideUnitPrice: true },
     )
+  })
+
+  it('passes sales-order print xlsx export action', () => {
+    const state = createGridState({
+      canUseBulkPrintActions: true,
+      config: { readOnly: false, title: '销售订单' },
+      records: [{ id: '1', orderNo: 'SO-001' }],
+      selectedRowKeys: ['1'],
+    })
+    mocks.useBusinessGridPage.mockReturnValue(state)
+
+    render(
+      <BusinessGridRouteContent
+        {...defaultProps}
+        pageDef={{ ...defaultProps.pageDef, moduleKey: 'sales-order' }}
+      />,
+    )
+
+    mocks.printDropdownProps!.onExportPrintXlsx({ hideUnitPrice: true })
+
+    expect(state.handleExportSalesOrderPrintXlsx).toHaveBeenCalledWith({
+      hideUnitPrice: true,
+    })
   })
 
   it('renders grid overlays', () => {

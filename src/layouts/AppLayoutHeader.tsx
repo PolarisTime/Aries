@@ -40,39 +40,49 @@ interface SideNavigationHeaderProps extends SharedHeaderProps {
 
 type AppLayoutHeaderProps = TopNavigationHeaderProps | SideNavigationHeaderProps
 
-function buildUserMenuItems(
+function buildUserMenu(
   t: TFunction,
   onOpenPersonalSettings: () => void,
   onSignOut: () => void,
-): NonNullable<MenuProps['items']> {
-  return [
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: t('layouts.userMenu.personalSettings'),
-      onClick: onOpenPersonalSettings,
+): MenuProps {
+  return {
+    items: [
+      {
+        key: 'settings',
+        icon: <SettingOutlined />,
+        label: t('layouts.userMenu.personalSettings'),
+      },
+      {
+        key: 'logout',
+        icon: <LogoutOutlined />,
+        label: t('layouts.userMenu.logout'),
+        danger: true,
+      },
+    ],
+    onClick: ({ key }) => {
+      if (key === 'settings') {
+        onOpenPersonalSettings()
+        return
+      }
+
+      if (key === 'logout') {
+        onSignOut()
+      }
     },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: t('layouts.userMenu.logout'),
-      danger: true,
-      onClick: onSignOut,
-    },
-  ]
+  }
 }
 
 export function AppLayoutHeader(props: AppLayoutHeaderProps) {
   const { t } = useTranslation()
-  const userMenuItems = buildUserMenuItems(
+  const userMenu = buildUserMenu(
     t,
     props.onOpenPersonalSettings,
     props.onSignOut,
   )
 
   if (props.kind === 'top') {
-    return <AppTopNavigationHeader {...props} userMenuItems={userMenuItems} />
+    return <AppTopNavigationHeader {...props} userMenu={userMenu} />
   }
 
-  return <AppSideNavigationHeader {...props} userMenuItems={userMenuItems} />
+  return <AppSideNavigationHeader {...props} userMenu={userMenu} />
 }

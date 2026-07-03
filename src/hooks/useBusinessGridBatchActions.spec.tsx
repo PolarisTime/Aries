@@ -586,4 +586,275 @@ describe('useBusinessGridBatchActions', () => {
     expect(successMock).toHaveBeenCalled()
     expect(refreshAndClearSelection).toHaveBeenCalled()
   })
+
+  it('includes skipped rows in successful audit feedback', async () => {
+    updateBusinessModuleStatusMock.mockResolvedValue(undefined)
+
+    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridBatchActions({
+        moduleKey: 'purchase-order',
+        selectedRowKeys: ['101', '202'],
+        selectedRows: [
+          { id: '101', status: '草稿' },
+          { id: '202', status: '已审核' },
+        ],
+        listAuditTarget: { key: 'status', value: '已审核' },
+        listReverseAuditTarget: { key: 'status', value: '草稿' },
+        refreshAndClearSelection,
+      }),
+    )
+
+    act(() => {
+      result.current.handleSelectedAuditRecords()
+    })
+
+    const confirmArg = confirmMock.mock.calls[0]?.[0]
+    await act(async () => {
+      await confirmArg.onOk()
+    })
+
+    expect(updateBusinessModuleStatusMock).toHaveBeenCalledTimes(1)
+    expect(updateBusinessModuleStatusMock).toHaveBeenCalledWith(
+      'purchase-order',
+      '101',
+      '已审核',
+    )
+    expect(successMock).toHaveBeenCalled()
+    expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the first audit error when later audit rows also fail', async () => {
+    updateBusinessModuleStatusMock
+      .mockRejectedValueOnce(new Error('首次审核失败'))
+      .mockRejectedValueOnce(new Error('再次审核失败'))
+
+    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridBatchActions({
+        moduleKey: 'purchase-order',
+        selectedRowKeys: ['101', '202', '303'],
+        selectedRows: [
+          { id: '101', status: '草稿' },
+          { id: '202', status: '草稿' },
+          { id: '303', status: '已审核' },
+        ],
+        listAuditTarget: { key: 'status', value: '已审核' },
+        listReverseAuditTarget: { key: 'status', value: '草稿' },
+        refreshAndClearSelection,
+      }),
+    )
+
+    act(() => {
+      result.current.handleSelectedAuditRecords()
+    })
+
+    const confirmArg = confirmMock.mock.calls[0]?.[0]
+    await act(async () => {
+      await confirmArg.onOk()
+    })
+
+    expect(updateBusinessModuleStatusMock).toHaveBeenCalledTimes(2)
+    expect(warningMock).toHaveBeenCalled()
+    expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
+  })
+
+  it('omits audit error details when the failure has an empty message', async () => {
+    updateBusinessModuleStatusMock.mockRejectedValue(new Error(''))
+
+    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridBatchActions({
+        moduleKey: 'purchase-order',
+        selectedRowKeys: ['101'],
+        selectedRows: [{ id: '101', status: '草稿' }],
+        listAuditTarget: { key: 'status', value: '已审核' },
+        listReverseAuditTarget: { key: 'status', value: '草稿' },
+        refreshAndClearSelection,
+      }),
+    )
+
+    act(() => {
+      result.current.handleSelectedAuditRecords()
+    })
+
+    const confirmArg = confirmMock.mock.calls[0]?.[0]
+    await act(async () => {
+      await confirmArg.onOk()
+    })
+
+    expect(warningMock).toHaveBeenCalled()
+    expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the first delete error when later delete rows also fail', async () => {
+    deleteBusinessModuleMock
+      .mockRejectedValueOnce(new Error('首次删除失败'))
+      .mockRejectedValueOnce(new Error('再次删除失败'))
+
+    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridBatchActions({
+        moduleKey: 'purchase-order',
+        selectedRowKeys: ['101', '202', '303'],
+        selectedRows: [
+          { id: '101', status: '待审核' },
+          { id: '202', status: '待审核' },
+          { id: '303', status: '已审核' },
+        ],
+        listAuditTarget: { key: 'status', value: '已审核' },
+        listReverseAuditTarget: { key: 'status', value: '待审核' },
+        refreshAndClearSelection,
+      }),
+    )
+
+    act(() => {
+      result.current.handleSelectedDeleteRecords()
+    })
+
+    const confirmArg = confirmMock.mock.calls[0]?.[0]
+    await act(async () => {
+      await confirmArg.onOk()
+    })
+
+    expect(deleteBusinessModuleMock).toHaveBeenCalledTimes(2)
+    expect(warningMock).toHaveBeenCalled()
+    expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
+  })
+
+  it('omits delete error details when the failure has an empty message', async () => {
+    deleteBusinessModuleMock.mockRejectedValue(new Error(''))
+
+    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridBatchActions({
+        moduleKey: 'purchase-order',
+        selectedRowKeys: ['101'],
+        selectedRows: [{ id: '101', status: '待审核' }],
+        listAuditTarget: { key: 'status', value: '已审核' },
+        listReverseAuditTarget: { key: 'status', value: '待审核' },
+        refreshAndClearSelection,
+      }),
+    )
+
+    act(() => {
+      result.current.handleSelectedDeleteRecords()
+    })
+
+    const confirmArg = confirmMock.mock.calls[0]?.[0]
+    await act(async () => {
+      await confirmArg.onOk()
+    })
+
+    expect(warningMock).toHaveBeenCalled()
+    expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
+  })
+
+  it('includes skipped rows in successful reverse audit feedback', async () => {
+    updateBusinessModuleStatusMock.mockResolvedValue(undefined)
+
+    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridBatchActions({
+        moduleKey: 'purchase-order',
+        selectedRowKeys: ['101', '202'],
+        selectedRows: [
+          { id: '101', status: '已审核' },
+          { id: '202', status: '草稿' },
+        ],
+        listAuditTarget: { key: 'status', value: '已审核' },
+        listReverseAuditTarget: { key: 'status', value: '草稿' },
+        refreshAndClearSelection,
+      }),
+    )
+
+    act(() => {
+      result.current.handleSelectedReverseAuditRecords()
+    })
+
+    const confirmArg = confirmMock.mock.calls[0]?.[0]
+    await act(async () => {
+      await confirmArg.onOk()
+    })
+
+    expect(updateBusinessModuleStatusMock).toHaveBeenCalledTimes(1)
+    expect(updateBusinessModuleStatusMock).toHaveBeenCalledWith(
+      'purchase-order',
+      '101',
+      '草稿',
+    )
+    expect(successMock).toHaveBeenCalled()
+    expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the first reverse audit error when later rows also fail', async () => {
+    updateBusinessModuleStatusMock
+      .mockRejectedValueOnce(new Error('首次反审核失败'))
+      .mockRejectedValueOnce(new Error('再次反审核失败'))
+
+    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridBatchActions({
+        moduleKey: 'purchase-order',
+        selectedRowKeys: ['101', '202', '303'],
+        selectedRows: [
+          { id: '101', status: '已审核' },
+          { id: '202', status: '已审核' },
+          { id: '303', status: '草稿' },
+        ],
+        listAuditTarget: { key: 'status', value: '已审核' },
+        listReverseAuditTarget: { key: 'status', value: '草稿' },
+        refreshAndClearSelection,
+      }),
+    )
+
+    act(() => {
+      result.current.handleSelectedReverseAuditRecords()
+    })
+
+    const confirmArg = confirmMock.mock.calls[0]?.[0]
+    await act(async () => {
+      await confirmArg.onOk()
+    })
+
+    expect(updateBusinessModuleStatusMock).toHaveBeenCalledTimes(2)
+    expect(warningMock).toHaveBeenCalled()
+    expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
+  })
+
+  it('omits reverse audit error details when the failure has an empty message', async () => {
+    updateBusinessModuleStatusMock.mockRejectedValue(new Error(''))
+
+    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridBatchActions({
+        moduleKey: 'purchase-order',
+        selectedRowKeys: ['101'],
+        selectedRows: [{ id: '101', status: '已审核' }],
+        listAuditTarget: { key: 'status', value: '已审核' },
+        listReverseAuditTarget: { key: 'status', value: '草稿' },
+        refreshAndClearSelection,
+      }),
+    )
+
+    act(() => {
+      result.current.handleSelectedReverseAuditRecords()
+    })
+
+    const confirmArg = confirmMock.mock.calls[0]?.[0]
+    await act(async () => {
+      await confirmArg.onOk()
+    })
+
+    expect(warningMock).toHaveBeenCalled()
+    expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
+  })
 })

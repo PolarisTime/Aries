@@ -37,6 +37,7 @@ vi.mock('@/utils/antd-app', () => ({
   message: { success: vi.fn(), error: vi.fn() },
 }))
 
+import { message } from '@/utils/antd-app'
 import { useSetupTwoFactorState } from '@/views/auth/useSetupTwoFactorState'
 
 async function waitForLoading(result: {
@@ -86,6 +87,25 @@ describe('useSetupTwoFactorState', () => {
     await waitFor(() => {
       expect(result.current.totpData?.secret).toBe('NEWSECRET')
     })
+  })
+
+  it('fetchTotpSetup reports Error and fallback failures', async () => {
+    const { result } = renderHook(() => useSetupTwoFactorState())
+    await waitForLoading(result)
+
+    mockSetupOwn2fa.mockRejectedValue(new Error('Refresh failed'))
+    await act(async () => {
+      await result.current.fetchTotpSetup()
+    })
+    expect(message.error).toHaveBeenCalledWith('Refresh failed')
+    expect(result.current.loading).toBe(false)
+
+    mockSetupOwn2fa.mockRejectedValue('string error')
+    await act(async () => {
+      await result.current.fetchTotpSetup()
+    })
+    expect(message.error).toHaveBeenCalledWith('加载失败')
+    expect(result.current.loading).toBe(false)
   })
 
   it('handleEnable calls enableOwn2fa and syncs state', async () => {
@@ -228,6 +248,28 @@ describe('useSetupTwoFactorState', () => {
       writable: true,
       configurable: true,
     })
+  })
+
+  it('handleEnable falls back to /dashboard when window is unavailable', async () => {
+    const originalWindow = globalThis.window
+    mockEnableOwn2fa.mockResolvedValue(undefined)
+    const { result } = renderHook(() => useSetupTwoFactorState())
+    await waitForLoading(result)
+
+    vi.useFakeTimers()
+    try {
+      await act(async () => {
+        await result.current.handleEnable({ totpCode: '123456' })
+      })
+      vi.stubGlobal('window', undefined)
+      act(() => {
+        vi.advanceTimersByTime(300)
+      })
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard' })
+    } finally {
+      vi.stubGlobal('window', originalWindow)
+      vi.useRealTimers()
+    }
   })
 
   it('calls syncCurrentUserTotpState on successful enable', async () => {

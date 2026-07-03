@@ -97,6 +97,7 @@ describe('useModulePageConfig', () => {
       useModulePageConfig({ ...defaultProps, initialConfig }),
     )
     expect(result.current.config).toEqual(initialConfig)
+    expect(useQueryMock.mock.calls[0][0].placeholderData()).toBe(initialConfig)
   })
 
   it('returns loading state', () => {
@@ -165,6 +166,8 @@ describe('useModulePageConfig', () => {
     expect(
       result.current.config?.itemColumns?.map((column) => column.dataIndex),
     ).toEqual(['materialCode', 'weightTon'])
+    result.current.config?.buildOverview([{ totalWeight: 10 }] as any)
+    expect(buildWeightOverviewMock).toHaveBeenCalledWith([{ totalWeight: 10 }])
   })
 
   it('handles receipt module with statement link catalog', () => {
@@ -201,6 +204,23 @@ describe('useModulePageConfig', () => {
     )
 
     expect(result.current.config).toBeDefined()
+  })
+
+  it('defaults receipt statement link fields to an empty list', () => {
+    useQueryMock.mockReturnValue({
+      data: {
+        key: 'receipt',
+        columns: [],
+        detailFields: [],
+      },
+      isLoading: false,
+    })
+
+    const { result } = renderHook(() =>
+      useModulePageConfig({ moduleKey: 'receipt' }),
+    )
+
+    expect(result.current.config?.formFields).toEqual([])
   })
 
   it('falls back to initialConfig when key does not match', () => {
@@ -313,5 +333,83 @@ describe('useModulePageConfig', () => {
 
     const { result } = renderHook(() => useModulePageConfig(defaultProps))
     expect(result.current.config).toBeDefined()
+  })
+
+  it('configures query functions and handles client setting failures', async () => {
+    const queryOptions: any[] = []
+    useQueryMock.mockImplementation((options: any) => {
+      queryOptions.push(options)
+      if (options.queryKey?.[0] === 'businessPageConfig') {
+        return {
+          data: {
+            key: 'receipt',
+            columns: [],
+            formFields: [
+              { key: 'sourceStatementId', title: 'Source' },
+              { key: 'remark', title: 'Remark' },
+            ],
+            detailFields: [],
+          },
+          isLoading: false,
+        }
+      }
+      if (options.queryKey?.[0] === 'statementLinkOptions') {
+        return {
+          data: [{ id: `${options.queryKey[1]}-1` }],
+          isLoading: false,
+        }
+      }
+      return { data: [], isLoading: false }
+    })
+    loadBusinessPageConfigMock.mockResolvedValue({ key: 'receipt' })
+    listClientSettingsMock.mockRejectedValue(new Error('settings failed'))
+    buildStatementLinkOptionsMock.mockReturnValue([{ label: 'S1', value: '1' }])
+
+    const { result } = renderHook(() =>
+      useModulePageConfig({ moduleKey: 'receipt' }),
+    )
+
+    const configQuery = queryOptions.find(
+      (options) => options.queryKey?.[0] === 'businessPageConfig',
+    )
+    await expect(configQuery.queryFn()).resolves.toEqual({ key: 'receipt' })
+
+    const settingsQuery = queryOptions.find(
+      (options) => options.queryKey?.[0] === 'clientSettings',
+    )
+    await expect(settingsQuery.queryFn()).resolves.toEqual([])
+
+    const statementQueries = queryOptions.filter(
+      (options) => options.queryKey?.[0] === 'statementLinkOptions',
+    )
+    await Promise.all(statementQueries.map((options) => options.queryFn()))
+    expect(listAllBusinessModuleRowsMock).toHaveBeenCalledWith(
+      'customer-statement',
+      {},
+    )
+    expect(listAllBusinessModuleRowsMock).toHaveBeenCalledWith(
+      'supplier-statement',
+      {},
+    )
+    expect(listAllBusinessModuleRowsMock).toHaveBeenCalledWith(
+      'freight-statement',
+      {},
+    )
+
+    const sourceField = result.current.config?.formFields?.find(
+      (field: any) => field.key === 'sourceStatementId',
+    )
+    expect(sourceField?.options?.({ customerName: '客户A' })).toEqual([
+      { label: 'S1', value: '1' },
+    ])
+    expect(buildStatementLinkOptionsMock).toHaveBeenCalledWith(
+      'receipt',
+      { customerName: '客户A' },
+      {
+        customerStatements: [{ id: 'customer-statement-1' }],
+        supplierStatements: [{ id: 'supplier-statement-1' }],
+        freightStatements: [{ id: 'freight-statement-1' }],
+      },
+    )
   })
 })

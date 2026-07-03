@@ -108,7 +108,9 @@ import {
 describe('useMasterOptions', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    useAuthStoreMock.mockReturnValue('test-token')
+    useAuthStoreMock.mockImplementation((selector) =>
+      selector({ token: 'test-token' }),
+    )
     useQueryMock.mockReturnValue({ data: undefined, isLoading: false })
   })
 
@@ -187,12 +189,26 @@ describe('useMasterOptions', () => {
   })
 
   it('disables all queries when token is missing', () => {
-    useAuthStoreMock.mockReturnValue(null)
+    useAuthStoreMock.mockImplementation((selector) => selector({ token: null }))
     renderHook(() => useMasterOptions({ suppliers: true }))
 
     expect(useQueryMock).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: false }),
     )
+  })
+
+  it('configures material search query with default keyword and limit', async () => {
+    const materials = [{ id: '1', materialCode: 'M001' }]
+    fetchMaterialSearchMock.mockResolvedValue(materials)
+
+    renderHook(() => useMasterOptions({ materials: true }))
+
+    const materialQueryConfig = useQueryMock.mock.calls.find(
+      ([config]) => config.queryKey[0] === 'material',
+    )?.[0]
+
+    await expect(materialQueryConfig.queryFn()).resolves.toBe(materials)
+    expect(fetchMaterialSearchMock).toHaveBeenCalledWith('', 500)
   })
 
   it('returns isLoading true when any query is loading', () => {
@@ -281,5 +297,18 @@ describe('resolveMasterOptionRequirements', () => {
   it('handles non-function options', () => {
     const result = resolveMasterOptionRequirements([{ options: 'some-string' }])
     expect(result.suppliers).toBe(false)
+  })
+
+  it('ignores unknown function options', () => {
+    const result = resolveMasterOptionRequirements([{ options: vi.fn() }])
+    expect(result).toEqual({
+      suppliers: false,
+      customers: false,
+      carriers: false,
+      warehouses: false,
+      settlementCompanies: false,
+      materialCategories: false,
+      materials: false,
+    })
   })
 })

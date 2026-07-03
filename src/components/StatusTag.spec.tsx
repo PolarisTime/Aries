@@ -43,6 +43,18 @@ describe('StatusTag', () => {
     expect(screen.getByText('active')).toBeTruthy()
   })
 
+  it('falls back to status tone when display text trims to empty', () => {
+    const { container } = render(
+      <StatusTag
+        status="已审核"
+        statusMap={{ 已审核: { color: 'default', label: '   ' } }}
+      />,
+    )
+    expect(container.querySelector('.ant-tag')).toHaveClass(
+      'ant-tag-processing',
+    )
+  })
+
   it('normalizes status before reading statusMap', () => {
     render(<StatusTag status=" approved " statusMap={statusMap} />)
     expect(screen.getByText('已审核')).toBeTruthy()
@@ -75,6 +87,17 @@ describe('StatusTag', () => {
     )
     expect(screen.getByText('禁用')).toHaveClass('ant-tag-blue')
     expect(screen.getByText('禁用')).toHaveClass('ant-tag-outlined')
+  })
+
+  it('falls back to resolved tone when statusMap color is unknown', () => {
+    render(
+      <StatusTag
+        status="自定义"
+        statusMap={{ 自定义: { color: 'purple', label: '已审核' } }}
+      />,
+    )
+    expect(screen.getByText('已审核')).toHaveClass('ant-tag-processing')
+    expect(screen.getByText('已审核')).toHaveClass('ant-tag-outlined')
   })
 
   it('uses light blue fallback tone for pending statuses', () => {

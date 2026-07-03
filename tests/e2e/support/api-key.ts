@@ -636,6 +636,7 @@ async function applyBrowserSession(page: Page, session: BrowserSession) {
       localStorage.setItem(storageKeys.tokenExpiresAt, expiresAt)
       localStorage.setItem(storageKeys.user, JSON.stringify(user))
       localStorage.setItem(storageKeys.authPersistence, 'local')
+      localStorage.setItem('leo-locale', 'zh-CN')
       sessionStorage.removeItem(storageKeys.token)
       sessionStorage.removeItem(storageKeys.tokenExpiresAt)
       sessionStorage.removeItem(storageKeys.user)
@@ -656,6 +657,7 @@ async function applyBrowserSession(page: Page, session: BrowserSession) {
       localStorage.setItem(storageKeys.tokenExpiresAt, expiresAt)
       localStorage.setItem(storageKeys.user, JSON.stringify(user))
       localStorage.setItem(storageKeys.authPersistence, 'local')
+      localStorage.setItem('leo-locale', 'zh-CN')
       sessionStorage.removeItem(storageKeys.token)
       sessionStorage.removeItem(storageKeys.tokenExpiresAt)
       sessionStorage.removeItem(storageKeys.user)
@@ -686,6 +688,7 @@ export async function primeApiKeySession(page: Page) {
 
   session = await syncSessionFromPage(page, session)
   updateCachedSession(session)
+  await expect(page).not.toHaveURL(/\/login(?:\?|$)/)
 
   return session
 }

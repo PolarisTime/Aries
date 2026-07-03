@@ -77,6 +77,15 @@ describe('useBusinessGridStatementActions', () => {
     expect(result.current.handleStatementGenerate).toBeDefined()
   })
 
+  it('loads display switches through the query config', async () => {
+    renderHook(() => useBusinessGridStatementActions(defaultProps))
+
+    const queryConfig = useQueryMock.mock.calls[0]?.[0]
+    await queryConfig.queryFn()
+
+    expect(listDisplaySwitchesMock).toHaveBeenCalledTimes(1)
+  })
+
   it('generates supplier statement', async () => {
     const candidates = [
       { id: '1', supplierName: 'Supplier A', inboundDate: '2024-01-15' },
@@ -101,6 +110,9 @@ describe('useBusinessGridStatementActions', () => {
       'supplier-statement',
       expect.any(Object),
     )
+    const draftOptions = buildSupplierStatementDraftDataMock.mock.calls[0]?.[0]
+    expect(draftOptions.buildLineItemId()).toMatch(/^draft-supplier-\d+-0$/)
+    expect(draftOptions.buildLineItemId()).toMatch(/^draft-supplier-\d+-1$/)
     expect(defaultProps.refreshModuleQueries).toHaveBeenCalled()
   })
 

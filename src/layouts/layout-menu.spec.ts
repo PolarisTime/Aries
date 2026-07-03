@@ -161,6 +161,29 @@ describe('buildVisibleLayoutMenuEntries', () => {
     expect(entries[0].children[0].path).toBe('/child')
   })
 
+  it('normalizes system menu routePath and missing children', () => {
+    const systemMenuTree = [
+      {
+        menuCode: 'menu-only',
+        menuName: '仅菜单',
+        routePath: 'menu-only',
+        icon: 'DashboardOutlined',
+        resourceCode: 'res-code',
+      },
+    ] as MenuNode[]
+
+    const entries = buildVisibleLayoutMenuEntries({
+      ...defaultOptions,
+      systemMenuTree,
+      getPageDefinition: vi.fn().mockReturnValue(undefined),
+      userCanAccessMenuCode: vi.fn().mockReturnValue(true),
+    })
+
+    expect(entries).toHaveLength(1)
+    expect(entries[0].path).toBe('/menu-only')
+    expect(entries[0].children).toEqual([])
+  })
+
   it('filters out hidden entries from system menu tree', () => {
     const hiddenPage: AppPageDefinition = {
       key: 'hidden-child',
@@ -357,7 +380,7 @@ describe('buildVisibleLayoutMenuEntries', () => {
       resourceKey: 'child-alias',
       hiddenInMenu: false,
       menuParent: 'parent-menu',
-      accessMenuKeys: ['some-key'],
+      accessResources: ['some-resource'],
     }
 
     const systemMenuTree: MenuNode[] = [
@@ -393,7 +416,7 @@ describe('buildVisibleLayoutMenuEntries', () => {
       resourceKey: 'orphan',
       hiddenInMenu: false,
       menuParent: 'nonexistent-parent',
-      accessMenuKeys: ['some-key'],
+      accessResources: ['some-resource'],
     }
 
     const systemMenuTree: MenuNode[] = [
@@ -456,6 +479,37 @@ describe('buildVisibleLayoutMenuEntries', () => {
 
     const codes = entries.map((e) => e.menuCode)
     expect(codes).toContain('resource-alias')
+  })
+
+  it('appends root alias entry when system menu tree is present', () => {
+    const aliasEntry: AppPageDefinition = {
+      key: 'root-alias',
+      title: '根别名',
+      menuKey: '/root-alias',
+      icon: 'LinkOutlined' as AppIconKey,
+      resourceKey: 'root-alias',
+      hiddenInMenu: false,
+      accessResources: ['some-resource'],
+    }
+
+    const systemMenuTree: MenuNode[] = [
+      {
+        menuCode: 'dashboard',
+        menuName: '工作台',
+        routePath: '/dashboard',
+        icon: 'DashboardOutlined',
+        resourceCode: null,
+        children: [],
+      },
+    ]
+
+    const entries = buildVisibleLayoutMenuEntries({
+      ...defaultOptions,
+      appPageDefinitions: [...sampleEntries, aliasEntry],
+      systemMenuTree,
+    })
+
+    expect(entries.map((e) => e.menuCode)).toContain('root-alias')
   })
 
   it('handles system menu tree with multiple levels', () => {

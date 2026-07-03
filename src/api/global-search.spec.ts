@@ -61,6 +61,14 @@ describe('searchGlobalDocuments', () => {
       },
     ])
   })
+
+  it('returns empty array when response data is null', async () => {
+    httpGetMock.mockResolvedValue({ code: 0, data: null })
+
+    await expect(searchGlobalDocuments('PO', ['purchase-order'])).resolves.toEqual(
+      [],
+    )
+  })
 })
 
 describe('toGlobalSearchResult', () => {

@@ -162,5 +162,22 @@ describe('print-template schemas', () => {
       const result = savePrintTemplatePayloadSchema.safeParse(data)
       expect(result.success).toBe(false)
     })
+
+    it('should reject coord template without templateHtml', () => {
+      const result = savePrintTemplatePayloadSchema.safeParse({
+        billType: 'purchase',
+        templateName: '模板1',
+        templateHtml: '   ',
+        templateType: 'COORD',
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.issues[0]).toMatchObject({
+          path: ['templateHtml'],
+          message: 'templateHtml is required',
+        })
+      }
+    })
   })
 })

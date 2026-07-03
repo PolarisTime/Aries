@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -42,10 +42,13 @@ describe('UserAccountTableCard', () => {
         id: '1',
         loginName: 'admin',
         userName: 'Admin',
+        departmentName: '平台部',
+        mobile: '13800000000',
         status: '正常',
         totpEnabled: true,
         roleNames: ['管理员'],
         dataScope: '全部数据',
+        lastLoginDate: '2026-07-03 12:00:00',
       },
       {
         id: '2',
@@ -74,6 +77,10 @@ describe('UserAccountTableCard', () => {
     onDelete: vi.fn(),
     onPageChange: vi.fn(),
   }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
 
   it('renders without crashing', () => {
     expect(UserAccountTableCard).toBeDefined()
@@ -133,5 +140,66 @@ describe('UserAccountTableCard', () => {
     expect(
       screen.getAllByText('system.userAccountTable.delete').length,
     ).toBeGreaterThan(0)
+  })
+
+  it('dispatches row actions with the selected user record', () => {
+    render(<UserAccountTableCard {...defaultProps} />)
+
+    fireEvent.click(screen.getAllByText('system.userAccountTable.view')[0])
+    fireEvent.click(screen.getAllByText('system.userAccountTable.edit')[0])
+    fireEvent.click(screen.getAllByText('2FA')[0])
+    fireEvent.click(screen.getAllByText('system.userAccountTable.delete')[0])
+
+    expect(defaultProps.onView).toHaveBeenCalledWith(defaultProps.users[0])
+    expect(defaultProps.onEdit).toHaveBeenCalledWith(defaultProps.users[0])
+    expect(defaultProps.onManage2fa).toHaveBeenCalledWith(defaultProps.users[0])
+    expect(defaultProps.onDelete).toHaveBeenCalledWith(defaultProps.users[1])
+  })
+
+  it('hides privileged actions when permissions are missing', () => {
+    render(
+      <UserAccountTableCard
+        {...defaultProps}
+        canCreate={false}
+        canDelete={false}
+        canEdit={false}
+      />,
+    )
+
+    expect(
+      screen.queryByText('system.userAccountTable.edit'),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('2FA')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('system.userAccountTable.delete'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders fallback values for optional table cells', () => {
+    render(
+      <UserAccountTableCard
+        {...defaultProps}
+        users={[
+          {
+            id: '3',
+            loginName: 'empty-user',
+            userName: 'Empty User',
+            departmentName: '',
+            mobile: '',
+            status: '禁用',
+            totpEnabled: false,
+            roleNames: undefined as unknown as string[],
+            dataScope: '',
+          },
+        ]}
+      />,
+    )
+
+    expect(screen.getByText('empty-user')).toBeInTheDocument()
+    expect(screen.getAllByText('--').length).toBeGreaterThanOrEqual(4)
+    expect(
+      screen.getByText('system.userAccountTable.totpDisabled'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('禁用')).toBeInTheDocument()
   })
 })

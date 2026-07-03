@@ -74,8 +74,7 @@ export function toDateTimeMillis(value: unknown): number | null {
   if (!parsed) {
     return null
   }
-  const millis = parsed.valueOf()
-  return Number.isFinite(millis) ? millis : null
+  return parsed.valueOf()
 }
 
 export function formatDate(value: unknown, fallback = '—'): string {
@@ -153,8 +152,7 @@ function parseDateParts(
     return null
   }
 
-  const parsed = dayjs(candidate)
-  return parsed.isValid() ? parsed : null
+  return dayjs(candidate)
 }
 
 function normalizeTimestampMillis(rawValue: string, numericValue: number) {

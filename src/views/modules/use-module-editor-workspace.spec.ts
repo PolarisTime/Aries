@@ -27,7 +27,14 @@ import {
   syncDerivedEditorFormValuesForModule,
   trimEditorItemsForModule,
 } from '@/module-system/module-adapter-editor'
-import { buildParentImportState } from '@/module-system/module-adapter-parent-import'
+import {
+  buildOccupiedParentMap,
+  buildParentImportState,
+} from '@/module-system/module-adapter-parent-import'
+import {
+  getModuleRecordPrimaryNo,
+  parseParentRelationNos,
+} from '@/module-system/module-adapter-shared'
 import { message, modal } from '@/utils/antd-app'
 import { parseDateTimeValue } from '@/utils/formatters'
 import { getStoredUser } from '@/utils/storage'
@@ -37,6 +44,7 @@ import {
   writeModuleEditorDraft,
 } from '@/views/modules/module-editor-draft-storage'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
+import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view-utils'
 
 const mockFns = vi.hoisted(() => ({
   translate: (key: string) => key,
@@ -220,6 +228,16 @@ function renderWorkspace(overrides: Record<string, unknown> = {}) {
   return renderHook(() => useModuleEditorWorkspace(workspaceProps))
 }
 
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
 describe('useModuleEditorWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -255,7 +273,11 @@ describe('useModuleEditorWorkspace', () => {
       hasImportedCurrentParent: false,
       importedItemCount: 0,
     })
+    vi.mocked(buildOccupiedParentMap).mockReturnValue({})
+    vi.mocked(getModuleRecordPrimaryNo).mockReturnValue('')
+    vi.mocked(parseParentRelationNos).mockReturnValue([])
     vi.mocked(parseDateTimeValue).mockReturnValue(undefined)
+    vi.mocked(resolveDefaultTaxRateValue).mockReturnValue(0)
     vi.mocked(getStoredUser).mockReturnValue({
       id: 'user-1',
       loginName: 'tester',
@@ -342,6 +364,17 @@ describe('useModuleEditorWorkspace', () => {
     })
   })
 
+  it('ignores empty form changes when open', () => {
+    const { result } = renderWorkspace({ config: cfg({ primaryNoKey: '' }) })
+
+    act(() => {
+      result.current.handleFormValuesChange({})
+    })
+
+    expect(syncDerivedEditorFormValuesForModule).not.toHaveBeenCalled()
+    expect(writeModuleEditorDraft).not.toHaveBeenCalled()
+  })
+
   it('openParentSelector is no-op without parentImport config', () => {
     const { result } = renderWorkspace({ open: false })
     act(() => {
@@ -375,6 +408,45 @@ describe('useModuleEditorWorkspace', () => {
       result.current.setItems((prev: unknown[]) => [...prev, { id: 'b' }])
     })
     expect(result.current.items).toEqual([{ id: 'b' }])
+  })
+
+  it('adds an item without syncing when item columns are absent', () => {
+    const { result } = renderWorkspace({ config: cfg({ primaryNoKey: '' }) })
+
+    act(() => {
+      result.current.addItem()
+    })
+
+    expect(result.current.items).toEqual([{ id: 'new-item' }])
+    expect(syncDerivedEditorFormValuesForModule).not.toHaveBeenCalled()
+  })
+
+  it('uses the line item sum helper while syncing form values', () => {
+    const form = frm()
+    vi.mocked(syncDerivedEditorFormValuesForModule).mockImplementation(
+      ({ items, sumLineItemsBy }) => ({
+        quantityTotal: sumLineItemsBy(items, 'quantity'),
+      }),
+    )
+    const { result } = renderWorkspace({
+      form,
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    act(() => {
+      result.current.setItems([
+        { id: 'line-1', quantity: 2 },
+        { id: 'line-2', quantity: '3' },
+        { id: 'line-3' },
+      ])
+    })
+    act(() => {
+      result.current.handleFormValuesChange({ customerName: '客户A' })
+    })
+
+    expect(form.setFieldsValue).toHaveBeenCalledWith({
+      quantityTotal: 5,
+    })
   })
 
   it('handleImportParentRecord no-op without parentImport config', () => {
@@ -423,6 +495,169 @@ describe('useModuleEditorWorkspace', () => {
     })
   })
 
+  it('stores an empty preallocated id when allocator only returns a number', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    vi.mocked(allocateBusinessPrimaryNo).mockResolvedValueOnce({
+      generatedNo: 'PRE-ONLY',
+      generatedId: '',
+    })
+    const form = frm()
+
+    renderWorkspace({ form, moduleKey: 'purchase-order' })
+
+    await waitFor(() => {
+      expect(form.setFieldsValue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          _preallocatedId: '',
+          orderNo: 'PRE-ONLY',
+        }),
+      )
+    })
+  })
+
+  it('does not mark non-system modules as authoritative after preallocation', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    const { result } = renderWorkspace({ moduleKey: 'custom-module' })
+
+    await waitFor(() => {
+      expect(allocateBusinessPrimaryNo).toHaveBeenCalledWith('custom-module')
+      expect(result.current.primaryNoLoading).toBe(false)
+    })
+    expect(result.current.authoritativePrimaryNo).toBe('')
+  })
+
+  it('reports generated primary number failures and clears loading', async () => {
+    vi.mocked(generateBusinessPrimaryNo).mockRejectedValueOnce(
+      new Error('生成失败'),
+    )
+    const { result } = renderWorkspace({ moduleKey: 'purchase-order' })
+
+    await waitFor(() => {
+      expect(message.error).toHaveBeenCalledWith('生成失败')
+      expect(result.current.primaryNoLoading).toBe(false)
+    })
+  })
+
+  it('reports fallback generated primary number failures for non-error values', async () => {
+    vi.mocked(generateBusinessPrimaryNo).mockRejectedValueOnce('bad response')
+    const { result } = renderWorkspace({ moduleKey: 'purchase-order' })
+
+    await waitFor(() => {
+      expect(message.error).toHaveBeenCalledWith('common.generateNoFailed')
+      expect(result.current.primaryNoLoading).toBe(false)
+    })
+  })
+
+  it('reports preallocated primary number failures and clears loading', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    vi.mocked(allocateBusinessPrimaryNo).mockRejectedValueOnce(
+      new Error('预生成失败'),
+    )
+    const { result } = renderWorkspace({ moduleKey: 'purchase-order' })
+
+    await waitFor(() => {
+      expect(message.error).toHaveBeenCalledWith('预生成失败')
+      expect(result.current.primaryNoLoading).toBe(false)
+    })
+  })
+
+  it('reports fallback preallocated primary number failures for non-error values', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    vi.mocked(allocateBusinessPrimaryNo).mockRejectedValueOnce('bad response')
+    const { result } = renderWorkspace({ moduleKey: 'purchase-order' })
+
+    await waitFor(() => {
+      expect(message.error).toHaveBeenCalledWith('common.preallocateNoFailed')
+      expect(result.current.primaryNoLoading).toBe(false)
+    })
+  })
+
+  it('does not apply generated primary numbers after unmount', async () => {
+    const generated = deferred<string>()
+    vi.mocked(generateBusinessPrimaryNo).mockReturnValueOnce(generated.promise)
+    const form = frm()
+    const { result, unmount } = renderWorkspace({
+      form,
+      moduleKey: 'purchase-order',
+    })
+
+    expect(result.current.primaryNoLoading).toBe(true)
+    unmount()
+
+    await act(async () => {
+      generated.resolve('GEN-LATE')
+      await generated.promise
+    })
+
+    expect(form.setFieldsValue).not.toHaveBeenCalledWith(
+      expect.objectContaining({ orderNo: 'GEN-LATE' }),
+    )
+  })
+
+  it('does not report generated primary number failures after unmount', async () => {
+    const generated = deferred<string>()
+    vi.mocked(generateBusinessPrimaryNo).mockReturnValueOnce(generated.promise)
+    const { unmount } = renderWorkspace({ moduleKey: 'purchase-order' })
+
+    unmount()
+
+    await act(async () => {
+      generated.reject(new Error('late failure'))
+      await generated.promise.catch(() => undefined)
+    })
+
+    expect(message.error).not.toHaveBeenCalledWith('late failure')
+  })
+
+  it('does not apply preallocated primary numbers after unmount', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    const preallocated = deferred<{
+      generatedNo: string
+      generatedId: string
+    }>()
+    vi.mocked(allocateBusinessPrimaryNo).mockReturnValueOnce(
+      preallocated.promise,
+    )
+    const form = frm()
+    const { result, unmount } = renderWorkspace({
+      form,
+      moduleKey: 'purchase-order',
+    })
+
+    expect(result.current.primaryNoLoading).toBe(true)
+    unmount()
+
+    await act(async () => {
+      preallocated.resolve({ generatedNo: 'PRE-LATE', generatedId: 'id-late' })
+      await preallocated.promise
+    })
+
+    expect(form.setFieldsValue).not.toHaveBeenCalledWith(
+      expect.objectContaining({ orderNo: 'PRE-LATE' }),
+    )
+  })
+
+  it('does not report preallocated primary number failures after unmount', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    const preallocated = deferred<{
+      generatedNo: string
+      generatedId: string
+    }>()
+    vi.mocked(allocateBusinessPrimaryNo).mockReturnValueOnce(
+      preallocated.promise,
+    )
+    const { unmount } = renderWorkspace({ moduleKey: 'purchase-order' })
+
+    unmount()
+
+    await act(async () => {
+      preallocated.reject(new Error('late preallocate failure'))
+      await preallocated.promise.catch(() => undefined)
+    })
+
+    expect(message.error).not.toHaveBeenCalledWith('late preallocate failure')
+  })
+
   it('defaults purchase order settlement company from current company', async () => {
     vi.mocked(getCompanySettingProfile).mockResolvedValue({
       id: '8',
@@ -468,6 +703,99 @@ describe('useModuleEditorWorkspace', () => {
     })
   })
 
+  it('does not overwrite an existing settlement company default', async () => {
+    vi.mocked(getCompanySettingProfile).mockResolvedValue({
+      id: '8',
+      companyName: '结算主体A',
+      taxNo: 'T',
+      settlementAccounts: [],
+      status: '正常',
+    })
+    const form = frm()
+    form.getFieldsValue.mockReturnValue({
+      id: 'fv',
+      settlementCompanyId: 'exists',
+    })
+
+    renderWorkspace({
+      form,
+      moduleKey: 'purchase-order',
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await waitFor(() => {
+      expect(getCompanySettingProfile).toHaveBeenCalled()
+    })
+    expect(form.setFieldsValue).not.toHaveBeenCalledWith({
+      settlementCompanyId: '8',
+      settlementCompanyName: '结算主体A',
+    })
+  })
+
+  it('ignores missing settlement defaults and lookup failures', async () => {
+    vi.mocked(getCompanySettingProfile).mockRejectedValueOnce(
+      new Error('profile unavailable'),
+    )
+    vi.mocked(fetchSettlementCompanyOptions).mockResolvedValueOnce([])
+    const form = frm()
+
+    renderWorkspace({
+      form,
+      moduleKey: 'purchase-order',
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await waitFor(() => {
+      expect(fetchSettlementCompanyOptions).toHaveBeenCalled()
+    })
+    expect(form.setFieldsValue).not.toHaveBeenCalledWith(
+      expect.objectContaining({ settlementCompanyId: expect.anything() }),
+    )
+
+    vi.clearAllMocks()
+    vi.mocked(readModuleEditorDraft).mockReturnValue(null)
+    vi.mocked(getCompanySettingProfile).mockResolvedValueOnce(null)
+    vi.mocked(fetchSettlementCompanyOptions).mockRejectedValueOnce(
+      new Error('options unavailable'),
+    )
+
+    renderWorkspace({
+      form,
+      moduleKey: 'purchase-order',
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await waitFor(() => {
+      expect(fetchSettlementCompanyOptions).toHaveBeenCalled()
+    })
+    expect(message.error).not.toHaveBeenCalled()
+  })
+
+  it('uses the fallback operator name when no stored user name is available', () => {
+    vi.mocked(getStoredUser).mockReturnValue({ id: 'user-1' } as never)
+
+    renderWorkspace({
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    expect(applyModuleDefaultEditorDraft).toHaveBeenCalledWith(
+      'test-module',
+      {},
+      'modules.editorWorkspace.currentUserFallback',
+    )
+
+    vi.mocked(getStoredUser).mockReturnValue(null as never)
+    renderWorkspace({
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    expect(applyModuleDefaultEditorDraft).toHaveBeenLastCalledWith(
+      'test-module',
+      {},
+      'modules.editorWorkspace.currentUserFallback',
+    )
+  })
+
   it('normalizes date fields and loads line items in edit mode', () => {
     vi.mocked(parseDateTimeValue).mockReturnValue('parsed-date' as never)
     const form = frm()
@@ -489,6 +817,58 @@ describe('useModuleEditorWorkspace', () => {
     )
     expect(result.current.isEdit).toBe(true)
     expect(result.current.items).toEqual([{ id: 'line-1' }])
+  })
+
+  it('uses empty line items when editing a record without items', () => {
+    const { result } = renderWorkspace({
+      record: {
+        id: 'r-1',
+        orderNo: 'ORD-001',
+      },
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    expect(result.current.items).toEqual([])
+  })
+
+  it('skips non-date and already normalized date values while loading records', () => {
+    const parsedDay = dayjs('2026-01-03')
+    vi.mocked(parseDateTimeValue).mockReturnValue(undefined)
+    const form = frm()
+
+    renderWorkspace({
+      form,
+      record: {
+        id: 'r-1',
+        textField: 'plain',
+        emptyDate: '',
+        nullDate: null,
+        parsedDay,
+        invalidDate: 'not-a-date',
+        items: [],
+      },
+      config: cfg({
+        formFields: [
+          { key: 'textField', type: 'text' },
+          { key: 'emptyDate', type: 'date' },
+          { key: 'nullDate', type: 'date' },
+          { key: 'parsedDay', type: 'date' },
+          { key: 'invalidDate', type: 'date' },
+        ],
+      }),
+    })
+
+    expect(parseDateTimeValue).toHaveBeenCalledTimes(1)
+    expect(parseDateTimeValue).toHaveBeenCalledWith('not-a-date')
+    expect(form.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        textField: 'plain',
+        emptyDate: '',
+        nullDate: null,
+        parsedDay,
+        invalidDate: undefined,
+      }),
+    )
   })
 
   it('keeps original time when saving an edited date-only field', async () => {
@@ -531,6 +911,79 @@ describe('useModuleEditorWorkspace', () => {
     expect(dayjs(savedRecord?.billDate).format('YYYY-MM-DD HH:mm:ss')).toBe(
       '2026-01-02 12:34:56',
     )
+  })
+
+  it('merges date-only field time from supported source value shapes', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 2, 4, 9, 8, 7))
+    vi.mocked(parseDateTimeValue).mockImplementation((value) => {
+      if (value instanceof Date) return dayjs(value)
+      if (value === 20260101111213) return dayjs('2026-01-01 11:12:13')
+      if (value === '20260101141516') return dayjs('2026-01-01 14:15:16')
+      return dayjs(value)
+    })
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      orderNo: 'ORD-001',
+      fromDayjs: dayjs('2026-02-02'),
+      fromDate: dayjs('2026-02-02'),
+      fromDateOnlyNumber: dayjs('2026-02-02'),
+      fromTimestampNumber: dayjs('2026-02-02'),
+      fromCompactString: dayjs('2026-02-02'),
+      fromInvalidSource: dayjs('2026-02-02'),
+      invalidValue: dayjs('invalid'),
+      plainValue: '2026-02-02',
+    })
+
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+      record: {
+        id: 'r-1',
+        orderNo: 'ORD-001',
+        fromDayjs: dayjs('2026-01-01 01:02:03'),
+        fromDate: new Date(2026, 0, 1, 4, 5, 6),
+        fromDateOnlyNumber: 20260101,
+        fromTimestampNumber: 20260101111213,
+        fromCompactString: '20260101141516',
+        fromInvalidSource: dayjs('invalid'),
+      },
+      config: cfg({
+        primaryNoKey: '',
+        formFields: [
+          { key: 'fromDayjs', label: 'A', type: 'date' },
+          { key: 'fromDate', label: 'B', type: 'date' },
+          { key: 'fromDateOnlyNumber', label: 'C', type: 'date' },
+          { key: 'fromTimestampNumber', label: 'D', type: 'date' },
+          { key: 'fromCompactString', label: 'E', type: 'date' },
+          { key: 'fromInvalidSource', label: 'F', type: 'date' },
+          { key: 'invalidValue', label: 'G', type: 'date' },
+          { key: 'plainValue', label: 'H', type: 'date' },
+        ],
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    const savedRecord = vi.mocked(saveBusinessModule).mock.calls[0]?.[1]
+    expect(dayjs(savedRecord?.fromDayjs).format('HH:mm:ss')).toBe('01:02:03')
+    expect(dayjs(savedRecord?.fromDate).format('HH:mm:ss')).toBe('04:05:06')
+    expect(dayjs(savedRecord?.fromDateOnlyNumber).format('HH:mm:ss')).toBe(
+      '09:08:07',
+    )
+    expect(dayjs(savedRecord?.fromTimestampNumber).format('HH:mm:ss')).toBe(
+      '11:12:13',
+    )
+    expect(dayjs(savedRecord?.fromCompactString).format('HH:mm:ss')).toBe(
+      '14:15:16',
+    )
+    expect(dayjs(savedRecord?.fromInvalidSource).format('HH:mm:ss')).toBe(
+      '09:08:07',
+    )
+    expect(savedRecord?.plainValue).toBe('2026-02-02')
+    vi.useRealTimers()
   })
 
   it('fills current time when saving a new date-only field', async () => {
@@ -657,6 +1110,33 @@ describe('useModuleEditorWorkspace', () => {
     )
   })
 
+  it('keeps successful snowflake saves quiet when the preallocated id is preserved', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    vi.mocked(saveBusinessModule).mockResolvedValueOnce({
+      data: { id: 'pre-id-1', orderNo: '' },
+    })
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      orderNo: '',
+      _preallocatedId: 'pre-id-1',
+    })
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.saveResult).toEqual(
+      expect.objectContaining({
+        status: 'success',
+        record: { id: 'pre-id-1', orderNo: '' },
+      }),
+    )
+  })
+
   it('saves a valid draft and exposes success result', async () => {
     const form = frm()
     const onSaved = vi.fn()
@@ -695,6 +1175,371 @@ describe('useModuleEditorWorkspace', () => {
     )
   })
 
+  it('blocks saving while the primary number is loading', async () => {
+    const generated = deferred<string>()
+    vi.mocked(generateBusinessPrimaryNo).mockReturnValueOnce(generated.promise)
+    const { result } = renderWorkspace({ moduleKey: 'purchase-order' })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(message.warning).toHaveBeenCalledWith('common.primaryNoGenerating')
+    expect(saveBusinessModule).not.toHaveBeenCalled()
+
+    await act(async () => {
+      generated.resolve('GEN-001')
+      await generated.promise
+    })
+  })
+
+  it('checks occupied parent relations before saving when uniqueness is enforced', async () => {
+    vi.mocked(listAllBusinessModuleRows).mockResolvedValueOnce([
+      { id: 'other-1', sourceNos: 'PO-1' },
+    ])
+    vi.mocked(buildOccupiedParentMap).mockReturnValueOnce({
+      'PO-1': { id: 'other-1', sourceNos: 'PO-1' },
+    })
+    const { result } = renderWorkspace({
+      open: false,
+      record: { id: 'current-1', orderNo: 'ORD-001', items: [] },
+      config: cfg({
+        primaryNoKey: '',
+        parentImport: {
+          parentModuleKey: 'purchase-order',
+          label: '采购订单',
+          parentFieldKey: 'sourceNos',
+          parentDisplayFieldKey: 'orderNo',
+          enforceUniqueRelation: true,
+        },
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(listAllBusinessModuleRows).toHaveBeenCalledWith('test-module', {})
+    expect(buildOccupiedParentMap).toHaveBeenCalledWith(
+      [{ id: 'other-1', sourceNos: 'PO-1' }],
+      'sourceNos',
+      'current-1',
+    )
+    expect(getEditorValidationMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        occupiedParentMap: {
+          'PO-1': { id: 'other-1', sourceNos: 'PO-1' },
+        },
+      }),
+    )
+  })
+
+  it('checks occupied parent relations without excluding a record in create mode', async () => {
+    const { result } = renderWorkspace({
+      open: false,
+      config: cfg({
+        primaryNoKey: '',
+        parentImport: {
+          parentModuleKey: 'purchase-order',
+          label: '采购订单',
+          parentFieldKey: 'sourceNos',
+          parentDisplayFieldKey: 'orderNo',
+          enforceUniqueRelation: true,
+        },
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(buildOccupiedParentMap).toHaveBeenCalledWith(
+      [],
+      'sourceNos',
+      undefined,
+    )
+  })
+
+  it('continues saving when occupied parent relation lookup fails', async () => {
+    vi.mocked(listAllBusinessModuleRows).mockRejectedValueOnce(
+      new Error('lookup failed'),
+    )
+    const { result } = renderWorkspace({
+      open: false,
+      config: cfg({
+        primaryNoKey: '',
+        parentImport: {
+          parentModuleKey: 'purchase-order',
+          label: '采购订单',
+          parentFieldKey: 'sourceNos',
+          parentDisplayFieldKey: 'orderNo',
+          enforceUniqueRelation: true,
+        },
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(saveBusinessModule).toHaveBeenCalled()
+  })
+
+  it('passes configured field and item metadata to editor validation', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    const { result } = renderWorkspace({
+      open: false,
+      config: cfg({
+        formFields: [{ key: 'customerName', label: '客户', type: 'text' }],
+        itemColumns: [{ key: 'quantity', title: '数量' }],
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    const validationArgs = vi.mocked(getEditorValidationMessage).mock
+      .calls[0]?.[0]
+    expect(validationArgs).toEqual(
+      expect.objectContaining({
+        fields: [{ key: 'customerName', label: '客户', type: 'text' }],
+        hasItemColumns: true,
+        itemColumns: [{ key: 'quantity', title: '数量' }],
+        skipRequiredFieldKeys: ['orderNo'],
+      }),
+    )
+    validationArgs?.getPrimaryNo({ orderNo: 'ORD-X' })
+    expect(getModuleRecordPrimaryNo).toHaveBeenCalledWith(
+      { orderNo: 'ORD-X' },
+      'orderNo',
+    )
+  })
+
+  it('passes empty form fields to validation when config omits them', async () => {
+    const { result } = renderWorkspace({
+      open: false,
+      config: cfg({ primaryNoKey: '', formFields: undefined }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(getEditorValidationMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ fields: [] }),
+    )
+  })
+
+  it('confirms and saves sales orders with zero unit price items', async () => {
+    vi.mocked(trimEditorItemsForModule).mockReturnValue([
+      { id: 'line-1', unitPrice: 0 },
+      { id: 'line-1b', unitPrice: '0' },
+      { id: 'line-2' },
+    ])
+    vi.mocked(modal.confirm).mockImplementation(
+      ({ onOk }: { onOk: () => void }) => {
+        onOk()
+      },
+    )
+    const { result } = renderWorkspace({
+      open: false,
+      moduleKey: 'sales-order',
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(modal.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '价格待定提醒',
+        content: '当前 3 条明细单价为 0，将以「待定价」状态保存。确认继续吗？',
+      }),
+    )
+    expect(saveBusinessModule).toHaveBeenCalled()
+  })
+
+  it('cancels sales order save when zero price confirmation is rejected', async () => {
+    vi.mocked(trimEditorItemsForModule).mockReturnValue([
+      { id: 'line-1', unitPrice: 0 },
+    ])
+    vi.mocked(modal.confirm).mockImplementation(
+      ({ onCancel }: { onCancel: () => void }) => {
+        onCancel()
+      },
+    )
+    const { result } = renderWorkspace({
+      open: false,
+      moduleKey: 'sales-order',
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(saveBusinessModule).not.toHaveBeenCalled()
+  })
+
+  it('cancels audit save when confirmation is rejected', async () => {
+    vi.mocked(modal.confirm).mockImplementation(
+      ({ onCancel }: { onCancel: () => void }) => {
+        onCancel()
+      },
+    )
+    const { result } = renderWorkspace({
+      open: false,
+      config: cfg({ primaryNoKey: '' }),
+      editorAuditTarget: { key: 'status', value: '已审核' },
+    })
+
+    await act(async () => {
+      await result.current.handleSave(true)
+    })
+
+    expect(saveBusinessModule).not.toHaveBeenCalled()
+  })
+
+  it('sets a warning save result when preallocated identity is replaced', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    vi.mocked(saveBusinessModule).mockResolvedValueOnce({
+      data: { id: 'saved-id', orderNo: 'SERVER-001' },
+    })
+    vi.mocked(getModuleRecordPrimaryNo).mockReturnValueOnce('SERVER-001')
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      orderNo: 'PRE-001',
+      _preallocatedId: 'pre-id-1',
+    })
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.saveResult).toEqual(
+      expect.objectContaining({
+        status: 'warning',
+        message: 'modules.editorWorkspace.preallocatedNoUpdatedContent',
+        record: { id: 'saved-id', orderNo: 'SERVER-001' },
+      }),
+    )
+  })
+
+  it('uses the returned id in preallocated replacement warnings when no primary number is returned', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    vi.mocked(saveBusinessModule).mockResolvedValueOnce({
+      data: { id: 'server-id' },
+    })
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      orderNo: '',
+      _preallocatedId: 'pre-id-1',
+    })
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.saveResult).toEqual(
+      expect.objectContaining({
+        status: 'warning',
+        message: 'modules.editorWorkspace.preallocatedNoUpdatedContent',
+      }),
+    )
+  })
+
+  it('warns when a snowflake save lacks preallocated identity', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    vi.mocked(saveBusinessModule).mockResolvedValueOnce({
+      data: { id: 'saved-id', orderNo: 'SERVER-001' },
+    })
+    vi.mocked(getModuleRecordPrimaryNo).mockReturnValueOnce('SERVER-001')
+    const { result } = renderWorkspace({
+      open: false,
+      config: cfg({ primaryNoKey: 'orderNo' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.saveResult).toEqual(
+      expect.objectContaining({
+        status: 'warning',
+        message: 'modules.editorWorkspace.preallocatedNoMismatchContent',
+      }),
+    )
+  })
+
+  it('warns with no number content when a snowflake save lacks all returned identifiers', async () => {
+    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    vi.mocked(saveBusinessModule).mockResolvedValueOnce({
+      data: undefined,
+    } as never)
+    const { result } = renderWorkspace({
+      open: false,
+      config: cfg({ primaryNoKey: 'orderNo' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.saveResult).toEqual(
+      expect.objectContaining({
+        status: 'warning',
+        message: 'modules.editorWorkspace.preallocatedNoMismatchContentNoNo',
+      }),
+    )
+  })
+
+  it('stores generic save error for non-error rejections', async () => {
+    vi.mocked(saveBusinessModule).mockRejectedValueOnce('bad response')
+    const { result } = renderWorkspace({
+      open: false,
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.saveResult).toEqual({
+      status: 'error',
+      message: 'common.saveFailedRetry',
+    })
+  })
+
+  it('does not set save result for antd form validation errors', async () => {
+    const form = frm()
+    form.validateFields.mockRejectedValueOnce({
+      errorFields: [{ name: ['orderNo'], errors: ['必填'] }],
+      values: { orderNo: '' },
+    })
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.saveResult).toBeNull()
+    expect(saveBusinessModule).not.toHaveBeenCalled()
+  })
+
   it('autosaves current editor draft without validating or calling persistence api', () => {
     const form = frm()
     form.getFieldsValue.mockReturnValue({
@@ -729,6 +1574,31 @@ describe('useModuleEditorWorkspace', () => {
     )
     expect(form.validateFields).not.toHaveBeenCalled()
     expect(saveBusinessModule).not.toHaveBeenCalled()
+  })
+
+  it('does not write an autosave draft when editor is closed', () => {
+    const { result } = renderWorkspace({ open: false })
+
+    act(() => {
+      result.current.flushEditorDraft('manual')
+    })
+
+    expect(writeModuleEditorDraft).not.toHaveBeenCalled()
+  })
+
+  it('swallows autosave draft write failures', () => {
+    vi.mocked(writeModuleEditorDraft).mockImplementationOnce(() => {
+      throw new Error('quota exceeded')
+    })
+    const { result } = renderWorkspace({
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    expect(() => {
+      act(() => {
+        result.current.flushEditorDraft('manual')
+      })
+    }).not.toThrow()
   })
 
   it('restores a saved editor draft after user confirmation', () => {
@@ -772,6 +1642,42 @@ describe('useModuleEditorWorkspace', () => {
     expect(result.current.items).toEqual([{ id: 'line-local', quantity: 3 }])
     expect(result.current.authoritativePrimaryNo).toBe('LOCAL-001')
     expect(generateBusinessPrimaryNo).not.toHaveBeenCalled()
+  })
+
+  it('ignores saved draft recovery callbacks after unmount', () => {
+    vi.mocked(readModuleEditorDraft).mockReturnValue({
+      version: 1,
+      userKey: 'user-1',
+      moduleKey: 'sales-order',
+      recordId: 'new',
+      values: { id: '', orderNo: 'LOCAL-001' },
+      items: [{ id: 'line-local' }],
+      authoritativePrimaryNo: 'LOCAL-001',
+      updatedAt: 1000,
+    })
+    const form = frm()
+
+    const { result, unmount } = renderWorkspace({
+      form,
+      moduleKey: 'sales-order',
+      config: cfg({ primaryNoKey: 'orderNo' }),
+    })
+    const confirmOptions = vi.mocked(modal.confirm).mock.calls[0]?.[0] as {
+      onOk: () => void
+      onCancel: () => void
+    }
+
+    unmount()
+
+    act(() => {
+      confirmOptions.onOk()
+      confirmOptions.onCancel()
+    })
+
+    expect(result.current.items).toEqual([])
+    expect(form.setFieldsValue).not.toHaveBeenCalledWith(
+      expect.objectContaining({ orderNo: 'LOCAL-001' }),
+    )
   })
 
   it('discards a saved editor draft and initializes a fresh editor when user cancels recovery', () => {
@@ -908,6 +1814,24 @@ describe('useModuleEditorWorkspace', () => {
     })
   })
 
+  it('stores fallback save error text when an Error has no message', async () => {
+    vi.mocked(saveBusinessModule).mockRejectedValueOnce(new Error(''))
+    const { result } = renderWorkspace({
+      open: false,
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.saveResult).toEqual({
+      status: 'error',
+      message: 'common.saveFailed',
+      traceId: undefined,
+    })
+  })
+
   it('opens parent selector with derived filters', () => {
     const form = frm()
     form.getFieldsValue.mockReturnValue({ supplierName: '供应商甲' })
@@ -933,6 +1857,26 @@ describe('useModuleEditorWorkspace', () => {
     expect(result.current.parentSelectorFilters).toEqual({
       supplierName: '供应商甲',
     })
+  })
+
+  it('opens parent selector with empty filters when no filter builder is configured', () => {
+    const { result } = renderWorkspace({
+      config: cfg({
+        parentImport: {
+          parentModuleKey: 'purchase-order',
+          label: '采购订单',
+          parentFieldKey: 'sourceNos',
+          parentDisplayFieldKey: 'orderNo',
+        },
+      }),
+    })
+
+    act(() => {
+      result.current.openParentSelector()
+    })
+
+    expect(result.current.parentSelectorOpen).toBe(true)
+    expect(result.current.parentSelectorFilters).toEqual({})
   })
 
   it('warns instead of opening parent selector when precheck fails', () => {
@@ -1003,6 +1947,162 @@ describe('useModuleEditorWorkspace', () => {
     expect(message.success).toHaveBeenCalled()
   })
 
+  it('imports multiple parent records and reports aggregate success', async () => {
+    const form = frm()
+    form.getFieldsValue.mockReturnValue({ id: 'draft-1', sourceNos: '' })
+    vi.mocked(parseParentRelationNos).mockReturnValue([])
+    vi.mocked(getBusinessModuleDetail)
+      .mockResolvedValueOnce({ data: { id: 'po-1', orderNo: 'PO-1' } })
+      .mockResolvedValueOnce({ data: { id: 'po-2', orderNo: 'PO-2' } })
+    vi.mocked(buildParentImportState)
+      .mockReturnValueOnce({
+        parentNosText: 'PO-1',
+        shouldApplyMappedValues: false,
+        mappedValues: {},
+        nextItems: [{ id: 'line-1' }],
+        hasImportedCurrentParent: false,
+        importedItemCount: 1,
+      })
+      .mockReturnValueOnce({
+        parentNosText: 'PO-1,PO-2',
+        shouldApplyMappedValues: false,
+        mappedValues: {},
+        nextItems: [{ id: 'line-1' }, { id: 'line-2' }],
+        hasImportedCurrentParent: false,
+        importedItemCount: 2,
+      })
+    vi.mocked(syncDerivedEditorFormValuesForModule).mockImplementation(
+      ({ record }) => record,
+    )
+    const { result } = renderWorkspace({
+      form,
+      config: cfg({
+        parentImport: {
+          parentModuleKey: 'purchase-order',
+          label: '采购订单',
+          parentFieldKey: 'sourceNos',
+          parentDisplayFieldKey: 'orderNo',
+        },
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleImportParentRecord([
+        { id: 'po-1' },
+        { id: 'po-2' },
+      ])
+    })
+
+    expect(message.success).toHaveBeenCalledWith('common.importParentSuccess')
+    expect(result.current.items).toEqual([{ id: 'line-1' }, { id: 'line-2' }])
+  })
+
+  it('does not count already imported parent records again', async () => {
+    const form = frm()
+    form.getFieldsValue.mockReturnValue({ id: 'draft-1', sourceNos: 'PO-1' })
+    vi.mocked(getBusinessModuleDetail).mockResolvedValueOnce({
+      data: { id: 'po-1', orderNo: 'PO-1' },
+    })
+    vi.mocked(buildParentImportState).mockReturnValueOnce({
+      parentNosText: 'PO-1',
+      shouldApplyMappedValues: false,
+      mappedValues: {},
+      nextItems: [{ id: 'line-1' }],
+      hasImportedCurrentParent: true,
+      importedItemCount: 1,
+    })
+    const { result } = renderWorkspace({
+      form,
+      config: cfg({
+        parentImport: {
+          parentModuleKey: 'purchase-order',
+          label: '采购订单',
+          parentFieldKey: 'sourceNos',
+          parentDisplayFieldKey: 'orderNo',
+        },
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleImportParentRecord([{ id: 'po-1' }])
+    })
+
+    expect(message.success).toHaveBeenCalledWith(
+      'common.importParentSuccessSimple',
+    )
+  })
+
+  it('stops parent import when parent validation fails', async () => {
+    const form = frm()
+    form.getFieldsValue.mockReturnValue({ id: 'draft-1', sourceNos: '' })
+    vi.mocked(getBusinessModuleDetail).mockResolvedValueOnce({
+      data: { id: 'po-1', orderNo: 'PO-1' },
+    })
+    const { result } = renderWorkspace({
+      form,
+      config: cfg({
+        parentImport: {
+          parentModuleKey: 'purchase-order',
+          label: '采购订单',
+          parentFieldKey: 'sourceNos',
+          parentDisplayFieldKey: 'orderNo',
+          validateParentImport: () => '供应商不一致',
+        },
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleImportParentRecord([{ id: 'po-1' }])
+    })
+
+    expect(message.error).toHaveBeenCalledWith('供应商不一致')
+    expect(buildParentImportState).not.toHaveBeenCalled()
+    expect(result.current.parentImporting).toBe(false)
+  })
+
+  it('reports parent import detail loading errors', async () => {
+    vi.mocked(getBusinessModuleDetail).mockRejectedValueOnce(
+      new Error('父单据不存在'),
+    )
+    const { result } = renderWorkspace({
+      config: cfg({
+        parentImport: {
+          parentModuleKey: 'purchase-order',
+          label: '采购订单',
+          parentFieldKey: 'sourceNos',
+          parentDisplayFieldKey: 'orderNo',
+        },
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleImportParentRecord([{ id: 'po-1' }])
+    })
+
+    expect(message.error).toHaveBeenCalledWith('父单据不存在')
+    expect(result.current.parentImporting).toBe(false)
+  })
+
+  it('reports fallback parent import errors for non-error failures', async () => {
+    vi.mocked(getBusinessModuleDetail).mockRejectedValueOnce('bad response')
+    const { result } = renderWorkspace({
+      config: cfg({
+        parentImport: {
+          parentModuleKey: 'purchase-order',
+          label: '采购订单',
+          parentFieldKey: 'sourceNos',
+          parentDisplayFieldKey: 'orderNo',
+        },
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleImportParentRecord([{ id: 'po-1' }])
+    })
+
+    expect(message.error).toHaveBeenCalledWith('common.importParentFailed')
+  })
+
   it('warns when importing parent without selected records', async () => {
     const { result } = renderWorkspace({
       config: cfg({
@@ -1045,5 +2145,89 @@ describe('useModuleEditorWorkspace', () => {
     expect(form.setFieldsValue).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 100 }),
     )
+  })
+
+  it('syncs derived values when replacing items through setItems', () => {
+    const form = frm()
+    vi.mocked(syncDerivedEditorFormValuesForModule).mockReturnValue({
+      quantityTotal: 3,
+    })
+    const { result } = renderWorkspace({
+      form,
+      config: cfg({
+        primaryNoKey: '',
+        itemColumns: [{ key: 'quantity', title: '数量' }],
+      }),
+    })
+
+    act(() => {
+      result.current.setItems([{ id: 'line-1', quantity: 3 }])
+    })
+
+    expect(syncDerivedEditorFormValuesForModule).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: [{ id: 'line-1', quantity: 3 }],
+      }),
+    )
+    expect(form.setFieldsValue).toHaveBeenCalledWith({
+      quantityTotal: 3,
+    })
+  })
+
+  it('calculates invoice tax fields while syncing derived form values', () => {
+    const form = frm()
+    form.getFieldsValue.mockReturnValue({ amount: 100 })
+    vi.mocked(useQuery).mockReturnValue({
+      data: [{ key: 'defaultTaxRate', value: '0.13' }],
+    } as never)
+    vi.mocked(resolveDefaultTaxRateValue).mockReturnValue(0.13)
+    vi.mocked(syncDerivedEditorFormValuesForModule).mockReturnValue({
+      amount: 100,
+    })
+    const { result } = renderWorkspace({
+      form,
+      moduleKey: 'invoice-receipt',
+      config: cfg({
+        primaryNoKey: '',
+        formFields: [{ key: 'invoiceDate', label: '开票日期', type: 'date' }],
+      }),
+    })
+
+    act(() => {
+      result.current.handleFormValuesChange({ amount: 100 })
+    })
+
+    expect(resolveDefaultTaxRateValue).toHaveBeenCalledWith([
+      { key: 'defaultTaxRate', value: '0.13' },
+    ])
+    expect(form.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 100,
+        taxRate: 0.13,
+        taxAmount: 13,
+      }),
+    )
+  })
+
+  it('uses empty settings and zero amount while syncing invoice tax fields', () => {
+    const form = frm()
+    vi.mocked(useQuery).mockReturnValue({ data: null } as never)
+    vi.mocked(resolveDefaultTaxRateValue).mockReturnValue(0.06)
+    vi.mocked(syncDerivedEditorFormValuesForModule).mockReturnValue({})
+    const { result } = renderWorkspace({
+      form,
+      moduleKey: 'invoice-issue',
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    act(() => {
+      result.current.handleFormValuesChange({ customerName: '客户A' })
+    })
+
+    expect(resolveDefaultTaxRateValue).toHaveBeenCalledWith([])
+    expect(form.setFieldsValue).toHaveBeenCalledWith({
+      taxRate: 0.06,
+      taxAmount: 0,
+    })
   })
 })

@@ -1,6 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
+const navigateMock = vi.hoisted(() => vi.fn())
+const latestColumnBuilderOptions = vi.hoisted(
+  () => ({ current: undefined as any }),
+)
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -8,7 +13,7 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@tanstack/react-router', () => ({
-  useNavigate: () => vi.fn(),
+  useNavigate: () => navigateMock,
 }))
 
 vi.mock('@/hooks/usePaginationConfig', () => ({
@@ -20,10 +25,13 @@ vi.mock('@/views/system/ApiKeyListToolbar', () => ({
 }))
 
 vi.mock('@/views/system/api-key-list-columns', () => ({
-  buildApiKeyListColumns: () => [
-    { title: 'Key Name', dataIndex: 'keyName', width: 180 },
-    { title: 'Status', dataIndex: 'status', width: 110 },
-  ],
+  buildApiKeyListColumns: (options: any) => {
+    latestColumnBuilderOptions.current = options
+    return [
+      { title: 'Key Name', dataIndex: 'keyName', width: 180 },
+      { title: 'Status', dataIndex: 'status', width: 110 },
+    ]
+  },
 }))
 
 import { ApiKeyListCard } from '@/views/system/ApiKeyListCard'
@@ -62,6 +70,17 @@ describe('ApiKeyListCard', () => {
   it('renders without crashing', () => {
     expect(ApiKeyListCard).toBeDefined()
     expect(typeof ApiKeyListCard).toBe('function')
+  })
+
+  it('navigates to api key detail from column view callback', () => {
+    render(<ApiKeyListCard {...defaultProps} />)
+
+    latestColumnBuilderOptions.current.onView({ id: 'key-1' })
+
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/api-key/key-1' })
+    expect(latestColumnBuilderOptions.current.onRevoke).toBe(
+      defaultProps.onRevoke,
+    )
   })
 
   it('renders the card title', () => {

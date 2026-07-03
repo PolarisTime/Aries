@@ -169,7 +169,9 @@ export function ModuleEditorItemsSection({
           }
           candidateQueryType={config.parentImport.candidateQueryType}
           candidateUsage={config.parentImport.candidateUsage}
-          hiddenSelectorColumnKeys={config.parentImport.hiddenSelectorColumnKeys}
+          hiddenSelectorColumnKeys={
+            config.parentImport.hiddenSelectorColumnKeys
+          }
           fixedFilters={parentSelectorFilters}
           title={t('modules.itemsSection.selectParent', {
             label:

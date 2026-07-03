@@ -119,6 +119,41 @@ describe('role-action-view-utils', () => {
       const result = flattenRoleActionMenus(tree)
       expect(result[0].resource).toBe('dashboard')
     })
+
+    it('falls back child resource to menuCode when resourceCode is empty', () => {
+      const tree: MenuNode[] = [
+        {
+          menuCode: 'system',
+          menuName: '系统管理',
+          resourceCode: '',
+          actions: [],
+          children: [
+            {
+              menuCode: 'user',
+              menuName: '用户管理',
+              resourceCode: '',
+              actions: ['read'],
+              children: [],
+            },
+          ],
+        },
+      ]
+      const result = flattenRoleActionMenus(tree)
+      expect(result[0].resource).toBe('user')
+    })
+
+    it('skips root nodes without actions', () => {
+      const tree: MenuNode[] = [
+        {
+          menuCode: 'dashboard',
+          menuName: '仪表盘',
+          resourceCode: 'dashboard',
+          actions: [],
+          children: [],
+        },
+      ]
+      expect(flattenRoleActionMenus(tree)).toEqual([])
+    })
   })
 
   describe('buildRoleMatrixData', () => {

@@ -134,4 +134,51 @@ describe('useIdleActivation', () => {
     }
     delete (window as any).requestIdleCallback
   })
+
+  it('allows missing cancelIdleCallback during requestIdleCallback cleanup', () => {
+    Object.defineProperty(window, 'requestIdleCallback', {
+      value: vi.fn().mockReturnValue(42),
+      writable: true,
+      configurable: true,
+    })
+    delete (window as any).cancelIdleCallback
+
+    const { unmount } = renderHook(() => useIdleActivation(true, 500))
+
+    expect(() => unmount()).not.toThrow()
+
+    delete (window as any).requestIdleCallback
+  })
+
+  it('treats enabled state as active without browser globals', async () => {
+    const browserGlobals = globalThis as Record<string, unknown>
+    const originalWindow = browserGlobals.window
+    const useEffectMock = vi.fn((effect: () => undefined | (() => void)) =>
+      effect(),
+    )
+
+    try {
+      vi.resetModules()
+      delete browserGlobals.window
+      vi.doMock('react', () => ({
+        useEffect: useEffectMock,
+        useState: vi.fn((initial: unknown) => [
+          typeof initial === 'function'
+            ? (initial as () => unknown)()
+            : initial,
+          vi.fn(),
+        ]),
+      }))
+
+      const { useIdleActivation: useIdleActivationWithoutBrowser } =
+        await import('./useIdleActivation')
+
+      expect(useIdleActivationWithoutBrowser(true)).toBe(true)
+      expect(useEffectMock).toHaveBeenCalled()
+    } finally {
+      browserGlobals.window = originalWindow
+      vi.doUnmock('react')
+      vi.resetModules()
+    }
+  })
 })

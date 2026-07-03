@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockSessionStorage = {
   getItem: vi.fn(),
@@ -16,6 +16,11 @@ Object.defineProperty(window, 'sessionStorage', {
 describe('login-view-utils', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    window.history.replaceState(null, '', '/')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('saveTotpSession saves to sessionStorage', async () => {
@@ -111,6 +116,38 @@ describe('login-view-utils', () => {
   })
 
   it('buildPostLoginTarget returns redirect path for normal user', async () => {
+    const { buildPostLoginTarget } = await import(
+      '@/views/auth/login-view-utils'
+    )
+    expect(buildPostLoginTarget(null)).toBe('/dashboard')
+  })
+
+  it('buildPostLoginTarget uses safe redirect query path', async () => {
+    window.history.replaceState(
+      null,
+      '',
+      '/login?redirect=%2Fmodules%3Ftab%3Dsales',
+    )
+    const { buildPostLoginTarget } = await import(
+      '@/views/auth/login-view-utils'
+    )
+    expect(buildPostLoginTarget(null)).toBe('/modules?tab=sales')
+  })
+
+  it('buildPostLoginTarget falls back when redirect is not a local path', async () => {
+    window.history.replaceState(
+      null,
+      '',
+      '/login?redirect=https%3A%2F%2Fevil.example',
+    )
+    const { buildPostLoginTarget } = await import(
+      '@/views/auth/login-view-utils'
+    )
+    expect(buildPostLoginTarget(null)).toBe('/dashboard')
+  })
+
+  it('buildPostLoginTarget falls back when window is unavailable', async () => {
+    vi.stubGlobal('window', undefined)
     const { buildPostLoginTarget } = await import(
       '@/views/auth/login-view-utils'
     )

@@ -83,6 +83,16 @@ describe('auth-interceptor', () => {
       expect(config.headers.set).not.toHaveBeenCalled()
     })
 
+    it('handles request config without url', async () => {
+      const http = setupHttp()
+      const config = await http.interceptors.request.handlers[0].fulfilled({
+        headers: { delete: vi.fn(), set: vi.fn() },
+      })
+
+      expect(getRequestPathMock).toHaveBeenCalledWith('')
+      expect(config.headers.set).not.toHaveBeenCalled()
+    })
+
     it('sets Bearer token for JWT token', async () => {
       const http = setupHttp()
       getTokenMock.mockReturnValue('my-jwt')
@@ -212,6 +222,22 @@ describe('auth-interceptor', () => {
       expect(err.message).toBe('canceled')
     })
 
+    it('uses default canceled message and attaches body trace id', async () => {
+      const http = setupHttp()
+      isCanceledRequestErrorMock.mockReturnValue(true)
+
+      const error = {
+        response: { data: { traceId: 'trace-from-body' } },
+      }
+      const err = await http.interceptors.response.handlers[0]
+        .rejected(error)
+        .catch((e: Error & { traceId?: string }) => e)
+
+      expect(err.message).toBe('请求已取消')
+      expect(err.traceId).toBe('trace-from-body')
+      expect(markHandledRequestErrorMock).toHaveBeenCalledWith(err)
+    })
+
     it('triggers refresh on shouldTriggerRefresh', async () => {
       const http = setupHttp()
       shouldTriggerRefreshMock.mockReturnValue(true)
@@ -287,6 +313,35 @@ describe('auth-interceptor', () => {
       expect(handleAuthFailureMock).toHaveBeenCalledWith('刷新失败')
     })
 
+    it('uses axios refresh error message when response message is absent', async () => {
+      const http = setupHttp()
+      shouldTriggerRefreshMock.mockReturnValue(true)
+      getRefreshPromiseMock.mockReturnValue(null)
+
+      const refreshError = {
+        isAxiosError: true,
+        response: { status: 500, data: {} },
+        message: '刷新请求失败',
+      }
+      refreshAccessTokenMock.mockRejectedValue(refreshError)
+
+      const config = { url: '/api/data', headers: {} }
+      const error = {
+        isAxiosError: true,
+        response: { status: 401, data: {} },
+        config,
+        message: 'Unauthorized',
+      }
+
+      await expect(
+        http.interceptors.response.handlers[0].rejected(error),
+      ).rejects.toThrow('刷新请求失败')
+      expect(normalizeErrorMessageMock).toHaveBeenCalledWith(
+        '刷新请求失败',
+        500,
+      )
+    })
+
     it('handles refresh failure with non-axios error', async () => {
       const http = setupHttp()
       shouldTriggerRefreshMock.mockReturnValue(true)
@@ -307,6 +362,30 @@ describe('auth-interceptor', () => {
       await expect(
         http.interceptors.response.handlers[0].rejected(error),
       ).rejects.toThrow('网络异常')
+    })
+
+    it('falls back to original error message for unknown refresh failure', async () => {
+      const http = setupHttp()
+      shouldTriggerRefreshMock.mockReturnValue(true)
+      getRefreshPromiseMock.mockReturnValue(null)
+
+      refreshAccessTokenMock.mockRejectedValue('refresh failed')
+
+      const config = { url: '/api/data', headers: {} }
+      const error = {
+        isAxiosError: true,
+        response: { status: 401, data: {} },
+        config,
+        message: 'Unauthorized',
+      }
+
+      await expect(
+        http.interceptors.response.handlers[0].rejected(error),
+      ).rejects.toThrow('Unauthorized')
+      expect(normalizeErrorMessageMock).toHaveBeenCalledWith(
+        'Unauthorized',
+        undefined,
+      )
     })
 
     it('clears auth state on shouldClearAuthState', async () => {
@@ -345,6 +424,25 @@ describe('auth-interceptor', () => {
         http.interceptors.response.handlers[0].rejected(error),
       ).rejects.toThrow('业务错误')
       expect(messageErrorMock).toHaveBeenCalledWith('业务错误')
+    })
+
+    it('falls back to error message when response message is absent', async () => {
+      const http = setupHttp()
+      shouldTriggerRefreshMock.mockReturnValue(false)
+      shouldClearAuthStateMock.mockReturnValue(false)
+
+      const error = {
+        isAxiosError: true,
+        response: { status: 500, data: {} },
+        config: { url: '/api/data', headers: {} },
+        message: '服务器错误',
+      }
+
+      await expect(
+        http.interceptors.response.handlers[0].rejected(error),
+      ).rejects.toThrow('服务器错误')
+      expect(normalizeErrorMessageMock).toHaveBeenCalledWith('服务器错误', 500)
+      expect(messageErrorMock).toHaveBeenCalledWith('服务器错误')
     })
 
     it('handles error without config gracefully', async () => {

@@ -98,6 +98,24 @@ describe('ErrorView', () => {
     expect(screen.getByTestId('status').textContent).toBe('500')
   })
 
+  it('shows error status for unauthorized errors', () => {
+    mockRouterState.error = new Error('Unauthorized access')
+    render(<ErrorView />)
+    expect(screen.getByTestId('status').textContent).toBe('403')
+  })
+
+  it('shows error status for forbidden errors without status code', () => {
+    mockRouterState.error = new Error('Forbidden')
+    render(<ErrorView />)
+    expect(screen.getByTestId('status').textContent).toBe('403')
+  })
+
+  it('shows error status for internal server errors without status code', () => {
+    mockRouterState.error = new Error('Internal server unavailable')
+    render(<ErrorView />)
+    expect(screen.getByTestId('status').textContent).toBe('500')
+  })
+
   it('shows generic error status for other errors', () => {
     mockRouterState.error = new Error('Something went wrong')
     render(<ErrorView />)
@@ -128,6 +146,18 @@ describe('ErrorView', () => {
     expect(screen.getByTestId('sub-title').textContent).toBe('服务器繁忙')
   })
 
+  it('shows server response error for long error messages', () => {
+    mockRouterState.error = new Error('x'.repeat(100))
+    render(<ErrorView />)
+    expect(screen.getByTestId('sub-title').textContent).toBe('服务器响应错误')
+  })
+
+  it('shows unknown error for non-error values', () => {
+    mockRouterState.error = 'plain error'
+    render(<ErrorView />)
+    expect(screen.getByTestId('sub-title').textContent).toBe('未知错误')
+  })
+
   it('extracts traceId from error object', () => {
     mockRouterState.error = { traceId: 'trace-123', message: 'Error' }
     render(<ErrorView />)
@@ -144,6 +174,12 @@ describe('ErrorView', () => {
     mockRouterState.error = { requestId: 'req-789', message: 'Error' }
     render(<ErrorView />)
     expect(screen.getByTestId('trace-id').textContent).toBe('req-789')
+  })
+
+  it('extracts request_id from error object', () => {
+    mockRouterState.error = { request_id: 'req-012', message: 'Error' }
+    render(<ErrorView />)
+    expect(screen.getByTestId('trace-id').textContent).toBe('req-012')
   })
 
   it('navigates to current path on retry', () => {

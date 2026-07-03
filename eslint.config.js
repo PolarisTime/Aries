@@ -18,6 +18,7 @@ export default tseslint.config(
     ignores: [
       'dist',
       'coverage',
+      'coverage-e2e',
       'playwright-report',
       'test-results',
       'node_modules',

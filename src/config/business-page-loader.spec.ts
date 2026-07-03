@@ -5,6 +5,45 @@ import {
 } from '@/config/business-page-loader'
 
 describe('business-page-loader', () => {
+  const moduleKeys = [
+    'material',
+    'material-categories',
+    'supplier',
+    'customer',
+    'carrier',
+    'warehouse',
+    'purchase-order',
+    'purchase-inbound',
+    'sales-order',
+    'sales-outbound',
+    'freight-bill',
+    'purchase-contract',
+    'sales-contract',
+    'supplier-statement',
+    'customer-statement',
+    'freight-statement',
+    'receipt',
+    'payment',
+    'ledger-adjustment',
+    'invoice-receipt',
+    'invoice-issue',
+    'receivable-payable',
+    'inventory-report',
+    'io-report',
+    'pending-invoice-receipt-report',
+    'general-setting',
+    'company-setting',
+    'operation-log',
+    'department',
+    'permission',
+  ]
+
+  it.each(moduleKeys)('loads %s config by module key', async (moduleKey) => {
+    const config = await loadBusinessPageConfig(moduleKey)
+
+    expect(config.key).toBe(moduleKey)
+  })
+
   it('loads the access-control permission catalog config by module key', {
     timeout: 15000,
   }, async () => {
@@ -28,7 +67,9 @@ describe('business-page-loader', () => {
   })
 
   it('throws when config not found in loaded module', async () => {
-    await expect(loadBusinessPageConfig('material')).resolves.toBeDefined()
+    await expect(
+      loadBusinessPageConfig('system-permission-management'),
+    ).rejects.toThrow('Module config not found: system-permission-management')
   })
 
   it('primeBusinessPageConfig sets cache', async () => {
@@ -45,9 +86,13 @@ describe('business-page-loader', () => {
   })
 
   it('handles cached config with different key (cached.key !== moduleKey)', async () => {
-    const configA = { key: 'permission', columns: [] } as any
-    const _configB = { key: 'material', columns: [] } as any
-    primeBusinessPageConfig('permission', configA)
-    await expect(loadBusinessPageConfig('material')).resolves.toBeDefined()
+    const mismatchedConfig = { key: 'permission', columns: [] } as any
+    primeBusinessPageConfig('permission', mismatchedConfig)
+    mismatchedConfig.key = 'other-key'
+
+    const loaded = await loadBusinessPageConfig('permission')
+
+    expect(loaded.key).toBe('permission')
+    expect(loaded).not.toBe(mismatchedConfig)
   })
 })

@@ -1,12 +1,85 @@
 import dayjs from 'dayjs'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import { moduleBehaviorRegistry } from './module-behavior-registry-core'
 
+const getSettlementCompanyOptionsMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/api/company-settings', () => ({
+  getSettlementCompanyOptions: getSettlementCompanyOptionsMock,
+}))
+
+const settlementCompanyOptions = [
+  { id: '9', value: ' 9 ', label: '主体A', companyName: '主体A' },
+  { id: '10', value: '10', label: '主体B', companyName: '主体B' },
+]
+
+type SyncEditorForm = (
+  form: Record<string, unknown>,
+  ctx: { changedKeys: Set<string> },
+) => void
+
+function getSyncEditorForm(moduleKey: string) {
+  const syncEditorForm = moduleBehaviorRegistry.get(moduleKey)?.syncEditorForm
+
+  expect(syncEditorForm).toBeTypeOf('function')
+
+  return syncEditorForm as SyncEditorForm
+}
+
 describe('module-behavior-editor', () => {
+  beforeEach(() => {
+    getSettlementCompanyOptionsMock.mockReset()
+    getSettlementCompanyOptionsMock.mockReturnValue(settlementCompanyOptions)
+  })
+
   it('registers carrier with priceMode default', () => {
     const config = moduleBehaviorRegistry.get('carrier')
     expect(config?.defaultDraftValues).toEqual({ priceMode: '按吨' })
+  })
+
+  it('carrier syncEditorForm snapshots the default settlement company name', () => {
+    const syncEditorForm = getSyncEditorForm('carrier')
+
+    const unchangedForm = {
+      defaultSettlementCompanyId: '9',
+      defaultSettlementCompanyName: '保留主体',
+    }
+    syncEditorForm(unchangedForm, { changedKeys: new Set(['carrierName']) })
+    expect(unchangedForm.defaultSettlementCompanyName).toBe('保留主体')
+    expect(getSettlementCompanyOptionsMock).not.toHaveBeenCalled()
+
+    const changedForm = {
+      defaultSettlementCompanyId: '9',
+      defaultSettlementCompanyName: '',
+    }
+    syncEditorForm(changedForm, {
+      changedKeys: new Set(['defaultSettlementCompanyId']),
+    })
+    expect(changedForm.defaultSettlementCompanyName).toBe('主体A')
+    expect(getSettlementCompanyOptionsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('customer syncEditorForm clears the default settlement company name when id is blank', () => {
+    const syncEditorForm = getSyncEditorForm('customer')
+
+    const unchangedForm = {
+      defaultSettlementCompanyId: '9',
+      defaultSettlementCompanyName: '保留主体',
+    }
+    syncEditorForm(unchangedForm, { changedKeys: new Set(['customerName']) })
+    expect(unchangedForm.defaultSettlementCompanyName).toBe('保留主体')
+    expect(getSettlementCompanyOptionsMock).not.toHaveBeenCalled()
+
+    const blankIdForm = {
+      defaultSettlementCompanyId: '   ',
+      defaultSettlementCompanyName: '旧主体',
+    }
+    syncEditorForm(blankIdForm, {
+      changedKeys: new Set(['defaultSettlementCompanyId']),
+    })
+    expect(blankIdForm.defaultSettlementCompanyName).toBe('')
+    expect(getSettlementCompanyOptionsMock).not.toHaveBeenCalled()
   })
 
   it('registers sales-order with editableLockedFields', () => {
@@ -33,6 +106,70 @@ describe('module-behavior-editor', () => {
     expect(dayjs.isDayjs(values.orderDate)).toBe(true)
   })
 
+  it('purchase-order syncEditorForm snapshots settlement company name changes', () => {
+    const syncEditorForm = getSyncEditorForm('purchase-order')
+
+    const unchangedForm = {
+      settlementCompanyId: '9',
+      settlementCompanyName: '保留主体',
+    }
+    syncEditorForm(unchangedForm, { changedKeys: new Set(['orderNo']) })
+    expect(unchangedForm.settlementCompanyName).toBe('保留主体')
+    expect(getSettlementCompanyOptionsMock).not.toHaveBeenCalled()
+
+    const unmatchedForm = {
+      settlementCompanyId: 'missing',
+      settlementCompanyName: '旧主体',
+    }
+    syncEditorForm(unmatchedForm, {
+      changedKeys: new Set(['settlementCompanyId']),
+    })
+    expect(unmatchedForm.settlementCompanyName).toBe('')
+    expect(getSettlementCompanyOptionsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('snapshot modules sync settlement company names while preserving existing fallback names', () => {
+    const snapshotModules = [
+      'purchase-inbound',
+      'sales-order',
+      'sales-outbound',
+      'freight-bill',
+      'supplier-statement',
+      'customer-statement',
+      'freight-statement',
+      'receipt',
+      'invoice-issue',
+    ]
+
+    for (const moduleKey of snapshotModules) {
+      const syncEditorForm = getSyncEditorForm(moduleKey)
+      const form = {
+        settlementCompanyId: '10',
+        settlementCompanyName: '',
+      }
+
+      syncEditorForm(form, { changedKeys: new Set(['settlementCompanyId']) })
+      expect(form.settlementCompanyName).toBe('主体B')
+    }
+
+    const syncEditorForm = getSyncEditorForm('sales-outbound')
+    const unchangedForm = {
+      settlementCompanyId: '10',
+      settlementCompanyName: '保留主体',
+    }
+    syncEditorForm(unchangedForm, { changedKeys: new Set(['outboundNo']) })
+    expect(unchangedForm.settlementCompanyName).toBe('保留主体')
+
+    const fallbackForm = {
+      settlementCompanyId: 'missing',
+      settlementCompanyName: '原主体',
+    }
+    syncEditorForm(fallbackForm, {
+      changedKeys: new Set(['settlementCompanyId']),
+    })
+    expect(fallbackForm.settlementCompanyName).toBe('原主体')
+  })
+
   it('purchase-inbound defaultDraftValues returns inboundDate', () => {
     const config = moduleBehaviorRegistry.get('purchase-inbound')
     expect(config?.readonlyItemColumns).toContain('warehouseName')
@@ -46,6 +183,16 @@ describe('module-behavior-editor', () => {
 
     expect(dayjs.isDayjs(values.outboundDate)).toBe(true)
     expect(values.outboundDate.format('YYYY-MM-DD')).toBe(
+      dayjs().format('YYYY-MM-DD'),
+    )
+  })
+
+  it('sales-order defaultDraftValues returns deliveryDate for today', () => {
+    const config = moduleBehaviorRegistry.get('sales-order')
+    const values = (config!.defaultDraftValues as () => any)()
+
+    expect(dayjs.isDayjs(values.deliveryDate)).toBe(true)
+    expect(values.deliveryDate.format('YYYY-MM-DD')).toBe(
       dayjs().format('YYYY-MM-DD'),
     )
   })
@@ -153,6 +300,11 @@ describe('module-behavior-editor', () => {
     syncEditorForm(form9, { changedKeys: new Set() })
     expect(dayjs.isDayjs(form9.effectiveDate)).toBe(true)
     expect(dayjs.isDayjs(form9.expireDate)).toBe(true)
+
+    const form10: any = { signDate: dayjs('2026-06-01') }
+    syncEditorForm(form10, { changedKeys: new Set() })
+    expect(form10.effectiveDate.format('YYYY-MM-DD')).toBe('2026-06-01')
+    expect(form10.expireDate.format('YYYY-MM-DD')).toBe('2027-06-01')
   })
 
   it('registers operator name modules', () => {
@@ -206,6 +358,17 @@ describe('module-behavior-editor', () => {
     })
     expect(nameChangedForm.counterpartyName).toBe('客户B')
     expect(nameChangedForm.counterpartyCode).toBe('')
+
+    const unchangedForm: any = {
+      counterpartyType: '客户',
+      counterpartyName: '客户C',
+      counterpartyCode: 'C003',
+    }
+    syncEditorForm(unchangedForm, {
+      changedKeys: new Set(['remark']),
+    })
+    expect(unchangedForm.counterpartyName).toBe('客户C')
+    expect(unchangedForm.counterpartyCode).toBe('C003')
   })
 
   it('registers positive line item modules', () => {

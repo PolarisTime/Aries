@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -11,6 +11,102 @@ vi.mock('@/components/SystemTableToolbar', () => ({
   SystemTableToolbar: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="toolbar">{children}</div>
   ),
+}))
+
+vi.mock('antd', () => ({
+  Button: ({
+    'aria-label': ariaLabel,
+    disabled,
+    onClick,
+  }: {
+    'aria-label'?: string
+    disabled?: boolean
+    onClick?: () => void
+  }) => (
+    <button aria-label={ariaLabel} disabled={disabled} onClick={onClick} />
+  ),
+  Card: ({
+    children,
+    className,
+    extra,
+    title,
+  }: {
+    children?: React.ReactNode
+    className?: string
+    extra?: React.ReactNode
+    title?: React.ReactNode
+  }) => (
+    <section className={`ant-card ${className ?? ''}`}>
+      <h2>{title}</h2>
+      {extra}
+      {children}
+    </section>
+  ),
+  Col: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  Empty: ({ description }: { description?: React.ReactNode }) => (
+    <div>{description}</div>
+  ),
+  Row: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  Select: ({
+    options = [],
+    placeholder,
+    value,
+    onChange,
+  }: {
+    options?: Array<{ label: string; value: string }>
+    placeholder?: string
+    value?: string
+    onChange?: (value?: string) => void
+  }) => (
+    <select
+      aria-label={placeholder}
+      value={value ?? ''}
+      onChange={(event) => onChange?.(event.currentTarget.value || undefined)}
+    >
+      <option value="">{placeholder}</option>
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  ),
+  Statistic: ({ title, value }: { title?: React.ReactNode; value?: number }) => (
+    <div>
+      <span>{title}</span>
+      <strong>{value}</strong>
+    </div>
+  ),
+  Switch: ({
+    'aria-label': ariaLabel,
+    checked,
+    disabled,
+    loading,
+    onChange,
+  }: {
+    'aria-label'?: string
+    checked?: boolean
+    disabled?: boolean
+    loading?: boolean
+    onChange?: () => void
+  }) => (
+    <button
+      aria-label={ariaLabel}
+      aria-pressed={checked}
+      data-loading={loading ? 'true' : 'false'}
+      disabled={disabled}
+      onClick={onChange}
+    />
+  ),
+  Tooltip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  Typography: {
+    Paragraph: ({ children }: { children?: React.ReactNode }) => (
+      <p>{children}</p>
+    ),
+    Text: ({ children }: { children?: React.ReactNode }) => (
+      <span>{children}</span>
+    ),
+  },
 }))
 
 vi.mock('@/utils/type-narrowing', () => ({
@@ -126,6 +222,95 @@ describe('GeneralSettingsTableCard', () => {
     expect(screen.getByText('水印字体大小')).toBeInTheDocument()
   })
 
+  it('groups pagination, session, and other basic parameters', () => {
+    render(
+      <GeneralSettingsTableCard
+        {...defaultProps}
+        basicSettingRows={[
+          {
+            id: 'pagination',
+            settingCode: 'UI_DEFAULT_LIST_PAGE_SIZE',
+            settingName: '默认分页大小',
+            remark: '分页备注',
+            sampleNo: '20',
+          } as never,
+          {
+            id: 'session',
+            settingCode: 'SYS_MAX_CONCURRENT_SESSIONS',
+            settingName: '最大会话数',
+            sampleNo: '3',
+          } as never,
+          {
+            id: 'other',
+            settingCode: 'SYS_OTHER_NUMERIC',
+            settingName: '其它参数',
+            sampleNo: '1',
+          } as never,
+        ]}
+      />,
+    )
+
+    expect(
+      screen.getByText('system.generalSettingsTable.groupPagination'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.generalSettingsTable.groupSession'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.generalSettingsTable.groupOther'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('分页备注')).toBeInTheDocument()
+  })
+
+  it('groups pagination parameters by setting name', () => {
+    render(
+      <GeneralSettingsTableCard
+        {...defaultProps}
+        basicSettingRows={[
+          {
+            id: 'pagination-name',
+            settingCode: 'SYS_UNCLASSIFIED',
+            settingName: '每页分页数量',
+            sampleNo: '30',
+          } as never,
+        ]}
+      />,
+    )
+
+    expect(
+      screen.getByText('system.generalSettingsTable.groupPagination'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders loading text for both configuration sections', () => {
+    render(<GeneralSettingsTableCard {...defaultProps} loading />)
+
+    expect(screen.getAllByText('common.loading')).toHaveLength(2)
+  })
+
+  it('calls edit handler from basic parameter row', () => {
+    const onEdit = vi.fn()
+    const record = {
+      id: '1',
+      settingCode: 'SYS_DEFAULT_TAX_RATE',
+      settingName: '默认税率',
+      sampleNo: '0.13',
+    } as never
+
+    render(
+      <GeneralSettingsTableCard
+        {...defaultProps}
+        basicSettingRows={[record]}
+        onEdit={onEdit}
+      />,
+    )
+    fireEvent.click(
+      screen.getByLabelText('system.generalSettingsTable.edit 默认税率'),
+    )
+
+    expect(onEdit).toHaveBeenCalledWith(record)
+  })
+
   it('renders switch settings as action list items', () => {
     const { container } = render(
       <GeneralSettingsTableCard
@@ -159,6 +344,37 @@ describe('GeneralSettingsTableCard', () => {
     expect(
       screen.getByLabelText('登录验证码 system.generalSettingsTable.enabled'),
     ).toBeInTheDocument()
+  })
+
+  it('calls toggle and edit handlers from switch rows', () => {
+    const onToggle = vi.fn()
+    const onEdit = vi.fn()
+    const record = {
+      id: '1',
+      settingName: '登录验证码',
+      status: '禁用',
+      remark: '',
+    } as never
+
+    render(
+      <GeneralSettingsTableCard
+        {...defaultProps}
+        switchRows={[record]}
+        onEdit={onEdit}
+        onToggle={onToggle}
+        toggling
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByLabelText('登录验证码 system.generalSettingsTable.disabled'),
+    )
+    fireEvent.click(
+      screen.getByLabelText('system.generalSettingsTable.edit 登录验证码'),
+    )
+
+    expect(onToggle).toHaveBeenCalledWith(record)
+    expect(onEdit).toHaveBeenCalledWith(record)
   })
 
   it('renders empty state when there are no switches', () => {

@@ -132,6 +132,24 @@ const mockPageDefinitions = [
     icon: 'customer',
   },
   {
+    key: 'supplier',
+    view: 'business-grid' as const,
+    moduleKey: 'supplier',
+    path: 'supplier',
+    title: 'Supplier',
+    menuKey: '/supplier',
+    icon: 'supplier',
+  },
+  {
+    key: 'number-rules',
+    view: 'number-rules' as const,
+    resourceKey: 'number-rules',
+    path: 'number-rules',
+    title: 'Number Rules',
+    menuKey: '/number-rules',
+    icon: 'number',
+  },
+  {
     key: 'general-setting',
     view: 'general-setting' as const,
     resourceKey: 'general-setting',
@@ -150,6 +168,42 @@ const mockPageDefinitions = [
     icon: 'setting',
   },
   {
+    key: 'company-setting',
+    view: 'company-setting' as const,
+    resourceKey: 'company-setting',
+    path: 'company-setting',
+    title: 'Company Setting',
+    menuKey: '/company-setting',
+    icon: 'company',
+  },
+  {
+    key: 'print-template',
+    view: 'print-template' as const,
+    resourceKey: 'print-template',
+    path: 'print-template',
+    title: 'Print Template',
+    menuKey: '/print-template',
+    icon: 'print',
+  },
+  {
+    key: 'session',
+    view: 'session' as const,
+    resourceKey: 'session',
+    path: 'session',
+    title: 'Session',
+    menuKey: '/session',
+    icon: 'session',
+  },
+  {
+    key: 'api-key',
+    view: 'api-key' as const,
+    resourceKey: 'api-key',
+    path: 'api-key',
+    title: 'API Key',
+    menuKey: '/api-key',
+    icon: 'key',
+  },
+  {
     key: 'access-control',
     view: 'access-control' as const,
     accessResources: ['permission:read', 'role:read'],
@@ -166,6 +220,24 @@ const mockPageDefinitions = [
     title: 'Security Center',
     menuKey: '/security-center',
     icon: 'safety',
+  },
+  {
+    key: 'security-key',
+    view: 'security-key' as const,
+    resourceKey: 'security-key',
+    path: 'security-key',
+    title: 'Security Key',
+    menuKey: '/security-key',
+    icon: 'security-key',
+  },
+  {
+    key: 'database-backup',
+    view: 'database-backup' as const,
+    resourceKey: 'database-backup',
+    path: 'database-backup',
+    title: 'Database Backup',
+    menuKey: '/database-backup',
+    icon: 'database',
   },
 ]
 
@@ -295,10 +367,18 @@ describe('router', () => {
     await importRouter()
     expect(routeOptionsByPath.has('/dashboard')).toBe(true)
     expect(routeOptionsByPath.has('/customer')).toBe(true)
+    expect(routeOptionsByPath.has('/supplier')).toBe(true)
+    expect(routeOptionsByPath.has('/number-rules')).toBe(true)
     expect(routeOptionsByPath.has('/general-setting')).toBe(true)
     expect(routeOptionsByPath.has('/system-parameters')).toBe(true)
+    expect(routeOptionsByPath.has('/company-setting')).toBe(true)
+    expect(routeOptionsByPath.has('/print-template')).toBe(true)
+    expect(routeOptionsByPath.has('/session')).toBe(true)
+    expect(routeOptionsByPath.has('/api-key')).toBe(true)
     expect(routeOptionsByPath.has('/access-control')).toBe(true)
     expect(routeOptionsByPath.has('/security-center')).toBe(true)
+    expect(routeOptionsByPath.has('/security-key')).toBe(true)
+    expect(routeOptionsByPath.has('/database-backup')).toBe(true)
   })
 
   it('creates api-key detail route', async () => {
@@ -359,6 +439,31 @@ describe('router', () => {
       ).resolves.toBeUndefined()
     })
 
+    it('uses cached setup status without reloading it from API', async () => {
+      await importRouter()
+      const { useSetupStore } = await import('@/stores/setupStore')
+      useSetupStore.getState().setStatus({ setupRequired: false })
+      mockGetInitialSetupStatus.mockClear()
+
+      await expect(
+        rootRouteOptions.current!.beforeLoad({
+          location: { pathname: '/dashboard' },
+        }),
+      ).resolves.toBeUndefined()
+      expect(mockGetInitialSetupStatus).not.toHaveBeenCalled()
+    })
+
+    it('skips setup check on server error page', async () => {
+      await importRouter()
+
+      await expect(
+        rootRouteOptions.current!.beforeLoad({
+          location: { pathname: '/server-error' },
+        }),
+      ).resolves.toBeUndefined()
+      expect(mockGetInitialSetupStatus).not.toHaveBeenCalled()
+    })
+
     it('rethrows redirect errors from setup status API', async () => {
       const redirectError = Object.assign(new Error('redirect'), {
         to: '/somewhere',
@@ -384,6 +489,26 @@ describe('router', () => {
       ).rejects.toMatchObject({ to: '/server-error' })
     })
 
+    it.each([
+      [{ code: 'ERR_NETWORK' }, 'axios network code'],
+      [{ code: 'ECONNABORTED' }, 'axios timeout code'],
+      [new TypeError('fetch failed'), 'fetch type error'],
+      [new Error('Network Error'), 'network message'],
+      [new Error('ECONNREFUSED localhost'), 'connection refused message'],
+      [new Error('request timeout'), 'timeout message'],
+      [{ status: 500 }, 'object without message'],
+      [null, 'empty error'],
+    ])('handles setup API failure: %s', async (error) => {
+      mockGetInitialSetupStatus.mockRejectedValue(error)
+      await importRouter()
+
+      await expect(
+        rootRouteOptions.current!.beforeLoad({
+          location: { pathname: '/dashboard' },
+        }),
+      ).rejects.toMatchObject({ to: '/server-error' })
+    })
+
     it('keeps source path when redirecting to /server-error', async () => {
       mockGetInitialSetupStatus.mockRejectedValue(new Error('network error'))
       await importRouter()
@@ -400,6 +525,17 @@ describe('router', () => {
         to: '/server-error',
         search: { from: '/access-control?tab=roles#section' },
       })
+    })
+
+    it('redirects to /server-error without from when source path is unsafe', async () => {
+      mockGetInitialSetupStatus.mockRejectedValue(new Error('network error'))
+      await importRouter()
+
+      await expect(
+        rootRouteOptions.current!.beforeLoad({
+          location: { pathname: undefined },
+        }),
+      ).rejects.toMatchObject({ to: '/server-error' })
     })
 
     it('redirects to /server-error on API error when on setup page', async () => {
@@ -603,6 +739,55 @@ describe('router', () => {
       )
     })
 
+    it('runs the prefetch query with first-page parameters', async () => {
+      mockPermissionCan.mockReturnValue(true)
+      const { loadBusinessPageConfig } = await import(
+        '@/config/business-page-loader'
+      )
+      vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+        key: 'customer',
+      } as any)
+      const signal = new AbortController().signal
+      const { listBusinessModule } = await import('@/api/business-listing')
+      vi.mocked(listBusinessModule).mockResolvedValue({} as any)
+      const { queryClient } = await import('@/lib/query-client')
+      vi.mocked(queryClient.ensureQueryData).mockImplementation(
+        async (options: any) => {
+          await options.queryFn({ signal })
+          return {}
+        },
+      )
+
+      await importRouter()
+      const opts = routeOptionsByPath.get('/customer')!
+      await opts.loader!()
+
+      expect(listBusinessModule).toHaveBeenCalledWith(
+        'customer',
+        {},
+        { currentPage: 1, pageSize: 20 },
+        { signal },
+      )
+    })
+
+    it('uses moduleKey as permission resource when resourceKey is missing', async () => {
+      mockPermissionCan.mockReturnValue(true)
+      const { loadBusinessPageConfig } = await import(
+        '@/config/business-page-loader'
+      )
+      vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+        key: 'supplier',
+      } as any)
+      const { queryClient } = await import('@/lib/query-client')
+      vi.mocked(queryClient.ensureQueryData).mockResolvedValue({} as any)
+
+      await importRouter()
+      const opts = routeOptionsByPath.get('/supplier')!
+      await opts.loader!()
+
+      expect(mockPermissionCan).toHaveBeenCalledWith('supplier', 'read')
+    })
+
     it('skips prefetch when user lacks permission', async () => {
       mockPermissionCan.mockReturnValue(false)
       const { loadBusinessPageConfig } = await import(
@@ -698,34 +883,40 @@ describe('router', () => {
 
     it('lazy loads module view components', async () => {
       await importRouter()
-      const customerComponent = routeOptionsByPath.get('/customer')!.component
-      expect(customerComponent).toBeDefined()
-      const customerMod = await customerComponent()
-      expect(customerMod).toHaveProperty('default')
+      const lazyRoutePaths = [
+        '/customer',
+        '/supplier',
+        '/number-rules',
+        '/general-setting',
+        '/system-parameters',
+        '/company-setting',
+        '/print-template',
+        '/session',
+        '/api-key',
+        '/access-control',
+        '/security-center',
+        '/security-key',
+        '/database-backup',
+      ]
 
-      const generalComponent =
-        routeOptionsByPath.get('/general-setting')!.component
-      expect(generalComponent).toBeDefined()
-      const generalMod = await generalComponent()
-      expect(generalMod).toHaveProperty('default')
+      for (const path of lazyRoutePaths) {
+        const component = routeOptionsByPath.get(path)!.component
+        expect(component).toBeDefined()
+        await expect(component()).resolves.toHaveProperty('default')
+      }
+    })
 
-      const accessComponent =
-        routeOptionsByPath.get('/access-control')!.component
-      expect(accessComponent).toBeDefined()
-      const accessMod = await accessComponent()
-      expect(accessMod).toHaveProperty('default')
+    it('lazy loads server error component', async () => {
+      await importRouter()
+      const component = routeOptionsByPath.get('/server-error')!.component
+      expect(component).toBeDefined()
+      const mod = await component()
+      expect(mod).toHaveProperty('default')
+    })
 
-      const systemParametersComponent =
-        routeOptionsByPath.get('/system-parameters')!.component
-      expect(systemParametersComponent).toBeDefined()
-      const systemParametersMod = await systemParametersComponent()
-      expect(systemParametersMod).toHaveProperty('default')
-
-      const securityCenterComponent =
-        routeOptionsByPath.get('/security-center')!.component
-      expect(securityCenterComponent).toBeDefined()
-      const securityCenterMod = await securityCenterComponent()
-      expect(securityCenterMod).toHaveProperty('default')
+    it('uses login component directly', async () => {
+      await importRouter()
+      expect(routeOptionsByPath.get('/login')!.component).toBeDefined()
     })
   })
 
@@ -770,6 +961,13 @@ describe('router', () => {
       expect(opts.getParentRoute()).toBeDefined()
     })
 
+    it('server error route has correct path and parent', async () => {
+      await importRouter()
+      const opts = routeOptionsByPath.get('/server-error')!
+      expect(opts.path).toBe('/server-error')
+      expect(opts.getParentRoute()).toBeDefined()
+    })
+
     it('setup-2fa route has correct path and parent', async () => {
       await importRouter()
       const opts = routeOptionsByPath.get('/setup-2fa')!
@@ -787,16 +985,16 @@ describe('router', () => {
     it('module routes have authenticated layout as parent', async () => {
       await importRouter()
       const dashboardOpts = routeOptionsByPath.get('/dashboard')!
-      expect(dashboardOpts.getParentRoute).toBeInstanceOf(Function)
+      expect(dashboardOpts.getParentRoute()).toBeDefined()
 
       const customerOpts = routeOptionsByPath.get('/customer')!
-      expect(customerOpts.getParentRoute).toBeInstanceOf(Function)
+      expect(customerOpts.getParentRoute()).toBeDefined()
     })
 
     it('api-key detail route has authenticated layout as parent', async () => {
       await importRouter()
       const opts = routeOptionsByPath.get('/api-key/$id')!
-      expect(opts.getParentRoute).toBeInstanceOf(Function)
+      expect(opts.getParentRoute()).toBeDefined()
     })
 
     it('creates router with lazy default components', async () => {

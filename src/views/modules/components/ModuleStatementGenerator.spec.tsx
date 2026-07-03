@@ -1,5 +1,15 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const moduleStatementTestHarness = vi.hoisted(() => ({
+  buttonPropsByText: new Map<string, any>(),
+}))
+
+const rememberButtonProps = (children: unknown, props: any) => {
+  if (typeof children === 'string') {
+    moduleStatementTestHarness.buttonPropsByText.set(children, props)
+  }
+}
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -19,9 +29,10 @@ vi.mock('antd', () => ({
         {footer}
       </div>
     ) : null,
-  Button: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
-  ),
+  Button: ({ children, ...props }: any) => {
+    rememberButtonProps(children, props)
+    return <button {...props}>{children}</button>
+  },
   Space: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   Tag: ({ children, ...props }: any) => <span {...props}>{children}</span>,
   Typography: {
@@ -41,9 +52,10 @@ vi.mock('antd/es/modal', () => ({
 }))
 
 vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
-  ),
+  default: ({ children, ...props }: any) => {
+    rememberButtonProps(children, props)
+    return <button {...props}>{children}</button>
+  },
 }))
 
 vi.mock('antd/es/space', () => ({
@@ -61,11 +73,14 @@ vi.mock('antd/es/typography', () => ({
 }))
 
 vi.mock('@/components/AppResultModal', () => ({
-  AppResultModal: ({ open, subTitle, traceId, footer }: any) =>
+  AppResultModal: ({ open, subTitle, traceId, footer, onClose }: any) =>
     open ? (
       <div data-testid="result-modal">
         <div>{subTitle}</div>
         {traceId && <div>trace:{traceId}</div>}
+        <button type="button" onClick={onClose}>
+          result-close
+        </button>
         {footer}
       </div>
     ) : null,
@@ -78,6 +93,10 @@ vi.mock('@/utils/type-narrowing', () => ({
 import { ModuleStatementGenerator } from '@/views/modules/components/ModuleStatementGenerator'
 
 describe('ModuleStatementGenerator', () => {
+  beforeEach(() => {
+    moduleStatementTestHarness.buttonPropsByText.clear()
+  })
+
   const defaultProps = {
     open: true,
     statementType: 'supplier' as const,
@@ -138,6 +157,19 @@ describe('ModuleStatementGenerator', () => {
     expect(screen.getByText('Carrier A')).toBeTruthy()
   })
 
+  it('falls back to a blank type label for an unexpected statement type', () => {
+    render(
+      <ModuleStatementGenerator
+        {...defaultProps}
+        statementType={'unexpected' as any}
+      />,
+    )
+    expect(
+      screen.getByText('modules.statement.generateTitle:{"type":""}'),
+    ).toBeTruthy()
+    expect(screen.getByText('modules.statement.extractError')).toBeTruthy()
+  })
+
   it('shows error when multiple counterparties', () => {
     const props = {
       ...defaultProps,
@@ -194,6 +226,44 @@ describe('ModuleStatementGenerator', () => {
     })
   })
 
+  it('closes parent modal when acknowledging a successful generation', async () => {
+    const onClose = vi.fn()
+    const onGenerate = vi.fn().mockResolvedValue(undefined)
+    render(
+      <ModuleStatementGenerator
+        {...defaultProps}
+        onClose={onClose}
+        onGenerate={onGenerate}
+      />,
+    )
+    fireEvent.click(screen.getByText('modules.statement.generateButton'))
+    await waitFor(() => {
+      expect(screen.getByTestId('result-modal')).toBeTruthy()
+    })
+    fireEvent.click(screen.getByText('modules.statement.gotIt'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('result-modal')).toBeNull()
+  })
+
+  it('closes only the result modal when acknowledging a failed generation', async () => {
+    const onClose = vi.fn()
+    const onGenerate = vi.fn().mockRejectedValue(new Error('Generation failed'))
+    render(
+      <ModuleStatementGenerator
+        {...defaultProps}
+        onClose={onClose}
+        onGenerate={onGenerate}
+      />,
+    )
+    fireEvent.click(screen.getByText('modules.statement.generateButton'))
+    await waitFor(() => {
+      expect(screen.getByText('Generation failed')).toBeTruthy()
+    })
+    fireEvent.click(screen.getByText('modules.statement.gotIt'))
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('result-modal')).toBeNull()
+  })
+
   it('shows error result when generation fails', async () => {
     const onGenerate = vi.fn().mockRejectedValue(new Error('Generation failed'))
     render(
@@ -203,6 +273,44 @@ describe('ModuleStatementGenerator', () => {
     await waitFor(() => {
       expect(screen.getByText('Generation failed')).toBeTruthy()
     })
+  })
+
+  it('closes parent modal from result modal close after success', async () => {
+    const onClose = vi.fn()
+    const onGenerate = vi.fn().mockResolvedValue(undefined)
+    render(
+      <ModuleStatementGenerator
+        {...defaultProps}
+        onClose={onClose}
+        onGenerate={onGenerate}
+      />,
+    )
+    fireEvent.click(screen.getByText('modules.statement.generateButton'))
+    await waitFor(() => {
+      expect(screen.getByTestId('result-modal')).toBeTruthy()
+    })
+    fireEvent.click(screen.getByText('result-close'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('result-modal')).toBeNull()
+  })
+
+  it('keeps parent modal open from result modal close after failure', async () => {
+    const onClose = vi.fn()
+    const onGenerate = vi.fn().mockRejectedValue(new Error('Generation failed'))
+    render(
+      <ModuleStatementGenerator
+        {...defaultProps}
+        onClose={onClose}
+        onGenerate={onGenerate}
+      />,
+    )
+    fireEvent.click(screen.getByText('modules.statement.generateButton'))
+    await waitFor(() => {
+      expect(screen.getByText('Generation failed')).toBeTruthy()
+    })
+    fireEvent.click(screen.getByText('result-close'))
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('result-modal')).toBeNull()
   })
 
   it('shows error result with traceId when generation fails', async () => {
@@ -245,6 +353,24 @@ describe('ModuleStatementGenerator', () => {
     )
     const generateBtn = screen.getByText('modules.statement.generateButton')
     expect(generateBtn).toBeTruthy()
+  })
+
+  it('guards generate handler when invoked without a summary', () => {
+    const onGenerate = vi.fn()
+    render(
+      <ModuleStatementGenerator
+        {...defaultProps}
+        selectedRows={[{ id: '1' }]}
+        onGenerate={onGenerate}
+      />,
+    )
+    const generateButtonProps =
+      moduleStatementTestHarness.buttonPropsByText.get(
+        'modules.statement.generateButton',
+      )
+    expect(generateButtonProps?.disabled).toBe(true)
+    generateButtonProps?.onClick()
+    expect(onGenerate).not.toHaveBeenCalled()
   })
 
   it('renders document count', () => {

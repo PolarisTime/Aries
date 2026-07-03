@@ -1,7 +1,68 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  ColumnSettingsPopover: vi.fn(
+    ({
+      onOpenChange,
+      onOrderChange,
+      onToggle,
+    }: {
+      onOpenChange: (open: boolean) => void
+      onOrderChange: (order: string[]) => void
+      onToggle: (key: string) => void
+    }) => (
+      <div data-testid="column-settings">
+        <button type="button" onClick={() => onOpenChange(true)}>
+          open columns
+        </button>
+        <button type="button" onClick={() => onToggle('quantity')}>
+          toggle column
+        </button>
+        <button type="button" onClick={() => onOrderChange(['name'])}>
+          order column
+        </button>
+      </div>
+    ),
+  ),
+  EditorFooterActions: vi.fn(
+    ({
+      onCancel,
+      onSave,
+    }: {
+      onCancel: () => void
+      onSave: (audit: boolean) => void
+    }) => (
+      <div data-testid="footer-actions">
+        <button type="button" onClick={onCancel}>
+          cancel
+        </button>
+        <button type="button" onClick={() => onSave(false)}>
+          save
+        </button>
+        <button type="button" onClick={() => onSave(true)}>
+          audit
+        </button>
+      </div>
+    ),
+  ),
+  ModuleItemsPanel: vi.fn(
+    ({
+      actions,
+      children,
+    }: {
+      actions: React.ReactNode
+      children: React.ReactNode
+    }) => (
+      <div data-testid="items-panel">
+        <div>{actions}</div>
+        {children}
+      </div>
+    ),
+  ),
+  ModuleItemsTable: vi.fn(({ emptyText }: { emptyText: React.ReactNode }) => (
+    <div data-testid="items-table">{emptyText}</div>
+  )),
   ModuleParentSelectorOverlay: vi.fn(() => (
     <div data-testid="parent-selector" />
   )),
@@ -9,7 +70,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, options?: { label?: string }) =>
+      options?.label ? `${key}:${options.label}` : key,
   }),
 }))
 
@@ -19,31 +81,39 @@ vi.mock('@ant-design/icons', () => ({
   PlusOutlined: () => <span>PlusOutlined</span>,
 }))
 
-vi.mock('antd/es/button', () => ({
-  default: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
+vi.mock('antd', () => ({
+  Button: ({
+    children,
+    icon,
+    loading,
+    ...props
+  }: {
+    children: React.ReactNode
+    icon?: React.ReactNode
+    loading?: boolean
+    [key: string]: unknown
+  }) => (
+    <button type="button" data-loading={loading ? 'true' : 'false'} {...props}>
+      {icon}
+      {children}
+    </button>
   ),
 }))
 
 vi.mock('./ColumnSettingsPopover', () => ({
-  ColumnSettingsPopover: () => <div data-testid="column-settings" />,
+  ColumnSettingsPopover: mocks.ColumnSettingsPopover,
 }))
 
 vi.mock('./EditorFooterActions', () => ({
-  EditorFooterActions: () => <div data-testid="footer-actions" />,
+  EditorFooterActions: mocks.EditorFooterActions,
 }))
 
 vi.mock('./ModuleItemsPanel', () => ({
-  ModuleItemsPanel: ({ children, actions }: any) => (
-    <div data-testid="items-panel">
-      <div>{actions}</div>
-      {children}
-    </div>
-  ),
+  ModuleItemsPanel: mocks.ModuleItemsPanel,
 }))
 
 vi.mock('./ModuleItemsTable', () => ({
-  ModuleItemsTable: () => <div data-testid="items-table" />,
+  ModuleItemsTable: mocks.ModuleItemsTable,
 }))
 
 vi.mock('./ModuleParentSelectorOverlay', () => ({
@@ -64,16 +134,19 @@ describe('ModuleEditorItemsSection', () => {
       detailFields: [],
       data: [],
       buildOverview: () => [],
-      itemColumns: [{ title: 'Item', dataIndex: 'name' }],
+      itemColumns: [{ title: 'Item', dataIndex: 'name', key: 'name' }],
     },
-    items: [],
+    items: [
+      { id: 'item-1', name: 'Item 1' },
+      { id: 'item-2', name: 'Item 2' },
+    ],
     selectedItemIds: [],
     parentImporting: false,
-    parentSelectorFilters: {},
+    parentSelectorFilters: { status: 'open' },
     parentSelectorOpen: false,
-    itemColumns: [],
-    itemColumnOrder: [],
-    visibleItemColumnKeys: [],
+    itemColumns: [{ title: 'Name', dataIndex: 'name', key: 'name' }],
+    itemColumnOrder: ['name'],
+    visibleItemColumnKeys: ['name'],
     permissions: {
       addManualItems: true,
       importParentItems: false,
@@ -93,14 +166,56 @@ describe('ModuleEditorItemsSection', () => {
     onRowDragOver: vi.fn(),
   }
 
-  it('renders items panel', () => {
-    render(<ModuleEditorItemsSection {...defaultProps} />)
-    expect(screen.getByTestId('items-panel')).toBeTruthy()
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
-  it('renders add button when addManualItems is true', () => {
+  it('renders the items panel and forwards table props for the default empty state', () => {
     render(<ModuleEditorItemsSection {...defaultProps} />)
-    expect(screen.getByText('modules.itemsSection.addItem')).toBeTruthy()
+
+    expect(screen.getByTestId('items-panel')).toBeTruthy()
+    expect(screen.getByTestId('items-table')).toHaveTextContent(
+      'modules.itemsSection.emptyText',
+    )
+    expect(mocks.ModuleItemsTable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        columns: defaultProps.itemColumns,
+        dataSource: defaultProps.items,
+        emptyText: 'modules.itemsSection.emptyText',
+      }),
+      undefined,
+    )
+  })
+
+  it('wires add, column settings, and footer actions', () => {
+    render(<ModuleEditorItemsSection {...defaultProps} />)
+
+    fireEvent.click(screen.getByText('modules.itemsSection.addItem'))
+    fireEvent.click(screen.getByText('open columns'))
+    fireEvent.click(screen.getByText('toggle column'))
+    fireEvent.click(screen.getByText('order column'))
+    fireEvent.click(screen.getByText('cancel'))
+    fireEvent.click(screen.getByText('save'))
+    fireEvent.click(screen.getByText('audit'))
+
+    expect(defaultProps.onAddItem).toHaveBeenCalledTimes(1)
+    expect(defaultProps.onToggleItemColumn).toHaveBeenCalledWith('quantity')
+    expect(defaultProps.onItemColumnOrderChange).toHaveBeenCalledWith(['name'])
+    expect(defaultProps.onCancel).toHaveBeenCalledTimes(1)
+    expect(defaultProps.onSave).toHaveBeenCalledWith(false)
+    expect(defaultProps.onSave).toHaveBeenCalledWith(true)
+    expect(mocks.ColumnSettingsPopover).toHaveBeenLastCalledWith(
+      expect.objectContaining({ open: true }),
+      undefined,
+    )
+    expect(mocks.EditorFooterActions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        canAudit: false,
+        canSave: true,
+        saving: false,
+      }),
+      undefined,
+    )
   })
 
   it('hides add button when addManualItems is false', () => {
@@ -110,7 +225,36 @@ describe('ModuleEditorItemsSection', () => {
         permissions={{ ...defaultProps.permissions, addManualItems: false }}
       />,
     )
+
     expect(screen.queryByText('modules.itemsSection.addItem')).toBeNull()
+  })
+
+  it('renders delete selected action and selected row class only when rows are selected', () => {
+    render(
+      <ModuleEditorItemsSection
+        {...defaultProps}
+        selectedItemIds={['item-1', 'item-3']}
+      />,
+    )
+
+    fireEvent.click(screen.getByText(/modules\.itemsSection\.deleteSelected/))
+
+    const tableProps = mocks.ModuleItemsTable.mock.calls.at(-1)?.[0]
+    expect(defaultProps.onRemoveSelectedItems).toHaveBeenCalledTimes(1)
+    expect(tableProps.rowClassName({ id: 'item-1' })).toBe(
+      'ant-table-row-selected',
+    )
+    expect(tableProps.rowClassName({ id: 'item-2' })).toBe('')
+  })
+
+  it('passes row drag events with the row id', () => {
+    render(<ModuleEditorItemsSection {...defaultProps} />)
+
+    const tableProps = mocks.ModuleItemsTable.mock.calls.at(-1)?.[0]
+    const dragEvent = { preventDefault: vi.fn() } as unknown as React.DragEvent
+    tableProps.onRow({ id: 'item-2' }).onDragOver(dragEvent)
+
+    expect(defaultProps.onRowDragOver).toHaveBeenCalledWith('item-2', dragEvent)
   })
 
   it('renders null when no itemColumns in config', () => {
@@ -118,10 +262,20 @@ describe('ModuleEditorItemsSection', () => {
     const { container } = render(
       <ModuleEditorItemsSection {...defaultProps} config={config} />,
     )
+
     expect(container.textContent).toBe('')
   })
 
-  it('passes purchase order candidate settings to parent selector', () => {
+  it('renders null when itemColumns is omitted in config', () => {
+    const { itemColumns: _itemColumns, ...config } = defaultProps.config
+    const { container } = render(
+      <ModuleEditorItemsSection {...defaultProps} config={config} />,
+    )
+
+    expect(container.textContent).toBe('')
+  })
+
+  it('renders import action with configured button text and parent selector props', () => {
     const config = {
       ...defaultProps.config,
       parentImport: {
@@ -129,6 +283,9 @@ describe('ModuleEditorItemsSection', () => {
         parentFieldKey: 'purchaseOrderNo',
         parentDisplayFieldKey: 'orderNo',
         label: '采购订单',
+        buttonText: '导入采购订单',
+        allowMultipleSelection: true,
+        candidateStatementModuleKey: 'purchase-statement',
         candidateQueryType: 'purchase-order-import' as const,
         candidateUsage: 'purchase-inbound' as const,
         hiddenSelectorColumnKeys: ['status'],
@@ -139,26 +296,50 @@ describe('ModuleEditorItemsSection', () => {
       <ModuleEditorItemsSection
         {...defaultProps}
         config={config}
+        parentImporting
         parentSelectorOpen
         permissions={{
           ...defaultProps.permissions,
+          audit: true,
           importParentItems: true,
         }}
       />,
     )
 
+    fireEvent.click(screen.getByText('导入采购订单'))
+
+    expect(defaultProps.onOpenParentSelector).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('导入采购订单')).toHaveAttribute(
+      'data-loading',
+      'true',
+    )
+    expect(screen.getByTestId('items-table')).toHaveTextContent(
+      'modules.itemsSection.emptyTextWithImport',
+    )
     expect(mocks.ModuleParentSelectorOverlay).toHaveBeenCalledWith(
       expect.objectContaining({
+        allowMultipleSelection: true,
         candidateQueryType: 'purchase-order-import',
+        candidateStatementModuleKey: 'purchase-statement',
         candidateUsage: 'purchase-inbound',
+        fixedFilters: { status: 'open' },
         hiddenSelectorColumnKeys: ['status'],
+        onClose: defaultProps.onCloseParentSelector,
+        onSelect: defaultProps.onImportParentRecord,
+        open: true,
+        parentDisplayFieldKey: 'orderNo',
         parentModuleKey: 'purchase-order',
+        title: 'modules.itemsSection.selectParent:采购订单',
       }),
+      undefined,
+    )
+    expect(mocks.EditorFooterActions).toHaveBeenCalledWith(
+      expect.objectContaining({ canAudit: true }),
       undefined,
     )
   })
 
-  it('passes freight bill candidate settings to parent selector', () => {
+  it('renders import action with configured label when button text is absent', () => {
     const config = {
       ...defaultProps.config,
       parentImport: {
@@ -174,7 +355,6 @@ describe('ModuleEditorItemsSection', () => {
       <ModuleEditorItemsSection
         {...defaultProps}
         config={config}
-        parentSelectorOpen
         permissions={{
           ...defaultProps.permissions,
           importParentItems: true,
@@ -182,23 +362,26 @@ describe('ModuleEditorItemsSection', () => {
       />,
     )
 
+    expect(
+      screen.getByText('modules.itemsSection.importItems:销售出库单'),
+    ).toBeTruthy()
     expect(mocks.ModuleParentSelectorOverlay).toHaveBeenCalledWith(
       expect.objectContaining({
         candidateQueryType: 'freight-bill-import',
         parentModuleKey: 'sales-outbound',
+        title: 'modules.itemsSection.selectParent:销售出库单',
       }),
       undefined,
     )
   })
 
-  it('passes sales order outbound candidate settings to parent selector', () => {
+  it('renders import action with default parent label when label is absent', () => {
     const config = {
       ...defaultProps.config,
       parentImport: {
         parentModuleKey: 'sales-order',
         parentFieldKey: 'salesOrderNo',
         parentDisplayFieldKey: 'orderNo',
-        label: '销售订单',
         candidateQueryType: 'sales-order-outbound-import' as const,
       },
     }
@@ -207,7 +390,6 @@ describe('ModuleEditorItemsSection', () => {
       <ModuleEditorItemsSection
         {...defaultProps}
         config={config}
-        parentSelectorOpen
         permissions={{
           ...defaultProps.permissions,
           importParentItems: true,
@@ -215,10 +397,17 @@ describe('ModuleEditorItemsSection', () => {
       />,
     )
 
+    expect(
+      screen.getByText(
+        'modules.itemsSection.importItems:modules.itemsSection.parentDoc',
+      ),
+    ).toBeTruthy()
     expect(mocks.ModuleParentSelectorOverlay).toHaveBeenCalledWith(
       expect.objectContaining({
         candidateQueryType: 'sales-order-outbound-import',
         parentModuleKey: 'sales-order',
+        title:
+          'modules.itemsSection.selectParent:modules.itemsSection.parentDoc',
       }),
       undefined,
     )

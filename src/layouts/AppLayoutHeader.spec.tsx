@@ -2,6 +2,9 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AppLayoutHeader } from '@/layouts/AppLayoutHeader'
 
+const topHeaderSpy = vi.fn()
+const sideHeaderSpy = vi.fn()
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
@@ -26,15 +29,17 @@ vi.mock('@/layouts/LazyAppHeaderSearch', () => ({
 }))
 
 vi.mock('@/layouts/AppTopNavigationHeader', () => ({
-  AppTopNavigationHeader: (props: any) => (
-    <div data-testid="top-header">top:{props.currentUserName}</div>
-  ),
+  AppTopNavigationHeader: (props: any) => {
+    topHeaderSpy(props)
+    return <div data-testid="top-header">top:{props.currentUserName}</div>
+  },
 }))
 
 vi.mock('@/layouts/AppSideNavigationHeader', () => ({
-  AppSideNavigationHeader: (props: any) => (
-    <div data-testid="side-header">side:{props.currentUserName}</div>
-  ),
+  AppSideNavigationHeader: (props: any) => {
+    sideHeaderSpy(props)
+    return <div data-testid="side-header">side:{props.currentUserName}</div>
+  },
 }))
 
 const sharedProps = {
@@ -75,6 +80,20 @@ describe('AppLayoutHeader', () => {
 
     expect(screen.getByTestId('top-header')).toBeDefined()
     expect(screen.getByText('top:张三')).toBeDefined()
+    expect(topHeaderSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userMenu: expect.objectContaining({
+          items: expect.arrayContaining([
+            expect.objectContaining({ key: 'settings', label: '个人设置' }),
+            expect.objectContaining({
+              key: 'logout',
+              label: '退出登录',
+              danger: true,
+            }),
+          ]),
+        }),
+      }),
+    )
   })
 
   it('renders side navigation header when kind is side', () => {
@@ -92,5 +111,31 @@ describe('AppLayoutHeader', () => {
 
     expect(screen.getByTestId('side-header')).toBeDefined()
     expect(screen.getByText('side:张三')).toBeDefined()
+  })
+
+  it('routes user menu actions to personal settings and sign out callbacks', () => {
+    const onOpenPersonalSettings = vi.fn()
+    const onSignOut = vi.fn()
+    render(
+      <AppLayoutHeader
+        {...sharedProps}
+        onOpenPersonalSettings={onOpenPersonalSettings}
+        onSignOut={onSignOut}
+        kind="side"
+        backendOnline={true}
+        clockDisplay={{ dateText: '2026年07月01日', timeText: '14时30分00秒' }}
+        collapsed={false}
+        onToggleCollapsed={vi.fn()}
+        title="工作台"
+      />,
+    )
+    const menu = sideHeaderSpy.mock.calls.at(-1)?.[0].userMenu
+
+    menu.onClick({ key: 'settings' })
+    menu.onClick({ key: 'logout' })
+    menu.onClick({ key: 'unknown' })
+
+    expect(onOpenPersonalSettings).toHaveBeenCalledTimes(1)
+    expect(onSignOut).toHaveBeenCalledTimes(1)
   })
 })

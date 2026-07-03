@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   buildDefaultEditorLineItem,
   generatePlaceholderBatchNo,
@@ -6,6 +6,10 @@ import {
   inferQuantityUnit,
   toRoundedNumber,
 } from './module-editor-shared'
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('hasEditorValue', () => {
   it('returns false for undefined', () => {
@@ -105,6 +109,21 @@ describe('generatePlaceholderBatchNo', () => {
   it('generates values in uppercase', () => {
     const result = generatePlaceholderBatchNo()
     expect(result).toBe(result.toUpperCase())
+  })
+
+  it('waits for the next millisecond when sequence overflows', () => {
+    const fixedTimestamp = 1_800_000_000_000
+    let calls = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => {
+      calls += 1
+      return calls <= 4098 ? fixedTimestamp : fixedTimestamp + 1
+    })
+
+    const values = Array.from({ length: 4097 }, () =>
+      generatePlaceholderBatchNo(),
+    )
+
+    expect(new Set(values).size).toBe(values.length)
   })
 })
 

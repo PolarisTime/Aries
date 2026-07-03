@@ -1,10 +1,12 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import {
   resolveAutoOpenDetailTarget,
   useBusinessGridRouteSync,
 } from './use-business-grid-route-sync'
+
+type RouteSyncProps = Parameters<typeof useBusinessGridRouteSync>[0]
 
 const purchaseOrderConfig: ModulePageConfig = {
   key: 'purchase-order',
@@ -146,10 +148,57 @@ describe('resolveAutoOpenDetailTarget', () => {
     })
     expect(result).toBeNull()
   })
+
+  it('uses id as the default primary number key', () => {
+    const record = {
+      id: 'PO2026000032',
+    } satisfies ModuleRecord
+
+    const result = resolveAutoOpenDetailTarget({
+      config: {
+        ...purchaseOrderConfig,
+        primaryNoKey: undefined,
+      },
+      records: [record],
+      searchStr: '?docNo=PO2026000032&openDetail=1',
+      autoOpenedRouteKey: '',
+    })
+
+    expect(result).toEqual({
+      nextAutoOpenedRouteKey: 'doc:PO2026000032',
+      target: record,
+    })
+  })
+
+  it('falls back to trackId when available rows have empty ids', () => {
+    const result = resolveAutoOpenDetailTarget({
+      config: purchaseOrderConfig,
+      records: [
+        {
+          id: '',
+          orderNo: 'PO2026000032',
+        },
+      ],
+      searchStr: '?trackId=1914876201459236001&openDetail=1',
+      autoOpenedRouteKey: '',
+    })
+
+    expect(result).toEqual({
+      nextAutoOpenedRouteKey: 'track:1914876201459236001',
+      target: '1914876201459236001',
+    })
+  })
 })
 
 describe('useBusinessGridRouteSync', () => {
-  function renderRouteSync(searchStr: string) {
+  beforeEach(() => {
+    window.history.replaceState(null, '', '/')
+  })
+
+  function renderRouteSync(
+    searchStr: string,
+    overrides: Partial<RouteSyncProps> = {},
+  ) {
     const handlers = {
       clearSelection: vi.fn(),
       openDetail: vi.fn(),
@@ -159,23 +208,39 @@ describe('useBusinessGridRouteSync', () => {
       updateFilter: vi.fn(),
     }
 
-    renderHook(() =>
-      useBusinessGridRouteSync({
-        location: {
-          searchStr,
-        } as never,
-        config: purchaseOrderConfig,
-        records: [],
-        defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
-        ...handlers,
-      }),
+    const props: RouteSyncProps = {
+      location: {
+        searchStr,
+      } as RouteSyncProps['location'],
+      config: purchaseOrderConfig,
+      records: [],
+      defaultFilters: { orderDate: ['2026-05-29', '2026-06-28'] },
+      ...handlers,
+      ...overrides,
+    }
+
+    const hook = renderHook(
+      (currentProps: RouteSyncProps) => useBusinessGridRouteSync(currentProps),
+      {
+        initialProps: props,
+      },
     )
 
-    return handlers
+    return {
+      handlers,
+      props,
+      ...hook,
+    }
+  }
+
+  function withSearchStr(searchStr: string): RouteSyncProps['location'] {
+    return {
+      searchStr,
+    } as RouteSyncProps['location']
   }
 
   it('keeps default filters when URL has no route keyword', () => {
-    const handlers = renderRouteSync('')
+    const { handlers } = renderRouteSync('')
 
     expect(handlers.setPage).toHaveBeenCalledWith(1)
     expect(handlers.clearSelection).toHaveBeenCalled()
@@ -189,7 +254,7 @@ describe('useBusinessGridRouteSync', () => {
   })
 
   it('merges route keyword with default filters', () => {
-    const handlers = renderRouteSync('?docNo=PO2026000032')
+    const { handlers } = renderRouteSync('?docNo=PO2026000032')
 
     expect(handlers.setFilters).toHaveBeenCalledWith({
       orderDate: ['2026-05-29', '2026-06-28'],
@@ -199,5 +264,106 @@ describe('useBusinessGridRouteSync', () => {
       orderDate: ['2026-05-29', '2026-06-28'],
       keyword: 'PO2026000032',
     })
+  })
+
+  it('uses window search before the router fallback search string', () => {
+    window.history.replaceState(null, '', '/modules?trackId=WINDOW-TRACK')
+
+    const { handlers } = renderRouteSync('?docNo=FALLBACK-DOC')
+
+    expect(handlers.setFilters).toHaveBeenCalledWith({
+      orderDate: ['2026-05-29', '2026-06-28'],
+      keyword: 'WINDOW-TRACK',
+    })
+    expect(handlers.setSubmittedFilters).toHaveBeenCalledWith({
+      orderDate: ['2026-05-29', '2026-06-28'],
+      keyword: 'WINDOW-TRACK',
+    })
+  })
+
+  it('clears keyword directly when filter state setter is unavailable', () => {
+    const { handlers } = renderRouteSync('', {
+      defaultFilters: undefined,
+      setFilters: undefined,
+    })
+
+    expect(handlers.setFilters).not.toHaveBeenCalled()
+    expect(handlers.updateFilter).toHaveBeenCalledWith('keyword', '')
+    expect(handlers.setSubmittedFilters).toHaveBeenCalledWith({})
+  })
+
+  it('updates keyword directly when filter state setter is unavailable', () => {
+    const { handlers } = renderRouteSync('?trackId=1914876201459236001', {
+      setFilters: undefined,
+    })
+
+    expect(handlers.setFilters).not.toHaveBeenCalled()
+    expect(handlers.updateFilter).toHaveBeenCalledWith(
+      'keyword',
+      '1914876201459236001',
+    )
+    expect(handlers.setSubmittedFilters).toHaveBeenCalledWith({
+      orderDate: ['2026-05-29', '2026-06-28'],
+      keyword: '1914876201459236001',
+    })
+  })
+
+  it('auto-opens the matched detail only once for the same route key', () => {
+    const record = {
+      id: '1914876201459236001',
+      orderNo: 'PO2026000032',
+    } satisfies ModuleRecord
+    const { handlers, props, rerender } = renderRouteSync(
+      '?trackId=1914876201459236001&openDetail=1',
+      {
+        records: [record],
+      },
+    )
+
+    expect(handlers.openDetail).toHaveBeenCalledWith(record)
+
+    handlers.openDetail.mockClear()
+    rerender({
+      ...props,
+      records: [{ ...record }],
+    })
+
+    expect(handlers.openDetail).not.toHaveBeenCalled()
+  })
+
+  it('resets auto-open state after the open detail flag is removed', () => {
+    const record = {
+      id: '1914876201459236001',
+      orderNo: 'PO2026000032',
+    } satisfies ModuleRecord
+    const { handlers, props, rerender } = renderRouteSync(
+      '?trackId=1914876201459236001&openDetail=1',
+      {
+        records: [record],
+      },
+    )
+
+    expect(handlers.openDetail).toHaveBeenCalledWith(record)
+
+    handlers.openDetail.mockClear()
+    rerender({
+      ...props,
+      location: withSearchStr('?trackId=1914876201459236001'),
+    })
+    expect(handlers.openDetail).not.toHaveBeenCalled()
+
+    rerender({
+      ...props,
+      location: withSearchStr('?trackId=1914876201459236001&openDetail=1'),
+    })
+    expect(handlers.openDetail).toHaveBeenCalledWith(record)
+  })
+
+  it('does not auto-open detail when route params cannot resolve a target', () => {
+    const { handlers } = renderRouteSync('?docNo=PO2026000032&openDetail=1', {
+      config: undefined,
+    })
+
+    expect(handlers.openDetail).not.toHaveBeenCalled()
   })
 })

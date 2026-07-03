@@ -54,13 +54,7 @@ function setStoredPersistenceMode(mode: AuthPersistenceMode) {
   getStorage(mode).setItem(STORAGE_KEYS.authPersistence, mode)
 }
 
-function resolvePersistenceMode(
-  preferred?: AuthPersistenceMode,
-): AuthPersistenceMode {
-  if (preferred) {
-    return preferred
-  }
-
+function resolvePersistenceMode(): AuthPersistenceMode {
   const storedMode = getStoredPersistenceMode()
   if (storedMode) {
     return storedMode

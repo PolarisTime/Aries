@@ -25,7 +25,7 @@ interface Props {
   search: LayoutHeaderSearchProps
   shellFontStyle: CSSProperties
   title: string
-  userMenuItems: NonNullable<MenuProps['items']>
+  userMenu: MenuProps
 }
 
 export function AppSideNavigationHeader({
@@ -37,7 +37,7 @@ export function AppSideNavigationHeader({
   search,
   shellFontStyle,
   title,
-  userMenuItems,
+  userMenu,
 }: Props) {
   const { t } = useTranslation()
   const devTimeString = new Date().toLocaleTimeString()
@@ -69,7 +69,7 @@ export function AppSideNavigationHeader({
         </span>
         <span className="action user-name">{currentUserName}</span>
         <span className="action">
-          <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
+          <Dropdown menu={userMenu} trigger={['click']}>
             <Button
               type="text"
               className="app-user-settings-trigger"

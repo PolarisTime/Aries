@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildModuleEditorDraftSnapshot,
   getModuleEditorDraftRecordId,
@@ -12,6 +12,10 @@ describe('module-editor-draft-storage', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.useRealTimers()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('returns null when no editor draft exists for the scope', () => {
@@ -111,6 +115,20 @@ describe('module-editor-draft-storage', () => {
     ).toBeNull()
   })
 
+  it('removes stored drafts with non-object snapshot payloads', () => {
+    localStorage.setItem(
+      'aries-module-editor-draft:user-1:sales-order:new',
+      JSON.stringify(null),
+    )
+
+    expect(
+      readModuleEditorDraft('user-1', 'sales-order', 'new', 1000),
+    ).toBeNull()
+    expect(
+      localStorage.getItem('aries-module-editor-draft:user-1:sales-order:new'),
+    ).toBeNull()
+  })
+
   it('removes stored drafts from unsupported snapshot versions', () => {
     localStorage.setItem(
       'aries-module-editor-draft:user-1:sales-order:new',
@@ -180,6 +198,7 @@ describe('module-editor-draft-storage', () => {
       '12',
     )
     expect(resolveModuleEditorDraftUserKey({ loginName: 'u' })).toBe('u')
+    expect(resolveModuleEditorDraftUserKey({})).toBe('anonymous')
     expect(resolveModuleEditorDraftUserKey(null)).toBe('anonymous')
     expect(getModuleEditorDraftRecordId({ id: 'record-1' })).toBe('record-1')
     expect(getModuleEditorDraftRecordId(null)).toBe('new')
@@ -202,5 +221,25 @@ describe('module-editor-draft-storage', () => {
     expect(
       readModuleEditorDraft('user-1', 'sales-order', 'record-1'),
     ).toBeNull()
+  })
+
+  it('skips browser storage access when rendered without window', () => {
+    const snapshot = buildModuleEditorDraftSnapshot({
+      userKey: 'user-1',
+      moduleKey: 'sales-order',
+      recordId: 'new',
+      values: { id: '' },
+      items: [],
+      authoritativePrimaryNo: '',
+      now: 1000,
+    })
+
+    vi.stubGlobal('window', undefined)
+
+    expect(() => writeModuleEditorDraft(snapshot)).not.toThrow()
+    expect(readModuleEditorDraft('user-1', 'sales-order', 'new')).toBeNull()
+    expect(() =>
+      removeModuleEditorDraft('user-1', 'sales-order', 'new'),
+    ).not.toThrow()
   })
 })

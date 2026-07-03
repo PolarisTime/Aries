@@ -25,6 +25,20 @@ describe('permissionStore', () => {
     expect(usePermissionStore.getState().permissionMap).toEqual({})
   })
 
+  it('skips blank resources and filters invalid actions', () => {
+    usePermissionStore.getState().setPermissions([
+      { resource: '   ', actions: ['read'] },
+      { resource: '/doc', actions: ['VIEW', '', null as never] },
+      { resource: '/empty-actions', actions: null as never },
+    ])
+
+    const state = usePermissionStore.getState()
+    expect(state.permissionMap['']).toBeUndefined()
+    expect(state.permissionMap.doc.has('read')).toBe(true)
+    expect(state.permissionMap.doc.has('')).toBe(false)
+    expect(state.permissionMap['empty-actions'].size).toBe(0)
+  })
+
   it('setPermissions handles null items', () => {
     usePermissionStore.getState().setPermissions(null as any)
     expect(usePermissionStore.getState().permissionMap).toEqual({})
@@ -37,6 +51,20 @@ describe('permissionStore', () => {
     expect(
       usePermissionStore.getState().permissionMap['purchase-order'].has('read'),
     ).toBe(true)
+  })
+
+  it('registers resolved resource aliases and normalized data scopes', () => {
+    usePermissionStore
+      .getState()
+      .setPermissions(
+        [{ resource: '/material-categories', actions: ['VIEW'] }],
+        { '/material-categories': 'department' },
+      )
+
+    const state = usePermissionStore.getState()
+    expect(state.can('material-categories', 'read')).toBe(true)
+    expect(state.can('material', 'read')).toBe(true)
+    expect(state.dataScopes).toEqual({ material: 'department' })
   })
 
   it('can checks resource action', () => {
@@ -62,6 +90,14 @@ describe('permissionStore', () => {
       .getState()
       .setPermissions([{ resource: '/admin', actions: ['*'] }])
     expect(usePermissionStore.getState().can('admin', 'anything')).toBe(true)
+  })
+
+  it('can returns false when action is not normalized to a stored permission', () => {
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: '/doc', actions: ['read'] }])
+
+    expect(usePermissionStore.getState().can('doc', '')).toBe(false)
   })
 
   it('canAny returns true if any action matches', () => {
@@ -96,6 +132,16 @@ describe('permissionStore', () => {
     expect(usePermissionStore.getState().can('test', 'read')).toBe(true)
   })
 
+  it('syncFromUser defaults missing data scopes', () => {
+    usePermissionStore.getState().syncFromUser({
+      permissions: [{ resource: '/test', actions: ['read'] }],
+    } as any)
+
+    const state = usePermissionStore.getState()
+    expect(state.can('test', 'read')).toBe(true)
+    expect(state.dataScopes).toEqual({})
+  })
+
   it('syncFromUser clears permissions for null user', () => {
     usePermissionStore
       .getState()
@@ -123,8 +169,10 @@ describe('permissionStore', () => {
       .getState()
       .setPermissions([{ resource: '/test', actions: ['read'] }], {
         test: 'department',
+        '': 'ignored-key',
       })
     expect(usePermissionStore.getState().dataScopes).toEqual({
+      '': 'ignored-key',
       test: 'department',
     })
   })

@@ -26,10 +26,6 @@ export function flushClientAutosaveHandlers(reason: ClientAutosaveReason) {
 }
 
 export function installClientAutosaveFlushListeners() {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return () => {}
-  }
-
   const handleWindowError = () => flushClientAutosaveHandlers('window-error')
   const handleUnhandledRejection = () =>
     flushClientAutosaveHandlers('unhandled-rejection')

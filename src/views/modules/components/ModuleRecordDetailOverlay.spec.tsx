@@ -40,8 +40,11 @@ vi.mock('@/module-system/module-action-icons', () => ({
 }))
 
 vi.mock('./ModuleItemsPanel', () => ({
-  ModuleItemsPanel: ({ children, actions, title }: any) => (
-    <div data-testid="items-panel">
+  ModuleItemsPanel: ({ children, actions, items, title }: any) => (
+    <div
+      data-items-length={String(items?.length ?? 0)}
+      data-testid="items-panel"
+    >
       {title ? <div data-testid="items-panel-title">{title}</div> : null}
       {actions}
       {children}
@@ -51,7 +54,10 @@ vi.mock('./ModuleItemsPanel', () => ({
 
 vi.mock('./ModuleItemsTable', () => ({
   ModuleItemsTable: ({ columns, dataSource, emptyText }: any) => (
-    <div data-testid="items-table">
+    <div
+      data-source-length={String(dataSource?.length ?? 0)}
+      data-testid="items-table"
+    >
       {dataSource?.length === 0
         ? emptyText
         : dataSource?.map((record: any, rowIndex: number) => (
@@ -70,8 +76,11 @@ vi.mock('./ModuleItemsTable', () => ({
 }))
 
 vi.mock('./PieceWeightPopover', () => ({
-  PieceWeightPopover: ({ allowItemIdFallback, weightTon }: any) => (
-    <span data-allow-item-id-fallback={String(allowItemIdFallback)}>
+  PieceWeightPopover: ({ allowItemIdFallback, category, weightTon }: any) => (
+    <span
+      data-allow-item-id-fallback={String(allowItemIdFallback)}
+      {...(category === undefined ? {} : { 'data-category': category })}
+    >
       {weightTon}
     </span>
   ),
@@ -259,6 +268,53 @@ describe('ModuleRecordDetailOverlay', () => {
     expect(screen.getByText('modules.detail.noDetailItems')).toBeTruthy()
   })
 
+  it('uses empty detail and item column fallbacks when config omits both lists', () => {
+    const configWithoutOptionalLists = {
+      ...defaultProps.config,
+      detailFields: undefined,
+      detailItemColumns: undefined,
+      itemColumns: undefined,
+    }
+    const record = { id: '1', billNo: 'BILL-001', orderNo: 'ORD-001' }
+
+    render(
+      <ModuleRecordDetailOverlay
+        {...defaultProps}
+        config={configWithoutOptionalLists}
+        record={record}
+      />,
+    )
+
+    expect(screen.queryByTestId('items-panel')).toBeNull()
+    expect(screen.getByText('modules.detail.close')).toBeTruthy()
+  })
+
+  it('uses empty record items for the panel and table when record omits items', () => {
+    const configWithItemColumns = {
+      ...defaultProps.config,
+      detailItemColumns: [{ dataIndex: 'brand', title: 'Brand', width: 100 }],
+    }
+    const record = { id: '1', billNo: 'BILL-001' }
+
+    render(
+      <ModuleRecordDetailOverlay
+        {...defaultProps}
+        config={configWithItemColumns}
+        record={record}
+      />,
+    )
+
+    expect(screen.getByTestId('items-panel')).toHaveAttribute(
+      'data-items-length',
+      '0',
+    )
+    expect(screen.getByTestId('items-table')).toHaveAttribute(
+      'data-source-length',
+      '0',
+    )
+    expect(screen.getByText('modules.detail.noDetailItems')).toBeTruthy()
+  })
+
   it('renders with canPrint', () => {
     const configWithItemColumns = {
       ...defaultProps.config,
@@ -354,6 +410,30 @@ describe('ModuleRecordDetailOverlay', () => {
       'data-allow-item-id-fallback',
       'false',
     )
+  })
+
+  it('omits piece weight category when the row category is not a string', () => {
+    const configWithWeight = {
+      ...defaultProps.config,
+      detailItemColumns: [
+        { dataIndex: 'weightTon', title: 'Weight', width: 100 },
+      ],
+    }
+    const record = {
+      id: '1',
+      billNo: 'BILL-001',
+      items: [{ id: 'i1', weightTon: 3.5, category: 123 }],
+    }
+
+    render(
+      <ModuleRecordDetailOverlay
+        {...defaultProps}
+        config={configWithWeight}
+        record={record}
+      />,
+    )
+
+    expect(screen.getByText('3.5')).not.toHaveAttribute('data-category')
   })
 
   it('hides piece weight for weigh calculated detail fields and rows', () => {

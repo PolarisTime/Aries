@@ -31,6 +31,7 @@ vi.mock('@/api/client', () => ({
 import {
   configureOssCors,
   DISPLAY_SWITCH_CODES,
+  getClientSettingNumber,
   getOssSetting,
   getStatementGeneratorRules,
   isDisplaySwitchEnabled,
@@ -271,6 +272,15 @@ describe('system-settings', () => {
 
       expect(result).toEqual([])
     })
+
+    it('returns empty array when response data is undefined', async () => {
+      httpGetMock.mockResolvedValue({ code: 0 })
+      assertApiSuccessMock.mockImplementation(
+        <T extends { code?: number }>(response: T) => response,
+      )
+
+      await expect(listClientSettings()).resolves.toEqual([])
+    })
   })
 
   describe('getStatementGeneratorRules', () => {
@@ -292,6 +302,35 @@ describe('system-settings', () => {
         '/general-settings/statement-generator-rule',
       )
       expect(result).toEqual({
+        customerStatementReceiptAmountZero: true,
+        supplierStatementFullPayment: false,
+      })
+    })
+
+    it('falls back missing statement generator flags to false', async () => {
+      httpGetMock.mockResolvedValue({ code: 0, data: undefined })
+      assertApiSuccessMock.mockImplementation(
+        <T extends { code?: number }>(response: T) => response,
+      )
+
+      await expect(getStatementGeneratorRules()).resolves.toEqual({
+        customerStatementReceiptAmountZero: false,
+        supplierStatementFullPayment: false,
+      })
+    })
+
+    it('coerces partial statement generator flags to boolean values', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: {
+          customerStatementReceiptAmountZero: 1,
+        },
+      })
+      assertApiSuccessMock.mockImplementation(
+        <T extends { code?: number }>(response: T) => response,
+      )
+
+      await expect(getStatementGeneratorRules()).resolves.toEqual({
         customerStatementReceiptAmountZero: true,
         supplierStatementFullPayment: false,
       })
@@ -336,6 +375,83 @@ describe('system-settings', () => {
       expect(
         isDisplaySwitchEnabled(undefined, DISPLAY_SWITCH_CODES.showSnowflakeId),
       ).toBe(false)
+    })
+
+    it('matches setting code after trimming record value', () => {
+      const rows = [
+        { settingCode: ' UI_WEIGHT_ONLY_PURCHASE_INBOUNDS ', status: '正常' },
+      ]
+
+      expect(
+        isDisplaySwitchEnabled(
+          rows,
+          DISPLAY_SWITCH_CODES.weightOnlyPurchaseInbounds,
+        ),
+      ).toBe(true)
+    })
+  })
+
+  describe('getClientSettingNumber', () => {
+    it('returns numeric sampleNo for active matching setting', () => {
+      expect(
+        getClientSettingNumber(
+          [
+            {
+              settingCode: 'SYS_TAX_RATE',
+              status: '正常',
+              sampleNo: '13',
+            },
+          ],
+          'SYS_TAX_RATE',
+          9,
+        ),
+      ).toBe(13)
+    })
+
+    it('returns fallback for disabled matching setting', () => {
+      expect(
+        getClientSettingNumber(
+          [
+            {
+              settingCode: 'SYS_TAX_RATE',
+              status: '停用',
+              sampleNo: '13',
+            },
+          ],
+          'SYS_TAX_RATE',
+          9,
+        ),
+      ).toBe(9)
+    })
+
+    it('returns fallback for missing rows or non-numeric values', () => {
+      expect(getClientSettingNumber(undefined, 'SYS_TAX_RATE', 9)).toBe(9)
+      expect(
+        getClientSettingNumber(
+          [
+            {
+              settingCode: 'SYS_TAX_RATE',
+              status: '正常',
+              sampleNo: 'not-a-number',
+            },
+          ],
+          'SYS_TAX_RATE',
+          9,
+        ),
+      ).toBe(9)
+    })
+
+    it('returns fallback when candidate rows miss setting code or status', () => {
+      expect(
+        getClientSettingNumber(
+          [
+            { status: '正常', sampleNo: '13' },
+            { settingCode: 'SYS_TAX_RATE', sampleNo: '13' },
+          ],
+          'SYS_TAX_RATE',
+          9,
+        ),
+      ).toBe(9)
     })
   })
 })

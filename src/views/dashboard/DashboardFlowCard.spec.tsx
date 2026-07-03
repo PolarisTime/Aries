@@ -58,21 +58,39 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@/views/dashboard/dashboard-flow-utils', () => ({
-  buildWorkflowSections: () => [
+  buildWorkflowSections: (_t: unknown, summary?: { twoNodes?: boolean }) => [
     {
       key: 'master',
       title: '主数据',
       description: '管理基础数据',
-      nodes: [
-        {
-          key: 'material',
-          title: '物料',
-          path: '/material',
-          icon: () => <div>物料图标</div>,
-          hint: '管理物料信息',
-          metric: '100 个物料',
-        },
-      ],
+      nodes: summary?.twoNodes
+        ? [
+            {
+              key: 'material',
+              title: '物料',
+              path: '/material',
+              icon: () => <div>物料图标</div>,
+              hint: '管理物料信息',
+              metric: '100 个物料',
+            },
+            {
+              key: 'supplier',
+              title: '供应商',
+              path: '/supplier',
+              icon: () => <div>供应商图标</div>,
+              hint: '管理供应商信息',
+            },
+          ]
+        : [
+            {
+              key: 'material',
+              title: '物料',
+              path: '/material',
+              icon: () => <div>物料图标</div>,
+              hint: '管理物料信息',
+              metric: '100 个物料',
+            },
+          ],
     },
   ],
 }))
@@ -119,5 +137,13 @@ describe('DashboardFlowCard', () => {
     expect(document.querySelector('.dashboard-flow-lanes')).toBeTruthy()
     expect(document.querySelector('.dashboard-flow-lane')).toBeTruthy()
     expect(document.querySelector('.dashboard-flow-arrow')).toBeNull()
+  })
+
+  it('renders arrows and omits empty metrics in multi-node flows', () => {
+    render(<DashboardFlowCard {...defaultProps} summary={{ twoNodes: true } as any} />)
+
+    expect(document.querySelector('.dashboard-flow-arrow')).toBeTruthy()
+    expect(screen.getByText('供应商')).toBeTruthy()
+    expect(screen.queryByText('undefined')).toBeNull()
   })
 })

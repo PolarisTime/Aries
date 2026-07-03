@@ -22,7 +22,7 @@ interface Props {
   shellFontStyle: CSSProperties
   topBrandMark: string
   topMenuItems: NonNullable<MenuProps['items']>
-  userMenuItems: NonNullable<MenuProps['items']>
+  userMenu: MenuProps
 }
 
 export function AppTopNavigationHeader({
@@ -36,7 +36,7 @@ export function AppTopNavigationHeader({
   shellFontStyle,
   topBrandMark,
   topMenuItems,
-  userMenuItems,
+  userMenu,
 }: Props) {
   const { t } = useTranslation()
   const devTimeString = new Date().toLocaleTimeString()
@@ -94,7 +94,7 @@ export function AppTopNavigationHeader({
               {clockDisplay.timeText}
             </strong>
           </div>
-          <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
+          <Dropdown menu={userMenu} trigger={['click']}>
             <button type="button" className="app-top-user-trigger">
               <span className="app-top-user-avatar">
                 {currentUserName.trim().charAt(0).toUpperCase() || 'U'}

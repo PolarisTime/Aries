@@ -7,6 +7,88 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
+vi.mock('antd', () => ({
+  Button: ({
+    children,
+    disabled,
+    onClick,
+  }: {
+    children?: React.ReactNode
+    disabled?: boolean
+    onClick?: () => void
+  }) => (
+    <button disabled={disabled} type="button" onClick={onClick}>
+      {children}
+    </button>
+  ),
+  Input: {
+    Search: ({
+      placeholder,
+      value,
+      onChange,
+      onSearch,
+    }: {
+      placeholder?: string
+      value?: string
+      onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void
+      onSearch?: () => void
+    }) => (
+      <input
+        aria-label={placeholder}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') onSearch?.()
+        }}
+      />
+    ),
+  },
+  Select: ({
+    options = [],
+    placeholder,
+    showSearch,
+    value,
+    onChange,
+  }: {
+    options?: Array<{ label: string; value: string }>
+    placeholder?: string
+    showSearch?: {
+      filterOption?: (
+        input: string,
+        option?: { label?: string; value?: string },
+      ) => boolean
+    }
+    value?: string
+    onChange?: (value?: string) => void
+  }) => (
+    <div>
+      <select
+        aria-label={placeholder}
+        value={value ?? ''}
+        onChange={(event) => onChange?.(event.currentTarget.value || undefined)}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {showSearch?.filterOption ? (
+        <>
+          <span data-testid={`${placeholder}-filter-match`}>
+            {String(showSearch.filterOption('adm', options[0]))}
+          </span>
+          <span data-testid={`${placeholder}-filter-missing-label`}>
+            {String(showSearch.filterOption('adm', {}))}
+          </span>
+        </>
+      ) : null}
+    </div>
+  ),
+}))
+
 import { ApiKeyListToolbar } from '@/views/system/ApiKeyListToolbar'
 
 describe('ApiKeyListToolbar', () => {
@@ -74,5 +156,57 @@ describe('ApiKeyListToolbar', () => {
     render(<ApiKeyListToolbar {...defaultProps} totpDisabled={true} />)
     const button = screen.getByText('system.apiKey.generateButton')
     expect(button.closest('button')).toBeDisabled()
+  })
+
+  it('filters and changes select values', () => {
+    const onFilterUserChange = vi.fn()
+    const onStatusFilterChange = vi.fn()
+    const onUsageScopeFilterChange = vi.fn()
+
+    render(
+      <ApiKeyListToolbar
+        {...defaultProps}
+        onFilterUserChange={onFilterUserChange}
+        onStatusFilterChange={onStatusFilterChange}
+        onUsageScopeFilterChange={onUsageScopeFilterChange}
+      />,
+    )
+
+    expect(
+      screen.getByTestId('system.apiKey.filterUserPlaceholder-filter-match'),
+    ).toHaveTextContent('true')
+    expect(
+      screen.getByTestId(
+        'system.apiKey.filterUserPlaceholder-filter-missing-label',
+      ),
+    ).toHaveTextContent('false')
+
+    fireEvent.change(
+      screen.getByLabelText('system.apiKey.filterUserPlaceholder'),
+      { target: { value: '1' } },
+    )
+    fireEvent.change(screen.getByLabelText('system.apiKey.allStatus'), {
+      target: { value: '有效' },
+    })
+    fireEvent.change(screen.getByLabelText('system.apiKey.allScope'), {
+      target: { value: '全部接口' },
+    })
+
+    expect(onFilterUserChange).toHaveBeenCalledWith('1')
+    expect(onStatusFilterChange).toHaveBeenCalledWith('有效')
+    expect(onUsageScopeFilterChange).toHaveBeenCalledWith('全部接口')
+  })
+
+  it('falls back to empty user option value when id is missing', () => {
+    render(
+      <ApiKeyListToolbar
+        {...defaultProps}
+        userOptions={[{ id: undefined, userName: 'No Id', loginName: 'no-id' }]}
+      />,
+    )
+
+    expect(
+      screen.getByLabelText('system.apiKey.filterUserPlaceholder'),
+    ).toHaveTextContent('No Id')
   })
 })

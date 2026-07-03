@@ -99,10 +99,9 @@ export function resolveSelectedParentRows(
   })
 }
 
-export function resolveVisibleParentSelectorColumns<T extends ParentSelectorColumn>(
-  columns: T[],
-  hiddenColumnKeys?: string[],
-) {
+export function resolveVisibleParentSelectorColumns<
+  T extends ParentSelectorColumn,
+>(columns: T[], hiddenColumnKeys?: string[]) {
   if (!hiddenColumnKeys?.length) {
     return columns
   }

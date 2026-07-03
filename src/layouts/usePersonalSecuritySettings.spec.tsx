@@ -13,6 +13,20 @@ vi.mock('@/api/account-security', () => ({
   setupOwn2fa: vi.fn(),
 }))
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) =>
+      ({
+        'auth.personalsecurity.passwordSuccess': '密码修改成功',
+        'auth.personalsecurity.passwordFailed': '密码修改失败',
+        'auth.personalsecurity.setupFailed': '设置两步验证失败',
+        'auth.personalsecurity.codeInvalid': '请输入6位验证码',
+        'auth.personalsecurity.enableSuccess': '两步验证启用成功',
+        'auth.personalsecurity.enableFailed': '启用两步验证失败',
+      })[key] ?? key,
+  }),
+}))
+
 vi.mock('@/stores/auth-user-sync', () => ({
   syncCurrentUserTotpState: vi.fn(),
 }))
@@ -57,6 +71,23 @@ describe('usePersonalSecuritySettings', () => {
     expect(result.current.totpEnabling).toBe(false)
   })
 
+  it('resets password form when security tab is opened', () => {
+    const { result, rerender } = renderHook(
+      ({ open, tab }) => usePersonalSecuritySettings({ open, tab }),
+      {
+        initialProps: { open: false, tab: 'display' },
+        wrapper: createWrapper(),
+      },
+    )
+    const resetFields = vi.spyOn(result.current.pwForm, 'resetFields')
+
+    rerender({ open: true, tab: 'display' })
+    expect(resetFields).not.toHaveBeenCalled()
+
+    rerender({ open: true, tab: 'security' })
+    expect(resetFields).toHaveBeenCalledTimes(1)
+  })
+
   it('calls changeOwnPassword on success', async () => {
     vi.mocked(accountSecurity.changeOwnPassword).mockResolvedValue(
       undefined as any,
@@ -97,6 +128,24 @@ describe('usePersonalSecuritySettings', () => {
     expect(antdApp.message.error).toHaveBeenCalledWith('密码错误')
   })
 
+  it('uses fallback message on non-error password change failure', async () => {
+    vi.mocked(accountSecurity.changeOwnPassword).mockRejectedValue('failed')
+
+    const { result } = renderHook(
+      () => usePersonalSecuritySettings({ open: false, tab: 'security' }),
+      { wrapper: createWrapper() },
+    )
+
+    await act(async () => {
+      await result.current.handleChangePassword({
+        oldPassword: 'wrong',
+        newPassword: 'new123',
+      })
+    })
+
+    expect(antdApp.message.error).toHaveBeenCalledWith('密码修改失败')
+  })
+
   it('calls setupOwn2fa on handleSetupTotp success', async () => {
     vi.mocked(accountSecurity.setupOwn2fa).mockResolvedValue({
       data: { qrCodeBase64: 'base64data', secret: 'SECRET' },
@@ -135,6 +184,21 @@ describe('usePersonalSecuritySettings', () => {
     expect(result.current.totpLoading).toBe(false)
   })
 
+  it('uses fallback message on non-error setup failure', async () => {
+    vi.mocked(accountSecurity.setupOwn2fa).mockRejectedValue('failed')
+
+    const { result } = renderHook(
+      () => usePersonalSecuritySettings({ open: false, tab: 'security' }),
+      { wrapper: createWrapper() },
+    )
+
+    await act(async () => {
+      await result.current.handleSetupTotp()
+    })
+
+    expect(antdApp.message.error).toHaveBeenCalledWith('设置两步验证失败')
+  })
+
   it('rejects invalid TOTP code', async () => {
     const { result } = renderHook(
       () => usePersonalSecuritySettings({ open: false, tab: 'security' }),
@@ -148,6 +212,22 @@ describe('usePersonalSecuritySettings', () => {
 
     expect(antdApp.message.error).toHaveBeenCalled()
     expect(accountSecurity.enableOwn2fa).not.toHaveBeenCalled()
+  })
+
+  it('trims TOTP code before enabling', async () => {
+    vi.mocked(accountSecurity.enableOwn2fa).mockResolvedValue(undefined as any)
+
+    const { result } = renderHook(
+      () => usePersonalSecuritySettings({ open: false, tab: 'security' }),
+      { wrapper: createWrapper() },
+    )
+
+    act(() => result.current.setTotpCode(' 123456 '))
+    await act(async () => {
+      await result.current.handleEnableTotp()
+    })
+
+    expect(accountSecurity.enableOwn2fa).toHaveBeenCalledWith('123456')
   })
 
   it('calls enableOwn2fa on valid code', async () => {
@@ -166,6 +246,8 @@ describe('usePersonalSecuritySettings', () => {
     expect(accountSecurity.enableOwn2fa).toHaveBeenCalledWith('123456')
     expect(authUserSync.syncCurrentUserTotpState).toHaveBeenCalledWith(true)
     expect(antdApp.message.success).toHaveBeenCalled()
+    expect(result.current.totpCode).toBe('')
+    expect(result.current.totpSetup).toBeNull()
   })
 
   it('resets security state', () => {
@@ -198,5 +280,21 @@ describe('usePersonalSecuritySettings', () => {
 
     expect(antdApp.message.error).toHaveBeenCalledWith('启用失败')
     expect(result.current.totpEnabling).toBe(false)
+  })
+
+  it('uses fallback message on non-error enable failure', async () => {
+    vi.mocked(accountSecurity.enableOwn2fa).mockRejectedValue('failed')
+
+    const { result } = renderHook(
+      () => usePersonalSecuritySettings({ open: false, tab: 'security' }),
+      { wrapper: createWrapper() },
+    )
+
+    act(() => result.current.setTotpCode('123456'))
+    await act(async () => {
+      await result.current.handleEnableTotp()
+    })
+
+    expect(antdApp.message.error).toHaveBeenCalledWith('启用两步验证失败')
   })
 })

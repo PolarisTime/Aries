@@ -1,6 +1,38 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppTopNavigationHeader } from '@/layouts/AppTopNavigationHeader'
+
+vi.mock('antd', () => ({
+  Dropdown: ({ children, menu }: any) => (
+    <div>
+      {children}
+      <div data-testid="dropdown-menu">
+        {menu.items?.map((item: any) => (
+          <button
+            type="button"
+            key={item.key}
+            onClick={() => menu.onClick?.({ key: item.key })}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  ),
+  Menu: ({ className, items, onClick, selectedKeys }: any) => (
+    <nav className={className} data-selected-keys={selectedKeys.join(',')}>
+      {items.map((item: any) => (
+        <button
+          type="button"
+          key={item.key}
+          onClick={() => onClick?.({ key: item.key })}
+        >
+          {item.label}
+        </button>
+      ))}
+    </nav>
+  ),
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -49,13 +81,25 @@ const defaultProps = {
     { key: 'dashboard', label: '工作台' },
     { key: 'material', label: '商品管理' },
   ],
-  userMenuItems: [
-    { key: 'settings', label: '个人设置' },
-    { key: 'logout', label: '退出登录' },
-  ],
+  userMenu: {
+    items: [
+      { key: 'settings', label: '个人设置' },
+      { key: 'logout', label: '退出登录' },
+    ],
+    onClick: vi.fn(),
+  },
 }
 
 describe('AppTopNavigationHeader', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    delete (window as Window & { caches?: CacheStorage }).caches
+    vi.unstubAllEnvs()
+  })
+
   it('renders brand mark', () => {
     render(<AppTopNavigationHeader {...defaultProps} />)
     expect(screen.getByText('L')).toBeDefined()
@@ -110,6 +154,25 @@ describe('AppTopNavigationHeader', () => {
     render(<AppTopNavigationHeader {...defaultProps} />)
     expect(screen.getByText('工作台')).toBeDefined()
     expect(screen.getByText('商品管理')).toBeDefined()
+  })
+
+  it('forwards top menu item clicks with selected key state', () => {
+    const onMenuClick = vi.fn()
+    const { container } = render(
+      <AppTopNavigationHeader
+        {...defaultProps}
+        selectedKeys={['material']}
+        onMenuClick={onMenuClick}
+      />,
+    )
+
+    expect(container.querySelector('.leo-top-menu')).toHaveAttribute(
+      'data-selected-keys',
+      'material',
+    )
+    fireEvent.click(screen.getByText('商品管理'))
+
+    expect(onMenuClick).toHaveBeenCalledWith({ key: 'material' })
   })
 
   it('renders user avatar with first character of name', () => {
@@ -194,5 +257,69 @@ describe('AppTopNavigationHeader', () => {
       <AppTopNavigationHeader {...defaultProps} currentUserName="  王五" />,
     )
     expect(screen.getByText('王')).toBeDefined()
+  })
+
+  it('passes user menu actions through the account dropdown', () => {
+    const onClick = vi.fn()
+    render(
+      <AppTopNavigationHeader
+        {...defaultProps}
+        userMenu={{
+          items: [
+            { key: 'settings', label: '个人设置' },
+            { key: 'logout', label: '退出登录' },
+          ],
+          onClick,
+        }}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('个人设置'))
+    fireEvent.click(screen.getByText('退出登录'))
+
+    expect(onClick).toHaveBeenNthCalledWith(1, { key: 'settings' })
+    expect(onClick).toHaveBeenNthCalledWith(2, { key: 'logout' })
+  })
+
+  it('clears browser caches before dev refresh reloads the page', async () => {
+    const keys = vi.fn().mockResolvedValue(['top-layout', 'top-assets'])
+    const deleteCache = vi.fn().mockResolvedValue(true)
+    Object.defineProperty(window, 'caches', {
+      configurable: true,
+      value: {
+        keys,
+        delete: deleteCache,
+      },
+    })
+    render(<AppTopNavigationHeader {...defaultProps} />)
+
+    fireEvent.click(document.querySelector('.app-dev-refresh-btn')!)
+
+    await waitFor(() => expect(keys).toHaveBeenCalledTimes(1))
+    await waitFor(() => {
+      expect(deleteCache).toHaveBeenCalledWith('top-layout')
+      expect(deleteCache).toHaveBeenCalledWith('top-assets')
+    })
+  })
+
+  it('still refreshes in dev mode when browser caches are unavailable', () => {
+    render(<AppTopNavigationHeader {...defaultProps} />)
+
+    fireEvent.click(document.querySelector('.app-dev-refresh-btn')!)
+
+    expect(screen.getByText('刷新')).toBeDefined()
+  })
+
+  it('omits dev refresh action outside dev mode', async () => {
+    vi.stubEnv('DEV', false)
+    vi.resetModules()
+    const { AppTopNavigationHeader: ProductionTopNavigationHeader } =
+      await import('@/layouts/AppTopNavigationHeader')
+
+    const { container } = render(
+      <ProductionTopNavigationHeader {...defaultProps} />,
+    )
+
+    expect(container.querySelector('.app-dev-refresh-btn')).toBeNull()
   })
 })

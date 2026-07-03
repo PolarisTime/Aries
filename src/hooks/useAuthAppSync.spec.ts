@@ -2,6 +2,7 @@ import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
+  loadPermissionCatalogMock,
   syncFromUserMock,
   clearPermissionsMock,
   loadMenusMock,
@@ -14,6 +15,7 @@ const {
   reloadMaterialCategoriesMock,
   isApiKeyTokenMock,
 } = vi.hoisted(() => ({
+  loadPermissionCatalogMock: vi.fn(),
   syncFromUserMock: vi.fn(),
   clearPermissionsMock: vi.fn(),
   loadMenusMock: vi.fn().mockResolvedValue(undefined),
@@ -73,7 +75,7 @@ vi.mock('@/api/warehouse-options', () => ({
   reloadWarehouseOptions: reloadWarehouseOptionsMock,
 }))
 vi.mock('@/constants/resource-permissions', () => ({
-  loadPermissionCatalog: vi.fn(),
+  loadPermissionCatalog: loadPermissionCatalogMock,
 }))
 vi.mock('@/utils/auth-token', () => ({ isApiKeyToken: isApiKeyTokenMock }))
 vi.mock('@/utils/logger', () => ({ logger: { warn: vi.fn() } }))
@@ -84,6 +86,8 @@ describe('useAuthAppSync', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     vi.useFakeTimers()
+    delete (window as any).requestIdleCallback
+    delete (window as any).cancelIdleCallback
 
     authState = {
       token: 'test-token',
@@ -200,5 +204,29 @@ describe('useAuthAppSync', () => {
     }
     renderHook(() => useAuthAppSync())
     await vi.advanceTimersByTimeAsync(300)
+    expect(loadPermissionCatalogMock).toHaveBeenCalled()
+  })
+
+  it('uses requestIdleCallback and cancels it on cleanup', () => {
+    const cancelIdleCallbackMock = vi.fn()
+    const requestIdleCallbackMock = vi.fn((callback: () => void) => {
+      callback()
+      return 123
+    })
+    ;(window as any).requestIdleCallback = requestIdleCallbackMock
+    ;(window as any).cancelIdleCallback = cancelIdleCallbackMock
+    permissionState = {
+      ...permissionState,
+      can: vi.fn().mockReturnValue(true),
+    }
+
+    const { unmount } = renderHook(() => useAuthAppSync())
+    unmount()
+
+    expect(requestIdleCallbackMock).toHaveBeenCalledWith(expect.any(Function), {
+      timeout: 1500,
+    })
+    expect(loadPermissionCatalogMock).toHaveBeenCalled()
+    expect(cancelIdleCallbackMock).toHaveBeenCalledWith(123)
   })
 })

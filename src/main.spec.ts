@@ -6,7 +6,12 @@ const initWebVitalsMock = vi.hoisted(() => vi.fn())
 const hydrateMock = vi.hoisted(() => vi.fn())
 const restoreSessionMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const syncFromUserMock = vi.hoisted(() => vi.fn())
+const setSetupStatusMock = vi.hoisted(() => vi.fn())
+const getInitialSetupStatusMock = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({ data: { setupRequired: false } }),
+)
 const renderMock = vi.hoisted(() => vi.fn())
+const dayjsLocaleMock = vi.hoisted(() => vi.fn())
 
 let mockIsAuthenticated = false
 let mockUser: LoginUser | null = null
@@ -17,6 +22,10 @@ vi.mock('@/api/client', () => ({
 
 vi.mock('@/utils/web-vitals', () => ({
   initWebVitals: initWebVitalsMock,
+}))
+
+vi.mock('@/api/setup', () => ({
+  getInitialSetupStatus: getInitialSetupStatusMock,
 }))
 
 vi.mock('@/stores/authStore', () => ({
@@ -38,21 +47,50 @@ vi.mock('@/stores/permissionStore', () => ({
   },
 }))
 
+vi.mock('@/stores/setupStore', () => ({
+  useSetupStore: {
+    getState: () => ({
+      setStatus: setSetupStatusMock,
+    }),
+  },
+}))
+
 vi.mock('@/lib/query-client', () => ({
   queryClient: {},
 }))
 
 vi.mock('@tanstack/react-query', () => ({
-  QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
+  QueryClientProvider: ({
     children,
+    client,
+  }: {
+    children: unknown
+    client: unknown
+  }) =>
+    Object.assign(Object.create(null), {
+      type: 'QueryClientProviderMock',
+      props: { children, client },
+    }),
 }))
 
 vi.mock('@tanstack/react-router', () => ({
-  RouterProvider: () => null,
+  RouterProvider: ({ router }: { router: unknown }) =>
+    Object.assign(Object.create(null), {
+      type: 'RouterProviderMock',
+      props: { router },
+    }),
 }))
 
 vi.mock('react-dom/client', () => ({
-  createRoot: vi.fn(() => ({ render: renderMock })),
+  createRoot: vi.fn(() => ({
+    render: (element: { type?: unknown; props?: unknown }) => {
+      renderMock(element)
+      if (typeof element.type === 'function') {
+        return element.type(element.props)
+      }
+      return null
+    },
+  })),
 }))
 
 vi.mock('@/router', () => ({
@@ -61,8 +99,16 @@ vi.mock('@/router', () => ({
 
 vi.mock('@/i18n', () => ({}))
 
+vi.mock('dayjs', () => ({
+  default: {
+    locale: dayjsLocaleMock,
+  },
+}))
+
+vi.mock('dayjs/locale/zh-cn', () => ({}))
+
 describe('main.tsx bootstrap', () => {
-  let rootEl: HTMLDivElement
+  let rootEl: HTMLDivElement | null
 
   beforeEach(() => {
     vi.resetModules()
@@ -70,6 +116,9 @@ describe('main.tsx bootstrap', () => {
     mockIsAuthenticated = false
     mockUser = null
     restoreSessionMock.mockResolvedValue(true)
+    getInitialSetupStatusMock.mockResolvedValue({
+      data: { setupRequired: false },
+    })
 
     rootEl = document.createElement('div')
     rootEl.id = 'app'
@@ -77,7 +126,8 @@ describe('main.tsx bootstrap', () => {
   })
 
   afterEach(() => {
-    document.body.removeChild(rootEl)
+    rootEl?.remove()
+    rootEl = null
   })
 
   it('calls ensureApiClientSetup and initWebVitals on bootstrap', async () => {
@@ -107,6 +157,19 @@ describe('main.tsx bootstrap', () => {
     })
   })
 
+  it('continues bootstrap when session restore fails', async () => {
+    mockIsAuthenticated = true
+    restoreSessionMock.mockRejectedValue(new Error('expired'))
+
+    await import('./main')
+
+    await vi.waitFor(() => {
+      expect(restoreSessionMock).toHaveBeenCalled()
+      expect(syncFromUserMock).toHaveBeenCalled()
+      expect(renderMock).toHaveBeenCalled()
+    })
+  })
+
   it('skips session restore when not authenticated', async () => {
     mockIsAuthenticated = false
 
@@ -125,5 +188,51 @@ describe('main.tsx bootstrap', () => {
     await vi.waitFor(() => {
       expect(syncFromUserMock).toHaveBeenCalled()
     })
+  })
+
+  it('sets initial setup status and initializes dayjs locale', async () => {
+    const setupStatus = { setupRequired: true }
+    getInitialSetupStatusMock.mockResolvedValue({ data: setupStatus })
+
+    await import('./main')
+
+    await vi.waitFor(() => {
+      expect(setSetupStatusMock).toHaveBeenCalledWith(setupStatus)
+      expect(dayjsLocaleMock).toHaveBeenCalledWith('zh-cn')
+    })
+  })
+
+  it('continues bootstrap when initial setup status request fails', async () => {
+    getInitialSetupStatusMock.mockRejectedValue(new Error('network'))
+
+    await import('./main')
+
+    await vi.waitFor(() => {
+      expect(getInitialSetupStatusMock).toHaveBeenCalled()
+      expect(renderMock).toHaveBeenCalled()
+    })
+    expect(setSetupStatusMock).not.toHaveBeenCalled()
+  })
+
+  it('renders App through the React root', async () => {
+    await import('./main')
+
+    await vi.waitFor(() => {
+      expect(renderMock).toHaveBeenCalledWith(expect.any(Object))
+    })
+  })
+
+  it('reports a missing root element during bootstrap', async () => {
+    rootEl?.remove()
+    rootEl = null
+    const rejection = new Promise<unknown>((resolve) => {
+      process.once('unhandledRejection', resolve)
+    })
+
+    await import('./main')
+    const error = await rejection
+
+    expect(error).toBeInstanceOf(Error)
+    expect((error as Error).message).toBe('Root element not found')
   })
 })

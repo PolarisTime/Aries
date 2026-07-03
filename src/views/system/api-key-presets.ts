@@ -23,8 +23,7 @@ type ApiKeyPresetDefinition = {
   labelKey: string
   descriptionKey: string
   usageScope: string
-  resourceGroups?: string[]
-  resourceCodes?: string[]
+  resourceCodes: string[]
   actionCodes: string[]
 }
 
@@ -139,13 +138,9 @@ function resolvePresetResourceCodes(
   definition: ApiKeyPresetDefinition,
   resourceOptions: ApiKeyResourceOption[],
 ) {
-  const resourceCodeSet = new Set(definition.resourceCodes || [])
-  const resourceGroupSet = new Set(definition.resourceGroups || [])
+  const resourceCodeSet = new Set(definition.resourceCodes)
   return resourceOptions
-    .filter(
-      (item) =>
-        resourceCodeSet.has(item.code) || resourceGroupSet.has(item.group),
-    )
+    .filter((item) => resourceCodeSet.has(item.code))
     .map((item) => item.code)
 }
 

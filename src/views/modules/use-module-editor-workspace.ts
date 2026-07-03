@@ -425,7 +425,7 @@ function buildPreallocatedIdWarning(args: {
     title: i18next.t('modules.editorWorkspace.preallocatedNoUpdatedTitle'),
     content: i18next.t('modules.editorWorkspace.preallocatedNoUpdatedContent', {
       expected: expectedIdentityNo,
-      actual: actualPrimaryNo || actualId || '未知',
+      actual: actualPrimaryNo || actualId,
     }),
   }
 }

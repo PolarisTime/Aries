@@ -1,6 +1,11 @@
 import type { Locator, Page } from '@playwright/test'
 import { e2eApiUrl } from './support/api-key'
-import { waitForFirstDetailRow } from './support/business-e2e'
+import {
+  fillOrReadFormField,
+  fillPurchaseOrderLineItem,
+  formField,
+  waitForFirstDetailRow,
+} from './support/business-e2e'
 import { expect, test } from './support/test'
 
 const API_BASE_URL = 'http://127.0.0.1:11211/api'
@@ -48,6 +53,7 @@ async function loginAsTest9(page: Page) {
       localStorage.setItem('aries-token-expires-at', expiresAt)
       localStorage.setItem('aries-user', JSON.stringify(currentUser))
       localStorage.setItem('aries-auth-persistence', 'local')
+      localStorage.setItem('leo-locale', 'zh-CN')
       sessionStorage.removeItem('aries-token')
       sessionStorage.removeItem('aries-token-expires-at')
       sessionStorage.removeItem('aries-user')
@@ -73,7 +79,7 @@ async function getCurrentAccessToken(page: Page) {
 
 async function openCreateOverlay(page: Page) {
   const beforeCount = await page.locator('.workspace-overlay-panel').count()
-  await page.getByRole('button', { name: '新建' }).click()
+  await page.getByRole('button', { name: /新建|新增/ }).click()
   const overlay = page.locator('.workspace-overlay-panel').nth(beforeCount)
   await expect(overlay).toBeVisible()
   return overlay
@@ -132,6 +138,9 @@ async function waitForSaveOutcome(
   })
   const errorMessage = page.locator('.ant-message-error').last()
   const validationErrors = overlay.locator('.ant-form-item-explain-error')
+  const saveResultText = page.getByText(
+    /保存成功|创建成功|更新成功|对账单已生成/,
+  )
 
   await expect
     .poll(
@@ -151,6 +160,14 @@ async function waitForSaveOutcome(
           }
         }
         if ((await successMessage.count()) > 0) return 'message'
+        if (
+          await saveResultText
+            .last()
+            .isVisible()
+            .catch(() => false)
+        ) {
+          return 'result'
+        }
         if (
           rowInList &&
           (await rowInList.count()) > 0 &&
@@ -208,42 +225,44 @@ async function importParentByKeyword(
 async function createSalesOutboundChain(page: Page, suffix: string) {
   const orderDate = isoToday()
   const deliveryDate = isoToday()
-  const purchaseOrderNo = `PO-FB-${suffix}`
-  const salesOrderNo = `SO-FB-${suffix}`
-  const salesOutboundNo = `SOB-FB-${suffix}`
+  let purchaseOrderNo = `PO-FB-${suffix}`
+  let salesOrderNo = `SO-FB-${suffix}`
+  let salesOutboundNo = `SOB-FB-${suffix}`
 
   await page.goto('/purchase-order')
   const purchaseOrderOverlay = await openCreateOverlay(page)
   await selectAntOption(
-    purchaseOrderOverlay.locator('#supplierName'),
+    formField(purchaseOrderOverlay, 'supplierName'),
     '益海（浙江）物联网科技有限公司',
   )
-  await purchaseOrderOverlay.locator('#orderNo').fill(purchaseOrderNo)
-  await fillDateInput(purchaseOrderOverlay.locator('#orderDate'), orderDate)
+  purchaseOrderNo = await fillOrReadFormField(
+    formField(purchaseOrderOverlay, 'orderNo'),
+    purchaseOrderNo,
+  )
+  await fillDateInput(formField(purchaseOrderOverlay, 'orderDate'), orderDate)
 
   const purchaseOrderRow = await waitForFirstDetailRow(purchaseOrderOverlay)
-  await purchaseOrderRow.locator('td').nth(3).locator('input').fill('HZ-YG-PL8')
-  await page.waitForTimeout(1200)
-  await selectAntOption(
-    purchaseOrderRow.locator('td').nth(10).locator('.ant-select'),
-    '升华物流',
-  )
-  await purchaseOrderRow.locator('td').nth(12).locator('input').fill('10')
-  await purchaseOrderRow.locator('td').nth(16).locator('input').fill('3200')
+  await fillPurchaseOrderLineItem(purchaseOrderRow)
   await saveOverlay(page, purchaseOrderOverlay, purchaseOrderNo)
 
   await page.goto('/sales-order')
   const salesOrderOverlay = await openCreateOverlay(page)
-  await salesOrderOverlay.locator('#orderNo').fill(salesOrderNo)
+  salesOrderNo = await fillOrReadFormField(
+    formField(salesOrderOverlay, 'orderNo'),
+    salesOrderNo,
+  )
   await selectAntOption(
-    salesOrderOverlay.locator('#customerName'),
+    formField(salesOrderOverlay, 'customerName'),
     '浙江大东吴杭萧绿建科技有限公司',
   )
   await selectAntOption(
-    salesOrderOverlay.locator('#projectName'),
+    formField(salesOrderOverlay, 'projectName'),
     '恒力(大连)船厂有限公司-绿色高端装备制造项目6#曲面分段车间',
   )
-  await fillDateInput(salesOrderOverlay.locator('#deliveryDate'), deliveryDate)
+  await fillDateInput(
+    formField(salesOrderOverlay, 'deliveryDate'),
+    deliveryDate,
+  )
   await importParentByKeyword(
     page,
     salesOrderOverlay,
@@ -263,9 +282,12 @@ async function createSalesOutboundChain(page: Page, suffix: string) {
 
   await page.goto('/sales-outbound')
   const salesOutboundOverlay = await openCreateOverlay(page)
-  await salesOutboundOverlay.locator('#outboundNo').fill(salesOutboundNo)
+  salesOutboundNo = await fillOrReadFormField(
+    formField(salesOutboundOverlay, 'outboundNo'),
+    salesOutboundNo,
+  )
   await fillDateInput(
-    salesOutboundOverlay.locator('#outboundDate'),
+    formField(salesOutboundOverlay, 'outboundDate'),
     deliveryDate,
   )
   await importParentByKeyword(
@@ -317,8 +339,8 @@ test('creates freight statement and freight payment from sales outbound flow', a
   await loginAsTest9(page)
 
   const suffix = buildSuffix()
-  const billNo = `WL-FB-${suffix}`
-  const paymentNo = `FK-FB-${suffix}`
+  let billNo = `WL-FB-${suffix}`
+  let paymentNo = `FK-FB-${suffix}`
   const carrierName = '陈永祥'
   const vehiclePlate = '浙A0S829'
 
@@ -329,14 +351,20 @@ test('creates freight statement and freight payment from sales outbound flow', a
 
   await page.goto('/freight-bill')
   const freightBillOverlay = await openCreateOverlay(page)
-  await freightBillOverlay.locator('#billNo').fill(billNo)
-  await selectAntOption(freightBillOverlay.locator('#carrierName'), carrierName)
+  billNo = await fillOrReadFormField(
+    formField(freightBillOverlay, 'billNo'),
+    billNo,
+  )
   await selectAntOption(
-    freightBillOverlay.locator('#vehiclePlate'),
+    formField(freightBillOverlay, 'carrierName'),
+    carrierName,
+  )
+  await selectAntOption(
+    formField(freightBillOverlay, 'vehiclePlate'),
     vehiclePlate,
   )
-  await fillDateInput(freightBillOverlay.locator('#billTime'), outboundDate)
-  await freightBillOverlay.locator('#remark').fill('e2e freight flow')
+  await fillDateInput(formField(freightBillOverlay, 'billTime'), outboundDate)
+  await formField(freightBillOverlay, 'remark').fill('e2e freight flow')
   await importParentByKeyword(
     page,
     freightBillOverlay,
@@ -430,22 +458,25 @@ test('creates freight statement and freight payment from sales outbound flow', a
 
   await page.goto('/payment')
   const paymentOverlay = await openCreateOverlay(page)
-  await paymentOverlay.locator('#paymentNo').fill(paymentNo)
-  await selectAntOption(paymentOverlay.locator('#businessType'), '物流商')
-  await paymentOverlay
-    .locator('#counterpartyName')
-    .fill(String(statement?.carrierName || carrierName))
+  paymentNo = await fillOrReadFormField(
+    formField(paymentOverlay, 'paymentNo'),
+    paymentNo,
+  )
+  await selectAntOption(formField(paymentOverlay, 'businessType'), '物流商')
+  await formField(paymentOverlay, 'counterpartyName').fill(
+    String(statement?.carrierName || carrierName),
+  )
   await selectAntOption(
-    paymentOverlay.locator('#sourceStatementId'),
+    formField(paymentOverlay, 'sourceStatementId'),
     String(statement?.statementNo || ''),
   )
-  await fillDateInput(paymentOverlay.locator('#paymentDate'), actualBillDate)
-  await selectAntOption(paymentOverlay.locator('#payType'), '银行转账')
-  await paymentOverlay
-    .locator('#amount')
-    .fill(String(Number(statement?.unpaidAmount || 0).toFixed(2)))
-  await selectAntOption(paymentOverlay.locator('#status'), '已付款')
-  await paymentOverlay.locator('#operatorName').fill('test9')
+  await fillDateInput(formField(paymentOverlay, 'paymentDate'), actualBillDate)
+  await selectAntOption(formField(paymentOverlay, 'payType'), '银行转账')
+  await formField(paymentOverlay, 'amount').fill(
+    String(Number(statement?.unpaidAmount || 0).toFixed(2)),
+  )
+  await selectAntOption(formField(paymentOverlay, 'status'), '已付款')
+  await formField(paymentOverlay, 'operatorName').fill('test9')
   await saveOverlay(page, paymentOverlay, paymentNo)
 
   const latestToken = await getCurrentAccessToken(page)
