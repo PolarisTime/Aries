@@ -4,6 +4,7 @@ import i18next from 'i18next'
 import {
   type Dispatch,
   type SetStateAction,
+  useCallback,
   useEffect,
   useReducer,
   useState,
@@ -51,10 +52,22 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
+import {
+  type ClientAutosaveReason,
+  registerClientAutosaveHandler,
+} from '@/utils/client-autosave-registry'
 import { cloneLineItems } from '@/utils/clone-utils'
 import { parseDateTimeValue } from '@/utils/formatters'
 import { getStoredUser } from '@/utils/storage'
 import { asString } from '@/utils/type-narrowing'
+import {
+  buildModuleEditorDraftSnapshot,
+  getModuleEditorDraftRecordId,
+  readModuleEditorDraft,
+  removeModuleEditorDraft,
+  resolveModuleEditorDraftUserKey,
+  writeModuleEditorDraft,
+} from '@/views/modules/module-editor-draft-storage'
 import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view-utils'
 
 const SNOWFLAKE_BUSINESS_NO_SWITCH_CODE =
@@ -100,7 +113,7 @@ interface WorkspaceFormApi {
   resetFields: () => void
 }
 
-type FormChangedValues = ModuleRecord
+type FormChangedValues = Partial<ModuleRecord>
 
 interface Props {
   open: boolean
@@ -452,6 +465,8 @@ export function useModuleEditorWorkspace({
   } | null>(null)
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
   const isEdit = !!record
+  const userKey = resolveModuleEditorDraftUserKey(getStoredUser())
+  const draftRecordId = getModuleEditorDraftRecordId(record)
   const editorSessionKey = `${moduleKey}:${String(record?.id || 'new')}:${String(open)}`
   const parentSelectorOpen = parentSelectorSessionKey === editorSessionKey
   const { data: clientSettings = [] } = useQuery({
@@ -470,20 +485,40 @@ export function useModuleEditorWorkspace({
     }
 
     let active = true
-
-    if (record) {
-      const nextAuthoritativePrimaryNo = getAuthoritativePrimaryNo(
-        moduleKey,
-        config.primaryNoKey,
-        record,
-      )
-      form.setFieldsValue(normalizeRecordForEditor(config, record))
+    const applyStoredDraft = (
+      storedDraft: NonNullable<ReturnType<typeof readModuleEditorDraft>>,
+    ) => {
+      if (!active) {
+        return
+      }
+      form.setFieldsValue(normalizeRecordForEditor(config, storedDraft.values))
       dispatchWorkspaceState({
-        items: record.items || [],
+        items: storedDraft.items,
         primaryNoLoading: false,
-        authoritativePrimaryNo: nextAuthoritativePrimaryNo,
+        authoritativePrimaryNo: storedDraft.authoritativePrimaryNo,
       })
-    } else {
+    }
+
+    const initializeEditor = () => {
+      if (!active) {
+        return
+      }
+
+      if (record) {
+        const nextAuthoritativePrimaryNo = getAuthoritativePrimaryNo(
+          moduleKey,
+          config.primaryNoKey,
+          record,
+        )
+        form.setFieldsValue(normalizeRecordForEditor(config, record))
+        dispatchWorkspaceState({
+          items: record.items || [],
+          primaryNoLoading: false,
+          authoritativePrimaryNo: nextAuthoritativePrimaryNo,
+        })
+        return
+      }
+
       form.resetFields()
       const defaultDraft: ModuleRecord = {} as ModuleRecord
       applyFormFieldDefaultDraftValues(defaultDraft, config.formFields)
@@ -581,6 +616,27 @@ export function useModuleEditorWorkspace({
         })
       }
     }
+
+    const storedDraft = readModuleEditorDraft(userKey, moduleKey, draftRecordId)
+    if (storedDraft) {
+      modal.confirm({
+        title: t('modules.editorWorkspace.recoverDraftTitle'),
+        content: t('modules.editorWorkspace.recoverDraftContent'),
+        okText: t('modules.editorWorkspace.recoverDraftOk'),
+        cancelText: t('modules.editorWorkspace.recoverDraftCancel'),
+        onOk: () => applyStoredDraft(storedDraft),
+        onCancel: () => {
+          removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
+          initializeEditor()
+        },
+      })
+      return () => {
+        active = false
+      }
+    }
+
+    initializeEditor()
+
     return () => {
       active = false
     }
@@ -588,12 +644,65 @@ export function useModuleEditorWorkspace({
     autoInsertBlankItemOnCreate,
     config,
     form,
+    draftRecordId,
     moduleKey,
     open,
     record,
     snowflakeBusinessNoEnabled,
     t,
+    userKey,
   ])
+
+  const writeCurrentDraftSnapshot = useCallback(
+    (reason?: ClientAutosaveReason, nextItems?: ModuleLineItem[]) => {
+      void reason
+      if (!open) {
+        return
+      }
+
+      const effectiveAuthoritativePrimaryNo =
+        authoritativePrimaryNo ||
+        getAuthoritativePrimaryNo(moduleKey, config.primaryNoKey, record)
+      const currentValues = applyAuthoritativePrimaryNo(
+        { ...form.getFieldsValue(true) },
+        config.primaryNoKey,
+        effectiveAuthoritativePrimaryNo,
+      )
+
+      try {
+        writeModuleEditorDraft(
+          buildModuleEditorDraftSnapshot({
+            userKey,
+            moduleKey,
+            recordId: draftRecordId,
+            values: currentValues,
+            items: nextItems || items,
+            authoritativePrimaryNo: effectiveAuthoritativePrimaryNo,
+          }),
+        )
+      } catch {
+        // 本地草稿是兜底能力，写入失败不应阻断用户编辑。
+      }
+    },
+    [
+      authoritativePrimaryNo,
+      config.primaryNoKey,
+      draftRecordId,
+      form,
+      items,
+      moduleKey,
+      open,
+      record,
+      userKey,
+    ],
+  )
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+    return registerClientAutosaveHandler(writeCurrentDraftSnapshot)
+  }, [open, writeCurrentDraftSnapshot])
 
   const handleFormValuesChange = (changedValues: FormChangedValues) => {
     if (!open) {
@@ -611,6 +720,7 @@ export function useModuleEditorWorkspace({
       changedValues,
       systemSettings: clientSettings,
     })
+    writeCurrentDraftSnapshot('editor-change')
   }
 
   const handleSave = async (audit = false) => {
@@ -754,6 +864,7 @@ export function useModuleEditorWorkspace({
         savedRecord: savedResult.data,
       })
       await refreshModuleQueries()
+      removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
       onSaved()
       if (preallocatedIdWarning) {
         setSaveResult({
@@ -866,6 +977,7 @@ export function useModuleEditorWorkspace({
         systemSettings: clientSettings,
       })
       dispatchWorkspaceState({ items: nextItems })
+      writeCurrentDraftSnapshot('parent-import', nextItems)
       setParentSelectorSessionKey(null)
       message.success(
         importedParentCount > 1
@@ -918,6 +1030,7 @@ export function useModuleEditorWorkspace({
         systemSettings: clientSettings,
       })
     }
+    writeCurrentDraftSnapshot('items-change', nextItems)
   }
 
   const updateItems: Dispatch<SetStateAction<ModuleLineItem[]>> = (
@@ -936,6 +1049,7 @@ export function useModuleEditorWorkspace({
         systemSettings: clientSettings,
       })
     }
+    writeCurrentDraftSnapshot('items-change', resolvedItems)
   }
 
   return {
@@ -956,5 +1070,6 @@ export function useModuleEditorWorkspace({
     saving,
     setItems: updateItems,
     handleFormValuesChange,
+    flushEditorDraft: writeCurrentDraftSnapshot,
   }
 }

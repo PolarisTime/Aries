@@ -977,6 +977,10 @@ export const zhCN: MessageSchema = {
       preallocatedNoUpdatedContent:
         '当前页面预生成的单号是 {{expected}}，但系统最终保存的实际单号是 {{actual}}。请以实际保存后的单号为准。',
       currentUserFallback: '当前用户',
+      recoverDraftTitle: '发现未保存草稿',
+      recoverDraftContent: '检测到上次编辑未正常结束，是否恢复本地保存的草稿？',
+      recoverDraftOk: '恢复草稿',
+      recoverDraftCancel: '丢弃草稿',
     },
     validation: {
       maxImportExceeded: '第{{row}}行可关联数量不能超过{{max}}件',

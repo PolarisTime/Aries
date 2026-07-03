@@ -1002,6 +1002,11 @@ export const enUS: MessageSchema = {
       preallocatedNoUpdatedContent:
         'The pre-allocated number on this page was {{expected}}, but the system saved with actual number {{actual}}. Please use the actual saved number.',
       currentUserFallback: 'Current User',
+      recoverDraftTitle: 'Unsaved Draft Found',
+      recoverDraftContent:
+        'The last editing session did not end normally. Restore the locally saved draft?',
+      recoverDraftOk: 'Restore Draft',
+      recoverDraftCancel: 'Discard Draft',
     },
     validation: {
       maxImportExceeded: 'Row {{row}}: import quantity cannot exceed {{max}}',

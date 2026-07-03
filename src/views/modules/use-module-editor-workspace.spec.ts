@@ -31,6 +31,11 @@ import { buildParentImportState } from '@/module-system/module-adapter-parent-im
 import { message, modal } from '@/utils/antd-app'
 import { parseDateTimeValue } from '@/utils/formatters'
 import { getStoredUser } from '@/utils/storage'
+import {
+  readModuleEditorDraft,
+  removeModuleEditorDraft,
+  writeModuleEditorDraft,
+} from '@/views/modules/module-editor-draft-storage'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
 
 const mockFns = vi.hoisted(() => ({
@@ -126,7 +131,32 @@ vi.mock('@/utils/formatters', () => ({
 }))
 
 vi.mock('@/utils/storage', () => ({
-  getStoredUser: vi.fn().mockReturnValue(null),
+  getStoredUser: vi.fn().mockReturnValue({
+    id: 'user-1',
+    loginName: 'tester',
+  }),
+}))
+
+vi.mock('@/utils/client-autosave-registry', () => ({
+  registerClientAutosaveHandler: vi.fn(() => vi.fn()),
+}))
+
+vi.mock('@/views/modules/module-editor-draft-storage', () => ({
+  buildModuleEditorDraftSnapshot: vi.fn((args) => ({
+    version: 1,
+    userKey: args.userKey,
+    moduleKey: args.moduleKey,
+    recordId: args.recordId,
+    values: args.values,
+    items: args.items,
+    authoritativePrimaryNo: args.authoritativePrimaryNo,
+    updatedAt: args.now,
+  })),
+  getModuleEditorDraftRecordId: vi.fn((record) => String(record?.id || 'new')),
+  readModuleEditorDraft: vi.fn().mockReturnValue(null),
+  removeModuleEditorDraft: vi.fn(),
+  resolveModuleEditorDraftUserKey: vi.fn(() => 'user-1'),
+  writeModuleEditorDraft: vi.fn(),
 }))
 
 vi.mock('@/utils/type-narrowing', () => ({
@@ -208,6 +238,7 @@ describe('useModuleEditorWorkspace', () => {
     vi.mocked(saveBusinessModule).mockResolvedValue({
       data: { id: 'saved-1', orderNo: 'ORD-001' },
     })
+    vi.mocked(modal.confirm).mockReset()
     vi.mocked(isDisplaySwitchEnabled).mockReturnValue(false)
     vi.mocked(applyFormFieldDefaultDraftValues).mockImplementation(() => {})
     vi.mocked(applyModuleDefaultEditorDraft).mockImplementation(() => {})
@@ -225,7 +256,11 @@ describe('useModuleEditorWorkspace', () => {
       importedItemCount: 0,
     })
     vi.mocked(parseDateTimeValue).mockReturnValue(undefined)
-    vi.mocked(getStoredUser).mockReturnValue(null)
+    vi.mocked(getStoredUser).mockReturnValue({
+      id: 'user-1',
+      loginName: 'tester',
+    } as never)
+    vi.mocked(readModuleEditorDraft).mockReturnValue(null)
   })
 
   it('can be imported', async () => {
@@ -264,6 +299,7 @@ describe('useModuleEditorWorkspace', () => {
       'saving',
       'setItems',
       'handleFormValuesChange',
+      'flushEditorDraft',
     ]
     for (const k of keys) expect(result.current).toHaveProperty(k)
   })
@@ -652,6 +688,125 @@ describe('useModuleEditorWorkspace', () => {
         record: { id: 'saved-1', orderNo: 'ORD-001' },
       }),
     )
+    expect(removeModuleEditorDraft).toHaveBeenCalledWith(
+      'user-1',
+      'test-module',
+      'new',
+    )
+  })
+
+  it('autosaves current editor draft without validating or calling persistence api', () => {
+    const form = frm()
+    form.getFieldsValue.mockReturnValue({
+      id: '',
+      orderNo: 'ORD-001',
+      customerName: '客户A',
+    })
+    const { result } = renderWorkspace({
+      form,
+      moduleKey: 'sales-order',
+      config: cfg({ primaryNoKey: 'orderNo' }),
+    })
+
+    act(() => {
+      result.current.setItems([{ id: 'line-1', quantity: 2 }])
+    })
+    act(() => {
+      result.current.flushEditorDraft('error-boundary')
+    })
+
+    expect(writeModuleEditorDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userKey: 'user-1',
+        moduleKey: 'sales-order',
+        recordId: 'new',
+        values: expect.objectContaining({
+          orderNo: 'ORD-001',
+          customerName: '客户A',
+        }),
+        items: [{ id: 'line-1', quantity: 2 }],
+      }),
+    )
+    expect(form.validateFields).not.toHaveBeenCalled()
+    expect(saveBusinessModule).not.toHaveBeenCalled()
+  })
+
+  it('restores a saved editor draft after user confirmation', () => {
+    vi.mocked(readModuleEditorDraft).mockReturnValue({
+      version: 1,
+      userKey: 'user-1',
+      moduleKey: 'sales-order',
+      recordId: 'new',
+      values: { id: '', orderNo: 'LOCAL-001', customerName: '本地客户' },
+      items: [{ id: 'line-local', quantity: 3 }],
+      authoritativePrimaryNo: 'LOCAL-001',
+      updatedAt: 1000,
+    })
+    const form = frm()
+
+    const { result } = renderWorkspace({
+      form,
+      moduleKey: 'sales-order',
+      config: cfg({ primaryNoKey: 'orderNo' }),
+    })
+
+    expect(modal.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'modules.editorWorkspace.recoverDraftTitle',
+        okText: 'modules.editorWorkspace.recoverDraftOk',
+      }),
+    )
+    const confirmOptions = vi.mocked(modal.confirm).mock.calls[0]?.[0] as {
+      onOk: () => void
+    }
+    act(() => {
+      confirmOptions.onOk()
+    })
+
+    expect(form.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderNo: 'LOCAL-001',
+        customerName: '本地客户',
+      }),
+    )
+    expect(result.current.items).toEqual([{ id: 'line-local', quantity: 3 }])
+    expect(result.current.authoritativePrimaryNo).toBe('LOCAL-001')
+    expect(generateBusinessPrimaryNo).not.toHaveBeenCalled()
+  })
+
+  it('discards a saved editor draft and initializes a fresh editor when user cancels recovery', () => {
+    vi.mocked(readModuleEditorDraft).mockReturnValue({
+      version: 1,
+      userKey: 'user-1',
+      moduleKey: 'sales-order',
+      recordId: 'new',
+      values: { id: '', orderNo: 'LOCAL-001' },
+      items: [{ id: 'line-local' }],
+      authoritativePrimaryNo: 'LOCAL-001',
+      updatedAt: 1000,
+    })
+    const form = frm()
+
+    renderWorkspace({
+      form,
+      moduleKey: 'sales-order',
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    const confirmOptions = vi.mocked(modal.confirm).mock.calls[0]?.[0] as {
+      onCancel: () => void
+    }
+    act(() => {
+      confirmOptions.onCancel()
+    })
+
+    expect(removeModuleEditorDraft).toHaveBeenCalledWith(
+      'user-1',
+      'sales-order',
+      'new',
+    )
+    expect(form.resetFields).toHaveBeenCalled()
+    expect(form.setFieldsValue).toHaveBeenCalledWith({})
   })
 
   it('keeps existing hidden fields when saving an edited record', async () => {

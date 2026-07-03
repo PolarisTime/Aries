@@ -956,6 +956,10 @@ export interface MessageSchema {
       preallocatedNoUpdatedTitle: string
       preallocatedNoUpdatedContent: string
       currentUserFallback: string
+      recoverDraftTitle: string
+      recoverDraftContent: string
+      recoverDraftOk: string
+      recoverDraftCancel: string
     }
     validation: {
       maxImportExceeded: string

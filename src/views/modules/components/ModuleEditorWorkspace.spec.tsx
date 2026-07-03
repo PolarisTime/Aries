@@ -1,5 +1,18 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const navigateMock = vi.hoisted(() => vi.fn())
+const moduleEditorCapabilityMocks = vi.hoisted(() => ({
+  useModuleEditorCapabilities: vi.fn(),
+}))
+const moduleEditorItemsMocks = vi.hoisted(() => ({
+  clearSelectedItems: vi.fn(),
+  handleDragOver: vi.fn(),
+  onItemColumnOrderChange: vi.fn(),
+  removeSelectedItems: vi.fn(),
+  toggleItemColumn: vi.fn(),
+  useModuleEditorItems: vi.fn(),
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -11,7 +24,7 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@tanstack/react-router', () => ({
-  useNavigate: () => vi.fn(),
+  useNavigate: () => navigateMock,
 }))
 
 vi.mock('@/hooks/useMasterOptions', () => ({
@@ -20,26 +33,13 @@ vi.mock('@/hooks/useMasterOptions', () => ({
 }))
 
 vi.mock('@/hooks/useModuleEditorCapabilities', () => ({
-  useModuleEditorCapabilities: vi.fn().mockReturnValue({
-    canAddManualEditorItems: true,
-    canManageEditorItems: true,
-    canSaveAndAuditCurrentEditor: true,
-    editorAuditTarget: 'audit',
-  }),
+  useModuleEditorCapabilities: (...args: unknown[]) =>
+    moduleEditorCapabilityMocks.useModuleEditorCapabilities(...args),
 }))
 
 vi.mock('@/views/modules/use-module-editor-items', () => ({
-  useModuleEditorItems: vi.fn().mockReturnValue({
-    clearSelectedItems: vi.fn(),
-    handleDragOver: vi.fn(),
-    itemColumns: [],
-    itemColumnOrder: [],
-    onItemColumnOrderChange: vi.fn(),
-    removeSelectedItems: vi.fn(),
-    selectedItemIds: [],
-    toggleItemColumn: vi.fn(),
-    visibleItemColumnKeys: [],
-  }),
+  useModuleEditorItems: (...args: unknown[]) =>
+    moduleEditorItemsMocks.useModuleEditorItems(...args),
 }))
 
 const mockUseModuleEditorWorkspace = vi.fn().mockReturnValue({
@@ -68,17 +68,79 @@ vi.mock('@/views/modules/use-module-editor-workspace', () => ({
 }))
 
 vi.mock('./ModuleEditorFormSection', () => ({
-  ModuleEditorFormSection: ({ ...props }: any) => (
+  ModuleEditorFormSection: ({ onCancel, onSave, ...props }: any) => (
     <div data-testid="form-section" {...props}>
       FormSection
+      <button type="button" onClick={() => onSave(false)}>
+        form-save
+      </button>
+      <button type="button" onClick={() => onSave(true)}>
+        form-save-audit
+      </button>
+      <button type="button" onClick={onCancel}>
+        form-cancel
+      </button>
     </div>
   ),
 }))
 
 vi.mock('./ModuleEditorItemsSection', () => ({
-  ModuleEditorItemsSection: ({ ...props }: any) => (
-    <div data-testid="items-section" {...props}>
+  ModuleEditorItemsSection: ({
+    onAddItem,
+    onCancel,
+    onCloseParentSelector,
+    onImportParentRecord,
+    onItemColumnOrderChange,
+    onOpenParentSelector,
+    onRemoveSelectedItems,
+    onRowDragOver,
+    onSave,
+    onToggleItemColumn,
+    permissions,
+    ...props
+  }: any) => (
+    <div
+      data-testid="items-section"
+      data-add-manual-items={String(permissions.addManualItems)}
+      data-import-parent-items={String(permissions.importParentItems)}
+      data-save={String(permissions.save)}
+      data-audit={String(permissions.audit)}
+      {...props}
+    >
       ItemsSection
+      <button type="button" onClick={onAddItem}>
+        add-item
+      </button>
+      <button type="button" onClick={() => onSave(true)}>
+        items-save-audit
+      </button>
+      <button type="button" onClick={onCancel}>
+        items-cancel
+      </button>
+      <button type="button" onClick={onOpenParentSelector}>
+        open-parent-selector
+      </button>
+      <button type="button" onClick={onCloseParentSelector}>
+        close-parent-selector
+      </button>
+      <button type="button" onClick={onRemoveSelectedItems}>
+        remove-selected-items
+      </button>
+      <button
+        type="button"
+        onClick={() => onImportParentRecord([{ id: 'parent-1' }])}
+      >
+        import-parent-record
+      </button>
+      <button type="button" onClick={() => onItemColumnOrderChange(['brand'])}>
+        reorder-item-column
+      </button>
+      <button type="button" onClick={() => onToggleItemColumn('brand')}>
+        toggle-item-column
+      </button>
+      <button type="button" onDragOver={(event) => onRowDragOver(event)}>
+        drag-over-item-row
+      </button>
     </div>
   ),
 }))
@@ -95,6 +157,53 @@ vi.mock('./WorkspaceOverlay', () => ({
   },
 }))
 
+vi.mock('antd', () => {
+  const Form = ({ children, onValuesChange, ...props }: any) => (
+    <form {...props} data-testid="editor-form">
+      <input
+        aria-label="editor-change-probe"
+        onChange={() =>
+          onValuesChange?.({ orderNo: 'ORD-002' }, { orderNo: 'ORD-002' })
+        }
+      />
+      {children}
+    </form>
+  )
+  Form.useForm = () => [{ getFieldsValue: () => ({}) }]
+  Form.Item = ({ children, ...props }: any) => <div {...props}>{children}</div>
+  Form.useFormInstance = () => ({})
+  Form.useWatch = () => ({})
+
+  return {
+    Button: ({ children, ...props }: any) => (
+      <button {...props}>{children}</button>
+    ),
+    Card: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    Form,
+    Space: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    Table: ({ columns, dataSource, rowKey, ...props }: any) => (
+      <table data-testid="save-result-items-table" {...props}>
+        <tbody>
+          {dataSource.map((record: Record<string, unknown>, index: number) => (
+            <tr key={rowKey(record, index)}>
+              {columns.map((column: any) => (
+                <td key={column.dataIndex}>
+                  {column.render
+                    ? column.render(record[column.dataIndex], record, index)
+                    : String(record[column.dataIndex] ?? '')}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ),
+    Typography: {
+      Text: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+    },
+  }
+})
+
 vi.mock('antd/es/button', () => ({
   default: ({ children, ...props }: any) => (
     <button {...props}>{children}</button>
@@ -107,7 +216,15 @@ vi.mock('antd/es/card', () => ({
 
 vi.mock('antd/es/form', () => {
   const Form = ({ children, ...props }: any) => (
-    <form {...props}>{children}</form>
+    <form
+      {...props}
+      onChange={(event) => {
+        props.onValuesChange?.({ orderNo: 'ORD-002' }, { orderNo: 'ORD-002' })
+        props.onChange?.(event)
+      }}
+    >
+      {children}
+    </form>
   )
   Form.useForm = () => [{ getFieldsValue: () => ({}) }]
   Form.Item = ({ children, ...props }: any) => <div {...props}>{children}</div>
@@ -121,7 +238,23 @@ vi.mock('antd/es/space', () => ({
 }))
 
 vi.mock('antd/es/table', () => ({
-  default: ({ ...props }: any) => <table {...props} />,
+  default: ({ columns, dataSource, rowKey, ...props }: any) => (
+    <table data-testid="save-result-items-table" {...props}>
+      <tbody>
+        {dataSource.map((record: Record<string, unknown>, index: number) => (
+          <tr key={rowKey(record, index)}>
+            {columns.map((column: any) => (
+              <td key={column.dataIndex}>
+                {column.render
+                  ? column.render(record[column.dataIndex], record, index)
+                  : String(record[column.dataIndex] ?? '')}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  ),
 }))
 
 vi.mock('antd/es/typography', () => ({
@@ -159,6 +292,47 @@ describe('ModuleEditorWorkspace', () => {
     onSaved: vi.fn(),
   }
 
+  beforeEach(() => {
+    vi.clearAllMocks()
+    navigateMock.mockReset()
+    moduleEditorCapabilityMocks.useModuleEditorCapabilities.mockReturnValue({
+      canAddManualEditorItems: true,
+      canManageEditorItems: true,
+      canSaveAndAuditCurrentEditor: true,
+      editorAuditTarget: 'audit',
+    })
+    moduleEditorItemsMocks.useModuleEditorItems.mockReturnValue({
+      clearSelectedItems: moduleEditorItemsMocks.clearSelectedItems,
+      handleDragOver: moduleEditorItemsMocks.handleDragOver,
+      itemColumns: [],
+      itemColumnOrder: [],
+      onItemColumnOrderChange: moduleEditorItemsMocks.onItemColumnOrderChange,
+      removeSelectedItems: moduleEditorItemsMocks.removeSelectedItems,
+      selectedItemIds: [],
+      toggleItemColumn: moduleEditorItemsMocks.toggleItemColumn,
+      visibleItemColumnKeys: [],
+    })
+    mockUseModuleEditorWorkspace.mockReturnValue({
+      addItem: vi.fn(),
+      clearSaveResult: vi.fn(),
+      closeParentSelector: vi.fn(),
+      handleImportParentRecord: vi.fn(),
+      handleSave: vi.fn(),
+      handleFormValuesChange: vi.fn(),
+      isEdit: false,
+      items: [],
+      openParentSelector: vi.fn(),
+      parentImporting: false,
+      parentSelectorFilters: {},
+      parentSelectorOpen: false,
+      primaryNoLoading: false,
+      authoritativePrimaryNo: '',
+      saveResult: null,
+      saving: false,
+      setItems: vi.fn(),
+    })
+  })
+
   it('renders workspace overlay when open', () => {
     render(<ModuleEditorWorkspace {...defaultProps} />)
     expect(screen.getByTestId('workspace-overlay')).toBeTruthy()
@@ -167,6 +341,113 @@ describe('ModuleEditorWorkspace', () => {
   it('renders form section', () => {
     render(<ModuleEditorWorkspace {...defaultProps} />)
     expect(screen.getByTestId('form-section')).toBeTruthy()
+  })
+
+  it('falls back to empty form fields when config omits formFields', () => {
+    const configWithoutFormFields = {
+      key: 'test-module',
+      title: 'Test Module',
+      itemColumns: [],
+      readOnly: false,
+    }
+
+    render(
+      <ModuleEditorWorkspace
+        {...defaultProps}
+        config={configWithoutFormFields}
+      />,
+    )
+
+    const capabilityArgs =
+      moduleEditorCapabilityMocks.useModuleEditorCapabilities.mock.calls[0][0]
+    expect(capabilityArgs.formFields).toEqual([])
+    expect(capabilityArgs.resolveModuleStatusOptions()).toEqual([])
+  })
+
+  it('passes normalized status options to editor capabilities', () => {
+    render(
+      <ModuleEditorWorkspace
+        {...defaultProps}
+        config={{
+          ...defaultProps.config,
+          formFields: [
+            {
+              key: 'status',
+              label: 'Status',
+              type: 'select',
+              options: [{ value: 'draft' }, { value: 2 }],
+            },
+          ],
+        }}
+      />,
+    )
+
+    const capabilityArgs =
+      moduleEditorCapabilityMocks.useModuleEditorCapabilities.mock.calls[0][0]
+    expect(capabilityArgs.resolveModuleStatusOptions()).toEqual(['draft', '2'])
+  })
+
+  it('binds form value changes to the editor workspace hook', () => {
+    const handleFormValuesChange = vi.fn()
+    mockUseModuleEditorWorkspace.mockReturnValueOnce({
+      ...mockUseModuleEditorWorkspace(),
+      handleFormValuesChange,
+    })
+
+    render(<ModuleEditorWorkspace {...defaultProps} />)
+    fireEvent.change(screen.getByLabelText('editor-change-probe'), {
+      target: { value: 'ORD-002' },
+    })
+
+    expect(handleFormValuesChange).toHaveBeenCalledWith({ orderNo: 'ORD-002' })
+  })
+
+  it('forwards form and item section actions to workspace handlers', () => {
+    const handlers = {
+      addItem: vi.fn(),
+      clearSaveResult: vi.fn(),
+      closeParentSelector: vi.fn(),
+      handleImportParentRecord: vi.fn(),
+      handleSave: vi.fn(),
+      handleFormValuesChange: vi.fn(),
+      openParentSelector: vi.fn(),
+      setItems: vi.fn(),
+    }
+    mockUseModuleEditorWorkspace.mockReturnValueOnce({
+      ...mockUseModuleEditorWorkspace(),
+      ...handlers,
+    })
+
+    render(<ModuleEditorWorkspace {...defaultProps} />)
+    fireEvent.click(screen.getByText('form-save'))
+    fireEvent.click(screen.getByText('form-save-audit'))
+    fireEvent.click(screen.getByText('add-item'))
+    fireEvent.click(screen.getByText('items-save-audit'))
+    fireEvent.click(screen.getByText('open-parent-selector'))
+    fireEvent.click(screen.getByText('close-parent-selector'))
+    fireEvent.click(screen.getByText('remove-selected-items'))
+    fireEvent.click(screen.getByText('import-parent-record'))
+    fireEvent.click(screen.getByText('reorder-item-column'))
+    fireEvent.click(screen.getByText('toggle-item-column'))
+    fireEvent.dragOver(screen.getByText('drag-over-item-row'))
+
+    expect(handlers.handleSave).toHaveBeenCalledWith(false)
+    expect(handlers.handleSave).toHaveBeenCalledWith(true)
+    expect(handlers.addItem).toHaveBeenCalledTimes(1)
+    expect(handlers.openParentSelector).toHaveBeenCalledTimes(1)
+    expect(handlers.closeParentSelector).toHaveBeenCalledTimes(1)
+    expect(moduleEditorItemsMocks.removeSelectedItems).toHaveBeenCalledTimes(1)
+    expect(moduleEditorItemsMocks.clearSelectedItems).toHaveBeenCalledTimes(1)
+    expect(handlers.handleImportParentRecord).toHaveBeenCalledWith([
+      { id: 'parent-1' },
+    ])
+    expect(moduleEditorItemsMocks.onItemColumnOrderChange).toHaveBeenCalledWith(
+      ['brand'],
+    )
+    expect(moduleEditorItemsMocks.toggleItemColumn).toHaveBeenCalledWith(
+      'brand',
+    )
+    expect(moduleEditorItemsMocks.handleDragOver).toHaveBeenCalledTimes(1)
   })
 
   it('renders items section', () => {
@@ -306,6 +587,45 @@ describe('ModuleEditorWorkspace', () => {
     expect(screen.getByText('modules.saveResult.close')).toBeTruthy()
   })
 
+  it('closes successful save result and clears the save state', () => {
+    const clearSaveResult = vi.fn()
+    const onClose = vi.fn()
+    mockUseModuleEditorWorkspace.mockReturnValueOnce({
+      ...mockUseModuleEditorWorkspace(),
+      clearSaveResult,
+      saveResult: {
+        status: 'success',
+        message: 'Saved',
+        record: { id: '1', items: [] },
+      },
+    })
+
+    render(<ModuleEditorWorkspace {...defaultProps} onClose={onClose} />)
+    fireEvent.click(screen.getByText('modules.saveResult.close'))
+
+    expect(clearSaveResult).toHaveBeenCalledTimes(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps editor open when clearing an error save result', () => {
+    const clearSaveResult = vi.fn()
+    const onClose = vi.fn()
+    mockUseModuleEditorWorkspace.mockReturnValueOnce({
+      ...mockUseModuleEditorWorkspace(),
+      clearSaveResult,
+      saveResult: {
+        status: 'error',
+        message: 'Failed',
+      },
+    })
+
+    render(<ModuleEditorWorkspace {...defaultProps} onClose={onClose} />)
+    fireEvent.click(screen.getByText('modules.saveResult.backToEdit'))
+
+    expect(clearSaveResult).toHaveBeenCalledTimes(1)
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
   it('renders save result with form fields', () => {
     mockUseModuleEditorWorkspace.mockReturnValueOnce({
       ...mockUseModuleEditorWorkspace(),
@@ -315,6 +635,8 @@ describe('ModuleEditorWorkspace', () => {
         record: {
           id: '1',
           orderNo: 'ORD-001',
+          totalWeight: 12.345,
+          totalAmount: 99.5,
           items: [],
         },
       },
@@ -331,6 +653,30 @@ describe('ModuleEditorWorkspace', () => {
       <ModuleEditorWorkspace {...defaultProps} config={configWithFields} />,
     )
     expect(screen.getByText(/modules\.saveResult\.pageSuccess/)).toBeTruthy()
+    expect(
+      screen.getByText(/12\.345 modules\.itemColumns\.weightTon/),
+    ).toBeTruthy()
+    expect(screen.getByText(/99\.5 modules\.itemColumns\.amount/)).toBeTruthy()
+  })
+
+  it('renders save result record card when config omits formFields', () => {
+    mockUseModuleEditorWorkspace.mockReturnValueOnce({
+      ...mockUseModuleEditorWorkspace(),
+      saveResult: {
+        status: 'success',
+        message: 'Saved',
+        record: { id: '1', orderNo: 'ORD-001', items: [] },
+      },
+    })
+
+    render(
+      <ModuleEditorWorkspace
+        {...defaultProps}
+        config={{ key: 'test-module', title: 'Test Module', itemColumns: [] }}
+      />,
+    )
+
+    expect(screen.getByText(/modules\.saveResult\.pageSuccess/)).toBeTruthy()
   })
 
   it('renders save result for freight-bill module', () => {
@@ -339,11 +685,55 @@ describe('ModuleEditorWorkspace', () => {
       saveResult: {
         status: 'success',
         message: 'Saved',
-        record: { id: '1', items: [{ id: 'i1', quantity: 5 }] },
+        record: {
+          id: '1',
+          items: [
+            { id: 'i1', quantity: 5, weightTon: 2.3456 },
+            { id: 'i2', quantity: 1 },
+          ],
+        },
       },
     })
     render(<ModuleEditorWorkspace {...defaultProps} moduleKey="freight-bill" />)
     expect(screen.getByText('modules.saveResult.close')).toBeTruthy()
+    expect(screen.getByText('2.346')).toBeTruthy()
+  })
+
+  it('renders finance item columns with numeric and empty values', () => {
+    mockUseModuleEditorWorkspace.mockReturnValueOnce({
+      ...mockUseModuleEditorWorkspace(),
+      saveResult: {
+        status: 'success',
+        message: 'Saved',
+        record: {
+          id: '1',
+          items: [
+            {
+              id: 'i1',
+              quantity: 5,
+              weightTon: null,
+              unitPrice: 10,
+              amount: null,
+            },
+            {
+              id: 'i2',
+              quantity: 2,
+              weightTon: 1,
+              unitPrice: null,
+              amount: 20,
+            },
+          ],
+        },
+      },
+    })
+
+    render(
+      <ModuleEditorWorkspace {...defaultProps} moduleKey="purchase-order" />,
+    )
+
+    expect(screen.getByText('10.00')).toBeTruthy()
+    expect(screen.getByText('20.00')).toBeTruthy()
+    expect(screen.getAllByText('-').length).toBeGreaterThanOrEqual(2)
   })
 
   it('renders save result for purchase-order module with next module', () => {
@@ -359,6 +749,56 @@ describe('ModuleEditorWorkspace', () => {
       <ModuleEditorWorkspace {...defaultProps} moduleKey="purchase-order" />,
     )
     expect(screen.getByText('modules.saveResult.close')).toBeTruthy()
+  })
+
+  it('creates the next module from a successful save result', () => {
+    const clearSaveResult = vi.fn()
+    const onClose = vi.fn()
+    mockUseModuleEditorWorkspace.mockReturnValueOnce({
+      ...mockUseModuleEditorWorkspace(),
+      clearSaveResult,
+      saveResult: {
+        status: 'success',
+        message: 'Saved',
+        record: { id: 'po-1', items: [] },
+      },
+    })
+
+    render(
+      <ModuleEditorWorkspace
+        {...defaultProps}
+        moduleKey="purchase-order"
+        onClose={onClose}
+      />,
+    )
+    fireEvent.click(
+      screen.getByText('modules.nextModule.createPurchaseInbound'),
+    )
+
+    expect(clearSaveResult).toHaveBeenCalledTimes(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(navigateMock).toHaveBeenCalledWith({
+      to: '/purchase-inbound',
+      search: 'sourceModule=purchase-order&sourceRecordId=po-1',
+    })
+  })
+
+  it('creates the next module with an empty source id when record is missing', () => {
+    mockUseModuleEditorWorkspace.mockReturnValueOnce({
+      ...mockUseModuleEditorWorkspace(),
+      saveResult: {
+        status: 'success',
+        message: 'Saved',
+      },
+    })
+
+    render(<ModuleEditorWorkspace {...defaultProps} moduleKey="sales-order" />)
+    fireEvent.click(screen.getByText('modules.nextModule.createSalesOutbound'))
+
+    expect(navigateMock).toHaveBeenCalledWith({
+      to: '/sales-outbound',
+      search: 'sourceModule=sales-order&sourceRecordId=',
+    })
   })
 
   it('renders save result for sales-order module', () => {

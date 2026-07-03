@@ -114,6 +114,7 @@ export function ModuleEditorWorkspace({
     clearSaveResult,
     closeParentSelector,
     handleImportParentRecord,
+    handleFormValuesChange,
     handleSave,
     isEdit,
     items,
@@ -186,6 +187,9 @@ export function ModuleEditorWorkspace({
           colon={false}
           labelWrap={false}
           className="editor-form-shell"
+          onValuesChange={(changedValues) => {
+            handleFormValuesChange(changedValues)
+          }}
         >
           <ModuleEditorFormSection
             config={config}
@@ -300,11 +304,10 @@ function SaveResultOverlay({
 
   const nextModule = isSuccess ? NEXT_MODULE[moduleKey] : null
 
-  const handleCreateNext = () => {
-    if (!nextModule) return
+  const handleCreateNext = (targetModule: { label: string; path: string }) => {
     onClear()
     void navigate({
-      to: nextModule.path,
+      to: targetModule.path,
       search: new URLSearchParams({
         sourceModule: moduleKey,
         sourceRecordId: String(saveResult.record?.id || ''),
@@ -316,7 +319,7 @@ function SaveResultOverlay({
     <Button
       type="primary"
       icon={<ArrowRightOutlined />}
-      onClick={handleCreateNext}
+      onClick={() => handleCreateNext(nextModule)}
     >
       {nextModule.label}
     </Button>

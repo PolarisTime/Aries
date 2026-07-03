@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AppErrorBoundary } from './AppErrorBoundary'
 
+const flushClientAutosaveHandlersMock = vi.hoisted(() => vi.fn())
+
 vi.mock('@/components/AppResult', () => ({
   AppResult: ({
     status,
@@ -21,6 +23,10 @@ vi.mock('@/components/AppResult', () => ({
       {extra}
     </div>
   ),
+}))
+
+vi.mock('@/utils/client-autosave-registry', () => ({
+  flushClientAutosaveHandlers: flushClientAutosaveHandlersMock,
 }))
 
 vi.mock('i18next', () => ({
@@ -69,6 +75,9 @@ describe('AppErrorBoundary', () => {
     expect(screen.getByTestId('status')).toHaveTextContent('error')
     expect(screen.getByTestId('subTitle')).toHaveTextContent('Test error')
     expect(screen.getByText(/重\s*试/)).toBeTruthy()
+    expect(flushClientAutosaveHandlersMock).toHaveBeenCalledWith(
+      'error-boundary',
+    )
 
     consoleSpy.mockRestore()
   })
