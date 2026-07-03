@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
+import { createElement } from 'react'
+import { describe, expect, it, vi } from 'vitest'
+import type { ModuleRecord } from '@/types/module-page'
+import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
 import {
   buildTableScrollConfig,
   computeTableAvailableHeight,
@@ -6,6 +11,48 @@ import {
   computeTableScrollX,
   parseTableColumnWidth,
 } from '@/views/modules/components/business-grid-table-utils'
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}))
+
+vi.mock('@/hooks/useDeferredColumns', () => ({
+  useDeferredColumns: (columns: unknown) => columns,
+}))
+
+vi.mock('antd', () => ({
+  Empty: ({ description }: { description: ReactNode }) =>
+    createElement('div', null, description),
+  Table: ({ dataSource, onRow, rowClassName }: any) =>
+    createElement(
+      'table',
+      null,
+      createElement(
+        'tbody',
+        null,
+        dataSource.map((record: ModuleRecord) => {
+          const rowProps = onRow(record)
+          return createElement(
+            'tr',
+            {
+              key: record.id,
+              'data-testid': `row-${record.id}`,
+              className: rowClassName(record),
+              ...rowProps,
+            },
+            createElement('td', null, record.name as ReactNode),
+            createElement(
+              'td',
+              null,
+              createElement('button', { type: 'button' }, '行内操作'),
+            ),
+          )
+        }),
+      ),
+    ),
+}))
 
 describe('computeTableBodyScrollY', () => {
   it('should reserve space for table header and pagination', () => {
@@ -110,5 +157,62 @@ describe('buildTableScrollConfig', () => {
         shellWidth: 720,
       }),
     ).toEqual({ x: 720, y: 480 })
+  })
+})
+
+describe('BusinessGridTable keyboard row interactions', () => {
+  const renderGrid = () => {
+    const onRowClick = vi.fn()
+    const onRowDoubleClick = vi.fn()
+    render(
+      createElement(BusinessGridTable, {
+        moduleKey: 'sales-order',
+        columns: [{ title: '名称', dataIndex: 'name' }],
+        dataSource: [{ id: 'row-1', name: '第一行' }],
+        loading: false,
+        rowClassName: () => 'business-row',
+        onRowClick,
+        onRowDoubleClick,
+      }),
+    )
+
+    return {
+      row: screen.getByTestId('row-row-1'),
+      inlineButton: screen.getByText('行内操作'),
+      onRowClick,
+      onRowDoubleClick,
+    }
+  }
+
+  it('focuses rows and maps Space to row selection', () => {
+    const { row, onRowClick, onRowDoubleClick } = renderGrid()
+
+    expect(row).toHaveAttribute('tabIndex', '0')
+    fireEvent.keyDown(row, { key: ' ', code: 'Space' })
+
+    expect(onRowClick).toHaveBeenCalledWith({ id: 'row-1', name: '第一行' })
+    expect(onRowDoubleClick).not.toHaveBeenCalled()
+  })
+
+  it('maps Enter to the existing row double click action', () => {
+    const { row, onRowClick, onRowDoubleClick } = renderGrid()
+
+    fireEvent.keyDown(row, { key: 'Enter', code: 'Enter' })
+
+    expect(onRowClick).not.toHaveBeenCalled()
+    expect(onRowDoubleClick).toHaveBeenCalledWith({
+      id: 'row-1',
+      name: '第一行',
+    })
+  })
+
+  it('does not trigger row keyboard actions from inner controls', () => {
+    const { inlineButton, onRowClick, onRowDoubleClick } = renderGrid()
+
+    fireEvent.keyDown(inlineButton, { key: ' ', code: 'Space' })
+    fireEvent.keyDown(inlineButton, { key: 'Enter', code: 'Enter' })
+
+    expect(onRowClick).not.toHaveBeenCalled()
+    expect(onRowDoubleClick).not.toHaveBeenCalled()
   })
 })

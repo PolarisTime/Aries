@@ -10,6 +10,7 @@ import {
 } from '@dnd-kit/core'
 import {
   SortableContext,
+  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
@@ -32,6 +33,7 @@ interface Props {
 interface SortableColumnRowProps {
   checked: boolean
   columnId: string
+  dragLabel: string
   label: ReactNode
   onToggle: () => void
 }
@@ -39,6 +41,7 @@ interface SortableColumnRowProps {
 function SortableColumnRow({
   checked,
   columnId,
+  dragLabel,
   label,
   onToggle,
 }: SortableColumnRowProps) {
@@ -62,13 +65,15 @@ function SortableColumnRow({
         opacity: isDragging ? 0.4 : 1,
       }}
     >
-      <span
+      <button
+        type="button"
         {...attributes}
         {...listeners}
-        className="cursor-grab text-tertiary inline-flex items-center"
+        className="cursor-grab text-tertiary inline-flex items-center border-0 bg-transparent p-0"
+        aria-label={dragLabel}
       >
         <HolderOutlined />
-      </span>
+      </button>
       <Checkbox checked={checked} onChange={onToggle}>
         {label}
       </Checkbox>
@@ -101,7 +106,9 @@ export function ColumnSettingsPopover({
   const { t } = useTranslation()
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   )
   const fallbackOrder = columns.map((column) => column.dataIndex)
   const sortableKeys =
@@ -149,6 +156,7 @@ export function ColumnSettingsPopover({
                 <SortableColumnRow
                   key={column.dataIndex}
                   columnId={column.dataIndex}
+                  dragLabel={`拖动列：${column.title}`}
                   checked={visibleKeys.includes(column.dataIndex)}
                   onToggle={() => onToggle(column.dataIndex)}
                   label={<span className="text-xs">{column.title}</span>}

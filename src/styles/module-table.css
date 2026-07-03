@@ -64,6 +64,12 @@
   vertical-align: middle;
 }
 
+.module-table-shell .ant-table-tbody .ant-table-row:focus-visible,
+.module-table-shell .ant-table-tbody .ant-table-row:focus-within {
+  outline: 2px solid var(--theme-highlight-border, var(--theme-primary));
+  outline-offset: -2px;
+}
+
 .module-table-shell .ant-table-bordered .ant-table,
 .module-table-shell .ant-table-bordered .ant-table-container,
 .module-table-shell .ant-table-bordered .ant-table-content,

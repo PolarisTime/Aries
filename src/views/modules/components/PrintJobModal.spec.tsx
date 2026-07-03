@@ -32,6 +32,7 @@ vi.mock('@dnd-kit/core', () => ({
 
 vi.mock('@dnd-kit/sortable', () => ({
   SortableContext: ({ children }: any) => <div>{children}</div>,
+  sortableKeyboardCoordinates: vi.fn(),
   useSortable: vi.fn().mockReturnValue({
     attributes: {},
     listeners: {},
@@ -213,6 +214,8 @@ vi.mock('@/constants/module-options', () => ({
   ),
 }))
 
+import { KeyboardSensor, useSensor } from '@dnd-kit/core'
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { getCustomerProjectOptions } from '@/constants/module-options'
 
 const coordTemplate = {
@@ -432,8 +435,30 @@ describe('PrintJobModal', () => {
     expect(screen.getByText('HRB400E')).toBeTruthy()
     expect(screen.getByText('Ф18')).toBeTruthy()
     expect(
+      screen.getByRole('button', { name: '拖动第 1 行打印明细' }),
+    ).toBeTruthy()
+    expect(
       screen.queryByLabelText('modules.print.brandOverridePlaceholder'),
     ).toBeNull()
+  })
+
+  it('configures keyboard sorting coordinates for print items', () => {
+    render(
+      <PrintJobModal
+        onClose={vi.fn()}
+        onPrint={vi.fn()}
+        open
+        moduleKey="sales-order"
+        selectedCount={1}
+        selectedRowKeys={['1']}
+        selectedRows={[{ id: '1' }]}
+        templates={[coordTemplate]}
+      />,
+    )
+
+    expect(useSensor).toHaveBeenCalledWith(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   })
 
   it('passes item-level brand override option', () => {

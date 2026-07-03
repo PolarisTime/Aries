@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/core'
 import {
   SortableContext,
+  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
@@ -282,6 +283,7 @@ function SortablePrintItemRow({
     transition,
     isDragging,
   } = useSortable({ id: item.id })
+  const dragLabel = `拖动第 ${index + 1} 行打印明细`
 
   return (
     <div
@@ -298,10 +300,10 @@ function SortablePrintItemRow({
           <button
             {...attributes}
             {...listeners}
-            aria-label={t('modules.print.dragItem')}
+            aria-label={dragLabel}
             className="inline-flex cursor-grab items-center border-0 bg-transparent p-0 text-gray-400"
             type="button"
-            title={t('modules.print.dragItem')}
+            title={dragLabel}
           >
             <HolderOutlined />
           </button>
@@ -635,7 +637,9 @@ export function PrintJobModal({
   )
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   )
   const { data: fetchedPrintItems } = useQuery<PrintRecordItem[]>({
     queryKey: QUERY_KEYS.printRecordItems(moduleKey, selectedRowKeys),

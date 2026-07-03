@@ -473,6 +473,11 @@
   box-shadow: none;
 }
 
+.header-global-search-group:focus-within {
+  border-color: var(--theme-highlight-border);
+  box-shadow: 0 0 0 2px var(--theme-primary-soft);
+}
+
 .header-global-search-box,
 .header-global-search-box.ant-select {
   flex: 1 1 auto;
@@ -803,6 +808,12 @@
 .open-page-strip-close:hover {
   color: var(--theme-primary);
   background: var(--theme-surface);
+}
+
+.open-page-strip-trigger:focus-visible,
+.open-page-strip-close:focus-visible {
+  outline: 2px solid var(--theme-highlight-border);
+  outline-offset: 2px;
 }
 
 .tab-layout-tabs-top-nav {

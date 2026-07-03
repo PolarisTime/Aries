@@ -28,8 +28,8 @@ import { asString } from '@/utils/type-narrowing'
 import { ModuleFilterToolbar } from './ModuleFilterToolbar'
 import {
   filterImportableParentRecords,
-  resolveVisibleParentSelectorColumns,
   resolveSelectedParentRows,
+  resolveVisibleParentSelectorColumns,
 } from './module-parent-selector-utils'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
@@ -74,6 +74,8 @@ type SelectedSummaryField = {
 
 const DEFAULT_PAGE_SIZE = 15
 const EMPTY_FIXED_FILTERS: SearchParams = {}
+const PARENT_SELECTOR_ROW_EXCLUSION_SELECTOR =
+  '.ant-table-selection-column, .parent-selector-selected-chip-remove'
 
 type ParentSelectorTranslator = (
   key: string,
@@ -824,6 +826,18 @@ function ParentSelectorTable({
   t,
   total,
 }: ParentSelectorTableProps) {
+  const shouldIgnoreRowInteraction = (target: EventTarget | null) =>
+    target instanceof Element &&
+    Boolean(target.closest(PARENT_SELECTOR_ROW_EXCLUSION_SELECTOR))
+
+  const handleRowAction = (record: ModuleRecord) => {
+    if (allowMultipleSelection) {
+      onToggleRecordSelection(record)
+      return
+    }
+    onImportRecord(record)
+  }
+
   return (
     <Table
       rowKey="id"
@@ -841,20 +855,26 @@ function ParentSelectorTable({
           : undefined
       }
       onRow={(record) => ({
+        tabIndex: 0,
+        'aria-selected': allowMultipleSelection
+          ? selectedRowKeys.includes(String(record.id))
+          : undefined,
         onClick: (event) => {
-          if (allowMultipleSelection) {
-            const target = event.target as HTMLElement | null
-            if (
-              target?.closest(
-                '.ant-table-selection-column, .parent-selector-selected-chip-remove',
-              )
-            ) {
-              return
-            }
+          if (shouldIgnoreRowInteraction(event.target)) return
+          handleRowAction(record)
+        },
+        onKeyDown: (event) => {
+          if (shouldIgnoreRowInteraction(event.target)) return
+          if (event.key === ' ' || event.key === 'Spacebar') {
+            if (!allowMultipleSelection) return
+            event.preventDefault()
             onToggleRecordSelection(record)
             return
           }
-          onImportRecord(record)
+          if (event.key === 'Enter') {
+            event.preventDefault()
+            handleRowAction(record)
+          }
         },
         style: { cursor: 'pointer' },
       })}
@@ -1020,27 +1040,28 @@ function ModuleParentSelectorOverlayContent({
   )
   const total = Number(data?.data?.total || 0)
 
-  const columns: ColumnsType<ModuleRecord> = resolveVisibleParentSelectorColumns(
-    resolveParentSelectorColumns(parentModuleKey, displayFieldKey),
-    hiddenSelectorColumnKeys,
-  ).map((column) => ({
-    dataIndex: column.dataIndex,
-    title: column.title,
-    width: column.width,
-    ellipsis: true,
-    render: (value: unknown) => {
-      if (column.type === 'status') {
-        return (
-          <StatusTag
-            status={asString(value)}
-            statusMap={getOverlayStatusMap()}
-            fallback={asString(value)}
-          />
-        )
-      }
-      return formatCellValue(value, column.type)
-    },
-  }))
+  const columns: ColumnsType<ModuleRecord> =
+    resolveVisibleParentSelectorColumns(
+      resolveParentSelectorColumns(parentModuleKey, displayFieldKey),
+      hiddenSelectorColumnKeys,
+    ).map((column) => ({
+      dataIndex: column.dataIndex,
+      title: column.title,
+      width: column.width,
+      ellipsis: true,
+      render: (value: unknown) => {
+        if (column.type === 'status') {
+          return (
+            <StatusTag
+              status={asString(value)}
+              statusMap={getOverlayStatusMap()}
+              fallback={asString(value)}
+            />
+          )
+        }
+        return formatCellValue(value, column.type)
+      },
+    }))
   const selectedRows = resolveSelectedParentRows(
     selectedRowKeys,
     selectedRecordMap,

@@ -1,11 +1,168 @@
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import type { ReactNode } from 'react'
+import { createElement } from 'react'
+import { describe, expect, it, vi } from 'vitest'
 import type { ModuleRecord } from '@/types/module-page'
+import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
 import {
   filterImportableParentRecords,
   hasImportableQuantity,
-  resolveVisibleParentSelectorColumns,
   resolveSelectedParentRows,
+  resolveVisibleParentSelectorColumns,
 } from './module-parent-selector-utils'
+
+const parentRows = [
+  { id: 'parent-1', name: '父单据 1', items: [{ id: 'item-1' }] },
+] as ModuleRecord[]
+
+vi.mock('@tanstack/react-query', () => ({
+  keepPreviousData: 'keepPreviousData',
+  useQuery: vi.fn(({ queryKey }: { queryKey: readonly unknown[] }) => {
+    if (queryKey[0] === 'parent-selector-list') {
+      return {
+        data: { data: { rows: parentRows, total: parentRows.length } },
+        isLoading: false,
+        isFetching: false,
+      }
+    }
+    return { data: undefined, isLoading: false, isFetching: false }
+  }),
+}))
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, options?: Record<string, unknown>) =>
+      options?.count == null ? key : `${key}:${options.count}`,
+  }),
+}))
+
+vi.mock('@/api/business', () => ({
+  getBusinessModuleDetail: vi.fn(),
+  listBusinessModule: vi.fn(),
+}))
+
+vi.mock('@/api/business-listing-filtering', () => ({
+  buildFilterParams: (_moduleKey: string, filters: Record<string, unknown>) =>
+    filters,
+}))
+
+vi.mock('@/api/freight-bill-candidates', () => ({
+  listFreightBillImportCandidatePage: vi.fn(),
+}))
+
+vi.mock('@/api/module-contracts', () => ({
+  getModuleConfig: () => ({
+    nativeFilterKeys: [],
+    dateRangeMapping: {},
+  }),
+}))
+
+vi.mock('@/api/purchase-order-candidates', () => ({
+  listPurchaseOrderImportCandidatePage: vi.fn(),
+}))
+
+vi.mock('@/api/sales-order-candidates', () => ({
+  listSalesOrderOutboundImportCandidatePage: vi.fn(),
+}))
+
+vi.mock('@/api/statements', () => ({
+  listStatementCandidatePage: vi.fn(),
+}))
+
+vi.mock('@/components/StatusTag', () => ({
+  StatusTag: ({ status }: { status: string }) =>
+    createElement('span', null, status),
+}))
+
+vi.mock('@/config/business-page-loader', () => ({
+  loadBusinessPageConfig: vi.fn(),
+}))
+
+vi.mock('@/hooks/useModuleDisplaySupport', () => ({
+  useModuleDisplaySupport: () => ({
+    formatCellValue: (value: unknown) => String(value ?? ''),
+  }),
+}))
+
+vi.mock('@/utils/antd-app', () => ({
+  message: { error: vi.fn() },
+}))
+
+vi.mock('./ModuleFilterToolbar', () => ({
+  ModuleFilterToolbar: () => null,
+}))
+
+vi.mock('./WorkspaceOverlay', () => ({
+  WorkspaceOverlay: ({
+    children,
+    footer,
+    title,
+  }: {
+    children: ReactNode
+    footer?: ReactNode
+    title: ReactNode
+  }) =>
+    createElement(
+      'div',
+      { role: 'dialog', 'aria-label': String(title) },
+      children,
+      footer,
+    ),
+}))
+
+vi.mock('antd', () => ({
+  Button: ({ children, icon, ...props }: any) =>
+    createElement('button', props, icon, children),
+  Table: ({
+    columns,
+    dataSource,
+    onRow,
+    rowSelection,
+  }: {
+    columns: Array<{
+      dataIndex: string
+      render?: (value: unknown, record: ModuleRecord) => ReactNode
+    }>
+    dataSource: ModuleRecord[]
+    onRow: (record: ModuleRecord) => Record<string, unknown>
+    rowSelection?: unknown
+  }) =>
+    createElement(
+      'table',
+      null,
+      createElement(
+        'tbody',
+        null,
+        dataSource.map((record) => {
+          const rowProps = onRow(record)
+          return createElement(
+            'tr',
+            {
+              key: record.id,
+              'data-testid': `parent-row-${record.id}`,
+              ...rowProps,
+            },
+            rowSelection
+              ? createElement(
+                  'td',
+                  { className: 'ant-table-selection-column' },
+                  createElement('button', { type: 'button' }, '选择列'),
+                )
+              : null,
+            columns.map((column) =>
+              createElement(
+                'td',
+                { key: column.dataIndex },
+                column.render
+                  ? column.render(record[column.dataIndex], record)
+                  : (record[column.dataIndex] as ReactNode),
+              ),
+            ),
+          )
+        }),
+      ),
+    ),
+}))
 
 describe('ModuleParentSelectorOverlay importable record filtering', () => {
   it('keeps purchase orders with audited status and positive sales remaining quantity', () => {
@@ -150,5 +307,81 @@ describe('resolveVisibleParentSelectorColumns', () => {
     )
 
     expect(columns.map((column) => column.dataIndex)).toEqual(['orderNo'])
+  })
+})
+
+describe('ModuleParentSelectorOverlay keyboard row interactions', () => {
+  const renderOverlay = (props: { allowMultipleSelection?: boolean } = {}) => {
+    const onSelect = vi.fn()
+    const onClose = vi.fn()
+    render(
+      createElement(ModuleParentSelectorOverlay, {
+        open: true,
+        parentModuleKey: 'customer',
+        parentDisplayFieldKey: 'name',
+        allowMultipleSelection: props.allowMultipleSelection,
+        onSelect,
+        onClose,
+      }),
+    )
+
+    return {
+      row: screen.getByTestId('parent-row-parent-1'),
+      onSelect,
+      onClose,
+    }
+  }
+
+  it('focuses candidate rows and imports a single row with Enter', async () => {
+    const { row, onSelect, onClose } = renderOverlay()
+
+    expect(row).toHaveAttribute('tabIndex', '0')
+    fireEvent.keyDown(row, { key: 'Enter', code: 'Enter' })
+
+    await waitFor(() => {
+      expect(onSelect).toHaveBeenCalledWith([parentRows[0]])
+    })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('toggles multi-select rows with Space and Enter', async () => {
+    const { row, onSelect } = renderOverlay({ allowMultipleSelection: true })
+
+    expect(row).toHaveAttribute('tabIndex', '0')
+    fireEvent.keyDown(row, { key: ' ', code: 'Space' })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('parent-row-parent-1')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      )
+    })
+
+    fireEvent.keyDown(screen.getByTestId('parent-row-parent-1'), {
+      key: 'Enter',
+      code: 'Enter',
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('parent-row-parent-1')).toHaveAttribute(
+        'aria-selected',
+        'false',
+      )
+    })
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('does not toggle multi-select rows from the selection column', () => {
+    renderOverlay({ allowMultipleSelection: true })
+
+    fireEvent.keyDown(screen.getByText('选择列'), {
+      key: ' ',
+      code: 'Space',
+    })
+
+    expect(screen.getByTestId('parent-row-parent-1')).not.toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
   })
 })

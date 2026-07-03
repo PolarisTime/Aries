@@ -2,6 +2,7 @@ import { Empty, Table } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import {
   type CSSProperties,
+  type KeyboardEvent,
   type MouseEvent,
   useEffect,
   useRef,
@@ -20,6 +21,8 @@ import {
 const MIN_TABLE_BODY_SCROLL_Y = 240
 const SELECTION_COLUMN_WIDTH = 40
 const TABLE_BOTTOM_INSET = 16
+const ROW_INTERACTION_EXCLUSION_SELECTOR =
+  'button, a, input, textarea, select, [contenteditable="true"], .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]'
 
 interface Props {
   moduleKey: string
@@ -33,6 +36,13 @@ interface Props {
   hasNextPage?: boolean
   fetchNextPage?: () => void
   isFetchingNextPage?: boolean
+}
+
+function shouldIgnoreRowInteraction(target: EventTarget | null) {
+  return (
+    target instanceof Element &&
+    Boolean(target.closest(ROW_INTERACTION_EXCLUSION_SELECTOR))
+  )
 }
 
 export function BusinessGridTable({
@@ -117,30 +127,37 @@ export function BusinessGridTable({
   } as CSSProperties
 
   const doubleClickCooldownRef = useRef(0)
+  const selectedRowKeys = rowSelection?.selectedRowKeys?.map((key) =>
+    String(key),
+  )
 
   const onRow = (record: ModuleRecord) => ({
+    tabIndex: 0,
+    ...(selectedRowKeys
+      ? { 'aria-selected': selectedRowKeys.includes(String(record.id)) }
+      : {}),
     onClick: (event: MouseEvent<HTMLElement>) => {
-      const target = event.target as HTMLElement | null
-      if (
-        target?.closest(
-          'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
-        )
-      )
-        return
+      if (shouldIgnoreRowInteraction(event.target)) return
       onRowClick(record)
     },
     onDoubleClick: (event: MouseEvent<HTMLElement>) => {
-      const target = event.target as HTMLElement | null
-      if (
-        target?.closest(
-          'button, a, .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]',
-        )
-      )
-        return
+      if (shouldIgnoreRowInteraction(event.target)) return
       const now = Date.now()
       if (now - doubleClickCooldownRef.current < 500) return
       doubleClickCooldownRef.current = now
       onRowDoubleClick(record)
+    },
+    onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
+      if (shouldIgnoreRowInteraction(event.target)) return
+      if (event.key === ' ' || event.key === 'Spacebar') {
+        event.preventDefault()
+        onRowClick(record)
+        return
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        onRowDoubleClick(record)
+      }
     },
   })
 

@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { type ComponentProps, useState } from 'react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -15,36 +16,193 @@ vi.mock('@/styles/workspace-overlay.css', () => ({}))
 
 import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
 
+type WorkspaceOverlayProps = ComponentProps<typeof WorkspaceOverlay>
+
 describe('WorkspaceOverlay', () => {
-  const defaultProps = {
-    open: true,
-    title: 'Test Title',
-    onClose: vi.fn(),
-    children: <div>Content</div>,
+  const renderOverlay = (props: Partial<WorkspaceOverlayProps> = {}) => {
+    const onClose = props.onClose ?? vi.fn()
+
+    const result = render(
+      <WorkspaceOverlay
+        open={props.open ?? true}
+        title={props.title ?? 'Test Title'}
+        onClose={onClose}
+        width={props.width}
+        height={props.height}
+        footer={props.footer}
+        variant={props.variant}
+        zIndex={props.zIndex}
+        className={props.className}
+      >
+        {props.children ?? <div>Content</div>}
+      </WorkspaceOverlay>,
+    )
+
+    return { ...result, onClose }
   }
 
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('renders when open', () => {
-    render(<WorkspaceOverlay {...defaultProps} />)
+    const { container } = renderOverlay()
+    const overlay = container.firstElementChild
+    const panel = screen.getByText('Test Title').closest('section')
+
     expect(screen.getByText('Test Title')).toBeTruthy()
     expect(screen.getByText('Content')).toBeTruthy()
+    expect(overlay).toHaveClass(
+      'workspace-overlay',
+      'workspace-overlay--workspace',
+    )
+    expect(overlay).not.toHaveAttribute('style')
+    expect(panel).toHaveClass(
+      'workspace-overlay-panel',
+      'workspace-overlay-panel--workspace',
+    )
+    expect(panel).not.toHaveClass('custom-panel')
+    expect(screen.getByRole('dialog', { name: 'Test Title' })).toBe(panel)
+    expect(panel).toHaveAttribute('aria-modal', 'true')
   })
 
   it('does not render when closed', () => {
-    render(<WorkspaceOverlay {...defaultProps} open={false} />)
+    const { onClose } = renderOverlay({ open: false })
+
     expect(screen.queryByText('Test Title')).toBeNull()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('calls onClose when mask is clicked', () => {
     const onClose = vi.fn()
-    render(<WorkspaceOverlay {...defaultProps} onClose={onClose} />)
-    fireEvent.click(screen.getByLabelText('modules.workspace.closeAria'))
+    renderOverlay({ onClose })
+    const mask = screen
+      .getAllByLabelText('modules.workspace.closeAria')
+      .find((element) => element.classList.contains('workspace-overlay-mask'))
+
+    fireEvent.click(mask!)
     expect(onClose).toHaveBeenCalled()
   })
 
+  it('calls onClose when close button is clicked', () => {
+    const onClose = vi.fn()
+    renderOverlay({ onClose })
+    const closeButton = screen.getByText('CloseOutlined').closest('button')
+
+    expect(closeButton).toHaveClass('workspace-overlay-close')
+    fireEvent.click(closeButton!)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes on Escape and removes the keydown listener on unmount', () => {
+    const { onClose, unmount } = renderOverlay()
+
+    fireEvent.keyDown(document, { key: 'Enter' })
+    expect(onClose).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+
+    unmount()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('moves focus into the dialog and traps Tab within it', async () => {
+    renderOverlay({
+      children: (
+        <>
+          <button type="button">First Action</button>
+          <button type="button">Second Action</button>
+        </>
+      ),
+    })
+
+    const firstAction = screen.getByText('First Action')
+    const secondAction = screen.getByText('Second Action')
+    const closeButton = screen.getByLabelText('modules.workspace.closeAria', {
+      selector: '.workspace-overlay-close',
+    })
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(firstAction)
+    })
+
+    fireEvent.keyDown(document.activeElement!, { key: 'Tab' })
+    expect(document.activeElement).toBe(secondAction)
+
+    fireEvent.keyDown(document.activeElement!, { key: 'Tab' })
+    expect(document.activeElement).toBe(closeButton)
+
+    fireEvent.keyDown(document.activeElement!, { key: 'Tab' })
+    expect(document.activeElement).toBe(firstAction)
+
+    fireEvent.keyDown(document.activeElement!, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(closeButton)
+  })
+
+  it('restores focus to the previously active element after close', async () => {
+    const TriggeredOverlay = () => {
+      const [open, setOpen] = useState(false)
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>
+            Open Overlay
+          </button>
+          <WorkspaceOverlay
+            open={open}
+            title="Restored Title"
+            onClose={() => setOpen(false)}
+          >
+            <button type="button">Overlay Action</button>
+          </WorkspaceOverlay>
+        </>
+      )
+    }
+
+    render(<TriggeredOverlay />)
+    const trigger = screen.getByText('Open Overlay')
+    trigger.focus()
+    fireEvent.click(trigger)
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByText('Overlay Action'))
+    })
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('dialog', { name: 'Restored Title' }),
+      ).toBeNull()
+      expect(document.activeElement).toBe(trigger)
+    })
+  })
+
   it('renders footer when provided', () => {
-    render(
-      <WorkspaceOverlay {...defaultProps} footer={<div>Footer Content</div>} />,
-    )
+    renderOverlay({ footer: <div>Footer Content</div> })
+
     expect(screen.getByText('Footer Content')).toBeTruthy()
+  })
+
+  it('applies panel sizing, custom className, explicit variant, and zIndex', () => {
+    const { container } = renderOverlay({
+      title: <strong>Node Title</strong>,
+      width: 720,
+      height: '80vh',
+      variant: 'workspace',
+      zIndex: 1200,
+      className: 'custom-panel',
+    })
+    const overlay = container.firstElementChild
+    const panel = screen.getByText('Node Title').closest('section')
+
+    expect(overlay).toHaveStyle({ zIndex: '1200' })
+    expect(panel).toHaveClass(
+      'workspace-overlay-panel',
+      'workspace-overlay-panel--workspace',
+      'custom-panel',
+    )
+    expect(panel).toHaveStyle({ maxWidth: '720px', height: '80vh' })
   })
 })
