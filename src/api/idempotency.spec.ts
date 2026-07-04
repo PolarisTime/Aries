@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AxiosHeaders } from 'axios'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   createIdempotencyKey,

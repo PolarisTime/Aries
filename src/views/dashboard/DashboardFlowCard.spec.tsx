@@ -140,7 +140,12 @@ describe('DashboardFlowCard', () => {
   })
 
   it('renders arrows and omits empty metrics in multi-node flows', () => {
-    render(<DashboardFlowCard {...defaultProps} summary={{ twoNodes: true } as any} />)
+    render(
+      <DashboardFlowCard
+        {...defaultProps}
+        summary={{ twoNodes: true } as any}
+      />,
+    )
 
     expect(document.querySelector('.dashboard-flow-arrow')).toBeTruthy()
     expect(screen.getByText('供应商')).toBeTruthy()

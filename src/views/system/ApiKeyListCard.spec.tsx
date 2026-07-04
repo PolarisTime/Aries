@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 const navigateMock = vi.hoisted(() => vi.fn())
-const latestColumnBuilderOptions = vi.hoisted(
-  () => ({ current: undefined as any }),
-)
+const latestColumnBuilderOptions = vi.hoisted(() => ({
+  current: undefined as any,
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

@@ -25,7 +25,10 @@ function normalizeStatus(value: unknown): SetupStatus | null {
   return null
 }
 
-function mergePersistedState(persistedState: unknown, currentState: SetupState) {
+function mergePersistedState(
+  persistedState: unknown,
+  currentState: SetupState,
+) {
   if (!persistedState || typeof persistedState !== 'object') {
     return currentState
   }

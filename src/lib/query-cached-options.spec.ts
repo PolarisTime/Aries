@@ -51,9 +51,7 @@ describe('createQueryCachedOptions', () => {
       queryKey,
     })
 
-    await expect(options.fetch()).resolves.toEqual([
-      { value: 'A', label: 'A' },
-    ])
+    await expect(options.fetch()).resolves.toEqual([{ value: 'A', label: 'A' }])
 
     expect(httpGetMock).toHaveBeenCalledWith('/test/options')
     expect(fetchQueryMock).not.toHaveBeenCalled()

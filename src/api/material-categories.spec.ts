@@ -27,11 +27,11 @@ vi.mock('@/constants/endpoints', () => ({
   },
 }))
 
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   fetchMaterialCategories,
   reloadMaterialCategories,
 } from './material-categories'
-import { QUERY_KEYS } from '@/constants/query-keys'
 
 describe('material-categories', () => {
   beforeEach(() => {

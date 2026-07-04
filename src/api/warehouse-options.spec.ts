@@ -27,12 +27,12 @@ vi.mock('@/constants/endpoints', () => ({
   },
 }))
 
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   fetchWarehouseOptions,
   getWarehouseOptions,
   reloadWarehouseOptions,
 } from './warehouse-options'
-import { QUERY_KEYS } from '@/constants/query-keys'
 
 describe('warehouse-options', () => {
   beforeEach(() => {

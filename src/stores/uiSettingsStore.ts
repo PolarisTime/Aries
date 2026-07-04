@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist, type PersistStorage } from 'zustand/middleware'
+import { type PersistStorage, persist } from 'zustand/middleware'
 import { STORAGE_KEYS } from '@/constants/storage'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
@@ -61,7 +61,9 @@ export function normalizePersonalSettings(
   return Object.keys(settings).length > 0 ? settings : null
 }
 
-function readPersistedPersonalSettings(value: unknown): PersonalSettings | null {
+function readPersistedPersonalSettings(
+  value: unknown,
+): PersonalSettings | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null
   }

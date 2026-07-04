@@ -43,9 +43,9 @@ describe('usePersonalSettings', () => {
   it('loads settings from storage', () => {
     useUiSettingsStore.setState({
       settings: {
-      fontSize: 16,
-      layoutMode: 'sider',
-      themeMode: 'dark',
+        fontSize: 16,
+        layoutMode: 'sider',
+        themeMode: 'dark',
       },
     })
 

@@ -158,9 +158,7 @@ describe('buildModuleEditorManagementColumns', () => {
           </tr>
         </thead>
         <tbody>
-          <tr>
-            {(columns[0].render as Function)(null, mockItems[0], 0)}
-          </tr>
+          <tr>{(columns[0].render as Function)(null, mockItems[0], 0)}</tr>
         </tbody>
       </table>,
     )
@@ -449,7 +447,10 @@ describe('buildModuleEditorDataColumns', () => {
 
     expect(isValidElement(warehouseElement)).toBe(true)
     expect(isValidElement(settlementElement)).toBe(true)
-    if (!isValidElement(warehouseElement) || !isValidElement(settlementElement)) {
+    if (
+      !isValidElement(warehouseElement) ||
+      !isValidElement(settlementElement)
+    ) {
       return
     }
     expect(warehouseElement.props.value).toBeUndefined()

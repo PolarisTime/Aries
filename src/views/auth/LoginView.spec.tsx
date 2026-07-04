@@ -226,7 +226,10 @@ describe('LoginView', () => {
 
   it('shows forced totp setup success message after login', async () => {
     mockRequiresForcedTotpSetup.mockReturnValue(true)
-    mockSignIn.mockResolvedValue({ user: { forceTotpSetup: true }, requires2fa: false })
+    mockSignIn.mockResolvedValue({
+      user: { forceTotpSetup: true },
+      requires2fa: false,
+    })
 
     render(<LoginView />)
     fireEvent.click(screen.getByTestId('password-form'))
@@ -277,7 +280,9 @@ describe('LoginView', () => {
 
     render(<LoginView />)
 
-    expect(screen.getByTestId('active-login-name')).toHaveTextContent('当前用户')
+    expect(screen.getByTestId('active-login-name')).toHaveTextContent(
+      '当前用户',
+    )
     expect(screen.getByTestId('countdown')).toHaveTextContent('00:00')
     expect(screen.getByTestId('expired')).toHaveTextContent('true')
     expect(screen.getByTestId('expiring')).toHaveTextContent('false')
@@ -355,10 +360,7 @@ describe('LoginView', () => {
     fireEvent.click(screen.getByText('验证'))
 
     await waitFor(() => {
-      expect(mockShowError).toHaveBeenCalledWith(
-        expect.any(Error),
-        '验证失败',
-      )
+      expect(mockShowError).toHaveBeenCalledWith(expect.any(Error), '验证失败')
     })
   })
 })

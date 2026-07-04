@@ -209,12 +209,12 @@ describe('useGridColumns', () => {
       'status',
     )
 
-    expect(getElementProps(statusColumn.meta?.renderCell?.(record))).toMatchObject(
-      {
-        status: 'pending',
-        statusMap: config.statusMap,
-      },
-    )
+    expect(
+      getElementProps(statusColumn.meta?.renderCell?.(record)),
+    ).toMatchObject({
+      status: 'pending',
+      statusMap: config.statusMap,
+    })
     expect(
       getElementProps(
         statusColumn.cell?.({

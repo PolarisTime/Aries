@@ -22,9 +22,7 @@ vi.mock('antd', () => ({
     'aria-label'?: string
     disabled?: boolean
     onClick?: () => void
-  }) => (
-    <button aria-label={ariaLabel} disabled={disabled} onClick={onClick} />
-  ),
+  }) => <button aria-label={ariaLabel} disabled={disabled} onClick={onClick} />,
   Card: ({
     children,
     className,
@@ -71,7 +69,13 @@ vi.mock('antd', () => ({
       ))}
     </select>
   ),
-  Statistic: ({ title, value }: { title?: React.ReactNode; value?: number }) => (
+  Statistic: ({
+    title,
+    value,
+  }: {
+    title?: React.ReactNode
+    value?: number
+  }) => (
     <div>
       <span>{title}</span>
       <strong>{value}</strong>

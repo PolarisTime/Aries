@@ -90,15 +90,12 @@ vi.mock('antd', () => {
     }: {
       children?: React.ReactNode
       menu?: {
-        items?: Array<
-          | {
-              disabled?: boolean
-              key: string
-              label: React.ReactNode
-              onClick?: () => void
-            }
-          | null
-        >
+        items?: Array<{
+          disabled?: boolean
+          key: string
+          label: React.ReactNode
+          onClick?: () => void
+        } | null>
       }
     }) => (
       <div>
@@ -149,9 +146,13 @@ vi.mock('antd', () => {
     ),
     Space,
     Spin: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
-    Tag: ({ children, title }: { children?: React.ReactNode; title?: string }) => (
-      <span title={title}>{children}</span>
-    ),
+    Tag: ({
+      children,
+      title,
+    }: {
+      children?: React.ReactNode
+      title?: string
+    }) => <span title={title}>{children}</span>,
     Tooltip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
     Typography: {
       Text: ({ children }: { children?: React.ReactNode }) => (
@@ -445,7 +446,9 @@ describe('PrintTemplateTableCard', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { pressed: true }))
-    screen.getAllByText('more').forEach((button) => fireEvent.click(button))
+    screen.getAllByText('more').forEach((button) => {
+      fireEvent.click(button)
+    })
     fireEvent.click(screen.getAllByText('system.printTemplate.preview')[0])
     fireEvent.click(screen.getAllByText('common.edit')[0])
     fireEvent.click(screen.getByText('system.printTemplate.copy'))

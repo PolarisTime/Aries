@@ -22,7 +22,10 @@ vi.mock('antd', () => {
   }: {
     children: (
       fields: Array<{ key: string; name: number }>,
-      operations: { add: typeof formListState.add; remove: typeof formListState.remove },
+      operations: {
+        add: typeof formListState.add
+        remove: typeof formListState.remove
+      },
     ) => React.ReactNode
   }) => (
     <div>
@@ -41,10 +44,10 @@ vi.mock('antd', () => {
     hidden?: boolean
     label?: React.ReactNode
   }) => (
-    <label hidden={hidden}>
+    <div hidden={hidden}>
       {label ? <span>{label}</span> : null}
       {children}
-    </label>
+    </div>
   )
 
   return {
@@ -73,7 +76,9 @@ vi.mock('antd', () => {
         {children}
       </section>
     ),
-    Col: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+    Col: ({ children }: { children?: React.ReactNode }) => (
+      <div>{children}</div>
+    ),
     Empty: ({
       children,
       description,
@@ -94,7 +99,9 @@ vi.mock('antd', () => {
       disabled?: boolean
       placeholder?: string
     }) => <input disabled={disabled} placeholder={placeholder} />,
-    Row: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+    Row: ({ children }: { children?: React.ReactNode }) => (
+      <div>{children}</div>
+    ),
     Select: ({
       disabled,
       options = [],
@@ -145,7 +152,9 @@ describe('CompanySettlementAccountsCard', () => {
 
   it('renders the settlement info title', () => {
     render(<CompanySettlementAccountsCard canSave={true} />)
-    expect(screen.getByText('system.company.settlementInfo')).toBeInTheDocument()
+    expect(
+      screen.getByText('system.company.settlementInfo'),
+    ).toBeInTheDocument()
   })
 
   it('is a function component', () => {
@@ -158,9 +167,9 @@ describe('CompanySettlementAccountsCard', () => {
     expect(
       screen.getByText('system.company.noSettlementAccounts'),
     ).toBeInTheDocument()
-    screen
-      .getAllByText('system.company.addBank')
-      .forEach((button) => fireEvent.click(button))
+    screen.getAllByText('system.company.addBank').forEach((button) => {
+      fireEvent.click(button)
+    })
 
     expect(formListState.add).toHaveBeenCalledTimes(2)
     expect(formListState.add).toHaveBeenCalledWith(

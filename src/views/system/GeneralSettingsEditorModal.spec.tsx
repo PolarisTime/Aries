@@ -59,9 +59,9 @@ vi.mock('antd', async () => {
   const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input {...props} />
   )
-  Input.TextArea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-    <textarea {...props} />
-  )
+  Input.TextArea = (
+    props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  ) => <textarea {...props} />
 
   const Space = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>

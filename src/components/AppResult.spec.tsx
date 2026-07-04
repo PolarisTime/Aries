@@ -20,7 +20,11 @@ vi.mock('antd', () => ({
     onClick?: React.MouseEventHandler<HTMLButtonElement>
     type?: string
   }) => (
-    <button data-button-type={type ?? 'default'} onClick={onClick} type="button">
+    <button
+      data-button-type={type ?? 'default'}
+      onClick={onClick}
+      type="button"
+    >
       {children}
     </button>
   ),

@@ -1,0 +1,36 @@
+name: Setup frontend
+description: Set up Node.js, pnpm cache, and project dependencies.
+
+inputs:
+  node-version:
+    description: Node.js version used by the frontend toolchain.
+    default: "24.16.0"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js LTS
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install pnpm via corepack
+      shell: bash
+      run: corepack enable
+
+    - name: Resolve pnpm store path
+      id: pnpm-store
+      shell: bash
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache pnpm store
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile --prefer-offline
