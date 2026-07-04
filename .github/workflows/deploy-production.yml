@@ -194,6 +194,9 @@ jobs:
             --keep-releases "$PROD_KEEP_RELEASES"
 
       - name: Install SteelX Nginx config
+        if: ${{ vars.PROD_INSTALL_NGINX_CONFIG == 'true' }}
+        env:
+          STEELX_SUDO_PASSWORD: ${{ secrets.STEELX_SUDO_PASSWORD }}
         run: |
           set -euo pipefail
           bash scripts/deploy/install-steelx-nginx-config.sh \
@@ -297,6 +300,7 @@ jobs:
             "$remote_command" < scripts/deploy/install-frontend-release.sh
 
       - name: Install SteelX Nginx config on production
+        if: ${{ vars.PROD_INSTALL_NGINX_CONFIG == 'true' }}
         run: |
           set -euo pipefail
           quote() { printf '%q' "$1"; }
