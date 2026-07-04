@@ -4,16 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   useQueryMock,
   loadBusinessPageConfigMock,
-  listClientSettingsMock,
-  isDisplaySwitchEnabledMock,
+  useRuntimeConfigMock,
   listAllBusinessModuleRowsMock,
   buildWeightOverviewMock,
   buildStatementLinkOptionsMock,
 } = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
   loadBusinessPageConfigMock: vi.fn(),
-  listClientSettingsMock: vi.fn(),
-  isDisplaySwitchEnabledMock: vi.fn().mockReturnValue(false),
+  useRuntimeConfigMock: vi.fn(),
   listAllBusinessModuleRowsMock: vi.fn(),
   buildWeightOverviewMock: vi.fn(),
   buildStatementLinkOptionsMock: vi.fn(),
@@ -24,14 +22,8 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: useQueryMock,
 }))
 
-vi.mock('@/api/system-settings', () => ({
-  DISPLAY_SWITCH_CODES: {
-    weightOnlyPurchaseInbounds: 'weightOnlyPurchaseInbounds',
-    weightOnlySalesOutbounds: 'weightOnlySalesOutbounds',
-    showSnowflakeId: 'showSnowflakeId',
-  },
-  isDisplaySwitchEnabled: isDisplaySwitchEnabledMock,
-  listClientSettings: listClientSettingsMock,
+vi.mock('./useRuntimeConfig', () => ({
+  useRuntimeConfig: useRuntimeConfigMock,
 }))
 
 vi.mock('@/api/business', () => ({
@@ -49,7 +41,6 @@ vi.mock('@/config/business-pages/shared', () => ({
 vi.mock('@/constants/query-keys', () => ({
   QUERY_KEYS: {
     businessPageConfig: vi.fn((key: string) => ['businessPageConfig', key]),
-    clientSettings: ['clientSettings'],
     statementLinkOptions: vi.fn((key: string) => ['statementLinkOptions', key]),
   },
 }))
@@ -68,7 +59,37 @@ describe('useModulePageConfig', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     useQueryMock.mockReturnValue({ data: undefined, isLoading: false })
-    isDisplaySwitchEnabledMock.mockReturnValue(false)
+    useRuntimeConfigMock.mockReturnValue({
+      data: {
+        ui: {
+          defaultPageSize: 20,
+          showSnowflakeId: false,
+          watermark: {
+            enabled: false,
+            content: '{username}  {time}',
+            fontSize: 18,
+            color: 'rgba(0,0,0,0.08)',
+            rotate: -22,
+            density: 200,
+          },
+        },
+        business: {
+          defaultTaxRate: 0.13,
+          statement: {
+            customerReceiptAmountZero: false,
+            supplierFullPayment: false,
+          },
+          businessNo: {
+            useSnowflakeId: false,
+          },
+        },
+        features: {
+          weightOnlyPurchaseInbound: false,
+          weightOnlySalesOutbound: false,
+        },
+      },
+      isLoading: false,
+    })
   })
 
   it('returns config from query', () => {
@@ -120,9 +141,14 @@ describe('useModulePageConfig', () => {
   })
 
   it('detects snowflake ID display switch', () => {
-    isDisplaySwitchEnabledMock.mockImplementation(
-      (_data: any, code: string) => code === 'showSnowflakeId',
-    )
+    useRuntimeConfigMock.mockReturnValue({
+      data: runtimeConfig({
+        ui: {
+          showSnowflakeId: true,
+        },
+      }),
+      isLoading: false,
+    })
 
     const { result } = renderHook(() => useModulePageConfig(defaultProps))
     expect(result.current.showSnowflakeId).toBe(true)
@@ -150,9 +176,14 @@ describe('useModulePageConfig', () => {
       ],
     }
     useQueryMock.mockReturnValue({ data: config, isLoading: false })
-    isDisplaySwitchEnabledMock.mockImplementation(
-      (_data: any, code: string) => code === 'weightOnlyPurchaseInbounds',
-    )
+    useRuntimeConfigMock.mockReturnValue({
+      data: runtimeConfig({
+        features: {
+          weightOnlyPurchaseInbound: true,
+        },
+      }),
+      isLoading: false,
+    })
 
     const { result } = renderHook(() =>
       useModulePageConfig({ moduleKey: 'purchase-inbound' }),
@@ -271,9 +302,14 @@ describe('useModulePageConfig', () => {
       ],
     }
     useQueryMock.mockReturnValue({ data: config, isLoading: false })
-    isDisplaySwitchEnabledMock.mockImplementation(
-      (_data: any, code: string) => code === 'weightOnlySalesOutbounds',
-    )
+    useRuntimeConfigMock.mockReturnValue({
+      data: runtimeConfig({
+        features: {
+          weightOnlySalesOutbound: true,
+        },
+      }),
+      isLoading: false,
+    })
 
     const { result } = renderHook(() =>
       useModulePageConfig({ moduleKey: 'sales-outbound' }),
@@ -311,7 +347,6 @@ describe('useModulePageConfig', () => {
       ],
     }
     useQueryMock.mockReturnValue({ data: config, isLoading: false })
-    isDisplaySwitchEnabledMock.mockReturnValue(false)
 
     const { result } = renderHook(() =>
       useModulePageConfig({ moduleKey: 'purchase-inbound' }),
@@ -335,7 +370,7 @@ describe('useModulePageConfig', () => {
     expect(result.current.config).toBeDefined()
   })
 
-  it('configures query functions and handles client setting failures', async () => {
+  it('configures query functions and statement link catalog', async () => {
     const queryOptions: any[] = []
     useQueryMock.mockImplementation((options: any) => {
       queryOptions.push(options)
@@ -362,7 +397,6 @@ describe('useModulePageConfig', () => {
       return { data: [], isLoading: false }
     })
     loadBusinessPageConfigMock.mockResolvedValue({ key: 'receipt' })
-    listClientSettingsMock.mockRejectedValue(new Error('settings failed'))
     buildStatementLinkOptionsMock.mockReturnValue([{ label: 'S1', value: '1' }])
 
     const { result } = renderHook(() =>
@@ -373,11 +407,6 @@ describe('useModulePageConfig', () => {
       (options) => options.queryKey?.[0] === 'businessPageConfig',
     )
     await expect(configQuery.queryFn()).resolves.toEqual({ key: 'receipt' })
-
-    const settingsQuery = queryOptions.find(
-      (options) => options.queryKey?.[0] === 'clientSettings',
-    )
-    await expect(settingsQuery.queryFn()).resolves.toEqual([])
 
     const statementQueries = queryOptions.filter(
       (options) => options.queryKey?.[0] === 'statementLinkOptions',
@@ -413,3 +442,46 @@ describe('useModulePageConfig', () => {
     )
   })
 })
+
+function runtimeConfig(
+  overrides: {
+    ui?: {
+      showSnowflakeId?: boolean
+    }
+    features?: {
+      weightOnlyPurchaseInbound?: boolean
+      weightOnlySalesOutbound?: boolean
+    }
+  } = {},
+) {
+  return {
+    ui: {
+      defaultPageSize: 20,
+      showSnowflakeId: overrides.ui?.showSnowflakeId ?? false,
+      watermark: {
+        enabled: false,
+        content: '{username}  {time}',
+        fontSize: 18,
+        color: 'rgba(0,0,0,0.08)',
+        rotate: -22,
+        density: 200,
+      },
+    },
+    business: {
+      defaultTaxRate: 0.13,
+      statement: {
+        customerReceiptAmountZero: false,
+        supplierFullPayment: false,
+      },
+      businessNo: {
+        useSnowflakeId: false,
+      },
+    },
+    features: {
+      weightOnlyPurchaseInbound:
+        overrides.features?.weightOnlyPurchaseInbound ?? false,
+      weightOnlySalesOutbound:
+        overrides.features?.weightOnlySalesOutbound ?? false,
+    },
+  }
+}

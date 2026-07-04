@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import dayjs from 'dayjs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,11 +12,7 @@ import {
   fetchSettlementCompanyOptions,
   getCompanySettingProfile,
 } from '@/api/company-settings'
-import {
-  isDisplaySwitchEnabled,
-  listClientSettings,
-  listSystemSettings,
-} from '@/api/system-settings'
+import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 import {
   applyFormFieldDefaultDraftValues,
   applyModuleDefaultEditorDraft,
@@ -35,6 +30,7 @@ import {
   getModuleRecordPrimaryNo,
   parseParentRelationNos,
 } from '@/module-system/module-adapter-shared'
+import type { RuntimeConfigResponse } from '@/types/runtime-config'
 import { message, modal } from '@/utils/antd-app'
 import { parseDateTimeValue } from '@/utils/formatters'
 import { getStoredUser } from '@/utils/storage'
@@ -44,14 +40,9 @@ import {
   writeModuleEditorDraft,
 } from '@/views/modules/module-editor-draft-storage'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
-import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view-utils'
 
 const mockFns = vi.hoisted(() => ({
   translate: (key: string) => key,
-}))
-
-vi.mock('@tanstack/react-query', () => ({
-  useQuery: vi.fn().mockReturnValue({ data: [] }),
 }))
 
 vi.mock('i18next', () => ({
@@ -81,21 +72,14 @@ vi.mock('@/api/company-settings', () => ({
   getCompanySettingProfile: vi.fn().mockResolvedValue(null),
 }))
 
-vi.mock('@/api/system-settings', () => ({
-  DISPLAY_SWITCH_CODES: { useSnowflakeBusinessNo: 'code' },
-  isDisplaySwitchEnabled: vi.fn().mockReturnValue(false),
-  listClientSettings: vi.fn().mockResolvedValue([]),
-  listSystemSettings: vi.fn().mockResolvedValue([]),
-}))
-
-vi.mock('@/constants/query-keys', () => ({
-  QUERY_KEYS: { generalSetting: ['general'], clientSettings: ['client'] },
-}))
-
 vi.mock('@/hooks/useModuleQueryRefresh', () => ({
   useModuleQueryRefresh: vi.fn().mockReturnValue({
     refreshModuleQueries: vi.fn(),
   }),
+}))
+
+vi.mock('@/hooks/useRuntimeConfig', () => ({
+  useRuntimeConfig: vi.fn(),
 }))
 
 vi.mock('@/module-system/module-adapter-editor', () => ({
@@ -171,10 +155,6 @@ vi.mock('@/utils/type-narrowing', () => ({
   asString: vi.fn((v: unknown) => String(v ?? '')),
 }))
 
-vi.mock('@/views/system/general-settings-view-utils', () => ({
-  resolveDefaultTaxRateValue: vi.fn().mockReturnValue(0),
-}))
-
 vi.mock('@/hooks/useModuleDisplaySupport', () => ({
   useModuleDisplaySupport: vi.fn().mockReturnValue({
     formatCellValue: vi.fn((v: unknown) => String(v ?? '')),
@@ -238,10 +218,55 @@ function deferred<T>() {
   return { promise, resolve, reject }
 }
 
+function runtimeConfig(
+  overrides: { defaultTaxRate?: number; useSnowflakeId?: boolean } = {},
+): RuntimeConfigResponse {
+  return {
+    ui: {
+      defaultPageSize: 20,
+      showSnowflakeId: false,
+      watermark: {
+        enabled: false,
+        content: '{username}  {time}',
+        fontSize: 18,
+        color: 'rgba(0,0,0,0.08)',
+        rotate: -22,
+        density: 200,
+      },
+    },
+    business: {
+      defaultTaxRate: overrides.defaultTaxRate ?? 0.13,
+      statement: {
+        customerReceiptAmountZero: false,
+        supplierFullPayment: false,
+      },
+      businessNo: {
+        useSnowflakeId: overrides.useSnowflakeId ?? false,
+      },
+    },
+    features: {
+      weightOnlyPurchaseInbound: false,
+      weightOnlySalesOutbound: false,
+    },
+  }
+}
+
+function mockRuntimeConfig(
+  overrides: Parameters<typeof runtimeConfig>[0] = {},
+) {
+  vi.mocked(useRuntimeConfig).mockReturnValue({
+    data: runtimeConfig(overrides),
+  } as never)
+}
+
+function enableSnowflakeBusinessNo() {
+  mockRuntimeConfig({ useSnowflakeId: true })
+}
+
 describe('useModuleEditorWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useQuery).mockReturnValue({ data: [] } as never)
+    mockRuntimeConfig()
     vi.mocked(allocateBusinessPrimaryNo).mockResolvedValue({
       generatedNo: 'PRE-001',
       generatedId: 'pre-id-1',
@@ -257,7 +282,6 @@ describe('useModuleEditorWorkspace', () => {
       data: { id: 'saved-1', orderNo: 'ORD-001' },
     })
     vi.mocked(modal.confirm).mockReset()
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(false)
     vi.mocked(applyFormFieldDefaultDraftValues).mockImplementation(() => {})
     vi.mocked(applyModuleDefaultEditorDraft).mockImplementation(() => {})
     vi.mocked(buildDefaultEditorLineItem).mockReturnValue({ id: 'new-item' })
@@ -277,7 +301,6 @@ describe('useModuleEditorWorkspace', () => {
     vi.mocked(getModuleRecordPrimaryNo).mockReturnValue('')
     vi.mocked(parseParentRelationNos).mockReturnValue([])
     vi.mocked(parseDateTimeValue).mockReturnValue(undefined)
-    vi.mocked(resolveDefaultTaxRateValue).mockReturnValue(0)
     vi.mocked(getStoredUser).mockReturnValue({
       id: 'user-1',
       loginName: 'tester',
@@ -326,21 +349,10 @@ describe('useModuleEditorWorkspace', () => {
     for (const k of keys) expect(result.current).toHaveProperty(k)
   })
 
-  it('loads editor settings from public client settings only', () => {
+  it('loads editor settings from runtime config', () => {
     renderWorkspace({ open: false })
 
-    expect(useQuery).toHaveBeenCalledWith(
-      expect.objectContaining({
-        queryKey: ['client'],
-        queryFn: listClientSettings,
-      }),
-    )
-    expect(useQuery).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        queryKey: ['general'],
-        queryFn: listSystemSettings,
-      }),
-    )
+    expect(useRuntimeConfig).toHaveBeenCalledTimes(1)
   })
 
   it('starts with empty items in create mode without autoInsert', () => {
@@ -478,7 +490,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('uses snowflake preallocation when the client switch is enabled', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     const form = frm()
 
     const { result } = renderWorkspace({ form, moduleKey: 'purchase-order' })
@@ -496,7 +508,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('stores an empty preallocated id when allocator only returns a number', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     vi.mocked(allocateBusinessPrimaryNo).mockResolvedValueOnce({
       generatedNo: 'PRE-ONLY',
       generatedId: '',
@@ -516,7 +528,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('does not mark non-system modules as authoritative after preallocation', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     const { result } = renderWorkspace({ moduleKey: 'custom-module' })
 
     await waitFor(() => {
@@ -549,7 +561,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('reports preallocated primary number failures and clears loading', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     vi.mocked(allocateBusinessPrimaryNo).mockRejectedValueOnce(
       new Error('预生成失败'),
     )
@@ -562,7 +574,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('reports fallback preallocated primary number failures for non-error values', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     vi.mocked(allocateBusinessPrimaryNo).mockRejectedValueOnce('bad response')
     const { result } = renderWorkspace({ moduleKey: 'purchase-order' })
 
@@ -610,7 +622,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('does not apply preallocated primary numbers after unmount', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     const preallocated = deferred<{
       generatedNo: string
       generatedId: string
@@ -638,7 +650,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('does not report preallocated primary number failures after unmount', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     const preallocated = deferred<{
       generatedNo: string
       generatedId: string
@@ -1111,7 +1123,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('keeps successful snowflake saves quiet when the preallocated id is preserved', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     vi.mocked(saveBusinessModule).mockResolvedValueOnce({
       data: { id: 'pre-id-1', orderNo: '' },
     })
@@ -1286,7 +1298,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('passes configured field and item metadata to editor validation', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     const { result } = renderWorkspace({
       open: false,
       config: cfg({
@@ -1403,7 +1415,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('sets a warning save result when preallocated identity is replaced', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     vi.mocked(saveBusinessModule).mockResolvedValueOnce({
       data: { id: 'saved-id', orderNo: 'SERVER-001' },
     })
@@ -1432,7 +1444,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('uses the returned id in preallocated replacement warnings when no primary number is returned', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     vi.mocked(saveBusinessModule).mockResolvedValueOnce({
       data: { id: 'server-id' },
     })
@@ -1459,7 +1471,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('warns when a snowflake save lacks preallocated identity', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     vi.mocked(saveBusinessModule).mockResolvedValueOnce({
       data: { id: 'saved-id', orderNo: 'SERVER-001' },
     })
@@ -1482,7 +1494,7 @@ describe('useModuleEditorWorkspace', () => {
   })
 
   it('warns with no number content when a snowflake save lacks all returned identifiers', async () => {
-    vi.mocked(isDisplaySwitchEnabled).mockReturnValue(true)
+    enableSnowflakeBusinessNo()
     vi.mocked(saveBusinessModule).mockResolvedValueOnce({
       data: undefined,
     } as never)
@@ -2177,10 +2189,7 @@ describe('useModuleEditorWorkspace', () => {
   it('calculates invoice tax fields while syncing derived form values', () => {
     const form = frm()
     form.getFieldsValue.mockReturnValue({ amount: 100 })
-    vi.mocked(useQuery).mockReturnValue({
-      data: [{ key: 'defaultTaxRate', value: '0.13' }],
-    } as never)
-    vi.mocked(resolveDefaultTaxRateValue).mockReturnValue(0.13)
+    mockRuntimeConfig({ defaultTaxRate: 0.13 })
     vi.mocked(syncDerivedEditorFormValuesForModule).mockReturnValue({
       amount: 100,
     })
@@ -2197,9 +2206,6 @@ describe('useModuleEditorWorkspace', () => {
       result.current.handleFormValuesChange({ amount: 100 })
     })
 
-    expect(resolveDefaultTaxRateValue).toHaveBeenCalledWith([
-      { key: 'defaultTaxRate', value: '0.13' },
-    ])
     expect(form.setFieldsValue).toHaveBeenCalledWith(
       expect.objectContaining({
         amount: 100,
@@ -2209,10 +2215,9 @@ describe('useModuleEditorWorkspace', () => {
     )
   })
 
-  it('uses empty settings and zero amount while syncing invoice tax fields', () => {
+  it('uses runtime default tax rate and zero amount while syncing invoice tax fields', () => {
     const form = frm()
-    vi.mocked(useQuery).mockReturnValue({ data: null } as never)
-    vi.mocked(resolveDefaultTaxRateValue).mockReturnValue(0.06)
+    mockRuntimeConfig({ defaultTaxRate: 0.06 })
     vi.mocked(syncDerivedEditorFormValuesForModule).mockReturnValue({})
     const { result } = renderWorkspace({
       form,
@@ -2224,7 +2229,6 @@ describe('useModuleEditorWorkspace', () => {
       result.current.handleFormValuesChange({ customerName: '客户A' })
     })
 
-    expect(resolveDefaultTaxRateValue).toHaveBeenCalledWith([])
     expect(form.setFieldsValue).toHaveBeenCalledWith({
       taxRate: 0.06,
       taxAmount: 0,

@@ -2,31 +2,27 @@ import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
-  useQueryMock,
+  useRuntimeConfigMock,
   generateBusinessPrimaryNoMock,
   getBusinessModuleDetailMock,
   saveBusinessModuleMock,
   listAllStatementCandidatesMock,
-  isDisplaySwitchEnabledMock,
-  listDisplaySwitchesMock,
   buildCustomerStatementDraftDataMock,
   buildSupplierStatementDraftDataMock,
   buildFreightStatementDraftDataMock,
 } = vi.hoisted(() => ({
-  useQueryMock: vi.fn().mockReturnValue({ data: [] }),
+  useRuntimeConfigMock: vi.fn(),
   generateBusinessPrimaryNoMock: vi.fn().mockResolvedValue('NO-001'),
   getBusinessModuleDetailMock: vi.fn(),
   saveBusinessModuleMock: vi.fn().mockResolvedValue(undefined),
   listAllStatementCandidatesMock: vi.fn(),
-  isDisplaySwitchEnabledMock: vi.fn().mockReturnValue(false),
-  listDisplaySwitchesMock: vi.fn().mockResolvedValue([]),
   buildCustomerStatementDraftDataMock: vi.fn().mockReturnValue({}),
   buildSupplierStatementDraftDataMock: vi.fn().mockReturnValue({}),
   buildFreightStatementDraftDataMock: vi.fn().mockReturnValue({}),
 }))
 
-vi.mock('@tanstack/react-query', () => ({
-  useQuery: useQueryMock,
+vi.mock('@/hooks/useRuntimeConfig', () => ({
+  useRuntimeConfig: useRuntimeConfigMock,
 }))
 
 vi.mock('@/api/business', () => ({
@@ -37,11 +33,6 @@ vi.mock('@/api/business', () => ({
 
 vi.mock('@/api/statements', () => ({
   listAllStatementCandidates: listAllStatementCandidatesMock,
-}))
-
-vi.mock('@/api/system-settings', () => ({
-  isDisplaySwitchEnabled: isDisplaySwitchEnabledMock,
-  listDisplaySwitches: listDisplaySwitchesMock,
 }))
 
 vi.mock('@/module-system/module-adapter-statement-drafts', () => ({
@@ -61,13 +52,22 @@ vi.mock('i18next', () => ({
 import { useBusinessGridStatementActions } from './useBusinessGridStatementActions'
 
 describe('useBusinessGridStatementActions', () => {
+  const runtimeConfig = {
+    business: {
+      statement: {
+        customerReceiptAmountZero: true,
+        supplierFullPayment: true,
+      },
+    },
+  }
+
   const defaultProps = {
     refreshModuleQueries: vi.fn().mockResolvedValue(undefined),
   }
 
   beforeEach(() => {
     vi.resetAllMocks()
-    useQueryMock.mockReturnValue({ data: [] })
+    useRuntimeConfigMock.mockReturnValue({ data: runtimeConfig })
   })
 
   it('returns handleStatementGenerate function', () => {
@@ -77,13 +77,10 @@ describe('useBusinessGridStatementActions', () => {
     expect(result.current.handleStatementGenerate).toBeDefined()
   })
 
-  it('loads display switches through the query config', async () => {
+  it('loads runtime config instead of display switches', () => {
     renderHook(() => useBusinessGridStatementActions(defaultProps))
 
-    const queryConfig = useQueryMock.mock.calls[0]?.[0]
-    await queryConfig.queryFn()
-
-    expect(listDisplaySwitchesMock).toHaveBeenCalledTimes(1)
+    expect(useRuntimeConfigMock).toHaveBeenCalledTimes(1)
   })
 
   it('generates supplier statement', async () => {
@@ -111,6 +108,7 @@ describe('useBusinessGridStatementActions', () => {
       expect.any(Object),
     )
     const draftOptions = buildSupplierStatementDraftDataMock.mock.calls[0]?.[0]
+    expect(draftOptions.defaultFullPayment).toBe(true)
     expect(draftOptions.buildLineItemId()).toMatch(/^draft-supplier-\d+-0$/)
     expect(draftOptions.buildLineItemId()).toMatch(/^draft-supplier-\d+-1$/)
     expect(defaultProps.refreshModuleQueries).toHaveBeenCalled()
@@ -139,6 +137,8 @@ describe('useBusinessGridStatementActions', () => {
       'customer-statement',
       expect.any(Object),
     )
+    const draftOptions = buildCustomerStatementDraftDataMock.mock.calls[0]?.[0]
+    expect(draftOptions.defaultReceiptAmountZero).toBe(true)
   })
 
   it('generates freight statement', async () => {

@@ -89,7 +89,6 @@ export const ENDPOINTS = {
   ATTACHMENTS_UPLOAD: '/attachments/upload',
   ATTACHMENTS_BINDINGS: '/attachments/bindings',
   NUMBER_RULES_NEXT: '/general-settings/number-rule/next',
-  GENERAL_SETTING_CLIENT_SETTINGS: '/general-settings/client-setting',
   STATEMENT_GENERATOR_RULE: '/general-settings/statement-generator-rule',
   UPLOAD_RULE: '/general-settings/upload-rule',
 

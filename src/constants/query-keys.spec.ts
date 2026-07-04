@@ -5,11 +5,11 @@ describe('QUERY_KEYS', () => {
   it('has all expected keys', () => {
     const expectedKeys = [
       'generalSetting',
-      'clientSettings',
+      'runtimeConfig',
       'companySetting',
-      'displaySwitches',
       'numberRules',
       'dashboardSummary',
+      'dashboardBackendHealth',
       'businessGrid',
       'businessGridAll',
       'businessGridPage',
@@ -20,6 +20,8 @@ describe('QUERY_KEYS', () => {
       'databaseMonitoring',
       'masterOptions',
       'companySettings',
+      'roleTemplates',
+      'rateLimitRules',
       'apiKeys',
       'apiKeyList',
       'apiKeyActionOptions',
@@ -40,26 +42,25 @@ describe('QUERY_KEYS', () => {
       'printTemplateByType',
       'printableTemplatesBase',
       'printableTemplates',
+      'printRecordBrands',
+      'printRecordItems',
       'parentSelectorListBase',
       'parentSelectorConfig',
       'parentSelectorList',
       'freightPickup',
     ]
 
-    for (const key of expectedKeys) {
-      expect(QUERY_KEYS).toHaveProperty(key)
-    }
+    expect([...Object.keys(QUERY_KEYS)].sort()).toEqual(
+      [...expectedKeys].sort(),
+    )
   })
 
   it('generalSetting is frozen array', () => {
     expect(QUERY_KEYS.generalSetting).toEqual(['general-setting'])
   })
 
-  it('clientSettings is frozen array', () => {
-    expect(QUERY_KEYS.clientSettings).toEqual([
-      'general-setting',
-      'client-settings',
-    ])
+  it('runtimeConfig is frozen array', () => {
+    expect(QUERY_KEYS.runtimeConfig).toEqual(['runtime-config'])
   })
 
   it('businessGrid returns dynamic query key', () => {

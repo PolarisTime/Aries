@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const listAllBusinessModuleRowsMock = vi.hoisted(() => vi.fn())
 const saveBusinessModuleMock = vi.hoisted(() => vi.fn())
 const updatePageUploadRuleMock = vi.hoisted(() => vi.fn())
-const isToggleSettingMock = vi.hoisted(() => vi.fn())
 const httpGetMock = vi.hoisted(() => vi.fn())
 const httpPostMock = vi.hoisted(() => vi.fn())
 const httpPutMock = vi.hoisted(() => vi.fn())
@@ -13,10 +12,6 @@ vi.mock('@/api/business', () => ({
   listAllBusinessModuleRows: listAllBusinessModuleRowsMock,
   saveBusinessModule: saveBusinessModuleMock,
   updatePageUploadRule: updatePageUploadRuleMock,
-}))
-
-vi.mock('@/module-system/settings-constants', () => ({
-  isToggleSetting: isToggleSettingMock,
 }))
 
 vi.mock('@/api/client', () => ({
@@ -30,13 +25,8 @@ vi.mock('@/api/client', () => ({
 
 import {
   configureOssCors,
-  DISPLAY_SWITCH_CODES,
-  getClientSettingNumber,
   getOssSetting,
   getStatementGeneratorRules,
-  isDisplaySwitchEnabled,
-  listClientSettings,
-  listDisplaySwitches,
   listSystemSettings,
   saveOssSetting,
   saveSystemSetting,
@@ -215,74 +205,6 @@ describe('system-settings', () => {
     })
   })
 
-  describe('listDisplaySwitches', () => {
-    it('filters public client settings with isToggleSetting', async () => {
-      httpGetMock.mockResolvedValue({
-        code: 0,
-        data: [
-          { id: '1', settingCode: 'UI_SHOW_SNOWFLAKE_ID', status: '正常' },
-          { id: '2', settingCode: 'SYS_TAX_RATE', status: '正常' },
-        ],
-      })
-      assertApiSuccessMock.mockImplementation(
-        <T extends { code?: number }>(response: T) => response,
-      )
-      isToggleSettingMock.mockImplementation(
-        (record: { settingCode: string }) =>
-          record.settingCode === 'UI_SHOW_SNOWFLAKE_ID',
-      )
-
-      const result = await listDisplaySwitches()
-
-      expect(httpGetMock).toHaveBeenCalledWith(
-        '/general-settings/client-setting',
-      )
-      expect(listAllBusinessModuleRowsMock).not.toHaveBeenCalled()
-      expect(result).toEqual([
-        { id: '1', settingCode: 'UI_SHOW_SNOWFLAKE_ID', status: '正常' },
-      ])
-    })
-  })
-
-  describe('listClientSettings', () => {
-    it('fetches and returns client settings', async () => {
-      const responseData = [
-        { settingCode: 'UI_WEIGHT_ONLY_PURCHASE_INBOUNDS', status: '正常' },
-      ]
-      httpGetMock.mockResolvedValue({ code: 0, data: responseData })
-      assertApiSuccessMock.mockImplementation(
-        <T extends { code?: number }>(response: T) => response,
-      )
-
-      const result = await listClientSettings()
-
-      expect(httpGetMock).toHaveBeenCalledWith(
-        '/general-settings/client-setting',
-      )
-      expect(result).toEqual(responseData)
-    })
-
-    it('returns empty array when data is not an array', async () => {
-      httpGetMock.mockResolvedValue({ code: 0, data: null })
-      assertApiSuccessMock.mockImplementation(
-        <T extends { code?: number }>(response: T) => response,
-      )
-
-      const result = await listClientSettings()
-
-      expect(result).toEqual([])
-    })
-
-    it('returns empty array when response data is undefined', async () => {
-      httpGetMock.mockResolvedValue({ code: 0 })
-      assertApiSuccessMock.mockImplementation(
-        <T extends { code?: number }>(response: T) => response,
-      )
-
-      await expect(listClientSettings()).resolves.toEqual([])
-    })
-  })
-
   describe('getStatementGeneratorRules', () => {
     it('fetches statement generator rules from singular endpoint', async () => {
       httpGetMock.mockResolvedValue({
@@ -334,124 +256,6 @@ describe('system-settings', () => {
         customerStatementReceiptAmountZero: true,
         supplierStatementFullPayment: false,
       })
-    })
-  })
-
-  describe('isDisplaySwitchEnabled', () => {
-    it('returns true when matching setting has status 正常', () => {
-      const rows = [
-        { settingCode: 'UI_WEIGHT_ONLY_PURCHASE_INBOUNDS', status: '正常' },
-      ]
-      expect(
-        isDisplaySwitchEnabled(
-          rows,
-          DISPLAY_SWITCH_CODES.weightOnlyPurchaseInbounds,
-        ),
-      ).toBe(true)
-    })
-
-    it('returns false when status is not 正常', () => {
-      const rows = [
-        {
-          settingCode: 'UI_WEIGHT_ONLY_PURCHASE_INBOUNDS',
-          status: '停用',
-        },
-      ]
-      expect(
-        isDisplaySwitchEnabled(
-          rows,
-          DISPLAY_SWITCH_CODES.weightOnlyPurchaseInbounds,
-        ),
-      ).toBe(false)
-    })
-
-    it('returns false when setting not found', () => {
-      expect(
-        isDisplaySwitchEnabled([], DISPLAY_SWITCH_CODES.showSnowflakeId),
-      ).toBe(false)
-    })
-
-    it('returns false when rows is undefined', () => {
-      expect(
-        isDisplaySwitchEnabled(undefined, DISPLAY_SWITCH_CODES.showSnowflakeId),
-      ).toBe(false)
-    })
-
-    it('matches setting code after trimming record value', () => {
-      const rows = [
-        { settingCode: ' UI_WEIGHT_ONLY_PURCHASE_INBOUNDS ', status: '正常' },
-      ]
-
-      expect(
-        isDisplaySwitchEnabled(
-          rows,
-          DISPLAY_SWITCH_CODES.weightOnlyPurchaseInbounds,
-        ),
-      ).toBe(true)
-    })
-  })
-
-  describe('getClientSettingNumber', () => {
-    it('returns numeric sampleNo for active matching setting', () => {
-      expect(
-        getClientSettingNumber(
-          [
-            {
-              settingCode: 'SYS_TAX_RATE',
-              status: '正常',
-              sampleNo: '13',
-            },
-          ],
-          'SYS_TAX_RATE',
-          9,
-        ),
-      ).toBe(13)
-    })
-
-    it('returns fallback for disabled matching setting', () => {
-      expect(
-        getClientSettingNumber(
-          [
-            {
-              settingCode: 'SYS_TAX_RATE',
-              status: '停用',
-              sampleNo: '13',
-            },
-          ],
-          'SYS_TAX_RATE',
-          9,
-        ),
-      ).toBe(9)
-    })
-
-    it('returns fallback for missing rows or non-numeric values', () => {
-      expect(getClientSettingNumber(undefined, 'SYS_TAX_RATE', 9)).toBe(9)
-      expect(
-        getClientSettingNumber(
-          [
-            {
-              settingCode: 'SYS_TAX_RATE',
-              status: '正常',
-              sampleNo: 'not-a-number',
-            },
-          ],
-          'SYS_TAX_RATE',
-          9,
-        ),
-      ).toBe(9)
-    })
-
-    it('returns fallback when candidate rows miss setting code or status', () => {
-      expect(
-        getClientSettingNumber(
-          [
-            { status: '正常', sampleNo: '13' },
-            { settingCode: 'SYS_TAX_RATE', sampleNo: '13' },
-          ],
-          'SYS_TAX_RATE',
-          9,
-        ),
-      ).toBe(9)
     })
   })
 })

@@ -61,9 +61,6 @@ describe('ENDPOINTS', () => {
     expect(ENDPOINTS.COMPANY_SETTINGS).toBe('/company-settings')
     expect(ENDPOINTS.COMPANY_SETTINGS_OPTIONS).toBe('/company-settings/options')
     expect(ENDPOINTS.COMPANY_NAME).toBe('/company-settings/name')
-    expect(ENDPOINTS.GENERAL_SETTING_CLIENT_SETTINGS).toBe(
-      '/general-settings/client-setting',
-    )
     expect(ENDPOINTS.STATEMENT_GENERATOR_RULE).toBe(
       '/general-settings/statement-generator-rule',
     )
@@ -124,7 +121,6 @@ describe('ENDPOINTS', () => {
       'ATTACHMENTS_UPLOAD',
       'ATTACHMENTS_BINDINGS',
       'NUMBER_RULES_NEXT',
-      'GENERAL_SETTING_CLIENT_SETTINGS',
       'STATEMENT_GENERATOR_RULE',
       'UPLOAD_RULE',
       'MATERIALS_IMPORT',

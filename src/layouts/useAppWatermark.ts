@@ -1,8 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
-
-import { listClientSettings } from '@/api/system-settings'
-import { QUERY_KEYS } from '@/constants/query-keys'
-import type { ModuleRecord } from '@/types/module-page'
+import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 
 export interface WatermarkConfig {
   enabled: boolean
@@ -28,21 +24,10 @@ export function buildWatermarkContent(
   return lines.length > 1 ? lines : rendered
 }
 
-function findSettingValue(systemSettings: ModuleRecord[], settingCode: string) {
-  return systemSettings.find(
-    (s) => String(s.settingCode).trim() === settingCode,
-  )?.sampleNo
-}
-
-function readFiniteNumber(
-  systemSettings: ModuleRecord[],
-  settingCode: string,
-  fallbackValue: number,
-) {
-  const rawValue = findSettingValue(systemSettings, settingCode)
-  if (rawValue == null || String(rawValue).trim() === '') return fallbackValue
-  const value = Number(rawValue)
-  return Number.isFinite(value) ? value : fallbackValue
+function readFiniteNumber(value: unknown, fallbackValue: number) {
+  if (value == null || String(value).trim() === '') return fallbackValue
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? numericValue : fallbackValue
 }
 
 function clampNumber(value: number, min: number, max: number) {
@@ -50,49 +35,25 @@ function clampNumber(value: number, min: number, max: number) {
 }
 
 export function useAppWatermark(currentUserLoginName: string): WatermarkConfig {
-  const { data: systemSettings = [] } = useQuery({
-    queryKey: QUERY_KEYS.clientSettings,
-    queryFn: async () => {
-      try {
-        return await listClientSettings()
-      } catch {
-        return []
-      }
-    },
-    staleTime: 60_000,
-  })
-
-  const enabled = systemSettings.some(
-    (s) =>
-      String(s.settingCode).trim() === 'UI_WATERMARK_ENABLED' &&
-      String(s.status) === '正常',
-  )
-  const contentSetting = systemSettings.find(
-    (s) => String(s.settingCode).trim() === 'SYS_WATERMARK_CONTENT',
-  )
+  const { data: runtimeConfig } = useRuntimeConfig()
+  const watermark = runtimeConfig?.ui.watermark
+  const enabled = watermark?.enabled ?? false
   const fontSize = clampNumber(
-    readFiniteNumber(systemSettings, 'SYS_WATERMARK_FONT_SIZE', 18),
+    readFiniteNumber(watermark?.fontSize, 18),
     10,
     48,
   )
-  const rotate = clampNumber(
-    readFiniteNumber(systemSettings, 'SYS_WATERMARK_ROTATE', -22),
-    -90,
-    90,
-  )
-  const color = String(
-    findSettingValue(systemSettings, 'SYS_WATERMARK_COLOR') ||
-      'rgba(0,0,0,0.08)',
-  ).trim()
+  const rotate = clampNumber(readFiniteNumber(watermark?.rotate, -22), -90, 90)
+  const color = String(watermark?.color || 'rgba(0,0,0,0.08)').trim()
   const density = clampNumber(
-    readFiniteNumber(systemSettings, 'SYS_WATERMARK_DENSITY', 200),
+    readFiniteNumber(watermark?.density, 200),
     50,
     400,
   )
 
   const text = (() => {
     if (!enabled) return undefined
-    const raw = String(contentSetting?.sampleNo || '').trim()
+    const raw = String(watermark?.content || '').trim()
     const template = raw && raw !== 'ON' ? raw : '{username}  {time}'
     return buildWatermarkContent(template, currentUserLoginName)
   })()

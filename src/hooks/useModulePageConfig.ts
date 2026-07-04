@@ -1,10 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { listAllBusinessModuleRows } from '@/api/business'
-import {
-  DISPLAY_SWITCH_CODES,
-  isDisplaySwitchEnabled,
-  listClientSettings,
-} from '@/api/system-settings'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { buildWeightOverview } from '@/config/business-pages/shared'
 import { QUERY_KEYS } from '@/constants/query-keys'
@@ -18,11 +13,7 @@ import type {
   ModuleRecord,
   ModuleRecordInput,
 } from '@/types/module-page'
-
-const WEIGHT_ONLY_VIEW_SETTING_CODES: Record<string, string> = {
-  'purchase-inbound': DISPLAY_SWITCH_CODES.weightOnlyPurchaseInbounds,
-  'sales-outbound': DISPLAY_SWITCH_CODES.weightOnlySalesOutbounds,
-}
+import { useRuntimeConfig } from './useRuntimeConfig'
 
 const WEIGHT_ONLY_AMOUNT_COLUMN_KEYS = new Set([
   'unitPrice',
@@ -126,8 +117,23 @@ function decorateStatementLinkConfig(
   }
 }
 
+function isWeightOnlyViewEnabled(
+  moduleKey: string,
+  runtimeConfig: ReturnType<typeof useRuntimeConfig>['data'],
+) {
+  if (!runtimeConfig) {
+    return false
+  }
+  if (moduleKey === 'purchase-inbound') {
+    return runtimeConfig.features.weightOnlyPurchaseInbound
+  }
+  if (moduleKey === 'sales-outbound') {
+    return runtimeConfig.features.weightOnlySalesOutbound
+  }
+  return false
+}
+
 export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
-  const switchCode = WEIGHT_ONLY_VIEW_SETTING_CODES[moduleKey]
   const needsStatementLinkCatalog =
     moduleKey === 'receipt' || moduleKey === 'payment'
 
@@ -138,21 +144,8 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
     staleTime: 5 * 60_000,
   })
 
-  const { data: displaySwitches, isLoading: displaySwitchesLoading } = useQuery(
-    {
-      queryKey: QUERY_KEYS.clientSettings,
-      queryFn: async () => {
-        try {
-          return await listClientSettings()
-        } catch {
-          return []
-        }
-      },
-      enabled: true,
-      placeholderData: keepPreviousData,
-      staleTime: 30_000,
-    },
-  )
+  const { data: runtimeConfig, isLoading: runtimeConfigLoading } =
+    useRuntimeConfig()
 
   const statementLinkCatalog = useStatementLinkCatalog(
     needsStatementLinkCatalog,
@@ -164,11 +157,7 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
       return initialConfig
     }
 
-    const isWeightOnlyViewEnabled = Boolean(
-      switchCode && isDisplaySwitchEnabled(displaySwitches, switchCode),
-    )
-
-    const baseConfig = isWeightOnlyViewEnabled
+    const baseConfig = isWeightOnlyViewEnabled(moduleKey, runtimeConfig)
       ? buildWeightOnlyViewConfig(found)
       : found
 
@@ -179,10 +168,7 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
     )
   })() satisfies ModulePageConfig | undefined
 
-  const showSnowflakeId = isDisplaySwitchEnabled(
-    displaySwitches,
-    DISPLAY_SWITCH_CODES.showSnowflakeId,
-  )
+  const showSnowflakeId = runtimeConfig?.ui.showSnowflakeId ?? false
 
   const supportsInvoiceAssist = INVOICE_ASSIST_MODULE_KEYS.has(moduleKey)
 
@@ -190,6 +176,6 @@ export function useModulePageConfig({ moduleKey, initialConfig }: Props) {
     config,
     showSnowflakeId,
     supportsInvoiceAssist,
-    isLoading: moduleConfigLoading || displaySwitchesLoading,
+    isLoading: moduleConfigLoading || runtimeConfigLoading,
   }
 }

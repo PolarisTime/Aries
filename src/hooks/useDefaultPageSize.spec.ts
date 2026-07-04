@@ -1,25 +1,49 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import { createElement } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { RuntimeConfigResponse } from '@/types/runtime-config'
 
-const { listClientSettingsMock } = vi.hoisted(() => ({
-  listClientSettingsMock: vi.fn(),
+const { useRuntimeConfigMock } = vi.hoisted(() => ({
+  useRuntimeConfigMock: vi.fn(),
 }))
 
-vi.mock('@/api/system-settings', () => ({
-  listClientSettings: (...args: unknown[]) => listClientSettingsMock(...args),
-}))
-
-vi.mock('@/constants/query-keys', () => ({
-  QUERY_KEYS: { clientSettings: ['clientSettings'] },
-}))
-
-vi.mock('@/module-system/settings-constants', () => ({
-  DEFAULT_LIST_PAGE_SIZE_SETTING_CODE: 'defaultPageSize',
+vi.mock('./useRuntimeConfig', () => ({
+  useRuntimeConfig: (...args: unknown[]) => useRuntimeConfigMock(...args),
 }))
 
 import { useDefaultPageSize } from './useDefaultPageSize'
+
+function createRuntimeConfig(defaultPageSize: unknown): RuntimeConfigResponse {
+  return {
+    ui: {
+      defaultPageSize: defaultPageSize as number,
+      showSnowflakeId: false,
+      watermark: {
+        enabled: false,
+        content: '',
+        fontSize: 18,
+        color: 'rgba(0,0,0,0.08)',
+        rotate: -22,
+        density: 200,
+      },
+    },
+    business: {
+      defaultTaxRate: 0,
+      statement: {
+        customerReceiptAmountZero: false,
+        supplierFullPayment: false,
+      },
+      businessNo: {
+        useSnowflakeId: false,
+      },
+    },
+    features: {
+      weightOnlyPurchaseInbound: false,
+      weightOnlySalesOutbound: false,
+    },
+  }
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -34,6 +58,7 @@ function createWrapper() {
 describe('useDefaultPageSize', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    useRuntimeConfigMock.mockReturnValue({ data: undefined })
   })
 
   it('returns default size when data is undefined', () => {
@@ -43,94 +68,60 @@ describe('useDefaultPageSize', () => {
     expect(result.current).toBe(20)
   })
 
-  it('returns default size when list is empty', async () => {
-    listClientSettingsMock.mockResolvedValue([])
+  it('returns default size when runtime config is unavailable', () => {
     const { result } = renderHook(() => useDefaultPageSize(), {
       wrapper: createWrapper(),
     })
-    await waitFor(() => expect(listClientSettingsMock).toHaveBeenCalled())
-    await waitFor(() => expect(result.current).toBe(20), { timeout: 3000 })
+    expect(result.current).toBe(20)
   })
 
-  it('returns default size when settings request fails', async () => {
-    listClientSettingsMock.mockRejectedValue(new Error('failed'))
+  it('returns runtime config value when available', () => {
+    useRuntimeConfigMock.mockReturnValue({
+      data: createRuntimeConfig(50),
+    })
     const { result } = renderHook(() => useDefaultPageSize(), {
       wrapper: createWrapper(),
     })
-    await waitFor(() => expect(listClientSettingsMock).toHaveBeenCalled())
-    await waitFor(() => expect(result.current).toBe(20), { timeout: 3000 })
+    expect(result.current).toBe(50)
   })
 
-  it('returns setting value when found', async () => {
-    listClientSettingsMock.mockResolvedValue([
-      { settingCode: ' defaultPageSize ', sampleNo: 50 },
-    ])
+  it('returns default size for invalid runtime config value', () => {
+    useRuntimeConfigMock.mockReturnValue({
+      data: createRuntimeConfig('invalid'),
+    })
     const { result } = renderHook(() => useDefaultPageSize(), {
       wrapper: createWrapper(),
     })
-    await waitFor(() => expect(result.current).toBe(50), { timeout: 3000 })
+    expect(result.current).toBe(20)
   })
 
-  it('returns default size when setting not found', async () => {
-    listClientSettingsMock.mockResolvedValue([
-      { settingCode: 'other', sampleNo: 100 },
-    ])
+  it('returns default size for negative value', () => {
+    useRuntimeConfigMock.mockReturnValue({
+      data: createRuntimeConfig(-10),
+    })
     const { result } = renderHook(() => useDefaultPageSize(), {
       wrapper: createWrapper(),
     })
-    await waitFor(() => expect(listClientSettingsMock).toHaveBeenCalled())
-    await waitFor(() => expect(result.current).toBe(20), { timeout: 3000 })
+    expect(result.current).toBe(20)
   })
 
-  it('ignores settings without settingCode', async () => {
-    listClientSettingsMock.mockResolvedValue([{ sampleNo: 100 }])
+  it('returns default size for zero value', () => {
+    useRuntimeConfigMock.mockReturnValue({
+      data: createRuntimeConfig(0),
+    })
     const { result } = renderHook(() => useDefaultPageSize(), {
       wrapper: createWrapper(),
     })
-    await waitFor(() => expect(listClientSettingsMock).toHaveBeenCalled())
-    await waitFor(() => expect(result.current).toBe(20), { timeout: 3000 })
+    expect(result.current).toBe(20)
   })
 
-  it('returns default size for invalid sampleNo', async () => {
-    listClientSettingsMock.mockResolvedValue([
-      { settingCode: 'defaultPageSize', sampleNo: 'invalid' },
-    ])
+  it('floors decimal values', () => {
+    useRuntimeConfigMock.mockReturnValue({
+      data: createRuntimeConfig(25.7),
+    })
     const { result } = renderHook(() => useDefaultPageSize(), {
       wrapper: createWrapper(),
     })
-    await waitFor(() => expect(listClientSettingsMock).toHaveBeenCalled())
-    await waitFor(() => expect(result.current).toBe(20), { timeout: 3000 })
-  })
-
-  it('returns default size for negative value', async () => {
-    listClientSettingsMock.mockResolvedValue([
-      { settingCode: 'defaultPageSize', sampleNo: -10 },
-    ])
-    const { result } = renderHook(() => useDefaultPageSize(), {
-      wrapper: createWrapper(),
-    })
-    await waitFor(() => expect(listClientSettingsMock).toHaveBeenCalled())
-    await waitFor(() => expect(result.current).toBe(20), { timeout: 3000 })
-  })
-
-  it('returns default size for zero value', async () => {
-    listClientSettingsMock.mockResolvedValue([
-      { settingCode: 'defaultPageSize', sampleNo: 0 },
-    ])
-    const { result } = renderHook(() => useDefaultPageSize(), {
-      wrapper: createWrapper(),
-    })
-    await waitFor(() => expect(listClientSettingsMock).toHaveBeenCalled())
-    await waitFor(() => expect(result.current).toBe(20), { timeout: 3000 })
-  })
-
-  it('floors decimal values', async () => {
-    listClientSettingsMock.mockResolvedValue([
-      { settingCode: 'defaultPageSize', sampleNo: 25.7 },
-    ])
-    const { result } = renderHook(() => useDefaultPageSize(), {
-      wrapper: createWrapper(),
-    })
-    await waitFor(() => expect(result.current).toBe(25), { timeout: 3000 })
+    expect(result.current).toBe(25)
   })
 })

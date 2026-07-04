@@ -8,10 +8,7 @@ export function useRefreshQuery(queryKey: readonly unknown[]) {
     if (queryKey[0] === 'general-setting') {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.numberRules })
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.clientSettings,
-      })
-      void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.displaySwitches,
+        queryKey: QUERY_KEYS.runtimeConfig,
       })
     }
     if (queryKey[0] === 'number-rules') {
@@ -19,10 +16,7 @@ export function useRefreshQuery(queryKey: readonly unknown[]) {
         queryKey: QUERY_KEYS.generalSetting,
       })
       void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.clientSettings,
-      })
-      void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.displaySwitches,
+        queryKey: QUERY_KEYS.runtimeConfig,
       })
     }
   }

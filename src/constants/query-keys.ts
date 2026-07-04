@@ -4,10 +4,9 @@
 export const QUERY_KEYS = {
   // Settings
   generalSetting: ['general-setting'] as const,
-  clientSettings: ['general-setting', 'client-settings'] as const,
+  runtimeConfig: ['runtime-config'] as const,
   companySetting: ['company-setting'] as const,
   companySettings: ['company-settings'] as const,
-  displaySwitches: ['display-switches'] as const,
   numberRules: ['number-rules'] as const,
 
   // Dashboard

@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import i18next from 'i18next'
 import {
@@ -21,13 +20,8 @@ import {
   fetchSettlementCompanyOptions,
   getCompanySettingProfile,
 } from '@/api/company-settings'
-import {
-  DISPLAY_SWITCH_CODES,
-  isDisplaySwitchEnabled,
-  listClientSettings,
-} from '@/api/system-settings'
-import { QUERY_KEYS } from '@/constants/query-keys'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
+import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 import {
   applyFormFieldDefaultDraftValues,
   applyModuleDefaultEditorDraft,
@@ -68,10 +62,6 @@ import {
   resolveModuleEditorDraftUserKey,
   writeModuleEditorDraft,
 } from '@/views/modules/module-editor-draft-storage'
-import { resolveDefaultTaxRateValue } from '@/views/system/general-settings-view-utils'
-
-const SNOWFLAKE_BUSINESS_NO_SWITCH_CODE =
-  DISPLAY_SWITCH_CODES.useSnowflakeBusinessNo
 
 const SYSTEM_GENERATED_PRIMARY_NO_MODULES = new Set([
   'purchase-order',
@@ -337,7 +327,7 @@ function syncEditorFormValues(args: {
   items: ModuleLineItem[]
   sumLineItemsBy: (nextItems: ModuleLineItem[], key: string) => number
   changedValues?: FormChangedValues
-  systemSettings?: ModuleRecord[]
+  defaultTaxRate: number
 }) {
   const {
     config,
@@ -346,7 +336,7 @@ function syncEditorFormValues(args: {
     items,
     sumLineItemsBy,
     changedValues,
-    systemSettings,
+    defaultTaxRate,
   } = args
   const currentValues = form.getFieldsValue(true)
   const changedKeys = new Set(Object.keys(changedValues || {}))
@@ -358,7 +348,6 @@ function syncEditorFormValues(args: {
     changedKeys,
   })
   if (moduleKey === 'invoice-receipt' || moduleKey === 'invoice-issue') {
-    const defaultTaxRate = resolveDefaultTaxRateValue(systemSettings || [])
     nextValues.taxRate = defaultTaxRate
     nextValues.taxAmount = Number(
       (Number(nextValues.amount || 0) * defaultTaxRate).toFixed(2),
@@ -469,15 +458,10 @@ export function useModuleEditorWorkspace({
   const draftRecordId = getModuleEditorDraftRecordId(record)
   const editorSessionKey = `${moduleKey}:${String(record?.id || 'new')}:${String(open)}`
   const parentSelectorOpen = parentSelectorSessionKey === editorSessionKey
-  const { data: clientSettings = [] } = useQuery({
-    queryKey: QUERY_KEYS.clientSettings,
-    queryFn: listClientSettings,
-    staleTime: 30_000,
-  })
-  const snowflakeBusinessNoEnabled = isDisplaySwitchEnabled(
-    clientSettings,
-    SNOWFLAKE_BUSINESS_NO_SWITCH_CODE,
-  )
+  const { data: runtimeConfig } = useRuntimeConfig()
+  const defaultTaxRate = runtimeConfig?.business.defaultTaxRate ?? 0.13
+  const snowflakeBusinessNoEnabled =
+    runtimeConfig?.business.businessNo.useSnowflakeId ?? false
 
   useEffect(() => {
     if (!open) {
@@ -718,7 +702,7 @@ export function useModuleEditorWorkspace({
       items,
       sumLineItemsBy,
       changedValues,
-      systemSettings: clientSettings,
+      defaultTaxRate,
     })
     writeCurrentDraftSnapshot('editor-change')
   }
@@ -974,7 +958,7 @@ export function useModuleEditorWorkspace({
         items: nextItems,
         sumLineItemsBy,
         changedValues: nextValues,
-        systemSettings: clientSettings,
+        defaultTaxRate,
       })
       dispatchWorkspaceState({ items: nextItems })
       writeCurrentDraftSnapshot('parent-import', nextItems)
@@ -1027,7 +1011,7 @@ export function useModuleEditorWorkspace({
         moduleKey,
         items: nextItems,
         sumLineItemsBy,
-        systemSettings: clientSettings,
+        defaultTaxRate,
       })
     }
     writeCurrentDraftSnapshot('items-change', nextItems)
@@ -1046,7 +1030,7 @@ export function useModuleEditorWorkspace({
         moduleKey,
         items: resolvedItems,
         sumLineItemsBy,
-        systemSettings: clientSettings,
+        defaultTaxRate,
       })
     }
     writeCurrentDraftSnapshot('items-change', resolvedItems)

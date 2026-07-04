@@ -1,5 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
-
 import i18next from 'i18next'
 import {
   generateBusinessPrimaryNo,
@@ -7,11 +5,7 @@ import {
   saveBusinessModule,
 } from '@/api/business'
 import { listAllStatementCandidates } from '@/api/statements'
-import {
-  isDisplaySwitchEnabled,
-  listDisplaySwitches,
-} from '@/api/system-settings'
-import { QUERY_KEYS } from '@/constants/query-keys'
+import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 import {
   buildCustomerStatementDraftData,
   buildFreightStatementDraftData,
@@ -39,21 +33,11 @@ function buildDraftLineItemId(prefix: string) {
 export function useBusinessGridStatementActions({
   refreshModuleQueries,
 }: Props) {
-  const { data: displaySwitches = [] } = useQuery({
-    queryKey: QUERY_KEYS.displaySwitches,
-    queryFn: () => listDisplaySwitches(),
-    staleTime: 5 * 60 * 1000,
-  })
-
-  const customerReceiptZero = isDisplaySwitchEnabled(
-    displaySwitches,
-    'SYS_CUSTOMER_STATEMENT_RECEIPT_ZERO_FROM_SALES_ORDER',
-  )
-
-  const supplierFullPayment = isDisplaySwitchEnabled(
-    displaySwitches,
-    'SYS_SUPPLIER_STATEMENT_FULL_PAYMENT_FROM_PURCHASE',
-  )
+  const { data: runtimeConfig } = useRuntimeConfig()
+  const customerReceiptZero =
+    runtimeConfig?.business.statement.customerReceiptAmountZero ?? false
+  const supplierFullPayment =
+    runtimeConfig?.business.statement.supplierFullPayment ?? false
 
   const handleStatementGenerate = async (
     type: StatementType,
