@@ -1,5 +1,7 @@
 # 前端手搓轮子扫描与迁移计划（技术扩写版）
 
+> 当前状态（2026-07-04）：第一阶段选项缓存迁移和第二阶段 UI persist 试点已完成并复验通过；Vitest 全量覆盖率 Statements / Branches / Functions / Lines 均为 100%。
+
 ## 1. 背景
 
 本计划基于 `aries` 前端代码只读扫描结果编写，目标是识别可以由现有依赖或成熟开源方案承接的自研基础设施，降低维护成本和回归风险。
@@ -203,6 +205,17 @@ const { data: options = [] } = useQuery({
 - 6 个 api 文件的单测从 mocked `http` 改写为 mocked `queryClient`，保持断言等价。
 - 切账号后旧缓存可见 = 0 起；失效延迟 ≤ 100ms。
 
+#### 4.1.6 执行记录（2026-07-04）
+
+状态：已完成第一阶段兼容迁移。
+
+- 新增 `src/lib/query-cached-options.ts`，将同步兼容 wrapper 的 `get/reload` 统一接入 `queryClient.getQueryData/prefetchQuery/invalidateQueries/fetchQuery`。
+- 6 个 API 文件已从 `createCachedOptions` 切换到 `createQueryCachedOptions`，并绑定 `QUERY_KEYS.masterOptions.*`。
+- 保留 `fetch*Options/get*Options/reload*Options` 原导出，继续支持现有配置层同步读取；后续版本可逐步移除同步 wrapper 和旧 `create-cached-options` 文件。
+- `option-resolvers` 的物料分类兼容预热在请求失败时保持 fallback，不向测试或运行时泄漏未处理 Promise。
+- 验证命令：`pnpm vitest run --coverage --maxWorkers=50%`。
+- 验证结果：442 个测试文件通过、1 个测试文件跳过；5798 个测试通过、4 个跳过；Statements / Branches / Functions / Lines 均为 100%。
+
 ---
 
 ### 4.2 非敏感 UI 持久化收敛到 Zustand persist
@@ -319,6 +332,20 @@ interface UISettingsState {
 - 列设置离线时可本地保存，恢复网络后可重新同步。（列设置同步在 5.3 另迁 Query/Mutation）
 - auth 行为不发生语义变化（`authStore` 不迁入 persist）。
 - 坏数据（破损 JSON）恢复降级到默认值，不抛异常。
+
+#### 4.2.5 执行记录（2026-07-04）
+
+状态：已完成 UI persist 试点与个人显示设置迁移。
+
+- `setupStore` 已接入 `zustand/middleware/persist`，存储 key 为 `aries-setup-status`，仅持久化 `status`。
+- 新增 `src/stores/uiSettingsStore.ts`，将 `fontSize` / `layoutMode` / `themeMode` 纳入独立 UI settings store，并复用 `aries-personal-settings` 存储 key。
+- `getPersonalSettings` / `setPersonalSettings` 保留为兼容 façade，底层读写已切换到 `uiSettingsStore`。
+- `useThemeMode`、`usePersonalSettings`、`AppAntdProvider` 已改为直接订阅 `uiSettingsStore`，不再依赖各自手写读取入口。
+- `useThemeMode` 仍保留系统主题监听与 storage 事件触发的 `persist.rehydrate()`；`usePersonalSettings` 仍保留兼容事件通知，持久化读写职责已收敛到 store。
+- 兼容旧版裸 JSON 格式与新版 persist 包装格式；破损 JSON 会移除并降级到默认值。
+- `authStore` 未迁入 persist，认证存储语义不变。
+- 定向验证命令：`pnpm vitest run src/hooks/useThemeMode.spec.ts src/layouts/usePersonalSettings.spec.ts src/components/AppAntdProvider.spec.tsx src/stores/setupStore.spec.ts src/stores/uiSettingsStore.spec.ts src/utils/__tests__/storage.spec.ts src/constants/storage.spec.ts`。
+- 定向验证结果：7 个测试文件通过、111 个测试通过（该数字为定向命令总用例数；本批新增核心覆盖包含 `uiSettingsStore.spec.ts` 13 个用例与 `setupStore.spec.ts` 3 个 persist 用例）。
 
 ---
 
@@ -727,6 +754,8 @@ export function useColumnSettingsSupport(pageKey: string) {
 1. 将 `createCachedOptions` 迁移到 TanStack Query（6 个 api 文件 + 删除 `createCachedOptions`）。
 2. 补充主数据变更后的选项缓存失效测试。
 
+当前状态（2026-07-04）：6 个 API 文件已迁移到 TanStack Query 缓存适配器；`createCachedOptions` 作为未引用旧兼容文件暂留，等待同步 wrapper 完整退场后删除。
+
 **预期收益**：删除重复缓存；降低登录态切换和缓存失效风险；统一数据请求状态。
 
 ### 第二批：UI 持久化收敛
@@ -734,6 +763,8 @@ export function useColumnSettingsSupport(pageKey: string) {
 1. 新增 UI settings store + setupStore 试点 persist。
 2. 迁移 theme / layout / fontSize 等非敏感设置。
 3. 将列设置同步拆成本地 fallback（persist store）和远端 Query/Mutation（见 5.3）。
+
+当前状态（2026-07-04）：`setupStore` persist 试点已落地；theme / layout / fontSize 已迁入 `uiSettingsStore`；列设置同步仍留在 5.3 批次处理。
 
 **预期收益**：缩小 `storage.ts` 职责；减少 hook 中的异步副作用；统一 UI 状态持久化方式。
 
@@ -781,6 +812,19 @@ export function useColumnSettingsSupport(pageKey: string) {
 | 全部迁移 | 单测绿基线 | 不低于迁移前 | `pnpm test:unit` |
 | 全部迁移 | e2e 覆盖率 | ≥ 60% 门（既有 `test:e2e:coverage`） | `pnpm test:e2e:coverage` |
 
+### 8.2 本轮测试与覆盖率基线（2026-07-04）
+
+| 项 | 结果 |
+| --- | --- |
+| 回归命令 | `pnpm vitest run --coverage --maxWorkers=50%` |
+| 测试文件 | 443 passed, 1 skipped, 444 total |
+| 测试用例 | 5814 passed, 4 skipped, 5818 total |
+| Statements | 100% (`9907/9907`) |
+| Branches | 100% (`7536/7536`) |
+| Functions | 100% (`2761/2761`) |
+| Lines | 100% (`9474/9474`) |
+| 类型检查 | `pnpm run typecheck` 通过 |
+
 ---
 
 ## 9. 风险控制
@@ -813,7 +857,7 @@ export function useColumnSettingsSupport(pageKey: string) {
 | 依赖 | 当前状态 | 计划 |
 | --- | --- | --- |
 | `@tanstack/react-query` 5.x | 已使用，`useMasterOptions` 为范本，全局 `staleTime: 60s` | 4.1 扩大使用面至 6 个 api 文件 |
-| `zustand` persist middleware | **当前几乎零使用**（仅 `useColumnSettingsSupport.ts` 1 处） | 4.2 首次引入 persist 模式，setupStore 试点 |
+| `zustand` persist middleware | 已在 `setupStore` 与 `uiSettingsStore` 使用；`useColumnSettingsSupport.ts` 的 `persist` 为本地函数名，不是 middleware | 4.2 已完成试点；5.3 再处理列设置同步 |
 | `idb-keyval` | 未引入 | 4.3 引入（推荐，~1KB, promise API） |
 | `localforage` | 未引入 | 4.3 评估但不优先（偏重） |
 | Handlebars / Mustache | 未引入 | 5.2 评估模板语法扩展时再决策，不提前引入 |

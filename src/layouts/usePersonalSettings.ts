@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
-  getPersonalSettings,
   type PersonalSettings,
-  setPersonalSettings,
   type ThemeMode,
-} from '@/utils/storage'
+  useUiSettingsStore,
+} from '@/stores/uiSettingsStore'
 
 export type LayoutMode = NonNullable<PersonalSettings['layoutMode']>
 
@@ -67,8 +66,10 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   const defaultFontSize = options.defaultFontSize ?? 14
   const defaultLayoutMode = options.defaultLayoutMode ?? 'top'
   const fontSizeCssVar = options.fontSizeCssVar ?? '--app-font-size'
+  const storedSettings = useUiSettingsStore((state) => state.settings)
+  const persistSettings = useUiSettingsStore((state) => state.setSettings)
   const initialSettings = normalizePersonalSettings(
-    getPersonalSettings(),
+    storedSettings,
     defaultFontSize,
     defaultLayoutMode,
   )
@@ -105,7 +106,7 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   }
 
   const load = () => {
-    applySettings(getPersonalSettings())
+    applySettings(useUiSettingsStore.getState().settings)
   }
 
   useEffect(() => {
@@ -133,7 +134,7 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setAppliedFontSize(fontSize)
     setAppliedLayoutMode(layoutMode)
     setAppliedThemeMode(themeMode)
-    setPersonalSettings({ fontSize, layoutMode, themeMode })
+    persistSettings({ fontSize, layoutMode, themeMode })
     window.dispatchEvent(new CustomEvent('personal-settings-changed'))
     setVisible(false)
   }

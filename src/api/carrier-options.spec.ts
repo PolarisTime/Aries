@@ -1,17 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const fetchMock = vi.hoisted(() => vi.fn())
-const reloadMock = vi.hoisted(() => vi.fn())
-const getMock = vi.hoisted(() => vi.fn())
+const { createQueryCachedOptionsMock, fetchMock, getMock, reloadMock } =
+  vi.hoisted(() => {
+    const fetchMock = vi.fn()
+    const getMock = vi.fn()
+    const reloadMock = vi.fn()
+    return {
+      createQueryCachedOptionsMock: vi.fn(() => ({
+        fetch: fetchMock,
+        reload: reloadMock,
+        get: getMock,
+      })),
+      fetchMock,
+      getMock,
+      reloadMock,
+    }
+  })
 
-vi.mock('@/lib/create-cached-options', () => ({
-  createCachedOptions: () => ({
-    fetch: fetchMock,
-    reload: reloadMock,
-    get: getMock,
-  }),
+vi.mock('@/lib/query-cached-options', () => ({
+  createQueryCachedOptions: createQueryCachedOptionsMock,
 }))
 
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   fetchCarrierOptions,
   findCarrierOption,
@@ -23,7 +33,17 @@ import {
 
 describe('carrier-options', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    fetchMock.mockClear()
+    getMock.mockClear()
+    reloadMock.mockClear()
+  })
+
+  it('binds carrier options to the TanStack Query master option key', () => {
+    expect(createQueryCachedOptionsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: QUERY_KEYS.masterOptions.carrier,
+      }),
+    )
   })
 
   describe('getCarrierOptions', () => {

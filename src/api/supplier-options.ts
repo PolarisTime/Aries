@@ -1,5 +1,6 @@
 import { ENDPOINTS } from '@/constants/endpoints'
-import { createCachedOptions } from '@/lib/create-cached-options'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { createQueryCachedOptions } from '@/lib/query-cached-options'
 
 export type SupplierOption = {
   id?: string
@@ -18,8 +19,9 @@ export function normalizeSupplierOptions(
   }))
 }
 
-const cached = createCachedOptions<SupplierOption>({
+const cached = createQueryCachedOptions<SupplierOption>({
   endpoint: ENDPOINTS.SUPPLIERS_OPTIONS,
+  queryKey: QUERY_KEYS.masterOptions.supplier,
   normalizer: normalizeSupplierOptions,
 })
 

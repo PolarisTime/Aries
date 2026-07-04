@@ -13,6 +13,7 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@tanstack/react-query', () => ({
+  QueryClient: vi.fn(),
   useQuery: vi.fn().mockReturnValue({ data: [] }),
 }))
 

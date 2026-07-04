@@ -47,11 +47,15 @@ function ensureMaterialCategoriesLoaded() {
     return
   }
   categoryOptionsLoading = true
-  void fetchMaterialCategories().then((data) => {
-    if (data.length > 0) {
-      _categoryOptions = data
-    }
-  })
+  void fetchMaterialCategories()
+    .then((data) => {
+      if (data.length > 0) {
+        _categoryOptions = data
+      }
+    })
+    .catch(() => {
+      categoryOptionsLoading = false
+    })
 }
 
 export function materialCategoryOptions() {

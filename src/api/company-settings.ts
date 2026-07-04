@@ -1,7 +1,8 @@
 import { assertApiSuccess, http } from '@/api/client'
 import { pageContent } from '@/api/page-contract'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { createCachedOptions } from '@/lib/create-cached-options'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { createQueryCachedOptions } from '@/lib/query-cached-options'
 import { getApiMessage } from '@/utils/api-messages'
 import { asId, asNumber, asString } from '@/utils/type-narrowing'
 
@@ -152,11 +153,12 @@ export async function listCompanySettings() {
   })
 }
 
-const settlementCompanyOptions = createCachedOptions<
+const settlementCompanyOptions = createQueryCachedOptions<
   SettlementCompanyOption,
   RawSettlementCompanyOption
 >({
   endpoint: ENDPOINTS.COMPANY_SETTINGS_OPTIONS,
+  queryKey: QUERY_KEYS.masterOptions.settlementCompany,
   normalizer: normalizeSettlementCompanyOptions,
 })
 

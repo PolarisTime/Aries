@@ -5,6 +5,19 @@ const httpPostMock = vi.hoisted(() => vi.fn())
 const httpPutMock = vi.hoisted(() => vi.fn())
 const httpDeleteMock = vi.hoisted(() => vi.fn())
 const assertApiSuccessMock = vi.hoisted(() => vi.fn())
+const {
+  fetchQueryMock,
+  getQueryDataMock,
+  invalidateQueriesMock,
+  prefetchQueryMock,
+  setQueryDataMock,
+} = vi.hoisted(() => ({
+  fetchQueryMock: vi.fn(),
+  getQueryDataMock: vi.fn(),
+  invalidateQueriesMock: vi.fn(),
+  prefetchQueryMock: vi.fn(),
+  setQueryDataMock: vi.fn(),
+}))
 
 vi.mock('@/api/client', () => ({
   assertApiSuccess: assertApiSuccessMock,
@@ -24,11 +37,15 @@ vi.mock('@/constants/endpoints', () => ({
   },
 }))
 
-vi.mock('@/lib/create-cached-options', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('@/lib/create-cached-options')>()
-  return actual
-})
+vi.mock('@/lib/query-client', () => ({
+  queryClient: {
+    fetchQuery: fetchQueryMock,
+    getQueryData: getQueryDataMock,
+    invalidateQueries: invalidateQueriesMock,
+    prefetchQuery: prefetchQueryMock,
+    setQueryData: setQueryDataMock,
+  },
+}))
 
 vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
@@ -44,6 +61,7 @@ vi.mock('@/utils/type-narrowing', () => ({
   asString: (v: unknown) => String(v ?? ''),
 }))
 
+import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   createCompanySetting,
   deleteCompanySetting,
@@ -61,7 +79,19 @@ import {
 describe('company-settings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    let queryCache: unknown
     assertApiSuccessMock.mockImplementation(<T>(response: T) => response)
+    fetchQueryMock.mockImplementation(async ({ queryFn }) => {
+      const data = await queryFn()
+      queryCache = data
+      return data
+    })
+    getQueryDataMock.mockImplementation(() => queryCache)
+    invalidateQueriesMock.mockResolvedValue(undefined)
+    prefetchQueryMock.mockResolvedValue(undefined)
+    setQueryDataMock.mockImplementation((_queryKey, data) => {
+      queryCache = data
+    })
   })
 
   describe('getCompanySettingProfile', () => {
@@ -271,6 +301,19 @@ describe('company-settings', () => {
 
       const result = await reloadSettlementCompanyOptions()
 
+      expect(setQueryDataMock).toHaveBeenCalledWith(
+        QUERY_KEYS.masterOptions.settlementCompany,
+        [],
+      )
+      expect(invalidateQueriesMock).toHaveBeenCalledWith({
+        queryKey: QUERY_KEYS.masterOptions.settlementCompany,
+      })
+      expect(fetchQueryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queryKey: QUERY_KEYS.masterOptions.settlementCompany,
+          staleTime: 0,
+        }),
+      )
       expect(httpGetMock).toHaveBeenCalledWith('/company-settings/options')
       expect(result).toEqual([
         {

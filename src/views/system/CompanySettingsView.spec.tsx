@@ -30,6 +30,7 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('@tanstack/react-query', () => ({
+  QueryClient: vi.fn(),
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
   useMutation: (...args: unknown[]) => mockUseMutation(...args),
   useQueryClient: () => mockUseQueryClient(),

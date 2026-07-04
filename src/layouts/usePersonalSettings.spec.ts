@@ -4,12 +4,7 @@ import {
   getPersonalControlHeights,
   usePersonalSettings,
 } from '@/layouts/usePersonalSettings'
-import * as storage from '@/utils/storage'
-
-vi.mock('@/utils/storage', () => ({
-  getPersonalSettings: vi.fn(),
-  setPersonalSettings: vi.fn(),
-}))
+import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 
 describe('getPersonalControlHeights', () => {
   it('returns calculated heights based on font size', () => {
@@ -33,8 +28,9 @@ describe('getPersonalControlHeights', () => {
 
 describe('usePersonalSettings', () => {
   beforeEach(() => {
-    vi.mocked(storage.getPersonalSettings).mockReturnValue(null)
-    vi.mocked(storage.setPersonalSettings).mockClear()
+    localStorage.clear()
+    useUiSettingsStore.setState({ settings: null })
+    useUiSettingsStore.persist.clearStorage()
   })
 
   it('uses default settings when storage returns null', () => {
@@ -45,10 +41,12 @@ describe('usePersonalSettings', () => {
   })
 
   it('loads settings from storage', () => {
-    vi.mocked(storage.getPersonalSettings).mockReturnValue({
+    useUiSettingsStore.setState({
+      settings: {
       fontSize: 16,
       layoutMode: 'sider',
       themeMode: 'dark',
+      },
     })
 
     const { result } = renderHook(() => usePersonalSettings())
@@ -84,10 +82,12 @@ describe('usePersonalSettings', () => {
   })
 
   it('resets to defaults', () => {
-    vi.mocked(storage.getPersonalSettings).mockReturnValue({
-      fontSize: 16,
-      layoutMode: 'sider',
-      themeMode: 'dark',
+    useUiSettingsStore.setState({
+      settings: {
+        fontSize: 16,
+        layoutMode: 'sider',
+        themeMode: 'dark',
+      },
     })
 
     const { result } = renderHook(() => usePersonalSettings())
@@ -109,7 +109,7 @@ describe('usePersonalSettings', () => {
     act(() => result.current.open())
     act(() => result.current.save())
 
-    expect(storage.setPersonalSettings).toHaveBeenCalledWith({
+    expect(useUiSettingsStore.getState().settings).toEqual({
       fontSize: 14,
       layoutMode: 'sider',
       themeMode: 'dark',
@@ -124,13 +124,14 @@ describe('usePersonalSettings', () => {
   })
 
   it('loads settings from storage on load()', () => {
-    vi.mocked(storage.getPersonalSettings).mockReturnValue({
-      fontSize: 18,
-      layoutMode: 'sider',
-      themeMode: 'light',
-    })
-
     const { result } = renderHook(() => usePersonalSettings())
+    useUiSettingsStore.setState({
+      settings: {
+        fontSize: 18,
+        layoutMode: 'sider',
+        themeMode: 'light',
+      },
+    })
 
     act(() => result.current.load())
 
@@ -176,8 +177,8 @@ describe('usePersonalSettings', () => {
   })
 
   it('normalizes invalid layout mode to default', () => {
-    vi.mocked(storage.getPersonalSettings).mockReturnValue({
-      layoutMode: 'invalid' as any,
+    useUiSettingsStore.setState({
+      settings: { layoutMode: 'invalid' as never },
     })
 
     const { result } = renderHook(() => usePersonalSettings())
@@ -185,8 +186,8 @@ describe('usePersonalSettings', () => {
   })
 
   it('normalizes invalid theme mode to system', () => {
-    vi.mocked(storage.getPersonalSettings).mockReturnValue({
-      themeMode: 'invalid' as any,
+    useUiSettingsStore.setState({
+      settings: { themeMode: 'invalid' as never },
     })
 
     const { result } = renderHook(() => usePersonalSettings())
@@ -212,10 +213,15 @@ describe('usePersonalSettings', () => {
           vi.fn(),
         ]),
       }))
-      vi.doMock('@/utils/storage', () => ({
-        getPersonalSettings: vi.fn(() => null),
-        setPersonalSettings: vi.fn(),
-      }))
+      vi.doMock('@/stores/uiSettingsStore', () => {
+        const fakeState = {
+          settings: null,
+          setSettings: vi.fn(),
+        }
+        const useStore = vi.fn((selector) => selector(fakeState))
+        useStore.getState = vi.fn(() => fakeState)
+        return { useUiSettingsStore: useStore }
+      })
 
       const { usePersonalSettings: usePersonalSettingsWithoutDocument } =
         await import('@/layouts/usePersonalSettings')
@@ -225,7 +231,7 @@ describe('usePersonalSettings', () => {
     } finally {
       browserGlobals.document = originalDocument
       vi.doUnmock('react')
-      vi.doUnmock('@/utils/storage')
+      vi.doUnmock('@/stores/uiSettingsStore')
       vi.resetModules()
     }
   })

@@ -1,6 +1,7 @@
 import { uniqBy } from 'es-toolkit'
 import { ENDPOINTS } from '@/constants/endpoints'
-import { createCachedOptions } from '@/lib/create-cached-options'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { createQueryCachedOptions } from '@/lib/query-cached-options'
 import type { ModuleRecordInput } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
@@ -43,8 +44,9 @@ export function normalizeCustomerRows(rows: CustomerOption[]) {
   })
 }
 
-const cached = createCachedOptions<CustomerOption>({
+const cached = createQueryCachedOptions<CustomerOption>({
   endpoint: ENDPOINTS.CUSTOMERS_OPTIONS,
+  queryKey: QUERY_KEYS.masterOptions.customer,
   normalizer: normalizeCustomerRows,
 })
 

@@ -1,21 +1,11 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { STORAGE_KEYS } from '@/constants/storage'
+import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 
-const {
-  getPersonalSettingsMock,
-  setPersonalSettingsMock,
-  matchMediaMock,
-  setAttributeMock,
-} = vi.hoisted(() => ({
-  getPersonalSettingsMock: vi.fn(),
-  setPersonalSettingsMock: vi.fn(),
+const { matchMediaMock, setAttributeMock } = vi.hoisted(() => ({
   matchMediaMock: vi.fn(),
   setAttributeMock: vi.fn(),
-}))
-
-vi.mock('@/utils/storage', () => ({
-  getPersonalSettings: getPersonalSettingsMock,
-  setPersonalSettings: setPersonalSettingsMock,
 }))
 
 import { useThemeMode } from './useThemeMode'
@@ -23,7 +13,9 @@ import { useThemeMode } from './useThemeMode'
 describe('useThemeMode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    getPersonalSettingsMock.mockReturnValue({ themeMode: 'system' })
+    localStorage.clear()
+    useUiSettingsStore.setState({ settings: null })
+    useUiSettingsStore.persist.clearStorage()
     matchMediaMock.mockReturnValue({
       matches: false,
       addEventListener: vi.fn(),
@@ -47,7 +39,7 @@ describe('useThemeMode', () => {
   })
 
   it('initializes with stored theme mode', () => {
-    getPersonalSettingsMock.mockReturnValue({ themeMode: 'dark' })
+    useUiSettingsStore.setState({ settings: { themeMode: 'dark' } })
     const { result } = renderHook(() => useThemeMode())
     expect(result.current.themeMode).toBe('dark')
   })
@@ -73,19 +65,19 @@ describe('useThemeMode', () => {
   })
 
   it('resolves to dark when themeMode is dark', () => {
-    getPersonalSettingsMock.mockReturnValue({ themeMode: 'dark' })
+    useUiSettingsStore.setState({ settings: { themeMode: 'dark' } })
     const { result } = renderHook(() => useThemeMode())
     expect(result.current.resolvedTheme).toBe('dark')
   })
 
   it('resolves to light when themeMode is light', () => {
-    getPersonalSettingsMock.mockReturnValue({ themeMode: 'light' })
+    useUiSettingsStore.setState({ settings: { themeMode: 'light' } })
     const { result } = renderHook(() => useThemeMode())
     expect(result.current.resolvedTheme).toBe('light')
   })
 
   it('sets theme mode and persists to storage', () => {
-    getPersonalSettingsMock.mockReturnValue({ fontSize: 14 })
+    useUiSettingsStore.setState({ settings: { fontSize: 14 } })
     const { result } = renderHook(() => useThemeMode())
 
     act(() => {
@@ -93,10 +85,13 @@ describe('useThemeMode', () => {
     })
 
     expect(result.current.themeMode).toBe('dark')
-    expect(setPersonalSettingsMock).toHaveBeenCalledWith({
+    expect(useUiSettingsStore.getState().settings).toEqual({
       fontSize: 14,
       themeMode: 'dark',
     })
+    expect(localStorage.getItem(STORAGE_KEYS.personalSettings)).toContain(
+      'dark',
+    )
   })
 
   it('applies data-theme attribute on mount', () => {
@@ -105,7 +100,7 @@ describe('useThemeMode', () => {
   })
 
   it('applies data-theme attribute when resolved theme changes', () => {
-    getPersonalSettingsMock.mockReturnValue({ themeMode: 'light' })
+    useUiSettingsStore.setState({ settings: { themeMode: 'light' } })
     const { result } = renderHook(() => useThemeMode())
 
     act(() => {
@@ -215,11 +210,17 @@ describe('useThemeMode', () => {
     )
 
     const { result } = renderHook(() => useThemeMode())
-    getPersonalSettingsMock.mockReturnValue({ themeMode: 'dark' })
+    localStorage.setItem(
+      STORAGE_KEYS.personalSettings,
+      JSON.stringify({
+        state: { settings: { themeMode: 'dark' } },
+        version: 1,
+      }),
+    )
 
     act(() => {
       storageHandler?.(
-        new StorageEvent('storage', { key: 'aries-personal-settings' }),
+        new StorageEvent('storage', { key: STORAGE_KEYS.personalSettings }),
       )
     })
 
@@ -228,7 +229,7 @@ describe('useThemeMode', () => {
 
   it('falls back to system when personal settings storage has no theme mode', () => {
     let storageHandler: ((event: StorageEvent) => void) | undefined
-    getPersonalSettingsMock.mockReturnValue({ themeMode: 'light' })
+    useUiSettingsStore.setState({ settings: { themeMode: 'light' } })
     vi.spyOn(window, 'addEventListener').mockImplementation(
       (event, handler) => {
         if (event === 'storage') {
@@ -238,11 +239,17 @@ describe('useThemeMode', () => {
     )
 
     const { result } = renderHook(() => useThemeMode())
-    getPersonalSettingsMock.mockReturnValue({})
+    localStorage.setItem(
+      STORAGE_KEYS.personalSettings,
+      JSON.stringify({
+        state: { settings: {} },
+        version: 1,
+      }),
+    )
 
     act(() => {
       storageHandler?.(
-        new StorageEvent('storage', { key: 'aries-personal-settings' }),
+        new StorageEvent('storage', { key: STORAGE_KEYS.personalSettings }),
       )
     })
 
@@ -250,14 +257,15 @@ describe('useThemeMode', () => {
   })
 
   it('creates personal settings when setting theme mode without existing settings', () => {
-    getPersonalSettingsMock.mockReturnValue(null)
     const { result } = renderHook(() => useThemeMode())
 
     act(() => {
       result.current.setThemeMode('light')
     })
 
-    expect(setPersonalSettingsMock).toHaveBeenCalledWith({ themeMode: 'light' })
+    expect(useUiSettingsStore.getState().settings).toEqual({
+      themeMode: 'light',
+    })
   })
 
   it('removes storage listener on unmount', () => {
@@ -299,10 +307,15 @@ describe('useThemeMode', () => {
           vi.fn(),
         ]),
       }))
-      vi.doMock('@/utils/storage', () => ({
-        getPersonalSettings: vi.fn(() => ({ themeMode: 'system' })),
-        setPersonalSettings: vi.fn(),
-      }))
+      vi.doMock('@/stores/uiSettingsStore', () => {
+        const fakeState = {
+          settings: { themeMode: 'system' },
+          setThemeMode: vi.fn(),
+        }
+        const useStore = vi.fn((selector) => selector(fakeState))
+        useStore.persist = { rehydrate: vi.fn() }
+        return { useUiSettingsStore: useStore }
+      })
 
       const { useThemeMode: useThemeModeWithoutBrowser } = await import(
         './useThemeMode'
@@ -314,7 +327,7 @@ describe('useThemeMode', () => {
       browserGlobals.window = originalWindow
       browserGlobals.document = originalDocument
       vi.doUnmock('react')
-      vi.doUnmock('@/utils/storage')
+      vi.doUnmock('@/stores/uiSettingsStore')
       vi.resetModules()
     }
   })

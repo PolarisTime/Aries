@@ -1,14 +1,14 @@
 import { STORAGE_KEYS } from '@/constants/storage'
 import type { LoginUser } from '@/shared/schemas'
+import {
+  getStoredPersonalSettings,
+  type PersonalSettings,
+  type ThemeMode,
+  useUiSettingsStore,
+} from '@/stores/uiSettingsStore'
 import type { ListColumnSettings } from '@/types/module-page'
 
-export type ThemeMode = 'light' | 'dark' | 'system'
-
-export interface PersonalSettings {
-  fontSize?: number
-  layoutMode?: 'sider' | 'top'
-  themeMode?: ThemeMode
-}
+export type { PersonalSettings, ThemeMode }
 
 export type AuthPersistenceMode = 'local' | 'session'
 
@@ -173,25 +173,11 @@ export function getAuthPersistenceMode() {
 }
 
 export function getPersonalSettings() {
-  const raw = localStorage.getItem(STORAGE_KEYS.personalSettings)
-  if (!raw) {
-    return null
-  }
-
-  try {
-    const parsed = JSON.parse(raw)
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as PersonalSettings
-    }
-    return null
-  } catch {
-    localStorage.removeItem(STORAGE_KEYS.personalSettings)
-    return null
-  }
+  return getStoredPersonalSettings()
 }
 
 export function setPersonalSettings(settings: PersonalSettings) {
-  localStorage.setItem(STORAGE_KEYS.personalSettings, JSON.stringify(settings))
+  useUiSettingsStore.getState().setSettings(settings)
 }
 
 function getListColumnSettingsKey(pageKey: string, userKey?: string) {

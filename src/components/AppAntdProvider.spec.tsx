@@ -1,20 +1,14 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { act, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import { AppAntdProvider } from './AppAntdProvider'
 
 const useThemeModeMock = vi.hoisted(() =>
   vi.fn(() => ({ resolvedTheme: 'light' })),
 )
-const getPersonalSettingsMock = vi.hoisted(() =>
-  vi.fn(() => ({ fontSize: 14 })),
-)
 
 vi.mock('@/hooks/useThemeMode', () => ({
   useThemeMode: useThemeModeMock,
-}))
-
-vi.mock('@/utils/storage', () => ({
-  getPersonalSettings: getPersonalSettingsMock,
 }))
 
 vi.mock('@/utils/antd-app', () => ({
@@ -34,8 +28,10 @@ import { buildAntdTheme } from '@/styles/antd-theme'
 describe('AppAntdProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
+    useUiSettingsStore.setState({ settings: { fontSize: 14 } })
+    useUiSettingsStore.persist.clearStorage()
     useThemeModeMock.mockReturnValue({ resolvedTheme: 'light' })
-    getPersonalSettingsMock.mockReturnValue({ fontSize: 14 })
   })
 
   it('renders children correctly', () => {
@@ -58,20 +54,27 @@ describe('AppAntdProvider', () => {
     expect(screen.getByText('暗色主题测试')).toBeTruthy()
   })
 
-  it('handles personal settings change event', () => {
+  it('updates theme config when personal font size changes', () => {
     render(
       <AppAntdProvider>
         <div>设置变更测试</div>
       </AppAntdProvider>,
     )
 
-    const event = new Event('personal-settings-changed')
-    window.dispatchEvent(event)
+    act(() => {
+      useUiSettingsStore.getState().setSettings({ fontSize: 18 })
+    })
+
     expect(screen.getByText('设置变更测试')).toBeTruthy()
+    expect(buildAntdTheme).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fontSize: 18,
+      }),
+    )
   })
 
   it('uses default font size when personal settings not available', () => {
-    getPersonalSettingsMock.mockReturnValue(null)
+    useUiSettingsStore.setState({ settings: null })
 
     render(
       <AppAntdProvider>

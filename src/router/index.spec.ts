@@ -297,6 +297,7 @@ vi.mock('@/views/dashboard/LazyDashboardView', () => ({
 
 beforeEach(() => {
   vi.resetModules()
+  localStorage.removeItem('aries-setup-status')
   rootRouteOptions.current = null
   routeOptionsByPath.clear()
   routeOptionsById.clear()

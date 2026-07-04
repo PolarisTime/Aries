@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
-import {
-  getPersonalSettings,
-  setPersonalSettings,
-  type ThemeMode,
-} from '@/utils/storage'
+import { STORAGE_KEYS } from '@/constants/storage'
+import { type ThemeMode, useUiSettingsStore } from '@/stores/uiSettingsStore'
 
 type ResolvedTheme = 'light' | 'dark'
 
@@ -20,8 +17,10 @@ function applyTheme(theme: ResolvedTheme) {
 }
 
 export function useThemeMode() {
-  const initial = getPersonalSettings()?.themeMode ?? 'system'
-  const [themeMode, setThemeModeState] = useState<ThemeMode>(initial)
+  const themeMode = useUiSettingsStore(
+    (state) => state.settings?.themeMode ?? 'system',
+  )
+  const persistThemeMode = useUiSettingsStore((state) => state.setThemeMode)
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(getSystemTheme)
 
   const resolvedTheme: ResolvedTheme =
@@ -45,18 +44,15 @@ export function useThemeMode() {
   // Sync from localStorage (when usePersonalSettings saves)
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key !== 'aries-personal-settings') return
-      const stored = getPersonalSettings()?.themeMode ?? 'system'
-      setThemeModeState(stored)
+      if (e.key !== STORAGE_KEYS.personalSettings) return
+      void useUiSettingsStore.persist.rehydrate()
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
   }, [])
 
   const setThemeMode = (mode: ThemeMode) => {
-    setThemeModeState(mode)
-    const current = getPersonalSettings() ?? {}
-    setPersonalSettings({ ...current, themeMode: mode })
+    persistThemeMode(mode)
   }
 
   return { themeMode, resolvedTheme, setThemeMode }

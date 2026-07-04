@@ -2054,6 +2054,12 @@ export interface MessageSchema {
       pathStyleAccess: string
       encryptedStorage: string
       serverProxyOnly: string
+      testStorage: string
+      configureCors: string
+      testSuccess: string
+      testFailed: string
+      corsSuccess: string
+      corsFailed: string
     }
     userAccount: {
       title: string

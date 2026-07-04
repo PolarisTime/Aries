@@ -172,6 +172,21 @@ describe('option-resolvers', () => {
         '线材',
       ])
     })
+
+    it('keeps fallback options when category loading fails', async () => {
+      fetchMaterialCategoriesMock.mockRejectedValue(new Error('Network error'))
+
+      materialCategoryOptions()
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(materialCategoryOptions().map((item) => item.value)).toEqual([
+        '螺纹钢',
+        '盘螺',
+        '线材',
+      ])
+      expect(fetchMaterialCategoriesMock).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe('material grades', () => {

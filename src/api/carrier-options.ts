@@ -1,5 +1,6 @@
 import { ENDPOINTS } from '@/constants/endpoints'
-import { createCachedOptions } from '@/lib/create-cached-options'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { createQueryCachedOptions } from '@/lib/query-cached-options'
 import type { ModuleRecordInput } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
@@ -27,8 +28,9 @@ export function normalizeCarrierOptions(
   }))
 }
 
-const cached = createCachedOptions<CarrierOption>({
+const cached = createQueryCachedOptions<CarrierOption>({
   endpoint: ENDPOINTS.CARRIERS_OPTIONS,
+  queryKey: QUERY_KEYS.masterOptions.carrier,
   normalizer: normalizeCarrierOptions,
 })
 

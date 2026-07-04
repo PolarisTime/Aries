@@ -1,15 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const fetchMock = vi.hoisted(() => vi.fn())
-const reloadMock = vi.hoisted(() => vi.fn())
-const getMock = vi.hoisted(() => vi.fn())
+const { createQueryCachedOptionsMock, fetchMock, getMock, reloadMock } =
+  vi.hoisted(() => {
+    const fetchMock = vi.fn()
+    const getMock = vi.fn()
+    const reloadMock = vi.fn()
+    return {
+      createQueryCachedOptionsMock: vi.fn(() => ({
+        fetch: fetchMock,
+        reload: reloadMock,
+        get: getMock,
+      })),
+      fetchMock,
+      reloadMock,
+      getMock,
+    }
+  })
 
-vi.mock('@/lib/create-cached-options', () => ({
-  createCachedOptions: vi.fn(() => ({
-    fetch: fetchMock,
-    reload: reloadMock,
-    get: getMock,
-  })),
+vi.mock('@/lib/query-cached-options', () => ({
+  createQueryCachedOptions: createQueryCachedOptionsMock,
 }))
 
 vi.mock('@/constants/endpoints', () => ({
@@ -22,10 +31,21 @@ import {
   fetchMaterialCategories,
   reloadMaterialCategories,
 } from './material-categories'
+import { QUERY_KEYS } from '@/constants/query-keys'
 
 describe('material-categories', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    fetchMock.mockClear()
+    getMock.mockClear()
+    reloadMock.mockClear()
+  })
+
+  it('binds material categories to the TanStack Query master option key', () => {
+    expect(createQueryCachedOptionsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: QUERY_KEYS.masterOptions.materialCategories,
+      }),
+    )
   })
 
   it('exports fetchMaterialCategories', () => {

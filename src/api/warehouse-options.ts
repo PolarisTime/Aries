@@ -1,13 +1,15 @@
 import { ENDPOINTS } from '@/constants/endpoints'
-import { createCachedOptions } from '@/lib/create-cached-options'
+import { QUERY_KEYS } from '@/constants/query-keys'
+import { createQueryCachedOptions } from '@/lib/query-cached-options'
 
 type WarehouseOption = {
   value: string
   label: string
 }
 
-const cached = createCachedOptions<WarehouseOption>({
+const cached = createQueryCachedOptions<WarehouseOption>({
   endpoint: ENDPOINTS.WAREHOUSES_OPTIONS,
+  queryKey: QUERY_KEYS.masterOptions.warehouse,
 })
 
 export const fetchWarehouseOptions = cached.fetch
