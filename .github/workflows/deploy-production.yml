@@ -1,0 +1,317 @@
+name: frontend-production-deploy
+run-name: "frontend deploy: Aries ${{ inputs.aries_ref || github.ref_name }} / target=${{ inputs.deploy_target || 'local' }} / dry_run=${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}"
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      aries_ref:
+        description: "Frontend Git ref to deploy"
+        required: true
+        default: "main"
+        type: string
+      dry_run:
+        description: "Build and package only; do not deploy to production"
+        required: true
+        default: true
+        type: boolean
+      deploy_target:
+        description: "Production deploy target"
+        required: true
+        default: "local"
+        type: choice
+        options:
+          - local
+          - ssh
+      release_note:
+        description: "Optional release note"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-production-deploy
+  cancel-in-progress: false
+
+env:
+  VITE_API_BASE_URL: /api
+
+jobs:
+  frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Aries
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.aries_ref || github.ref_name }}
+
+      - name: Set up frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Build
+        run: VITE_API_BASE_URL="$VITE_API_BASE_URL" pnpm build-only --mode production
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aries-frontend-dist
+          path: dist/**
+          if-no-files-found: error
+
+  package:
+    name: Package Frontend Release
+    needs:
+      - frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Aries deploy scripts
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.aries_ref || github.ref_name }}
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: aries-frontend-dist
+          path: release-input/frontend
+
+      - name: Create frontend release archive
+        run: |
+          set -euo pipefail
+          aries_sha="$(git rev-parse HEAD)"
+          release_id="aries-${GITHUB_RUN_NUMBER}-${aries_sha::12}"
+          mkdir -p release/frontend release/deploy
+          cp -a release-input/frontend/. release/frontend/
+          cp scripts/deploy/install-frontend-release.sh release/deploy/
+          cp scripts/deploy/install-steelx-nginx-config.sh release/deploy/
+          jq -n \
+            --arg releaseId "$release_id" \
+            --arg ariesRef "${{ inputs.aries_ref || github.ref_name }}" \
+            --arg ariesSha "$aries_sha" \
+            --arg runId "$GITHUB_RUN_ID" \
+            --arg runNumber "$GITHUB_RUN_NUMBER" \
+            --arg deployTarget "${{ inputs.deploy_target || 'local' }}" \
+            --argjson dryRun "${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}" \
+            --arg releaseNote "${{ inputs.release_note || '' }}" \
+            '{
+              releaseId: $releaseId,
+              ariesRef: $ariesRef,
+              ariesSha: $ariesSha,
+              runId: $runId,
+              runNumber: $runNumber,
+              deployTarget: $deployTarget,
+              dryRun: $dryRun,
+              releaseNote: $releaseNote
+            }' > release/manifest.json
+          tar -C release -czf aries-frontend-release.tar.gz .
+          sha256sum aries-frontend-release.tar.gz > aries-frontend-release.tar.gz.sha256
+
+      - name: Upload frontend release archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: aries-frontend-release
+          path: |
+            aries-frontend-release.tar.gz
+            aries-frontend-release.tar.gz.sha256
+          if-no-files-found: error
+
+  dry-run:
+    name: Dry Run Summary
+    needs: package
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print summary
+        run: |
+          echo "Dry run completed. Frontend release archive was built but not deployed."
+          echo "Aries ref: ${{ inputs.aries_ref || github.ref_name }}"
+          echo "Target:    ${{ inputs.deploy_target || 'local' }}"
+
+  deploy-local:
+    name: Deploy Frontend Local
+    needs: package
+    if: ${{ (github.event_name == 'push' || !inputs.dry_run) && (github.event_name == 'push' || inputs.deploy_target == 'local') }}
+    runs-on:
+      - self-hosted
+      - linux
+      - steelx-production
+    environment: production
+    defaults:
+      run:
+        shell: bash
+    env:
+      PROD_RELEASE_ROOT: ${{ vars.PROD_RELEASE_ROOT || '/instance/steelx' }}
+      PROD_FRONTEND_ROOT: ${{ vars.PROD_FRONTEND_ROOT || '/instance/steelx/frontend' }}
+      PROD_KEEP_RELEASES: ${{ vars.PROD_KEEP_RELEASES || '5' }}
+      PROD_BACKEND_PORT: ${{ vars.PROD_BACKEND_PORT || '57217' }}
+      PROD_NGINX_FRONTEND_PORT: ${{ vars.PROD_NGINX_FRONTEND_PORT || '443' }}
+      PROD_NGINX_HTTP_REDIRECT_PORT: ${{ vars.PROD_NGINX_HTTP_REDIRECT_PORT || '80' }}
+      PROD_NGINX_SERVER_NAME: ${{ vars.PROD_NGINX_SERVER_NAME || 'in1ove.com' }}
+      PROD_NGINX_SSL_CERTIFICATE: ${{ vars.PROD_NGINX_SSL_CERTIFICATE || '/instance/ssl/fullchain.crt' }}
+      PROD_NGINX_SSL_CERTIFICATE_KEY: ${{ vars.PROD_NGINX_SSL_CERTIFICATE_KEY || '/instance/ssl/privkey.key' }}
+      PROD_NGINX_WORKER_USER: ${{ vars.PROD_NGINX_WORKER_USER || 'sakura' }}
+      PROD_NGINX_WORKER_GROUP: ${{ vars.PROD_NGINX_WORKER_GROUP || 'sakura' }}
+    steps:
+      - name: Checkout Aries deploy scripts
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.aries_ref || github.ref_name }}
+
+      - name: Download frontend release archive
+        uses: actions/download-artifact@v4
+        with:
+          name: aries-frontend-release
+          path: frontend-release
+
+      - name: Install frontend release
+        run: |
+          set -euo pipefail
+          bash scripts/deploy/install-frontend-release.sh \
+            --archive frontend-release/aries-frontend-release.tar.gz \
+            --sha256-file frontend-release/aries-frontend-release.tar.gz.sha256 \
+            --frontend-root "$PROD_FRONTEND_ROOT" \
+            --keep-releases "$PROD_KEEP_RELEASES"
+
+      - name: Install SteelX Nginx config
+        run: |
+          set -euo pipefail
+          bash scripts/deploy/install-steelx-nginx-config.sh \
+            --release-root "$PROD_RELEASE_ROOT" \
+            --frontend-root "$PROD_FRONTEND_ROOT" \
+            --backend-port "$PROD_BACKEND_PORT" \
+            --frontend-port "$PROD_NGINX_FRONTEND_PORT" \
+            --http-redirect-port "$PROD_NGINX_HTTP_REDIRECT_PORT" \
+            --server-name "$PROD_NGINX_SERVER_NAME" \
+            --ssl-certificate "$PROD_NGINX_SSL_CERTIFICATE" \
+            --ssl-certificate-key "$PROD_NGINX_SSL_CERTIFICATE_KEY" \
+            --nginx-worker-user "$PROD_NGINX_WORKER_USER" \
+            --nginx-worker-group "$PROD_NGINX_WORKER_GROUP"
+
+  deploy-ssh:
+    name: Deploy Frontend SSH
+    needs: package
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.dry_run && inputs.deploy_target == 'ssh' }}
+    runs-on:
+      - self-hosted
+      - linux
+      - steelx-production
+    environment: production
+    defaults:
+      run:
+        shell: bash
+    env:
+      PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+      PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT || '22' }}
+      PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+      PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+      PROD_SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+      PROD_RELEASE_ROOT: ${{ vars.PROD_RELEASE_ROOT || '/instance/steelx' }}
+      PROD_FRONTEND_ROOT: ${{ vars.PROD_FRONTEND_ROOT || '/instance/steelx/frontend' }}
+      PROD_KEEP_RELEASES: ${{ vars.PROD_KEEP_RELEASES || '5' }}
+      PROD_BACKEND_PORT: ${{ vars.PROD_BACKEND_PORT || '57217' }}
+      PROD_NGINX_FRONTEND_PORT: ${{ vars.PROD_NGINX_FRONTEND_PORT || '443' }}
+      PROD_NGINX_HTTP_REDIRECT_PORT: ${{ vars.PROD_NGINX_HTTP_REDIRECT_PORT || '80' }}
+      PROD_NGINX_SERVER_NAME: ${{ vars.PROD_NGINX_SERVER_NAME || 'in1ove.com' }}
+      PROD_NGINX_SSL_CERTIFICATE: ${{ vars.PROD_NGINX_SSL_CERTIFICATE || '/instance/ssl/fullchain.crt' }}
+      PROD_NGINX_SSL_CERTIFICATE_KEY: ${{ vars.PROD_NGINX_SSL_CERTIFICATE_KEY || '/instance/ssl/privkey.key' }}
+      PROD_NGINX_WORKER_USER: ${{ vars.PROD_NGINX_WORKER_USER || 'sakura' }}
+      PROD_NGINX_WORKER_GROUP: ${{ vars.PROD_NGINX_WORKER_GROUP || 'sakura' }}
+    steps:
+      - name: Checkout Aries deploy scripts
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.aries_ref || github.ref_name }}
+
+      - name: Download frontend release archive
+        uses: actions/download-artifact@v4
+        with:
+          name: aries-frontend-release
+          path: frontend-release
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          : "${PROD_SSH_HOST:?Missing PROD_SSH_HOST secret}"
+          : "${PROD_SSH_USER:?Missing PROD_SSH_USER secret}"
+          : "${PROD_SSH_PRIVATE_KEY:?Missing PROD_SSH_PRIVATE_KEY secret}"
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > "$HOME/.ssh/aries-production"
+          chmod 600 "$HOME/.ssh/aries-production"
+          if [[ -n "$PROD_SSH_KNOWN_HOSTS" ]]; then
+            printf '%s\n' "$PROD_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          else
+            ssh-keyscan -p "$PROD_SSH_PORT" "$PROD_SSH_HOST" > "$HOME/.ssh/known_hosts"
+          fi
+          chmod 644 "$HOME/.ssh/known_hosts"
+
+      - name: Upload frontend release archive
+        run: |
+          set -euo pipefail
+          remote_dir="/tmp/aries-frontend-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          ssh -i "$HOME/.ssh/aries-production" \
+            -p "$PROD_SSH_PORT" \
+            "${PROD_SSH_USER}@${PROD_SSH_HOST}" \
+            "mkdir -p '$remote_dir'"
+          scp -i "$HOME/.ssh/aries-production" \
+            -P "$PROD_SSH_PORT" \
+            frontend-release/aries-frontend-release.tar.gz \
+            frontend-release/aries-frontend-release.tar.gz.sha256 \
+            "${PROD_SSH_USER}@${PROD_SSH_HOST}:${remote_dir}/"
+          echo "REMOTE_ARCHIVE=${remote_dir}/aries-frontend-release.tar.gz" >> "$GITHUB_ENV"
+          echo "REMOTE_SHA256=${remote_dir}/aries-frontend-release.tar.gz.sha256" >> "$GITHUB_ENV"
+
+      - name: Install frontend release on production
+        run: |
+          set -euo pipefail
+          quote() { printf '%q' "$1"; }
+          remote_command="sudo bash -s --"
+          remote_command+=" --archive $(quote "$REMOTE_ARCHIVE")"
+          remote_command+=" --sha256-file $(quote "$REMOTE_SHA256")"
+          remote_command+=" --frontend-root $(quote "$PROD_FRONTEND_ROOT")"
+          remote_command+=" --keep-releases $(quote "$PROD_KEEP_RELEASES")"
+          ssh -i "$HOME/.ssh/aries-production" \
+            -p "$PROD_SSH_PORT" \
+            "${PROD_SSH_USER}@${PROD_SSH_HOST}" \
+            "$remote_command" < scripts/deploy/install-frontend-release.sh
+
+      - name: Install SteelX Nginx config on production
+        run: |
+          set -euo pipefail
+          quote() { printf '%q' "$1"; }
+          remote_command="sudo bash -s --"
+          remote_command+=" --release-root $(quote "$PROD_RELEASE_ROOT")"
+          remote_command+=" --frontend-root $(quote "$PROD_FRONTEND_ROOT")"
+          remote_command+=" --backend-port $(quote "$PROD_BACKEND_PORT")"
+          remote_command+=" --frontend-port $(quote "$PROD_NGINX_FRONTEND_PORT")"
+          remote_command+=" --http-redirect-port $(quote "$PROD_NGINX_HTTP_REDIRECT_PORT")"
+          remote_command+=" --server-name $(quote "$PROD_NGINX_SERVER_NAME")"
+          remote_command+=" --ssl-certificate $(quote "$PROD_NGINX_SSL_CERTIFICATE")"
+          remote_command+=" --ssl-certificate-key $(quote "$PROD_NGINX_SSL_CERTIFICATE_KEY")"
+          remote_command+=" --nginx-worker-user $(quote "$PROD_NGINX_WORKER_USER")"
+          remote_command+=" --nginx-worker-group $(quote "$PROD_NGINX_WORKER_GROUP")"
+          ssh -i "$HOME/.ssh/aries-production" \
+            -p "$PROD_SSH_PORT" \
+            "${PROD_SSH_USER}@${PROD_SSH_HOST}" \
+            "$remote_command" < scripts/deploy/install-steelx-nginx-config.sh
