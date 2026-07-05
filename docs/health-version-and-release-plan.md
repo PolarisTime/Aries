@@ -138,8 +138,12 @@ semantic-release 配置 `aries/.releaserc`：`branches: ["main"]`、`tagFormat: 
 框架分工（现有框架优先）：
 
 - Spring Boot Actuator：`BuildProperties` / `GitProperties` 提供版本与 SHA 注入能力；内部诊断走 `/actuator/health`、`/actuator/info`（不对公网）。
-- Micrometer + OTel：负责 trace 生成、传播、采样、导出。
+- Micrometer + OTel：负责 trace 生成、传播、采样、导出（已引入，见现状第 5 节）。
 - 自研端点只保留公开、字段可控的 `/version`。JVM/DB/Redis 详细诊断保留在受保护的 `/system/health` 或后续下沉到 Actuator。
+
+为何自研 `/version` 而非直接暴露 `/actuator/info`：`/actuator/info` 配好 info contributors 后可零业务代码输出同样字段，但它位于 `/actuator` 命名空间下，公开它需单独放行并谨慎隔离同命名空间的其他敏感端点。本项目 `/actuator/**` 默认不打算对公网开放，自研 `/version` 可让公开契约字段完全可控、与 `/actuator` 安全边界天然隔离，因此对本项目更干净。
+
+metrics 前置条件：当前仅 trace 链路就绪（`opentelemetry-exporter-otlp` 导出 trace）。`pom.xml` 尚缺 `micrometer-registry-prometheus`，因此 `/actuator/prometheus` 目前不可用。若后续要做指标导出，需先补该依赖（版本随 Spring Boot BOM）。注意 trace 走 OTLP、metrics 走 Prometheus registry（拉模型）或 OTLP metrics（推模型）是两条独立链路，需明确二选一，不要与 trace 混为一谈。
 
 ## 开发方案
 
@@ -157,7 +161,7 @@ semantic-release 配置 `aries/.releaserc`：`branches: ["main"]`、`tagFormat: 
 构建侧（消除版本分裂）：
 
 1. `spring-boot-maven-plugin` 增加 `build-info` 执行，生成 `META-INF/build-info.properties`，使 `BuildProperties` 可用（版本取自 `pom.xml` 的 `1.1.2`）。
-2. 引入 git 版本插件（如 `git-commit-id-maven-plugin`）生成 `git.properties`，使 `GitProperties` 可用。
+2. 启用 `git-commit-id-maven-plugin` 生成 `git.properties`，使 `GitProperties` 可用。该插件由 Spring Boot BOM 统一管理版本（当前 `9.0.2`，Spring Boot 官方在 `spring-boot-dependencies` 中维护），**无需手动指定版本号**，直接继承 parent 即可。
 
 代码侧：
 
@@ -194,7 +198,7 @@ semantic-release 配置 `aries/.releaserc`：`branches: ["main"]`、`tagFormat: 
 - 默认 profile 也将 `leo.surface.health.public-access-enabled` 收敛为 `false`（`application.yml:342`），与生产对齐；`SurfaceAccessProperties.java:34` 默认值改为 `false`。
 - 详细页要求认证 + 明确权限（角色）。
 - 公开页（若保留）只显示 `UP` 与检查时间，去掉 Java 版本、运行时长等。
-- 中长期：将详细 JVM/DB/Redis 诊断下沉到 Actuator / Spring Boot Admin，逐步废弃自研 HTML 详细页，避免重复维护。
+- 中长期：将详细 JVM/DB/Redis 诊断下沉到 Actuator，逐步废弃自研 HTML 详细页，避免重复维护。运维 UI 有两种选择：① Actuator 端点 + Grafana 直连（更轻，单体应用优先考虑）；② Spring Boot Admin（**可选**，面向多服务统一看板，对单体偏重，且会新增一个需认证/网络隔离的 Web 服务）。Spring Boot Admin 版本与 Boot 强绑定（`3.5.x` 对应 Boot 3.5、`4.0.x` 对应 Boot 4.x），是否引入建议与后端 Boot 版本升级一并决策，不单独提前引入（见风险章节）。
 
 ### 阶段 5：TraceId 收敛，对齐 Micrometer
 
@@ -246,6 +250,7 @@ semantic-release 配置 `aries/.releaserc`：`branches: ["main"]`、`tagFormat: 
 - 前端自动版本发布不推动后端版本。后端版本来自 Maven 构建（阶段 2），需在后端发布流程中确保 `build-info` 被打进制品。
 - 真实发布会触发 tag 和生产部署，必须在 `SEMANTIC_RELEASE_TOKEN`、回滚流程（已有 `rollback-production.yml`）和监控确认后执行。
 - 修改 `HealthController` 的 HTTP status 语义会影响现有 LB / 探针配置，上线前需同步运维确认探针路径与期望状态码。
+- Spring Boot 3.5（当前 parent `3.5.16`）开源支持已于 2026-06-30 结束（EOL）。本计划书的核心改造（Actuator / `git-commit-id-maven-plugin` / Micrometer）在 3.5 与 4.x 上均成立，可照常推进；但中长期引入 Spring Boot Admin、`micrometer-registry-prometheus` 等新组件时，应优先按 Boot 4.x 兼容版本选型，避免在 3.5 线叠加新依赖后再做双重迁移。
 
 ## 推荐执行顺序
 
