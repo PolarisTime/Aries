@@ -164,6 +164,12 @@ server {
     ssl_session_cache shared:STEELXSSL:10m;
     ssl_session_timeout 10m;
 
+    server_tokens off;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "no-referrer" always;
+
     root $FRONTEND_ROOT/current;
     index index.html;
 
