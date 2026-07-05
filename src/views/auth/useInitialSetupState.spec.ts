@@ -49,6 +49,7 @@ vi.mock('@/utils/type-narrowing', () => ({
   asString: (v: unknown) => String(v ?? ''),
 }))
 
+import { useSetupStore } from '@/stores/setupStore'
 import { message } from '@/utils/antd-app'
 import { useInitialSetupState } from '@/views/auth/useInitialSetupState'
 
@@ -56,6 +57,8 @@ describe('useInitialSetupState', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useRealTimers()
+    useSetupStore.setState({ status: null })
+    useSetupStore.persist.clearStorage()
     mockGetInitialSetupStatus.mockReset()
     mockSubmitInitialAdmin.mockReset()
     mockSubmitInitialCompany.mockReset()
@@ -71,6 +74,8 @@ describe('useInitialSetupState', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    useSetupStore.setState({ status: null })
+    useSetupStore.persist.clearStorage()
   })
 
   it('returns initial state', async () => {
@@ -649,6 +654,7 @@ describe('useInitialSetupState', () => {
 
   it('submits company setup with normalized payload', async () => {
     mockSubmitInitialCompany.mockResolvedValue({ message: '公司已创建' })
+    useSetupStore.getState().setStatus({ setupRequired: true })
     const { result } = renderHook(() => useInitialSetupState())
 
     await waitFor(() => {
@@ -677,6 +683,7 @@ describe('useInitialSetupState', () => {
       remark: '',
     })
     expect(message.success).toHaveBeenCalledWith('公司已创建')
+    expect(useSetupStore.getState().status).toEqual({ setupRequired: false })
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/login' })
     expect(result.current.loadingCompany).toBe(false)
   })

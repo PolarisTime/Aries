@@ -12,6 +12,7 @@ import type {
   InitialSetupStatus,
   InitialSetupTotpResult,
 } from '@/shared/schemas'
+import { useSetupStore } from '@/stores/setupStore'
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 
@@ -58,6 +59,7 @@ export function useInitialSetupState() {
       const res = await getInitialSetupStatus()
       const s = res.data
       setStatus(s)
+      useSetupStore.getState().setStatus(s)
       if (s.adminConfigured && !s.companyConfigured) {
         setAdminCompleted(true)
         setCurrentStep('company')
@@ -90,6 +92,7 @@ export function useInitialSetupState() {
         }
         const s = res.data
         setStatus(s)
+        useSetupStore.getState().setStatus(s)
         if (s.adminConfigured && !s.companyConfigured) {
           setAdminCompleted(true)
           setCurrentStep('company')
@@ -209,6 +212,7 @@ export function useInitialSetupState() {
       message.success(
         res.message || t('auth.initialsetup.companyCreateSuccess'),
       )
+      useSetupStore.getState().setStatus({ setupRequired: false })
       void navigate({ to: '/login' })
       setLoadingCompany(false)
     } catch (error) {
