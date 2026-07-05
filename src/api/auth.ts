@@ -16,20 +16,15 @@ import {
 } from './auth/auth-state'
 import { authHttp, http } from './client'
 
-export type HealthCheck = {
-  status: string
-  message?: string
-}
-
 export type HealthResponse = {
   status: string
+}
+
+export type BackendInfo = {
   app: string
-  version?: string
-  traceId: string
-  timestamp: string
-  db?: HealthCheck
-  redis?: HealthCheck
-  disk?: HealthCheck
+  version: string
+  gitCommit: string
+  buildTime: string | null
 }
 
 export function login(
@@ -92,6 +87,12 @@ export async function checkAuthPing(): Promise<boolean> {
 
 export async function fetchBackendHealth(): Promise<HealthResponse> {
   const response = await http.get<ApiResponse<HealthResponse>>(ENDPOINTS.HEALTH)
+  return assertApiSuccess(response, getApiMessage('backendServiceUnavailable'))
+    .data
+}
+
+export async function fetchBackendInfo(): Promise<BackendInfo> {
+  const response = await http.get<ApiResponse<BackendInfo>>(ENDPOINTS.VERSION)
   return assertApiSuccess(response, getApiMessage('backendServiceUnavailable'))
     .data
 }

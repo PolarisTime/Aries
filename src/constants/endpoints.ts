@@ -60,6 +60,7 @@ export const ENDPOINTS = {
 
   // Health (pure action → singular)
   HEALTH: '/health',
+  VERSION: '/version',
 
   // Dashboard (pure action → singular)
   DASHBOARD_SUMMARY: '/dashboard/summary',

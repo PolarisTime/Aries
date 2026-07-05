@@ -5,6 +5,7 @@ const mockNavigate = vi.fn()
 const mockUseQuery = vi.fn()
 const mockUseIdleActivation = vi.fn()
 const mockUsePageVisibility = vi.fn()
+const mockAppVersionFooter = vi.fn()
 
 vi.mock('@tanstack/react-query', () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
@@ -53,12 +54,14 @@ vi.mock('@/api/dashboard', () => ({
 vi.mock('@/constants/query-keys', () => ({
   QUERY_KEYS: {
     dashboardSummary: ['dashboardSummary'],
-    dashboardBackendHealth: ['dashboardBackendHealth'],
   },
 }))
 
-vi.mock('@/api/auth', () => ({
-  fetchBackendHealth: vi.fn(),
+vi.mock('@/layouts/AppVersionFooter', () => ({
+  AppVersionFooter: (props: Record<string, unknown>) => {
+    mockAppVersionFooter(props)
+    return <footer data-testid="version-footer">Version Footer</footer>
+  },
 }))
 
 vi.mock('@/hooks/useIdleActivation', () => ({
@@ -109,14 +112,7 @@ describe('DashboardView', () => {
     vi.clearAllMocks()
     mockUseIdleActivation.mockReturnValue(true)
     mockUsePageVisibility.mockReturnValue(true)
-    mockUseQuery.mockImplementation((options) => {
-      if (options.queryKey?.[0] === 'dashboardBackendHealth') {
-        return {
-          data: { version: '0.1.0' },
-          isLoading: false,
-          isError: false,
-        }
-      }
+    mockUseQuery.mockImplementation(() => {
       return {
         data: {
           companyName: '测试公司',
@@ -176,19 +172,13 @@ describe('DashboardView', () => {
         refetchInterval: false,
       }),
     )
-    expect(mockUseQuery).toHaveBeenCalledWith(
-      expect.objectContaining({
-        queryKey: ['dashboardBackendHealth'],
-        refetchInterval: false,
-      }),
-    )
+    expect(mockUseQuery).toHaveBeenCalledTimes(1)
   })
 
-  it('renders version footer on dashboard only', () => {
+  it('renders version footer without passing backend health data', () => {
     render(<DashboardView />)
-    expect(screen.getByText('© 2026C Leo')).toBeTruthy()
-    expect(screen.getByText('前端 v0.2.0')).toBeTruthy()
-    expect(screen.getByText('后端 v0.1.0')).toBeTruthy()
+    expect(screen.getByTestId('version-footer')).toBeTruthy()
+    expect(mockAppVersionFooter.mock.calls[0]?.[0]).toEqual({})
   })
 
   it('does not render error alert when query is successful', () => {

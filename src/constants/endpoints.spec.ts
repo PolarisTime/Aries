@@ -67,6 +67,11 @@ describe('ENDPOINTS', () => {
     expect(ENDPOINTS.UPLOAD_RULE).toBe('/general-settings/upload-rule')
   })
 
+  it('has health and version endpoints', () => {
+    expect(ENDPOINTS.HEALTH).toBe('/health')
+    expect(ENDPOINTS.VERSION).toBe('/version')
+  })
+
   it('has permission and role endpoints', () => {
     expect(ENDPOINTS.PERMISSION_CATALOG).toBe('/permissions/catalog')
     expect(ENDPOINTS.ROLE_SETTINGS).toBe('/role-settings')
@@ -106,6 +111,7 @@ describe('ENDPOINTS', () => {
       'COMPANY_SETTINGS_OPTIONS',
       'COMPANY_NAME',
       'HEALTH',
+      'VERSION',
       'DASHBOARD_SUMMARY',
       'GLOBAL_SEARCH',
       'DATABASE_STATUS',

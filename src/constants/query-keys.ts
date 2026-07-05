@@ -11,7 +11,7 @@ export const QUERY_KEYS = {
 
   // Dashboard
   dashboardSummary: ['dashboard-summary'] as const,
-  dashboardBackendHealth: ['dashboard-backend-health'] as const,
+  backendInfo: ['backend-info'] as const,
 
   // Business grid
   businessGrid: (moduleKey: string) => ['business-grid', moduleKey] as const,

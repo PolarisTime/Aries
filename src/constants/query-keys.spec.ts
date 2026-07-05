@@ -9,7 +9,7 @@ describe('QUERY_KEYS', () => {
       'companySetting',
       'numberRules',
       'dashboardSummary',
-      'dashboardBackendHealth',
+      'backendInfo',
       'businessGrid',
       'businessGridAll',
       'businessGridPage',
@@ -61,6 +61,10 @@ describe('QUERY_KEYS', () => {
 
   it('runtimeConfig is frozen array', () => {
     expect(QUERY_KEYS.runtimeConfig).toEqual(['runtime-config'])
+  })
+
+  it('backendInfo is a stable singleton key', () => {
+    expect(QUERY_KEYS.backendInfo).toEqual(['backend-info'])
   })
 
   it('businessGrid returns dynamic query key', () => {

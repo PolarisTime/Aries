@@ -3,7 +3,6 @@ import { useNavigate } from '@tanstack/react-router'
 import { Alert } from 'antd'
 import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
-import { fetchBackendHealth } from '@/api/auth'
 import { getDashboardSummary } from '@/api/dashboard'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useIdleActivation } from '@/hooks/useIdleActivation'
@@ -32,12 +31,6 @@ export function DashboardView() {
     queryFn: getDashboardSummary,
     refetchInterval: isPageVisible ? 120000 : false,
   })
-  const { data: backendHealth } = useQuery({
-    queryKey: QUERY_KEYS.dashboardBackendHealth,
-    queryFn: fetchBackendHealth,
-    refetchInterval: isPageVisible ? 120000 : false,
-  })
-
   const animatedServerTime = useDashboardServerTime(summary?.serverTime)
   const infoItems = buildDashboardInfoItems(t, summary)
 
@@ -77,7 +70,7 @@ export function DashboardView() {
         </aside>
       </div>
 
-      <AppVersionFooter backendVersion={backendHealth?.version || null} />
+      <AppVersionFooter />
     </div>
   )
 }

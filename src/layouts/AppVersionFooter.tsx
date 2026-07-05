@@ -1,13 +1,20 @@
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { fetchBackendInfo } from '@/api/auth'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { frontendVersion } from '@/utils/env'
 
-interface AppVersionFooterProps {
-  backendVersion: string | null
-}
-
-export function AppVersionFooter({ backendVersion }: AppVersionFooterProps) {
+export function AppVersionFooter() {
   const { t } = useTranslation()
-  const resolvedBackendVersion = backendVersion || t('common.versionUnknown')
+  const { data } = useQuery({
+    queryKey: QUERY_KEYS.backendInfo,
+    queryFn: fetchBackendInfo,
+    staleTime: 60 * 60 * 1000,
+    gcTime: 2 * 60 * 60 * 1000,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  })
+  const resolvedBackendVersion = data?.version || t('common.versionUnknown')
 
   return (
     <footer className="app-version-footer">

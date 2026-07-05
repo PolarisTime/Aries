@@ -8,16 +8,13 @@ const INITIAL_BOOT_DELAY_MS = 1200
 
 export function useBackendStatus(token: string): {
   backendOnline: boolean
-  backendVersion: string | null
 } {
   const [healthState, setHealthState] = useState<{
     backendOnline: boolean
-    backendVersion: string | null
     token: string
-  }>({ backendOnline: false, backendVersion: null, token })
+  }>({ backendOnline: false, token })
   const isCurrentToken = Boolean(token) && healthState.token === token
   const backendOnline = isCurrentToken ? healthState.backendOnline : false
-  const backendVersion = isCurrentToken ? healthState.backendVersion : null
   const healthRetriesRef = useRef(0)
 
   useEffect(() => {
@@ -33,17 +30,14 @@ export function useBackendStatus(token: string): {
         const body = await fetchBackendHealth()
         setHealthState({
           backendOnline: body.status === 'UP',
-          backendVersion: body.version || null,
           token,
         })
         healthRetriesRef.current = 0
       } catch {
-        setHealthState((current) => ({
+        setHealthState({
           backendOnline: false,
-          backendVersion:
-            current.token === token ? current.backendVersion : null,
           token,
-        }))
+        })
         healthRetriesRef.current += 1
         if (healthRetriesRef.current <= HEALTH_CHECK_MAX_RETRIES) {
           const delay = Math.min(
@@ -82,6 +76,5 @@ export function useBackendStatus(token: string): {
 
   return {
     backendOnline,
-    backendVersion,
   }
 }

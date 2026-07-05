@@ -25,7 +25,7 @@ describe('useBackendStatus', () => {
   it('checks backend health after initial delay', async () => {
     vi.mocked(fetchBackendHealth).mockResolvedValue({
       status: 'UP',
-      version: '0.1.0',
+      timestamp: '2026-07-05T03:30:00Z',
     })
 
     const { result } = renderHook(() => useBackendStatus('token'))
@@ -38,7 +38,7 @@ describe('useBackendStatus', () => {
     })
 
     expect(result.current.backendOnline).toBe(true)
-    expect(result.current.backendVersion).toBe('0.1.0')
+    expect('backendVersion' in result.current).toBe(false)
   })
 
   it('sets backendOnline to false when health check fails', async () => {
@@ -65,13 +65,15 @@ describe('useBackendStatus', () => {
     })
 
     expect(result.current.backendOnline).toBe(false)
-    expect(result.current.backendVersion).toBeNull()
   })
 
   it('retries health check on failure', async () => {
     vi.mocked(fetchBackendHealth)
       .mockRejectedValueOnce(new Error('Network error'))
-      .mockResolvedValueOnce({ status: 'UP', version: '0.1.0' })
+      .mockResolvedValueOnce({
+        status: 'UP',
+        timestamp: '2026-07-05T03:30:00Z',
+      })
 
     const { result } = renderHook(() => useBackendStatus('token'))
 
@@ -88,7 +90,6 @@ describe('useBackendStatus', () => {
     })
 
     expect(result.current.backendOnline).toBe(true)
-    expect(result.current.backendVersion).toBe('0.1.0')
   })
 
   it('stops retrying after max retries', async () => {
@@ -170,7 +171,7 @@ describe('useBackendStatus', () => {
   it('hides stale health state while token changes', async () => {
     vi.mocked(fetchBackendHealth).mockResolvedValue({
       status: 'UP',
-      version: '0.1.0',
+      timestamp: '2026-07-05T03:30:00Z',
     })
 
     const { result, rerender } = renderHook(
@@ -184,19 +185,17 @@ describe('useBackendStatus', () => {
     })
 
     expect(result.current.backendOnline).toBe(true)
-    expect(result.current.backendVersion).toBe('0.1.0')
 
     rerender({ token: 'token2' })
 
     expect(result.current.backendOnline).toBe(false)
-    expect(result.current.backendVersion).toBeNull()
   })
 
-  it('clears stale backend version when new token health check fails', async () => {
+  it('keeps backend status offline when new token health check fails', async () => {
     vi.mocked(fetchBackendHealth)
       .mockResolvedValueOnce({
         status: 'UP',
-        version: '0.1.0',
+        timestamp: '2026-07-05T03:30:00Z',
       })
       .mockRejectedValueOnce(new Error('Network error'))
 
@@ -210,7 +209,7 @@ describe('useBackendStatus', () => {
       await vi.advanceTimersByTimeAsync(0)
     })
 
-    expect(result.current.backendVersion).toBe('0.1.0')
+    expect(result.current.backendOnline).toBe(true)
 
     rerender({ token: 'token2' })
 
@@ -220,7 +219,6 @@ describe('useBackendStatus', () => {
     })
 
     expect(result.current.backendOnline).toBe(false)
-    expect(result.current.backendVersion).toBeNull()
   })
 
   it('uses exponential backoff for retries', async () => {

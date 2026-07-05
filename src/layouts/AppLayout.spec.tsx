@@ -336,7 +336,6 @@ vi.mock('@/layouts/useAppWatermark', () => ({
 vi.mock('@/layouts/useBackendStatus', () => ({
   useBackendStatus: vi.fn().mockReturnValue({
     backendOnline: true,
-    backendVersion: '0.1.0',
   }),
 }))
 

@@ -27,6 +27,7 @@ vi.mock('@/constants/endpoints', () => ({
     AUTH_REFRESH: '/auth/refresh',
     AUTH_PING: '/auth/ping',
     HEALTH: '/health',
+    VERSION: '/version',
   },
 }))
 
@@ -37,6 +38,7 @@ vi.mock('@/utils/api-messages', () => ({
 import {
   checkAuthPing,
   fetchBackendHealth,
+  fetchBackendInfo,
   fetchCaptcha,
   login,
   login2fa,
@@ -185,10 +187,6 @@ describe('auth', () => {
     it('fetches health status', async () => {
       const healthData = {
         status: 'UP',
-        app: 'aries',
-        version: '0.1.0',
-        traceId: 't1',
-        timestamp: '2024-01-01',
       }
       httpGetMock.mockResolvedValue({ code: 0, data: healthData })
 
@@ -196,6 +194,23 @@ describe('auth', () => {
 
       expect(httpGetMock).toHaveBeenCalledWith('/health')
       expect(result).toEqual(healthData)
+    })
+  })
+
+  describe('fetchBackendInfo', () => {
+    it('fetches backend version info', async () => {
+      const backendInfo = {
+        app: 'leo',
+        version: '1.1.2',
+        gitCommit: 'abcdef1',
+        buildTime: '2026-07-05T03:30:00Z',
+      }
+      httpGetMock.mockResolvedValue({ code: 0, data: backendInfo })
+
+      const result = await fetchBackendInfo()
+
+      expect(httpGetMock).toHaveBeenCalledWith('/version')
+      expect(result).toEqual(backendInfo)
     })
   })
 })

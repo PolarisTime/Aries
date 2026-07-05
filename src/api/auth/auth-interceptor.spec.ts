@@ -139,6 +139,19 @@ describe('auth-interceptor', () => {
       expect(config.headers.set).not.toHaveBeenCalled()
     })
 
+    it('skips auth for version endpoint', async () => {
+      const http = setupHttp()
+      getTokenMock.mockReturnValue('my-jwt')
+      getRequestPathMock.mockReturnValue('/version')
+
+      const config = await http.interceptors.request.handlers[0].fulfilled({
+        url: '/version',
+        headers: { set: vi.fn(), delete: vi.fn() },
+      })
+
+      expect(config.headers.set).not.toHaveBeenCalled()
+    })
+
     it('skips auth for auth endpoints', async () => {
       const http = setupHttp()
       getTokenMock.mockReturnValue('my-jwt')

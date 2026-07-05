@@ -66,6 +66,7 @@ const PUBLIC_ENDPOINTS = [
   ENDPOINTS.SETUP_ADMIN,
   ENDPOINTS.SETUP_COMPANY,
   ENDPOINTS.HEALTH,
+  ENDPOINTS.VERSION,
 ]
 
 function isPublicEndpoint(url: string) {
