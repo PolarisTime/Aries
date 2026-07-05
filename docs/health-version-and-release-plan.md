@@ -172,6 +172,83 @@ metrics 前置条件：当前仅 trace 链路就绪（`opentelemetry-exporter-ot
 
 要点：`/version` 只暴露非敏感构建元数据；JVM/DB/Redis 等一律不放入。
 
+实现细节：
+
+`pom.xml` 构建插件配置：
+
+```xml
+<!-- 现有 spring-boot-maven-plugin 增加 build-info 执行，生成 META-INF/build-info.properties -->
+<plugin>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-maven-plugin</artifactId>
+  <executions>
+    <execution>
+      <id>build-info</id>
+      <goals><goal>build-info</goal></goals>
+    </execution>
+  </executions>
+  <!-- 现有 <configuration> 的 lombok exclude 保留 -->
+</plugin>
+
+<!-- git-commit-id：版本由 Spring Boot BOM 管理（9.0.2），无需写 <version> -->
+<plugin>
+  <groupId>io.github.git-commit-id</groupId>
+  <artifactId>git-commit-id-maven-plugin</artifactId>
+  <executions>
+    <execution>
+      <id>get-the-git-infos</id>
+      <phase>initialize</phase>
+      <goals><goal>revision</goal></goals>
+    </execution>
+  </executions>
+  <configuration>
+    <failOnNoGitDirectory>false</failOnNoGitDirectory>
+    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+    <includeOnlyProperties>
+      <property>git.commit.id.abbrev</property>
+      <property>git.commit.time</property>
+    </includeOnlyProperties>
+  </configuration>
+</plugin>
+```
+
+> CI 注意：`failOnNoGitDirectory=false` 保证无 `.git` 时构建不失败。CI 若用浅克隆，`git.commit.id.abbrev` 仍可取到；如需完整历史再单独配置 `fetch-depth`。
+
+**关键陷阱**：`BuildProperties` 与 `GitProperties` 是**条件装配** Bean——仅当对应的 `build-info.properties` / `git.properties` 存在时才注册。本地 IDE 直接运行（未跑 `build-info` goal）或无 git 环境时，直接用 `@Autowired` 构造器注入会导致**应用启动失败**。必须用 `ObjectProvider` 容忍缺失：
+
+```java
+@RestController
+public class VersionController {
+
+    private final ObjectProvider<BuildProperties> buildProperties;
+    private final ObjectProvider<GitProperties> gitProperties;
+    private final String appName;
+
+    public VersionController(ObjectProvider<BuildProperties> buildProperties,
+                             ObjectProvider<GitProperties> gitProperties,
+                             @Value("${spring.application.name:leo}") String appName) {
+        this.buildProperties = buildProperties;
+        this.gitProperties = gitProperties;
+        this.appName = appName;
+    }
+
+    @GetMapping("/version")
+    public ApiResponse<VersionResponse> version() {
+        BuildProperties build = buildProperties.getIfAvailable();
+        GitProperties git = gitProperties.getIfAvailable();
+        return ApiResponse.success(new VersionResponse(
+                appName,
+                build != null ? build.getVersion() : "unknown",
+                git != null ? git.getShortCommitId() : "unknown",
+                build != null ? build.getTime().toString() : null));
+    }
+
+    public record VersionResponse(String app, String version, String gitCommit, String buildTime) {}
+}
+```
+
+fallback 原则：构建信息缺失时 `version` 返回 `"unknown"`（或 `"dev"`），**不得**回退到 `1.1.0` 之类旧正式版本号。响应沿用全站统一的 `ApiResponse<T>` 包装（`ApiResponse.success(...)`，见 `ApiResponse.java:28`），前端复用现有 `assertApiSuccess` 解包。`build.getTime()` 返回 `Instant`，`toString()` 即 ISO-8601（如 `2026-07-05T03:30:00Z`）。
+
 ### 阶段 3：收敛公开 JSON `/health`
 
 `HealthController` / `HealthService` 改造：
@@ -193,6 +270,31 @@ metrics 前置条件：当前仅 trace 链路就绪（`opentelemetry-exporter-ot
 
 不得公开：Java 版本、JVM 名称、运行时长、主机/端口/库名、PG/Redis 版本、连接数/表数/Key 数/命中率、磁盘容量、Debug 输出。
 
+实现细节：
+
+裁剪现有 DTO（`HealthResponse.java` 当前含 8 个字段）为公开最小集：
+
+```java
+// 最小型
+public record HealthResponse(String status, String timestamp) {}
+// 或保留粗粒度依赖状态（不含容量/主机/版本）
+public record HealthResponse(String status, String timestamp, Map<String, String> checks) {}
+```
+
+HTTP status 方案（推荐：保留 `ApiResponse` 包装，用 `ResponseEntity` 设置状态码，与全站一致）：
+
+```java
+@GetMapping("/health")
+public ResponseEntity<ApiResponse<HealthResponse>> health() {
+    HealthResponse body = healthService.publicHealth();
+    HttpStatus status = "UP".equals(body.status()) ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE;
+    return ResponseEntity.status(status).body(ApiResponse.success(body));
+}
+```
+
+> 前后端契约联动：改为 `503` 后，前端 axios 对非 2xx 默认 reject。`useBackendStatus` 的 `checkBackendHealth` 已有 try/catch，`503` 会进入 catch → `backendOnline=false`，符合“降级即不可用”语义，前端无需额外改动。
+> readiness 语义需在开发时明确并写入测试，三选一：① `UP` 返回 `200`、其余 `503`（最严格）；② 仅 `DOWN` 返回 `503`、`DEGRADED` 保持 `200`（依赖降级仍算在线）；③ `/health` 恒 `200`、readiness 交给 `/actuator/health`（此时需在 `management.endpoints.web.exposure.include` 暴露 health 并配置访问控制，Controller 保持返回 `ApiResponse.success`）。
+
 ### 阶段 4：收敛 HTML `/system/health`
 
 - 默认 profile 也将 `leo.surface.health.public-access-enabled` 收敛为 `false`（`application.yml:342`），与生产对齐；`SurfaceAccessProperties.java:34` 默认值改为 `false`。
@@ -210,6 +312,15 @@ metrics 前置条件：当前仅 trace 链路就绪（`opentelemetry-exporter-ot
 - 失败响应体统一携带当前 traceId，便于用户反馈定位日志。
 - CORS 暴露 `X-Trace-Id` 已就绪（`SecurityConfig.java:100`），无需改动。
 
+实现细节：
+
+当前 `TraceIdFilter` 已通过 `MDC.get("traceId")` 间接读取 Micrometer 写入的 trace id（Micrometer correlation 在 span 激活时把 traceId 注入 MDC），主路径**无需重写**，收敛以语义澄清为主：
+
+- 若要更显式、摆脱对 MDC key 约定的依赖，可注入 `io.micrometer.tracing.Tracer`，用 `tracer.currentSpan()` 读取 `context().traceId()`；但 MDC 方案已足够，二选一即可，不必两套并行。
+- legacy 分支（`TraceIdFilter.java:36-39`）：仅当 MDC 无值（未采样，或 filter 早于 span 创建）才回显请求头 `X-Trace-Id`。保留同名响应头，但在代码注释中标注其为 legacy 兜底，避免与 OTel trace id 混淆。
+- 移除 `HealthService` 的 `safeTraceId()`（`HealthService.java:87-90`）及 `HealthResponse.traceId`（已含在阶段 3 的 DTO 裁剪内）。
+- 失败响应的 traceId **无需新增**：`ApiResponse.failure(...)` 已通过 `currentTraceId()` 读 MDC 注入（`ApiResponse.java:44-59`）。
+
 ### 阶段 6：前端改造（切 `/version` + 去重探活）
 
 - 新增 `fetchBackendInfo` 调用 `/version`（新增 `aries/src/api` 方法），返回 `{ app, version, gitCommit, buildTime }` 类型。
@@ -221,6 +332,61 @@ metrics 前置条件：当前仅 trace 链路就绪（`opentelemetry-exporter-ot
 - 更新 `aries/src/api/auth.ts` 的 `HealthResponse` 类型，去掉 `version/traceId/db/redis/disk`，与收敛后的 `/health` 对齐。
 - 不保留 `/health.version` 兜底（不考虑兼容性）。
 
+实现细节：
+
+1. `aries/src/constants/endpoints.ts` 新增（Health 段旁）：
+
+```ts
+// Version (pure action → singular)
+VERSION: '/version',
+```
+
+2. `aries/src/api/`（放入 `auth.ts` 或新建 `system.ts`）新增类型与请求：
+
+```ts
+export type BackendInfo = {
+  app: string
+  version: string
+  gitCommit: string
+  buildTime: string | null
+}
+
+export async function fetchBackendInfo(): Promise<BackendInfo> {
+  const response = await http.get<ApiResponse<BackendInfo>>(ENDPOINTS.VERSION)
+  return assertApiSuccess(response, getApiMessage('backendServiceUnavailable')).data
+}
+```
+
+3. `aries/src/constants/query-keys.ts` Dashboard 段新增：
+
+```ts
+backendInfo: ['backend-info'] as const,
+```
+
+4. `AppVersionFooter` 自行取数（与 health 解耦），不再接收 `backendVersion` prop：
+
+```tsx
+export function AppVersionFooter() {
+  const { t } = useTranslation()
+  const { data } = useQuery({
+    queryKey: QUERY_KEYS.backendInfo,
+    queryFn: fetchBackendInfo,
+    staleTime: 60 * 60 * 1000, // 1h：构建期内版本不变
+    gcTime: 2 * 60 * 60 * 1000,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+  })
+  const backendVersion = data?.version || t('common.versionUnknown')
+  // 其余渲染不变
+}
+```
+
+5. `DashboardView.tsx`：删除 `backendHealth` 的 `useQuery`（`:35-39`）与 `fetchBackendHealth` import，`<AppVersionFooter />` 去掉 props（`:80`）。
+6. `useBackendStatus.ts`：删除 `backendVersion` 状态字段、返回值及相关赋值（`:11,15-17,20,36,43-44,85`），`fetchBackendHealth` 结果只读 `status`。
+7. `auth.ts` 的 `HealthResponse` 类型裁剪为 `{ status: string }`，与收敛后的 `/health` 对齐。
+
+> `versionUnknown` i18n key 已存在（`zh-CN.ts:274` / `en-US.ts:276`，值为 `--`），无需新增。
+
 ### 阶段 7：测试与验收
 
 后端测试：
@@ -231,11 +397,26 @@ metrics 前置条件：当前仅 trace 链路就绪（`opentelemetry-exporter-ot
 - `/system/health` 详细页需认证 + 权限；默认/生产 profile 下的公开性符合预期。
 - `TraceIdFilter`：MDC 有值时 `X-Trace-Id` 与 MDC 一致；`/health`、`/version` 不含 traceId。
 
+关键用例（MockMvc / `@SpringBootTest`）：
+
+- `GET /version` 未认证可访问，返回 `200`，`data.version` 非空且不等于旧硬编码版本。
+- 模拟 `BuildProperties`/`GitProperties` 缺失（`ObjectProvider` 为空）时，`version`/`gitCommit` 为 `"unknown"`，接口不抛异常、不返回 `500`。
+- `GET /health` 为 `UP` 时返回 `200`，且 body 不含 `version`/`traceId`/`db.freeGb`/`disk` 等字段（用 JSON path 断言字段缺失）。
+- `GET /health` 依赖 DOWN 时，按最终 readiness 决策断言状态码（`503` 或 `200`）。
+- `/system/health` 详细内容在默认 profile 与 `@ActiveProfiles("prod")` 下分别断言公开性/鉴权要求。
+
 前端测试：
 
 - 页脚显示前端版本 + `/version.version`；`/version` 失败时显示 `--` 或 fallback（`common.versionUnknown`）。
 - 在线状态只依赖 `/health`，不依赖 `/version`。
 - 复用现有前端测试并更新：`aries/src/layouts/useBackendStatus.spec.ts`（移除 backendVersion 断言）、`aries/src/views/dashboard/DashboardView.spec.tsx`、`aries/src/layouts/AppLayout.spec.tsx`。
+
+关键用例（Vitest + Testing Library）：
+
+- mock `/version` 成功 → 页脚渲染 `后端 v<version>`；mock 失败 → 渲染 `--`（`common.versionUnknown`）。
+- `/version` 请求失败不影响 `useBackendStatus` 的在线判断（两者为独立 query）。
+- `useBackendStatus.spec.ts` 移除所有 `backendVersion` 断言（`:41,68,91,187,192,213,223`），仅保留 `backendOnline`。
+- `AppLayout.spec.tsx:336-339` 的 `useBackendStatus` mock 去掉 `backendVersion` 返回值。
 
 发布验证：
 
