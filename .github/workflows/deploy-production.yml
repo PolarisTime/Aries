@@ -100,7 +100,11 @@ jobs:
         run: |
           set -euo pipefail
           aries_sha="$(git rev-parse HEAD)"
-          release_id="aries-${GITHUB_RUN_NUMBER}-${aries_sha::12}"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            release_id="aries-frontend-${GITHUB_REF_NAME}"
+          else
+            release_id="aries-${GITHUB_RUN_NUMBER}-${aries_sha::12}"
+          fi
           mkdir -p release/frontend release/deploy
           cp -a release-input/frontend/. release/frontend/
           cp scripts/deploy/install-frontend-release.sh release/deploy/
@@ -124,14 +128,19 @@ jobs:
               dryRun: $dryRun,
               releaseNote: $releaseNote
             }' > release/manifest.json
-          tar -C release -czf aries-frontend-release.tar.gz .
-          sha256sum aries-frontend-release.tar.gz > aries-frontend-release.tar.gz.sha256
+          archive_name="${release_id}.tar.gz"
+          tar -C release -czf "$archive_name" .
+          sha256sum "$archive_name" > "${archive_name}.sha256"
+          cp "$archive_name" aries-frontend-release.tar.gz
+          cp "${archive_name}.sha256" aries-frontend-release.tar.gz.sha256
 
       - name: Upload frontend release archive
         uses: actions/upload-artifact@v4
         with:
           name: aries-frontend-release
           path: |
+            aries-frontend-*.tar.gz
+            aries-frontend-*.tar.gz.sha256
             aries-frontend-release.tar.gz
             aries-frontend-release.tar.gz.sha256
           if-no-files-found: error

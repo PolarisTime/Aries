@@ -60,6 +60,7 @@ pnpm typecheck
 pnpm test:unit
 pnpm build-only
 pnpm test:e2e
+pnpm release:dry-run
 ```
 
 默认 E2E 套件不包含 `debug-*.spec.ts` 和 `*-debug.spec.ts` 诊断脚本。
@@ -91,6 +92,13 @@ E2E_INCLUDE_DEBUG=1 E2E_LOGIN_NAME=your_user E2E_LOGIN_PASSWORD=your_password pn
 - 使用 `TanStack Query` 管理服务端状态与缓存。
 - 不引入 `ant-design-pro` 脚手架，不切换到 `Umi`。
 - 如需 Pro 风格组件，只局部引入 `@ant-design/pro-components`。
+
+## 自动版本发布
+
+- `main` 分支推送会运行 `.github/workflows/release.yml`，由 `semantic-release` 根据 Conventional Commits 自动计算下一个版本。
+- 发布流程会更新 `package.json` 版本和 `CHANGELOG.md`，创建 `vX.Y.Z` tag 与 GitHub Release；`package.json` 为 `private`，不会发布到 npm registry。
+- 仓库必须配置 `SEMANTIC_RELEASE_TOKEN` secret。该 token 需要能向 `PolarisTime/Aries` 推送 commit/tag 并创建 release；不能只依赖默认 `GITHUB_TOKEN`，否则 workflow 创建的 tag 不会继续触发现有生产部署 workflow。
+- `vX.Y.Z` tag 会触发 `.github/workflows/deploy-production.yml`，部署包 manifest 和归档名会携带语义版本号。
 
 ## 提交前检查
 
