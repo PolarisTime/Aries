@@ -27,10 +27,14 @@ const FOCUSABLE_SELECTOR = [
 ].join(',')
 
 function getFocusableElements(container: HTMLElement) {
-  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
-    .filter((element) => !element.hasAttribute('disabled'))
-    .filter((element) => element.getAttribute('aria-hidden') !== 'true')
-    .filter((element) => !element.hidden)
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  ).filter(
+    (element) =>
+      !element.hasAttribute('disabled') &&
+      element.getAttribute('aria-hidden') !== 'true' &&
+      !element.hidden,
+  )
 }
 
 function getInitialFocusTarget(panel: HTMLElement) {

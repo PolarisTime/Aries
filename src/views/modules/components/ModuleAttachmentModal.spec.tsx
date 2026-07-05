@@ -162,9 +162,9 @@ vi.mock('antd', () => {
       </div>
     ),
     Progress: ({ percent, status: _status, ...props }: any) => (
-      <div aria-valuenow={percent} role="progressbar" {...props}>
+      <progress aria-valuenow={percent} value={percent} max={100} {...props}>
         {percent}
-      </div>
+      </progress>
     ),
     Tag: ({ children, color: _color, ...props }: any) => (
       <span {...props}>{children}</span>
@@ -299,9 +299,9 @@ vi.mock('antd/es/spin', () => ({
 
 vi.mock('antd/es/progress', () => ({
   default: ({ percent, status: _status, ...props }: any) => (
-    <div aria-valuenow={percent} role="progressbar" {...props}>
+    <progress aria-valuenow={percent} value={percent} max={100} {...props}>
       {percent}
-    </div>
+    </progress>
   ),
 }))
 
@@ -712,7 +712,7 @@ describe('ModuleAttachmentModal', () => {
         'src',
         'https://blob.example.test/attachment-preview',
       )
-      expect(screen.getByTitle('PDF Preview')).not.toHaveAttribute('sandbox')
+      expect(screen.getByTitle('PDF Preview')).toHaveAttribute('sandbox', '')
     })
 
     await act(async () => {
@@ -1388,6 +1388,9 @@ describe('ModuleAttachmentModal', () => {
     expect(screen.queryByTitle('PDF Preview')).toBeNull()
 
     rerender(<ModuleAttachmentModal {...defaultProps} open={false} />)
+    await act(async () => {
+      mocks.modalProps!.afterOpenChange(false)
+    })
     await waitFor(() => {
       expect(mocks.revokeObjectURL).toHaveBeenCalledWith(
         'https://blob.example.test/attachment-preview',

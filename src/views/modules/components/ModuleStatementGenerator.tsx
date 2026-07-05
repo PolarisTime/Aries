@@ -135,6 +135,7 @@ export function ModuleStatementGenerator({
             <Button onClick={onClose}>{t('common.cancel')}</Button>
             <Button
               type="primary"
+              data-testid="statement-generate-button"
               loading={generating}
               disabled={!summary}
               onClick={() => {

@@ -2,12 +2,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const moduleStatementTestHarness = vi.hoisted(() => ({
-  buttonPropsByText: new Map<string, any>(),
+  buttonPropsByTestId: new Map<string, any>(),
 }))
 
-const rememberButtonProps = (children: unknown, props: any) => {
-  if (typeof children === 'string') {
-    moduleStatementTestHarness.buttonPropsByText.set(children, props)
+const rememberButtonProps = (props: any) => {
+  const testId = props['data-testid']
+  if (testId) {
+    moduleStatementTestHarness.buttonPropsByTestId.set(String(testId), props)
   }
 }
 
@@ -30,7 +31,7 @@ vi.mock('antd', () => ({
       </div>
     ) : null,
   Button: ({ children, ...props }: any) => {
-    rememberButtonProps(children, props)
+    rememberButtonProps(props)
     return <button {...props}>{children}</button>
   },
   Space: ({ children, ...props }: any) => <div {...props}>{children}</div>,
@@ -53,7 +54,7 @@ vi.mock('antd/es/modal', () => ({
 
 vi.mock('antd/es/button', () => ({
   default: ({ children, ...props }: any) => {
-    rememberButtonProps(children, props)
+    rememberButtonProps(props)
     return <button {...props}>{children}</button>
   },
 }))
@@ -94,7 +95,7 @@ import { ModuleStatementGenerator } from '@/views/modules/components/ModuleState
 
 describe('ModuleStatementGenerator', () => {
   beforeEach(() => {
-    moduleStatementTestHarness.buttonPropsByText.clear()
+    moduleStatementTestHarness.buttonPropsByTestId.clear()
   })
 
   const defaultProps = {
@@ -365,8 +366,8 @@ describe('ModuleStatementGenerator', () => {
       />,
     )
     const generateButtonProps =
-      moduleStatementTestHarness.buttonPropsByText.get(
-        'modules.statement.generateButton',
+      moduleStatementTestHarness.buttonPropsByTestId.get(
+        'statement-generate-button',
       )
     expect(generateButtonProps?.disabled).toBe(true)
     generateButtonProps?.onClick()

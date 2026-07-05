@@ -1,5 +1,9 @@
 {
   "ignore": {
-    "files": ["public/static/clodop-license.js"]
+    "files": [
+      "public/static/clodop-license.js",
+      "coverage-e2e/**",
+      "src/test/e2e-coverage-probe.tsx"
+    ]
   }
 }
