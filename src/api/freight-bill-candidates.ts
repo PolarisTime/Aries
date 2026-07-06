@@ -13,7 +13,7 @@ export async function listFreightBillImportCandidatePage(
 ): Promise<TableResponse<ModuleRecord>> {
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
-      '/freight-bills/import-candidate',
+      '/freight-bills/import-candidates',
       {
         params: {
           ...filters,

@@ -22,9 +22,9 @@ export const ENDPOINTS = {
 
   // API Keys (business entity → plural)
   API_KEYS: '/auth/api-keys',
-  API_KEYS_USER_OPTIONS: '/auth/api-keys/user-option',
-  API_KEYS_RESOURCE_OPTIONS: '/auth/api-keys/resource-option',
-  API_KEYS_ACTION_OPTIONS: '/auth/api-keys/action-option',
+  API_KEYS_USER_OPTIONS: '/auth/api-keys/user-options',
+  API_KEYS_RESOURCE_OPTIONS: '/auth/api-keys/resource-options',
+  API_KEYS_ACTION_OPTIONS: '/auth/api-keys/action-options',
 
   // Sessions / Refresh Tokens (business entity → plural)
   REFRESH_TOKENS: '/auth/refresh-tokens',
@@ -47,7 +47,7 @@ export const ENDPOINTS = {
 
   // Roles (business entity → plural)
   ROLE_SETTINGS: '/role-settings',
-  ROLE_PERMISSION_OPTIONS: '/role-settings/permission-option',
+  ROLE_PERMISSION_OPTIONS: '/role-settings/permission-options',
 
   // System menus (sub-resource tree → singular action)
   SYSTEM_MENUS_TREE: '/system/menu/tree',
@@ -98,15 +98,15 @@ export const ENDPOINTS = {
   MATERIALS_TEMPLATE: '/materials/template',
   MATERIALS_EXPORT: '/materials/export',
   MATERIALS_SEARCH: '/materials/search',
-  MATERIAL_GRADES: '/materials/grade',
+  MATERIAL_GRADES: '/materials/grades',
 
-  // Departments (sub-resource option → singular action)
-  DEPARTMENTS_OPTIONS: '/departments/option',
+  // Departments (sub-resource option lists → plural collection)
+  DEPARTMENTS_OPTIONS: '/departments/options',
 
   // Master data option lists (business entities → plural)
-  WAREHOUSES_OPTIONS: '/warehouses/option',
-  CUSTOMERS_OPTIONS: '/customers/option',
-  SUPPLIERS_OPTIONS: '/suppliers/option',
-  CARRIERS_OPTIONS: '/carriers/option',
-  MATERIAL_CATEGORIES: '/material-categories/option',
+  WAREHOUSES_OPTIONS: '/warehouses/options',
+  CUSTOMERS_OPTIONS: '/customers/options',
+  SUPPLIERS_OPTIONS: '/suppliers/options',
+  CARRIERS_OPTIONS: '/carriers/options',
+  MATERIAL_CATEGORIES: '/material-categories/options',
 } as const

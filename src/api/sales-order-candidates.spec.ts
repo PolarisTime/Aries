@@ -38,7 +38,7 @@ describe('sales-order-candidates', () => {
     )
 
     expect(httpGetMock).toHaveBeenCalledWith(
-      '/sales-orders/outbound-import-candidate',
+      '/sales-orders/outbound-import-candidates',
       {
         params: {
           keyword: 'SO2026000001',

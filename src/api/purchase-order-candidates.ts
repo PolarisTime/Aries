@@ -18,7 +18,7 @@ export async function listPurchaseOrderImportCandidatePage(
 ): Promise<TableResponse<ModuleRecord>> {
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
-      '/purchase-orders/import-candidate',
+      '/purchase-orders/import-candidates',
       {
         params: {
           ...filters,

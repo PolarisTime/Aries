@@ -13,21 +13,22 @@ describe('ENDPOINTS', () => {
 
   it('has all required API key endpoints', () => {
     expect(ENDPOINTS.API_KEYS).toBe('/auth/api-keys')
-    expect(ENDPOINTS.API_KEYS_USER_OPTIONS).toBe('/auth/api-keys/user-option')
+    expect(ENDPOINTS.API_KEYS_USER_OPTIONS).toBe('/auth/api-keys/user-options')
     expect(ENDPOINTS.API_KEYS_RESOURCE_OPTIONS).toBe(
-      '/auth/api-keys/resource-option',
+      '/auth/api-keys/resource-options',
     )
     expect(ENDPOINTS.API_KEYS_ACTION_OPTIONS).toBe(
-      '/auth/api-keys/action-option',
+      '/auth/api-keys/action-options',
     )
   })
 
   it('has all required master data endpoints', () => {
-    expect(ENDPOINTS.WAREHOUSES_OPTIONS).toBe('/warehouses/option')
-    expect(ENDPOINTS.CUSTOMERS_OPTIONS).toBe('/customers/option')
-    expect(ENDPOINTS.SUPPLIERS_OPTIONS).toBe('/suppliers/option')
-    expect(ENDPOINTS.CARRIERS_OPTIONS).toBe('/carriers/option')
-    expect(ENDPOINTS.MATERIAL_CATEGORIES).toBe('/material-categories/option')
+    expect(ENDPOINTS.DEPARTMENTS_OPTIONS).toBe('/departments/options')
+    expect(ENDPOINTS.WAREHOUSES_OPTIONS).toBe('/warehouses/options')
+    expect(ENDPOINTS.CUSTOMERS_OPTIONS).toBe('/customers/options')
+    expect(ENDPOINTS.SUPPLIERS_OPTIONS).toBe('/suppliers/options')
+    expect(ENDPOINTS.CARRIERS_OPTIONS).toBe('/carriers/options')
+    expect(ENDPOINTS.MATERIAL_CATEGORIES).toBe('/material-categories/options')
   })
 
   it('has all required material endpoints', () => {
@@ -35,7 +36,7 @@ describe('ENDPOINTS', () => {
     expect(ENDPOINTS.MATERIALS_TEMPLATE).toBe('/materials/template')
     expect(ENDPOINTS.MATERIALS_EXPORT).toBe('/materials/export')
     expect(ENDPOINTS.MATERIALS_SEARCH).toBe('/materials/search')
-    expect(ENDPOINTS.MATERIAL_GRADES).toBe('/materials/grade')
+    expect(ENDPOINTS.MATERIAL_GRADES).toBe('/materials/grades')
   })
 
   it('has system-related endpoints', () => {
@@ -76,7 +77,7 @@ describe('ENDPOINTS', () => {
     expect(ENDPOINTS.PERMISSION_CATALOG).toBe('/permissions/catalog')
     expect(ENDPOINTS.ROLE_SETTINGS).toBe('/role-settings')
     expect(ENDPOINTS.ROLE_PERMISSION_OPTIONS).toBe(
-      '/role-settings/permission-option',
+      '/role-settings/permission-options',
     )
   })
 

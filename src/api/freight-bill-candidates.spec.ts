@@ -38,7 +38,7 @@ describe('freight-bill-candidates', () => {
     )
 
     expect(httpGetMock).toHaveBeenCalledWith(
-      '/freight-bills/import-candidate',
+      '/freight-bills/import-candidates',
       {
         params: {
           keyword: 'OB2026000001',

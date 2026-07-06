@@ -37,7 +37,7 @@ async function listStatementCandidates(
   const endpointConfig = getModuleConfig(statementModuleKey)
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
-      `${endpointConfig.path}/candidate`,
+      `${endpointConfig.path}/candidates`,
       { params: { ...filters, keyword: keyword.trim(), page, size } },
     ),
     getApiMessage('queryStatementCandidatesFailed'),

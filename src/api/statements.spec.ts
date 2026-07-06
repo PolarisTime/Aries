@@ -65,7 +65,7 @@ describe('statements', () => {
 
       expect(getModuleConfigMock).toHaveBeenCalledWith('supplier-statement')
       expect(httpGetMock).toHaveBeenCalledWith(
-        '/supplier-statements/candidate',
+        '/supplier-statements/candidates',
         { params: { keyword: '', page: 0, size: 200 } },
       )
       expect(result).toHaveLength(1)
@@ -109,7 +109,7 @@ describe('statements', () => {
       })
 
       expect(httpGetMock).toHaveBeenCalledWith(
-        '/supplier-statements/candidate',
+        '/supplier-statements/candidates',
         { params: { keyword: 'test', page: 0, size: 200, status: '启用' } },
       )
     })

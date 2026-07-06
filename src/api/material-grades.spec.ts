@@ -26,6 +26,7 @@ describe('material-grades', () => {
       { value: 'HRB500', label: 'HRB500' },
       { value: 'HRB600', label: 'HRB600' },
     ])
+    expect(httpGetMock).toHaveBeenCalledWith('/materials/grades')
   })
 
   it('returns cached results on second call', async () => {

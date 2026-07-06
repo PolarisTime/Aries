@@ -42,7 +42,7 @@ describe('purchase-order-candidates', () => {
     )
 
     expect(httpGetMock).toHaveBeenCalledWith(
-      '/purchase-orders/import-candidate',
+      '/purchase-orders/import-candidates',
       {
         params: {
           keyword: '321698660075175936',
