@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/PolarisTime/Aries/compare/v2.0.0...v2.0.1) (2026-07-06)
+
+
+### Bug Fixes
+
+* **deploy:** 修复前端本机部署脚本获取方式 ([5ed4a8f](https://github.com/PolarisTime/Aries/commit/5ed4a8fe5bccf4685c3ae633f10a4240b1d6b702))
+
 # [2.0.0](https://github.com/PolarisTime/Aries/compare/v1.1.1...v2.0.0) (2026-07-06)
 
 
