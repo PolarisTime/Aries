@@ -132,7 +132,7 @@ jobs:
           tar -C release -czf "$archive_name" .
           sha256sum "$archive_name" > "${archive_name}.sha256"
           cp "$archive_name" aries-frontend-release.tar.gz
-          cp "${archive_name}.sha256" aries-frontend-release.tar.gz.sha256
+          sha256sum aries-frontend-release.tar.gz > aries-frontend-release.tar.gz.sha256
 
       - name: Upload frontend release archive
         uses: actions/upload-artifact@v4
@@ -181,22 +181,30 @@ jobs:
       PROD_NGINX_SSL_CERTIFICATE_KEY: ${{ vars.PROD_NGINX_SSL_CERTIFICATE_KEY || '/instance/ssl/privkey.key' }}
       PROD_NGINX_WORKER_USER: ${{ vars.PROD_NGINX_WORKER_USER || 'sakura' }}
       PROD_NGINX_WORKER_GROUP: ${{ vars.PROD_NGINX_WORKER_GROUP || 'sakura' }}
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      NO_PROXY: "127.0.0.1,localhost"
     steps:
-      - name: Checkout Aries deploy scripts
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.aries_ref || github.ref_name }}
-
       - name: Download frontend release archive
         uses: actions/download-artifact@v4
         with:
           name: aries-frontend-release
           path: frontend-release
 
+      - name: Extract deploy scripts
+        run: |
+          set -euo pipefail
+          mkdir -p frontend-release/extracted
+          (cd frontend-release && sha256sum -c aries-frontend-release.tar.gz.sha256)
+          tar -xzf frontend-release/aries-frontend-release.tar.gz -C frontend-release/extracted
+          chmod 0755 frontend-release/extracted/deploy/install-frontend-release.sh
+          chmod 0755 frontend-release/extracted/deploy/install-steelx-nginx-config.sh
+
       - name: Install frontend release
         run: |
           set -euo pipefail
-          bash scripts/deploy/install-frontend-release.sh \
+          bash frontend-release/extracted/deploy/install-frontend-release.sh \
             --archive frontend-release/aries-frontend-release.tar.gz \
             --sha256-file frontend-release/aries-frontend-release.tar.gz.sha256 \
             --frontend-root "$PROD_FRONTEND_ROOT" \
@@ -208,7 +216,7 @@ jobs:
           STEELX_SUDO_PASSWORD: ${{ secrets.STEELX_SUDO_PASSWORD }}
         run: |
           set -euo pipefail
-          bash scripts/deploy/install-steelx-nginx-config.sh \
+          bash frontend-release/extracted/deploy/install-steelx-nginx-config.sh \
             --release-root "$PROD_RELEASE_ROOT" \
             --frontend-root "$PROD_FRONTEND_ROOT" \
             --backend-port "$PROD_BACKEND_PORT" \
@@ -249,17 +257,25 @@ jobs:
       PROD_NGINX_SSL_CERTIFICATE_KEY: ${{ vars.PROD_NGINX_SSL_CERTIFICATE_KEY || '/instance/ssl/privkey.key' }}
       PROD_NGINX_WORKER_USER: ${{ vars.PROD_NGINX_WORKER_USER || 'sakura' }}
       PROD_NGINX_WORKER_GROUP: ${{ vars.PROD_NGINX_WORKER_GROUP || 'sakura' }}
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      NO_PROXY: "127.0.0.1,localhost"
     steps:
-      - name: Checkout Aries deploy scripts
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.aries_ref || github.ref_name }}
-
       - name: Download frontend release archive
         uses: actions/download-artifact@v4
         with:
           name: aries-frontend-release
           path: frontend-release
+
+      - name: Extract deploy scripts
+        run: |
+          set -euo pipefail
+          mkdir -p frontend-release/extracted
+          (cd frontend-release && sha256sum -c aries-frontend-release.tar.gz.sha256)
+          tar -xzf frontend-release/aries-frontend-release.tar.gz -C frontend-release/extracted
+          chmod 0755 frontend-release/extracted/deploy/install-frontend-release.sh
+          chmod 0755 frontend-release/extracted/deploy/install-steelx-nginx-config.sh
 
       - name: Configure SSH
         run: |
@@ -306,7 +322,7 @@ jobs:
           ssh -i "$HOME/.ssh/aries-production" \
             -p "$PROD_SSH_PORT" \
             "${PROD_SSH_USER}@${PROD_SSH_HOST}" \
-            "$remote_command" < scripts/deploy/install-frontend-release.sh
+            "$remote_command" < frontend-release/extracted/deploy/install-frontend-release.sh
 
       - name: Install SteelX Nginx config on production
         if: ${{ vars.PROD_INSTALL_NGINX_CONFIG == 'true' }}
@@ -327,4 +343,4 @@ jobs:
           ssh -i "$HOME/.ssh/aries-production" \
             -p "$PROD_SSH_PORT" \
             "${PROD_SSH_USER}@${PROD_SSH_HOST}" \
-            "$remote_command" < scripts/deploy/install-steelx-nginx-config.sh
+            "$remote_command" < frontend-release/extracted/deploy/install-steelx-nginx-config.sh
