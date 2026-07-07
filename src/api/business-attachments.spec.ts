@@ -751,7 +751,7 @@ describe('business-attachments', () => {
       await updatePageUploadRule('purchase-order', payload)
 
       expect(httpPutMock).toHaveBeenCalledWith(
-        '/general-setting/upload-rule',
+        '/general-settings/upload-rule',
         payload,
         { params: { moduleKey: 'purchase-order' } },
       )

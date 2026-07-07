@@ -7,6 +7,7 @@ import type {
   UploadRuleRecord,
 } from '@/api/business-types'
 import { http } from '@/api/client'
+import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
 import type { RawApiRecord } from '@/types/api-raw'
 
@@ -347,7 +348,7 @@ export async function updatePageUploadRule(
   payload: UploadRulePayload,
 ) {
   return http.put<ApiResponse<UploadRuleRecord>>(
-    '/general-setting/upload-rule',
+    ENDPOINTS.UPLOAD_RULE,
     payload,
     {
       params: {
