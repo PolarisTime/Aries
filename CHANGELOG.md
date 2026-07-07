@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/PolarisTime/Aries/compare/v2.0.1...v2.0.2) (2026-07-07)
+
+
+### Bug Fixes
+
+* **api:** 修正上传规则接口路径 ([d2db1e3](https://github.com/PolarisTime/Aries/commit/d2db1e34c4bc9e110a647be098a2d79ba46f9143))
+
 ## [2.0.1](https://github.com/PolarisTime/Aries/compare/v2.0.0...v2.0.1) (2026-07-06)
 
 
