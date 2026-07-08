@@ -7,6 +7,7 @@ import {
 import { useNavigate } from '@tanstack/react-router'
 import { Button, Card, Form, Space, Table, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { isDocumentChargeEnabledModule } from '@/config/document-charge-items'
 import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import {
   resolveMasterOptionRequirements,
@@ -17,6 +18,7 @@ import { isParentImportedEditorLocked } from '@/module-system/module-adapter-edi
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
+import { ModuleEditorChargeSection } from './ModuleEditorChargeSection'
 import { ModuleEditorFormSection } from './ModuleEditorFormSection'
 import { ModuleEditorItemsSection } from './ModuleEditorItemsSection'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
@@ -111,6 +113,7 @@ export function ModuleEditorWorkspace({
   const canAddManualItems = canAddManualEditorItems
   const {
     addItem,
+    addChargeItem,
     clearSaveResult,
     closeParentSelector,
     handleImportParentRecord,
@@ -118,6 +121,7 @@ export function ModuleEditorWorkspace({
     handleSave,
     isEdit,
     items,
+    chargeItems,
     openParentSelector,
     parentImporting,
     parentSelectorFilters,
@@ -126,6 +130,7 @@ export function ModuleEditorWorkspace({
     saveResult,
     saving,
     setItems,
+    setChargeItems,
   } = useModuleEditorWorkspace({
     open,
     config,
@@ -150,6 +155,8 @@ export function ModuleEditorWorkspace({
   const canImportParentItems =
     Boolean(config.parentImport) && canManageCurrentItems
   const canSaveAndAuditInEditor = canSaveAndAuditCurrentEditor
+  const canEditCharges = canSave && isDocumentChargeEnabledModule(moduleKey)
+  const showChargeSection = isDocumentChargeEnabledModule(moduleKey)
   const {
     clearSelectedItems,
     handleDragOver,
@@ -241,6 +248,17 @@ export function ModuleEditorWorkspace({
           onToggleItemColumn={toggleItemColumn}
           onRowDragOver={handleDragOver}
         />
+
+        {showChargeSection ? (
+          <ModuleEditorChargeSection
+            moduleKey={moduleKey}
+            items={items}
+            chargeItems={chargeItems}
+            canEdit={canEditCharges}
+            onAddChargeItem={addChargeItem}
+            onChangeChargeItems={setChargeItems}
+          />
+        ) : null}
       </WorkspaceOverlay>
 
       {saveResult ? (

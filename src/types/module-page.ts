@@ -50,6 +50,7 @@ export interface ModuleActionDefinition {
 export type ModuleRecordInput = {
   id?: string | number
   items?: ModuleRecordInput[]
+  chargeItems?: ModuleRecordInput[]
   [key: string]: unknown
 }
 
@@ -58,9 +59,19 @@ export type ModuleLineItem = {
   [key: string]: unknown
 }
 
+export type ModuleChargeItem = {
+  id: string
+  chargeName?: string
+  chargeDirection?: 'RECEIVABLE' | 'PAYABLE' | 'INTERNAL' | string
+  amount?: string | number | null
+  billable?: boolean
+  [key: string]: unknown
+}
+
 export type ModuleRecord = {
   id: string
   items?: ModuleLineItem[]
+  chargeItems?: ModuleChargeItem[]
   [key: string]: unknown
 }
 
@@ -123,6 +134,7 @@ export interface ModulePageConfig {
   saveFields?: {
     scalar?: string[]
     lineItem?: string[]
+    chargeItem?: string[]
     computed?: string[]
   }
 }

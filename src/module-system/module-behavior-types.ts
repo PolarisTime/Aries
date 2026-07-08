@@ -19,6 +19,7 @@ interface SyncEditorFormContext {
 export interface ModuleBehaviorConfig {
   defaultStatus?: string
   auditStatus?: string
+  auditSourceStatuses?: string[]
   protectedEditStatuses?: string[]
   protectedDeleteStatuses?: string[]
   actionKindsByLabel?: Record<string, string>
@@ -59,6 +60,7 @@ export interface ModuleBehaviorConfig {
     ctx: SyncEditorFormContext,
   ) => void
   savePayloadLineItems?: boolean
+  savePayloadChargeItems?: boolean
   extraScalarFields?: string[]
   includeAttachmentIds?: boolean
   supportsStatementLinking?: 'receipt' | 'payment'

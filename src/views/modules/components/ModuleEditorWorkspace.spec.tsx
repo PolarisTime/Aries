@@ -44,6 +44,7 @@ vi.mock('@/views/modules/use-module-editor-items', () => ({
 
 const mockUseModuleEditorWorkspace = vi.fn().mockReturnValue({
   addItem: vi.fn(),
+  addChargeItem: vi.fn(),
   clearSaveResult: vi.fn(),
   closeParentSelector: vi.fn(),
   handleImportParentRecord: vi.fn(),
@@ -51,6 +52,7 @@ const mockUseModuleEditorWorkspace = vi.fn().mockReturnValue({
   handleFormValuesChange: vi.fn(),
   isEdit: false,
   items: [],
+  chargeItems: [],
   openParentSelector: vi.fn(),
   parentImporting: false,
   parentSelectorFilters: {},
@@ -60,6 +62,7 @@ const mockUseModuleEditorWorkspace = vi.fn().mockReturnValue({
   saveResult: null,
   saving: false,
   setItems: vi.fn(),
+  setChargeItems: vi.fn(),
 })
 
 vi.mock('@/views/modules/use-module-editor-workspace', () => ({
@@ -140,6 +143,30 @@ vi.mock('./ModuleEditorItemsSection', () => ({
       </button>
       <button type="button" onDragOver={(event) => onRowDragOver(event)}>
         drag-over-item-row
+      </button>
+    </div>
+  ),
+}))
+
+vi.mock('./ModuleEditorChargeSection', () => ({
+  ModuleEditorChargeSection: ({
+    moduleKey,
+    onAddChargeItem,
+    onChangeChargeItems,
+    ...props
+  }: any) => (
+    <div data-testid="charge-section" data-module-key={moduleKey} {...props}>
+      ChargeSection
+      <button type="button" onClick={onAddChargeItem}>
+        add-charge
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onChangeChargeItems([{ id: 'charge-1', chargeName: '卸货费' }])
+        }
+      >
+        change-charge
       </button>
     </div>
   ),
@@ -314,6 +341,7 @@ describe('ModuleEditorWorkspace', () => {
     })
     mockUseModuleEditorWorkspace.mockReturnValue({
       addItem: vi.fn(),
+      addChargeItem: vi.fn(),
       clearSaveResult: vi.fn(),
       closeParentSelector: vi.fn(),
       handleImportParentRecord: vi.fn(),
@@ -321,6 +349,7 @@ describe('ModuleEditorWorkspace', () => {
       handleFormValuesChange: vi.fn(),
       isEdit: false,
       items: [],
+      chargeItems: [],
       openParentSelector: vi.fn(),
       parentImporting: false,
       parentSelectorFilters: {},
@@ -330,6 +359,7 @@ describe('ModuleEditorWorkspace', () => {
       saveResult: null,
       saving: false,
       setItems: vi.fn(),
+      setChargeItems: vi.fn(),
     })
   })
 
@@ -453,6 +483,17 @@ describe('ModuleEditorWorkspace', () => {
   it('renders items section', () => {
     render(<ModuleEditorWorkspace {...defaultProps} />)
     expect(screen.getByTestId('items-section')).toBeTruthy()
+  })
+
+  it('renders charge section for charge-enabled modules', () => {
+    render(
+      <ModuleEditorWorkspace {...defaultProps} moduleKey="purchase-order" />,
+    )
+
+    expect(screen.getByTestId('charge-section')).toHaveAttribute(
+      'data-module-key',
+      'purchase-order',
+    )
   })
 
   it('does not render when closed', () => {

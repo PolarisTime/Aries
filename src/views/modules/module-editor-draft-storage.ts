@@ -1,5 +1,9 @@
 import type { LoginUser } from '@/shared/schemas'
-import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleChargeItem,
+  ModuleLineItem,
+  ModuleRecord,
+} from '@/types/module-page'
 
 const STORAGE_PREFIX = 'aries-module-editor-draft:'
 const DRAFT_VERSION = 1
@@ -12,6 +16,7 @@ export interface ModuleEditorDraftSnapshot {
   recordId: string
   values: ModuleRecord
   items: ModuleLineItem[]
+  chargeItems: ModuleChargeItem[]
   authoritativePrimaryNo: string
   updatedAt: number
 }
@@ -22,6 +27,7 @@ interface BuildModuleEditorDraftSnapshotArgs {
   recordId: string
   values: ModuleRecord
   items: ModuleLineItem[]
+  chargeItems?: ModuleChargeItem[]
   authoritativePrimaryNo: string
   now?: number
 }
@@ -59,6 +65,9 @@ function parseDraftSnapshot(value: unknown): ModuleEditorDraftSnapshot | null {
     recordId: value.recordId,
     values: value.values as ModuleRecord,
     items: value.items as ModuleLineItem[],
+    chargeItems: Array.isArray(value.chargeItems)
+      ? (value.chargeItems as ModuleChargeItem[])
+      : [],
     authoritativePrimaryNo:
       typeof value.authoritativePrimaryNo === 'string'
         ? value.authoritativePrimaryNo
@@ -84,6 +93,7 @@ export function buildModuleEditorDraftSnapshot({
   recordId,
   values,
   items,
+  chargeItems = [],
   authoritativePrimaryNo,
   now = Date.now(),
 }: BuildModuleEditorDraftSnapshotArgs): ModuleEditorDraftSnapshot {
@@ -94,6 +104,7 @@ export function buildModuleEditorDraftSnapshot({
     recordId,
     values: { ...values },
     items: items.map((item) => ({ ...item })),
+    chargeItems: chargeItems.map((item) => ({ ...item })),
     authoritativePrimaryNo,
     updatedAt: now,
   }

@@ -1,10 +1,14 @@
+import { DOCUMENT_CHARGE_ITEM_SAVE_FIELDS } from '@/config/document-charge-items'
 import type { ModuleFilterDefinition } from '@/types/module-page'
 
 interface ModuleSaveFieldSchema {
   scalar?: string[]
   lineItem?: string[]
+  chargeItem?: string[]
   computed?: string[]
 }
+
+const documentChargeItemSaveFields = [...DOCUMENT_CHARGE_ITEM_SAVE_FIELDS]
 
 interface ModulePageSchema {
   filters?: ModuleFilterDefinition[]
@@ -59,6 +63,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'status',
         'remark',
       ],
+      chargeItem: documentChargeItemSaveFields,
     },
   },
   'purchase-inbound': {
@@ -123,6 +128,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'unitPrice',
         'amount',
       ],
+      chargeItem: documentChargeItemSaveFields,
     },
   },
   'sales-order': {
@@ -178,6 +184,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'unitPrice',
         'amount',
       ],
+      chargeItem: documentChargeItemSaveFields,
     },
   },
   'sales-outbound': {
@@ -230,6 +237,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'unitPrice',
         'amount',
       ],
+      chargeItem: documentChargeItemSaveFields,
     },
   },
   'freight-bill': {
@@ -280,6 +288,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'weightTon',
         'warehouseName',
       ],
+      chargeItem: documentChargeItemSaveFields,
     },
   },
   receipt: {

@@ -1,11 +1,13 @@
 import dayjs from 'dayjs'
 import { loadBusinessPageConfig } from '@/config/business-page-loader'
+import { DOCUMENT_CHARGE_ITEM_SAVE_FIELDS } from '@/config/document-charge-items'
 import { getModulePageSchema } from '@/config/module-page-schema'
 import {
   getBehaviorValue,
   hasBehavior,
 } from '@/module-system/module-behavior-registry'
 import type {
+  ModuleChargeItem,
   ModuleLineItem,
   ModulePageConfig,
   ModuleRecord,
@@ -115,6 +117,7 @@ function toPersistedLineItemId(value: unknown) {
 }
 
 type LineItemFieldSpec = { key: string; numeric?: boolean }
+type ChargeItemFieldSpec = { key: string }
 
 const NUMERIC_LINE_ITEM_FIELD_KEYS = new Set([
   'quantity',
@@ -161,6 +164,15 @@ const LINE_ITEM_FIELDS: readonly LineItemFieldSpec[] = [
   { key: 'warehouseName' },
 ]
 
+const SOURCE_CHARGE_ITEM_FIELD_KEYS = new Set([
+  'sourceModuleKey',
+  'sourceDocumentId',
+  'sourceChargeItemId',
+])
+
+const DEFAULT_CHARGE_ITEM_FIELDS: readonly ChargeItemFieldSpec[] =
+  DOCUMENT_CHARGE_ITEM_SAVE_FIELDS.map((key) => ({ key }))
+
 async function resolveLineItemFields(
   moduleKey: string,
 ): Promise<readonly LineItemFieldSpec[]> {
@@ -198,6 +210,40 @@ function getCachedLineItemFields(
   return fieldsPromise
 }
 
+async function resolveChargeItemFields(
+  moduleKey: string,
+): Promise<readonly ChargeItemFieldSpec[]> {
+  const schemaSaveFields = getModulePageSchema(moduleKey)?.saveFields
+  if (schemaSaveFields?.chargeItem) {
+    return schemaSaveFields.chargeItem.map((key) => ({ key }))
+  }
+
+  const config = await loadModuleConfig(moduleKey)
+  const moduleSaveFields = config?.saveFields
+  if (moduleSaveFields?.chargeItem) {
+    return moduleSaveFields.chargeItem.map((key) => ({ key }))
+  }
+
+  return DEFAULT_CHARGE_ITEM_FIELDS
+}
+
+const chargeItemFieldCache = new Map<
+  string,
+  Promise<readonly ChargeItemFieldSpec[]>
+>()
+
+function getCachedChargeItemFields(
+  moduleKey: string,
+): Promise<readonly ChargeItemFieldSpec[]> {
+  const cached = chargeItemFieldCache.get(moduleKey)
+  if (cached) return cached
+  const fieldsPromise = resolveChargeItemFields(moduleKey).then((fields) =>
+    Object.freeze(fields),
+  )
+  chargeItemFieldCache.set(moduleKey, fieldsPromise)
+  return fieldsPromise
+}
+
 function serializeLineItem(
   item: ModuleLineItem,
   moduleKey: string,
@@ -222,6 +268,61 @@ function serializeLineItem(
   return result
 }
 
+function serializeChargeAmount(value: unknown) {
+  if (
+    value == null ||
+    (typeof value === 'string' && value.trim().length === 0)
+  ) {
+    throw new Error('费用金额不能为空')
+  }
+
+  const nextValue = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(nextValue)) {
+    throw new Error('费用金额不合法')
+  }
+  return nextValue
+}
+
+function serializeChargeBoolean(value: unknown) {
+  if (typeof value === 'boolean') {
+    return value
+  }
+  if (typeof value === 'string') {
+    return value.trim().toLowerCase() === 'true'
+  }
+  return Boolean(value)
+}
+
+function serializeChargeItem(
+  item: ModuleChargeItem,
+  chargeItemFields: readonly ChargeItemFieldSpec[],
+) {
+  const persistedId = toPersistedLineItemId(item.id)
+  const result: Record<string, unknown> = {}
+  if (persistedId) {
+    result.id = persistedId
+  }
+
+  for (const field of chargeItemFields) {
+    if (SOURCE_CHARGE_ITEM_FIELD_KEYS.has(field.key)) {
+      continue
+    }
+    if (field.key === 'amount') {
+      result.amount = serializeChargeAmount(item.amount)
+      continue
+    }
+    const value = item[field.key]
+    if (value === undefined) {
+      continue
+    }
+    result[field.key] =
+      field.key === 'billable'
+        ? serializeChargeBoolean(value)
+        : serializeFieldValue(field.key, value)
+  }
+  return result
+}
+
 export function serializeBusinessRecordForSave(
   moduleKey: string,
   record: ModuleRecord,
@@ -242,6 +343,7 @@ async function serializeBusinessRecordForSaveAsync(
       if (
         key === 'id' ||
         key === 'items' ||
+        key === 'chargeItems' ||
         key === 'attachmentIds' ||
         key === '_preallocatedId'
       ) {
@@ -266,6 +368,13 @@ async function serializeBusinessRecordForSaveAsync(
     const lineItemFields = await getCachedLineItemFields(moduleKey)
     payload.items = toArray(record.items).map((item) =>
       serializeLineItem(item, moduleKey, lineItemFields),
+    )
+  }
+
+  if (hasBehavior(moduleKey, 'savePayloadChargeItems')) {
+    const chargeItemFields = await getCachedChargeItemFields(moduleKey)
+    payload.chargeItems = toArray(record.chargeItems).map((item) =>
+      serializeChargeItem(item, chargeItemFields),
     )
   }
 

@@ -50,6 +50,46 @@ describe('module-record schemas', () => {
       const result = moduleRecordSchema.safeParse(data)
       expect(result.success).toBe(true)
     })
+
+    it('should validate charge items while preserving backend extension fields', () => {
+      const data = {
+        id: '123',
+        chargeItems: [
+          {
+            id: 'charge-1',
+            lineNo: 1,
+            chargeName: '卸货费',
+            chargeDirection: 'PAYABLE',
+            settlementPartyType: 'SUPPLIER',
+            settlementPartyId: '700520000000000005',
+            settlementPartyName: '供应商A',
+            amount: '120.50',
+            billable: true,
+            sourceModuleKey: 'purchase-order',
+            sourceDocumentId: '700520000000000006',
+            sourceChargeItemId: '700520000000000007',
+            backendExtra: 'kept',
+          },
+        ],
+      }
+
+      const result = moduleRecordSchema.safeParse(data)
+
+      expect(result.success).toBe(true)
+      expect(result.data.chargeItems?.[0]).toMatchObject({
+        sourceModuleKey: 'purchase-order',
+        backendExtra: 'kept',
+      })
+    })
+
+    it('should reject invalid charge items', () => {
+      const result = moduleRecordSchema.safeParse({
+        id: '123',
+        chargeItems: [{ chargeName: '缺少 id 的费用' }],
+      })
+
+      expect(result.success).toBe(false)
+    })
   })
 
   describe('salesOrderItemSchema', () => {

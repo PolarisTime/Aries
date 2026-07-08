@@ -28,6 +28,29 @@ const lineItemSchema = z
 
 export type LineItem = z.infer<typeof lineItemSchema>
 
+// ── 费用明细 Schema ────────────────────────────────────
+
+/** 通用费用明细 — looseObject 保留后端扩展字段兼容来源追踪 */
+export const moduleChargeItemSchema = z.looseObject({
+  id: z.string(),
+  lineNo: z.number().optional(),
+  chargeName: z.string(),
+  chargeDirection: z.enum(['RECEIVABLE', 'PAYABLE', 'INTERNAL']),
+  settlementPartyType: z
+    .enum(['CUSTOMER', 'SUPPLIER', 'CARRIER', 'COMPANY'])
+    .optional(),
+  settlementPartyId: snowflakeIdSchema.optional(),
+  settlementPartyName: z.string().optional(),
+  amount: z.union([z.string(), z.number()]),
+  billable: z.boolean().optional(),
+  sourceModuleKey: z.string().optional(),
+  sourceDocumentId: snowflakeIdSchema.optional(),
+  sourceChargeItemId: snowflakeIdSchema.optional(),
+  remark: z.string().optional(),
+})
+
+export type ModuleChargeItem = z.infer<typeof moduleChargeItemSchema>
+
 // ── 模块记录 Schema ────────────────────────────────────
 
 /** 模块记录通用字段 */
@@ -36,6 +59,7 @@ export const moduleRecordSchema = z.looseObject({
   status: z.string().optional(),
   remark: z.string().optional(),
   items: z.array(lineItemSchema).optional(),
+  chargeItems: z.array(moduleChargeItemSchema).optional(),
   attachmentIds: z.array(z.string()).optional(),
   createdBy: z.union([z.string(), z.number()]).optional(),
   createdAt: z.string().optional(),

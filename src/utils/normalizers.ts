@@ -1,4 +1,5 @@
 import type {
+  ModuleChargeItem,
   ModuleLineItem,
   ModuleRecord,
   ModuleRecordInput,
@@ -21,17 +22,36 @@ function normalizeLineItem(raw: ModuleRecordInput): ModuleLineItem {
 }
 
 /**
+ * 规范化费用明细数据
+ */
+function normalizeChargeItem(raw: ModuleRecordInput): ModuleChargeItem {
+  const result: ModuleChargeItem = { id: asString(raw.id ?? raw.lineNo) }
+  for (const [key, value] of Object.entries(raw)) {
+    if (key === 'id' || key === 'lineNo') {
+      result[key] = value == null ? '' : asString(value)
+    } else {
+      result[key] = value
+    }
+  }
+  return result
+}
+
+/**
  * 规范化模块记录数据
  */
 export function normalizeRecord(raw: ModuleRecordInput): ModuleRecord {
   const items = asArray<ModuleRecordInput>(raw.items)
-  const { items: _rawItems, ...rawFields } = raw
+  const chargeItems = asArray<ModuleRecordInput>(raw.chargeItems)
+  const { items: _rawItems, chargeItems: _rawChargeItems, ...rawFields } = raw
   const normalized: ModuleRecord = {
     ...rawFields,
     id: asId(raw.id) || asString(raw.id),
   }
   if (items.length > 0) {
     normalized.items = items.map(normalizeLineItem)
+  }
+  if (chargeItems.length > 0) {
+    normalized.chargeItems = chargeItems.map(normalizeChargeItem)
   }
   return normalized
 }

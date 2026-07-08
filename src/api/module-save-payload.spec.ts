@@ -434,6 +434,143 @@ describe('module-save-payload', () => {
     expect(payload).toHaveProperty('attachmentIds', ['att-1', 'att-2'])
   })
 
+  it('includes charge items when behavior allows and strips non-request fields', async () => {
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: ['orderNo'],
+        chargeItem: [
+          'chargeName',
+          'chargeDirection',
+          'settlementPartyType',
+          'settlementPartyId',
+          'settlementPartyName',
+          'amount',
+          'billable',
+          'remark',
+          'sourceModuleKey',
+          'sourceDocumentId',
+          'sourceChargeItemId',
+        ],
+      },
+    })
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadChargeItems',
+    )
+    vi.mocked(getBehaviorValue).mockReturnValue([])
+
+    const payload = await serializeBusinessRecordForSave('purchase-order', {
+      id: '',
+      orderNo: 'PO-001',
+      chargeItems: [
+        {
+          id: 'charge-temp-1',
+          chargeName: '卸货费',
+          chargeDirection: 'PAYABLE',
+          settlementPartyType: 'SUPPLIER',
+          settlementPartyId: '7',
+          settlementPartyName: '供应商A',
+          amount: '120.50',
+          billable: true,
+          sourceModuleKey: 'purchase-order',
+          sourceDocumentId: '700520000000000006',
+          sourceChargeItemId: '700520000000000007',
+          remark: '现场',
+        },
+        {
+          id: '700520000000000008',
+          chargeName: '代收服务费',
+          chargeDirection: 'RECEIVABLE',
+          amount: 30,
+          billable: false,
+        },
+      ],
+    })
+
+    expect(payload).toMatchObject({
+      orderNo: 'PO-001',
+      chargeItems: [
+        {
+          chargeName: '卸货费',
+          chargeDirection: 'PAYABLE',
+          settlementPartyType: 'SUPPLIER',
+          settlementPartyId: '7',
+          settlementPartyName: '供应商A',
+          amount: 120.5,
+          billable: true,
+          remark: '现场',
+        },
+        {
+          id: '700520000000000008',
+          chargeName: '代收服务费',
+          chargeDirection: 'RECEIVABLE',
+          amount: 30,
+          billable: false,
+        },
+      ],
+    })
+    expect(payload.chargeItems![0]).not.toHaveProperty('id')
+    expect(payload.chargeItems![0]).not.toHaveProperty('sourceModuleKey')
+    expect(payload.chargeItems![0]).not.toHaveProperty('sourceDocumentId')
+    expect(payload.chargeItems![0]).not.toHaveProperty('sourceChargeItemId')
+  })
+
+  it('does not include charge items when the charge save behavior is disabled', async () => {
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: ['orderNo'],
+        chargeItem: ['chargeName', 'amount'],
+      },
+    })
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    vi.mocked(hasBehavior).mockReturnValue(false)
+    vi.mocked(getBehaviorValue).mockReturnValue([])
+
+    const payload = await serializeBusinessRecordForSave('purchase-order', {
+      id: '',
+      orderNo: 'PO-001',
+      chargeItems: [{ id: 'charge-1', chargeName: '卸货费', amount: 120 }],
+    })
+
+    expect(payload).toEqual({ orderNo: 'PO-001' })
+  })
+
+  it('rejects blank and invalid charge item amounts instead of converting them to zero', async () => {
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: ['orderNo'],
+        chargeItem: ['chargeName', 'amount'],
+      },
+    })
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadChargeItems',
+    )
+    vi.mocked(getBehaviorValue).mockReturnValue([])
+
+    await expect(
+      serializeBusinessRecordForSave('purchase-order', {
+        id: '',
+        orderNo: 'PO-001',
+        chargeItems: [{ id: 'charge-1', chargeName: '卸货费', amount: '' }],
+      }),
+    ).rejects.toThrow('费用金额不能为空')
+
+    await expect(
+      serializeBusinessRecordForSave('purchase-order', {
+        id: '',
+        orderNo: 'PO-001',
+        chargeItems: [{ id: 'charge-2', chargeName: '卸货费', amount: 'abc' }],
+      }),
+    ).rejects.toThrow('费用金额不合法')
+  })
+
   it('includes attachmentIds when behavior allows', async () => {
     const { loadBusinessPageConfig } = await import(
       '@/config/business-page-loader'

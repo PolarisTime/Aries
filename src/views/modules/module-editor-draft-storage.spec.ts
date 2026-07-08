@@ -29,6 +29,7 @@ describe('module-editor-draft-storage', () => {
       recordId: 'new',
       values: { id: '', orderNo: 'SO-001', customerName: '客户A' },
       items: [{ id: 'line-1', quantity: 2 }],
+      chargeItems: [{ id: 'charge-1', chargeName: '卸货费', amount: 120 }],
       authoritativePrimaryNo: 'SO-001',
       now: 1000,
     })
@@ -64,21 +65,27 @@ describe('module-editor-draft-storage', () => {
   it('builds a snapshot with cloned top-level values and items', () => {
     const values = { id: '', orderNo: 'SO-001' }
     const item = { id: 'line-1', quantity: 2 }
+    const chargeItem = { id: 'charge-1', chargeName: '卸货费', amount: 120 }
     const snapshot = buildModuleEditorDraftSnapshot({
       userKey: 'user-1',
       moduleKey: 'sales-order',
       recordId: 'new',
       values,
       items: [item],
+      chargeItems: [chargeItem],
       authoritativePrimaryNo: '',
       now: 1000,
     })
 
     values.orderNo = 'SO-CHANGED'
     item.quantity = 9
+    chargeItem.amount = 9
 
     expect(snapshot.values.orderNo).toBe('SO-001')
     expect(snapshot.items).toEqual([{ id: 'line-1', quantity: 2 }])
+    expect(snapshot.chargeItems).toEqual([
+      { id: 'charge-1', chargeName: '卸货费', amount: 120 },
+    ])
   })
 
   it('removes malformed stored drafts instead of returning unsafe data', () => {

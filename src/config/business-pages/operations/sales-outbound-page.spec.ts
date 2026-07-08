@@ -25,6 +25,48 @@ describe('salesOutboundPageConfig', () => {
     expect(projectFilter?.row).toBeUndefined()
   })
 
+  it('allows filtering pre outbound sales outbounds', () => {
+    const statusFilter = salesOutboundsPageConfig.filters!.find(
+      (filter) => filter.key === 'status',
+    )
+
+    expect(statusFilter?.options).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ value: '预出库' }),
+        expect.objectContaining({ value: '已审核' }),
+      ]),
+    )
+  })
+
+  it('allows saving sales outbounds as pre outbound', () => {
+    const statusField = salesOutboundsPageConfig.formFields!.find(
+      (field) => field.key === 'status',
+    )
+
+    expect(statusField?.options).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ value: '草稿' }),
+        expect.objectContaining({ value: '预出库' }),
+        expect.objectContaining({ value: '已审核' }),
+      ]),
+    )
+  })
+
+  it('has charge item save fields', () => {
+    expect(salesOutboundsPageConfig.saveFields?.chargeItem).toEqual(
+      expect.arrayContaining([
+        'chargeName',
+        'chargeDirection',
+        'settlementPartyType',
+        'settlementPartyId',
+        'settlementPartyName',
+        'amount',
+        'billable',
+        'remark',
+      ]),
+    )
+  })
+
   describe('parentImport', () => {
     it('filters audited parent sales orders and hides the status selector column', () => {
       expect(pi.candidateQueryType).toBe('sales-order-outbound-import')

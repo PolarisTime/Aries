@@ -66,6 +66,21 @@ describe('purchaseOrdersPageConfig', () => {
     expect(purchaseOrdersPageConfig.itemColumns!.length).toBeGreaterThan(0)
   })
 
+  it('has charge item save fields', () => {
+    expect(purchaseOrdersPageConfig.saveFields?.chargeItem).toEqual(
+      expect.arrayContaining([
+        'chargeName',
+        'chargeDirection',
+        'settlementPartyType',
+        'settlementPartyId',
+        'settlementPartyName',
+        'amount',
+        'billable',
+        'remark',
+      ]),
+    )
+  })
+
   it('buildOverview returns result', () => {
     const result = purchaseOrdersPageConfig.buildOverview!([])
     expect(Array.isArray(result)).toBe(true)

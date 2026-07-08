@@ -141,6 +141,7 @@ vi.mock('@/views/modules/module-editor-draft-storage', () => ({
     recordId: args.recordId,
     values: args.values,
     items: args.items,
+    chargeItems: args.chargeItems,
     authoritativePrimaryNo: args.authoritativePrimaryNo,
     updatedAt: args.now,
   })),
@@ -333,6 +334,7 @@ describe('useModuleEditorWorkspace', () => {
       'handleSave',
       'isEdit',
       'items',
+      'chargeItems',
       'openParentSelector',
       'parentImporting',
       'parentSelectorFilters',
@@ -343,6 +345,8 @@ describe('useModuleEditorWorkspace', () => {
       'clearSaveResult',
       'saving',
       'setItems',
+      'setChargeItems',
+      'addChargeItem',
       'handleFormValuesChange',
       'flushEditorDraft',
     ]
@@ -420,6 +424,26 @@ describe('useModuleEditorWorkspace', () => {
       result.current.setItems((prev: unknown[]) => [...prev, { id: 'b' }])
     })
     expect(result.current.items).toEqual([{ id: 'b' }])
+  })
+
+  it('setChargeItems with function updater works independently from line items', () => {
+    const { result } = renderWorkspace({ open: false })
+    act(() => {
+      result.current.setItems([{ id: 'line-1' }])
+      result.current.setChargeItems([{ id: 'charge-1', chargeName: '运费' }])
+    })
+    act(() => {
+      result.current.setChargeItems((prev: unknown[]) => [
+        ...prev,
+        { id: 'charge-2', chargeName: '卸货费' },
+      ])
+    })
+
+    expect(result.current.items).toEqual([{ id: 'line-1' }])
+    expect(result.current.chargeItems).toEqual([
+      { id: 'charge-1', chargeName: '运费' },
+      { id: 'charge-2', chargeName: '卸货费' },
+    ])
   })
 
   it('adds an item without syncing when item columns are absent', () => {
@@ -818,6 +842,7 @@ describe('useModuleEditorWorkspace', () => {
         id: 'r-1',
         billDate: '2026-01-01',
         items: [{ id: 'line-1' }],
+        chargeItems: [{ id: 'charge-1', chargeName: '卸货费', amount: 120 }],
       },
       config: cfg({
         formFields: [{ key: 'billDate', type: 'date' }],
@@ -829,6 +854,9 @@ describe('useModuleEditorWorkspace', () => {
     )
     expect(result.current.isEdit).toBe(true)
     expect(result.current.items).toEqual([{ id: 'line-1' }])
+    expect(result.current.chargeItems).toEqual([
+      { id: 'charge-1', chargeName: '卸货费', amount: 120 },
+    ])
   })
 
   it('uses empty line items when editing a record without items', () => {
@@ -841,6 +869,7 @@ describe('useModuleEditorWorkspace', () => {
     })
 
     expect(result.current.items).toEqual([])
+    expect(result.current.chargeItems).toEqual([])
   })
 
   it('skips non-date and already normalized date values while loading records', () => {
@@ -1184,6 +1213,34 @@ describe('useModuleEditorWorkspace', () => {
       'user-1',
       'test-module',
       'new',
+    )
+  })
+
+  it('saves charge items independently from line items', async () => {
+    const form = frm()
+    vi.mocked(trimEditorItemsForModule).mockReturnValue([{ id: 'line-1' }])
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    act(() => {
+      result.current.setChargeItems([
+        { id: 'charge-1', chargeName: '卸货费', amount: 120 },
+      ])
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(saveBusinessModule).toHaveBeenCalledWith(
+      'test-module',
+      expect.objectContaining({
+        items: [{ id: 'line-1' }],
+        chargeItems: [{ id: 'charge-1', chargeName: '卸货费', amount: 120 }],
+      }),
     )
   })
 

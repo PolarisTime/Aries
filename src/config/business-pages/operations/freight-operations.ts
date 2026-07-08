@@ -1,4 +1,5 @@
 import i18next from 'i18next'
+import { DOCUMENT_CHARGE_ITEM_SAVE_FIELDS } from '@/config/document-charge-items'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
@@ -277,8 +278,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       ),
       enforceUniqueRelation: true,
       allowMultipleSelection: true,
-      buildParentFilters: () => ({ status: '已审核' }),
-      hiddenSelectorColumnKeys: ['status'],
+      buildParentFilters: () => ({}),
       validateBeforeOpen: (currentRecord) =>
         asString(currentRecord.carrierName).trim()
           ? null
@@ -307,6 +307,10 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       transformItems: transformFreightItems,
     },
     itemColumns: compactFreightItemColumns,
+    saveFields: {
+      scalar: [],
+      chargeItem: [...DOCUMENT_CHARGE_ITEM_SAVE_FIELDS],
+    },
     data: [],
     buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalFreight'),
     statusMap,

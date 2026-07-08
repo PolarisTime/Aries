@@ -145,6 +145,21 @@ describe('purchaseInboundsPageConfig', () => {
     expect(purchaseInboundsPageConfig.itemColumns).toBeDefined()
   })
 
+  it('has charge item save fields', () => {
+    expect(purchaseInboundsPageConfig.saveFields?.chargeItem).toEqual(
+      expect.arrayContaining([
+        'chargeName',
+        'chargeDirection',
+        'settlementPartyType',
+        'settlementPartyId',
+        'settlementPartyName',
+        'amount',
+        'billable',
+        'remark',
+      ]),
+    )
+  })
+
   it('buildOverview returns result', () => {
     const result = purchaseInboundsPageConfig.buildOverview!([])
     expect(Array.isArray(result)).toBe(true)
