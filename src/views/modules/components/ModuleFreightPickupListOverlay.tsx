@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail } from '@/api/business'
 import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import { asId, asString } from '@/utils/type-narrowing'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
@@ -90,6 +91,13 @@ function groupItemsByProject(
   return groups
 }
 
+function hasPreOutboundSource(items: ModuleRecord[]) {
+  return items.some(
+    (item) =>
+      asString(item.sourceSalesOutboundStatus) === DOCUMENT_STATUS.PRE_OUTBOUND,
+  )
+}
+
 function DetailCard({ record }: { record: ModuleRecord }) {
   const { t } = useTranslation()
   const itemColumns = getItemColumns(t)
@@ -109,6 +117,13 @@ function DetailCard({ record }: { record: ModuleRecord }) {
             {String(record.billNo ?? '-')}
           </Typography.Text>
         </div>
+        {hasPreOutboundSource(items) ? (
+          <div className="mb-1">
+            <Typography.Text type="warning" strong>
+              {t('modules.freightPickup.planPickupNotice')}
+            </Typography.Text>
+          </div>
+        ) : null}
         <div>
           <Typography.Text type="secondary">
             {t('modules.freightPickup.carrier')}：

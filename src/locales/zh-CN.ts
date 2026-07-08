@@ -666,6 +666,7 @@ export const zhCN: MessageSchema = {
     },
     status: {
       draft: '草稿',
+      preOutbound: '预出库',
       unaudited: '未审核',
       audited: '已审核',
       executing: '执行中',
@@ -892,6 +893,7 @@ export const zhCN: MessageSchema = {
       totalWeight: '总重(吨)',
       totalFreight: '总运费',
       pickupLocation: '提货地点',
+      planPickupNotice: '来源出库尚未审核，提货清单为计划提货',
     },
     table: {
       noData: '暂无数据',
@@ -923,6 +925,7 @@ export const zhCN: MessageSchema = {
       paginationTotal: '共 {{count}} 条',
       status: {
         draft: '草稿',
+        preOutbound: '预出库',
         unaudited: '未审核',
         audited: '已审核',
         invoiceReceived: '已收票',

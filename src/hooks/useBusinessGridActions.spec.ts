@@ -49,6 +49,7 @@ describe('useBusinessGridActions', () => {
     submittedFilters: { status: 'pending' },
     listAuditTarget: 'confirmed' as const,
     listReverseAuditTarget: 'draft' as const,
+    listAuditSourceStatuses: ['draft', 'preOutbound'],
     refreshModuleQueries: vi.fn().mockResolvedValue(undefined),
     clearSelection: vi.fn(),
     formatCellValue: vi.fn((v: unknown) => String(v)),
@@ -104,6 +105,7 @@ describe('useBusinessGridActions', () => {
         selectedRows: [{ id: '1' }, { id: '2' }],
         listAuditTarget: 'confirmed',
         listReverseAuditTarget: 'draft',
+        listAuditSourceStatuses: ['draft', 'preOutbound'],
       }),
     )
   })

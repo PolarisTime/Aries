@@ -211,6 +211,68 @@ describe('ModuleFreightPickupListOverlay', () => {
     expect(screen.getByText('Dock B')).toBeTruthy()
   })
 
+  it('shows plan pickup notice when a source outbound is pre outbound', () => {
+    render(
+      <ModuleFreightPickupListOverlay
+        {...defaultProps}
+        records={[
+          {
+            ...defaultProps.records[0],
+            items: [
+              {
+                id: 'pre-outbound-item',
+                projectName: 'Project X',
+                warehouseName: 'Dock A',
+                brand: 'Brand A',
+                material: 'Q235',
+                spec: '10#',
+                length: '12m',
+                quantity: 10,
+                weightTon: 1.234,
+                sourceSalesOutboundStatus: '预出库',
+              },
+            ],
+          },
+        ]}
+      />,
+    )
+
+    expect(
+      screen.getByText('modules.freightPickup.planPickupNotice'),
+    ).toBeTruthy()
+  })
+
+  it('does not show plan pickup notice when all source outbounds are audited', () => {
+    render(
+      <ModuleFreightPickupListOverlay
+        {...defaultProps}
+        records={[
+          {
+            ...defaultProps.records[0],
+            items: [
+              {
+                id: 'audited-item',
+                projectName: 'Project X',
+                warehouseName: 'Dock A',
+                brand: 'Brand A',
+                material: 'Q235',
+                spec: '10#',
+                length: '12m',
+                quantity: 10,
+                weightTon: 1.234,
+                sourceSalesOutboundStatus: '已审核',
+              },
+            ],
+          },
+        ]}
+      />,
+    )
+
+    expect(
+      screen.queryByText('modules.freightPickup.planPickupNotice'),
+    ).toBeNull()
+  })
+
   it('configures and executes detail query for selected records', async () => {
     vi.mocked(getBusinessModuleDetail)
       .mockResolvedValueOnce({ data: { id: 'full-1', billNo: 'FULL-001' } })

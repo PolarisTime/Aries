@@ -235,6 +235,7 @@ describe('useBusinessGridPage', () => {
       lineItemsLocked: true,
       listAuditTarget: '已审核',
       listReverseAuditTarget: '草稿',
+      listAuditSourceStatuses: ['草稿', '预出库'],
     })
     mocks.useModuleFilters.mockReturnValue({
       filters: { keyword: 'draft' },
@@ -689,6 +690,7 @@ describe('useBusinessGridPage', () => {
     act(() => actionOptions.clearSelection())
 
     expect(actionOptions.selectedRows).toEqual([{ id: '1', projectId: 'P-1' }])
+    expect(actionOptions.listAuditSourceStatuses).toEqual(['草稿', '预出库'])
     expect(actionOptions.refreshModuleQueries).toBe(mocks.refreshModuleQueries)
     expect(mocks.openFreightPickup).toHaveBeenCalledWith([
       { id: '1', projectId: 'P-1' },

@@ -15,6 +15,7 @@ interface Props {
   submittedFilters: SearchParams
   listAuditTarget: AuditTarget | null
   listReverseAuditTarget: AuditTarget | null
+  listAuditSourceStatuses?: string[]
   refreshModuleQueries: () => Promise<void>
   clearSelection: () => void
   formatCellValue: (value: unknown, columnType?: string) => string
@@ -27,6 +28,7 @@ export function useBusinessGridActions({
   submittedFilters,
   listAuditTarget,
   listReverseAuditTarget,
+  listAuditSourceStatuses,
   refreshModuleQueries,
   clearSelection,
   formatCellValue,
@@ -53,6 +55,7 @@ export function useBusinessGridActions({
     selectedRows,
     listAuditTarget,
     listReverseAuditTarget,
+    listAuditSourceStatuses,
     refreshAndClearSelection,
   })
 

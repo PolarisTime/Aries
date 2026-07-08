@@ -63,6 +63,10 @@ for (const key of approvedStatusModules) {
   registerModuleBehavior(key, { auditStatus: '已审核' })
 }
 
+registerModuleBehavior('sales-outbound', {
+  auditSourceStatuses: ['草稿', '预出库'],
+})
+
 registerModuleBehavior('receipt', { auditStatus: '已收款' })
 registerModuleBehavior('payment', { auditStatus: '已付款' })
 registerModuleBehavior('invoice-receipt', { auditStatus: '已收票' })

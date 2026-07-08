@@ -22,6 +22,7 @@ interface Props {
   selectedRows: ModuleRecord[]
   listAuditTarget: AuditTarget | null
   listReverseAuditTarget: AuditTarget | null
+  listAuditSourceStatuses?: string[]
   refreshAndClearSelection: () => Promise<void>
 }
 
@@ -31,6 +32,7 @@ export function useBusinessGridBatchActions({
   selectedRows,
   listAuditTarget,
   listReverseAuditTarget,
+  listAuditSourceStatuses,
   refreshAndClearSelection,
 }: Props) {
   const { t } = useTranslation()
@@ -51,6 +53,7 @@ export function useBusinessGridBatchActions({
         record.status,
         listAuditTarget,
         listReverseAuditTarget,
+        listAuditSourceStatuses,
       ),
     )
     const skippedCount = selected.length - eligible.length

@@ -24,7 +24,7 @@ describe('freight-bill-candidates', () => {
           {
             id: '321698660075175936',
             outboundNo: 'OB2026000001',
-            status: '已审核',
+            status: '预出库',
           },
         ],
         totalElements: 1,
@@ -53,6 +53,7 @@ describe('freight-bill-candidates', () => {
       expect.objectContaining({
         id: '321698660075175936',
         outboundNo: 'OB2026000001',
+        status: '预出库',
       }),
     )
   })

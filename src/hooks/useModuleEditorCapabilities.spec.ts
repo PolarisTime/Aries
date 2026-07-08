@@ -15,6 +15,7 @@ const {
   buildListAuditTargetsMock: vi.fn().mockReturnValue({
     auditTarget: 'confirmed',
     reverseAuditTarget: 'draft',
+    auditSourceStatuses: ['draft'],
   }),
   buildEditorAuditTargetMock: vi.fn().mockReturnValue('confirmed'),
   resolveStatusOptionsMock: vi.fn().mockReturnValue(['draft', 'confirmed']),
@@ -62,6 +63,7 @@ describe('useModuleEditorCapabilities', () => {
     buildListAuditTargetsMock.mockReturnValue({
       auditTarget: 'confirmed',
       reverseAuditTarget: 'draft',
+      auditSourceStatuses: ['draft'],
     })
     buildEditorAuditTargetMock.mockReturnValue('confirmed')
     resolveStatusOptionsMock.mockReturnValue(['draft', 'confirmed'])
@@ -82,6 +84,7 @@ describe('useModuleEditorCapabilities', () => {
     expect(result.current.lineItemsLocked).toBeDefined()
     expect(result.current.listAuditTarget).toBeDefined()
     expect(result.current.listReverseAuditTarget).toBeDefined()
+    expect(result.current.listAuditSourceStatuses).toEqual(['draft'])
     expect(result.current.listStatusOptions).toBeDefined()
     expect(result.current.lockedLineItemsNotice).toBeDefined()
   })

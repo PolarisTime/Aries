@@ -4,6 +4,7 @@ import { createElement } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModuleRecord } from '@/types/module-page'
 import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
+import { getOverlayStatusMap } from './useModuleParentSelectorOverlay'
 import {
   filterImportableParentRecords,
   hasImportableQuantity,
@@ -372,6 +373,17 @@ beforeEach(() => {
   )
 })
 
+describe('getOverlayStatusMap', () => {
+  it('maps pre outbound status for parent selector rows', () => {
+    expect(getOverlayStatusMap()).toMatchObject({
+      预出库: {
+        color: 'warning',
+        text: '预出库',
+      },
+    })
+  })
+})
+
 describe('ModuleParentSelectorOverlay importable record filtering', () => {
   it('keeps purchase orders with audited status and positive sales remaining quantity', () => {
     const records = [
@@ -467,6 +479,20 @@ describe('ModuleParentSelectorOverlay importable record filtering', () => {
     expect(
       filterImportableParentRecords('freight-bill', records).map((r) => r.id),
     ).toEqual(['fb-1'])
+  })
+
+  it('leaves backend-filtered sales outbound candidates untouched', () => {
+    const records = [
+      { id: 'outbound-pre', status: '预出库' },
+      { id: 'outbound-audited', status: '已审核' },
+      { id: 'outbound-draft', status: '草稿' },
+    ] as ModuleRecord[]
+
+    expect(
+      filterImportableParentRecords('sales-outbound', records).map(
+        (r) => r.id,
+      ),
+    ).toEqual(['outbound-pre', 'outbound-audited', 'outbound-draft'])
   })
 
   it('keeps completed sales orders for customer statement candidates', () => {

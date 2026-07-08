@@ -35,6 +35,7 @@ export const weightPriceSchema = z.object({
 /** 单据状态枚举 */
 export const documentStatusSchema = z.enum([
   '草稿',
+  '预出库',
   '已审核',
   '未审核',
   '已完成',

@@ -222,6 +222,7 @@ export function useBusinessGridPage({
     lineItemsLocked: editorLineItemsLocked,
     listAuditTarget,
     listReverseAuditTarget,
+    listAuditSourceStatuses,
   } = useModuleEditorCapabilities({
     moduleKey,
     formFields,
@@ -269,6 +270,7 @@ export function useBusinessGridPage({
     submittedFilters,
     listAuditTarget,
     listReverseAuditTarget,
+    listAuditSourceStatuses,
     refreshModuleQueries,
     clearSelection,
     formatCellValue,

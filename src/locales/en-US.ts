@@ -683,6 +683,7 @@ export const enUS: MessageSchema = {
     },
     status: {
       draft: 'Draft',
+      preOutbound: 'Pre Outbound',
       unaudited: 'Unaudited',
       audited: 'Audited',
       executing: 'Executing',
@@ -916,6 +917,8 @@ export const enUS: MessageSchema = {
       totalWeight: 'Weight(ton)',
       totalFreight: 'Total Freight',
       pickupLocation: 'Pickup Location',
+      planPickupNotice:
+        'Source outbound is not audited yet. This pickup list is a plan.',
     },
     table: {
       noData: 'No data',
@@ -948,6 +951,7 @@ export const enUS: MessageSchema = {
       paginationTotal: 'Total {{count}}',
       status: {
         draft: 'Draft',
+        preOutbound: 'Pre Outbound',
         unaudited: 'Unaudited',
         audited: 'Audited',
         invoiceReceived: 'Invoice Received',

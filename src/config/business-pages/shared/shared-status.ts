@@ -3,6 +3,7 @@ import type { ModuleStatusMeta } from '@/types/module-page'
 
 export const statusMap: Record<string, ModuleStatusMeta> = {
   草稿: { text: i18next.t('modules.status.draft'), color: 'warning' },
+  预出库: { text: i18next.t('modules.status.preOutbound'), color: 'warning' },
   完成采购: {
     text: i18next.t('modules.status.completedPurchase'),
     color: 'success',

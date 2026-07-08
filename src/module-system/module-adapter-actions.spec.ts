@@ -519,6 +519,18 @@ describe('buildListAuditTargets', () => {
       reverseAuditTarget: { key: 'status', value: '草稿' },
     })
   })
+
+  it('returns configured audit source statuses', () => {
+    register('sales-outbound', { auditSourceStatuses: ['草稿', '预出库'] })
+
+    const result = buildListAuditTargets({
+      moduleKey: 'sales-outbound',
+      statusOptions: ['草稿', '预出库', '已审核'],
+      preferredStatus: '草稿',
+    })
+
+    expect(result.auditSourceStatuses).toEqual(['草稿', '预出库'])
+  })
 })
 
 describe('canAuditFromStatus', () => {
@@ -537,6 +549,28 @@ describe('canAuditFromStatus', () => {
   it('returns false when status does not match reverseAuditTarget', () => {
     expect(
       canAuditFromStatus('已完成', { value: '已审核' }, { value: '草稿' }),
+    ).toBe(false)
+  })
+
+  it('returns true when status is configured as an audit source status', () => {
+    expect(
+      canAuditFromStatus(
+        '预出库',
+        { value: '已审核' },
+        { value: '草稿' },
+        ['草稿', '预出库'],
+      ),
+    ).toBe(true)
+  })
+
+  it('returns false when configured audit source status equals audit target', () => {
+    expect(
+      canAuditFromStatus(
+        '已审核',
+        { value: '已审核' },
+        { value: '草稿' },
+        ['草稿', '预出库'],
+      ),
     ).toBe(false)
   })
 

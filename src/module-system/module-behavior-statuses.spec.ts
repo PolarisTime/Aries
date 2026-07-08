@@ -94,6 +94,17 @@ describe('module-behavior-statuses', () => {
     expect(call).toBeDefined()
   })
 
+  it('registers audit source statuses for sales-outbound pre outbound flow', () => {
+    const call = mockedRegister.mock.calls.find(
+      ([key, config]) =>
+        key === 'sales-outbound' &&
+        Array.isArray(config.auditSourceStatuses) &&
+        config.auditSourceStatuses.includes('草稿') &&
+        config.auditSourceStatuses.includes('预出库'),
+    )
+    expect(call).toBeDefined()
+  })
+
   it('registers auditStatus for receipt', () => {
     const receiptCalls = mockedRegister.mock.calls.filter(
       ([key]) => key === 'receipt',

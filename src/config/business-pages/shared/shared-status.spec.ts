@@ -5,6 +5,7 @@ describe('statusMap', () => {
   it('contains expected status entries', () => {
     const expectedKeys = [
       '草稿',
+      '预出库',
       '完成采购',
       '完成入库',
       '完成销售',
@@ -72,6 +73,7 @@ describe('statusMap', () => {
       '待审核',
       '未收票',
       '草稿',
+      '预出库',
       '未签署',
     ]
     for (const key of warningStatuses) {

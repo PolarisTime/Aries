@@ -257,6 +257,7 @@ export function buildListAuditTargets(options: {
   preferredStatus?: unknown
 }) {
   const { moduleKey, statusOptions, preferredStatus } = options
+  const auditSourceStatuses = getBehaviorValue(moduleKey, 'auditSourceStatuses')
   return {
     auditTarget: buildEditorAuditTarget(moduleKey, statusOptions),
     reverseAuditTarget: buildReverseAuditTarget(
@@ -264,6 +265,9 @@ export function buildListAuditTargets(options: {
       statusOptions,
       preferredStatus,
     ),
+    auditSourceStatuses: Array.isArray(auditSourceStatuses)
+      ? normalizeOptions(auditSourceStatuses)
+      : undefined,
   }
 }
 
@@ -271,10 +275,15 @@ export function canAuditFromStatus(
   currentStatus: unknown,
   auditTarget?: { value: string } | null,
   reverseAuditTarget?: { value: string } | null,
+  auditSourceStatuses?: unknown[],
 ) {
   const status = asString(currentStatus).trim()
   const auditStatus = asString(auditTarget?.value).trim()
   const reverseStatus = asString(reverseAuditTarget?.value).trim()
+  const sourceStatuses = normalizeOptions(auditSourceStatuses || [])
+  if (auditStatus && sourceStatuses.length > 0) {
+    return status !== auditStatus && sourceStatuses.includes(status)
+  }
   return Boolean(
     auditStatus &&
       reverseStatus &&

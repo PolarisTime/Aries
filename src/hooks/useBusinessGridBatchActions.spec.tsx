@@ -92,6 +92,53 @@ describe('useBusinessGridBatchActions', () => {
     expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
   })
 
+  it('uses configured audit source statuses when filtering audit rows', async () => {
+    updateBusinessModuleStatusMock.mockResolvedValue(undefined)
+
+    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridBatchActions({
+        moduleKey: 'sales-outbound',
+        selectedRowKeys: ['101', '202', '303'],
+        selectedRows: [
+          { id: '101', status: '草稿' },
+          { id: '202', status: '预出库' },
+          { id: '303', status: '已审核' },
+        ],
+        listAuditTarget: { key: 'status', value: '已审核' },
+        listReverseAuditTarget: { key: 'status', value: '草稿' },
+        listAuditSourceStatuses: ['草稿', '预出库'],
+        refreshAndClearSelection,
+      }),
+    )
+
+    act(() => {
+      result.current.handleSelectedAuditRecords()
+    })
+
+    expect(confirmMock).toHaveBeenCalledTimes(1)
+    const confirmArg = confirmMock.mock.calls[0]?.[0]
+    await act(async () => {
+      await confirmArg.onOk()
+    })
+
+    expect(updateBusinessModuleStatusMock).toHaveBeenCalledTimes(2)
+    expect(updateBusinessModuleStatusMock).toHaveBeenNthCalledWith(
+      1,
+      'sales-outbound',
+      '101',
+      '已审核',
+    )
+    expect(updateBusinessModuleStatusMock).toHaveBeenNthCalledWith(
+      2,
+      'sales-outbound',
+      '202',
+      '已审核',
+    )
+    expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
+  })
+
   it('skips completed rows for reverse audit', () => {
     const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
 

@@ -104,6 +104,10 @@ export function getOverlayStatusMap() {
       color: 'default',
       text: i18next.t('modules.parentSelector.status.draft'),
     },
+    [DOCUMENT_STATUS.PRE_OUTBOUND]: {
+      color: 'warning',
+      text: i18next.t('modules.parentSelector.status.preOutbound'),
+    },
     [DOCUMENT_STATUS.UNAUDITED]: {
       color: 'default',
       text: i18next.t('modules.parentSelector.status.unaudited'),

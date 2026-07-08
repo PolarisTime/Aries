@@ -89,6 +89,11 @@ describe('api schemas', () => {
       expect(result.success).toBe(true)
     })
 
+    it('should validate pre outbound status', () => {
+      const result = documentStatusSchema.safeParse('预出库')
+      expect(result.success).toBe(true)
+    })
+
     it('should reject invalid status', () => {
       const result = documentStatusSchema.safeParse('无效状态')
       expect(result.success).toBe(false)

@@ -79,6 +79,7 @@ export function useModuleEditorCapabilities({
   const {
     auditTarget: listAuditTarget,
     reverseAuditTarget: listReverseAuditTarget,
+    auditSourceStatuses: listAuditSourceStatuses,
   } = buildListAuditTargets({
     moduleKey,
     statusOptions: listStatusOptions,
@@ -120,6 +121,7 @@ export function useModuleEditorCapabilities({
     lineItemsLocked,
     listAuditTarget,
     listReverseAuditTarget,
+    listAuditSourceStatuses,
     listStatusOptions,
     lockedLineItemsNotice,
   }

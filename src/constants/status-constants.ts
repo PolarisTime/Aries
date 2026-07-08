@@ -43,6 +43,7 @@ export const DB_MONITORING_STATUS = {
 // 业务单据状态
 export const DOCUMENT_STATUS = {
   DRAFT: '草稿',
+  PRE_OUTBOUND: '预出库',
   UNAUDITED: '未审核',
   AUDITED: '已审核',
   INVOICED_RECEIVED: '已收票',

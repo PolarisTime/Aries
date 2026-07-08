@@ -647,6 +647,7 @@ export interface MessageSchema {
     }
     status: {
       draft: string
+      preOutbound: string
       unaudited: string
       audited: string
       executing: string
@@ -872,6 +873,7 @@ export interface MessageSchema {
       totalWeight: string
       totalFreight: string
       pickupLocation: string
+      planPickupNotice: string
     }
     table: {
       noData: string
@@ -903,6 +905,7 @@ export interface MessageSchema {
       paginationTotal: string
       status: {
         draft: string
+        preOutbound: string
         unaudited: string
         audited: string
         invoiceReceived: string
