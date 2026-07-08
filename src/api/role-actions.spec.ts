@@ -24,13 +24,6 @@ vi.mock('@/api/system-menus', () => ({
   MenuNode: {},
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    ROLE_PERMISSION_OPTIONS: '/roles/permission-options',
-    ROLE_SETTINGS: '/roles',
-  },
-}))
-
 vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
 }))
@@ -61,7 +54,9 @@ describe('role-actions', () => {
 
       const result = await listSystemMenus()
 
-      expect(httpGetMock).toHaveBeenCalledWith('/roles/permission-options')
+      expect(httpGetMock).toHaveBeenCalledWith(
+        '/role-settings/permission-options',
+      )
       expect(result).toEqual([
         { menuCode: 'dashboard', menuName: '工作台', children: [] },
       ])
@@ -89,7 +84,7 @@ describe('role-actions', () => {
 
       const result = await listRoleSettingsPage(0, 10)
 
-      expect(httpGetMock).toHaveBeenCalledWith('/roles', {
+      expect(httpGetMock).toHaveBeenCalledWith('/role-settings', {
         params: { page: 0, size: 10 },
       })
       expect(result.records).toEqual([
@@ -108,7 +103,7 @@ describe('role-actions', () => {
 
       const result = await getRoleActions('1')
 
-      expect(httpGetMock).toHaveBeenCalledWith('/roles/1/permission')
+      expect(httpGetMock).toHaveBeenCalledWith('/role-settings/1/permission')
       expect(result).toEqual([{ resource: 'material', action: 'read' }])
     })
 
@@ -128,7 +123,10 @@ describe('role-actions', () => {
       const actions = [{ resource: 'material', action: 'write' }]
       await updateRoleActions('1', actions)
 
-      expect(httpPutMock).toHaveBeenCalledWith('/roles/1/permission', actions)
+      expect(httpPutMock).toHaveBeenCalledWith(
+        '/role-settings/1/permission',
+        actions,
+      )
     })
   })
 
@@ -138,7 +136,7 @@ describe('role-actions', () => {
 
       await updateRole('1', { roleName: '新角色' })
 
-      expect(httpPutMock).toHaveBeenCalledWith('/roles/1', {
+      expect(httpPutMock).toHaveBeenCalledWith('/role-settings/1', {
         roleName: '新角色',
       })
     })
@@ -154,7 +152,7 @@ describe('role-actions', () => {
 
       const result = await createRole({ roleCode: 'new', roleName: '新角色' })
 
-      expect(httpPostMock).toHaveBeenCalledWith('/roles', {
+      expect(httpPostMock).toHaveBeenCalledWith('/role-settings', {
         roleCode: 'new',
         roleName: '新角色',
       })
@@ -169,7 +167,7 @@ describe('role-actions', () => {
 
       const result = await deleteRole(2)
 
-      expect(httpDeleteMock).toHaveBeenCalledWith('/roles/2')
+      expect(httpDeleteMock).toHaveBeenCalledWith('/role-settings/2')
       expect(result).toEqual(mockResponse)
     })
   })

@@ -100,6 +100,12 @@ export const ENDPOINTS = {
   MATERIALS_SEARCH: '/materials/search',
   MATERIAL_GRADES: '/materials/grades',
 
+  // Import candidate collections
+  PURCHASE_ORDER_IMPORT_CANDIDATES: '/purchase-orders/import-candidates',
+  FREIGHT_BILL_IMPORT_CANDIDATES: '/freight-bills/import-candidates',
+  SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES:
+    '/sales-orders/outbound-import-candidates',
+
   // Departments (sub-resource option lists → plural collection)
   DEPARTMENTS_OPTIONS: '/departments/options',
 

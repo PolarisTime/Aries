@@ -1,6 +1,7 @@
 import { normalizeRows } from '@/api/business-normalizers'
 import { assertApiSuccess, http } from '@/api/client'
 import { pageContent, pageTotalElements } from '@/api/page-contract'
+import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse, TableResponse } from '@/types/api'
 import type { RawPagePayload, SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
@@ -13,7 +14,7 @@ export async function listFreightBillImportCandidatePage(
 ): Promise<TableResponse<ModuleRecord>> {
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
-      '/freight-bills/import-candidates',
+      ENDPOINTS.FREIGHT_BILL_IMPORT_CANDIDATES,
       {
         params: {
           ...filters,

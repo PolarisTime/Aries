@@ -9,12 +9,6 @@ vi.mock('@/api/client', () => ({
   http: { get: httpGetMock, post: httpPostMock },
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    SECURITY_KEYS: '/security-keys',
-  },
-}))
-
 vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
 }))
@@ -64,7 +58,7 @@ describe('security-keys', () => {
 
       const result = await getSecurityKeyOverview()
 
-      expect(httpGetMock).toHaveBeenCalledWith('/security-keys')
+      expect(httpGetMock).toHaveBeenCalledWith('/system/security-keys')
       expect(result.data.jwt.keyCode).toBe('jwt')
       expect(result.data.totp.keyCode).toBe('totp')
     })
@@ -90,7 +84,7 @@ describe('security-keys', () => {
       const result = await rotateJwtSecurityKey('123456')
 
       expect(httpPostMock).toHaveBeenCalledWith(
-        '/security-keys/jwt/rotate',
+        '/system/security-keys/jwt/rotate',
         null,
         { headers: { 'X-TOTP-Code': '123456' } },
       )
@@ -103,7 +97,7 @@ describe('security-keys', () => {
       await rotateJwtSecurityKey('  123456  ')
 
       expect(httpPostMock).toHaveBeenCalledWith(
-        '/security-keys/jwt/rotate',
+        '/system/security-keys/jwt/rotate',
         null,
         { headers: { 'X-TOTP-Code': '123456' } },
       )
@@ -130,7 +124,7 @@ describe('security-keys', () => {
       const result = await rotateTotpSecurityKey('654321')
 
       expect(httpPostMock).toHaveBeenCalledWith(
-        '/security-keys/totp/rotate',
+        '/system/security-keys/totp/rotate',
         null,
         { headers: { 'X-TOTP-Code': '654321' } },
       )

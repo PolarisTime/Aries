@@ -8,12 +8,6 @@ vi.mock('@/api/client', () => ({
   http: { get: httpGetMock },
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    SYSTEM_MENUS_TREE: '/system-menus/tree',
-  },
-}))
-
 vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
 }))
@@ -59,7 +53,7 @@ describe('system-menus', () => {
 
       const result = await listSystemMenus()
 
-      expect(httpGetMock).toHaveBeenCalledWith('/system-menus/tree')
+      expect(httpGetMock).toHaveBeenCalledWith('/system/menu/tree')
       expect(result).toHaveLength(1)
       expect(result[0].menuCode).toBe('dashboard')
       expect(result[0].menuName).toBe('工作台')

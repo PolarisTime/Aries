@@ -21,12 +21,6 @@ vi.mock('@/lib/query-cached-options', () => ({
   createQueryCachedOptions: createQueryCachedOptionsMock,
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    SUPPLIERS_OPTIONS: '/suppliers/options',
-  },
-}))
-
 import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   fetchSupplierOptions,
@@ -45,6 +39,7 @@ describe('supplier-options', () => {
   it('binds supplier options to the TanStack Query master option key', () => {
     expect(createQueryCachedOptionsMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        endpoint: '/suppliers/options',
         queryKey: QUERY_KEYS.masterOptions.supplier,
       }),
     )

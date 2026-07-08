@@ -21,12 +21,6 @@ vi.mock('@/lib/query-cached-options', () => ({
   createQueryCachedOptions: createQueryCachedOptionsMock,
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    WAREHOUSES_OPTIONS: '/warehouses/options',
-  },
-}))
-
 import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   fetchWarehouseOptions,
@@ -44,6 +38,7 @@ describe('warehouse-options', () => {
   it('binds warehouse options to the TanStack Query master option key', () => {
     expect(createQueryCachedOptionsMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        endpoint: '/warehouses/options',
         queryKey: QUERY_KEYS.masterOptions.warehouse,
       }),
     )

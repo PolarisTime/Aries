@@ -20,15 +20,6 @@ vi.mock('@/api/page-contract', () => ({
   pageContent: vi.fn((data: { content?: unknown[] }) => data.content || []),
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    USER_ACCOUNTS: '/user-accounts',
-    USER_ACCOUNTS_LOGIN_NAME_CHECK: '/user-accounts/check-login-name',
-    ROLE_SETTINGS: '/roles',
-    DEPARTMENTS_OPTIONS: '/departments/options',
-  },
-}))
-
 vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
 }))
@@ -101,7 +92,7 @@ describe('user-accounts', () => {
       const result = await checkUserAccountLoginName('newuser')
 
       expect(httpGetMock).toHaveBeenCalledWith(
-        '/user-accounts/check-login-name',
+        '/user-accounts/login-name-availability',
         {
           params: { loginName: 'newuser', excludeUserId: undefined },
         },
@@ -115,7 +106,7 @@ describe('user-accounts', () => {
       await checkUserAccountLoginName('admin', 'user-1')
 
       expect(httpGetMock).toHaveBeenCalledWith(
-        '/user-accounts/check-login-name',
+        '/user-accounts/login-name-availability',
         {
           params: { loginName: 'admin', excludeUserId: 'user-1' },
         },
@@ -217,7 +208,7 @@ describe('user-accounts', () => {
 
       const result = await listRoleOptions()
 
-      expect(httpGetMock).toHaveBeenCalledWith('/roles', {
+      expect(httpGetMock).toHaveBeenCalledWith('/role-settings', {
         params: { page: 0, size: 200 },
       })
       expect(result).toEqual([

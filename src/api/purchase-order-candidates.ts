@@ -1,6 +1,7 @@
 import { normalizeRows } from '@/api/business-normalizers'
 import { assertApiSuccess, http } from '@/api/client'
 import { pageContent, pageTotalElements } from '@/api/page-contract'
+import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse, TableResponse } from '@/types/api'
 import type { RawPagePayload, SearchParams } from '@/types/api-raw'
 import type { ModuleRecord } from '@/types/module-page'
@@ -18,7 +19,7 @@ export async function listPurchaseOrderImportCandidatePage(
 ): Promise<TableResponse<ModuleRecord>> {
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
-      '/purchase-orders/import-candidates',
+      ENDPOINTS.PURCHASE_ORDER_IMPORT_CANDIDATES,
       {
         params: {
           ...filters,

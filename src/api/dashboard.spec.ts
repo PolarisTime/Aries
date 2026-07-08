@@ -8,12 +8,6 @@ vi.mock('@/api/client', () => ({
   http: { get: httpGetMock },
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    DASHBOARD_SUMMARY: '/dashboard/summary',
-  },
-}))
-
 import { getDashboardSummary } from './dashboard'
 
 describe('dashboard', () => {

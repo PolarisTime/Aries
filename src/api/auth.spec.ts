@@ -18,19 +18,6 @@ vi.mock('@/api/auth/auth-state', () => ({
   waitForRefreshTokenReuseRetry: waitForRefreshTokenReuseRetryMock,
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    AUTH_LOGIN: '/auth/login',
-    AUTH_CAPTCHA: '/auth/captcha',
-    AUTH_LOGIN_2FA: '/auth/login-2fa',
-    AUTH_LOGOUT: '/auth/logout',
-    AUTH_REFRESH: '/auth/refresh',
-    AUTH_PING: '/auth/ping',
-    HEALTH: '/health',
-    VERSION: '/version',
-  },
-}))
-
 vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
 }))

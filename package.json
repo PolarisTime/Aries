@@ -26,6 +26,7 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:contract": "E2E_BACKEND_MODE=real playwright test tests/e2e/dashboard-backend-contract.spec.ts",
     "test:e2e:real": "E2E_BACKEND_MODE=real playwright test",
     "test:e2e:mock": "E2E_BACKEND_MODE=mock playwright test",
     "test:e2e:coverage": "NODE_OPTIONS=--max-old-space-size=8192 E2E_BACKEND_MODE=real E2E_COVERAGE=1 E2E_COVERAGE_MIN_STATEMENTS=60 E2E_COVERAGE_MIN_BRANCHES=60 E2E_COVERAGE_MIN_FUNCTIONS=25 E2E_COVERAGE_MIN_LINES=60 playwright test",

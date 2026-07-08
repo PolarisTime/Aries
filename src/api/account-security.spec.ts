@@ -8,14 +8,6 @@ vi.mock('@/api/client', () => ({
   http: { post: httpPostMock },
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    ACCOUNT_PASSWORD: '/account/password',
-    ACCOUNT_2FA_SETUP: '/account/2fa/setup',
-    ACCOUNT_2FA_ENABLE: '/account/2fa/enable',
-  },
-}))
-
 vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
 }))
@@ -42,7 +34,7 @@ describe('account-security', () => {
         newPassword: 'new',
       })
 
-      expect(httpPostMock).toHaveBeenCalledWith('/account/password', {
+      expect(httpPostMock).toHaveBeenCalledWith('/account/security/password', {
         currentPassword: 'old',
         newPassword: 'new',
       })
@@ -68,7 +60,7 @@ describe('account-security', () => {
 
       const result = await setupOwn2fa()
 
-      expect(httpPostMock).toHaveBeenCalledWith('/account/2fa/setup')
+      expect(httpPostMock).toHaveBeenCalledWith('/account/security/2fa/setup')
       expect(result).toEqual(mockResponse)
     })
   })
@@ -83,9 +75,12 @@ describe('account-security', () => {
 
       const result = await enableOwn2fa('123456')
 
-      expect(httpPostMock).toHaveBeenCalledWith('/account/2fa/enable', {
-        totpCode: '123456',
-      })
+      expect(httpPostMock).toHaveBeenCalledWith(
+        '/account/security/2fa/enable',
+        {
+          totpCode: '123456',
+        },
+      )
       expect(result).toEqual(mockResponse)
     })
   })

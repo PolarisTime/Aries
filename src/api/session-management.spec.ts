@@ -13,13 +13,6 @@ vi.mock('@/api/page-contract', () => ({
   pageContent: vi.fn((data: { content?: unknown[] }) => data.content || []),
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    REFRESH_TOKENS: '/refresh-tokens',
-    REFRESH_TOKENS_SUMMARY: '/refresh-tokens/summary',
-  },
-}))
-
 vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
 }))
@@ -67,7 +60,7 @@ describe('session-management', () => {
 
       const result = await listRefreshTokens({ page: 0, size: 10 })
 
-      expect(httpGetMock).toHaveBeenCalledWith('/refresh-tokens', {
+      expect(httpGetMock).toHaveBeenCalledWith('/auth/refresh-tokens', {
         params: { page: 0, size: 10 },
       })
       expect(result.records).toHaveLength(1)
@@ -82,7 +75,7 @@ describe('session-management', () => {
 
       await listRefreshTokens({ page: 0, size: 10, keyword: 'admin' })
 
-      expect(httpGetMock).toHaveBeenCalledWith('/refresh-tokens', {
+      expect(httpGetMock).toHaveBeenCalledWith('/auth/refresh-tokens', {
         params: { page: 0, size: 10, keyword: 'admin' },
       })
     })
@@ -102,7 +95,7 @@ describe('session-management', () => {
 
       const result = await getRefreshTokenSummary()
 
-      expect(httpGetMock).toHaveBeenCalledWith('/refresh-tokens/summary')
+      expect(httpGetMock).toHaveBeenCalledWith('/auth/refresh-tokens/summary')
       expect(result.onlineUsers).toBe(5)
       expect(result.onlineSessions).toBe(8)
     })
@@ -115,7 +108,7 @@ describe('session-management', () => {
       await revokeRefreshToken('token-1')
 
       expect(httpPostMock).toHaveBeenCalledWith(
-        '/refresh-tokens/token-1/revoke',
+        '/auth/refresh-tokens/token-1/revoke',
       )
     })
   })
@@ -126,7 +119,9 @@ describe('session-management', () => {
 
       await revokeAllRefreshTokens()
 
-      expect(httpPostMock).toHaveBeenCalledWith('/refresh-tokens/revoke-all')
+      expect(httpPostMock).toHaveBeenCalledWith(
+        '/auth/refresh-tokens/revoke-all',
+      )
     })
   })
 })

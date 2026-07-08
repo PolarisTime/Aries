@@ -41,6 +41,7 @@ describe('carrier-options', () => {
   it('binds carrier options to the TanStack Query master option key', () => {
     expect(createQueryCachedOptionsMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        endpoint: '/carriers/options',
         queryKey: QUERY_KEYS.masterOptions.carrier,
       }),
     )

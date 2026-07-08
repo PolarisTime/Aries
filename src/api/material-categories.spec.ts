@@ -21,12 +21,6 @@ vi.mock('@/lib/query-cached-options', () => ({
   createQueryCachedOptions: createQueryCachedOptionsMock,
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    MATERIAL_CATEGORIES: '/material-categories',
-  },
-}))
-
 import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   fetchMaterialCategories,
@@ -43,6 +37,7 @@ describe('material-categories', () => {
   it('binds material categories to the TanStack Query master option key', () => {
     expect(createQueryCachedOptionsMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        endpoint: '/material-categories/options',
         queryKey: QUERY_KEYS.masterOptions.materialCategories,
       }),
     )

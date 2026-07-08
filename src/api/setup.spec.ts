@@ -9,15 +9,6 @@ vi.mock('@/api/client', () => ({
   http: { get: httpGetMock, post: httpPostMock },
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    SETUP_STATUS: '/setup/status',
-    SETUP_ADMIN_2FA: '/setup/admin-2fa',
-    SETUP_ADMIN: '/setup/admin',
-    SETUP_COMPANY: '/setup/company',
-  },
-}))
-
 vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
 }))
@@ -64,7 +55,7 @@ describe('setup API', () => {
   })
 
   describe('setupInitialAdmin2fa', () => {
-    it('calls POST /setup/admin-2fa with payload', async () => {
+    it('calls POST /setup/admin/2fa/setup with payload', async () => {
       const payload = { loginName: 'admin' }
       const mockResponse = {
         code: 0,
@@ -74,7 +65,10 @@ describe('setup API', () => {
 
       const result = await setupInitialAdmin2fa(payload)
 
-      expect(httpPostMock).toHaveBeenCalledWith('/setup/admin-2fa', payload)
+      expect(httpPostMock).toHaveBeenCalledWith(
+        '/setup/admin/2fa/setup',
+        payload,
+      )
       expect(assertApiSuccessMock).toHaveBeenCalledWith(
         mockResponse,
         'generateAdmin2faFailed',

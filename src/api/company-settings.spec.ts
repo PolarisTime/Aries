@@ -29,14 +29,6 @@ vi.mock('@/api/client', () => ({
   },
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    COMPANY_SETTINGS: '/company-settings',
-    COMPANY_SETTINGS_CURRENT: '/company-settings/current',
-    COMPANY_SETTINGS_OPTIONS: '/company-settings/options',
-  },
-}))
-
 vi.mock('@/lib/query-client', () => ({
   queryClient: {
     fetchQuery: fetchQueryMock,

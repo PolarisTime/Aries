@@ -13,15 +13,6 @@ vi.mock('@/api/page-contract', () => ({
   pageContent: vi.fn((data: { content?: unknown[] }) => data.content || []),
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    API_KEYS: '/api-keys',
-    API_KEYS_USER_OPTIONS: '/api-keys/user-options',
-    API_KEYS_RESOURCE_OPTIONS: '/api-keys/resource-options',
-    API_KEYS_ACTION_OPTIONS: '/api-keys/action-options',
-  },
-}))
-
 vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
 }))
@@ -57,7 +48,7 @@ describe('api-keys', () => {
 
       const result = await listApiKeys({ page: 0, size: 10 })
 
-      expect(httpGetMock).toHaveBeenCalledWith('/api-keys', {
+      expect(httpGetMock).toHaveBeenCalledWith('/auth/api-keys', {
         params: { page: 0, size: 10 },
       })
       expect(result.records).toEqual([{ id: '1', keyName: 'test-key' }])
@@ -74,7 +65,7 @@ describe('api-keys', () => {
 
       const result = await listApiKeyUserOptions('admin')
 
-      expect(httpGetMock).toHaveBeenCalledWith('/api-keys/user-options', {
+      expect(httpGetMock).toHaveBeenCalledWith('/auth/api-keys/user-options', {
         params: { keyword: 'admin' },
       })
       expect(result[0].id).toBe('1')
@@ -86,7 +77,7 @@ describe('api-keys', () => {
 
       await listApiKeyUserOptions()
 
-      expect(httpGetMock).toHaveBeenCalledWith('/api-keys/user-options', {
+      expect(httpGetMock).toHaveBeenCalledWith('/auth/api-keys/user-options', {
         params: { keyword: undefined },
       })
     })
@@ -102,6 +93,9 @@ describe('api-keys', () => {
 
       const result = await listApiKeyResourceOptions()
 
+      expect(httpGetMock).toHaveBeenCalledWith(
+        '/auth/api-keys/resource-options',
+      )
       expect(result).toEqual([
         { code: 'material', title: '物料', group: '主数据' },
       ])
@@ -118,6 +112,7 @@ describe('api-keys', () => {
 
       const result = await listApiKeyActionOptions()
 
+      expect(httpGetMock).toHaveBeenCalledWith('/auth/api-keys/action-options')
       expect(result).toEqual([{ code: 'read', title: '读取' }])
     })
   })
@@ -139,7 +134,7 @@ describe('api-keys', () => {
       }
       await createApiKey('user-1', payload, '123456')
 
-      expect(httpPostMock).toHaveBeenCalledWith('/api-keys', payload, {
+      expect(httpPostMock).toHaveBeenCalledWith('/auth/api-keys', payload, {
         params: { userId: 'user-1' },
         headers: { 'X-TOTP-Code': '123456' },
       })
@@ -152,7 +147,7 @@ describe('api-keys', () => {
 
       await revokeApiKey('key-1')
 
-      expect(httpPostMock).toHaveBeenCalledWith('/api-keys/key-1/revoke')
+      expect(httpPostMock).toHaveBeenCalledWith('/auth/api-keys/key-1/revoke')
     })
   })
 
@@ -166,7 +161,7 @@ describe('api-keys', () => {
 
       const result = await getApiKeyDetail('1')
 
-      expect(httpGetMock).toHaveBeenCalledWith('/api-keys/1')
+      expect(httpGetMock).toHaveBeenCalledWith('/auth/api-keys/1')
       expect(result).toEqual({ id: '1', keyName: 'test-key', status: 'active' })
     })
 
@@ -181,11 +176,11 @@ describe('api-keys', () => {
 
   describe('buildApiKeyUrl', () => {
     it('returns base url when id is undefined', () => {
-      expect(buildApiKeyUrl()).toBe('/api-keys')
+      expect(buildApiKeyUrl()).toBe('/auth/api-keys')
     })
 
     it('returns url with id when id is provided', () => {
-      expect(buildApiKeyUrl('abc')).toBe('/api-keys/abc')
+      expect(buildApiKeyUrl('abc')).toBe('/auth/api-keys/abc')
     })
   })
 
@@ -223,7 +218,7 @@ describe('api-keys', () => {
       httpGetMock.mockResolvedValue({ code: 0, data: [] })
 
       await listApiKeyUserOptions('  test  ')
-      expect(httpGetMock).toHaveBeenCalledWith('/api-keys/user-options', {
+      expect(httpGetMock).toHaveBeenCalledWith('/auth/api-keys/user-options', {
         params: { keyword: 'test' },
       })
     })

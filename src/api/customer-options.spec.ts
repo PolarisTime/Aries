@@ -44,6 +44,7 @@ describe('customer-options', () => {
   it('binds customer options to the TanStack Query master option key', () => {
     expect(createQueryCachedOptionsMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        endpoint: '/customers/options',
         queryKey: QUERY_KEYS.masterOptions.customer,
       }),
     )

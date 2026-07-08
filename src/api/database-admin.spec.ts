@@ -8,13 +8,6 @@ vi.mock('@/api/client', () => ({
   http: { get: httpGetMock },
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    DATABASE_STATUS: '/database/status',
-    DATABASE_MONITORING: '/database/monitoring',
-  },
-}))
-
 vi.mock('@/utils/api-messages', () => ({
   getApiMessage: (key: string) => key,
 }))
@@ -66,7 +59,7 @@ describe('database-admin', () => {
 
       const result = await getDatabaseStatus()
 
-      expect(httpGetMock).toHaveBeenCalledWith('/database/status')
+      expect(httpGetMock).toHaveBeenCalledWith('/system/databases/status')
       expect(result.postgres.host).toBe('localhost')
       expect(result.redis.status).toBe('UP')
     })
@@ -116,7 +109,7 @@ describe('database-admin', () => {
 
       const result = await getDatabaseMonitoring()
 
-      expect(httpGetMock).toHaveBeenCalledWith('/database/monitoring')
+      expect(httpGetMock).toHaveBeenCalledWith('/system/databases/monitoring')
       expect(result.available).toBe(true)
     })
   })

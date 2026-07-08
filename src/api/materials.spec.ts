@@ -10,14 +10,6 @@ vi.mock('./client', () => ({
   http: { get: httpGetMock, post: httpPostMock },
 }))
 
-vi.mock('@/constants/endpoints', () => ({
-  ENDPOINTS: {
-    MATERIALS_SEARCH: '/materials/search',
-    MATERIALS_TEMPLATE: '/materials/template',
-    MATERIALS_IMPORT: '/materials/import',
-  },
-}))
-
 vi.mock('@/utils/download', () => ({
   downloadBlob: downloadBlobMock,
 }))

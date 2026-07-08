@@ -22,6 +22,29 @@ describe('ENDPOINTS', () => {
     )
   })
 
+  it('has all required session endpoints', () => {
+    expect(ENDPOINTS.REFRESH_TOKENS).toBe('/auth/refresh-tokens')
+    expect(ENDPOINTS.REFRESH_TOKENS_SUMMARY).toBe(
+      '/auth/refresh-tokens/summary',
+    )
+  })
+
+  it('has all required account security endpoints', () => {
+    expect(ENDPOINTS.ACCOUNT_SECURITY_STATUS).toBe('/account/security')
+    expect(ENDPOINTS.ACCOUNT_PASSWORD).toBe('/account/security/password')
+    expect(ENDPOINTS.ACCOUNT_2FA_SETUP).toBe('/account/security/2fa/setup')
+    expect(ENDPOINTS.ACCOUNT_2FA_ENABLE).toBe('/account/security/2fa/enable')
+    expect(ENDPOINTS.ACCOUNT_2FA_DISABLE).toBe('/account/security/2fa/disable')
+  })
+
+  it('has all required user account endpoints', () => {
+    expect(ENDPOINTS.USER_ACCOUNTS).toBe('/user-accounts')
+    expect(ENDPOINTS.USER_ACCOUNTS_LOGIN_NAME_CHECK).toBe(
+      '/user-accounts/login-name-availability',
+    )
+    expect(ENDPOINTS.USER_ACCOUNT_PREFERENCES).toBe('/user-accounts/preference')
+  })
+
   it('has all required master data endpoints', () => {
     expect(ENDPOINTS.DEPARTMENTS_OPTIONS).toBe('/departments/options')
     expect(ENDPOINTS.WAREHOUSES_OPTIONS).toBe('/warehouses/options')
@@ -39,6 +62,18 @@ describe('ENDPOINTS', () => {
     expect(ENDPOINTS.MATERIAL_GRADES).toBe('/materials/grades')
   })
 
+  it('has all required import candidate endpoints', () => {
+    expect(ENDPOINTS.PURCHASE_ORDER_IMPORT_CANDIDATES).toBe(
+      '/purchase-orders/import-candidates',
+    )
+    expect(ENDPOINTS.FREIGHT_BILL_IMPORT_CANDIDATES).toBe(
+      '/freight-bills/import-candidates',
+    )
+    expect(ENDPOINTS.SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES).toBe(
+      '/sales-orders/outbound-import-candidates',
+    )
+  })
+
   it('has system-related endpoints', () => {
     expect(ENDPOINTS.DATABASE_STATUS).toBe('/system/databases/status')
     expect(ENDPOINTS.DATABASE_MONITORING).toBe('/system/databases/monitoring')
@@ -49,17 +84,14 @@ describe('ENDPOINTS', () => {
   it('has all setup endpoints', () => {
     expect(ENDPOINTS.SETUP_STATUS).toBe('/setup/status')
     expect(ENDPOINTS.SETUP_INITIALIZE).toBe('/setup/initialize')
+    expect(ENDPOINTS.SETUP_ADMIN_2FA).toBe('/setup/admin/2fa/setup')
     expect(ENDPOINTS.SETUP_ADMIN).toBe('/setup/admin')
     expect(ENDPOINTS.SETUP_COMPANY).toBe('/setup/company')
   })
 
-  it('has all required user account endpoints', () => {
-    expect(ENDPOINTS.USER_ACCOUNTS).toBe('/user-accounts')
-    expect(ENDPOINTS.USER_ACCOUNT_PREFERENCES).toBe('/user-accounts/preference')
-  })
-
   it('has all required settings endpoints', () => {
     expect(ENDPOINTS.COMPANY_SETTINGS).toBe('/company-settings')
+    expect(ENDPOINTS.COMPANY_SETTINGS_CURRENT).toBe('/company-settings/current')
     expect(ENDPOINTS.COMPANY_SETTINGS_OPTIONS).toBe('/company-settings/options')
     expect(ENDPOINTS.COMPANY_NAME).toBe('/company-settings/name')
     expect(ENDPOINTS.STATEMENT_GENERATOR_RULE).toBe(
@@ -79,6 +111,7 @@ describe('ENDPOINTS', () => {
     expect(ENDPOINTS.ROLE_PERMISSION_OPTIONS).toBe(
       '/role-settings/permission-options',
     )
+    expect(ENDPOINTS.SYSTEM_MENUS_TREE).toBe('/system/menu/tree')
   })
 
   it('has all expected keys', () => {
@@ -135,6 +168,9 @@ describe('ENDPOINTS', () => {
       'MATERIALS_EXPORT',
       'MATERIALS_SEARCH',
       'MATERIAL_GRADES',
+      'PURCHASE_ORDER_IMPORT_CANDIDATES',
+      'FREIGHT_BILL_IMPORT_CANDIDATES',
+      'SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES',
       'DEPARTMENTS_OPTIONS',
       'WAREHOUSES_OPTIONS',
       'CUSTOMERS_OPTIONS',
