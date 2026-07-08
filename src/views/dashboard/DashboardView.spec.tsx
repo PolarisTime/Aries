@@ -37,9 +37,11 @@ vi.mock('react-i18next', () => ({
         'dashboard.values.unconfigured': '未配置',
         'dashboard.values.enabled': '已启用',
         'dashboard.values.disabled': '已禁用',
-        'common.productCopyright': '© 2026C Leo',
-        'common.frontendVersion': '前端 v{{version}}',
-        'common.backendVersion': '后端 v{{version}}',
+        'common.productCopyright': '© {{year}} Leo',
+        'common.frontendVersion':
+          '前端 v{{version}} · 编译时间 {{buildTime}} · 构建 SHA-1 {{gitCommit}}',
+        'common.backendVersion':
+          '后端 v{{version}} · 编译时间 {{buildTime}} · 构建 SHA-1 {{gitCommit}}',
         'common.versionUnknown': '--',
       }
       return (map[key] ?? key).replace('{{version}}', options?.version ?? '')

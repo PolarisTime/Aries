@@ -90,9 +90,11 @@ vi.mock('react-i18next', () => ({
         'common.confirmLogoutContent': '确定要退出吗？',
         'common.cancel': '取消',
         'common.displaySettingsSaved': '显示设置已保存',
-        'common.productCopyright': '© 2026C Leo',
-        'common.frontendVersion': '前端 v{{version}}',
-        'common.backendVersion': '后端 v{{version}}',
+        'common.productCopyright': '© {{year}} Leo',
+        'common.frontendVersion':
+          '前端 v{{version}} · 编译时间 {{buildTime}} · 构建 SHA-1 {{gitCommit}}',
+        'common.backendVersion':
+          '后端 v{{version}} · 编译时间 {{buildTime}} · 构建 SHA-1 {{gitCommit}}',
         'common.versionUnknown': '--',
         'layouts.sideNav.breadcrumbPrefix': '首页 / ',
         'layouts.sideNav.apiOnline': '在线',
@@ -595,9 +597,9 @@ describe('AppLayout', () => {
 
   it('does not render global version footer', () => {
     render(<AppLayout />)
-    expect(screen.queryByText('© 2026C Leo')).toBeNull()
-    expect(screen.queryByText('前端 v0.2.0')).toBeNull()
-    expect(screen.queryByText('后端 v0.1.0')).toBeNull()
+    expect(screen.queryByText(/© \d{4} Leo/)).toBeNull()
+    expect(screen.queryByText(/前端 v0\.2\.0/)).toBeNull()
+    expect(screen.queryByText(/后端 v0\.1\.0/)).toBeNull()
   })
 
   it('handles top navigation header actions and page tabs', async () => {

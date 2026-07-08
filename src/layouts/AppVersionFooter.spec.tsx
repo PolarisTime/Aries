@@ -24,18 +24,26 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, options?: Record<string, string>) => {
       const map: Record<string, string> = {
-        'common.productCopyright': '© 2026C Leo',
-        'common.frontendVersion': '前端 v{{version}}',
-        'common.backendVersion': '后端 v{{version}}',
+        'common.productCopyright': '© {{year}} Leo',
+        'common.frontendVersion':
+          '前端 v{{version}} · 编译时间 {{buildTime}} · 构建 SHA-1 {{gitCommit}}',
+        'common.backendVersion':
+          '后端 v{{version}} · 编译时间 {{buildTime}} · 构建 SHA-1 {{gitCommit}}',
         'common.versionUnknown': '--',
       }
-      return (map[key] ?? key).replace('{{version}}', options?.version ?? '')
+      return (map[key] ?? key)
+        .replace('{{year}}', options?.year ?? '')
+        .replace('{{version}}', options?.version ?? '')
+        .replace('{{buildTime}}', options?.buildTime ?? '')
+        .replace('{{gitCommit}}', options?.gitCommit ?? '')
     },
   }),
 }))
 
 vi.mock('@/utils/env', () => ({
   frontendVersion: '0.2.0',
+  frontendBuildTime: '2026-07-08 18:10:11',
+  frontendGitCommit: '123abcdef0',
 }))
 
 import { fetchBackendInfo } from '@/api/auth'
@@ -44,22 +52,36 @@ import { AppVersionFooter } from '@/layouts/AppVersionFooter'
 describe('AppVersionFooter', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2027, 0, 2, 3, 4, 5))
     mockUseQuery.mockReturnValue({
       data: {
         app: 'leo',
         version: '1.1.2',
-        gitCommit: 'abcdef1',
+        gitCommit: 'abcdef12345',
         buildTime: '2026-07-05T03:30:00Z',
       },
     })
   })
 
-  it('renders frontend version and backend version from /version', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('renders system year and frontend/backend build metadata', () => {
     render(<AppVersionFooter />)
 
-    expect(screen.getByText('© 2026C Leo')).toBeTruthy()
-    expect(screen.getByText('前端 v0.2.0')).toBeTruthy()
-    expect(screen.getByText('后端 v1.1.2')).toBeTruthy()
+    expect(screen.getByText('© 2027 Leo')).toBeTruthy()
+    expect(
+      screen.getByText(
+        '前端 v0.2.0 · 编译时间 2026-07-08 18:10:11 · 构建 SHA-1 123abcde',
+      ),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(
+        '后端 v1.1.2 · 编译时间 2026-07-05 03:30:00 · 构建 SHA-1 abcdef12',
+      ),
+    ).toBeTruthy()
   })
 
   it('falls back to versionUnknown when backend info is unavailable', () => {
@@ -67,7 +89,9 @@ describe('AppVersionFooter', () => {
 
     render(<AppVersionFooter />)
 
-    expect(screen.getByText('后端 v--')).toBeTruthy()
+    expect(
+      screen.getByText('后端 v-- · 编译时间 -- · 构建 SHA-1 --'),
+    ).toBeTruthy()
   })
 
   it('uses a stable backend info query without polling', () => {

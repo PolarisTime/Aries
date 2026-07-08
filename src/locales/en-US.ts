@@ -270,9 +270,11 @@ export const enUS: MessageSchema = {
     confirmLogoutContent: 'Are you sure you want to sign out?',
     displaySettingsSaved: 'Display settings saved',
     brandSubtitle: 'Steel Trading Business Platform',
-    productCopyright: '© 2026C Leo',
-    frontendVersion: 'Frontend v{{version}}',
-    backendVersion: 'Backend v{{version}}',
+    productCopyright: '© {{year}} Leo',
+    frontendVersion:
+      'Frontend v{{version}} · Build time {{buildTime}} · Build SHA-1 {{gitCommit}}',
+    backendVersion:
+      'Backend v{{version}} · Build time {{buildTime}} · Build SHA-1 {{gitCommit}}',
     versionUnknown: '--',
     confirmAudit: 'Confirm Audit',
     saveFailed: 'Save failed',

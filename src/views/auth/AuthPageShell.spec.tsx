@@ -6,9 +6,11 @@ vi.mock('react-i18next', () => ({
     t: (key: string, options?: Record<string, string>) => {
       const map: Record<string, string> = {
         'common.brandSubtitle': '测试副标题',
-        'common.productCopyright': '© 2026C Leo',
-        'common.frontendVersion': '前端 v{{version}}',
-        'common.backendVersion': '后端 v{{version}}',
+        'common.productCopyright': '© {{year}} Leo',
+        'common.frontendVersion':
+          '前端 v{{version}} · 编译时间 {{buildTime}} · 构建 SHA-1 {{gitCommit}}',
+        'common.backendVersion':
+          '后端 v{{version}} · 编译时间 {{buildTime}} · 构建 SHA-1 {{gitCommit}}',
         'common.versionUnknown': '--',
       }
       return (map[key] ?? key).replace('{{version}}', options?.version ?? '')
@@ -75,8 +77,8 @@ describe('AuthPageShell', () => {
         <div>内容</div>
       </AuthPageShell>,
     )
-    expect(screen.queryByText('© 2026C Leo')).toBeNull()
-    expect(screen.queryByText('前端 v0.2.0')).toBeNull()
-    expect(screen.queryByText('后端 v--')).toBeNull()
+    expect(screen.queryByText(/© \d{4} Leo/)).toBeNull()
+    expect(screen.queryByText(/前端 v0\.2\.0/)).toBeNull()
+    expect(screen.queryByText(/后端 v--/)).toBeNull()
   })
 })

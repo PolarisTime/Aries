@@ -31,12 +31,32 @@ describe('env', () => {
     expect(frontendVersion).toBe('1.2.3')
   })
 
+  it('exports configured frontend build metadata', async () => {
+    vi.stubGlobal('__APP_BUILD_TIME__', '2026-07-08 18:10:11')
+    vi.stubGlobal('__APP_COMMIT__', '123abcdef0')
+
+    const { frontendBuildTime, frontendGitCommit } = await import('../env')
+
+    expect(frontendBuildTime).toBe('2026-07-08 18:10:11')
+    expect(frontendGitCommit).toBe('123abcde')
+  })
+
   it('falls back to default frontend version', async () => {
     vi.stubGlobal('__APP_VERSION__', undefined)
 
     const { frontendVersion } = await import('../env')
 
     expect(frontendVersion).toBe('0.0.0')
+  })
+
+  it('falls back to unknown frontend build metadata', async () => {
+    vi.stubGlobal('__APP_BUILD_TIME__', undefined)
+    vi.stubGlobal('__APP_COMMIT__', undefined)
+
+    const { frontendBuildTime, frontendGitCommit } = await import('../env')
+
+    expect(frontendBuildTime).toBe('unknown')
+    expect(frontendGitCommit).toBe('unknown')
   })
 
   it('combines api base and version when version is configured', async () => {

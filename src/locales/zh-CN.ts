@@ -268,9 +268,11 @@ export const zhCN: MessageSchema = {
     confirmLogoutContent: '确定要退出登录吗？',
     displaySettingsSaved: '显示设置已保存',
     brandSubtitle: '钢贸业务中台',
-    productCopyright: '© 2026C Leo',
-    frontendVersion: '前端 v{{version}}',
-    backendVersion: '后端 v{{version}}',
+    productCopyright: '© {{year}} Leo',
+    frontendVersion:
+      '前端 v{{version}} · 编译时间 {{buildTime}} · 构建 SHA-1 {{gitCommit}}',
+    backendVersion:
+      '后端 v{{version}} · 编译时间 {{buildTime}} · 构建 SHA-1 {{gitCommit}}',
     versionUnknown: '--',
     confirmAudit: '确定审核',
     saveFailed: '保存失败',

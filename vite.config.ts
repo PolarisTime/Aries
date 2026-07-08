@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
@@ -8,6 +9,39 @@ const packageJson = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
 ) as { version?: string }
 const appVersion = packageJson.version || '0.0.0'
+
+function padDatePart(value: number) {
+  return value.toString().padStart(2, '0')
+}
+
+function formatLocalDateTime(date: Date) {
+  const datePart = [
+    date.getFullYear(),
+    padDatePart(date.getMonth() + 1),
+    padDatePart(date.getDate()),
+  ].join('-')
+  const timePart = [
+    padDatePart(date.getHours()),
+    padDatePart(date.getMinutes()),
+    padDatePart(date.getSeconds()),
+  ].join(':')
+  return `${datePart} ${timePart}`
+}
+
+function resolveGitCommit() {
+  const envCommit = process.env.VITE_APP_COMMIT || process.env.GITHUB_SHA
+  if (envCommit) {
+    return envCommit.slice(0, 8)
+  }
+
+  try {
+    return execFileSync('git', ['rev-parse', '--short=8', 'HEAD'], {
+      encoding: 'utf8',
+    }).trim()
+  } catch {
+    return 'unknown'
+  }
+}
 
 const INITIAL_HTML_ANTD_PRELOAD_ALLOWLIST = new Set([
   'antd-button',
@@ -102,6 +136,10 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
+      __APP_BUILD_TIME__: JSON.stringify(
+        process.env.VITE_APP_BUILD_TIME || formatLocalDateTime(new Date()),
+      ),
+      __APP_COMMIT__: JSON.stringify(resolveGitCommit()),
     },
     server: {
       host: '0.0.0.0',
