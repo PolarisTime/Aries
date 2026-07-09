@@ -73,6 +73,47 @@ function shouldRenderEditablePieceWeight(moduleKey: string, columnKey: string) {
   return moduleKey === 'purchase-order' && columnKey === 'pieceWeightTon'
 }
 
+function buildMaterialSnapshotLabel(record: ModuleLineItem) {
+  const materialName =
+    typeof record.materialName === 'string' ? record.materialName.trim() : ''
+  return [
+    asString(record.brand).trim() || materialName,
+    asString(record.category).trim(),
+    asString(record.material).trim(),
+    asString(record.spec).trim(),
+    asString(record.length).trim(),
+  ]
+    .filter(Boolean)
+    .join(' | ')
+}
+
+function withCurrentMaterialOption(
+  materialOptions: MaterialOption[],
+  record: ModuleLineItem,
+) {
+  const materialCode = asString(record.materialCode).trim()
+  if (!materialCode) {
+    return materialOptions
+  }
+  if (materialOptions.some((option) => option.value === materialCode)) {
+    return materialOptions
+  }
+
+  const label = buildMaterialSnapshotLabel(record)
+  if (!label) {
+    return materialOptions
+  }
+
+  return [
+    {
+      label,
+      searchText: buildMaterialSnapshotLabel(record).toLowerCase(),
+      value: materialCode,
+    },
+    ...materialOptions,
+  ]
+}
+
 function buildEditableColumnRender({
   config,
   materialOptions,
@@ -116,13 +157,15 @@ function buildEditableColumnRender({
       }
 
       if (key === 'materialCode') {
+        const materialValue =
+          typeof record.materialCode === 'string'
+            ? record.materialCode.trim()
+            : buildMaterialSnapshotLabel(record)
+              ? asString(record.materialCode).trim()
+              : ''
         return (
           <Select
-            value={
-              typeof record.materialCode === 'string'
-                ? record.materialCode
-                : undefined
-            }
+            value={materialValue || undefined}
             showSearch={{
               filterOption: (input, option) => {
                 const keywords = input.trim().toLowerCase().split(/\s+/)
@@ -133,10 +176,11 @@ function buildEditableColumnRender({
             allowClear
             className="w-full"
             placeholder="搜索品牌 / 类别 / 材质 / 规格 / 长度"
+            optionLabelProp="label"
             onChange={(selectedValue) =>
               handleMaterialSelect(record.id, String(selectedValue || ''))
             }
-            options={materialOptions}
+            options={withCurrentMaterialOption(materialOptions, record)}
           />
         )
       }
@@ -182,7 +226,7 @@ function buildEditableColumnRender({
         return (
           <InputNumber
             value={asNumber(value)}
-            className="w-full"
+            className="w-full module-editor-number-input"
             min={0}
             precision={3}
             controls={false}
@@ -227,7 +271,7 @@ function buildEditableColumnRender({
         return (
           <InputNumber
             value={asNumber(value)}
-            className="w-full"
+            className="w-full module-editor-number-input"
             min={min}
             precision={precision}
             controls={!hideControls}

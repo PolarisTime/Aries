@@ -381,6 +381,46 @@ describe('buildModuleEditorDataColumns', () => {
     expect(element.props.showSearch.filterOption('', {})).toBe(true)
   })
 
+  it('adds current material snapshot when material option list does not contain the selected value', () => {
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      materialOptions: [],
+      itemColumns: [
+        {
+          title: '物料编码',
+          dataIndex: 'materialCode',
+          type: 'string',
+          width: 120,
+        },
+      ],
+    })
+    const element = (columns[0].render as Function)(
+      '330050675528433664',
+      {
+        ...mockItems[0],
+        materialCode: '330050675528433664',
+        brand: '中天',
+        category: '螺纹钢',
+        material: 'HRB400',
+        spec: '18',
+        length: '9m',
+      },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBe('330050675528433664')
+    expect(element.props.optionLabelProp).toBe('label')
+    expect(element.props.options).toEqual([
+      expect.objectContaining({
+        label: '中天 | 螺纹钢 | HRB400 | 18 | 9m',
+        value: '330050675528433664',
+      }),
+    ])
+  })
+
   it('returns warehouse select props and maps warehouse options', () => {
     const handleWarehouseSelect = vi.fn()
     const columns = buildModuleEditorDataColumns({
@@ -577,6 +617,7 @@ describe('buildModuleEditorDataColumns', () => {
     expect(element.props.min).toBe(0)
     expect(element.props.precision).toBe(2)
     expect(element.props.controls).toBe(true)
+    expect(element.props.className).toContain('module-editor-number-input')
 
     element.props.onChange(101)
     expect(handleItemNumberChange).toHaveBeenCalledWith('1', 'amount', 101)

@@ -56,4 +56,16 @@ describe('shared-item-column-compact', () => {
       expect(col.dataIndex).toBeDefined()
     }
   })
+
+  it('uses widened material code and warehouse columns for compact purchase items', () => {
+    const materialCodeColumn = compactPurchaseItemColumns.find(
+      (column) => column.dataIndex === 'materialCode',
+    )
+    const warehouseNameColumn = compactPurchaseItemColumns.find(
+      (column) => column.dataIndex === 'warehouseName',
+    )
+
+    expect(materialCodeColumn?.width).toBe(280)
+    expect(warehouseNameColumn?.width).toBe(160)
+  })
 })

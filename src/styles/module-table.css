@@ -332,6 +332,10 @@
   width: 100%;
 }
 
+.module-editor-number-input .ant-input-number-input {
+  text-align: center;
+}
+
 .editor-form-shell .ant-input-textarea textarea.ant-input {
   min-height: calc(var(--app-control-height) * 3);
 }
