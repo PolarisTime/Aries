@@ -1,3 +1,13 @@
+## [2.1.1](https://github.com/PolarisTime/Aries/compare/v2.1.0...v2.1.1) (2026-07-09)
+
+
+### Bug Fixes
+
+* **editor:** 修复采购订单草稿恢复显示与保存 ([59da677](https://github.com/PolarisTime/Aries/commit/59da677c64e69b557a0f5100ce76928cf42c4ab6))
+* **editor:** 调整明细列宽和数字输入居中 ([3cb06b7](https://github.com/PolarisTime/Aries/commit/3cb06b7238cc3ebdc69d129dabcc0169cb48fb4d))
+* **material:** 商品编码检索排除类别 ([afd2aeb](https://github.com/PolarisTime/Aries/commit/afd2aeb27f4ea6bda74f963acd8725e3f8960e9f))
+* **table:** 调整业务表格列宽 ([7faafa1](https://github.com/PolarisTime/Aries/commit/7faafa14683f921f88e1254b5e3f3b1b170a42c7))
+
 # [2.1.0](https://github.com/PolarisTime/Aries/compare/v2.0.3...v2.1.0) (2026-07-09)
 
 
