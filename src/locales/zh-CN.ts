@@ -992,6 +992,8 @@ export const zhCN: MessageSchema = {
       weighRequired:
         '第{{row}}行商品类别需按过磅入库，请将本行结算方式改为过磅',
       weighWeightRequired: '请填写第{{row}}行过磅重量',
+      lockedSalesWeightExceeded:
+        '第{{row}}行过磅重量小于已锁定销售重量{{locked}}吨，请修改过磅重量，或先反审核销售出库/销售订单后再保存',
       lineItemRequired: '请填写第{{row}}行{{label}}',
       fieldRequired: '请填写{{label}}',
       minOneItem: '请至少填写一条明细',

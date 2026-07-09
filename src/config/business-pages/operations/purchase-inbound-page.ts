@@ -274,6 +274,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
                       quantity: Number(item.remainingQuantity ?? item.quantity),
                       sourcePurchaseOrderItemId: item.id,
                       _sourcePieceWeightTon: item.pieceWeightTon,
+                      _lockedSalesWeightTon: item.lockedSalesWeightTon,
                       settlementMode: isPurchaseWeighRequiredCategory(
                         item.category,
                       )

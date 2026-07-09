@@ -219,6 +219,26 @@ describe('getEditorValidationMessage', () => {
       expect(result).toContain('modules.validation.weighWeightRequired')
     })
 
+    it('rejects purchase inbound weigh weight lower than locked sales weight', () => {
+      const result = getEditorValidationMessage({
+        ...baseOptions,
+        moduleKey: 'purchase-inbound',
+        hasItemColumns: true,
+        itemCount: 1,
+        items: [
+          {
+            id: '1',
+            category: '钢坯',
+            settlementMode: '过磅',
+            weighWeightTon: 1,
+            _lockedSalesWeightTon: 2,
+          },
+        ] as any,
+        itemColumns: [] as any,
+      })
+      expect(result).toContain('modules.validation.lockedSalesWeightExceeded')
+    })
+
     it('requires required columns', () => {
       const result = getEditorValidationMessage({
         ...baseOptions,

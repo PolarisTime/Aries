@@ -94,6 +94,7 @@ describe('purchaseInboundsPageConfig', () => {
           remainingQuantity: 5,
           quantity: 9,
           pieceWeightTon: 0.8,
+          lockedSalesWeightTon: 2.4,
         },
         {
           id: 'item-2',
@@ -109,6 +110,7 @@ describe('purchaseInboundsPageConfig', () => {
       quantity: 5,
       sourcePurchaseOrderItemId: 'item-1',
       _sourcePieceWeightTon: 0.8,
+      _lockedSalesWeightTon: 2.4,
       settlementMode: '过磅',
     })
     expect(items?.[1]).toMatchObject({

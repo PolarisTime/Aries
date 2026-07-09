@@ -111,7 +111,7 @@ vi.mock('@/module-system/module-adapter-shared', () => ({
 
 vi.mock('@/utils/antd-app', () => ({
   message: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
-  modal: { confirm: vi.fn() },
+  modal: { confirm: vi.fn(), info: vi.fn() },
 }))
 
 vi.mock('@/utils/clone-utils', () => ({
@@ -282,6 +282,7 @@ describe('useModuleEditorWorkspace', () => {
       data: { id: 'saved-1', orderNo: 'ORD-001' },
     })
     vi.mocked(modal.confirm).mockReset()
+    vi.mocked(modal.info).mockReset()
     vi.mocked(applyFormFieldDefaultDraftValues).mockImplementation(() => {})
     vi.mocked(applyModuleDefaultEditorDraft).mockImplementation(() => {})
     vi.mocked(buildDefaultEditorLineItem).mockReturnValue({ id: 'new-item' })
@@ -1841,6 +1842,35 @@ describe('useModuleEditorWorkspace', () => {
       status: 'error',
       message: 'common.saveFailed',
       traceId: undefined,
+    })
+  })
+
+  it('shows pre-outbound guidance when purchase inbound is not completed before audit', async () => {
+    const errorMessage =
+      '来源采购明细尚未完成采购入库，不能直接审核销售出库。请先将销售出库保存为预出库，待采购入库过磅同步重量后再审核。'
+    vi.mocked(saveBusinessModule).mockRejectedValueOnce(
+      Object.assign(new Error(errorMessage), { traceId: 'trace-pre' }),
+    )
+    const { result } = renderWorkspace({
+      open: false,
+      moduleKey: 'sales-outbound',
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(modal.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '请改用预出库流程',
+        okText: '知道了',
+      }),
+    )
+    expect(result.current.saveResult).toEqual({
+      status: 'error',
+      message: errorMessage,
+      traceId: 'trace-pre',
     })
   })
 

@@ -419,6 +419,20 @@ function buildPreallocatedIdWarning(args: {
   }
 }
 
+function showPreOutboundGuidanceIfNeeded(moduleKey: string, errorMessage: string) {
+  if (
+    moduleKey !== 'sales-outbound' ||
+    !errorMessage.includes('来源采购明细尚未完成采购入库')
+  ) {
+    return
+  }
+  modal.info({
+    title: '请改用预出库流程',
+    content: errorMessage,
+    okText: '知道了',
+  })
+}
+
 export function useModuleEditorWorkspace({
   open,
   config,
@@ -869,9 +883,11 @@ export function useModuleEditorWorkspace({
         // Form 已内联展示校验错误，不重复提示
       } else if (err instanceof Error) {
         const traceId = (err as Error & { traceId?: string }).traceId
+        const errorMessage = err.message || t('common.saveFailed')
+        showPreOutboundGuidanceIfNeeded(moduleKey, errorMessage)
         setSaveResult({
           status: 'error',
-          message: err.message || t('common.saveFailed'),
+          message: errorMessage,
           traceId,
         })
       } else {

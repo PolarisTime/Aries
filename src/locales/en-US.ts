@@ -1019,6 +1019,8 @@ export const enUS: MessageSchema = {
       weighRequired:
         'Row {{row}}: this category requires weigh-based inbound. Please change the settlement mode to weigh.',
       weighWeightRequired: 'Please enter the weigh weight for row {{row}}',
+      lockedSalesWeightExceeded:
+        'Row {{row}}: weigh weight is lower than locked sales weight {{locked}} ton. Please adjust the weigh weight, or reverse-audit the sales outbound/order before saving.',
       lineItemRequired: 'Please enter {{label}} for row {{row}}',
       fieldRequired: 'Please enter {{label}}',
       minOneItem: 'Please add at least one line item',
