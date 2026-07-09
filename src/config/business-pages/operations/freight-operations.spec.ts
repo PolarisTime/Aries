@@ -30,29 +30,16 @@ describe('freightOperationsPageConfigs', () => {
     expect(config.columns.map((column) => column.dataIndex)).toContain('status')
   })
 
-  it('has charge item save fields', () => {
-    expect(config.saveFields?.chargeItem).toEqual(
-      expect.arrayContaining([
-        'chargeName',
-        'chargeDirection',
-        'settlementPartyType',
-        'settlementPartyId',
-        'settlementPartyName',
-        'amount',
-        'billable',
-        'remark',
-      ]),
-    )
-  })
-
   it('has parentImport with validation', () => {
     const pi = config.parentImport
     expect(pi?.parentModuleKey).toBe('sales-outbound')
     expect(pi?.candidateQueryType).toBe('freight-bill-import')
     expect(pi?.enforceUniqueRelation).toBe(true)
     expect(pi?.allowMultipleSelection).toBe(true)
-    expect(pi?.buildParentFilters?.({ id: '1' })).toEqual({})
-    expect(pi?.hiddenSelectorColumnKeys ?? []).not.toContain('status')
+    expect(pi?.buildParentFilters?.({ id: '1' })).toEqual({
+      status: '已审核',
+    })
+    expect(pi?.hiddenSelectorColumnKeys).toContain('status')
 
     const validation = pi?.validateBeforeOpen?.({ carrierName: '' })
     expect(validation).toBe('请先选择物流商，再导入销售出库单')

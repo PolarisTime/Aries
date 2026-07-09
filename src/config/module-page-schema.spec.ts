@@ -173,42 +173,6 @@ describe('module-page-schema', () => {
       expect(schema.saveFields!.scalar).toContain('targetAmount')
     })
 
-    it('returns charge item save fields for charge-enabled modules', () => {
-      const moduleKeys = [
-        'purchase-order',
-        'purchase-inbound',
-        'sales-order',
-        'sales-outbound',
-        'freight-bill',
-      ]
-
-      moduleKeys.forEach((moduleKey) => {
-        const schema = getModulePageSchema(moduleKey)
-
-        expect(schema?.saveFields?.chargeItem).toEqual(
-          expect.arrayContaining([
-            'chargeName',
-            'chargeDirection',
-            'settlementPartyType',
-            'settlementPartyId',
-            'settlementPartyName',
-            'amount',
-            'billable',
-            'remark',
-          ]),
-        )
-        expect(schema?.saveFields?.chargeItem).not.toContain(
-          'sourceModuleKey',
-        )
-        expect(schema?.saveFields?.chargeItem).not.toContain(
-          'sourceDocumentId',
-        )
-        expect(schema?.saveFields?.chargeItem).not.toContain(
-          'sourceChargeItemId',
-        )
-      })
-    })
-
     it('returns undefined for unknown module key', () => {
       expect(getModulePageSchema('unknown-module')).toBeUndefined()
     })

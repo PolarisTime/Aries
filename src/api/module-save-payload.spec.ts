@@ -307,6 +307,60 @@ describe('module-save-payload', () => {
     })
   })
 
+  it('normalizes schema line item numeric fields before saving', async () => {
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: ['orderNo'],
+        lineItem: ['quantity', 'unitPrice'],
+      },
+    })
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadLineItems',
+    )
+    vi.mocked(getBehaviorValue).mockReturnValue([])
+
+    const payload = await serializeBusinessRecordForSave('schema-numeric-test', {
+      id: '',
+      orderNo: 'SO-NUMERIC',
+      items: [{ id: '1', quantity: '', unitPrice: '12.50' }],
+    })
+
+    expect(payload.items).toEqual([{ id: '1', quantity: 0, unitPrice: 12.5 }])
+  })
+
+  it('omits non-persisted reference ids from line items', async () => {
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: ['orderNo'],
+        lineItem: ['sourcePurchaseOrderItemId', 'materialCode'],
+      },
+    })
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadLineItems',
+    )
+    vi.mocked(getBehaviorValue).mockReturnValue([])
+
+    const payload = await serializeBusinessRecordForSave('schema-reference-test', {
+      id: '',
+      orderNo: 'PO-ID',
+      items: [
+        {
+          id: '1',
+          sourcePurchaseOrderItemId: '8c4790f2f6b1aa44dc371b5ce155c7e3',
+          materialCode: 'M001',
+        },
+      ],
+    })
+
+    expect(payload.items![0]).toEqual({ id: '1', materialCode: 'M001' })
+  })
+
   it('keeps settlement company fields for purchase order, sales order and freight bill', async () => {
     const { getModulePageSchema } = await vi.importActual<
       typeof import('@/config/module-page-schema')
@@ -434,143 +488,6 @@ describe('module-save-payload', () => {
     expect(payload).toHaveProperty('attachmentIds', ['att-1', 'att-2'])
   })
 
-  it('includes charge items when behavior allows and strips non-request fields', async () => {
-    getModulePageSchemaMock.mockReturnValue({
-      saveFields: {
-        scalar: ['orderNo'],
-        chargeItem: [
-          'chargeName',
-          'chargeDirection',
-          'settlementPartyType',
-          'settlementPartyId',
-          'settlementPartyName',
-          'amount',
-          'billable',
-          'remark',
-          'sourceModuleKey',
-          'sourceDocumentId',
-          'sourceChargeItemId',
-        ],
-      },
-    })
-    const { hasBehavior, getBehaviorValue } = await import(
-      '@/module-system/module-behavior-registry'
-    )
-    vi.mocked(hasBehavior).mockImplementation(
-      (_key: string, behavior: string) => behavior === 'savePayloadChargeItems',
-    )
-    vi.mocked(getBehaviorValue).mockReturnValue([])
-
-    const payload = await serializeBusinessRecordForSave('purchase-order', {
-      id: '',
-      orderNo: 'PO-001',
-      chargeItems: [
-        {
-          id: 'charge-temp-1',
-          chargeName: '卸货费',
-          chargeDirection: 'PAYABLE',
-          settlementPartyType: 'SUPPLIER',
-          settlementPartyId: '7',
-          settlementPartyName: '供应商A',
-          amount: '120.50',
-          billable: true,
-          sourceModuleKey: 'purchase-order',
-          sourceDocumentId: '700520000000000006',
-          sourceChargeItemId: '700520000000000007',
-          remark: '现场',
-        },
-        {
-          id: '700520000000000008',
-          chargeName: '代收服务费',
-          chargeDirection: 'RECEIVABLE',
-          amount: 30,
-          billable: false,
-        },
-      ],
-    })
-
-    expect(payload).toMatchObject({
-      orderNo: 'PO-001',
-      chargeItems: [
-        {
-          chargeName: '卸货费',
-          chargeDirection: 'PAYABLE',
-          settlementPartyType: 'SUPPLIER',
-          settlementPartyId: '7',
-          settlementPartyName: '供应商A',
-          amount: 120.5,
-          billable: true,
-          remark: '现场',
-        },
-        {
-          id: '700520000000000008',
-          chargeName: '代收服务费',
-          chargeDirection: 'RECEIVABLE',
-          amount: 30,
-          billable: false,
-        },
-      ],
-    })
-    expect(payload.chargeItems![0]).not.toHaveProperty('id')
-    expect(payload.chargeItems![0]).not.toHaveProperty('sourceModuleKey')
-    expect(payload.chargeItems![0]).not.toHaveProperty('sourceDocumentId')
-    expect(payload.chargeItems![0]).not.toHaveProperty('sourceChargeItemId')
-  })
-
-  it('does not include charge items when the charge save behavior is disabled', async () => {
-    getModulePageSchemaMock.mockReturnValue({
-      saveFields: {
-        scalar: ['orderNo'],
-        chargeItem: ['chargeName', 'amount'],
-      },
-    })
-    const { hasBehavior, getBehaviorValue } = await import(
-      '@/module-system/module-behavior-registry'
-    )
-    vi.mocked(hasBehavior).mockReturnValue(false)
-    vi.mocked(getBehaviorValue).mockReturnValue([])
-
-    const payload = await serializeBusinessRecordForSave('purchase-order', {
-      id: '',
-      orderNo: 'PO-001',
-      chargeItems: [{ id: 'charge-1', chargeName: '卸货费', amount: 120 }],
-    })
-
-    expect(payload).toEqual({ orderNo: 'PO-001' })
-  })
-
-  it('rejects blank and invalid charge item amounts instead of converting them to zero', async () => {
-    getModulePageSchemaMock.mockReturnValue({
-      saveFields: {
-        scalar: ['orderNo'],
-        chargeItem: ['chargeName', 'amount'],
-      },
-    })
-    const { hasBehavior, getBehaviorValue } = await import(
-      '@/module-system/module-behavior-registry'
-    )
-    vi.mocked(hasBehavior).mockImplementation(
-      (_key: string, behavior: string) => behavior === 'savePayloadChargeItems',
-    )
-    vi.mocked(getBehaviorValue).mockReturnValue([])
-
-    await expect(
-      serializeBusinessRecordForSave('purchase-order', {
-        id: '',
-        orderNo: 'PO-001',
-        chargeItems: [{ id: 'charge-1', chargeName: '卸货费', amount: '' }],
-      }),
-    ).rejects.toThrow('费用金额不能为空')
-
-    await expect(
-      serializeBusinessRecordForSave('purchase-order', {
-        id: '',
-        orderNo: 'PO-001',
-        chargeItems: [{ id: 'charge-2', chargeName: '卸货费', amount: 'abc' }],
-      }),
-    ).rejects.toThrow('费用金额不合法')
-  })
-
   it('includes attachmentIds when behavior allows', async () => {
     const { loadBusinessPageConfig } = await import(
       '@/config/business-page-loader'
@@ -612,6 +529,23 @@ describe('module-save-payload', () => {
       date: dayjs('2026-06-01 12:00:00'),
     })
     expect(payload).toHaveProperty('date', '2026-06-01 12:00:00')
+  })
+
+  it('rejects invalid dayjs values before sending them to the backend', async () => {
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+      key: 'test',
+      detailFields: [{ key: 'date', type: 'input', label: '日期' }],
+    } as ModulePageConfig)
+
+    await expect(
+      serializeBusinessRecordForSave('test', {
+        id: '',
+        date: dayjs('invalid-date'),
+      }),
+    ).rejects.toThrow('date 日期格式不合法')
   })
 
   it('handles saveFields with computed fields from schema', async () => {

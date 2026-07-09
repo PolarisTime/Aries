@@ -48,21 +48,6 @@ describe('salesOrdersPageConfig', () => {
     expect(salesOrdersPageConfig.columns.length).toBeGreaterThan(0)
   })
 
-  it('has charge item save fields', () => {
-    expect(salesOrdersPageConfig.saveFields?.chargeItem).toEqual(
-      expect.arrayContaining([
-        'chargeName',
-        'chargeDirection',
-        'settlementPartyType',
-        'settlementPartyId',
-        'settlementPartyName',
-        'amount',
-        'billable',
-        'remark',
-      ]),
-    )
-  })
-
   it('has parentImport config', () => {
     expect(salesOrdersPageConfig.parentImport).toBeDefined()
     expect(salesOrdersPageConfig.parentImport!.parentModuleKey).toBe(

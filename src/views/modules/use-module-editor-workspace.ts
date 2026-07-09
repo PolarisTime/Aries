@@ -41,7 +41,6 @@ import {
 } from '@/module-system/module-adapter-shared'
 import type { SearchParams } from '@/types/api-raw'
 import type {
-  ModuleChargeItem,
   ModuleLineItem,
   ModulePageConfig,
   ModuleRecord,
@@ -93,7 +92,6 @@ interface AuditTarget {
 
 interface EditorWorkspaceState {
   items: ModuleLineItem[]
-  chargeItems: ModuleChargeItem[]
   primaryNoLoading: boolean
   authoritativePrimaryNo: string
 }
@@ -322,22 +320,6 @@ function editorWorkspaceReducer(
   return { ...state, ...patch }
 }
 
-function getDefaultChargeDirection(moduleKey: string) {
-  return moduleKey === 'sales-order' || moduleKey === 'sales-outbound'
-    ? 'RECEIVABLE'
-    : 'PAYABLE'
-}
-
-function buildDefaultEditorChargeItem(moduleKey: string): ModuleChargeItem {
-  return {
-    id: `charge-item-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    chargeName: '',
-    chargeDirection: getDefaultChargeDirection(moduleKey),
-    amount: '',
-    billable: true,
-  }
-}
-
 function syncEditorFormValues(args: {
   config: ModulePageConfig
   form: WorkspaceFormApi
@@ -458,13 +440,11 @@ export function useModuleEditorWorkspace({
     editorWorkspaceReducer,
     {
       items: [],
-      chargeItems: [],
       primaryNoLoading: false,
       authoritativePrimaryNo: '',
     },
   )
-  const { items, chargeItems, primaryNoLoading, authoritativePrimaryNo } =
-    workspaceState
+  const { items, primaryNoLoading, authoritativePrimaryNo } = workspaceState
   const { t } = useTranslation()
   const [saveResult, setSaveResult] = useState<{
     status: 'success' | 'error' | 'warning'
@@ -498,7 +478,6 @@ export function useModuleEditorWorkspace({
       form.setFieldsValue(normalizeRecordForEditor(config, storedDraft.values))
       dispatchWorkspaceState({
         items: storedDraft.items,
-        chargeItems: storedDraft.chargeItems,
         primaryNoLoading: false,
         authoritativePrimaryNo: storedDraft.authoritativePrimaryNo,
       })
@@ -518,7 +497,6 @@ export function useModuleEditorWorkspace({
         form.setFieldsValue(normalizeRecordForEditor(config, record))
         dispatchWorkspaceState({
           items: record.items || [],
-          chargeItems: record.chargeItems || [],
           primaryNoLoading: false,
           authoritativePrimaryNo: nextAuthoritativePrimaryNo,
         })
@@ -541,7 +519,6 @@ export function useModuleEditorWorkspace({
       if (config.primaryNoKey) {
         dispatchWorkspaceState({
           items: draftItems,
-          chargeItems: [],
           primaryNoLoading: true,
           authoritativePrimaryNo: '',
         })
@@ -618,7 +595,6 @@ export function useModuleEditorWorkspace({
       } else {
         dispatchWorkspaceState({
           items: draftItems,
-          chargeItems: [],
           primaryNoLoading: false,
           authoritativePrimaryNo: '',
         })
@@ -662,11 +638,7 @@ export function useModuleEditorWorkspace({
   ])
 
   const writeCurrentDraftSnapshot = useCallback(
-    (
-      reason?: ClientAutosaveReason,
-      nextItems?: ModuleLineItem[],
-      nextChargeItems?: ModuleChargeItem[],
-    ) => {
+    (reason?: ClientAutosaveReason, nextItems?: ModuleLineItem[]) => {
       void reason
       if (!open) {
         return
@@ -689,7 +661,6 @@ export function useModuleEditorWorkspace({
             recordId: draftRecordId,
             values: currentValues,
             items: nextItems || items,
-            chargeItems: nextChargeItems || chargeItems,
             authoritativePrimaryNo: effectiveAuthoritativePrimaryNo,
           }),
         )
@@ -702,7 +673,6 @@ export function useModuleEditorWorkspace({
       config.primaryNoKey,
       draftRecordId,
       form,
-      chargeItems,
       items,
       moduleKey,
       open,
@@ -848,7 +818,6 @@ export function useModuleEditorWorkspace({
             ? asString(values._preallocatedId)
             : undefined,
         items: trimmedItems,
-        chargeItems,
       }
       applyAuthoritativePrimaryNo(
         draftRecord,
@@ -1067,35 +1036,13 @@ export function useModuleEditorWorkspace({
     writeCurrentDraftSnapshot('items-change', resolvedItems)
   }
 
-  const addChargeItem = () => {
-    const nextChargeItems = [
-      ...chargeItems,
-      buildDefaultEditorChargeItem(moduleKey),
-    ]
-    dispatchWorkspaceState({ chargeItems: nextChargeItems })
-    writeCurrentDraftSnapshot('editor-change', undefined, nextChargeItems)
-  }
-
-  const updateChargeItems: Dispatch<SetStateAction<ModuleChargeItem[]>> = (
-    nextChargeItems,
-  ) => {
-    const resolvedChargeItems =
-      typeof nextChargeItems === 'function'
-        ? nextChargeItems(chargeItems)
-        : nextChargeItems
-    dispatchWorkspaceState({ chargeItems: resolvedChargeItems })
-    writeCurrentDraftSnapshot('editor-change', undefined, resolvedChargeItems)
-  }
-
   return {
     addItem,
-    addChargeItem,
     closeParentSelector: () => setParentSelectorSessionKey(null),
     handleImportParentRecord,
     handleSave,
     isEdit,
     items,
-    chargeItems,
     openParentSelector,
     parentImporting,
     parentSelectorFilters,
@@ -1106,7 +1053,6 @@ export function useModuleEditorWorkspace({
     clearSaveResult: () => setSaveResult(null),
     saving,
     setItems: updateItems,
-    setChargeItems: updateChargeItems,
     handleFormValuesChange,
     flushEditorDraft: writeCurrentDraftSnapshot,
   }

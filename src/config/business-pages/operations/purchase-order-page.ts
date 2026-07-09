@@ -1,5 +1,4 @@
 import i18next from 'i18next'
-import { DOCUMENT_CHARGE_ITEM_SAVE_FIELDS } from '@/config/document-charge-items'
 import {
   buildValueOptions,
   getSettlementCompanyOptions,
@@ -216,10 +215,6 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
     },
   ],
   itemColumns: compactPurchaseItemColumns,
-  saveFields: {
-    scalar: [],
-    chargeItem: [...DOCUMENT_CHARGE_ITEM_SAVE_FIELDS],
-  },
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,

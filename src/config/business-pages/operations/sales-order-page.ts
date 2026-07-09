@@ -1,7 +1,6 @@
 import { Tooltip } from 'antd'
 import i18next from 'i18next'
 import React from 'react'
-import { DOCUMENT_CHARGE_ITEM_SAVE_FIELDS } from '@/config/document-charge-items'
 import {
   buildValueOptions,
   getCustomerOptions,
@@ -365,10 +364,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       ),
   },
   itemColumns: compactPurchaseItemColumns,
-  saveFields: {
-    scalar: [],
-    chargeItem: [...DOCUMENT_CHARGE_ITEM_SAVE_FIELDS],
-  },
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,

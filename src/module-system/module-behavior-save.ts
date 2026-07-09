@@ -1,4 +1,3 @@
-import { DOCUMENT_CHARGE_ENABLED_MODULE_KEYS } from '@/config/document-charge-items'
 import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 
 const lineItemPayloadModules = [
@@ -18,10 +17,6 @@ const lineItemPayloadModules = [
 
 for (const key of lineItemPayloadModules) {
   registerModuleBehavior(key, { savePayloadLineItems: true })
-}
-
-for (const key of DOCUMENT_CHARGE_ENABLED_MODULE_KEYS) {
-  registerModuleBehavior(key, { savePayloadChargeItems: true })
 }
 
 const extraScalarFieldsMap: Record<string, string[]> = {

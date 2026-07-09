@@ -35,14 +35,6 @@ describe('module-behavior-save', () => {
     'sales-contract': ['salesName'],
   }
 
-  const chargeItemPayloadModules = [
-    'purchase-order',
-    'purchase-inbound',
-    'sales-order',
-    'sales-outbound',
-    'freight-bill',
-  ]
-
   it('registers savePayloadLineItems for all line item modules', () => {
     const registeredModules = new Set(
       mockedRegister.mock.calls
@@ -50,17 +42,6 @@ describe('module-behavior-save', () => {
         .map(([key]) => key),
     )
     lineItemPayloadModules.forEach((moduleKey) => {
-      expect(registeredModules.has(moduleKey)).toBe(true)
-    })
-  })
-
-  it('registers savePayloadChargeItems for supported charge item modules', () => {
-    const registeredModules = new Set(
-      mockedRegister.mock.calls
-        .filter(([, config]) => config.savePayloadChargeItems === true)
-        .map(([key]) => key),
-    )
-    chargeItemPayloadModules.forEach((moduleKey) => {
       expect(registeredModules.has(moduleKey)).toBe(true)
     })
   })

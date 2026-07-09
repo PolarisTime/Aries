@@ -126,7 +126,6 @@ describe('ModuleBehaviorConfig', () => {
   it('accepts miscellaneous fields', () => {
     const config: ModuleBehaviorConfig = {
       savePayloadLineItems: true,
-      savePayloadChargeItems: true,
       extraScalarFields: ['field1'],
       includeAttachmentIds: true,
       supportsStatementLinking: 'receipt',
@@ -140,7 +139,6 @@ describe('ModuleBehaviorConfig', () => {
     }
 
     expect(config.savePayloadLineItems).toBe(true)
-    expect(config.savePayloadChargeItems).toBe(true)
     expect(config.supportsStatementLinking).toBe('receipt')
     expect(config.alertActionLink?.text).toBe('View')
     expect(config.detailRoutePath).toBe('/detail')

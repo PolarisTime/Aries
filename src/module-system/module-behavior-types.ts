@@ -60,7 +60,6 @@ export interface ModuleBehaviorConfig {
     ctx: SyncEditorFormContext,
   ) => void
   savePayloadLineItems?: boolean
-  savePayloadChargeItems?: boolean
   extraScalarFields?: string[]
   includeAttachmentIds?: boolean
   supportsStatementLinking?: 'receipt' | 'payment'

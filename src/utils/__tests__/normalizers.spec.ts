@@ -73,34 +73,6 @@ describe('normalizeRecord', () => {
     expect(result.items![0].price).toBe(50)
   })
 
-  it('normalizes charge items independently from line items', () => {
-    const raw = {
-      id: '1',
-      items: [{ id: 'line-1', amount: 100 }],
-      chargeItems: [
-        {
-          lineNo: 1,
-          chargeName: '卸货费',
-          chargeDirection: 'PAYABLE',
-          amount: '120.50',
-        },
-      ],
-    }
-
-    const result = normalizeRecord(raw)
-
-    expect(result.items).toEqual([{ id: 'line-1', amount: 100 }])
-    expect(result.chargeItems).toEqual([
-      {
-        id: '1',
-        lineNo: '1',
-        chargeName: '卸货费',
-        chargeDirection: 'PAYABLE',
-        amount: '120.50',
-      },
-    ])
-  })
-
   it('handles line items with null id and lineNo', () => {
     const raw = {
       id: '1',

@@ -1,5 +1,4 @@
 import i18next from 'i18next'
-import { DOCUMENT_CHARGE_ITEM_SAVE_FIELDS } from '@/config/document-charge-items'
 import {
   buildValueOptions,
   getCustomerOptions,
@@ -55,7 +54,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
-      options: buildValueOptions('草稿', '预出库', '已审核'),
+      options: buildValueOptions('草稿', '已审核'),
     },
     {
       key: 'outboundDate',
@@ -231,17 +230,10 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
-      key: 'status',
-      label: i18next.t('modules.columns.status'),
-      type: 'select',
-      options: buildValueOptions('草稿', '预出库', '已审核'),
-      row: 3,
-    },
-    {
       key: 'remark',
       label: i18next.t('modules.columns.remark'),
       type: 'input',
-      row: 3,
+      row: 2,
     },
   ],
   parentImport: {
@@ -273,10 +265,6 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       ),
   },
   itemColumns: compactPurchaseItemColumns,
-  saveFields: {
-    scalar: [],
-    chargeItem: [...DOCUMENT_CHARGE_ITEM_SAVE_FIELDS],
-  },
   data: [],
   buildOverview: (rows) => buildAmountWeightOverview(rows, 'totalAmount'),
   statusMap,
