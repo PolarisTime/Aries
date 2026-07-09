@@ -554,23 +554,19 @@ describe('canAuditFromStatus', () => {
 
   it('returns true when status is configured as an audit source status', () => {
     expect(
-      canAuditFromStatus(
+      canAuditFromStatus('预出库', { value: '已审核' }, { value: '草稿' }, [
+        '草稿',
         '预出库',
-        { value: '已审核' },
-        { value: '草稿' },
-        ['草稿', '预出库'],
-      ),
+      ]),
     ).toBe(true)
   })
 
   it('returns false when configured audit source status equals audit target', () => {
     expect(
-      canAuditFromStatus(
-        '已审核',
-        { value: '已审核' },
-        { value: '草稿' },
-        ['草稿', '预出库'],
-      ),
+      canAuditFromStatus('已审核', { value: '已审核' }, { value: '草稿' }, [
+        '草稿',
+        '预出库',
+      ]),
     ).toBe(false)
   })
 

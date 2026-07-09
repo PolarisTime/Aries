@@ -419,7 +419,10 @@ function buildPreallocatedIdWarning(args: {
   }
 }
 
-function showPreOutboundGuidanceIfNeeded(moduleKey: string, errorMessage: string) {
+function showPreOutboundGuidanceIfNeeded(
+  moduleKey: string,
+  errorMessage: string,
+) {
   if (
     moduleKey !== 'sales-outbound' ||
     !errorMessage.includes('来源采购明细尚未完成采购入库')

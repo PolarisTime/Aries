@@ -1,9 +1,9 @@
+import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
 import type {
   ModuleFormFieldDefinition,
   ModuleLineItem,
   ModuleRecord,
 } from '@/types/module-page'
-import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
 import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'

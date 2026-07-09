@@ -322,11 +322,14 @@ describe('module-save-payload', () => {
     )
     vi.mocked(getBehaviorValue).mockReturnValue([])
 
-    const payload = await serializeBusinessRecordForSave('schema-numeric-test', {
-      id: '',
-      orderNo: 'SO-NUMERIC',
-      items: [{ id: '1', quantity: '', unitPrice: '12.50' }],
-    })
+    const payload = await serializeBusinessRecordForSave(
+      'schema-numeric-test',
+      {
+        id: '',
+        orderNo: 'SO-NUMERIC',
+        items: [{ id: '1', quantity: '', unitPrice: '12.50' }],
+      },
+    )
 
     expect(payload.items).toEqual([{ id: '1', quantity: 0, unitPrice: 12.5 }])
   })
@@ -346,17 +349,20 @@ describe('module-save-payload', () => {
     )
     vi.mocked(getBehaviorValue).mockReturnValue([])
 
-    const payload = await serializeBusinessRecordForSave('schema-reference-test', {
-      id: '',
-      orderNo: 'PO-ID',
-      items: [
-        {
-          id: '1',
-          sourcePurchaseOrderItemId: '8c4790f2f6b1aa44dc371b5ce155c7e3',
-          materialCode: 'M001',
-        },
-      ],
-    })
+    const payload = await serializeBusinessRecordForSave(
+      'schema-reference-test',
+      {
+        id: '',
+        orderNo: 'PO-ID',
+        items: [
+          {
+            id: '1',
+            sourcePurchaseOrderItemId: '8c4790f2f6b1aa44dc371b5ce155c7e3',
+            materialCode: 'M001',
+          },
+        ],
+      },
+    )
 
     expect(payload.items![0]).toEqual({ id: '1', materialCode: 'M001' })
   })

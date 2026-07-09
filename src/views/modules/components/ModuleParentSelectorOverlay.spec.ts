@@ -4,13 +4,13 @@ import { createElement } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModuleRecord } from '@/types/module-page'
 import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
-import { getOverlayStatusMap } from './useModuleParentSelectorOverlay'
 import {
   filterImportableParentRecords,
   hasImportableQuantity,
   resolveSelectedParentRows,
   resolveVisibleParentSelectorColumns,
 } from './module-parent-selector-utils'
+import { getOverlayStatusMap } from './useModuleParentSelectorOverlay'
 
 const parentSelectorMocks = vi.hoisted(() => ({
   parentRows: [{ id: 'parent-1', name: '父单据 1', items: [{ id: 'item-1' }] }],
@@ -489,9 +489,7 @@ describe('ModuleParentSelectorOverlay importable record filtering', () => {
     ] as ModuleRecord[]
 
     expect(
-      filterImportableParentRecords('sales-outbound', records).map(
-        (r) => r.id,
-      ),
+      filterImportableParentRecords('sales-outbound', records).map((r) => r.id),
     ).toEqual(['outbound-pre', 'outbound-audited', 'outbound-draft'])
   })
 

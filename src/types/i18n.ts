@@ -968,6 +968,7 @@ export interface MessageSchema {
       maxImportExceeded: string
       weighRequired: string
       weighWeightRequired: string
+      lockedSalesWeightExceeded: string
       lineItemRequired: string
       fieldRequired: string
       minOneItem: string

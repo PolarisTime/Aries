@@ -69,10 +69,7 @@ function renderReadOnlyValue(
   return formatCellValue(value, type)
 }
 
-function shouldRenderEditablePieceWeight(
-  moduleKey: string,
-  columnKey: string,
-) {
+function shouldRenderEditablePieceWeight(moduleKey: string, columnKey: string) {
   return moduleKey === 'purchase-order' && columnKey === 'pieceWeightTon'
 }
 
