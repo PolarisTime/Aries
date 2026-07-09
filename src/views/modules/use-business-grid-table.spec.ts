@@ -22,7 +22,7 @@ vi.mock('@/hooks/useDataTable', () => ({
 }))
 
 vi.mock('@/hooks/useGridColumns', () => ({
-  ACTION_COLUMN_WIDTH: 50,
+  ACTION_COLUMN_WIDTH: 100,
   useGridColumns: mocks.useGridColumns,
 }))
 
@@ -88,7 +88,7 @@ function mockGridColumns() {
           id: 'actions',
           header: '操作',
           meta: {
-            width: 50,
+            width: 100,
             align: 'center',
             fixed: 'left',
             renderCell: rowActions,
@@ -438,7 +438,7 @@ describe('useBusinessGridTable', () => {
         dataIndex: 'actions',
         fixed: 'left',
         className: 'sticky-actions-col',
-        width: 50,
+        width: 100,
         align: 'center',
         ellipsis: true,
       }),

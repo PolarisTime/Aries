@@ -39,7 +39,7 @@ export const materialsPageConfig: ModulePageConfig = {
     {
       title: i18next.t('modules.pages.material.materialCode'),
       dataIndex: 'materialCode',
-      width: 150,
+      width: 180,
     },
     {
       title: i18next.t('modules.pages.material.brand'),

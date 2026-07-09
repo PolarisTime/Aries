@@ -340,6 +340,6 @@ describe('useGridColumns', () => {
   })
 
   it('returns export constant ACTION_COLUMN_WIDTH', () => {
-    expect(ACTION_COLUMN_WIDTH).toBe(50)
+    expect(ACTION_COLUMN_WIDTH).toBe(100)
   })
 })

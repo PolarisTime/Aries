@@ -31,6 +31,14 @@ describe('materialsPageConfig', () => {
     expect(materialsPageConfig.columns.length).toBeGreaterThan(0)
   })
 
+  it('sets material code column width', () => {
+    const materialCodeColumn = materialsPageConfig.columns.find(
+      (column) => column.dataIndex === 'materialCode',
+    )
+
+    expect(materialCodeColumn?.width).toBe(180)
+  })
+
   it('has detailFields', () => {
     expect(materialsPageConfig.detailFields).toBeDefined()
     expect(materialsPageConfig.detailFields!.length).toBeGreaterThan(0)
