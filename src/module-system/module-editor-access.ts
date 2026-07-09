@@ -3,6 +3,7 @@ import type {
   ModuleLineItem,
   ModuleRecord,
 } from '@/types/module-page'
+import { isPurchaseWeighRequiredCategory } from '@/constants/module-options'
 import { asString } from '@/utils/type-narrowing'
 import { getBehaviorValue } from './module-behavior-registry'
 import { DERIVED_READONLY_ITEM_COLUMN_KEYS } from './module-editor-shared'
@@ -186,7 +187,12 @@ export function isEditorItemColumnEditableForModule(
 
   if (
     DERIVED_READONLY_ITEM_COLUMN_KEYS.has(columnKey) &&
-    !(moduleKey === 'purchase-inbound' && columnKey === 'weightTon')
+    !(moduleKey === 'purchase-inbound' && columnKey === 'weightTon') &&
+    !(
+      moduleKey === 'purchase-order' &&
+      columnKey === 'pieceWeightTon' &&
+      isPurchaseWeighRequiredCategory(record?.category)
+    )
   ) {
     return false
   }

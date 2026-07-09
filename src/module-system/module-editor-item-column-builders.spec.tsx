@@ -622,6 +622,41 @@ describe('buildModuleEditorDataColumns', () => {
     expect(container.querySelector('input')).not.toBeInTheDocument()
   })
 
+  it('renders piece weight input for editable purchase order weigh rows', () => {
+    const handleItemNumberChange = vi.fn()
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      config: { ...mockConfig, key: 'purchase-order' },
+      isItemColumnEditable: vi.fn(() => true),
+      handleItemNumberChange,
+    })
+    const pieceWeightColumn = columns.find(
+      (c) => c.dataIndex === 'pieceWeightTon',
+    )
+    const element = (pieceWeightColumn?.render as Function)(
+      2.05,
+      {
+        ...mockItems[0],
+        category: '盘螺',
+        pieceWeightTon: 2.05,
+        settlementMode: '过磅',
+      },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBe(2.05)
+    expect(element.props.controls).toBe(false)
+
+    element.props.onChange(2.2)
+    expect(handleItemNumberChange).toHaveBeenCalledWith(
+      '1',
+      'pieceWeightTon',
+      2.2,
+    )
+  })
+
   it('calls handleItemInputChange on input change', () => {
     const handleItemInputChange = vi.fn()
     const editableProps = {

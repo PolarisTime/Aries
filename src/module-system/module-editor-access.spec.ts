@@ -414,6 +414,39 @@ describe('isEditorItemColumnEditableForModule', () => {
     ).toBe(true)
   })
 
+  it('returns true for pieceWeightTon on purchase-order weigh-required rows', () => {
+    expect(
+      isEditorItemColumnEditableForModule(
+        'purchase-order',
+        'pieceWeightTon',
+        true,
+        false,
+        { id: 'line-1', category: '盘螺' } as any,
+      ),
+    ).toBe(true)
+    expect(
+      isEditorItemColumnEditableForModule(
+        'purchase-order',
+        'pieceWeightTon',
+        true,
+        false,
+        { id: 'line-2', category: '线材' } as any,
+      ),
+    ).toBe(true)
+  })
+
+  it('returns false for pieceWeightTon on purchase-order straight bar rows', () => {
+    expect(
+      isEditorItemColumnEditableForModule(
+        'purchase-order',
+        'pieceWeightTon',
+        true,
+        false,
+        { id: 'line-1', category: '直条' } as any,
+      ),
+    ).toBe(false)
+  })
+
   it('returns false for batchNo on purchase-inbound', () => {
     expect(
       isEditorItemColumnEditableForModule(

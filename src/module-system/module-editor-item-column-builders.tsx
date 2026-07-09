@@ -69,6 +69,13 @@ function renderReadOnlyValue(
   return formatCellValue(value, type)
 }
 
+function shouldRenderEditablePieceWeight(
+  moduleKey: string,
+  columnKey: string,
+) {
+  return moduleKey === 'purchase-order' && columnKey === 'pieceWeightTon'
+}
+
 function buildEditableColumnRender({
   config,
   materialOptions,
@@ -96,7 +103,11 @@ function buildEditableColumnRender({
         )
       }
 
-      if (key === 'pieceWeightTon' && shouldDisplayPieceWeightAsDash(record)) {
+      if (
+        key === 'pieceWeightTon' &&
+        shouldDisplayPieceWeightAsDash(record) &&
+        !shouldRenderEditablePieceWeight(config.key, key)
+      ) {
         return renderReadOnlyValue(
           value,
           type,
@@ -209,9 +220,12 @@ function buildEditableColumnRender({
       if (isNumberEditorColumn(key)) {
         const precision = getEditorItemPrecision(key)
         const min = getEditorItemMin(key)
-        const hideControls = ['quantity', 'unitPrice', 'weightTon'].includes(
-          key,
-        )
+        const hideControls = [
+          'quantity',
+          'pieceWeightTon',
+          'unitPrice',
+          'weightTon',
+        ].includes(key)
 
         return (
           <InputNumber
