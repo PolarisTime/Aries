@@ -1,3 +1,24 @@
+# [2.1.0](https://github.com/PolarisTime/Aries/compare/v2.0.3...v2.1.0) (2026-07-09)
+
+
+### Bug Fixes
+
+* **frontend:** 修复发布校验失败 ([61acd7d](https://github.com/PolarisTime/Aries/commit/61acd7d64856ec5e0bbfd19e496f56f61f544d30))
+* **frontend:** 增加采购入库重量冲突提示 ([5076391](https://github.com/PolarisTime/Aries/commit/507639103dae63106f17171930c33da00e22cc28))
+
+
+### Features
+
+* **layout:** 增加页脚构建信息展示 ([21856d0](https://github.com/PolarisTime/Aries/commit/21856d0ef9c6e0d74ea816c28a42a557c96c58df))
+* **logistics:** 支持预出库提货清单交互 ([c0627fb](https://github.com/PolarisTime/Aries/commit/c0627fb585f0d61998e17cba5edd0ffc9bd358b0))
+* **modules:** 新增单据费用编辑与保存 ([3137dd6](https://github.com/PolarisTime/Aries/commit/3137dd62c940d3c6fa4ef170d73249d641c89c4d))
+* **purchase-order:** 支持盘螺线材件重编辑 ([999e938](https://github.com/PolarisTime/Aries/commit/999e9383b318226c7b5fa2ef71ca802e277114e1))
+
+
+### Reverts
+
+* **modules:** 回退单据费用编辑功能 ([eb18f96](https://github.com/PolarisTime/Aries/commit/eb18f96c0f3ae4b361e6c2b450b4683195e8f8a3))
+
 ## [2.0.3](https://github.com/PolarisTime/Aries/compare/v2.0.2...v2.0.3) (2026-07-08)
 
 
