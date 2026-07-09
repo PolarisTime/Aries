@@ -61,6 +61,7 @@ export const statusMap: Record<string, ModuleStatusMeta> = {
   禁用: { text: i18next.t('modules.status.disabled'), color: 'error' },
   成功: { text: i18next.t('modules.status.success'), color: 'success' },
   失败: { text: i18next.t('modules.status.failed'), color: 'error' },
+  已删除: { text: i18next.t('modules.status.deleted'), color: 'error' },
 }
 
 export const actionSet = [

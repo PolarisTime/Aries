@@ -711,6 +711,7 @@ export const enUS: MessageSchema = {
       disabled: 'Disabled',
       success: 'Success',
       failed: 'Failed',
+      deleted: 'Deleted',
     },
     editor: {
       edit: 'Edit',

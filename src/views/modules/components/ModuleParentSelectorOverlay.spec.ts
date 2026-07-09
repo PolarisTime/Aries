@@ -1101,6 +1101,40 @@ describe('ModuleParentSelectorOverlay keyboard row interactions', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
+  it('derives deleted status in parent selector rows and selected summaries', async () => {
+    parentSelectorMocks.parentRows.splice(
+      0,
+      parentSelectorMocks.parentRows.length,
+      {
+        id: 'po-deleted',
+        orderNo: 'PO-DELETED',
+        supplierName: '供应商 A',
+        orderDate: '2026-01-01',
+        status: '已审核',
+        deletedFlag: true,
+        items: [{ id: 'item-1', salesRemainingQuantity: 1 }],
+      },
+    )
+
+    render(
+      createElement(ModuleParentSelectorOverlay, {
+        open: true,
+        parentModuleKey: 'purchase-order',
+        allowMultipleSelection: true,
+        onSelect: vi.fn(),
+        onClose: vi.fn(),
+      }),
+    )
+
+    expect(screen.getByText('已删除')).toBeTruthy()
+    fireEvent.click(screen.getByText('表格选择当前行'))
+
+    await waitFor(() => {
+      expect(screen.getAllByText('已删除').length).toBeGreaterThanOrEqual(2)
+    })
+    expect(parentSelectorMocks.parentRows[0].status).toBe('已审核')
+  })
+
   it('keeps selected keys when removing a record missing from the cache', async () => {
     parentSelectorMocks.parentRows.splice(
       0,

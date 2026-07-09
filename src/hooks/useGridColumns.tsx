@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import { type ActionItem, TableActions } from '@/components/TableActions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import { getDisplayStatus } from '@/module-system/module-record-deletion'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
-import { asString } from '@/utils/type-narrowing'
 
 export const ACTION_COLUMN_WIDTH = 100
 
@@ -64,24 +64,32 @@ export function useGridColumns({
         align: colDef.align || 'center',
         renderCell: (record: ModuleRecord) => {
           const value = record[colDef.dataIndex]
+          if (colDef.type === 'status') {
+            const statusStr = getDisplayStatus(record, colDef.dataIndex)
+            if (config.statusMap) {
+              return (
+                <StatusTag status={statusStr} statusMap={config.statusMap} />
+              )
+            }
+            return <span>{formatCellValue(statusStr, colDef.type)}</span>
+          }
           if (colDef.render) {
             return colDef.render(value, record)
-          }
-          if (colDef.type === 'status' && config.statusMap) {
-            const statusStr = asString(value)
-            return <StatusTag status={statusStr} statusMap={config.statusMap} />
           }
           return <span>{formatCellValue(value, colDef.type)}</span>
         },
       },
       cell: ({ getValue, row }) => {
         const value = getValue()
+        if (colDef.type === 'status') {
+          const statusStr = getDisplayStatus(row.original, colDef.dataIndex)
+          if (config.statusMap) {
+            return <StatusTag status={statusStr} statusMap={config.statusMap} />
+          }
+          return <span>{formatCellValue(statusStr, colDef.type)}</span>
+        }
         if (colDef.render) {
           return colDef.render(value, row.original)
-        }
-        if (colDef.type === 'status' && config.statusMap) {
-          const statusStr = asString(value)
-          return <StatusTag status={statusStr} statusMap={config.statusMap} />
         }
         return <span>{formatCellValue(value, colDef.type)}</span>
       },

@@ -675,6 +675,7 @@ export interface MessageSchema {
       disabled: string
       success: string
       failed: string
+      deleted: string
     }
     editor: {
       edit: string

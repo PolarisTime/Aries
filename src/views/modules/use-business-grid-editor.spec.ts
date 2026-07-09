@@ -6,6 +6,7 @@ import {
 } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
+import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 
 vi.mock('@/api/business', () => ({
@@ -21,6 +22,10 @@ vi.mock('@/module-system/module-behavior-registry', () => ({
   getBehaviorValue: vi.fn(),
 }))
 
+vi.mock('@/module-system/module-record-deletion', () => ({
+  isDeletedModuleRecord: vi.fn(),
+}))
+
 vi.mock('@/utils/type-narrowing', () => ({
   asString: (v: unknown) => String(v ?? ''),
 }))
@@ -29,6 +34,7 @@ const getBusinessModuleDetailMock = vi.mocked(getBusinessModuleDetail)
 const listAllBusinessModuleRowsMock = vi.mocked(listAllBusinessModuleRows)
 const getModuleConfigMock = vi.mocked(getModuleConfig)
 const getBehaviorValueMock = vi.mocked(getBehaviorValue)
+const isDeletedModuleRecordMock = vi.mocked(isDeletedModuleRecord)
 
 describe('useBusinessGridEditor', () => {
   const defaultProps = {
@@ -62,6 +68,7 @@ describe('useBusinessGridEditor', () => {
     vi.clearAllMocks()
     getModuleConfigMock.mockReturnValue({ readOnly: false })
     getBehaviorValueMock.mockReturnValue(undefined)
+    isDeletedModuleRecordMock.mockReturnValue(false)
     getBusinessModuleDetailMock.mockResolvedValue({
       data: { id: 'detail-id', name: 'Detail' },
     })
@@ -172,21 +179,22 @@ describe('useBusinessGridEditor', () => {
 
   it('ignores deleted lock related rows when opening editor', async () => {
     useLockBehavior()
-    listAllBusinessModuleRowsMock.mockResolvedValue([
-      { id: 'active-row', status: '已审核', deletedFlag: false },
-      { id: 'deleted-row', status: '已审核', deletedFlag: true },
-      { id: 'legacy-deleted-row', status: '已审核', deleted_flag: true },
-      { id: 'delete-flag-row', status: '已审核', deleteFlag: true },
-    ])
+    const rows = [
+      { id: 'active-row', status: '已审核' },
+      { id: 'deleted-row', status: '已审核' },
+    ]
+    listAllBusinessModuleRowsMock.mockResolvedValue(rows)
+    isDeletedModuleRecordMock.mockImplementation((row) => row === rows[1])
     const { result } = renderHook(() => useBusinessGridEditor(defaultProps))
 
     await act(async () => {
       await result.current.openEditor({ id: '1', orderNo: 'SO-001' })
     })
 
-    expect(result.current.editorLockRelatedRows).toEqual([
-      { id: 'active-row', status: '已审核', deletedFlag: false },
-    ])
+    expect(isDeletedModuleRecordMock).toHaveBeenCalledTimes(2)
+    expect(isDeletedModuleRecordMock).toHaveBeenNthCalledWith(1, rows[0])
+    expect(isDeletedModuleRecordMock).toHaveBeenNthCalledWith(2, rows[1])
+    expect(result.current.editorLockRelatedRows).toEqual([rows[0]])
   })
 
   it.each([

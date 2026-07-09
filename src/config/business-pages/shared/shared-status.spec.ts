@@ -33,6 +33,7 @@ describe('statusMap', () => {
       '禁用',
       '成功',
       '失败',
+      '已删除',
     ]
 
     for (const key of expectedKeys) {
@@ -81,6 +82,15 @@ describe('statusMap', () => {
     }
     expect(statusMap.禁用.color).toBe('error')
     expect(statusMap.失败.color).toBe('error')
+    expect(statusMap.已删除.color).toBe('error')
+  })
+
+  it('contains deleted display metadata', () => {
+    expect(statusMap.已删除).toMatchObject({
+      text: expect.any(String),
+      color: 'error',
+    })
+    expect(statusMap.已删除.text).toBeTruthy()
   })
 })
 

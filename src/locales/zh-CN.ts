@@ -694,6 +694,7 @@ export const zhCN: MessageSchema = {
       disabled: '已禁用',
       success: '成功',
       failed: '失败',
+      deleted: '已删除',
     },
     editor: {
       edit: '编辑',

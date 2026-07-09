@@ -15,6 +15,7 @@ import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
+import { getDisplayStatus } from '@/module-system/module-record-deletion'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModulePageConfig,
@@ -135,6 +136,10 @@ export function getOverlayStatusMap() {
     [DOCUMENT_STATUS.INBOUND_COMPLETED]: {
       color: 'success',
       text: i18next.t('modules.parentSelector.status.inboundComplete'),
+    },
+    已删除: {
+      color: 'error',
+      text: i18next.t('modules.status.deleted'),
     },
   }
 }
@@ -581,7 +586,7 @@ export function buildSelectedRecordSummary(
   return {
     primary,
     meta,
-    status: asString(record.status).trim(),
+    status: getDisplayStatus(record).trim(),
   }
 }
 
@@ -706,13 +711,14 @@ export function useModuleParentSelectorOverlay({
       title: column.title,
       width: column.width,
       ellipsis: true,
-      render: (value: unknown) => {
+      render: (value: unknown, record: ModuleRecord) => {
         if (column.type === 'status') {
+          const status = getDisplayStatus(record, column.dataIndex)
           return (
             <StatusTag
-              status={asString(value)}
+              status={status}
               statusMap={getOverlayStatusMap()}
-              fallback={asString(value)}
+              fallback={status}
             />
           )
         }

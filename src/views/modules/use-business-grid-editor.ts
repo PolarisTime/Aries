@@ -5,6 +5,7 @@ import {
 } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
+import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
@@ -33,11 +34,6 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
   )
   const requiresDetailFetch = Boolean(config.itemColumns?.length)
 
-  const isDeletedRelatedRow = (row: ModuleRecord) =>
-    row.deletedFlag === true ||
-    row.deleteFlag === true ||
-    row.deleted_flag === true
-
   const resolveEditorLockRelatedRows = async (record: ModuleRecord | null) => {
     if (
       !record ||
@@ -54,7 +50,7 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
     const rows = await listAllBusinessModuleRows(lineItemLockSourceModule, {
       [lineItemLockSourceField]: targetValue,
     })
-    return rows.filter((row) => !isDeletedRelatedRow(row))
+    return rows.filter((row) => !isDeletedModuleRecord(row))
   }
 
   const resolveEditorRecord = async (record: ModuleRecord) => {

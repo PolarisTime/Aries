@@ -223,9 +223,131 @@ describe('useGridColumns', () => {
         } as Parameters<NonNullable<typeof statusColumn.cell>>[0]),
       ),
     ).toMatchObject({
-      status: '404',
+      status: 'pending',
       statusMap: config.statusMap,
     })
+  })
+
+  it('derives deleted status for status columns without mutating original record', () => {
+    const config = {
+      columns: [
+        { dataIndex: 'status', title: 'Status', type: 'status' as const },
+      ],
+      statusMap: {
+        已审核: { color: 'success' as const, text: '已审核' },
+        已删除: { color: 'error' as const, text: '已删除' },
+      },
+    }
+    const deletedRecord = {
+      id: 'row-1',
+      status: '已审核',
+      deletedFlag: true,
+    }
+    const statusColumn = getColumn(
+      renderHookColumns({ ...defaultProps, config }),
+      'status',
+    )
+
+    expect(
+      getElementProps(statusColumn.meta?.renderCell?.(deletedRecord)),
+    ).toMatchObject({
+      status: '已删除',
+      statusMap: config.statusMap,
+    })
+    expect(deletedRecord.status).toBe('已审核')
+
+    expect(
+      getElementProps(
+        statusColumn.cell?.({
+          getValue: () => '已审核',
+          row: { original: deletedRecord },
+        } as Parameters<NonNullable<typeof statusColumn.cell>>[0]),
+      ),
+    ).toMatchObject({
+      status: '已删除',
+      statusMap: config.statusMap,
+    })
+    expect(deletedRecord.status).toBe('已审核')
+  })
+
+  it('uses derived deleted status before custom status renderers', () => {
+    const customRender = vi.fn(() => 'custom-status')
+    const config = {
+      columns: [
+        {
+          dataIndex: 'status',
+          title: 'Status',
+          type: 'status' as const,
+          render: customRender,
+        },
+      ],
+      statusMap: {
+        已审核: { color: 'success' as const, text: '已审核' },
+        已删除: { color: 'error' as const, text: '已删除' },
+      },
+    }
+    const deletedRecord = {
+      id: 'row-1',
+      status: '已审核',
+      deletedFlag: true,
+    }
+    const statusColumn = getColumn(
+      renderHookColumns({ ...defaultProps, config }),
+      'status',
+    )
+
+    expect(
+      getElementProps(statusColumn.meta?.renderCell?.(deletedRecord)),
+    ).toMatchObject({
+      status: '已删除',
+      statusMap: config.statusMap,
+    })
+    expect(
+      getElementProps(
+        statusColumn.cell?.({
+          getValue: () => '已审核',
+          row: { original: deletedRecord },
+        } as Parameters<NonNullable<typeof statusColumn.cell>>[0]),
+      ),
+    ).toMatchObject({
+      status: '已删除',
+      statusMap: config.statusMap,
+    })
+    expect(customRender).not.toHaveBeenCalled()
+    expect(deletedRecord.status).toBe('已审核')
+  })
+
+  it('derives deleted status from custom status column keys', () => {
+    const config = {
+      columns: [
+        {
+          dataIndex: 'auditStatus',
+          title: 'Audit Status',
+          type: 'status' as const,
+        },
+      ],
+      statusMap: {
+        待审核: { color: 'warning' as const, text: '待审核' },
+        已删除: { color: 'error' as const, text: '已删除' },
+      },
+    }
+    const deletedRecord = {
+      id: 'row-1',
+      auditStatus: '待审核',
+      deleted_flag: true,
+    }
+    const statusColumn = getColumn(
+      renderHookColumns({ ...defaultProps, config }),
+      'auditStatus',
+    )
+
+    expect(
+      getElementProps(statusColumn.meta?.renderCell?.(deletedRecord)),
+    ).toMatchObject({
+      status: '已删除',
+      statusMap: config.statusMap,
+    })
+    expect(deletedRecord.auditStatus).toBe('待审核')
   })
 
   it('formats non-status values in meta renderCell and table cell', () => {
@@ -283,7 +405,41 @@ describe('useGridColumns', () => {
           row: { original: record },
         } as Parameters<NonNullable<typeof statusColumn.cell>>[0]),
       ).children,
-    ).toBe('status:null')
+    ).toBe('status:pending')
+  })
+
+  it('derives deleted status for status columns without statusMap', () => {
+    const formatCellValue = vi
+      .fn()
+      .mockImplementation((value: unknown, type?: string) => `${type}:${value}`)
+    useModuleDisplaySupportMock.mockReturnValue({ formatCellValue })
+    const config = {
+      columns: [
+        { dataIndex: 'status', title: 'Status', type: 'status' as const },
+      ],
+    }
+    const deletedRecord = {
+      id: 'row-1',
+      status: '已审核',
+      deleteFlag: true,
+    }
+    const statusColumn = getColumn(
+      renderHookColumns({ ...defaultProps, config }),
+      'status',
+    )
+
+    expect(
+      getElementProps(statusColumn.meta?.renderCell?.(deletedRecord)).children,
+    ).toBe('status:已删除')
+    expect(
+      getElementProps(
+        statusColumn.cell?.({
+          getValue: () => '已审核',
+          row: { original: deletedRecord },
+        } as Parameters<NonNullable<typeof statusColumn.cell>>[0]),
+      ).children,
+    ).toBe('status:已删除')
+    expect(deletedRecord.status).toBe('已审核')
   })
 
   it('renders status column with StatusTag', () => {
