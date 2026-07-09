@@ -345,7 +345,7 @@ describe('useModuleEditorItemColumns', () => {
     ])
   })
 
-  it('limits pinyin initial search for material code select to brand and material name', () => {
+  it('excludes category from material code select search text', () => {
     mocks.useMasterOptions.mockReturnValue({
       materials: [
         {
@@ -382,11 +382,11 @@ describe('useModuleEditorItemColumns', () => {
         searchText: expect.stringContaining('zhongtian'),
       }),
     )
-    expect(materialOptions.find((option) => option.value === 'M-002')).toEqual(
-      expect.objectContaining({
-        searchText: expect.not.stringContaining('zhitiao'),
-      }),
+    const categoryOnlyOption = materialOptions.find(
+      (option) => option.value === 'M-002',
     )
+    expect(categoryOnlyOption?.searchText).not.toContain('直条')
+    expect(categoryOnlyOption?.searchText).not.toContain('zhitiao')
   })
 
   it('builds search initials automatically for newly added material brands', () => {

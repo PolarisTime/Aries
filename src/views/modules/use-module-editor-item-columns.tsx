@@ -46,7 +46,6 @@ type MaterialSelectSearchFields = {
   materialCode: string
   brand: string
   materialName: string
-  category: string
   material: string
   spec: string
   length: string
@@ -56,7 +55,6 @@ function buildMaterialSelectSearchText({
   materialCode,
   brand,
   materialName,
-  category,
   material,
   spec,
   length,
@@ -65,7 +63,6 @@ function buildMaterialSelectSearchText({
     materialCode,
     brand,
     materialName,
-    category,
     material,
     spec,
     length,
@@ -185,7 +182,6 @@ export function useModuleEditorItemColumns({
             materialCode,
             brand,
             materialName,
-            category,
             material,
             spec,
             length,
