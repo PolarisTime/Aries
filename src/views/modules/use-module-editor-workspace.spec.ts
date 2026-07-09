@@ -1657,6 +1657,91 @@ describe('useModuleEditorWorkspace', () => {
     expect(generateBusinessPrimaryNo).not.toHaveBeenCalled()
   })
 
+  it('normalizes recovered purchase order draft select values', () => {
+    vi.mocked(readModuleEditorDraft).mockReturnValue({
+      version: 1,
+      userKey: 'user-1',
+      moduleKey: 'purchase-order',
+      recordId: 'new',
+      values: {
+        id: '',
+        orderNo: 'LOCAL-PO',
+        settlementCompanyId: { value: 8, label: '结算主体A' },
+        supplierName: { value: '供应商A', label: '供应商A' },
+      } as never,
+      items: [],
+      authoritativePrimaryNo: 'LOCAL-PO',
+      updatedAt: 1000,
+    })
+    const form = frm()
+
+    renderWorkspace({
+      form,
+      moduleKey: 'purchase-order',
+      config: cfg({ primaryNoKey: 'orderNo' }),
+    })
+
+    const confirmOptions = vi.mocked(modal.confirm).mock.calls[0]?.[0] as {
+      onOk: () => void
+    }
+    act(() => {
+      confirmOptions.onOk()
+    })
+
+    expect(form.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        settlementCompanyId: '8',
+        supplierName: '供应商A',
+      }),
+    )
+  })
+
+  it('replaces stale preallocated id when recovering a new snowflake draft', async () => {
+    enableSnowflakeBusinessNo()
+    vi.mocked(allocateBusinessPrimaryNo).mockResolvedValueOnce({
+      generatedNo: 'PO-NEW',
+      generatedId: 'new-pre-id',
+    })
+    vi.mocked(readModuleEditorDraft).mockReturnValue({
+      version: 1,
+      userKey: 'user-1',
+      moduleKey: 'purchase-order',
+      recordId: 'new',
+      values: {
+        id: '',
+        orderNo: 'PO-OLD',
+        _preallocatedId: 'old-pre-id',
+      },
+      items: [],
+      authoritativePrimaryNo: 'PO-OLD',
+      updatedAt: 1000,
+    })
+    const form = frm()
+
+    const { result } = renderWorkspace({
+      form,
+      moduleKey: 'purchase-order',
+      config: cfg({ primaryNoKey: 'orderNo' }),
+    })
+
+    const confirmOptions = vi.mocked(modal.confirm).mock.calls[0]?.[0] as {
+      onOk: () => void
+    }
+    await act(async () => {
+      confirmOptions.onOk()
+    })
+
+    await waitFor(() => {
+      expect(form.setFieldsValue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderNo: 'PO-NEW',
+          _preallocatedId: 'new-pre-id',
+        }),
+      )
+    })
+    expect(result.current.authoritativePrimaryNo).toBe('PO-NEW')
+  })
+
   it('ignores saved draft recovery callbacks after unmount', () => {
     vi.mocked(readModuleEditorDraft).mockReturnValue({
       version: 1,

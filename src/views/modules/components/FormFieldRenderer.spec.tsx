@@ -129,12 +129,14 @@ vi.mock('antd', () => {
       disabled,
       mode,
       options,
+      optionLabelProp,
       showSearch,
     }: any) => (
       <select
         data-testid="select"
         data-allow-clear={String(Boolean(allowClear))}
         data-mode={String(mode || '')}
+        data-option-label-prop={String(optionLabelProp || '')}
         data-options={JSON.stringify(options)}
         data-show-search={String(Boolean(showSearch))}
         id={id}
@@ -326,6 +328,32 @@ describe('FormFieldRenderer', () => {
     render(<FormFieldRenderer {...props} />)
 
     expect(screen.getByTestId('select')).toHaveAttribute('data-options', '[]')
+  })
+
+  it('adds current settlement company snapshot when select options do not contain the value', () => {
+    formMocks.watchedValues = {
+      settlementCompanyId: '8',
+      settlementCompanyName: '结算主体A',
+    }
+    const props = {
+      ...defaultProps,
+      field: {
+        ...defaultProps.field,
+        key: 'settlementCompanyId',
+        type: 'select',
+        options: [],
+      },
+    }
+    render(<FormFieldRenderer {...props} />)
+
+    expect(screen.getByTestId('select')).toHaveAttribute(
+      'data-options',
+      JSON.stringify([{ label: '结算主体A', value: '8' }]),
+    )
+    expect(screen.getByTestId('select')).toHaveAttribute(
+      'data-option-label-prop',
+      'label',
+    )
   })
 
   it('falls back to empty multi-select options when resolved options are not an array', () => {

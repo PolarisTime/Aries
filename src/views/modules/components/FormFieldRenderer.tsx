@@ -20,6 +20,56 @@ interface Props {
   disabled?: boolean
 }
 
+type SelectOptionValue = string | number | boolean
+
+function normalizeOptionValue(value: unknown): SelectOptionValue {
+  return typeof value === 'number' || typeof value === 'boolean'
+    ? value
+    : asString(value)
+}
+
+function normalizeAutoCompleteOptionValue(value: unknown) {
+  return typeof value === 'number' || typeof value === 'boolean'
+    ? String(value)
+    : asString(value)
+}
+
+function getLabelValue(value: unknown) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const candidate = value as Record<string, unknown>
+    if ('value' in candidate) {
+      return asString(candidate.value)
+    }
+  }
+  return normalizeOptionValue(value)
+}
+
+function getSnapshotLabelKey(fieldKey: string) {
+  return fieldKey.endsWith('Id') ? fieldKey.replace(/Id$/, 'Name') : ''
+}
+
+function withCurrentSnapshotOption(
+  fieldKey: string,
+  options: Array<{ label: string; value: SelectOptionValue }>,
+  formValues: Record<string, unknown>,
+) {
+  const value = getLabelValue(formValues[fieldKey])
+  if (value === '') {
+    return options
+  }
+  if (options.some((option) => String(option.value) === String(value))) {
+    return options
+  }
+
+  const labelKey = getSnapshotLabelKey(fieldKey)
+  const label = labelKey ? asString(formValues[labelKey]).trim() : ''
+  if (!label) {
+    return options
+  }
+
+  return [{ label, value }, ...options]
+}
+
 export function FormFieldRenderer({ field, disabled }: Props) {
   const { t } = useTranslation()
   const form = Form.useFormInstance()
@@ -35,6 +85,18 @@ export function FormFieldRenderer({ field, disabled }: Props) {
     typeof field.options === 'function'
       ? field.options(formValues)
       : field.options || []
+  const selectOptions = Array.isArray(resolvedOptions)
+    ? resolvedOptions.map((opt) => ({
+        label: String(opt.label),
+        value: normalizeOptionValue(opt.value),
+      }))
+    : []
+  const autoCompleteOptions = Array.isArray(resolvedOptions)
+    ? resolvedOptions.map((opt) => ({
+        label: String(opt.label),
+        value: normalizeAutoCompleteOptionValue(opt.value),
+      }))
+    : []
 
   const rules = field.required
     ? [
@@ -95,18 +157,12 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           allowClear={allowClear}
           disabled={disabledValue}
           showSearch={{ filterOption: createPinyinFilterOption() }}
-          options={
-            Array.isArray(resolvedOptions)
-              ? resolvedOptions.map((opt) => ({
-                  label: String(opt.label),
-                  value:
-                    typeof opt.value === 'number' ||
-                    typeof opt.value === 'boolean'
-                      ? opt.value
-                      : asString(opt.value),
-                }))
-              : []
-          }
+          optionLabelProp="label"
+          options={withCurrentSnapshotOption(
+            field.key,
+            selectOptions,
+            formValues,
+          )}
         />,
       )
 
@@ -119,18 +175,8 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           disabled={disabledValue}
           mode="multiple"
           showSearch={{ filterOption: createPinyinFilterOption() }}
-          options={
-            Array.isArray(resolvedOptions)
-              ? resolvedOptions.map((opt) => ({
-                  label: String(opt.label),
-                  value:
-                    typeof opt.value === 'number' ||
-                    typeof opt.value === 'boolean'
-                      ? opt.value
-                      : asString(opt.value),
-                }))
-              : []
-          }
+          optionLabelProp="label"
+          options={selectOptions}
         />,
       )
 
@@ -172,18 +218,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
           allowClear={allowClear}
           disabled={disabledValue}
           showSearch={{ filterOption: createPinyinFilterOption() }}
-          options={
-            Array.isArray(resolvedOptions)
-              ? resolvedOptions.map((opt) => ({
-                  label: String(opt.label),
-                  value:
-                    typeof opt.value === 'number' ||
-                    typeof opt.value === 'boolean'
-                      ? String(opt.value)
-                      : asString(opt.value),
-                }))
-              : []
-          }
+          options={autoCompleteOptions}
         />,
       )
 

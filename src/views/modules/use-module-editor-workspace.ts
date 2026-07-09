@@ -121,15 +121,24 @@ function normalizeRecordForEditor(
   config: ModulePageConfig,
   record: ModuleRecord,
 ): ModuleRecord {
-  if (!config.formFields?.length) {
-    return record
-  }
-
   const normalized: ModuleRecord = {
     ...record,
   }
 
-  for (const field of config.formFields) {
+  for (const [key, value] of Object.entries(normalized)) {
+    normalized[key] = normalizeLabeledValueObject(value)
+  }
+
+  for (const field of config.formFields || []) {
+    if (
+      field.type === 'select' ||
+      field.type === 'multiSelect' ||
+      field.type === 'autoComplete'
+    ) {
+      normalized[field.key] = normalizeSelectLikeValue(normalized[field.key])
+      continue
+    }
+
     if (field.type !== 'date') {
       continue
     }
@@ -143,6 +152,43 @@ function normalizeRecordForEditor(
   }
 
   return normalized
+}
+
+function isRecordLike(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function normalizeSelectLikeValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeSelectLikeValue(item))
+  }
+  if (isRecordLike(value) && 'value' in value) {
+    return asString(value.value)
+  }
+  if (typeof value === 'number' || typeof value === 'bigint') {
+    return asString(value)
+  }
+  return value
+}
+
+function normalizeLabeledValueObject(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeLabeledValueObject(item))
+  }
+  if (isRecordLike(value) && 'value' in value) {
+    return asString(value.value)
+  }
+  return value
+}
+
+function normalizeLineItemsForEditor(items: ModuleLineItem[]) {
+  return items.map((item) => ({
+    ...item,
+    materialCode: normalizeLabeledValueObject(item.materialCode),
+    settlementMode: normalizeSelectLikeValue(item.settlementMode),
+    warehouseName: normalizeSelectLikeValue(item.warehouseName),
+    settlementCompanyId: normalizeSelectLikeValue(item.settlementCompanyId),
+  }))
 }
 
 function hasExplicitTimePart(value: unknown): boolean {
@@ -492,9 +538,64 @@ export function useModuleEditorWorkspace({
       if (!active) {
         return
       }
-      form.setFieldsValue(normalizeRecordForEditor(config, storedDraft.values))
+      const restoredValues = normalizeRecordForEditor(
+        config,
+        storedDraft.values,
+      )
+      const restoredItems = normalizeLineItemsForEditor(storedDraft.items)
+
+      if (!record && config.primaryNoKey && snowflakeBusinessNoEnabled) {
+        const primaryNoKey = asString(config.primaryNoKey)
+        form.setFieldsValue({
+          ...restoredValues,
+          _preallocatedId: '',
+          [primaryNoKey]: '',
+        })
+        dispatchWorkspaceState({
+          items: restoredItems,
+          primaryNoLoading: true,
+          authoritativePrimaryNo: '',
+        })
+        void allocateBusinessPrimaryNo(moduleKey)
+          .then(({ generatedNo, generatedId }) => {
+            if (!active) {
+              return
+            }
+            form.setFieldsValue({
+              ...restoredValues,
+              _preallocatedId: generatedId || '',
+              [primaryNoKey]: generatedNo,
+            })
+            dispatchWorkspaceState({
+              authoritativePrimaryNo: shouldUseAuthoritativePrimaryNo(
+                moduleKey,
+                config.primaryNoKey,
+              )
+                ? generatedNo
+                : '',
+            })
+          })
+          .catch((err) => {
+            if (!active) {
+              return
+            }
+            message.error(
+              err instanceof Error
+                ? err.message
+                : t('common.preallocateNoFailed'),
+            )
+          })
+          .finally(() => {
+            if (active) {
+              dispatchWorkspaceState({ primaryNoLoading: false })
+            }
+          })
+        return
+      }
+
+      form.setFieldsValue(restoredValues)
       dispatchWorkspaceState({
-        items: storedDraft.items,
+        items: restoredItems,
         primaryNoLoading: false,
         authoritativePrimaryNo: storedDraft.authoritativePrimaryNo,
       })
@@ -513,7 +614,7 @@ export function useModuleEditorWorkspace({
         )
         form.setFieldsValue(normalizeRecordForEditor(config, record))
         dispatchWorkspaceState({
-          items: record.items || [],
+          items: normalizeLineItemsForEditor(record.items || []),
           primaryNoLoading: false,
           authoritativePrimaryNo: nextAuthoritativePrimaryNo,
         })
