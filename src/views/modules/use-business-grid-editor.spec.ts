@@ -167,7 +167,26 @@ describe('useBusinessGridEditor', () => {
       'sales-outbound',
       { salesOrderNo: 'SO-001' },
     )
-    expect(result.current.editorLockRelatedRows).toBe(relatedRows)
+    expect(result.current.editorLockRelatedRows).toEqual(relatedRows)
+  })
+
+  it('ignores deleted lock related rows when opening editor', async () => {
+    useLockBehavior()
+    listAllBusinessModuleRowsMock.mockResolvedValue([
+      { id: 'active-row', status: '已审核', deletedFlag: false },
+      { id: 'deleted-row', status: '已审核', deletedFlag: true },
+      { id: 'legacy-deleted-row', status: '已审核', deleted_flag: true },
+      { id: 'delete-flag-row', status: '已审核', deleteFlag: true },
+    ])
+    const { result } = renderHook(() => useBusinessGridEditor(defaultProps))
+
+    await act(async () => {
+      await result.current.openEditor({ id: '1', orderNo: 'SO-001' })
+    })
+
+    expect(result.current.editorLockRelatedRows).toEqual([
+      { id: 'active-row', status: '已审核', deletedFlag: false },
+    ])
   })
 
   it.each([

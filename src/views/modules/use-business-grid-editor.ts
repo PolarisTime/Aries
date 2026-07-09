@@ -33,6 +33,11 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
   )
   const requiresDetailFetch = Boolean(config.itemColumns?.length)
 
+  const isDeletedRelatedRow = (row: ModuleRecord) =>
+    row.deletedFlag === true ||
+    row.deleteFlag === true ||
+    row.deleted_flag === true
+
   const resolveEditorLockRelatedRows = async (record: ModuleRecord | null) => {
     if (
       !record ||
@@ -46,9 +51,10 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
     if (!targetValue) {
       return []
     }
-    return listAllBusinessModuleRows(lineItemLockSourceModule, {
+    const rows = await listAllBusinessModuleRows(lineItemLockSourceModule, {
       [lineItemLockSourceField]: targetValue,
     })
+    return rows.filter((row) => !isDeletedRelatedRow(row))
   }
 
   const resolveEditorRecord = async (record: ModuleRecord) => {
