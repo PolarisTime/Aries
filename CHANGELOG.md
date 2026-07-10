@@ -1,3 +1,10 @@
+## [2.1.3](https://github.com/PolarisTime/Aries/compare/v2.1.2...v2.1.3) (2026-07-10)
+
+
+### Bug Fixes
+
+* **frontend:** 完成前端安全整改与业务修复 ([30165d6](https://github.com/PolarisTime/Aries/commit/30165d682bbc5d624241303c11acf5c30af0ee3e))
+
 ## [2.1.2](https://github.com/PolarisTime/Aries/compare/v2.1.1...v2.1.2) (2026-07-10)
 
 
