@@ -15,27 +15,30 @@ interface Props {
 
 interface State {
   error: Error | null
+  resetKey?: string
 }
 
 export class AppErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { error: null }
+    this.state = { error: null, resetKey: props.resetKey }
   }
 
   static getDerivedStateFromError(error: Error): State {
     return { error }
   }
 
+  static getDerivedStateFromProps(
+    props: Props,
+    state: State,
+  ): Partial<State> | null {
+    if (props.resetKey === state.resetKey) return null
+    return { error: null, resetKey: props.resetKey }
+  }
+
   componentDidCatch(error: Error, info: ErrorInfo) {
     flushClientAutosaveHandlers('error-boundary')
     console.error('[AppErrorBoundary]', error, info.componentStack)
-  }
-
-  componentDidUpdate(prevProps: Props) {
-    if (this.state.error && prevProps.resetKey !== this.props.resetKey) {
-      this.setState({ error: null })
-    }
   }
 
   handleReset = () => {

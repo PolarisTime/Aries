@@ -248,6 +248,10 @@ export function useUserAccountEditor({
         return
       }
       fillEditorForm(detail)
+      setEditorLoading(false)
+      if (detailAbortControllerRef.current === abortController) {
+        detailAbortControllerRef.current = null
+      }
     } catch (error) {
       if (!isCurrentEditorSession(session)) return
       showError(
@@ -259,12 +263,8 @@ export function useUserAccountEditor({
       setEditorLoading(false)
       setEditingId(null)
       setLoginNameChecking(false)
-    } finally {
-      if (isCurrentEditorSession(session)) {
-        setEditorLoading(false)
-        if (detailAbortControllerRef.current === abortController) {
-          detailAbortControllerRef.current = null
-        }
+      if (detailAbortControllerRef.current === abortController) {
+        detailAbortControllerRef.current = null
       }
     }
   }
@@ -279,40 +279,40 @@ export function useUserAccountEditor({
     ) {
       return
     }
+    if (!isCurrentEditorSession(session)) return
     try {
       const values = await form.validateFields()
-      if (!isCurrentEditorSession(session)) return
-      const validationPromise = runLoginNameCheck(
-        values.loginName,
-        targetId ?? undefined,
-      )
-      const validationRequestVersion = loginNameRequestVersionRef.current
-      const validationResult = await validationPromise
-      if (
-        !isCurrentEditorSession(session) ||
-        loginNameRequestVersionRef.current !== validationRequestVersion
-      ) {
-        return
+      if (isCurrentEditorSession(session)) {
+        const validationPromise = runLoginNameCheck(
+          values.loginName,
+          targetId ?? undefined,
+        )
+        const validationRequestVersion = loginNameRequestVersionRef.current
+        const validationResult = await validationPromise
+        const validationIsCurrent =
+          isCurrentEditorSession(session) &&
+          loginNameRequestVersionRef.current === validationRequestVersion
+        if (validationIsCurrent && !validationResult.available) {
+          message.warning(validationResult.message)
+        }
+        if (validationIsCurrent && validationResult.available) {
+          const payload: UserAccountFormPayload = {
+            loginName: values.loginName.trim(),
+            ...(mode === 'create' && values.password?.trim()
+              ? { password: values.password.trim() }
+              : {}),
+            userName: values.userName.trim(),
+            mobile: values.mobile?.trim() || '',
+            departmentId: values.departmentId ?? null,
+            roleIds: [...(values.roleIds || [])].map(String),
+            dataScope: selectedRoleDataScope,
+            permissionSummary: values.permissionSummary?.trim() || '',
+            status: values.status,
+            remark: values.remark?.trim() || '',
+          }
+          saveMutation.mutate(payload)
+        }
       }
-      if (!validationResult.available) {
-        message.warning(validationResult.message)
-        return
-      }
-      const payload: UserAccountFormPayload = {
-        loginName: values.loginName.trim(),
-        ...(mode === 'create' && values.password?.trim()
-          ? { password: values.password.trim() }
-          : {}),
-        userName: values.userName.trim(),
-        mobile: values.mobile?.trim() || '',
-        departmentId: values.departmentId ?? null,
-        roleIds: [...(values.roleIds || [])].map(String),
-        dataScope: selectedRoleDataScope,
-        permissionSummary: values.permissionSummary?.trim() || '',
-        status: values.status,
-        remark: values.remark?.trim() || '',
-      }
-      saveMutation.mutate(payload)
     } catch {
       // validation failed
     }

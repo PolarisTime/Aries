@@ -88,12 +88,16 @@ export function useUserAccountTwoFactor() {
 
   const isCurrentTwoFaOperation = (
     operation: TwoFaOperation,
-    responseTargetId = operation.targetId,
-  ) =>
-    operationVersionRef.current === operation.version &&
-    twoFaSessionRef.current.version === operation.sessionVersion &&
-    twoFaSessionRef.current.targetId === operation.targetId &&
-    responseTargetId === operation.targetId
+    candidateTargetId?: string,
+  ) => {
+    const responseTargetId = candidateTargetId ?? operation.targetId
+    return (
+      operationVersionRef.current === operation.version &&
+      twoFaSessionRef.current.version === operation.sessionVersion &&
+      twoFaSessionRef.current.targetId === operation.targetId &&
+      responseTargetId === operation.targetId
+    )
+  }
 
   const resetOperationLoading = () => {
     setTwoFaSetupLoading(false)
@@ -147,19 +151,16 @@ export function useUserAccountTwoFactor() {
         return
       }
       setTwoFaRecord(detail)
+      setTwoFaLoading(false)
+      if (detailAbortControllerRef.current === abortController) {
+        detailAbortControllerRef.current = null
+      }
     } catch (error) {
       if (!isCurrentTwoFaTarget(session, targetId)) return
       showError(error, t('auth.user2fa.loadFailed'))
       setTwoFaLoading(false)
       invalidateTwoFaSession()
       setTwoFaOpen(false)
-    } finally {
-      if (isCurrentTwoFaTarget(session, targetId)) {
-        setTwoFaLoading(false)
-        if (detailAbortControllerRef.current === abortController) {
-          detailAbortControllerRef.current = null
-        }
-      }
     }
   }
 
@@ -171,18 +172,18 @@ export function useUserAccountTwoFactor() {
     const operation = startTwoFaOperation(session, targetId)
     resetOperationLoading()
     setTwoFaSetupLoading(true)
+    if (!isCurrentTwoFaOperation(operation)) return
     try {
       const response = await setupUserAccount2fa(targetId)
-      if (!isCurrentTwoFaOperation(operation)) return
-      setTwoFaSetup(response.data)
-      setTwoFaCode('')
-      message.success(response.message || t('auth.user2fa.generateSuccess'))
+      if (isCurrentTwoFaOperation(operation)) {
+        setTwoFaSetup(response.data)
+        setTwoFaCode('')
+        message.success(response.message || t('auth.user2fa.generateSuccess'))
+        setTwoFaSetupLoading(false)
+      }
     } catch (error) {
       if (isCurrentTwoFaOperation(operation)) {
         showError(error, t('auth.user2fa.generateFailed'))
-      }
-    } finally {
-      if (isCurrentTwoFaOperation(operation)) {
         setTwoFaSetupLoading(false)
       }
     }
@@ -218,9 +219,6 @@ export function useUserAccountTwoFactor() {
     } catch (error) {
       if (isCurrentTwoFaOperation(operation)) {
         showError(error, t('auth.user2fa.enableFailed'))
-      }
-    } finally {
-      if (isCurrentTwoFaOperation(operation)) {
         setTwoFaEnableLoading(false)
       }
     }
@@ -266,9 +264,6 @@ export function useUserAccountTwoFactor() {
         } catch (error) {
           if (isCurrentTwoFaOperation(operation)) {
             showError(error, t('auth.user2fa.disableFailed'))
-          }
-        } finally {
-          if (isCurrentTwoFaOperation(operation)) {
             setTwoFaDisableLoading(false)
           }
         }
