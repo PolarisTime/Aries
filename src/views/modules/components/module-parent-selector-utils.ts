@@ -1,3 +1,4 @@
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -7,7 +8,6 @@ export type ParentSelectorColumn = {
 }
 
 const AUDITED_STATUS = '已审核'
-const PURCHASE_COMPLETED_STATUS = '完成采购'
 const SALES_COMPLETED_STATUS = '完成销售'
 
 function hasPositiveQuantity(value: unknown) {
@@ -57,7 +57,7 @@ export function filterImportableParentRecords(
       candidateStatementModuleKey === 'supplier-statement' &&
       parentModuleKey === 'purchase-inbound'
     ) {
-      return asString(record.status) === PURCHASE_COMPLETED_STATUS
+      return asString(record.status) === DOCUMENT_STATUS.INBOUND_COMPLETED
     }
     if (
       candidateStatementModuleKey === 'customer-statement' &&

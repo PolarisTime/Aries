@@ -20,6 +20,8 @@ import {
   submitInitialCompany,
 } from './setup'
 
+const SETUP_TOKEN = 'A'.repeat(43)
+
 describe('setup API', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -55,7 +57,7 @@ describe('setup API', () => {
   })
 
   describe('setupInitialAdmin2fa', () => {
-    it('calls POST /setup/admin/2fa/setup with payload', async () => {
+    it('calls POST /setup/admin/2fa/setup with setup token header', async () => {
       const payload = { loginName: 'admin' }
       const mockResponse = {
         code: 0,
@@ -63,12 +65,14 @@ describe('setup API', () => {
       }
       httpPostMock.mockResolvedValue(mockResponse)
 
-      const result = await setupInitialAdmin2fa(payload)
+      const result = await setupInitialAdmin2fa(payload, SETUP_TOKEN)
 
       expect(httpPostMock).toHaveBeenCalledWith(
         '/setup/admin/2fa/setup',
         payload,
+        { headers: { 'X-Setup-Token': SETUP_TOKEN } },
       )
+      expect(payload).not.toHaveProperty('setupToken')
       expect(assertApiSuccessMock).toHaveBeenCalledWith(
         mockResponse,
         'generateAdmin2faFailed',
@@ -78,7 +82,7 @@ describe('setup API', () => {
   })
 
   describe('submitInitialAdmin', () => {
-    it('calls POST /setup/admin with payload', async () => {
+    it('calls POST /setup/admin with setup token header', async () => {
       const payload = {
         admin: { loginName: 'admin', password: 'pass123' },
         totpSecret: 'secret',
@@ -90,9 +94,12 @@ describe('setup API', () => {
       }
       httpPostMock.mockResolvedValue(mockResponse)
 
-      const result = await submitInitialAdmin(payload)
+      const result = await submitInitialAdmin(payload, SETUP_TOKEN)
 
-      expect(httpPostMock).toHaveBeenCalledWith('/setup/admin', payload)
+      expect(httpPostMock).toHaveBeenCalledWith('/setup/admin', payload, {
+        headers: { 'X-Setup-Token': SETUP_TOKEN },
+      })
+      expect(payload).not.toHaveProperty('setupToken')
       expect(assertApiSuccessMock).toHaveBeenCalledWith(
         mockResponse,
         'adminAccountInitFailed',
@@ -102,7 +109,7 @@ describe('setup API', () => {
   })
 
   describe('submitInitialCompany', () => {
-    it('calls POST /setup/company with payload', async () => {
+    it('calls POST /setup/company with setup token header', async () => {
       const payload = { name: 'Test Company' }
       const mockResponse = {
         code: 0,
@@ -110,9 +117,12 @@ describe('setup API', () => {
       }
       httpPostMock.mockResolvedValue(mockResponse)
 
-      const result = await submitInitialCompany(payload)
+      const result = await submitInitialCompany(payload, SETUP_TOKEN)
 
-      expect(httpPostMock).toHaveBeenCalledWith('/setup/company', payload)
+      expect(httpPostMock).toHaveBeenCalledWith('/setup/company', payload, {
+        headers: { 'X-Setup-Token': SETUP_TOKEN },
+      })
+      expect(payload).not.toHaveProperty('setupToken')
       expect(assertApiSuccessMock).toHaveBeenCalledWith(
         mockResponse,
         'companyInitFailed',

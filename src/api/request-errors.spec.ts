@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   isCanceledRequestError,
+  isRequestError,
   markHandledRequestError,
+  readRequestError,
 } from './request-errors'
 
 describe('request-errors', () => {
@@ -22,6 +24,30 @@ describe('request-errors', () => {
     it('does nothing for primitives', () => {
       expect(() => markHandledRequestError('string')).not.toThrow()
       expect(() => markHandledRequestError(42)).not.toThrow()
+    })
+  })
+
+  describe('structured request error metadata', () => {
+    it('reads normalized status, business code, trace id, and handled state', () => {
+      const error = Object.assign(new Error('数据已更新'), {
+        status: 409,
+        code: 4090,
+        traceId: 'trace-conflict',
+      })
+      markHandledRequestError(error)
+
+      expect(isRequestError(error)).toBe(true)
+      expect(readRequestError(error)).toEqual({
+        status: 409,
+        code: 4090,
+        traceId: 'trace-conflict',
+        handled: true,
+      })
+    })
+
+    it('returns empty metadata for an unrelated value', () => {
+      expect(isRequestError(new Error('plain error'))).toBe(false)
+      expect(readRequestError('plain error')).toEqual({ handled: false })
     })
   })
 

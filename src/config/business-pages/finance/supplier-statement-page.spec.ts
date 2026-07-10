@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { supplierStatementPageConfig } from './supplier-statement-page'
 
 describe('supplierStatementPageConfig', () => {
@@ -31,7 +32,7 @@ describe('supplierStatementPageConfig', () => {
   })
 
   describe('parentImport', () => {
-    it('buildParentFilters filters by supplier and status', () => {
+    it('buildParentFilters only sends filters supported by the candidate API', () => {
       const filters = pi.buildParentFilters!({
         supplierName: ' 供应商A ',
         settlementCompanyId: 7,
@@ -39,7 +40,6 @@ describe('supplierStatementPageConfig', () => {
       expect(filters).toEqual({
         supplierName: '供应商A',
         settlementCompanyId: 7,
-        status: '完成采购',
       })
     })
 
@@ -48,7 +48,6 @@ describe('supplierStatementPageConfig', () => {
       expect(filters).toEqual({
         supplierName: '',
         settlementCompanyId: undefined,
-        status: '完成采购',
       })
     })
 
@@ -89,26 +88,35 @@ describe('supplierStatementPageConfig', () => {
       expect(draft.paymentAmount).toBe(0)
     })
 
-    it('validateParentImport passes when status matches and supplier matches', () => {
+    it('validateParentImport passes for completed inbound from the same supplier', () => {
       const result = pi.validateParentImport!({
         currentRecord: { supplierName: '供应商A' },
-        parentRecord: { status: '完成采购', supplierName: '供应商A' },
+        parentRecord: {
+          status: DOCUMENT_STATUS.INBOUND_COMPLETED,
+          supplierName: '供应商A',
+        },
       } as any)
       expect(result).toBeNull()
     })
 
-    it('validateParentImport rejects non-完成采购 status', () => {
+    it('validateParentImport rejects statuses other than completed inbound', () => {
       const result = pi.validateParentImport!({
         currentRecord: { supplierName: '供应商A' },
-        parentRecord: { status: '待审核', supplierName: '供应商A' },
+        parentRecord: {
+          status: DOCUMENT_STATUS.PURCHASE_COMPLETED,
+          supplierName: '供应商A',
+        },
       } as any)
-      expect(result).toBe('只能选择完成采购的采购入库单生成供应商对账单')
+      expect(result).toBe('只能选择完成入库的采购入库单生成供应商对账单')
     })
 
     it('validateParentImport rejects mismatched supplier', () => {
       const result = pi.validateParentImport!({
         currentRecord: { supplierName: '供应商A' },
-        parentRecord: { status: '完成采购', supplierName: '供应商B' },
+        parentRecord: {
+          status: DOCUMENT_STATUS.INBOUND_COMPLETED,
+          supplierName: '供应商B',
+        },
       } as any)
       expect(result).toBe('只能选择同一供应商的采购入库单生成供应商对账单')
     })
@@ -117,7 +125,7 @@ describe('supplierStatementPageConfig', () => {
       const result = pi.validateParentImport!({
         currentRecord: { supplierName: '供应商A', settlementCompanyId: 1 },
         parentRecord: {
-          status: '完成采购',
+          status: DOCUMENT_STATUS.INBOUND_COMPLETED,
           supplierName: '供应商A',
           settlementCompanyId: 2,
         },

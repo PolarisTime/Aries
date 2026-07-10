@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router'
 import { Form } from 'antd'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +9,7 @@ import {
 } from '@/api/account-security'
 import type { TotpSetupResponse } from '@/shared/schemas'
 import { syncCurrentUserTotpState } from '@/stores/auth-user-sync'
+import { useAuthStore } from '@/stores/authStore'
 import { message } from '@/utils/antd-app'
 
 interface Props {
@@ -39,6 +41,8 @@ export function usePersonalSecuritySettings({
   tab,
 }: Props): UsePersonalSecuritySettingsResult {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const signOut = useAuthStore((state) => state.signOut)
   const [pwForm] = Form.useForm<PasswordFormValues>()
   const [pwSaving, setPwSaving] = useState(false)
   const [totpLoading, setTotpLoading] = useState(false)
@@ -67,9 +71,6 @@ export function usePersonalSecuritySettings({
         currentPassword: values.oldPassword,
         newPassword: values.newPassword,
       })
-      message.success(t('auth.personalsecurity.passwordSuccess'))
-      pwForm.resetFields()
-      setPwSaving(false)
     } catch (error) {
       message.error(
         error instanceof Error
@@ -77,7 +78,14 @@ export function usePersonalSecuritySettings({
           : t('auth.personalsecurity.passwordFailed'),
       )
       setPwSaving(false)
+      return
     }
+
+    message.success(t('auth.personalsecurity.passwordSuccess'))
+    pwForm.resetFields()
+    setPwSaving(false)
+    await signOut()
+    void navigate({ to: '/login' })
   }
 
   const handleSetupTotp = async (): Promise<void> => {

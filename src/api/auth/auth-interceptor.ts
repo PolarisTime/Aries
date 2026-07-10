@@ -55,6 +55,40 @@ function attachTraceIdToError(err: Error, traceId: string | undefined) {
   }
 }
 
+function toFiniteNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+  return undefined
+}
+
+function attachResponseMetadataToError(
+  target: Error,
+  source: {
+    response?: {
+      status?: unknown
+      data?: { code?: unknown; traceId?: string }
+      headers?: Record<string, unknown> & {
+        get?: (name: string) => unknown
+      }
+    }
+  },
+): void {
+  const status = toFiniteNumber(source.response?.status)
+  const code = toFiniteNumber(source.response?.data?.code)
+  if (status !== undefined) {
+    ;(target as Error & { status: number }).status = status
+  }
+  if (code !== undefined) {
+    ;(target as Error & { code: number }).code = code
+  }
+  attachTraceIdToError(target, extractBackendTraceId(source))
+}
+
 type GuardedAxiosInstance = AxiosInstance & {
   __leoAuthInterceptorsSetup?: boolean
 }
@@ -126,7 +160,7 @@ export function setupAuthInterceptors(http: AxiosInstance) {
     async (error) => {
       if (isCanceledRequestError(error)) {
         const canceledErr = new Error(error?.message || '请求已取消')
-        attachTraceIdToError(canceledErr, extractBackendTraceId(error))
+        attachResponseMetadataToError(canceledErr, error)
         markHandledRequestError(canceledErr)
         return Promise.reject(canceledErr)
       }
@@ -183,11 +217,9 @@ export function setupAuthInterceptors(http: AxiosInstance) {
           markHandledRequestError(error)
           handleAuthFailure(refreshMessage)
           const refreshErr = new Error(refreshMessage)
-          attachTraceIdToError(
+          attachResponseMetadataToError(
             refreshErr,
-            extractBackendTraceId(
-              axios.isAxiosError(refreshError) ? refreshError : error,
-            ),
+            axios.isAxiosError(refreshError) ? refreshError : error,
           )
           markHandledRequestError(refreshErr)
           return Promise.reject(refreshErr)
@@ -215,7 +247,7 @@ export function setupAuthInterceptors(http: AxiosInstance) {
       }
 
       const normalizedErr = new Error(description)
-      attachTraceIdToError(normalizedErr, extractBackendTraceId(error))
+      attachResponseMetadataToError(normalizedErr, error)
       markHandledRequestError(normalizedErr)
 
       return Promise.reject(normalizedErr)

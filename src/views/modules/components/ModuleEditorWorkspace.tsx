@@ -2,11 +2,13 @@ import {
   ArrowRightOutlined,
   CheckCircleFilled,
   CloseCircleFilled,
+  ReloadOutlined,
   WarningFilled,
 } from '@ant-design/icons'
 import { useNavigate } from '@tanstack/react-router'
 import { Button, Card, Form, Space, Table, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { ERROR_CODE } from '@/constants/error-codes'
 import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import {
   resolveMasterOptionRequirements,
@@ -124,6 +126,7 @@ export function ModuleEditorWorkspace({
     parentSelectorOpen,
     authoritativePrimaryNo,
     saveResult,
+    reloadAfterConflict,
     saving,
     setItems,
   } = useModuleEditorWorkspace({
@@ -248,9 +251,13 @@ export function ModuleEditorWorkspace({
           saveResult={saveResult}
           config={config}
           moduleKey={moduleKey}
+          resolvingConflict={saving}
           onClear={() => {
             clearSaveResult()
             if (saveResult.status !== 'error') onClose()
+          }}
+          onResolveConflict={() => {
+            void reloadAfterConflict()
           }}
         />
       ) : null}
@@ -263,18 +270,23 @@ interface SaveResultOverlayProps {
     status: 'success' | 'error' | 'warning'
     message: string
     traceId?: string
+    errorCode?: number
     record?: ModuleRecord
   }
   config: ModulePageConfig
   moduleKey: string
+  resolvingConflict: boolean
   onClear: () => void
+  onResolveConflict: () => void
 }
 
 function SaveResultOverlay({
   saveResult,
   config,
   moduleKey,
+  resolvingConflict,
   onClear,
+  onResolveConflict,
 }: SaveResultOverlayProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -284,6 +296,9 @@ function SaveResultOverlay({
 
   const isSuccess =
     saveResult.status === 'success' || saveResult.status === 'warning'
+  const isConflict =
+    saveResult.status === 'error' &&
+    saveResult.errorCode === ERROR_CODE.CONCURRENT_MODIFICATION
 
   const statusIcon =
     saveResult.status === 'success' ? (
@@ -327,15 +342,24 @@ function SaveResultOverlay({
 
   const resultTitle = isSuccess
     ? t('modules.saveResult.pageSuccess', { title: config.title })
-    : t('modules.saveResult.error')
+    : isConflict
+      ? t('modules.saveResult.conflict')
+      : t('modules.saveResult.error')
 
   const actionBar = (
     <div className="mt-16 flex flex-wrap justify-center gap-8">
       {quickActions}
-      <Button type="primary" onClick={onClear}>
-        {saveResult.status === 'error'
-          ? t('modules.saveResult.backToEdit')
-          : t('modules.saveResult.close')}
+      <Button
+        type="primary"
+        icon={isConflict ? <ReloadOutlined /> : undefined}
+        loading={isConflict && resolvingConflict}
+        onClick={isConflict ? onResolveConflict : onClear}
+      >
+        {isConflict
+          ? t('modules.saveResult.reloadLatest')
+          : saveResult.status === 'error'
+            ? t('modules.saveResult.backToEdit')
+            : t('modules.saveResult.close')}
       </Button>
     </div>
   )
@@ -442,7 +466,11 @@ function SaveResultOverlay({
         : baseItemColumns
 
   return (
-    <WorkspaceOverlay open title={headerTitle} onClose={onClear}>
+    <WorkspaceOverlay
+      open
+      title={headerTitle}
+      onClose={isConflict ? onResolveConflict : onClear}
+    >
       {saveResult.status === 'error' && saveResult.traceId ? (
         <Card size="small" className="mb-16">
           <Typography.Text

@@ -12,6 +12,7 @@ import {
   fetchSettlementCompanyOptions,
   getCompanySettingProfile,
 } from '@/api/company-settings'
+import { ERROR_CODE } from '@/constants/error-codes'
 import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 import {
   applyFormFieldDefaultDraftValues,
@@ -43,6 +44,7 @@ import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-work
 
 const mockFns = vi.hoisted(() => ({
   translate: (key: string) => key,
+  refreshModuleQueries: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('i18next', () => ({
@@ -74,7 +76,7 @@ vi.mock('@/api/company-settings', () => ({
 
 vi.mock('@/hooks/useModuleQueryRefresh', () => ({
   useModuleQueryRefresh: vi.fn().mockReturnValue({
-    refreshModuleQueries: vi.fn(),
+    refreshModuleQueries: mockFns.refreshModuleQueries,
   }),
 }))
 
@@ -342,6 +344,7 @@ describe('useModuleEditorWorkspace', () => {
       'authoritativePrimaryNo',
       'saveResult',
       'clearSaveResult',
+      'reloadAfterConflict',
       'saving',
       'setItems',
       'handleFormValuesChange',
@@ -1910,6 +1913,48 @@ describe('useModuleEditorWorkspace', () => {
       message: '保存失败',
       traceId: 'trace-1',
     })
+  })
+
+  it('requires a fresh list reload after a concurrent modification conflict', async () => {
+    vi.mocked(saveBusinessModule).mockRejectedValueOnce(
+      Object.assign(new Error('数据已被其他请求修改'), {
+        status: 409,
+        code: ERROR_CODE.CONCURRENT_MODIFICATION,
+        traceId: 'trace-conflict',
+      }),
+    )
+    const onClose = vi.fn()
+    const { result } = renderWorkspace({
+      open: false,
+      onClose,
+      record: { id: 'record-1' },
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.saveResult).toEqual({
+      status: 'error',
+      message: '数据已被其他请求修改',
+      traceId: 'trace-conflict',
+      errorCode: ERROR_CODE.CONCURRENT_MODIFICATION,
+    })
+    expect(onClose).not.toHaveBeenCalled()
+
+    await act(async () => {
+      await result.current.reloadAfterConflict()
+    })
+
+    expect(removeModuleEditorDraft).toHaveBeenCalledWith(
+      'user-1',
+      'test-module',
+      'record-1',
+    )
+    expect(mockFns.refreshModuleQueries).toHaveBeenCalledTimes(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(result.current.saveResult).toBeNull()
   })
 
   it('stores fallback save error text when an Error has no message', async () => {

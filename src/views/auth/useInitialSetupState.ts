@@ -18,6 +18,8 @@ import { asString } from '@/utils/type-narrowing'
 
 export type SetupStep = 'admin' | 'company'
 
+export const SETUP_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}=?$/
+
 type AdminFormValues = {
   adminLoginName: string
   adminPassword: string
@@ -53,6 +55,19 @@ export function useInitialSetupState() {
   const [loadingAdmin, setLoadingAdmin] = useState(false)
   const [loadingCompany, setLoadingCompany] = useState(false)
   const [form] = Form.useForm()
+
+  const getValidSetupToken = (): string | null => {
+    const setupToken = asString(form.getFieldValue('setupToken'))
+    if (!setupToken) {
+      message.error(t('auth.initialsetup.setupTokenRequired'))
+      return null
+    }
+    if (!SETUP_TOKEN_PATTERN.test(setupToken)) {
+      message.error(t('auth.initialsetup.setupTokenInvalid'))
+      return null
+    }
+    return setupToken
+  }
 
   const loadStatus = async () => {
     try {
@@ -134,9 +149,13 @@ export function useInitialSetupState() {
       message.error(t('auth.initialsetup.inputAdminLoginFirst'))
       return
     }
+    const setupToken = getValidSetupToken()
+    if (!setupToken) {
+      return
+    }
     setLoadingTotp(true)
     try {
-      const res = await setupInitialAdmin2fa({ loginName })
+      const res = await setupInitialAdmin2fa({ loginName }, setupToken)
       setTotpSetup(res.data)
       message.success(t('auth.initialsetup.totpGenerated'))
       setLoadingTotp(false)
@@ -149,8 +168,13 @@ export function useInitialSetupState() {
   }
 
   const handleSubmitAdmin = async () => {
+    const setupToken = getValidSetupToken()
+    if (!setupToken) {
+      return
+    }
     try {
       const values = (await form.validateFields([
+        'setupToken',
         'adminLoginName',
         'adminPassword',
         'adminConfirmPassword',
@@ -167,17 +191,21 @@ export function useInitialSetupState() {
         return
       }
       setLoadingAdmin(true)
-      const res = await submitInitialAdmin({
-        admin: {
-          loginName: values.adminLoginName.trim(),
-          password: values.adminPassword,
-          userName: (
-            values.adminUserName || t('auth.initialsetup.defaultAdminUserName')
-          ).trim(),
+      const res = await submitInitialAdmin(
+        {
+          admin: {
+            loginName: values.adminLoginName.trim(),
+            password: values.adminPassword,
+            userName: (
+              values.adminUserName ||
+              t('auth.initialsetup.defaultAdminUserName')
+            ).trim(),
+          },
+          totpSecret: totpSetup.secret,
+          totpCode: values.totpCode.trim(),
         },
-        totpSecret: totpSetup.secret,
-        totpCode: values.totpCode.trim(),
-      })
+        setupToken,
+      )
       message.success(res.message || t('auth.initialsetup.adminCreateSuccess'))
       setAdminCompleted(true)
       setCurrentStep('company')
@@ -192,8 +220,13 @@ export function useInitialSetupState() {
   }
 
   const handleSubmitCompany = async () => {
+    const setupToken = getValidSetupToken()
+    if (!setupToken) {
+      return
+    }
     try {
       const values = (await form.validateFields([
+        'setupToken',
         'companyName',
         'taxNo',
         'bankName',
@@ -201,14 +234,17 @@ export function useInitialSetupState() {
       ])) as unknown as CompanyFormValues
 
       setLoadingCompany(true)
-      const res = await submitInitialCompany({
-        companyName: values.companyName.trim(),
-        taxNo: values.taxNo.trim(),
-        bankName: values.bankName.trim(),
-        bankAccount: values.bankAccount.trim(),
-        taxRate: values.taxRate || 0.13,
-        remark: values.remark?.trim() || '',
-      })
+      const res = await submitInitialCompany(
+        {
+          companyName: values.companyName.trim(),
+          taxNo: values.taxNo.trim(),
+          bankName: values.bankName.trim(),
+          bankAccount: values.bankAccount.trim(),
+          taxRate: values.taxRate || 0.13,
+          remark: values.remark?.trim() || '',
+        },
+        setupToken,
+      )
       message.success(
         res.message || t('auth.initialsetup.companyCreateSuccess'),
       )

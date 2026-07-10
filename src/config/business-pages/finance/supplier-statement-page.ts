@@ -4,6 +4,7 @@ import {
   getSupplierOptions,
   statementStatusOptions,
 } from '@/constants/module-options'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, SUPPLIER_NAME_LABEL } from '../shared/filter-labels'
@@ -299,7 +300,6 @@ export const supplierStatementPageConfig: ModulePageConfig = {
     buildParentFilters: (currentRecord) => ({
       supplierName: asString(currentRecord.supplierName).trim(),
       settlementCompanyId: currentRecord.settlementCompanyId,
-      status: '完成采购',
     }),
     validateBeforeOpen: (currentRecord) =>
       asString(currentRecord.supplierName).trim()
@@ -315,8 +315,11 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       status: '待确认',
     }),
     validateParentImport: ({ currentRecord, parentRecord }) => {
-      if (asString(parentRecord.status).trim() !== '完成采购') {
-        return '只能选择完成采购的采购入库单生成供应商对账单'
+      if (
+        asString(parentRecord.status).trim() !==
+        DOCUMENT_STATUS.INBOUND_COMPLETED
+      ) {
+        return '只能选择完成入库的采购入库单生成供应商对账单'
       }
       if (
         asString(currentRecord.supplierName).trim() !==

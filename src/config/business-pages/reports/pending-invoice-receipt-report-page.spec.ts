@@ -21,6 +21,14 @@ describe('pendingInvoiceReceiptReportPageConfig', () => {
     expect(pendingInvoiceReceiptReportPageConfig.readOnly).toBe(true)
   })
 
+  it('does not expose export without a backend endpoint', () => {
+    expect(
+      pendingInvoiceReceiptReportPageConfig.actions?.some(
+        (action) => action.key === 'export',
+      ) ?? false,
+    ).toBe(false)
+  })
+
   it('has filters', () => {
     expect(pendingInvoiceReceiptReportPageConfig.filters).toBeDefined()
     expect(

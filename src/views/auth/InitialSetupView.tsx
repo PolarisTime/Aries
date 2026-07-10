@@ -1,11 +1,25 @@
-import { Card, Flex, Form, Result, Space, Spin, Steps, Typography } from 'antd'
+import { KeyOutlined } from '@ant-design/icons'
+import {
+  Card,
+  Flex,
+  Form,
+  Input,
+  Result,
+  Space,
+  Spin,
+  Steps,
+  Typography,
+} from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { appTitle } from '@/utils/env'
 import { AuthPageShell } from '@/views/auth/AuthPageShell'
 import { InitialSetupAdminForm } from '@/views/auth/InitialSetupAdminForm'
 import { InitialSetupCompanyForm } from '@/views/auth/InitialSetupCompanyForm'
-import { useInitialSetupState } from '@/views/auth/useInitialSetupState'
+import {
+  SETUP_TOKEN_PATTERN,
+  useInitialSetupState,
+} from '@/views/auth/useInitialSetupState'
 
 export function InitialSetupView() {
   const { t } = useTranslation()
@@ -76,6 +90,26 @@ export function InitialSetupView() {
               taxRate: 0.13,
             }}
           >
+            <Form.Item
+              name="setupToken"
+              label={t('auth.initialsetup.setupTokenLabel')}
+              rules={[
+                {
+                  required: true,
+                  message: t('auth.initialsetup.setupTokenRequired'),
+                },
+                {
+                  pattern: SETUP_TOKEN_PATTERN,
+                  message: t('auth.initialsetup.setupTokenInvalid'),
+                },
+              ]}
+            >
+              <Input.Password
+                prefix={<KeyOutlined />}
+                placeholder={t('auth.initialsetup.setupTokenPlaceholder')}
+                autoComplete="off"
+              />
+            </Form.Item>
             {currentStep === 'admin' ? (
               <InitialSetupAdminForm
                 totpSetup={totpSetup}

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { Key, ReactNode } from 'react'
 import { createElement } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
 import {
@@ -951,7 +952,7 @@ describe('ModuleParentSelectorOverlay keyboard row interactions', () => {
       {
         id: 'parent-1',
         name: '父单据 1',
-        status: '完成采购',
+        status: DOCUMENT_STATUS.INBOUND_COMPLETED,
       },
     )
     const onSelect = vi.fn()
@@ -1178,7 +1179,7 @@ describe('ModuleParentSelectorOverlay keyboard row interactions', () => {
       {
         id: 'parent-1',
         name: '父单据 1',
-        status: '完成采购',
+        status: DOCUMENT_STATUS.INBOUND_COMPLETED,
       },
     )
     const onSelect = vi.fn()

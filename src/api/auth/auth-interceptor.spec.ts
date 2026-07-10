@@ -439,6 +439,42 @@ describe('auth-interceptor', () => {
       expect(messageErrorMock).toHaveBeenCalledWith('业务错误')
     })
 
+    it('preserves HTTP status, business code, trace id, and handled marker', async () => {
+      const http = setupHttp()
+      normalizeErrorMessageMock.mockReturnValue('数据已被其他请求修改')
+      markHandledRequestErrorMock.mockImplementation((error: unknown) => {
+        if (error && typeof error === 'object') {
+          Object.assign(error, { __leoRequestErrorHandled: true })
+        }
+      })
+
+      const error = {
+        isAxiosError: true,
+        response: {
+          status: 409,
+          data: {
+            code: 4090,
+            message: '数据已被其他请求修改',
+            traceId: 'trace-conflict',
+          },
+        },
+        config: { url: '/api/data', headers: {} },
+        message: 'Request failed with status code 409',
+      }
+
+      const normalized = await http.interceptors.response.handlers[0]
+        .rejected(error)
+        .catch((caught: Error) => caught)
+
+      expect(normalized).toMatchObject({
+        message: '数据已被其他请求修改',
+        status: 409,
+        code: 4090,
+        traceId: 'trace-conflict',
+        __leoRequestErrorHandled: true,
+      })
+    })
+
     it('falls back to error message when response message is absent', async () => {
       const http = setupHttp()
       shouldTriggerRefreshMock.mockReturnValue(false)

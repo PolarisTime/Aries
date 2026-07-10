@@ -6,6 +6,7 @@ const mockGetInitialSetupStatus = vi.fn()
 const mockSubmitInitialAdmin = vi.fn()
 const mockSubmitInitialCompany = vi.fn()
 const mockSetupInitialAdmin2fa = vi.fn()
+const SETUP_TOKEN = 'A'.repeat(43)
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mockNavigate,
@@ -18,6 +19,7 @@ vi.mock('react-i18next', () => ({
         'auth.initialsetup.alreadyCompletedRedirect': '已完成初始化',
         'auth.initialsetup.loadStatusFailed': '加载状态失败',
         'auth.initialsetup.inputAdminLoginFirst': '请先输入管理员登录名',
+        'auth.initialsetup.setupTokenInvalid': '初始化凭证格式无效',
         'auth.initialsetup.totpGenerated': '验证码已生成',
         'auth.initialsetup.operationFailed': '操作失败',
         'auth.initialsetup.passwordMismatch': '密码不匹配',
@@ -285,6 +287,26 @@ describe('useInitialSetupState', () => {
     expect(mockSetupInitialAdmin2fa).not.toHaveBeenCalled()
   })
 
+  it('rejects an invalid setup token before generating totp', async () => {
+    const { result } = renderHook(() => useInitialSetupState())
+
+    await waitFor(() => {
+      expect(result.current.checking).toBe(false)
+    })
+    act(() => {
+      result.current.form.setFieldsValue({
+        adminLoginName: 'admin',
+        setupToken: 'invalid-token',
+      })
+    })
+    await act(async () => {
+      await result.current.handleGenerateTotp()
+    })
+
+    expect(message.error).toHaveBeenCalledWith('初始化凭证格式无效')
+    expect(mockSetupInitialAdmin2fa).not.toHaveBeenCalled()
+  })
+
   it('generates totp with trimmed admin login name', async () => {
     mockSetupInitialAdmin2fa.mockResolvedValue({
       data: {
@@ -298,15 +320,19 @@ describe('useInitialSetupState', () => {
       expect(result.current.checking).toBe(false)
     })
     act(() => {
-      result.current.form.setFieldsValue({ adminLoginName: ' admin ' })
+      result.current.form.setFieldsValue({
+        adminLoginName: ' admin ',
+        setupToken: SETUP_TOKEN,
+      })
     })
     await act(async () => {
       await result.current.handleGenerateTotp()
     })
 
-    expect(mockSetupInitialAdmin2fa).toHaveBeenCalledWith({
-      loginName: 'admin',
-    })
+    expect(mockSetupInitialAdmin2fa).toHaveBeenCalledWith(
+      { loginName: 'admin' },
+      SETUP_TOKEN,
+    )
     expect(result.current.totpSetup).toEqual({
       secret: 'secret',
       qrCodeDataUri: 'data:image/png;base64,qr',
@@ -323,7 +349,10 @@ describe('useInitialSetupState', () => {
       expect(result.current.checking).toBe(false)
     })
     act(() => {
-      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+      result.current.form.setFieldsValue({
+        adminLoginName: 'admin',
+        setupToken: SETUP_TOKEN,
+      })
     })
     await act(async () => {
       await result.current.handleGenerateTotp()
@@ -341,7 +370,10 @@ describe('useInitialSetupState', () => {
       expect(result.current.checking).toBe(false)
     })
     act(() => {
-      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+      result.current.form.setFieldsValue({
+        adminLoginName: 'admin',
+        setupToken: SETUP_TOKEN,
+      })
     })
     await act(async () => {
       await result.current.handleGenerateTotp()
@@ -360,6 +392,7 @@ describe('useInitialSetupState', () => {
     act(() => {
       result.current.form.setFieldsValue({
         adminLoginName: 'admin',
+        setupToken: SETUP_TOKEN,
         adminPassword: 'one',
         adminConfirmPassword: 'two',
         adminUserName: 'Admin',
@@ -374,6 +407,30 @@ describe('useInitialSetupState', () => {
     expect(mockSubmitInitialAdmin).not.toHaveBeenCalled()
   })
 
+  it('rejects an invalid setup token before submitting admin', async () => {
+    const { result } = renderHook(() => useInitialSetupState())
+
+    await waitFor(() => {
+      expect(result.current.checking).toBe(false)
+    })
+    act(() => {
+      result.current.form.setFieldsValue({
+        setupToken: `${SETUP_TOKEN}==`,
+        adminLoginName: 'admin',
+        adminPassword: 'secret',
+        adminConfirmPassword: 'secret',
+        adminUserName: 'Admin',
+        totpCode: '123456',
+      })
+    })
+    await act(async () => {
+      await result.current.handleSubmitAdmin()
+    })
+
+    expect(message.error).toHaveBeenCalledWith('初始化凭证格式无效')
+    expect(mockSubmitInitialAdmin).not.toHaveBeenCalled()
+  })
+
   it('requires generated totp secret before submitting admin', async () => {
     const { result } = renderHook(() => useInitialSetupState())
 
@@ -383,6 +440,7 @@ describe('useInitialSetupState', () => {
     act(() => {
       result.current.form.setFieldsValue({
         adminLoginName: 'admin',
+        setupToken: SETUP_TOKEN,
         adminPassword: 'secret',
         adminConfirmPassword: 'secret',
         adminUserName: 'Admin',
@@ -421,7 +479,10 @@ describe('useInitialSetupState', () => {
       expect(result.current.checking).toBe(false)
     })
     act(() => {
-      result.current.form.setFieldsValue({ adminLoginName: ' admin ' })
+      result.current.form.setFieldsValue({
+        adminLoginName: ' admin ',
+        setupToken: SETUP_TOKEN,
+      })
     })
     await act(async () => {
       await result.current.handleGenerateTotp()
@@ -439,15 +500,18 @@ describe('useInitialSetupState', () => {
       await result.current.handleSubmitAdmin()
     })
 
-    expect(mockSubmitInitialAdmin).toHaveBeenCalledWith({
-      admin: {
-        loginName: 'admin',
-        password: 'secret',
-        userName: 'admin',
+    expect(mockSubmitInitialAdmin).toHaveBeenCalledWith(
+      {
+        admin: {
+          loginName: 'admin',
+          password: 'secret',
+          userName: 'admin',
+        },
+        totpSecret: 'secret',
+        totpCode: '123456',
       },
-      totpSecret: 'secret',
-      totpCode: '123456',
-    })
+      SETUP_TOKEN,
+    )
     expect(message.success).toHaveBeenCalledWith('管理员创建成功')
     expect(mockGetInitialSetupStatus.mock.calls.length).toBeGreaterThan(1)
     expect(result.current.loadingAdmin).toBe(false)
@@ -469,7 +533,10 @@ describe('useInitialSetupState', () => {
       },
     })
     act(() => {
-      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+      result.current.form.setFieldsValue({
+        adminLoginName: 'admin',
+        setupToken: SETUP_TOKEN,
+      })
     })
     await act(async () => {
       await result.current.handleGenerateTotp()
@@ -487,15 +554,18 @@ describe('useInitialSetupState', () => {
       await result.current.handleSubmitAdmin()
     })
 
-    expect(mockSubmitInitialAdmin).toHaveBeenCalledWith({
-      admin: {
-        loginName: 'admin',
-        password: 'secret',
-        userName: 'Root',
+    expect(mockSubmitInitialAdmin).toHaveBeenCalledWith(
+      {
+        admin: {
+          loginName: 'admin',
+          password: 'secret',
+          userName: 'Root',
+        },
+        totpSecret: 'secret',
+        totpCode: '654321',
       },
-      totpSecret: 'secret',
-      totpCode: '654321',
-    })
+      SETUP_TOKEN,
+    )
     expect(message.success).toHaveBeenCalledWith('管理员已保存')
     expect(result.current.currentStep).toBe('company')
   })
@@ -509,7 +579,10 @@ describe('useInitialSetupState', () => {
       expect(result.current.checking).toBe(false)
     })
     act(() => {
-      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+      result.current.form.setFieldsValue({
+        adminLoginName: 'admin',
+        setupToken: SETUP_TOKEN,
+      })
     })
     await act(async () => {
       await result.current.handleGenerateTotp()
@@ -554,7 +627,10 @@ describe('useInitialSetupState', () => {
       expect(result.current.checking).toBe(false)
     })
     act(() => {
-      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+      result.current.form.setFieldsValue({
+        adminLoginName: 'admin',
+        setupToken: SETUP_TOKEN,
+      })
     })
     await act(async () => {
       await result.current.handleGenerateTotp()
@@ -595,7 +671,10 @@ describe('useInitialSetupState', () => {
       },
     })
     act(() => {
-      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+      result.current.form.setFieldsValue({
+        adminLoginName: 'admin',
+        setupToken: SETUP_TOKEN,
+      })
     })
     await act(async () => {
       await result.current.handleGenerateTotp()
@@ -630,7 +709,10 @@ describe('useInitialSetupState', () => {
       expect(result.current.checking).toBe(false)
     })
     act(() => {
-      result.current.form.setFieldsValue({ adminLoginName: 'admin' })
+      result.current.form.setFieldsValue({
+        adminLoginName: 'admin',
+        setupToken: SETUP_TOKEN,
+      })
     })
     await act(async () => {
       await result.current.handleGenerateTotp()
@@ -652,9 +734,35 @@ describe('useInitialSetupState', () => {
     expect(result.current.loadingAdmin).toBe(false)
   })
 
-  it('submits company setup with normalized payload', async () => {
-    mockSubmitInitialCompany.mockResolvedValue({ message: '公司已创建' })
-    useSetupStore.getState().setStatus({ setupRequired: true })
+  it('keeps the setup token only in form memory', async () => {
+    localStorage.clear()
+    sessionStorage.clear()
+    const { result } = renderHook(() => useInitialSetupState())
+
+    await waitFor(() => {
+      expect(result.current.checking).toBe(false)
+    })
+    act(() => {
+      result.current.form.setFieldValue('setupToken', SETUP_TOKEN)
+    })
+
+    const localValues = Array.from(
+      { length: localStorage.length },
+      (_, index) => localStorage.getItem(localStorage.key(index) ?? ''),
+    )
+    const sessionValues = Array.from(
+      { length: sessionStorage.length },
+      (_, index) => sessionStorage.getItem(sessionStorage.key(index) ?? ''),
+    )
+
+    expect(result.current.form.getFieldValue('setupToken')).toBe(SETUP_TOKEN)
+    expect(useSetupStore.getState()).not.toHaveProperty('setupToken')
+    expect([...localValues, ...sessionValues].join('\n')).not.toContain(
+      SETUP_TOKEN,
+    )
+  })
+
+  it('rejects an invalid setup token before submitting company', async () => {
     const { result } = renderHook(() => useInitialSetupState())
 
     await waitFor(() => {
@@ -662,6 +770,40 @@ describe('useInitialSetupState', () => {
     })
     act(() => {
       result.current.form.setFieldsValue({
+        setupToken: 'invalid-token',
+        companyName: 'Leo',
+        taxNo: 'TAX',
+        bankName: 'Bank',
+        bankAccount: '001',
+      })
+    })
+    await act(async () => {
+      await result.current.handleSubmitCompany()
+    })
+
+    expect(message.error).toHaveBeenCalledWith('初始化凭证格式无效')
+    expect(mockSubmitInitialCompany).not.toHaveBeenCalled()
+  })
+
+  it('submits company setup with normalized payload', async () => {
+    mockSubmitInitialCompany.mockResolvedValue({ message: '公司已创建' })
+    mockGetInitialSetupStatus.mockResolvedValue({
+      data: {
+        setupRequired: true,
+        adminConfigured: true,
+        companyConfigured: false,
+      },
+    })
+    useSetupStore.getState().setStatus({ setupRequired: true })
+    const { result } = renderHook(() => useInitialSetupState())
+
+    await waitFor(() => {
+      expect(result.current.checking).toBe(false)
+    })
+    expect(result.current.currentStep).toBe('company')
+    act(() => {
+      result.current.form.setFieldsValue({
+        setupToken: SETUP_TOKEN,
         companyName: ' Leo ',
         taxNo: ' TAX ',
         bankName: ' Bank ',
@@ -674,14 +816,17 @@ describe('useInitialSetupState', () => {
       await result.current.handleSubmitCompany()
     })
 
-    expect(mockSubmitInitialCompany).toHaveBeenCalledWith({
-      companyName: 'Leo',
-      taxNo: 'TAX',
-      bankName: 'Bank',
-      bankAccount: '001',
-      taxRate: 0.13,
-      remark: '',
-    })
+    expect(mockSubmitInitialCompany).toHaveBeenCalledWith(
+      {
+        companyName: 'Leo',
+        taxNo: 'TAX',
+        bankName: 'Bank',
+        bankAccount: '001',
+        taxRate: 0.13,
+        remark: '',
+      },
+      SETUP_TOKEN,
+    )
     expect(message.success).toHaveBeenCalledWith('公司已创建')
     expect(useSetupStore.getState().status).toEqual({ setupRequired: false })
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/login' })
@@ -695,7 +840,11 @@ describe('useInitialSetupState', () => {
     await waitFor(() => {
       expect(result.current.checking).toBe(false)
     })
+    act(() => {
+      result.current.form.setFieldValue('setupToken', SETUP_TOKEN)
+    })
     vi.spyOn(result.current.form, 'validateFields').mockResolvedValue({
+      setupToken: SETUP_TOKEN,
       companyName: ' Leo ',
       taxNo: ' TAX ',
       bankName: ' Bank ',
@@ -708,14 +857,17 @@ describe('useInitialSetupState', () => {
       await result.current.handleSubmitCompany()
     })
 
-    expect(mockSubmitInitialCompany).toHaveBeenCalledWith({
-      companyName: 'Leo',
-      taxNo: 'TAX',
-      bankName: 'Bank',
-      bankAccount: '001',
-      taxRate: 0.07,
-      remark: '备注',
-    })
+    expect(mockSubmitInitialCompany).toHaveBeenCalledWith(
+      {
+        companyName: 'Leo',
+        taxNo: 'TAX',
+        bankName: 'Bank',
+        bankAccount: '001',
+        taxRate: 0.07,
+        remark: '备注',
+      },
+      SETUP_TOKEN,
+    )
     expect(message.success).toHaveBeenCalledWith('公司创建成功')
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/login' })
     expect(result.current.loadingCompany).toBe(false)
@@ -730,6 +882,7 @@ describe('useInitialSetupState', () => {
     })
     act(() => {
       result.current.form.setFieldsValue({
+        setupToken: SETUP_TOKEN,
         companyName: 'Leo',
         taxNo: 'TAX',
         bankName: 'Bank',
@@ -753,6 +906,7 @@ describe('useInitialSetupState', () => {
     })
     act(() => {
       result.current.form.setFieldsValue({
+        setupToken: SETUP_TOKEN,
         companyName: 'Leo',
         taxNo: 'TAX',
         bankName: 'Bank',

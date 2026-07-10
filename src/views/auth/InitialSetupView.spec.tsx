@@ -11,6 +11,10 @@ vi.mock('react-i18next', () => ({
         'auth.initialsetup.adminStep': '管理员设置',
         'auth.initialsetup.companyStep': '公司设置',
         'auth.initialsetup.defaultAdminUserName': 'admin',
+        'auth.initialsetup.setupTokenLabel': '初始化凭证',
+        'auth.initialsetup.setupTokenPlaceholder': '请输入部署初始化凭证',
+        'auth.initialsetup.setupTokenRequired': '请输入初始化凭证',
+        'auth.initialsetup.setupTokenInvalid': '初始化凭证格式无效',
       }
       return map[key] ?? key
     },
@@ -32,12 +36,25 @@ vi.mock('antd', () => {
     <form {...props}>{children}</form>
   )
   Form.useForm = () => [{ __INTERNAL__: { name: '' } }]
-  Form.Item = ({ children, ...props }: any) => <div {...props}>{children}</div>
+  Form.Item = ({ children, name, rules, ...props }: any) => (
+    <div
+      data-testid={`form-item-${name}`}
+      data-pattern={rules?.find((rule: any) => rule.pattern)?.pattern?.source}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+  const Input = (props: Record<string, unknown>) => <input {...props} />
+  Input.Password = (props: Record<string, unknown>) => (
+    <input type="password" {...props} />
+  )
 
   return {
     Card: ({ children, ...props }: any) => <div {...props}>{children}</div>,
     Flex: ({ children, ...props }: any) => <div {...props}>{children}</div>,
     Form,
+    Input,
     Layout: ({ children, ...props }: any) => <div {...props}>{children}</div>,
     Result: ({ title, ...props }: any) => <div {...props}>{title}</div>,
     Space: ({ children, ...props }: any) => <div {...props}>{children}</div>,
@@ -66,7 +83,15 @@ vi.mock('antd/es/form', () => {
     <form {...props}>{children}</form>
   )
   Form.useForm = () => [{ __INTERNAL__: { name: '' } }]
-  Form.Item = ({ children, ...props }: any) => <div {...props}>{children}</div>
+  Form.Item = ({ children, name, rules, ...props }: any) => (
+    <div
+      data-testid={`form-item-${name}`}
+      data-pattern={rules?.find((rule: any) => rule.pattern)?.pattern?.source}
+      {...props}
+    >
+      {children}
+    </div>
+  )
   return { default: Form }
 })
 
@@ -133,6 +158,7 @@ const mockUseInitialSetupState = vi
   .mockReturnValue(createInitialSetupState())
 
 vi.mock('@/views/auth/useInitialSetupState', () => ({
+  SETUP_TOKEN_PATTERN: /^[A-Za-z0-9_-]{43}=?$/,
   useInitialSetupState: (...args: unknown[]) =>
     mockUseInitialSetupState(...args),
 }))
@@ -190,6 +216,14 @@ describe('InitialSetupView', () => {
   it('renders admin form on first step', () => {
     render(<InitialSetupView />)
     expect(screen.getByTestId('admin-form')).toBeTruthy()
+    expect(screen.getByPlaceholderText('请输入部署初始化凭证')).toHaveAttribute(
+      'type',
+      'password',
+    )
+    expect(screen.getByTestId('form-item-setupToken')).toHaveAttribute(
+      'data-pattern',
+      '^[A-Za-z0-9_-]{43}=?$',
+    )
     expect(screen.getByText('系统初始化向导')).toBeTruthy()
     expect(screen.getByText('管理员设置')).toBeTruthy()
     expect(screen.getByText('公司设置')).toBeTruthy()
@@ -255,6 +289,10 @@ describe('InitialSetupView', () => {
     expect(screen.getByTestId('company-form')).toBeTruthy()
     expect(screen.getByTestId('admin-completed')).toHaveTextContent('true')
     expect(screen.getByTestId('company-loading')).toHaveTextContent('true')
+    expect(screen.getByPlaceholderText('请输入部署初始化凭证')).toHaveAttribute(
+      'type',
+      'password',
+    )
 
     fireEvent.click(screen.getByText('返回管理员'))
     fireEvent.click(screen.getByText('提交公司'))

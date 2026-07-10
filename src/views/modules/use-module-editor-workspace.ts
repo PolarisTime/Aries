@@ -20,6 +20,8 @@ import {
   fetchSettlementCompanyOptions,
   getCompanySettingProfile,
 } from '@/api/company-settings'
+import { readRequestError } from '@/api/request-errors'
+import { ERROR_CODE } from '@/constants/error-codes'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 import {
@@ -489,6 +491,7 @@ export function useModuleEditorWorkspace({
   moduleKey,
   editorAuditTarget,
   form,
+  onClose,
   onSaved,
   autoInsertBlankItemOnCreate,
 }: Props) {
@@ -513,6 +516,7 @@ export function useModuleEditorWorkspace({
     status: 'success' | 'error' | 'warning'
     message: string
     traceId?: string
+    errorCode?: number
     record?: ModuleRecord
   } | null>(null)
   const { refreshModuleQueries } = useModuleQueryRefresh(moduleKey)
@@ -986,17 +990,38 @@ export function useModuleEditorWorkspace({
       if (isAntdFormValidationError(err)) {
         // Form 已内联展示校验错误，不重复提示
       } else if (err instanceof Error) {
-        const traceId = (err as Error & { traceId?: string }).traceId
+        const { code, traceId } = readRequestError(err)
         const errorMessage = err.message || t('common.saveFailed')
         showPreOutboundGuidanceIfNeeded(moduleKey, errorMessage)
         setSaveResult({
           status: 'error',
           message: errorMessage,
           traceId,
+          ...(code !== undefined ? { errorCode: code } : {}),
         })
       } else {
         setSaveResult({ status: 'error', message: t('common.saveFailedRetry') })
       }
+      setSaving(false)
+    }
+  }
+
+  const reloadAfterConflict = async (): Promise<void> => {
+    if (saveResult?.errorCode !== ERROR_CODE.CONCURRENT_MODIFICATION) {
+      return
+    }
+
+    setSaving(true)
+    removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
+    try {
+      await refreshModuleQueries()
+      setSaveResult(null)
+      onClose()
+    } catch (error) {
+      message.error(
+        error instanceof Error ? error.message : t('common.loadFailed'),
+      )
+    } finally {
       setSaving(false)
     }
   }
@@ -1171,6 +1196,7 @@ export function useModuleEditorWorkspace({
     authoritativePrimaryNo,
     saveResult,
     clearSaveResult: () => setSaveResult(null),
+    reloadAfterConflict,
     saving,
     setItems: updateItems,
     handleFormValuesChange,

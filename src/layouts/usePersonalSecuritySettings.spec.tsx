@@ -7,6 +7,19 @@ import { usePersonalSecuritySettings } from '@/layouts/usePersonalSecuritySettin
 import * as authUserSync from '@/stores/auth-user-sync'
 import * as antdApp from '@/utils/antd-app'
 
+const navigateMock = vi.hoisted(() => vi.fn())
+const signOutMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@tanstack/react-router', () => ({
+  useNavigate: () => navigateMock,
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: (
+    selector: (state: { signOut: typeof signOutMock }) => unknown,
+  ) => selector({ signOut: signOutMock }),
+}))
+
 vi.mock('@/api/account-security', () => ({
   changeOwnPassword: vi.fn(),
   enableOwn2fa: vi.fn(),
@@ -17,7 +30,8 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) =>
       ({
-        'auth.personalsecurity.passwordSuccess': '密码修改成功',
+        'auth.personalsecurity.passwordSuccess':
+          '密码修改成功，请立即使用新密码重新登录',
         'auth.personalsecurity.passwordFailed': '密码修改失败',
         'auth.personalsecurity.setupFailed': '设置两步验证失败',
         'auth.personalsecurity.codeInvalid': '请输入6位验证码',
@@ -57,6 +71,9 @@ describe('usePersonalSecuritySettings', () => {
     vi.mocked(authUserSync.syncCurrentUserTotpState).mockReset()
     vi.mocked(antdApp.message.success).mockReset()
     vi.mocked(antdApp.message.error).mockReset()
+    navigateMock.mockReset()
+    signOutMock.mockReset()
+    signOutMock.mockResolvedValue(undefined)
   })
 
   it('returns initial state', () => {
@@ -88,7 +105,7 @@ describe('usePersonalSecuritySettings', () => {
     expect(resetFields).toHaveBeenCalledTimes(1)
   })
 
-  it('calls changeOwnPassword on success', async () => {
+  it('signs out and redirects to login after password change succeeds', async () => {
     vi.mocked(accountSecurity.changeOwnPassword).mockResolvedValue(
       undefined as any,
     )
@@ -98,16 +115,22 @@ describe('usePersonalSecuritySettings', () => {
       { wrapper: createWrapper() },
     )
 
-    await result.current.handleChangePassword({
-      oldPassword: 'old123',
-      newPassword: 'new123',
+    await act(async () => {
+      await result.current.handleChangePassword({
+        oldPassword: 'old123',
+        newPassword: 'new123',
+      })
     })
 
     expect(accountSecurity.changeOwnPassword).toHaveBeenCalledWith({
       currentPassword: 'old123',
       newPassword: 'new123',
     })
-    expect(antdApp.message.success).toHaveBeenCalled()
+    expect(antdApp.message.success).toHaveBeenCalledWith(
+      '密码修改成功，请立即使用新密码重新登录',
+    )
+    expect(signOutMock).toHaveBeenCalledTimes(1)
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/login' })
   })
 
   it('shows error message on password change failure', async () => {
@@ -126,6 +149,8 @@ describe('usePersonalSecuritySettings', () => {
     })
 
     expect(antdApp.message.error).toHaveBeenCalledWith('密码错误')
+    expect(signOutMock).not.toHaveBeenCalled()
+    expect(navigateMock).not.toHaveBeenCalled()
   })
 
   it('uses fallback message on non-error password change failure', async () => {

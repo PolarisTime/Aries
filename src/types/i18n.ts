@@ -453,6 +453,10 @@ export interface MessageSchema {
       adminStep: string
       companyStep: string
       defaultAdminUserName: string
+      setupTokenLabel: string
+      setupTokenPlaceholder: string
+      setupTokenRequired: string
+      setupTokenInvalid: string
       alreadyCompletedRedirect: string
       loadStatusFailed: string
       operationFailed: string
@@ -709,7 +713,9 @@ export interface MessageSchema {
       success: string
       pageSuccess: string
       error: string
+      conflict: string
       backToEdit: string
+      reloadLatest: string
       close: string
     }
     statement: {
@@ -1523,8 +1529,14 @@ export interface MessageSchema {
         outboundNo: string
         outboundDate: string
         quantity: string
+        onHandQuantity: string
+        reservedQuantity: string
+        availableQuantity: string
         qtyUnit: string
         stockWeight: string
+        onHandWeight: string
+        reservedWeight: string
+        availableWeight: string
         pieceWeight: string
         unit: string
         stockRecordCount: string

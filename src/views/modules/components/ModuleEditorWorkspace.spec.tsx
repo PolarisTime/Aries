@@ -52,6 +52,7 @@ const mockUseModuleEditorWorkspace = vi.fn().mockReturnValue({
   isEdit: false,
   items: [],
   openParentSelector: vi.fn(),
+  reloadAfterConflict: vi.fn(),
   parentImporting: false,
   parentSelectorFilters: {},
   parentSelectorOpen: false,
@@ -267,6 +268,7 @@ vi.mock('@ant-design/icons', () => ({
   ArrowRightOutlined: () => <span>ArrowRightOutlined</span>,
   CheckCircleFilled: () => <span>CheckCircleFilled</span>,
   CloseCircleFilled: () => <span>CloseCircleFilled</span>,
+  ReloadOutlined: () => <span>ReloadOutlined</span>,
   WarningFilled: () => <span>WarningFilled</span>,
 }))
 
@@ -624,6 +626,31 @@ describe('ModuleEditorWorkspace', () => {
 
     expect(clearSaveResult).toHaveBeenCalledTimes(1)
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('reloads latest data instead of reopening a stale editor after conflict', () => {
+    const clearSaveResult = vi.fn()
+    const reloadAfterConflict = vi.fn()
+    mockUseModuleEditorWorkspace.mockReturnValueOnce({
+      ...mockUseModuleEditorWorkspace(),
+      clearSaveResult,
+      reloadAfterConflict,
+      saveResult: {
+        status: 'error',
+        message: 'Conflict',
+        errorCode: 4090,
+      },
+    })
+
+    render(<ModuleEditorWorkspace {...defaultProps} />)
+
+    expect(
+      screen.queryByText('modules.saveResult.backToEdit'),
+    ).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('modules.saveResult.reloadLatest'))
+
+    expect(reloadAfterConflict).toHaveBeenCalledTimes(1)
+    expect(clearSaveResult).not.toHaveBeenCalled()
   })
 
   it('renders save result with form fields', () => {

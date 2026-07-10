@@ -3,7 +3,7 @@ import type { Profiler } from 'node:inspector'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import type { SourceMapInput } from '@jridgewell/trace-mapping'
-import type { CoverageMapData, FileCoverageData } from 'istanbul-lib-coverage'
+import type { CoverageMapData } from 'istanbul-lib-coverage'
 import ts from 'typescript'
 
 const require = createRequire(import.meta.url)
@@ -94,7 +94,7 @@ export function normalizeCoverageMapData(
 
   for (const [filePath, fileCoverage] of Object.entries(coverage)) {
     const normalizedPath = normalizePathForCoverage(filePath, projectRoot)
-    const mutableCoverage = fileCoverage as FileCoverageData
+    const mutableCoverage = fileCoverage
     mutableCoverage.path = normalizedPath
 
     if (isProductionSourceFile(normalizedPath)) {

@@ -20,13 +20,6 @@ export const pendingInvoiceReceiptReportPageConfig: ModulePageConfig = {
     'modules.pages.pendingInvoiceReceiptReport.pendingInvoiceDesc',
   ),
   readOnly: true,
-  actions: [
-    {
-      key: 'export',
-      label: i18next.t('modules.pages.pendingInvoiceReceiptReport.export'),
-      type: 'primary',
-    },
-  ],
   filters: [
     {
       key: 'keyword',

@@ -36,7 +36,7 @@ export interface AttachmentRecord {
   previewType?: string
   previewUrl?: string
   downloadUrl?: string
-  storageType?: 'local' | 's3' | string
+  storageType?: string
   storageLabel?: string
 }
 

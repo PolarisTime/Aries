@@ -22,6 +22,10 @@ describe('ERROR_CODE', () => {
     expect(ERROR_CODE.REFRESH_TOKEN_REUSE_CONFLICT).toBe(4091)
   })
 
+  it('has correct CONCURRENT_MODIFICATION code', () => {
+    expect(ERROR_CODE.CONCURRENT_MODIFICATION).toBe(4090)
+  })
+
   it('has correct FORBIDDEN code', () => {
     expect(ERROR_CODE.FORBIDDEN).toBe(4030)
   })
@@ -44,6 +48,7 @@ describe('ERROR_CODE', () => {
       'VALIDATION_ERROR',
       'UNAUTHORIZED',
       'SESSION_EVICTED',
+      'CONCURRENT_MODIFICATION',
       'REFRESH_TOKEN_REUSE_CONFLICT',
       'FORBIDDEN',
       'NOT_FOUND',

@@ -44,7 +44,7 @@ test('pending invoice receipt report shrinks after invoice receipt is created', 
   const suffix = buildSuffix()
   let purchaseOrderNo = `PO-PIR-${suffix}`
   let receiveNo = `SP-PIR-${suffix}`
-  let invoiceNo = `INV-PIR-${suffix}`
+  const invoiceNo = `INV-PIR-${suffix}`
 
   const purchaseOrder = await createPurchaseOrder(page, purchaseOrderNo)
   const { orderDate } = purchaseOrder
@@ -97,10 +97,7 @@ test('pending invoice receipt report shrinks after invoice receipt is created', 
     formField(overlay, 'receiveNo'),
     receiveNo,
   )
-  invoiceNo = await fillOrReadFormField(
-    formField(overlay, 'invoiceNo'),
-    invoiceNo,
-  )
+  await fillOrReadFormField(formField(overlay, 'invoiceNo'), invoiceNo)
   await selectAntOption(
     formField(overlay, 'supplierName'),
     '益海（浙江）物联网科技有限公司',

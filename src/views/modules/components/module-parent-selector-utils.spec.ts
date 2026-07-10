@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   filterImportableParentRecords,
@@ -223,11 +224,11 @@ describe('module-parent-selector-utils', () => {
       expect(result[0].id).toBe('1')
     })
 
-    it('filters by completed status for supplier statement', () => {
+    it('filters supplier statement candidates by completed inbound status', () => {
       const records = [
-        { id: '1', status: '完成采购' },
-        { id: '2', status: '已审核' },
-        { id: '3', status: '草稿' },
+        { id: '1', status: DOCUMENT_STATUS.INBOUND_COMPLETED },
+        { id: '2', status: DOCUMENT_STATUS.PURCHASE_COMPLETED },
+        { id: '3', status: DOCUMENT_STATUS.AUDITED },
       ]
       const result = filterImportableParentRecords(
         'purchase-inbound',

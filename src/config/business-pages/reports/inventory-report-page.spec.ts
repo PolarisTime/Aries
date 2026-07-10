@@ -74,6 +74,25 @@ describe('inventoryReportPageConfig', () => {
     expect(listKeys).not.toContain('batchNo')
   })
 
+  it('shows on-hand, reserved and available quantities and weights', () => {
+    const listKeys = inventoryReportPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+
+    expect(listKeys).toEqual(
+      expect.arrayContaining([
+        'onHandQuantity',
+        'reservedQuantity',
+        'availableQuantity',
+        'onHandWeightTon',
+        'reservedWeightTon',
+        'availableWeightTon',
+      ]),
+    )
+    expect(listKeys).not.toContain('quantity')
+    expect(listKeys).not.toContain('weightTon')
+  })
+
   it('shows material, warehouse, batch and outbound references in flow detail columns', () => {
     const detailItemKeys = inventoryReportPageConfig.detailItemColumns?.map(
       (column) => column.dataIndex,
@@ -95,9 +114,59 @@ describe('inventoryReportPageConfig', () => {
     )
   })
 
-  it('buildOverview returns result', () => {
-    const result = inventoryReportPageConfig.buildOverview!([])
-    expect(Array.isArray(result)).toBe(true)
-    expect(result.length).toBe(2)
+  it('keeps quantity and weightTon fields for inventory flow items', () => {
+    const detailItemKeys = inventoryReportPageConfig.detailItemColumns?.map(
+      (column) => column.dataIndex,
+    )
+
+    expect(detailItemKeys).toEqual(
+      expect.arrayContaining(['quantity', 'weightTon']),
+    )
+    expect(detailItemKeys).not.toEqual(
+      expect.arrayContaining([
+        'onHandQuantity',
+        'reservedQuantity',
+        'availableQuantity',
+        'onHandWeightTon',
+        'reservedWeightTon',
+        'availableWeightTon',
+      ]),
+    )
+  })
+
+  it('summarizes on-hand, reserved and available weights', () => {
+    const result = inventoryReportPageConfig.buildOverview!([
+      {
+        id: '1',
+        onHandWeightTon: 12.5,
+        reservedWeightTon: 2.25,
+        availableWeightTon: 10.25,
+      },
+      {
+        id: '2',
+        onHandWeightTon: 7.5,
+        reservedWeightTon: 1.75,
+        availableWeightTon: 5.75,
+      },
+    ])
+
+    expect(result).toEqual([
+      {
+        label: 'modules.pages.inventoryReport.stockRecordCount',
+        value: '2',
+      },
+      {
+        label: 'modules.pages.inventoryReport.onHandWeight',
+        value: '20.000',
+      },
+      {
+        label: 'modules.pages.inventoryReport.reservedWeight',
+        value: '4.000',
+      },
+      {
+        label: 'modules.pages.inventoryReport.availableWeight',
+        value: '16.000',
+      },
+    ])
   })
 })
