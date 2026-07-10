@@ -1,3 +1,11 @@
+## [2.1.2](https://github.com/PolarisTime/Aries/compare/v2.1.1...v2.1.2) (2026-07-10)
+
+
+### Bug Fixes
+
+* **frontend:** 过滤已删除的锁定关联行 ([e4d4139](https://github.com/PolarisTime/Aries/commit/e4d4139d487a4aa49f76c85c18a2a15eaa40c229))
+* **ui:** 派生展示软删除状态 ([bf3882f](https://github.com/PolarisTime/Aries/commit/bf3882f2d4d06ccfba2c5fe800e358637cebdd79))
+
 ## [2.1.1](https://github.com/PolarisTime/Aries/compare/v2.1.0...v2.1.1) (2026-07-09)
 
 
