@@ -813,6 +813,8 @@ export const zhCN: MessageSchema = {
       selectPlaceholder: '请选择{{label}}',
       inputPlaceholder: '请输入{{label}}',
       quickFilters: '快捷筛选',
+      conditions: '筛选条件',
+      activeCount: '已启用 {{count}} 项',
     },
     formField: {
       inputPlaceholder: '请输入{{label}}',
@@ -878,6 +880,11 @@ export const zhCN: MessageSchema = {
     },
     workspace: {
       closeAria: '关闭工作区',
+      currentPageSummary: '当前页汇总',
+      resultRange: '第 {{start}}-{{end}} 条，共 {{total}} 条',
+      emptyResultRange: '当前页暂无记录，共 {{total}} 条',
+      pagination: '列表分页',
+      paginationRange: '第 {{start}}-{{end}} 条 / 共 {{total}} 条',
     },
     page: {
       configNotFound: '页面配置未找到',
@@ -1265,6 +1272,7 @@ export const zhCN: MessageSchema = {
         totalWeight: '总重量（吨）',
         totalFreight: '总运费',
         paidAmount: '已付金额',
+        unpaidAmount: '未付金额',
         auditStatus: '审核状态',
         signStatus: '签署状态',
         attachment: '附件',

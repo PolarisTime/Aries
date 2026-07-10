@@ -793,6 +793,8 @@ export interface MessageSchema {
       selectPlaceholder: string
       inputPlaceholder: string
       quickFilters: string
+      conditions: string
+      activeCount: string
     }
     formField: {
       inputPlaceholder: string
@@ -858,6 +860,11 @@ export interface MessageSchema {
     }
     workspace: {
       closeAria: string
+      currentPageSummary: string
+      resultRange: string
+      emptyResultRange: string
+      pagination: string
+      paginationRange: string
     }
     page: {
       configNotFound: string
@@ -1230,6 +1237,7 @@ export interface MessageSchema {
         totalWeight: string
         totalFreight: string
         paidAmount: string
+        unpaidAmount: string
         auditStatus: string
         signStatus: string
         attachment: string

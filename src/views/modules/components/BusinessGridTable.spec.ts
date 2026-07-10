@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { createElement } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -121,6 +121,7 @@ const makeRect = (overrides: Partial<DOMRect> = {}) =>
   }) as DOMRect
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
@@ -508,26 +509,26 @@ describe('BusinessGridTable keyboard row interactions', () => {
     }
   }
 
-  it('focuses rows and maps Space to row selection', () => {
+  it('focuses rows without mapping Space to checkbox selection', () => {
     const { row, onRowClick, onRowDoubleClick } = renderGrid()
 
     expect(row).toHaveAttribute('tabIndex', '0')
     fireEvent.keyDown(row, { key: ' ', code: 'Space' })
 
-    expect(onRowClick).toHaveBeenCalledWith({ id: 'row-1', name: '第一行' })
+    expect(onRowClick).not.toHaveBeenCalled()
     expect(onRowDoubleClick).not.toHaveBeenCalled()
   })
 
-  it('maps Enter to the existing row double click action', () => {
+  it('maps Enter to the row detail action', () => {
     const { row, onRowClick, onRowDoubleClick } = renderGrid()
 
     fireEvent.keyDown(row, { key: 'Enter', code: 'Enter' })
 
-    expect(onRowClick).not.toHaveBeenCalled()
-    expect(onRowDoubleClick).toHaveBeenCalledWith({
+    expect(onRowClick).toHaveBeenCalledWith({
       id: 'row-1',
       name: '第一行',
     })
+    expect(onRowDoubleClick).not.toHaveBeenCalled()
   })
 
   it('does not trigger row keyboard actions from inner controls', () => {
@@ -540,14 +541,57 @@ describe('BusinessGridTable keyboard row interactions', () => {
     expect(onRowDoubleClick).not.toHaveBeenCalled()
   })
 
-  it('maps row click to selection and ignores clicks from inner controls', () => {
+  it('maps a settled row click to detail and ignores inner controls', () => {
+    vi.useFakeTimers()
     const { row, inlineButton, onRowClick } = renderGrid()
 
     fireEvent.click(row)
     fireEvent.click(inlineButton)
 
+    expect(onRowClick).not.toHaveBeenCalled()
+    act(() => vi.runAllTimers())
+
     expect(onRowClick).toHaveBeenCalledTimes(1)
     expect(onRowClick).toHaveBeenCalledWith({ id: 'row-1', name: '第一行' })
+  })
+
+  it('cancels the pending detail action when the row is double clicked', () => {
+    vi.useFakeTimers()
+    const { row, onRowClick, onRowDoubleClick } = renderGrid()
+
+    fireEvent.click(row, { detail: 1 })
+    fireEvent.click(row, { detail: 2 })
+    fireEvent.doubleClick(row)
+    act(() => vi.runAllTimers())
+
+    expect(onRowClick).not.toHaveBeenCalled()
+    expect(onRowDoubleClick).toHaveBeenCalledTimes(1)
+    expect(onRowDoubleClick).toHaveBeenCalledWith({
+      id: 'row-1',
+      name: '第一行',
+    })
+  })
+
+  it('clears a pending row click when the table unmounts', () => {
+    vi.useFakeTimers()
+    const onRowClick = vi.fn()
+    const { unmount } = render(
+      createElement(BusinessGridTable, {
+        moduleKey: 'sales-order',
+        columns: [{ title: '名称', dataIndex: 'name' }],
+        dataSource: [{ id: 'row-1', name: '第一行' }],
+        loading: false,
+        rowClassName: () => 'business-row',
+        onRowClick,
+        onRowDoubleClick: vi.fn(),
+      }),
+    )
+
+    fireEvent.click(screen.getByTestId('row-row-1'))
+    unmount()
+    act(() => vi.runAllTimers())
+
+    expect(onRowClick).not.toHaveBeenCalled()
   })
 
   it('debounces row double click and ignores inner control double clicks', () => {

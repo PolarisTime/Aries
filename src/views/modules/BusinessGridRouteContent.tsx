@@ -1,6 +1,5 @@
 import { useLocation } from '@tanstack/react-router'
 import { Empty } from 'antd'
-import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
@@ -17,16 +16,6 @@ import { useBusinessGridRouteSync } from '@/views/modules/use-business-grid-rout
 interface Props {
   pageDef: AppPageDefinition
   initialConfig?: ModulePageConfig
-}
-
-function toggleSelectedKey(
-  setSelectedRowKeys: Dispatch<SetStateAction<string[]>>,
-  recordId: string,
-) {
-  setSelectedRowKeys((prev) => {
-    if (prev.includes(recordId)) return prev.filter((key) => key !== recordId)
-    return [...prev, recordId]
-  })
 }
 
 export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
@@ -99,16 +88,9 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         onToggleColumn={state.toggleColumn}
         onColumnOrderChange={state.onColumnOrderChange}
         onRowClick={(record) => {
-          const id = String(record.id)
-          toggleSelectedKey(state.setSelectedRowKeys, id)
-          state.setSelectedRowMap((prev) => {
-            if (prev[id]) {
-              const next = { ...prev }
-              delete next[id]
-              return next
-            }
-            return { ...prev, [id]: record }
-          })
+          if (state.canViewRecords) {
+            void state.openDetail(record)
+          }
         }}
         onRowDoubleClick={(record) => {
           if (state.config?.readOnly) {

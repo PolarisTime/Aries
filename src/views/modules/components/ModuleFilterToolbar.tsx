@@ -2,7 +2,7 @@ import { DownOutlined, UpOutlined } from '@ant-design/icons'
 import { Button, DatePicker, Form, Input, Segmented, Select } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 import type { SearchParams } from '@/types/api-raw'
@@ -202,7 +202,8 @@ export function ModuleFilterToolbar({
   onReset,
 }: Props) {
   const { t } = useTranslation()
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(false)
+  const secondaryRegionId = useId()
   const lastTextCommitAtRef = useRef(0)
 
   const hasConfigKeywordFilter = config.filters.some(
@@ -221,6 +222,9 @@ export function ModuleFilterToolbar({
   ]
   const canExpand = secondaryFilters.length > 0
   const quickFilters = config.quickFilters || []
+  const activeFilterCount = Object.keys(
+    normalizeFilters(submittedFilters),
+  ).length
   const activeQuickFilterKey = quickFilters.find((filter) =>
     isSameFilterPreset(submittedFilters, {
       ...defaultFilters,
@@ -281,7 +285,21 @@ export function ModuleFilterToolbar({
   )
 
   return (
-    <Form colon={false} className="module-filter-toolbar mb-4">
+    <Form
+      colon={false}
+      className="module-filter-toolbar"
+      aria-label={t('modules.filter.conditions')}
+    >
+      <div className="module-filter-heading-row">
+        <span className="module-filter-heading">
+          {t('modules.filter.conditions')}
+        </span>
+        {activeFilterCount > 0 ? (
+          <span className="module-filter-active-count" aria-live="polite">
+            {t('modules.filter.activeCount', { count: activeFilterCount })}
+          </span>
+        ) : null}
+      </div>
       {quickFilters.length ? (
         <div className="module-filter-quick-row">
           <Segmented
@@ -351,6 +369,8 @@ export function ModuleFilterToolbar({
               type="text"
               icon={expanded ? <UpOutlined /> : <DownOutlined />}
               iconPlacement="end"
+              aria-controls={secondaryRegionId}
+              aria-expanded={expanded}
               onClick={() => setExpanded((value) => !value)}
             >
               {expanded ? t('common.collapse') : t('common.expand')}
@@ -366,7 +386,7 @@ export function ModuleFilterToolbar({
         </Form.Item>
       </div>
       {expanded && secondaryFilters.length ? (
-        <div className="module-filter-secondary-row">
+        <div className="module-filter-secondary-row" id={secondaryRegionId}>
           <div className="module-filter-main-row">
             <div className="module-filter-fields-grid module-filter-secondary-grid">
               {secondaryFilters.map(renderFilterItem)}

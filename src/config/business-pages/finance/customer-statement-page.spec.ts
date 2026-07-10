@@ -28,6 +28,29 @@ describe('customerStatementPageConfig', () => {
     expect(Array.isArray(overview)).toBe(true)
   })
 
+  it('shows the reconciliation columns in business order by default', () => {
+    const hiddenColumnKeys = new Set(
+      customerStatementPageConfig.defaultHiddenColumnKeys,
+    )
+    const visibleColumnKeys = customerStatementPageConfig.columns
+      .map((column) => column.dataIndex)
+      .filter((key) => !hiddenColumnKeys.has(key))
+
+    expect(hiddenColumnKeys).toContain('customerCode')
+    expect(visibleColumnKeys).toEqual([
+      'statementNo',
+      'customerName',
+      'projectName',
+      'settlementCompanyName',
+      'startDate',
+      'endDate',
+      'salesAmount',
+      'receiptAmount',
+      'closingAmount',
+      'status',
+    ])
+  })
+
   describe('parentImport', () => {
     it('buildParentFilters filters by customer and project', () => {
       const filters = pi.buildParentFilters!({

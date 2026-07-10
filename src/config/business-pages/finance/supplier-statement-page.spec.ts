@@ -31,6 +31,28 @@ describe('supplierStatementPageConfig', () => {
     expect(Array.isArray(overview)).toBe(true)
   })
 
+  it('shows the reconciliation columns in business order by default', () => {
+    const hiddenColumnKeys = new Set(
+      supplierStatementPageConfig.defaultHiddenColumnKeys,
+    )
+    const visibleColumnKeys = supplierStatementPageConfig.columns
+      .map((column) => column.dataIndex)
+      .filter((key) => !hiddenColumnKeys.has(key))
+
+    expect(hiddenColumnKeys).toContain('supplierCode')
+    expect(visibleColumnKeys).toEqual([
+      'statementNo',
+      'supplierName',
+      'settlementCompanyName',
+      'startDate',
+      'endDate',
+      'purchaseAmount',
+      'paymentAmount',
+      'closingAmount',
+      'status',
+    ])
+  })
+
   describe('parentImport', () => {
     it('buildParentFilters only sends filters supported by the candidate API', () => {
       const filters = pi.buildParentFilters!({

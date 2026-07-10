@@ -56,8 +56,10 @@ export function useModuleRecordHelpers({ moduleKey, config }: Props) {
     getModuleRecordPrimaryNo(record, config.primaryNoKey)
 
   const getRowClassName = (record: ModuleRecord) => {
-    const status = asString(record.status)
-    return config.rowHighlightStatuses?.includes(status)
+    const statuses = [asString(record.status), asString(record.signStatus)]
+    return config.rowHighlightStatuses?.some((status) =>
+      statuses.includes(status),
+    )
       ? 'table-row-emphasis'
       : ''
   }

@@ -79,6 +79,11 @@ export const customerStatementPageConfig: ModulePageConfig = {
       width: 180,
     },
     {
+      title: SETTLEMENT_COMPANY_LABEL,
+      dataIndex: 'settlementCompanyName',
+      width: 160,
+    },
+    {
       title: i18next.t('modules.pages.customerStatement.startDate'),
       dataIndex: 'startDate',
       width: 120,
@@ -119,7 +124,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
-  defaultHiddenColumnKeys: ['projectName', 'receiptAmount'],
+  defaultHiddenColumnKeys: ['customerCode'],
   detailFields: [
     {
       label: i18next.t('modules.pages.customerStatement.statementNo'),

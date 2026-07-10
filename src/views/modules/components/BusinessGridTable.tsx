@@ -21,6 +21,7 @@ import {
 const MIN_TABLE_BODY_SCROLL_Y = 240
 const SELECTION_COLUMN_WIDTH = 40
 const TABLE_BOTTOM_INSET = 16
+const ROW_SINGLE_CLICK_DELAY_MS = 220
 const ROW_INTERACTION_EXCLUSION_SELECTOR =
   'button, a, input, textarea, select, [contenteditable="true"], .ant-btn, .ant-checkbox-wrapper, .ant-checkbox, .table-action-group, [role="button"]'
 
@@ -127,9 +128,25 @@ export function BusinessGridTable({
   } as CSSProperties
 
   const doubleClickCooldownRef = useRef(0)
+  const rowClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const selectedRowKeys = rowSelection?.selectedRowKeys?.map((key) =>
     String(key),
   )
+
+  useEffect(
+    () => () => {
+      if (rowClickTimerRef.current) {
+        clearTimeout(rowClickTimerRef.current)
+      }
+    },
+    [],
+  )
+
+  const clearPendingRowClick = () => {
+    if (!rowClickTimerRef.current) return
+    clearTimeout(rowClickTimerRef.current)
+    rowClickTimerRef.current = null
+  }
 
   const onRow = (record: ModuleRecord) => ({
     tabIndex: 0,
@@ -138,10 +155,15 @@ export function BusinessGridTable({
       : {}),
     onClick: (event: MouseEvent<HTMLElement>) => {
       if (shouldIgnoreRowInteraction(event.target)) return
-      onRowClick(record)
+      clearPendingRowClick()
+      rowClickTimerRef.current = setTimeout(() => {
+        rowClickTimerRef.current = null
+        onRowClick(record)
+      }, ROW_SINGLE_CLICK_DELAY_MS)
     },
     onDoubleClick: (event: MouseEvent<HTMLElement>) => {
       if (shouldIgnoreRowInteraction(event.target)) return
+      clearPendingRowClick()
       const now = Date.now()
       if (now - doubleClickCooldownRef.current < 500) return
       doubleClickCooldownRef.current = now
@@ -149,14 +171,10 @@ export function BusinessGridTable({
     },
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
       if (shouldIgnoreRowInteraction(event.target)) return
-      if (event.key === ' ' || event.key === 'Spacebar') {
-        event.preventDefault()
-        onRowClick(record)
-        return
-      }
       if (event.key === 'Enter') {
         event.preventDefault()
-        onRowDoubleClick(record)
+        clearPendingRowClick()
+        onRowClick(record)
       }
     },
   })

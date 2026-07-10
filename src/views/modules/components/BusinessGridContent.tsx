@@ -1,4 +1,4 @@
-import { Alert, Card } from 'antd'
+import { Alert } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import { useState } from 'react'
 import type { SearchParams } from '@/types/api-raw'
@@ -8,8 +8,10 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
+import { BusinessGridWorkspaceHeader } from '@/views/modules/components/BusinessGridWorkspaceHeader'
 import { ColumnSettingsPopover } from '@/views/modules/components/ColumnSettingsPopover'
 import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterToolbar'
+import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
 import { ModuleTableToolbar } from '@/views/modules/components/ModuleTableToolbar'
 
 interface Props {
@@ -90,57 +92,62 @@ export function BusinessGridContent({
   // columnSettingsOpen initialised to false via useState; no mount-effect needed
 
   return (
-    <Card
-      className="module-grid-card"
-      styles={{ body: { padding: '12px 16px 0' } }}
-    >
-      <ModuleFilterToolbar
+    <section className="module-grid-workspace">
+      <BusinessGridWorkspaceHeader
         config={config}
-        filters={filters}
-        defaultFilters={defaultFilters}
-        submittedFilters={submittedFilters}
-        onUpdateFilter={onUpdateFilter}
-        onApplyFilters={onApplyFilters}
-        onReset={onReset}
-      />
-
-      <ModuleTableToolbar
-        canCreate={canCreate}
-        canExport={canExport}
+        records={records}
         total={total}
         currentPage={currentPage}
         pageSize={pageSize}
-        selectedCount={selectedCount}
-        loading={loading}
-        exporting={exporting}
-        onPageChange={onPageChange}
-        onCreate={onCreate}
-        onExport={onExport}
-        onRefresh={onRefresh}
-        toolbarActions={toolbarActions}
-        onAction={onAction}
-        extra={
-          <>
-            {printDropdown}
-            <ColumnSettingsPopover
-              columns={config.columns}
-              orderedKeys={columnOrder}
-              visibleKeys={columnVisibleKeys}
-              onToggle={onToggleColumn}
-              onOrderChange={onColumnOrderChange}
-              open={columnSettingsOpen}
-              onOpenChange={setColumnSettingsOpen}
-            />
-          </>
-        }
       />
+
+      <div className="module-grid-filter-region">
+        <ModuleFilterToolbar
+          config={config}
+          filters={filters}
+          defaultFilters={defaultFilters}
+          submittedFilters={submittedFilters}
+          onUpdateFilter={onUpdateFilter}
+          onApplyFilters={onApplyFilters}
+          onReset={onReset}
+        />
+      </div>
+
+      <div className="module-grid-command-region">
+        <ModuleTableToolbar
+          canCreate={canCreate}
+          canExport={canExport}
+          selectedCount={selectedCount}
+          loading={loading}
+          exporting={exporting}
+          onCreate={onCreate}
+          onExport={onExport}
+          onRefresh={onRefresh}
+          toolbarActions={toolbarActions}
+          onAction={onAction}
+          extra={
+            <>
+              {printDropdown}
+              <ColumnSettingsPopover
+                columns={config.columns}
+                orderedKeys={columnOrder}
+                visibleKeys={columnVisibleKeys}
+                onToggle={onToggleColumn}
+                onOrderChange={onColumnOrderChange}
+                open={columnSettingsOpen}
+                onOpenChange={setColumnSettingsOpen}
+              />
+            </>
+          }
+        />
+      </div>
 
       {warningMessage ? (
         <Alert
           type="warning"
           showIcon
           title={warningMessage}
-          className="mb-4"
+          className="module-grid-warning"
         />
       ) : null}
 
@@ -155,6 +162,13 @@ export function BusinessGridContent({
         onRowClick={onRowClick}
         onRowDoubleClick={onRowDoubleClick}
       />
-    </Card>
+
+      <ModuleTablePagination
+        total={total}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        onPageChange={onPageChange}
+      />
+    </section>
   )
 }

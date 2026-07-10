@@ -14,12 +14,12 @@ vi.mock('antd', () => ({
   Button: ({
     children,
     icon,
-    loading: _loading,
+    loading,
     type: _type,
     danger: _danger,
     ...props
   }: any) => (
-    <button {...props}>
+    <button data-loading={String(Boolean(loading))} {...props}>
       {icon}
       {children}
     </button>
@@ -32,17 +32,14 @@ vi.mock('antd', () => ({
     gap: _gap,
     ...props
   }: any) => <div {...props}>{children}</div>,
-  Pagination: ({ showTotal, onChange, itemRender, total }: any) => (
-    <div data-testid="pagination">
-      {showTotal?.(total)}
-      <button data-testid="page-change" onClick={() => onChange?.(2, 20)} />
-      {itemRender?.(1, 'prev', <span>prev</span>)}
-      {itemRender?.(1, 'next', <span>next</span>)}
-      {itemRender?.(1, 'page', <span>page</span>)}
-    </div>
-  ),
+  Pagination: () => <div data-testid="legacy-pagination" />,
   Space: ({ children, size: _size, wrap: _wrap, ...props }: any) => (
     <div {...props}>{children}</div>
+  ),
+  Tooltip: ({ children, title }: any) => (
+    <span data-testid="tooltip" data-title={title}>
+      {children}
+    </span>
   ),
 }))
 
@@ -62,16 +59,12 @@ describe('ModuleTableToolbar', () => {
   const defaultProps = {
     canCreate: true,
     canExport: true,
-    total: 100,
-    currentPage: 1,
-    pageSize: 20,
     selectedCount: 0,
     loading: false,
     exporting: false,
     onCreate: vi.fn(),
     onExport: vi.fn(),
     onRefresh: vi.fn(),
-    onPageChange: vi.fn(),
   }
 
   it('renders create button when canCreate is true', () => {
@@ -94,9 +87,14 @@ describe('ModuleTableToolbar', () => {
     expect(screen.queryByText('common.export')).toBeNull()
   })
 
-  it('renders refresh button', () => {
+  it('renders an accessible icon-only refresh command with a tooltip', () => {
     render(<ModuleTableToolbar {...defaultProps} />)
-    expect(screen.getByText('common.refresh')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'common.refresh' })).toBeTruthy()
+    expect(screen.getByTestId('tooltip')).toHaveAttribute(
+      'data-title',
+      'common.refresh',
+    )
+    expect(screen.queryByText('common.refresh')).toBeNull()
   })
 
   it('calls onCreate when create button is clicked', () => {
@@ -109,7 +107,7 @@ describe('ModuleTableToolbar', () => {
   it('calls onRefresh when refresh button is clicked', () => {
     const onRefresh = vi.fn()
     render(<ModuleTableToolbar {...defaultProps} onRefresh={onRefresh} />)
-    fireEvent.click(screen.getByText('common.refresh'))
+    fireEvent.click(screen.getByRole('button', { name: 'common.refresh' }))
     expect(onRefresh).toHaveBeenCalled()
   })
 
@@ -122,7 +120,9 @@ describe('ModuleTableToolbar', () => {
 
   it('shows loading state on refresh button', () => {
     render(<ModuleTableToolbar {...defaultProps} loading={true} />)
-    expect(screen.getByText('common.refresh')).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'common.refresh' }),
+    ).toHaveAttribute('data-loading', 'true')
   })
 
   it('shows exporting state on export button', () => {
@@ -130,14 +130,9 @@ describe('ModuleTableToolbar', () => {
     expect(screen.getByText('common.export')).toBeTruthy()
   })
 
-  it('renders pagination with total', () => {
-    render(<ModuleTableToolbar {...defaultProps} />)
-    expect(screen.getByTestId('pagination')).toBeTruthy()
-  })
-
   it('renders selected count when selectedCount > 0', () => {
     render(<ModuleTableToolbar {...defaultProps} selectedCount={5} />)
-    expect(screen.getByTestId('pagination')).toBeTruthy()
+    expect(screen.getByText('common.selected:{"count":5}')).toBeTruthy()
   })
 
   it('renders extra content', () => {
@@ -229,12 +224,6 @@ describe('ModuleTableToolbar', () => {
     )
     fireEvent.click(screen.getByText('审核'))
     expect(onAction).toHaveBeenCalledWith(toolbarActions[0])
-  })
-
-  it('handles page change', () => {
-    render(<ModuleTableToolbar {...defaultProps} />)
-    fireEvent.click(screen.getByTestId('page-change'))
-    expect(defaultProps.onPageChange).toHaveBeenCalled()
   })
 
   it('renders disabled toolbar action', () => {

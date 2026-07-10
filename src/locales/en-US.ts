@@ -836,6 +836,8 @@ export const enUS: MessageSchema = {
       selectPlaceholder: 'Select {{label}}',
       inputPlaceholder: 'Enter {{label}}',
       quickFilters: 'Quick Filters',
+      conditions: 'Filters',
+      activeCount: '{{count}} active',
     },
     formField: {
       inputPlaceholder: 'Enter {{label}}',
@@ -903,6 +905,11 @@ export const enUS: MessageSchema = {
     },
     workspace: {
       closeAria: 'Close workspace',
+      currentPageSummary: 'Current page summary',
+      resultRange: '{{start}}-{{end}} of {{total}}',
+      emptyResultRange: 'No records on this page, {{total}} total',
+      pagination: 'List pagination',
+      paginationRange: '{{start}}-{{end}} / {{total}} total',
     },
     page: {
       configNotFound: 'Page configuration not found',
@@ -1291,6 +1298,7 @@ export const enUS: MessageSchema = {
         totalWeight: 'totalWeight',
         totalFreight: 'totalFreight',
         paidAmount: 'paidAmount',
+        unpaidAmount: 'unpaidAmount',
         auditStatus: 'auditStatus',
         signStatus: 'signStatus',
         attachment: 'attachment',

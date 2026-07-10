@@ -107,6 +107,11 @@ export const freightStatementPageConfig: ModulePageConfig = {
       width: 150,
     },
     {
+      title: SETTLEMENT_COMPANY_LABEL,
+      dataIndex: 'settlementCompanyName',
+      width: 160,
+    },
+    {
       title: i18next.t('modules.pages.freightStatement.startDate'),
       dataIndex: 'startDate',
       width: 120,
@@ -140,6 +145,13 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'amount',
     },
     {
+      title: i18next.t('modules.pages.freightStatement.unpaidAmount'),
+      dataIndex: 'unpaidAmount',
+      width: 110,
+      align: 'right',
+      type: 'amount',
+    },
+    {
       title: i18next.t('modules.pages.freightStatement.auditStatus'),
       dataIndex: 'status',
       width: 110,
@@ -154,7 +166,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
-  defaultHiddenColumnKeys: ['paidAmount'],
+  defaultHiddenColumnKeys: ['carrierCode'],
   detailFields: [
     {
       label: i18next.t('modules.pages.freightStatement.statementNo'),

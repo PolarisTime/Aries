@@ -3,16 +3,14 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, options?: Record<string, unknown>) =>
+      options ? `${key}:${JSON.stringify(options)}` : key,
   }),
 }))
 
-vi.mock('antd/es/alert', () => ({
-  default: ({ title, ...props }: any) => <div {...props}>{title}</div>,
-}))
-
-vi.mock('antd/es/card', () => ({
-  default: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+vi.mock('antd', () => ({
+  Alert: ({ title, ...props }: any) => <div {...props}>{title}</div>,
+  Card: ({ children, ...props }: any) => <div {...props}>{children}</div>,
 }))
 
 vi.mock('./ColumnSettingsPopover', () => ({
@@ -24,7 +22,20 @@ vi.mock('./ModuleFilterToolbar', () => ({
 }))
 
 vi.mock('./ModuleTableToolbar', () => ({
-  ModuleTableToolbar: () => <div data-testid="table-toolbar" />,
+  ModuleTableToolbar: (props: Record<string, unknown>) => (
+    <div data-testid="table-toolbar" data-selected={props.selectedCount} />
+  ),
+}))
+
+vi.mock('./ModuleTablePagination', () => ({
+  ModuleTablePagination: (props: Record<string, unknown>) => (
+    <div
+      data-testid="table-pagination"
+      data-current={props.currentPage}
+      data-page-size={props.pageSize}
+      data-total={props.total}
+    />
+  ),
 }))
 
 vi.mock('@/views/modules/components/BusinessGridTable', () => ({
@@ -52,9 +63,12 @@ describe('BusinessGridContent', () => {
     submittedFilters: {},
     loading: false,
     exporting: false,
-    records: [],
-    total: 0,
-    currentPage: 1,
+    records: [
+      { id: '21', amount: 120 },
+      { id: '22', amount: 80 },
+    ],
+    total: 95,
+    currentPage: 2,
     pageSize: 20,
     warningMessage: '',
     columnVisibleKeys: [],
@@ -99,5 +113,64 @@ describe('BusinessGridContent', () => {
       <BusinessGridContent {...defaultProps} warningMessage="Test warning" />,
     )
     expect(screen.getByText('Test warning')).toBeTruthy()
+  })
+
+  it('renders the page context and current result range', () => {
+    render(
+      <BusinessGridContent
+        {...defaultProps}
+        config={{
+          ...defaultProps.config,
+          kicker: 'Finance',
+          title: '付款管理',
+          description: '登记并核对企业付款流水。',
+        }}
+      />,
+    )
+
+    expect(screen.getByText('Finance')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: '付款管理' })).toBeTruthy()
+    expect(screen.getByText('登记并核对企业付款流水。')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'modules.workspace.resultRange:{"start":21,"end":22,"total":95}',
+      ),
+    ).toBeTruthy()
+  })
+
+  it('builds an explicitly current-page overview from visible records', () => {
+    const buildOverview = vi.fn(() => [
+      { label: '付款笔数', value: '2' },
+      { label: '付款金额', value: '200.00' },
+    ])
+
+    render(
+      <BusinessGridContent
+        {...defaultProps}
+        config={{ ...defaultProps.config, buildOverview }}
+      />,
+    )
+
+    expect(buildOverview).toHaveBeenCalledWith(defaultProps.records)
+    expect(
+      screen.getByText('modules.workspace.currentPageSummary'),
+    ).toBeTruthy()
+    expect(screen.getByText('付款笔数')).toBeTruthy()
+    expect(screen.getByText('200.00')).toBeTruthy()
+  })
+
+  it('keeps pagination below the table with page-size and selection context', () => {
+    render(<BusinessGridContent {...defaultProps} selectedCount={3} />)
+
+    const table = screen.getByTestId('grid-table')
+    const toolbar = screen.getByTestId('table-toolbar')
+    const pagination = screen.getByTestId('table-pagination')
+    expect(table.compareDocumentPosition(pagination)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+    expect(pagination).toHaveAttribute('data-current', '2')
+    expect(pagination).toHaveAttribute('data-page-size', '20')
+    expect(pagination).toHaveAttribute('data-total', '95')
+    expect(toolbar).toHaveAttribute('data-selected', '3')
   })
 })

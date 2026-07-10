@@ -12,7 +12,13 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('antd', () => {
-  const Button = ({ children, icon, type: _type, ...props }: any) => (
+  const Button = ({
+    children,
+    icon,
+    iconPlacement: _iconPlacement,
+    type: _type,
+    ...props
+  }: any) => (
     <button type="button" {...props}>
       {icon}
       {children}
@@ -20,7 +26,7 @@ vi.mock('antd', () => {
   )
   const Col = ({ children }: any) => <div>{children}</div>
   const Row = ({ children }: any) => <div>{children}</div>
-  const Form = ({ children, onFinish, ...props }: any) => (
+  const Form = ({ children, colon: _colon, onFinish, ...props }: any) => (
     <form
       onSubmit={(event) => {
         event.preventDefault()
@@ -471,7 +477,7 @@ describe('ModuleFilterToolbar', () => {
     expect(onApplyFilters).not.toHaveBeenCalled()
   })
 
-  it('renders row two filters by default and hides them after collapse', () => {
+  it('keeps secondary filters collapsed by default and expands them on demand', () => {
     renderToolbar({
       config: config({
         filters: [
@@ -482,11 +488,11 @@ describe('ModuleFilterToolbar', () => {
     })
 
     expect(screen.getByLabelText('Primary')).toBeTruthy()
-    expect(screen.getByLabelText('Secondary')).toBeTruthy()
-
-    fireEvent.click(screen.getByText('common.collapse'))
-
     expect(screen.queryByLabelText('Secondary')).toBeNull()
+
+    fireEvent.click(screen.getByText('common.expand'))
+
+    expect(screen.getByLabelText('Secondary')).toBeTruthy()
   })
 
   it('moves filters after the fourth primary field into the second row', () => {
@@ -502,12 +508,30 @@ describe('ModuleFilterToolbar', () => {
       }),
     })
 
-    expect(screen.getByLabelText('Five')).toBeTruthy()
+    expect(screen.queryByLabelText('Five')).toBeNull()
 
-    fireEvent.click(screen.getByText('common.collapse'))
+    fireEvent.click(screen.getByText('common.expand'))
 
     expect(screen.getByLabelText('Four')).toBeTruthy()
-    expect(screen.queryByLabelText('Five')).toBeNull()
+    expect(screen.getByLabelText('Five')).toBeTruthy()
+  })
+
+  it('reports active hidden filters while secondary filters are collapsed', () => {
+    renderToolbar({
+      config: config({
+        filters: [
+          { key: 'primary', label: 'Primary', type: 'input', row: 1 },
+          { key: 'secondary', label: 'Secondary', type: 'input', row: 2 },
+        ],
+      }),
+      filters: { secondary: 'S-001' },
+      submittedFilters: { secondary: 'S-001' },
+    })
+
+    expect(screen.queryByLabelText('Secondary')).toBeNull()
+    expect(
+      screen.getByText('modules.filter.activeCount:{"count":1}'),
+    ).toBeTruthy()
   })
 
   it('applies quick filters with default filters preserved', () => {

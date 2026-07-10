@@ -30,6 +30,30 @@ describe('freightStatementPageConfig', () => {
     expect(Array.isArray(overview)).toBe(true)
   })
 
+  it('shows the reconciliation columns in business order by default', () => {
+    const hiddenColumnKeys = new Set(
+      freightStatementPageConfig.defaultHiddenColumnKeys,
+    )
+    const visibleColumnKeys = freightStatementPageConfig.columns
+      .map((column) => column.dataIndex)
+      .filter((key) => !hiddenColumnKeys.has(key))
+
+    expect(hiddenColumnKeys).toContain('carrierCode')
+    expect(visibleColumnKeys).toEqual([
+      'statementNo',
+      'carrierName',
+      'settlementCompanyName',
+      'startDate',
+      'endDate',
+      'totalWeight',
+      'totalFreight',
+      'paidAmount',
+      'unpaidAmount',
+      'status',
+      'signStatus',
+    ])
+  })
+
   describe('parentImport', () => {
     it('buildParentFilters filters by carrier and status', () => {
       const filters = pi.buildParentFilters!({

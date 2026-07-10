@@ -296,7 +296,7 @@ describe('BusinessGridRouteContent', () => {
     expect(state.setCurrentPage).toHaveBeenCalledWith(3)
   })
 
-  it('toggles row selection state when a row is clicked', () => {
+  it('opens row detail on click without changing checkbox selection', () => {
     const state = createGridState()
     mocks.useBusinessGridPage.mockReturnValue(state)
     const record = { id: 'row-1', projectName: '项目甲' }
@@ -304,13 +304,22 @@ describe('BusinessGridRouteContent', () => {
     render(<BusinessGridRouteContent {...defaultProps} />)
 
     mocks.gridContentProps!.onRowClick(record)
-    const keyUpdater = state.setSelectedRowKeys.mock.calls[0][0]
-    const mapUpdater = state.setSelectedRowMap.mock.calls[0][0]
 
-    expect(keyUpdater([])).toEqual(['row-1'])
-    expect(keyUpdater(['row-1', 'row-2'])).toEqual(['row-2'])
-    expect(mapUpdater({})).toEqual({ 'row-1': record })
-    expect(mapUpdater({ 'row-1': record })).toEqual({})
+    expect(state.openDetail).toHaveBeenCalledWith(record)
+    expect(state.setSelectedRowKeys).not.toHaveBeenCalled()
+    expect(state.setSelectedRowMap).not.toHaveBeenCalled()
+  })
+
+  it('does nothing on row click without view access', () => {
+    const state = createGridState({ canViewRecords: false })
+    mocks.useBusinessGridPage.mockReturnValue(state)
+
+    render(<BusinessGridRouteContent {...defaultProps} />)
+
+    mocks.gridContentProps!.onRowClick({ id: 'row-1' })
+
+    expect(state.openDetail).not.toHaveBeenCalled()
+    expect(state.setSelectedRowKeys).not.toHaveBeenCalled()
   })
 
   it('opens editor on row double click when editing is allowed', () => {

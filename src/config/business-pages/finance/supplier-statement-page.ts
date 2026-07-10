@@ -75,6 +75,11 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       width: 140,
     },
     {
+      title: SETTLEMENT_COMPANY_LABEL,
+      dataIndex: 'settlementCompanyName',
+      width: 160,
+    },
+    {
       title: i18next.t('modules.pages.supplierStatement.startDate'),
       dataIndex: 'startDate',
       width: 120,
@@ -115,7 +120,7 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
-  defaultHiddenColumnKeys: ['paymentAmount'],
+  defaultHiddenColumnKeys: ['supplierCode'],
   detailFields: [
     {
       label: i18next.t('modules.pages.supplierStatement.statementNo'),

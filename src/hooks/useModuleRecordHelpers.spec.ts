@@ -132,6 +132,25 @@ describe('useModuleRecordHelpers', () => {
     )
   })
 
+  it('returns emphasis class when a secondary workflow status is highlighted', () => {
+    const { result } = renderHook(() =>
+      useModuleRecordHelpers({
+        ...defaultProps,
+        config: {
+          ...defaultProps.config,
+          rowHighlightStatuses: ['未签署'],
+        },
+      }),
+    )
+
+    expect(
+      result.current.getRowClassName({
+        status: '待审核',
+        signStatus: '未签署',
+      }),
+    ).toBe('table-row-emphasis')
+  })
+
   it('returns empty string for non-highlighted statuses', () => {
     const { result } = renderHook(() => useModuleRecordHelpers(defaultProps))
     expect(result.current.getRowClassName({ status: 'confirmed' })).toBe('')
