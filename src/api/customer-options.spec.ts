@@ -24,6 +24,7 @@ vi.mock('@/lib/query-cached-options', () => ({
 import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   fetchCustomerOptions,
+  findCustomerOption,
   formatProjectOptionLabel,
   getCustomerOptions,
   getCustomerProjectOptions,
@@ -83,6 +84,43 @@ describe('customer-options', () => {
       const result = getCustomerOptions()
 
       expect(result).toEqual([{ label: '客户C', value: '客户C' }])
+    })
+
+    it('preserves the default settlement company metadata', () => {
+      getMock.mockReturnValue([
+        {
+          customerName: '客户A',
+          value: '客户A',
+          label: '客户A',
+          defaultSettlementCompanyId: 9,
+          defaultSettlementCompanyName: '主体A',
+        },
+      ])
+
+      expect(getCustomerOptions()).toEqual([
+        {
+          label: '客户A',
+          value: '客户A',
+          defaultSettlementCompanyId: 9,
+          defaultSettlementCompanyName: '主体A',
+        },
+      ])
+    })
+  })
+
+  describe('findCustomerOption', () => {
+    it('finds the customer project row carrying the default settlement company', () => {
+      const customer = {
+        customerName: '客户A',
+        projectName: '项目A',
+        value: '客户A',
+        label: '客户A / 项目A',
+        defaultSettlementCompanyId: 9,
+        defaultSettlementCompanyName: '主体A',
+      }
+      getMock.mockReturnValue([customer])
+
+      expect(findCustomerOption('客户A', '项目A')).toBe(customer)
     })
   })
 

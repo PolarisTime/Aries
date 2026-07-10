@@ -140,6 +140,24 @@ describe('carrier-options', () => {
   })
 
   describe('normalizeCarrierOptions', () => {
+    it('preserves the default settlement company metadata', () => {
+      const result = normalizeCarrierOptions([
+        {
+          value: '物流甲',
+          label: '物流甲',
+          defaultSettlementCompanyId: 9,
+          defaultSettlementCompanyName: '主体A',
+        },
+      ])
+
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          defaultSettlementCompanyId: 9,
+          defaultSettlementCompanyName: '主体A',
+        }),
+      )
+    })
+
     it('converts id to string when present', () => {
       const result = normalizeCarrierOptions([
         { id: 42 as any, value: 'v', label: 'L' },

@@ -1,5 +1,7 @@
 import dayjs from 'dayjs'
+import { findCarrierOption } from '@/api/carrier-options'
 import { getSettlementCompanyOptions } from '@/api/company-settings'
+import { findCustomerOption } from '@/api/customer-options'
 import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 import { parseDateTimeValue } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
@@ -17,6 +19,24 @@ function findSettlementCompanyName(id: unknown, fallback = '') {
     getSettlementCompanyOptions().find(
       (option) => asString(option.value).trim() === normalizedId,
     )?.companyName || fallback
+  )
+}
+
+function applyDefaultSettlementCompany(
+  editorForm: Record<string, unknown>,
+  option:
+    | {
+        defaultSettlementCompanyId?: string | number
+        defaultSettlementCompanyName?: string
+      }
+    | undefined,
+) {
+  editorForm.settlementCompanyId =
+    option?.defaultSettlementCompanyId == null
+      ? ''
+      : asString(option.defaultSettlementCompanyId)
+  editorForm.settlementCompanyName = asString(
+    option?.defaultSettlementCompanyName,
   )
 }
 
@@ -80,6 +100,26 @@ const settlementCompanySnapshotModules = [
 for (const key of settlementCompanySnapshotModules) {
   registerModuleBehavior(key, {
     syncEditorForm(editorForm, ctx) {
+      if (
+        key === 'sales-order' &&
+        (ctx.changedKeys.has('customerName') ||
+          ctx.changedKeys.has('projectName'))
+      ) {
+        applyDefaultSettlementCompany(
+          editorForm,
+          findCustomerOption(editorForm.customerName, editorForm.projectName),
+        )
+        return
+      }
+
+      if (key === 'freight-bill' && ctx.changedKeys.has('carrierName')) {
+        applyDefaultSettlementCompany(
+          editorForm,
+          findCarrierOption(editorForm.carrierName),
+        )
+        return
+      }
+
       if (ctx.changedKeys.has('settlementCompanyId')) {
         editorForm.settlementCompanyName = findSettlementCompanyName(
           editorForm.settlementCompanyId,

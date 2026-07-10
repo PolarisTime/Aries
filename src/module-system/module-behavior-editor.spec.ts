@@ -3,10 +3,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getBehaviorValue, hasBehavior } from './module-behavior-registry'
 import { moduleBehaviorRegistry } from './module-behavior-registry-core'
 
-const getSettlementCompanyOptionsMock = vi.hoisted(() => vi.fn())
+const {
+  getSettlementCompanyOptionsMock,
+  findCustomerOptionMock,
+  findCarrierOptionMock,
+} = vi.hoisted(() => ({
+  getSettlementCompanyOptionsMock: vi.fn(),
+  findCustomerOptionMock: vi.fn(),
+  findCarrierOptionMock: vi.fn(),
+}))
 
 vi.mock('@/api/company-settings', () => ({
   getSettlementCompanyOptions: getSettlementCompanyOptionsMock,
+}))
+
+vi.mock('@/api/customer-options', () => ({
+  findCustomerOption: findCustomerOptionMock,
+}))
+
+vi.mock('@/api/carrier-options', () => ({
+  findCarrierOption: findCarrierOptionMock,
 }))
 
 const settlementCompanyOptions = [
@@ -31,6 +47,8 @@ describe('module-behavior-editor', () => {
   beforeEach(() => {
     getSettlementCompanyOptionsMock.mockReset()
     getSettlementCompanyOptionsMock.mockReturnValue(settlementCompanyOptions)
+    findCustomerOptionMock.mockReset()
+    findCarrierOptionMock.mockReset()
   })
 
   it('registers carrier with priceMode default', () => {
@@ -90,6 +108,41 @@ describe('module-behavior-editor', () => {
     expect(config?.defaultOperatorField).toBe('salesName')
     expect(hasBehavior('sales-order', 'supportsStatements')).toBe(true)
     expect(hasBehavior('sales-order', 'supportsFreightPickup')).toBe(true)
+  })
+
+  it('sales-order uses the selected customer default settlement company', () => {
+    findCustomerOptionMock.mockReturnValue({
+      defaultSettlementCompanyId: 9,
+      defaultSettlementCompanyName: '主体A',
+    })
+    const form = { customerName: '客户A', projectName: '项目A' } as Record<
+      string,
+      unknown
+    >
+
+    getSyncEditorForm('sales-order')(form, {
+      changedKeys: new Set(['customerName']),
+    })
+
+    expect(findCustomerOptionMock).toHaveBeenCalledWith('客户A', '项目A')
+    expect(form.settlementCompanyId).toBe('9')
+    expect(form.settlementCompanyName).toBe('主体A')
+  })
+
+  it('freight-bill uses the selected carrier default settlement company', () => {
+    findCarrierOptionMock.mockReturnValue({
+      defaultSettlementCompanyId: 10,
+      defaultSettlementCompanyName: '主体B',
+    })
+    const form = { carrierName: '物流甲' } as Record<string, unknown>
+
+    getSyncEditorForm('freight-bill')(form, {
+      changedKeys: new Set(['carrierName']),
+    })
+
+    expect(findCarrierOptionMock).toHaveBeenCalledWith('物流甲')
+    expect(form.settlementCompanyId).toBe('10')
+    expect(form.settlementCompanyName).toBe('主体B')
   })
 
   it('registers purchase-order with defaultOperatorField', () => {

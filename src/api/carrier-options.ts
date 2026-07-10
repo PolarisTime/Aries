@@ -9,6 +9,8 @@ export type CarrierOption = {
   value: string
   label: string
   vehiclePlates?: string[]
+  defaultSettlementCompanyId?: string | number
+  defaultSettlementCompanyName?: string
 }
 
 export function normalizeCarrierOptions(

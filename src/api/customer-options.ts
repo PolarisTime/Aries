@@ -57,6 +57,29 @@ export function getCustomerOptions(): CustomerOption[] {
   return uniqueCustomerNameOptions(cached.get())
 }
 
+export function findCustomerOption(
+  customerName: unknown,
+  projectName?: unknown,
+): CustomerOption | undefined {
+  const normalizedCustomerName = normalizeText(customerName)
+  if (!normalizedCustomerName) return undefined
+
+  const customerRows = cached
+    .get()
+    .filter(
+      (row) =>
+        normalizeText(row.customerName || row.value) === normalizedCustomerName,
+    )
+  const normalizedProjectName = normalizeText(projectName)
+  if (!normalizedProjectName) return customerRows[0]
+
+  return (
+    customerRows.find(
+      (row) => normalizeText(row.projectName) === normalizedProjectName,
+    ) || customerRows[0]
+  )
+}
+
 export function getCustomerProjectOptions(
   form?: ModuleRecordInput,
 ): CustomerOption[] {
@@ -76,7 +99,11 @@ export function uniqueCustomerNameOptions(rows: CustomerOption[]) {
     (row) => normalizeText(row.customerName || row.value),
   ).map((row) => {
     const customerName = normalizeText(row.customerName || row.value)
-    return { label: customerName, value: customerName }
+    return {
+      label: customerName,
+      value: customerName,
+      ...settlementCompanySnapshot(row),
+    }
   })
 }
 
@@ -100,8 +127,17 @@ export function uniqueProjectOptions(
       projectName,
       customerCode: row.customerCode,
       projectNameAbbr: row.projectNameAbbr,
+      ...settlementCompanySnapshot(row),
     }
   })
+}
+
+function settlementCompanySnapshot(row: CustomerOption) {
+  if (row.defaultSettlementCompanyId == null) return {}
+  return {
+    defaultSettlementCompanyId: row.defaultSettlementCompanyId,
+    defaultSettlementCompanyName: row.defaultSettlementCompanyName,
+  }
 }
 
 export function formatProjectOptionLabel(
