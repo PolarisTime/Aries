@@ -1,3 +1,17 @@
+# [2.2.0](https://github.com/PolarisTime/Aries/compare/v2.1.3...v2.2.0) (2026-07-10)
+
+
+### Bug Fixes
+
+* **frontend:** 对齐后端安全与数据一致性契约 ([ef1a3df](https://github.com/PolarisTime/Aries/commit/ef1a3df7fb7bd8d54c044a19ebc95b54b2fd06bc))
+* **react:** 修复 React Doctor 检查问题 ([74f3e63](https://github.com/PolarisTime/Aries/commit/74f3e63f8bf227777d038559751a0cd2e1a1bd9c))
+* **system:** 补充关闭 2FA 的验证码校验 ([b5bede7](https://github.com/PolarisTime/Aries/commit/b5bede753d4c9e0e0b2e20886b0974f10b179930))
+
+
+### Features
+
+* **order:** 自动带出往来方默认结算主体 ([c89b126](https://github.com/PolarisTime/Aries/commit/c89b12692d07dc046170bda3952dcc9367fd0cc2))
+
 ## [2.1.3](https://github.com/PolarisTime/Aries/compare/v2.1.2...v2.1.3) (2026-07-10)
 
 
