@@ -231,6 +231,11 @@ export function useUserAccountTwoFactor() {
     const targetId = String(twoFaRecord.id)
     const session = { ...twoFaSessionRef.current }
     if (!isCurrentTwoFaTarget(session, targetId)) return
+    const normalizedCode = twoFaCode.trim()
+    if (!/^\d{6}$/.test(normalizedCode)) {
+      message.warning(t('auth.user2fa.codeInvalid'))
+      return
+    }
     modal.confirm({
       title: t('auth.user2fa.disableTitle'),
       content: t('auth.user2fa.disableContent', {
@@ -245,7 +250,7 @@ export function useUserAccountTwoFactor() {
         resetOperationLoading()
         setTwoFaDisableLoading(true)
         try {
-          const response = await disableUserAccount2fa(targetId)
+          const response = await disableUserAccount2fa(targetId, normalizedCode)
           if (!isCurrentTwoFaOperation(operation, String(response.data.id))) {
             return
           }

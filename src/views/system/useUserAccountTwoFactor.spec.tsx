@@ -503,9 +503,33 @@ describe('useUserAccountTwoFactor', () => {
       expect(result.current.twoFaLoading).toBe(false)
     })
     act(() => {
+      result.current.setTwoFaCode('123456')
+    })
+    act(() => {
       result.current.handleDisable2fa()
     })
     expect(mockModalConfirm).toHaveBeenCalled()
+  })
+
+  it('handleDisable2fa requires a 6-digit operator TOTP code', async () => {
+    const { result } = renderHook(() => useUserAccountTwoFactor())
+    await act(async () => {
+      await result.current.open2faModal({ id: '1' } as never)
+    })
+    await waitFor(() => {
+      expect(result.current.twoFaLoading).toBe(false)
+    })
+
+    act(() => {
+      result.current.setTwoFaCode('12ab56')
+    })
+    act(() => {
+      result.current.handleDisable2fa()
+    })
+
+    expect(mockMessageWarning).toHaveBeenCalledWith('auth.user2fa.codeInvalid')
+    expect(mockModalConfirm).not.toHaveBeenCalled()
+    expect(mockDisableUserAccount2fa).not.toHaveBeenCalled()
   })
 
   it('handleDisable2fa calls API on confirm', async () => {
@@ -525,12 +549,15 @@ describe('useUserAccountTwoFactor', () => {
       onOk = config.onOk
     })
     act(() => {
+      result.current.setTwoFaCode(' 123456 ')
+    })
+    act(() => {
       result.current.handleDisable2fa()
     })
     await act(async () => {
       await onOk!()
     })
-    expect(mockDisableUserAccount2fa).toHaveBeenCalledWith('1')
+    expect(mockDisableUserAccount2fa).toHaveBeenCalledWith('1', '123456')
     expect(mockSyncCurrentUserTotpStateById).toHaveBeenCalledWith('1', false)
     expect(mockMessageSuccess).toHaveBeenCalledWith('Disabled')
   })
@@ -550,6 +577,9 @@ describe('useUserAccountTwoFactor', () => {
     let onOk: (() => void) | undefined
     mockModalConfirm.mockImplementation((config: { onOk: () => void }) => {
       onOk = config.onOk
+    })
+    act(() => {
+      result.current.setTwoFaCode('123456')
     })
     act(() => {
       result.current.handleDisable2fa()
@@ -575,6 +605,9 @@ describe('useUserAccountTwoFactor', () => {
     let onOk: (() => void) | undefined
     mockModalConfirm.mockImplementation((config: { onOk: () => void }) => {
       onOk = config.onOk
+    })
+    act(() => {
+      result.current.setTwoFaCode('123456')
     })
     act(() => {
       result.current.handleDisable2fa()
@@ -612,13 +645,16 @@ describe('useUserAccountTwoFactor', () => {
       await result.current.open2faModal({ id: '1' } as never)
     })
     act(() => {
+      result.current.setTwoFaCode('123456')
+    })
+    act(() => {
       result.current.handleDisable2fa()
     })
     act(() => {
       disablePromise = onOk!()
     })
     await waitFor(() => {
-      expect(mockDisableUserAccount2fa).toHaveBeenCalledWith('1')
+      expect(mockDisableUserAccount2fa).toHaveBeenCalledWith('1', '123456')
     })
     await act(async () => {
       await result.current.open2faModal({ id: '2' } as never)

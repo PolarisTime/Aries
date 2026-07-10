@@ -108,9 +108,11 @@ export async function enableUserAccount2fa(id: string, totpCode: string) {
   return assertApiSuccess(response, getApiMessage('enable2faFailed'))
 }
 
-export async function disableUserAccount2fa(id: string) {
+export async function disableUserAccount2fa(id: string, totpCode: string) {
   const response = await http.post<ApiResponse<UserAccountRecord>>(
     `${buildUserAccountUrl(id)}/2fa/disable`,
+    null,
+    { headers: { 'X-TOTP-Code': totpCode.trim() } },
   )
   return assertApiSuccess(response, getApiMessage('disable2faFailed'))
 }

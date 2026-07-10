@@ -431,6 +431,8 @@ export interface MessageSchema {
       enable: string
       statusTitle: string
       statusDescription: string
+      disableCodeLabel: string
+      disableCodePlaceholder: string
       disable: string
       loadFailed: string
       generateSuccess: string

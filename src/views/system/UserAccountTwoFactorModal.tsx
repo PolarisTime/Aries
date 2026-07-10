@@ -41,6 +41,7 @@ export function UserAccountTwoFactorModal({
   const { t } = useTranslation()
   const setupSecretId = buildFormControlId('user-account-2fa', 'setup-secret')
   const verifyCodeId = buildFormControlId('user-account-2fa', 'verify-code')
+  const disableCodeId = buildFormControlId('user-account-2fa', 'disable-code')
 
   return (
     <FormModal
@@ -152,9 +153,31 @@ export function UserAccountTwoFactorModal({
                 <Typography.Paragraph type="secondary">
                   {t('auth.user2fa.statusDescription')}
                 </Typography.Paragraph>
-                <Button danger loading={disableLoading} onClick={onDisable}>
-                  {t('auth.user2fa.disable')}
-                </Button>
+                <Form layout="vertical">
+                  <Form.Item
+                    required
+                    {...buildLabeledFormItemProps({
+                      label: t('auth.user2fa.disableCodeLabel'),
+                      htmlFor: disableCodeId,
+                    })}
+                  >
+                    <Input
+                      id={disableCodeId}
+                      name="two-factor-disable-code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      required
+                      disabled={disableLoading}
+                      maxLength={6}
+                      placeholder={t('auth.user2fa.disableCodePlaceholder')}
+                      value={code}
+                      onChange={(event) => onCodeChange(event.target.value)}
+                    />
+                  </Form.Item>
+                  <Button danger loading={disableLoading} onClick={onDisable}>
+                    {t('auth.user2fa.disable')}
+                  </Button>
+                </Form>
               </div>
             )}
           </>

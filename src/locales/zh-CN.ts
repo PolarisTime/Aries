@@ -448,6 +448,8 @@ export const zhCN: MessageSchema = {
       statusTitle: '当前状态',
       statusDescription:
         '该用户已启用二次验证，登录时需要在账号密码后继续输入动态验证码。',
+      disableCodeLabel: '当前操作人 2FA 验证码',
+      disableCodePlaceholder: '请输入当前登录账号的 6 位验证码',
       disable: '关闭 2FA',
       loadFailed: '加载 2FA 信息失败',
       generateSuccess: '二维码生成成功',

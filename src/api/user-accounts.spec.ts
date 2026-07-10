@@ -197,15 +197,19 @@ describe('user-accounts', () => {
   })
 
   describe('disableUserAccount2fa', () => {
-    it('disables 2fa', async () => {
+    it('disables 2fa with the current operator TOTP code', async () => {
       httpPostMock.mockResolvedValue({
         code: 0,
         data: { id: '1', totpEnabled: false },
       })
 
-      const result = await disableUserAccount2fa('1')
+      const result = await disableUserAccount2fa('1', ' 123456 ')
 
-      expect(httpPostMock).toHaveBeenCalledWith('/user-accounts/1/2fa/disable')
+      expect(httpPostMock).toHaveBeenCalledWith(
+        '/user-accounts/1/2fa/disable',
+        null,
+        { headers: { 'X-TOTP-Code': '123456' } },
+      )
       expect(result.data.totpEnabled).toBe(false)
     })
   })

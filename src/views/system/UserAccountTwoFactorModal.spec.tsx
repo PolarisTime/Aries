@@ -344,10 +344,11 @@ describe('UserAccountTwoFactorModal', () => {
     expect(handlers.onEnable).toHaveBeenCalledTimes(1)
   })
 
-  it('renders enabled TOTP status and disables it', () => {
+  it('renders an operator TOTP input before disabling enabled 2FA', () => {
     render(
       <UserAccountTwoFactorModal
         {...defaultProps}
+        code="123456"
         disableLoading={false}
         record={{ ...disabledRecord, totpEnabled: true }}
       />,
@@ -362,6 +363,27 @@ describe('UserAccountTwoFactorModal', () => {
     expect(
       screen.getByText('auth.user2fa.statusDescription'),
     ).toBeInTheDocument()
+
+    const disableCodeInput = screen.getByLabelText(
+      'auth.user2fa.disableCodeLabel',
+    )
+    expect(disableCodeInput).toHaveAttribute(
+      'id',
+      'user-account-2fa-disable-code',
+    )
+    expect(disableCodeInput).toHaveAttribute('name', 'two-factor-disable-code')
+    expect(disableCodeInput).toHaveAttribute(
+      'placeholder',
+      'auth.user2fa.disableCodePlaceholder',
+    )
+    expect(disableCodeInput).toHaveAttribute('maxlength', '6')
+    expect(disableCodeInput).toHaveAttribute('inputmode', 'numeric')
+    expect(disableCodeInput).toHaveAttribute('autocomplete', 'one-time-code')
+    expect(disableCodeInput).toBeRequired()
+    expect(disableCodeInput).toHaveValue('123456')
+
+    fireEvent.change(disableCodeInput, { target: { value: '654321' } })
+    expect(handlers.onCodeChange).toHaveBeenCalledWith('654321')
 
     const disableButton = screen.getByRole('button', {
       name: 'auth.user2fa.disable',
@@ -385,6 +407,9 @@ describe('UserAccountTwoFactorModal', () => {
     const disableButton = screen.getByRole('button', {
       name: 'auth.user2fa.disable',
     })
+    expect(
+      screen.getByLabelText('auth.user2fa.disableCodeLabel'),
+    ).toBeDisabled()
     expect(disableButton).toHaveAttribute('data-loading', 'true')
     expect(disableButton).toBeDisabled()
     fireEvent.click(disableButton)

@@ -462,6 +462,8 @@ export const enUS: MessageSchema = {
       statusTitle: 'Current Status',
       statusDescription:
         'This user has enabled two-factor authentication and must enter a dynamic code after password sign-in.',
+      disableCodeLabel: 'Current operator 2FA code',
+      disableCodePlaceholder: 'Enter the current account 6-digit code',
       disable: 'Disable 2FA',
       loadFailed: 'Failed to load 2FA information',
       generateSuccess: 'QR code generated',
