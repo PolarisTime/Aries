@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { t } from 'i18next'
+import { type LodopInstruction, parseLodopScript } from '@/utils/lodop-script'
 import { logger } from '@/utils/logger'
 
 let loadPromise: Promise<boolean> | null = null
@@ -128,256 +129,73 @@ function isCLodopAvailable() {
   return getCLodopInstance() !== null
 }
 
-const reParam = `(?:["']([^"']*)["']|(\\d+))`
-
-function parseInitCall(code: string) {
-  let title = ''
-  let inita: string[] | null = null
-  const reA = new RegExp(
-    `LODOP\\s*\\.\\s*PRINT_INITA\\s*\\(` +
-      `\\s*${reParam}\\s*,` +
-      `\\s*${reParam}\\s*,` +
-      `\\s*${reParam}\\s*,` +
-      `\\s*${reParam}\\s*,` +
-      `\\s*["']([^"']*)["']` +
-      `\\s*\\)`,
-  )
-  const matchedA = code.match(reA)
-  if (matchedA) {
-    inita = [
-      matchedA[1] != null ? matchedA[1] : matchedA[2],
-      matchedA[3] != null ? matchedA[3] : matchedA[4],
-      matchedA[5] != null ? matchedA[5] : matchedA[6],
-      matchedA[7] != null ? matchedA[7] : matchedA[8],
-    ]
-    title = matchedA[9]
-    return { title, inita }
-  }
-  const matched = code.match(
-    /LODOP\s*\.\s*PRINT_INIT\s*\(\s*["']([^"']*)["']\s*\)/,
-  )
-  if (matched) {
-    title = matched[1]
-  }
-  return { title, inita }
-}
-
-/**
- * Safely execute LODOP API calls without eval / new Function.
- * Only allows LODOP.SET_*, LODOP.ADD_*, LODOP.SET_PRINT_* and similar safe methods.
- */
-function executeLodopCalls(lodop: CLodopInstance, code: string) {
-  const SAFE_METHOD =
-    /^LODOP\.(SET_|ADD_|NEWPAGE|NewPage|SET_PRINT|SELECT_|DELETE_|PRINT_INIT|PRINT\b|PREVIEW|PRINT_DESIGN|PRINT_SETUP)[A-Za-z_]*\s*\(/i
-  const CONTROL_METHODS = new Set([
-    'PRINT_INIT',
-    'PRINT_INITA',
-    'PREVIEW',
-    'PRINT',
-    'PRINT_DESIGN',
-    'PRINT_SETUP',
-  ])
-  const lines = code.split(/;\r?\n?/)
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed || !trimmed.startsWith('LODOP.')) continue
-    if (!SAFE_METHOD.test(trimmed)) continue
-
-    try {
-      const openParen = trimmed.indexOf('(')
-      const methodName = trimmed.substring(6, openParen)
-      if (CONTROL_METHODS.has(methodName.toUpperCase())) continue
-      const argsStr = trimmed.substring(openParen + 1, trimmed.lastIndexOf(')'))
-      const args = parseArgs(argsStr)
-      const fn = (
-        lodop as unknown as Record<string, (...a: unknown[]) => void>
-      )[methodName]
-      if (typeof fn === 'function') fn.apply(lodop, args)
-    } catch {
-      // skip broken lines
-    }
-  }
-}
-
-function parseArgs(argsStr: string): unknown[] {
-  if (!argsStr.trim()) return []
-  const result: unknown[] = []
-  let depth = 0
-  let current = ''
-  for (let i = 0; i < argsStr.length; i++) {
-    const ch = argsStr[i]
-    if (ch === '"' || ch === "'") {
-      const quote = ch
-      let j = i + 1
-      while (j < argsStr.length && argsStr[j] !== quote) j++
-      current = argsStr.substring(i + 1, j)
-      i = j
-      result.push(current)
-      current = ''
-      // skip comma
-      while (i + 1 < argsStr.length && argsStr[i + 1] === ' ') i++
-      if (i + 1 < argsStr.length && argsStr[i + 1] === ',') i++
-      continue
-    }
-    if (ch === '(') depth++
-    else if (ch === ')') depth--
-    else if (ch === ',' && depth === 0) {
-      const val = current.trim()
-      if (val) result.push(coerceValue(val))
-      current = ''
-      continue
-    }
-    current += ch
-  }
-  const val = current.trim()
-  if (val) result.push(coerceValue(val))
-  return result
-}
-
-function coerceValue(v: string): unknown {
-  if (v === 'true') return true
-  if (v === 'false') return false
-  const num = Number(v)
-  if (!Number.isNaN(num) && v !== '') return num
-  const expressionValue = evaluateNumericExpression(v)
-  if (expressionValue !== null) return expressionValue
-  return v
-}
-
-function evaluateNumericExpression(expression: string): number | null {
-  const tokens = expression
-    .replace(/\s+/g, '')
-    .match(/[+\-*/]|(?:\d+(?:\.\d*)?|\.\d+)/g)
-
-  if (!tokens?.length || tokens.join('') !== expression.replace(/\s+/g, '')) {
-    return null
-  }
-  if (tokens.length % 2 === 0) {
-    return null
-  }
-  if (
-    tokens.some(
-      (token, index) => index % 2 === 0 && Number.isNaN(Number(token)),
-    )
-  ) {
-    return null
-  }
-  const values: number[] = [Number(tokens[0])]
-  const operators: string[] = []
-
-  for (let i = 1; i < tokens.length; i += 2) {
-    const operator = tokens[i]
-    const nextValue = Number(tokens[i + 1])
-    if (operator === '*') {
-      values[values.length - 1] *= nextValue
-    } else if (operator === '/') {
-      values[values.length - 1] /= nextValue
-    } else {
-      operators.push(operator)
-      values.push(nextValue)
-    }
-  }
-
-  const result = values.reduce((total, value, index) => {
-    if (index === 0) return value
-    return operators[index - 1] === '-' ? total - value : total + value
-  }, 0)
-  return Number.isFinite(result) ? result : null
-}
-
-const SCRIPT_METHOD_RE = /\bLODOP\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(/g
-const BLOCKED_SCRIPT_RE =
-  /\b(?:window|document|globalThis|localStorage|sessionStorage|fetch|XMLHttpRequest|WebSocket|Function|eval|import|constructor|prototype|__proto__)\b/
-const CONTROL_PRINT_RE =
-  /\bLODOP\s*\.\s*(?:PREVIEW|PRINT|PRINTA|PRINT_DESIGN|PRINT_SETUP)\s*\([^)]*\)\s*;?/gi
-const ALLOWED_SCRIPT_METHODS = new Set([
-  'ADD_PRINT_BARCODE',
-  'ADD_PRINT_CHART',
-  'ADD_PRINT_ELLIPSE',
-  'ADD_PRINT_HTM',
-  'ADD_PRINT_HTML',
-  'ADD_PRINT_IMAGE',
-  'ADD_PRINT_LINE',
-  'ADD_PRINT_RECT',
-  'ADD_PRINT_SHAPE',
-  'ADD_PRINT_TABLE',
-  'ADD_PRINT_TEXT',
-  'ADD_PRINT_URL',
-  'NEWPAGE',
-  'NewPage',
+const TEMPLATE_CONTROL_METHODS = new Set([
   'PRINT_INIT',
   'PRINT_INITA',
-  'SELECT_PRINTER',
-  'SET_PREVIEW_WINDOW',
-  'SET_PRINT_COPIES',
-  'SET_PRINT_MODE',
-  'SET_PRINT_PAGESIZE',
-  'SET_PRINT_STYLE',
-  'SET_PRINT_STYLEA',
-  'SET_PRINTER_INDEX',
+  'PREVIEW',
+  'PRINT',
 ])
 
-function hasScriptControlFlow(code: string) {
-  return /^\s*(?:var|let|const|for\s*\(|if\s*\(|while\s*\(|switch\s*\()/m.test(
-    code,
-  )
+function getLodopMethod(lodop: CLodopInstance, method: string) {
+  return (lodop as unknown as Record<string, unknown>)[method]
 }
 
-function sanitizeExecutableLodopScript(code: string, printer?: string) {
-  if (BLOCKED_SCRIPT_RE.test(code)) {
-    throw new Error(t('print.clodopTemplatePrintFailed'))
+function assertRequiredMethods(
+  lodop: CLodopInstance,
+  instructions: LodopInstruction[],
+  options: LodopPrintOptions,
+) {
+  const requiredMethods = new Set(
+    instructions
+      .filter(({ method }) => method !== 'PREVIEW' && method !== 'PRINT')
+      .map(({ method }) => method),
+  )
+  if (!instructions.some(({ method }) => method.startsWith('PRINT_INIT'))) {
+    requiredMethods.add('PRINT_INIT')
   }
+  requiredMethods.add(options.preview === false ? 'PRINT' : 'PREVIEW')
+  if (options.printer) requiredMethods.add('SET_PRINTER_INDEX')
 
-  const withoutControlPrint = code.replace(CONTROL_PRINT_RE, '')
-  const unknownMethods = new Set<string>()
-  for (const match of withoutControlPrint.matchAll(SCRIPT_METHOD_RE)) {
-    const method = match[1]
-    if (!ALLOWED_SCRIPT_METHODS.has(method)) {
-      unknownMethods.add(method)
+  for (const method of requiredMethods) {
+    if (typeof getLodopMethod(lodop, method) !== 'function') {
+      throw new Error(t('print.clodopTemplatePrintFailed'))
     }
   }
-  if (unknownMethods.size > 0) {
-    throw new Error(
-      `${t('print.clodopTemplatePrintFailed')}: ${Array.from(unknownMethods).join(', ')}`,
-    )
-  }
-
-  if (!printer) {
-    return withoutControlPrint
-  }
-
-  return `${withoutControlPrint}\nLODOP.SET_PRINTER_INDEX(${JSON.stringify(printer)});`
-}
-
-function executeLodopScript(
-  lodop: CLodopInstance,
-  code: string,
-  options: Pick<LodopPrintOptions, 'printer'>,
-) {
-  const script = sanitizeExecutableLodopScript(code, options.printer)
-  const fn = new Function(
-    'LODOP',
-    'parseFloat',
-    'parseInt',
-    'isNaN',
-    'String',
-    'Number',
-    'Math',
-    script,
-  )
-  fn(lodop, parseFloat, parseInt, Number.isNaN, String, Number, Math)
 }
 
 function callInit(
   lodop: CLodopInstance,
-  title: string,
-  inita: string[] | null,
+  instructions: LodopInstruction[],
+  fallbackTitle: string,
 ) {
-  if (inita) {
-    lodop.PRINT_INITA(inita[0], inita[1], inita[2], inita[3], title)
+  const init = instructions.find(({ method }) =>
+    method.startsWith('PRINT_INIT'),
+  )
+  if (init?.method === 'PRINT_INITA') {
+    const [top, left, width, height, title] = init.args
+    lodop.PRINT_INITA(
+      top as string | number,
+      left as string | number,
+      width as string | number,
+      height as string | number,
+      String(title),
+    )
     return
   }
-  lodop.PRINT_INIT(title)
+  lodop.PRINT_INIT(
+    init?.method === 'PRINT_INIT' ? String(init.args[0]) : fallbackTitle,
+  )
+}
+
+function executeLodopCalls(
+  lodop: CLodopInstance,
+  instructions: LodopInstruction[],
+) {
+  for (const { args, method } of instructions) {
+    if (TEMPLATE_CONTROL_METHODS.has(method)) continue
+    const fn = getLodopMethod(lodop, method) as (...args: unknown[]) => void
+    fn.apply(lodop, args)
+  }
 }
 
 export interface LodopPrintOptions {
@@ -395,16 +213,13 @@ export function execPrintCode(code: string, options: LodopPrintOptions = {}) {
   const { preview = true, printer, title = t('print.defaultTitle') } = options
 
   try {
-    if (hasScriptControlFlow(code)) {
-      executeLodopScript(lodop, code, { printer })
-    } else {
-      const parsed = parseInitCall(code)
-      callInit(lodop, parsed.title || title, parsed.inita)
-      if (printer) {
-        lodop.SET_PRINTER_INDEX(printer)
-      }
-      executeLodopCalls(lodop, code)
+    const instructions = parseLodopScript(code)
+    assertRequiredMethods(lodop, instructions, { preview, printer, title })
+    callInit(lodop, instructions, title)
+    if (printer) {
+      lodop.SET_PRINTER_INDEX(printer)
     }
+    executeLodopCalls(lodop, instructions)
     if (preview) {
       lodop.PREVIEW()
     } else {

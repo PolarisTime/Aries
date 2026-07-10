@@ -23,19 +23,22 @@ vi.mock('antd', () => ({
   ),
   Input: {
     Search: ({
+      'aria-label': ariaLabel,
       placeholder,
       value,
       onChange,
       onSearch,
     }: {
+      'aria-label'?: string
       placeholder?: string
       value?: string
       onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void
       onSearch?: () => void
     }) => (
       <input
-        aria-label={placeholder}
+        aria-label={ariaLabel}
         placeholder={placeholder}
+        type="search"
         value={value}
         onChange={onChange}
         onKeyDown={(event) => {
@@ -45,12 +48,14 @@ vi.mock('antd', () => ({
     ),
   },
   Select: ({
+    'aria-label': ariaLabel,
     options = [],
     placeholder,
     showSearch,
     value,
     onChange,
   }: {
+    'aria-label'?: string
     options?: Array<{ label: string; value: string }>
     placeholder?: string
     showSearch?: {
@@ -64,7 +69,7 @@ vi.mock('antd', () => ({
   }) => (
     <div>
       <select
-        aria-label={placeholder}
+        aria-label={ariaLabel}
         value={value ?? ''}
         onChange={(event) => onChange?.(event.currentTarget.value || undefined)}
       >
@@ -118,6 +123,27 @@ describe('ApiKeyListToolbar', () => {
     render(<ApiKeyListToolbar {...defaultProps} />)
     expect(
       screen.getByPlaceholderText('system.apiKey.searchPlaceholder'),
+    ).toBeInTheDocument()
+  })
+
+  it('gives search and filter controls persistent accessible names', () => {
+    render(<ApiKeyListToolbar {...defaultProps} />)
+
+    expect(
+      screen.getByRole('searchbox', {
+        name: 'system.apiKey.searchPlaceholder',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('combobox', {
+        name: 'system.apiKey.filterUserPlaceholder',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('combobox', { name: 'system.apiKey.allStatus' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('combobox', { name: 'system.apiKey.allScope' }),
     ).toBeInTheDocument()
   })
 

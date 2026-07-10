@@ -1,3 +1,4 @@
+import { parseLodopScript } from '@/utils/lodop-script'
 import { expandEachBlocks, expandIfBlocks, renderPlaceholders } from './syntax'
 import type { PrintDataRow, RenderResult } from './types'
 
@@ -7,9 +8,9 @@ function renderCoordTemplate(
   items: PrintDataRow[],
 ): string {
   let source = templateHtml
-  source = expandEachBlocks(source, items, data)
+  source = expandEachBlocks(source, items, data, 'lodop')
   source = expandIfBlocks(source, data)
-  return renderPlaceholders(source, data)
+  return renderPlaceholders(source, data, 'lodop')
 }
 
 export function renderPrintTemplate(
@@ -21,8 +22,10 @@ export function renderPrintTemplate(
   if (templateType !== 'COORD') {
     throw new Error('Unsupported print template type')
   }
+  const script = renderCoordTemplate(templateHtml, data, items)
+  parseLodopScript(script)
   return {
     type: 'COORD',
-    script: renderCoordTemplate(templateHtml, data, items),
+    script,
   }
 }

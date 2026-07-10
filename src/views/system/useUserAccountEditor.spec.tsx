@@ -28,6 +28,16 @@ const defaultFormValues = {
   status: 'enabled',
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+  return { promise, resolve, reject }
+}
+
 interface MutationOptions {
   mutationFn: (values: Record<string, unknown>) => Promise<unknown>
   onSuccess: (response: { data?: unknown; message?: string }) => void
@@ -190,6 +200,10 @@ describe('useUserAccountEditor', () => {
     })
     expect(result.current.editorOpen).toBe(true)
     expect(result.current.editorMode).toBe('edit')
+    expect(mockGetUserAccountDetail).toHaveBeenCalledWith(
+      '1',
+      expect.any(AbortSignal),
+    )
     await waitFor(() => {
       expect(result.current.editorLoading).toBe(false)
     })
@@ -210,6 +224,127 @@ describe('useUserAccountEditor', () => {
       expect(result.current.editorOpen).toBe(false)
     })
     expect(mockShowError).toHaveBeenCalled()
+  })
+
+  it('keeps the latest edit target when detail responses resolve out of order', async () => {
+    const firstDetail = createDeferred<Record<string, unknown>>()
+    const secondDetail = createDeferred<Record<string, unknown>>()
+    mockGetUserAccountDetail.mockImplementation((id: string) =>
+      id === '1' ? firstDetail.promise : secondDetail.promise,
+    )
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+    let firstOpen!: Promise<void>
+    let secondOpen!: Promise<void>
+
+    act(() => {
+      firstOpen = result.current.openEditModal({ id: '1' } as never)
+    })
+    act(() => {
+      secondOpen = result.current.openEditModal({ id: '2' } as never)
+    })
+
+    await act(async () => {
+      secondDetail.resolve({
+        id: '2',
+        loginName: 'latest-user',
+        userName: 'Latest User',
+        roleIds: [],
+        status: 'enabled',
+      })
+      await secondOpen
+    })
+    await act(async () => {
+      firstDetail.resolve({
+        id: '1',
+        loginName: 'stale-user',
+        userName: 'Stale User',
+        roleIds: [],
+        status: 'enabled',
+      })
+      await firstOpen
+    })
+
+    expect(result.current.editingId).toBe('2')
+    expect(mockFormInstance.setFieldsValue).toHaveBeenLastCalledWith(
+      expect.objectContaining({ loginName: 'latest-user' }),
+    )
+    expect(result.current.editorLoading).toBe(false)
+  })
+
+  it('ignores an edit detail response after the editor is closed', async () => {
+    const detail = createDeferred<Record<string, unknown>>()
+    mockGetUserAccountDetail.mockReturnValue(detail.promise)
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+    let openPromise!: Promise<void>
+
+    act(() => {
+      openPromise = result.current.openEditModal({ id: '1' } as never)
+    })
+    act(() => {
+      result.current.closeEditor()
+    })
+    const signal = mockGetUserAccountDetail.mock.calls[0][1] as AbortSignal
+    expect(signal.aborted).toBe(true)
+    await act(async () => {
+      detail.resolve({
+        id: '1',
+        loginName: 'stale-user',
+        userName: 'Stale User',
+        roleIds: [],
+        status: 'enabled',
+      })
+      await openPromise
+    })
+
+    expect(result.current.editorOpen).toBe(false)
+    expect(result.current.editingId).toBeNull()
+    expect(mockFormInstance.setFieldsValue).not.toHaveBeenCalled()
+  })
+
+  it('keeps create form values when an earlier edit detail resolves', async () => {
+    const detail = createDeferred<Record<string, unknown>>()
+    mockGetUserAccountDetail.mockReturnValue(detail.promise)
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+    let openPromise!: Promise<void>
+
+    act(() => {
+      openPromise = result.current.openEditModal({ id: '1' } as never)
+    })
+    act(() => {
+      result.current.openCreateModal()
+    })
+    await act(async () => {
+      detail.resolve({
+        id: '1',
+        loginName: 'stale-user',
+        userName: 'Stale User',
+        roleIds: [],
+        status: 'enabled',
+      })
+      await openPromise
+    })
+
+    expect(result.current.editorOpen).toBe(true)
+    expect(result.current.editorMode).toBe('create')
+    expect(result.current.editingId).toBeNull()
+    expect(mockFormInstance.setFieldsValue).toHaveBeenLastCalledWith(
+      expect.objectContaining({ loginName: '' }),
+    )
   })
 
   it('closeEditor closes the editor', () => {
@@ -332,6 +467,82 @@ describe('useUserAccountEditor', () => {
     })
     expect(checkResult.available).toBe(true)
     expect(mockShowError).toHaveBeenCalled()
+  })
+
+  it('keeps the latest login-name validation result when checks resolve out of order', async () => {
+    const firstCheck = createDeferred<{
+      available: boolean
+      message: string
+    }>()
+    const secondCheck = createDeferred<{
+      available: boolean
+      message: string
+    }>()
+    mockCheckUserAccountLoginName.mockImplementation((loginName: string) =>
+      loginName === 'first-user' ? firstCheck.promise : secondCheck.promise,
+    )
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+    let firstPromise!: Promise<unknown>
+    let secondPromise!: Promise<unknown>
+
+    act(() => {
+      firstPromise = result.current.runLoginNameCheck('first-user')
+    })
+    act(() => {
+      secondPromise = result.current.runLoginNameCheck('second-user')
+    })
+    await act(async () => {
+      secondCheck.resolve({ available: true, message: '' })
+      await secondPromise
+    })
+    await act(async () => {
+      firstCheck.resolve({ available: false, message: 'Stale result' })
+      await firstPromise
+    })
+
+    expect(result.current.loginNameValidationMessage).toBe('')
+    expect(result.current.loginNameChecking).toBe(false)
+  })
+
+  it('does not save after the editor session changes during login-name validation', async () => {
+    const mutate = vi.fn()
+    const loginNameCheck = createDeferred<{
+      available: boolean
+      message: string
+    }>()
+    mockUseMutation.mockReturnValue({ mutate, isPending: false })
+    mockCheckUserAccountLoginName.mockReturnValue(loginNameCheck.promise)
+    const { result } = renderHook(() =>
+      useUserAccountEditor({
+        canViewRoleCatalog: true,
+        canViewDepartmentCatalog: true,
+      }),
+    )
+    let savePromise!: Promise<void>
+
+    act(() => {
+      result.current.openCreateModal()
+    })
+    act(() => {
+      savePromise = result.current.handleSave()
+    })
+    await waitFor(() => {
+      expect(mockCheckUserAccountLoginName).toHaveBeenCalled()
+    })
+    act(() => {
+      result.current.closeEditor()
+    })
+    await act(async () => {
+      loginNameCheck.resolve({ available: true, message: '' })
+      await savePromise
+    })
+
+    expect(mutate).not.toHaveBeenCalled()
   })
 
   it('saves selected role ids in payload', async () => {
@@ -660,7 +871,7 @@ describe('useUserAccountEditor', () => {
     expect(mutate.mock.calls[0][0]).not.toHaveProperty('password')
   })
 
-  it('checks login name without exclude id when edit detail failed before saving', async () => {
+  it('skips save when edit detail failed', async () => {
     const mutate = vi.fn()
     mockUseMutation.mockReturnValue({
       mutate,
@@ -682,11 +893,8 @@ describe('useUserAccountEditor', () => {
       await result.current.handleSave()
     })
 
-    expect(mockCheckUserAccountLoginName).toHaveBeenCalledWith(
-      'testuser',
-      undefined,
-    )
-    expect(mutate.mock.calls[0][0]).not.toHaveProperty('password')
+    expect(mockCheckUserAccountLoginName).not.toHaveBeenCalled()
+    expect(mutate).not.toHaveBeenCalled()
   })
 
   it('builds payload defaults from optional form fields before saving', async () => {

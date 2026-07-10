@@ -202,6 +202,27 @@ describe('AppErrorBoundary', () => {
     consoleSpy.mockRestore()
   })
 
+  it('resets error state when the route reset key changes', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { rerender } = render(
+      <AppErrorBoundary resetKey="/first-page">
+        <ThrowError shouldThrow={true} />
+      </AppErrorBoundary>,
+    )
+
+    expect(screen.getByTestId('app-result')).toBeTruthy()
+
+    rerender(
+      <AppErrorBoundary resetKey="/second-page">
+        <ThrowError shouldThrow={false} />
+      </AppErrorBoundary>,
+    )
+
+    expect(screen.getByText('正常内容')).toBeTruthy()
+    expect(screen.queryByTestId('app-result')).toBeNull()
+    consoleSpy.mockRestore()
+  })
+
   it('handles long error messages with generic server error', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 

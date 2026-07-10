@@ -1,6 +1,10 @@
 import i18next from 'i18next'
 import { create } from 'zustand'
 import { ERROR_CODE } from '@/constants/error-codes'
+import {
+  clearUserQueryCache,
+  clearUserQueryCacheOnIdentityChange,
+} from '@/lib/auth-query-cache'
 import type {
   Login2faPayload,
   LoginPayload,
@@ -95,6 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!data.accessToken || !data.user) {
       throw new Error(i18next.t('auth.error.missingTokenOrUser'))
     }
+    await clearUserQueryCacheOnIdentityChange(get().user, data.user)
     persistSession(
       data.user,
       data.accessToken,
@@ -127,6 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!data.accessToken || !data.user) {
       throw new Error(i18next.t('auth.error.missing2faResponseTokenOrUser'))
     }
+    await clearUserQueryCacheOnIdentityChange(get().user, data.user)
     persistSession(
       data.user,
       data.accessToken,
@@ -143,6 +149,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
+    await clearUserQueryCache()
     try {
       const { logout } = await loadAuthApi()
       await logout()
@@ -168,6 +175,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const data = await refreshSession()
       if (!data.accessToken || !data.user)
         throw new Error(i18next.t('auth.error.sessionRestoreFailed'))
+      await clearUserQueryCacheOnIdentityChange(user, data.user)
       persistSession(
         data.user,
         data.accessToken,

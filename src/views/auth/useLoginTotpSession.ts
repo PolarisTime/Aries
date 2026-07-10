@@ -111,10 +111,10 @@ export function useLoginTotpSession() {
     }
   }, [loginStep, stepDeadline, t])
 
-  const start2faStep = (token: string, loginName: string) => {
+  const start2faStep = (token: string, loginName: string, remember = true) => {
     const deadline = Date.now() + 5 * 60 * 1000
     dispatchTotpState({ type: 'start', token, deadline, now: Date.now() })
-    saveTotpSession(token, deadline, loginName)
+    saveTotpSession(token, deadline, loginName, remember)
   }
 
   return {

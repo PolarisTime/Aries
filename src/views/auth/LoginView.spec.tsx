@@ -30,6 +30,7 @@ const {
     loginStep: 'password',
     now: 1000,
     savedSession: null,
+    loginRemember: true,
     stepDeadline: 0,
     tempToken: null,
     totpCode: '',
@@ -110,7 +111,11 @@ vi.mock('@/views/auth/LoginPasswordForm', () => ({
     <button
       data-testid="password-form"
       onClick={() =>
-        onSubmit({ loginName: 'admin', password: 'pass123', remember: true })
+        onSubmit({
+          loginName: 'admin',
+          password: 'pass123',
+          remember: mockTotpSession.loginRemember,
+        })
       }
     >
       提交登录
@@ -160,6 +165,7 @@ describe('LoginView', () => {
       loginStep: 'password',
       now: 1000,
       savedSession: null,
+      loginRemember: true,
       stepDeadline: 0,
       tempToken: null,
       totpCode: '',
@@ -220,7 +226,22 @@ describe('LoginView', () => {
     const submitButton = screen.getByTestId('password-form')
     fireEvent.click(submitButton)
     await waitFor(() => {
-      expect(mockStart2faStep).toHaveBeenCalledWith('temp123', 'admin')
+      expect(mockStart2faStep).toHaveBeenCalledWith('temp123', 'admin', true)
+    })
+  })
+
+  it('preserves a non-persistent login choice when starting 2FA', async () => {
+    mockTotpSession.loginRemember = false
+    mockSignIn.mockResolvedValue({
+      requires2fa: true,
+      tempToken: 'temp123',
+    })
+
+    render(<LoginView />)
+    fireEvent.click(screen.getByTestId('password-form'))
+
+    await waitFor(() => {
+      expect(mockStart2faStep).toHaveBeenCalledWith('temp123', 'admin', false)
     })
   })
 
@@ -345,6 +366,28 @@ describe('LoginView', () => {
       })
       expect(mockMessageSuccess).toHaveBeenCalledWith('登录成功')
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/' })
+    })
+  })
+
+  it('restores the non-persistent login choice when verifying saved 2FA', async () => {
+    Object.assign(mockTotpSession, {
+      loginStep: 'totp',
+      savedSession: { loginName: 'admin', remember: false },
+      tempToken: 'temp',
+      totpCode: '123456',
+      stepDeadline: 0,
+    })
+    mockVerify2fa.mockResolvedValue({ user: { id: '1' } })
+
+    render(<LoginView />)
+    fireEvent.click(screen.getByText('验证'))
+
+    await waitFor(() => {
+      expect(mockVerify2fa).toHaveBeenCalledWith({
+        tempToken: 'temp',
+        totpCode: '123456',
+        remember: false,
+      })
     })
   })
 

@@ -79,6 +79,20 @@ describe('user-accounts', () => {
       expect(httpGetMock).toHaveBeenCalledWith('/user-accounts/1')
       expect(result).toEqual({ id: '1', loginName: 'admin', userName: 'Admin' })
     })
+
+    it('forwards an abort signal', async () => {
+      const controller = new AbortController()
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: { id: '1', loginName: 'admin', userName: 'Admin' },
+      })
+
+      await getUserAccountDetail('1', controller.signal)
+
+      expect(httpGetMock).toHaveBeenCalledWith('/user-accounts/1', {
+        signal: controller.signal,
+      })
+    })
   })
 
   describe('checkUserAccountLoginName', () => {

@@ -139,12 +139,13 @@ describe('useLoginTotpSession', () => {
     const { saveTotpSession } = await import('@/views/auth/login-view-utils')
     const { result } = renderHook(() => useLoginTotpSession())
     act(() => {
-      result.current.start2faStep('temp-token', 'admin')
+      result.current.start2faStep('temp-token', 'admin', false)
     })
     expect(saveTotpSession).toHaveBeenCalledWith(
       'temp-token',
       expect.any(Number),
       'admin',
+      false,
     )
   })
 
@@ -190,12 +191,14 @@ describe('useLoginTotpSession', () => {
       token: 'saved-token',
       deadline: futureDeadline,
       loginName: 'saved-user',
+      remember: false,
     })
     const { result } = renderHook(() => useLoginTotpSession())
     expect(result.current.savedSession).toEqual({
       token: 'saved-token',
       deadline: futureDeadline,
       loginName: 'saved-user',
+      remember: false,
     })
     expect(result.current.loginStep).toBe('totp')
     expect(result.current.tempToken).toBe('saved-token')

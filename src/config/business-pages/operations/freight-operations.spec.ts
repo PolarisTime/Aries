@@ -30,7 +30,7 @@ describe('freightOperationsPageConfigs', () => {
     expect(config.columns.map((column) => column.dataIndex)).toContain('status')
   })
 
-  it('has parentImport with validation', () => {
+  it('has parentImport configuration', () => {
     const pi = config.parentImport
     expect(pi?.parentModuleKey).toBe('sales-outbound')
     expect(pi?.candidateQueryType).toBe('freight-bill-import')
@@ -46,27 +46,11 @@ describe('freightOperationsPageConfigs', () => {
 
     const noValidation = pi?.validateBeforeOpen?.({ carrierName: '物流A' })
     expect(noValidation).toBeNull()
+  })
 
-    const validImport = pi?.validateParentImport?.({
-      currentRecord: { customerName: '客户A' },
-      currentItems: [],
-      parentRecord: { customerName: '客户A' },
-    })
-    expect(validImport).toBeNull()
-
-    const invalidImport = pi?.validateParentImport?.({
-      currentRecord: { customerName: '客户A' },
-      currentItems: [],
-      parentRecord: { customerName: '客户B' },
-    })
-    expect(invalidImport).toBe('仅支持同一客户名称的销售出库单合并生成物流单')
-
-    const noConflictWithExistingItems = pi?.validateParentImport?.({
-      currentRecord: { customerName: '' },
-      currentItems: [{ customerName: '客户A' }],
-      parentRecord: { customerName: '客户A' },
-    })
-    expect(noConflictWithExistingItems).toBeNull()
+  it('allows merging sales outbounds from arbitrary customers', () => {
+    expect(config.parentImport?.allowMultipleSelection).toBe(true)
+    expect(config.parentImport?.validateParentImport).toBeUndefined()
   })
 
   it('parentImport mapParentToDraft returns default values', () => {

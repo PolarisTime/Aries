@@ -1509,6 +1509,91 @@ describe('ModuleAttachmentModal', () => {
     })
   })
 
+  it('serializes pasted uploads so binding updates cannot overwrite each other', async () => {
+    let bindings = ['existing-1']
+    let resolveFirstUpdate: (() => void) | undefined
+    let updateCount = 0
+
+    mocks.getAttachmentBindings.mockImplementation(async () => ({
+      data: {
+        attachments: bindings.map((id) => attachment({ id })),
+      },
+    }))
+    mocks.uploadAttachment.mockImplementation(async (file: File) => ({
+      data: { id: file.name },
+    }))
+    mocks.updateAttachmentBindings.mockImplementation(
+      async (
+        _moduleKey: string,
+        _recordId: string,
+        attachmentIds: string[],
+      ) => {
+        updateCount += 1
+        if (updateCount === 1) {
+          await new Promise<void>((resolve) => {
+            resolveFirstUpdate = () => {
+              bindings = [...attachmentIds]
+              resolve()
+            }
+          })
+        } else {
+          bindings = [...attachmentIds]
+        }
+        return {}
+      },
+    )
+
+    render(<ModuleAttachmentModal {...defaultProps} />)
+    const firstFile = new File(['first'], 'first-id', { type: 'image/png' })
+    const secondFile = new File(['second'], 'second-id', {
+      type: 'image/png',
+    })
+    const paste = new Event('paste', {
+      bubbles: true,
+      cancelable: true,
+    }) as ClipboardEvent
+    Object.defineProperty(paste, 'clipboardData', {
+      value: {
+        items: [
+          { getAsFile: () => firstFile },
+          { getAsFile: () => secondFile },
+        ],
+      },
+    })
+    Object.defineProperty(paste, 'target', {
+      value: screen.getByTestId('upload'),
+    })
+
+    await act(async () => {
+      window.dispatchEvent(paste)
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(mocks.updateAttachmentBindings).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      resolveFirstUpdate?.()
+    })
+
+    await waitFor(() => {
+      expect(mocks.updateAttachmentBindings).toHaveBeenCalledTimes(2)
+    })
+    expect(mocks.updateAttachmentBindings).toHaveBeenNthCalledWith(
+      1,
+      'test-module',
+      '123',
+      ['existing-1', 'first-id'],
+    )
+    expect(mocks.updateAttachmentBindings).toHaveBeenNthCalledWith(
+      2,
+      'test-module',
+      '123',
+      ['existing-1', 'first-id', 'second-id'],
+    )
+  })
+
   it('ignores paste events without permission or files', async () => {
     mocks.can.mockImplementation(
       (_resource: string, action: string) => action !== 'update',

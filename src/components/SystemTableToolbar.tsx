@@ -39,14 +39,17 @@ export function SystemTableToolbar({
   const inputId =
     searchId ?? buildFormControlId('system-table-toolbar', 'search')
   const inputName = searchName ?? inputId
+  const resolvedKeywordPlaceholder =
+    keywordPlaceholder ?? t('toolbar.searchPlaceholder')
 
   return (
     <div className="system-table-toolbar">
       <Input.Search
         id={inputId}
         name={inputName}
+        aria-label={resolvedKeywordPlaceholder}
         className="system-table-toolbar-search"
-        placeholder={keywordPlaceholder ?? t('toolbar.searchPlaceholder')}
+        placeholder={resolvedKeywordPlaceholder}
         /* 动态宽度：keywordWidth 由父组件传入，无法映射为固定 Tailwind 类 */
         style={{ width: keywordWidth, maxWidth: '100%' }}
         allowClear

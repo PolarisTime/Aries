@@ -25,10 +25,16 @@ describe('login-view-utils', () => {
 
   it('saveTotpSession saves to sessionStorage', async () => {
     const { saveTotpSession } = await import('@/views/auth/login-view-utils')
-    saveTotpSession('token123', Date.now() + 300000, 'admin')
+    const deadline = Date.now() + 300000
+    saveTotpSession('token123', deadline, 'admin', false)
     expect(mockSessionStorage.setItem).toHaveBeenCalledWith(
       'aries-totp-session',
-      expect.stringContaining('token123'),
+      JSON.stringify({
+        token: 'token123',
+        deadline,
+        loginName: 'admin',
+        remember: false,
+      }),
     )
   })
 
@@ -53,6 +59,7 @@ describe('login-view-utils', () => {
         token: 'test-token',
         deadline: futureDeadline,
         loginName: 'admin',
+        remember: false,
       }),
     )
     const { restoreTotpSession } = await import('@/views/auth/login-view-utils')
@@ -61,6 +68,26 @@ describe('login-view-utils', () => {
       token: 'test-token',
       deadline: futureDeadline,
       loginName: 'admin',
+      remember: false,
+    })
+  })
+
+  it('restoreTotpSession defaults legacy sessions to non-persistent login', async () => {
+    const futureDeadline = Date.now() + 300000
+    mockSessionStorage.getItem.mockReturnValue(
+      JSON.stringify({
+        token: 'legacy-token',
+        deadline: futureDeadline,
+        loginName: 'legacy-user',
+      }),
+    )
+    const { restoreTotpSession } = await import('@/views/auth/login-view-utils')
+
+    expect(restoreTotpSession()).toEqual({
+      token: 'legacy-token',
+      deadline: futureDeadline,
+      loginName: 'legacy-user',
+      remember: false,
     })
   })
 

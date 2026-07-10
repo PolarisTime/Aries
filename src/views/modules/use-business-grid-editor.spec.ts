@@ -321,19 +321,19 @@ describe('useBusinessGridEditor', () => {
     expect(result.current.editorLockLoading).toBe(false)
   })
 
-  it('rethrows loading failures and leaves loading state for the failed version', async () => {
+  it('consumes detail failures and clears loading for the failed version', async () => {
     const error = new Error('detail failed')
     getBusinessModuleDetailMock.mockRejectedValue(error)
     const { result } = renderHook(() => useBusinessGridEditor(detailProps))
 
     await act(async () => {
-      await expect(result.current.openEditor({ id: '1' })).rejects.toThrow(
-        error,
+      await expect(result.current.openEditor({ id: '1' })).resolves.toBe(
+        undefined,
       )
     })
 
     expect(result.current.editorOpen).toBe(false)
     expect(result.current.editRecord).toBeNull()
-    expect(result.current.editorLockLoading).toBe(true)
+    expect(result.current.editorLockLoading).toBe(false)
   })
 })

@@ -93,18 +93,20 @@ export function WorkspaceOverlay({
   useEffect(() => {
     if (open) {
       const handler = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          const topOverlay = Array.from(
-            document.querySelectorAll('.workspace-overlay'),
-          ).at(-1)
-          if (!topOverlay?.contains(panelRef.current)) return
-          handleClose()
-          return
-        }
-        if (e.key !== 'Tab') return
+        if (e.key !== 'Escape' && e.key !== 'Tab') return
 
         const panel = panelRef.current
         if (!panel) return
+        const topOverlay = Array.from(
+          document.querySelectorAll('.workspace-overlay'),
+        ).at(-1)
+        if (!topOverlay?.contains(panel)) return
+
+        if (e.key === 'Escape') {
+          handleClose()
+          return
+        }
+
         const focusableElements = getFocusableElements(panel)
         if (!focusableElements.length) {
           e.preventDefault()

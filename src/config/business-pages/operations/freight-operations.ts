@@ -19,17 +19,6 @@ import {
   transformFreightItems,
 } from '../shared/shared'
 
-function getNormalizedUniqueValues(values: unknown[]) {
-  return Array.from(
-    new Set(
-      values.flatMap((value) => {
-        const v = asString(value).trim()
-        return v ? [v] : []
-      }),
-    ),
-  )
-}
-
 export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
   'freight-bill': {
     key: 'freight-bill',
@@ -287,23 +276,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         customerName: parentRecord.customerName || '',
         projectName: parentRecord.projectName || '',
       }),
-      validateParentImport: ({ currentRecord, currentItems, parentRecord }) => {
-        const existingCustomerNames = getNormalizedUniqueValues([
-          currentRecord.customerName,
-          ...currentItems.map((item) => item.customerName),
-        ])
-        const nextCustomerName = asString(parentRecord.customerName).trim()
-
-        if (
-          existingCustomerNames.length &&
-          nextCustomerName &&
-          !existingCustomerNames.includes(nextCustomerName)
-        ) {
-          return '仅支持同一客户名称的销售出库单合并生成物流单'
-        }
-
-        return null
-      },
       transformItems: transformFreightItems,
     },
     itemColumns: compactFreightItemColumns,

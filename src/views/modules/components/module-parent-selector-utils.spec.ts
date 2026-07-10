@@ -124,6 +124,26 @@ describe('module-parent-selector-utils', () => {
   })
 
   describe('filterImportableParentRecords', () => {
+    it('filters soft-deleted records before applying module rules', () => {
+      const records = [
+        {
+          id: 'deleted',
+          status: '已审核',
+          deletedFlag: true,
+          items: [{ id: 'i1', quantity: 10 }],
+        },
+        {
+          id: 'active',
+          status: '已审核',
+          items: [{ id: 'i2', quantity: 10 }],
+        },
+      ]
+
+      const result = filterImportableParentRecords('purchase-order', records)
+
+      expect(result).toEqual([records[1]])
+    })
+
     it('filters by audited status for purchase-order', () => {
       const records = [
         { id: '1', status: '已审核', items: [{ id: 'i1', quantity: 10 }] },

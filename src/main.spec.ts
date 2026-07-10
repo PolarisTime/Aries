@@ -147,6 +147,19 @@ describe('main.tsx bootstrap', () => {
     })
   })
 
+  it('reads the latest auth state after hydration before restoring session', async () => {
+    mockIsAuthenticated = false
+    hydrateMock.mockImplementationOnce(() => {
+      mockIsAuthenticated = true
+    })
+
+    await import('./main')
+
+    await vi.waitFor(() => {
+      expect(restoreSessionMock).toHaveBeenCalled()
+    })
+  })
+
   it('restores session when authenticated', async () => {
     mockIsAuthenticated = true
 
@@ -212,6 +225,35 @@ describe('main.tsx bootstrap', () => {
       expect(renderMock).toHaveBeenCalled()
     })
     expect(setSetupStatusMock).not.toHaveBeenCalled()
+  })
+
+  it('renders an accessible startup shell before network bootstrap settles', async () => {
+    let resolveSetup!: (value: { data: { setupRequired: boolean } }) => void
+    getInitialSetupStatusMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSetup = resolve
+        }),
+    )
+
+    await import('./main')
+    const initialRenderCount = renderMock.mock.calls.length
+    const initialElement = renderMock.mock.calls[0]?.[0] as
+      | {
+          props: unknown
+          type: (props: unknown) => { props: Record<string, unknown> }
+        }
+      | undefined
+
+    resolveSetup({ data: { setupRequired: false } })
+    await vi.waitFor(() => {
+      expect(renderMock).toHaveBeenCalledTimes(2)
+    })
+
+    expect(initialRenderCount).toBe(1)
+    const startupShell = initialElement?.type(initialElement.props)
+    expect(startupShell?.props.role).toBe('status')
+    expect(startupShell?.props['aria-live']).toBe('polite')
   })
 
   it('renders App through the React root', async () => {

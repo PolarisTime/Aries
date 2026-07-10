@@ -9,6 +9,8 @@ interface Props {
   children: ReactNode
   /** 自定义回退展示，不传则用默认 AppResult */
   fallback?: ReactNode
+  /** 变化时清除已捕获错误，通常传入当前路由或页面标识 */
+  resetKey?: string
 }
 
 interface State {
@@ -28,6 +30,12 @@ export class AppErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: ErrorInfo) {
     flushClientAutosaveHandlers('error-boundary')
     console.error('[AppErrorBoundary]', error, info.componentStack)
+  }
+
+  componentDidUpdate(prevProps: Props) {
+    if (this.state.error && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ error: null })
+    }
   }
 
   handleReset = () => {

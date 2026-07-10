@@ -12,6 +12,7 @@ const appLayoutMocks = vi.hoisted(() => ({
   can: vi.fn().mockReturnValue(true),
   closePage: vi.fn(),
   closePersonalSettings: vi.fn(),
+  errorBoundaryResetKey: undefined as string | undefined,
   getPersonalSettings: vi.fn().mockReturnValue(null),
   getPageDefinition: vi.fn(),
   getPageRoutePath: vi.fn(),
@@ -126,7 +127,10 @@ vi.mock('@/components/AppAntdProvider', () => ({
 }))
 
 vi.mock('@/components/AppErrorBoundary', () => ({
-  AppErrorBoundary: ({ children }: any) => <>{children}</>,
+  AppErrorBoundary: ({ children, resetKey }: any) => {
+    appLayoutMocks.errorBoundaryResetKey = resetKey
+    return <>{children}</>
+  },
 }))
 
 vi.mock('@/config/page-registry', () => ({
@@ -561,6 +565,7 @@ describe('AppLayout', () => {
     }
     appLayoutMocks.globalSearchConfig = undefined
     appLayoutMocks.jumpResult = undefined
+    appLayoutMocks.errorBoundaryResetKey = undefined
     appLayoutMocks.watermarkEnabled = true
     appLayoutMocks.watermarkText = '水印'
   })
@@ -583,6 +588,12 @@ describe('AppLayout', () => {
   it('renders content outlet', () => {
     render(<AppLayout />)
     expect(screen.getByTestId('outlet')).toBeDefined()
+  })
+
+  it('uses the active page key to reset the content error boundary', () => {
+    render(<AppLayout />)
+
+    expect(appLayoutMocks.errorBoundaryResetKey).toBe('/dashboard')
   })
 
   it('renders header', () => {

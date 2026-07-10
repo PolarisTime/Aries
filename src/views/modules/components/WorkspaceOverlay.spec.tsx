@@ -282,6 +282,25 @@ describe('WorkspaceOverlay', () => {
     expect(topClose).toHaveBeenCalledTimes(1)
   })
 
+  it('lets only the topmost nested overlay trap Tab', () => {
+    render(
+      <WorkspaceOverlay open title="Bottom Overlay" onClose={vi.fn()}>
+        <button type="button">Bottom Action</button>
+        <WorkspaceOverlay open title="Top Overlay" onClose={vi.fn()}>
+          <button type="button">Top First Action</button>
+          <button type="button">Top Second Action</button>
+        </WorkspaceOverlay>
+      </WorkspaceOverlay>,
+    )
+    const topFirstAction = screen.getByText('Top First Action')
+    const topSecondAction = screen.getByText('Top Second Action')
+    topFirstAction.focus()
+
+    fireEvent.keyDown(document, { key: 'Tab' })
+
+    expect(document.activeElement).toBe(topSecondAction)
+  })
+
   it('ignores Tab after the panel ref has been cleared', () => {
     let keydownHandler: EventListener | undefined
     const addEventListener = document.addEventListener.bind(document)

@@ -1101,7 +1101,7 @@ describe('ModuleParentSelectorOverlay keyboard row interactions', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('derives deleted status in parent selector rows and selected summaries', async () => {
+  it('excludes soft-deleted records from parent selector candidates', () => {
     parentSelectorMocks.parentRows.splice(
       0,
       parentSelectorMocks.parentRows.length,
@@ -1126,13 +1126,83 @@ describe('ModuleParentSelectorOverlay keyboard row interactions', () => {
       }),
     )
 
-    expect(screen.getByText('已删除')).toBeTruthy()
-    fireEvent.click(screen.getByText('表格选择当前行'))
+    expect(screen.queryByTestId('parent-row-po-deleted')).toBeNull()
+    expect(screen.queryByText('已删除')).toBeNull()
+    expect(parentSelectorMocks.parentRows[0].status).toBe('已审核')
+  })
+
+  it('rejects a record whose loaded detail is soft-deleted', async () => {
+    parentSelectorMocks.parentRows.splice(
+      0,
+      parentSelectorMocks.parentRows.length,
+      {
+        id: 'parent-1',
+        name: '父单据 1',
+      },
+    )
+    parentSelectorMocks.getBusinessModuleDetail.mockResolvedValue({
+      data: {
+        id: 'parent-1',
+        name: '已删除父单据',
+        deletedFlag: true,
+        items: [{ id: 'detail-item' }],
+      },
+    })
+    const onSelect = vi.fn()
+    const onClose = vi.fn()
+
+    render(
+      createElement(ModuleParentSelectorOverlay, {
+        open: true,
+        parentModuleKey: 'customer',
+        parentDisplayFieldKey: 'name',
+        onSelect,
+        onClose,
+      }),
+    )
+    fireEvent.click(screen.getByTestId('parent-row-parent-1'))
 
     await waitFor(() => {
-      expect(screen.getAllByText('已删除').length).toBeGreaterThanOrEqual(2)
+      expect(parentSelectorMocks.messageError).toHaveBeenCalledWith(
+        'modules.importParentFailed',
+      )
     })
-    expect(parentSelectorMocks.parentRows[0].status).toBe('已审核')
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('revalidates cached candidate records immediately before onSelect', async () => {
+    parentSelectorMocks.parentRows.splice(
+      0,
+      parentSelectorMocks.parentRows.length,
+      {
+        id: 'parent-1',
+        name: '父单据 1',
+        status: '完成采购',
+      },
+    )
+    const onSelect = vi.fn()
+    const onClose = vi.fn()
+
+    render(
+      createElement(ModuleParentSelectorOverlay, {
+        open: true,
+        parentModuleKey: 'purchase-inbound',
+        candidateStatementModuleKey: 'supplier-statement',
+        onSelect,
+        onClose,
+      }),
+    )
+    parentSelectorMocks.parentRows[0].deletedFlag = true
+    fireEvent.click(screen.getByTestId('parent-row-parent-1'))
+
+    await waitFor(() => {
+      expect(parentSelectorMocks.messageError).toHaveBeenCalledWith(
+        'modules.importParentFailed',
+      )
+    })
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('keeps selected keys when removing a record missing from the cache', async () => {

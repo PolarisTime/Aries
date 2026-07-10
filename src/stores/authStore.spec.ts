@@ -2,6 +2,7 @@ import { act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { STORAGE_KEYS } from '@/constants/storage'
+import { queryClient } from '@/lib/query-client'
 import { useAuthStore } from '@/stores/authStore'
 import { clearToken, setAuthSession, setStoredUser } from '@/utils/storage'
 
@@ -11,6 +12,13 @@ const mockUser = {
   userName: 'Admin',
   roleName: '管理员',
   permissions: [],
+}
+
+const otherUser = {
+  ...mockUser,
+  id: 2,
+  loginName: 'operator',
+  userName: 'Operator',
 }
 
 const loginMock = vi.fn()
@@ -33,6 +41,7 @@ vi.mock('i18next', () => ({
 }))
 
 beforeEach(() => {
+  queryClient.clear()
   localStorage.clear()
   sessionStorage.clear()
   clearToken()
@@ -69,6 +78,28 @@ describe('authStore hydration', () => {
 })
 
 describe('authStore signIn', () => {
+  it('clears cached user data when signing in as a different identity', async () => {
+    queryClient.setQueryData(['private-records'], [{ ownerId: mockUser.id }])
+    useAuthStore.setState({ user: mockUser })
+    loginMock.mockResolvedValue({
+      code: ERROR_CODE.SUCCESS,
+      message: '',
+      data: {
+        requires2fa: false,
+        accessToken: 'operator-token',
+        user: otherUser,
+        expiresIn: 3600,
+      },
+    })
+
+    await useAuthStore.getState().signIn({
+      loginName: 'operator',
+      password: 'pass',
+    })
+
+    expect(queryClient.getQueryData(['private-records'])).toBeUndefined()
+  })
+
   it('signs in successfully with valid credentials', async () => {
     loginMock.mockResolvedValue({
       code: ERROR_CODE.SUCCESS,
@@ -281,6 +312,31 @@ describe('authStore verify2fa', () => {
 })
 
 describe('authStore signOut', () => {
+  it('cancels active queries and clears user data before logout', async () => {
+    const events: string[] = []
+    queryClient.setQueryData(['private-records'], [{ ownerId: mockUser.id }])
+    const pendingQuery = queryClient.fetchQuery({
+      queryKey: ['private-pending'],
+      queryFn: ({ signal }) =>
+        new Promise<void>((_resolve, reject) => {
+          signal.addEventListener('abort', () => {
+            events.push('cancel')
+            reject(new DOMException('Aborted', 'AbortError'))
+          })
+        }),
+    })
+    void pendingQuery.catch(() => undefined)
+    logoutMock.mockImplementation(async () => {
+      events.push('logout')
+    })
+
+    await Promise.resolve()
+    await useAuthStore.getState().signOut()
+
+    expect(events).toEqual(['cancel', 'logout'])
+    expect(queryClient.getQueryData(['private-records'])).toBeUndefined()
+  })
+
   it('clears auth state on sign out', async () => {
     logoutMock.mockResolvedValue(undefined)
     setAuthSession(mockUser, 'test-token', 3600, 'local')
@@ -322,6 +378,26 @@ describe('authStore signOut', () => {
 })
 
 describe('authStore restoreSession', () => {
+  it('clears cached user data when restored identity has changed', async () => {
+    queryClient.setQueryData(['private-records'], [{ ownerId: mockUser.id }])
+    setAuthSession(mockUser, 'stored-token', 3600, 'local')
+    useAuthStore.setState({
+      token: 'stored-token',
+      user: mockUser,
+      isAuthenticated: true,
+      authReady: false,
+    })
+    refreshSessionMock.mockResolvedValue({
+      accessToken: 'operator-token',
+      user: otherUser,
+      expiresIn: 7200,
+    })
+
+    await useAuthStore.getState().restoreSession()
+
+    expect(queryClient.getQueryData(['private-records'])).toBeUndefined()
+  })
+
   it('returns false when no stored user', async () => {
     const result = await useAuthStore.getState().restoreSession()
     expect(result).toBe(false)

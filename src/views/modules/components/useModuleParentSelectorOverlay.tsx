@@ -15,7 +15,10 @@ import { loadBusinessPageConfig } from '@/config/business-page-loader'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
-import { getDisplayStatus } from '@/module-system/module-record-deletion'
+import {
+  getDisplayStatus,
+  isDeletedModuleRecord,
+} from '@/module-system/module-record-deletion'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModulePageConfig,
@@ -825,6 +828,10 @@ export function useModuleParentSelectorOverlay({
         candidateStatementModuleKey,
         candidateQueryType,
       )
+      if (resolvedRecords.some(isDeletedModuleRecord)) {
+        message.error(t('modules.importParentFailed'))
+        return
+      }
       onSelect(resolvedRecords)
       onClose()
     } catch (error) {

@@ -87,26 +87,24 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
 
     const version = ++openVersionRef.current
     setEditorLockLoading(true)
-    return Promise.all([
-      resolveEditorLockRelatedRows(record),
-      resolveEditorRecord(record),
-    ])
-      .then(([lockRelatedRows, resolvedRecord]) => {
-        if (version !== openVersionRef.current) {
-          return
-        }
-        setEditorLockRelatedRows(lockRelatedRows)
-        setEditRecord(resolvedRecord)
-        setEditorOpen(true)
-      })
-      .catch((error: unknown) => {
-        throw error
-      })
-      .then(() => {
-        if (version === openVersionRef.current) {
-          setEditorLockLoading(false)
-        }
-      })
+    try {
+      const [lockRelatedRows, resolvedRecord] = await Promise.all([
+        resolveEditorLockRelatedRows(record),
+        resolveEditorRecord(record),
+      ])
+      if (version !== openVersionRef.current) {
+        return
+      }
+      setEditorLockRelatedRows(lockRelatedRows)
+      setEditRecord(resolvedRecord)
+      setEditorOpen(true)
+    } catch {
+      return
+    } finally {
+      if (version === openVersionRef.current) {
+        setEditorLockLoading(false)
+      }
+    }
   }
 
   const closeEditor = () => {

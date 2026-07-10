@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Form } from 'antd'
 import i18next from 'i18next'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   checkUserAccountLoginName,
   createUserAccount,
@@ -33,6 +33,11 @@ interface UseUserAccountEditorOptions {
   enabled?: boolean
 }
 
+interface EditorSession {
+  version: number
+  targetId: string | null
+}
+
 export function useUserAccountEditor({
   canViewRoleCatalog,
   canViewDepartmentCatalog,
@@ -40,6 +45,12 @@ export function useUserAccountEditor({
 }: UseUserAccountEditorOptions) {
   const queryClient = useQueryClient()
   const { showError } = useRequestError()
+  const editorSessionRef = useRef<EditorSession>({
+    version: 0,
+    targetId: null,
+  })
+  const detailAbortControllerRef = useRef<AbortController | null>(null)
+  const loginNameRequestVersionRef = useRef(0)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editorMode, setEditorMode] = useState<UserAccountEditorMode>('create')
   const [editorLoading, setEditorLoading] = useState(false)
@@ -58,6 +69,45 @@ export function useUserAccountEditor({
   })
   const { selectedRoleDataScope, selectedRoleIds, selectedRoleSummaries } =
     useUserAccountEditorRoleState({ form, roleOptions })
+
+  const startEditorSession = (targetId: string | null): EditorSession => {
+    detailAbortControllerRef.current?.abort()
+    detailAbortControllerRef.current = null
+    const session = {
+      version: editorSessionRef.current.version + 1,
+      targetId,
+    }
+    editorSessionRef.current = session
+    loginNameRequestVersionRef.current += 1
+    return session
+  }
+
+  const invalidateEditorSession = () => {
+    detailAbortControllerRef.current?.abort()
+    detailAbortControllerRef.current = null
+    editorSessionRef.current = {
+      version: editorSessionRef.current.version + 1,
+      targetId: null,
+    }
+    loginNameRequestVersionRef.current += 1
+  }
+
+  const isCurrentEditorSession = (session: EditorSession) =>
+    editorSessionRef.current.version === session.version &&
+    editorSessionRef.current.targetId === session.targetId
+
+  useEffect(
+    () => () => {
+      detailAbortControllerRef.current?.abort()
+      detailAbortControllerRef.current = null
+      editorSessionRef.current = {
+        version: editorSessionRef.current.version + 1,
+        targetId: null,
+      }
+      loginNameRequestVersionRef.current += 1
+    },
+    [],
+  )
 
   const saveMutation = useMutation({
     mutationFn: async (values: UserAccountFormPayload) => {
@@ -124,8 +174,17 @@ export function useUserAccountEditor({
     loginName: string,
     excludeUserId?: string,
   ) => {
-    if (!loginName.trim()) {
+    const normalizedLoginName = loginName.trim()
+    const session = { ...editorSessionRef.current }
+    const requestVersion = loginNameRequestVersionRef.current + 1
+    loginNameRequestVersionRef.current = requestVersion
+    const isCurrentRequest = () =>
+      loginNameRequestVersionRef.current === requestVersion &&
+      isCurrentEditorSession(session)
+
+    if (!normalizedLoginName) {
       setLoginNameValidationMessage('')
+      setLoginNameChecking(false)
       return {
         available: true,
         message: '',
@@ -133,20 +192,27 @@ export function useUserAccountEditor({
     }
     setLoginNameChecking(true)
     try {
-      const result = await checkUserAccountLoginName(loginName, excludeUserId)
+      const result = await checkUserAccountLoginName(
+        normalizedLoginName,
+        excludeUserId,
+      )
       const validationMessage = result.available
         ? ''
         : result.message ||
           i18next.t('system.userAccountEditorHook.loginNameExists')
-      setLoginNameValidationMessage(validationMessage)
-      setLoginNameChecking(false)
+      if (isCurrentRequest()) {
+        setLoginNameValidationMessage(validationMessage)
+        setLoginNameChecking(false)
+      }
       return { available: result.available, message: validationMessage }
     } catch (error) {
-      showError(
-        error,
-        i18next.t('system.userAccountEditorHook.checkLoginNameFailed'),
-      )
-      setLoginNameChecking(false)
+      if (isCurrentRequest()) {
+        showError(
+          error,
+          i18next.t('system.userAccountEditorHook.checkLoginNameFailed'),
+        )
+        setLoginNameChecking(false)
+      }
       return {
         available: true,
         message: '',
@@ -155,43 +221,86 @@ export function useUserAccountEditor({
   }
 
   const openCreateModal = () => {
+    startEditorSession(null)
     setEditorMode('create')
+    setEditorLoading(false)
     resetEditorForm()
     setEditorOpen(true)
   }
 
   const openEditModal = async (record: UserAccountRecord) => {
+    const targetId = String(record.id)
+    const session = startEditorSession(targetId)
+    const abortController = new AbortController()
+    detailAbortControllerRef.current = abortController
     setEditorMode('edit')
     setEditorOpen(true)
     setEditorLoading(true)
+    setEditingId(null)
+    setLoginNameValidationMessage('')
+    setLoginNameChecking(false)
     try {
-      const detail = await getUserAccountDetail(record.id)
+      const detail = await getUserAccountDetail(
+        targetId,
+        abortController.signal,
+      )
+      if (!isCurrentEditorSession(session) || String(detail.id) !== targetId) {
+        return
+      }
       fillEditorForm(detail)
-      setEditorLoading(false)
     } catch (error) {
+      if (!isCurrentEditorSession(session)) return
       showError(
         error,
         i18next.t('system.userAccountEditorHook.loadDetailFailed'),
       )
+      invalidateEditorSession()
       setEditorOpen(false)
       setEditorLoading(false)
+      setEditingId(null)
+      setLoginNameChecking(false)
+    } finally {
+      if (isCurrentEditorSession(session)) {
+        setEditorLoading(false)
+        if (detailAbortControllerRef.current === abortController) {
+          detailAbortControllerRef.current = null
+        }
+      }
     }
   }
 
   const handleSave = async () => {
+    const session = { ...editorSessionRef.current }
+    const mode = editorMode
+    const targetId = mode === 'edit' ? editingId : null
+    if (
+      mode === 'edit' &&
+      (!targetId || session.targetId !== String(targetId))
+    ) {
+      return
+    }
     try {
       const values = await form.validateFields()
-      const validationResult = await runLoginNameCheck(
+      if (!isCurrentEditorSession(session)) return
+      const validationPromise = runLoginNameCheck(
         values.loginName,
-        editorMode === 'edit' ? (editingId ?? undefined) : undefined,
+        targetId ?? undefined,
       )
+      const validationRequestVersion = loginNameRequestVersionRef.current
+      const validationResult = await validationPromise
+      if (
+        !isCurrentEditorSession(session) ||
+        loginNameRequestVersionRef.current !== validationRequestVersion
+      ) {
+        return
+      }
       if (!validationResult.available) {
         message.warning(validationResult.message)
         return
       }
       const payload: UserAccountFormPayload = {
         loginName: values.loginName.trim(),
-        ...(editorMode === 'create' && values.password?.trim()
+        ...(mode === 'create' && values.password?.trim()
           ? { password: values.password.trim() }
           : {}),
         userName: values.userName.trim(),
@@ -210,7 +319,11 @@ export function useUserAccountEditor({
   }
 
   const closeEditor = () => {
+    invalidateEditorSession()
     setEditorOpen(false)
+    setEditorLoading(false)
+    setEditingId(null)
+    setLoginNameChecking(false)
   }
 
   const closeCreateResult = () => {

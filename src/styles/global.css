@@ -13,6 +13,15 @@ body,
   min-height: 100%;
 }
 
+.app-startup-shell {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  background: var(--theme-shell-bg);
+  color: var(--text-secondary);
+  font-size: var(--app-font-size);
+}
+
 /* Modal centering */
 .ant-modal-root .ant-modal-wrap {
   display: flex;

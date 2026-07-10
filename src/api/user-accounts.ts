@@ -48,10 +48,12 @@ export async function listUserAccounts(params: UserAccountListParams) {
   return { ...data, records: pageContent(data) }
 }
 
-export async function getUserAccountDetail(id: string) {
-  const response = await http.get<ApiResponse<UserAccountRecord>>(
-    buildUserAccountUrl(id),
-  )
+export async function getUserAccountDetail(id: string, signal?: AbortSignal) {
+  const response = signal
+    ? await http.get<ApiResponse<UserAccountRecord>>(buildUserAccountUrl(id), {
+        signal,
+      })
+    : await http.get<ApiResponse<UserAccountRecord>>(buildUserAccountUrl(id))
   return assertApiSuccess(response, getApiMessage('loadUserDetailFailed')).data
 }
 

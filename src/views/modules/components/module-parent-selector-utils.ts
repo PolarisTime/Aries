@@ -1,3 +1,4 @@
+import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
@@ -49,6 +50,9 @@ export function filterImportableParentRecords(
   candidateStatementModuleKey?: string,
 ) {
   return records.filter((record) => {
+    if (isDeletedModuleRecord(record)) {
+      return false
+    }
     if (
       candidateStatementModuleKey === 'supplier-statement' &&
       parentModuleKey === 'purchase-inbound'

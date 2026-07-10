@@ -59,6 +59,7 @@ export function ApiKeyListToolbar({
       createDisabled={totpDisabled}
     >
       <Select
+        aria-label={t('system.apiKey.filterUserPlaceholder')}
         showSearch={{
           filterOption: (input, option) =>
             String(option?.label || '')
@@ -76,6 +77,7 @@ export function ApiKeyListToolbar({
         }))}
       />
       <Select
+        aria-label={t('system.apiKey.allStatus')}
         allowClear
         placeholder={t('system.apiKey.allStatus')}
         className="w-140"
@@ -84,6 +86,7 @@ export function ApiKeyListToolbar({
         options={statusOptions}
       />
       <Select
+        aria-label={t('system.apiKey.allScope')}
         allowClear
         placeholder={t('system.apiKey.allScope')}
         className="w-150"

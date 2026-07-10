@@ -6,16 +6,18 @@ export interface SavedTotpSession {
   token: string
   deadline: number
   loginName: string
+  remember: boolean
 }
 
 export function saveTotpSession(
   token: string,
   deadline: number,
   loginName: string,
+  remember: boolean,
 ): void {
   sessionStorage.setItem(
     TOTP_SESSION_KEY,
-    JSON.stringify({ token, deadline, loginName }),
+    JSON.stringify({ token, deadline, loginName, remember }),
   )
 }
 
@@ -39,6 +41,7 @@ export function restoreTotpSession(): SavedTotpSession | null {
         token: parsed.token,
         deadline: parsed.deadline,
         loginName: parsed.loginName,
+        remember: parsed.remember === true,
       }
     }
   } catch {

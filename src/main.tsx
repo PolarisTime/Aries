@@ -1,5 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
+import i18next from 'i18next'
 import { createRoot } from 'react-dom/client'
 import { ensureApiClientSetup } from '@/api/client'
 import { getInitialSetupStatus } from '@/api/setup'
@@ -28,9 +29,27 @@ function App() {
   )
 }
 
+function StartupShell() {
+  return (
+    <main
+      className="app-startup-shell"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      {i18next.t('common.loading')}
+    </main>
+  )
+}
+
 installClientAutosaveFlushListeners()
 
 async function bootstrap() {
+  const rootElement = document.getElementById('app')
+  if (!rootElement) throw new Error('Root element not found')
+  const root = createRoot(rootElement)
+  root.render(<StartupShell />)
+
   ensureApiClientSetup()
   initWebVitals()
 
@@ -41,11 +60,12 @@ async function bootstrap() {
 
   const authStore = useAuthStore.getState()
   authStore.hydrate()
+  const hydratedAuthStore = useAuthStore.getState()
 
   // 并行执行会话恢复和初始化状态检查，减少阻塞时间
   const [, setupResult] = await Promise.allSettled([
-    authStore.isAuthenticated
-      ? authStore.restoreSession().catch(() => false)
+    hydratedAuthStore.isAuthenticated
+      ? hydratedAuthStore.restoreSession().catch(() => false)
       : Promise.resolve(false),
     getInitialSetupStatus().catch(() => null),
   ])
@@ -58,10 +78,7 @@ async function bootstrap() {
     useSetupStore.getState().setStatus(setupResult.value.data)
   }
 
-  const root = document.getElementById('app')
-  if (!root) throw new Error('Root element not found')
-
-  createRoot(root).render(<App />)
+  root.render(<App />)
 }
 
 void bootstrap()

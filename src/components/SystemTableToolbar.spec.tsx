@@ -15,6 +15,14 @@ describe('SystemTableToolbar', () => {
     expect(input).toBeTruthy()
   })
 
+  it('gives the search input an accessible name', () => {
+    render(<SystemTableToolbar {...defaultProps} />)
+
+    expect(
+      screen.getByRole('searchbox', { name: 'toolbar.searchPlaceholder' }),
+    ).toBeTruthy()
+  })
+
   it('renders custom placeholder', () => {
     render(
       <SystemTableToolbar {...defaultProps} keywordPlaceholder="搜索订单号" />,

@@ -386,9 +386,9 @@ export function useModuleAttachmentModal({
 
       event.preventDefault()
       void (async () => {
-        await Promise.allSettled(
-          files.map((file) => uploadAndBindAttachment(file)),
-        )
+        for (const file of files) {
+          await uploadAndBindAttachment(file)
+        }
       })()
     }
 

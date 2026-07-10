@@ -10,7 +10,7 @@ export async function exportModuleData(
 ): Promise<void> {
   const endpointConfig = getModuleConfig(module)
   const exportParams = buildFilterParams(module, params)
-  const response = await http.instance.post(
+  const response = await http.post<Blob>(
     `${endpointConfig.path}/export`,
     exportParams,
     {
@@ -18,5 +18,5 @@ export async function exportModuleData(
       responseType: 'blob',
     },
   )
-  downloadBlob(response.data as Blob, `${module}.xlsx`)
+  downloadBlob(response, `${module}.xlsx`)
 }

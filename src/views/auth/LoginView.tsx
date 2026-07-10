@@ -40,7 +40,7 @@ export function LoginView() {
   const [pendingLoginName, setPendingLoginName] = useState(
     savedSession?.loginName || '',
   )
-  const pendingRememberRef = useRef(true)
+  const pendingRememberRef = useRef(savedSession?.remember ?? true)
   const handleLogin = async (values: LoginPayload) => {
     setLoading(true)
     setPendingLoginName(values.loginName)
@@ -48,7 +48,11 @@ export function LoginView() {
     try {
       const result = await signIn(values)
       if (result.requires2fa) {
-        start2faStep(result.tempToken, values.loginName)
+        start2faStep(
+          result.tempToken,
+          values.loginName,
+          pendingRememberRef.current,
+        )
         setLoading(false)
         return
       }

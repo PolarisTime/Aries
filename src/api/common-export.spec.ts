@@ -6,7 +6,7 @@ const buildFilterParamsMock = vi.hoisted(() => vi.fn())
 const downloadBlobMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/api/client', () => ({
-  http: { instance: { post: httpPostMock } },
+  http: { post: httpPostMock },
 }))
 
 vi.mock('@/api/module-contracts', () => ({
@@ -32,7 +32,7 @@ describe('common-export', () => {
 
   it('exports module data as blob', async () => {
     const mockBlob = new Blob(['data'])
-    httpPostMock.mockResolvedValue({ data: mockBlob })
+    httpPostMock.mockResolvedValue(mockBlob)
 
     await exportModuleData('purchase-order', { keyword: 'test' })
 

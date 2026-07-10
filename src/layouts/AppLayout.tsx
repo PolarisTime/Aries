@@ -105,7 +105,7 @@ function AppContentOutlet({ openPageKey }: AppContentOutletProps) {
   return (
     <Content className="leo-content">
       <div className="leo-content-inner">
-        <AppErrorBoundary>
+        <AppErrorBoundary resetKey={openPageKey}>
           <Outlet key={openPageKey} />
         </AppErrorBoundary>
       </div>
