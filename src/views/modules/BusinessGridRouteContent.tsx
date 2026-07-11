@@ -73,6 +73,23 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     openRecordDetail(record)
   }
 
+  const toggleRecordSelection = (record: ModuleRecord) => {
+    const recordKey = String(record.id)
+    const isSelected = state.selectedRowKeys.includes(recordKey)
+    const nextSelectedRowKeys = isSelected
+      ? state.selectedRowKeys.filter((key) => key !== recordKey)
+      : [...state.selectedRowKeys, recordKey]
+    const nextSelectedKeySet = new Set(nextSelectedRowKeys)
+    const nextSelectedRows = state.records.filter((row) =>
+      nextSelectedKeySet.has(String(row.id)),
+    )
+    state.rowSelection?.onChange?.(
+      nextSelectedRowKeys,
+      nextSelectedRows,
+      { type: 'single' },
+    )
+  }
+
   return (
     <div key={moduleKey} className="page-stack module-page-stack">
       <BusinessGridContent
@@ -110,7 +127,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         onClearSelection={state.clearSelection}
         onToggleColumn={state.toggleColumn}
         onColumnOrderChange={state.onColumnOrderChange}
-        onRowClick={openRecordDetail}
+        onRowClick={toggleRecordSelection}
         onRowDoubleClick={openRecordEditor}
         canCreate={
           !state.config.readOnly &&

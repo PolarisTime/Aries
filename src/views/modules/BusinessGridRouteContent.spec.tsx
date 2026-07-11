@@ -331,7 +331,7 @@ describe('BusinessGridRouteContent', () => {
     )
   })
 
-  it('opens row detail on single click without changing checkbox selection', () => {
+  it('selects an unselected row on single click without opening it', () => {
     const record = { id: 'row-1', projectName: '项目甲' }
     const onSelectionChange = vi.fn()
     const state = createGridState({
@@ -344,11 +344,15 @@ describe('BusinessGridRouteContent', () => {
 
     mocks.gridContentProps!.onRowClick(record)
 
-    expect(state.openDetail).toHaveBeenCalledWith(record)
-    expect(onSelectionChange).not.toHaveBeenCalled()
+    expect(onSelectionChange).toHaveBeenCalledWith(
+      ['row-1'],
+      [record],
+      { type: 'single' },
+    )
+    expect(state.openDetail).not.toHaveBeenCalled()
   })
 
-  it('keeps a selected row selected when opening it', () => {
+  it('deselects a selected row on single click', () => {
     const record = { id: 'row-1' }
     const onSelectionChange = vi.fn()
     const state = createGridState({
@@ -362,19 +366,29 @@ describe('BusinessGridRouteContent', () => {
 
     mocks.gridContentProps!.onRowClick(record)
 
-    expect(state.openDetail).toHaveBeenCalledWith(record)
-    expect(onSelectionChange).not.toHaveBeenCalled()
+    expect(onSelectionChange).toHaveBeenCalledWith([], [], { type: 'single' })
+    expect(state.openDetail).not.toHaveBeenCalled()
   })
 
-  it('does not open row detail on single click without view access', () => {
+  it('allows row selection without view access', () => {
     const record = { id: 'row-1' }
-    const state = createGridState({ canViewRecords: false })
+    const onSelectionChange = vi.fn()
+    const state = createGridState({
+      canViewRecords: false,
+      records: [record],
+      rowSelection: { onChange: onSelectionChange },
+    })
     mocks.useBusinessGridPage.mockReturnValue(state)
 
     render(<BusinessGridRouteContent {...defaultProps} />)
 
     mocks.gridContentProps!.onRowClick(record)
 
+    expect(onSelectionChange).toHaveBeenCalledWith(
+      ['row-1'],
+      [record],
+      { type: 'single' },
+    )
     expect(state.openDetail).not.toHaveBeenCalled()
   })
 

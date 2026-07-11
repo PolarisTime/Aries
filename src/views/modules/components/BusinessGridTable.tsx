@@ -151,6 +151,7 @@ export function BusinessGridTable({
   const onRow = (record: ModuleRecord) => ({
     tabIndex: 0,
     'aria-keyshortcuts': 'Enter',
+    title: 'Enter 打开单据',
     ...(selectedRowKeys
       ? { 'aria-selected': selectedRowKeys.includes(String(record.id)) }
       : {}),
@@ -175,7 +176,7 @@ export function BusinessGridTable({
       if (event.key === 'Enter') {
         event.preventDefault()
         clearPendingRowClick()
-        onRowClick(record)
+        onRowDoubleClick(record)
       }
     },
   })

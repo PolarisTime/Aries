@@ -663,7 +663,7 @@ export const zhCN: MessageSchema = {
       recordCount: '记录数',
       totalWeight: '总重量',
       totalAmount: '总金额',
-      documentCount: '单据数',
+      documentCount: '单据数量',
       masterDataCount: '主数据数',
       normalCount: '正常数',
       currentAmount: '本期金额',

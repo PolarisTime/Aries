@@ -8,7 +8,6 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
-import { BusinessGridWorkspaceHeader } from '@/views/modules/components/BusinessGridWorkspaceHeader'
 import { ColumnSettingsPopover } from '@/views/modules/components/ColumnSettingsPopover'
 import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterToolbar'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
@@ -98,14 +97,6 @@ export function BusinessGridContent({
 
   return (
     <section className="module-grid-workspace">
-      <BusinessGridWorkspaceHeader
-        config={config}
-        records={records}
-        total={total}
-        currentPage={currentPage}
-        pageSize={pageSize}
-      />
-
       <div className="module-grid-filter-region">
         <ModuleFilterToolbar
           config={config}

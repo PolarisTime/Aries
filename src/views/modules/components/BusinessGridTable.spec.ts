@@ -313,7 +313,10 @@ describe('BusinessGridTable layout and rendering', () => {
       'aria-keyshortcuts',
       'Enter',
     )
-    expect(screen.getByTestId('row-row-1')).not.toHaveAttribute('title')
+    expect(screen.getByTestId('row-row-1')).toHaveAttribute(
+      'title',
+      'Enter 打开单据',
+    )
     expect(screen.getByTestId('mock-table')).toHaveAttribute(
       'data-scroll-x',
       '160',
@@ -529,11 +532,11 @@ describe('BusinessGridTable keyboard row interactions', () => {
 
     fireEvent.keyDown(row, { key: 'Enter', code: 'Enter' })
 
-    expect(onRowClick).toHaveBeenCalledWith({
+    expect(onRowDoubleClick).toHaveBeenCalledWith({
       id: 'row-1',
       name: '第一行',
     })
-    expect(onRowDoubleClick).not.toHaveBeenCalled()
+    expect(onRowClick).not.toHaveBeenCalled()
   })
 
   it('does not trigger row keyboard actions from inner controls', () => {

@@ -1,4 +1,5 @@
 import { Pagination } from 'antd'
+import zhCN from 'antd/locale/zh_CN'
 import { useTranslation } from 'react-i18next'
 import type { ModuleOverviewItem } from '@/types/module-page'
 
@@ -9,6 +10,12 @@ interface Props {
   currentItemCount: number
   overviewItems: ModuleOverviewItem[]
   onPageChange: (page: number, pageSize: number) => void
+}
+
+const PAGINATION_LOCALE = {
+  ...zhCN.Pagination,
+  items_per_page: '/ 页',
+  page: '页',
 }
 
 export function ModuleTablePagination({
@@ -62,6 +69,7 @@ export function ModuleTablePagination({
           showLessItems
           showSizeChanger
           pageSizeOptions={['10', '20', '50', '100']}
+          locale={PAGINATION_LOCALE}
           onChange={onPageChange}
         />
       </div>

@@ -682,7 +682,7 @@ export const enUS: MessageSchema = {
       recordCount: 'Records',
       totalWeight: 'Total Weight',
       totalAmount: 'Total Amount',
-      documentCount: 'Documents',
+      documentCount: 'Document count',
       masterDataCount: 'Master Data',
       normalCount: 'Normal',
       currentAmount: 'Current Amount',

@@ -126,7 +126,7 @@ describe('BusinessGridContent', () => {
     expect(screen.getByText('Test warning')).toBeTruthy()
   })
 
-  it('renders a compact workspace header with page context', () => {
+  it('does not render the workspace header', () => {
     render(
       <BusinessGridContent
         {...defaultProps}
@@ -139,14 +139,9 @@ describe('BusinessGridContent', () => {
       />,
     )
 
-    expect(screen.getByText('Finance')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: '付款管理' })).toBeTruthy()
-    expect(screen.getByText('登记并核对企业付款流水。')).toBeTruthy()
-    expect(
-      screen.getByText(
-        'modules.workspace.resultRange:{"start":21,"end":22,"total":95}',
-      ),
-    ).toBeTruthy()
+    expect(screen.queryByText('Finance')).toBeNull()
+    expect(screen.queryByRole('heading', { name: '付款管理' })).toBeNull()
+    expect(screen.queryByText('登记并核对企业付款流水。')).toBeNull()
   })
 
   it('builds the pagination overview from the current page records', () => {

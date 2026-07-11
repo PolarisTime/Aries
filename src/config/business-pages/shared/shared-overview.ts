@@ -15,7 +15,7 @@ export function buildAmountWeightOverview(
 ): ModuleOverviewItem[] {
   return [
     {
-      label: i18next.t('modules.overview.recordCount'),
+      label: i18next.t('modules.overview.documentCount'),
       value: formatInteger(rows.length),
     },
     {

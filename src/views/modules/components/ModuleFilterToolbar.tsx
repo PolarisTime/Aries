@@ -223,10 +223,6 @@ export function ModuleFilterToolbar({
     ...sortedFilters.filter((field) => !isPrimaryFilter(field)),
   ]
   const canExpand = secondaryFilters.length > 0
-  const normalizedSubmittedFilters = normalizeFilters(submittedFilters)
-  const activeSecondaryFilterCount = secondaryFilters.filter(
-    (field) => field.key in normalizedSubmittedFilters,
-  ).length
   const quickFilters = config.quickFilters || []
   const activeQuickFilterKey = quickFilters.find((filter) =>
     isSameFilterPreset(submittedFilters, {
@@ -371,13 +367,6 @@ export function ModuleFilterToolbar({
               <span>
                 {expanded ? t('common.collapse') : t('common.expand')}
               </span>
-              {!expanded && activeSecondaryFilterCount > 0 ? (
-                <span className="module-filter-active-count">
-                  {t('modules.filter.activeCount', {
-                    count: activeSecondaryFilterCount,
-                  })}
-                </span>
-              ) : null}
             </Button>
           ) : null}
           <Button

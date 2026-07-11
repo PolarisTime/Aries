@@ -73,7 +73,12 @@ describe('ModuleTablePagination', () => {
         total: 95,
       }),
     )
-    expect(mocks.paginationProps?.locale).toBeUndefined()
+    expect(mocks.paginationProps?.locale).toEqual(
+      expect.objectContaining({
+        items_per_page: '/ 页',
+        page: '页',
+      }),
+    )
     expect(mocks.paginationProps?.showTotal).toBeUndefined()
   })
 

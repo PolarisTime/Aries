@@ -34,6 +34,7 @@ describe('buildAmountWeightOverview', () => {
     const rows = [{ totalWeight: 100, totalAmount: 5000 }]
     const result = buildAmountWeightOverview(rows, 'totalAmount')
     expect(result).toHaveLength(3)
+    expect(result[0].label).toBe('单据数量')
     expect(result[0].value).toBe(formatInteger(1))
     expect(result[1].value).toBe(formatWeight(100))
     expect(result[2].value).toBe(formatAmount(5000))
