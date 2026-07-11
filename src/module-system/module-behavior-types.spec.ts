@@ -12,12 +12,14 @@ describe('ModuleBehaviorConfig', () => {
       defaultStatus: '草稿',
       auditStatus: '已核准',
       protectedEditStatuses: ['已完成'],
+      partiallyEditableStatuses: ['交付核定'],
       protectedDeleteStatuses: ['已完成', '已核准'],
     }
 
     expect(config.defaultStatus).toBe('草稿')
     expect(config.auditStatus).toBe('已核准')
     expect(config.protectedEditStatuses).toEqual(['已完成'])
+    expect(config.partiallyEditableStatuses).toEqual(['交付核定'])
     expect(config.protectedDeleteStatuses).toEqual(['已完成', '已核准'])
   })
 

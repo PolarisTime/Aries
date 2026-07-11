@@ -299,4 +299,71 @@ describe('useModuleRecordActions', () => {
     expect(onDetail).toHaveBeenCalledWith(record)
     expect(onAttach).toHaveBeenCalledWith(record)
   })
+
+  it('does not put reopen verification in sales order row actions', () => {
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: 'sales-order', actions: ['read', 'audit'] }])
+    const record = { id: '101', status: '完成销售' }
+
+    const { result } = renderHook(() =>
+      useModuleRecordActions({
+        moduleKey: 'sales-order',
+        onAttach: vi.fn(),
+        onStatusChange: vi.fn(),
+      }),
+    )
+
+    expect(
+      result.current.buildActions(record).map((item) => item.key),
+    ).not.toContain('reopen-delivery-verification')
+  })
+
+  it('returns confirm action for sales orders under delivery verification', () => {
+    usePermissionStore
+      .getState()
+      .setPermissions([{ resource: 'sales-order', actions: ['read', 'audit'] }])
+    const onStatusChange = vi.fn()
+    const record = { id: '101', status: '交付核定' }
+
+    const { result } = renderHook(() =>
+      useModuleRecordActions({
+        moduleKey: 'sales-order',
+        onAttach: vi.fn(),
+        onStatusChange,
+      }),
+    )
+
+    const action = result.current
+      .buildActions(record)
+      .find((item) => item.key === 'confirm-delivery-verification')
+    action?.onClick?.()
+
+    expect(action?.label).toBe(
+      'hooks.recordActions.confirmDeliveryVerification',
+    )
+    expect(onStatusChange).toHaveBeenCalledWith(record, '完成销售')
+  })
+
+  it('does not return delivery verification actions without audit permission', () => {
+    usePermissionStore
+      .getState()
+      .setPermissions([
+        { resource: 'sales-order', actions: ['read', 'update'] },
+      ])
+
+    const { result } = renderHook(() =>
+      useModuleRecordActions({
+        moduleKey: 'sales-order',
+        onAttach: vi.fn(),
+        onStatusChange: vi.fn(),
+      }),
+    )
+
+    expect(
+      result.current
+        .buildActions({ id: '101', status: '完成销售' })
+        .map((item) => item.key),
+    ).not.toContain('reopen-delivery-verification')
+  })
 })

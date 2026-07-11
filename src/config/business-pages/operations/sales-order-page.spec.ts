@@ -29,6 +29,14 @@ describe('salesOrdersPageConfig', () => {
     expect(
       salesOrdersPageConfig.filters!.map((filter) => filter.key),
     ).toContain('settlementCompanyId')
+    const statusFilter = salesOrdersPageConfig.filters!.find(
+      (filter) => filter.key === 'status',
+    )
+    expect(statusFilter?.options).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ value: '交付核定' }),
+      ]),
+    )
   })
 
   it('does not force customer and project into manual rows', () => {

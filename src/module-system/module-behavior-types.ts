@@ -21,6 +21,7 @@ export interface ModuleBehaviorConfig {
   auditStatus?: string
   auditSourceStatuses?: string[]
   protectedEditStatuses?: string[]
+  partiallyEditableStatuses?: string[]
   protectedDeleteStatuses?: string[]
   actionKindsByLabel?: Record<string, string>
   actionKindsByKey?: Record<string, string>

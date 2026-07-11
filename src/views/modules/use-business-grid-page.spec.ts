@@ -2,7 +2,11 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AppPageDefinition } from '@/config/page-registry'
-import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleActionDefinition,
+  ModulePageConfig,
+  ModuleRecord,
+} from '@/types/module-page'
 import { useBusinessGridPage } from '@/views/modules/use-business-grid-page'
 
 const mocks = vi.hoisted(() => ({
@@ -43,6 +47,7 @@ const mocks = vi.hoisted(() => ({
   setFilters: vi.fn(),
   toggleColumn: vi.fn(),
   updateFilter: vi.fn(),
+  updateBusinessModuleStatus: vi.fn(),
   useBusinessGridActions: vi.fn(),
   useBusinessGridEditor: vi.fn(),
   useBusinessGridOverlays: vi.fn(),
@@ -71,6 +76,7 @@ vi.mock('@/hooks/useBusinessGridActions', () => ({
 
 vi.mock('@/api/business', () => ({
   fetchAttachmentCounts: mocks.fetchAttachmentCounts,
+  updateBusinessModuleStatus: mocks.updateBusinessModuleStatus,
 }))
 
 vi.mock('@/hooks/useDefaultPageSize', () => ({
@@ -170,6 +176,9 @@ describe('useBusinessGridPage', () => {
     mocks.getBehaviorValue.mockReturnValue(null)
     mocks.fetchAttachmentCounts.mockResolvedValue({
       data: { moduleKey: 'purchase-inbound', counts: { '1': 2, '2': 0 } },
+    })
+    mocks.updateBusinessModuleStatus.mockResolvedValue({
+      message: '状态更新成功',
     })
     mocks.getRowClassName.mockReturnValue('')
     mocks.resolveMasterOptionRequirements.mockReturnValue(['customers'])
@@ -337,6 +346,46 @@ describe('useBusinessGridPage', () => {
         }),
       )
     })
+  })
+
+  it('updates completed sales order from the command region reopen action', async () => {
+    const record = { id: '1', status: '完成销售' }
+    const baseProps = props()
+    const { result } = renderHook(() =>
+      useBusinessGridPage({
+        ...baseProps,
+        moduleKey: 'sales-order',
+        pageDef: {
+          ...baseProps.pageDef,
+          moduleKey: 'sales-order',
+          resourceKey: 'sales-order',
+        },
+      }),
+    )
+
+    await act(async () => {
+      result.current.setSelectedRowKeys(['1'])
+      result.current.setSelectedRowMap({ '1': record })
+    })
+
+    const action = result.current.visibleToolbarActions.find(
+      (item: ModuleActionDefinition) =>
+        item.key === 'reopen-delivery-verification',
+    )
+    expect(action).toEqual(
+      expect.objectContaining({ label: '重新核定', disabled: false }),
+    )
+
+    await act(async () => {
+      await result.current.handleAction(action)
+    })
+
+    expect(mocks.updateBusinessModuleStatus).toHaveBeenCalledWith(
+      'sales-order',
+      '1',
+      '交付核定',
+    )
+    expect(mocks.refreshModuleQueries).toHaveBeenCalled()
   })
 
   it('skips records and attachment counts when view permission is missing', () => {

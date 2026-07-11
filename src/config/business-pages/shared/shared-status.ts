@@ -12,6 +12,10 @@ export const statusMap: Record<string, ModuleStatusMeta> = {
     text: i18next.t('modules.status.completedInbound'),
     color: 'success',
   },
+  交付核定: {
+    text: i18next.t('modules.status.deliveryVerification'),
+    color: 'processing',
+  },
   完成销售: {
     text: i18next.t('modules.status.completedSales'),
     color: 'success',

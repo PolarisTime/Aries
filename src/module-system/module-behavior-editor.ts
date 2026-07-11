@@ -68,10 +68,10 @@ registerModuleBehavior('sales-order', {
   lineItemLockSourceModule: 'sales-outbound',
   lineItemLockSourceField: 'salesOrderNo',
   lineItemLockTargetField: 'orderNo',
-  lineItemLockStatuses: ['已审核'],
+  lineItemLockStatuses: ['已审核', '交付核定'],
   lockedLineItemsNotice:
-    '当前销售订单已审核，订单编号、客户、项目和明细非价格字段已锁定，仅允许调整送货日期、备注和单价。',
-  protectedEditStatuses: ['完成销售'],
+    '关联销售出库已审核，当前仅允许调整送货日期、备注和单价。',
+  partiallyEditableStatuses: ['交付核定'],
 })
 
 registerModuleBehavior('purchase-order', { defaultOperatorField: 'buyerName' })

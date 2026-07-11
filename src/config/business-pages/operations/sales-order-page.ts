@@ -59,7 +59,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
-      options: buildValueOptions('草稿', '已审核', '完成销售'),
+      options: buildValueOptions('草稿', '已审核', '交付核定', '完成销售'),
     },
     {
       key: 'deliveryDate',

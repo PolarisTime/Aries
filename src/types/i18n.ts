@@ -663,6 +663,7 @@ export interface MessageSchema {
       completed: string
       completedPurchase: string
       completedSales: string
+      deliveryVerification: string
       completedInbound: string
       confirmed: string
       pendingConfirm: string
@@ -1822,6 +1823,8 @@ export interface MessageSchema {
       attachment: string
       audit: string
       reverseAudit: string
+      reopenDeliveryVerification: string
+      confirmDeliveryVerification: string
     }
     requestError: {
       requestFailed: string

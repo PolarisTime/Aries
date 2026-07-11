@@ -1,6 +1,10 @@
 import { useNavigate } from '@tanstack/react-router'
+import i18next from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
-import { fetchAttachmentCounts } from '@/api/business'
+import {
+  fetchAttachmentCounts,
+  updateBusinessModuleStatus,
+} from '@/api/business'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { useBusinessGridActions } from '@/hooks/useBusinessGridActions'
 import { useDefaultPageSize } from '@/hooks/useDefaultPageSize'
@@ -30,6 +34,7 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overlays'
@@ -241,6 +246,19 @@ export function useBusinessGridPage({
     },
   })
 
+  const handleSalesOrderStatusChange = async (
+    record: ModuleRecord,
+    status: string,
+  ) => {
+    const response = await updateBusinessModuleStatus(
+      moduleKey,
+      String(record.id),
+      status,
+    )
+    message.success(response.message || '销售订单状态已更新')
+    await refreshModuleQueries()
+  }
+
   const { buildActions } = useModuleRecordActions({
     moduleKey,
     resourceKey: pageDef.resourceKey,
@@ -253,6 +271,7 @@ export function useBusinessGridPage({
         ? (record) => navigateToDetailRoute(detailRoutePath, record)
         : openDetail
       : undefined,
+    onStatusChange: handleSalesOrderStatusChange,
   })
 
   const {
@@ -276,7 +295,10 @@ export function useBusinessGridPage({
     formatCellValue,
   })
 
-  const { visibleToolbarActions, handleAction } = useModuleToolbarActions({
+  const {
+    visibleToolbarActions: baseVisibleToolbarActions,
+    handleAction: handleToolbarAction,
+  } = useModuleToolbarActions({
     moduleKey,
     config: toolbarConfig,
     formFields,
@@ -331,6 +353,33 @@ export function useBusinessGridPage({
       },
     },
   })
+
+  const selectedSalesOrders = Object.values(selectedRowMap)
+  const reopenDeliveryVerificationAction: ModuleActionDefinition | null =
+    moduleKey === 'sales-order' && canAuditRecord
+      ? {
+          key: 'reopen-delivery-verification',
+          label: i18next.t('hooks.recordActions.reopenDeliveryVerification'),
+          type: 'default',
+          disabled:
+            selectedSalesOrders.length !== 1 ||
+            selectedSalesOrders[0]?.status !== '完成销售',
+        }
+      : null
+  const visibleToolbarActions = reopenDeliveryVerificationAction
+    ? [...baseVisibleToolbarActions, reopenDeliveryVerificationAction]
+    : baseVisibleToolbarActions
+  const handleAction = async (action: ModuleActionDefinition) => {
+    if (action.key === 'reopen-delivery-verification') {
+      const selectedOrder = selectedSalesOrders[0]
+      if (!selectedOrder || selectedOrder.status !== '完成销售') {
+        return
+      }
+      await handleSalesOrderStatusChange(selectedOrder, '交付核定')
+      return
+    }
+    await handleToolbarAction(action)
+  }
 
   const {
     columnOrder,

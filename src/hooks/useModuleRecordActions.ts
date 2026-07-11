@@ -10,6 +10,7 @@ interface Props {
   attachmentCounts?: Record<string, number>
   onAttach: (record: ModuleRecord) => void
   onDetail?: (record: ModuleRecord) => void
+  onStatusChange?: (record: ModuleRecord, status: string) => void
   detailActionLabel?: string
 }
 
@@ -20,6 +21,7 @@ export function useModuleRecordActions({
   attachmentCounts = {},
   onAttach,
   onDetail,
+  onStatusChange,
   detailActionLabel,
 }: Props) {
   const { t } = useTranslation()
@@ -51,6 +53,19 @@ export function useModuleRecordActions({
     }
     if (isReadOnly) {
       return items
+    }
+    if (
+      moduleKey === 'sales-order' &&
+      onStatusChange &&
+      can(resource, 'audit')
+    ) {
+      if (record.status === '交付核定') {
+        items.push({
+          key: 'confirm-delivery-verification',
+          label: t('hooks.recordActions.confirmDeliveryVerification'),
+          onClick: () => onStatusChange(record, '完成销售'),
+        })
+      }
     }
     if (can(resource, 'read') || can(resource, 'update')) {
       const attachmentLabel = t('hooks.recordActions.attachment')

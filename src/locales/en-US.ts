@@ -701,6 +701,7 @@ export const enUS: MessageSchema = {
       completed: 'Completed',
       completedPurchase: 'Purchase Done',
       completedSales: 'Sales Done',
+      deliveryVerification: 'Delivery Verification',
       completedInbound: 'Inbound Done',
       confirmed: 'Confirmed',
       pendingConfirm: 'Pending Confirm',
@@ -1913,6 +1914,8 @@ export const enUS: MessageSchema = {
       attachment: 'Attachments',
       audit: 'Audit',
       reverseAudit: 'Reverse Audit',
+      reopenDeliveryVerification: 'Reopen Verification',
+      confirmDeliveryVerification: 'Confirm Without Changes',
     },
     requestError: {
       requestFailed: 'Request failed',

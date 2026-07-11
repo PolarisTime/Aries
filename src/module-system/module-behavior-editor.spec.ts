@@ -104,7 +104,7 @@ describe('module-behavior-editor', () => {
     const config = moduleBehaviorRegistry.get('sales-order')
     expect(config?.editableLockedFields).toEqual(['deliveryDate', 'remark'])
     expect(config?.editableLockedItemColumns).toEqual(['unitPrice'])
-    expect(config?.protectedEditStatuses).toEqual(['完成销售'])
+    expect(config?.partiallyEditableStatuses).toEqual(['交付核定'])
     expect(config?.defaultOperatorField).toBe('salesName')
     expect(hasBehavior('sales-order', 'supportsStatements')).toBe(true)
     expect(hasBehavior('sales-order', 'supportsFreightPickup')).toBe(true)
@@ -475,7 +475,7 @@ describe('module-behavior-editor', () => {
     expect(config?.lineItemLockSourceModule).toBe('sales-outbound')
     expect(config?.lineItemLockSourceField).toBe('salesOrderNo')
     expect(config?.lineItemLockTargetField).toBe('orderNo')
-    expect(config?.lineItemLockStatuses).toEqual(['已审核'])
+    expect(config?.lineItemLockStatuses).toEqual(['已审核', '交付核定'])
   })
 
   it('registers purchase-inbound with readonlyItemColumns', () => {

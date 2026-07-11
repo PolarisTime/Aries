@@ -55,6 +55,14 @@ describe('isEditBlockedByStatus', () => {
     expect(isEditBlockedByStatus('已审核')).toBe(true)
   })
 
+  it('opens partial editing during delivery verification', () => {
+    withRegistered('sales-order', {
+      partiallyEditableStatuses: ['交付核定'],
+    })
+    expect(isEditBlockedByStatus('交付核定', 'sales-order')).toBe(false)
+    expect(isEditBlockedByStatus('完成销售', 'sales-order')).toBe(true)
+  })
+
   it('returns true for per-module blocked status', () => {
     withRegistered('test-module', { protectedEditStatuses: ['已关闭'] })
     expect(isEditBlockedByStatus('已关闭', 'test-module')).toBe(true)

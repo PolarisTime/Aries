@@ -42,6 +42,11 @@ export function isEditBlockedByStatus(
   const normalized = asString(status).trim()
   if (!normalized) return false
   if (moduleKey) {
+    const partiallyEditableStatuses = getBehaviorValue(
+      moduleKey,
+      'partiallyEditableStatuses',
+    )
+    if (partiallyEditableStatuses?.includes(normalized)) return false
     const perModule = getBehaviorValue(moduleKey, 'protectedEditStatuses')
     if (perModule) return new Set(perModule).has(normalized)
   }

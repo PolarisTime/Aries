@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { actionSet, statusMap } from './shared-status'
 
 describe('statusMap', () => {
+  it('shows delivery verification as an in-progress status', () => {
+    expect(statusMap.交付核定).toEqual({
+      text: '交付核定',
+      color: 'processing',
+    })
+  })
   it('contains expected status entries', () => {
     const expectedKeys = [
       '草稿',

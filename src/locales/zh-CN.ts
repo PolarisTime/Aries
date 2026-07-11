@@ -682,6 +682,7 @@ export const zhCN: MessageSchema = {
       completed: '已完成',
       completedPurchase: '完成采购',
       completedSales: '完成销售',
+      deliveryVerification: '交付核定',
       completedInbound: '完成入库',
       confirmed: '已确认',
       pendingConfirm: '待确认',
@@ -1883,6 +1884,8 @@ export const zhCN: MessageSchema = {
       attachment: '附件',
       audit: '审核',
       reverseAudit: '反审核',
+      reopenDeliveryVerification: '重新核定',
+      confirmDeliveryVerification: '确认无需调整',
     },
     requestError: {
       requestFailed: '请求失败',
