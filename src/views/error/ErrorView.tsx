@@ -45,6 +45,7 @@ export function ErrorView() {
 
   return (
     <AppResult
+      className="app-result--page"
       status={status}
       subTitle={subTitle}
       traceId={traceId}

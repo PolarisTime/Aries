@@ -409,7 +409,7 @@ describe('useBusinessGridTable', () => {
       {
         key: 'plain',
         title: '普通列',
-        align: 'right',
+        align: 'center',
         className: undefined,
       },
       {

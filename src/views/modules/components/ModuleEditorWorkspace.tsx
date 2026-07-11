@@ -1,13 +1,11 @@
 import {
   ArrowRightOutlined,
-  CheckCircleFilled,
-  CloseCircleFilled,
   ReloadOutlined,
-  WarningFilled,
 } from '@ant-design/icons'
 import { useNavigate } from '@tanstack/react-router'
 import { Button, Card, Form, Space, Table, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { AppResult } from '@/components/AppResult'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { DISPLAY_WEIGHT_PRECISION } from '@/constants/precision'
 import {
@@ -302,15 +300,6 @@ function SaveResultOverlay({
     saveResult.status === 'error' &&
     saveResult.errorCode === ERROR_CODE.CONCURRENT_MODIFICATION
 
-  const statusIcon =
-    saveResult.status === 'success' ? (
-      <CheckCircleFilled className="text-4xl text-[var(--ant-color-success,#52c41a)]" />
-    ) : saveResult.status === 'warning' ? (
-      <WarningFilled className="text-4xl text-[var(--ant-color-warning,#faad14)]" />
-    ) : (
-      <CloseCircleFilled className="text-4xl text-[var(--ant-color-error,#ff4d4f)]" />
-    )
-
   const NEXT_MODULE: Record<string, { label: string; path: string }> =
     Object.fromEntries(
       Object.entries(NEXT_MODULE_PATHS).map(([key, { labelKey, path }]) => [
@@ -349,7 +338,7 @@ function SaveResultOverlay({
       : t('modules.saveResult.error')
 
   const actionBar = (
-    <div className="mt-16 flex flex-wrap justify-center gap-8">
+    <>
       {quickActions}
       <Button
         type="primary"
@@ -363,14 +352,7 @@ function SaveResultOverlay({
             ? t('modules.saveResult.backToEdit')
             : t('modules.saveResult.close')}
       </Button>
-    </div>
-  )
-
-  const headerTitle = (
-    <span className="flex items-center gap-8">
-      {statusIcon}
-      <span>{resultTitle}</span>
-    </span>
+    </>
   )
 
   const baseItemColumns = [
@@ -470,20 +452,18 @@ function SaveResultOverlay({
   return (
     <WorkspaceOverlay
       open
-      title={headerTitle}
+      title={config.title}
       onClose={isConflict ? onResolveConflict : onClear}
+      className="save-result-overlay"
     >
-      {saveResult.status === 'error' && saveResult.traceId ? (
-        <Card size="small" className="mb-16">
-          <Typography.Text
-            type="secondary"
-            copyable={{ text: saveResult.traceId }}
-            className="font-mono text-[11px]"
-          >
-            Trace ID: {saveResult.traceId}
-          </Typography.Text>
-        </Card>
-      ) : null}
+      <AppResult
+        className="app-result--workspace"
+        status={saveResult.status}
+        title={resultTitle}
+        subTitle={saveResult.message}
+        traceId={saveResult.traceId}
+        extra={actionBar}
+      />
 
       {saveResult.record ? (
         <Card size="small" className="mb-16">
@@ -513,8 +493,6 @@ function SaveResultOverlay({
           </Space>
         </Card>
       ) : null}
-
-      {actionBar}
 
       {items.length > 0 ? (
         <div className="mt-16 flex justify-center">

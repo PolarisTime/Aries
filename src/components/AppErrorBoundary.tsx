@@ -56,6 +56,7 @@ export class AppErrorBoundary extends Component<Props, State> {
 
       return (
         <AppResult
+          className="app-result--page"
           status={status}
           subTitle={message}
           traceId={traceId}

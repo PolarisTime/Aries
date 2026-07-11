@@ -24,6 +24,32 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
+vi.mock('@/components/AppResult', () => ({
+  AppResult: ({
+    className,
+    extra,
+    status,
+    subTitle,
+    title,
+  }: {
+    className?: string
+    extra?: React.ReactNode
+    status?: string
+    subTitle?: React.ReactNode
+    title?: React.ReactNode
+  }) => (
+    <section
+      className={className}
+      data-status={status}
+      data-testid="app-result"
+    >
+      <div>{title}</div>
+      <div>{subTitle}</div>
+      {extra}
+    </section>
+  ),
+}))
+
 import { ServerErrorView } from '@/views/error/ServerErrorView'
 
 describe('ServerErrorView', () => {
@@ -34,6 +60,13 @@ describe('ServerErrorView', () => {
 
   it('renders server error content', () => {
     render(<ServerErrorView />)
+    expect(screen.getByTestId('app-result')).toHaveClass(
+      'server-error-result',
+    )
+    expect(screen.getByTestId('app-result')).toHaveAttribute(
+      'data-status',
+      'warning',
+    )
     expect(screen.getByText('服务器异常')).toBeTruthy()
     expect(screen.getByRole('button', { name: /重\s*试/ })).toBeTruthy()
   })

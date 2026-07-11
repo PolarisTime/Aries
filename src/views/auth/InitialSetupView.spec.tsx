@@ -27,6 +27,14 @@ vi.mock('@/components/AppAntdProvider', () => ({
   ),
 }))
 
+vi.mock('@/components/AppResult', () => ({
+  AppResult: ({ className, status, title }: any) => (
+    <div className={className} data-status={status} data-testid="app-result">
+      {title}
+    </div>
+  ),
+}))
+
 vi.mock('@/utils/env', () => ({
   appTitle: '测试应用',
 }))

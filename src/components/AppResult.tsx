@@ -3,6 +3,7 @@ import { Button, Result, Typography } from 'antd'
 import type { ResultProps } from 'antd/es/result'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import '@/styles/app-result.css'
 
 interface AppResultProps extends Omit<ResultProps, 'extra'> {
   title?: ResultProps['title']
@@ -25,6 +26,8 @@ export function AppResult({
   homeButtonText,
   backButtonText,
   traceId,
+  className,
+  classNames,
   ...rest
 }: AppResultProps) {
   const { t } = useTranslation()
@@ -88,8 +91,30 @@ export function AppResult({
     resolvedSubTitle
   )
 
+  const resolvedClassNames: NonNullable<ResultProps['classNames']> = (info) => {
+    const customClassNames =
+      typeof classNames === 'function' ? classNames(info) : classNames
+    const mergeClassName = (base: string, custom?: string) =>
+      [base, custom].filter(Boolean).join(' ')
+
+    return {
+      ...customClassNames,
+      root: mergeClassName('app-result', customClassNames?.root),
+      icon: mergeClassName('app-result__icon', customClassNames?.icon),
+      title: mergeClassName('app-result__title', customClassNames?.title),
+      subTitle: mergeClassName(
+        'app-result__subtitle',
+        customClassNames?.subTitle,
+      ),
+      extra: mergeClassName('app-result__extra', customClassNames?.extra),
+      body: mergeClassName('app-result__body', customClassNames?.body),
+    }
+  }
+
   return (
     <Result
+      className={['app-result', className].filter(Boolean).join(' ')}
+      classNames={resolvedClassNames}
       status={status}
       title={resolvedTitle}
       subTitle={subtitleNode}

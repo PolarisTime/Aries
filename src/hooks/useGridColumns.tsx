@@ -44,7 +44,7 @@ export function useGridColumns({
       accessorKey: colDef.dataIndex,
       meta: {
         width: colDef.width ? `${colDef.width}px` : '120px',
-        align: colDef.align || 'center',
+        align: 'center',
         renderCell: (record: ModuleRecord) => {
           const value = record[colDef.dataIndex]
           if (colDef.type === 'status') {

@@ -91,8 +91,7 @@ function buildAntdColumns({
             : undefined,
         width:
           columnId === 'actions' ? ACTION_COLUMN_WIDTH : columnDef.meta?.width,
-        align: (columnDef.meta?.align ??
-          'center') as ColumnType<ModuleRecord>['align'],
+        align: 'center',
         ellipsis: true,
         render: (_: unknown, record: ModuleRecord) => {
           return columnDef.meta?.renderCell?.(record) ?? null

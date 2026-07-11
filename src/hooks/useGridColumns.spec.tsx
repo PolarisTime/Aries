@@ -127,7 +127,7 @@ describe('useGridColumns', () => {
     expect(nameColumn?.meta?.width).toBe('200px')
   })
 
-  it('uses custom align when provided', () => {
+  it('keeps list columns centered when custom align is provided', () => {
     const config = {
       columns: [{ dataIndex: 'name', title: 'Name', align: 'left' }],
     }
@@ -135,7 +135,7 @@ describe('useGridColumns', () => {
       useGridColumns({ ...defaultProps, config }),
     )
     const nameColumn = result.current.columns.find((col) => col.id === 'name')
-    expect(nameColumn?.meta?.align).toBe('left')
+    expect(nameColumn?.meta?.align).toBe('center')
   })
 
   it('defaults align to center', () => {

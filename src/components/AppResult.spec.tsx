@@ -29,22 +29,44 @@ vi.mock('antd', () => ({
     </button>
   ),
   Result: ({
+    className,
+    classNames,
     status,
     title,
     subTitle,
     extra,
   }: {
+    className?: string
+    classNames?:
+      | Record<string, string>
+      | ((info: { props: Record<string, unknown> }) => Record<string, string>)
     status?: React.ReactNode
     title?: React.ReactNode
     subTitle?: React.ReactNode
     extra?: React.ReactNode
-  }) => (
-    <section data-status={String(status)} data-testid="result">
-      <div data-testid="title">{title}</div>
-      {subTitle ? <div data-testid="subtitle">{subTitle}</div> : null}
-      {extra ? <div data-testid="extra">{extra}</div> : null}
+  }) => {
+    const resolvedClassNames =
+      typeof classNames === 'function' ? classNames({ props: {} }) : classNames
+
+    return (
+    <section
+      className={className}
+      data-status={String(status)}
+      data-testid="result"
+    >
+      <div className={resolvedClassNames?.icon} data-testid="result-icon" />
+      <div className={resolvedClassNames?.title} data-testid="title">{title}</div>
+      {subTitle ? (
+        <div className={resolvedClassNames?.subTitle} data-testid="subtitle">
+          {subTitle}
+        </div>
+      ) : null}
+      {extra ? (
+        <div className={resolvedClassNames?.extra} data-testid="extra">{extra}</div>
+      ) : null}
     </section>
-  ),
+    )
+  },
   Typography: {
     Text: ({
       children,
@@ -113,6 +135,15 @@ describe('AppResult', () => {
 
     expect(screen.getByTestId('title')).toHaveTextContent('自定义结果标题')
     expect(screen.getByTestId('subtitle')).toHaveTextContent('请联系系统管理员')
+  })
+
+  it('uses Ant Design semantic regions for the business result layout', () => {
+    render(<AppResult status="success" extra={<button type="button">打印</button>} />)
+
+    expect(screen.getByTestId('result')).toHaveClass('app-result')
+    expect(screen.getByTestId('result-icon')).toHaveClass('app-result__icon')
+    expect(screen.getByTestId('title')).toHaveClass('app-result__title')
+    expect(screen.getByTestId('extra')).toHaveClass('app-result__extra')
   })
 
   it('renders a copyable trace id when provided', () => {

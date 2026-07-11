@@ -4,7 +4,6 @@ import {
   Flex,
   Form,
   Input,
-  Result,
   Space,
   Spin,
   Steps,
@@ -12,6 +11,7 @@ import {
 } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
+import { AppResult } from '@/components/AppResult'
 import { appTitle } from '@/utils/env'
 import { AuthPageShell } from '@/views/auth/AuthPageShell'
 import { InitialSetupAdminForm } from '@/views/auth/InitialSetupAdminForm'
@@ -53,7 +53,8 @@ export function InitialSetupView() {
     return (
       <AppAntdProvider>
         <Flex align="center" justify="center" className="min-h-screen p-6">
-          <Result
+          <AppResult
+            className="app-result--page"
             status="success"
             title={t('auth.initialsetup.completedTitle')}
           />

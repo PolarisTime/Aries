@@ -32,6 +32,21 @@ vi.mock('@/hooks/useMasterOptions', () => ({
   useMasterOptions: vi.fn(),
 }))
 
+vi.mock('@/components/AppResult', () => ({
+  AppResult: ({ className, extra, status, subTitle, title, traceId }: any) => (
+    <section
+      className={className}
+      data-status={status}
+      data-testid="app-result"
+    >
+      <h2>{title}</h2>
+      <p>{subTitle}</p>
+      {traceId ? <span>Trace ID: {traceId}</span> : null}
+      {extra}
+    </section>
+  ),
+}))
+
 vi.mock('@/hooks/useModuleEditorCapabilities', () => ({
   useModuleEditorCapabilities: (...args: unknown[]) =>
     moduleEditorCapabilityMocks.useModuleEditorCapabilities(...args),
@@ -546,7 +561,15 @@ describe('ModuleEditorWorkspace', () => {
       },
     })
     render(<ModuleEditorWorkspace {...defaultProps} />)
+    expect(screen.getByTestId('app-result')).toHaveClass(
+      'app-result--workspace',
+    )
+    expect(screen.getByTestId('app-result')).toHaveAttribute(
+      'data-status',
+      'error',
+    )
     expect(screen.getByText('modules.saveResult.error')).toBeTruthy()
+    expect(screen.getByText('Save failed')).toBeTruthy()
     expect(screen.getByText(/Trace ID/)).toBeTruthy()
   })
 

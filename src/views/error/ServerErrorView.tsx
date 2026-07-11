@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { Button, Result } from 'antd'
+import { Button } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { AppResult } from '@/components/AppResult'
 import { resolveServerErrorRetryPath } from '@/utils/server-error-navigation'
 
 export function ServerErrorView() {
@@ -14,16 +15,9 @@ export function ServerErrorView() {
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        background: '#f5f5f5',
-      }}
-    >
-      <Result
+    <main className="server-error-page">
+      <AppResult
+        className="server-error-result"
         status="warning"
         title={t('error.serverError.title')}
         subTitle={t('error.serverError.subTitle')}
@@ -33,6 +27,6 @@ export function ServerErrorView() {
           </Button>
         }
       />
-    </div>
+    </main>
   )
 }

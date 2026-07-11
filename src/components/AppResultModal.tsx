@@ -28,11 +28,13 @@ export function AppResultModal({
       open={open}
       onCancel={onClose}
       footer={footer ?? null}
-      width={520}
+      width={640}
+      classNames={{ container: 'app-result-modal' }}
       centered
       destroyOnHidden
     >
       <AppResult
+        className="app-result--modal"
         status={status}
         title={title}
         subTitle={subTitle}
