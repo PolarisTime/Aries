@@ -1,14 +1,5 @@
 import { KeyOutlined } from '@ant-design/icons'
-import {
-  Card,
-  Flex,
-  Form,
-  Input,
-  Space,
-  Spin,
-  Steps,
-  Typography,
-} from 'antd'
+import { Card, Flex, Form, Input, Space, Spin, Steps, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppResult } from '@/components/AppResult'
@@ -65,7 +56,10 @@ export function InitialSetupView() {
 
   return (
     <AuthPageShell>
-      <Card className="login-form-card initial-setup-card" variant="outlined">
+      <Card
+        className="login-form-card initial-setup-card initial-setup-workspace"
+        variant="outlined"
+      >
         <Space orientation="vertical" size="large" className="w-full">
           <Space orientation="vertical" size={4} className="w-full text-center">
             <Typography.Title level={2} className="m-0">
@@ -81,7 +75,7 @@ export function InitialSetupView() {
               { title: t('auth.initialsetup.adminStep') },
               { title: t('auth.initialsetup.companyStep') },
             ]}
-            className="mb-2"
+            className="mb-2 initial-setup-progress"
           />
           <Form
             form={form}

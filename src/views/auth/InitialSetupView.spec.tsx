@@ -221,6 +221,15 @@ describe('InitialSetupView', () => {
     mockUseInitialSetupState.mockReturnValue(createInitialSetupState())
   })
 
+  it('presents initial setup as an OOBE task with explicit progress', () => {
+    const { container } = render(<InitialSetupView />)
+
+    expect(container.querySelector('.initial-setup-progress')).toBeTruthy()
+    expect(container.querySelector('.initial-setup-workspace')).toBeTruthy()
+    expect(screen.getByText('管理员设置')).toBeTruthy()
+    expect(screen.getByText('公司设置')).toBeTruthy()
+  })
+
   it('renders admin form on first step', () => {
     render(<InitialSetupView />)
     expect(screen.getByTestId('admin-form')).toBeTruthy()

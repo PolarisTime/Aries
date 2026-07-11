@@ -71,6 +71,33 @@ describe('AuthPageShell', () => {
     expect(screen.getByTestId('antd-provider')).toBeTruthy()
   })
 
+  it('separates brand context from the primary authentication task', () => {
+    const { container } = render(
+      <AuthPageShell>
+        <div>登录表单</div>
+      </AuthPageShell>,
+    )
+
+    expect(container.querySelector('.auth-page-visual')).toBeTruthy()
+    expect(container.querySelector('main.auth-page-main')).toBeTruthy()
+    expect(container.querySelector('.auth-page-panel')).toBeTruthy()
+  })
+
+  it('marks custom hero as the visual context without duplicating the brand', () => {
+    const { container } = render(
+      <AuthPageShell hero={<div>初始化说明</div>}>
+        <div>初始化表单</div>
+      </AuthPageShell>,
+    )
+
+    expect(container.querySelector('.auth-page-visual')).toHaveTextContent(
+      '初始化说明',
+    )
+    expect(container.querySelector('.auth-page-panel')).toHaveTextContent(
+      '初始化表单',
+    )
+  })
+
   it('does not render version footer', () => {
     render(
       <AuthPageShell>

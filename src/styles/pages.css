@@ -611,60 +611,173 @@
 }
 
 .auth-page-shell {
-  display: flex;
-  flex-direction: column;
   min-height: 100vh;
-  background: var(--theme-shell-bg);
+  background: var(--theme-card-bg);
+}
+
+.auth-page-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(480px, 1.1fr);
+  min-height: 100vh;
+}
+
+.auth-page-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 100vh;
+  padding: 64px;
+  overflow: hidden;
+  color: var(--theme-header-text);
+  background:
+    radial-gradient(
+      circle at 18% 18%,
+      color-mix(in srgb, var(--theme-primary) 28%, transparent),
+      transparent 38%
+    ),
+    linear-gradient(
+      145deg,
+      var(--theme-sider-bg) 0%,
+      color-mix(in srgb, var(--theme-sider-bg) 88%, var(--theme-primary)) 100%
+    );
+}
+
+.auth-page-visual::after {
+  position: absolute;
+  right: -96px;
+  bottom: -96px;
+  width: 320px;
+  height: 320px;
+  content: '';
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 35%, transparent);
+  border-radius: 50%;
+}
+
+.auth-page-visual-orbit {
+  position: absolute;
+  top: 12%;
+  right: 12%;
+  width: 160px;
+  height: 160px;
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 28%, transparent);
+  border-radius: 50%;
+}
+
+.auth-page-visual-content {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 520px);
+  margin-inline: auto;
+}
+
+.auth-page-main {
+  min-width: 0;
+  background:
+    linear-gradient(
+      var(--theme-border-subtle) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      var(--theme-border-subtle) 1px,
+      transparent 1px
+    ),
+    var(--theme-shell-bg);
+  background-size: 32px 32px;
 }
 
 .auth-page-content {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 48px 24px;
+  min-height: 100vh;
+  padding: 48px;
+}
+
+.auth-page-panel {
+  width: min(100%, 720px);
 }
 
 .auth-page-brand {
-  margin-bottom: 24px;
-  text-align: center;
+  color: var(--theme-header-text);
+}
+
+.auth-page-brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
 }
 
 .auth-page-brand-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 12px;
+  width: 40px;
+  height: 40px;
   color: #fff;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: 0;
-  background: var(--theme-primary);
+  background: color-mix(in srgb, var(--theme-primary) 82%, white);
   border-radius: 8px;
   box-shadow: 0 1px 2px 0 var(--theme-shadow-sm);
 }
 
-.auth-page-brand-title.ant-typography {
-  margin-bottom: 4px;
-  font-size: 20px;
-  line-height: 28px;
+.auth-page-product-label.ant-typography {
+  color: var(--theme-header-text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
 }
 
-.auth-page-brand-subtitle {
-  font-size: 14px;
-  line-height: 22px;
+.auth-page-brand-title.ant-typography {
+  max-width: 480px;
+  margin: 0 0 16px;
+  color: var(--theme-header-text);
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.18;
+}
+
+.auth-page-brand-subtitle.ant-typography {
+  max-width: 440px;
+  margin-bottom: 0;
+  color: var(--theme-header-muted);
+  font-size: 16px;
+  line-height: 26px;
+}
+
+.auth-page-brand-rule {
+  width: 48px;
+  height: 2px;
+  margin: 32px 0 20px;
+  background: var(--theme-primary);
+}
+
+.auth-page-brand-note.ant-typography {
+  color: var(--theme-header-muted);
+  font-size: 13px;
 }
 
 .login-form-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
+  margin-inline: auto;
   border-color: var(--theme-card-border);
   border-radius: 8px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  box-shadow: var(--ant-box-shadow-tertiary);
 }
 
 .initial-setup-card {
   max-width: 720px;
+}
+
+.initial-setup-progress {
+  padding: 16px;
+  background: var(--theme-highlight-bg);
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: 8px;
+}
+
+.initial-setup-workspace .ant-card-body {
+  padding: 32px;
 }
 
 .login-form .ant-input-affix-wrapper,
@@ -696,6 +809,61 @@
 
 .login-form-card .ant-card-body {
   padding: 24px;
+}
+
+@media (max-width: 900px) {
+  .auth-page-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-page-visual {
+    min-height: auto;
+    padding: 24px;
+  }
+
+  .auth-page-visual-orbit,
+  .auth-page-visual::after,
+  .auth-page-brand-rule,
+  .auth-page-brand-note {
+    display: none;
+  }
+
+  .auth-page-brand-lockup {
+    margin-bottom: 12px;
+  }
+
+  .auth-page-brand-title.ant-typography {
+    margin-bottom: 4px;
+    font-size: 24px;
+  }
+
+  .auth-page-brand-subtitle.ant-typography {
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  .auth-page-content {
+    min-height: auto;
+    padding: 32px 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .auth-page-visual {
+    padding: 20px;
+  }
+
+  .auth-page-product-label.ant-typography {
+    display: none;
+  }
+
+  .auth-page-brand-title.ant-typography {
+    font-size: 20px;
+  }
+
+  .initial-setup-workspace .ant-card-body {
+    padding: 20px;
+  }
 }
 
 .login-skeleton-form {
