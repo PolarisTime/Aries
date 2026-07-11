@@ -115,7 +115,7 @@ describe('BusinessGridContent', () => {
     expect(screen.getByText('Test warning')).toBeTruthy()
   })
 
-  it('renders the page context and current result range', () => {
+  it('does not render the workspace header', () => {
     render(
       <BusinessGridContent
         {...defaultProps}
@@ -128,17 +128,12 @@ describe('BusinessGridContent', () => {
       />,
     )
 
-    expect(screen.getByText('Finance')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: '付款管理' })).toBeTruthy()
-    expect(screen.getByText('登记并核对企业付款流水。')).toBeTruthy()
-    expect(
-      screen.getByText(
-        'modules.workspace.resultRange:{"start":21,"end":22,"total":95}',
-      ),
-    ).toBeTruthy()
+    expect(screen.queryByText('Finance')).toBeNull()
+    expect(screen.queryByRole('heading', { name: '付款管理' })).toBeNull()
+    expect(screen.queryByText('登记并核对企业付款流水。')).toBeNull()
   })
 
-  it('builds an explicitly current-page overview from visible records', () => {
+  it('does not build or render the workspace overview', () => {
     const buildOverview = vi.fn(() => [
       { label: '付款笔数', value: '2' },
       { label: '付款金额', value: '200.00' },
@@ -151,12 +146,12 @@ describe('BusinessGridContent', () => {
       />,
     )
 
-    expect(buildOverview).toHaveBeenCalledWith(defaultProps.records)
+    expect(buildOverview).not.toHaveBeenCalled()
     expect(
-      screen.getByText('modules.workspace.currentPageSummary'),
-    ).toBeTruthy()
-    expect(screen.getByText('付款笔数')).toBeTruthy()
-    expect(screen.getByText('200.00')).toBeTruthy()
+      screen.queryByText('modules.workspace.currentPageSummary'),
+    ).toBeNull()
+    expect(screen.queryByText('付款笔数')).toBeNull()
+    expect(screen.queryByText('200.00')).toBeNull()
   })
 
   it('keeps pagination below the table with page-size and selection context', () => {

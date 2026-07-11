@@ -516,7 +516,7 @@ describe('ModuleFilterToolbar', () => {
     expect(screen.getByLabelText('Five')).toBeTruthy()
   })
 
-  it('reports active hidden filters while secondary filters are collapsed', () => {
+  it('does not render the filter heading or active filter count', () => {
     renderToolbar({
       config: config({
         filters: [
@@ -530,8 +530,11 @@ describe('ModuleFilterToolbar', () => {
 
     expect(screen.queryByLabelText('Secondary')).toBeNull()
     expect(
-      screen.getByText('modules.filter.activeCount:{"count":1}'),
-    ).toBeTruthy()
+      screen.queryByText('modules.filter.conditions'),
+    ).toBeNull()
+    expect(
+      screen.queryByText('modules.filter.activeCount:{"count":1}'),
+    ).toBeNull()
   })
 
   it('applies quick filters with default filters preserved', () => {

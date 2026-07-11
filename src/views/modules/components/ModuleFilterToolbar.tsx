@@ -222,9 +222,6 @@ export function ModuleFilterToolbar({
   ]
   const canExpand = secondaryFilters.length > 0
   const quickFilters = config.quickFilters || []
-  const activeFilterCount = Object.keys(
-    normalizeFilters(submittedFilters),
-  ).length
   const activeQuickFilterKey = quickFilters.find((filter) =>
     isSameFilterPreset(submittedFilters, {
       ...defaultFilters,
@@ -290,16 +287,6 @@ export function ModuleFilterToolbar({
       className="module-filter-toolbar"
       aria-label={t('modules.filter.conditions')}
     >
-      <div className="module-filter-heading-row">
-        <span className="module-filter-heading">
-          {t('modules.filter.conditions')}
-        </span>
-        {activeFilterCount > 0 ? (
-          <span className="module-filter-active-count" aria-live="polite">
-            {t('modules.filter.activeCount', { count: activeFilterCount })}
-          </span>
-        ) : null}
-      </div>
       {quickFilters.length ? (
         <div className="module-filter-quick-row">
           <Segmented
