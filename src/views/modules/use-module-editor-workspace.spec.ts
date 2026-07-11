@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import dayjs from 'dayjs'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   allocateBusinessPrimaryNo,
   generateBusinessPrimaryNo,
@@ -38,6 +38,7 @@ import { getStoredUser } from '@/utils/storage'
 import {
   readModuleEditorDraft,
   removeModuleEditorDraft,
+  resolveModuleEditorDraftUserKey,
   writeModuleEditorDraft,
 } from '@/views/modules/module-editor-draft-storage'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
@@ -266,6 +267,10 @@ function enableSnowflakeBusinessNo() {
 }
 
 describe('useModuleEditorWorkspace', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockRuntimeConfig()
@@ -308,6 +313,7 @@ describe('useModuleEditorWorkspace', () => {
       id: 'user-1',
       loginName: 'tester',
     } as never)
+    vi.mocked(resolveModuleEditorDraftUserKey).mockReturnValue('user-1')
     vi.mocked(readModuleEditorDraft).mockReturnValue(null)
   })
 
@@ -1191,6 +1197,31 @@ describe('useModuleEditorWorkspace', () => {
     )
   })
 
+  it('keeps a successful save result when refreshing the list fails', async () => {
+    mockFns.refreshModuleQueries.mockRejectedValueOnce(new Error('刷新失败'))
+    const onSaved = vi.fn()
+    const { result } = renderWorkspace({
+      open: false,
+      onSaved,
+      config: cfg({ primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(result.current.saveResult).toEqual(
+      expect.objectContaining({ status: 'success' }),
+    )
+    expect(removeModuleEditorDraft).toHaveBeenCalledWith(
+      'user-1',
+      'test-module',
+      'new',
+    )
+    expect(onSaved).toHaveBeenCalled()
+    expect(message.error).toHaveBeenCalledWith('刷新失败')
+  })
+
   it('blocks saving while the primary number is loading', async () => {
     const generated = deferred<string>()
     vi.mocked(generateBusinessPrimaryNo).mockReturnValueOnce(generated.promise)
@@ -1590,6 +1621,65 @@ describe('useModuleEditorWorkspace', () => {
     )
     expect(form.validateFields).not.toHaveBeenCalled()
     expect(saveBusinessModule).not.toHaveBeenCalled()
+  })
+
+  it('debounces draft writes while the user is editing', () => {
+    vi.useFakeTimers()
+    const { result } = renderWorkspace({ config: cfg({ primaryNoKey: '' }) })
+
+    act(() => {
+      result.current.handleFormValuesChange({ customerName: '客户A' })
+      result.current.handleFormValuesChange({ customerName: '客户AB' })
+    })
+
+    expect(writeModuleEditorDraft).not.toHaveBeenCalled()
+    act(() => vi.advanceTimersByTime(499))
+    expect(writeModuleEditorDraft).not.toHaveBeenCalled()
+    act(() => vi.advanceTimersByTime(1))
+    expect(writeModuleEditorDraft).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  it('flushes the latest draft when the editor unmounts', () => {
+    const { result, unmount } = renderWorkspace({
+      config: cfg({ primaryNoKey: '' }),
+    })
+    act(() => {
+      result.current.handleFormValuesChange({ customerName: '客户A' })
+    })
+    vi.mocked(writeModuleEditorDraft).mockClear()
+
+    unmount()
+
+    expect(writeModuleEditorDraft).toHaveBeenCalledTimes(1)
+  })
+
+  it('flushes the latest draft when the editor closes normally', () => {
+    const initialProps = props({ config: cfg({ primaryNoKey: '' }) })
+    const { result, rerender } = renderHook(
+      (hookProps) => useModuleEditorWorkspace(hookProps),
+      { initialProps },
+    )
+    act(() => {
+      result.current.handleFormValuesChange({ customerName: '客户A' })
+    })
+    vi.mocked(writeModuleEditorDraft).mockClear()
+
+    rerender({ ...initialProps, open: false })
+
+    expect(writeModuleEditorDraft).toHaveBeenCalledTimes(1)
+  })
+
+  it('disables local drafts without a stable authenticated user key', () => {
+    vi.mocked(resolveModuleEditorDraftUserKey).mockReturnValue(null as never)
+
+    const { result } = renderWorkspace({ config: cfg({ primaryNoKey: '' }) })
+    act(() => {
+      result.current.flushEditorDraft('error-boundary')
+    })
+
+    expect(readModuleEditorDraft).not.toHaveBeenCalled()
+    expect(writeModuleEditorDraft).not.toHaveBeenCalled()
   })
 
   it('does not write an autosave draft when editor is closed', () => {

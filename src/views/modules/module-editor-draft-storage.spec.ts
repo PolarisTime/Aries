@@ -188,9 +188,57 @@ describe('module-editor-draft-storage', () => {
         'user-1',
         'sales-order',
         'new',
-        1000 + 8 * 24 * 60 * 60 * 1000,
+        1000 + 25 * 60 * 60 * 1000,
       ),
     ).toBeNull()
+  })
+
+  it('omits sensitive and oversized values from a draft snapshot', () => {
+    const snapshot = buildModuleEditorDraftSnapshot({
+      userKey: 'user-1',
+      moduleKey: 'sales-order',
+      recordId: 'new',
+      values: {
+        id: '',
+        customerName: '客户A',
+        setupToken: 'secret-token',
+        attachmentContent: 'x'.repeat(70 * 1024),
+      },
+      items: [
+        {
+          id: 'line-1',
+          material: '钢材',
+          fileContent: 'data:application/pdf;base64,secret',
+        },
+      ],
+      authoritativePrimaryNo: '',
+      now: 1000,
+    })
+
+    expect(snapshot.values).toEqual({ id: '', customerName: '客户A' })
+    expect(snapshot.items).toEqual([{ id: 'line-1', material: '钢材' }])
+  })
+
+  it('rejects a draft that exceeds the total storage limit', () => {
+    const snapshot = buildModuleEditorDraftSnapshot({
+      userKey: 'user-1',
+      moduleKey: 'sales-order',
+      recordId: 'new',
+      values: Object.fromEntries(
+        Array.from({ length: 10 }, (_, index) => [
+          `notes${index}`,
+          'x'.repeat(60 * 1024),
+        ]),
+      ),
+      items: [],
+      authoritativePrimaryNo: '',
+      now: 1000,
+    })
+
+    expect(() => writeModuleEditorDraft(snapshot)).toThrow(
+      'Editor draft exceeds storage limit',
+    )
+    expect(localStorage.length).toBe(0)
   })
 
   it('resolves stable user and record keys', () => {
@@ -198,8 +246,8 @@ describe('module-editor-draft-storage', () => {
       '12',
     )
     expect(resolveModuleEditorDraftUserKey({ loginName: 'u' })).toBe('u')
-    expect(resolveModuleEditorDraftUserKey({})).toBe('anonymous')
-    expect(resolveModuleEditorDraftUserKey(null)).toBe('anonymous')
+    expect(resolveModuleEditorDraftUserKey({})).toBeNull()
+    expect(resolveModuleEditorDraftUserKey(null)).toBeNull()
     expect(getModuleEditorDraftRecordId({ id: 'record-1' })).toBe('record-1')
     expect(getModuleEditorDraftRecordId(null)).toBe('new')
   })

@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useReducer,
+  useRef,
   useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -82,6 +83,8 @@ const SYSTEM_GENERATED_PRIMARY_NO_MODULES = new Set([
   'invoice-issue',
   'ledger-adjustment',
 ])
+
+const EDITOR_DRAFT_DEBOUNCE_MS = 500
 
 function sumLineItemsBy(nextItems: ModuleLineItem[], key: string) {
   return nextItems.reduce((sum, item) => sum + Number(item[key] || 0), 0)
@@ -723,7 +726,9 @@ export function useModuleEditorWorkspace({
       }
     }
 
-    const storedDraft = readModuleEditorDraft(userKey, moduleKey, draftRecordId)
+    const storedDraft = userKey
+      ? readModuleEditorDraft(userKey, moduleKey, draftRecordId)
+      : null
     if (storedDraft) {
       modal.confirm({
         title: t('modules.editorWorkspace.recoverDraftTitle'),
@@ -732,7 +737,9 @@ export function useModuleEditorWorkspace({
         cancelText: t('modules.editorWorkspace.recoverDraftCancel'),
         onOk: () => applyStoredDraft(storedDraft),
         onCancel: () => {
-          removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
+          if (userKey) {
+            removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
+          }
           initializeEditor()
         },
       })
@@ -762,7 +769,7 @@ export function useModuleEditorWorkspace({
   const writeCurrentDraftSnapshot = useCallback(
     (reason?: ClientAutosaveReason, nextItems?: ModuleLineItem[]) => {
       void reason
-      if (!open) {
+      if (!userKey) {
         return
       }
 
@@ -797,18 +804,69 @@ export function useModuleEditorWorkspace({
       form,
       items,
       moduleKey,
-      open,
       record,
       userKey,
     ],
   )
 
-  useEffect(() => {
-    if (!open) {
+  const draftWriteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingDraftItemsRef = useRef<ModuleLineItem[] | undefined>(undefined)
+  const draftWriterRef = useRef(writeCurrentDraftSnapshot)
+  draftWriterRef.current = writeCurrentDraftSnapshot
+  const editorOpenRef = useRef(open)
+  editorOpenRef.current = open
+
+  const flushScheduledDraft = useCallback((reason?: ClientAutosaveReason) => {
+    if (draftWriteTimerRef.current) {
+      clearTimeout(draftWriteTimerRef.current)
+      draftWriteTimerRef.current = null
+    }
+    const pendingItems = pendingDraftItemsRef.current
+    pendingDraftItemsRef.current = undefined
+    if (!editorOpenRef.current) {
       return
     }
-    return registerClientAutosaveHandler(writeCurrentDraftSnapshot)
-  }, [open, writeCurrentDraftSnapshot])
+    draftWriterRef.current(reason, pendingItems)
+  }, [])
+
+  const scheduleDraftWrite = useCallback(
+    (nextItems?: ModuleLineItem[]) => {
+      if (!userKey) {
+        return
+      }
+      pendingDraftItemsRef.current = nextItems
+      if (draftWriteTimerRef.current) {
+        clearTimeout(draftWriteTimerRef.current)
+      }
+      draftWriteTimerRef.current = setTimeout(() => {
+        flushScheduledDraft('editor-change')
+      }, EDITOR_DRAFT_DEBOUNCE_MS)
+    },
+    [flushScheduledDraft, userKey],
+  )
+
+  const flushScheduledDraftRef = useRef(flushScheduledDraft)
+  flushScheduledDraftRef.current = flushScheduledDraft
+
+  useEffect(() => {
+    if (!open || !userKey) {
+      return
+    }
+    const activeDraftWriter = draftWriterRef.current
+    const unregister = registerClientAutosaveHandler((reason) => {
+      flushScheduledDraftRef.current(reason)
+    })
+    return () => {
+      if (draftWriteTimerRef.current) {
+        clearTimeout(draftWriteTimerRef.current)
+        draftWriteTimerRef.current = null
+      }
+      const pendingItems = pendingDraftItemsRef.current
+      pendingDraftItemsRef.current = undefined
+      activeDraftWriter('pagehide', pendingItems)
+      unregister()
+    }
+  }, [open, userKey])
 
   const handleFormValuesChange = (changedValues: FormChangedValues) => {
     if (!open) {
@@ -826,7 +884,7 @@ export function useModuleEditorWorkspace({
       changedValues,
       defaultTaxRate,
     })
-    writeCurrentDraftSnapshot('editor-change')
+    scheduleDraftWrite()
   }
 
   const handleSave = async (audit = false) => {
@@ -969,9 +1027,9 @@ export function useModuleEditorWorkspace({
         draftRecord,
         savedRecord: savedResult.data,
       })
-      await refreshModuleQueries()
-      removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
-      onSaved()
+      if (userKey) {
+        removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
+      }
       if (preallocatedIdWarning) {
         setSaveResult({
           status: 'warning',
@@ -984,6 +1042,16 @@ export function useModuleEditorWorkspace({
           message: isEdit ? t('common.editSuccess') : t('common.addSuccess'),
           record: savedResult.data,
         })
+      }
+      onSaved()
+      try {
+        await refreshModuleQueries()
+      } catch (refreshError) {
+        message.error(
+          refreshError instanceof Error
+            ? refreshError.message
+            : t('common.loadFailed'),
+        )
       }
       setSaving(false)
     } catch (err) {
@@ -1000,7 +1068,10 @@ export function useModuleEditorWorkspace({
           ...(code !== undefined ? { errorCode: code } : {}),
         })
       } else {
-        setSaveResult({ status: 'error', message: t('common.saveFailedRetry') })
+        setSaveResult({
+          status: 'error',
+          message: t('common.saveFailedRetry'),
+        })
       }
       setSaving(false)
     }
@@ -1012,7 +1083,9 @@ export function useModuleEditorWorkspace({
     }
 
     setSaving(true)
-    removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
+    if (userKey) {
+      removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
+    }
     try {
       await refreshModuleQueries()
       setSaveResult(null)
@@ -1110,7 +1183,7 @@ export function useModuleEditorWorkspace({
         defaultTaxRate,
       })
       dispatchWorkspaceState({ items: nextItems })
-      writeCurrentDraftSnapshot('parent-import', nextItems)
+      scheduleDraftWrite(nextItems)
       setParentSelectorSessionKey(null)
       message.success(
         importedParentCount > 1
@@ -1163,7 +1236,7 @@ export function useModuleEditorWorkspace({
         defaultTaxRate,
       })
     }
-    writeCurrentDraftSnapshot('items-change', nextItems)
+    scheduleDraftWrite(nextItems)
   }
 
   const updateItems: Dispatch<SetStateAction<ModuleLineItem[]>> = (
@@ -1182,7 +1255,7 @@ export function useModuleEditorWorkspace({
         defaultTaxRate,
       })
     }
-    writeCurrentDraftSnapshot('items-change', resolvedItems)
+    scheduleDraftWrite(resolvedItems)
   }
 
   return {
@@ -1204,6 +1277,6 @@ export function useModuleEditorWorkspace({
     saving,
     setItems: updateItems,
     handleFormValuesChange,
-    flushEditorDraft: writeCurrentDraftSnapshot,
+    flushEditorDraft: flushScheduledDraft,
   }
 }

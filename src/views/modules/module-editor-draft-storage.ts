@@ -3,7 +3,11 @@ import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 
 const STORAGE_PREFIX = 'aries-module-editor-draft:'
 const DRAFT_VERSION = 1
-const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000
+const DRAFT_TTL_MS = 24 * 60 * 60 * 1000
+const MAX_DRAFT_STRING_LENGTH = 64 * 1024
+const MAX_DRAFT_STORAGE_BYTES = 512 * 1024
+const SENSITIVE_DRAFT_KEY_PATTERN =
+  /(password|token|secret|credential|attachmentContent|fileContent|base64|dataUrl)/i
 
 export interface ModuleEditorDraftSnapshot {
   version: 1
@@ -32,6 +36,33 @@ function getStorageKey(userKey: string, moduleKey: string, recordId: string) {
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function sanitizeDraftValue(value: unknown, key = ''): unknown {
+  if (SENSITIVE_DRAFT_KEY_PATTERN.test(key)) {
+    return undefined
+  }
+  if (typeof value === 'string') {
+    return value.length <= MAX_DRAFT_STRING_LENGTH ? value : undefined
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => sanitizeDraftValue(item))
+      .filter((item) => item !== undefined)
+  }
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).flatMap(([nestedKey, nestedValue]) => {
+        const sanitized = sanitizeDraftValue(nestedValue, nestedKey)
+        return sanitized === undefined ? [] : [[nestedKey, sanitized]]
+      }),
+    )
+  }
+  return value
+}
+
+function sanitizeDraftRecord(record: ModuleRecord): ModuleRecord {
+  return sanitizeDraftValue(record) as ModuleRecord
 }
 
 function parseDraftSnapshot(value: unknown): ModuleEditorDraftSnapshot | null {
@@ -69,9 +100,10 @@ function parseDraftSnapshot(value: unknown): ModuleEditorDraftSnapshot | null {
 
 export function resolveModuleEditorDraftUserKey(user: LoginUser | null) {
   if (!user) {
-    return 'anonymous'
+    return null
   }
-  return String(user.id || user.loginName || 'anonymous')
+  const stableKey = user.id || user.loginName
+  return stableKey ? String(stableKey) : null
 }
 
 export function getModuleEditorDraftRecordId(record: ModuleRecord | null) {
@@ -92,8 +124,8 @@ export function buildModuleEditorDraftSnapshot({
     userKey,
     moduleKey,
     recordId,
-    values: { ...values },
-    items: items.map((item) => ({ ...item })),
+    values: sanitizeDraftRecord(values),
+    items: items.map((item) => sanitizeDraftRecord(item) as ModuleLineItem),
     authoritativePrimaryNo,
     updatedAt: now,
   }
@@ -103,9 +135,16 @@ export function writeModuleEditorDraft(snapshot: ModuleEditorDraftSnapshot) {
   if (typeof window === 'undefined') {
     return
   }
+  const serializedSnapshot = JSON.stringify(snapshot)
+  if (
+    new TextEncoder().encode(serializedSnapshot).byteLength >
+    MAX_DRAFT_STORAGE_BYTES
+  ) {
+    throw new Error('Editor draft exceeds storage limit')
+  }
   localStorage.setItem(
     getStorageKey(snapshot.userKey, snapshot.moduleKey, snapshot.recordId),
-    JSON.stringify(snapshot),
+    serializedSnapshot,
   )
 }
 
