@@ -293,7 +293,7 @@ describe('BusinessGridTable layout and rendering', () => {
     })
   })
 
-  it('passes row selection width and selected row aria state', () => {
+  it('hides checkbox selection and marks the selected row with border beam styling', () => {
     renderGrid({
       rowSelection: {
         selectedRowKeys: ['row-1'],
@@ -303,7 +303,7 @@ describe('BusinessGridTable layout and rendering', () => {
 
     expect(screen.getByTestId('mock-table')).toHaveAttribute(
       'data-selection-column-width',
-      '40',
+      '',
     )
     expect(screen.getByTestId('row-row-1')).toHaveAttribute(
       'aria-selected',
@@ -317,9 +317,12 @@ describe('BusinessGridTable layout and rendering', () => {
       'title',
       'Enter 打开单据',
     )
+    expect(screen.getByTestId('row-row-1')).toHaveClass(
+      'module-table-row-selected-border-beam',
+    )
     expect(screen.getByTestId('mock-table')).toHaveAttribute(
       'data-scroll-x',
-      '160',
+      '120',
     )
   })
 

@@ -19,7 +19,6 @@ import {
 } from '@/views/modules/components/business-grid-table-utils'
 
 const MIN_TABLE_BODY_SCROLL_Y = 120
-const SELECTION_COLUMN_WIDTH = 40
 const TABLE_BOTTOM_INSET = 16
 const ROW_SINGLE_CLICK_DELAY_MS = 220
 const ROW_INTERACTION_EXCLUSION_SELECTOR =
@@ -104,16 +103,12 @@ export function BusinessGridTable({
     }
   }, [])
 
-  const selection = rowSelection
-    ? { ...rowSelection, columnWidth: SELECTION_COLUMN_WIDTH }
-    : undefined
-
   const isVirtual = dataSource.length > 100
 
   const scrollX = computeTableScrollX({
     columnWidths: visibleColumns.map((col) => col.width),
     containerWidth: shellWidth,
-    selectionColumnWidth: rowSelection ? SELECTION_COLUMN_WIDTH : 0,
+    selectionColumnWidth: 0,
   })
 
   const scroll = buildTableScrollConfig({
@@ -132,6 +127,13 @@ export function BusinessGridTable({
   const selectedRowKeys = rowSelection?.selectedRowKeys?.map((key) =>
     String(key),
   )
+  const resolveRowClassName = (record: ModuleRecord) => {
+    const classes = [rowClassName(record)]
+    if (selectedRowKeys?.includes(String(record.id))) {
+      classes.push('module-table-row-selected-border-beam')
+    }
+    return classes.filter(Boolean).join(' ')
+  }
 
   useEffect(
     () => () => {
@@ -198,12 +200,11 @@ export function BusinessGridTable({
         loading={loading}
         columns={visibleColumns}
         dataSource={dataSource}
-        rowSelection={selection}
         virtual={isVirtual}
         tableLayout="fixed"
         pagination={false}
         scroll={scroll}
-        rowClassName={rowClassName}
+        rowClassName={resolveRowClassName}
         onRow={onRow}
         locale={locale}
       />

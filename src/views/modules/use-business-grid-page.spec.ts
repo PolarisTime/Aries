@@ -330,7 +330,7 @@ describe('useBusinessGridPage', () => {
           { id: '1', projectId: 'P-1' },
           { id: '2', projectId: 'P-2' },
         ],
-        showActions: true,
+        showActions: false,
       }),
     )
   })
@@ -351,6 +351,31 @@ describe('useBusinessGridPage', () => {
         }),
       )
     })
+  })
+
+  it('moves the selected record attachment action into the command region', async () => {
+    const onAttach = vi.fn()
+    mocks.buildActions.mockReturnValue([
+      { key: 'attach', label: '附件(2)', onClick: onAttach },
+    ])
+    const { result } = renderHook(() => useBusinessGridPage(props()))
+
+    await act(async () => {
+      result.current.setSelectedRowKeys(['1'])
+      result.current.setSelectedRowMap({
+        '1': { id: '1', projectId: 'P-1' },
+      })
+    })
+
+    const action = result.current.visibleToolbarActions.find(
+      (item: ModuleActionDefinition) => item.key === 'attach',
+    )
+    expect(action?.label).toBe('附件(2)')
+
+    await act(async () => {
+      await result.current.handleAction(action)
+    })
+    expect(onAttach).toHaveBeenCalledTimes(1)
   })
 
   it('updates completed sales order from the command region reopen action', async () => {

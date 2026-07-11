@@ -375,6 +375,16 @@ export function useBusinessGridPage({
 
   const selectedRecords = Object.values(selectedRowMap)
   const selectedSalesOrders = selectedRecords
+  const selectedRecordActions =
+    selectedRecords.length === 1 ? buildActions(selectedRecords[0]) : []
+  const selectedRecordToolbarActions: ModuleActionDefinition[] =
+    selectedRecordActions.map((action) => ({
+      key: action.key,
+      label: action.label,
+      type: 'default',
+      danger: action.danger,
+      disabled: action.disabled,
+    }))
   const reopenDeliveryVerificationAction: ModuleActionDefinition | null =
     moduleKey === 'sales-order' &&
     canAuditRecord &&
@@ -402,12 +412,20 @@ export function useBusinessGridPage({
       : null
   const visibleToolbarActions = [
     ...baseVisibleToolbarActions,
+    ...selectedRecordToolbarActions,
     ...(reopenDeliveryVerificationAction
       ? [reopenDeliveryVerificationAction]
       : []),
     ...(prepaymentAllocationAction ? [prepaymentAllocationAction] : []),
   ]
   const handleAction = async (action: ModuleActionDefinition) => {
+    const selectedRecordAction = selectedRecordActions.find(
+      (candidate) => candidate.key === action.key,
+    )
+    if (selectedRecordAction) {
+      selectedRecordAction.onClick()
+      return
+    }
     if (action.key === 'allocate-purchase-prepayment') {
       if (!canUpdateRecord || !selectedPrepayment) return
       overlays.openPrepaymentAllocation(selectedPrepayment)
@@ -440,7 +458,7 @@ export function useBusinessGridPage({
     setSelectedRowKeys,
     setSelectedRowMap,
     buildActions,
-    showActions: true,
+    showActions: false,
   })
 
   return {

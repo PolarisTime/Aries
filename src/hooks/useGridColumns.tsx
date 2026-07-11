@@ -29,7 +29,7 @@ interface Props {
 export function useGridColumns({
   config,
   rowActions,
-  canUpdate,
+  canUpdate: _canUpdate,
   showActions,
 }: Props) {
   const { formatCellValue } = useModuleDisplaySupport()
@@ -83,7 +83,7 @@ export function useGridColumns({
     })
   }
 
-  if (canUpdate || showActions) {
+  if (showActions) {
     columns.push({
       id: 'actions',
       header: t('hooks.gridColumns.actions'),

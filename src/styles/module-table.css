@@ -1,5 +1,14 @@
 .module-table-shell {
   --module-table-border-color: var(--theme-border-subtle);
+
+  border: 1px solid var(--module-table-border-color);
+  border-radius: var(--ant-border-radius-lg, 8px);
+  background: var(--theme-card-bg);
+}
+
+.module-table-shell .ant-table-cell-fix-left-last::after,
+.module-table-shell .ant-table-cell-fix-right-first::after {
+  box-shadow: none !important;
 }
 
 .module-table-shell .sticky-actions-col,
@@ -65,6 +74,76 @@
 
 .module-table-shell .ant-table-tbody .ant-table-row {
   cursor: pointer;
+}
+
+.module-table-shell .ant-table-tbody .module-table-row-selected-border-beam {
+  background-color: var(--ant-table-row-selected-bg, var(--theme-highlight-bg));
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      transparent 35%,
+      color-mix(in srgb, var(--theme-primary) 45%, transparent) 43%,
+      var(--theme-primary) 50%,
+      color-mix(in srgb, var(--theme-primary) 45%, transparent) 57%,
+      transparent 65%,
+      transparent 100%
+    ),
+    linear-gradient(
+      270deg,
+      transparent 0%,
+      transparent 35%,
+      color-mix(in srgb, var(--theme-primary) 45%, transparent) 43%,
+      var(--theme-primary) 50%,
+      color-mix(in srgb, var(--theme-primary) 45%, transparent) 57%,
+      transparent 65%,
+      transparent 100%
+    );
+  background-position:
+    0 0,
+    0 100%;
+  background-repeat: repeat-x;
+  background-size: 220% 2px;
+  animation: module-table-selected-border-beam 1.8s linear infinite;
+}
+
+.module-table-shell
+  .ant-table-tbody
+  .module-table-row-selected-border-beam
+  > td {
+  background-color: transparent !important;
+}
+
+.module-table-shell
+  .ant-table-tbody
+  .module-table-row-selected-border-beam
+  > td:first-child {
+  box-shadow:
+    inset 2px 0 0 var(--theme-highlight-border, var(--theme-primary)),
+    -2px 0 8px color-mix(in srgb, var(--theme-primary) 35%, transparent);
+}
+
+.module-table-shell
+  .ant-table-tbody
+  .module-table-row-selected-border-beam
+  > td:last-child {
+  box-shadow:
+    inset -2px 0 0 var(--theme-highlight-border, var(--theme-primary)),
+    2px 0 8px color-mix(in srgb, var(--theme-primary) 35%, transparent);
+}
+
+@keyframes module-table-selected-border-beam {
+  to {
+    background-position:
+      220% 0,
+      -220% 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .module-table-shell .ant-table-tbody .module-table-row-selected-border-beam {
+    animation: none;
+  }
 }
 
 .module-table-shell .ant-table-tbody .ant-table-cell > * {

@@ -73,9 +73,11 @@ describe('useGridColumns', () => {
     expect(Array.isArray(result.current.columns)).toBe(true)
   })
 
-  it('includes actions column when canUpdate is true', () => {
-    const actionsColumn = getColumn(renderHookColumns(), 'actions')
-    expect(actionsColumn?.meta?.width).toBe(ACTION_COLUMN_WIDTH)
+  it('does not include actions column from update permission alone', () => {
+    const actionsColumn = renderHookColumns().find(
+      (column) => column.id === 'actions',
+    )
+    expect(actionsColumn).toBeUndefined()
   })
 
   it('includes actions column when showActions is true', () => {
@@ -162,7 +164,10 @@ describe('useGridColumns', () => {
     ]
     defaultProps.rowActions.mockReturnValue(actions)
 
-    const actionsColumn = getColumn(renderHookColumns(), 'actions')
+    const actionsColumn = getColumn(
+      renderHookColumns({ ...defaultProps, showActions: true }),
+      'actions',
+    )
 
     const metaNode = actionsColumn.meta?.renderCell?.(record)
     expect(getElementProps(metaNode).items).toBe(actions)
