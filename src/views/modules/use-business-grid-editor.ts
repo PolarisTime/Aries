@@ -1,11 +1,14 @@
-import { useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   getBusinessModuleDetail,
   listAllBusinessModuleRows,
 } from '@/api/business'
 import { getModuleConfig } from '@/api/module-contracts'
+import { buildEditorTaskKey } from '@/layouts/editor-workspace/editor-task-model'
+import { editorTaskStore } from '@/layouts/editor-workspace/editor-task-store'
 import { getBehaviorValue } from '@/module-system/module-behavior-registry'
 import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
+import { useAuthStore } from '@/stores/authStore'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
@@ -22,6 +25,39 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
   >([])
   const [editorLockLoading, setEditorLockLoading] = useState(false)
   const openVersionRef = useRef(0)
+
+  const registerEditorTask = (record: ModuleRecord | null) => {
+    const user = useAuthStore.getState().user
+    const userKey = String(user?.id || user?.loginName || '').trim()
+    if (!userKey) {
+      return
+    }
+    const mode =
+      record && moduleKey === 'sales-order' && record.status === '交付核定'
+        ? 'reconfirm'
+        : record
+          ? 'edit'
+          : 'create'
+    const recordId = String(record?.id || 'new')
+    const primaryNo = String(
+      record?.[config.primaryNoKey || 'orderNo'] || '',
+    ).trim()
+    const key = buildEditorTaskKey({ userKey, moduleKey, mode, recordId })
+    editorTaskStore.getState().open({
+      key,
+      userKey,
+      moduleKey,
+      mode,
+      recordId,
+      path: window.location.pathname,
+      title: record
+        ? `${config.title}${primaryNo ? ` ${primaryNo}` : ''}`
+        : `新建${config.title}`,
+      status: 'clean',
+      updatedAt: Date.now(),
+      closable: true,
+    })
+  }
 
   const lineItemLockSourceModule = String(
     getBehaviorValue(moduleKey, 'lineItemLockSourceModule') || '',
@@ -76,6 +112,7 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
   }
 
   const openEditor = async (record: ModuleRecord | null) => {
+    registerEditorTask(record)
     if (!record) {
       openVersionRef.current += 1
       setEditorLockRelatedRows([])
@@ -106,6 +143,37 @@ export function useBusinessGridEditor({ moduleKey, config }: Props) {
       }
     }
   }
+
+  const resumeEditorTask = useEffectEvent(async () => {
+    const state = editorTaskStore.getState()
+    const task = state.tasks.find((item) => item.key === state.resumeKey)
+    if (!task || task.moduleKey !== moduleKey) {
+      return
+    }
+    state.consumeResume(task.key)
+    if (task.mode === 'create') {
+      await openEditor(null)
+      return
+    }
+    try {
+      const detail = await getBusinessModuleDetail(moduleKey, task.recordId)
+      await openEditor(detail.data)
+    } catch {
+      editorTaskStore.getState().updateStatus(task.key, 'error')
+    }
+  })
+
+  useEffect(() => {
+    const resumePendingTask = () => {
+      void resumeEditorTask()
+    }
+    resumePendingTask()
+    return editorTaskStore.subscribe((state, previousState) => {
+      if (state.resumeKey && state.resumeKey !== previousState.resumeKey) {
+        resumePendingTask()
+      }
+    })
+  }, [])
 
   const closeEditor = () => {
     setEditorOpen(false)

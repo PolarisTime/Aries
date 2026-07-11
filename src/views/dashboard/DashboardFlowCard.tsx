@@ -15,7 +15,12 @@ export function DashboardFlowCard({ navigate, summary }: Props) {
 
   return (
     <Card
-      title={t('dashboard.sections.businessFlow')}
+      title={
+        <div className="dashboard-flow-card-heading">
+          <span>{t('dashboard.sections.businessFlow')}</span>
+          <small>{t('dashboard.alerts.title')}</small>
+        </div>
+      }
       className="dashboard-flow-card"
     >
       <div className="dashboard-flow-lanes">

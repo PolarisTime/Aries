@@ -1,9 +1,7 @@
-import {
-  ArrowRightOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons'
+import { ArrowRightOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from '@tanstack/react-router'
 import { Button, Card, Form, Space, Table, Typography } from 'antd'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
 import { ERROR_CODE } from '@/constants/error-codes'
@@ -13,6 +11,7 @@ import {
   useMasterOptions,
 } from '@/hooks/useMasterOptions'
 import { useModuleEditorCapabilities } from '@/hooks/useModuleEditorCapabilities'
+import { editorTaskStore } from '@/layouts/editor-workspace/editor-task-store'
 import { isParentImportedEditorLocked } from '@/module-system/module-adapter-editor'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
@@ -79,9 +78,14 @@ export function ModuleEditorWorkspace({
 }: Props) {
   const { t } = useTranslation()
   const [form] = Form.useForm()
+  const watchedCustomerId = Form.useWatch('customerId', form)
+  const customerId =
+    typeof watchedCustomerId === 'string' && watchedCustomerId
+      ? watchedCustomerId
+      : undefined
   const formFields = config.formFields || []
   const formOptionRequirements = resolveMasterOptionRequirements(formFields)
-  useMasterOptions(formOptionRequirements, open)
+  useMasterOptions(formOptionRequirements, open, customerId)
   const statusField = formFields.find((field) => field.key === 'status')
   const statusOptions = Array.isArray(statusField?.options)
     ? statusField.options.map((option) => String(option.value))
@@ -139,6 +143,27 @@ export function ModuleEditorWorkspace({
     autoInsertBlankItemOnCreate:
       Boolean(config.itemColumns?.length) && canAddManualItems,
   })
+
+  useEffect(() => {
+    const activeKey = editorTaskStore.getState().activeKey
+    const activeTask = editorTaskStore
+      .getState()
+      .tasks.find((task) => task.key === activeKey)
+    if (!activeTask || activeTask.moduleKey !== moduleKey) {
+      return
+    }
+    if (saving) {
+      editorTaskStore.getState().updateStatus(activeTask.key, 'saving')
+      return
+    }
+    if (saveResult?.status === 'error') {
+      editorTaskStore.getState().updateStatus(activeTask.key, 'error')
+      return
+    }
+    if (saveResult?.status === 'success') {
+      editorTaskStore.getState().updateStatus(activeTask.key, 'clean')
+    }
+  }, [moduleKey, saveResult?.status, saving])
   const editorFormValues = form.getFieldsValue(true)
   const parentImportedItemEditLocked = isParentImportedEditorLocked(
     moduleKey,
@@ -189,6 +214,10 @@ export function ModuleEditorWorkspace({
           labelWrap={false}
           className="editor-form-shell"
           onValuesChange={(changedValues) => {
+            const activeKey = editorTaskStore.getState().activeKey
+            if (activeKey) {
+              editorTaskStore.getState().updateStatus(activeKey, 'dirty')
+            }
             handleFormValuesChange(changedValues)
           }}
         >

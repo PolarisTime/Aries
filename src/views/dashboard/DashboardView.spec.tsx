@@ -138,6 +138,18 @@ describe('DashboardView', () => {
     expect(document.querySelector('.dashboard-workplace-layout')).toBeTruthy()
   })
 
+  it('presents a task-first command center with secondary context', () => {
+    render(<DashboardView />)
+
+    expect(document.querySelector('.dashboard-command-center')).toBeTruthy()
+    expect(
+      document.querySelector('.dashboard-primary-region'),
+    ).toContainElement(screen.getByTestId('flow-card'))
+    expect(
+      document.querySelector('.dashboard-context-region'),
+    ).toContainElement(screen.getByTestId('sidebar-panels'))
+  })
+
   it('renders error alert when query fails', () => {
     mockUseQuery.mockReturnValue({
       data: null,

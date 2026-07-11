@@ -152,23 +152,6 @@ vi.mock('@/hooks/useAuthRefreshTimer', () => ({
   useAuthRefreshTimer: vi.fn((refresh: () => void) => refresh()),
 }))
 
-vi.mock('@/hooks/useOpenPages', () => ({
-  useOpenPages: vi.fn(
-    (_defaultPath, _unnamedPage, _workbench, resolveOpenPage) => ({
-      pages: [
-        {
-          ...resolveOpenPage(appLayoutMocks.openPagesProbePath),
-          key: '/dashboard',
-          path: '/dashboard',
-          title: '工作台',
-          closable: false,
-        },
-      ],
-      closePage: appLayoutMocks.closePage,
-    }),
-  ),
-}))
-
 vi.mock('@/layouts/app-layout-utils', () => ({
   buildAppLayoutStyles: vi.fn().mockReturnValue({
     fixedWidthStyle: { width: '100%' },
@@ -241,22 +224,6 @@ vi.mock('@/layouts/AppLayoutHeader', () => ({
       </button>
       <button type="button" onClick={() => search.onBlur()}>
         search-blur
-      </button>
-    </section>
-  ),
-}))
-
-vi.mock('@/layouts/AppPageTabs', () => ({
-  AppPageTabs: ({ closePage, onNavigateToPath, pages }: any) => (
-    <section data-testid="page-tabs">
-      {pages.map((page: any) => (
-        <span key={page.key}>{page.title}</span>
-      ))}
-      <button type="button" onClick={() => onNavigateToPath('/dashboard')}>
-        tab-navigate
-      </button>
-      <button type="button" onClick={() => closePage('/dashboard')}>
-        tab-close
       </button>
     </section>
   ),
@@ -575,14 +542,15 @@ describe('AppLayout', () => {
     expect(document.querySelector('.app-shell')).toBeDefined()
   })
 
-  it('renders side navigation menu items', () => {
+  it('renders the top navigation header', () => {
     render(<AppLayout />)
-    expect(screen.getAllByText('工作台').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByTestId('layout-header-top')).toBeTruthy()
   })
 
-  it('renders page tabs', () => {
+  it('does not reserve global page tab space without editor tasks', () => {
     render(<AppLayout />)
-    expect(screen.getAllByText('工作台').length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByTestId('page-tabs')).toBeNull()
+    expect(document.querySelector('.leo-main-without-editor-tabs')).toBeTruthy()
   })
 
   it('renders content outlet', () => {
@@ -613,20 +581,17 @@ describe('AppLayout', () => {
     expect(screen.queryByText(/后端 v0\.1\.0/)).toBeNull()
   })
 
-  it('handles top navigation header actions and page tabs', async () => {
+  it('handles top navigation header actions', async () => {
     appLayoutMocks.modalConfirm.mockImplementation(({ onOk }) => onOk())
 
     render(<AppLayout />)
 
     fireEvent.click(screen.getByText('dashboard'))
     fireEvent.click(screen.getByText('header-menu'))
-    fireEvent.click(screen.getByText('tab-navigate'))
-    fireEvent.click(screen.getByText('tab-close'))
     fireEvent.click(screen.getByText('open-settings'))
     fireEvent.click(screen.getByText('sign-out'))
 
     expect(appLayoutMocks.navigate).toHaveBeenCalledWith({ to: '/dashboard' })
-    expect(appLayoutMocks.closePage).toHaveBeenCalledWith('/dashboard')
     expect(appLayoutMocks.loadPersonalSettings).toHaveBeenCalled()
     expect(appLayoutMocks.openPersonalSettings).toHaveBeenCalled()
     expect(appLayoutMocks.modalConfirm).toHaveBeenCalledWith(

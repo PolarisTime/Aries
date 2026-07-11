@@ -43,6 +43,9 @@ export function DashboardWorkplaceHeader({
           <UserOutlined />
         </Avatar>
         <div className="dashboard-workplace-copy">
+          <div className="dashboard-workplace-eyebrow">
+            {t('dashboard.sections.overview')}
+          </div>
           <h1>{companyName}</h1>
           <div className="dashboard-workplace-meta">
             <span>
@@ -69,8 +72,11 @@ export function DashboardWorkplaceHeader({
       </div>
 
       <div className="dashboard-workplace-stats">
-        {metricItems.map((item) => (
+        {metricItems.map((item, index) => (
           <div key={item.key} className="dashboard-workplace-stat">
+            <span className="dashboard-workplace-stat-index" aria-hidden>
+              {String(index + 1).padStart(2, '0')}
+            </span>
             <Statistic title={item.title} value={item.value} />
           </div>
         ))}

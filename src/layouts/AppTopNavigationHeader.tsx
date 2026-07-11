@@ -42,11 +42,12 @@ export function AppTopNavigationHeader({
   const devTimeString = new Date().toLocaleTimeString()
 
   return (
-    <div className="app-header-bar app-header-bar-top">
+    <header className="app-header-bar app-header-bar-top">
       <div className="app-top-nav-left">
         <button
           type="button"
           className="app-top-brand"
+          aria-label="工作台"
           onClick={onDashboardClick}
         >
           <span className="app-top-brand-mark">{topBrandMark}</span>
@@ -94,8 +95,17 @@ export function AppTopNavigationHeader({
               {clockDisplay.timeText}
             </strong>
           </div>
-          <Dropdown menu={userMenu} trigger={['click']}>
-            <button type="button" className="app-top-user-trigger">
+          <Dropdown
+            menu={userMenu}
+            trigger={['click']}
+            placement="bottomRight"
+            arrow={{ pointAtCenter: true }}
+          >
+            <button
+              type="button"
+              className="app-top-user-trigger"
+              aria-label={currentUserName || currentUserLoginName || '用户菜单'}
+            >
               <span className="app-top-user-avatar">
                 {currentUserName.trim().charAt(0).toUpperCase() || 'U'}
               </span>
@@ -108,6 +118,6 @@ export function AppTopNavigationHeader({
           </Dropdown>
         </div>
       </div>
-    </div>
+    </header>
   )
 }

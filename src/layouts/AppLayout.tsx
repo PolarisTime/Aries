@@ -3,20 +3,21 @@ import { Layout, Menu, Watermark } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useStore } from 'zustand'
 import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
 import { getPageDefinition, getPageRoutePath } from '@/config/page-registry'
 import { useAuthAppSync } from '@/hooks/useAuthAppSync'
 import { useAuthHeartbeat } from '@/hooks/useAuthHeartbeat'
 import { useAuthRefreshTimer } from '@/hooks/useAuthRefreshTimer'
-import { useOpenPages } from '@/hooks/useOpenPages'
 import { AppLayoutHeader } from '@/layouts/AppLayoutHeader'
-import { AppPageTabs } from '@/layouts/AppPageTabs'
 import {
   buildAppLayoutStyles,
   buildAppLayoutUserInfo,
   buildClockDisplay,
 } from '@/layouts/app-layout-utils'
+import { EditorWorkspaceTabs } from '@/layouts/editor-workspace/EditorWorkspaceTabs'
+import { editorTaskStore } from '@/layouts/editor-workspace/editor-task-store'
 import type { GlobalSearchResult } from '@/layouts/global-search'
 import { LazyPersonalSettingsModal } from '@/layouts/LazyPersonalSettingsModal'
 import { resolveRoutePageContext } from '@/layouts/route-page-context'
@@ -200,20 +201,10 @@ export function AppLayout() {
 
   const isTopNavigationLayout = appliedLayoutMode === 'top'
 
-  const resolveOpenPage = (pathname: string) => {
-    const context = resolveRoutePageContext(pathname, t)
-    return {
-      key: context.openPageKey,
-      path: pathname,
-      title: context.title,
-    }
-  }
-
-  const { pages, closePage } = useOpenPages(
-    '/dashboard',
-    t('hooks.openPages.unnamedPage'),
-    t('hooks.openPages.workbench'),
-    resolveOpenPage,
+  const editorTasks = useStore(editorTaskStore, (state) => state.tasks)
+  const activeEditorTaskKey = useStore(
+    editorTaskStore,
+    (state) => state.activeKey,
   )
 
   const {
@@ -290,8 +281,6 @@ export function AppLayout() {
     }
   }
 
-  const activeTabKey = routePageContext.openPageKey
-
   const handleSignOut = () => {
     modal.confirm({
       title: t('common.confirmLogout'),
@@ -318,6 +307,10 @@ export function AppLayout() {
   const { currentUserLoginName, currentUserName } = buildAppLayoutUserInfo(
     t,
     user,
+  )
+  const currentUserKey = String(user?.id || user?.loginName || '').trim()
+  const currentUserEditorTasks = editorTasks.filter(
+    (task) => task.userKey === currentUserKey,
   )
   const clockDisplay = buildClockDisplay(clock)
   const {
@@ -352,7 +345,7 @@ export function AppLayout() {
       ) : null}
 
       <Layout
-        className={`leo-main${isTopNavigationLayout ? ' leo-main-top-nav' : ''}`}
+        className={`leo-main${isTopNavigationLayout ? ' leo-main-top-nav' : ''}${currentUserEditorTasks.length ? ' leo-main-with-editor-tabs' : ' leo-main-without-editor-tabs'}`}
         style={mainStyle}
       >
         <Header className={headerClassName} style={fixedWidthStyle}>
@@ -414,14 +407,37 @@ export function AppLayout() {
           )}
         </Header>
 
-        <AppPageTabs
-          activeKey={activeTabKey}
-          pages={pages}
-          isTopNavigationLayout={isTopNavigationLayout}
-          shellFontStyle={{ ...fixedWidthStyle, ...shellFontStyle }}
-          closePage={closePage}
-          // eslint-disable-next-line @typescript-eslint/no-misused-promises -- Antd Modal onOk pattern
-          onNavigateToPath={(path) => navigate({ to: path as '/' })}
+        <EditorWorkspaceTabs
+          activeKey={activeEditorTaskKey}
+          tasks={currentUserEditorTasks}
+          style={{ ...fixedWidthStyle, ...shellFontStyle }}
+          onActivate={(key) => {
+            const task = editorTaskStore
+              .getState()
+              .tasks.find((item) => item.key === key)
+            if (!task || !editorTaskStore.getState().requestResume(key)) {
+              return
+            }
+            void navigate({ to: task.path as '/' })
+          }}
+          onClose={(key) => {
+            const task = editorTaskStore
+              .getState()
+              .tasks.find((item) => item.key === key)
+            if (task?.status === 'dirty' || task?.status === 'error') {
+              modal.confirm({
+                title: '关闭编辑任务',
+                content: '未保存内容已保留为草稿，可稍后从草稿恢复。',
+                okText: '关闭',
+                cancelText: t('common.cancel'),
+                onOk: () => {
+                  editorTaskStore.getState().close(key)
+                },
+              })
+              return
+            }
+            editorTaskStore.getState().close(key)
+          }}
         />
 
         <AppContentOutlet openPageKey={routePageContext.openPageKey} />

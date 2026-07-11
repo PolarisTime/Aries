@@ -216,6 +216,16 @@ describe('AppTopNavigationHeader', () => {
     expect(container.querySelector('.app-header-bar-top')).toBeDefined()
   })
 
+  it('uses a semantic banner for the global top navigation', () => {
+    const { container } = render(<AppTopNavigationHeader {...defaultProps} />)
+
+    expect(container.querySelector('header.app-header-bar-top')).toBeTruthy()
+    expect(container.querySelector('.app-top-brand')).toHaveAttribute(
+      'aria-label',
+      '工作台',
+    )
+  })
+
   it('renders app-top-nav-left section', () => {
     const { container } = render(<AppTopNavigationHeader {...defaultProps} />)
     expect(container.querySelector('.app-top-nav-left')).toBeDefined()

@@ -50,25 +50,30 @@ export function DashboardView() {
         summary={summary}
       />
 
-      <div className="dashboard-workplace-layout">
-        <main className="dashboard-workplace-main">
-          {canMountFlowCard ? (
-            <Suspense
-              fallback={
-                <div className="dashboard-flow-card-placeholder" aria-hidden />
-              }
-            >
-              <LazyDashboardFlowCard navigate={navigate} summary={summary} />
-            </Suspense>
-          ) : (
-            <div className="dashboard-flow-card-placeholder" aria-hidden />
-          )}
-        </main>
+      <section className="dashboard-command-center">
+        <div className="dashboard-workplace-layout">
+          <main className="dashboard-workplace-main dashboard-primary-region">
+            {canMountFlowCard ? (
+              <Suspense
+                fallback={
+                  <div
+                    className="dashboard-flow-card-placeholder"
+                    aria-hidden
+                  />
+                }
+              >
+                <LazyDashboardFlowCard navigate={navigate} summary={summary} />
+              </Suspense>
+            ) : (
+              <div className="dashboard-flow-card-placeholder" aria-hidden />
+            )}
+          </main>
 
-        <aside className="dashboard-workplace-sidebar">
-          <DashboardSidebarPanels infoItems={infoItems} summary={summary} />
-        </aside>
-      </div>
+          <aside className="dashboard-workplace-sidebar dashboard-context-region">
+            <DashboardSidebarPanels infoItems={infoItems} summary={summary} />
+          </aside>
+        </div>
+      </section>
 
       <AppVersionFooter />
     </div>
