@@ -82,6 +82,11 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       width: 180,
     },
     {
+      title: SETTLEMENT_COMPANY_LABEL,
+      dataIndex: 'settlementCompanyName',
+      width: 160,
+    },
+    {
       title: i18next.t('modules.pages.invoiceIssue.invoiceDate'),
       dataIndex: 'invoiceDate',
       width: 120,
@@ -113,8 +118,24 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.operator'),
+      dataIndex: 'operatorName',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceIssue.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
-  defaultHiddenColumnKeys: ['sourceSalesOrderNos', 'projectName', 'taxAmount'],
+  defaultHiddenColumnKeys: [
+    'sourceSalesOrderNos',
+    'projectName',
+    'taxAmount',
+    'operatorName',
+    'remark',
+  ],
   detailFields: [
     { label: i18next.t('modules.pages.invoiceIssue.issueNo'), key: 'issueNo' },
     {

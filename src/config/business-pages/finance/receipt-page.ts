@@ -71,6 +71,11 @@ export const receiptsPageConfig: ModulePageConfig = {
       width: 180,
     },
     {
+      title: SETTLEMENT_COMPANY_LABEL,
+      dataIndex: 'settlementCompanyName',
+      width: 160,
+    },
+    {
       title: i18next.t('modules.pages.receipt.receiptDate'),
       dataIndex: 'receiptDate',
       width: 120,
@@ -95,8 +100,18 @@ export const receiptsPageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
+    {
+      title: i18next.t('modules.pages.receipt.operator'),
+      dataIndex: 'operatorName',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.pages.receipt.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
-  defaultHiddenColumnKeys: ['projectName', 'payType'],
+  defaultHiddenColumnKeys: ['projectName', 'payType', 'operatorName', 'remark'],
   detailFields: [
     {
       label: i18next.t('modules.pages.receipt.receiptNo'),

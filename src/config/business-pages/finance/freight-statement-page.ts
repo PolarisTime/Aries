@@ -165,8 +165,13 @@ export const freightStatementPageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
+    {
+      title: i18next.t('modules.columns.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
-  defaultHiddenColumnKeys: ['carrierCode'],
+  defaultHiddenColumnKeys: ['carrierCode', 'remark'],
   detailFields: [
     {
       label: i18next.t('modules.pages.freightStatement.statementNo'),

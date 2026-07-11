@@ -70,6 +70,11 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       width: 140,
     },
     {
+      title: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
+      dataIndex: 'settlementCompanyName',
+      width: 160,
+    },
+    {
       title: i18next.t('modules.pages.purchaseOrder.colBuyer'),
       dataIndex: 'buyerName',
       width: 110,

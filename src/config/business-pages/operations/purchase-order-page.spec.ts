@@ -67,7 +67,7 @@ describe('purchaseOrdersPageConfig', () => {
     ).toContain('settlementCompanyId')
   })
 
-  it('keeps settlement company in header after supplier instead of tables', () => {
+  it('keeps settlement company in the header and exposes it in the list', () => {
     const formFieldKeys = purchaseOrdersPageConfig.formFields?.map(
       (field) => field.key,
     )
@@ -76,7 +76,7 @@ describe('purchaseOrdersPageConfig', () => {
     )
     expect(
       purchaseOrdersPageConfig.columns.map((column) => column.dataIndex),
-    ).not.toContain('settlementCompanyName')
+    ).toContain('settlementCompanyName')
     expect(
       purchaseOrdersPageConfig.itemColumns?.map((column) => column.dataIndex),
     ).not.toContain('settlementCompanyName')

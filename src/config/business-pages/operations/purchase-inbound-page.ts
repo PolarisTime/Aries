@@ -83,6 +83,11 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       width: 160,
     },
     {
+      title: '仓库',
+      dataIndex: 'warehouseName',
+      width: 140,
+    },
+    {
       title: i18next.t('modules.pages.purchaseInbound.colInboundDate'),
       dataIndex: 'inboundDate',
       width: 120,

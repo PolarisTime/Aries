@@ -74,6 +74,7 @@ describe('freightOperationsPageConfigs', () => {
       'projectName',
       'settlementCompanyName',
       'unitPrice',
+      'remark',
     ])
   })
 

@@ -157,6 +157,11 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         type: 'status',
         align: 'center',
       },
+      {
+        title: i18next.t('modules.columns.remark'),
+        dataIndex: 'remark',
+        width: 180,
+      },
     ],
     defaultHiddenColumnKeys: [
       'carrierCode',
@@ -164,6 +169,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       'projectName',
       'settlementCompanyName',
       'unitPrice',
+      'remark',
     ],
     detailFields: [
       {

@@ -106,6 +106,16 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       width: 180,
     },
     {
+      title: '仓库',
+      dataIndex: 'warehouseName',
+      width: 140,
+    },
+    {
+      title: '结算主体',
+      dataIndex: 'settlementCompanyName',
+      width: 160,
+    },
+    {
       title: i18next.t('modules.pages.salesOutbound.colOutboundDate'),
       dataIndex: 'outboundDate',
       width: 120,

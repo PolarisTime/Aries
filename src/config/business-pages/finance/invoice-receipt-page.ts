@@ -70,6 +70,11 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       width: 170,
     },
     {
+      title: '结算主体',
+      dataIndex: 'settlementCompanyName',
+      width: 160,
+    },
+    {
       title: i18next.t('modules.pages.invoiceReceipt.invoiceDate'),
       dataIndex: 'invoiceDate',
       width: 120,
@@ -101,11 +106,23 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
+    {
+      title: i18next.t('modules.pages.invoiceReceipt.operator'),
+      dataIndex: 'operatorName',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.pages.invoiceReceipt.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
   defaultHiddenColumnKeys: [
     'sourcePurchaseOrderNos',
     'invoiceTitle',
     'taxAmount',
+    'operatorName',
+    'remark',
   ],
   detailFields: [
     {

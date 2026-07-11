@@ -151,11 +151,23 @@ export const paymentsPageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
+    {
+      title: i18next.t('modules.pages.payment.operator'),
+      dataIndex: 'operatorName',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.pages.payment.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
   defaultHiddenColumnKeys: [
     'payType',
     'purchaseOrderNo',
     'settlementCompanyName',
+    'operatorName',
+    'remark',
   ],
   detailFields: [
     {

@@ -96,6 +96,11 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       width: 160,
     },
     {
+      title: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
+      dataIndex: 'purchaseOrderNo',
+      width: 160,
+    },
+    {
       title: i18next.t('modules.pages.salesOrder.colProjectName'),
       dataIndex: 'projectName',
       width: 180,
@@ -104,6 +109,11 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       title: i18next.t('modules.pages.salesOrder.colCustomerName'),
       dataIndex: 'customerName',
       width: 140,
+    },
+    {
+      title: SETTLEMENT_COMPANY_LABEL,
+      dataIndex: 'settlementCompanyName',
+      width: 160,
     },
     {
       title: i18next.t('modules.pages.salesOrder.colSalesName'),

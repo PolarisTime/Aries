@@ -125,8 +125,18 @@ export const purchaseRefundsPageConfig: ModulePageConfig = {
       align: 'center',
       type: 'status',
     },
+    {
+      title: i18next.t('modules.pages.purchaseRefund.operator'),
+      dataIndex: 'operatorName',
+      width: 120,
+    },
+    {
+      title: i18next.t('modules.columns.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
-  defaultHiddenColumnKeys: ['settlementCompanyName'],
+  defaultHiddenColumnKeys: ['settlementCompanyName', 'operatorName', 'remark'],
   detailFields: [
     {
       label: i18next.t('modules.pages.purchaseRefund.refundNo'),

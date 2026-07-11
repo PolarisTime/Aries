@@ -123,8 +123,13 @@ export const customerStatementPageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
+    {
+      title: i18next.t('modules.columns.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
-  defaultHiddenColumnKeys: ['customerCode'],
+  defaultHiddenColumnKeys: ['customerCode', 'remark'],
   detailFields: [
     {
       label: i18next.t('modules.pages.customerStatement.statementNo'),

@@ -119,8 +119,13 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       type: 'status',
       align: 'center',
     },
+    {
+      title: i18next.t('modules.columns.remark'),
+      dataIndex: 'remark',
+      width: 180,
+    },
   ],
-  defaultHiddenColumnKeys: ['supplierCode'],
+  defaultHiddenColumnKeys: ['supplierCode', 'remark'],
   detailFields: [
     {
       label: i18next.t('modules.pages.supplierStatement.statementNo'),
