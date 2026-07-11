@@ -2220,6 +2220,25 @@
   padding-bottom: 10px;
 }
 
+.keyboard-shortcut-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 18px;
+  padding: 0 5px;
+  color: var(--theme-text-muted);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+  background: var(--theme-surface-hover);
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: 4px;
+  box-shadow: 0 1px 0 var(--theme-border-subtle);
+}
+
 .module-filter-heading-row {
   display: flex;
   align-items: center;
@@ -2587,37 +2606,59 @@
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
+  gap: 16px;
   min-height: 48px;
   padding: 8px 16px;
   background: var(--theme-surface);
   border-top: 1px solid var(--theme-border-subtle);
 }
 
+.module-table-pagination-summary,
+.module-table-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.module-table-pagination-summary {
+  min-width: 0;
+  color: var(--theme-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.module-table-pagination-controls {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+
+.module-table-pagination-range {
+  color: var(--theme-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .module-table-pagination .ant-pagination {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  width: 100%;
   margin: 0 !important;
-}
-
-.module-table-pagination .ant-pagination-total-text {
-  flex: 1 1 auto;
-  color: var(--theme-text-muted);
-  font-size: 12px;
 }
 
 @media (max-width: 575px) {
   .module-table-pagination {
+    align-items: stretch;
+    flex-direction: column;
     min-height: 56px;
     padding: 8px;
   }
 
-  .module-table-pagination .ant-pagination-total-text {
-    flex-basis: 100%;
-    height: 20px;
-    margin: 0 0 4px;
-    line-height: 20px;
+  .module-table-pagination-summary {
+    overflow-x: auto;
+  }
+
+  .module-table-pagination-controls {
+    justify-content: space-between;
   }
 }

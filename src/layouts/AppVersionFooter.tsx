@@ -10,6 +10,24 @@ import {
 
 function formatBuildTime(value: string) {
   const trimmed = value.trim()
+  if (/([zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed)) {
+    const parsed = new Date(trimmed)
+    if (!Number.isNaN(parsed.getTime())) {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23',
+      }).formatToParts(parsed)
+      const part = (type: Intl.DateTimeFormatPartTypes) =>
+        parts.find((item) => item.type === type)?.value || ''
+      return `${part('year')}-${part('month')}-${part('day')} ${part('hour')}:${part('minute')}:${part('second')}`
+    }
+  }
   const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})/)
   return match ? `${match[1]} ${match[2]}` : trimmed
 }

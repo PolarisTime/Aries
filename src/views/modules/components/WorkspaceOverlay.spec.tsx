@@ -120,6 +120,8 @@ describe('WorkspaceOverlay', () => {
     const closeButton = screen.getByText('CloseOutlined').closest('button')
 
     expect(closeButton).toHaveClass('workspace-overlay-close')
+    expect(closeButton).toHaveAttribute('aria-keyshortcuts', 'Escape')
+    expect(closeButton).toHaveTextContent('Esc')
     fireEvent.click(closeButton!)
     expect(onClose).toHaveBeenCalledTimes(1)
   })

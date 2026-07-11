@@ -48,19 +48,23 @@ vi.mock('antd', () => {
     onBlur,
     onChange,
     onPressEnter,
+    suffix,
     value,
     ...props
   }: any) => (
-    <input
-      data-testid="input"
-      value={value ?? ''}
-      onBlur={(event) => onBlur?.(event)}
-      onChange={(event) => onChange?.(event)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') onPressEnter?.(event)
-      }}
-      {...props}
-    />
+    <span>
+      <input
+        data-testid="input"
+        value={value ?? ''}
+        onBlur={(event) => onBlur?.(event)}
+        onChange={(event) => onChange?.(event)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') onPressEnter?.(event)
+        }}
+        {...props}
+      />
+      {suffix}
+    </span>
   )
   const Select = ({
     allowClear: _allowClear,
@@ -209,6 +213,16 @@ describe('ModuleFilterToolbar', () => {
     expect(screen.getByLabelText('common.keyword')).toBeTruthy()
     expect(screen.getByText('common.reset')).toBeTruthy()
     expect(screen.queryByText('common.query')).toBeNull()
+  })
+
+  it('marks text filters with the Enter shortcut', () => {
+    renderToolbar()
+
+    expect(screen.getByLabelText('common.keyword')).toHaveAttribute(
+      'aria-keyshortcuts',
+      'Enter',
+    )
+    expect(screen.getByText('Enter', { selector: 'kbd' })).toBeTruthy()
   })
 
   it('does not render fallback keyword when config provides keyword filter', () => {

@@ -158,6 +158,8 @@ export function BusinessGridContent({
         total={total}
         currentPage={currentPage}
         pageSize={pageSize}
+        records={records}
+        selectedRowKeys={rowSelection?.selectedRowKeys || []}
         onPageChange={onPageChange}
       />
     </section>

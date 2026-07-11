@@ -569,6 +569,8 @@ describe('ModuleParentSelectorOverlay keyboard row interactions', () => {
     const { row, onSelect, onClose } = renderOverlay()
 
     expect(row).toHaveAttribute('tabIndex', '0')
+    expect(row).toHaveAttribute('aria-keyshortcuts', 'Enter')
+    expect(row).toHaveAttribute('title', 'Enter 打开')
     fireEvent.keyDown(row, { key: 'Enter', code: 'Enter' })
 
     await waitFor(() => {
@@ -581,6 +583,8 @@ describe('ModuleParentSelectorOverlay keyboard row interactions', () => {
     const { row, onSelect } = renderOverlay({ allowMultipleSelection: true })
 
     expect(row).toHaveAttribute('tabIndex', '0')
+    expect(row).toHaveAttribute('aria-keyshortcuts', 'Enter Space')
+    expect(row).toHaveAttribute('title', 'Space 选择，Enter 打开')
     fireEvent.keyDown(row, { key: ' ', code: 'Space' })
 
     await waitFor(() => {

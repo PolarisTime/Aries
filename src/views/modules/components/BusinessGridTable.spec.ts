@@ -309,6 +309,14 @@ describe('BusinessGridTable layout and rendering', () => {
       'aria-selected',
       'true',
     )
+    expect(screen.getByTestId('row-row-1')).toHaveAttribute(
+      'aria-keyshortcuts',
+      'Enter',
+    )
+    expect(screen.getByTestId('row-row-1')).toHaveAttribute(
+      'title',
+      'Enter 打开单据',
+    )
     expect(screen.getByTestId('mock-table')).toHaveAttribute(
       'data-scroll-x',
       '160',
@@ -519,16 +527,16 @@ describe('BusinessGridTable keyboard row interactions', () => {
     expect(onRowDoubleClick).not.toHaveBeenCalled()
   })
 
-  it('maps Enter to the row detail action', () => {
+  it('maps Enter to opening the row', () => {
     const { row, onRowClick, onRowDoubleClick } = renderGrid()
 
     fireEvent.keyDown(row, { key: 'Enter', code: 'Enter' })
 
-    expect(onRowClick).toHaveBeenCalledWith({
+    expect(onRowDoubleClick).toHaveBeenCalledWith({
       id: 'row-1',
       name: '第一行',
     })
-    expect(onRowDoubleClick).not.toHaveBeenCalled()
+    expect(onRowClick).not.toHaveBeenCalled()
   })
 
   it('does not trigger row keyboard actions from inner controls', () => {
@@ -541,7 +549,7 @@ describe('BusinessGridTable keyboard row interactions', () => {
     expect(onRowDoubleClick).not.toHaveBeenCalled()
   })
 
-  it('maps a settled row click to detail and ignores inner controls', () => {
+  it('maps a settled row click to selection and ignores inner controls', () => {
     vi.useFakeTimers()
     const { row, inlineButton, onRowClick } = renderGrid()
 
@@ -555,7 +563,7 @@ describe('BusinessGridTable keyboard row interactions', () => {
     expect(onRowClick).toHaveBeenCalledWith({ id: 'row-1', name: '第一行' })
   })
 
-  it('cancels the pending detail action when the row is double clicked', () => {
+  it('cancels the pending selection when the row is double clicked', () => {
     vi.useFakeTimers()
     const { row, onRowClick, onRowDoubleClick } = renderGrid()
 

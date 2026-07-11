@@ -283,6 +283,12 @@ function ParentSelectorTable({
       }
       onRow={(record) => ({
         tabIndex: 0,
+        'aria-keyshortcuts': allowMultipleSelection
+          ? 'Enter Space'
+          : 'Enter',
+        title: allowMultipleSelection
+          ? 'Space 选择，Enter 打开'
+          : 'Enter 打开',
         'aria-selected': allowMultipleSelection
           ? selectedRowKeys.includes(String(record.id))
           : undefined,

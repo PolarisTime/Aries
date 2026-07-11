@@ -10,22 +10,20 @@ const packageJson = JSON.parse(
 ) as { version?: string }
 const appVersion = packageJson.version || '0.0.0'
 
-function padDatePart(value: number) {
-  return value.toString().padStart(2, '0')
-}
-
 function formatLocalDateTime(date: Date) {
-  const datePart = [
-    date.getFullYear(),
-    padDatePart(date.getMonth() + 1),
-    padDatePart(date.getDate()),
-  ].join('-')
-  const timePart = [
-    padDatePart(date.getHours()),
-    padDatePart(date.getMinutes()),
-    padDatePart(date.getSeconds()),
-  ].join(':')
-  return `${datePart} ${timePart}`
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value || ''
+  return `${part('year')}-${part('month')}-${part('day')} ${part('hour')}:${part('minute')}:${part('second')}`
 }
 
 function resolveGitCommit() {

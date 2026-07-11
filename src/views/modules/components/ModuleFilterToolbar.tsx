@@ -175,6 +175,8 @@ function ModuleFilterField({
       id={fieldId}
       name={field.key}
       allowClear
+      aria-keyshortcuts="Enter"
+      suffix={<kbd className="keyboard-shortcut-hint">Enter</kbd>}
       placeholder={
         field.placeholder ||
         t('modules.filter.inputPlaceholder', { label: field.label })
@@ -327,6 +329,8 @@ export function ModuleFilterToolbar({
                   id={buildFormControlId('module-filter', 'keyword')}
                   name="keyword"
                   allowClear
+                  aria-keyshortcuts="Enter"
+                  suffix={<kbd className="keyboard-shortcut-hint">Enter</kbd>}
                   placeholder={t('common.pleaseInput')}
                   value={asString(filters.keyword)}
                   onChange={(event) =>

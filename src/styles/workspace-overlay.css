@@ -196,14 +196,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
+  min-width: 32px;
   height: 32px;
+  padding: 0 6px;
   border: none;
   background: transparent;
   cursor: pointer;
   border-radius: 6px;
   color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
   transition: all 0.2s;
+}
+
+.workspace-overlay-close .keyboard-shortcut-hint {
+  margin-left: 4px;
 }
 
 .workspace-overlay-close:hover {

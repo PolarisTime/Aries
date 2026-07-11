@@ -17,9 +17,6 @@ vi.mock('antd', () => ({
     mocks.paginationProps = props
     return (
       <div data-testid="pagination">
-        <span data-testid="pagination-total">
-          {props.showTotal?.(props.total, [21, 40])}
-        </span>
         <button
           type="button"
           data-testid="change-page"
@@ -37,19 +34,47 @@ describe('ModuleTablePagination', () => {
     mocks.paginationProps = undefined
   })
 
-  it('renders a responsive size-changing paginator with the visible range', () => {
+  it('summarizes all current-page records when no rows are selected', () => {
     render(
       <ModuleTablePagination
         total={95}
         currentPage={2}
         pageSize={20}
+        records={[
+          {
+            id: '1',
+            totalWeight: 1.25,
+            totalAmount: 100,
+            items: [{ id: '11', quantity: 3 }],
+          },
+          {
+            id: '2',
+            totalQuantity: 7,
+            totalWeight: 2.5,
+            totalAmount: 250.5,
+          },
+        ]}
+        selectedRowKeys={[]}
         onPageChange={vi.fn()}
       />,
     )
 
-    expect(screen.getByTestId('pagination-total')).toHaveTextContent(
-      'modules.workspace.paginationRange:{"start":21,"end":40,"total":95}',
+    expect(screen.getByTestId('pagination-summary')).not.toHaveTextContent(
+      'modules.workspace.currentPageSummary',
     )
+    expect(screen.getByTestId('pagination-summary')).toHaveTextContent(
+      'modules.overview.documentCount：2',
+    )
+    expect(screen.getByTestId('pagination-summary')).toHaveTextContent('3.750')
+    expect(screen.getByTestId('pagination-summary')).toHaveTextContent('350.50')
+    expect(screen.getByTestId('pagination-range')).toHaveTextContent(
+      'modules.workspace.paginationRange:{"start":21,"end":22,"total":95}',
+    )
+    expect(
+      screen
+        .getByTestId('pagination-range')
+        .compareDocumentPosition(screen.getByTestId('pagination')),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
     expect(mocks.paginationProps).toEqual(
       expect.objectContaining({
         current: 2,
@@ -60,6 +85,48 @@ describe('ModuleTablePagination', () => {
         total: 95,
       }),
     )
+    expect(mocks.paginationProps?.locale).toEqual(
+      expect.objectContaining({
+        items_per_page: '/ 页',
+        page: '页',
+      }),
+    )
+    expect(mocks.paginationProps?.showTotal).toBeUndefined()
+  })
+
+  it('summarizes only selected records when rows are selected', () => {
+    render(
+      <ModuleTablePagination
+        total={2}
+        currentPage={1}
+        pageSize={20}
+        records={[
+          {
+            id: '1',
+            totalWeight: 1.25,
+            totalAmount: 100,
+            items: [{ id: '11', quantity: 3 }],
+          },
+          {
+            id: '2',
+            totalQuantity: 7,
+            totalWeight: 2.5,
+            totalAmount: 250.5,
+          },
+        ]}
+        selectedRowKeys={['2']}
+        onPageChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByTestId('pagination-summary')).not.toHaveTextContent(
+      'common.selected:{"count":1}',
+    )
+    expect(screen.getByTestId('pagination-summary')).toHaveTextContent(
+      'modules.overview.documentCount：1',
+    )
+    expect(screen.getByTestId('pagination-summary')).toHaveTextContent('2.500')
+    expect(screen.getByTestId('pagination-summary')).toHaveTextContent('250.50')
   })
 
   it('forwards page and page-size changes', () => {
@@ -69,6 +136,8 @@ describe('ModuleTablePagination', () => {
         total={95}
         currentPage={2}
         pageSize={20}
+        records={[]}
+        selectedRowKeys={[]}
         onPageChange={onPageChange}
       />,
     )

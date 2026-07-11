@@ -170,9 +170,11 @@ export function WorkspaceOverlay({
             className="workspace-overlay-close"
             type="button"
             aria-label={t('modules.workspace.closeAria')}
+            aria-keyshortcuts="Escape"
             onClick={onClose}
           >
             <CloseOutlined />
+            <kbd className="keyboard-shortcut-hint">Esc</kbd>
           </button>
         </header>
         <div className="workspace-overlay-body">{children}</div>

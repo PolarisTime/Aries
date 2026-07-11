@@ -296,30 +296,43 @@ describe('BusinessGridRouteContent', () => {
     expect(state.setCurrentPage).toHaveBeenCalledWith(3)
   })
 
-  it('opens row detail on click without changing checkbox selection', () => {
-    const state = createGridState()
-    mocks.useBusinessGridPage.mockReturnValue(state)
+  it('selects an unselected row on single click without opening it', () => {
     const record = { id: 'row-1', projectName: '项目甲' }
+    const onSelectionChange = vi.fn()
+    const state = createGridState({
+      records: [record],
+      rowSelection: { onChange: onSelectionChange },
+    })
+    mocks.useBusinessGridPage.mockReturnValue(state)
 
     render(<BusinessGridRouteContent {...defaultProps} />)
 
     mocks.gridContentProps!.onRowClick(record)
 
-    expect(state.openDetail).toHaveBeenCalledWith(record)
-    expect(state.setSelectedRowKeys).not.toHaveBeenCalled()
-    expect(state.setSelectedRowMap).not.toHaveBeenCalled()
+    expect(onSelectionChange).toHaveBeenCalledWith(
+      ['row-1'],
+      [record],
+      { type: 'single' },
+    )
+    expect(state.openDetail).not.toHaveBeenCalled()
   })
 
-  it('does nothing on row click without view access', () => {
-    const state = createGridState({ canViewRecords: false })
+  it('deselects a selected row on single click', () => {
+    const record = { id: 'row-1' }
+    const onSelectionChange = vi.fn()
+    const state = createGridState({
+      records: [record],
+      selectedRowKeys: ['row-1'],
+      rowSelection: { onChange: onSelectionChange },
+    })
     mocks.useBusinessGridPage.mockReturnValue(state)
 
     render(<BusinessGridRouteContent {...defaultProps} />)
 
-    mocks.gridContentProps!.onRowClick({ id: 'row-1' })
+    mocks.gridContentProps!.onRowClick(record)
 
+    expect(onSelectionChange).toHaveBeenCalledWith([], [], { type: 'single' })
     expect(state.openDetail).not.toHaveBeenCalled()
-    expect(state.setSelectedRowKeys).not.toHaveBeenCalled()
   })
 
   it('opens editor on row double click when editing is allowed', () => {

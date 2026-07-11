@@ -79,7 +79,7 @@ describe('AppVersionFooter', () => {
     ).toBeTruthy()
     expect(
       screen.getByText(
-        '后端 v1.1.2 · 编译时间 2026-07-05 03:30:00 · 构建 SHA-1 abcdef12',
+        '后端 v1.1.2 · 编译时间 2026-07-05 11:30:00 · 构建 SHA-1 abcdef12',
       ),
     ).toBeTruthy()
   })
