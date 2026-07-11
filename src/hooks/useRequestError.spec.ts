@@ -1,9 +1,10 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-const { errorMock, isCanceledMock } = vi.hoisted(() => ({
+const { errorMock, isCanceledMock, readRequestErrorMock } = vi.hoisted(() => ({
   errorMock: vi.fn(),
   isCanceledMock: vi.fn(),
+  readRequestErrorMock: vi.fn(() => ({ handled: false })),
 }))
 
 vi.mock('@/utils/antd-app', () => ({
@@ -12,6 +13,7 @@ vi.mock('@/utils/antd-app', () => ({
 
 vi.mock('@/api/request-errors', () => ({
   isCanceledRequestError: (...args: unknown[]) => isCanceledMock(...args),
+  readRequestError: (...args: unknown[]) => readRequestErrorMock(...args),
 }))
 
 vi.mock('react-i18next', () => ({
@@ -55,6 +57,15 @@ describe('useRequestError', () => {
     isCanceledMock.mockReturnValue(true)
     const { result } = renderHook(() => useRequestError())
     result.current.showError(new Error('canceled'))
+    expect(errorMock).not.toHaveBeenCalled()
+  })
+
+  it('does not show an error already handled by the request layer', () => {
+    readRequestErrorMock.mockReturnValue({ handled: true })
+    const { result } = renderHook(() => useRequestError())
+
+    result.current.showError(new Error('服务暂时不可用'))
+
     expect(errorMock).not.toHaveBeenCalled()
   })
 

@@ -47,3 +47,19 @@ export function resolveServerErrorRetryPath(searchStr: unknown): string {
     ? from.trim()
     : SERVER_ERROR_RETRY_FALLBACK_ROUTE
 }
+
+export function navigateToServerErrorPage(): boolean {
+  if (typeof window === 'undefined') return false
+  if (window.location.pathname === SERVER_ERROR_ROUTE) return false
+
+  const returnPath = getServerErrorReturnPath({
+    pathname: window.location.pathname,
+    searchStr: window.location.search,
+    hash: window.location.hash,
+  })
+  const query = returnPath
+    ? `?${new URLSearchParams({ from: returnPath }).toString()}`
+    : ''
+  window.location.assign(`${SERVER_ERROR_ROUTE}${query}`)
+  return true
+}

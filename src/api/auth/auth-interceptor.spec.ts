@@ -16,6 +16,7 @@ const normalizeErrorMessageMock = vi.hoisted(() => vi.fn())
 const isCanceledRequestErrorMock = vi.hoisted(() => vi.fn())
 const markHandledRequestErrorMock = vi.hoisted(() => vi.fn())
 const messageErrorMock = vi.hoisted(() => vi.fn())
+const navigateToServerErrorPageMock = vi.hoisted(() => vi.fn(() => true))
 
 vi.mock('@/utils/storage', () => ({ getToken: getTokenMock }))
 vi.mock('@/utils/auth-token', () => ({ isApiKeyToken: isApiKeyTokenMock }))
@@ -24,6 +25,9 @@ vi.mock('@/utils/route-helpers', () => ({
   isExactAuthEndpoint: isExactAuthEndpointMock,
 }))
 vi.mock('@/utils/antd-app', () => ({ message: { error: messageErrorMock } }))
+vi.mock('@/utils/server-error-navigation', () => ({
+  navigateToServerErrorPage: navigateToServerErrorPageMock,
+}))
 vi.mock('./auth-guard', () => ({
   shouldTriggerRefresh: shouldTriggerRefreshMock,
   shouldClearAuthState: shouldClearAuthStateMock,
@@ -437,6 +441,26 @@ describe('auth-interceptor', () => {
         http.interceptors.response.handlers[0].rejected(error),
       ).rejects.toThrow('业务错误')
       expect(messageErrorMock).toHaveBeenCalledWith('业务错误')
+    })
+
+    it('navigates once without notifications when concurrent requests detect backend offline', async () => {
+      const http = setupHttp()
+      normalizeErrorMessageMock.mockReturnValue('服务暂时不可用')
+      const networkError = () => ({
+        isAxiosError: true,
+        code: 'ERR_NETWORK',
+        config: { url: '/api/data', headers: {} },
+        message: 'Network Error',
+      })
+
+      const results = await Promise.allSettled([
+        http.interceptors.response.handlers[0].rejected(networkError()),
+        http.interceptors.response.handlers[0].rejected(networkError()),
+      ])
+
+      expect(results.every((result) => result.status === 'rejected')).toBe(true)
+      expect(navigateToServerErrorPageMock).toHaveBeenCalledTimes(1)
+      expect(messageErrorMock).not.toHaveBeenCalled()
     })
 
     it('preserves HTTP status, business code, trace id, and handled marker', async () => {

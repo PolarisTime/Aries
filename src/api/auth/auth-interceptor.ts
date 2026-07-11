@@ -8,6 +8,7 @@ import { ENDPOINTS } from '@/constants/endpoints'
 import { message } from '@/utils/antd-app'
 import { isApiKeyToken } from '@/utils/auth-token'
 import { getRequestPath, isExactAuthEndpoint } from '@/utils/route-helpers'
+import { navigateToServerErrorPage } from '@/utils/server-error-navigation'
 import { getToken } from '@/utils/storage'
 import { shouldClearAuthState, shouldTriggerRefresh } from './auth-guard'
 import {
@@ -91,6 +92,27 @@ function attachResponseMetadataToError(
 
 type GuardedAxiosInstance = AxiosInstance & {
   __leoAuthInterceptorsSetup?: boolean
+  __leoBackendOfflineNavigationStarted?: boolean
+}
+
+function isBackendUnavailableError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const candidate = error as {
+    code?: unknown
+    message?: unknown
+    response?: unknown
+  }
+  if (candidate.response) return false
+  const code = String(candidate.code || '')
+  const messageText = String(candidate.message || '').toLowerCase()
+  return (
+    code === 'ERR_NETWORK' ||
+    code === 'ECONNABORTED' ||
+    code === 'ETIMEDOUT' ||
+    messageText.includes('network error') ||
+    messageText.includes('econnrefused') ||
+    messageText.includes('timeout')
+  )
 }
 
 const PUBLIC_ENDPOINTS = [
@@ -156,7 +178,10 @@ export function setupAuthInterceptors(http: AxiosInstance) {
   })
 
   http.interceptors.response.use(
-    (response) => response.data,
+    (response) => {
+      guardedInstance.__leoBackendOfflineNavigationStarted = false
+      return response.data
+    },
     async (error) => {
       if (isCanceledRequestError(error)) {
         const canceledErr = new Error(error?.message || '请求已取消')
@@ -174,6 +199,19 @@ export function setupAuthInterceptors(http: AxiosInstance) {
         isExactAuthEndpoint(url, '/auth/logout') ||
         isExactAuthEndpoint(url, '/auth/refresh')
       const publicEndpoint = isPublicEndpoint(url)
+
+      if (isBackendUnavailableError(error)) {
+        const description = normalizeErrorMessage(error.message, status)
+        markHandledRequestError(error)
+        if (!guardedInstance.__leoBackendOfflineNavigationStarted) {
+          guardedInstance.__leoBackendOfflineNavigationStarted =
+            navigateToServerErrorPage()
+        }
+        const networkErr = new Error(description)
+        attachResponseMetadataToError(networkErr, error)
+        markHandledRequestError(networkErr)
+        return Promise.reject(networkErr)
+      }
 
       if (
         shouldTriggerRefresh(

@@ -1,5 +1,8 @@
 import { useTranslation } from 'react-i18next'
-import { isCanceledRequestError } from '@/api/request-errors'
+import {
+  isCanceledRequestError,
+  readRequestError,
+} from '@/api/request-errors'
 import { message } from '@/utils/antd-app'
 
 export function useRequestError() {
@@ -10,6 +13,9 @@ export function useRequestError() {
     fallback = t('hooks.requestError.requestFailed'),
   ) => {
     if (isCanceledRequestError(error)) {
+      return
+    }
+    if (readRequestError(error).handled) {
       return
     }
     const msg =
