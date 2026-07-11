@@ -6,6 +6,7 @@ const overlayMocks = vi.hoisted(() => ({
   detail: vi.fn(),
   editor: vi.fn(),
   freightPickup: vi.fn(),
+  prepaymentAllocation: vi.fn(),
   statement: vi.fn(),
 }))
 
@@ -42,6 +43,13 @@ vi.mock('./ModuleRecordDetailOverlay', () => ({
   ModuleRecordDetailOverlay: (props: unknown) => {
     overlayMocks.detail(props)
     return <div data-testid="detail-overlay" />
+  },
+}))
+
+vi.mock('./PaymentPrepaymentAllocationModal', () => ({
+  PaymentPrepaymentAllocationModal: (props: unknown) => {
+    overlayMocks.prepaymentAllocation(props)
+    return <div data-testid="prepayment-allocation" />
   },
 }))
 
@@ -83,6 +91,8 @@ describe('BusinessGridOverlays', () => {
     customerStatementOpen: false,
     freightStatementOpen: false,
     freightPickupOpen: false,
+    prepaymentAllocationOpen: false,
+    prepaymentAllocationPayment: null,
     selectedRows: [],
     canSave: true,
     canAudit: true,
@@ -96,6 +106,8 @@ describe('BusinessGridOverlays', () => {
     onCloseCustomerStatement: vi.fn(),
     onCloseFreightStatement: vi.fn(),
     onCloseFreightPickup: vi.fn(),
+    onClosePrepaymentAllocation: vi.fn(),
+    onPrepaymentAllocationSaved: vi.fn(),
     onGenerateSupplierStatement: vi.fn(),
     onGenerateCustomerStatement: vi.fn(),
     onGenerateFreightStatement: vi.fn(),
@@ -249,6 +261,31 @@ describe('BusinessGridOverlays', () => {
     expect(overlayMocks.freightPickup).toHaveBeenCalledWith(
       expect.objectContaining({
         records: freightPickupRecords,
+      }),
+    )
+  })
+
+  it('renders the dedicated prepayment allocation overlay', async () => {
+    const payment = {
+      id: 'payment-1',
+      paymentPurpose: 'PURCHASE_PREPAYMENT',
+      status: '已付款',
+    }
+    render(
+      <BusinessGridOverlays
+        {...defaultProps}
+        prepaymentAllocationOpen={true}
+        prepaymentAllocationPayment={payment}
+      />,
+    )
+
+    expect(await screen.findByTestId('prepayment-allocation')).toBeTruthy()
+    expect(overlayMocks.prepaymentAllocation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        open: true,
+        payment,
+        onClose: defaultProps.onClosePrepaymentAllocation,
+        onSaved: defaultProps.onPrepaymentAllocationSaved,
       }),
     )
   })

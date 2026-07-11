@@ -116,6 +116,7 @@ export function FormFieldRenderer({ field, disabled }: Props) {
     <Form.Item
       key={field.key}
       name={field.key}
+      preserve={field.preserve}
       {...buildLabeledFormItemProps({
         label: displayLabel,
         htmlFor: fieldId,

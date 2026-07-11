@@ -7,10 +7,12 @@ const {
   getSettlementCompanyOptionsMock,
   findCustomerOptionMock,
   findCarrierOptionMock,
+  findSupplierOptionMock,
 } = vi.hoisted(() => ({
   getSettlementCompanyOptionsMock: vi.fn(),
   findCustomerOptionMock: vi.fn(),
   findCarrierOptionMock: vi.fn(),
+  findSupplierOptionMock: vi.fn(),
 }))
 
 vi.mock('@/api/company-settings', () => ({
@@ -23,6 +25,10 @@ vi.mock('@/api/customer-options', () => ({
 
 vi.mock('@/api/carrier-options', () => ({
   findCarrierOption: findCarrierOptionMock,
+}))
+
+vi.mock('@/api/supplier-options', () => ({
+  findSupplierOption: findSupplierOptionMock,
 }))
 
 const settlementCompanyOptions = [
@@ -49,6 +55,7 @@ describe('module-behavior-editor', () => {
     getSettlementCompanyOptionsMock.mockReturnValue(settlementCompanyOptions)
     findCustomerOptionMock.mockReset()
     findCarrierOptionMock.mockReset()
+    findSupplierOptionMock.mockReset()
   })
 
   it('registers carrier with priceMode default', () => {
@@ -131,6 +138,7 @@ describe('module-behavior-editor', () => {
 
   it('freight-bill uses the selected carrier default settlement company', () => {
     findCarrierOptionMock.mockReturnValue({
+      carrierCode: ' WL-001 ',
       defaultSettlementCompanyId: 10,
       defaultSettlementCompanyName: '主体B',
     })
@@ -141,8 +149,52 @@ describe('module-behavior-editor', () => {
     })
 
     expect(findCarrierOptionMock).toHaveBeenCalledWith('物流甲')
+    expect(form.carrierCode).toBe('WL-001')
     expect(form.settlementCompanyId).toBe('10')
     expect(form.settlementCompanyName).toBe('主体B')
+  })
+
+  it('freight-bill clears a stale carrier code when the carrier is unknown', () => {
+    findCarrierOptionMock.mockReturnValue(undefined)
+    const form = {
+      carrierName: '未知物流商',
+      carrierCode: 'WL-OLD',
+    } as Record<string, unknown>
+
+    getSyncEditorForm('freight-bill')(form, {
+      changedKeys: new Set(['carrierName']),
+    })
+
+    expect(form.carrierCode).toBe('')
+  })
+
+  it('freight-statement snapshots the selected carrier code', () => {
+    findCarrierOptionMock.mockReturnValue({
+      carrierCode: ' WL-002 ',
+      value: '物流乙',
+    })
+    const form = { carrierName: '物流乙' } as Record<string, unknown>
+
+    getSyncEditorForm('freight-statement')(form, {
+      changedKeys: new Set(['carrierName']),
+    })
+
+    expect(findCarrierOptionMock).toHaveBeenCalledWith('物流乙')
+    expect(form.carrierCode).toBe('WL-002')
+  })
+
+  it('freight-statement clears a stale code when the carrier is unknown', () => {
+    findCarrierOptionMock.mockReturnValue(undefined)
+    const form = {
+      carrierName: '未知物流商',
+      carrierCode: 'WL-OLD',
+    } as Record<string, unknown>
+
+    getSyncEditorForm('freight-statement')(form, {
+      changedKeys: new Set(['carrierName']),
+    })
+
+    expect(form.carrierCode).toBe('')
   })
 
   it('registers purchase-order with defaultOperatorField', () => {
@@ -152,11 +204,57 @@ describe('module-behavior-editor', () => {
     expect(hasBehavior('purchase-order', 'lineItemTrimStrategy')).toBe(true)
   })
 
+  it('registers purchase-refund as an authoritative readonly source document', () => {
+    const config = moduleBehaviorRegistry.get('purchase-refund')
+    expect(config?.defaultOperatorField).toBe('operatorName')
+    expect(config?.allowsManualLineItems).toBe(false)
+    expect(config?.readonlyLineItems).toBe(true)
+    expect(config?.defaultDraftValues).toBeTypeOf('function')
+    const values = (
+      config!.defaultDraftValues as () => Record<string, unknown>
+    )()
+    expect(dayjs.isDayjs(values.refundDate)).toBe(true)
+  })
+
+  it('registers supplier refund receipt operator and receipt date defaults', () => {
+    const config = moduleBehaviorRegistry.get('supplier-refund-receipt')
+
+    expect(config?.defaultOperatorField).toBe('operatorName')
+    expect(config?.defaultDraftValues).toBeTypeOf('function')
+    const values = (
+      config!.defaultDraftValues as () => Record<string, unknown>
+    )()
+    expect(dayjs.isDayjs(values.receiptDate)).toBe(true)
+    expect((values.receiptDate as dayjs.Dayjs).format('YYYY-MM-DD')).toBe(
+      dayjs().format('YYYY-MM-DD'),
+    )
+  })
+
   it('purchase-order defaultDraftValues returns current date', () => {
     const config = moduleBehaviorRegistry.get('purchase-order')
     const values = (config!.defaultDraftValues as () => any)()
     expect(values.orderDate).toBeDefined()
     expect(dayjs.isDayjs(values.orderDate)).toBe(true)
+  })
+
+  it('purchase-order snapshots the selected supplier name by stable code', () => {
+    findSupplierOptionMock.mockReturnValue({
+      supplierCode: 'SUP-001',
+      value: '供应商甲',
+      label: '供应商甲',
+    })
+    const form = {
+      supplierName: '',
+      supplierCode: 'SUP-001',
+    } as Record<string, unknown>
+
+    getSyncEditorForm('purchase-order')(form, {
+      changedKeys: new Set(['supplierCode']),
+    })
+
+    expect(findSupplierOptionMock).toHaveBeenCalledWith('SUP-001')
+    expect(form.supplierCode).toBe('SUP-001')
+    expect(form.supplierName).toBe('供应商甲')
   })
 
   it('purchase-order syncEditorForm snapshots settlement company name changes', () => {
@@ -221,6 +319,20 @@ describe('module-behavior-editor', () => {
       changedKeys: new Set(['settlementCompanyId']),
     })
     expect(fallbackForm.settlementCompanyName).toBe('原主体')
+  })
+
+  it('ledger adjustment snapshots the selected settlement company name', () => {
+    const form = {
+      settlementCompanyId: '10',
+      settlementCompanyName: '',
+    }
+
+    getSyncEditorForm('ledger-adjustment')(form, {
+      changedKeys: new Set(['settlementCompanyId']),
+    })
+
+    expect(form.settlementCompanyName).toBe('主体B')
+    expect(getSettlementCompanyOptionsMock).toHaveBeenCalledTimes(1)
   })
 
   it('purchase-inbound defaultDraftValues returns inboundDate', () => {

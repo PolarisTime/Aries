@@ -7,7 +7,11 @@ import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
 import { buildFilterParams } from '@/api/business-listing-filtering'
 import { listFreightBillImportCandidatePage } from '@/api/freight-bill-candidates'
 import { getModuleConfig } from '@/api/module-contracts'
-import { listPurchaseOrderImportCandidatePage } from '@/api/purchase-order-candidates'
+import {
+  listPurchaseOrderImportCandidatePage,
+  listPurchaseOrderPrepaymentCandidatePage,
+  listPurchaseRefundSourceCandidatePage,
+} from '@/api/purchase-order-candidates'
 import { listSalesOrderOutboundImportCandidatePage } from '@/api/sales-order-candidates'
 import { listStatementCandidatePage } from '@/api/statements'
 import { StatusTag } from '@/components/StatusTag'
@@ -431,6 +435,12 @@ function resolveParentSelectorSourceModule(
   if (candidateQueryType === 'purchase-order-import') {
     return 'purchase-order-import'
   }
+  if (candidateQueryType === 'purchase-prepayment') {
+    return 'purchase-prepayment'
+  }
+  if (candidateQueryType === 'purchase-refund-source') {
+    return 'purchase-refund-source'
+  }
   if (candidateQueryType === 'freight-bill-import') {
     return 'freight-bill-import'
   }
@@ -671,6 +681,20 @@ export function useModuleParentSelectorOverlay({
           pageSize,
         )
       }
+      if (candidateQueryType === 'purchase-prepayment') {
+        return listPurchaseOrderPrepaymentCandidatePage(
+          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          Math.max(page - 1, 0),
+          pageSize,
+        )
+      }
+      if (candidateQueryType === 'purchase-refund-source') {
+        return listPurchaseRefundSourceCandidatePage(
+          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          Math.max(page - 1, 0),
+          pageSize,
+        )
+      }
       if (candidateQueryType === 'freight-bill-import') {
         return listFreightBillImportCandidatePage(
           buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
@@ -703,6 +727,7 @@ export function useModuleParentSelectorOverlay({
     parentModuleKey,
     data?.data?.rows || [],
     candidateStatementModuleKey,
+    candidateQueryType,
   )
   const total = Number(data?.data?.total || 0)
   const columns: ColumnsType<ModuleRecord> =

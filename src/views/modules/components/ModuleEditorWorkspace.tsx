@@ -203,8 +203,10 @@ export function ModuleEditorWorkspace({
             showActions={!config.itemColumns?.length}
             lineItemsLocked={lineItemsLocked}
             lockedLineItemsNotice={lockedLineItemsNotice}
+            parentImporting={parentImporting}
             authoritativePrimaryNo={authoritativePrimaryNo}
             onCancel={onClose}
+            onOpenParentSelector={openParentSelector}
             onSave={(audit) => {
               void handleSave(audit)
             }}

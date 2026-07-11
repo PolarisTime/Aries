@@ -27,6 +27,7 @@ describe('app-icons', () => {
         'InboxOutlined',
         'PrinterOutlined',
         'ProfileOutlined',
+        'RollbackOutlined',
         'SafetyCertificateOutlined',
         'SettingOutlined',
         'ShopOutlined',

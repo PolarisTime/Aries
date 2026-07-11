@@ -36,6 +36,26 @@ describe('systemOrganizationPageConfigs', () => {
     ).toBeGreaterThan(0)
   })
 
+  it('keeps department hierarchy visible and hides administrative details by default', () => {
+    const config = systemOrganizationPageConfigs.department
+    const columnKeys = config.columns.map((column) => column.dataIndex)
+    const hiddenKeys = config.defaultHiddenColumnKeys ?? []
+    const visibleKeys = columnKeys.filter((key) => !hiddenKeys.includes(key))
+
+    expect(hiddenKeys).toEqual(['contactPhone', 'sortOrder', 'remark'])
+    expect(columnKeys).toEqual(expect.arrayContaining(hiddenKeys))
+    expect(visibleKeys).toEqual(
+      expect.arrayContaining([
+        'departmentCode',
+        'departmentName',
+        'parentName',
+        'managerName',
+        'status',
+      ]),
+    )
+    expect(hiddenKeys.length).toBeLessThan(columnKeys.length * 0.6)
+  })
+
   it('has formFields', () => {
     expect(systemOrganizationPageConfigs.department.formFields).toBeDefined()
   })

@@ -8,6 +8,7 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
+import { BusinessGridWorkspaceHeader } from '@/views/modules/components/BusinessGridWorkspaceHeader'
 import { ColumnSettingsPopover } from '@/views/modules/components/ColumnSettingsPopover'
 import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterToolbar'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
@@ -22,6 +23,7 @@ interface Props {
   loading: boolean
   exporting: boolean
   records: ModuleRecord[]
+  selectedRows: ModuleRecord[]
   total: number
   currentPage: number
   pageSize: number
@@ -37,6 +39,7 @@ interface Props {
   onCreate: () => void
   onExport: () => void
   onRefresh: () => void
+  onClearSelection: () => void
   onToggleColumn: (key: string) => void
   onColumnOrderChange: (order: string[]) => void
   onRowClick: (record: ModuleRecord) => void
@@ -59,6 +62,7 @@ export function BusinessGridContent({
   loading,
   exporting,
   records,
+  selectedRows,
   total,
   currentPage,
   pageSize,
@@ -74,6 +78,7 @@ export function BusinessGridContent({
   onCreate,
   onExport,
   onRefresh,
+  onClearSelection,
   onToggleColumn,
   onColumnOrderChange,
   onRowClick,
@@ -87,11 +92,20 @@ export function BusinessGridContent({
   printDropdown,
 }: Props) {
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
-
-  // columnSettingsOpen initialised to false via useState; no mount-effect needed
+  const overviewItems = config.buildOverview(
+    selectedRows.length ? selectedRows : records,
+  )
 
   return (
     <section className="module-grid-workspace">
+      <BusinessGridWorkspaceHeader
+        config={config}
+        records={records}
+        total={total}
+        currentPage={currentPage}
+        pageSize={pageSize}
+      />
+
       <div className="module-grid-filter-region">
         <ModuleFilterToolbar
           config={config}
@@ -114,6 +128,7 @@ export function BusinessGridContent({
           onCreate={onCreate}
           onExport={onExport}
           onRefresh={onRefresh}
+          onClearSelection={onClearSelection}
           toolbarActions={toolbarActions}
           onAction={onAction}
           extra={
@@ -158,8 +173,8 @@ export function BusinessGridContent({
         total={total}
         currentPage={currentPage}
         pageSize={pageSize}
-        records={records}
-        selectedRowKeys={rowSelection?.selectedRowKeys || []}
+        currentItemCount={records.length}
+        overviewItems={overviewItems}
         onPageChange={onPageChange}
       />
     </section>

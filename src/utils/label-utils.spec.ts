@@ -22,9 +22,9 @@ describe('padLabel', () => {
     expect(result).toBe('　　测试')
   })
 
-  it('handles text with no CJK characters', () => {
+  it('leaves text with no CJK characters unchanged', () => {
     const result = padLabel('test', 4)
-    expect(result).toBe('　　　　test')
+    expect(result).toBe('test')
   })
 
   it('handles mixed CJK and non-CJK characters', () => {
@@ -32,9 +32,9 @@ describe('padLabel', () => {
     expect(result).toBe('　　test测试')
   })
 
-  it('handles empty string', () => {
+  it('leaves an empty string unchanged', () => {
     const result = padLabel('', 4)
-    expect(result).toBe('　　　　')
+    expect(result).toBe('')
   })
 
   it('handles custom target', () => {

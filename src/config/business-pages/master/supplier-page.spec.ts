@@ -29,6 +29,26 @@ describe('suppliersPageConfig', () => {
     expect(suppliersPageConfig.columns.length).toBeGreaterThan(0)
   })
 
+  it('keeps supplier identity visible and hides contact details by default', () => {
+    const columnKeys = suppliersPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+    const hiddenKeys = suppliersPageConfig.defaultHiddenColumnKeys ?? []
+    const visibleKeys = columnKeys.filter((key) => !hiddenKeys.includes(key))
+
+    expect(hiddenKeys).toEqual(['contactPhone', 'city', 'remark'])
+    expect(columnKeys).toEqual(expect.arrayContaining(hiddenKeys))
+    expect(visibleKeys).toEqual(
+      expect.arrayContaining([
+        'supplierCode',
+        'supplierName',
+        'contactName',
+        'status',
+      ]),
+    )
+    expect(hiddenKeys.length).toBeLessThan(columnKeys.length * 0.6)
+  })
+
   it('has detailFields', () => {
     expect(suppliersPageConfig.detailFields).toBeDefined()
   })

@@ -1,6 +1,11 @@
 import type { TableColumnsType, TableProps } from 'antd'
 import type { ColumnType } from 'antd/es/table'
-import type { Dispatch, ReactNode, SetStateAction } from 'react'
+import {
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+  useEffect,
+} from 'react'
 import type { ActionItem } from '@/components/TableActions'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import type { ColumnDef, RowSelectionState } from '@/hooks/useDataTable'
@@ -25,7 +30,6 @@ interface Props {
 }
 
 const ACTIONS_COLUMN_ID = 'actions'
-const STATUS_COLUMN_ID = 'status'
 
 function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
   const ordered = new Set(savedOrder)
@@ -33,18 +37,11 @@ function mergeColumnOrder(allIds: string[], savedOrder: string[]): string[] {
   for (const id of allIds) {
     if (!ordered.has(id)) merged.push(id)
   }
-  // 强制操作列始终排在数据列第一位（勾选框之后）
+  // 操作列保持在业务数据之后，窄屏优先展示单号与交易方。
   const idx = merged.indexOf(ACTIONS_COLUMN_ID)
-  if (idx > 0) {
+  if (idx >= 0 && idx !== merged.length - 1) {
     merged.splice(idx, 1)
-    merged.unshift(ACTIONS_COLUMN_ID)
-  }
-
-  const actionIndex = merged.indexOf(ACTIONS_COLUMN_ID)
-  const statusIndex = merged.indexOf(STATUS_COLUMN_ID)
-  if (actionIndex >= 0 && statusIndex >= 0 && statusIndex !== actionIndex + 1) {
-    merged.splice(statusIndex, 1)
-    merged.splice(actionIndex + 1, 0, STATUS_COLUMN_ID)
+    merged.push(ACTIONS_COLUMN_ID)
   }
   return merged
 }
@@ -79,7 +76,10 @@ function buildAntdColumns({
         title,
         dataIndex: columnId,
         key: columnId,
-        fixed: columnDef.meta?.fixed as ColumnType<ModuleRecord>['fixed'],
+        fixed:
+          columnId === ACTIONS_COLUMN_ID
+            ? undefined
+            : (columnDef.meta?.fixed as ColumnType<ModuleRecord>['fixed']),
         className: columnId === 'actions' ? 'sticky-actions-col' : undefined,
         onCell:
           columnId === 'actions'
@@ -197,7 +197,24 @@ export function useBusinessGridTable({
     },
     preserveSelectedRowKeys: true,
   }
-  const columnVisibleKeys = allColumnIds.filter(
+  useEffect(() => {
+    if (!selectedRowKeys.length || !records.length) return
+
+    const selectedKeys = new Set(selectedRowKeys)
+    // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent -- 当前页刷新后必须替换父级持有的跨页选择快照。
+    setSelectedRowMap((previous) => {
+      let changed = false
+      const next = { ...previous }
+      for (const record of records) {
+        const key = String(record.id)
+        if (!selectedKeys.has(key) || next[key] === record) continue
+        next[key] = record
+        changed = true
+      }
+      return changed ? next : previous
+    })
+  }, [records, selectedRowKeys, setSelectedRowMap])
+  const columnVisibleKeys = columnOrder.filter(
     (id) => columnVisibility[id] !== false,
   )
   const toggleColumn = (key: string) => {

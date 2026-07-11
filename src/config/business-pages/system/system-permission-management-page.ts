@@ -17,6 +17,7 @@ export const permissionManagementPageConfig: ModulePageConfig = {
   readOnly: true,
   actions: [
     {
+      key: 'export',
       label: i18next.t('modules.pages.systemPermissionManagement.export'),
       type: 'primary',
     },

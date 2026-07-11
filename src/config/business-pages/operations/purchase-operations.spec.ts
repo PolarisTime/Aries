@@ -31,7 +31,14 @@ describe('purchaseOperationsPageConfigs', () => {
     )
   })
 
-  it('has exactly 2 entries', () => {
-    expect(Object.keys(purchaseOperationsPageConfigs)).toHaveLength(2)
+  it('contains purchase-refund config', () => {
+    expect(purchaseOperationsPageConfigs['purchase-refund']).toBeDefined()
+    expect(purchaseOperationsPageConfigs['purchase-refund'].key).toBe(
+      'purchase-refund',
+    )
+  })
+
+  it('has exactly 3 entries', () => {
+    expect(Object.keys(purchaseOperationsPageConfigs)).toHaveLength(3)
   })
 })

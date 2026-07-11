@@ -54,6 +54,16 @@ export const financePageDefinitions: AppPageDefinition[] = [
     searchable: true,
   },
   {
+    key: 'supplier-refund-receipt',
+    title: '供应商退款到账单',
+    menuKey: '/supplier-refund-receipt',
+    view: 'business-grid',
+    icon: 'RollbackOutlined',
+    menuParent: 'finance',
+    moduleKey: 'supplier-refund-receipt',
+    searchable: true,
+  },
+  {
     key: 'invoice-receipt',
     title: '收票单',
     menuKey: '/invoice-receipt',

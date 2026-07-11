@@ -1,4 +1,4 @@
-const MIN_TABLE_BODY_SCROLL_Y = 240
+const MIN_TABLE_BODY_SCROLL_Y = 120
 const DEFAULT_COLUMN_WIDTH = 120
 
 export function computeTableBodyScrollY(
@@ -50,11 +50,13 @@ export function computeTableAvailableHeight({
   containerTop: number
   bottomInset: number
 }) {
+  if (containerHeight > 0) return containerHeight
+
   const viewportAvailableHeight =
     viewportHeight > 0 && containerTop >= 0
       ? Math.max(0, viewportHeight - containerTop - bottomInset)
       : 0
-  return Math.max(containerHeight, viewportAvailableHeight)
+  return viewportAvailableHeight
 }
 
 export function buildTableScrollConfig({

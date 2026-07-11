@@ -17,6 +17,8 @@ describe('useBusinessGridOverlays', () => {
     expect(result.current.freightStatementOpen).toBe(false)
     expect(result.current.freightPickupOpen).toBe(false)
     expect(result.current.freightPickupRecords).toEqual([])
+    expect(result.current.prepaymentAllocationOpen).toBe(false)
+    expect(result.current.prepaymentAllocationPayment).toBeNull()
   })
 
   it('opens attachment overlay', () => {
@@ -124,6 +126,27 @@ describe('useBusinessGridOverlays', () => {
     expect(result.current.freightPickupRecords).toEqual([])
   })
 
+  it('opens and closes prepayment allocation with the selected payment', () => {
+    const { result } = renderHook(() => useBusinessGridOverlays())
+    const payment = {
+      id: 'payment-1',
+      paymentPurpose: 'PURCHASE_PREPAYMENT',
+      status: '已付款',
+    }
+
+    act(() => {
+      result.current.openPrepaymentAllocation(payment)
+    })
+    expect(result.current.prepaymentAllocationOpen).toBe(true)
+    expect(result.current.prepaymentAllocationPayment).toEqual(payment)
+
+    act(() => {
+      result.current.closePrepaymentAllocation()
+    })
+    expect(result.current.prepaymentAllocationOpen).toBe(false)
+    expect(result.current.prepaymentAllocationPayment).toBeNull()
+  })
+
   it('handles attachment with empty id', () => {
     const { result } = renderHook(() => useBusinessGridOverlays())
     act(() => {
@@ -145,5 +168,7 @@ describe('useBusinessGridOverlays', () => {
     expect(typeof result.current.closeFreightStatement).toBe('function')
     expect(typeof result.current.openFreightPickup).toBe('function')
     expect(typeof result.current.closeFreightPickup).toBe('function')
+    expect(typeof result.current.openPrepaymentAllocation).toBe('function')
+    expect(typeof result.current.closePrepaymentAllocation).toBe('function')
   })
 })

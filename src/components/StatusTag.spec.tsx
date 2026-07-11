@@ -50,9 +50,8 @@ describe('StatusTag', () => {
         statusMap={{ 已审核: { color: 'default', label: '   ' } }}
       />,
     )
-    expect(container.querySelector('.ant-tag')).toHaveClass(
-      'ant-tag-processing',
-    )
+    expect(container.querySelector('.ant-tag')).toHaveClass('ant-tag-green')
+    expect(container.querySelector('.ant-tag')).toHaveClass('ant-tag-filled')
   })
 
   it('normalizes status before reading statusMap', () => {
@@ -62,31 +61,30 @@ describe('StatusTag', () => {
 
   it('uses fallback color for known statuses when meta is missing', () => {
     render(<StatusTag status="已审核" statusMap={{}} />)
-    expect(screen.getByText('已审核')).toHaveClass('ant-tag-processing')
-    expect(screen.getByText('已审核')).toHaveClass('ant-tag-outlined')
+    expect(screen.getByText('已审核')).toHaveClass('ant-tag-green')
+    expect(screen.getByText('已审核')).toHaveClass('ant-tag-filled')
   })
 
-  it('uses light blue tone when statusMap color is default', () => {
+  it('uses warning tone when statusMap color is default but status is pending', () => {
     render(
       <StatusTag
         status="草稿"
         statusMap={{ 草稿: { color: 'default', label: '草稿' } }}
       />,
     )
-    expect(screen.getByText('草稿')).toHaveClass('ant-tag-blue')
-    expect(screen.getByText('草稿')).toHaveClass('ant-tag-outlined')
-    expect(screen.getByText('草稿').style.backgroundColor).toBe('transparent')
+    expect(screen.getByText('草稿')).toHaveClass('ant-tag-gold')
+    expect(screen.getByText('草稿')).toHaveClass('ant-tag-filled')
   })
 
-  it('normalizes legacy error color aliases to light blue tone', () => {
+  it('keeps legacy error aliases semantically red', () => {
     render(
       <StatusTag
         status="禁用"
         statusMap={{ 禁用: { color: 'red', label: '禁用' } }}
       />,
     )
-    expect(screen.getByText('禁用')).toHaveClass('ant-tag-blue')
-    expect(screen.getByText('禁用')).toHaveClass('ant-tag-outlined')
+    expect(screen.getByText('禁用')).toHaveClass('ant-tag-red')
+    expect(screen.getByText('禁用')).toHaveClass('ant-tag-filled')
   })
 
   it('falls back to resolved tone when statusMap color is unknown', () => {
@@ -96,32 +94,32 @@ describe('StatusTag', () => {
         statusMap={{ 自定义: { color: 'purple', label: '已审核' } }}
       />,
     )
-    expect(screen.getByText('已审核')).toHaveClass('ant-tag-processing')
-    expect(screen.getByText('已审核')).toHaveClass('ant-tag-outlined')
+    expect(screen.getByText('已审核')).toHaveClass('ant-tag-green')
+    expect(screen.getByText('已审核')).toHaveClass('ant-tag-filled')
   })
 
-  it('uses light blue fallback tone for pending statuses', () => {
+  it('uses gold fallback tone for pending statuses', () => {
     render(<StatusTag status="未审核" statusMap={{}} />)
-    expect(screen.getByText('未审核')).toHaveClass('ant-tag-blue')
-    expect(screen.getByText('未审核')).toHaveClass('ant-tag-outlined')
+    expect(screen.getByText('未审核')).toHaveClass('ant-tag-gold')
+    expect(screen.getByText('未审核')).toHaveClass('ant-tag-filled')
   })
 
-  it('uses light blue fallback tone for disabled statuses', () => {
+  it('uses red fallback tone for disabled statuses', () => {
     render(<StatusTag status="已禁用" statusMap={{}} />)
-    expect(screen.getByText('已禁用')).toHaveClass('ant-tag-blue')
-    expect(screen.getByText('已禁用')).toHaveClass('ant-tag-outlined')
+    expect(screen.getByText('已禁用')).toHaveClass('ant-tag-red')
+    expect(screen.getByText('已禁用')).toHaveClass('ant-tag-filled')
   })
 
-  it('uses geekblue outlined tone for completed statuses', () => {
+  it('uses green filled tone for completed statuses', () => {
     render(<StatusTag status="完成采购" statusMap={{}} />)
-    expect(screen.getByText('完成采购')).toHaveClass('ant-tag-geekblue')
-    expect(screen.getByText('完成采购')).toHaveClass('ant-tag-outlined')
+    expect(screen.getByText('完成采购')).toHaveClass('ant-tag-green')
+    expect(screen.getByText('完成采购')).toHaveClass('ant-tag-filled')
   })
 
-  it('uses geekblue outlined tone for statuses prefixed with 完成', () => {
+  it('uses green filled tone for statuses prefixed with 完成', () => {
     render(<StatusTag status="完成付款" statusMap={{}} />)
-    expect(screen.getByText('完成付款')).toHaveClass('ant-tag-geekblue')
-    expect(screen.getByText('完成付款')).toHaveClass('ant-tag-outlined')
+    expect(screen.getByText('完成付款')).toHaveClass('ant-tag-green')
+    expect(screen.getByText('完成付款')).toHaveClass('ant-tag-filled')
   })
 
   it('uses geekblue outlined tone when display text is prefixed with 完成', () => {
@@ -131,11 +129,11 @@ describe('StatusTag', () => {
         statusMap={{ completed: { color: 'success', label: '完成对账' } }}
       />,
     )
-    expect(screen.getByText('完成对账')).toHaveClass('ant-tag-geekblue')
-    expect(screen.getByText('完成对账')).toHaveClass('ant-tag-outlined')
+    expect(screen.getByText('完成对账')).toHaveClass('ant-tag-green')
+    expect(screen.getByText('完成对账')).toHaveClass('ant-tag-filled')
   })
 
-  it('keeps blue status tones distinct without filled backgrounds', () => {
+  it('keeps pending, approved and completed states semantically distinct', () => {
     render(
       <>
         <StatusTag status="草稿" statusMap={{}} />
@@ -147,27 +145,10 @@ describe('StatusTag', () => {
     const audited = screen.getByText('已审核')
     const completed = screen.getByText('完成采购')
 
-    expect(draft.style.backgroundColor).toBe('transparent')
-    expect(audited.style.backgroundColor).toBe('transparent')
-    expect(completed.style.backgroundColor).toBe('transparent')
-    expect(
-      new Set([draft.style.color, audited.style.color, completed.style.color])
-        .size,
-    ).toBe(3)
-    expect(
-      new Set([
-        draft.style.borderColor,
-        audited.style.borderColor,
-        completed.style.borderColor,
-      ]).size,
-    ).toBe(3)
-    expect(
-      new Set([
-        draft.style.fontWeight,
-        audited.style.fontWeight,
-        completed.style.fontWeight,
-      ]).size,
-    ).toBe(3)
+    expect(draft).toHaveClass('ant-tag-gold')
+    expect(audited).toHaveClass('ant-tag-green')
+    expect(completed).toHaveClass('ant-tag-green')
+    expect(draft).toHaveClass('ant-tag-filled')
   })
 
   it('uses dash for blank status', () => {

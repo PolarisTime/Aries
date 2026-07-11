@@ -52,6 +52,31 @@ describe('inventoryReportPageConfig', () => {
     expect(inventoryReportPageConfig.columns.length).toBeGreaterThan(0)
   })
 
+  it('keeps stock comparisons visible and hides redundant identity fields by default', () => {
+    const columnKeys = inventoryReportPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+    const hiddenKeys = inventoryReportPageConfig.defaultHiddenColumnKeys ?? []
+    const visibleKeys = columnKeys.filter((key) => !hiddenKeys.includes(key))
+
+    expect(hiddenKeys).toEqual(['brand', 'category', 'length', 'quantityUnit'])
+    expect(columnKeys).toEqual(expect.arrayContaining(hiddenKeys))
+    expect(visibleKeys).toEqual(
+      expect.arrayContaining([
+        'materialCode',
+        'material',
+        'spec',
+        'onHandQuantity',
+        'reservedQuantity',
+        'availableQuantity',
+        'onHandWeightTon',
+        'reservedWeightTon',
+        'availableWeightTon',
+      ]),
+    )
+    expect(hiddenKeys.length).toBeLessThan(columnKeys.length * 0.6)
+  })
+
   it('keeps detail header fields empty because flow table carries row information', () => {
     expect(inventoryReportPageConfig.detailFields).toEqual([])
   })

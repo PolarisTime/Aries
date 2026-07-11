@@ -24,9 +24,46 @@ describe('salesContractsPageConfig', () => {
     expect(salesContractsPageConfig.filters!.length).toBeGreaterThanOrEqual(4)
   })
 
+  it('keeps core filters visible and moves the sign date to the advanced row', () => {
+    const filterRows = Object.fromEntries(
+      salesContractsPageConfig.filters.map((filter) => [
+        filter.key,
+        filter.row ?? 1,
+      ]),
+    )
+
+    expect(filterRows).toEqual({
+      keyword: 1,
+      customerName: 1,
+      status: 1,
+      signDate: 2,
+    })
+  })
+
   it('has columns', () => {
     expect(salesContractsPageConfig.columns).toBeDefined()
     expect(salesContractsPageConfig.columns.length).toBeGreaterThan(0)
+  })
+
+  it('hides secondary dates and salesperson while keeping scan columns visible', () => {
+    expect(salesContractsPageConfig.defaultHiddenColumnKeys).toEqual([
+      'effectiveDate',
+      'expireDate',
+      'salesName',
+    ])
+    for (const key of [
+      'contractNo',
+      'customerName',
+      'projectName',
+      'signDate',
+      'totalWeight',
+      'totalAmount',
+      'status',
+    ]) {
+      expect(salesContractsPageConfig.defaultHiddenColumnKeys).not.toContain(
+        key,
+      )
+    }
   })
 
   it('has formFields', () => {

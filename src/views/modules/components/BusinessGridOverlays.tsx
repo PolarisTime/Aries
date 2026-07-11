@@ -6,6 +6,7 @@ import {
   loadModuleFreightPickupListOverlay,
   loadModuleRecordDetailOverlay,
   loadModuleStatementGenerator,
+  loadPaymentPrepaymentAllocationModal,
 } from '@/views/modules/components/business-grid-overlay-loaders'
 import { OverlayLazyFallback } from '@/views/modules/components/OverlayLazyFallback'
 
@@ -16,6 +17,9 @@ const ModuleEditorWorkspace = lazy(loadModuleEditorWorkspace)
 const ModuleFreightPickupListOverlay = lazy(loadModuleFreightPickupListOverlay)
 const ModuleRecordDetailOverlay = lazy(loadModuleRecordDetailOverlay)
 const ModuleStatementGenerator = lazy(loadModuleStatementGenerator)
+const PaymentPrepaymentAllocationModal = lazy(
+  loadPaymentPrepaymentAllocationModal,
+)
 
 interface Props {
   moduleKey: string
@@ -33,6 +37,8 @@ interface Props {
   freightStatementOpen: boolean
   freightPickupOpen: boolean
   freightPickupRecords?: ModuleRecord[]
+  prepaymentAllocationOpen: boolean
+  prepaymentAllocationPayment: ModuleRecord | null
   selectedRows: ModuleRecord[]
   canSave: boolean
   canAudit: boolean
@@ -46,6 +52,8 @@ interface Props {
   onCloseCustomerStatement: () => void
   onCloseFreightStatement: () => void
   onCloseFreightPickup: () => void
+  onClosePrepaymentAllocation: () => void
+  onPrepaymentAllocationSaved: () => Promise<void> | void
   onGenerateSupplierStatement: (
     counterpartyName: string,
     startDate: string,
@@ -79,6 +87,8 @@ export function BusinessGridOverlays({
   freightStatementOpen,
   freightPickupOpen,
   freightPickupRecords = EMPTY_FREIGHT_PICKUP_RECORDS,
+  prepaymentAllocationOpen,
+  prepaymentAllocationPayment,
   selectedRows,
   canSave,
   canAudit,
@@ -92,6 +102,8 @@ export function BusinessGridOverlays({
   onCloseCustomerStatement,
   onCloseFreightStatement,
   onCloseFreightPickup,
+  onClosePrepaymentAllocation,
+  onPrepaymentAllocationSaved,
   onGenerateSupplierStatement,
   onGenerateCustomerStatement,
   onGenerateFreightStatement,
@@ -168,6 +180,15 @@ export function BusinessGridOverlays({
           moduleKey={moduleKey}
           records={freightPickupRecords}
           onClose={onCloseFreightPickup}
+        />
+      ) : null}
+
+      {prepaymentAllocationOpen ? (
+        <PaymentPrepaymentAllocationModal
+          open={prepaymentAllocationOpen}
+          payment={prepaymentAllocationPayment}
+          onClose={onClosePrepaymentAllocation}
+          onSaved={onPrepaymentAllocationSaved}
         />
       ) : null}
     </Suspense>

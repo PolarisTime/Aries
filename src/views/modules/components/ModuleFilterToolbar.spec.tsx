@@ -509,7 +509,7 @@ describe('ModuleFilterToolbar', () => {
     expect(screen.getByLabelText('Secondary')).toBeTruthy()
   })
 
-  it('moves filters after the fourth primary field into the second row', () => {
+  it('keeps at most three configured filters in the primary row', () => {
     renderToolbar({
       config: config({
         filters: [
@@ -522,6 +522,7 @@ describe('ModuleFilterToolbar', () => {
       }),
     })
 
+    expect(screen.queryByLabelText('Four')).toBeNull()
     expect(screen.queryByLabelText('Five')).toBeNull()
 
     fireEvent.click(screen.getByText('common.expand'))
@@ -530,7 +531,7 @@ describe('ModuleFilterToolbar', () => {
     expect(screen.getByLabelText('Five')).toBeTruthy()
   })
 
-  it('does not render the filter heading or active filter count', () => {
+  it('shows the active count for collapsed secondary filters', () => {
     renderToolbar({
       config: config({
         filters: [
@@ -543,12 +544,10 @@ describe('ModuleFilterToolbar', () => {
     })
 
     expect(screen.queryByLabelText('Secondary')).toBeNull()
+    expect(screen.queryByText('modules.filter.conditions')).toBeNull()
     expect(
-      screen.queryByText('modules.filter.conditions'),
-    ).toBeNull()
-    expect(
-      screen.queryByText('modules.filter.activeCount:{"count":1}'),
-    ).toBeNull()
+      screen.getByText('modules.filter.activeCount:{"count":1}'),
+    ).toBeTruthy()
   })
 
   it('applies quick filters with default filters preserved', () => {

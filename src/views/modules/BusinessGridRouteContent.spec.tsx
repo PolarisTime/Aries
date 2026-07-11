@@ -17,6 +17,7 @@ function createGridState(overrides: Record<string, unknown> = {}) {
     config: { readOnly: false },
     records: [],
     isLoading: false,
+    isFetching: false,
     editorLockLoading: false,
     exporting: false,
     total: 0,
@@ -49,6 +50,7 @@ function createGridState(overrides: Record<string, unknown> = {}) {
     setPageSize: vi.fn(),
     setCurrentPage: vi.fn(),
     selectedRowKeys: [],
+    selectedRows: [],
     canUseBulkPrintActions: false,
     handlePrintSelectedRecords: vi.fn(),
     handleExportSalesOrderPrintXlsx: vi.fn(),
@@ -69,11 +71,14 @@ function createGridState(overrides: Record<string, unknown> = {}) {
       freightStatementOpen: false,
       freightPickupOpen: false,
       freightPickupRecords: [],
+      prepaymentAllocationOpen: false,
+      prepaymentAllocationPayment: null,
       closeAttachment: vi.fn(),
       closeSupplierStatement: vi.fn(),
       closeCustomerStatement: vi.fn(),
       closeFreightStatement: vi.fn(),
       closeFreightPickup: vi.fn(),
+      closePrepaymentAllocation: vi.fn(),
     },
     editorLineItemsLocked: false,
     lockedLineItemsNotice: '',
@@ -282,6 +287,7 @@ describe('BusinessGridRouteContent', () => {
     props.onCreate()
     props.onExport()
     props.onRefresh()
+    props.onClearSelection()
     props.onAction({ key: 'audit' })
     props.onPageChange(2, 50)
     props.onPageChange(3, 20)
@@ -289,6 +295,7 @@ describe('BusinessGridRouteContent', () => {
     expect(state.openEditor).toHaveBeenCalledWith(null)
     expect(state.handleExport).toHaveBeenCalled()
     expect(state.refreshModuleQueries).toHaveBeenCalled()
+    expect(state.clearSelection).toHaveBeenCalled()
     expect(state.handleAction).toHaveBeenCalledWith({ key: 'audit' })
     expect(state.setPageSize).toHaveBeenCalledTimes(1)
     expect(state.setPageSize).toHaveBeenCalledWith(50)
@@ -296,7 +303,35 @@ describe('BusinessGridRouteContent', () => {
     expect(state.setCurrentPage).toHaveBeenCalledWith(3)
   })
 
-  it('selects an unselected row on single click without opening it', () => {
+  it('binds route-driven filter resets to the current page state', () => {
+    const state = createGridState()
+    mocks.useBusinessGridPage.mockReturnValue(state)
+
+    render(<BusinessGridRouteContent {...defaultProps} />)
+
+    expect(mocks.useBusinessGridRouteSync).toHaveBeenCalledWith(
+      expect.objectContaining({ setPage: state.setCurrentPage }),
+    )
+  })
+
+  it('keeps the grid loading while a replacement page is being fetched', () => {
+    mocks.useBusinessGridPage.mockReturnValue(
+      createGridState({
+        isLoading: false,
+        isFetching: true,
+        editorLockLoading: false,
+      }),
+    )
+
+    render(<BusinessGridRouteContent {...defaultProps} />)
+
+    expect(screen.getByTestId('grid-content')).toHaveAttribute(
+      'data-loading',
+      'true',
+    )
+  })
+
+  it('opens row detail on single click without changing checkbox selection', () => {
     const record = { id: 'row-1', projectName: '项目甲' }
     const onSelectionChange = vi.fn()
     const state = createGridState({
@@ -309,15 +344,11 @@ describe('BusinessGridRouteContent', () => {
 
     mocks.gridContentProps!.onRowClick(record)
 
-    expect(onSelectionChange).toHaveBeenCalledWith(
-      ['row-1'],
-      [record],
-      { type: 'single' },
-    )
-    expect(state.openDetail).not.toHaveBeenCalled()
+    expect(state.openDetail).toHaveBeenCalledWith(record)
+    expect(onSelectionChange).not.toHaveBeenCalled()
   })
 
-  it('deselects a selected row on single click', () => {
+  it('keeps a selected row selected when opening it', () => {
     const record = { id: 'row-1' }
     const onSelectionChange = vi.fn()
     const state = createGridState({
@@ -331,7 +362,19 @@ describe('BusinessGridRouteContent', () => {
 
     mocks.gridContentProps!.onRowClick(record)
 
-    expect(onSelectionChange).toHaveBeenCalledWith([], [], { type: 'single' })
+    expect(state.openDetail).toHaveBeenCalledWith(record)
+    expect(onSelectionChange).not.toHaveBeenCalled()
+  })
+
+  it('does not open row detail on single click without view access', () => {
+    const record = { id: 'row-1' }
+    const state = createGridState({ canViewRecords: false })
+    mocks.useBusinessGridPage.mockReturnValue(state)
+
+    render(<BusinessGridRouteContent {...defaultProps} />)
+
+    mocks.gridContentProps!.onRowClick(record)
+
     expect(state.openDetail).not.toHaveBeenCalled()
   })
 
@@ -418,6 +461,7 @@ describe('BusinessGridRouteContent', () => {
         { id: '2', orderNo: 'SO-002' },
       ],
       selectedRowKeys: ['1'],
+      selectedRows: [{ id: '1', orderNo: 'SO-001' }],
     })
     mocks.useBusinessGridPage.mockReturnValue(state)
 
@@ -464,12 +508,28 @@ describe('BusinessGridRouteContent', () => {
     )
   })
 
+  it('hides bulk print until at least one row is selected', () => {
+    const state = createGridState({
+      canUseBulkPrintActions: true,
+      config: { readOnly: false, title: '销售订单' },
+      records: [{ id: '1', orderNo: 'SO-001' }],
+      selectedRowKeys: [],
+      selectedRows: [],
+    })
+    mocks.useBusinessGridPage.mockReturnValue(state)
+
+    render(<BusinessGridRouteContent {...defaultProps} />)
+
+    expect(screen.queryByTestId('print-template-dropdown')).toBeNull()
+  })
+
   it('passes sales-order print xlsx export action', () => {
     const state = createGridState({
       canUseBulkPrintActions: true,
       config: { readOnly: false, title: '销售订单' },
       records: [{ id: '1', orderNo: 'SO-001' }],
       selectedRowKeys: ['1'],
+      selectedRows: [{ id: '1', orderNo: 'SO-001' }],
     })
     mocks.useBusinessGridPage.mockReturnValue(state)
 
@@ -494,6 +554,7 @@ describe('BusinessGridRouteContent', () => {
       lockedLineItemsNotice: '已锁定',
       records: [{ id: '1' }, { id: '2' }],
       selectedRowKeys: ['2'],
+      selectedRows: [{ id: '2' }],
     })
     mocks.useBusinessGridPage.mockReturnValue(state)
 
@@ -526,7 +587,7 @@ describe('BusinessGridRouteContent', () => {
       '2026-03-31',
     )
 
-    expect(state.setSelectedRowKeys).toHaveBeenCalledWith([])
+    expect(state.clearSelection).toHaveBeenCalled()
     expect(state.handleEditorSaved).toHaveBeenCalled()
     expect(state.handleStatementGenerate).toHaveBeenCalledWith(
       'supplier',
@@ -546,6 +607,42 @@ describe('BusinessGridRouteContent', () => {
       '2026-03-01',
       '2026-03-31',
     )
+  })
+
+  it('passes the selected prepayment to its dedicated overlay and refreshes after saving', async () => {
+    const payment = {
+      id: 'payment-1',
+      paymentPurpose: 'PURCHASE_PREPAYMENT',
+      status: '已付款',
+    }
+    const state = createGridState({
+      overlays: {
+        ...createGridState().overlays,
+        prepaymentAllocationOpen: true,
+        prepaymentAllocationPayment: payment,
+      },
+    })
+    mocks.useBusinessGridPage.mockReturnValue(state)
+
+    render(
+      <BusinessGridRouteContent
+        {...defaultProps}
+        pageDef={{ ...defaultProps.pageDef, moduleKey: 'payment' }}
+      />,
+    )
+
+    expect(mocks.gridOverlayProps).toEqual(
+      expect.objectContaining({
+        prepaymentAllocationOpen: true,
+        prepaymentAllocationPayment: payment,
+        onClosePrepaymentAllocation: state.overlays.closePrepaymentAllocation,
+      }),
+    )
+
+    await mocks.gridOverlayProps!.onPrepaymentAllocationSaved()
+
+    expect(state.clearSelection).toHaveBeenCalledTimes(1)
+    expect(state.refreshModuleQueries).toHaveBeenCalledTimes(1)
   })
 
   it('exports BusinessGridRouteContent component', () => {

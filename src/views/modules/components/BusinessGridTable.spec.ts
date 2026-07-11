@@ -132,7 +132,7 @@ describe('computeTableBodyScrollY', () => {
   })
 
   it('should keep a safe minimum height for small containers', () => {
-    expect(computeTableBodyScrollY(220, 48, 56)).toBe(240)
+    expect(computeTableBodyScrollY(220, 48, 56)).toBe(120)
   })
 })
 
@@ -171,7 +171,7 @@ describe('computeTableScrollX', () => {
 })
 
 describe('computeTableAvailableHeight', () => {
-  it('should fill the remaining viewport when the flex container is short', () => {
+  it('should respect the measured flex container height', () => {
     expect(
       computeTableAvailableHeight({
         containerHeight: 260,
@@ -179,7 +179,7 @@ describe('computeTableAvailableHeight', () => {
         containerTop: 320,
         bottomInset: 16,
       }),
-    ).toBe(564)
+    ).toBe(260)
   })
 
   it('should keep the measured container height when it is larger', () => {
@@ -288,7 +288,7 @@ describe('BusinessGridTable layout and rendering', () => {
     await waitFor(() => {
       expect(screen.getByTestId('mock-table')).toHaveAttribute(
         'data-scroll-y',
-        '240',
+        '120',
       )
     })
   })
@@ -313,10 +313,7 @@ describe('BusinessGridTable layout and rendering', () => {
       'aria-keyshortcuts',
       'Enter',
     )
-    expect(screen.getByTestId('row-row-1')).toHaveAttribute(
-      'title',
-      'Enter 打开单据',
-    )
+    expect(screen.getByTestId('row-row-1')).not.toHaveAttribute('title')
     expect(screen.getByTestId('mock-table')).toHaveAttribute(
       'data-scroll-x',
       '160',
@@ -437,7 +434,7 @@ describe('BusinessGridTable layout and rendering', () => {
 
     expect(screen.getByTestId('mock-table')).toHaveAttribute(
       'data-scroll-y',
-      '240',
+      '120',
     )
   })
 
@@ -532,11 +529,11 @@ describe('BusinessGridTable keyboard row interactions', () => {
 
     fireEvent.keyDown(row, { key: 'Enter', code: 'Enter' })
 
-    expect(onRowDoubleClick).toHaveBeenCalledWith({
+    expect(onRowClick).toHaveBeenCalledWith({
       id: 'row-1',
       name: '第一行',
     })
-    expect(onRowClick).not.toHaveBeenCalled()
+    expect(onRowDoubleClick).not.toHaveBeenCalled()
   })
 
   it('does not trigger row keyboard actions from inner controls', () => {

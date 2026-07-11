@@ -20,6 +20,8 @@ const parentSelectorMocks = vi.hoisted(() => ({
   listBusinessModule: vi.fn(),
   listFreightBillImportCandidatePage: vi.fn(),
   listPurchaseOrderImportCandidatePage: vi.fn(),
+  listPurchaseOrderPrepaymentCandidatePage: vi.fn(),
+  listPurchaseRefundSourceCandidatePage: vi.fn(),
   listSalesOrderOutboundImportCandidatePage: vi.fn(),
   listStatementCandidatePage: vi.fn(),
   loadBusinessPageConfig: vi.fn(),
@@ -66,6 +68,10 @@ vi.mock('@/api/module-contracts', () => ({
 vi.mock('@/api/purchase-order-candidates', () => ({
   listPurchaseOrderImportCandidatePage: (...args: unknown[]) =>
     parentSelectorMocks.listPurchaseOrderImportCandidatePage(...args),
+  listPurchaseOrderPrepaymentCandidatePage: (...args: unknown[]) =>
+    parentSelectorMocks.listPurchaseOrderPrepaymentCandidatePage(...args),
+  listPurchaseRefundSourceCandidatePage: (...args: unknown[]) =>
+    parentSelectorMocks.listPurchaseRefundSourceCandidatePage(...args),
 }))
 
 vi.mock('@/api/sales-order-candidates', () => ({
@@ -947,6 +953,51 @@ describe('ModuleParentSelectorOverlay keyboard row interactions', () => {
     expect(
       parentSelectorMocks.listSalesOrderOutboundImportCandidatePage,
     ).toHaveBeenCalledWith({}, 0, 15)
+
+    render(
+      createElement(ModuleParentSelectorOverlay, {
+        open: true,
+        parentModuleKey: 'purchase-order',
+        candidateQueryType: 'purchase-refund-source' as any,
+        onSelect: vi.fn(),
+        onClose: vi.fn(),
+      }),
+    )
+    expect(
+      parentSelectorMocks.listPurchaseRefundSourceCandidatePage,
+    ).toHaveBeenCalledWith({}, 0, 15)
+  })
+
+  it('uses the dedicated server page for purchase prepayment candidates', () => {
+    parentSelectorMocks.parentRows.splice(
+      0,
+      parentSelectorMocks.parentRows.length,
+      { id: 'audited', status: DOCUMENT_STATUS.AUDITED },
+      { id: 'completed', status: DOCUMENT_STATUS.PURCHASE_COMPLETED },
+      {
+        id: 'draft',
+        status: DOCUMENT_STATUS.DRAFT,
+        importableQuantity: 10,
+      },
+    )
+
+    render(
+      createElement(ModuleParentSelectorOverlay, {
+        open: true,
+        parentModuleKey: 'purchase-order',
+        candidateQueryType: 'purchase-prepayment',
+        onSelect: vi.fn(),
+        onClose: vi.fn(),
+      }),
+    )
+
+    expect(
+      parentSelectorMocks.listPurchaseOrderPrepaymentCandidatePage,
+    ).toHaveBeenCalledWith({}, 0, 15)
+    expect(parentSelectorMocks.listBusinessModule).not.toHaveBeenCalled()
+    expect(screen.getByTestId('parent-row-audited')).toBeInTheDocument()
+    expect(screen.getByTestId('parent-row-completed')).toBeInTheDocument()
+    expect(screen.queryByTestId('parent-row-draft')).not.toBeInTheDocument()
   })
 
   it('imports candidate rows without loading detail', async () => {

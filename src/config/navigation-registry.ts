@@ -19,6 +19,7 @@ export type AppIconKey =
   | 'InboxOutlined'
   | 'PrinterOutlined'
   | 'ProfileOutlined'
+  | 'RollbackOutlined'
   | 'SafetyCertificateOutlined'
   | 'SettingOutlined'
   | 'ShopOutlined'

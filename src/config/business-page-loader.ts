@@ -31,6 +31,9 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
   'purchase-inbound': async () =>
     (await import('@/config/business-pages/purchase-operations'))
       .purchaseOperationsPageConfigs,
+  'purchase-refund': async () =>
+    (await import('@/config/business-pages/purchase-operations'))
+      .purchaseOperationsPageConfigs,
   'sales-order': async () =>
     (await import('@/config/business-pages/sales-operations'))
       .salesOperationsPageConfigs,
@@ -58,6 +61,8 @@ const businessPageLoaders: Record<string, ConfigLoader> = {
   receipt: async () =>
     (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,
   payment: async () =>
+    (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,
+  'supplier-refund-receipt': async () =>
     (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,
   'ledger-adjustment': async () =>
     (await import('@/config/business-pages/payment-pages')).paymentPageConfigs,

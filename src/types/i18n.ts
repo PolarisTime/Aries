@@ -249,6 +249,7 @@ export interface MessageSchema {
     noData: string
     total: string
     selected: string
+    clearSelection: string
     pleaseSelect: string
     pleaseInput: string
     confirmLogout: string
@@ -1113,6 +1114,26 @@ export interface MessageSchema {
         payment: string
         createPayment: string
         businessType: string
+        paymentPurpose: string
+        statementSettlement: string
+        purchasePrepayment: string
+        allocatePrepayment: string
+        supplierStatement: string
+        allocationAmount: string
+        addAllocation: string
+        paymentAmount: string
+        allocatedAmount: string
+        remainingAmount: string
+        noAllocations: string
+        allocationSaved: string
+        allocationLoadFailed: string
+        allocationSaveFailed: string
+        statementAvailableOption: string
+        statementSelectionRequired: string
+        positiveAllocationRequired: string
+        statementAllocationExceeded: string
+        duplicateStatementAllocation: string
+        paymentAllocationExceeded: string
         supplier: string
         carrier: string
         draft: string
@@ -1125,12 +1146,43 @@ export interface MessageSchema {
         amount: string
         status: string
         relatedStatement: string
+        sourcePurchaseOrderId: string
+        purchaseOrderNo: string
+        supplierCode: string
+        supplierName: string
+        settlementCompanyId: string
+        settlementCompany: string
+        parentPurchaseOrder: string
+        selectPurchaseOrder: string
         operator: string
         remark: string
         bankTransfer: string
         bankAcceptance: string
         cash: string
         paymentDesc: string
+      }
+      supplierRefundReceipt: {
+        title: string
+        create: string
+        description: string
+        refundReceiptNo: string
+        purchaseRefundId: string
+        supplierCode: string
+        supplierName: string
+        settlementCompany: string
+        receiptDate: string
+        receiptMethod: string
+        amount: string
+        status: string
+        draft: string
+        received: string
+        operator: string
+        remark: string
+        bankTransfer: string
+        bankAcceptance: string
+        cash: string
+        parentPurchaseRefund: string
+        selectPurchaseRefund: string
       }
       receipt: {
         receipt: string
@@ -1356,6 +1408,21 @@ export interface MessageSchema {
         colDeliveryDate: string
         parentImportLabel: string
         parentImportButton: string
+      }
+      purchaseRefund: {
+        title: string
+        description: string
+        placeholderRefundNo: string
+        refundNo: string
+        purchaseOrderNo: string
+        supplierCode: string
+        supplier: string
+        settlementCompany: string
+        refundDate: string
+        totalQuantity: string
+        operator: string
+        parentPurchaseOrder: string
+        importPurchaseOrder: string
       }
       purchaseInbound: {
         title: string

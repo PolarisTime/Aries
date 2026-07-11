@@ -13,7 +13,7 @@ describe('computeTableBodyScrollY', () => {
   })
 
   it('returns min when computed is smaller', () => {
-    expect(computeTableBodyScrollY(200, 100, 80)).toBe(240)
+    expect(computeTableBodyScrollY(200, 100, 80)).toBe(120)
   })
 })
 
@@ -73,9 +73,19 @@ describe('computeTableScrollX', () => {
 })
 
 describe('computeTableAvailableHeight', () => {
-  it('returns max of containerHeight and viewportAvailableHeight', () => {
+  it('prefers the measured flex container height over viewport fallback', () => {
     const result = computeTableAvailableHeight({
       containerHeight: 400,
+      viewportHeight: 800,
+      containerTop: 100,
+      bottomInset: 50,
+    })
+    expect(result).toBe(400)
+  })
+
+  it('uses viewport height only before the flex container is measured', () => {
+    const result = computeTableAvailableHeight({
+      containerHeight: 0,
       viewportHeight: 800,
       containerTop: 100,
       bottomInset: 50,

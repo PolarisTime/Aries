@@ -101,6 +101,9 @@ export interface ModuleFormFieldDefinition {
   options?: ModuleFormFieldOption[] | ModuleFormFieldOptionResolver
   required?: boolean
   disabled?: boolean
+  disabledWhen?: (form?: ModuleRecordInput) => boolean
+  visibleWhen?: (form?: ModuleRecordInput) => boolean
+  preserve?: boolean
   allowClear?: boolean
   defaultValue?: string | number | boolean
   min?: number

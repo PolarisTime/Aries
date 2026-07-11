@@ -10,6 +10,8 @@ interface Props {
   attachmentCounts?: Record<string, number>
   onAttach: (record: ModuleRecord) => void
   onDetail?: (record: ModuleRecord) => void
+  onEdit?: (record: ModuleRecord) => void
+  canEditRecord?: (record: ModuleRecord) => boolean
   onStatusChange?: (record: ModuleRecord, status: string) => void
   detailActionLabel?: string
 }
@@ -21,6 +23,8 @@ export function useModuleRecordActions({
   attachmentCounts = {},
   onAttach,
   onDetail,
+  onEdit,
+  canEditRecord,
   onStatusChange,
   detailActionLabel,
 }: Props) {
@@ -53,6 +57,17 @@ export function useModuleRecordActions({
     }
     if (isReadOnly) {
       return items
+    }
+    if (
+      onEdit &&
+      can(resource, 'update') &&
+      (canEditRecord?.(record) ?? true)
+    ) {
+      items.push({
+        key: 'edit',
+        label: t('hooks.recordActions.edit'),
+        onClick: () => onEdit(record),
+      })
     }
     if (
       moduleKey === 'sales-order' &&

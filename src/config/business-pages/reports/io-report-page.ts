@@ -114,6 +114,7 @@ export const ioReportPageConfig: ModulePageConfig = {
       type: 'weight',
     },
   ],
+  defaultHiddenColumnKeys: ['spec', 'batchNo', 'quantityUnit'],
   detailFields: [
     {
       label: i18next.t('modules.pages.ioReport.businessDate'),

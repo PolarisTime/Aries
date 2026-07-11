@@ -138,6 +138,7 @@ export const inventoryReportPageConfig: ModulePageConfig = {
       type: 'weight',
     },
   ],
+  defaultHiddenColumnKeys: ['brand', 'category', 'length', 'quantityUnit'],
   detailFields: [],
   detailItemColumns: [
     {

@@ -39,11 +39,7 @@ interface Props {
 }
 
 function isCreateToolbarAction(action: ModuleActionDefinition) {
-  return (
-    action.key === 'create' ||
-    action.label.includes('新增') ||
-    action.label.includes('生成')
-  )
+  return action.key === 'create' || action.key?.startsWith('create_')
 }
 
 export function useModuleToolbarActions({
@@ -69,25 +65,22 @@ export function useModuleToolbarActions({
     )
 
   const bulkDeleteAction: ModuleActionDefinition | null =
-    canUseBulkDeleteActions
+    canUseBulkDeleteActions && selectedRowCount > 0
       ? {
           label: t('hooks.toolbarActions.delete'),
           type: 'default',
           danger: true,
-          disabled: selectedRowCount === 0,
         }
       : null
 
   const bulkToolbarActions = (() => {
-    const disabled = selectedRowCount === 0
     const actions: ModuleActionDefinition[] = []
-    if (canUseBulkAuditActions) {
+    if (canUseBulkAuditActions && selectedRowCount > 0) {
       actions.push(
-        { label: t('hooks.toolbarActions.audit'), type: 'default', disabled },
+        { label: t('hooks.toolbarActions.audit'), type: 'default' },
         {
           label: t('hooks.toolbarActions.reverseAudit'),
           type: 'default',
-          disabled,
         },
       )
     }
@@ -110,7 +103,7 @@ export function useModuleToolbarActions({
         return []
       }
       if (action.key === 'generate_pickup_list' && selectedRowCount === 0) {
-        return [{ ...action, disabled: true }]
+        return []
       }
       return [action]
     })

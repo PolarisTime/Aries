@@ -34,39 +34,27 @@ describe('ModuleTablePagination', () => {
     mocks.paginationProps = undefined
   })
 
-  it('summarizes all current-page records when no rows are selected', () => {
+  it('renders page-specific overview items', () => {
     render(
       <ModuleTablePagination
         total={95}
         currentPage={2}
         pageSize={20}
-        records={[
-          {
-            id: '1',
-            totalWeight: 1.25,
-            totalAmount: 100,
-            items: [{ id: '11', quantity: 3 }],
-          },
-          {
-            id: '2',
-            totalQuantity: 7,
-            totalWeight: 2.5,
-            totalAmount: 250.5,
-          },
+        currentItemCount={2}
+        overviewItems={[
+          { label: '商品数', value: '12' },
+          { label: '正常商品', value: '10' },
         ]}
-        selectedRowKeys={[]}
         onPageChange={vi.fn()}
       />,
     )
 
-    expect(screen.getByTestId('pagination-summary')).not.toHaveTextContent(
-      'modules.workspace.currentPageSummary',
+    expect(screen.getByTestId('pagination-summary')).toHaveTextContent(
+      '商品数：12',
     )
     expect(screen.getByTestId('pagination-summary')).toHaveTextContent(
-      'modules.overview.documentCount：2',
+      '正常商品：10',
     )
-    expect(screen.getByTestId('pagination-summary')).toHaveTextContent('3.750')
-    expect(screen.getByTestId('pagination-summary')).toHaveTextContent('350.50')
     expect(screen.getByTestId('pagination-range')).toHaveTextContent(
       'modules.workspace.paginationRange:{"start":21,"end":22,"total":95}',
     )
@@ -85,48 +73,23 @@ describe('ModuleTablePagination', () => {
         total: 95,
       }),
     )
-    expect(mocks.paginationProps?.locale).toEqual(
-      expect.objectContaining({
-        items_per_page: '/ 页',
-        page: '页',
-      }),
-    )
+    expect(mocks.paginationProps?.locale).toBeUndefined()
     expect(mocks.paginationProps?.showTotal).toBeUndefined()
   })
 
-  it('summarizes only selected records when rows are selected', () => {
+  it('omits the overview region when a page has no summary items', () => {
     render(
       <ModuleTablePagination
         total={2}
         currentPage={1}
         pageSize={20}
-        records={[
-          {
-            id: '1',
-            totalWeight: 1.25,
-            totalAmount: 100,
-            items: [{ id: '11', quantity: 3 }],
-          },
-          {
-            id: '2',
-            totalQuantity: 7,
-            totalWeight: 2.5,
-            totalAmount: 250.5,
-          },
-        ]}
-        selectedRowKeys={['2']}
+        currentItemCount={2}
+        overviewItems={[]}
         onPageChange={vi.fn()}
       />,
     )
 
-    expect(screen.getByTestId('pagination-summary')).not.toHaveTextContent(
-      'common.selected:{"count":1}',
-    )
-    expect(screen.getByTestId('pagination-summary')).toHaveTextContent(
-      'modules.overview.documentCount：1',
-    )
-    expect(screen.getByTestId('pagination-summary')).toHaveTextContent('2.500')
-    expect(screen.getByTestId('pagination-summary')).toHaveTextContent('250.50')
+    expect(screen.queryByTestId('pagination-summary')).toBeNull()
   })
 
   it('forwards page and page-size changes', () => {
@@ -136,8 +99,8 @@ describe('ModuleTablePagination', () => {
         total={95}
         currentPage={2}
         pageSize={20}
-        records={[]}
-        selectedRowKeys={[]}
+        currentItemCount={0}
+        overviewItems={[]}
         onPageChange={onPageChange}
       />,
     )

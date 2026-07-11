@@ -229,6 +229,35 @@ describe('ModuleEditorItemsSection', () => {
     expect(screen.queryByText('modules.itemsSection.addItem')).toBeNull()
   })
 
+  it('keeps the parent selector mounted for modules without line items', () => {
+    render(
+      <ModuleEditorItemsSection
+        {...defaultProps}
+        config={{
+          ...defaultProps.config,
+          itemColumns: undefined,
+          parentImport: {
+            parentModuleKey: 'purchase-order',
+            parentFieldKey: 'purchaseOrderNo',
+            parentDisplayFieldKey: 'orderNo',
+            label: '采购订单',
+          },
+        }}
+      />,
+    )
+
+    expect(screen.getByTestId('parent-selector')).toBeTruthy()
+    expect(mocks.ModuleParentSelectorOverlay).toHaveBeenCalledWith(
+      expect.objectContaining({
+        open: false,
+        parentModuleKey: 'purchase-order',
+        parentDisplayFieldKey: 'orderNo',
+      }),
+      undefined,
+    )
+    expect(screen.queryByTestId('items-panel')).toBeNull()
+  })
+
   it('renders delete selected action and selected row class only when rows are selected', () => {
     render(
       <ModuleEditorItemsSection

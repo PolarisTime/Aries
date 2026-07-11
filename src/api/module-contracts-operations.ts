@@ -38,6 +38,23 @@ export const operationModuleEndpointContracts: Record<
       },
     },
   },
+  'purchase-refund': {
+    path: '/purchase-refunds',
+    nativeFilterKeys: [
+      'keyword',
+      'supplierName',
+      'settlementCompanyId',
+      'status',
+      'startDate',
+      'endDate',
+    ],
+    dateRangeMapping: {
+      refundDate: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
+  },
   'sales-order': {
     path: '/sales-orders',
     nativeFilterKeys: [
@@ -78,6 +95,7 @@ export const operationModuleEndpointContracts: Record<
     path: '/freight-bills',
     nativeFilterKeys: [
       'keyword',
+      'carrierCode',
       'carrierName',
       'settlementCompanyId',
       'status',

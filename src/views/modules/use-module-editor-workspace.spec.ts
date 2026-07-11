@@ -2119,6 +2119,43 @@ describe('useModuleEditorWorkspace', () => {
     expect(message.success).toHaveBeenCalled()
   })
 
+  it('uses the configured authoritative parent record resolver', async () => {
+    const form = frm()
+    form.getFieldsValue.mockReturnValue({ id: 'draft-1', purchaseOrderNo: '' })
+    const resolveParentRecord = vi.fn().mockResolvedValue({
+      id: 'po-1',
+      purchaseOrderNo: 'PO-1',
+      items: [{ id: 'refund-line-1' }],
+    })
+    vi.mocked(buildParentImportState).mockReturnValue({
+      parentNosText: 'PO-1',
+      shouldApplyMappedValues: false,
+      mappedValues: {},
+      nextItems: [{ id: 'refund-line-1' }],
+      hasImportedCurrentParent: false,
+      importedItemCount: 1,
+    })
+    const { result } = renderWorkspace({
+      form,
+      config: cfg({
+        parentImport: {
+          parentModuleKey: 'purchase-order',
+          label: '采购订单',
+          parentFieldKey: 'purchaseOrderNo',
+          parentDisplayFieldKey: 'purchaseOrderNo',
+          resolveParentRecord,
+        },
+      }),
+    })
+
+    await act(async () => {
+      await result.current.handleImportParentRecord([{ id: 'po-1' }])
+    })
+
+    expect(resolveParentRecord).toHaveBeenCalledWith({ id: 'po-1' })
+    expect(getBusinessModuleDetail).not.toHaveBeenCalled()
+  })
+
   it('imports multiple parent records and reports aggregate success', async () => {
     const form = frm()
     form.getFieldsValue.mockReturnValue({ id: 'draft-1', sourceNos: '' })

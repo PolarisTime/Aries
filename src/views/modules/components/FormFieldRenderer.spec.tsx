@@ -38,9 +38,10 @@ vi.mock('antd', () => {
   const Form = {
     useFormInstance: () => formInstance,
     useWatch: () => formMocks.watchedValues,
-    Item: ({ children, name, ...props }: any) => (
+    Item: ({ children, name, preserve, ...props }: any) => (
       <div
         data-testid={`form-item-${name}`}
+        data-preserve={preserve === undefined ? undefined : String(preserve)}
         data-rules={JSON.stringify(props.rules ?? [])}
         {...props}
       >
@@ -519,6 +520,22 @@ describe('FormFieldRenderer', () => {
           message: 'modules.formField.inputRequired',
         },
       ]),
+    )
+  })
+
+  it('forwards preserve=false for conditional fields so hidden values are cleared', () => {
+    render(
+      <FormFieldRenderer
+        field={{
+          ...defaultProps.field,
+          preserve: false,
+        }}
+      />,
+    )
+
+    expect(screen.getByTestId('form-item-test-field')).toHaveAttribute(
+      'data-preserve',
+      'false',
     )
   })
 

@@ -43,6 +43,44 @@ describe('pendingInvoiceReceiptReportPageConfig', () => {
     ).toBeGreaterThan(0)
   })
 
+  it('keeps pending invoice context visible and hides completed-value details by default', () => {
+    const columnKeys = pendingInvoiceReceiptReportPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+    const hiddenKeys =
+      pendingInvoiceReceiptReportPageConfig.defaultHiddenColumnKeys ?? []
+    const visibleKeys = columnKeys.filter((key) => !hiddenKeys.includes(key))
+
+    expect(hiddenKeys).toEqual([
+      'brand',
+      'material',
+      'category',
+      'length',
+      'orderQuantity',
+      'quantityUnit',
+      'orderWeightTon',
+      'receivedInvoiceWeightTon',
+      'unitPrice',
+      'orderAmount',
+      'receivedInvoiceAmount',
+    ])
+    expect(columnKeys).toEqual(expect.arrayContaining(hiddenKeys))
+    expect(visibleKeys).toEqual(
+      expect.arrayContaining([
+        'orderNo',
+        'supplierName',
+        'invoiceTitle',
+        'orderDate',
+        'materialCode',
+        'spec',
+        'pendingInvoiceWeightTon',
+        'pendingInvoiceAmount',
+        'status',
+      ]),
+    )
+    expect(hiddenKeys.length).toBeLessThan(columnKeys.length * 0.6)
+  })
+
   it('buildOverview returns result', () => {
     const result = pendingInvoiceReceiptReportPageConfig.buildOverview!([])
     expect(Array.isArray(result)).toBe(true)

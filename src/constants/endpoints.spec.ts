@@ -66,12 +66,19 @@ describe('ENDPOINTS', () => {
     expect(ENDPOINTS.PURCHASE_ORDER_IMPORT_CANDIDATES).toBe(
       '/purchase-orders/import-candidates',
     )
+    expect(ENDPOINTS.PURCHASE_ORDER_PREPAYMENT_CANDIDATES).toBe(
+      '/purchase-orders/prepayment-candidates',
+    )
     expect(ENDPOINTS.FREIGHT_BILL_IMPORT_CANDIDATES).toBe(
       '/freight-bills/import-candidates',
     )
     expect(ENDPOINTS.SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES).toBe(
       '/sales-orders/outbound-import-candidates',
     )
+    expect(ENDPOINTS.PURCHASE_REFUND_SOURCE_CANDIDATES).toBe(
+      '/purchase-refunds/source-candidates',
+    )
+    expect(ENDPOINTS.PURCHASE_REFUND_PREVIEW).toBe('/purchase-refunds/preview')
   })
 
   it('has system-related endpoints', () => {
@@ -169,6 +176,7 @@ describe('ENDPOINTS', () => {
       'MATERIALS_SEARCH',
       'MATERIAL_GRADES',
       'PURCHASE_ORDER_IMPORT_CANDIDATES',
+      'PURCHASE_ORDER_PREPAYMENT_CANDIDATES',
       'FREIGHT_BILL_IMPORT_CANDIDATES',
       'SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES',
       'DEPARTMENTS_OPTIONS',

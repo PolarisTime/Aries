@@ -16,6 +16,7 @@ describe('module-behavior-statuses', () => {
   const lineItemModules = [
     'purchase-order',
     'purchase-inbound',
+    'purchase-refund',
     'sales-order',
     'sales-outbound',
     'freight-bill',
@@ -38,6 +39,7 @@ describe('module-behavior-statuses', () => {
   const draftStatusModules: Record<string, string> = {
     'purchase-order': '草稿',
     'purchase-inbound': '草稿',
+    'purchase-refund': '草稿',
     'sales-order': '草稿',
     'sales-outbound': '草稿',
     'freight-bill': '未审核',
@@ -46,6 +48,7 @@ describe('module-behavior-statuses', () => {
     'customer-statement': '待确认',
     receipt: '草稿',
     payment: '草稿',
+    'supplier-refund-receipt': '草稿',
     'invoice-receipt': '草稿',
     'invoice-issue': '草稿',
     'ledger-adjustment': '草稿',
@@ -54,6 +57,7 @@ describe('module-behavior-statuses', () => {
   const approvedStatusModules = [
     'purchase-order',
     'purchase-inbound',
+    'purchase-refund',
     'sales-order',
     'sales-outbound',
     'freight-bill',
@@ -121,6 +125,15 @@ describe('module-behavior-statuses', () => {
     expect(
       paymentCalls.some(([, config]) => config.auditStatus === '已付款'),
     ).toBe(true)
+  })
+
+  it('registers auditStatus for supplier refund receipt', () => {
+    const calls = mockedRegister.mock.calls.filter(
+      ([key]) => key === 'supplier-refund-receipt',
+    )
+    expect(calls.some(([, config]) => config.auditStatus === '已收款')).toBe(
+      true,
+    )
   })
 
   it('registers auditStatus for invoice-receipt', () => {

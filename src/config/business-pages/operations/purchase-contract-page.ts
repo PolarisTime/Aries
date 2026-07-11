@@ -49,6 +49,7 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
       key: 'signDate',
       label: i18next.t('modules.pages.purchaseContract.signDate'),
       type: 'dateRange',
+      row: 2,
     },
   ],
   columns: [
@@ -116,6 +117,12 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
       dataIndex: 'remark',
       width: 180,
     },
+  ],
+  defaultHiddenColumnKeys: [
+    'effectiveDate',
+    'expireDate',
+    'buyerName',
+    'remark',
   ],
   detailFields: [
     {

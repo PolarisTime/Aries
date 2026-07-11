@@ -37,6 +37,18 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       clientSearchKeys: ['outboundNo'],
     },
     {
+      key: 'customerName',
+      label: CUSTOMER_NAME_LABEL,
+      type: 'select',
+      options: getCustomerOptions,
+    },
+    {
+      key: 'status',
+      label: BILL_STATUS_LABEL,
+      type: 'select',
+      options: buildValueOptions('草稿', '已审核'),
+    },
+    {
       key: 'productKeyword',
       label: i18next.t('modules.pages.salesOutbound.filterProductKeyword'),
       type: 'input',
@@ -49,41 +61,38 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
         'material',
         'spec',
       ],
-    },
-    {
-      key: 'status',
-      label: BILL_STATUS_LABEL,
-      type: 'select',
-      options: buildValueOptions('草稿', '已审核'),
-    },
-    {
-      key: 'outboundDate',
-      label: i18next.t('modules.pages.salesOutbound.filterOutboundDate'),
-      type: 'dateRange',
-    },
-    {
-      key: 'customerName',
-      label: CUSTOMER_NAME_LABEL,
-      type: 'select',
-      options: getCustomerOptions,
+      row: 2,
     },
     {
       key: 'projectName',
       label: i18next.t('modules.pages.salesOutbound.filterProjectName'),
       type: 'select',
       options: getCustomerProjectOptions,
+      row: 2,
     },
     {
       key: 'settlementCompanyId',
       label: '结算主体',
       type: 'select',
       options: getSettlementCompanyOptions,
+      row: 2,
+    },
+    {
+      key: 'outboundDate',
+      label: i18next.t('modules.pages.salesOutbound.filterOutboundDate'),
+      type: 'dateRange',
+      row: 2,
     },
   ],
   columns: [
     {
       title: i18next.t('modules.pages.salesOutbound.colOutboundNo'),
       dataIndex: 'outboundNo',
+      width: 160,
+    },
+    {
+      title: i18next.t('modules.pages.salesOutbound.colSalesOrderNo'),
+      dataIndex: 'salesOrderNo',
       width: 160,
     },
     {
@@ -129,7 +138,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       width: 180,
     },
   ],
-  defaultHiddenColumnKeys: ['projectName', 'remark'],
+  defaultHiddenColumnKeys: ['remark'],
   detailFields: [
     {
       label: i18next.t('modules.pages.salesOutbound.colOutboundNo'),

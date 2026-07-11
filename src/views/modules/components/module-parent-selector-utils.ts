@@ -1,6 +1,9 @@
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { isDeletedModuleRecord } from '@/module-system/module-record-deletion'
-import type { ModuleRecord } from '@/types/module-page'
+import type {
+  ModuleParentImportDefinition,
+  ModuleRecord,
+} from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
 export type ParentSelectorColumn = {
@@ -48,10 +51,21 @@ export function filterImportableParentRecords(
   parentModuleKey: string,
   records: ModuleRecord[],
   candidateStatementModuleKey?: string,
+  candidateQueryType?: ModuleParentImportDefinition['candidateQueryType'],
 ) {
   return records.filter((record) => {
     if (isDeletedModuleRecord(record)) {
       return false
+    }
+    if (
+      candidateQueryType === 'purchase-prepayment' &&
+      parentModuleKey === 'purchase-order'
+    ) {
+      const status = asString(record.status)
+      return (
+        status === DOCUMENT_STATUS.AUDITED ||
+        status === DOCUMENT_STATUS.PURCHASE_COMPLETED
+      )
     }
     if (
       candidateStatementModuleKey === 'supplier-statement' &&

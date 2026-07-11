@@ -70,8 +70,29 @@ export function ModuleEditorItemsSection({
   const { t } = useTranslation()
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
 
+  const parentSelector = config.parentImport ? (
+    <ModuleParentSelectorOverlay
+      open={parentSelectorOpen}
+      parentModuleKey={config.parentImport.parentModuleKey}
+      parentDisplayFieldKey={config.parentImport.parentDisplayFieldKey}
+      allowMultipleSelection={config.parentImport.allowMultipleSelection}
+      candidateStatementModuleKey={
+        config.parentImport.candidateStatementModuleKey
+      }
+      candidateQueryType={config.parentImport.candidateQueryType}
+      candidateUsage={config.parentImport.candidateUsage}
+      hiddenSelectorColumnKeys={config.parentImport.hiddenSelectorColumnKeys}
+      fixedFilters={parentSelectorFilters}
+      title={t('modules.itemsSection.selectParent', {
+        label: config.parentImport.label || t('modules.itemsSection.parentDoc'),
+      })}
+      onSelect={onImportParentRecord}
+      onClose={onCloseParentSelector}
+    />
+  ) : null
+
   if (!config.itemColumns?.length) {
-    return null
+    return parentSelector
   }
 
   return (
@@ -158,29 +179,7 @@ export function ModuleEditorItemsSection({
         </ModuleItemsPanel>
       </div>
 
-      {config.parentImport && (
-        <ModuleParentSelectorOverlay
-          open={parentSelectorOpen}
-          parentModuleKey={config.parentImport.parentModuleKey}
-          parentDisplayFieldKey={config.parentImport.parentDisplayFieldKey}
-          allowMultipleSelection={config.parentImport.allowMultipleSelection}
-          candidateStatementModuleKey={
-            config.parentImport.candidateStatementModuleKey
-          }
-          candidateQueryType={config.parentImport.candidateQueryType}
-          candidateUsage={config.parentImport.candidateUsage}
-          hiddenSelectorColumnKeys={
-            config.parentImport.hiddenSelectorColumnKeys
-          }
-          fixedFilters={parentSelectorFilters}
-          title={t('modules.itemsSection.selectParent', {
-            label:
-              config.parentImport.label || t('modules.itemsSection.parentDoc'),
-          })}
-          onSelect={onImportParentRecord}
-          onClose={onCloseParentSelector}
-        />
-      )}
+      {parentSelector}
     </>
   )
 }

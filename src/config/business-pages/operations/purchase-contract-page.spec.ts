@@ -28,9 +28,45 @@ describe('purchaseContractsPageConfig', () => {
     )
   })
 
+  it('keeps common filters visible and moves the date filter to the advanced row', () => {
+    const filterRows = Object.fromEntries(
+      purchaseContractsPageConfig.filters.map((filter) => [
+        filter.key,
+        filter.row ?? 1,
+      ]),
+    )
+
+    expect(filterRows).toEqual({
+      keyword: 1,
+      supplierName: 1,
+      status: 1,
+      signDate: 2,
+    })
+  })
+
   it('has columns', () => {
     expect(purchaseContractsPageConfig.columns).toBeDefined()
     expect(purchaseContractsPageConfig.columns.length).toBeGreaterThan(0)
+  })
+
+  it('hides secondary contract columns by default', () => {
+    expect(purchaseContractsPageConfig.defaultHiddenColumnKeys).toEqual(
+      expect.arrayContaining([
+        'effectiveDate',
+        'expireDate',
+        'buyerName',
+        'remark',
+      ]),
+    )
+    expect(purchaseContractsPageConfig.defaultHiddenColumnKeys).not.toContain(
+      'contractNo',
+    )
+    expect(purchaseContractsPageConfig.defaultHiddenColumnKeys).not.toContain(
+      'supplierName',
+    )
+    expect(purchaseContractsPageConfig.defaultHiddenColumnKeys).not.toContain(
+      'status',
+    )
   })
 
   it('has formFields', () => {

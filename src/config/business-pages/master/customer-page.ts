@@ -72,6 +72,7 @@ export const customersPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
+  defaultHiddenColumnKeys: ['contactPhone', 'city'],
   detailFields: [
     {
       label: i18next.t('modules.pages.customer.colCustomerCode'),

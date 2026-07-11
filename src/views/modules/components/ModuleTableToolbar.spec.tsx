@@ -44,6 +44,7 @@ vi.mock('antd', () => ({
 }))
 
 vi.mock('@ant-design/icons', () => ({
+  CloseOutlined: () => <span>CloseOutlined</span>,
   DownloadOutlined: () => <span>DownloadOutlined</span>,
   PlusOutlined: () => <span>PlusOutlined</span>,
   ReloadOutlined: () => <span>ReloadOutlined</span>,
@@ -135,6 +136,23 @@ describe('ModuleTableToolbar', () => {
     expect(screen.getByText('common.selected:{"count":5}')).toBeTruthy()
   })
 
+  it('provides an accessible command to clear the current selection', () => {
+    const onClearSelection = vi.fn()
+    render(
+      <ModuleTableToolbar
+        {...defaultProps}
+        selectedCount={5}
+        onClearSelection={onClearSelection}
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'common.clearSelection' }),
+    )
+
+    expect(onClearSelection).toHaveBeenCalledTimes(1)
+  })
+
   it('renders extra content', () => {
     render(
       <ModuleTableToolbar {...defaultProps} extra={<div>Extra Content</div>} />,
@@ -170,10 +188,11 @@ describe('ModuleTableToolbar', () => {
     expect(screen.getByText('审核')).toBeTruthy()
   })
 
-  it('skips toolbar actions with label containing 新增', () => {
+  it('skips toolbar actions with a stable create key', () => {
     const toolbarActions = [
       {
-        label: '新增记录',
+        key: 'create',
+        label: 'Create record',
         type: 'primary' as const,
         danger: false,
         disabled: false,
@@ -183,12 +202,13 @@ describe('ModuleTableToolbar', () => {
     render(
       <ModuleTableToolbar {...defaultProps} toolbarActions={toolbarActions} />,
     )
-    expect(screen.queryByText('新增记录')).toBeNull()
+    expect(screen.queryByText('Create record')).toBeNull()
   })
 
   it('hides export button when toolbarActions has 导出', () => {
     const toolbarActions = [
       {
+        key: 'export',
         label: '导出',
         type: 'default' as const,
         danger: false,

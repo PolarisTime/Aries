@@ -53,6 +53,27 @@ describe('getEditorValidationMessage', () => {
     expect(result).toBeNull()
   })
 
+  it('skips required validation for fields hidden by current form values', () => {
+    const result = getEditorValidationMessage({
+      ...baseOptions,
+      fields: [
+        {
+          key: 'sourceStatementId',
+          label: '关联对账单',
+          required: true,
+          visibleWhen: (form?: Record<string, unknown>) =>
+            form?.paymentPurpose === 'STATEMENT_SETTLEMENT',
+        },
+      ] as any,
+      editorForm: {
+        id: '',
+        paymentPurpose: 'PURCHASE_PREPAYMENT',
+      },
+    })
+
+    expect(result).toBeNull()
+  })
+
   it('returns minOneItem when hasItemColumns and itemCount is 0', () => {
     const result = getEditorValidationMessage({
       ...baseOptions,

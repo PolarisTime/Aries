@@ -1,22 +1,19 @@
-/* 操作列宽度固定 + 背景色（fixed 定位由 antd 处理） */
 .module-table-shell {
-  --module-table-border-color: var(--ant-color-border, #d9d9d9);
+  --module-table-border-color: var(--theme-border-subtle);
 }
 
 .module-table-shell .sticky-actions-col,
 .module-table-shell col.sticky-actions-col,
 .module-table-shell .ant-table-fixed-left .sticky-actions-col,
 .module-table-shell .ant-table-fixed-left col.sticky-actions-col {
-  width: 100px !important;
-  min-width: 100px !important;
-  max-width: 100px !important;
+  width: 200px !important;
+  min-width: 200px !important;
+  max-width: 200px !important;
 }
-.module-table-shell .ant-table-thead .sticky-actions-col,
-.module-table-shell .ant-table-fixed-left .ant-table-thead .sticky-actions-col {
+.module-table-shell .ant-table-thead .sticky-actions-col {
   background: var(--theme-table-header-bg) !important;
 }
-.module-table-shell .ant-table-tbody .sticky-actions-col,
-.module-table-shell .ant-table-fixed-left .ant-table-tbody .sticky-actions-col {
+.module-table-shell .ant-table-tbody .sticky-actions-col {
   background: var(--theme-card-bg) !important;
 }
 .module-table-shell
@@ -50,35 +47,8 @@
 .module-table-shell
   .ant-table-tbody
   .table-row-emphasis:not(.ant-table-row-selected)
-  > td {
-  background: var(--ant-color-warning-bg, #fffbe6);
-}
-
-.module-table-shell
-  .ant-table-tbody
-  .table-row-emphasis:not(.ant-table-row-selected)
-  > .sticky-actions-col {
-  background: var(--ant-color-warning-bg, #fffbe6) !important;
-}
-
-.module-table-shell
-  .ant-table-tbody
-  .table-row-emphasis:not(.ant-table-row-selected)
   > td:first-child {
   box-shadow: inset 3px 0 0 var(--ant-color-warning, #faad14);
-}
-
-[data-theme="dark"]
-  .module-table-shell
-  .ant-table-tbody
-  .table-row-emphasis:not(.ant-table-row-selected)
-  > td,
-[data-theme="dark"]
-  .module-table-shell
-  .ant-table-tbody
-  .table-row-emphasis:not(.ant-table-row-selected)
-  > .sticky-actions-col {
-  background: var(--ant-color-warning-bg, #2b2111) !important;
 }
 
 .module-table-shell .ant-table-tbody > tr > td,
@@ -89,8 +59,12 @@
   font-size: var(--app-font-size);
   vertical-align: middle !important;
   white-space: nowrap;
-  border-color: var(--module-table-border-color) !important;
-  border-style: dashed !important;
+  border-inline-end: 0 !important;
+  border-bottom: 1px solid var(--module-table-border-color) !important;
+}
+
+.module-table-shell .ant-table-tbody .ant-table-row {
+  cursor: pointer;
 }
 
 .module-table-shell .ant-table-tbody .ant-table-cell > * {
@@ -101,32 +75,6 @@
 .module-table-shell .ant-table-tbody .ant-table-row:focus-within {
   outline: 2px solid var(--theme-highlight-border, var(--theme-primary));
   outline-offset: -2px;
-}
-
-.module-table-shell .ant-table-bordered .ant-table,
-.module-table-shell .ant-table-bordered .ant-table-container,
-.module-table-shell .ant-table-bordered .ant-table-content,
-.module-table-shell .ant-table-bordered .ant-table-body {
-  border-color: var(--module-table-border-color) !important;
-  border-style: dashed !important;
-}
-
-.module-table-shell .ant-table-bordered .ant-table-thead .ant-table-cell,
-.module-table-shell .ant-table-bordered .ant-table-tbody .ant-table-cell {
-  border-inline-end: 1px dashed var(--module-table-border-color) !important;
-  border-bottom: 1px dashed var(--module-table-border-color) !important;
-}
-
-.module-table-shell .ant-table-bordered .ant-table-container::before,
-.module-table-shell .ant-table-bordered .ant-table-container::after,
-.module-table-shell .ant-table-bordered .ant-table-cell-fix-left-last::after,
-.module-table-shell .ant-table-bordered .ant-table-cell-fix-right-first::after {
-  border-color: var(--module-table-border-color) !important;
-  border-style: dashed !important;
-}
-
-.module-table-shell .ant-table-bordered .ant-table-thead .ant-table-cell {
-  border-bottom: 1px dashed var(--module-table-border-color) !important;
 }
 
 .table-action-group {

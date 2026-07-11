@@ -48,6 +48,11 @@ describe('canManageEditorLineItems', () => {
     expect(canManageEditorLineItems('test', true, false, false)).toBe(false)
   })
 
+  it('returns false when line items are readonly', () => {
+    register('test', { readonlyLineItems: true })
+    expect(canManageEditorLineItems('test', true, true, false)).toBe(false)
+  })
+
   it('returns false when record is locked and module locks items', () => {
     register('test', { locksLineItemsWhenRecordLocked: true })
     expect(canManageEditorLineItems('test', true, true, true)).toBe(false)

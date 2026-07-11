@@ -6,6 +6,7 @@ import { asString } from '@/utils/type-narrowing'
 
 export type CarrierOption = {
   id?: string
+  carrierCode?: string
   value: string
   label: string
   vehiclePlates?: string[]
@@ -19,6 +20,10 @@ export function normalizeCarrierOptions(
   return options.map((option) => ({
     ...option,
     id: option.id == null ? undefined : String(option.id),
+    carrierCode:
+      option.carrierCode == null
+        ? undefined
+        : String(option.carrierCode).trim(),
     label: String(option.label || ''),
     value: String(option.value || ''),
     vehiclePlates: Array.isArray(option.vehiclePlates)

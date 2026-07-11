@@ -30,6 +30,28 @@ describe('carriersPageConfig', () => {
     expect(carriersPageConfig.columns.length).toBeGreaterThan(0)
   })
 
+  it('keeps carrier settlement context visible and hides secondary details by default', () => {
+    const columnKeys = carriersPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+    const hiddenKeys = carriersPageConfig.defaultHiddenColumnKeys ?? []
+    const visibleKeys = columnKeys.filter((key) => !hiddenKeys.includes(key))
+
+    expect(hiddenKeys).toEqual(['contactPhone', 'vehicleType', 'remark'])
+    expect(columnKeys).toEqual(expect.arrayContaining(hiddenKeys))
+    expect(visibleKeys).toEqual(
+      expect.arrayContaining([
+        'carrierCode',
+        'carrierName',
+        'contactName',
+        'priceMode',
+        'defaultSettlementCompanyName',
+        'status',
+      ]),
+    )
+    expect(hiddenKeys.length).toBeLessThan(columnKeys.length * 0.6)
+  })
+
   it('has formFields', () => {
     expect(carriersPageConfig.formFields).toBeDefined()
     expect(carriersPageConfig.formFields!.length).toBeGreaterThan(0)

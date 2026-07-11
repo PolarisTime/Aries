@@ -1,6 +1,7 @@
 import type { TableColumnsType } from 'antd'
 import { Button, Col, Empty, Flex, Row, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
+import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
@@ -108,6 +109,7 @@ export function ModuleRecordDetailOverlay({
                 const colDef = config.columns.find(
                   (c) => c.dataIndex === field.key,
                 )
+                const fieldType = colDef?.type || field.type
                 return (
                   <Col
                     key={field.key}
@@ -123,10 +125,17 @@ export function ModuleRecordDetailOverlay({
                         {field.key === 'pieceWeightTon' &&
                         shouldDisplayPieceWeightAsDash(record)
                           ? '-'
-                          : formatCellValue(
-                              record[field.key],
-                              colDef?.type || field.type,
-                            )}
+                          : fieldType === 'status'
+                            ? renderModuleRecordStatus({
+                                record,
+                                statusKey: field.key,
+                                statusMap: config.statusMap,
+                                renderFallback: (status) =>
+                                  formatCellValue(status, fieldType),
+                              })
+                            : colDef?.render
+                              ? colDef.render(record[field.key], record)
+                              : formatCellValue(record[field.key], fieldType)}
                       </span>
                     </div>
                   </Col>

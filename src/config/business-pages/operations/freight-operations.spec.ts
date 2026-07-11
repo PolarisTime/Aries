@@ -30,6 +30,69 @@ describe('freightOperationsPageConfigs', () => {
     expect(config.columns.map((column) => column.dataIndex)).toContain('status')
   })
 
+  it('keeps operational filters visible and moves secondary filters to row two', () => {
+    const primaryFilterKeys = ['keyword', 'carrierName', 'status']
+    const secondaryFilterKeys = ['settlementCompanyId', 'billTime']
+
+    expect(
+      config
+        .filters!.filter((filter) => filter.row == null)
+        .map((filter) => filter.key),
+    ).toEqual(primaryFilterKeys)
+    for (const key of primaryFilterKeys) {
+      expect(
+        config.filters!.find((filter) => filter.key === key)?.row,
+      ).toBeUndefined()
+    }
+    expect(
+      config
+        .filters!.filter((filter) => filter.row === 2)
+        .map((filter) => filter.key),
+    ).toEqual(secondaryFilterKeys)
+    for (const key of secondaryFilterKeys) {
+      expect(config.filters!.find((filter) => filter.key === key)?.row).toBe(2)
+    }
+  })
+
+  it('shows source outbound and vehicle while keeping party context optional', () => {
+    const columnKeys = config.columns.map((column) => column.dataIndex)
+
+    expect(columnKeys).toEqual(
+      expect.arrayContaining([
+        'outboundNo',
+        'vehiclePlate',
+        'customerName',
+        'projectName',
+        'settlementCompanyName',
+      ]),
+    )
+    expect(config.defaultHiddenColumnKeys).not.toContain('outboundNo')
+    expect(config.defaultHiddenColumnKeys).not.toContain('vehiclePlate')
+    expect(config.defaultHiddenColumnKeys).toEqual([
+      'carrierCode',
+      'customerName',
+      'projectName',
+      'settlementCompanyName',
+      'unitPrice',
+    ])
+  })
+
+  it('snapshots the stable carrier code across list, detail and editor config', () => {
+    expect(config.columns.map((column) => column.dataIndex)).toContain(
+      'carrierCode',
+    )
+    expect(config.detailFields.map((field) => field.key)).toContain(
+      'carrierCode',
+    )
+    expect(
+      config.formFields.find((field) => field.key === 'carrierCode'),
+    ).toMatchObject({
+      type: 'input',
+      disabled: true,
+    })
+    expect(config.saveFields?.scalar).toContain('carrierCode')
+  })
+
   it('has parentImport configuration', () => {
     const pi = config.parentImport
     expect(pi?.parentModuleKey).toBe('sales-outbound')

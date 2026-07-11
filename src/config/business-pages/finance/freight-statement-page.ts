@@ -385,16 +385,23 @@ export const freightStatementPageConfig: ModulePageConfig = {
     buttonText: '选择物流单生成明细',
     enforceUniqueRelation: true,
     allowMultipleSelection: true,
-    buildParentFilters: (currentRecord) => ({
-      carrierName: asString(currentRecord.carrierName).trim(),
-      settlementCompanyId: currentRecord.settlementCompanyId,
-      status: '已审核',
-    }),
+    buildParentFilters: (currentRecord) => {
+      const carrierCode = asString(currentRecord.carrierCode).trim()
+      const carrierIdentityFilter = carrierCode
+        ? { carrierCode }
+        : { carrierName: asString(currentRecord.carrierName).trim() }
+      return {
+        ...carrierIdentityFilter,
+        settlementCompanyId: currentRecord.settlementCompanyId,
+        status: '已审核',
+      }
+    },
     validateBeforeOpen: (currentRecord) =>
       asString(currentRecord.carrierName).trim()
         ? null
         : '请先选择物流商，再选择物流单',
     mapParentToDraft: (parentRecord) => ({
+      carrierCode: asString(parentRecord.carrierCode).trim(),
       carrierName: parentRecord.carrierName || '',
       settlementCompanyId: parentRecord.settlementCompanyId,
       settlementCompanyName: parentRecord.settlementCompanyName || '',
@@ -408,10 +415,14 @@ export const freightStatementPageConfig: ModulePageConfig = {
       if (asString(parentRecord.status).trim() !== '已审核') {
         return '只能选择已审核的物流单生成物流对账单'
       }
-      if (
-        asString(currentRecord.carrierName).trim() !==
-        asString(parentRecord.carrierName).trim()
-      ) {
+      const currentCarrierCode = asString(currentRecord.carrierCode).trim()
+      const parentCarrierCode = asString(parentRecord.carrierCode).trim()
+      const isSameCarrier =
+        currentCarrierCode && parentCarrierCode
+          ? currentCarrierCode === parentCarrierCode
+          : asString(currentRecord.carrierName).trim() ===
+            asString(parentRecord.carrierName).trim()
+      if (!isSameCarrier) {
         return '只能选择同一物流商的物流单生成物流对账单'
       }
       const settlementCompanyError = validateSameSettlementCompany(

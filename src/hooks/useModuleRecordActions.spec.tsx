@@ -58,6 +58,43 @@ describe('useModuleRecordActions', () => {
     ).toEqual(['detail', 'attach'])
   })
 
+  it('shows an explicit edit action when update is allowed', () => {
+    const onEdit = vi.fn()
+    const record = { id: '303', status: '草稿' }
+    const { result } = renderHook(() =>
+      useModuleRecordActions({
+        moduleKey: 'sales-order',
+        onAttach: vi.fn(),
+        onEdit,
+      }),
+    )
+
+    const editAction = result.current
+      .buildActions(record)
+      .find((item) => item.key === 'edit')
+    editAction?.onClick()
+
+    expect(editAction?.label).toBe('hooks.recordActions.edit')
+    expect(onEdit).toHaveBeenCalledWith(record)
+  })
+
+  it('hides edit when the current record is not editable', () => {
+    const { result } = renderHook(() =>
+      useModuleRecordActions({
+        moduleKey: 'sales-order',
+        onAttach: vi.fn(),
+        onEdit: vi.fn(),
+        canEditRecord: () => false,
+      }),
+    )
+
+    expect(
+      result.current
+        .buildActions({ id: '303', status: '已审核' })
+        .map((item) => item.key),
+    ).not.toContain('edit')
+  })
+
   it('uses custom detail action label when provided', () => {
     const { result } = renderHook(() =>
       useModuleRecordActions({

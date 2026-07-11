@@ -67,6 +67,20 @@ describe('freightStatementPageConfig', () => {
       })
     })
 
+    it('buildParentFilters prefers stable carrier code over mutable name', () => {
+      const filters = pi.buildParentFilters!({
+        carrierCode: ' WL-001 ',
+        carrierName: ' 承运商旧名称 ',
+        settlementCompanyId: 9,
+      } as any)
+
+      expect(filters).toEqual({
+        carrierCode: 'WL-001',
+        settlementCompanyId: 9,
+        status: '已审核',
+      })
+    })
+
     it('buildParentFilters handles empty carrierName', () => {
       const filters = pi.buildParentFilters!({ carrierName: '' } as any)
       expect(filters).toEqual({
@@ -90,12 +104,14 @@ describe('freightStatementPageConfig', () => {
 
     it('mapParentToDraft maps fields from parent record', () => {
       const draft = pi.mapParentToDraft!({
+        carrierCode: 'WL-001',
         carrierName: '承运商A',
         billTime: '2024-01-15',
         settlementCompanyId: 9,
         settlementCompanyName: '主体C',
       } as any)
       expect(draft).toEqual({
+        carrierCode: 'WL-001',
         carrierName: '承运商A',
         settlementCompanyId: 9,
         settlementCompanyName: '主体C',
@@ -109,6 +125,7 @@ describe('freightStatementPageConfig', () => {
 
     it('mapParentToDraft handles missing fields', () => {
       const draft = pi.mapParentToDraft!({} as any)
+      expect(draft.carrierCode).toBe('')
       expect(draft.carrierName).toBe('')
       expect(draft.paidAmount).toBe(0)
     })
@@ -135,6 +152,53 @@ describe('freightStatementPageConfig', () => {
         parentRecord: { status: '已审核', carrierName: '承运商B' },
       } as any)
       expect(result).toBe('只能选择同一物流商的物流单生成物流对账单')
+    })
+
+    it('validateParentImport rejects matching names with different codes', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: {
+          carrierCode: 'WL-001',
+          carrierName: '承运商A',
+        },
+        parentRecord: {
+          status: '已审核',
+          carrierCode: 'WL-002',
+          carrierName: '承运商A',
+        },
+      } as any)
+
+      expect(result).toBe('只能选择同一物流商的物流单生成物流对账单')
+    })
+
+    it('validateParentImport trusts matching codes when names changed', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: {
+          carrierCode: 'WL-001',
+          carrierName: '承运商新名称',
+        },
+        parentRecord: {
+          status: '已审核',
+          carrierCode: 'WL-001',
+          carrierName: '承运商旧名称',
+        },
+      } as any)
+
+      expect(result).toBeNull()
+    })
+
+    it('validateParentImport falls back to name for historical missing codes', () => {
+      const result = pi.validateParentImport!({
+        currentRecord: {
+          carrierCode: 'WL-001',
+          carrierName: '承运商A',
+        },
+        parentRecord: {
+          status: '已审核',
+          carrierName: '承运商A',
+        },
+      } as any)
+
+      expect(result).toBeNull()
     })
 
     it('validateParentImport rejects mismatched settlement company', () => {

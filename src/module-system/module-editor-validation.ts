@@ -10,6 +10,7 @@ import type {
 import { asString } from '@/utils/type-narrowing'
 import { parseParentRelationNos } from './module-adapter-shared'
 import { hasEditorValue } from './module-editor-shared'
+import { isModuleFormFieldVisible } from './module-form-field-visibility'
 
 function getLineItemValidationMessages(
   items: ModuleLineItem[],
@@ -119,6 +120,9 @@ export function getEditorValidationMessage(options: {
 
   for (const field of fields) {
     if (skipRequiredFieldKeySet.has(field.key)) {
+      continue
+    }
+    if (!isModuleFormFieldVisible(field, editorForm)) {
       continue
     }
     if (field.required && !hasEditorValue(editorForm[field.key])) {

@@ -214,7 +214,7 @@ export function ModuleFilterToolbar({
   const sortedFilters = config.filters.toSorted(
     (left, right) => (left.row || 1) - (right.row || 1),
   )
-  const primaryCapacity = hasConfigKeywordFilter ? 4 : 3
+  const primaryCapacity = hasConfigKeywordFilter ? 3 : 2
   const primaryCandidateFilters = sortedFilters.filter(isPrimaryFilter)
   const firstRowFilters = primaryCandidateFilters.slice(0, primaryCapacity)
   const overflowFilters = primaryCandidateFilters.slice(primaryCapacity)
@@ -223,6 +223,10 @@ export function ModuleFilterToolbar({
     ...sortedFilters.filter((field) => !isPrimaryFilter(field)),
   ]
   const canExpand = secondaryFilters.length > 0
+  const normalizedSubmittedFilters = normalizeFilters(submittedFilters)
+  const activeSecondaryFilterCount = secondaryFilters.filter(
+    (field) => field.key in normalizedSubmittedFilters,
+  ).length
   const quickFilters = config.quickFilters || []
   const activeQuickFilterKey = quickFilters.find((filter) =>
     isSameFilterPreset(submittedFilters, {
@@ -364,7 +368,16 @@ export function ModuleFilterToolbar({
               aria-expanded={expanded}
               onClick={() => setExpanded((value) => !value)}
             >
-              {expanded ? t('common.collapse') : t('common.expand')}
+              <span>
+                {expanded ? t('common.collapse') : t('common.expand')}
+              </span>
+              {!expanded && activeSecondaryFilterCount > 0 ? (
+                <span className="module-filter-active-count">
+                  {t('modules.filter.activeCount', {
+                    count: activeSecondaryFilterCount,
+                  })}
+                </span>
+              ) : null}
             </Button>
           ) : null}
           <Button

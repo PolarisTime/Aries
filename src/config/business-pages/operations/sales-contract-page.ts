@@ -46,6 +46,7 @@ export const salesContractsPageConfig: ModulePageConfig = {
       key: 'signDate',
       label: i18next.t('modules.pages.salesContract.signDate'),
       type: 'dateRange',
+      row: 2,
     },
   ],
   columns: [
@@ -109,6 +110,7 @@ export const salesContractsPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
+  defaultHiddenColumnKeys: ['effectiveDate', 'expireDate', 'salesName'],
   detailFields: [
     {
       label: i18next.t('modules.pages.salesContract.contractNo'),

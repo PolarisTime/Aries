@@ -23,7 +23,11 @@ vi.mock('./ModuleFilterToolbar', () => ({
 
 vi.mock('./ModuleTableToolbar', () => ({
   ModuleTableToolbar: (props: Record<string, unknown>) => (
-    <div data-testid="table-toolbar" data-selected={props.selectedCount} />
+    <div
+      data-testid="table-toolbar"
+      data-selected={props.selectedCount}
+      data-can-clear={String(typeof props.onClearSelection === 'function')}
+    />
   ),
 }))
 
@@ -34,6 +38,7 @@ vi.mock('./ModuleTablePagination', () => ({
       data-current={props.currentPage}
       data-page-size={props.pageSize}
       data-total={props.total}
+      data-overview={JSON.stringify(props.overviewItems)}
     />
   ),
 }))
@@ -67,6 +72,7 @@ describe('BusinessGridContent', () => {
       { id: '21', amount: 120 },
       { id: '22', amount: 80 },
     ],
+    selectedRows: [],
     total: 95,
     currentPage: 2,
     pageSize: 20,
@@ -81,6 +87,7 @@ describe('BusinessGridContent', () => {
     onCreate: vi.fn(),
     onExport: vi.fn(),
     onRefresh: vi.fn(),
+    onClearSelection: vi.fn(),
     onToggleColumn: vi.fn(),
     onColumnOrderChange: vi.fn(),
     onRowClick: vi.fn(),
@@ -101,6 +108,10 @@ describe('BusinessGridContent', () => {
   it('renders table toolbar', () => {
     render(<BusinessGridContent {...defaultProps} />)
     expect(screen.getByTestId('table-toolbar')).toBeTruthy()
+    expect(screen.getByTestId('table-toolbar')).toHaveAttribute(
+      'data-can-clear',
+      'true',
+    )
   })
 
   it('renders grid table', () => {
@@ -115,7 +126,7 @@ describe('BusinessGridContent', () => {
     expect(screen.getByText('Test warning')).toBeTruthy()
   })
 
-  it('does not render the workspace header', () => {
+  it('renders a compact workspace header with page context', () => {
     render(
       <BusinessGridContent
         {...defaultProps}
@@ -128,12 +139,17 @@ describe('BusinessGridContent', () => {
       />,
     )
 
-    expect(screen.queryByText('Finance')).toBeNull()
-    expect(screen.queryByRole('heading', { name: '付款管理' })).toBeNull()
-    expect(screen.queryByText('登记并核对企业付款流水。')).toBeNull()
+    expect(screen.getByText('Finance')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: '付款管理' })).toBeTruthy()
+    expect(screen.getByText('登记并核对企业付款流水。')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'modules.workspace.resultRange:{"start":21,"end":22,"total":95}',
+      ),
+    ).toBeTruthy()
   })
 
-  it('does not build or render the workspace overview', () => {
+  it('builds the pagination overview from the current page records', () => {
     const buildOverview = vi.fn(() => [
       { label: '付款笔数', value: '2' },
       { label: '付款金额', value: '200.00' },
@@ -146,12 +162,43 @@ describe('BusinessGridContent', () => {
       />,
     )
 
-    expect(buildOverview).not.toHaveBeenCalled()
-    expect(
-      screen.queryByText('modules.workspace.currentPageSummary'),
-    ).toBeNull()
-    expect(screen.queryByText('付款笔数')).toBeNull()
-    expect(screen.queryByText('200.00')).toBeNull()
+    expect(buildOverview).toHaveBeenCalledWith(defaultProps.records)
+    expect(screen.getByTestId('table-pagination')).toHaveAttribute(
+      'data-overview',
+      JSON.stringify([
+        { label: '付款笔数', value: '2' },
+        { label: '付款金额', value: '200.00' },
+      ]),
+    )
+  })
+
+  it('builds the pagination overview from cross-page selected rows', () => {
+    const selectedRows = [
+      { id: '3', amount: 300 },
+      { id: '41', amount: 410 },
+    ]
+    const buildOverview = vi.fn(() => [
+      { label: '已选记录', value: '2' },
+      { label: '已选金额', value: '710.00' },
+    ])
+
+    render(
+      <BusinessGridContent
+        {...defaultProps}
+        selectedRows={selectedRows}
+        selectedCount={2}
+        config={{ ...defaultProps.config, buildOverview }}
+      />,
+    )
+
+    expect(buildOverview).toHaveBeenCalledWith(selectedRows)
+    expect(screen.getByTestId('table-pagination')).toHaveAttribute(
+      'data-overview',
+      JSON.stringify([
+        { label: '已选记录', value: '2' },
+        { label: '已选金额', value: '710.00' },
+      ]),
+    )
   })
 
   it('keeps pagination below the table with page-size and selection context', () => {

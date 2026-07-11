@@ -277,8 +277,11 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       'modules.pages.invoiceReceipt.importPurchaseOrderItems',
     ),
     mapParentToDraft: (parentRecord) => ({
+      supplierCode: parentRecord.supplierCode || '',
       supplierName: parentRecord.supplierName || '',
-      invoiceTitle: parentRecord.supplierName || '',
+      settlementCompanyId: parentRecord.settlementCompanyId,
+      settlementCompanyName: parentRecord.settlementCompanyName || '',
+      invoiceTitle: parentRecord.settlementCompanyName || '',
     }),
     transformItems: (parentRecord) =>
       Array.isArray(parentRecord.items)
@@ -300,6 +303,7 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       'receiveNo',
       'invoiceNo',
       'sourcePurchaseOrderNos',
+      'supplierCode',
       'supplierName',
       'invoiceTitle',
       'invoiceDate',

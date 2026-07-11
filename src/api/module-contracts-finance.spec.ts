@@ -30,6 +30,7 @@ describe('module-contracts-finance', () => {
     const config = financeModuleEndpointContracts['freight-statement']
     expect(config).toBeDefined()
     expect(config.path).toBe('/freight-statements')
+    expect(config.nativeFilterKeys).toContain('carrierCode')
     expect(config.nativeFilterKeys).toContain('carrierName')
     expect(config.nativeFilterKeys).toContain('signStatus')
   })
@@ -46,6 +47,24 @@ describe('module-contracts-finance', () => {
     expect(config).toBeDefined()
     expect(config.path).toBe('/payments')
     expect(config.nativeFilterKeys).toContain('businessType')
+  })
+
+  it('contains supplier-refund-receipt config', () => {
+    const config = financeModuleEndpointContracts['supplier-refund-receipt']
+    expect(config).toBeDefined()
+    expect(config.path).toBe('/supplier-refund-receipts')
+    expect(config.nativeFilterKeys).toEqual([
+      'keyword',
+      'supplierName',
+      'settlementCompanyId',
+      'status',
+      'startDate',
+      'endDate',
+    ])
+    expect(config.dateRangeMapping?.receiptDate).toEqual({
+      startKey: 'startDate',
+      endKey: 'endDate',
+    })
   })
 
   it('contains invoice-receipt config', () => {
@@ -67,6 +86,7 @@ describe('module-contracts-finance', () => {
     expect(config.path).toBe('/ledger-adjustments')
     expect(config.nativeFilterKeys).toContain('direction')
     expect(config.nativeFilterKeys).toContain('counterpartyType')
+    expect(config.nativeFilterKeys).toContain('settlementCompanyId')
     expect(config.dateRangeMapping?.adjustmentDate.startKey).toBe('startDate')
     expect(config.dateRangeMapping?.adjustmentDate.endKey).toBe('endDate')
   })

@@ -14,6 +14,7 @@ const primaryNoFallbackKeys = [
   'statementNo',
   'receiptNo',
   'paymentNo',
+  'refundReceiptNo',
   'receiveNo',
   'issueNo',
   'materialCode',
@@ -77,6 +78,7 @@ export function generatePrimaryNo(
   const prefixMap: Record<string, string> = {
     'purchase-order': 'CG',
     'purchase-inbound': 'RK',
+    'purchase-refund': 'PR',
     'sales-order': 'XS',
     'sales-outbound': 'CK',
     'freight-bill': 'W',
@@ -87,6 +89,7 @@ export function generatePrimaryNo(
     'freight-statement': 'WDZ',
     receipts: 'SK',
     payments: 'FK',
+    'supplier-refund-receipt': 'SRR',
     'invoice-receipt': 'SP',
     'invoice-issue': 'KP',
     'ledger-adjustment': 'LA',

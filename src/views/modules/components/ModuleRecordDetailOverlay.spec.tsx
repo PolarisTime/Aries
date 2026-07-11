@@ -227,6 +227,96 @@ describe('ModuleRecordDetailOverlay', () => {
     expect(screen.getByText(/ORD-001/)).toBeTruthy()
   })
 
+  it('uses the matching list column renderer for detail values', () => {
+    const configWithRenderedPurpose = {
+      ...defaultProps.config,
+      columns: [
+        {
+          dataIndex: 'paymentPurpose',
+          title: 'Payment Purpose',
+          render: (value: unknown) =>
+            value === 'PURCHASE_PREPAYMENT' ? '采购预付款' : String(value),
+        },
+      ],
+      detailFields: [{ key: 'paymentPurpose', label: 'Payment Purpose' }],
+    }
+
+    render(
+      <ModuleRecordDetailOverlay
+        {...defaultProps}
+        config={configWithRenderedPurpose}
+        record={{
+          id: '1',
+          billNo: 'BILL-001',
+          paymentPurpose: 'PURCHASE_PREPAYMENT',
+          items: [],
+        }}
+      />,
+    )
+
+    expect(screen.getByText('采购预付款')).toBeTruthy()
+    expect(screen.queryByText('PURCHASE_PREPAYMENT')).toBeNull()
+  })
+
+  it('uses the configured English status label in record details', () => {
+    const configWithEnglishStatuses = {
+      ...defaultProps.config,
+      statusMap: {
+        已付款: { text: 'Paid', color: 'success' as const },
+        已删除: { text: 'Deleted', color: 'error' as const },
+      },
+      detailFields: [
+        { key: 'status', label: 'Status', type: 'status' as const },
+      ],
+    }
+
+    render(
+      <ModuleRecordDetailOverlay
+        {...defaultProps}
+        config={configWithEnglishStatuses}
+        record={{
+          id: '1',
+          billNo: 'BILL-001',
+          status: '已付款',
+          items: [],
+        }}
+      />,
+    )
+
+    expect(screen.getByText('Paid')).toBeTruthy()
+    expect(screen.queryByText('已付款')).toBeNull()
+  })
+
+  it('uses the deleted status mapping instead of the stored status in details', () => {
+    const configWithEnglishStatuses = {
+      ...defaultProps.config,
+      statusMap: {
+        已付款: { text: 'Paid', color: 'success' as const },
+        已删除: { text: 'Deleted', color: 'error' as const },
+      },
+      detailFields: [
+        { key: 'status', label: 'Status', type: 'status' as const },
+      ],
+    }
+
+    render(
+      <ModuleRecordDetailOverlay
+        {...defaultProps}
+        config={configWithEnglishStatuses}
+        record={{
+          id: '1',
+          billNo: 'BILL-001',
+          status: '已付款',
+          deletedFlag: true,
+          items: [],
+        }}
+      />,
+    )
+
+    expect(screen.getByText('Deleted')).toBeTruthy()
+    expect(screen.queryByText('已付款')).toBeNull()
+  })
+
   it('renders record with detail item columns', () => {
     const configWithItemColumns = {
       ...defaultProps.config,

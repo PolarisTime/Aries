@@ -46,6 +46,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       label: '结算主体',
       type: 'select',
       options: getSettlementCompanyOptions,
+      row: 2,
     },
     {
       key: 'status',
@@ -57,6 +58,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       key: 'inboundDate',
       label: i18next.t('modules.pages.purchaseInbound.filterInboundDate'),
       type: 'dateRange',
+      row: 2,
     },
   ],
   columns: [
@@ -66,9 +68,19 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       width: 160,
     },
     {
+      title: i18next.t('modules.pages.purchaseInbound.colPurchaseOrderNo'),
+      dataIndex: 'purchaseOrderNo',
+      width: 160,
+    },
+    {
       title: i18next.t('modules.pages.purchaseInbound.colSupplier'),
       dataIndex: 'supplierName',
       width: 140,
+    },
+    {
+      title: '结算主体',
+      dataIndex: 'settlementCompanyName',
+      width: 160,
     },
     {
       title: i18next.t('modules.pages.purchaseInbound.colInboundDate'),
@@ -117,7 +129,11 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       width: 180,
     },
   ],
-  defaultHiddenColumnKeys: ['remark'],
+  defaultHiddenColumnKeys: [
+    'settlementCompanyName',
+    'totalWeightAdjustmentTon',
+    'remark',
+  ],
   detailFields: [
     {
       label: i18next.t('modules.pages.purchaseInbound.colInboundNo'),
@@ -259,6 +275,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({
       purchaseOrderNo: parentRecord.orderNo || '',
+      supplierCode: parentRecord.supplierCode || '',
       supplierName: parentRecord.supplierName || '',
       settlementCompanyId: parentRecord.settlementCompanyId,
       settlementCompanyName: parentRecord.settlementCompanyName || '',

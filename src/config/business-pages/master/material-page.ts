@@ -108,6 +108,13 @@ export const materialsPageConfig: ModulePageConfig = {
       width: 180,
     },
   ],
+  defaultHiddenColumnKeys: [
+    'pieceWeightTon',
+    'piecesPerBundle',
+    'unitPrice',
+    'batchNoEnabled',
+    'remark',
+  ],
   detailFields: [
     {
       label: i18next.t('modules.pages.material.materialCode'),

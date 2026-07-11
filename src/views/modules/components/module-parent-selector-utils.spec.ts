@@ -156,6 +156,30 @@ describe('module-parent-selector-utils', () => {
       expect(result[0].id).toBe('1')
     })
 
+    it('allows audited and completed purchase orders for purchase prepayment without requiring importable quantity', () => {
+      const records = [
+        { id: 'audited', status: DOCUMENT_STATUS.AUDITED },
+        { id: 'completed', status: DOCUMENT_STATUS.PURCHASE_COMPLETED },
+        {
+          id: 'draft',
+          status: DOCUMENT_STATUS.DRAFT,
+          importableQuantity: 10,
+        },
+      ]
+
+      const result = filterImportableParentRecords(
+        'purchase-order',
+        records,
+        undefined,
+        'purchase-prepayment',
+      )
+
+      expect(result.map((record) => record.id)).toEqual([
+        'audited',
+        'completed',
+      ])
+    })
+
     it('filters by audited status for sales-order', () => {
       const records = [
         {

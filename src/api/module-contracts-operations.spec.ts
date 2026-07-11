@@ -25,6 +25,16 @@ describe('module-contracts-operations', () => {
     expect(config.dateRangeMapping?.inboundDate.startKey).toBe('startDate')
   })
 
+  it('contains purchase-refund config', () => {
+    const config = operationModuleEndpointContracts['purchase-refund']
+    expect(config).toBeDefined()
+    expect(config.path).toBe('/purchase-refunds')
+    expect(config.nativeFilterKeys).toContain('supplierName')
+    expect(config.nativeFilterKeys).toContain('settlementCompanyId')
+    expect(config.dateRangeMapping?.refundDate.startKey).toBe('startDate')
+    expect(config.dateRangeMapping?.refundDate.endKey).toBe('endDate')
+  })
+
   it('contains sales-order config', () => {
     const config = operationModuleEndpointContracts['sales-order']
     expect(config).toBeDefined()
@@ -45,6 +55,7 @@ describe('module-contracts-operations', () => {
     const config = operationModuleEndpointContracts['freight-bill']
     expect(config).toBeDefined()
     expect(config.path).toBe('/freight-bills')
+    expect(config.nativeFilterKeys).toContain('carrierCode')
     expect(config.nativeFilterKeys).toContain('carrierName')
   })
 

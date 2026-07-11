@@ -22,6 +22,10 @@ export function canManageEditorLineItems(
   canSaveCurrentEditor: boolean,
   lineItemsLocked: boolean,
 ) {
+  if (getBehaviorValue(moduleKey, 'readonlyLineItems') === true) {
+    return false
+  }
+
   return (
     canEditLineItems &&
     canSaveCurrentEditor &&

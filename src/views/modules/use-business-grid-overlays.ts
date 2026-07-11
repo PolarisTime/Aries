@@ -11,6 +11,8 @@ export function useBusinessGridOverlays() {
   const [freightPickupRecords, setFreightPickupRecords] = useState<
     ModuleRecord[]
   >([])
+  const [prepaymentAllocationPayment, setPrepaymentAllocationPayment] =
+    useState<ModuleRecord | null>(null)
 
   const openAttachment = (record: ModuleRecord) => {
     setAttachRecordId(String(record.id || ''))
@@ -29,6 +31,8 @@ export function useBusinessGridOverlays() {
     customerStatementOpen,
     freightStatementOpen,
     freightPickupOpen,
+    prepaymentAllocationOpen: prepaymentAllocationPayment !== null,
+    prepaymentAllocationPayment,
     openAttachment,
     closeAttachment,
     openSupplierStatement: () => setSupplierStatementOpen(true),
@@ -45,6 +49,12 @@ export function useBusinessGridOverlays() {
     closeFreightPickup: () => {
       setFreightPickupOpen(false)
       setFreightPickupRecords([])
+    },
+    openPrepaymentAllocation: (payment: ModuleRecord) => {
+      setPrepaymentAllocationPayment(payment)
+    },
+    closePrepaymentAllocation: () => {
+      setPrepaymentAllocationPayment(null)
     },
   }
 }

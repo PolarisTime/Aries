@@ -38,6 +38,7 @@ export const financeModuleEndpointContracts: Record<
     path: '/freight-statements',
     nativeFilterKeys: [
       'keyword',
+      'carrierCode',
       'carrierName',
       'settlementCompanyId',
       'status',
@@ -83,6 +84,23 @@ export const financeModuleEndpointContracts: Record<
       },
     },
   },
+  'supplier-refund-receipt': {
+    path: '/supplier-refund-receipts',
+    nativeFilterKeys: [
+      'keyword',
+      'supplierName',
+      'settlementCompanyId',
+      'status',
+      'startDate',
+      'endDate',
+    ],
+    dateRangeMapping: {
+      receiptDate: {
+        startKey: 'startDate',
+        endKey: 'endDate',
+      },
+    },
+  },
   'invoice-receipt': {
     path: '/invoice-receipts',
     nativeFilterKeys: [
@@ -122,6 +140,7 @@ export const financeModuleEndpointContracts: Record<
       'keyword',
       'direction',
       'counterpartyType',
+      'settlementCompanyId',
       'status',
       'startDate',
       'endDate',

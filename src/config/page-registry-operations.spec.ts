@@ -41,6 +41,18 @@ describe('page-registry-operations', () => {
     expect(page!.icon).toBe('InboxOutlined')
   })
 
+  it('defines purchase-refund page', () => {
+    const page = operationPageDefinitions.find(
+      (definition) => definition.key === 'purchase-refund',
+    )
+    expect(page).toBeDefined()
+    expect(page!.title).toBe('采购退款单')
+    expect(page!.menuParent).toBe('purchase')
+    expect(page!.moduleKey).toBe('purchase-refund')
+    expect(page!.searchable).toBe(true)
+    expect(page!.icon).toBe('FileSyncOutlined')
+  })
+
   it('defines sales-order page', () => {
     const page = operationPageDefinitions.find((d) => d.key === 'sales-order')
     expect(page).toBeDefined()
@@ -135,7 +147,7 @@ describe('page-registry-operations', () => {
       (d) => d.menuParent === 'reports',
     )
 
-    expect(purchase).toHaveLength(2)
+    expect(purchase).toHaveLength(3)
     expect(sales).toHaveLength(2)
     expect(freight).toHaveLength(1)
     expect(contracts).toHaveLength(2)

@@ -28,7 +28,10 @@ import { useModuleRecordActions } from '@/hooks/useModuleRecordActions'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import { useModuleToolbarActions } from '@/hooks/useModuleToolbarActions'
 import { resolveStatusOptions } from '@/module-system/module-adapter-actions'
-import { getBehaviorValue } from '@/module-system/module-behavior-registry'
+import {
+  getBehaviorValue,
+  isEditBlockedByStatus,
+} from '@/module-system/module-behavior-registry'
 import type {
   ModuleActionDefinition,
   ModulePageConfig,
@@ -200,6 +203,18 @@ export function useBusinessGridPage({
     setSelectedRowKeys([])
     setSelectedRowMap({})
   }
+  const applyGridFilters: typeof applyFilters = (nextFilters) => {
+    clearSelection()
+    applyFilters(nextFilters)
+  }
+  const searchGrid = () => {
+    clearSelection()
+    handleSearch()
+  }
+  const resetGridFilters = () => {
+    clearSelection()
+    handleReset()
+  }
 
   const navigate = useNavigate()
   const detailRoutePath = getBehaviorValue(moduleKey, 'detailRoutePath')
@@ -215,7 +230,8 @@ export function useBusinessGridPage({
   const shouldUseDetailAction = Boolean(
     detailRoutePath ||
       moduleKey === 'receivable-payable' ||
-      config?.detailActionLabel,
+      config?.detailActionLabel ||
+      (config?.readOnly && config.detailFields.length > 0),
   )
 
   const formFields = config?.formFields || []
@@ -271,7 +287,13 @@ export function useBusinessGridPage({
         ? (record) => navigateToDetailRoute(detailRoutePath, record)
         : openDetail
       : undefined,
-    onStatusChange: handleSalesOrderStatusChange,
+    onEdit: (record) => {
+      void openEditor(record)
+    },
+    canEditRecord: (record) => !isEditBlockedByStatus(record.status, moduleKey),
+    onStatusChange: (record, status) => {
+      void handleSalesOrderStatusChange(record, status)
+    },
   })
 
   const {
@@ -339,10 +361,7 @@ export function useBusinessGridPage({
         overlays.openCustomerStatement()
       },
       openFreightPickupList: () => {
-        const selected = records.filter((r) =>
-          selectedRowKeys.includes(String(r.id)),
-        )
-        overlays.openFreightPickup(selected)
+        overlays.openFreightPickup(Object.values(selectedRowMap))
       },
       openFreightStatementGenerator: () => {
         overlays.openFreightStatement()
@@ -354,22 +373,46 @@ export function useBusinessGridPage({
     },
   })
 
-  const selectedSalesOrders = Object.values(selectedRowMap)
+  const selectedRecords = Object.values(selectedRowMap)
+  const selectedSalesOrders = selectedRecords
   const reopenDeliveryVerificationAction: ModuleActionDefinition | null =
-    moduleKey === 'sales-order' && canAuditRecord
+    moduleKey === 'sales-order' &&
+    canAuditRecord &&
+    selectedSalesOrders.length === 1 &&
+    selectedSalesOrders[0]?.status === '完成销售'
       ? {
           key: 'reopen-delivery-verification',
           label: i18next.t('hooks.recordActions.reopenDeliveryVerification'),
           type: 'default',
-          disabled:
-            selectedSalesOrders.length !== 1 ||
-            selectedSalesOrders[0]?.status !== '完成销售',
         }
       : null
-  const visibleToolbarActions = reopenDeliveryVerificationAction
-    ? [...baseVisibleToolbarActions, reopenDeliveryVerificationAction]
-    : baseVisibleToolbarActions
+  const selectedPrepayment =
+    selectedRecords.length === 1 &&
+    selectedRecords[0]?.paymentPurpose === 'PURCHASE_PREPAYMENT' &&
+    selectedRecords[0]?.status === '已付款'
+      ? selectedRecords[0]
+      : null
+  const prepaymentAllocationAction: ModuleActionDefinition | null =
+    moduleKey === 'payment' && canUpdateRecord && selectedPrepayment
+      ? {
+          key: 'allocate-purchase-prepayment',
+          label: i18next.t('modules.pages.payment.allocatePrepayment'),
+          type: 'default',
+        }
+      : null
+  const visibleToolbarActions = [
+    ...baseVisibleToolbarActions,
+    ...(reopenDeliveryVerificationAction
+      ? [reopenDeliveryVerificationAction]
+      : []),
+    ...(prepaymentAllocationAction ? [prepaymentAllocationAction] : []),
+  ]
   const handleAction = async (action: ModuleActionDefinition) => {
+    if (action.key === 'allocate-purchase-prepayment') {
+      if (!canUpdateRecord || !selectedPrepayment) return
+      overlays.openPrepaymentAllocation(selectedPrepayment)
+      return
+    }
     if (action.key === 'reopen-delivery-verification') {
       const selectedOrder = selectedSalesOrders[0]
       if (!selectedOrder || selectedOrder.status !== '完成销售') {
@@ -422,13 +465,13 @@ export function useBusinessGridPage({
     editorLockLoading,
     editorOpen,
     exporting,
-    applyFilters,
+    applyFilters: applyGridFilters,
     filters,
     handleAction,
     handleEditorSaved,
     handleExport,
-    handleReset,
-    handleSearch,
+    handleReset: resetGridFilters,
+    handleSearch: searchGrid,
     handleStatementGenerate,
     isFetching,
     isLoading,
@@ -444,6 +487,7 @@ export function useBusinessGridPage({
     refreshModuleQueries,
     rowSelection,
     selectedRowKeys,
+    selectedRows: Object.values(selectedRowMap),
     setSelectedRowKeys,
     setSelectedRowMap,
     setFilters,

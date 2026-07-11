@@ -22,9 +22,30 @@ describe('purchaseOrdersPageConfig', () => {
     expect(purchaseOrdersPageConfig.primaryNoKey).toBe('orderNo')
   })
 
+  it('uses the shared business grid page header', () => {
+    expect(purchaseOrdersPageConfig.hidePageHeader).toBeUndefined()
+  })
+
   it('has filters', () => {
     expect(purchaseOrdersPageConfig.filters).toBeDefined()
     expect(purchaseOrdersPageConfig.filters!.length).toBeGreaterThanOrEqual(4)
+  })
+
+  it('keeps common filters visible and moves secondary filters to the advanced row', () => {
+    const filterRows = Object.fromEntries(
+      purchaseOrdersPageConfig.filters.map((filter) => [
+        filter.key,
+        filter.row ?? 1,
+      ]),
+    )
+
+    expect(filterRows).toEqual({
+      keyword: 1,
+      supplierName: 1,
+      settlementCompanyId: 2,
+      status: 1,
+      orderDate: 2,
+    })
   })
 
   it('has columns', () => {
@@ -51,7 +72,7 @@ describe('purchaseOrdersPageConfig', () => {
       (field) => field.key,
     )
     expect(formFieldKeys?.indexOf('settlementCompanyId')).toBe(
-      (formFieldKeys?.indexOf('supplierName') ?? -2) + 1,
+      (formFieldKeys?.indexOf('supplierCode') ?? -2) + 1,
     )
     expect(
       purchaseOrdersPageConfig.columns.map((column) => column.dataIndex),

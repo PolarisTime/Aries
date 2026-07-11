@@ -51,6 +51,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     saveFields: {
       scalar: [
         'orderNo',
+        'supplierCode',
         'supplierName',
         'settlementCompanyId',
         'settlementCompanyName',
@@ -89,6 +90,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       scalar: [
         'inboundNo',
         'purchaseOrderNo',
+        'supplierCode',
         'supplierName',
         'warehouseName',
         'settlementCompanyId',
@@ -122,6 +124,25 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'weightAdjustmentAmount',
         'unitPrice',
         'amount',
+      ],
+    },
+  },
+  'purchase-refund': {
+    filters: [
+      { key: 'keyword', label: '退款单号', type: 'input' },
+      { key: 'supplierName', label: '供应商名称', type: 'select' },
+      { key: 'settlementCompanyId', label: '结算主体', type: 'select' },
+      { key: 'status', label: '单据状态', type: 'select' },
+      { key: 'refundDate', label: '退款日期', type: 'dateRange' },
+    ],
+    saveFields: {
+      scalar: [
+        'refundNo',
+        'sourcePurchaseOrderId',
+        'refundDate',
+        'status',
+        'operatorName',
+        'remark',
       ],
     },
   },
@@ -247,6 +268,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
     saveFields: {
       scalar: [
         'billNo',
+        'carrierCode',
         'carrierName',
         'settlementCompanyId',
         'settlementCompanyName',
@@ -306,11 +328,39 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
       scalar: [
         'paymentNo',
         'businessType',
+        'paymentPurpose',
         'counterpartyCode',
         'counterpartyName',
         'sourceStatementId',
+        'sourcePurchaseOrderId',
+        'purchaseOrderNo',
+        'supplierCode',
+        'supplierName',
+        'settlementCompanyId',
+        'settlementCompanyName',
         'paymentDate',
         'payType',
+        'amount',
+        'status',
+        'operatorName',
+        'remark',
+      ],
+    },
+  },
+  'supplier-refund-receipt': {
+    filters: [
+      { key: 'keyword', label: '退款到账单号', type: 'input' },
+      { key: 'supplierName', label: '供应商名称', type: 'select' },
+      { key: 'settlementCompanyId', label: '结算主体', type: 'select' },
+      { key: 'status', label: '单据状态', type: 'select' },
+      { key: 'receiptDate', label: '到账日期', type: 'dateRange' },
+    ],
+    saveFields: {
+      scalar: [
+        'refundReceiptNo',
+        'purchaseRefundId',
+        'receiptDate',
+        'receiptMethod',
         'amount',
         'status',
         'operatorName',
@@ -326,6 +376,8 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'counterpartyType',
         'counterpartyCode',
         'counterpartyName',
+        'settlementCompanyId',
+        'settlementCompanyName',
         'projectId',
         'projectName',
         'adjustmentDate',
@@ -499,6 +551,7 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'receiveNo',
         'invoiceNo',
         'sourcePurchaseOrderNos',
+        'supplierCode',
         'supplierName',
         'invoiceTitle',
         'invoiceDate',

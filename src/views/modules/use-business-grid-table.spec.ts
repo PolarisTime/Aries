@@ -22,7 +22,7 @@ vi.mock('@/hooks/useDataTable', () => ({
 }))
 
 vi.mock('@/hooks/useGridColumns', () => ({
-  ACTION_COLUMN_WIDTH: 100,
+  ACTION_COLUMN_WIDTH: 200,
   useGridColumns: mocks.useGridColumns,
 }))
 
@@ -183,9 +183,9 @@ describe('useBusinessGridTable', () => {
     rerender({ currentConfig: config })
 
     expect(result.current.antdColumns.map((column) => column.key)).toEqual([
-      'actions',
       'orderNo',
       'customerName',
+      'actions',
     ])
   })
 
@@ -248,20 +248,20 @@ describe('useBusinessGridTable', () => {
     ])
   })
 
-  it('moves the status column right after the action column', () => {
+  it('keeps configured business columns before the action column', () => {
     const { result } = renderHook(() =>
       useTestBusinessGridTable(configWithStatus),
     )
 
     expect(result.current.antdColumns.map((column) => column.key)).toEqual([
-      'actions',
-      'status',
       'orderNo',
       'customerName',
+      'status',
+      'actions',
     ])
   })
 
-  it('keeps the action column first while applying saved column order', () => {
+  it('keeps the action column last while applying saved column order', () => {
     mockColumnSettings({
       columnOrder: ['customerName', 'actions', 'orderNo'],
     })
@@ -269,13 +269,13 @@ describe('useBusinessGridTable', () => {
     const { result } = renderHook(() => useTestBusinessGridTable(config))
 
     expect(result.current.antdColumns.map((column) => column.key)).toEqual([
-      'actions',
       'customerName',
       'orderNo',
+      'actions',
     ])
   })
 
-  it('keeps status after action while applying saved column order', () => {
+  it('preserves saved business column order before the action column', () => {
     mockColumnSettings({
       columnOrder: ['customerName', 'actions', 'orderNo', 'status'],
     })
@@ -285,10 +285,10 @@ describe('useBusinessGridTable', () => {
     )
 
     expect(result.current.antdColumns.map((column) => column.key)).toEqual([
-      'actions',
-      'status',
       'customerName',
       'orderNo',
+      'status',
+      'actions',
     ])
   })
 
@@ -302,9 +302,9 @@ describe('useBusinessGridTable', () => {
         sortOrder: 'sortOrder' in column ? column.sortOrder : undefined,
       })),
     ).toEqual([
-      { key: 'actions', sorter: undefined, sortOrder: undefined },
       { key: 'orderNo', sorter: undefined, sortOrder: undefined },
       { key: 'customerName', sorter: undefined, sortOrder: undefined },
+      { key: 'actions', sorter: undefined, sortOrder: undefined },
     ])
   })
 
@@ -326,10 +326,10 @@ describe('useBusinessGridTable', () => {
       2,
     )
     expect(result.current.antdColumns.map((column) => column.key)).toEqual([
-      'actions',
       'orderNo',
+      'actions',
     ])
-    expect(result.current.columnVisibleKeys).toEqual(['actions', 'orderNo'])
+    expect(result.current.columnVisibleKeys).toEqual(['orderNo', 'actions'])
 
     act(() => result.current.toggleColumn('customerName'))
     expect(mocks.handleColumnVisibilityChange).toHaveBeenLastCalledWith({})
@@ -349,15 +349,15 @@ describe('useBusinessGridTable', () => {
     const { result } = renderHook(() => useTestBusinessGridTable(config))
 
     expect(result.current.columnOrder).toEqual([
-      'actions',
       'ghost',
       'customerName',
       'orderNo',
+      'actions',
     ])
     expect(result.current.antdColumns.map((column) => column.key)).toEqual([
-      'actions',
       'customerName',
       'orderNo',
+      'actions',
     ])
   })
 
@@ -401,12 +401,6 @@ describe('useBusinessGridTable', () => {
       })),
     ).toEqual([
       {
-        key: 'actions',
-        title: '',
-        align: 'center',
-        className: 'sticky-actions-col',
-      },
-      {
         key: 'computed',
         title: '',
         align: 'center',
@@ -418,6 +412,12 @@ describe('useBusinessGridTable', () => {
         align: 'right',
         className: undefined,
       },
+      {
+        key: 'actions',
+        title: '',
+        align: 'center',
+        className: 'sticky-actions-col',
+      },
     ])
   })
 
@@ -428,17 +428,17 @@ describe('useBusinessGridTable', () => {
     const { result } = renderHook(() =>
       useTestBusinessGridTable(config, { buildActions }),
     )
-    const actionColumn = result.current.antdColumns[0]
-    const orderNoColumn = result.current.antdColumns[1]
+    const orderNoColumn = result.current.antdColumns[0]
+    const actionColumn = result.current.antdColumns[2]
     const record = { id: '1', orderNo: 'SO-001', customerName: '上海客户' }
 
     expect(actionColumn).toEqual(
       expect.objectContaining({
         key: 'actions',
         dataIndex: 'actions',
-        fixed: 'left',
+        fixed: undefined,
         className: 'sticky-actions-col',
-        width: 100,
+        width: 200,
         align: 'center',
         ellipsis: true,
       }),
@@ -563,6 +563,36 @@ describe('useBusinessGridTable', () => {
 
     expect(rowMap).toEqual({
       '1': { id: '1', orderNo: 'SO-001' },
+    })
+  })
+
+  it('refreshes selected row snapshots when current page records change', () => {
+    let rowMap = {
+      '1': { id: '1', orderNo: 'SO-001', status: '完成销售' },
+    }
+    const setSelectedRowMap = vi.fn((updater) => {
+      rowMap = updater(rowMap)
+    })
+    const { rerender } = renderHook(
+      ({ records }) =>
+        useTestBusinessGridTable(config, {
+          records,
+          selectedRowKeys: ['1'],
+          setSelectedRowMap,
+        }),
+      {
+        initialProps: {
+          records: [{ id: '1', orderNo: 'SO-001', status: '完成销售' }],
+        },
+      },
+    )
+
+    rerender({
+      records: [{ id: '1', orderNo: 'SO-001', status: '交付核定' }],
+    })
+
+    expect(rowMap).toEqual({
+      '1': { id: '1', orderNo: 'SO-001', status: '交付核定' },
     })
   })
 

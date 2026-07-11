@@ -8,6 +8,6 @@ function cjkLength(text: string): number {
 
 export function padLabel(text: string, targetCjk = 4): string {
   const cjk = cjkLength(text)
-  if (cjk >= targetCjk) return text
+  if (cjk === 0 || cjk >= targetCjk) return text
   return FULLWIDTH_SPACE.repeat(targetCjk - cjk) + text
 }

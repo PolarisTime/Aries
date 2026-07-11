@@ -39,6 +39,32 @@ describe('materialCategoriesPageConfig', () => {
     )
   })
 
+  it('keeps category policy visible and hides tolerance details by default', () => {
+    const columnKeys = materialCategoriesPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+    const hiddenKeys =
+      materialCategoriesPageConfig.defaultHiddenColumnKeys ?? []
+    const visibleKeys = columnKeys.filter((key) => !hiddenKeys.includes(key))
+
+    expect(hiddenKeys).toEqual([
+      'purchaseWeighOverTolerancePercent',
+      'purchaseWeighUnderTolerancePercent',
+      'remark',
+    ])
+    expect(columnKeys).toEqual(expect.arrayContaining(hiddenKeys))
+    expect(visibleKeys).toEqual(
+      expect.arrayContaining([
+        'categoryCode',
+        'categoryName',
+        'sortOrder',
+        'purchaseWeighRequired',
+        'status',
+      ]),
+    )
+    expect(hiddenKeys.length).toBeLessThan(columnKeys.length * 0.6)
+  })
+
   it('has formFields', () => {
     expect(materialCategoriesPageConfig.formFields).toBeDefined()
     expect(materialCategoriesPageConfig.formFields!.length).toBeGreaterThan(0)

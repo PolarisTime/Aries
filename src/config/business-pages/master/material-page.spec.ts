@@ -31,6 +31,36 @@ describe('materialsPageConfig', () => {
     expect(materialsPageConfig.columns.length).toBeGreaterThan(0)
   })
 
+  it('keeps material identity visible and hides secondary pricing details by default', () => {
+    const columnKeys = materialsPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+    const hiddenKeys = materialsPageConfig.defaultHiddenColumnKeys ?? []
+    const visibleKeys = columnKeys.filter((key) => !hiddenKeys.includes(key))
+
+    expect(hiddenKeys).toEqual([
+      'pieceWeightTon',
+      'piecesPerBundle',
+      'unitPrice',
+      'batchNoEnabled',
+      'remark',
+    ])
+    expect(columnKeys).toEqual(expect.arrayContaining(hiddenKeys))
+    expect(visibleKeys).toEqual(
+      expect.arrayContaining([
+        'materialCode',
+        'brand',
+        'material',
+        'category',
+        'spec',
+        'length',
+        'unit',
+        'quantityUnit',
+      ]),
+    )
+    expect(hiddenKeys.length).toBeLessThan(columnKeys.length * 0.6)
+  })
+
   it('sets material code column width', () => {
     const materialCodeColumn = materialsPageConfig.columns.find(
       (column) => column.dataIndex === 'materialCode',

@@ -25,6 +25,31 @@ describe('ioReportPageConfig', () => {
     expect(ioReportPageConfig.columns.length).toBeGreaterThan(0)
   })
 
+  it('keeps movement context visible and hides secondary item details by default', () => {
+    const columnKeys = ioReportPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+    const hiddenKeys = ioReportPageConfig.defaultHiddenColumnKeys ?? []
+    const visibleKeys = columnKeys.filter((key) => !hiddenKeys.includes(key))
+
+    expect(hiddenKeys).toEqual(['spec', 'batchNo', 'quantityUnit'])
+    expect(columnKeys).toEqual(expect.arrayContaining(hiddenKeys))
+    expect(visibleKeys).toEqual(
+      expect.arrayContaining([
+        'businessDate',
+        'businessType',
+        'sourceNo',
+        'materialCode',
+        'warehouseName',
+        'inQuantity',
+        'outQuantity',
+        'inWeightTon',
+        'outWeightTon',
+      ]),
+    )
+    expect(hiddenKeys.length).toBeLessThan(columnKeys.length * 0.6)
+  })
+
   it('has detailFields', () => {
     expect(ioReportPageConfig.detailFields).toBeDefined()
   })

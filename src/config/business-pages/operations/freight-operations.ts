@@ -54,12 +54,6 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         options: getCarrierOptions,
       },
       {
-        key: 'settlementCompanyId',
-        label: SETTLEMENT_COMPANY_LABEL,
-        type: 'select',
-        options: getSettlementCompanyOptions,
-      },
-      {
         key: 'status',
         label: AUDIT_STATUS_LABEL,
         type: 'select',
@@ -75,9 +69,17 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         ],
       },
       {
+        key: 'settlementCompanyId',
+        label: SETTLEMENT_COMPANY_LABEL,
+        type: 'select',
+        options: getSettlementCompanyOptions,
+        row: 2,
+      },
+      {
         key: 'billTime',
         label: i18next.t('modules.pages.freightOperations.documentDate'),
         type: 'dateRange',
+        row: 2,
       },
     ],
     columns: [
@@ -85,6 +87,16 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         title: i18next.t('modules.pages.freightOperations.freightBillNo'),
         dataIndex: 'billNo',
         width: 160,
+      },
+      {
+        title: i18next.t('modules.pages.freightOperations.relatedOutbound'),
+        dataIndex: 'outboundNo',
+        width: 160,
+      },
+      {
+        title: i18next.t('modules.pages.freightStatement.carrierCode'),
+        dataIndex: 'carrierCode',
+        width: 130,
       },
       {
         title: i18next.t('modules.pages.freightOperations.carrier'),
@@ -95,6 +107,21 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         title: i18next.t('modules.pages.freightOperations.vehiclePlate'),
         dataIndex: 'vehiclePlate',
         width: 120,
+      },
+      {
+        title: i18next.t('modules.pages.freightOperations.customerName'),
+        dataIndex: 'customerName',
+        width: 140,
+      },
+      {
+        title: i18next.t('modules.pages.freightOperations.projectName'),
+        dataIndex: 'projectName',
+        width: 180,
+      },
+      {
+        title: SETTLEMENT_COMPANY_LABEL,
+        dataIndex: 'settlementCompanyName',
+        width: 160,
       },
       {
         title: i18next.t('modules.pages.freightOperations.documentDate'),
@@ -131,7 +158,13 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         align: 'center',
       },
     ],
-    defaultHiddenColumnKeys: ['vehiclePlate', 'unitPrice'],
+    defaultHiddenColumnKeys: [
+      'carrierCode',
+      'customerName',
+      'projectName',
+      'settlementCompanyName',
+      'unitPrice',
+    ],
     detailFields: [
       {
         label: i18next.t('modules.pages.freightOperations.freightBillNo'),
@@ -144,6 +177,10 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       {
         label: i18next.t('modules.pages.freightOperations.carrier'),
         key: 'carrierName',
+      },
+      {
+        label: i18next.t('modules.pages.freightStatement.carrierCode'),
+        key: 'carrierCode',
       },
       {
         label: SETTLEMENT_COMPANY_LABEL,
@@ -218,6 +255,13 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         row: 1,
       },
       {
+        key: 'carrierCode',
+        label: i18next.t('modules.pages.freightStatement.carrierCode'),
+        type: 'input',
+        disabled: true,
+        row: 1,
+      },
+      {
         key: 'settlementCompanyId',
         label: SETTLEMENT_COMPANY_LABEL,
         type: 'select',
@@ -255,6 +299,44 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         row: 2,
       },
     ],
+    saveFields: {
+      scalar: [
+        'billNo',
+        'carrierCode',
+        'carrierName',
+        'settlementCompanyId',
+        'settlementCompanyName',
+        'vehiclePlate',
+        'customerName',
+        'projectName',
+        'billTime',
+        'unitPrice',
+        'status',
+        'remark',
+      ],
+      lineItem: [
+        'sourceNo',
+        'sourceSalesOutboundItemId',
+        'settlementCompanyId',
+        'settlementCompanyName',
+        'customerName',
+        'projectName',
+        'materialCode',
+        'materialName',
+        'brand',
+        'category',
+        'material',
+        'spec',
+        'length',
+        'quantity',
+        'quantityUnit',
+        'pieceWeightTon',
+        'piecesPerBundle',
+        'batchNo',
+        'weightTon',
+        'warehouseName',
+      ],
+    },
     parentImport: {
       parentModuleKey: 'sales-outbound',
       label: i18next.t('modules.pages.freightOperations.parentSalesOutbound'),

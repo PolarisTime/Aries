@@ -1041,12 +1041,16 @@ export function useModuleEditorWorkspace({
     setParentImporting(true)
     try {
       const parentDetails = await Promise.all(
-        selectedRecords.map((selectedRecord) =>
-          getBusinessModuleDetail(
-            parentImportConfig.parentModuleKey,
-            String(selectedRecord.id),
-          ),
-        ),
+        selectedRecords.map(async (selectedRecord) => ({
+          data: parentImportConfig.resolveParentRecord
+            ? await parentImportConfig.resolveParentRecord(selectedRecord)
+            : (
+                await getBusinessModuleDetail(
+                  parentImportConfig.parentModuleKey,
+                  String(selectedRecord.id),
+                )
+              ).data,
+        })),
       )
 
       let nextValues = form.getFieldsValue(true)

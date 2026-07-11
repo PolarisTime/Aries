@@ -2,10 +2,12 @@ import i18next from 'i18next'
 import {
   getCarrierOptions,
   getCustomerOptions,
+  getSettlementCompanyOptions,
   getSupplierOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
+import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import { buildFinanceOverview, statusMap } from '../shared/shared'
 
 const directionOptions = [
@@ -113,6 +115,12 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
       options: counterpartyTypeOptions,
     },
     {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
+    },
+    {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'select',
@@ -150,6 +158,11 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
     {
       title: i18next.t('modules.pages.ledgerAdjustment.counterparty'),
       dataIndex: 'counterpartyName',
+      width: 160,
+    },
+    {
+      title: SETTLEMENT_COMPANY_LABEL,
+      dataIndex: 'settlementCompanyName',
       width: 160,
     },
     {
@@ -209,6 +222,11 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.ledgerAdjustment.counterparty'),
       key: 'counterpartyName',
+      row: 2,
+    },
+    {
+      label: SETTLEMENT_COMPANY_LABEL,
+      key: 'settlementCompanyName',
       row: 2,
     },
     {
@@ -309,6 +327,15 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      required: true,
+      allowClear: false,
+      options: getSettlementCompanyOptions,
+      row: 2,
+    },
+    {
       key: 'projectName',
       label: i18next.t('modules.pages.ledgerAdjustment.project'),
       type: 'input',
@@ -394,6 +421,8 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
       'counterpartyType',
       'counterpartyCode',
       'counterpartyName',
+      'settlementCompanyId',
+      'settlementCompanyName',
       'projectId',
       'projectName',
       'adjustmentDate',

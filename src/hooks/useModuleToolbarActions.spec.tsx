@@ -139,7 +139,7 @@ describe('useModuleToolbarActions', () => {
     ).toEqual(['hooks.toolbarActions.delete'])
   })
 
-  it('disables delete when no rows selected', () => {
+  it('hides delete when no rows are selected', () => {
     const { result } = renderHook(() =>
       useModuleToolbarActions({
         moduleKey: 'sales-order',
@@ -154,10 +154,10 @@ describe('useModuleToolbarActions', () => {
       }),
     )
 
-    expect(result.current.visibleToolbarActions[0]?.disabled).toBe(true)
+    expect(result.current.visibleToolbarActions).toEqual([])
   })
 
-  it('disables actions when no rows selected', () => {
+  it('hides batch actions when no rows are selected', () => {
     const { result } = renderHook(() =>
       useModuleToolbarActions({
         moduleKey: 'sales-order',
@@ -172,9 +172,7 @@ describe('useModuleToolbarActions', () => {
       }),
     )
 
-    for (const action of result.current.visibleToolbarActions) {
-      expect(action.disabled).toBe(true)
-    }
+    expect(result.current.visibleToolbarActions).toEqual([])
   })
 
   it('filters actions by permission', () => {
@@ -374,7 +372,7 @@ describe('useModuleToolbarActions', () => {
     expect(handlers.navigateToRoleActionEditor).toHaveBeenCalled()
   })
 
-  it('creates pinned generate_pickup_list action with disabled state when selectedRowCount is 0', () => {
+  it('hides generate_pickup_list until rows are selected', () => {
     const handlers = createHandlers()
     resolveModuleActionKindMock.mockReturnValue('none')
     const { result } = renderHook(() =>
@@ -400,7 +398,7 @@ describe('useModuleToolbarActions', () => {
       }),
     )
 
-    expect(result.current.visibleToolbarActions[0]?.disabled).toBe(true)
+    expect(result.current.visibleToolbarActions).toEqual([])
   })
 
   it('shows warning for no permission action', () => {

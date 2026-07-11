@@ -1,7 +1,7 @@
 import { Tag } from 'antd'
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
-const STANDARD_BLUE_STATUSES = new Set([
+const SUCCESS_STATUSES = new Set([
   '正常',
   '有效',
   '启用',
@@ -15,7 +15,7 @@ const STANDARD_BLUE_STATUSES = new Set([
   'UP',
 ])
 
-const DEEP_BLUE_STATUSES = new Set([
+const COMPLETED_STATUSES = new Set([
   '已完成',
   '完成采购',
   '完成入库',
@@ -29,7 +29,7 @@ const DEEP_BLUE_STATUSES = new Set([
   '已对账',
 ])
 
-const LIGHT_BLUE_STATUSES = new Set([
+const WARNING_STATUSES = new Set([
   '草稿',
   '待审核',
   '未审核',
@@ -39,21 +39,11 @@ const LIGHT_BLUE_STATUSES = new Set([
   '未收票',
   '未结清',
   '未对账',
-  '已过期',
   '未知',
   '未启用',
-  '禁用',
-  '已禁用',
-  '停用',
-  '失败',
-  '异常',
-  '错误',
-  '离线',
-  'DOWN',
-  'DEGRADED',
 ])
 
-const FLOW_BLUE_STATUSES = new Set([
+const PROCESSING_STATUSES = new Set([
   '执行中',
   '处理中',
   '部分入库',
@@ -64,28 +54,19 @@ const FLOW_BLUE_STATUSES = new Set([
   'processing',
 ])
 
-const AUXILIARY_BLUE_STATUSES = new Set(['关注', '需 VACUUM', '需 ANALYZE'])
-
-const LIGHT_BLUE_TAG_STYLE: CSSProperties = {
-  backgroundColor: 'transparent',
-  borderColor: '#91caff',
-  color: '#0958d9',
-  fontWeight: 400,
-}
-
-const STANDARD_BLUE_TAG_STYLE: CSSProperties = {
-  backgroundColor: 'transparent',
-  borderColor: '#1677ff',
-  color: '#003eb3',
-  fontWeight: 500,
-}
-
-const DEEP_BLUE_TAG_STYLE: CSSProperties = {
-  backgroundColor: 'transparent',
-  borderColor: '#2f54eb',
-  color: '#10239e',
-  fontWeight: 600,
-}
+const ERROR_STATUSES = new Set([
+  '禁用',
+  '已禁用',
+  '停用',
+  '失败',
+  '异常',
+  '错误',
+  '离线',
+  '已过期',
+  '已删除',
+  'DOWN',
+  'DEGRADED',
+])
 
 interface StatusMeta {
   text?: string
@@ -101,65 +82,55 @@ interface Props {
   className?: string
 }
 
-interface BlueTagTone {
-  color?: string
-  style: CSSProperties
+const TAG_COLOR_ALIASES: Record<string, string | undefined> = {
+  default: undefined,
+  warning: 'gold',
+  orange: 'gold',
+  gold: 'gold',
+  yellow: 'gold',
+  error: 'red',
+  red: 'red',
+  success: 'green',
+  green: 'green',
+  processing: 'blue',
+  blue: 'blue',
+  geekblue: 'blue',
 }
 
-const BLUE_TONE_BY_COLOR: Record<string, BlueTagTone> = {
-  default: { color: 'blue', style: LIGHT_BLUE_TAG_STYLE },
-  warning: { color: 'blue', style: LIGHT_BLUE_TAG_STYLE },
-  error: { color: 'blue', style: LIGHT_BLUE_TAG_STYLE },
-  red: { color: 'blue', style: LIGHT_BLUE_TAG_STYLE },
-  orange: { color: 'blue', style: LIGHT_BLUE_TAG_STYLE },
-  gold: { color: 'blue', style: LIGHT_BLUE_TAG_STYLE },
-  yellow: { color: 'blue', style: LIGHT_BLUE_TAG_STYLE },
-  success: { color: 'processing', style: STANDARD_BLUE_TAG_STYLE },
-  green: { color: 'processing', style: STANDARD_BLUE_TAG_STYLE },
-  processing: { color: 'processing', style: STANDARD_BLUE_TAG_STYLE },
-  blue: { color: 'processing', style: STANDARD_BLUE_TAG_STYLE },
-  geekblue: { color: 'geekblue', style: DEEP_BLUE_TAG_STYLE },
-}
-
-function isDeepBlueStatus(status: string): boolean {
-  return DEEP_BLUE_STATUSES.has(status) || status.startsWith('完成')
-}
-
-function resolveFallbackTone(status: string): BlueTagTone {
-  if (isDeepBlueStatus(status)) {
-    return BLUE_TONE_BY_COLOR.geekblue
+function resolveFallbackColor(status: string): string | undefined {
+  if (ERROR_STATUSES.has(status)) {
+    return 'red'
   }
-  if (STANDARD_BLUE_STATUSES.has(status) || FLOW_BLUE_STATUSES.has(status)) {
-    return BLUE_TONE_BY_COLOR.processing
+  if (COMPLETED_STATUSES.has(status) || status.startsWith('完成')) {
+    return 'green'
   }
-  if (LIGHT_BLUE_STATUSES.has(status) || AUXILIARY_BLUE_STATUSES.has(status)) {
-    return BLUE_TONE_BY_COLOR.default
+  if (SUCCESS_STATUSES.has(status)) {
+    return 'green'
   }
-  return BLUE_TONE_BY_COLOR.default
+  if (PROCESSING_STATUSES.has(status)) {
+    return 'blue'
+  }
+  if (WARNING_STATUSES.has(status)) {
+    return 'gold'
+  }
+  return undefined
 }
 
-function resolveBlueTagTone(
+function resolveTagColor(
   status: string,
   color?: string,
   displayText?: string,
-): BlueTagTone {
+): string | undefined {
   const normalizedColor = color?.trim()
   const normalizedDisplayText = displayText?.trim()
-  const statusTone = resolveFallbackTone(status)
-  const displayTone = normalizedDisplayText
-    ? resolveFallbackTone(normalizedDisplayText)
-    : statusTone
-  const fallbackTone = displayTone
-  if (
-    isDeepBlueStatus(status) ||
-    (normalizedDisplayText ? isDeepBlueStatus(normalizedDisplayText) : false)
-  ) {
-    return BLUE_TONE_BY_COLOR.geekblue
-  }
+  const fallbackColor = normalizedDisplayText
+    ? (resolveFallbackColor(normalizedDisplayText) ??
+      resolveFallbackColor(status))
+    : resolveFallbackColor(status)
   if (!normalizedColor || normalizedColor === 'default') {
-    return fallbackTone
+    return fallbackColor
   }
-  return BLUE_TONE_BY_COLOR[normalizedColor] ?? fallbackTone
+  return TAG_COLOR_ALIASES[normalizedColor] ?? fallbackColor
 }
 
 export function StatusTag({ status, statusMap, fallback, className }: Props) {
@@ -167,27 +138,16 @@ export function StatusTag({ status, statusMap, fallback, className }: Props) {
   const meta = statusMap[normalizedStatus] ?? statusMap[status]
   const fallbackText = fallback || normalizedStatus || '--'
   const displayText = meta?.label || meta?.text || fallbackText
-  const tone = resolveBlueTagTone(normalizedStatus, meta?.color, displayText)
+  const color = resolveTagColor(normalizedStatus, meta?.color, displayText)
   if (!meta) {
     return (
-      <Tag
-        color={tone.color}
-        variant="outlined"
-        className={className}
-        style={tone.style}
-      >
+      <Tag color={color} variant="filled" className={className}>
         {fallbackText}
       </Tag>
     )
   }
   return (
-    <Tag
-      color={tone.color}
-      icon={meta.icon}
-      variant="outlined"
-      className={className}
-      style={tone.style}
-    >
+    <Tag color={color} icon={meta.icon} variant="filled" className={className}>
       {displayText}
     </Tag>
   )

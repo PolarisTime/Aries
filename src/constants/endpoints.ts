@@ -102,9 +102,13 @@ export const ENDPOINTS = {
 
   // Import candidate collections
   PURCHASE_ORDER_IMPORT_CANDIDATES: '/purchase-orders/import-candidates',
+  PURCHASE_ORDER_PREPAYMENT_CANDIDATES:
+    '/purchase-orders/prepayment-candidates',
   FREIGHT_BILL_IMPORT_CANDIDATES: '/freight-bills/import-candidates',
   SALES_ORDER_OUTBOUND_IMPORT_CANDIDATES:
     '/sales-orders/outbound-import-candidates',
+  PURCHASE_REFUND_SOURCE_CANDIDATES: '/purchase-refunds/source-candidates',
+  PURCHASE_REFUND_PREVIEW: '/purchase-refunds/preview',
 
   // Departments (sub-resource option lists → plural collection)
   DEPARTMENTS_OPTIONS: '/departments/options',

@@ -217,8 +217,8 @@ describe('freightStatementPageConfig', () => {
 })
 
 describe('page config specific features', () => {
-  it('purchaseOrdersPageConfig has hidePageHeader', () => {
-    expect(purchaseOrdersPageConfig.hidePageHeader).toBe(true)
+  it('purchaseOrdersPageConfig uses the shared business grid page header', () => {
+    expect(purchaseOrdersPageConfig.hidePageHeader).toBeUndefined()
   })
 
   it('salesOrdersPageConfig has parentImport with complex transformItems', () => {

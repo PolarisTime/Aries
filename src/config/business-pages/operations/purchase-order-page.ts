@@ -1,4 +1,5 @@
 import i18next from 'i18next'
+import { getSupplierIdentityOptions } from '@/api/supplier-options'
 import {
   buildValueOptions,
   getSettlementCompanyOptions,
@@ -23,7 +24,6 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
   kicker: 'Purchase',
   description: i18next.t('modules.pages.purchaseOrder.description'),
   primaryNoKey: 'orderNo',
-  hidePageHeader: true,
   actions: actionSet,
   filters: [
     {
@@ -43,6 +43,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
       type: 'select',
       options: getSettlementCompanyOptions,
+      row: 2,
     },
     {
       key: 'status',
@@ -54,6 +55,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       key: 'orderDate',
       label: i18next.t('modules.pages.purchaseOrder.filterOrderDate'),
       type: 'dateRange',
+      row: 2,
     },
   ],
   columns: [
@@ -177,11 +179,11 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'supplierName',
+      key: 'supplierCode',
       label: i18next.t('modules.pages.purchaseOrder.colSupplier'),
       type: 'select',
       required: true,
-      options: getSupplierOptions,
+      options: getSupplierIdentityOptions,
       row: 2,
     },
     {

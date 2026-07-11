@@ -73,6 +73,18 @@ describe('page-registry-finance', () => {
     expect(page!.icon).toBe('CreditCardOutlined')
   })
 
+  it('defines supplier refund receipt page', () => {
+    const page = financePageDefinitions.find(
+      (d) => d.key === 'supplier-refund-receipt',
+    )
+    expect(page).toBeDefined()
+    expect(page!.title).toBe('供应商退款到账单')
+    expect(page!.menuParent).toBe('finance')
+    expect(page!.moduleKey).toBe('supplier-refund-receipt')
+    expect(page!.searchable).toBe(true)
+    expect(page!.icon).toBe('RollbackOutlined')
+  })
+
   it('defines ledger-adjustment page', () => {
     const page = financePageDefinitions.find(
       (d) => d.key === 'ledger-adjustment',
@@ -138,7 +150,7 @@ describe('page-registry-finance', () => {
     const hidden = financePageDefinitions.filter((d) => d.hiddenInMenu)
 
     expect(statements).toHaveLength(3)
-    expect(finance).toHaveLength(7)
+    expect(finance).toHaveLength(8)
     expect(hidden).toHaveLength(0)
   })
 })

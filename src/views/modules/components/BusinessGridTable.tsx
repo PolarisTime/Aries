@@ -18,7 +18,7 @@ import {
   computeTableScrollX,
 } from '@/views/modules/components/business-grid-table-utils'
 
-const MIN_TABLE_BODY_SCROLL_Y = 240
+const MIN_TABLE_BODY_SCROLL_Y = 120
 const SELECTION_COLUMN_WIDTH = 40
 const TABLE_BOTTOM_INSET = 16
 const ROW_SINGLE_CLICK_DELAY_MS = 220
@@ -151,7 +151,6 @@ export function BusinessGridTable({
   const onRow = (record: ModuleRecord) => ({
     tabIndex: 0,
     'aria-keyshortcuts': 'Enter',
-    title: 'Enter 打开单据',
     ...(selectedRowKeys
       ? { 'aria-selected': selectedRowKeys.includes(String(record.id)) }
       : {}),
@@ -176,7 +175,7 @@ export function BusinessGridTable({
       if (event.key === 'Enter') {
         event.preventDefault()
         clearPendingRowClick()
-        onRowDoubleClick(record)
+        onRowClick(record)
       }
     },
   })
@@ -194,7 +193,6 @@ export function BusinessGridTable({
       <Table
         key={moduleKey}
         rowKey="id"
-        bordered
         size="small"
         loading={loading}
         columns={visibleColumns}

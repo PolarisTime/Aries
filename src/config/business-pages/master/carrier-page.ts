@@ -73,6 +73,7 @@ export const carriersPageConfig: ModulePageConfig = {
       width: 180,
     },
   ],
+  defaultHiddenColumnKeys: ['contactPhone', 'vehicleType', 'remark'],
   detailFields: [
     {
       label: i18next.t('modules.pages.carrier.colCarrierCode'),

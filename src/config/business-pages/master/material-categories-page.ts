@@ -70,6 +70,11 @@ export const materialCategoriesPageConfig: ModulePageConfig = {
       width: 200,
     },
   ],
+  defaultHiddenColumnKeys: [
+    'purchaseWeighOverTolerancePercent',
+    'purchaseWeighUnderTolerancePercent',
+    'remark',
+  ],
   detailFields: [
     {
       label: i18next.t('modules.pages.materialCategories.categoryCode'),

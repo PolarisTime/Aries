@@ -90,6 +90,11 @@ vi.mock('antd', () => ({
       <span {...props}>{strong ? <strong>{children}</strong> : children}</span>
     ),
   },
+  Tooltip: ({ children, title }: any) => (
+    <span data-testid="settings-tooltip" data-title={title}>
+      {children}
+    </span>
+  ),
 }))
 
 vi.mock('@ant-design/icons', () => ({
@@ -128,7 +133,14 @@ describe('ColumnSettingsPopover', () => {
 
   it('renders settings button', () => {
     render(<ColumnSettingsPopover {...defaultProps} />)
-    expect(screen.getByText('common.columnSettings')).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'common.columnSettings' }),
+    ).toBeTruthy()
+    expect(screen.queryByText('common.columnSettings')).toBeNull()
+    expect(screen.getByTestId('settings-tooltip')).toHaveAttribute(
+      'data-title',
+      'common.columnSettings',
+    )
   })
 
   it('renders popover content when open', () => {

@@ -88,6 +88,24 @@ describe('supplier-options', () => {
   })
 
   describe('normalizeSupplierOptions', () => {
+    it('normalizes the stable supplier code snapshot', () => {
+      const result = normalizeSupplierOptions([
+        {
+          id: 123 as any,
+          supplierCode: 456,
+          value: '供应商甲',
+          label: '供应商甲',
+        } as any,
+      ])
+
+      expect(result[0]).toMatchObject({
+        id: '123',
+        supplierCode: '456',
+        value: '供应商甲',
+        label: '供应商甲',
+      })
+    })
+
     it('converts id to string when present', () => {
       const result = normalizeSupplierOptions([
         { id: 123 as any, value: 'v1', label: 'L1' },

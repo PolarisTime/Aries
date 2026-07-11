@@ -69,6 +69,7 @@ export const systemOrganizationPageConfigs: Record<string, ModulePageConfig> = {
         width: 220,
       },
     ],
+    defaultHiddenColumnKeys: ['contactPhone', 'sortOrder', 'remark'],
     detailFields: [
       {
         label: i18next.t('modules.pages.systemOrganization.deptCode'),

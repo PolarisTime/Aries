@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import { findCarrierOption } from '@/api/carrier-options'
 import { getSettlementCompanyOptions } from '@/api/company-settings'
 import { findCustomerOption } from '@/api/customer-options'
+import { findSupplierOption } from '@/api/supplier-options'
 import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 import { parseDateTimeValue } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
@@ -78,6 +79,11 @@ registerModuleBehavior('purchase-order', { defaultOperatorField: 'buyerName' })
 registerModuleBehavior('purchase-order', {
   defaultDraftValues: () => ({ orderDate: currentDateTime() }),
   syncEditorForm(editorForm, ctx) {
+    if (ctx.changedKeys.has('supplierCode')) {
+      const supplier = findSupplierOption(editorForm.supplierCode)
+      editorForm.supplierCode = asString(supplier?.supplierCode).trim()
+      editorForm.supplierName = asString(supplier?.value).trim()
+    }
     if (ctx.changedKeys.has('settlementCompanyId')) {
       editorForm.settlementCompanyName = findSettlementCompanyName(
         editorForm.settlementCompanyId,
@@ -112,12 +118,16 @@ for (const key of settlementCompanySnapshotModules) {
         return
       }
 
-      if (key === 'freight-bill' && ctx.changedKeys.has('carrierName')) {
-        applyDefaultSettlementCompany(
-          editorForm,
-          findCarrierOption(editorForm.carrierName),
-        )
-        return
+      if (
+        (key === 'freight-bill' || key === 'freight-statement') &&
+        ctx.changedKeys.has('carrierName')
+      ) {
+        const carrier = findCarrierOption(editorForm.carrierName)
+        editorForm.carrierCode = asString(carrier?.carrierCode).trim()
+        if (key === 'freight-bill') {
+          applyDefaultSettlementCompany(editorForm, carrier)
+          return
+        }
       }
 
       if (ctx.changedKeys.has('settlementCompanyId')) {
@@ -212,6 +222,8 @@ registerModuleBehavior('purchase-contract', {
 const operatorNameModules = [
   'receipt',
   'payment',
+  'purchase-refund',
+  'supplier-refund-receipt',
   'invoice-receipt',
   'invoice-issue',
   'ledger-adjustment',
@@ -221,9 +233,26 @@ for (const key of operatorNameModules) {
   registerModuleBehavior(key, { defaultOperatorField: 'operatorName' })
 }
 
+registerModuleBehavior('purchase-refund', {
+  defaultDraftValues: () => ({ refundDate: currentDate() }),
+  allowsManualLineItems: false,
+  readonlyLineItems: true,
+})
+
+registerModuleBehavior('supplier-refund-receipt', {
+  defaultDraftValues: () => ({ receiptDate: currentDate() }),
+})
+
 registerModuleBehavior('ledger-adjustment', {
   defaultDraftValues: () => ({ adjustmentDate: currentDate() }),
   syncEditorForm(editorForm, ctx) {
+    if (ctx.changedKeys.has('settlementCompanyId')) {
+      editorForm.settlementCompanyName = findSettlementCompanyName(
+        editorForm.settlementCompanyId,
+        asString(editorForm.settlementCompanyName),
+      )
+    }
+
     if (ctx.changedKeys.has('counterpartyType')) {
       editorForm.counterpartyName = ''
       editorForm.counterpartyCode = ''

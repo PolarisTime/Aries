@@ -7,12 +7,16 @@ vi.mock('i18next', () => ({
 vi.mock('@/constants/module-options', () => ({
   getCarrierOptions: vi.fn(() => [{ label: '承运商A', value: '承运商A' }]),
   getCustomerOptions: vi.fn(() => [{ label: '客户A', value: '客户A' }]),
+  getSettlementCompanyOptions: vi.fn(() => [
+    { label: '主体A', value: '9', companyName: '主体A' },
+  ]),
   getSupplierOptions: vi.fn(() => [{ label: '供应商A', value: '供应商A' }]),
 }))
 
 import {
   getCarrierOptions,
   getCustomerOptions,
+  getSettlementCompanyOptions,
   getSupplierOptions,
 } from '@/constants/module-options'
 import { ledgerAdjustmentPageConfig } from './ledger-adjustment-page'
@@ -26,13 +30,26 @@ describe('ledgerAdjustmentPageConfig', () => {
   it('defines ledger adjustment filters', () => {
     expect(
       ledgerAdjustmentPageConfig.filters?.map((field) => field.key),
-    ).toEqual(['direction', 'counterpartyType', 'status', 'adjustmentDate'])
+    ).toEqual([
+      'direction',
+      'counterpartyType',
+      'settlementCompanyId',
+      'status',
+      'adjustmentDate',
+    ])
   })
 
-  it('shows counterparty code in columns', () => {
-    expect(
-      ledgerAdjustmentPageConfig.columns.map((column) => column.dataIndex),
-    ).toContain('counterpartyCode')
+  it('shows counterparty code and settlement company in the list and details', () => {
+    const columnKeys = ledgerAdjustmentPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+    const detailKeys = ledgerAdjustmentPageConfig.detailFields.map(
+      (field) => field.key,
+    )
+
+    expect(columnKeys).toContain('counterpartyCode')
+    expect(columnKeys).toContain('settlementCompanyName')
+    expect(detailKeys).toContain('settlementCompanyName')
   })
 
   it('keeps ledger adjustment scalar save fields', () => {
@@ -42,6 +59,8 @@ describe('ledgerAdjustmentPageConfig', () => {
       'counterpartyType',
       'counterpartyCode',
       'counterpartyName',
+      'settlementCompanyId',
+      'settlementCompanyName',
       'projectId',
       'projectName',
       'adjustmentDate',
@@ -81,6 +100,14 @@ describe('ledgerAdjustmentPageConfig', () => {
     expect(fields.counterpartyType.allowClear).toBe(false)
     expect(fields.counterpartyName.type).toBe('select')
     expect(fields.counterpartyName.allowClear).toBe(false)
+    expect(fields.settlementCompanyId).toEqual(
+      expect.objectContaining({
+        type: 'select',
+        required: true,
+        allowClear: false,
+        options: getSettlementCompanyOptions,
+      }),
+    )
     expect(fields.adjustmentDate.dateFormat).toBe('YYYY-MM-DD')
     expect(fields.adjustmentDate.showTime).toBe(false)
     expect(fields.adjustmentDate.allowClear).toBe(false)

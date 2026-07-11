@@ -20,6 +20,7 @@ describe('module-page-schema', () => {
       expect(schema.filters![4].type).toBe('dateRange')
       expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
       expect(schema.saveFields!.scalar).toContain('settlementCompanyName')
+      expect(schema.saveFields!.scalar).toContain('supplierCode')
     })
 
     it('returns schema for purchase-inbound', () => {
@@ -34,7 +35,29 @@ describe('module-page-schema', () => {
       expect(schema.filters![4].key).toBe('inboundDate')
       expect(schema.filters![4].label).toBe('入库日期')
       expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
+      expect(schema.saveFields!.scalar).toContain('supplierCode')
       expect(schema.saveFields!.lineItem).toContain('settlementCompanyId')
+    })
+
+    it('returns schema for purchase-refund', () => {
+      const schema = getModulePageSchema('purchase-refund')
+      expect(schema).toBeDefined()
+      expect(schema.filters!.map((filter) => filter.key)).toEqual([
+        'keyword',
+        'supplierName',
+        'settlementCompanyId',
+        'status',
+        'refundDate',
+      ])
+      expect(schema.saveFields!.scalar).toEqual([
+        'refundNo',
+        'sourcePurchaseOrderId',
+        'refundDate',
+        'status',
+        'operatorName',
+        'remark',
+      ])
+      expect(schema.saveFields!.lineItem).toBeUndefined()
     })
 
     it('returns schema for sales-order with productKeyword filter', () => {
@@ -90,6 +113,34 @@ describe('module-page-schema', () => {
       expect(schema.saveFields!.scalar).toContain('paymentNo')
       expect(schema.saveFields!.scalar).toContain('businessType')
       expect(schema.saveFields!.scalar).toContain('counterpartyName')
+      expect(schema.saveFields!.scalar).toContain('paymentPurpose')
+      expect(schema.saveFields!.scalar).toContain('sourcePurchaseOrderId')
+      expect(schema.saveFields!.scalar).toContain('purchaseOrderNo')
+      expect(schema.saveFields!.scalar).toContain('supplierCode')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
+      expect(schema.saveFields!.lineItem).toBeUndefined()
+    })
+
+    it('returns schema for supplier-refund-receipt', () => {
+      const schema = getModulePageSchema('supplier-refund-receipt')
+      expect(schema).toBeDefined()
+      expect(schema.filters!.map((filter) => filter.key)).toEqual([
+        'keyword',
+        'supplierName',
+        'settlementCompanyId',
+        'status',
+        'receiptDate',
+      ])
+      expect(schema.saveFields!.scalar).toEqual([
+        'refundReceiptNo',
+        'purchaseRefundId',
+        'receiptDate',
+        'receiptMethod',
+        'amount',
+        'status',
+        'operatorName',
+        'remark',
+      ])
       expect(schema.saveFields!.lineItem).toBeUndefined()
     })
 
@@ -99,6 +150,8 @@ describe('module-page-schema', () => {
       expect(schema.saveFields!.scalar).toContain('adjustmentNo')
       expect(schema.saveFields!.scalar).toContain('counterpartyType')
       expect(schema.saveFields!.scalar).toContain('counterpartyCode')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyId')
+      expect(schema.saveFields!.scalar).toContain('settlementCompanyName')
       expect(schema.saveFields!.scalar).toContain('effect')
       expect(schema.saveFields!.lineItem).toBeUndefined()
     })
@@ -137,10 +190,18 @@ describe('module-page-schema', () => {
       expect(schema.saveFields!.scalar).toContain('expireDate')
     })
 
+    it('returns schema for freight-bill with a stable carrier identity', () => {
+      const schema = getModulePageSchema('freight-bill')
+      expect(schema).toBeDefined()
+      expect(schema.saveFields!.scalar).toContain('carrierCode')
+      expect(schema.saveFields!.scalar).toContain('carrierName')
+    })
+
     it('returns schema for freight-statement', () => {
       const schema = getModulePageSchema('freight-statement')
       expect(schema).toBeDefined()
       expect(schema.saveFields!.scalar).toContain('statementNo')
+      expect(schema.saveFields!.scalar).toContain('carrierCode')
       expect(schema.saveFields!.scalar).toContain('carrierName')
       expect(schema.saveFields!.scalar).toContain('totalWeight')
       expect(schema.saveFields!.scalar).toContain('totalFreight')
@@ -160,6 +221,7 @@ describe('module-page-schema', () => {
       expect(schema.saveFields!.scalar).toContain('invoiceTitle')
       expect(schema.saveFields!.scalar).toContain('taxRate')
       expect(schema.saveFields!.scalar).toContain('taxAmount')
+      expect(schema.saveFields!.scalar).toContain('supplierCode')
     })
 
     it('returns schema for invoice-issue', () => {

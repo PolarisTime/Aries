@@ -13,7 +13,11 @@ export const operationLogsPageConfig: ModulePageConfig = {
   description: i18next.t('modules.pages.operationLog.operationLogDesc'),
   readOnly: true,
   actions: [
-    { label: i18next.t('modules.pages.operationLog.export'), type: 'primary' },
+    {
+      key: 'export',
+      label: i18next.t('modules.pages.operationLog.export'),
+      type: 'primary',
+    },
   ],
   quickFilters: [
     {
@@ -149,6 +153,14 @@ export const operationLogsPageConfig: ModulePageConfig = {
       dataIndex: 'remark',
       width: 240,
     },
+  ],
+  defaultHiddenColumnKeys: [
+    'loginName',
+    'authType',
+    'requestMethod',
+    'requestPath',
+    'clientIp',
+    'remark',
   ],
   detailFields: [
     { label: i18next.t('modules.pages.operationLog.logNo'), key: 'logNo' },

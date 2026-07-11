@@ -30,6 +30,29 @@ describe('customersPageConfig', () => {
     expect(customersPageConfig.columns.length).toBeGreaterThan(0)
   })
 
+  it('keeps customer settlement context visible and hides secondary contact details by default', () => {
+    const columnKeys = customersPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+    const hiddenKeys = customersPageConfig.defaultHiddenColumnKeys ?? []
+    const visibleKeys = columnKeys.filter((key) => !hiddenKeys.includes(key))
+
+    expect(hiddenKeys).toEqual(['contactPhone', 'city'])
+    expect(columnKeys).toEqual(expect.arrayContaining(hiddenKeys))
+    expect(visibleKeys).toEqual(
+      expect.arrayContaining([
+        'customerCode',
+        'customerName',
+        'projectName',
+        'contactName',
+        'settlementMode',
+        'defaultSettlementCompanyName',
+        'status',
+      ]),
+    )
+    expect(hiddenKeys.length).toBeLessThan(columnKeys.length * 0.6)
+  })
+
   it('has detailFields', () => {
     expect(customersPageConfig.detailFields).toBeDefined()
   })

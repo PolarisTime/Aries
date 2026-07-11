@@ -15,6 +15,12 @@ describe('operationLogsPageConfig', () => {
     expect(operationLogsPageConfig.readOnly).toBe(true)
   })
 
+  it('identifies export actions by a locale-independent key', () => {
+    expect(operationLogsPageConfig.actions).toEqual([
+      expect.objectContaining({ key: 'export' }),
+    ])
+  })
+
   it('has quickFilters', () => {
     expect(operationLogsPageConfig.quickFilters).toBeDefined()
     expect(operationLogsPageConfig.quickFilters!.length).toBeGreaterThanOrEqual(
@@ -30,6 +36,36 @@ describe('operationLogsPageConfig', () => {
   it('has columns', () => {
     expect(operationLogsPageConfig.columns).toBeDefined()
     expect(operationLogsPageConfig.columns.length).toBeGreaterThan(0)
+  })
+
+  it('keeps audit context visible and hides request diagnostics by default', () => {
+    const columnKeys = operationLogsPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+    const hiddenKeys = operationLogsPageConfig.defaultHiddenColumnKeys ?? []
+    const visibleKeys = columnKeys.filter((key) => !hiddenKeys.includes(key))
+
+    expect(hiddenKeys).toEqual([
+      'loginName',
+      'authType',
+      'requestMethod',
+      'requestPath',
+      'clientIp',
+      'remark',
+    ])
+    expect(columnKeys).toEqual(expect.arrayContaining(hiddenKeys))
+    expect(visibleKeys).toEqual(
+      expect.arrayContaining([
+        'logNo',
+        'operatorName',
+        'moduleName',
+        'actionType',
+        'businessNo',
+        'resultStatus',
+        'operationTime',
+      ]),
+    )
+    expect(hiddenKeys.length).toBeLessThan(columnKeys.length * 0.6)
   })
 
   it('has detailFields', () => {

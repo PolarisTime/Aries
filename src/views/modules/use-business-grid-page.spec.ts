@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   closeEditor: vi.fn(),
   formatCellValue: vi.fn(),
   getBehaviorValue: vi.fn(),
+  isEditBlockedByStatus: vi.fn(),
   getRowClassName: vi.fn(),
   handleAction: vi.fn(),
   handleEditorSaved: vi.fn(),
@@ -39,6 +40,7 @@ const mocks = vi.hoisted(() => ({
   openFreightPickup: vi.fn(),
   openFreightStatement: vi.fn(),
   openFreightSummary: vi.fn(),
+  openPrepaymentAllocation: vi.fn(),
   openSupplierStatement: vi.fn(),
   refreshModuleQueries: vi.fn(),
   resolveMasterOptionRequirements: vi.fn(),
@@ -151,6 +153,7 @@ vi.mock('@/module-system/module-adapter-actions', () => ({
 
 vi.mock('@/module-system/module-behavior-registry', () => ({
   getBehaviorValue: mocks.getBehaviorValue,
+  isEditBlockedByStatus: mocks.isEditBlockedByStatus,
 }))
 
 vi.mock('@/views/modules/use-business-grid-editor', () => ({
@@ -203,6 +206,7 @@ describe('useBusinessGridPage', () => {
     mocks.useBusinessGridOverlays.mockReturnValue({
       openAttachment: mocks.openAttachment,
       openCustomerStatement: mocks.openCustomerStatement,
+      openPrepaymentAllocation: mocks.openPrepaymentAllocation,
       openSupplierStatement: mocks.openSupplierStatement,
       openFreightStatement: mocks.openFreightStatement,
       openFreightPickup: mocks.openFreightPickup,
@@ -273,6 +277,7 @@ describe('useBusinessGridPage', () => {
     mocks.useModuleRecordActions.mockReturnValue({
       buildActions: mocks.buildActions,
     })
+    mocks.isEditBlockedByStatus.mockReturnValue(false)
     mocks.useModuleRecordHelpers.mockReturnValue({
       getRowClassName: mocks.getRowClassName,
     })
@@ -372,9 +377,8 @@ describe('useBusinessGridPage', () => {
       (item: ModuleActionDefinition) =>
         item.key === 'reopen-delivery-verification',
     )
-    expect(action).toEqual(
-      expect.objectContaining({ label: '重新核定', disabled: false }),
-    )
+    expect(action).toEqual(expect.objectContaining({ label: '重新核定' }))
+    expect(action).not.toHaveProperty('disabled')
 
     await act(async () => {
       await result.current.handleAction(action)
@@ -386,6 +390,187 @@ describe('useBusinessGridPage', () => {
       '交付核定',
     )
     expect(mocks.refreshModuleQueries).toHaveBeenCalled()
+  })
+
+  it('hides the reopen action until one completed sales order is selected', () => {
+    const baseProps = props()
+    const { result } = renderHook(() =>
+      useBusinessGridPage({
+        ...baseProps,
+        moduleKey: 'sales-order',
+        pageDef: {
+          ...baseProps.pageDef,
+          moduleKey: 'sales-order',
+          resourceKey: 'sales-order',
+        },
+      }),
+    )
+
+    expect(
+      result.current.visibleToolbarActions.some(
+        (item: ModuleActionDefinition) =>
+          item.key === 'reopen-delivery-verification',
+      ),
+    ).toBe(false)
+  })
+
+  it('opens prepayment allocation only for one paid purchase prepayment', async () => {
+    const payment = {
+      id: 'payment-1',
+      paymentPurpose: 'PURCHASE_PREPAYMENT',
+      status: '已付款',
+    }
+    const baseProps = props()
+    const { result } = renderHook(() =>
+      useBusinessGridPage({
+        ...baseProps,
+        moduleKey: 'payment',
+        pageDef: {
+          ...baseProps.pageDef,
+          moduleKey: 'payment',
+          resourceKey: 'payment',
+        },
+      }),
+    )
+
+    await act(async () => {
+      result.current.setSelectedRowKeys([payment.id])
+      result.current.setSelectedRowMap({ [payment.id]: payment })
+    })
+
+    const action = result.current.visibleToolbarActions.find(
+      (item: ModuleActionDefinition) =>
+        item.key === 'allocate-purchase-prepayment',
+    )
+    expect(action).toEqual(
+      expect.objectContaining({ label: '分配预付款', type: 'default' }),
+    )
+
+    await act(async () => {
+      await result.current.handleAction(action)
+    })
+
+    expect(mocks.openPrepaymentAllocation).toHaveBeenCalledWith(payment)
+    expect(mocks.openEditor).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    {
+      name: '未选择付款单',
+      selectedRows: [],
+    },
+    {
+      name: '选择多张付款单',
+      selectedRows: [
+        {
+          id: 'payment-1',
+          paymentPurpose: 'PURCHASE_PREPAYMENT',
+          status: '已付款',
+        },
+        {
+          id: 'payment-2',
+          paymentPurpose: 'PURCHASE_PREPAYMENT',
+          status: '已付款',
+        },
+      ],
+    },
+    {
+      name: '选择普通对账付款',
+      selectedRows: [
+        {
+          id: 'payment-1',
+          paymentPurpose: 'STATEMENT_SETTLEMENT',
+          status: '已付款',
+        },
+      ],
+    },
+    {
+      name: '选择草稿采购预付款',
+      selectedRows: [
+        {
+          id: 'payment-1',
+          paymentPurpose: 'PURCHASE_PREPAYMENT',
+          status: '草稿',
+        },
+      ],
+    },
+  ])('$name时隐藏预付款分配动作', async ({ selectedRows }) => {
+    const baseProps = props()
+    const { result } = renderHook(() =>
+      useBusinessGridPage({
+        ...baseProps,
+        moduleKey: 'payment',
+        pageDef: {
+          ...baseProps.pageDef,
+          moduleKey: 'payment',
+          resourceKey: 'payment',
+        },
+      }),
+    )
+
+    await act(async () => {
+      result.current.setSelectedRowKeys(selectedRows.map((record) => record.id))
+      result.current.setSelectedRowMap(
+        Object.fromEntries(selectedRows.map((record) => [record.id, record])),
+      )
+    })
+
+    expect(
+      result.current.visibleToolbarActions.some(
+        (item: ModuleActionDefinition) =>
+          item.key === 'allocate-purchase-prepayment',
+      ),
+    ).toBe(false)
+  })
+
+  it('does not open prepayment allocation without payment update permission', async () => {
+    mocks.useModulePermissions.mockReturnValue({
+      canViewRecords: true,
+      canCreateRecord: false,
+      canUpdateRecord: false,
+      canDeleteRecord: false,
+      canExportData: false,
+      canAuditRecord: false,
+      canPrintRecord: false,
+      can: mocks.can,
+      resolvedResource: 'payment',
+    })
+    const payment = {
+      id: 'payment-1',
+      paymentPurpose: 'PURCHASE_PREPAYMENT',
+      status: '已付款',
+    }
+    const baseProps = props()
+    const { result } = renderHook(() =>
+      useBusinessGridPage({
+        ...baseProps,
+        moduleKey: 'payment',
+        pageDef: {
+          ...baseProps.pageDef,
+          moduleKey: 'payment',
+          resourceKey: 'payment',
+        },
+      }),
+    )
+
+    await act(async () => {
+      result.current.setSelectedRowKeys([payment.id])
+      result.current.setSelectedRowMap({ [payment.id]: payment })
+    })
+    await act(async () => {
+      await result.current.handleAction({
+        key: 'allocate-purchase-prepayment',
+        label: '分配预付款',
+      })
+    })
+
+    expect(mocks.openPrepaymentAllocation).not.toHaveBeenCalled()
+    expect(
+      result.current.visibleToolbarActions.some(
+        (item: ModuleActionDefinition) =>
+          item.key === 'allocate-purchase-prepayment',
+      ),
+    ).toBe(false)
   })
 
   it('skips records and attachment counts when view permission is missing', () => {
@@ -541,6 +726,54 @@ describe('useBusinessGridPage', () => {
     expect(result.current.currentPage).toBe(3)
     expect(result.current.pageSize).toBe(50)
     expect(result.current.selectedRowKeys).toEqual([])
+  })
+
+  it('clears hidden selections when applying, searching or resetting filters', async () => {
+    const { result } = renderHook(() => useBusinessGridPage(props()))
+    await waitFor(() => {
+      expect(mocks.useModuleRecordActions).toHaveBeenLastCalledWith(
+        expect.objectContaining({ attachmentCounts: { '1': 2, '2': 0 } }),
+      )
+    })
+
+    const selectRecord = () => {
+      act(() => result.current.setSelectedRowKeys(['1']))
+      act(() => result.current.setSelectedRowMap({ '1': { id: '1' } }))
+    }
+
+    selectRecord()
+    act(() => result.current.applyFilters({ status: '草稿' }))
+    expect(result.current.selectedRowKeys).toEqual([])
+    expect(result.current.selectedRows).toEqual([])
+
+    selectRecord()
+    act(() => result.current.handleSearch())
+    expect(result.current.selectedRowKeys).toEqual([])
+    expect(result.current.selectedRows).toEqual([])
+
+    selectRecord()
+    act(() => result.current.handleReset())
+    expect(result.current.selectedRowKeys).toEqual([])
+    expect(result.current.selectedRows).toEqual([])
+  })
+
+  it('wires explicit row editing through the record action builder', async () => {
+    renderHook(() => useBusinessGridPage(props()))
+    await waitFor(() => {
+      expect(mocks.useModuleRecordActions).toHaveBeenLastCalledWith(
+        expect.objectContaining({ attachmentCounts: { '1': 2, '2': 0 } }),
+      )
+    })
+    const actionOptions = mocks.useModuleRecordActions.mock.calls.at(-1)?.[0]
+    const record = { id: '1', status: '草稿' }
+
+    expect(actionOptions.canEditRecord(record)).toBe(true)
+    await act(async () => {
+      actionOptions.onEdit(record)
+      await Promise.resolve()
+    })
+
+    expect(mocks.openEditor).toHaveBeenCalledWith(record)
   })
 
   it('exports submitted filters for master data pages', async () => {
@@ -736,6 +969,7 @@ describe('useBusinessGridPage', () => {
     const toolbarOptions = mocks.useModuleToolbarActions.mock.calls.at(-1)?.[0]
 
     toolbarOptions.handlers.openFreightPickupList()
+    expect(result.current.selectedRows).toEqual([{ id: '1', projectId: 'P-1' }])
     act(() => actionOptions.clearSelection())
 
     expect(actionOptions.selectedRows).toEqual([{ id: '1', projectId: 'P-1' }])

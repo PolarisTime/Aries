@@ -1,7 +1,9 @@
-import { Alert, Col, Form, Row, Typography } from 'antd'
+import { ImportOutlined } from '@ant-design/icons'
+import { Alert, Button, Col, Form, Row, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { isEditorFieldDisabledForModule } from '@/module-system/module-adapter-editor'
 import { groupFieldsByRow } from '@/module-system/module-field-layout'
+import { isModuleFormFieldVisible } from '@/module-system/module-form-field-visibility'
 import type {
   ModuleFormFieldDefinition,
   ModulePageConfig,
@@ -18,8 +20,10 @@ interface Props {
   showActions: boolean
   lineItemsLocked: boolean
   lockedLineItemsNotice: string
+  parentImporting: boolean
   authoritativePrimaryNo?: string
   onCancel: () => void
+  onOpenParentSelector: () => void
   onSave: (audit: boolean) => void
 }
 
@@ -42,14 +46,24 @@ export function ModuleEditorFormSection({
   showActions,
   lineItemsLocked,
   lockedLineItemsNotice,
+  parentImporting,
   authoritativePrimaryNo,
   onCancel,
+  onOpenParentSelector,
   onSave,
 }: Props) {
   const { t } = useTranslation()
   const form = Form.useFormInstance()
   const formValues = Form.useWatch([], form) || {}
-  const formFieldRows = groupFieldsByRow(config.formFields || [])
+  const formFieldRows = groupFieldsByRow(
+    (config.formFields || []).filter((field) =>
+      isModuleFormFieldVisible(field, formValues),
+    ),
+  )
+  const parentImportVisible = Boolean(
+    config.parentImport &&
+      (config.parentImport.visibleWhen?.(formValues) ?? true),
+  )
 
   if (!formFieldRows.length) {
     return null
@@ -76,6 +90,22 @@ export function ModuleEditorFormSection({
         </div>
         {showActions ? (
           <div className="editor-form-actions">
+            {parentImportVisible ? (
+              <Button
+                htmlType="button"
+                icon={<ImportOutlined />}
+                loading={parentImporting}
+                disabled={!canSave}
+                onClick={onOpenParentSelector}
+              >
+                {config.parentImport?.buttonText ||
+                  t('modules.itemsSection.importItems', {
+                    label:
+                      config.parentImport?.label ||
+                      t('modules.itemsSection.parentDoc'),
+                  })}
+              </Button>
+            ) : null}
             <EditorFooterActions
               canSave={canSave}
               canAudit={canAudit}
@@ -99,7 +129,7 @@ export function ModuleEditorFormSection({
                 disabled={isEditorFieldDisabledForModule(
                   moduleKey,
                   field.key,
-                  Boolean(field.disabled),
+                  Boolean(field.disabled || field.disabledWhen?.(formValues)),
                   canSave,
                   lineItemsLocked,
                   config.primaryNoKey,

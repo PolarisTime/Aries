@@ -3,7 +3,7 @@ import { Empty } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
 import { isEditBlockedByStatus } from '@/module-system/module-behavior-registry'
-import type { ModulePageConfig } from '@/types/module-page'
+import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BusinessGridContent } from '@/views/modules/components/BusinessGridContent'
 import { BusinessGridOverlays } from '@/views/modules/components/BusinessGridOverlays'
@@ -34,7 +34,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     location,
     config: state.config,
     records: state.records,
-    setPage: () => {},
+    setPage: state.setCurrentPage,
     clearSelection: state.clearSelection,
     defaultFilters: state.defaultFilters,
     setFilters: state.setFilters,
@@ -52,6 +52,27 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     )
   }
 
+  const openRecordDetail = (record: ModuleRecord) => {
+    if (state.canViewRecords) {
+      void state.openDetail(record)
+    }
+  }
+
+  const openRecordEditor = (record: ModuleRecord) => {
+    if (state.config?.readOnly) {
+      openRecordDetail(record)
+      return
+    }
+    if (
+      state.canUpdateRecord &&
+      !isEditBlockedByStatus(record.status, moduleKey)
+    ) {
+      void state.openEditor(record)
+      return
+    }
+    openRecordDetail(record)
+  }
+
   return (
     <div key={moduleKey} className="page-stack module-page-stack">
       <BusinessGridContent
@@ -61,9 +82,10 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         filters={state.filters}
         defaultFilters={state.defaultFilters}
         submittedFilters={state.submittedFilters}
-        loading={state.isLoading || state.editorLockLoading}
+        loading={state.isLoading || state.isFetching || state.editorLockLoading}
         exporting={state.exporting}
         records={state.records}
+        selectedRows={state.selectedRows}
         total={state.total}
         currentPage={state.currentPage}
         pageSize={state.pageSize}
@@ -85,42 +107,11 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         onRefresh={() => {
           void state.refreshModuleQueries()
         }}
+        onClearSelection={state.clearSelection}
         onToggleColumn={state.toggleColumn}
         onColumnOrderChange={state.onColumnOrderChange}
-        onRowClick={(record) => {
-          const recordKey = String(record.id)
-          const isSelected = state.selectedRowKeys.includes(recordKey)
-          const nextSelectedRowKeys = isSelected
-            ? state.selectedRowKeys.filter((key) => key !== recordKey)
-            : [...state.selectedRowKeys, recordKey]
-          const nextSelectedKeySet = new Set(nextSelectedRowKeys)
-          const nextSelectedRows = state.records.filter((row) =>
-            nextSelectedKeySet.has(String(row.id)),
-          )
-          state.rowSelection?.onChange?.(
-            nextSelectedRowKeys,
-            nextSelectedRows,
-            { type: 'single' },
-          )
-        }}
-        onRowDoubleClick={(record) => {
-          if (state.config?.readOnly) {
-            if (state.canViewRecords) {
-              void state.openDetail(record)
-            }
-            return
-          }
-          if (
-            state.canUpdateRecord &&
-            !isEditBlockedByStatus(record.status, moduleKey)
-          ) {
-            void state.openEditor(record)
-            return
-          }
-          if (state.canViewRecords) {
-            void state.openDetail(record)
-          }
-        }}
+        onRowClick={openRecordDetail}
+        onRowDoubleClick={openRecordEditor}
         canCreate={
           !state.config.readOnly &&
           state.canCreateRecord &&
@@ -149,7 +140,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
                 onImported={state.refreshModuleQueries}
               />
             )}
-            {state.canUseBulkPrintActions ? (
+            {state.canUseBulkPrintActions && state.selectedRowKeys.length ? (
               <PrintTemplateDropdown
                 moduleKey={moduleKey}
                 moduleTitle={state.config.title}
@@ -157,9 +148,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
                 loading={false}
                 selectedCount={state.selectedRowKeys.length}
                 selectedRowKeys={state.selectedRowKeys}
-                selectedRows={state.records.filter((r) =>
-                  state.selectedRowKeys.includes(String(r.id)),
-                )}
+                selectedRows={state.selectedRows}
                 onPrint={(mode, template, printOptions) => {
                   void state.handlePrintSelectedRecords(
                     mode,
@@ -196,9 +185,9 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         freightStatementOpen={state.overlays.freightStatementOpen}
         freightPickupOpen={state.overlays.freightPickupOpen}
         freightPickupRecords={state.overlays.freightPickupRecords}
-        selectedRows={state.records.filter((r) =>
-          state.selectedRowKeys.includes(String(r.id)),
-        )}
+        prepaymentAllocationOpen={state.overlays.prepaymentAllocationOpen}
+        prepaymentAllocationPayment={state.overlays.prepaymentAllocationPayment}
+        selectedRows={state.selectedRows}
         canSave={
           state.editRecord ? state.canUpdateRecord : state.canCreateRecord
         }
@@ -209,7 +198,7 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         }
         onCloseEditor={state.closeEditor}
         onSaved={() => {
-          state.setSelectedRowKeys([])
+          state.clearSelection()
           state.handleEditorSaved()
         }}
         onCloseDetail={state.closeDetail}
@@ -218,6 +207,11 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
         onCloseCustomerStatement={state.overlays.closeCustomerStatement}
         onCloseFreightStatement={state.overlays.closeFreightStatement}
         onCloseFreightPickup={state.overlays.closeFreightPickup}
+        onClosePrepaymentAllocation={state.overlays.closePrepaymentAllocation}
+        onPrepaymentAllocationSaved={async () => {
+          state.clearSelection()
+          await state.refreshModuleQueries()
+        }}
         onGenerateSupplierStatement={(counterpartyName, start, end) =>
           state.handleStatementGenerate(
             'supplier',

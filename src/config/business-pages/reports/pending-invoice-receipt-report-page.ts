@@ -180,6 +180,19 @@ export const pendingInvoiceReceiptReportPageConfig: ModulePageConfig = {
       align: 'center',
     },
   ],
+  defaultHiddenColumnKeys: [
+    'brand',
+    'material',
+    'category',
+    'length',
+    'orderQuantity',
+    'quantityUnit',
+    'orderWeightTon',
+    'receivedInvoiceWeightTon',
+    'unitPrice',
+    'orderAmount',
+    'receivedInvoiceAmount',
+  ],
   detailFields: [
     {
       label: i18next.t(

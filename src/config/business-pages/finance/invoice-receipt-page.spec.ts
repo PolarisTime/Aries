@@ -15,17 +15,26 @@ describe('invoiceReceiptPageConfig', () => {
   describe('parentImport', () => {
     it('mapParentToDraft maps fields from parent record', () => {
       const draft = pi.mapParentToDraft!({
+        supplierCode: 'SUP-001',
         supplierName: '供应商A',
+        settlementCompanyId: 'company-1',
+        settlementCompanyName: '结算主体A',
       } as any)
       expect(draft).toEqual({
+        supplierCode: 'SUP-001',
         supplierName: '供应商A',
-        invoiceTitle: '供应商A',
+        settlementCompanyId: 'company-1',
+        settlementCompanyName: '结算主体A',
+        invoiceTitle: '结算主体A',
       })
     })
 
     it('mapParentToDraft handles missing fields', () => {
       const draft = pi.mapParentToDraft!({} as any)
       expect(draft.supplierName).toBe('')
+      expect(draft.supplierCode).toBe('')
+      expect(draft.settlementCompanyId).toBeUndefined()
+      expect(draft.settlementCompanyName).toBe('')
       expect(draft.invoiceTitle).toBe('')
     })
 

@@ -1,13 +1,12 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { StatusTag } from '@/components/StatusTag'
+import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { type ActionItem, TableActions } from '@/components/TableActions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
-import { getDisplayStatus } from '@/module-system/module-record-deletion'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 
-export const ACTION_COLUMN_WIDTH = 100
+export const ACTION_COLUMN_WIDTH = 200
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -38,22 +37,6 @@ export function useGridColumns({
 
   const columns: ColumnDef<ModuleRecord>[] = []
 
-  if (canUpdate || showActions) {
-    columns.push({
-      id: 'actions',
-      header: t('hooks.gridColumns.actions'),
-      meta: {
-        width: ACTION_COLUMN_WIDTH,
-        align: 'center',
-        fixed: 'left',
-        renderCell: (record: ModuleRecord) => (
-          <TableActions items={rowActions(record)} />
-        ),
-      },
-      cell: ({ row }) => <TableActions items={rowActions(row.original)} />,
-    })
-  }
-
   for (const colDef of config.columns) {
     columns.push({
       id: colDef.dataIndex,
@@ -65,13 +48,14 @@ export function useGridColumns({
         renderCell: (record: ModuleRecord) => {
           const value = record[colDef.dataIndex]
           if (colDef.type === 'status') {
-            const statusStr = getDisplayStatus(record, colDef.dataIndex)
-            if (config.statusMap) {
-              return (
-                <StatusTag status={statusStr} statusMap={config.statusMap} />
-              )
-            }
-            return <span>{formatCellValue(statusStr, colDef.type)}</span>
+            return renderModuleRecordStatus({
+              record,
+              statusKey: colDef.dataIndex,
+              statusMap: config.statusMap,
+              renderFallback: (status) => (
+                <span>{formatCellValue(status, colDef.type)}</span>
+              ),
+            })
           }
           if (colDef.render) {
             return colDef.render(value, record)
@@ -82,17 +66,35 @@ export function useGridColumns({
       cell: ({ getValue, row }) => {
         const value = getValue()
         if (colDef.type === 'status') {
-          const statusStr = getDisplayStatus(row.original, colDef.dataIndex)
-          if (config.statusMap) {
-            return <StatusTag status={statusStr} statusMap={config.statusMap} />
-          }
-          return <span>{formatCellValue(statusStr, colDef.type)}</span>
+          return renderModuleRecordStatus({
+            record: row.original,
+            statusKey: colDef.dataIndex,
+            statusMap: config.statusMap,
+            renderFallback: (status) => (
+              <span>{formatCellValue(status, colDef.type)}</span>
+            ),
+          })
         }
         if (colDef.render) {
           return colDef.render(value, row.original)
         }
         return <span>{formatCellValue(value, colDef.type)}</span>
       },
+    })
+  }
+
+  if (canUpdate || showActions) {
+    columns.push({
+      id: 'actions',
+      header: t('hooks.gridColumns.actions'),
+      meta: {
+        width: ACTION_COLUMN_WIDTH,
+        align: 'center',
+        renderCell: (record: ModuleRecord) => (
+          <TableActions items={rowActions(record)} />
+        ),
+      },
+      cell: ({ row }) => <TableActions items={rowActions(row.original)} />,
     })
   }
 

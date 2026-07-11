@@ -124,6 +124,12 @@ describe('generatePrimaryNo', () => {
     )
   })
 
+  it('uses purchase-refund prefix', () => {
+    expect(generatePrimaryNo('purchase-refund', '2026', '000001')).toBe(
+      '2026PR000001',
+    )
+  })
+
   it('uses sales-outbound prefix', () => {
     expect(generatePrimaryNo('sales-outbound', '2026', '000001')).toBe(
       '2026CK000001',
@@ -172,6 +178,12 @@ describe('generatePrimaryNo', () => {
 
   it('uses payments prefix', () => {
     expect(generatePrimaryNo('payments', '2026', '000001')).toBe('2026FK000001')
+  })
+
+  it('uses supplier refund receipt prefix', () => {
+    expect(generatePrimaryNo('supplier-refund-receipt', '2026', '000001')).toBe(
+      '2026SRR000001',
+    )
   })
 
   it('uses ledger-adjustment prefix', () => {

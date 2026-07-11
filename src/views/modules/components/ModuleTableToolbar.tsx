@@ -1,4 +1,5 @@
 import {
+  CloseOutlined,
   DownloadOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -12,6 +13,14 @@ const EMPTY_TOOLBAR_ACTIONS: never[] = []
 
 import { resolveModuleActionIcon } from '@/module-system/module-action-icons'
 
+function isCreateAction(action: ModuleActionDefinition) {
+  return action.key === 'create' || action.key?.startsWith('create_')
+}
+
+function isExportAction(action: ModuleActionDefinition) {
+  return action.key === 'export' || action.key?.startsWith('export_')
+}
+
 interface Props {
   canCreate: boolean
   canExport: boolean
@@ -21,6 +30,7 @@ interface Props {
   onCreate: () => void
   onExport: () => void
   onRefresh: () => void
+  onClearSelection?: () => void
   extra?: ReactNode
   toolbarActions?: ModuleActionDefinition[]
   onAction?: (action: ModuleActionDefinition) => void
@@ -35,6 +45,7 @@ export function ModuleTableToolbar({
   onCreate,
   onExport,
   onRefresh,
+  onClearSelection,
   extra,
   toolbarActions = EMPTY_TOOLBAR_ACTIONS,
   onAction,
@@ -49,8 +60,8 @@ export function ModuleTableToolbar({
           </Button>
         )}
         {toolbarActions.map((action) => {
-          if (action.label === '新增' || action.label.includes('新增')) {
-            return null // Already handled by canCreate
+          if (isCreateAction(action)) {
+            return null
           }
           return (
             <Button
@@ -60,7 +71,7 @@ export function ModuleTableToolbar({
               disabled={action.disabled}
               loading={action.loading}
               icon={
-                action.label === '导出' ? (
+                isExportAction(action) ? (
                   <DownloadOutlined />
                 ) : (
                   resolveModuleActionIcon(action.label)
@@ -72,7 +83,7 @@ export function ModuleTableToolbar({
             </Button>
           )
         })}
-        {canExport && !toolbarActions.some((a) => a.label === '导出') && (
+        {canExport && !toolbarActions.some(isExportAction) && (
           <Button
             icon={<DownloadOutlined />}
             onClick={onExport}
@@ -85,9 +96,23 @@ export function ModuleTableToolbar({
       </Space>
       <div className="module-table-utilities">
         {selectedCount > 0 ? (
-          <span className="module-table-selected-count" aria-live="polite">
-            {t('common.selected', { count: selectedCount })}
-          </span>
+          <>
+            <span className="module-table-selected-count" aria-live="polite">
+              {t('common.selected', { count: selectedCount })}
+            </span>
+            {onClearSelection ? (
+              <Tooltip title={t('common.clearSelection')}>
+                <Button
+                  type="text"
+                  size="small"
+                  className="module-table-clear-selection-button"
+                  aria-label={t('common.clearSelection')}
+                  icon={<CloseOutlined />}
+                  onClick={onClearSelection}
+                />
+              </Tooltip>
+            ) : null}
+          </>
         ) : null}
         <Tooltip title={t('common.refresh')}>
           <Button

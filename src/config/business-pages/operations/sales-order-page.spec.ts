@@ -33,22 +33,46 @@ describe('salesOrdersPageConfig', () => {
       (filter) => filter.key === 'status',
     )
     expect(statusFilter?.options).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ value: '交付核定' }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ value: '交付核定' })]),
     )
   })
 
-  it('does not force customer and project into manual rows', () => {
+  it('keeps core filters visible and moves advanced filters to the second row', () => {
+    const keywordFilter = salesOrdersPageConfig.filters!.find(
+      (filter) => filter.key === 'keyword',
+    )
     const customerFilter = salesOrdersPageConfig.filters!.find(
       (filter) => filter.key === 'customerName',
     )
-    const projectFilter = salesOrdersPageConfig.filters!.find(
-      (filter) => filter.key === 'projectName',
+    const statusFilter = salesOrdersPageConfig.filters!.find(
+      (filter) => filter.key === 'status',
     )
+    const advancedFilterKeys = [
+      'productKeyword',
+      'projectName',
+      'settlementCompanyId',
+      'deliveryDate',
+    ]
 
+    expect(
+      salesOrdersPageConfig
+        .filters!.filter((filter) => filter.row == null)
+        .map((filter) => filter.key),
+    ).toEqual(['keyword', 'customerName', 'status'])
+    expect(keywordFilter?.row).toBeUndefined()
     expect(customerFilter?.row).toBeUndefined()
-    expect(projectFilter?.row).toBeUndefined()
+    expect(statusFilter?.row).toBeUndefined()
+    expect(
+      salesOrdersPageConfig
+        .filters!.filter((filter) => filter.row === 2)
+        .map((filter) => filter.key),
+    ).toEqual(advancedFilterKeys)
+    for (const key of advancedFilterKeys) {
+      expect(
+        salesOrdersPageConfig.filters!.find((filter) => filter.key === key)
+          ?.row,
+      ).toBe(2)
+    }
   })
 
   it('has columns', () => {
@@ -216,6 +240,13 @@ describe('salesOrdersPageConfig', () => {
 
   it('has defaultHiddenColumnKeys', () => {
     expect(salesOrdersPageConfig.defaultHiddenColumnKeys).toBeDefined()
+    expect(salesOrdersPageConfig.defaultHiddenColumnKeys).not.toContain(
+      'projectName',
+    )
+    expect(salesOrdersPageConfig.defaultHiddenColumnKeys).toEqual([
+      'salesName',
+      'remark',
+    ])
   })
 
   it('renders totalWeight for unchanged sales order rows', () => {

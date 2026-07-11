@@ -140,6 +140,18 @@ describe('carrier-options', () => {
   })
 
   describe('normalizeCarrierOptions', () => {
+    it('preserves and trims the stable carrier code', () => {
+      const result = normalizeCarrierOptions([
+        {
+          carrierCode: ' WL-001 ',
+          value: '物流甲',
+          label: '物流甲',
+        },
+      ])
+
+      expect(result[0].carrierCode).toBe('WL-001')
+    })
+
     it('preserves the default settlement company metadata', () => {
       const result = normalizeCarrierOptions([
         {

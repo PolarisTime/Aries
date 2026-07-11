@@ -59,6 +59,7 @@ export const suppliersPageConfig: ModulePageConfig = {
       width: 180,
     },
   ],
+  defaultHiddenColumnKeys: ['contactPhone', 'city', 'remark'],
   detailFields: [
     {
       label: i18next.t('modules.pages.supplier.colSupplierCode'),

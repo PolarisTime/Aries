@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isEditorFieldDisabledForModule } from '@/module-system/module-adapter-editor'
 import { groupFieldsByRow } from '@/module-system/module-field-layout'
@@ -54,6 +54,10 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
+vi.mock('@ant-design/icons', () => ({
+  ImportOutlined: () => <span>ImportOutlined</span>,
+}))
+
 vi.mock('antd', () => ({
   Alert: ({ showIcon, title, type, ...props }: any) => (
     <div
@@ -68,6 +72,11 @@ vi.mock('antd', () => ({
     <div data-lg={String(lg)} {...props}>
       {children}
     </div>
+  ),
+  Button: ({ children, loading, ...props }: any) => (
+    <button type="button" data-loading={loading ? 'true' : 'false'} {...props}>
+      {children}
+    </button>
   ),
   Form: {
     useFormInstance: mocks.useFormInstance,
@@ -132,7 +141,9 @@ describe('ModuleEditorFormSection', () => {
     showActions: false,
     lineItemsLocked: false,
     lockedLineItemsNotice: '',
+    parentImporting: false,
     onCancel: vi.fn(),
+    onOpenParentSelector: vi.fn(),
     onSave: vi.fn(),
   }
 
@@ -177,6 +188,69 @@ describe('ModuleEditorFormSection', () => {
     expect(screen.getByText('modules.editorForm.documentInfo')).toBeTruthy()
     expect(screen.getByLabelText('Preallocated ID')).toBeTruthy()
     expect(screen.getByTestId('form-field')).toHaveTextContent('Field 1')
+  })
+
+  it('filters form fields using current form values before grouping rows', () => {
+    const formValues = { paymentPurpose: 'PURCHASE_PREPAYMENT' }
+    mocks.useWatch.mockReturnValue(formValues)
+    const statementField = createField({
+      key: 'sourceStatementId',
+      label: 'Statement',
+      visibleWhen: (form) => form?.paymentPurpose === 'STATEMENT_SETTLEMENT',
+    })
+    const purchaseOrderField = createField({
+      key: 'purchaseOrderNo',
+      label: 'Purchase order',
+      visibleWhen: (form) => form?.paymentPurpose === 'PURCHASE_PREPAYMENT',
+    })
+
+    render(
+      <ModuleEditorFormSection
+        {...defaultProps}
+        config={{
+          ...defaultProps.config,
+          formFields: [statementField, purchaseOrderField],
+        }}
+      />,
+    )
+
+    expect(groupFieldsByRow).toHaveBeenCalledWith([purchaseOrderField])
+    expect(screen.queryByText('Statement')).toBeNull()
+    expect(screen.getByText('Purchase order')).toBeTruthy()
+  })
+
+  it('shows parent selector action for eligible modules without line items', () => {
+    const onOpenParentSelector = vi.fn()
+    mocks.useWatch.mockReturnValue({
+      paymentPurpose: 'PURCHASE_PREPAYMENT',
+    })
+
+    render(
+      <ModuleEditorFormSection
+        {...defaultProps}
+        showActions
+        parentImporting
+        onOpenParentSelector={onOpenParentSelector}
+        config={{
+          ...defaultProps.config,
+          formFields: [createField({ key: 'paymentPurpose' })],
+          parentImport: {
+            parentModuleKey: 'purchase-order',
+            parentFieldKey: 'purchaseOrderNo',
+            parentDisplayFieldKey: 'orderNo',
+            label: '采购订单',
+            buttonText: '选择采购订单',
+            visibleWhen: (form) =>
+              form.paymentPurpose === 'PURCHASE_PREPAYMENT',
+          },
+        }}
+      />,
+    )
+
+    const button = screen.getByRole('button', { name: '选择采购订单' })
+    expect(button).toHaveAttribute('data-loading', 'true')
+    fireEvent.click(button)
+    expect(onOpenParentSelector).toHaveBeenCalledTimes(1)
   })
 
   it('passes authoritative primary number to disabled resolver', () => {

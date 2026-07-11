@@ -20,6 +20,12 @@ describe('permissionManagementPageConfig', () => {
     expect(permissionManagementPageConfig.readOnly).toBe(true)
   })
 
+  it('identifies export actions by a locale-independent key', () => {
+    expect(permissionManagementPageConfig.actions).toEqual([
+      expect.objectContaining({ key: 'export' }),
+    ])
+  })
+
   it('has filters', () => {
     expect(permissionManagementPageConfig.filters).toBeDefined()
     expect(

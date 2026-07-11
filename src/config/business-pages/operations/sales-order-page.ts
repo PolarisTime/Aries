@@ -42,6 +42,18 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       clientSearchKeys: ['orderNo'],
     },
     {
+      key: 'customerName',
+      label: CUSTOMER_NAME_LABEL,
+      type: 'select',
+      options: getCustomerOptions,
+    },
+    {
+      key: 'status',
+      label: BILL_STATUS_LABEL,
+      type: 'select',
+      options: buildValueOptions('草稿', '已审核', '交付核定', '完成销售'),
+    },
+    {
       key: 'productKeyword',
       label: i18next.t('modules.pages.salesOrder.filterProductKeyword'),
       type: 'input',
@@ -54,35 +66,27 @@ export const salesOrdersPageConfig: ModulePageConfig = {
         'material',
         'spec',
       ],
-    },
-    {
-      key: 'status',
-      label: BILL_STATUS_LABEL,
-      type: 'select',
-      options: buildValueOptions('草稿', '已审核', '交付核定', '完成销售'),
-    },
-    {
-      key: 'deliveryDate',
-      label: i18next.t('modules.pages.salesOrder.filterDeliveryDate'),
-      type: 'dateRange',
-    },
-    {
-      key: 'customerName',
-      label: CUSTOMER_NAME_LABEL,
-      type: 'select',
-      options: getCustomerOptions,
+      row: 2,
     },
     {
       key: 'projectName',
       label: i18next.t('modules.pages.salesOrder.filterProjectName'),
       type: 'select',
       options: getCustomerProjectOptions,
+      row: 2,
     },
     {
       key: 'settlementCompanyId',
       label: SETTLEMENT_COMPANY_LABEL,
       type: 'select',
       options: getSettlementCompanyOptions,
+      row: 2,
+    },
+    {
+      key: 'deliveryDate',
+      label: i18next.t('modules.pages.salesOrder.filterDeliveryDate'),
+      type: 'dateRange',
+      row: 2,
     },
   ],
   columns: [
@@ -164,7 +168,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       width: 180,
     },
   ],
-  defaultHiddenColumnKeys: ['projectName', 'salesName', 'remark'],
+  defaultHiddenColumnKeys: ['salesName', 'remark'],
   detailFields: [
     {
       label: i18next.t('modules.pages.salesOrder.colCustomerName'),

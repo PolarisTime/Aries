@@ -8,6 +8,7 @@ vi.mock('@/constants/module-options', () => ({
   customerOptions: [],
   enabledStatusOptions: [],
   getSettlementCompanyOptions: vi.fn(() => []),
+  getSupplierOptions: vi.fn(() => []),
 }))
 
 import { paymentPageConfigs } from './payment-pages'
@@ -23,6 +24,13 @@ describe('paymentPageConfigs', () => {
     expect(paymentPageConfigs.payment.key).toBe('payment')
   })
 
+  it('contains supplier refund receipt config', () => {
+    expect(paymentPageConfigs['supplier-refund-receipt']).toBeDefined()
+    expect(paymentPageConfigs['supplier-refund-receipt'].key).toBe(
+      'supplier-refund-receipt',
+    )
+  })
+
   it('contains ledger adjustment config', () => {
     expect(paymentPageConfigs['ledger-adjustment']).toBeDefined()
     expect(paymentPageConfigs['ledger-adjustment'].key).toBe(
@@ -30,7 +38,7 @@ describe('paymentPageConfigs', () => {
     )
   })
 
-  it('has exactly 3 entries', () => {
-    expect(Object.keys(paymentPageConfigs)).toHaveLength(3)
+  it('has exactly 4 entries', () => {
+    expect(Object.keys(paymentPageConfigs)).toHaveLength(4)
   })
 })

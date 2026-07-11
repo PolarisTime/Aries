@@ -40,9 +40,46 @@ describe('purchaseInboundsPageConfig', () => {
     ).toContain('settlementCompanyId')
   })
 
+  it('keeps common filters visible and moves secondary filters to the advanced row', () => {
+    const filterRows = Object.fromEntries(
+      purchaseInboundsPageConfig.filters.map((filter) => [
+        filter.key,
+        filter.row ?? 1,
+      ]),
+    )
+
+    expect(filterRows).toEqual({
+      keyword: 1,
+      supplierName: 1,
+      settlementCompanyId: 2,
+      status: 1,
+      inboundDate: 2,
+    })
+  })
+
   it('has columns', () => {
     expect(purchaseInboundsPageConfig.columns).toBeDefined()
     expect(purchaseInboundsPageConfig.columns.length).toBeGreaterThan(0)
+  })
+
+  it('shows the source order and keeps secondary columns hidden by default', () => {
+    const columnKeys = purchaseInboundsPageConfig.columns.map(
+      (column) => column.dataIndex,
+    )
+
+    expect(columnKeys).toEqual(
+      expect.arrayContaining(['purchaseOrderNo', 'settlementCompanyName']),
+    )
+    expect(purchaseInboundsPageConfig.defaultHiddenColumnKeys).toEqual(
+      expect.arrayContaining([
+        'settlementCompanyName',
+        'totalWeightAdjustmentTon',
+        'remark',
+      ]),
+    )
+    expect(purchaseInboundsPageConfig.defaultHiddenColumnKeys).not.toContain(
+      'purchaseOrderNo',
+    )
   })
 
   it('has parentImport config', () => {
@@ -63,12 +100,14 @@ describe('purchaseInboundsPageConfig', () => {
       parentImport.mapParentToDraft?.({
         id: 'po-1',
         orderNo: 'PO-001',
+        supplierCode: 'SUP-001',
         supplierName: '供应商A',
         settlementCompanyId: 'company-1',
         settlementCompanyName: '结算主体A',
       }),
     ).toEqual({
       purchaseOrderNo: 'PO-001',
+      supplierCode: 'SUP-001',
       supplierName: '供应商A',
       settlementCompanyId: 'company-1',
       settlementCompanyName: '结算主体A',
@@ -78,6 +117,7 @@ describe('purchaseInboundsPageConfig', () => {
   it('maps parent purchase order draft defaults when optional fields are missing', () => {
     expect(parentImport.mapParentToDraft?.({ id: 'po-2' })).toEqual({
       purchaseOrderNo: '',
+      supplierCode: '',
       supplierName: '',
       settlementCompanyId: undefined,
       settlementCompanyName: '',

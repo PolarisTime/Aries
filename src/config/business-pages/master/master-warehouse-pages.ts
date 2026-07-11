@@ -92,6 +92,7 @@ export const masterWarehousePageConfigs: Record<string, ModulePageConfig> = {
         width: 180,
       },
     ],
+    defaultHiddenColumnKeys: ['contactPhone', 'address', 'remark'],
     detailFields: [
       {
         label: i18next.t('modules.pages.masterWarehouse.warehouseCode'),
