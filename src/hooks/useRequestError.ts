@@ -1,8 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  isCanceledRequestError,
-  readRequestError,
-} from '@/api/request-errors'
+import { isCanceledRequestError, readRequestError } from '@/api/request-errors'
 import { message } from '@/utils/antd-app'
 
 export function useRequestError() {

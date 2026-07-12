@@ -1,137 +1,91 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { logger } from '@/utils/logger'
 import { normalizeRecord, normalizeRows } from '../normalizers'
 
-describe('normalizeRecord', () => {
-  it('normalizes record with id and items', () => {
-    const raw = {
+describe('business API normalizers', () => {
+  it('normalizes root, line item and nested relation ids', () => {
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined)
+
+    const result = normalizeRecord({
       id: 42,
-      name: 'Test',
-      items: [
-        { lineNo: '1', product: 'A', quantity: 10 },
-        { lineNo: '2', product: 'B', quantity: 20 },
-      ],
-    }
-    const result = normalizeRecord(raw)
-    expect(result.id).toBe('42')
-    expect(result.name).toBe('Test')
-    expect(result.items).toHaveLength(2)
-    expect(result.items![0].id).toBe('1')
-    expect(result.items![1].id).toBe('2')
-  })
-
-  it('normalizes record without items', () => {
-    const raw = { id: '101' }
-    const result = normalizeRecord(raw)
-    expect(result.id).toBe('101')
-    expect(result.items).toBeUndefined()
-  })
-
-  it('handles empty items array', () => {
-    const raw = { id: '101', items: [] }
-    const result = normalizeRecord(raw)
-    expect(result.items).toBeUndefined()
-  })
-
-  it('normalizes record with string id', () => {
-    const raw = { id: 'abc', name: 'test' }
-    const result = normalizeRecord(raw)
-    expect(result.id).toBe('abc')
-  })
-
-  it('strips items from top-level fields', () => {
-    const raw = { id: '1', items: [{ lineNo: '1' }], status: 'active' }
-    const result = normalizeRecord(raw)
-    expect(result.status).toBe('active')
-    expect(result.id).toBe('1')
-  })
-
-  it('sets id from lineNo when id is missing', () => {
-    const raw = { id: '1', items: [{ lineNo: '10', product: 'X' }] }
-    const result = normalizeRecord(raw)
-    expect(result.items![0].id).toBe('10')
-    expect(result.items![0].product).toBe('X')
-  })
-
-  it('normalizes line items preserving non-id/lineNo fields', () => {
-    const raw = {
-      id: '1',
+      customerId: 7,
+      traceId: 'trace-1',
       items: [
         {
-          id: 'item-1',
-          lineNo: '1',
-          product: 'Steel',
-          quantity: 100,
-          price: 50,
+          id: '101',
+          materialId: 8,
+          sourcePurchaseOrderItemId: '700520000000000001',
+          product: 'A',
         },
       ],
-    }
-    const result = normalizeRecord(raw)
-    expect(result.items![0].id).toBe('item-1')
-    expect(result.items![0].lineNo).toBe('1')
-    expect(result.items![0].product).toBe('Steel')
-    expect(result.items![0].quantity).toBe(100)
-    expect(result.items![0].price).toBe(50)
+    })
+
+    expect(result).toMatchObject({
+      id: '42',
+      customerId: '7',
+      traceId: 'trace-1',
+      items: [
+        {
+          id: '101',
+          materialId: '8',
+          sourcePurchaseOrderItemId: '700520000000000001',
+          product: 'A',
+        },
+      ],
+    })
   })
 
-  it('handles line items with null id and lineNo', () => {
-    const raw = {
-      id: '1',
-      items: [{ id: null, lineNo: null, product: 'A' }],
-    }
-    const result = normalizeRecord(raw)
-    expect(result.items![0].id).toBe('')
-    expect(result.items![0].lineNo).toBe('')
-    expect(result.items![0].product).toBe('A')
+  it('keeps an explicit empty items array absent from the normalized model', () => {
+    expect(normalizeRecord({ id: '101', items: [] }).items).toBeUndefined()
   })
 
-  it('handles record with numeric id', () => {
-    const raw = { id: 42, name: 'test' }
-    const result = normalizeRecord(raw)
-    expect(result.id).toBe('42')
+  it('promotes typed financial allocation sources for detail and editor fields', () => {
+    expect(
+      normalizeRecord({
+        id: '900',
+        items: [
+          {
+            id: '901',
+            sourceSupplierStatementId: '700520000000000001',
+          },
+        ],
+      }),
+    ).toMatchObject({
+      sourceSupplierStatementId: '700520000000000001',
+      items: [
+        {
+          sourceSupplierStatementId: '700520000000000001',
+        },
+      ],
+    })
   })
 
-  it('handles record with undefined items', () => {
-    const raw = { id: '1', items: undefined }
-    const result = normalizeRecord(raw)
-    expect(result.items).toBeUndefined()
-  })
-})
-
-describe('normalizeRows', () => {
-  it('normalizes array of records', () => {
-    const rows = [
-      { id: '1', name: 'A' },
-      { id: '2', name: 'B' },
-    ]
-    const result = normalizeRows(rows)
-    expect(result).toHaveLength(2)
-    expect(result[0].id).toBe('1')
-    expect(result[1].id).toBe('2')
+  it('rejects a missing or non-decimal persisted identity', () => {
+    expect(() => normalizeRecord({ name: 'missing' })).toThrow('id')
+    expect(() => normalizeRecord({ id: 'record-101' })).toThrow('id')
+    expect(() =>
+      normalizeRecord({ id: '1', items: [{ lineNo: '10' }] }),
+    ).toThrow('items[0].id')
   })
 
-  it('returns empty array for non-array input', () => {
+  it('rejects unsafe nested number ids', () => {
+    expect(() =>
+      normalizeRecord({
+        id: '1',
+        items: [{ id: '2', warehouseId: Number.MAX_SAFE_INTEGER + 1 }],
+      }),
+    ).toThrow('items[0].warehouseId')
+  })
+
+  it('normalizes arrays and rejects non-record rows', () => {
+    expect(
+      normalizeRows([
+        { id: '1', name: 'A' },
+        { id: '2', name: 'B' },
+      ]).map((row) => row.id),
+    ).toEqual(['1', '2'])
     expect(normalizeRows(null)).toEqual([])
-    expect(normalizeRows(undefined)).toEqual([])
-  })
-
-  it('handles empty array', () => {
-    expect(normalizeRows([])).toEqual([])
-  })
-
-  it('normalizes rows with items', () => {
-    const rows = [
-      { id: '1', items: [{ lineNo: '1', product: 'A' }] },
-      { id: '2', items: [{ lineNo: '2', product: 'B' }] },
-    ]
-    const result = normalizeRows(rows)
-    expect(result).toHaveLength(2)
-    expect(result[0].items).toHaveLength(1)
-    expect(result[0].items![0].product).toBe('A')
-  })
-
-  it('handles non-object array elements gracefully', () => {
-    const rows = [42, 'string']
-    const result = normalizeRows(rows)
-    expect(result).toHaveLength(2)
+    expect(() => normalizeRows([42, 'string'])).toThrow()
   })
 })

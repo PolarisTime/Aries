@@ -648,7 +648,7 @@
   bottom: -96px;
   width: 320px;
   height: 320px;
-  content: '';
+  content: "";
   border: 1px solid color-mix(in srgb, var(--theme-primary) 35%, transparent);
   border-radius: 50%;
 }
@@ -673,15 +673,8 @@
 .auth-page-main {
   min-width: 0;
   background:
-    linear-gradient(
-      var(--theme-border-subtle) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      var(--theme-border-subtle) 1px,
-      transparent 1px
-    ),
+    linear-gradient(var(--theme-border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--theme-border-subtle) 1px, transparent 1px),
     var(--theme-shell-bg);
   background-size: 32px 32px;
 }

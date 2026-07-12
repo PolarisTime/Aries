@@ -22,19 +22,24 @@ interface Props {
   lockedLineItemsNotice: string
   parentImporting: boolean
   authoritativePrimaryNo?: string
+  layoutVariant?: 'default' | 'finance'
   onCancel: () => void
   onOpenParentSelector: () => void
   onSave: (audit: boolean) => void
 }
 
-function getFieldSpan(field: ModuleFormFieldDefinition) {
+function getFieldSpan(
+  field: ModuleFormFieldDefinition,
+  layoutVariant: 'default' | 'finance',
+) {
   if (typeof field.colSpan === 'number' && Number.isFinite(field.colSpan)) {
-    return Math.max(6, Math.min(24, Math.trunc(field.colSpan)))
+    const span = Math.max(6, Math.min(24, Math.trunc(field.colSpan)))
+    return layoutVariant === 'finance' && span === 6 ? 8 : span
   }
   if (field.fullRow || field.type === 'textarea') {
     return 24
   }
-  return 6
+  return layoutVariant === 'finance' ? 8 : 6
 }
 
 export function ModuleEditorFormSection({
@@ -48,6 +53,7 @@ export function ModuleEditorFormSection({
   lockedLineItemsNotice,
   parentImporting,
   authoritativePrimaryNo,
+  layoutVariant = 'default',
   onCancel,
   onOpenParentSelector,
   onSave,
@@ -123,7 +129,12 @@ export function ModuleEditorFormSection({
           className="editor-form-row"
         >
           {fieldRow.map((field: ModuleFormFieldDefinition) => (
-            <Col key={field.key} xs={24} sm={12} lg={getFieldSpan(field)}>
+            <Col
+              key={field.key}
+              xs={24}
+              sm={12}
+              lg={getFieldSpan(field, layoutVariant)}
+            >
               <FormFieldRenderer
                 field={field}
                 disabled={isEditorFieldDisabledForModule(

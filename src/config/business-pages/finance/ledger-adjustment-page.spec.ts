@@ -5,19 +5,33 @@ vi.mock('i18next', () => ({
 }))
 
 vi.mock('@/constants/module-options', () => ({
-  getCarrierOptions: vi.fn(() => [{ label: '承运商A', value: '承运商A' }]),
-  getCustomerOptions: vi.fn(() => [{ label: '客户A', value: '客户A' }]),
+  getCustomerOptions: vi.fn(() => [{ label: '客户A', value: '301' }]),
+  getCustomerProjectOptions: vi.fn(() => [
+    { label: 'P001 / 项目A', value: '601' },
+  ]),
   getSettlementCompanyOptions: vi.fn(() => [
     { label: '主体A', value: '9', companyName: '主体A' },
   ]),
-  getSupplierOptions: vi.fn(() => [{ label: '供应商A', value: '供应商A' }]),
 }))
 
+vi.mock('@/api/carrier-options', () => ({
+  getCarrierEntityOptions: vi.fn(() => [
+    { label: 'CAR-001 / 承运商A', value: '501' },
+  ]),
+}))
+
+vi.mock('@/api/supplier-options', () => ({
+  getSupplierEntityOptions: vi.fn(() => [
+    { label: 'SUP-001 / 供应商A', value: '401' },
+  ]),
+}))
+
+import { getCarrierEntityOptions } from '@/api/carrier-options'
+import { getSupplierEntityOptions } from '@/api/supplier-options'
 import {
-  getCarrierOptions,
   getCustomerOptions,
+  getCustomerProjectOptions,
   getSettlementCompanyOptions,
-  getSupplierOptions,
 } from '@/constants/module-options'
 import { ledgerAdjustmentPageConfig } from './ledger-adjustment-page'
 
@@ -57,6 +71,7 @@ describe('ledgerAdjustmentPageConfig', () => {
       'adjustmentNo',
       'direction',
       'counterpartyType',
+      'counterpartyId',
       'counterpartyCode',
       'counterpartyName',
       'settlementCompanyId',
@@ -98,8 +113,17 @@ describe('ledgerAdjustmentPageConfig', () => {
     expect(fields.direction.allowClear).toBe(false)
     expect(fields.counterpartyType.defaultValue).toBe('客户')
     expect(fields.counterpartyType.allowClear).toBe(false)
-    expect(fields.counterpartyName.type).toBe('select')
-    expect(fields.counterpartyName.allowClear).toBe(false)
+    expect(fields.counterpartyId.type).toBe('select')
+    expect(fields.counterpartyId.allowClear).toBe(false)
+    expect(fields.counterpartyName.disabled).toBe(true)
+    expect(fields.projectId).toEqual(
+      expect.objectContaining({
+        type: 'select',
+        options: getCustomerProjectOptions,
+        preserve: false,
+      }),
+    )
+    expect(fields.projectName.disabled).toBe(true)
     expect(fields.settlementCompanyId).toEqual(
       expect.objectContaining({
         type: 'select',
@@ -123,25 +147,45 @@ describe('ledgerAdjustmentPageConfig', () => {
   })
 
   it('resolves counterparty options by counterparty type', () => {
-    const counterpartyName = ledgerAdjustmentPageConfig.formFields?.find(
-      (field) => field.key === 'counterpartyName',
+    const counterpartyId = ledgerAdjustmentPageConfig.formFields?.find(
+      (field) => field.key === 'counterpartyId',
     )
-    expect(typeof counterpartyName?.options).toBe('function')
+    expect(typeof counterpartyId?.options).toBe('function')
 
-    const resolveOptions = counterpartyName!.options as (form?: any) => any[]
+    const resolveOptions = counterpartyId!.options as (form?: any) => any[]
     expect(resolveOptions({ counterpartyType: '客户' })).toEqual([
-      { label: '客户A', value: '客户A' },
+      { label: '客户A', value: '301' },
     ])
     expect(getCustomerOptions).toHaveBeenCalled()
 
     expect(resolveOptions({ counterpartyType: '供应商' })).toEqual([
-      { label: '供应商A', value: '供应商A' },
+      { label: 'SUP-001 / 供应商A', value: '401' },
     ])
-    expect(getSupplierOptions).toHaveBeenCalled()
+    expect(getSupplierEntityOptions).toHaveBeenCalled()
 
     expect(resolveOptions({ counterpartyType: '物流商' })).toEqual([
-      { label: '承运商A', value: '承运商A' },
+      { label: 'CAR-001 / 承运商A', value: '501' },
     ])
-    expect(getCarrierOptions).toHaveBeenCalled()
+    expect(getCarrierEntityOptions).toHaveBeenCalled()
+  })
+
+  it('declares all master data required by the dynamic counterparty selector', () => {
+    const counterpartyField = ledgerAdjustmentPageConfig.formFields?.find(
+      (field) => field.key === 'counterpartyId',
+    ) as
+      | {
+          masterOptionRequirements?: {
+            suppliers?: boolean
+            customers?: boolean
+            carriers?: boolean
+          }
+        }
+      | undefined
+
+    expect(counterpartyField?.masterOptionRequirements).toEqual({
+      suppliers: true,
+      customers: true,
+      carriers: true,
+    })
   })
 })

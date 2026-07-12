@@ -5,7 +5,8 @@ vi.mock('i18next', () => ({
 }))
 
 vi.mock('@/constants/module-options', () => ({
-  customerOptions: [],
+  getCustomerOptions: () => [],
+  getCustomerProjectOptions: () => [],
   getSettlementCompanyOptions: () => [],
 }))
 
@@ -40,6 +41,39 @@ describe('receiptsPageConfig', () => {
     expect(receiptsPageConfig.saveFields!.scalar).toContain(
       'settlementCompanyId',
     )
+  })
+
+  it('uses stable customer, project and customer-statement identities', () => {
+    const fieldKeys = receiptsPageConfig.formFields?.map((field) => field.key)
+
+    expect(fieldKeys).toEqual(
+      expect.arrayContaining([
+        'customerId',
+        'customerName',
+        'projectId',
+        'projectName',
+        'sourceCustomerStatementId',
+      ]),
+    )
+    expect(fieldKeys).not.toContain('sourceStatementId')
+    expect(receiptsPageConfig.saveFields?.scalar).toEqual(
+      expect.arrayContaining([
+        'customerId',
+        'projectId',
+        'sourceCustomerStatementId',
+      ]),
+    )
+    expect(receiptsPageConfig.saveFields?.scalar).not.toContain(
+      'sourceStatementId',
+    )
+  })
+
+  it('allows an unallocated draft while the backend enforces settled allocations', () => {
+    const sourceField = receiptsPageConfig.formFields?.find(
+      (field) => field.key === 'sourceCustomerStatementId',
+    )
+
+    expect(sourceField?.required).toBe(false)
   })
 
   it('buildOverview returns result', () => {

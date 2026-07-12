@@ -79,14 +79,14 @@ export function PaymentPrepaymentAllocationModal({
           allocations.map((allocation, index) => ({
             rowKey: allocation.id || `current-${index}`,
             ...(allocation.id ? { id: allocation.id } : {}),
-            sourceStatementId: allocation.sourceStatementId,
+            sourceSupplierStatementId: allocation.sourceSupplierStatementId,
             allocatedAmount: allocation.allocatedAmount,
           })),
         )
 
         const statementCandidates =
           await listPaymentSupplierStatementCandidates({
-            supplierCode: asString(detail.supplierCode).trim(),
+            supplierId: asString(detail.counterpartyId).trim(),
             settlementCompanyId: asString(detail.settlementCompanyId).trim(),
           })
         if (cancelled) return
@@ -157,17 +157,17 @@ export function PaymentPrepaymentAllocationModal({
   const columns: TableProps<AllocationRow>['columns'] = [
     {
       title: t('modules.pages.payment.supplierStatement'),
-      key: 'sourceStatementId',
+      key: 'sourceSupplierStatementId',
       render: (_, row) => {
         const selectedByOtherRows = new Set<string>()
         for (const candidate of rows) {
           if (candidate.rowKey !== row.rowKey) {
-            selectedByOtherRows.add(candidate.sourceStatementId)
+            selectedByOtherRows.add(candidate.sourceSupplierStatementId)
           }
         }
         return (
           <Select
-            value={row.sourceStatementId || undefined}
+            value={row.sourceSupplierStatementId || undefined}
             options={statementOptions.map((option) => ({
               ...option,
               disabled: selectedByOtherRows.has(option.value),
@@ -175,7 +175,7 @@ export function PaymentPrepaymentAllocationModal({
             placeholder={t('modules.pages.payment.supplierStatement')}
             showSearch={{ optionFilterProp: 'label' }}
             onChange={(value) => {
-              updateRow(row.rowKey, { sourceStatementId: value })
+              updateRow(row.rowKey, { sourceSupplierStatementId: value })
             }}
             className="w-full"
           />
@@ -188,7 +188,7 @@ export function PaymentPrepaymentAllocationModal({
       width: 180,
       render: (_, row) => {
         const availableAmount = availableAmountByStatementId.get(
-          row.sourceStatementId,
+          row.sourceSupplierStatementId,
         )
         return (
           <InputNumber
@@ -229,11 +229,13 @@ export function PaymentPrepaymentAllocationModal({
 
   const handleSave = async () => {
     if (!paymentId) return
-    const payload = rows.map(({ id, sourceStatementId, allocatedAmount }) => ({
-      ...(id ? { id } : {}),
-      sourceStatementId,
-      allocatedAmount,
-    }))
+    const payload = rows.map(
+      ({ id, sourceSupplierStatementId, allocatedAmount }) => ({
+        ...(id ? { id } : {}),
+        sourceSupplierStatementId,
+        allocatedAmount,
+      }),
+    )
     const validationMessages: PrepaymentAllocationValidationMessages = {
       statementRequired: (lineNumber) =>
         t('modules.pages.payment.statementSelectionRequired', { lineNumber }),
@@ -325,7 +327,7 @@ export function PaymentPrepaymentAllocationModal({
               ...current,
               {
                 rowKey: `new-${nextRowKey.current}`,
-                sourceStatementId: '',
+                sourceSupplierStatementId: '',
                 allocatedAmount: 0,
               },
             ])
@@ -372,14 +374,16 @@ function normalizeCurrentAllocations(
   payment: ModuleRecord,
 ): PaymentPrepaymentAllocation[] {
   return (payment.items || []).flatMap((item, index) => {
-    const sourceStatementId = asString(item.sourceStatementId).trim()
-    if (!sourceStatementId) return []
+    const sourceSupplierStatementId = asString(
+      item.sourceSupplierStatementId ?? item.sourceStatementId,
+    ).trim()
+    if (!sourceSupplierStatementId) return []
     const id = asString(item.id).trim()
     return [
       {
         ...(id ? { id } : {}),
         lineNo: asNumber(item.lineNo) || index + 1,
-        sourceStatementId,
+        sourceSupplierStatementId,
         statementNo: asString(item.statementNo).trim(),
         statementBalanceAmount: asNumber(item.statementBalanceAmount),
         allocatedAmount: asNumber(item.allocatedAmount),

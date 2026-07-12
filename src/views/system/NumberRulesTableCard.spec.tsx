@@ -277,7 +277,7 @@ describe('NumberRulesTableCard', () => {
     vi.clearAllMocks()
   })
 
-  it('渲染工具栏、统计与两张规则表，并执行单据规则列 render', () => {
+  it('渲染工具栏与两张规则表，并执行单据规则列 render', () => {
     render(<NumberRulesTableCard {...defaultProps} />)
 
     expect(screen.getByText('system.numberRules.title')).toBeInTheDocument()
@@ -289,15 +289,14 @@ describe('NumberRulesTableCard', () => {
       screen.getByLabelText('system.numberRules.searchPlaceholder'),
     ).toHaveValue('订单')
     expect(
-      screen.getAllByText('system.numberRules.documentRules'),
-    ).toHaveLength(2)
-    expect(screen.getAllByText('system.numberRules.uploadRules')).toHaveLength(
-      2,
-    )
-    expect(
-      screen.getByText('system.numberRules.disabledUploadRules'),
+      screen.getByText('system.numberRules.documentRules'),
     ).toBeInTheDocument()
-    expect(screen.getAllByText('1')).toHaveLength(3)
+    expect(
+      screen.getByText('system.numberRules.uploadRules'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('system.numberRules.disabledUploadRules'),
+    ).toBeNull()
     expect(screen.getByText('销售订单')).toBeInTheDocument()
     expect(screen.getByText('销售订单编号')).toBeInTheDocument()
     expect(screen.getByText('SO')).toBeInTheDocument()
@@ -339,8 +338,6 @@ describe('NumberRulesTableCard', () => {
         .getAllByTestId('status-tag')
         .find((element) => element.textContent === '禁用'),
     ).toHaveAttribute('data-color', 'red')
-    expect(screen.getAllByText('1')).toHaveLength(2)
-    expect(screen.getByText('2')).toBeInTheDocument()
   })
 
   it('分派工具栏搜索、刷新、状态筛选与两类编辑动作', () => {

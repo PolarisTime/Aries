@@ -16,13 +16,19 @@ vi.mock('@/components/SystemTableToolbar', () => ({
 vi.mock('antd', () => ({
   Button: ({
     'aria-label': ariaLabel,
+    children,
     disabled,
     onClick,
   }: {
     'aria-label'?: string
+    children?: React.ReactNode
     disabled?: boolean
     onClick?: () => void
-  }) => <button aria-label={ariaLabel} disabled={disabled} onClick={onClick} />,
+  }) => (
+    <button aria-label={ariaLabel} disabled={disabled} onClick={onClick}>
+      {children}
+    </button>
+  ),
   Card: ({
     children,
     className,
@@ -160,29 +166,12 @@ describe('GeneralSettingsTableCard', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders statistics', () => {
-    render(<GeneralSettingsTableCard {...defaultProps} />)
+  it('uses a compact toolbar without duplicate statistics', () => {
+    const { container } = render(<GeneralSettingsTableCard {...defaultProps} />)
+    expect(container.querySelector('.general-settings-summary-card')).toBeNull()
     expect(
-      screen.getByText('system.generalSettingsTable.basicParams'),
+      container.querySelector('.general-settings-page-toolbar'),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText('system.generalSettingsTable.systemSwitches'),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('system.generalSettingsTable.currentEnabled'),
-    ).toBeInTheDocument()
-  })
-
-  it('displays counts from props', () => {
-    render(
-      <GeneralSettingsTableCard
-        {...defaultProps}
-        basicSettingRows={[{ id: '1' } as never, { id: '2' } as never]}
-        switchRows={[{ id: '3' } as never]}
-      />,
-    )
-    expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders toolbar', () => {
@@ -308,6 +297,9 @@ describe('GeneralSettingsTableCard', () => {
         onEdit={onEdit}
       />,
     )
+    expect(
+      screen.getByLabelText('system.generalSettingsTable.edit 默认税率'),
+    ).toHaveTextContent('13%')
     fireEvent.click(
       screen.getByLabelText('system.generalSettingsTable.edit 默认税率'),
     )

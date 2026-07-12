@@ -83,11 +83,9 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
     const nextSelectedRows = state.records.filter((row) =>
       nextSelectedKeySet.has(String(row.id)),
     )
-    state.rowSelection?.onChange?.(
-      nextSelectedRowKeys,
-      nextSelectedRows,
-      { type: 'single' },
-    )
+    state.rowSelection?.onChange?.(nextSelectedRowKeys, nextSelectedRows, {
+      type: 'single',
+    })
   }
 
   return (
@@ -229,24 +227,47 @@ export function BusinessGridRouteContent({ pageDef, initialConfig }: Props) {
           state.clearSelection()
           await state.refreshModuleQueries()
         }}
-        onGenerateSupplierStatement={(counterpartyName, start, end) =>
+        onGenerateSupplierStatement={(
+          counterpartyName,
+          start,
+          end,
+          counterpartyId,
+        ) =>
           state.handleStatementGenerate(
             'supplier',
             counterpartyName,
             start,
             end,
+            counterpartyId,
           )
         }
-        onGenerateCustomerStatement={(counterpartyName, start, end) =>
+        onGenerateCustomerStatement={(
+          counterpartyName,
+          start,
+          end,
+          counterpartyId,
+        ) =>
           state.handleStatementGenerate(
             'customer',
             counterpartyName,
             start,
             end,
+            counterpartyId,
           )
         }
-        onGenerateFreightStatement={(counterpartyName, start, end) =>
-          state.handleStatementGenerate('freight', counterpartyName, start, end)
+        onGenerateFreightStatement={(
+          counterpartyName,
+          start,
+          end,
+          counterpartyId,
+        ) =>
+          state.handleStatementGenerate(
+            'freight',
+            counterpartyName,
+            start,
+            end,
+            counterpartyId,
+          )
         }
       />
     </div>

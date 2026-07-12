@@ -84,8 +84,17 @@ vi.mock('@/views/modules/use-module-editor-workspace', () => ({
 }))
 
 vi.mock('./ModuleEditorFormSection', () => ({
-  ModuleEditorFormSection: ({ onCancel, onSave, ...props }: any) => (
-    <div data-testid="form-section" {...props}>
+  ModuleEditorFormSection: ({
+    onCancel,
+    onSave,
+    showActions,
+    ...props
+  }: any) => (
+    <div
+      data-testid="form-section"
+      data-show-actions={String(showActions)}
+      {...props}
+    >
       FormSection
       <button type="button" onClick={() => onSave(false)}>
         form-save
@@ -113,6 +122,7 @@ vi.mock('./ModuleEditorItemsSection', () => ({
     onSave,
     onToggleItemColumn,
     permissions,
+    showFooterActions,
     ...props
   }: any) => (
     <div
@@ -121,6 +131,7 @@ vi.mock('./ModuleEditorItemsSection', () => ({
       data-import-parent-items={String(permissions.importParentItems)}
       data-save={String(permissions.save)}
       data-audit={String(permissions.audit)}
+      data-show-footer-actions={String(showFooterActions)}
       {...props}
     >
       ItemsSection
@@ -162,12 +173,13 @@ vi.mock('./ModuleEditorItemsSection', () => ({
 }))
 
 vi.mock('./WorkspaceOverlay', () => ({
-  WorkspaceOverlay: ({ children, title, open, ...props }: any) => {
+  WorkspaceOverlay: ({ children, footer, title, open, ...props }: any) => {
     if (!open) return null
     return (
       <div data-testid="workspace-overlay" {...props}>
         <div>{title}</div>
         {children}
+        {footer ? <div data-testid="workspace-footer">{footer}</div> : null}
       </div>
     )
   },
@@ -191,8 +203,10 @@ vi.mock('antd', () => {
   Form.useWatch = () => ({})
 
   return {
-    Button: ({ children, ...props }: any) => (
-      <button {...props}>{children}</button>
+    Button: ({ children, loading, ...props }: any) => (
+      <button data-loading={String(Boolean(loading))} {...props}>
+        {children}
+      </button>
     ),
     Card: ({ children, ...props }: any) => <div {...props}>{children}</div>,
     Form,
@@ -281,9 +295,12 @@ vi.mock('antd/es/typography', () => ({
 
 vi.mock('@ant-design/icons', () => ({
   ArrowRightOutlined: () => <span>ArrowRightOutlined</span>,
+  AuditOutlined: () => <span>AuditOutlined</span>,
   CheckCircleFilled: () => <span>CheckCircleFilled</span>,
   CloseCircleFilled: () => <span>CloseCircleFilled</span>,
+  CloseOutlined: () => <span>CloseOutlined</span>,
   ReloadOutlined: () => <span>ReloadOutlined</span>,
+  SaveOutlined: () => <span>SaveOutlined</span>,
   WarningFilled: () => <span>WarningFilled</span>,
 }))
 
@@ -353,6 +370,45 @@ describe('ModuleEditorWorkspace', () => {
   it('renders workspace overlay when open', () => {
     render(<ModuleEditorWorkspace {...defaultProps} />)
     expect(screen.getByTestId('workspace-overlay')).toBeTruthy()
+  })
+
+  it('uses the standard finance editor layout with footer actions', () => {
+    render(<ModuleEditorWorkspace {...defaultProps} moduleKey="receipt" />)
+
+    expect(screen.getByTestId('workspace-overlay')).toHaveClass(
+      'workspace-overlay-panel--finance-editor',
+    )
+    expect(screen.getByTestId('editor-form')).toHaveAttribute(
+      'layout',
+      'vertical',
+    )
+    expect(screen.getByTestId('editor-form')).toHaveClass(
+      'editor-form-shell--finance',
+    )
+    expect(screen.getByTestId('form-section')).toHaveAttribute(
+      'data-show-actions',
+      'false',
+    )
+    expect(screen.getByTestId('items-section')).toHaveAttribute(
+      'data-show-footer-actions',
+      'false',
+    )
+    expect(screen.getByTestId('workspace-footer')).toBeInTheDocument()
+  })
+
+  it('keeps the existing editor layout for non-finance documents', () => {
+    render(
+      <ModuleEditorWorkspace {...defaultProps} moduleKey="purchase-order" />,
+    )
+
+    expect(screen.getByTestId('workspace-overlay')).not.toHaveClass(
+      'workspace-overlay-panel--finance-editor',
+    )
+    expect(screen.getByTestId('editor-form')).toHaveAttribute(
+      'layout',
+      'horizontal',
+    )
+    expect(screen.queryByTestId('workspace-footer')).not.toBeInTheDocument()
   })
 
   it('renders form section', () => {

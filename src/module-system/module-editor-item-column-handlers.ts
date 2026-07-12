@@ -1,3 +1,4 @@
+import type { WarehouseOption } from '@/api/warehouse-options'
 import { recalculateEditorLineItem } from '@/module-system/module-adapter-editor'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
@@ -10,10 +11,6 @@ type MaterialDraftApplicator = (
   item: ModuleLineItem,
   materialRecord?: ModuleRecord | null,
 ) => ModuleLineItem
-
-type MaterialLookupResolver = (
-  materialCode: string,
-) => Promise<ModuleRecord | null>
 
 export function useModuleEditorItemColumnHandlers({ setItems }: Props) {
   const handleItemNumberChange = (
@@ -47,47 +44,42 @@ export function useModuleEditorItemColumnHandlers({ setItems }: Props) {
 
   const handleMaterialSelect = (
     itemId: string,
-    materialCode: string,
+    materialId: string,
     materialRecord?: ModuleRecord | null,
     applyMaterial?: MaterialDraftApplicator,
-    resolveMaterial?: MaterialLookupResolver,
   ) => {
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== itemId) return item
-        const updated = { ...item, materialCode }
+        const updated = {
+          ...item,
+          materialId: materialId || undefined,
+          materialCode: materialRecord
+            ? asString(materialRecord.materialCode).trim()
+            : '',
+        }
         if (applyMaterial) {
           return { ...applyMaterial(updated, materialRecord) }
         }
         return updated
       }),
     )
-
-    if (!materialRecord && applyMaterial && resolveMaterial) {
-      void resolveMaterial(materialCode).then((resolvedMaterial) => {
-        if (!resolvedMaterial) {
-          return
-        }
-        setItems((prev) =>
-          prev.map((item) => {
-            if (item.id !== itemId) {
-              return item
-            }
-            if (asString(item.materialCode).trim() !== materialCode.trim()) {
-              return item
-            }
-            const applied = applyMaterial({ ...item }, resolvedMaterial)
-            return { ...applied }
-          }),
-        )
-      })
-    }
   }
 
-  const handleWarehouseSelect = (itemId: string, warehouseName: string) => {
+  const handleWarehouseSelect = (
+    itemId: string,
+    warehouseId: string,
+    warehouse?: WarehouseOption | null,
+  ) => {
     setItems((prev) =>
       prev.map((item) =>
-        item.id === itemId ? { ...item, warehouseName } : item,
+        item.id === itemId
+          ? {
+              ...item,
+              warehouseId: warehouseId || undefined,
+              warehouseName: warehouse?.warehouseName || '',
+            }
+          : item,
       ),
     )
   }

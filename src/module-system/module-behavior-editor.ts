@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import { findCarrierOption } from '@/api/carrier-options'
 import { getSettlementCompanyOptions } from '@/api/company-settings'
 import { findCustomerOption } from '@/api/customer-options'
+import { findProjectOption } from '@/api/project-options'
 import { findSupplierOption } from '@/api/supplier-options'
 import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 import { parseDateTimeValue } from '@/utils/formatters'
@@ -39,6 +40,81 @@ function applyDefaultSettlementCompany(
   editorForm.settlementCompanyName = asString(
     option?.defaultSettlementCompanyName,
   )
+}
+
+function optionDisplayName(
+  option: { id?: unknown; value?: unknown } | undefined,
+  explicitName: unknown,
+) {
+  const name = asString(explicitName).trim()
+  if (name) {
+    return name
+  }
+  const value = asString(option?.value).trim()
+  return value && value !== asString(option?.id).trim() ? value : ''
+}
+
+function resolveCounterpartyIdentity(type: unknown, id: unknown) {
+  const counterpartyType = asString(type).trim()
+  if (counterpartyType === '客户') {
+    const customer = findCustomerOption(id)
+    return customer
+      ? {
+          id: customer.id,
+          code: customer.customerCode,
+          name: customer.customerName,
+        }
+      : undefined
+  }
+  if (counterpartyType === '供应商') {
+    const supplier = findSupplierOption(id)
+    return supplier
+      ? {
+          id: supplier.id,
+          code: supplier.supplierCode,
+          name: optionDisplayName(supplier, supplier.supplierName),
+        }
+      : undefined
+  }
+  if (counterpartyType === '物流商') {
+    const carrier = findCarrierOption(id)
+    return carrier
+      ? {
+          id: carrier.id,
+          code: carrier.carrierCode,
+          name: optionDisplayName(carrier, carrier.carrierName),
+        }
+      : undefined
+  }
+  return undefined
+}
+
+function clearStatementSources(editorForm: Record<string, unknown>) {
+  editorForm.sourceSupplierStatementId = ''
+  editorForm.sourceFreightStatementId = ''
+}
+
+function clearCounterpartyIdentity(editorForm: Record<string, unknown>) {
+  editorForm.counterpartyId = ''
+  editorForm.counterpartyCode = ''
+  editorForm.counterpartyName = ''
+}
+
+function snapshotCounterpartyIdentity(editorForm: Record<string, unknown>) {
+  const identity = resolveCounterpartyIdentity(
+    editorForm.counterpartyType,
+    editorForm.counterpartyId,
+  )
+  editorForm.counterpartyId = asString(identity?.id)
+  editorForm.counterpartyCode = asString(identity?.code).trim()
+  editorForm.counterpartyName = asString(identity?.name).trim()
+}
+
+function snapshotSupplierIdentity(editorForm: Record<string, unknown>) {
+  const supplier = findSupplierOption(editorForm.supplierId)
+  editorForm.supplierId = asString(supplier?.id)
+  editorForm.supplierCode = asString(supplier?.supplierCode).trim()
+  editorForm.supplierName = asString(supplier?.supplierName).trim()
 }
 
 registerModuleBehavior('carrier', {
@@ -79,10 +155,8 @@ registerModuleBehavior('purchase-order', { defaultOperatorField: 'buyerName' })
 registerModuleBehavior('purchase-order', {
   defaultDraftValues: () => ({ orderDate: currentDateTime() }),
   syncEditorForm(editorForm, ctx) {
-    if (ctx.changedKeys.has('supplierCode')) {
-      const supplier = findSupplierOption(editorForm.supplierCode)
-      editorForm.supplierCode = asString(supplier?.supplierCode).trim()
-      editorForm.supplierName = asString(supplier?.value).trim()
+    if (ctx.changedKeys.has('supplierId')) {
+      snapshotSupplierIdentity(editorForm)
     }
     if (ctx.changedKeys.has('settlementCompanyId')) {
       editorForm.settlementCompanyName = findSettlementCompanyName(
@@ -107,14 +181,49 @@ for (const key of settlementCompanySnapshotModules) {
   registerModuleBehavior(key, {
     syncEditorForm(editorForm, ctx) {
       if (
-        key === 'sales-order' &&
-        (ctx.changedKeys.has('customerName') ||
-          ctx.changedKeys.has('projectName'))
+        (key === 'purchase-inbound' || key === 'supplier-statement') &&
+        ctx.changedKeys.has('supplierId')
       ) {
-        applyDefaultSettlementCompany(
-          editorForm,
-          findCustomerOption(editorForm.customerName, editorForm.projectName),
+        snapshotSupplierIdentity(editorForm)
+      }
+
+      if (
+        (key === 'sales-order' || key === 'receipt') &&
+        ctx.changedKeys.has('customerId')
+      ) {
+        const customer = findCustomerOption(editorForm.customerId)
+        editorForm.customerId = asString(customer?.id)
+        editorForm.customerCode = asString(customer?.customerCode).trim()
+        editorForm.customerName = asString(customer?.customerName).trim()
+        if (!ctx.changedKeys.has('projectId')) {
+          editorForm.projectId = ''
+          editorForm.projectName = ''
+        }
+        if (key === 'receipt') {
+          editorForm.sourceCustomerStatementId = ''
+        }
+        applyDefaultSettlementCompany(editorForm, customer)
+      }
+
+      if (
+        (key === 'sales-order' || key === 'receipt') &&
+        ctx.changedKeys.has('projectId')
+      ) {
+        const project = findProjectOption(
+          editorForm.projectId,
+          editorForm.customerId,
         )
+        editorForm.projectId = asString(project?.id)
+        editorForm.projectName = asString(project?.projectName).trim()
+        if (key === 'receipt') {
+          editorForm.sourceCustomerStatementId = ''
+        }
+      }
+
+      if (
+        (key === 'sales-order' || key === 'receipt') &&
+        (ctx.changedKeys.has('customerId') || ctx.changedKeys.has('projectId'))
+      ) {
         return
       }
 
@@ -145,7 +254,7 @@ registerModuleBehavior('purchase-inbound', {
   defaultDraftValues: () => ({ inboundDate: currentDateTime() }),
   resolveReadonlyEditorFields(record) {
     return asString(record.purchaseOrderNo).trim()
-      ? ['supplierName', 'settlementCompanyId']
+      ? ['supplierId', 'settlementCompanyId']
       : []
   },
   readonlyItemColumns: [
@@ -172,9 +281,7 @@ registerModuleBehavior('purchase-contract', {
 })
 registerModuleBehavior('purchase-contract', {
   resolveReadonlyEditorFields(record) {
-    return asString(record.sourcePurchaseOrderNos).trim()
-      ? ['supplierName']
-      : []
+    return asString(record.sourcePurchaseOrderNos).trim() ? ['supplierId'] : []
   },
   defaultDraftValues: () => {
     const signDate = currentDateTime()
@@ -185,6 +292,10 @@ registerModuleBehavior('purchase-contract', {
     }
   },
   syncEditorForm(editorForm, ctx) {
+    if (ctx.changedKeys.has('supplierId')) {
+      snapshotSupplierIdentity(editorForm)
+    }
+
     const signDateValue = editorForm.signDate
     const signDate = dayjs.isDayjs(signDateValue)
       ? signDateValue
@@ -243,6 +354,45 @@ registerModuleBehavior('supplier-refund-receipt', {
   defaultDraftValues: () => ({ receiptDate: currentDate() }),
 })
 
+registerModuleBehavior('invoice-receipt', {
+  syncEditorForm(editorForm, ctx) {
+    if (ctx.changedKeys.has('supplierId')) {
+      snapshotSupplierIdentity(editorForm)
+    }
+  },
+})
+
+registerModuleBehavior('payment', {
+  syncEditorForm(editorForm, ctx) {
+    if (ctx.changedKeys.has('counterpartyType')) {
+      clearStatementSources(editorForm)
+      if (!ctx.changedKeys.has('counterpartyId')) {
+        clearCounterpartyIdentity(editorForm)
+        return
+      }
+    }
+
+    if (ctx.changedKeys.has('counterpartyId')) {
+      snapshotCounterpartyIdentity(editorForm)
+      clearStatementSources(editorForm)
+      return
+    }
+
+    if (
+      ctx.changedKeys.has('sourceSupplierStatementId') &&
+      editorForm.sourceSupplierStatementId
+    ) {
+      editorForm.sourceFreightStatementId = ''
+    }
+    if (
+      ctx.changedKeys.has('sourceFreightStatementId') &&
+      editorForm.sourceFreightStatementId
+    ) {
+      editorForm.sourceSupplierStatementId = ''
+    }
+  },
+})
+
 registerModuleBehavior('ledger-adjustment', {
   defaultDraftValues: () => ({ adjustmentDate: currentDate() }),
   syncEditorForm(editorForm, ctx) {
@@ -254,12 +404,38 @@ registerModuleBehavior('ledger-adjustment', {
     }
 
     if (ctx.changedKeys.has('counterpartyType')) {
-      editorForm.counterpartyName = ''
-      editorForm.counterpartyCode = ''
+      if (!ctx.changedKeys.has('counterpartyId')) {
+        clearCounterpartyIdentity(editorForm)
+        editorForm.customerId = ''
+        editorForm.projectId = ''
+        editorForm.projectName = ''
+        return
+      }
+    }
+
+    if (ctx.changedKeys.has('counterpartyId')) {
+      snapshotCounterpartyIdentity(editorForm)
+      editorForm.customerId =
+        editorForm.counterpartyType === '客户' ? editorForm.counterpartyId : ''
+      if (editorForm.counterpartyType !== '客户') {
+        editorForm.projectId = ''
+        editorForm.projectName = ''
+      }
+      return
+    }
+
+    if (ctx.changedKeys.has('projectId')) {
+      const project =
+        editorForm.counterpartyType === '客户'
+          ? findProjectOption(editorForm.projectId, editorForm.counterpartyId)
+          : undefined
+      editorForm.projectId = asString(project?.id)
+      editorForm.projectName = asString(project?.projectName).trim()
       return
     }
 
     if (ctx.changedKeys.has('counterpartyName')) {
+      editorForm.counterpartyId = ''
       editorForm.counterpartyCode = ''
     }
   },

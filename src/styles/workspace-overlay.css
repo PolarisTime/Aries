@@ -35,6 +35,14 @@
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
 
+.workspace-overlay-panel--finance-editor .workspace-overlay-body {
+  background: var(--ant-color-bg-layout, #f5f5f5);
+}
+
+.workspace-overlay-panel--finance-editor .workspace-overlay-footer {
+  padding: 12px 24px;
+}
+
 .workspace-overlay-panel--parent-selector {
   width: 100%;
   max-width: none !important;

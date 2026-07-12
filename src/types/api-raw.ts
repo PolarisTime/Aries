@@ -5,7 +5,7 @@
 
 /** 后端返回的原始记录数据（未规范化） */
 export type RawApiRecord = {
-  id?: string | number
+  id?: unknown
   items?: RawApiRecord[]
   [key: string]: unknown
 }

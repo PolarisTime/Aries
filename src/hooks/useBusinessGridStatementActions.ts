@@ -11,6 +11,8 @@ import {
   buildFreightStatementDraftData,
   buildSupplierStatementDraftData,
 } from '@/module-system/module-adapter-statement-drafts'
+import type { EntityId } from '@/types/entity-id'
+import { parseEntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
 import { cloneLineItems } from '@/utils/clone-utils'
 import { asString } from '@/utils/type-narrowing'
@@ -41,10 +43,21 @@ export function useBusinessGridStatementActions({
 
   const handleStatementGenerate = async (
     type: StatementType,
-    counterpartyName: string,
+    _counterpartyName: string,
     startDate: string,
     endDate: string,
+    counterpartyId?: EntityId,
   ) => {
+    const identityField =
+      type === 'supplier'
+        ? 'supplierId'
+        : type === 'customer'
+          ? 'customerId'
+          : 'carrierId'
+    const normalizedCounterpartyId = parseEntityId(
+      counterpartyId,
+      identityField,
+    )
     const statementModuleKey =
       type === 'supplier'
         ? 'supplier-statement'
@@ -60,6 +73,12 @@ export function useBusinessGridStatementActions({
     const candidateRows = await listAllStatementCandidates(
       statementModuleKey,
       '',
+      200,
+      {
+        [identityField]: normalizedCounterpartyId,
+        startDate,
+        endDate,
+      },
     )
     const filteredCandidates = candidateRows.filter((candidate) => {
       const dateField =
@@ -74,14 +93,12 @@ export function useBusinessGridStatementActions({
         return false
       }
 
-      if (type === 'supplier') {
-        return asString(candidate.supplierName) === counterpartyName
-      }
-      if (type === 'customer') {
-        return asString(candidate.customerName) === counterpartyName
-      }
-
-      return asString(candidate.carrierName) === counterpartyName
+      return (
+        parseEntityId(
+          candidate[identityField],
+          `candidate.${identityField}`,
+        ) === normalizedCounterpartyId
+      )
     })
 
     if (!filteredCandidates.length) {
@@ -97,19 +114,22 @@ export function useBusinessGridStatementActions({
     const statementPeriod = { startDate, endDate }
 
     if (type === 'customer') {
-      const recordsByProject = new Map<string, ModuleRecord[]>()
+      const recordsByProject = new Map<EntityId, ModuleRecord[]>()
 
       for (const record of sourceRecords) {
-        const projectName = asString(record.projectName)
-        const current = recordsByProject.get(projectName) || []
+        const projectId = parseEntityId(
+          record.projectId,
+          'sourceOrder.projectId',
+        )
+        const current = recordsByProject.get(projectId) || []
         current.push(record)
-        recordsByProject.set(projectName, current)
+        recordsByProject.set(projectId, current)
       }
 
       await Promise.all(
-        Array.from(recordsByProject, async ([projectName, projectRecords]) => {
+        Array.from(recordsByProject, async ([projectId, projectRecords]) => {
           const localBuildLineItemId = buildDraftLineItemId(
-            `draft-customer-${projectName || 'project'}`,
+            `draft-customer-${projectId}`,
           )
           const draft = buildCustomerStatementDraftData({
             baseDraft: {

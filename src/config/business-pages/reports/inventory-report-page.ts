@@ -31,7 +31,7 @@ export const inventoryReportPageConfig: ModulePageConfig = {
       ),
     },
     {
-      key: 'warehouseName',
+      key: 'warehouseId',
       label: i18next.t('modules.pages.inventoryReport.warehouse'),
       type: 'select',
       options: getWarehouseOptions,

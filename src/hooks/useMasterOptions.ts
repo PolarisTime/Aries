@@ -10,12 +10,19 @@ import {
   fetchCustomerOptions,
 } from '@/api/customer-options'
 import { fetchMaterialCategories } from '@/api/material-categories'
-import { fetchMaterialSearch } from '@/api/materials'
+import {
+  fetchMaterialSearch,
+  type MaterialSearchResponse,
+} from '@/api/materials'
+import { fetchProjectOptions, type ProjectOption } from '@/api/project-options'
 import {
   fetchSupplierOptions,
   type SupplierOption,
 } from '@/api/supplier-options'
-import { fetchWarehouseOptions } from '@/api/warehouse-options'
+import {
+  fetchWarehouseOptions,
+  type WarehouseOption,
+} from '@/api/warehouse-options'
 import {
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
@@ -28,51 +35,32 @@ import {
 } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useAuthStore } from '@/stores/authStore'
+import type { EntityId } from '@/types/entity-id'
+import type { ModuleMasterOptionRequirements } from '@/types/module-page'
 
 interface MasterOptions {
   suppliers: SupplierOption[]
   customers: CustomerOption[]
+  projects: ProjectOption[]
   carriers: CarrierOption[]
   settlementCompanies: SettlementCompanyOption[]
-  warehouses: { value: string; label: string }[]
+  warehouses: WarehouseOption[]
   materialCategories: { value: string; label: string }[]
-  materials: Array<{
-    id?: string
-    materialCode?: string
-    brand?: string
-    category?: string
-    material?: string
-    spec?: string
-    length?: string
-    unit?: string
-    quantityUnit?: string
-    pieceWeightTon?: number
-    piecesPerBundle?: number
-    unitPrice?: number
-    batchNoEnabled?: boolean
-    remark?: string
-    [key: string]: unknown
-  }>
+  materials: MaterialSearchResponse[]
 }
 
-export interface MasterOptionRequirements {
-  suppliers?: boolean
-  customers?: boolean
-  carriers?: boolean
-  settlementCompanies?: boolean
-  warehouses?: boolean
-  materialCategories?: boolean
-  materials?: boolean
-}
+export type MasterOptionRequirements = ModuleMasterOptionRequirements
 
 type OptionDefinition = {
   options?: unknown
+  masterOptionRequirements?: MasterOptionRequirements
 }
 
 function emptyRequirements(): MasterOptionRequirements {
   return {
     suppliers: false,
     customers: false,
+    projects: false,
     carriers: false,
     settlementCompanies: false,
     warehouses: false,
@@ -87,6 +75,12 @@ export function resolveMasterOptionRequirements(
   const requirements = emptyRequirements()
 
   for (const definition of definitions || []) {
+    for (const key of Object.keys(requirements) as Array<
+      keyof MasterOptionRequirements
+    >) {
+      requirements[key] ||= Boolean(definition.masterOptionRequirements?.[key])
+    }
+
     const options = definition.options
     if (typeof options !== 'function') {
       continue
@@ -102,6 +96,9 @@ export function resolveMasterOptionRequirements(
       options === getCustomerProjectOptions
     ) {
       requirements.customers = true
+      if (options === getCustomerProjectOptions) {
+        requirements.projects = true
+      }
       continue
     }
 
@@ -134,11 +131,13 @@ export function resolveMasterOptionRequirements(
 export function useMasterOptions(
   requirements: MasterOptionRequirements = {},
   enabled = true,
+  customerId?: EntityId,
 ) {
   const token = useAuthStore((s) => s.token)
   const normalizedRequirements = {
     suppliers: Boolean(requirements.suppliers),
     customers: Boolean(requirements.customers),
+    projects: Boolean(requirements.projects),
     carriers: Boolean(requirements.carriers),
     settlementCompanies: Boolean(requirements.settlementCompanies),
     warehouses: Boolean(requirements.warehouses),
@@ -203,9 +202,19 @@ export function useMasterOptions(
     staleTime: 300_000,
   })
 
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
+    queryKey: QUERY_KEYS.masterOptions.project(customerId || 'none'),
+    queryFn: () =>
+      customerId ? fetchProjectOptions(customerId) : Promise.resolve([]),
+    enabled:
+      queryEnabled && normalizedRequirements.projects && Boolean(customerId),
+    staleTime: 300_000,
+  })
+
   return {
     suppliers,
     customers,
+    projects,
     carriers,
     settlementCompanies,
     warehouses,
@@ -214,6 +223,7 @@ export function useMasterOptions(
     isLoading:
       suppliersLoading ||
       customersLoading ||
+      projectsLoading ||
       carriersLoading ||
       settlementCompaniesLoading ||
       warehousesLoading ||

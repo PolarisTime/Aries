@@ -326,6 +326,42 @@
   margin-bottom: 16px;
 }
 
+.editor-form-shell--finance {
+  padding: 20px 24px 12px;
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: var(--ant-border-radius-lg, 8px);
+  background: var(--ant-color-bg-container, #fff);
+}
+
+.editor-form-shell--finance .editor-form-head {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+}
+
+.editor-form-shell--finance .ant-form-item-row {
+  display: block;
+}
+
+.editor-form-shell--finance .ant-form-item-label {
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0 0 4px;
+  overflow: visible;
+  text-align: left;
+}
+
+.editor-form-shell--finance .ant-form-item-label > label {
+  justify-content: flex-start;
+  min-height: 22px;
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+}
+
+.editor-form-shell--finance .ant-form-item {
+  margin-bottom: 16px;
+}
+
 .editor-form-row {
   row-gap: 2px;
 }

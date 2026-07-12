@@ -318,7 +318,7 @@ describe('buildModuleEditorDataColumns', () => {
         {
           label: '益海',
           searchText: '益海 yihai yh',
-          value: 'MAT-1',
+          value: '308251467645452280',
         },
       ],
       handleMaterialSelect,
@@ -334,13 +334,17 @@ describe('buildModuleEditorDataColumns', () => {
     const materialColumn = columns.find((c) => c.dataIndex === 'materialCode')
     const element = (materialColumn?.render as Function)(
       'MAT-1',
-      { ...mockItems[0], materialCode: 'MAT-1' },
+      {
+        ...mockItems[0],
+        materialId: '308251467645452280',
+        materialCode: 'MAT-1',
+      },
       0,
     )
 
     expect(isValidElement(element)).toBe(true)
     if (!isValidElement(element)) return
-    expect(element.props.value).toBe('MAT-1')
+    expect(element.props.value).toBe('308251467645452280')
     expect(
       element.props.showSearch.filterOption('yi yh', {
         searchText: '益海 yihai yh',
@@ -354,6 +358,46 @@ describe('buildModuleEditorDataColumns', () => {
 
     element.props.onChange(undefined)
     expect(handleMaterialSelect).toHaveBeenCalledWith('1', '')
+  })
+
+  it('binds the material select value and callback to materialId', () => {
+    const handleMaterialSelect = vi.fn()
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      materialOptions: [
+        {
+          label: '益海 | HRB400',
+          searchText: 'm-001 益海 hrb400',
+          value: '308251467645452289',
+        },
+      ],
+      handleMaterialSelect,
+      itemColumns: [
+        {
+          title: '物料编码',
+          dataIndex: 'materialCode',
+          type: 'string',
+          width: 120,
+        },
+      ],
+    })
+    const element = (columns[0].render as Function)(
+      'M-001',
+      {
+        ...mockItems[0],
+        materialId: '308251467645452289',
+        materialCode: 'M-001',
+      },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBe('308251467645452289')
+
+    element.props.onChange('308251467645452289')
+    expect(handleMaterialSelect).toHaveBeenCalledWith('1', '308251467645452289')
   })
 
   it('uses undefined material value and empty search text fallback', () => {
@@ -399,7 +443,8 @@ describe('buildModuleEditorDataColumns', () => {
       '330050675528433664',
       {
         ...mockItems[0],
-        materialCode: '330050675528433664',
+        materialId: '330050675528433664',
+        materialCode: 'M-HISTORY',
         brand: '中天',
         category: '螺纹钢',
         material: 'HRB400',
@@ -421,12 +466,93 @@ describe('buildModuleEditorDataColumns', () => {
     ])
   })
 
+  it('shows an inactive material only by its existing id and disables reselection', () => {
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      materialOptions: [],
+      itemColumns: [
+        {
+          title: '物料编码',
+          dataIndex: 'materialCode',
+          type: 'string',
+          width: 120,
+        },
+      ],
+    })
+    const element = (columns[0].render as Function)(
+      'M-HISTORY',
+      {
+        ...mockItems[0],
+        materialId: '308251467645452290',
+        materialCode: 'M-HISTORY',
+        brand: '历史品牌',
+        material: 'HRB400',
+      },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBe('308251467645452290')
+    expect(element.props.options).toEqual([
+      expect.objectContaining({
+        value: '308251467645452290',
+        label: '历史品牌 | HRB400',
+        disabled: true,
+      }),
+    ])
+  })
+
+  it('uses the material code as the minimum inactive snapshot label', () => {
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      materialOptions: [],
+      itemColumns: [
+        {
+          title: '物料编码',
+          dataIndex: 'materialCode',
+          type: 'string',
+          width: 120,
+        },
+      ],
+    })
+    const element = (columns[0].render as Function)(
+      'M-HISTORY',
+      {
+        ...mockItems[0],
+        materialId: '308251467645452299',
+        materialCode: 'M-HISTORY',
+      },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.options).toEqual([
+      expect.objectContaining({
+        value: '308251467645452299',
+        label: 'M-HISTORY',
+        disabled: true,
+      }),
+    ])
+  })
+
   it('returns warehouse select props and maps warehouse options', () => {
     const handleWarehouseSelect = vi.fn()
     const columns = buildModuleEditorDataColumns({
       ...defaultProps,
       isItemColumnEditable: vi.fn(() => true),
-      warehouses: [{ label: '一号码头', value: 'WH-1' }],
+      warehouses: [
+        {
+          id: '308251467645452293',
+          label: '一号码头',
+          value: '308251467645452293',
+          warehouseCode: 'WH-1',
+          warehouseName: '一号码头',
+        },
+      ],
       handleWarehouseSelect,
       itemColumns: [
         {
@@ -439,20 +565,115 @@ describe('buildModuleEditorDataColumns', () => {
     })
     const warehouseColumn = columns.find((c) => c.dataIndex === 'warehouseName')
     const element = (warehouseColumn?.render as Function)(
-      'WH-1',
-      { ...mockItems[0], warehouseName: 'WH-1' },
+      '一号码头',
+      {
+        ...mockItems[0],
+        warehouseId: '308251467645452293',
+        warehouseName: '一号码头',
+      },
       0,
     )
 
     expect(isValidElement(element)).toBe(true)
     if (!isValidElement(element)) return
-    expect(element.props.value).toBe('WH-1')
+    expect(element.props.value).toBe('308251467645452293')
     expect(element.props.options).toEqual([
-      { label: '一号码头', value: 'WH-1' },
+      {
+        id: '308251467645452293',
+        label: '一号码头',
+        value: '308251467645452293',
+        warehouseCode: 'WH-1',
+        warehouseName: '一号码头',
+      },
     ])
 
-    element.props.onChange('WH-1')
-    expect(handleWarehouseSelect).toHaveBeenCalledWith('1', 'WH-1')
+    element.props.onChange('308251467645452293')
+    expect(handleWarehouseSelect).toHaveBeenCalledWith(
+      '1',
+      '308251467645452293',
+      expect.objectContaining({ warehouseName: '一号码头' }),
+    )
+  })
+
+  it('binds warehouse selection to warehouseId and passes its snapshot option', () => {
+    const handleWarehouseSelect = vi.fn()
+    const warehouse = {
+      id: '308251467645452291',
+      value: '308251467645452291',
+      label: 'WH-001 / 一号仓',
+      warehouseCode: 'WH-001',
+      warehouseName: '一号仓',
+    }
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      warehouses: [warehouse],
+      handleWarehouseSelect,
+      itemColumns: [
+        {
+          title: '仓库',
+          dataIndex: 'warehouseName',
+          type: 'string',
+          width: 120,
+        },
+      ],
+    })
+    const element = (columns[0].render as Function)(
+      '一号仓',
+      {
+        ...mockItems[0],
+        warehouseId: '308251467645452291',
+        warehouseName: '一号仓',
+      },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBe('308251467645452291')
+
+    element.props.onChange('308251467645452291')
+    expect(handleWarehouseSelect).toHaveBeenCalledWith(
+      '1',
+      '308251467645452291',
+      warehouse,
+    )
+  })
+
+  it('shows an inactive warehouse by id and snapshot without name identity fallback', () => {
+    const columns = buildModuleEditorDataColumns({
+      ...defaultProps,
+      isItemColumnEditable: vi.fn(() => true),
+      warehouses: [],
+      itemColumns: [
+        {
+          title: '仓库',
+          dataIndex: 'warehouseName',
+          type: 'string',
+          width: 120,
+        },
+      ],
+    })
+    const element = (columns[0].render as Function)(
+      '历史仓',
+      {
+        ...mockItems[0],
+        warehouseId: '308251467645452292',
+        warehouseName: '历史仓',
+      },
+      0,
+    )
+
+    expect(isValidElement(element)).toBe(true)
+    if (!isValidElement(element)) return
+    expect(element.props.value).toBe('308251467645452292')
+    expect(element.props.options).toEqual([
+      expect.objectContaining({
+        value: '308251467645452292',
+        label: '历史仓',
+        disabled: true,
+      }),
+    ])
   })
 
   it('uses undefined warehouse and settlement mode values for non-string records', () => {

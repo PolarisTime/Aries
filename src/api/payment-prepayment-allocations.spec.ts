@@ -41,7 +41,7 @@ describe('payment-prepayment-allocations', () => {
       items: [
         {
           id: '801',
-          sourceStatementId: '701',
+          sourceSupplierStatementId: '701',
           allocatedAmount: '200.50',
         },
       ],
@@ -54,11 +54,12 @@ describe('payment-prepayment-allocations', () => {
     expect(mocks.getBusinessModuleDetail).toHaveBeenCalledWith('payment', '901')
   })
 
-  it('lists confirmed statements by authoritative supplier code and settlement company without filtering by supplier name', async () => {
+  it('lists confirmed statements by authoritative supplier id and settlement company', async () => {
     mocks.listAllBusinessModuleRows.mockResolvedValue([
       {
         id: '701',
         statementNo: 'GYDZ-001',
+        supplierId: '401',
         supplierCode: 'SUP-001',
         supplierName: '供应商新名称',
         settlementCompanyId: '301',
@@ -67,6 +68,7 @@ describe('payment-prepayment-allocations', () => {
       {
         id: '702',
         statementNo: 'GYDZ-002',
+        supplierId: '402',
         supplierCode: 'SUP-002',
         supplierName: '供应商甲',
         settlementCompanyId: '301',
@@ -75,6 +77,7 @@ describe('payment-prepayment-allocations', () => {
       {
         id: '703',
         statementNo: 'GYDZ-003',
+        supplierId: '401',
         supplierCode: 'SUP-001',
         supplierName: '供应商甲',
         settlementCompanyId: '302',
@@ -83,6 +86,7 @@ describe('payment-prepayment-allocations', () => {
       {
         id: '704',
         statementNo: 'GYDZ-004',
+        supplierId: '401',
         supplierCode: 'SUP-001',
         supplierName: '供应商甲',
         settlementCompanyId: '301',
@@ -92,7 +96,7 @@ describe('payment-prepayment-allocations', () => {
 
     await expect(
       listPaymentSupplierStatementCandidates({
-        supplierCode: 'SUP-001',
+        supplierId: '401',
         settlementCompanyId: '301',
       }),
     ).resolves.toEqual([
@@ -101,6 +105,7 @@ describe('payment-prepayment-allocations', () => {
     expect(mocks.listAllBusinessModuleRows).toHaveBeenCalledWith(
       'supplier-statement',
       {
+        supplierId: '401',
         settlementCompanyId: '301',
         status: '已确认',
       },
@@ -120,7 +125,7 @@ describe('payment-prepayment-allocations', () => {
         {
           id: '801',
           lineNo: 1,
-          sourceStatementId: '701',
+          sourceSupplierStatementId: '701',
           statementNo: 'GYDZ-001',
           statementBalanceAmount: '300.25',
           allocatedAmount: '200.50',
@@ -132,7 +137,7 @@ describe('payment-prepayment-allocations', () => {
       replacePaymentPrepaymentAllocations('901', [
         {
           id: '801',
-          sourceStatementId: '701',
+          sourceSupplierStatementId: '701',
           allocatedAmount: '200.50',
         },
       ]),
@@ -140,7 +145,7 @@ describe('payment-prepayment-allocations', () => {
       {
         id: '801',
         lineNo: 1,
-        sourceStatementId: '701',
+        sourceSupplierStatementId: '701',
         statementNo: 'GYDZ-001',
         statementBalanceAmount: 300.25,
         allocatedAmount: 200.5,
@@ -152,13 +157,25 @@ describe('payment-prepayment-allocations', () => {
         items: [
           {
             id: '801',
-            sourceStatementId: '701',
+            sourceSupplierStatementId: '701',
             allocatedAmount: 200.5,
           },
         ],
       },
       { headers: { 'X-Idempotency-Key': 'test-key' } },
     )
+  })
+
+  it('rejects an unsafe numeric supplier statement id', async () => {
+    await expect(
+      replacePaymentPrepaymentAllocations('901', [
+        {
+          sourceSupplierStatementId: (Number.MAX_SAFE_INTEGER + 1) as never,
+          allocatedAmount: 10,
+        },
+      ]),
+    ).rejects.toThrow('items[0].sourceSupplierStatementId')
+    expect(mocks.httpPut).not.toHaveBeenCalled()
   })
 
   it('sends an empty collection to clear all allocations', async () => {

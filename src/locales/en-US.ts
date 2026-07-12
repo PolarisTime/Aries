@@ -2153,6 +2153,8 @@ export const enUS: MessageSchema = {
     },
     printTemplate: {
       title: 'Print Templates',
+      description:
+        'Manage print templates by document type and settlement company, with preview, copy, and file synchronization support.',
       newTemplate: 'New Template',
       editTemplate: 'Edit Template',
       deleteTemplate: 'Delete Print Template',
@@ -2355,11 +2357,17 @@ export const enUS: MessageSchema = {
       confirmRotation: 'Confirm rotation of {{type}} key',
     },
     securityCenter: {
+      title: 'Security Center',
+      description:
+        'Manage active sessions, API keys, and master keys. Credential and key changes take effect immediately and affect system access security.',
       sessionsTab: 'Sessions',
       apiKeysTab: 'API Keys',
       securityKeysTab: 'Master Keys',
     },
     systemParameters: {
+      title: 'System Parameters',
+      description:
+        'Manage business parameters, document numbering, and object storage in one place. Review changes before saving because they affect subsequent operations.',
       generalTab: 'Parameters & Switches',
       numberRulesTab: 'Number & Upload Rules',
       ossTab: 'OSS Settings',
@@ -2368,6 +2376,8 @@ export const enUS: MessageSchema = {
       title: 'OSS Settings',
       description:
         'Configure object storage for attachments. Secrets should be encrypted by the backend and used only on the server.',
+      connectionSection: 'Connection',
+      securitySection: 'Credentials & Security',
       pendingApi: 'Server Saved',
       pendingApiHint:
         'Uploads, previews and downloads use the latest server-side configuration after saving.',
@@ -2418,6 +2428,8 @@ export const enUS: MessageSchema = {
     },
     accessControl: {
       title: 'Access Control',
+      description:
+        "Manage user accounts, role action permissions, and the permission catalog. Changes affect the corresponding users' access scope.",
       tabUsers: 'User Accounts',
       tabRoles: 'Role Permissions',
       tabPermissions: 'Permission Directory',

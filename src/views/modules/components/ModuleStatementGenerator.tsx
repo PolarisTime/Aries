@@ -2,6 +2,8 @@ import { Button, Modal, Space, Tag, Typography } from 'antd'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResultModal } from '@/components/AppResultModal'
+import type { EntityId } from '@/types/entity-id'
+import { parseEntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 
@@ -23,23 +25,38 @@ const NAME_FIELD: Record<string, keyof ModuleRecord> = {
   freight: 'carrierName',
 }
 
+const ID_FIELD: Record<string, keyof ModuleRecord> = {
+  supplier: 'supplierId',
+  customer: 'customerId',
+  freight: 'carrierId',
+}
+
 function extractCounterparty(
   rows: ModuleRecord[],
   type: string,
   t: (key: string) => string,
-): string {
+): { id?: EntityId; name: string } {
   const nameField = NAME_FIELD[type]
-  const names = new Set(
-    rows.flatMap((r) => {
-      const v = asString(r[nameField])
-      return v ? [v] : []
-    }),
-  )
-  if (names.size === 0)
+  const names = rows.flatMap((r) => {
+    const v = asString(r[nameField])
+    return v ? [v] : []
+  })
+  if (names.length === 0)
     throw new Error(t('modules.statement.counterpartyNotFound'))
-  if (names.size > 1)
+
+  const idField = ID_FIELD[type]
+  if (!idField) {
+    throw new Error(t('modules.statement.counterpartyNotFound'))
+  }
+  const ids = new Set(
+    rows.map((row, index) =>
+      parseEntityId(row[idField], `selectedRows[${index}].${String(idField)}`),
+    ),
+  )
+  if (ids.size !== 1) {
     throw new Error(t('modules.statement.multipleCounterparties'))
-  return [...names][0]
+  }
+  return { id: [...ids][0], name: names[0] }
 }
 
 function extractDateRange(
@@ -67,6 +84,7 @@ interface Props {
     counterpartyName: string,
     startDate: string,
     endDate: string,
+    counterpartyId?: EntityId,
   ) => Promise<void>
 }
 
@@ -100,7 +118,12 @@ export function ModuleStatementGenerator({
     if (!summary) return
     try {
       setGenerating(true)
-      await onGenerate(summary.counterparty, summary.start, summary.end)
+      await onGenerate(
+        summary.counterparty.name,
+        summary.start,
+        summary.end,
+        summary.counterparty.id,
+      )
       setResult({
         status: 'success',
         message: t('modules.statement.generated'),
@@ -163,7 +186,7 @@ export function ModuleStatementGenerator({
               <span className="text-gray-500">
                 {t('modules.statement.counterpartyUnit')}
               </span>
-              <Tag color="blue">{summary.counterparty}</Tag>
+              <Tag color="blue">{summary.counterparty.name}</Tag>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-gray-500">

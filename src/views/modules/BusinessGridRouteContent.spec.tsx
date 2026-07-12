@@ -344,11 +344,9 @@ describe('BusinessGridRouteContent', () => {
 
     mocks.gridContentProps!.onRowClick(record)
 
-    expect(onSelectionChange).toHaveBeenCalledWith(
-      ['row-1'],
-      [record],
-      { type: 'single' },
-    )
+    expect(onSelectionChange).toHaveBeenCalledWith(['row-1'], [record], {
+      type: 'single',
+    })
     expect(state.openDetail).not.toHaveBeenCalled()
   })
 
@@ -384,11 +382,9 @@ describe('BusinessGridRouteContent', () => {
 
     mocks.gridContentProps!.onRowClick(record)
 
-    expect(onSelectionChange).toHaveBeenCalledWith(
-      ['row-1'],
-      [record],
-      { type: 'single' },
-    )
+    expect(onSelectionChange).toHaveBeenCalledWith(['row-1'], [record], {
+      type: 'single',
+    })
     expect(state.openDetail).not.toHaveBeenCalled()
   })
 
@@ -589,16 +585,19 @@ describe('BusinessGridRouteContent', () => {
       '供应商甲',
       '2026-01-01',
       '2026-01-31',
+      '700520000000000001',
     )
     mocks.gridOverlayProps!.onGenerateCustomerStatement(
       '客户甲',
       '2026-02-01',
       '2026-02-28',
+      '700520000000000002',
     )
     mocks.gridOverlayProps!.onGenerateFreightStatement(
       '物流甲',
       '2026-03-01',
       '2026-03-31',
+      '700520000000000003',
     )
 
     expect(state.clearSelection).toHaveBeenCalled()
@@ -608,18 +607,21 @@ describe('BusinessGridRouteContent', () => {
       '供应商甲',
       '2026-01-01',
       '2026-01-31',
+      '700520000000000001',
     )
     expect(state.handleStatementGenerate).toHaveBeenCalledWith(
       'customer',
       '客户甲',
       '2026-02-01',
       '2026-02-28',
+      '700520000000000002',
     )
     expect(state.handleStatementGenerate).toHaveBeenCalledWith(
       'freight',
       '物流甲',
       '2026-03-01',
       '2026-03-31',
+      '700520000000000003',
     )
   })
 

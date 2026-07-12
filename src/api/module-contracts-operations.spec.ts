@@ -14,6 +14,7 @@ describe('module-contracts-operations', () => {
     expect(config.path).toBe('/purchase-orders')
     expect(config.nativeFilterKeys).toContain('keyword')
     expect(config.nativeFilterKeys).toContain('supplierName')
+    expect(config.nativeFilterKeys).toContain('supplierId')
     expect(config.dateRangeMapping?.orderDate.startKey).toBe('startDate')
     expect(config.dateRangeMapping?.orderDate.endKey).toBe('endDate')
   })
@@ -22,6 +23,9 @@ describe('module-contracts-operations', () => {
     const config = operationModuleEndpointContracts['purchase-inbound']
     expect(config).toBeDefined()
     expect(config.path).toBe('/purchase-inbounds')
+    expect(config.nativeFilterKeys).toEqual(
+      expect.arrayContaining(['supplierId', 'currentRecordId']),
+    )
     expect(config.dateRangeMapping?.inboundDate.startKey).toBe('startDate')
   })
 
@@ -30,6 +34,7 @@ describe('module-contracts-operations', () => {
     expect(config).toBeDefined()
     expect(config.path).toBe('/purchase-refunds')
     expect(config.nativeFilterKeys).toContain('supplierName')
+    expect(config.nativeFilterKeys).toContain('supplierId')
     expect(config.nativeFilterKeys).toContain('settlementCompanyId')
     expect(config.dateRangeMapping?.refundDate.startKey).toBe('startDate')
     expect(config.dateRangeMapping?.refundDate.endKey).toBe('endDate')
@@ -41,6 +46,9 @@ describe('module-contracts-operations', () => {
     expect(config.path).toBe('/sales-orders')
     expect(config.nativeFilterKeys).toContain('customerName')
     expect(config.nativeFilterKeys).toContain('projectName')
+    expect(config.nativeFilterKeys).toEqual(
+      expect.arrayContaining(['customerId', 'projectId', 'currentRecordId']),
+    )
     expect(config.dateRangeMapping?.deliveryDate.startKey).toBe('startDate')
   })
 
@@ -48,6 +56,9 @@ describe('module-contracts-operations', () => {
     const config = operationModuleEndpointContracts['sales-outbound']
     expect(config).toBeDefined()
     expect(config.path).toBe('/sales-outbounds')
+    expect(config.nativeFilterKeys).toEqual(
+      expect.arrayContaining(['customerId', 'projectId', 'currentRecordId']),
+    )
     expect(config.dateRangeMapping?.outboundDate.startKey).toBe('startDate')
   })
 
@@ -57,6 +68,14 @@ describe('module-contracts-operations', () => {
     expect(config.path).toBe('/freight-bills')
     expect(config.nativeFilterKeys).toContain('carrierCode')
     expect(config.nativeFilterKeys).toContain('carrierName')
+    expect(config.nativeFilterKeys).toEqual(
+      expect.arrayContaining([
+        'carrierId',
+        'customerId',
+        'projectId',
+        'currentRecordId',
+      ]),
+    )
   })
 
   it('contains purchase-contract config', () => {

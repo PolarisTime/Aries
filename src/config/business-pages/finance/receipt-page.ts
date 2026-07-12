@@ -1,6 +1,7 @@
 import i18next from 'i18next'
 import {
-  customerOptions,
+  getCustomerOptions,
+  getCustomerProjectOptions,
   getSettlementCompanyOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig } from '@/types/module-page'
@@ -26,7 +27,7 @@ export const receiptsPageConfig: ModulePageConfig = {
       key: 'customerName',
       label: CUSTOMER_NAME_LABEL,
       type: 'select',
-      options: customerOptions,
+      options: getCustomerOptions,
     },
     {
       key: 'status',
@@ -135,7 +136,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       label: i18next.t('modules.pages.receipt.relatedStatement'),
-      key: 'sourceStatementId',
+      key: 'sourceCustomerStatementId',
       row: 1,
     },
     {
@@ -187,11 +188,11 @@ export const receiptsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'customerName',
+      key: 'customerId',
       label: i18next.t('modules.pages.receipt.customer'),
       type: 'select',
       required: true,
-      options: customerOptions,
+      options: getCustomerOptions,
       row: 1,
     },
     {
@@ -202,17 +203,34 @@ export const receiptsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
+      key: 'customerName',
+      label: i18next.t('modules.pages.receipt.customer'),
+      type: 'input',
+      required: true,
+      disabled: true,
+      row: 1,
+    },
+    {
+      key: 'projectId',
+      label: i18next.t('modules.pages.receipt.project'),
+      type: 'select',
+      required: true,
+      options: getCustomerProjectOptions,
+      row: 1,
+    },
+    {
       key: 'projectName',
       label: i18next.t('modules.pages.receipt.project'),
       type: 'input',
       required: true,
+      disabled: true,
       row: 1,
     },
     {
-      key: 'sourceStatementId',
+      key: 'sourceCustomerStatementId',
       label: i18next.t('modules.pages.receipt.relatedStatement'),
       type: 'select',
-      required: true,
+      required: false,
       row: 1,
     },
     {
@@ -283,12 +301,14 @@ export const receiptsPageConfig: ModulePageConfig = {
   saveFields: {
     scalar: [
       'receiptNo',
+      'customerId',
       'customerCode',
       'customerName',
+      'projectId',
       'projectName',
       'settlementCompanyId',
       'settlementCompanyName',
-      'sourceStatementId',
+      'sourceCustomerStatementId',
       'receiptDate',
       'payType',
       'amount',

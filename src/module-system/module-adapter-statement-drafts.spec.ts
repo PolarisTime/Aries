@@ -12,12 +12,14 @@ let itemCounter = 0
 const buildLineItemId = () => `item-${++itemCounter}`
 
 describe('buildSupplierStatementDraftData', () => {
-  const baseDraft = { id: '', supplierName: '' }
+  const baseDraft = { id: '', supplierId: '', supplierName: '' }
   const sourceInbounds = [
     {
       id: '1',
       inboundNo: 'RK001',
       inboundDate: '2026-01-15',
+      supplierId: '700520000000000001',
+      supplierCode: 'SUP-001',
       supplierName: '供应商A',
       totalAmount: 1000,
       items: [
@@ -39,6 +41,8 @@ describe('buildSupplierStatementDraftData', () => {
       id: '2',
       inboundNo: 'RK002',
       inboundDate: '2026-02-20',
+      supplierId: '700520000000000001',
+      supplierCode: 'SUP-001',
       supplierName: '供应商A',
       totalAmount: 2000,
       items: [
@@ -65,6 +69,8 @@ describe('buildSupplierStatementDraftData', () => {
     })
 
     expect(result.supplierName).toBe('供应商A')
+    expect(result.supplierId).toBe('700520000000000001')
+    expect(result.supplierCode).toBe('SUP-001')
     expect(result.startDate).toBe('2026-01-15')
     expect(result.endDate).toBe('2026-02-20')
     expect(result.purchaseAmount).toBe(3000)
@@ -73,6 +79,28 @@ describe('buildSupplierStatementDraftData', () => {
     expect(result.sourceInboundNos).toBe('RK001, RK002')
     expect(result.items).toHaveLength(3)
     expect(result.remark).toContain('RK001')
+  })
+
+  it('rejects source inbounds from different stable supplier ids', () => {
+    expect(() =>
+      buildSupplierStatementDraftData({
+        baseDraft,
+        sourceInbounds: [
+          sourceInbounds[0],
+          {
+            ...sourceInbounds[1],
+            supplierId: '700520000000000002',
+            supplierName: '供应商A',
+          },
+        ],
+        payments: [],
+        today: '2026-03-01',
+        statementPeriod: undefined,
+        defaultFullPayment: false,
+        cloneLineItems,
+        buildLineItemId,
+      }),
+    ).toThrow('supplierId')
   })
 
   it('uses payment records when default full payment is disabled', () => {
@@ -165,6 +193,8 @@ describe('buildSupplierStatementDraftData', () => {
         id: '1',
         inboundNo: 'RK001',
         inboundDate: '2026-01-15',
+        supplierId: '700520000000000001',
+        supplierCode: 'SUP-001',
         supplierName: '供应商A',
         totalAmount: 'invalid',
         items: [
@@ -193,6 +223,8 @@ describe('buildSupplierStatementDraftData', () => {
         id: '1',
         inboundNo: '',
         inboundDate: '2026-01-15',
+        supplierId: '700520000000000001',
+        supplierCode: 'SUP-001',
         supplierName: '',
         totalAmount: 'invalid',
         items: [
@@ -354,6 +386,103 @@ describe('buildCustomerStatementDraftData', () => {
       sourceSalesOrderItemId: 'item-1',
     })
   })
+
+  it('keeps stable customer and project identities across draft and lines', () => {
+    const result = buildCustomerStatementDraftData({
+      baseDraft,
+      sourceOrders: [
+        {
+          id: '700520000000000011',
+          orderNo: 'XS011',
+          deliveryDate: '2026-03-10',
+          customerId: '700520000000000001',
+          customerCode: 'CUS-001',
+          customerName: '客户新名称',
+          projectId: '700520000000000002',
+          projectName: '项目新名称',
+          totalAmount: 3000,
+          items: [
+            {
+              id: '700520000000000101',
+              customerId: '700520000000000001',
+              projectId: '700520000000000002',
+              amount: 3000,
+            },
+          ],
+        },
+      ] as any[],
+      today: '2026-03-15',
+      statementPeriod: undefined,
+      defaultReceiptAmountZero: false,
+      cloneLineItems,
+      buildLineItemId,
+    })
+
+    expect(result).toMatchObject({
+      customerId: '700520000000000001',
+      customerCode: 'CUS-001',
+      customerName: '客户新名称',
+      projectId: '700520000000000002',
+      projectName: '项目新名称',
+    })
+    expect(result.items[0]).toMatchObject({
+      sourceSalesOrderItemId: '700520000000000101',
+      customerId: '700520000000000001',
+      projectId: '700520000000000002',
+    })
+  })
+
+  it('rejects same-name source orders with different customer ids', () => {
+    expect(() =>
+      buildCustomerStatementDraftData({
+        baseDraft,
+        sourceOrders: [
+          {
+            ...sourceOrders[0],
+            customerId: '700520000000000001',
+            projectId: '700520000000000010',
+          },
+          {
+            ...sourceOrders[0],
+            id: '2',
+            customerId: '700520000000000002',
+            projectId: '700520000000000010',
+          },
+        ],
+        today: '2026-03-15',
+        statementPeriod: undefined,
+        defaultReceiptAmountZero: false,
+        cloneLineItems,
+        buildLineItemId,
+      }),
+    ).toThrow('customerId')
+  })
+
+  it('rejects partially missing stable project identities', () => {
+    expect(() =>
+      buildCustomerStatementDraftData({
+        baseDraft,
+        sourceOrders: [
+          {
+            ...sourceOrders[0],
+            customerId: '700520000000000001',
+            projectId: '700520000000000010',
+          },
+          {
+            ...sourceOrders[0],
+            id: '2',
+            customerId: '700520000000000001',
+            projectId: undefined,
+          },
+        ],
+        today: '2026-03-15',
+        statementPeriod: undefined,
+        defaultReceiptAmountZero: false,
+        cloneLineItems,
+        buildLineItemId,
+      }),
+    ).toThrow('projectId')
+  })
 })
 
 describe('buildFreightStatementDraftData', () => {
@@ -475,5 +604,69 @@ describe('buildFreightStatementDraftData', () => {
     expect(result.totalWeight).toBe(30)
     expect(result.totalFreight).toBe(300)
     expect(result.items[0]).toMatchObject({ sourceNo: '' })
+  })
+
+  it('keeps carrier and direct freight source identities', () => {
+    const result = buildFreightStatementDraftData({
+      baseDraft,
+      sourceBills: [
+        {
+          id: '701000000000000001',
+          billNo: 'W001',
+          billTime: '2026-04-01',
+          carrierId: '701000000000000010',
+          carrierCode: 'WL-001',
+          carrierName: '物流商新名称',
+          customerId: '701000000000000020',
+          projectId: '701000000000000021',
+          totalWeight: 50,
+          totalFreight: 500,
+          items: [
+            {
+              id: '701000000000000002',
+              customerId: '701000000000000020',
+              projectId: '701000000000000021',
+              weightTon: 50,
+            },
+          ],
+        },
+      ] as any[],
+      today: '2026-04-10',
+      statementPeriod: undefined,
+      cloneLineItems,
+      buildLineItemId,
+    })
+
+    expect(result).toMatchObject({
+      carrierId: '701000000000000010',
+      carrierCode: 'WL-001',
+      carrierName: '物流商新名称',
+    })
+    expect(result.items[0]).toMatchObject({
+      sourceFreightBillId: '701000000000000001',
+      sourceFreightBillItemId: '701000000000000002',
+      customerId: '701000000000000020',
+      projectId: '701000000000000021',
+    })
+  })
+
+  it('rejects same-name source bills with different carrier ids', () => {
+    expect(() =>
+      buildFreightStatementDraftData({
+        baseDraft,
+        sourceBills: [
+          { ...sourceBills[0], carrierId: '701000000000000010' },
+          {
+            ...sourceBills[0],
+            id: '2',
+            carrierId: '701000000000000011',
+          },
+        ],
+        today: '2026-04-10',
+        statementPeriod: undefined,
+        cloneLineItems,
+        buildLineItemId,
+      }),
+    ).toThrow('carrierId')
   })
 })

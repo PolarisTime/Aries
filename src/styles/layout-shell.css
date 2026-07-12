@@ -764,7 +764,7 @@
   transition:
     color var(--ant-motion-duration-fast) var(--ant-motion-ease-in-out),
     background-color var(--ant-motion-duration-fast)
-      var(--ant-motion-ease-in-out),
+    var(--ant-motion-ease-in-out),
     border-color var(--ant-motion-duration-fast) var(--ant-motion-ease-in-out);
 }
 
@@ -773,9 +773,7 @@
   background: var(--theme-surface-hover);
 }
 
-.editor-workspace-tabs-antd.ant-tabs-card
-  > .ant-tabs-nav
-  .ant-tabs-tab-active {
+.editor-workspace-tabs-antd.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
   color: var(--theme-primary);
   background: var(--theme-surface);
   border-color: var(--theme-card-border);
@@ -1042,6 +1040,97 @@
   max-height: 100%;
   margin-inline: auto;
   overflow: hidden;
+}
+
+.settings-tabbed-page {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.settings-standard-page {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.settings-page-header {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 4px 0 8px;
+}
+
+.settings-page-header > .ant-typography {
+  margin: 0;
+}
+
+.settings-page-header > .ant-typography + .ant-typography {
+  margin-top: 4px;
+}
+
+.settings-page-header-with-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-navigation-tabs {
+  flex: 0 0 auto;
+}
+
+.settings-navigation-tabs > .ant-tabs-nav {
+  margin-bottom: 0;
+}
+
+.settings-page-content {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-top: 16px;
+  overflow: hidden;
+}
+
+.settings-page-content > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.settings-standard-tabs {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.settings-standard-tabs > .ant-tabs-nav {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+
+.settings-standard-tabs > .ant-tabs-body-holder,
+.settings-standard-tabs-body,
+.settings-standard-tabs-content {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settings-standard-tabs > .ant-tabs-body-holder {
+  padding-top: 16px;
+}
+
+.settings-standard-tabs-content > .page-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .system-parameters-header {
@@ -1862,11 +1951,7 @@
   gap: 32px;
   padding: 24px 28px;
   background:
-    linear-gradient(
-      120deg,
-      var(--theme-primary-soft),
-      transparent 42%
-    ),
+    linear-gradient(120deg, var(--theme-primary-soft), transparent 42%),
     var(--theme-surface);
   border: 1px solid var(--theme-card-border);
   border-radius: var(--ant-border-radius-lg);
@@ -2158,7 +2243,7 @@
   bottom: 16px;
   left: 0;
   width: 3px;
-  content: '';
+  content: "";
   background: var(--theme-primary);
   border-radius: 0 2px 2px 0;
 }

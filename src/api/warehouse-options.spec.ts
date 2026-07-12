@@ -25,6 +25,7 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   fetchWarehouseOptions,
   getWarehouseOptions,
+  normalizeWarehouseOptions,
   reloadWarehouseOptions,
 } from './warehouse-options'
 
@@ -40,8 +41,73 @@ describe('warehouse-options', () => {
       expect.objectContaining({
         endpoint: '/warehouses/options',
         queryKey: QUERY_KEYS.masterOptions.warehouse,
+        normalizer: normalizeWarehouseOptions,
       }),
     )
+  })
+
+  it('normalizes option identity and authoritative warehouse snapshots', () => {
+    expect(
+      normalizeWarehouseOptions([
+        {
+          id: 42,
+          value: 42,
+          label: 'WH-001 / 一号仓',
+          warehouseCode: ' WH-001 ',
+          warehouseName: ' 一号仓 ',
+        },
+      ]),
+    ).toEqual([
+      {
+        id: '42',
+        value: '42',
+        label: 'WH-001 / 一号仓',
+        warehouseCode: 'WH-001',
+        warehouseName: '一号仓',
+      },
+    ])
+  })
+
+  it('accepts a stable value id when the endpoint omits the duplicate id field', () => {
+    expect(
+      normalizeWarehouseOptions([
+        {
+          value: '308251467645452289',
+          label: '一号仓',
+          warehouseCode: 'WH-001',
+          warehouseName: '一号仓',
+        },
+      ]),
+    ).toEqual([
+      expect.objectContaining({
+        id: '308251467645452289',
+        value: '308251467645452289',
+      }),
+    ])
+  })
+
+  it('fails closed for name-valued or precision-lost warehouse identity', () => {
+    expect(() =>
+      normalizeWarehouseOptions([
+        {
+          value: '一号仓',
+          label: '一号仓',
+          warehouseCode: 'WH-001',
+          warehouseName: '一号仓',
+        },
+      ]),
+    ).toThrow('warehouses[0].id')
+
+    expect(() =>
+      normalizeWarehouseOptions([
+        {
+          id: Number.MAX_SAFE_INTEGER + 1,
+          label: '一号仓',
+          warehouseCode: 'WH-001',
+          warehouseName: '一号仓',
+        },
+      ]),
+    ).toThrow('warehouses[0].id')
   })
 
   it('exports fetchWarehouseOptions', () => {

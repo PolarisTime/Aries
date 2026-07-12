@@ -190,6 +190,26 @@ describe('ModuleEditorFormSection', () => {
     expect(screen.getByTestId('form-field')).toHaveTextContent('Field 1')
   })
 
+  it('uses a three-column grid for finance documents', () => {
+    const config = {
+      ...defaultProps.config,
+      formFields: [createField({ key: 'amount', label: 'Amount' })],
+    }
+
+    render(
+      <ModuleEditorFormSection
+        {...defaultProps}
+        config={config}
+        layoutVariant="finance"
+      />,
+    )
+
+    expect(screen.getByTestId('form-field').parentElement).toHaveAttribute(
+      'data-lg',
+      '8',
+    )
+  })
+
   it('filters form fields using current form values before grouping rows', () => {
     const formValues = { paymentPurpose: 'PURCHASE_PREPAYMENT' }
     mocks.useWatch.mockReturnValue(formValues)

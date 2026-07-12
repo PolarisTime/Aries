@@ -113,6 +113,34 @@ describe('statements', () => {
         { params: { keyword: 'test', page: 0, size: 200, status: '启用' } },
       )
     })
+
+    it('maps generic currentRecordId to currentStatementId without leaking the generic key', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: { content: [], totalElements: 0 },
+      })
+
+      await listAllStatementCandidates('supplier-statement', '', 200, {
+        supplierId: '700520000000000001',
+        currentRecordId: '700520000000000099',
+      })
+
+      expect(httpGetMock).toHaveBeenCalledWith(
+        '/supplier-statements/candidates',
+        {
+          params: {
+            supplierId: '700520000000000001',
+            currentStatementId: '700520000000000099',
+            keyword: '',
+            page: 0,
+            size: 200,
+          },
+        },
+      )
+      expect(
+        httpGetMock.mock.calls[0][1].params.currentRecordId,
+      ).toBeUndefined()
+    })
   })
 
   describe('listStatementCandidatePage', () => {
@@ -153,27 +181,37 @@ describe('statements', () => {
   })
 
   describe('normalizeRecord', () => {
-    it('uses asId for id when available', () => {
+    it('normalizes the root and nested declared entity ids', () => {
       const result = normalizeRecord({ id: '123', name: 'test' })
       expect(result.id).toBe('123')
     })
 
-    it('falls back to asString when asId returns empty', () => {
-      const result = normalizeRecord({ id: null, name: 'test' })
-      expect(result.id).toBe('')
+    it('rejects a missing root entity id', () => {
+      expect(() => normalizeRecord({ id: null, name: 'test' })).toThrow('id')
     })
 
-    it('normalizes items array ids', () => {
+    it('normalizes item and relation ids without touching protocol ids', () => {
       const result = normalizeRecord({
         id: '1',
+        customerId: 7,
+        traceId: 'trace-1',
         items: [
-          { id: 'item-1', name: 'a' },
-          { id: 'item-2', name: 'b' },
+          {
+            id: '2',
+            materialId: 8,
+            sourcePurchaseOrderItemId: '700520000000000001',
+            name: 'a',
+          },
         ],
       })
-      expect(result.items).toHaveLength(2)
-      expect(result.items![0].id).toBe('item-1')
-      expect(result.items![1].id).toBe('item-2')
+      expect(result.customerId).toBe('7')
+      expect(result.traceId).toBe('trace-1')
+      expect(result.items).toHaveLength(1)
+      expect(result.items![0]).toMatchObject({
+        id: '2',
+        materialId: '8',
+        sourcePurchaseOrderItemId: '700520000000000001',
+      })
     })
 
     it('sets items to undefined when not an array', () => {
@@ -181,12 +219,15 @@ describe('statements', () => {
       expect(result.items).toBeUndefined()
     })
 
-    it('normalizes item id fallback', () => {
-      const result = normalizeRecord({
-        id: '1',
-        items: [{ id: null, name: 'a' }],
-      })
-      expect(result.items![0].id).toBe('')
+    it('rejects unsafe nested number ids', () => {
+      expect(() =>
+        normalizeRecord({
+          id: '1',
+          items: [
+            { id: '2', warehouseId: Number.MAX_SAFE_INTEGER + 1, name: 'a' },
+          ],
+        }),
+      ).toThrow('items[0].warehouseId')
     })
   })
 })

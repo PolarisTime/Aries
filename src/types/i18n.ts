@@ -2039,6 +2039,7 @@ export interface MessageSchema {
     }
     printTemplate: {
       title: string
+      description: string
       newTemplate: string
       editTemplate: string
       deleteTemplate: string
@@ -2104,6 +2105,8 @@ export interface MessageSchema {
       saveFailed: string
     }
     systemParameters: {
+      title: string
+      description: string
       generalTab: string
       numberRulesTab: string
       ossTab: string
@@ -2111,6 +2114,8 @@ export interface MessageSchema {
     ossSettings: {
       title: string
       description: string
+      connectionSection: string
+      securitySection: string
       pendingApi: string
       pendingApiHint: string
       saveFailed: string
@@ -2287,12 +2292,15 @@ export interface MessageSchema {
       confirmRotation: string
     }
     securityCenter: {
+      title: string
+      description: string
       sessionsTab: string
       apiKeysTab: string
       securityKeysTab: string
     }
     accessControl: {
       title: string
+      description: string
       tabUsers: string
       tabRoles: string
       tabPermissions: string

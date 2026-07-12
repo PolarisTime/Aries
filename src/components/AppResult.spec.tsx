@@ -49,22 +49,26 @@ vi.mock('antd', () => ({
       typeof classNames === 'function' ? classNames({ props: {} }) : classNames
 
     return (
-    <section
-      className={className}
-      data-status={String(status)}
-      data-testid="result"
-    >
-      <div className={resolvedClassNames?.icon} data-testid="result-icon" />
-      <div className={resolvedClassNames?.title} data-testid="title">{title}</div>
-      {subTitle ? (
-        <div className={resolvedClassNames?.subTitle} data-testid="subtitle">
-          {subTitle}
+      <section
+        className={className}
+        data-status={String(status)}
+        data-testid="result"
+      >
+        <div className={resolvedClassNames?.icon} data-testid="result-icon" />
+        <div className={resolvedClassNames?.title} data-testid="title">
+          {title}
         </div>
-      ) : null}
-      {extra ? (
-        <div className={resolvedClassNames?.extra} data-testid="extra">{extra}</div>
-      ) : null}
-    </section>
+        {subTitle ? (
+          <div className={resolvedClassNames?.subTitle} data-testid="subtitle">
+            {subTitle}
+          </div>
+        ) : null}
+        {extra ? (
+          <div className={resolvedClassNames?.extra} data-testid="extra">
+            {extra}
+          </div>
+        ) : null}
+      </section>
     )
   },
   Typography: {
@@ -138,7 +142,12 @@ describe('AppResult', () => {
   })
 
   it('uses Ant Design semantic regions for the business result layout', () => {
-    render(<AppResult status="success" extra={<button type="button">打印</button>} />)
+    render(
+      <AppResult
+        status="success"
+        extra={<button type="button">打印</button>}
+      />,
+    )
 
     expect(screen.getByTestId('result')).toHaveClass('app-result')
     expect(screen.getByTestId('result-icon')).toHaveClass('app-result__icon')

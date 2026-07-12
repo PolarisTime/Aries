@@ -53,7 +53,7 @@ export function validatePrepaymentAllocations(
   const statementIds = new Set<string>()
   for (let index = 0; index < items.length; index += 1) {
     const item = items[index]
-    const statementId = asString(item.sourceStatementId).trim()
+    const statementId = asString(item.sourceSupplierStatementId).trim()
     if (!statementId) {
       return messages.statementRequired(index + 1)
     }
@@ -86,7 +86,7 @@ export function buildPrepaymentStatementOptions(
 ): PrepaymentStatementOption[] {
   const allocationsByStatementId = new Map(
     currentAllocations.map((allocation) => [
-      allocation.sourceStatementId,
+      allocation.sourceSupplierStatementId,
       allocation,
     ]),
   )
@@ -107,13 +107,13 @@ export function buildPrepaymentStatementOptions(
   }
 
   for (const allocation of currentAllocations) {
-    if (options.has(allocation.sourceStatementId)) continue
+    if (options.has(allocation.sourceSupplierStatementId)) continue
     const availableAmount =
       allocation.statementBalanceAmount + allocation.allocatedAmount
-    options.set(allocation.sourceStatementId, {
-      value: allocation.sourceStatementId,
+    options.set(allocation.sourceSupplierStatementId, {
+      value: allocation.sourceSupplierStatementId,
       label: formatOptionLabel(
-        allocation.statementNo || allocation.sourceStatementId,
+        allocation.statementNo || allocation.sourceSupplierStatementId,
         availableAmount,
       ),
       availableAmount,

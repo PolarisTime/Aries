@@ -38,7 +38,7 @@ describe('purchaseContractsPageConfig', () => {
 
     expect(filterRows).toEqual({
       keyword: 1,
-      supplierName: 1,
+      supplierId: 1,
       status: 1,
       signDate: 2,
     })
@@ -71,6 +71,11 @@ describe('purchaseContractsPageConfig', () => {
 
   it('has formFields', () => {
     expect(purchaseContractsPageConfig.formFields).toBeDefined()
+    expect(
+      purchaseContractsPageConfig.formFields?.find(
+        (field) => field.key === 'supplierId',
+      ),
+    ).toEqual(expect.objectContaining({ type: 'select', required: true }))
   })
 
   it('has parentImport config', () => {
@@ -81,11 +86,15 @@ describe('purchaseContractsPageConfig', () => {
   it('maps parent purchase order fields into an archived contract draft', () => {
     const draft = parentImport.mapParentToDraft?.({
       orderDate: '2025-03-18',
+      supplierId: '700520000000000001',
+      supplierCode: 'SUP-001',
       supplierName: '供应商A',
       buyerName: '采购员A',
     })
 
     expect(draft).toMatchObject({
+      supplierId: '700520000000000001',
+      supplierCode: 'SUP-001',
       supplierName: '供应商A',
       buyerName: '采购员A',
       signDate: '2025-03-18',
@@ -97,6 +106,8 @@ describe('purchaseContractsPageConfig', () => {
 
   it('maps parent purchase order draft defaults when optional fields are missing', () => {
     expect(parentImport.mapParentToDraft?.({ id: 'po-1' })).toEqual({
+      supplierId: undefined,
+      supplierCode: '',
       supplierName: '',
       buyerName: '',
       signDate: undefined,

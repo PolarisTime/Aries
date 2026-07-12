@@ -1,6 +1,7 @@
 import { MenuOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
 import { Checkbox, Input, InputNumber, Select } from 'antd'
+import type { WarehouseOption } from '@/api/warehouse-options'
 import { StatusTag } from '@/components/StatusTag'
 import {
   getEditorItemMin,
@@ -17,6 +18,7 @@ import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import { asNumber, asString } from '@/utils/type-narrowing'
 
 interface MaterialOption {
+  disabled?: boolean
   label: string
   searchText: string
   value: string
@@ -25,13 +27,17 @@ interface MaterialOption {
 interface EditableRenderOptions {
   config: ModulePageConfig
   materialOptions: MaterialOption[]
-  warehouses: Array<{ label: string; value: string }>
+  warehouses: WarehouseOption[]
   formatCellValue: (value: unknown, columnType?: string) => string
   isItemColumnEditable: (columnKey: string, record?: ModuleLineItem) => boolean
   handleItemNumberChange: (itemId: string, key: string, value: unknown) => void
   handleItemInputChange: (itemId: string, key: string, value: string) => void
-  handleMaterialSelect: (itemId: string, materialCode: string) => void
-  handleWarehouseSelect: (itemId: string, warehouseName: string) => void
+  handleMaterialSelect: (itemId: string, materialId: string) => void
+  handleWarehouseSelect: (
+    itemId: string,
+    warehouseId: string,
+    warehouse?: WarehouseOption | null,
+  ) => void
   handleSettlementModeChange: (itemId: string, settlementMode: string) => void
 }
 
@@ -91,26 +97,56 @@ function withCurrentMaterialOption(
   materialOptions: MaterialOption[],
   record: ModuleLineItem,
 ) {
-  const materialCode = asString(record.materialCode).trim()
-  if (!materialCode) {
+  const materialId = asString(record.materialId).trim()
+  if (!materialId) {
     return materialOptions
   }
-  if (materialOptions.some((option) => option.value === materialCode)) {
+  if (materialOptions.some((option) => option.value === materialId)) {
     return materialOptions
   }
 
-  const label = buildMaterialSnapshotLabel(record)
+  const materialCode = asString(record.materialCode).trim()
+  const label = buildMaterialSnapshotLabel(record) || materialCode
   if (!label) {
     return materialOptions
   }
 
   return [
     {
+      disabled: true,
       label,
-      searchText: buildMaterialSnapshotLabel(record).toLowerCase(),
-      value: materialCode,
+      searchText: [materialCode, label].filter(Boolean).join(' ').toLowerCase(),
+      value: materialId,
     },
     ...materialOptions,
+  ]
+}
+
+function withCurrentWarehouseOption(
+  warehouses: WarehouseOption[],
+  record: ModuleLineItem,
+): Array<WarehouseOption & { disabled?: boolean }> {
+  const warehouseId = asString(record.warehouseId).trim()
+  if (
+    !warehouseId ||
+    warehouses.some((option) => option.value === warehouseId)
+  ) {
+    return warehouses
+  }
+  const warehouseName = asString(record.warehouseName).trim()
+  if (!warehouseName) {
+    return warehouses
+  }
+  return [
+    {
+      disabled: true,
+      id: warehouseId,
+      value: warehouseId,
+      label: warehouseName,
+      warehouseCode: '',
+      warehouseName,
+    },
+    ...warehouses,
   ]
 }
 
@@ -157,12 +193,7 @@ function buildEditableColumnRender({
       }
 
       if (key === 'materialCode') {
-        const materialValue =
-          typeof record.materialCode === 'string'
-            ? record.materialCode.trim()
-            : buildMaterialSnapshotLabel(record)
-              ? asString(record.materialCode).trim()
-              : ''
+        const materialValue = asString(record.materialId).trim()
         return (
           <Select
             value={materialValue || undefined}
@@ -186,24 +217,22 @@ function buildEditableColumnRender({
       }
 
       if (key === 'warehouseName') {
+        const warehouseValue = asString(record.warehouseId).trim()
         return (
           <Select
-            value={
-              typeof record.warehouseName === 'string'
-                ? record.warehouseName
-                : undefined
-            }
+            value={warehouseValue || undefined}
             showSearch={{ filterOption: createPinyinFilterOption() }}
             allowClear
             className="w-full"
             placeholder="选择码头"
-            onChange={(selectedValue: string) =>
-              handleWarehouseSelect(record.id, selectedValue)
-            }
-            options={warehouses.map((warehouse) => ({
-              label: warehouse.label,
-              value: warehouse.value,
-            }))}
+            onChange={(selectedValue) => {
+              const warehouseId = String(selectedValue || '')
+              const warehouse = warehouses.find(
+                (option) => option.value === warehouseId,
+              )
+              handleWarehouseSelect(record.id, warehouseId, warehouse || null)
+            }}
+            options={withCurrentWarehouseOption(warehouses, record)}
           />
         )
       }

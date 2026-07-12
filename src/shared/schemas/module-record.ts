@@ -1,14 +1,36 @@
 import { z } from 'zod'
+import { type AuditActorId, parseAuditActorId } from '@/types/audit-actor-id'
 import { materialInfoSchema, weightPriceSchema } from './api'
 
-const snowflakeIdSchema = z.union([z.string(), z.number()])
+const snowflakeIdSchema = z
+  .string()
+  .refine(
+    (value) =>
+      /^[1-9]\d*$/.test(value) && BigInt(value) <= 9_223_372_036_854_775_807n,
+  )
+
+const auditActorIdSchema = z.custom<AuditActorId>((value) => {
+  try {
+    parseAuditActorId(value)
+    return true
+  } catch {
+    return false
+  }
+})
 
 // ── 行项目 Schema ──────────────────────────────────────
 
 /** 行项目通用字段 — looseObject 保留模块特有字段兼容存量 */
 const lineItemSchema = z
   .looseObject({
-    id: z.string(),
+    id: snowflakeIdSchema,
+    customerId: snowflakeIdSchema.optional(),
+    projectId: snowflakeIdSchema.optional(),
+    supplierId: snowflakeIdSchema.optional(),
+    carrierId: snowflakeIdSchema.optional(),
+    materialId: snowflakeIdSchema.optional(),
+    warehouseId: snowflakeIdSchema.optional(),
+    settlementCompanyId: snowflakeIdSchema.optional(),
     sourceNo: z.string().optional(),
     sourcePurchaseOrderItemId: snowflakeIdSchema.optional(),
     sourceSalesOrderItemId: snowflakeIdSchema.optional(),
@@ -32,13 +54,26 @@ export type LineItem = z.infer<typeof lineItemSchema>
 
 /** 模块记录通用字段 */
 export const moduleRecordSchema = z.looseObject({
-  id: z.string(),
+  id: snowflakeIdSchema,
+  customerId: snowflakeIdSchema.optional(),
+  projectId: snowflakeIdSchema.optional(),
+  supplierId: snowflakeIdSchema.optional(),
+  carrierId: snowflakeIdSchema.optional(),
+  counterpartyId: snowflakeIdSchema.optional(),
+  settlementCompanyId: snowflakeIdSchema.optional(),
+  sourcePurchaseOrderId: snowflakeIdSchema.optional(),
+  sourceSalesOrderId: snowflakeIdSchema.optional(),
+  sourceCustomerStatementId: snowflakeIdSchema.optional(),
+  sourceSupplierStatementId: snowflakeIdSchema.optional(),
+  sourceFreightStatementId: snowflakeIdSchema.optional(),
+  sourceStatementId: snowflakeIdSchema.optional(),
   status: z.string().optional(),
   remark: z.string().optional(),
   items: z.array(lineItemSchema).optional(),
-  attachmentIds: z.array(z.string()).optional(),
-  createdBy: z.union([z.string(), z.number()]).optional(),
+  attachmentIds: z.array(snowflakeIdSchema).optional(),
+  createdBy: auditActorIdSchema.optional(),
   createdAt: z.string().optional(),
+  updatedBy: auditActorIdSchema.optional(),
   updatedAt: z.string().optional(),
 })
 

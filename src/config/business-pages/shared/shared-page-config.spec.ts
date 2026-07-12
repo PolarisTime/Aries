@@ -171,27 +171,39 @@ describe('freightStatementPageConfig', () => {
     expect(pi.enforceUniqueRelation).toBe(true)
     expect(pi.allowMultipleSelection).toBe(true)
 
-    const validation = pi.validateBeforeOpen?.({ carrierName: '' })
+    const validation = pi.validateBeforeOpen?.({ carrierId: undefined })
     expect(validation).toBe('请先选择物流商，再选择物流单')
 
-    const noValidation = pi.validateBeforeOpen?.({ carrierName: '物流A' })
+    const noValidation = pi.validateBeforeOpen?.({ carrierId: '501' })
     expect(noValidation).toBeNull()
 
     const validateResult = pi.validateParentImport?.({
-      currentRecord: { carrierName: '物流A' },
-      parentRecord: { status: '已审核', carrierName: '物流A' },
+      currentRecord: { carrierId: '501', carrierName: '物流A' },
+      parentRecord: {
+        status: '已审核',
+        carrierId: '501',
+        carrierName: '物流A',
+      },
     })
     expect(validateResult).toBeNull()
 
     const validateWrongStatus = pi.validateParentImport?.({
-      currentRecord: { carrierName: '物流A' },
-      parentRecord: { status: '草稿', carrierName: '物流A' },
+      currentRecord: { carrierId: '501', carrierName: '物流A' },
+      parentRecord: {
+        status: '草稿',
+        carrierId: '501',
+        carrierName: '物流A',
+      },
     })
     expect(validateWrongStatus).toBe('只能选择已审核的物流单生成物流对账单')
 
     const validateWrongCarrier = pi.validateParentImport?.({
-      currentRecord: { carrierName: '物流A' },
-      parentRecord: { status: '已审核', carrierName: '物流B' },
+      currentRecord: { carrierId: '501', carrierName: '物流A' },
+      parentRecord: {
+        status: '已审核',
+        carrierId: '502',
+        carrierName: '物流B',
+      },
     })
     expect(validateWrongCarrier).toBe(
       '只能选择同一物流商的物流单生成物流对账单',

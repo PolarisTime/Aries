@@ -32,7 +32,12 @@ describe('freight-bill-candidates', () => {
     })
 
     const result = await listFreightBillImportCandidatePage(
-      { keyword: ' OB2026000001 ', customerName: '客户甲' },
+      {
+        keyword: ' OB2026000001 ',
+        customerId: '700520000000000001',
+        projectId: '700520000000000002',
+        currentRecordId: '700520000000000099',
+      },
       0,
       15,
     )
@@ -42,7 +47,9 @@ describe('freight-bill-candidates', () => {
       {
         params: {
           keyword: 'OB2026000001',
-          customerName: '客户甲',
+          customerId: '700520000000000001',
+          projectId: '700520000000000002',
+          currentBillId: '700520000000000099',
           page: 0,
           size: 15,
         },

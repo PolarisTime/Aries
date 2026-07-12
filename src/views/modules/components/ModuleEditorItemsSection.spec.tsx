@@ -218,6 +218,16 @@ describe('ModuleEditorItemsSection', () => {
     )
   })
 
+  it('keeps item tools but moves submit actions out when requested', () => {
+    render(
+      <ModuleEditorItemsSection {...defaultProps} showFooterActions={false} />,
+    )
+
+    expect(screen.getByText('modules.itemsSection.addItem')).toBeInTheDocument()
+    expect(screen.getByTestId('column-settings')).toBeInTheDocument()
+    expect(screen.queryByTestId('footer-actions')).not.toBeInTheDocument()
+  })
+
   it('hides add button when addManualItems is false', () => {
     render(
       <ModuleEditorItemsSection

@@ -60,9 +60,7 @@ describe('ServerErrorView', () => {
 
   it('renders server error content', () => {
     render(<ServerErrorView />)
-    expect(screen.getByTestId('app-result')).toHaveClass(
-      'server-error-result',
-    )
+    expect(screen.getByTestId('app-result')).toHaveClass('server-error-result')
     expect(screen.getByTestId('app-result')).toHaveAttribute(
       'data-status',
       'warning',

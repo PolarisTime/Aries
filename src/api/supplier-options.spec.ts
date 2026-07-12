@@ -24,6 +24,9 @@ vi.mock('@/lib/query-cached-options', () => ({
 import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   fetchSupplierOptions,
+  findSupplierOption,
+  getSupplierEntityOptions,
+  getSupplierNameFilterOptions,
   getSupplierOptions,
   normalizeSupplierOptions,
   reloadSupplierOptions,
@@ -77,6 +80,54 @@ describe('supplier-options', () => {
     expect(result).toEqual(options)
   })
 
+  it('builds supplier entity options whose value is the snowflake id', () => {
+    getMock.mockReturnValue([
+      {
+        id: '700520000000000001',
+        supplierCode: 'SUP-001',
+        supplierName: '供应商A',
+        value: '700520000000000001',
+        label: 'SUP-001 / 供应商A',
+      },
+    ])
+
+    expect(getSupplierEntityOptions()).toEqual([
+      expect.objectContaining({
+        id: '700520000000000001',
+        value: '700520000000000001',
+        label: 'SUP-001 / 供应商A',
+      }),
+    ])
+    expect(findSupplierOption('700520000000000001')?.supplierCode).toBe(
+      'SUP-001',
+    )
+    expect(findSupplierOption('SUP-001')).toBeUndefined()
+    expect(findSupplierOption('供应商A')).toBeUndefined()
+  })
+
+  it('builds deduplicated legacy name filters for reports without supplierId', () => {
+    getMock.mockReturnValue([
+      {
+        id: '700520000000000001',
+        supplierCode: 'SUP-001',
+        supplierName: '同名供应商',
+        value: '700520000000000001',
+        label: 'SUP-001 / 同名供应商',
+      },
+      {
+        id: '700520000000000002',
+        supplierCode: 'SUP-002',
+        supplierName: '同名供应商',
+        value: '700520000000000002',
+        label: 'SUP-002 / 同名供应商',
+      },
+    ])
+
+    expect(getSupplierNameFilterOptions()).toEqual([
+      { value: '同名供应商', label: '同名供应商' },
+    ])
+  })
+
   it('reloadSupplierOptions delegates to cached.reload', async () => {
     const options = [{ id: '1', value: 's1', label: '供应商A' }]
     reloadMock.mockResolvedValue(options)
@@ -88,77 +139,87 @@ describe('supplier-options', () => {
   })
 
   describe('normalizeSupplierOptions', () => {
-    it('normalizes the stable supplier code snapshot', () => {
+    it('normalizes a supplier option to a stable id value and snapshots', () => {
       const result = normalizeSupplierOptions([
         {
-          id: 123 as any,
-          supplierCode: 456,
+          id: 123,
+          supplierCode: ' SUP-001 ',
           value: '供应商甲',
           label: '供应商甲',
-        } as any,
+        },
       ])
 
       expect(result[0]).toMatchObject({
         id: '123',
-        supplierCode: '456',
-        value: '供应商甲',
-        label: '供应商甲',
+        supplierCode: 'SUP-001',
+        supplierName: '供应商甲',
+        value: '123',
+        label: 'SUP-001 / 供应商甲',
       })
     })
 
-    it('converts id to string when present', () => {
+    it('converts a safe numeric id to string', () => {
       const result = normalizeSupplierOptions([
-        { id: 123 as any, value: 'v1', label: 'L1' },
+        { id: 123, value: 'v1', label: 'L1' },
       ])
       expect(result[0].id).toBe('123')
+      expect(result[0].value).toBe('123')
     })
 
-    it('keeps id undefined when null', () => {
+    it('rejects an unsafe numeric supplier id', () => {
+      expect(() =>
+        normalizeSupplierOptions([
+          {
+            id: Number.MAX_SAFE_INTEGER + 1,
+            value: 'v1',
+            label: 'L1',
+          },
+        ]),
+      ).toThrow('suppliers[0].id')
+    })
+
+    it.each([
+      null,
+      undefined,
+      '',
+      'not-an-id',
+    ])('rejects a missing or invalid supplier id: %s', (id) => {
+      expect(() =>
+        normalizeSupplierOptions([{ id, value: 'v1', label: 'L1' }]),
+      ).toThrow('suppliers[0].id')
+    })
+
+    it('falls back to the source label when supplier name is absent', () => {
       const result = normalizeSupplierOptions([
-        { id: null as any, value: 'v1', label: 'L1' },
+        { id: '1', value: '', label: '供应商显示名' },
       ])
-      expect(result[0].id).toBeUndefined()
+      expect(result[0]).toMatchObject({
+        supplierName: '供应商显示名',
+        value: '1',
+        label: '供应商显示名 / #1',
+      })
     })
 
-    it('keeps id undefined when undefined', () => {
-      const result = normalizeSupplierOptions([{ value: 'v1', label: 'L1' }])
-      expect(result[0].id).toBeUndefined()
-    })
-
-    it('converts empty label to empty string', () => {
-      const result = normalizeSupplierOptions([{ value: 'v1', label: '' }])
-      expect(result[0].label).toBe('')
-    })
-
-    it('falls back to empty string when label is falsy', () => {
+    it('uses the id-only label when all snapshots are empty', () => {
       const result = normalizeSupplierOptions([
-        { value: 'v1', label: null as any },
+        { id: '1', value: '', label: '' },
       ])
-      expect(result[0].label).toBe('')
-    })
-
-    it('falls back to empty string when value is falsy', () => {
-      const result = normalizeSupplierOptions([
-        { value: null as any, label: 'L1' },
-      ])
-      expect(result[0].value).toBe('')
-    })
-
-    it('preserves valid label and value', () => {
-      const result = normalizeSupplierOptions([
-        { value: 's1', label: '供应商' },
-      ])
-      expect(result[0]).toEqual({ id: undefined, value: 's1', label: '供应商' })
+      expect(result[0]).toMatchObject({
+        id: '1',
+        supplierName: '',
+        value: '1',
+        label: '#1',
+      })
     })
 
     it('handles multiple options', () => {
       const result = normalizeSupplierOptions([
         { id: '1', value: 'a', label: 'A' },
-        { id: undefined, value: 'b', label: 'B' },
+        { id: '2', value: 'b', label: 'B' },
       ])
       expect(result).toHaveLength(2)
       expect(result[0].id).toBe('1')
-      expect(result[1].id).toBeUndefined()
+      expect(result[1].id).toBe('2')
     })
   })
 })

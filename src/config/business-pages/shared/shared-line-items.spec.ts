@@ -10,6 +10,7 @@ describe('transformFreightItems', () => {
       warehouseName: '一号库',
       items: [
         {
+          materialId: '308251467645452289',
           materialCode: 'M001',
           materialName: '螺纹钢',
           brand: '宝钢',
@@ -23,6 +24,8 @@ describe('transformFreightItems', () => {
           quantity: 10,
           quantityUnit: '件',
           weightTon: 0.5,
+          warehouseId: '308251467645452290',
+          warehouseName: '一号库',
         },
       ],
     })
@@ -32,8 +35,10 @@ describe('transformFreightItems', () => {
     expect(result[0].customerName).toBe('客户A')
     expect(result[0].projectName).toBe('项目X')
     expect(result[0].materialCode).toBe('M001')
+    expect(result[0].materialId).toBe('308251467645452289')
     expect(result[0].materialName).toBe('螺纹钢')
     expect(result[0].warehouseName).toBe('一号库')
+    expect(result[0].warehouseId).toBe('308251467645452290')
     expect(result[0].quantity).toBe(10)
   })
 
@@ -50,6 +55,36 @@ describe('transformFreightItems', () => {
     })
 
     expect(result[0].materialName).toBe('宝钢')
+  })
+
+  it('never pairs a legacy item warehouse name with a parent warehouse id', () => {
+    const result = transformFreightItems({
+      warehouseId: '308251467645452291',
+      warehouseName: '单头仓',
+      items: [
+        {
+          warehouseName: '历史明细仓',
+        },
+      ],
+    })
+
+    expect(result[0]).toMatchObject({
+      warehouseId: undefined,
+      warehouseName: '历史明细仓',
+    })
+  })
+
+  it('inherits the parent warehouse id and name as one snapshot pair', () => {
+    const result = transformFreightItems({
+      warehouseId: '308251467645452292',
+      warehouseName: '单头仓',
+      items: [{}],
+    })
+
+    expect(result[0]).toMatchObject({
+      warehouseId: '308251467645452292',
+      warehouseName: '单头仓',
+    })
   })
 
   it('handles items with only whitespace materialName', () => {

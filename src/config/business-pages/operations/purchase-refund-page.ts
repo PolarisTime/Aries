@@ -45,7 +45,7 @@ export const purchaseRefundsPageConfig: ModulePageConfig = {
       ),
     },
     {
-      key: 'supplierName',
+      key: 'supplierId',
       label: SUPPLIER_NAME_LABEL,
       type: 'select',
       options: getSupplierOptions,
@@ -290,6 +290,9 @@ export const purchaseRefundsPageConfig: ModulePageConfig = {
     buttonText: i18next.t('modules.pages.purchaseRefund.importPurchaseOrder'),
     candidateQueryType: 'purchase-refund-source',
     enforceUniqueRelation: true,
+    buildParentFilters: (currentRecord) => ({
+      supplierId: currentRecord.supplierId,
+    }),
     hiddenSelectorColumnKeys: ['buyerName', 'status'],
     resolveParentRecord: (parentRecord) =>
       getPurchaseRefundPreview(String(parentRecord.id)),
@@ -297,6 +300,7 @@ export const purchaseRefundsPageConfig: ModulePageConfig = {
       sourcePurchaseOrderId:
         parentRecord.sourcePurchaseOrderId || parentRecord.id,
       purchaseOrderNo: parentRecord.purchaseOrderNo || '',
+      supplierId: parentRecord.supplierId,
       supplierCode: parentRecord.supplierCode || '',
       supplierName: parentRecord.supplierName || '',
       settlementCompanyId: parentRecord.settlementCompanyId,

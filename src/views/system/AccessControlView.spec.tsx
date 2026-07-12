@@ -65,6 +65,14 @@ vi.mock('antd', () => ({
       ))}
     </div>
   ),
+  Typography: {
+    Title: ({ children }: { children?: React.ReactNode }) => (
+      <h2>{children}</h2>
+    ),
+    Paragraph: ({ children }: { children?: React.ReactNode }) => (
+      <p>{children}</p>
+    ),
+  },
 }))
 
 vi.mock('@/views/modules/components/BusinessGridPageSkeleton', () => ({
@@ -107,6 +115,16 @@ describe('AccessControlView', () => {
     vi.clearAllMocks()
     grantOnly(['user-account', 'role', 'permission'])
     mockLocation.searchStr = ''
+  })
+
+  it('renders the standard access control heading', () => {
+    render(<AccessControlView />)
+    expect(
+      screen.getByRole('heading', { name: 'system.accessControl.title' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.accessControl.description'),
+    ).toBeInTheDocument()
   })
 
   it('renders all permitted tabs and defaults to users when query is absent', async () => {

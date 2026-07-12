@@ -3,9 +3,19 @@ import {
   enabledStatusOptions,
   getSettlementCompanyOptions,
 } from '@/constants/module-options'
+import { registerModuleBehavior } from '@/module-system/module-behavior-registry-core'
 import type { ModulePageConfig } from '@/types/module-page'
 import { actionSet, buildMasterOverview, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
+import {
+  normalizeCarrierDraftRecord,
+  normalizeCarrierEditorRecord,
+} from './carrier-vehicle-adapter'
+
+registerModuleBehavior('carrier', {
+  normalizeEditorRecord: normalizeCarrierEditorRecord,
+  normalizeDraftRecord: normalizeCarrierDraftRecord,
+})
 
 export const carriersPageConfig: ModulePageConfig = {
   key: 'carrier',
@@ -276,18 +286,7 @@ export const carriersPageConfig: ModulePageConfig = {
       'carrierName',
       'contactName',
       'contactPhone',
-      'vehiclePlate',
-      'vehicleContact',
-      'vehiclePhone',
-      'vehicleRemark',
-      'vehiclePlate2',
-      'vehicleContact2',
-      'vehiclePhone2',
-      'vehicleRemark2',
-      'vehiclePlate3',
-      'vehicleContact3',
-      'vehiclePhone3',
-      'vehicleRemark3',
+      'vehicles',
       'priceMode',
       'defaultSettlementCompanyId',
       'defaultSettlementCompanyName',

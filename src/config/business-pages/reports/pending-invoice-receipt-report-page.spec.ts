@@ -8,6 +8,10 @@ vi.mock('@/constants/module-options', () => ({
   getSupplierOptions: [],
 }))
 
+vi.mock('@/api/supplier-options', () => ({
+  getSupplierNameFilterOptions: () => [{ value: '供应商A', label: '供应商A' }],
+}))
+
 import { pendingInvoiceReceiptReportPageConfig } from './pending-invoice-receipt-report-page'
 
 describe('pendingInvoiceReceiptReportPageConfig', () => {
@@ -34,6 +38,18 @@ describe('pendingInvoiceReceiptReportPageConfig', () => {
     expect(
       pendingInvoiceReceiptReportPageConfig.filters!.length,
     ).toBeGreaterThanOrEqual(3)
+  })
+
+  it('uses the backend-compatible supplier name filter until the report exposes supplierId', () => {
+    const supplierFilter = pendingInvoiceReceiptReportPageConfig.filters.find(
+      (filter) => filter.key === 'supplierName',
+    )
+
+    expect(
+      typeof supplierFilter?.options === 'function'
+        ? supplierFilter.options({})
+        : supplierFilter?.options,
+    ).toEqual([{ value: '供应商A', label: '供应商A' }])
   })
 
   it('has columns', () => {

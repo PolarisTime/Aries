@@ -1,9 +1,11 @@
 import i18next from 'i18next'
 import {
-  customerOptions,
+  getCustomerOptions,
+  getCustomerProjectOptions,
   getSettlementCompanyOptions,
   statementStatusOptions,
 } from '@/constants/module-options'
+import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, CUSTOMER_NAME_LABEL } from '../shared/filter-labels'
@@ -16,6 +18,10 @@ import {
   compactBatchCustomerStatementItemColumns,
   statusMap,
 } from '../shared/shared'
+
+function entityIdOf(value: unknown, field: string) {
+  return parseOptionalEntityId(value, field)
+}
 
 export const customerStatementPageConfig: ModulePageConfig = {
   key: 'customer-statement',
@@ -34,10 +40,16 @@ export const customerStatementPageConfig: ModulePageConfig = {
   ],
   filters: [
     {
-      key: 'customerName',
+      key: 'customerId',
       label: CUSTOMER_NAME_LABEL,
       type: 'select',
-      options: customerOptions,
+      options: getCustomerOptions,
+    },
+    {
+      key: 'projectId',
+      label: i18next.t('modules.pages.customerStatement.project'),
+      type: 'select',
+      options: getCustomerProjectOptions,
     },
     {
       key: 'settlementCompanyId',
@@ -195,11 +207,11 @@ export const customerStatementPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'customerName',
+      key: 'customerId',
       label: i18next.t('modules.pages.customerStatement.customer'),
       type: 'select',
       required: true,
-      options: customerOptions,
+      options: getCustomerOptions,
       row: 1,
     },
     {
@@ -210,10 +222,11 @@ export const customerStatementPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'projectName',
+      key: 'projectId',
       label: i18next.t('modules.pages.customerStatement.project'),
-      type: 'input',
+      type: 'select',
       required: true,
+      options: getCustomerProjectOptions,
       row: 1,
     },
     {
@@ -279,8 +292,10 @@ export const customerStatementPageConfig: ModulePageConfig = {
     scalar: [
       'statementNo',
       'sourceOrderNos',
+      'customerId',
       'customerCode',
       'customerName',
+      'projectId',
       'projectName',
       'settlementCompanyId',
       'settlementCompanyName',
@@ -294,6 +309,10 @@ export const customerStatementPageConfig: ModulePageConfig = {
     ],
     lineItem: [
       'sourceNo',
+      'sourceSalesOrderItemId',
+      'customerId',
+      'projectId',
+      'materialId',
       'materialCode',
       'brand',
       'category',
@@ -309,6 +328,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       'weightTon',
       'unitPrice',
       'amount',
+      'warehouseId',
     ],
   },
   parentImport: {
@@ -321,17 +341,21 @@ export const customerStatementPageConfig: ModulePageConfig = {
     enforceUniqueRelation: true,
     allowMultipleSelection: true,
     buildParentFilters: (currentRecord) => ({
-      customerName: asString(currentRecord.customerName).trim(),
-      projectName: asString(currentRecord.projectName).trim(),
+      customerId: entityIdOf(currentRecord.customerId, 'customerId'),
+      projectId: entityIdOf(currentRecord.projectId, 'projectId'),
+      currentRecordId: entityIdOf(currentRecord.id, 'currentRecordId'),
       settlementCompanyId: currentRecord.settlementCompanyId,
       status: '完成销售',
     }),
     validateBeforeOpen: (currentRecord) =>
-      asString(currentRecord.customerName).trim()
+      entityIdOf(currentRecord.customerId, 'customerId')
         ? null
         : '请先选择客户，再选择销售订单',
     mapParentToDraft: (parentRecord) => ({
+      customerId: entityIdOf(parentRecord.customerId, 'customerId'),
+      customerCode: asString(parentRecord.customerCode).trim(),
       customerName: parentRecord.customerName || '',
+      projectId: entityIdOf(parentRecord.projectId, 'projectId'),
       projectName: parentRecord.projectName || '',
       settlementCompanyId: parentRecord.settlementCompanyId,
       settlementCompanyName: parentRecord.settlementCompanyName || '',
@@ -344,28 +368,35 @@ export const customerStatementPageConfig: ModulePageConfig = {
       if (asString(parentRecord.status).trim() !== '完成销售') {
         return '只能选择完成销售的销售订单生成客户对账单'
       }
-      if (
-        asString(currentRecord.customerName).trim() !==
-        asString(parentRecord.customerName).trim()
-      ) {
+      const currentCustomerId = entityIdOf(
+        currentRecord.customerId,
+        'currentRecord.customerId',
+      )
+      const parentCustomerId = entityIdOf(
+        parentRecord.customerId,
+        'parentRecord.customerId',
+      )
+      if (!currentCustomerId || currentCustomerId !== parentCustomerId) {
         return '只能选择同一客户的销售订单生成客户对账单'
       }
-      const existingProjectNames = Array.from(
+      const existingProjectIds = Array.from(
         new Set(
           [
-            currentRecord.projectName,
-            ...currentItems.map((item) => item.projectName),
+            currentRecord.projectId,
+            ...currentItems.map((item) => item.projectId),
           ].flatMap((value) => {
-            const projectName = asString(value).trim()
-            return projectName ? [projectName] : []
+            const projectId = entityIdOf(value, 'projectId')
+            return projectId ? [projectId] : []
           }),
         ),
       )
-      const nextProjectName = asString(parentRecord.projectName).trim()
+      const nextProjectId = entityIdOf(
+        parentRecord.projectId,
+        'parentRecord.projectId',
+      )
       if (
-        existingProjectNames.length &&
-        nextProjectName &&
-        !existingProjectNames.includes(nextProjectName)
+        existingProjectIds.length &&
+        (!nextProjectId || !existingProjectIds.includes(nextProjectId))
       ) {
         return '只能选择同一项目的销售订单生成客户对账单'
       }
@@ -381,12 +412,26 @@ export const customerStatementPageConfig: ModulePageConfig = {
     },
     transformItems: (parentRecord) => {
       const sourceNo = asString(parentRecord.orderNo).trim()
+      const parentCustomerId = entityIdOf(
+        parentRecord.customerId,
+        'parentRecord.customerId',
+      )
+      const parentProjectId = entityIdOf(
+        parentRecord.projectId,
+        'parentRecord.projectId',
+      )
       return (Array.isArray(parentRecord.items) ? parentRecord.items : []).map(
         (item, index) => ({
           ...item,
           id: `${sourceNo || 'sales-order'}-${String(item.id || index)}`,
           sourceNo,
           sourceSalesOrderItemId: item.id,
+          customerId:
+            entityIdOf(item.customerId, 'items[].customerId') ||
+            parentCustomerId,
+          projectId:
+            entityIdOf(item.projectId, 'items[].projectId') || parentProjectId,
+          warehouseId: entityIdOf(item.warehouseId, 'items[].warehouseId'),
           _parentBillTime: parentRecord.deliveryDate || '',
         }),
       )

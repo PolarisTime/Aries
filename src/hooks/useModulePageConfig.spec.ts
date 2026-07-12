@@ -206,7 +206,7 @@ describe('useModulePageConfig', () => {
       data: {
         key: 'receipt',
         columns: [],
-        formFields: [{ key: 'sourceStatementId', title: 'Source' }],
+        formFields: [{ key: 'sourceCustomerStatementId', title: 'Source' }],
         detailFields: [],
       },
       isLoading: false,
@@ -217,6 +217,9 @@ describe('useModulePageConfig', () => {
     )
 
     expect(result.current.config).toBeDefined()
+    expect(result.current.config?.formFields?.[0]?.options).toBeTypeOf(
+      'function',
+    )
   })
 
   it('handles payment module with statement link catalog', () => {
@@ -224,7 +227,10 @@ describe('useModulePageConfig', () => {
       data: {
         key: 'payment',
         columns: [],
-        formFields: [{ key: 'sourceStatementId', title: 'Source' }],
+        formFields: [
+          { key: 'sourceSupplierStatementId', title: 'Supplier source' },
+          { key: 'sourceFreightStatementId', title: 'Freight source' },
+        ],
         detailFields: [],
       },
       isLoading: false,
@@ -235,6 +241,11 @@ describe('useModulePageConfig', () => {
     )
 
     expect(result.current.config).toBeDefined()
+    expect(
+      result.current.config?.formFields?.every(
+        (field) => typeof field.options === 'function',
+      ),
+    ).toBe(true)
   })
 
   it('defaults receipt statement link fields to an empty list', () => {
@@ -380,7 +391,7 @@ describe('useModulePageConfig', () => {
             key: 'receipt',
             columns: [],
             formFields: [
-              { key: 'sourceStatementId', title: 'Source' },
+              { key: 'sourceCustomerStatementId', title: 'Source' },
               { key: 'remark', title: 'Remark' },
             ],
             detailFields: [],
@@ -426,14 +437,14 @@ describe('useModulePageConfig', () => {
     )
 
     const sourceField = result.current.config?.formFields?.find(
-      (field: any) => field.key === 'sourceStatementId',
+      (field: any) => field.key === 'sourceCustomerStatementId',
     )
-    expect(sourceField?.options?.({ customerName: '客户A' })).toEqual([
+    expect(sourceField?.options?.({ customerId: '101' })).toEqual([
       { label: 'S1', value: '1' },
     ])
     expect(buildStatementLinkOptionsMock).toHaveBeenCalledWith(
       'receipt',
-      { customerName: '客户A' },
+      { customerId: '101' },
       {
         customerStatements: [{ id: 'customer-statement-1' }],
         supplierStatements: [{ id: 'supplier-statement-1' }],

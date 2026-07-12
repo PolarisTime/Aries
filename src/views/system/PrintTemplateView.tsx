@@ -1,9 +1,12 @@
+import { Typography } from 'antd'
+import { useTranslation } from 'react-i18next'
 import { PrintTemplateEditorModal } from '@/views/system/PrintTemplateEditorModal'
 import { PrintTemplatePreviewModal } from '@/views/system/PrintTemplatePreviewModal'
 import { PrintTemplateTableCard } from '@/views/system/PrintTemplateTableCard'
 import { usePrintTemplateView } from '@/views/system/usePrintTemplateView'
 
 export function PrintTemplateView() {
+  const { t } = useTranslation()
   const view = usePrintTemplateView()
 
   if (view.editorOpen) {
@@ -25,7 +28,15 @@ export function PrintTemplateView() {
   }
 
   return (
-    <div className="page-stack">
+    <div className="page-stack settings-standard-page print-template-page">
+      <header className="settings-page-header">
+        <Typography.Title level={3}>
+          {t('system.printTemplate.title')}
+        </Typography.Title>
+        <Typography.Paragraph type="secondary">
+          {t('system.printTemplate.description')}
+        </Typography.Paragraph>
+      </header>
       <PrintTemplateTableCard
         selectedBillType={view.selectedBillType}
         activeTemplateId={view.activeTemplateId}

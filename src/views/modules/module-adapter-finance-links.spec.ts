@@ -12,7 +12,9 @@ describe('module-adapter-finance-links', () => {
       {
         id: '308251467645452288',
         statementNo: 'ST20260001',
+        customerId: '308251467645452280',
         customerName: '测试客户',
+        projectId: '308251467645452281',
         projectName: '测试项目',
         closingAmount: 100,
       } satisfies ModuleRecord,
@@ -40,15 +42,17 @@ describe('module-adapter-finance-links', () => {
     const currentRecord = {
       id: '308251467645452288',
       statementNo: 'ST20260001',
+      customerId: '308251467645452280',
       customerName: '测试客户',
+      projectId: '308251467645452281',
       projectName: '测试项目',
       closingAmount: 0,
     } satisfies ModuleRecord
 
     const options = buildCustomerStatementOptions([currentRecord], {
       currentStatementId: '308251467645452288',
-      customerName: '测试客户',
-      projectName: '测试项目',
+      customerId: '308251467645452280',
+      projectId: '308251467645452281',
     })
 
     expect(options).toHaveLength(1)
@@ -59,22 +63,26 @@ describe('module-adapter-finance-links', () => {
     const options = buildStatementLinkOptions(
       'receipt',
       {
-        customerName: '测试客户',
-        projectName: '测试项目',
+        customerId: '308251467645452280',
+        projectId: '308251467645452281',
       },
       {
         customerStatements: [
           {
             id: '308251467645452288',
             statementNo: 'ST20260001',
+            customerId: '308251467645452280',
             customerName: '测试客户',
+            projectId: '308251467645452281',
             projectName: '测试项目',
             closingAmount: 100,
           } satisfies ModuleRecord,
           {
             id: '308251467645452289',
             statementNo: 'ST20260002',
+            customerId: '308251467645452282',
             customerName: '其他客户',
+            projectId: '308251467645452281',
             projectName: '测试项目',
             closingAmount: 100,
           } satisfies ModuleRecord,
@@ -88,12 +96,12 @@ describe('module-adapter-finance-links', () => {
     expect(options[0]?.value).toBe('308251467645452288')
   })
 
-  it('builds supplier payment link options by business type', () => {
+  it('builds supplier payment link options by typed counterparty identity', () => {
     const options = buildStatementLinkOptions(
       'payment',
       {
-        businessType: '供应商',
-        counterpartyName: '益海供应商',
+        counterpartyType: '供应商',
+        counterpartyId: '308251467645452283',
       },
       {
         customerStatements: [],
@@ -101,6 +109,7 @@ describe('module-adapter-finance-links', () => {
           {
             id: '308251467645452290',
             statementNo: 'GYDZ20260001',
+            supplierId: '308251467645452283',
             supplierName: '益海供应商',
             closingAmount: 88,
           } satisfies ModuleRecord,
@@ -109,6 +118,7 @@ describe('module-adapter-finance-links', () => {
           {
             id: '308251467645452291',
             statementNo: 'WDZ20260001',
+            carrierId: '308251467645452284',
             carrierName: '升华物流',
             unpaidAmount: 66,
           } satisfies ModuleRecord,

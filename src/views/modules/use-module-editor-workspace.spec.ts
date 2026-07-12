@@ -12,6 +12,7 @@ import {
   fetchSettlementCompanyOptions,
   getCompanySettingProfile,
 } from '@/api/company-settings'
+import { normalizeCarrierDraftRecord } from '@/config/business-pages/master/carrier-vehicle-adapter'
 import { ERROR_CODE } from '@/constants/error-codes'
 import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 import {
@@ -31,6 +32,7 @@ import {
   getModuleRecordPrimaryNo,
   parseParentRelationNos,
 } from '@/module-system/module-adapter-shared'
+import { getBehaviorValue } from '@/module-system/module-behavior-registry'
 import type { RuntimeConfigResponse } from '@/types/runtime-config'
 import { message, modal } from '@/utils/antd-app'
 import { parseDateTimeValue } from '@/utils/formatters'
@@ -93,6 +95,10 @@ vi.mock('@/module-system/module-adapter-editor', () => ({
   normalizeDraftRecordForModule: vi.fn(),
   syncDerivedEditorFormValuesForModule: vi.fn().mockReturnValue({}),
   trimEditorItemsForModule: vi.fn().mockReturnValue([]),
+}))
+
+vi.mock('@/module-system/module-behavior-registry', () => ({
+  getBehaviorValue: vi.fn(),
 }))
 
 vi.mock('@/module-system/module-adapter-parent-import', () => ({
@@ -297,6 +303,7 @@ describe('useModuleEditorWorkspace', () => {
     vi.mocked(normalizeDraftRecordForModule).mockImplementation(() => {})
     vi.mocked(syncDerivedEditorFormValuesForModule).mockReturnValue({})
     vi.mocked(trimEditorItemsForModule).mockReturnValue([])
+    vi.mocked(getBehaviorValue).mockReturnValue(undefined)
     vi.mocked(buildParentImportState).mockReturnValue({
       parentNosText: '',
       shouldApplyMappedValues: false,
@@ -839,6 +846,130 @@ describe('useModuleEditorWorkspace', () => {
     )
     expect(result.current.isEdit).toBe(true)
     expect(result.current.items).toEqual([{ id: 'line-1' }])
+  })
+
+  it('applies a module editor-record adapter to a clone before hydrating the form', () => {
+    const form = frm()
+    const sourceRecord = {
+      id: 'r-1',
+      vehicles: [{ vehicleId: '308251467645452281', plate: '沪A10001' }],
+    }
+    const normalizeEditorRecord = vi.fn((record) => {
+      const { vehicles: _vehicles, ...rest } = record
+      return { ...rest, vehiclePlate: '沪A10001' }
+    })
+    vi.mocked(getBehaviorValue).mockReturnValue(normalizeEditorRecord)
+
+    renderWorkspace({
+      form,
+      moduleKey: 'carrier',
+      record: sourceRecord,
+      config: cfg({ key: 'carrier', primaryNoKey: '' }),
+    })
+
+    expect(getBehaviorValue).toHaveBeenCalledWith(
+      'carrier',
+      'normalizeEditorRecord',
+    )
+    expect(normalizeEditorRecord).toHaveBeenCalledTimes(1)
+    expect(normalizeEditorRecord.mock.calls[0]?.[0]).not.toBe(sourceRecord)
+    expect(sourceRecord).not.toHaveProperty('vehiclePlate')
+    expect(form.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'r-1',
+        vehiclePlate: '沪A10001',
+      }),
+    )
+  })
+
+  it('hydrates the receipt statement selector from the first typed allocation', () => {
+    const form = frm()
+
+    renderWorkspace({
+      form,
+      moduleKey: 'receipt',
+      record: {
+        id: 'r-1',
+        items: [
+          {
+            id: 'line-1',
+            sourceCustomerStatementId: '701000000000000001',
+          },
+        ],
+      },
+      config: cfg({
+        key: 'receipt',
+        primaryNoKey: '',
+        formFields: [{ key: 'sourceCustomerStatementId', type: 'select' }],
+      }),
+    })
+
+    expect(form.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceCustomerStatementId: '701000000000000001',
+      }),
+    )
+  })
+
+  it.each([
+    {
+      counterpartyType: '供应商',
+      sourceField: 'sourceSupplierStatementId',
+      sourceId: '701000000000000002',
+    },
+    {
+      counterpartyType: '物流商',
+      sourceField: 'sourceFreightStatementId',
+      sourceId: '701000000000000003',
+    },
+  ])('hydrates the payment $sourceField selector from its typed allocation', ({
+    counterpartyType,
+    sourceField,
+    sourceId,
+  }) => {
+    const form = frm()
+
+    renderWorkspace({
+      form,
+      moduleKey: 'payment',
+      record: {
+        id: 'p-1',
+        counterpartyType,
+        items: [{ id: 'line-1', [sourceField]: sourceId }],
+      },
+      config: cfg({
+        key: 'payment',
+        primaryNoKey: '',
+        formFields: [{ key: sourceField, type: 'select' }],
+      }),
+    })
+
+    expect(form.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({ [sourceField]: sourceId }),
+    )
+  })
+
+  it('hydrates a customer ledger counterparty for project option loading', () => {
+    const form = frm()
+
+    renderWorkspace({
+      form,
+      moduleKey: 'ledger-adjustment',
+      record: {
+        id: 'a-1',
+        counterpartyType: '客户',
+        counterpartyId: '501000000000000001',
+      },
+      config: cfg({
+        key: 'ledger-adjustment',
+        primaryNoKey: '',
+        formFields: [{ key: 'projectId', type: 'select' }],
+      }),
+    })
+
+    expect(form.setFieldsValue).toHaveBeenCalledWith(
+      expect.objectContaining({ customerId: '501000000000000001' }),
+    )
   })
 
   it('uses empty line items when editing a record without items', () => {
@@ -1943,6 +2074,100 @@ describe('useModuleEditorWorkspace', () => {
         purchaseOrderNo: 'PO-001',
         status: '已审核',
         items: [{ id: 'line-1', unitPrice: 3300 }],
+      }),
+    )
+  })
+
+  it('retains the original vehicle id when saving edited carrier flat fields', async () => {
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      carrierCode: 'WL-001',
+      carrierName: '物流商A',
+      vehiclePlate: '沪A10001',
+      vehicleContact: '司机甲',
+      vehiclePhone: '13800000001',
+      vehicleRemark: '更新后',
+    })
+    vi.mocked(normalizeDraftRecordForModule).mockImplementation(({ record }) =>
+      normalizeCarrierDraftRecord(record),
+    )
+
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+      moduleKey: 'carrier',
+      record: {
+        id: '308251467645452280',
+        carrierCode: 'WL-001',
+        carrierName: '物流商A',
+        vehicles: [
+          {
+            vehicleId: '308251467645452281',
+            plate: '沪A00001',
+            contact: '旧司机',
+          },
+        ],
+      },
+      config: cfg({ key: 'carrier', primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(saveBusinessModule).toHaveBeenCalledWith(
+      'carrier',
+      expect.objectContaining({
+        vehicles: [
+          {
+            vehicleId: '308251467645452281',
+            plate: '沪A10001',
+            contact: '司机甲',
+            phone: '13800000001',
+            remark: '更新后',
+          },
+        ],
+      }),
+    )
+  })
+
+  it('saves a newly entered carrier vehicle without inventing a client id', async () => {
+    const form = frm()
+    form.validateFields.mockResolvedValue({
+      carrierCode: 'WL-002',
+      carrierName: '物流商B',
+      vehiclePlate: '沪B20001',
+      vehicleContact: '司机乙',
+      vehiclePhone: '13800000002',
+      vehicleRemark: '',
+    })
+    vi.mocked(normalizeDraftRecordForModule).mockImplementation(({ record }) =>
+      normalizeCarrierDraftRecord(record),
+    )
+
+    const { result } = renderWorkspace({
+      open: false,
+      form,
+      moduleKey: 'carrier',
+      config: cfg({ key: 'carrier', primaryNoKey: '' }),
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(saveBusinessModule).toHaveBeenCalledWith(
+      'carrier',
+      expect.objectContaining({
+        id: '',
+        vehicles: [
+          {
+            plate: '沪B20001',
+            contact: '司机乙',
+            phone: '13800000002',
+            remark: '',
+          },
+        ],
       }),
     )
   })

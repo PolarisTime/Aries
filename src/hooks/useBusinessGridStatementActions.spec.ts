@@ -85,8 +85,18 @@ describe('useBusinessGridStatementActions', () => {
 
   it('generates supplier statement', async () => {
     const candidates = [
-      { id: '1', supplierName: 'Supplier A', inboundDate: '2024-01-15' },
-      { id: '2', supplierName: 'Supplier A', inboundDate: '2024-01-20' },
+      {
+        id: '1',
+        supplierId: '700520000000000001',
+        supplierName: 'Supplier A',
+        inboundDate: '2024-01-15',
+      },
+      {
+        id: '2',
+        supplierId: '700520000000000001',
+        supplierName: 'Supplier A',
+        inboundDate: '2024-01-20',
+      },
     ]
     listAllStatementCandidatesMock.mockResolvedValue(candidates)
     getBusinessModuleDetailMock.mockResolvedValue({ data: {} })
@@ -100,6 +110,7 @@ describe('useBusinessGridStatementActions', () => {
         'Supplier A',
         '2024-01-01',
         '2024-01-31',
+        '700520000000000001',
       )
     })
 
@@ -112,14 +123,31 @@ describe('useBusinessGridStatementActions', () => {
     expect(draftOptions.buildLineItemId()).toMatch(/^draft-supplier-\d+-0$/)
     expect(draftOptions.buildLineItemId()).toMatch(/^draft-supplier-\d+-1$/)
     expect(defaultProps.refreshModuleQueries).toHaveBeenCalled()
+    expect(listAllStatementCandidatesMock).toHaveBeenCalledWith(
+      'supplier-statement',
+      '',
+      200,
+      {
+        supplierId: '700520000000000001',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+      },
+    )
   })
 
   it('generates customer statement', async () => {
     const candidates = [
-      { id: '1', customerName: 'Customer A', deliveryDate: '2024-01-15' },
+      {
+        id: '1',
+        customerId: '700520000000000002',
+        customerName: 'Customer A',
+        deliveryDate: '2024-01-15',
+      },
     ]
     listAllStatementCandidatesMock.mockResolvedValue(candidates)
-    getBusinessModuleDetailMock.mockResolvedValue({ data: {} })
+    getBusinessModuleDetailMock.mockResolvedValue({
+      data: { projectId: '700520000000000020' },
+    })
 
     const { result } = renderHook(() =>
       useBusinessGridStatementActions(defaultProps),
@@ -130,6 +158,7 @@ describe('useBusinessGridStatementActions', () => {
         'Customer A',
         '2024-01-01',
         '2024-01-31',
+        '700520000000000002',
       )
     })
 
@@ -139,11 +168,26 @@ describe('useBusinessGridStatementActions', () => {
     )
     const draftOptions = buildCustomerStatementDraftDataMock.mock.calls[0]?.[0]
     expect(draftOptions.defaultReceiptAmountZero).toBe(true)
+    expect(listAllStatementCandidatesMock).toHaveBeenCalledWith(
+      'customer-statement',
+      '',
+      200,
+      {
+        customerId: '700520000000000002',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+      },
+    )
   })
 
   it('generates freight statement', async () => {
     const candidates = [
-      { id: '1', carrierName: 'Carrier A', billTime: '2024-01-15' },
+      {
+        id: '1',
+        carrierId: '700520000000000003',
+        carrierName: 'Carrier A',
+        billTime: '2024-01-15',
+      },
     ]
     listAllStatementCandidatesMock.mockResolvedValue(candidates)
     getBusinessModuleDetailMock.mockResolvedValue({ data: {} })
@@ -157,12 +201,23 @@ describe('useBusinessGridStatementActions', () => {
         'Carrier A',
         '2024-01-01',
         '2024-01-31',
+        '700520000000000003',
       )
     })
 
     expect(saveBusinessModuleMock).toHaveBeenCalledWith(
       'freight-statement',
       expect.any(Object),
+    )
+    expect(listAllStatementCandidatesMock).toHaveBeenCalledWith(
+      'freight-statement',
+      '',
+      200,
+      {
+        carrierId: '700520000000000003',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+      },
     )
   })
 
@@ -186,8 +241,18 @@ describe('useBusinessGridStatementActions', () => {
 
   it('filters candidates by date range', async () => {
     const candidates = [
-      { id: '1', supplierName: 'Supplier A', inboundDate: '2024-01-15' },
-      { id: '2', supplierName: 'Supplier A', inboundDate: '2024-02-15' },
+      {
+        id: '1',
+        supplierId: '700520000000000001',
+        supplierName: 'Supplier A',
+        inboundDate: '2024-01-15',
+      },
+      {
+        id: '2',
+        supplierId: '700520000000000001',
+        supplierName: 'Supplier A',
+        inboundDate: '2024-02-15',
+      },
     ]
     listAllStatementCandidatesMock.mockResolvedValue(candidates)
     getBusinessModuleDetailMock.mockResolvedValue({ data: {} })
@@ -201,16 +266,27 @@ describe('useBusinessGridStatementActions', () => {
         'Supplier A',
         '2024-01-01',
         '2024-01-31',
+        '700520000000000001',
       )
     })
 
     expect(getBusinessModuleDetailMock).toHaveBeenCalledTimes(1)
   })
 
-  it('filters candidates by counterparty name', async () => {
+  it('filters same-name supplier candidates by stable supplier id', async () => {
     const candidates = [
-      { id: '1', supplierName: 'Supplier A', inboundDate: '2024-01-15' },
-      { id: '2', supplierName: 'Supplier B', inboundDate: '2024-01-15' },
+      {
+        id: '1',
+        supplierId: '700520000000000001',
+        supplierName: 'Supplier A',
+        inboundDate: '2024-01-15',
+      },
+      {
+        id: '2',
+        supplierId: '700520000000000002',
+        supplierName: 'Supplier A',
+        inboundDate: '2024-01-15',
+      },
     ]
     listAllStatementCandidatesMock.mockResolvedValue(candidates)
     getBusinessModuleDetailMock.mockResolvedValue({ data: {} })
@@ -224,6 +300,7 @@ describe('useBusinessGridStatementActions', () => {
         'Supplier A',
         '2024-01-01',
         '2024-01-31',
+        '700520000000000001',
       )
     })
 

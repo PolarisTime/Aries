@@ -131,16 +131,93 @@ describe('useModuleEditorItemColumnHandlers', () => {
   })
 
   describe('handleMaterialSelect', () => {
-    it('updates material code', () => {
+    it('atomically writes material identity and the authoritative code snapshot', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [
+        {
+          id: '1',
+          materialId: '100',
+          materialCode: 'OLD',
+          brand: '旧品牌',
+        },
+      ]
+      const materialRecord = {
+        id: '200',
+        materialCode: 'M-200',
+        brand: '权威品牌',
+      }
+      const applyMaterial = vi.fn((item, record) => ({
+        ...item,
+        brand: record?.brand,
+      }))
+
+      act(() => {
+        result.current.handleMaterialSelect(
+          '1',
+          '200',
+          materialRecord,
+          applyMaterial,
+        )
+      })
+
+      expect(applyMaterial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          materialId: '200',
+          materialCode: 'M-200',
+        }),
+        materialRecord,
+      )
+      expect(items[0]).toMatchObject({
+        materialId: '200',
+        materialCode: 'M-200',
+        brand: '权威品牌',
+      })
+    })
+
+    it('atomically clears material identity before clearing its snapshots', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', materialId: '100', materialCode: 'OLD' }]
+      const applyMaterial = vi.fn((item) => ({
+        ...item,
+        brand: '',
+      }))
+
+      act(() => {
+        result.current.handleMaterialSelect('1', '', null, applyMaterial)
+      })
+
+      expect(applyMaterial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          materialId: undefined,
+          materialCode: '',
+        }),
+        null,
+      )
+      expect(items[0]).toMatchObject({
+        materialId: undefined,
+        materialCode: '',
+        brand: '',
+      })
+    })
+
+    it('updates material code from the selected record', () => {
       const { result } = renderHook(() =>
         useModuleEditorItemColumnHandlers({ setItems }),
       )
       items = [{ id: '1', materialCode: 'old' }]
 
       act(() => {
-        result.current.handleMaterialSelect('1', 'new-code')
+        result.current.handleMaterialSelect('1', '200', {
+          id: '200',
+          materialCode: 'new-code',
+        })
       })
 
+      expect(items[0].materialId).toBe('200')
       expect(items[0].materialCode).toBe('new-code')
     })
 
@@ -154,7 +231,10 @@ describe('useModuleEditorItemColumnHandlers', () => {
       ]
 
       act(() => {
-        result.current.handleMaterialSelect('1', 'new-code')
+        result.current.handleMaterialSelect('1', '200', {
+          id: '200',
+          materialCode: 'new-code',
+        })
       })
 
       expect(items[0].materialCode).toBe('new-code')
@@ -167,12 +247,16 @@ describe('useModuleEditorItemColumnHandlers', () => {
       )
       items = [{ id: '1', materialCode: 'old' }]
       const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
-      const materialRecord = { name: 'Material A' }
+      const materialRecord = {
+        id: '200',
+        materialCode: 'new-code',
+        name: 'Material A',
+      }
 
       act(() => {
         result.current.handleMaterialSelect(
           '1',
-          'new-code',
+          '200',
           materialRecord,
           applyMaterial,
         )
@@ -182,100 +266,7 @@ describe('useModuleEditorItemColumnHandlers', () => {
       expect(items[0].applied).toBe(true)
     })
 
-    it('resolves material when resolveMaterial provided', async () => {
-      const { result } = renderHook(() =>
-        useModuleEditorItemColumnHandlers({ setItems }),
-      )
-      items = [{ id: '1', materialCode: 'new-code' }]
-      const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
-      const resolveMaterial = vi
-        .fn()
-        .mockResolvedValue({ name: 'Resolved Material' })
-
-      await act(async () => {
-        result.current.handleMaterialSelect(
-          '1',
-          'new-code',
-          null,
-          applyMaterial,
-          resolveMaterial,
-        )
-      })
-
-      expect(resolveMaterial).toHaveBeenCalledWith('new-code')
-    })
-
-    it('does not call resolveMaterial when resolveMaterial returns null', async () => {
-      const { result } = renderHook(() =>
-        useModuleEditorItemColumnHandlers({ setItems }),
-      )
-      items = [{ id: '1', materialCode: 'new-code' }]
-      const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
-      const resolveMaterial = vi.fn().mockResolvedValue(null)
-
-      await act(async () => {
-        result.current.handleMaterialSelect(
-          '1',
-          'new-code',
-          null,
-          applyMaterial,
-          resolveMaterial,
-        )
-      })
-
-      expect(resolveMaterial).toHaveBeenCalledWith('new-code')
-    })
-
-    it('does not apply resolved material when materialCode changed before resolution', async () => {
-      const { result } = renderHook(() =>
-        useModuleEditorItemColumnHandlers({ setItems }),
-      )
-      items = [{ id: '1', materialCode: 'new-code' }]
-      const applyMaterial = vi.fn((item, mat) =>
-        mat ? { ...item, resolvedApplied: true } : item,
-      )
-      const resolveMaterial = vi.fn().mockImplementation(async () => {
-        items[0] = { ...items[0], materialCode: 'different-code' }
-        return { name: 'Resolved Material' }
-      })
-
-      await act(async () => {
-        result.current.handleMaterialSelect(
-          '1',
-          'new-code',
-          null,
-          applyMaterial,
-          resolveMaterial,
-        )
-      })
-
-      expect(items[0].resolvedApplied).toBeUndefined()
-    })
-
-    it('applies resolved material when materialCode matches', async () => {
-      const { result } = renderHook(() =>
-        useModuleEditorItemColumnHandlers({ setItems }),
-      )
-      items = [{ id: '1', materialCode: 'new-code' }]
-      const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
-      const resolveMaterial = vi
-        .fn()
-        .mockResolvedValue({ name: 'Resolved Material' })
-
-      await act(async () => {
-        result.current.handleMaterialSelect(
-          '1',
-          'new-code',
-          null,
-          applyMaterial,
-          resolveMaterial,
-        )
-      })
-
-      expect(items[0].applied).toBe(true)
-    })
-
-    it('keeps non-target rows when applying resolved material', async () => {
+    it('keeps non-target rows when applying material', () => {
       const { result } = renderHook(() =>
         useModuleEditorItemColumnHandlers({ setItems }),
       )
@@ -284,56 +275,75 @@ describe('useModuleEditorItemColumnHandlers', () => {
         { id: '2', materialCode: 'other-code' },
       ]
       const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
-      const resolveMaterial = vi
-        .fn()
-        .mockResolvedValue({ name: 'Resolved Material' })
+      const materialRecord = { id: '200', materialCode: 'new-code' }
 
-      await act(async () => {
+      act(() => {
         result.current.handleMaterialSelect(
           '1',
-          'new-code',
-          null,
+          '200',
+          materialRecord,
           applyMaterial,
-          resolveMaterial,
         )
       })
 
       expect(items[0].applied).toBe(true)
       expect(items[1]).toEqual({ id: '2', materialCode: 'other-code' })
     })
-
-    it('does not call resolveMaterial when materialRecord is provided', () => {
-      const { result } = renderHook(() =>
-        useModuleEditorItemColumnHandlers({ setItems }),
-      )
-      items = [{ id: '1', materialCode: 'old' }]
-      const applyMaterial = vi.fn((item) => ({ ...item, applied: true }))
-      const resolveMaterial = vi.fn()
-      const materialRecord = { name: 'Material A' }
-
-      act(() => {
-        result.current.handleMaterialSelect(
-          '1',
-          'new-code',
-          materialRecord,
-          applyMaterial,
-          resolveMaterial,
-        )
-      })
-
-      expect(resolveMaterial).not.toHaveBeenCalled()
-    })
   })
 
   describe('handleWarehouseSelect', () => {
-    it('updates warehouse name', () => {
+    it('atomically writes warehouse id and the authoritative name snapshot', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', warehouseId: '100', warehouseName: '旧仓' }]
+
+      act(() => {
+        result.current.handleWarehouseSelect('1', '200', {
+          id: '200',
+          value: '200',
+          label: 'WH-200 / 新仓',
+          warehouseCode: 'WH-200',
+          warehouseName: '新仓',
+        })
+      })
+
+      expect(items[0]).toMatchObject({
+        warehouseId: '200',
+        warehouseName: '新仓',
+      })
+    })
+
+    it('clears warehouse id and name together', () => {
+      const { result } = renderHook(() =>
+        useModuleEditorItemColumnHandlers({ setItems }),
+      )
+      items = [{ id: '1', warehouseId: '100', warehouseName: '旧仓' }]
+
+      act(() => {
+        result.current.handleWarehouseSelect('1', '', null)
+      })
+
+      expect(items[0]).toMatchObject({
+        warehouseId: undefined,
+        warehouseName: '',
+      })
+    })
+
+    it('updates warehouse name from the selected option', () => {
       const { result } = renderHook(() =>
         useModuleEditorItemColumnHandlers({ setItems }),
       )
       items = [{ id: '1', warehouseName: 'old' }]
 
       act(() => {
-        result.current.handleWarehouseSelect('1', 'new-warehouse')
+        result.current.handleWarehouseSelect('1', '200', {
+          id: '200',
+          value: '200',
+          label: 'new-warehouse',
+          warehouseCode: 'WH-200',
+          warehouseName: 'new-warehouse',
+        })
       })
 
       expect(items[0].warehouseName).toBe('new-warehouse')
@@ -349,7 +359,13 @@ describe('useModuleEditorItemColumnHandlers', () => {
       ]
 
       act(() => {
-        result.current.handleWarehouseSelect('1', 'new-warehouse')
+        result.current.handleWarehouseSelect('1', '200', {
+          id: '200',
+          value: '200',
+          label: 'new-warehouse',
+          warehouseCode: 'WH-200',
+          warehouseName: 'new-warehouse',
+        })
       })
 
       expect(items[0].warehouseName).toBe('new-warehouse')

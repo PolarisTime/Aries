@@ -75,6 +75,14 @@ vi.mock('antd', () => ({
   Form: {
     useForm: () => [mockForm],
   },
+  Typography: {
+    Title: ({ children }: { children?: React.ReactNode }) => (
+      <h3>{children}</h3>
+    ),
+    Paragraph: ({ children }: { children?: React.ReactNode }) => (
+      <p>{children}</p>
+    ),
+  },
 }))
 
 vi.mock('@/views/system/PrintTemplateTableCard', () => ({
@@ -326,6 +334,12 @@ describe('PrintTemplateView', () => {
 
   it('renders the table card', () => {
     render(<PrintTemplateView />)
+    expect(
+      screen.getByRole('heading', { name: 'system.printTemplate.title' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.printTemplate.description'),
+    ).toBeInTheDocument()
     expect(screen.getByTestId('table-card')).toBeInTheDocument()
     expect(screen.getByTestId('selected-bill-type')).toHaveTextContent(
       'purchase-order',

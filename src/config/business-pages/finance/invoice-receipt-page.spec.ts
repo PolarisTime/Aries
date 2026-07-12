@@ -9,18 +9,32 @@ describe('invoiceReceiptPageConfig', () => {
     expect(invoiceReceiptPageConfig.title).toBeTruthy()
     expect(invoiceReceiptPageConfig.primaryNoKey).toBeTruthy()
     expect(Array.isArray(invoiceReceiptPageConfig.columns)).toBe(true)
+    expect(invoiceReceiptPageConfig.saveFields?.lineItem).toEqual(
+      expect.arrayContaining(['materialId', 'warehouseId']),
+    )
+    expect(invoiceReceiptPageConfig.saveFields?.scalar).toContain('supplierId')
+    expect(
+      invoiceReceiptPageConfig.filters.map((filter) => filter.key),
+    ).toContain('supplierId')
+    expect(
+      invoiceReceiptPageConfig.formFields?.find(
+        (field) => field.key === 'supplierId',
+      ),
+    ).toEqual(expect.objectContaining({ type: 'select', required: true }))
     expect(invoiceReceiptPageConfig.buildOverview).toBeTypeOf('function')
   })
 
   describe('parentImport', () => {
     it('mapParentToDraft maps fields from parent record', () => {
       const draft = pi.mapParentToDraft!({
+        supplierId: '700520000000000001',
         supplierCode: 'SUP-001',
         supplierName: '供应商A',
         settlementCompanyId: 'company-1',
         settlementCompanyName: '结算主体A',
       } as any)
       expect(draft).toEqual({
+        supplierId: '700520000000000001',
         supplierCode: 'SUP-001',
         supplierName: '供应商A',
         settlementCompanyId: 'company-1',
@@ -31,6 +45,7 @@ describe('invoiceReceiptPageConfig', () => {
 
     it('mapParentToDraft handles missing fields', () => {
       const draft = pi.mapParentToDraft!({} as any)
+      expect(draft.supplierId).toBeUndefined()
       expect(draft.supplierName).toBe('')
       expect(draft.supplierCode).toBe('')
       expect(draft.settlementCompanyId).toBeUndefined()

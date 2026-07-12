@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
   applyMaterialToEditorLineItem: vi.fn(),
   buildModuleEditorDataColumns: vi.fn(),
   buildModuleEditorManagementColumns: vi.fn(),
-  fetchMaterialSearch: vi.fn(),
   formatCellValue: vi.fn(),
   handleColumnOrderChange: vi.fn(),
   handleColumnVisibilityChange: vi.fn(),
@@ -25,10 +24,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('pinyin-pro', () => ({
   pinyin: mocks.pinyin,
-}))
-
-vi.mock('@/api/materials', () => ({
-  fetchMaterialSearch: mocks.fetchMaterialSearch,
 }))
 
 vi.mock('@/hooks/useColumnSettingsSupport', () => ({
@@ -91,6 +86,7 @@ describe('useModuleEditorItemColumns', () => {
     mocks.useMasterOptions.mockReturnValue({
       materials: [
         {
+          id: '308251467645452280',
           brand: '宝钢',
           category: '卷板',
           material: 'Q235',
@@ -99,15 +95,25 @@ describe('useModuleEditorItemColumns', () => {
           spec: '2.0',
         },
         {
+          id: '308251467645452280',
           brand: '重复',
           materialCode: 'm-001',
         },
         {
+          id: '308251467645452282',
           brand: '空编码',
           materialCode: ' ',
         },
       ],
-      warehouses: [{ label: '一号码头', value: 'W-1' }],
+      warehouses: [
+        {
+          id: '308251467645452283',
+          label: '一号码头',
+          value: '308251467645452283',
+          warehouseCode: 'WH-1',
+          warehouseName: '一号码头',
+        },
+      ],
     })
     mocks.useColumnSettingsSupport.mockReturnValue({
       columnOrder: ['warehouseName', 'missing'],
@@ -156,12 +162,86 @@ describe('useModuleEditorItemColumns', () => {
         materialOptions: [
           expect.objectContaining({
             label: '宝钢 | 卷板 | Q235 | 2.0',
-            value: 'M-001',
+            value: '308251467645452280',
           }),
         ],
-        warehouses: [{ label: '一号码头', value: 'W-1' }],
+        warehouses: [
+          expect.objectContaining({
+            value: '308251467645452283',
+            warehouseName: '一号码头',
+          }),
+        ],
       }),
     )
+  })
+
+  it('builds material options and resolves selections strictly by material id', () => {
+    const material = {
+      id: '308251467645452289',
+      brand: '宝钢',
+      materialCode: 'M-001',
+      material: 'Q235',
+    }
+    mocks.useMasterOptions.mockReturnValue({
+      materials: [material],
+      warehouses: [],
+    })
+
+    renderHook(() => useModuleEditorItemColumns(defaultProps()))
+    const dataOptions = mocks.buildModuleEditorDataColumns.mock.calls[0][0]
+
+    expect(dataOptions.materialOptions).toEqual([
+      expect.objectContaining({
+        value: '308251467645452289',
+        label: '宝钢 | Q235',
+      }),
+    ])
+
+    dataOptions.handleMaterialSelect('line-1', '308251467645452289')
+    expect(mocks.handleMaterialSelect).toHaveBeenLastCalledWith(
+      'line-1',
+      '308251467645452289',
+      material,
+      expect.any(Function),
+    )
+    const applySelectedMaterial =
+      mocks.handleMaterialSelect.mock.calls.at(-1)?.[3]
+    applySelectedMaterial(
+      { id: 'line-1', quantity: 1 },
+      { id: '308251467645452289', materialCode: 'M-001' },
+    )
+    expect(mocks.applyMaterialToEditorLineItem).toHaveBeenCalledWith(
+      { id: 'line-1', quantity: 1 },
+      { id: '308251467645452289', materialCode: 'M-001' },
+      'purchase-inbound',
+    )
+  })
+
+  it('does not merge distinct material ids through a duplicate material code', () => {
+    mocks.useMasterOptions.mockReturnValue({
+      materials: [
+        {
+          id: '308251467645452290',
+          brand: '品牌A',
+          materialCode: 'M-SAME',
+        },
+        {
+          id: '308251467645452291',
+          brand: '品牌B',
+          materialCode: 'M-SAME',
+        },
+      ],
+      warehouses: [],
+    })
+
+    renderHook(() => useModuleEditorItemColumns(defaultProps()))
+    const dataOptions = mocks.buildModuleEditorDataColumns.mock.calls[0][0]
+
+    expect(
+      dataOptions.materialOptions.map(
+        (option: { value: string }) => option.value,
+      ),
+    ).toEqual(['308251467645452290', '308251467645452291'])
   })
 
   it('passes row record when checking item column editability', () => {
@@ -228,65 +308,6 @@ describe('useModuleEditorItemColumns', () => {
     ])
   })
 
-  it('resolves material selection from local and remote material records', async () => {
-    mocks.fetchMaterialSearch
-      .mockResolvedValueOnce([
-        { materialCode: 'OTHER', materialName: '其他' },
-        { materialCode: 'REMOTE-1', materialName: '远程物料' },
-      ])
-      .mockResolvedValueOnce([
-        { materialName: '缺少编码' },
-        { materialCode: 'OTHER', materialName: '其他' },
-      ])
-    mocks.applyMaterialToEditorLineItem.mockReturnValue({
-      id: 'line-1',
-      materialCode: 'M-001',
-    })
-    renderHook(() => useModuleEditorItemColumns(defaultProps()))
-    const dataOptions = mocks.buildModuleEditorDataColumns.mock.calls[0][0]
-
-    dataOptions.handleMaterialSelect('line-1', 'M-001')
-    expect(mocks.handleMaterialSelect).toHaveBeenLastCalledWith(
-      'line-1',
-      'M-001',
-      expect.objectContaining({ materialCode: 'm-001' }),
-      expect.any(Function),
-      expect.any(Function),
-    )
-    const applySelectedMaterial =
-      mocks.handleMaterialSelect.mock.calls.at(-1)?.[3]
-    expect(
-      applySelectedMaterial(
-        { id: 'line-1', quantity: 1 },
-        { id: 'material-1', materialCode: 'M-001' },
-      ),
-    ).toEqual({ id: 'line-1', materialCode: 'M-001' })
-    expect(mocks.applyMaterialToEditorLineItem).toHaveBeenCalledWith(
-      { id: 'line-1', quantity: 1 },
-      { id: 'material-1', materialCode: 'M-001' },
-      'purchase-inbound',
-    )
-
-    dataOptions.handleMaterialSelect('line-1', ' remote-1 ')
-    const resolver = mocks.handleMaterialSelect.mock.calls.at(-1)?.[4]
-    await expect(resolver(' remote-1 ')).resolves.toEqual(
-      expect.objectContaining({ materialCode: 'REMOTE-1' }),
-    )
-    expect(mocks.fetchMaterialSearch).toHaveBeenCalledWith('remote-1', 20)
-    await expect(resolver('missing')).resolves.toBeNull()
-    expect(mocks.fetchMaterialSearch).toHaveBeenCalledWith('missing', 20)
-    await expect(resolver(' ')).resolves.toBeNull()
-
-    dataOptions.handleMaterialSelect('line-1', ' ')
-    expect(mocks.handleMaterialSelect).toHaveBeenLastCalledWith(
-      'line-1',
-      ' ',
-      null,
-      expect.any(Function),
-      expect.any(Function),
-    )
-  })
-
   it('uses module key fallback and returns no columns when item columns are absent', () => {
     const configWithoutItemColumns = {
       ...config(),
@@ -321,6 +342,7 @@ describe('useModuleEditorItemColumns', () => {
           brand: '无编码',
         },
         {
+          id: '308251467645452292',
           materialCode: 'NAME-1',
           materialName: '命名物料',
         },
@@ -340,7 +362,7 @@ describe('useModuleEditorItemColumns', () => {
       expect.objectContaining({
         label: '命名物料',
         searchText: expect.stringContaining('name-1 命名物料'),
-        value: 'NAME-1',
+        value: '308251467645452292',
       }),
     ])
   })
@@ -349,6 +371,7 @@ describe('useModuleEditorItemColumns', () => {
     mocks.useMasterOptions.mockReturnValue({
       materials: [
         {
+          id: '308251467645452293',
           brand: '中天',
           category: '螺纹钢',
           material: 'HRB400',
@@ -356,6 +379,7 @@ describe('useModuleEditorItemColumns', () => {
           spec: '18',
         },
         {
+          id: '308251467645452294',
           brand: '宝钢',
           category: '直条',
           material: '铸铁',
@@ -376,14 +400,16 @@ describe('useModuleEditorItemColumns', () => {
       .filter((option) => option.searchText.includes('zt'))
       .map((option) => option.value)
 
-    expect(matches).toEqual(['M-001'])
-    expect(materialOptions.find((option) => option.value === 'M-001')).toEqual(
+    expect(matches).toEqual(['308251467645452293'])
+    expect(
+      materialOptions.find((option) => option.value === '308251467645452293'),
+    ).toEqual(
       expect.objectContaining({
         searchText: expect.stringContaining('zhongtian'),
       }),
     )
     const categoryOnlyOption = materialOptions.find(
-      (option) => option.value === 'M-002',
+      (option) => option.value === '308251467645452294',
     )
     expect(categoryOnlyOption?.searchText).not.toContain('直条')
     expect(categoryOnlyOption?.searchText).not.toContain('zhitiao')
@@ -393,6 +419,7 @@ describe('useModuleEditorItemColumns', () => {
     mocks.useMasterOptions.mockReturnValue({
       materials: [
         {
+          id: '308251467645452295',
           brand: '长兴',
           category: '螺纹钢',
           material: 'HRB400',
@@ -413,12 +440,12 @@ describe('useModuleEditorItemColumns', () => {
     expect(materialOptions).toEqual([
       expect.objectContaining({
         searchText: expect.stringContaining('changxing'),
-        value: 'M-NEW',
+        value: '308251467645452295',
       }),
     ])
     expect(
       materialOptions.filter((option) => option.searchText.includes('cx')),
-    ).toEqual([expect.objectContaining({ value: 'M-NEW' })])
+    ).toEqual([expect.objectContaining({ value: '308251467645452295' })])
   })
 
   it('omits management columns when line items cannot be managed', () => {

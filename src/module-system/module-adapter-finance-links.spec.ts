@@ -9,9 +9,11 @@ const sampleStatements = [
   {
     id: '1',
     statementNo: 'KHDZ20260001',
+    customerId: '101',
     customerName: '客户A',
+    projectId: '201',
     projectName: '项目X',
-    settlementCompanyId: 1,
+    settlementCompanyId: '301',
     settlementCompanyName: '主体A',
     closingAmount: 5000,
     endDate: '2026-03-15',
@@ -19,9 +21,11 @@ const sampleStatements = [
   {
     id: '2',
     statementNo: 'KHDZ20260002',
+    customerId: '102',
     customerName: '客户B',
+    projectId: '202',
     projectName: '项目Y',
-    settlementCompanyId: 2,
+    settlementCompanyId: '302',
     settlementCompanyName: '主体B',
     closingAmount: 0,
     endDate: '2026-03-20',
@@ -29,9 +33,11 @@ const sampleStatements = [
   {
     id: '3',
     statementNo: 'KHDZ20260003',
+    customerId: '101',
     customerName: '客户A',
+    projectId: '203',
     projectName: '项目Z',
-    settlementCompanyId: 2,
+    settlementCompanyId: '302',
     settlementCompanyName: '主体B',
     closingAmount: 3000,
     endDate: '2026-03-10',
@@ -39,9 +45,9 @@ const sampleStatements = [
 ] as any[]
 
 describe('buildCustomerStatementOptions', () => {
-  it('filters and sorts by closingAmount, customerName, projectName', () => {
+  it('filters and sorts by closingAmount and stable customer identity', () => {
     const result = buildCustomerStatementOptions(sampleStatements, {
-      customerName: '客户A',
+      customerId: '101',
     })
     expect(result).toHaveLength(2)
     expect(result[0].value).toBe('1')
@@ -60,7 +66,7 @@ describe('buildCustomerStatementOptions', () => {
     expect(buildCustomerStatementOptions([])).toEqual([])
   })
 
-  it('uses empty value when customer statement id is missing', () => {
+  it('excludes customer statements without a stable statement id', () => {
     const result = buildCustomerStatementOptions([
       {
         statementNo: 'KHDZ20260004',
@@ -70,13 +76,13 @@ describe('buildCustomerStatementOptions', () => {
       },
     ] as any[])
 
-    expect(result[0].value).toBe('')
+    expect(result).toEqual([])
   })
 
-  it('filters by projectName when provided', () => {
+  it('filters by projectId when provided', () => {
     const result = buildCustomerStatementOptions(sampleStatements, {
-      customerName: '客户A',
-      projectName: '项目X',
+      customerId: '101',
+      projectId: '201',
     })
     expect(result).toHaveLength(1)
     expect(result[0].value).toBe('1')
@@ -84,8 +90,8 @@ describe('buildCustomerStatementOptions', () => {
 
   it('filters by settlementCompanyId when provided', () => {
     const result = buildCustomerStatementOptions(sampleStatements, {
-      customerName: '客户A',
-      settlementCompanyId: '1',
+      customerId: '101',
+      settlementCompanyId: '301',
     })
 
     expect(result).toHaveLength(1)
@@ -95,7 +101,7 @@ describe('buildCustomerStatementOptions', () => {
 
   it('sorts by endDate descending', () => {
     const result = buildCustomerStatementOptions(sampleStatements, {
-      customerName: '客户A',
+      customerId: '101',
     })
     expect(result[0].value).toBe('1')
     expect(result[1].value).toBe('3')
@@ -128,6 +134,7 @@ describe('buildStatementLinkOptions', () => {
       {
         id: '4',
         statementNo: 'GYDZ20260001',
+        supplierId: '401',
         supplierName: '供应商A',
         closingAmount: 8000,
         endDate: '2026-02-28',
@@ -137,6 +144,7 @@ describe('buildStatementLinkOptions', () => {
       {
         id: '5',
         statementNo: 'WDZ20260001',
+        carrierId: '501',
         carrierName: '物流商A',
         unpaidAmount: 6000,
         endDate: '2026-04-01',
@@ -150,11 +158,12 @@ describe('buildStatementLinkOptions', () => {
     expect(result[0].label).toContain('待收')
   })
 
-  it('returns supplier options for payment with businessType 供应商', () => {
+  it('returns supplier options for payment with typed counterparty identity', () => {
     const result = buildStatementLinkOptions(
       'payment',
       {
-        businessType: '供应商',
+        counterpartyType: '供应商',
+        counterpartyId: '401',
       },
       catalog,
     )
@@ -162,11 +171,12 @@ describe('buildStatementLinkOptions', () => {
     expect(result[0].label).toContain('待付')
   })
 
-  it('returns freight options for payment with businessType 物流商', () => {
+  it('returns freight options for payment with typed counterparty identity', () => {
     const result = buildStatementLinkOptions(
       'payment',
       {
-        businessType: '物流商',
+        counterpartyType: '物流商',
+        counterpartyId: '501',
       },
       catalog,
     )
@@ -174,11 +184,11 @@ describe('buildStatementLinkOptions', () => {
     expect(result[0].label).toContain('待付')
   })
 
-  it('returns empty array for payment with unknown businessType', () => {
+  it('returns empty array for payment with unknown counterpartyType', () => {
     const result = buildStatementLinkOptions(
       'payment',
       {
-        businessType: '其他',
+        counterpartyType: '其他',
       },
       catalog,
     )
@@ -189,7 +199,7 @@ describe('buildStatementLinkOptions', () => {
     const result = buildStatementLinkOptions(
       'receipt',
       {
-        sourceStatementId: '2',
+        sourceCustomerStatementId: '2',
       },
       catalog,
     )
@@ -197,13 +207,13 @@ describe('buildStatementLinkOptions', () => {
     expect(ids).toContain('2')
   })
 
-  it('filters customer statements by customerName and projectName', () => {
+  it('filters customer statements by customerId and projectId', () => {
     const result = buildStatementLinkOptions(
       'receipt',
       {
-        customerName: '客户A',
-        projectName: '项目X',
-        settlementCompanyId: '1',
+        customerId: '101',
+        projectId: '201',
+        settlementCompanyId: '301',
       },
       catalog,
     )
@@ -216,29 +226,31 @@ describe('buildStatementLinkOptions', () => {
     expect(result.length).toBeGreaterThan(0)
   })
 
-  it('filters supplier statements by counterpartyName', () => {
+  it('filters supplier statements by counterpartyId', () => {
     const result = buildStatementLinkOptions(
       'payment',
       {
-        businessType: '供应商',
-        counterpartyName: '供应商A',
+        counterpartyType: '供应商',
+        counterpartyId: '401',
       },
       catalog,
     )
     expect(result.length).toBeGreaterThan(0)
   })
 
-  it('uses empty value when supplier statement id is missing', () => {
+  it('excludes supplier statements without a stable statement id', () => {
     const result = buildStatementLinkOptions(
       'payment',
       {
-        businessType: '供应商',
+        counterpartyType: '供应商',
+        counterpartyId: '401',
       },
       {
         ...catalog,
         supplierStatements: [
           {
             statementNo: 'GYDZ20260002',
+            supplierId: '401',
             supplierName: '供应商A',
             closingAmount: 100,
           },
@@ -246,32 +258,34 @@ describe('buildStatementLinkOptions', () => {
       },
     )
 
-    expect(result[0].value).toBe('')
+    expect(result).toEqual([])
   })
 
-  it('filters freight statements by counterpartyName', () => {
+  it('filters freight statements by counterpartyId', () => {
     const result = buildStatementLinkOptions(
       'payment',
       {
-        businessType: '物流商',
-        counterpartyName: '物流商A',
+        counterpartyType: '物流商',
+        counterpartyId: '501',
       },
       catalog,
     )
     expect(result.length).toBeGreaterThan(0)
   })
 
-  it('uses empty value when freight statement id is missing', () => {
+  it('excludes freight statements without a stable statement id', () => {
     const result = buildStatementLinkOptions(
       'payment',
       {
-        businessType: '物流商',
+        counterpartyType: '物流商',
+        counterpartyId: '501',
       },
       {
         ...catalog,
         freightStatements: [
           {
             statementNo: 'WDZ20260002',
+            carrierId: '501',
             carrierName: '物流商A',
             unpaidAmount: 100,
           },
@@ -279,7 +293,7 @@ describe('buildStatementLinkOptions', () => {
       },
     )
 
-    expect(result[0].value).toBe('')
+    expect(result).toEqual([])
   })
 
   it('returns payment options with undefined form', () => {

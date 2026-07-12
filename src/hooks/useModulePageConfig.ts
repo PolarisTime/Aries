@@ -105,7 +105,13 @@ function decorateStatementLinkConfig(
   return {
     ...baseConfig,
     formFields: (baseConfig.formFields || []).map((field) => {
-      if (field.key !== 'sourceStatementId') {
+      const isStatementSourceField =
+        (moduleKey === 'receipt' &&
+          field.key === 'sourceCustomerStatementId') ||
+        (moduleKey === 'payment' &&
+          (field.key === 'sourceSupplierStatementId' ||
+            field.key === 'sourceFreightStatementId'))
+      if (!isStatementSourceField) {
         return field
       }
       return {

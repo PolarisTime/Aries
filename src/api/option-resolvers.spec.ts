@@ -374,23 +374,31 @@ describe('option-resolvers', () => {
   describe('warehouse options', () => {
     it('returns dynamic options when available', () => {
       apiGetWarehouseOptionsMock.mockReturnValue([
-        { value: '三号库', label: '三号库' },
+        {
+          id: '308251467645452289',
+          value: '308251467645452289',
+          label: 'WH-003 / 三号库',
+          warehouseCode: 'WH-003',
+          warehouseName: '三号库',
+        },
       ])
-
-      const result = getWarehouseOptions()
-
-      expect(result).toEqual([{ value: '三号库', label: '三号库' }])
-    })
-
-    it('returns fallback options when no dynamic options', () => {
-      apiGetWarehouseOptionsMock.mockReturnValue([])
 
       const result = getWarehouseOptions()
 
       expect(result).toEqual([
-        { label: '一号库', value: '一号库' },
-        { label: '二号库', value: '二号库' },
+        expect.objectContaining({
+          value: '308251467645452289',
+          warehouseName: '三号库',
+        }),
       ])
+    })
+
+    it('returns no name-valued fallback when stable options are unavailable', () => {
+      apiGetWarehouseOptionsMock.mockReturnValue([])
+
+      const result = getWarehouseOptions()
+
+      expect(result).toEqual([])
     })
   })
 })

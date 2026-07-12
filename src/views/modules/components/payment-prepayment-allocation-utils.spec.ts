@@ -24,8 +24,8 @@ describe('payment-prepayment-allocation-utils', () => {
   it('calculates allocated and remaining amounts in cents', () => {
     expect(
       summarizePrepaymentAllocations(1, [
-        { sourceStatementId: '1', allocatedAmount: 0.1 },
-        { sourceStatementId: '2', allocatedAmount: 0.2 },
+        { sourceSupplierStatementId: '1', allocatedAmount: 0.1 },
+        { sourceSupplierStatementId: '2', allocatedAmount: 0.2 },
       ]),
     ).toEqual({ paymentAmount: 1, allocatedAmount: 0.3, remainingAmount: 0.7 })
   })
@@ -40,7 +40,7 @@ describe('payment-prepayment-allocation-utils', () => {
     expect(
       validatePrepaymentAllocations(
         100,
-        [{ sourceStatementId: '', allocatedAmount: 10 }],
+        [{ sourceSupplierStatementId: '', allocatedAmount: 10 }],
         new Map(),
         validationMessages,
       ),
@@ -48,7 +48,7 @@ describe('payment-prepayment-allocation-utils', () => {
     expect(
       validatePrepaymentAllocations(
         100,
-        [{ sourceStatementId: '1', allocatedAmount: 0 }],
+        [{ sourceSupplierStatementId: '1', allocatedAmount: 0 }],
         new Map(),
         validationMessages,
       ),
@@ -60,8 +60,8 @@ describe('payment-prepayment-allocation-utils', () => {
       validatePrepaymentAllocations(
         100,
         [
-          { sourceStatementId: '1', allocatedAmount: 30 },
-          { sourceStatementId: '1', allocatedAmount: 20 },
+          { sourceSupplierStatementId: '1', allocatedAmount: 30 },
+          { sourceSupplierStatementId: '1', allocatedAmount: 20 },
         ],
         new Map(),
         validationMessages,
@@ -71,8 +71,8 @@ describe('payment-prepayment-allocation-utils', () => {
       validatePrepaymentAllocations(
         100,
         [
-          { sourceStatementId: '1', allocatedAmount: 60 },
-          { sourceStatementId: '2', allocatedAmount: 40.01 },
+          { sourceSupplierStatementId: '1', allocatedAmount: 60 },
+          { sourceSupplierStatementId: '2', allocatedAmount: 40.01 },
         ],
         new Map(),
         validationMessages,
@@ -84,7 +84,7 @@ describe('payment-prepayment-allocation-utils', () => {
     expect(
       validatePrepaymentAllocations(
         1000,
-        [{ sourceStatementId: '1', allocatedAmount: 300.01 }],
+        [{ sourceSupplierStatementId: '1', allocatedAmount: 300.01 }],
         new Map([['1', 300]]),
         validationMessages,
       ),
@@ -104,7 +104,7 @@ describe('payment-prepayment-allocation-utils', () => {
         [
           {
             id: '11',
-            sourceStatementId: '2',
+            sourceSupplierStatementId: '2',
             statementNo: 'GYDZ-002',
             statementBalanceAmount: 200,
             allocatedAmount: 50,

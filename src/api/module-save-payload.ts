@@ -5,6 +5,11 @@ import {
   getBehaviorValue,
   hasBehavior,
 } from '@/module-system/module-behavior-registry'
+import {
+  ENTITY_ID_FIELDS,
+  parseEntityId,
+  parseOptionalEntityId,
+} from '@/types/entity-id'
 import type {
   ModuleLineItem,
   ModulePageConfig,
@@ -22,6 +27,24 @@ const COMPUTED_FIELD_KEYS = new Set([
   'permissionSummary',
   'userCount',
 ])
+
+const REQUIRED_SUPPLIER_ID_MODULES = new Set([
+  'purchase-order',
+  'purchase-inbound',
+  'purchase-contract',
+  'invoice-receipt',
+  'supplier-statement',
+  'supplier-refund-receipt',
+])
+
+function assertRequiredStableIdentities(
+  moduleKey: string,
+  record: ModuleRecord,
+) {
+  if (REQUIRED_SUPPLIER_ID_MODULES.has(moduleKey)) {
+    parseEntityId(record.supplierId, `${moduleKey}.supplierId`)
+  }
+}
 
 async function loadModuleConfig(
   moduleKey: string,
@@ -92,7 +115,7 @@ function pickDefinedFields(record: ModuleRecord, fields: readonly string[]) {
 
 function serializeFieldValue(field: string, value: unknown) {
   if (isReferenceIdField(field)) {
-    return toPersistedLineItemId(value)
+    return parseOptionalEntityId(value, field)
   }
   if (dayjs.isDayjs(value)) {
     if (!value.isValid()) {
@@ -104,20 +127,14 @@ function serializeFieldValue(field: string, value: unknown) {
 }
 
 function isReferenceIdField(field: string) {
-  return field === 'id' || field.endsWith('Id')
+  return ENTITY_ID_FIELDS.has(field)
 }
 
 function toPersistedLineItemId(value: unknown) {
-  if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
-    return String(value)
-  }
-  if (typeof value !== 'string') {
+  if (typeof value === 'string' && !/^[1-9]\d*$/.test(value)) {
     return undefined
   }
-  const normalized = value.trim()
-  return /^\d+$/.test(normalized) && !/^0+$/.test(normalized)
-    ? normalized
-    : undefined
+  return parseOptionalEntityId(value, 'items[].id')
 }
 
 type LineItemFieldSpec = { key: string; numeric?: boolean }
@@ -135,6 +152,7 @@ const NUMERIC_LINE_ITEM_FIELD_KEYS = new Set([
 ])
 
 const LINE_ITEM_FIELDS: readonly LineItemFieldSpec[] = [
+  { key: 'materialId' },
   { key: 'materialCode' },
   { key: 'brand' },
   { key: 'category' },
@@ -164,6 +182,7 @@ const LINE_ITEM_FIELDS: readonly LineItemFieldSpec[] = [
   { key: 'customerName' },
   { key: 'projectName' },
   { key: 'materialName' },
+  { key: 'warehouseId' },
   { key: 'warehouseName' },
 ]
 
@@ -242,6 +261,131 @@ function serializeNumericField(field: string, value: unknown) {
   return nextValue
 }
 
+function assertTypedAllocationSource(
+  moduleKey: string,
+  item: ModuleLineItem,
+  index: number,
+) {
+  if (moduleKey === 'receipt') {
+    const sourceCustomerStatementId = parseOptionalEntityId(
+      item.sourceCustomerStatementId,
+      `items[${index}].sourceCustomerStatementId`,
+    )
+    if (!sourceCustomerStatementId) {
+      throw new Error(
+        `items[${index}].sourceCustomerStatementId 核销来源不能为空`,
+      )
+    }
+    return
+  }
+
+  if (moduleKey !== 'payment') {
+    return
+  }
+
+  const sourceSupplierStatementId = parseOptionalEntityId(
+    item.sourceSupplierStatementId,
+    `items[${index}].sourceSupplierStatementId`,
+  )
+  const sourceFreightStatementId = parseOptionalEntityId(
+    item.sourceFreightStatementId,
+    `items[${index}].sourceFreightStatementId`,
+  )
+  if (
+    Boolean(sourceSupplierStatementId) === Boolean(sourceFreightStatementId)
+  ) {
+    throw new Error(`items[${index}] 核销对账单来源必须且只能填写一种`)
+  }
+}
+
+function buildSingleAllocation(
+  sourceKey:
+    | 'sourceCustomerStatementId'
+    | 'sourceSupplierStatementId'
+    | 'sourceFreightStatementId',
+  sourceId: string,
+  amount: unknown,
+): Record<string, unknown> {
+  return {
+    [sourceKey]: sourceId,
+    allocatedAmount: amount,
+  }
+}
+
+function resolveLineItemsForSave(
+  moduleKey: string,
+  record: ModuleRecord,
+): ModuleLineItem[] {
+  const existingItems = toArray(record.items)
+  const existingItem = existingItems[0] ?? { id: '' }
+
+  if (moduleKey === 'receipt') {
+    const sourceCustomerStatementId = parseOptionalEntityId(
+      record.sourceCustomerStatementId,
+      'sourceCustomerStatementId',
+    )
+    if (!sourceCustomerStatementId || existingItems.length > 1) {
+      return existingItems
+    }
+    return [
+      {
+        ...existingItem,
+        ...buildSingleAllocation(
+          'sourceCustomerStatementId',
+          sourceCustomerStatementId,
+          record.amount ?? existingItems[0]?.allocatedAmount,
+        ),
+      },
+    ]
+  }
+
+  if (moduleKey !== 'payment') {
+    return existingItems
+  }
+
+  const sourceSupplierStatementId = parseOptionalEntityId(
+    record.sourceSupplierStatementId,
+    'sourceSupplierStatementId',
+  )
+  const sourceFreightStatementId = parseOptionalEntityId(
+    record.sourceFreightStatementId,
+    'sourceFreightStatementId',
+  )
+  if (sourceSupplierStatementId && sourceFreightStatementId) {
+    throw new Error('付款核销对账单来源必须且只能填写一种')
+  }
+  if (existingItems.length > 1) {
+    return existingItems
+  }
+  if (sourceSupplierStatementId) {
+    return [
+      {
+        ...existingItem,
+        sourceFreightStatementId: undefined,
+        ...buildSingleAllocation(
+          'sourceSupplierStatementId',
+          sourceSupplierStatementId,
+          record.amount ?? existingItems[0]?.allocatedAmount,
+        ),
+      },
+    ]
+  }
+  if (sourceFreightStatementId) {
+    return [
+      {
+        ...existingItem,
+        sourceSupplierStatementId: undefined,
+        ...buildSingleAllocation(
+          'sourceFreightStatementId',
+          sourceFreightStatementId,
+          record.amount ?? existingItems[0]?.allocatedAmount,
+        ),
+      },
+    ]
+  }
+  return existingItems
+}
+
 export function serializeBusinessRecordForSave(
   moduleKey: string,
   record: ModuleRecord,
@@ -253,6 +397,7 @@ async function serializeBusinessRecordForSaveAsync(
   moduleKey: string,
   record: ModuleRecord,
 ) {
+  assertRequiredStableIdentities(moduleKey, record)
   const scalarFields = await getScalarFields(moduleKey)
   const payload = pickDefinedFields(record, scalarFields)
 
@@ -279,13 +424,18 @@ async function serializeBusinessRecordForSaveAsync(
     hasBehavior(moduleKey, 'includeAttachmentIds') &&
     Array.isArray(record.attachmentIds)
   ) {
-    payload.attachmentIds = record.attachmentIds
+    payload.attachmentIds = record.attachmentIds.map((id, index) =>
+      parseEntityId(id, `attachmentIds[${index}]`),
+    )
   }
 
   if (hasBehavior(moduleKey, 'savePayloadLineItems')) {
     const lineItemFields = await getCachedLineItemFields(moduleKey)
-    payload.items = toArray(record.items).map((item) =>
-      serializeLineItem(item, moduleKey, lineItemFields),
+    payload.items = resolveLineItemsForSave(moduleKey, record).map(
+      (item, index) => {
+        assertTypedAllocationSource(moduleKey, item, index)
+        return serializeLineItem(item, moduleKey, lineItemFields)
+      },
     )
   }
 

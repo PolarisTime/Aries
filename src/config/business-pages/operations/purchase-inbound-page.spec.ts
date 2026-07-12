@@ -50,11 +50,19 @@ describe('purchaseInboundsPageConfig', () => {
 
     expect(filterRows).toEqual({
       keyword: 1,
-      supplierName: 1,
+      supplierId: 1,
       settlementCompanyId: 2,
       status: 1,
       inboundDate: 2,
     })
+  })
+
+  it('uses supplierId as the editable supplier identity', () => {
+    expect(
+      purchaseInboundsPageConfig.formFields?.find(
+        (field) => field.key === 'supplierId',
+      ),
+    ).toEqual(expect.objectContaining({ type: 'select', required: true }))
   })
 
   it('has columns', () => {
@@ -90,8 +98,12 @@ describe('purchaseInboundsPageConfig', () => {
     expect(
       parentImport.buildParentFilters?.({
         id: '1',
+        supplierId: '700520000000000001',
       }),
-    ).toEqual({ status: '已审核' })
+    ).toEqual({
+      supplierId: '700520000000000001',
+      status: '已审核',
+    })
     expect(parentImport.hiddenSelectorColumnKeys).toContain('status')
   })
 
@@ -100,6 +112,7 @@ describe('purchaseInboundsPageConfig', () => {
       parentImport.mapParentToDraft?.({
         id: 'po-1',
         orderNo: 'PO-001',
+        supplierId: '700520000000000001',
         supplierCode: 'SUP-001',
         supplierName: '供应商A',
         settlementCompanyId: 'company-1',
@@ -107,6 +120,7 @@ describe('purchaseInboundsPageConfig', () => {
       }),
     ).toEqual({
       purchaseOrderNo: 'PO-001',
+      supplierId: '700520000000000001',
       supplierCode: 'SUP-001',
       supplierName: '供应商A',
       settlementCompanyId: 'company-1',
@@ -117,6 +131,7 @@ describe('purchaseInboundsPageConfig', () => {
   it('maps parent purchase order draft defaults when optional fields are missing', () => {
     expect(parentImport.mapParentToDraft?.({ id: 'po-2' })).toEqual({
       purchaseOrderNo: '',
+      supplierId: undefined,
       supplierCode: '',
       supplierName: '',
       settlementCompanyId: undefined,

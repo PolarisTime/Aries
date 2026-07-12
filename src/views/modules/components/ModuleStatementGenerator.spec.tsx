@@ -102,8 +102,18 @@ describe('ModuleStatementGenerator', () => {
     open: true,
     statementType: 'supplier' as const,
     selectedRows: [
-      { id: '1', supplierName: 'Supplier A', inboundDate: '2024-01-01' },
-      { id: '2', supplierName: 'Supplier A', inboundDate: '2024-01-15' },
+      {
+        id: '1',
+        supplierId: '700520000000000001',
+        supplierName: 'Supplier A',
+        inboundDate: '2024-01-01',
+      },
+      {
+        id: '2',
+        supplierId: '700520000000000001',
+        supplierName: 'Supplier A',
+        inboundDate: '2024-01-15',
+      },
     ],
     onClose: vi.fn(),
     onGenerate: vi.fn(),
@@ -139,7 +149,12 @@ describe('ModuleStatementGenerator', () => {
       ...defaultProps,
       statementType: 'customer' as const,
       selectedRows: [
-        { id: '1', customerName: 'Customer A', deliveryDate: '2024-02-01' },
+        {
+          id: '1',
+          customerId: '700520000000000002',
+          customerName: 'Customer A',
+          deliveryDate: '2024-02-01',
+        },
       ],
     }
     render(<ModuleStatementGenerator {...props} />)
@@ -151,7 +166,12 @@ describe('ModuleStatementGenerator', () => {
       ...defaultProps,
       statementType: 'freight' as const,
       selectedRows: [
-        { id: '1', carrierName: 'Carrier A', billTime: '2024-03-01' },
+        {
+          id: '1',
+          carrierId: '700520000000000003',
+          carrierName: 'Carrier A',
+          billTime: '2024-03-01',
+        },
       ],
     }
     render(<ModuleStatementGenerator {...props} />)
@@ -180,6 +200,47 @@ describe('ModuleStatementGenerator', () => {
       ],
     }
     render(<ModuleStatementGenerator {...props} />)
+    expect(screen.getByText('modules.statement.extractError')).toBeTruthy()
+  })
+
+  it('rejects same-name suppliers with different stable ids', () => {
+    render(
+      <ModuleStatementGenerator
+        {...defaultProps}
+        selectedRows={[
+          {
+            id: '1',
+            supplierId: '700520000000000001',
+            supplierName: '同名供应商',
+            inboundDate: '2024-01-01',
+          },
+          {
+            id: '2',
+            supplierId: '700520000000000002',
+            supplierName: '同名供应商',
+            inboundDate: '2024-01-15',
+          },
+        ]}
+      />,
+    )
+
+    expect(screen.getByText('modules.statement.extractError')).toBeTruthy()
+  })
+
+  it('rejects supplier generation when stable id is missing', () => {
+    render(
+      <ModuleStatementGenerator
+        {...defaultProps}
+        selectedRows={[
+          {
+            id: '1',
+            supplierName: 'Supplier A',
+            inboundDate: '2024-01-01',
+          },
+        ]}
+      />,
+    )
+
     expect(screen.getByText('modules.statement.extractError')).toBeTruthy()
   })
 
@@ -212,8 +273,55 @@ describe('ModuleStatementGenerator', () => {
         'Supplier A',
         '2024-01-01',
         '2024-01-15',
+        '700520000000000001',
       )
     })
+  })
+
+  it.each([
+    {
+      statementType: 'customer' as const,
+      selectedRow: {
+        id: '1',
+        customerId: '700520000000000002',
+        customerName: 'Customer A',
+        deliveryDate: '2024-02-01',
+      },
+      expected: [
+        'Customer A',
+        '2024-02-01',
+        '2024-02-01',
+        '700520000000000002',
+      ],
+    },
+    {
+      statementType: 'freight' as const,
+      selectedRow: {
+        id: '1',
+        carrierId: '700520000000000003',
+        carrierName: 'Carrier A',
+        billTime: '2024-03-01',
+      },
+      expected: ['Carrier A', '2024-03-01', '2024-03-01', '700520000000000003'],
+    },
+  ])('passes the stable id when generating a $statementType statement', async ({
+    statementType,
+    selectedRow,
+    expected,
+  }) => {
+    const onGenerate = vi.fn().mockResolvedValue(undefined)
+    render(
+      <ModuleStatementGenerator
+        {...defaultProps}
+        statementType={statementType}
+        selectedRows={[selectedRow]}
+        onGenerate={onGenerate}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('modules.statement.generateButton'))
+
+    await waitFor(() => expect(onGenerate).toHaveBeenCalledWith(...expected))
   })
 
   it('shows success result after generation', async () => {
@@ -385,9 +493,24 @@ describe('ModuleStatementGenerator', () => {
     const props = {
       ...defaultProps,
       selectedRows: [
-        { id: '1', supplierName: 'Supplier A', inboundDate: '2024-03-01' },
-        { id: '2', supplierName: 'Supplier A', inboundDate: '2024-01-01' },
-        { id: '3', supplierName: 'Supplier A', inboundDate: '2024-02-01' },
+        {
+          id: '1',
+          supplierId: '700520000000000001',
+          supplierName: 'Supplier A',
+          inboundDate: '2024-03-01',
+        },
+        {
+          id: '2',
+          supplierId: '700520000000000001',
+          supplierName: 'Supplier A',
+          inboundDate: '2024-01-01',
+        },
+        {
+          id: '3',
+          supplierId: '700520000000000001',
+          supplierName: 'Supplier A',
+          inboundDate: '2024-02-01',
+        },
       ],
     }
     render(<ModuleStatementGenerator {...props} />)
@@ -417,7 +540,12 @@ describe('ModuleStatementGenerator', () => {
     const props = {
       ...defaultProps,
       selectedRows: [
-        { id: '1', supplierName: 'Supplier A', inboundDate: '2024-01-01' },
+        {
+          id: '1',
+          supplierId: '700520000000000001',
+          supplierName: 'Supplier A',
+          inboundDate: '2024-01-01',
+        },
       ],
     }
     render(<ModuleStatementGenerator {...props} />)

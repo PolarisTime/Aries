@@ -36,7 +36,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       ),
     },
     {
-      key: 'supplierName',
+      key: 'supplierId',
       label: SUPPLIER_NAME_LABEL,
       type: 'select',
       options: getSupplierOptions,
@@ -232,7 +232,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'supplierName',
+      key: 'supplierId',
       label: i18next.t('modules.pages.purchaseInbound.colSupplier'),
       type: 'select',
       required: true,
@@ -276,10 +276,14 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     buttonText: i18next.t('modules.pages.purchaseInbound.parentImportButton'),
     candidateQueryType: 'purchase-order-import',
     candidateUsage: 'purchase-inbound',
-    buildParentFilters: () => ({ status: '已审核' }),
+    buildParentFilters: (currentRecord) => ({
+      supplierId: currentRecord.supplierId,
+      status: '已审核',
+    }),
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({
       purchaseOrderNo: parentRecord.orderNo || '',
+      supplierId: parentRecord.supplierId,
       supplierCode: parentRecord.supplierCode || '',
       supplierName: parentRecord.supplierName || '',
       settlementCompanyId: parentRecord.settlementCompanyId,

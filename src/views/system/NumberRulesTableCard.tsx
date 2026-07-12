@@ -1,11 +1,10 @@
 import { EditOutlined } from '@ant-design/icons'
-import { Card, Col, Row, Select, Statistic, Table, Typography } from 'antd'
+import { Card, Select, Table, Typography } from 'antd'
 import type { TableProps } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { StatusTag } from '@/components/StatusTag'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
 import { TableActions } from '@/components/TableActions'
-import { STATUS } from '@/constants/status-constants'
 import type { ModuleRecord } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import {
@@ -49,7 +48,6 @@ function NumberRuleStatusTag({ value }: { value: string }) {
 export function NumberRulesTableCard({
   keyword,
   statusFilter,
-  rows,
   numberRuleRows,
   uploadRuleRows,
   loading,
@@ -191,32 +189,6 @@ export function NumberRulesTableCard({
         </SystemTableToolbar>
       }
     >
-      <Row gutter={[16, 16]} className="mb-4">
-        <Col xs={24} sm={8}>
-          <Statistic
-            title={t('system.numberRules.documentRules')}
-            value={numberRuleRows.length}
-          />
-        </Col>
-        <Col xs={24} sm={8}>
-          <Statistic
-            title={t('system.numberRules.uploadRules')}
-            value={uploadRuleRows.length}
-          />
-        </Col>
-        <Col xs={24} sm={8}>
-          <Statistic
-            title={t('system.numberRules.disabledUploadRules')}
-            value={
-              rows.filter(
-                (row) =>
-                  asString(row.ruleType) === 'UPLOAD_RULE' &&
-                  asString(row.status) === STATUS.DISABLED,
-              ).length
-            }
-          />
-        </Col>
-      </Row>
       <Typography.Title level={5}>
         {t('system.numberRules.documentRules')}
       </Typography.Title>

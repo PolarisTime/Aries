@@ -1,9 +1,10 @@
 import i18next from 'i18next'
+import { getCarrierEntityOptions } from '@/api/carrier-options'
+import { getSupplierEntityOptions } from '@/api/supplier-options'
 import {
-  getCarrierOptions,
   getCustomerOptions,
+  getCustomerProjectOptions,
   getSettlementCompanyOptions,
-  getSupplierOptions,
 } from '@/constants/module-options'
 import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
@@ -80,12 +81,16 @@ const adjustmentStatusOptions = [
 function getCounterpartyOptions(form?: ModuleRecordInput) {
   switch (form?.counterpartyType) {
     case '供应商':
-      return getSupplierOptions()
+      return getSupplierEntityOptions()
     case '物流商':
-      return getCarrierOptions()
+      return getCarrierEntityOptions()
     default:
       return getCustomerOptions()
   }
+}
+
+function isCustomerCounterparty(form?: ModuleRecordInput) {
+  return form?.counterpartyType === '客户'
 }
 
 export const ledgerAdjustmentPageConfig: ModulePageConfig = {
@@ -307,23 +312,34 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'counterpartyCode',
-      label: i18next.t('modules.pages.ledgerAdjustment.counterpartyCode'),
-      type: 'input',
-      required: true,
-      maxLength: 64,
-      placeholder: i18next.t(
-        'modules.pages.ledgerAdjustment.counterpartyCodePlaceholder',
-      ),
-      row: 1,
-    },
-    {
-      key: 'counterpartyName',
+      key: 'counterpartyId',
       label: i18next.t('modules.pages.ledgerAdjustment.counterparty'),
       type: 'select',
       required: true,
       allowClear: false,
       options: getCounterpartyOptions,
+      masterOptionRequirements: {
+        suppliers: true,
+        customers: true,
+        carriers: true,
+      },
+      row: 1,
+    },
+    {
+      key: 'counterpartyCode',
+      label: i18next.t('modules.pages.ledgerAdjustment.counterpartyCode'),
+      type: 'input',
+      required: true,
+      disabled: true,
+      maxLength: 64,
+      row: 2,
+    },
+    {
+      key: 'counterpartyName',
+      label: i18next.t('modules.pages.ledgerAdjustment.counterparty'),
+      type: 'input',
+      required: true,
+      disabled: true,
       row: 2,
     },
     {
@@ -336,9 +352,21 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
+      key: 'projectId',
+      label: i18next.t('modules.pages.ledgerAdjustment.project'),
+      type: 'select',
+      options: getCustomerProjectOptions,
+      visibleWhen: isCustomerCounterparty,
+      preserve: false,
+      row: 2,
+    },
+    {
       key: 'projectName',
       label: i18next.t('modules.pages.ledgerAdjustment.project'),
       type: 'input',
+      disabled: true,
+      visibleWhen: isCustomerCounterparty,
+      preserve: false,
       maxLength: 128,
       row: 2,
     },
@@ -419,6 +447,7 @@ export const ledgerAdjustmentPageConfig: ModulePageConfig = {
       'adjustmentNo',
       'direction',
       'counterpartyType',
+      'counterpartyId',
       'counterpartyCode',
       'counterpartyName',
       'settlementCompanyId',

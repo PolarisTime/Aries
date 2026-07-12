@@ -41,7 +41,7 @@ describe('purchaseOrdersPageConfig', () => {
 
     expect(filterRows).toEqual({
       keyword: 1,
-      supplierName: 1,
+      supplierId: 1,
       settlementCompanyId: 2,
       status: 1,
       orderDate: 2,
@@ -72,7 +72,7 @@ describe('purchaseOrdersPageConfig', () => {
       (field) => field.key,
     )
     expect(formFieldKeys?.indexOf('settlementCompanyId')).toBe(
-      (formFieldKeys?.indexOf('supplierCode') ?? -2) + 1,
+      (formFieldKeys?.indexOf('supplierId') ?? -2) + 1,
     )
     expect(
       purchaseOrdersPageConfig.columns.map((column) => column.dataIndex),
@@ -80,6 +80,21 @@ describe('purchaseOrdersPageConfig', () => {
     expect(
       purchaseOrdersPageConfig.itemColumns?.map((column) => column.dataIndex),
     ).not.toContain('settlementCompanyName')
+  })
+
+  it('uses supplierId as the editable supplier identity', () => {
+    const supplierField = purchaseOrdersPageConfig.formFields?.find(
+      (field) => field.key === 'supplierId',
+    )
+
+    expect(supplierField).toEqual(
+      expect.objectContaining({ type: 'select', required: true }),
+    )
+    expect(
+      purchaseOrdersPageConfig.formFields?.some(
+        (field) => field.key === 'supplierCode',
+      ),
+    ).toBe(false)
   })
 
   it('has itemColumns', () => {

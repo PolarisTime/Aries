@@ -38,6 +38,90 @@ describe('module-editor-draft-storage', () => {
     expect(readModuleEditorDraft('user-1', 'sales-order', 'new', 1000)).toEqual(
       snapshot,
     )
+    expect(snapshot.version).toBe(2)
+  })
+
+  it('preserves draft UI ids and exact entity ids across nested identity paths', () => {
+    const snapshot = buildModuleEditorDraftSnapshot({
+      userKey: 'user-1',
+      moduleKey: 'freight-bill',
+      recordId: 'new',
+      values: {
+        id: '',
+        carrierId: '308251467645452289',
+        attachmentIds: ['308251467645452290'],
+        source: {
+          sourceFreightBillItemId: '308251467645452291',
+        },
+      },
+      items: [
+        {
+          id: 'line-local',
+          sourceSalesOutboundItemId: '308251467645452292',
+          attachmentIds: ['308251467645452293'],
+          source: {
+            sourceFreightBillItemId: '308251467645452294',
+          },
+        },
+      ],
+      authoritativePrimaryNo: '',
+      now: 1000,
+    })
+
+    writeModuleEditorDraft(snapshot)
+
+    expect(
+      readModuleEditorDraft('user-1', 'freight-bill', 'new', 1000),
+    ).toEqual(snapshot)
+    expect(snapshot.values.id).toBe('')
+    expect(snapshot.items[0].id).toBe('line-local')
+    expect(snapshot.values.carrierId).toBe('308251467645452289')
+  })
+
+  it('fails closed when building a draft with an unsafe numeric entity id', () => {
+    expect(() =>
+      buildModuleEditorDraftSnapshot({
+        userKey: 'user-1',
+        moduleKey: 'sales-order',
+        recordId: 'new',
+        values: {
+          id: '',
+          customerId: 9_007_199_254_740_992,
+        },
+        items: [{ id: 'line-1' }],
+        authoritativePrimaryNo: '',
+        now: 1000,
+      }),
+    ).toThrow('实体 ID 契约无效：values.customerId')
+  })
+
+  it('removes a stored v2 draft containing an unsafe nested entity id', () => {
+    const key = 'aries-module-editor-draft:user-1:freight-bill:new'
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        version: 2,
+        userKey: 'user-1',
+        moduleKey: 'freight-bill',
+        recordId: 'new',
+        values: { id: '' },
+        items: [
+          {
+            id: 'line-1',
+            source: {
+              sourceSalesOutboundItemId: 9_007_199_254_740_992,
+            },
+          },
+        ],
+        authoritativePrimaryNo: '',
+        updatedAt: 1000,
+      }),
+    )
+
+    expect(
+      readModuleEditorDraft('user-1', 'freight-bill', 'new', 1000),
+    ).toBeNull()
+    expect(localStorage.getItem(key)).toBeNull()
   })
 
   it('isolates draft scopes with encoded user, module, and record keys', () => {
@@ -45,7 +129,7 @@ describe('module-editor-draft-storage', () => {
       userKey: 'user/1',
       moduleKey: 'sales:order',
       recordId: 'record 1',
-      values: { id: 'record 1', orderNo: 'SO-001' },
+      values: { id: '308251467645452295', orderNo: 'SO-001' },
       items: [],
       authoritativePrimaryNo: '',
       now: 1000,
@@ -97,7 +181,7 @@ describe('module-editor-draft-storage', () => {
     localStorage.setItem(
       'aries-module-editor-draft:user-1:sales-order:new',
       JSON.stringify({
-        version: 1,
+        version: 2,
         userKey: 'user-1',
         moduleKey: 'sales-order',
         recordId: 'new',
@@ -129,11 +213,11 @@ describe('module-editor-draft-storage', () => {
     ).toBeNull()
   })
 
-  it('removes stored drafts from unsupported snapshot versions', () => {
+  it('removes legacy v1 drafts instead of restoring them', () => {
     localStorage.setItem(
       'aries-module-editor-draft:user-1:sales-order:new',
       JSON.stringify({
-        version: 0,
+        version: 1,
         userKey: 'user-1',
         moduleKey: 'sales-order',
         recordId: 'new',
@@ -155,7 +239,7 @@ describe('module-editor-draft-storage', () => {
     localStorage.setItem(
       'aries-module-editor-draft:user-1:sales-order:new',
       JSON.stringify({
-        version: 1,
+        version: 2,
         userKey: 'user-1',
         moduleKey: 'sales-order',
         recordId: 'new',
@@ -256,18 +340,18 @@ describe('module-editor-draft-storage', () => {
     const snapshot = buildModuleEditorDraftSnapshot({
       userKey: 'user-1',
       moduleKey: 'sales-order',
-      recordId: 'record-1',
-      values: { id: 'record-1' },
+      recordId: '308251467645452296',
+      values: { id: '308251467645452296' },
       items: [],
       authoritativePrimaryNo: '',
       now: 1000,
     })
     writeModuleEditorDraft(snapshot)
 
-    removeModuleEditorDraft('user-1', 'sales-order', 'record-1')
+    removeModuleEditorDraft('user-1', 'sales-order', '308251467645452296')
 
     expect(
-      readModuleEditorDraft('user-1', 'sales-order', 'record-1'),
+      readModuleEditorDraft('user-1', 'sales-order', '308251467645452296'),
     ).toBeNull()
   })
 

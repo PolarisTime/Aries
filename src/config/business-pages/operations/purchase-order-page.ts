@@ -1,5 +1,4 @@
 import i18next from 'i18next'
-import { getSupplierIdentityOptions } from '@/api/supplier-options'
 import {
   buildValueOptions,
   getSettlementCompanyOptions,
@@ -33,7 +32,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       placeholder: i18next.t('modules.pages.purchaseOrder.placeholderOrderNo'),
     },
     {
-      key: 'supplierName',
+      key: 'supplierId',
       label: SUPPLIER_NAME_LABEL,
       type: 'select',
       options: getSupplierOptions,
@@ -184,11 +183,11 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'supplierCode',
+      key: 'supplierId',
       label: i18next.t('modules.pages.purchaseOrder.colSupplier'),
       type: 'select',
       required: true,
-      options: getSupplierIdentityOptions,
+      options: getSupplierOptions,
       row: 2,
     },
     {

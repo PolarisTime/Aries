@@ -378,6 +378,7 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     lineItem: [
       'sourceNo',
       'sourceSalesOrderItemId',
+      'materialId',
       'materialCode',
       'brand',
       'category',
@@ -385,6 +386,7 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
       'spec',
       'length',
       'unit',
+      'warehouseId',
       'warehouseName',
       'batchNo',
       'quantity',

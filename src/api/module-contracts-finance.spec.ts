@@ -14,6 +14,7 @@ describe('module-contracts-finance', () => {
     expect(config.path).toBe('/supplier-statements')
     expect(config.nativeFilterKeys).toContain('keyword')
     expect(config.nativeFilterKeys).toContain('supplierName')
+    expect(config.nativeFilterKeys).toContain('supplierId')
     expect(config.nativeFilterKeys).toContain('status')
     expect(config.dateRangeMapping?.endDate.startKey).toBe('periodStart')
     expect(config.dateRangeMapping?.endDate.endKey).toBe('periodEnd')
@@ -24,6 +25,9 @@ describe('module-contracts-finance', () => {
     expect(config).toBeDefined()
     expect(config.path).toBe('/customer-statements')
     expect(config.nativeFilterKeys).toContain('customerName')
+    expect(config.nativeFilterKeys).toEqual(
+      expect.arrayContaining(['customerId', 'projectId']),
+    )
   })
 
   it('contains freight-statement config', () => {
@@ -32,6 +36,7 @@ describe('module-contracts-finance', () => {
     expect(config.path).toBe('/freight-statements')
     expect(config.nativeFilterKeys).toContain('carrierCode')
     expect(config.nativeFilterKeys).toContain('carrierName')
+    expect(config.nativeFilterKeys).toContain('carrierId')
     expect(config.nativeFilterKeys).toContain('signStatus')
   })
 

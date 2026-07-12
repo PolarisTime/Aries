@@ -8,6 +8,7 @@ export const operationModuleEndpointContracts: Record<
     path: '/purchase-orders',
     nativeFilterKeys: [
       'keyword',
+      'supplierId',
       'supplierName',
       'settlementCompanyId',
       'status',
@@ -25,7 +26,9 @@ export const operationModuleEndpointContracts: Record<
     path: '/purchase-inbounds',
     nativeFilterKeys: [
       'keyword',
+      'supplierId',
       'supplierName',
+      'currentRecordId',
       'settlementCompanyId',
       'status',
       'startDate',
@@ -42,6 +45,7 @@ export const operationModuleEndpointContracts: Record<
     path: '/purchase-refunds',
     nativeFilterKeys: [
       'keyword',
+      'supplierId',
       'supplierName',
       'settlementCompanyId',
       'status',
@@ -59,8 +63,11 @@ export const operationModuleEndpointContracts: Record<
     path: '/sales-orders',
     nativeFilterKeys: [
       'keyword',
+      'customerId',
       'customerName',
+      'projectId',
       'projectName',
+      'currentRecordId',
       'settlementCompanyId',
       'status',
       'startDate',
@@ -77,8 +84,11 @@ export const operationModuleEndpointContracts: Record<
     path: '/sales-outbounds',
     nativeFilterKeys: [
       'keyword',
+      'customerId',
       'customerName',
+      'projectId',
       'projectName',
+      'currentRecordId',
       'settlementCompanyId',
       'status',
       'startDate',
@@ -95,8 +105,12 @@ export const operationModuleEndpointContracts: Record<
     path: '/freight-bills',
     nativeFilterKeys: [
       'keyword',
+      'carrierId',
       'carrierCode',
       'carrierName',
+      'customerId',
+      'projectId',
+      'currentRecordId',
       'settlementCompanyId',
       'status',
       'startDate',

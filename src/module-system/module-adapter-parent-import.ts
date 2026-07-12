@@ -1,3 +1,4 @@
+import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
 import type {
   ModuleLineItem,
   ModuleParentImportDefinition,
@@ -6,13 +7,22 @@ import type {
 import { asString } from '@/utils/type-narrowing'
 import { parseParentRelationNos } from './module-adapter-shared'
 
-function getSourceParentItemId(item: ModuleLineItem) {
-  return String(
-    item.sourceInboundItemId ||
-      item.sourcePurchaseOrderItemId ||
-      item.sourceSalesOrderItemId ||
-      '',
-  ).trim()
+const SOURCE_PARENT_ITEM_ID_FIELDS = [
+  'sourceFreightBillItemId',
+  'sourceSalesOutboundItemId',
+  'sourceInboundItemId',
+  'sourcePurchaseOrderItemId',
+  'sourceSalesOrderItemId',
+] as const
+
+function getSourceParentItemId(item: ModuleLineItem): string {
+  for (const field of SOURCE_PARENT_ITEM_ID_FIELDS) {
+    const id = parseOptionalEntityId(item[field], field)
+    if (id) {
+      return id
+    }
+  }
+  return ''
 }
 
 function resolvePersistedParentRelationNo(item: ModuleLineItem) {
@@ -21,6 +31,14 @@ function resolvePersistedParentRelationNo(item: ModuleLineItem) {
     return explicitRelationNo
   }
   return asString(item.sourceNo).trim()
+}
+
+function resolvePersistedParentRelationId(item: ModuleLineItem) {
+  const explicitRelationId = parseOptionalEntityId(
+    item._parentRelationId,
+    '_parentRelationId',
+  )
+  return explicitRelationId || ''
 }
 
 function toSafeNumber(value: unknown) {
@@ -45,7 +63,11 @@ function isZeroLike(value: unknown) {
 }
 
 function isEmptyDraftLineItem(item: ModuleLineItem) {
-  if (resolvePersistedParentRelationNo(item) || getSourceParentItemId(item)) {
+  if (
+    resolvePersistedParentRelationId(item) ||
+    resolvePersistedParentRelationNo(item) ||
+    getSourceParentItemId(item)
+  ) {
     return false
   }
 
@@ -97,11 +119,30 @@ export function buildParentImportState(options: {
     cloneLineItems,
   } = options
 
+  const parentId = parseEntityId(parentRecord.id, 'parentRecord.id')
   const parentNo = String(
     asString(parentRecord[parentImportConfig.parentDisplayFieldKey]),
   )
-  const hasImportedCurrentParent = currentParentNos.includes(parentNo)
-  const mergedParentNos = hasImportedCurrentParent
+  const effectiveCurrentItems = currentItems.filter(
+    (item) => !isEmptyDraftLineItem(item),
+  )
+  const hasPersistedRelationIds = effectiveCurrentItems.some((item) =>
+    Boolean(resolvePersistedParentRelationId(item)),
+  )
+  const currentParentItems = effectiveCurrentItems.filter((item) => {
+    const relationId = resolvePersistedParentRelationId(item)
+    if (relationId) {
+      return relationId === parentId
+    }
+    return (
+      !hasPersistedRelationIds &&
+      resolvePersistedParentRelationNo(item) === parentNo
+    )
+  })
+  const hasImportedCurrentParent = hasPersistedRelationIds
+    ? currentParentItems.length > 0
+    : currentParentNos.includes(parentNo)
+  const mergedParentNos = currentParentNos.includes(parentNo)
     ? currentParentNos
     : [...currentParentNos, parentNo]
   const mappedValues = parentImportConfig.mapParentToDraft?.(parentRecord) || {}
@@ -114,12 +155,6 @@ export function buildParentImportState(options: {
     : Array.isArray(parentRecord.items)
       ? cloneLineItems(parentRecord.items)
       : []
-  const effectiveCurrentItems = currentItems.filter(
-    (item) => !isEmptyDraftLineItem(item),
-  )
-  const currentParentItems = effectiveCurrentItems.filter(
-    (item) => resolvePersistedParentRelationNo(item) === parentNo,
-  )
   const currentAllocatedQuantityMap = new Map<string, number>()
   const currentAllocatedWeightTonMap = new Map<string, number>()
   const currentAllocatedAmountMap = new Map<string, number>()
@@ -148,6 +183,7 @@ export function buildParentImportState(options: {
     const sourceParentItemId = getSourceParentItemId(item)
     const nextItem: ModuleLineItem = {
       ...item,
+      _parentRelationId: parentId,
       _parentRelationNo: parentNo,
     }
     if (!sourceParentItemId) {
@@ -218,6 +254,7 @@ export function buildParentImportState(options: {
   })
 
   return {
+    parentId,
     parentNo,
     hasImportedCurrentParent,
     importedItemCount: importedItems.length,
@@ -227,7 +264,7 @@ export function buildParentImportState(options: {
     nextItems: hasImportedCurrentParent
       ? [
           ...effectiveCurrentItems.filter(
-            (item) => resolvePersistedParentRelationNo(item) !== parentNo,
+            (item) => !currentParentItems.includes(item),
           ),
           ...importedItems,
         ]

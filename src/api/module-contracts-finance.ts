@@ -8,6 +8,7 @@ export const financeModuleEndpointContracts: Record<
     path: '/supplier-statements',
     nativeFilterKeys: [
       'keyword',
+      'supplierId',
       'supplierName',
       'settlementCompanyId',
       'status',
@@ -23,7 +24,9 @@ export const financeModuleEndpointContracts: Record<
     path: '/customer-statements',
     nativeFilterKeys: [
       'keyword',
+      'customerId',
       'customerName',
+      'projectId',
       'settlementCompanyId',
       'status',
     ],
@@ -38,6 +41,7 @@ export const financeModuleEndpointContracts: Record<
     path: '/freight-statements',
     nativeFilterKeys: [
       'keyword',
+      'carrierId',
       'carrierCode',
       'carrierName',
       'settlementCompanyId',

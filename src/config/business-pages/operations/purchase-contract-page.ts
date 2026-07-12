@@ -34,7 +34,7 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
       ),
     },
     {
-      key: 'supplierName',
+      key: 'supplierId',
       label: SUPPLIER_NAME_LABEL,
       type: 'select',
       options: getSupplierOptions,
@@ -205,7 +205,7 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'supplierName',
+      key: 'supplierId',
       label: i18next.t('modules.pages.purchaseContract.supplier'),
       type: 'select',
       required: true,
@@ -269,6 +269,8 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
     mapParentToDraft: (parentRecord) => {
       const signDate = parentRecord.orderDate || undefined
       return {
+        supplierId: parentRecord.supplierId,
+        supplierCode: parentRecord.supplierCode || '',
         supplierName: parentRecord.supplierName || '',
         buyerName: parentRecord.buyerName || '',
         signDate,

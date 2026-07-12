@@ -13,6 +13,8 @@ const lineItemPayloadModules = [
   'freight-statement',
   'invoice-receipt',
   'invoice-issue',
+  'receipt',
+  'payment',
 ]
 
 for (const key of lineItemPayloadModules) {

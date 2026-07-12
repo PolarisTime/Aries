@@ -1,3 +1,4 @@
+import { parseOptionalEntityId } from '@/types/entity-id'
 import type {
   ModuleFormFieldOption,
   ModuleRecord,
@@ -7,14 +8,14 @@ import { asString } from '@/utils/type-narrowing'
 
 interface CustomerStatementOptionArgs {
   currentStatementId?: string | null
-  customerName?: string
-  projectName?: string
+  customerId?: string
+  projectId?: string
   settlementCompanyId?: string
 }
 
 interface CounterpartyStatementOptionArgs {
   currentStatementId?: string | null
-  counterpartyName?: string
+  counterpartyId?: string
 }
 
 export interface StatementLinkCatalog {
@@ -33,12 +34,11 @@ function normalizeAmount(value: unknown) {
 }
 
 function normalizeId(value: unknown) {
-  const id = asString(value).trim()
-  return id ? id : null
+  return parseOptionalEntityId(value, 'statementId') ?? null
 }
 
-function matchesFilter(actual: unknown, expected: string) {
-  return !expected || normalizeText(actual) === expected
+function matchesIdentity(actual: unknown, expected: string | null) {
+  return expected === null || normalizeId(actual) === expected
 }
 
 function keepCurrentOrOpenBalance(
@@ -74,25 +74,26 @@ export function buildCustomerStatementOptions(
   statements: ModuleRecord[],
   args: CustomerStatementOptionArgs = {},
 ) {
-  const customerName = normalizeText(args.customerName)
-  const projectName = normalizeText(args.projectName)
-  const settlementCompanyId = normalizeText(args.settlementCompanyId)
+  const customerId = normalizeId(args.customerId)
+  const projectId = normalizeId(args.projectId)
+  const settlementCompanyId = normalizeId(args.settlementCompanyId)
 
   return [...statements]
     .filter(
       (record) =>
+        normalizeId(record.id) !== null &&
         keepCurrentOrOpenBalance(
           record,
           'closingAmount',
           args.currentStatementId,
         ) &&
-        matchesFilter(record.customerName, customerName) &&
-        matchesFilter(record.projectName, projectName) &&
-        matchesFilter(record.settlementCompanyId, settlementCompanyId),
+        matchesIdentity(record.customerId, customerId) &&
+        matchesIdentity(record.projectId, projectId) &&
+        matchesIdentity(record.settlementCompanyId, settlementCompanyId),
     )
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
-      value: String(record.id || ''),
+      value: normalizeId(record.id)!,
       label: `${asString(record.statementNo)} | ${asString(record.customerName)} / ${asString(record.projectName)} | 待收 ${formatAmountLabel(record.closingAmount)}`,
       settlementCompanyId: asString(record.settlementCompanyId),
       settlementCompanyName: asString(record.settlementCompanyName),
@@ -103,20 +104,22 @@ function buildSupplierStatementOptions(
   statements: ModuleRecord[],
   args: CounterpartyStatementOptionArgs = {},
 ) {
-  const counterpartyName = normalizeText(args.counterpartyName)
+  const counterpartyId = normalizeId(args.counterpartyId)
 
   return [...statements]
     .filter(
       (record) =>
+        normalizeId(record.id) !== null &&
         keepCurrentOrOpenBalance(
           record,
           'closingAmount',
           args.currentStatementId,
-        ) && matchesFilter(record.supplierName, counterpartyName),
+        ) &&
+        matchesIdentity(record.supplierId, counterpartyId),
     )
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
-      value: String(record.id || ''),
+      value: normalizeId(record.id)!,
       label: `${asString(record.statementNo)} | ${asString(record.supplierName)} | 待付 ${formatAmountLabel(record.closingAmount)}`,
     }))
 }
@@ -125,20 +128,22 @@ function buildFreightStatementOptions(
   statements: ModuleRecord[],
   args: CounterpartyStatementOptionArgs = {},
 ) {
-  const counterpartyName = normalizeText(args.counterpartyName)
+  const counterpartyId = normalizeId(args.counterpartyId)
 
   return [...statements]
     .filter(
       (record) =>
+        normalizeId(record.id) !== null &&
         keepCurrentOrOpenBalance(
           record,
           'unpaidAmount',
           args.currentStatementId,
-        ) && matchesFilter(record.carrierName, counterpartyName),
+        ) &&
+        matchesIdentity(record.carrierId, counterpartyId),
     )
     .sort(compareStatements)
     .map<ModuleFormFieldOption>((record) => ({
-      value: String(record.id || ''),
+      value: normalizeId(record.id)!,
       label: `${asString(record.statementNo)} | ${asString(record.carrierName)} | 待付 ${formatAmountLabel(record.unpaidAmount)}`,
     }))
 }
@@ -161,31 +166,29 @@ export function buildStatementLinkOptions(
   form: ModuleRecordInput | undefined,
   catalog: StatementLinkCatalog,
 ) {
-  const currentStatementId = normalizeId(form?.sourceStatementId)
-
   if (moduleKey === 'receipt') {
     return buildCustomerStatementOptions(catalog.customerStatements, {
-      currentStatementId,
-      customerName: normalizeText(form?.customerName),
-      projectName: normalizeText(form?.projectName),
-      settlementCompanyId: normalizeText(form?.settlementCompanyId),
+      currentStatementId: normalizeId(form?.sourceCustomerStatementId),
+      customerId: normalizeId(form?.customerId) ?? undefined,
+      projectId: normalizeId(form?.projectId) ?? undefined,
+      settlementCompanyId: normalizeId(form?.settlementCompanyId) ?? undefined,
     })
   }
 
-  const counterpartyName = normalizeText(form?.counterpartyName)
-  const businessType = normalizeText(form?.businessType)
+  const counterpartyType = normalizeText(form?.counterpartyType)
+  const counterpartyId = normalizeId(form?.counterpartyId) ?? undefined
 
-  if (businessType === '供应商') {
+  if (counterpartyType === '供应商') {
     return buildSupplierStatementOptions(catalog.supplierStatements, {
-      currentStatementId,
-      counterpartyName,
+      currentStatementId: normalizeId(form?.sourceSupplierStatementId),
+      counterpartyId,
     })
   }
 
-  if (businessType === '物流商') {
+  if (counterpartyType === '物流商') {
     return buildFreightStatementOptions(catalog.freightStatements, {
-      currentStatementId,
-      counterpartyName,
+      currentStatementId: normalizeId(form?.sourceFreightStatementId),
+      counterpartyId,
     })
   }
 

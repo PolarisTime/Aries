@@ -1,3 +1,4 @@
+import type { EntityId } from '@/types/entity-id'
 import type {
   ModuleColumnDefinition,
   ModuleDetailField,
@@ -20,6 +21,7 @@ export type {
   ModuleFormFieldOption,
   ModuleFormFieldOptionResolver,
   ModuleFormFieldType,
+  ModuleMasterOptionRequirements,
   ModuleQuickFilterDefinition,
 } from '@/types/module-page-fields'
 
@@ -48,18 +50,18 @@ export interface ModuleActionDefinition {
 }
 
 export type ModuleRecordInput = {
-  id?: string | number
+  id?: EntityId
   items?: ModuleRecordInput[]
   [key: string]: unknown
 }
 
 export type ModuleLineItem = {
-  id: string
+  id: EntityId
   [key: string]: unknown
 }
 
 export type ModuleRecord = {
-  id: string
+  id: EntityId
   items?: ModuleLineItem[]
   [key: string]: unknown
 }

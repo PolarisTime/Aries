@@ -4,6 +4,20 @@ vi.mock('i18next', () => ({
   default: { t: (key: string) => key },
 }))
 
+vi.mock('@/api/carrier-options', () => ({
+  getCarrierEntityOptions: vi.fn(() => [
+    { id: '501', label: 'CAR-001 / 承运商A', value: '501' },
+  ]),
+}))
+
+vi.mock('@/api/supplier-options', () => ({
+  getSupplierEntityOptions: vi.fn(() => [
+    { id: '401', label: 'SUP-001 / 供应商A', value: '401' },
+  ]),
+}))
+
+import { getCarrierEntityOptions } from '@/api/carrier-options'
+import { getSupplierEntityOptions } from '@/api/supplier-options'
 import { paymentsPageConfig } from './payment-page'
 
 describe('paymentsPageConfig', () => {
@@ -62,29 +76,103 @@ describe('paymentsPageConfig', () => {
   })
 
   it('shows statement allocation only for statement settlement', () => {
-    const statementField = paymentsPageConfig.formFields!.find(
-      (field) => field.key === 'sourceStatementId',
+    const supplierStatementField = paymentsPageConfig.formFields!.find(
+      (field) => field.key === 'sourceSupplierStatementId',
+    )
+    const freightStatementField = paymentsPageConfig.formFields!.find(
+      (field) => field.key === 'sourceFreightStatementId',
     )
 
     expect(
-      statementField?.visibleWhen?.({
+      supplierStatementField?.visibleWhen?.({
         paymentPurpose: 'STATEMENT_SETTLEMENT',
+        counterpartyType: '供应商',
       }),
     ).toBe(true)
     expect(
-      statementField?.visibleWhen?.({
+      supplierStatementField?.visibleWhen?.({
         paymentPurpose: 'PURCHASE_PREPAYMENT',
+        counterpartyType: '供应商',
       }),
     ).toBe(false)
-    expect(statementField?.preserve).toBe(false)
+    expect(
+      freightStatementField?.visibleWhen?.({
+        paymentPurpose: 'STATEMENT_SETTLEMENT',
+        counterpartyType: '物流商',
+      }),
+    ).toBe(true)
+    expect(supplierStatementField?.preserve).toBe(false)
+    expect(freightStatementField?.preserve).toBe(false)
+  })
+
+  it('uses a typed counterparty identity and never saves a generic statement id', () => {
+    const fieldKeys = paymentsPageConfig.formFields?.map((field) => field.key)
+    const detailKeys = paymentsPageConfig.detailFields.map((field) => field.key)
+    const saveFields = paymentsPageConfig.saveFields?.scalar || []
+
+    expect(fieldKeys).toEqual(
+      expect.arrayContaining([
+        'counterpartyType',
+        'counterpartyId',
+        'sourceSupplierStatementId',
+        'sourceFreightStatementId',
+      ]),
+    )
+    expect(fieldKeys).not.toContain('sourceStatementId')
+    expect(detailKeys).toEqual(
+      expect.arrayContaining([
+        'sourceSupplierStatementId',
+        'sourceFreightStatementId',
+      ]),
+    )
+    expect(detailKeys).not.toContain('sourceStatementId')
+    expect(saveFields).toEqual(
+      expect.arrayContaining(['counterpartyType', 'counterpartyId']),
+    )
+    expect(saveFields).not.toContain('businessType')
+    expect(saveFields).not.toContain('sourceStatementId')
+  })
+
+  it('uses snowflake ids as supplier and carrier selector values', () => {
+    const counterpartyField = paymentsPageConfig.formFields?.find(
+      (field) => field.key === 'counterpartyId',
+    )
+    const options = counterpartyField?.options as (form?: any) => any[]
+
+    expect(options({ counterpartyType: '供应商' })[0]).toMatchObject({
+      value: '401',
+    })
+    expect(getSupplierEntityOptions).toHaveBeenCalled()
+    expect(options({ counterpartyType: '物流商' })[0]).toMatchObject({
+      value: '501',
+    })
+    expect(getCarrierEntityOptions).toHaveBeenCalled()
+  })
+
+  it('declares all master data required by the dynamic counterparty selector', () => {
+    const counterpartyField = paymentsPageConfig.formFields?.find(
+      (field) => field.key === 'counterpartyId',
+    ) as
+      | {
+          masterOptionRequirements?: {
+            suppliers?: boolean
+            carriers?: boolean
+          }
+        }
+      | undefined
+
+    expect(counterpartyField?.masterOptionRequirements).toEqual({
+      suppliers: true,
+      carriers: true,
+    })
   })
 
   it('locks supplier business type and exposes authoritative snapshots for purchase prepayment', () => {
-    const businessTypeField = paymentsPageConfig.formFields!.find(
-      (field) => field.key === 'businessType',
+    const counterpartyTypeField = paymentsPageConfig.formFields!.find(
+      (field) => field.key === 'counterpartyType',
     )
     expect(
-      businessTypeField?.disabledWhen?.({
+      counterpartyTypeField?.disabledWhen?.({
         paymentPurpose: 'PURCHASE_PREPAYMENT',
       }),
     ).toBe(true)
@@ -120,6 +208,13 @@ describe('paymentsPageConfig', () => {
     expect(parentImport!.parentModuleKey).toBe('purchase-order')
     expect(parentImport!.candidateQueryType).toBe('purchase-prepayment')
     expect(
+      parentImport!.buildParentFilters?.({
+        id: '1',
+        counterpartyType: '供应商',
+        counterpartyId: '700520000000000001',
+      }),
+    ).toEqual({ supplierId: '700520000000000001' })
+    expect(
       parentImport!.visibleWhen?.({
         paymentPurpose: 'PURCHASE_PREPAYMENT',
       } as any),
@@ -135,12 +230,14 @@ describe('paymentsPageConfig', () => {
         orderNo: 'PO-001',
         supplierCode: 'SUP-001',
         supplierName: '供应商甲',
+        supplierId: '301',
         settlementCompanyId: '201',
         settlementCompanyName: '结算主体甲',
         totalAmount: 1280.5,
       }),
     ).toEqual({
-      businessType: '供应商',
+      counterpartyType: '供应商',
+      counterpartyId: '301',
       counterpartyCode: 'SUP-001',
       counterpartyName: '供应商甲',
       sourcePurchaseOrderId: '101',

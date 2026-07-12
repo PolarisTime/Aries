@@ -5,6 +5,7 @@ import {
   statementStatusOptions,
 } from '@/constants/module-options'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
+import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL, SUPPLIER_NAME_LABEL } from '../shared/filter-labels'
@@ -17,6 +18,10 @@ import {
   compactBatchSupplierStatementItemColumns,
   statusMap,
 } from '../shared/shared'
+
+function entityIdOf(value: unknown, field: string) {
+  return parseOptionalEntityId(value, field)
+}
 
 export const supplierStatementPageConfig: ModulePageConfig = {
   key: 'supplier-statement',
@@ -35,7 +40,7 @@ export const supplierStatementPageConfig: ModulePageConfig = {
   ],
   filters: [
     {
-      key: 'supplierName',
+      key: 'supplierId',
       label: SUPPLIER_NAME_LABEL,
       type: 'select',
       options: getSupplierOptions,
@@ -187,7 +192,7 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'supplierName',
+      key: 'supplierId',
       label: i18next.t('modules.pages.supplierStatement.supplier'),
       type: 'select',
       required: true,
@@ -264,6 +269,7 @@ export const supplierStatementPageConfig: ModulePageConfig = {
     scalar: [
       'statementNo',
       'sourceInboundNos',
+      'supplierId',
       'supplierCode',
       'supplierName',
       'settlementCompanyId',
@@ -278,6 +284,8 @@ export const supplierStatementPageConfig: ModulePageConfig = {
     ],
     lineItem: [
       'sourceNo',
+      'sourceInboundItemId',
+      'materialId',
       'materialCode',
       'brand',
       'category',
@@ -308,14 +316,17 @@ export const supplierStatementPageConfig: ModulePageConfig = {
     enforceUniqueRelation: true,
     allowMultipleSelection: true,
     buildParentFilters: (currentRecord) => ({
-      supplierName: asString(currentRecord.supplierName).trim(),
+      supplierId: entityIdOf(currentRecord.supplierId, 'supplierId'),
+      currentRecordId: entityIdOf(currentRecord.id, 'currentRecordId'),
       settlementCompanyId: currentRecord.settlementCompanyId,
     }),
     validateBeforeOpen: (currentRecord) =>
-      asString(currentRecord.supplierName).trim()
+      entityIdOf(currentRecord.supplierId, 'supplierId')
         ? null
         : '请先选择供应商，再选择采购入库单',
     mapParentToDraft: (parentRecord) => ({
+      supplierId: parentRecord.supplierId,
+      supplierCode: parentRecord.supplierCode || '',
       supplierName: parentRecord.supplierName || '',
       settlementCompanyId: parentRecord.settlementCompanyId,
       settlementCompanyName: parentRecord.settlementCompanyName || '',
@@ -331,10 +342,15 @@ export const supplierStatementPageConfig: ModulePageConfig = {
       ) {
         return '只能选择完成入库的采购入库单生成供应商对账单'
       }
-      if (
-        asString(currentRecord.supplierName).trim() !==
-        asString(parentRecord.supplierName).trim()
-      ) {
+      const currentSupplierId = entityIdOf(
+        currentRecord.supplierId,
+        'currentRecord.supplierId',
+      )
+      const parentSupplierId = entityIdOf(
+        parentRecord.supplierId,
+        'parentRecord.supplierId',
+      )
+      if (!currentSupplierId || currentSupplierId !== parentSupplierId) {
         return '只能选择同一供应商的采购入库单生成供应商对账单'
       }
       const settlementCompanyError = validateSameSettlementCompany(

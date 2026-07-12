@@ -53,7 +53,7 @@ export const supplierRefundReceiptsPageConfig: ModulePageConfig = {
       type: 'input',
     },
     {
-      key: 'supplierName',
+      key: 'supplierId',
       label: SUPPLIER_NAME_LABEL,
       type: 'select',
       options: getSupplierOptions,
@@ -289,6 +289,7 @@ export const supplierRefundReceiptsPageConfig: ModulePageConfig = {
     buildParentFilters: () => ({ status: '已审核' }),
     mapParentToDraft: (parentRecord) => ({
       purchaseRefundId: parentRecord.id,
+      supplierId: parentRecord.supplierId,
       supplierCode: parentRecord.supplierCode || '',
       supplierName: parentRecord.supplierName || '',
       settlementCompanyId: parentRecord.settlementCompanyId,
@@ -299,6 +300,7 @@ export const supplierRefundReceiptsPageConfig: ModulePageConfig = {
     scalar: [
       'refundReceiptNo',
       'purchaseRefundId',
+      'supplierId',
       'receiptDate',
       'receiptMethod',
       'amount',

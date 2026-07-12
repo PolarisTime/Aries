@@ -42,6 +42,7 @@ import {
   getModuleRecordPrimaryNo,
   parseParentRelationNos,
 } from '@/module-system/module-adapter-shared'
+import { getBehaviorValue } from '@/module-system/module-behavior-registry'
 import type { SearchParams } from '@/types/api-raw'
 import type {
   ModuleLineItem,
@@ -126,9 +127,19 @@ function normalizeRecordForEditor(
   config: ModulePageConfig,
   record: ModuleRecord,
 ): ModuleRecord {
-  const normalized: ModuleRecord = {
+  let normalized: ModuleRecord = {
     ...record,
   }
+
+  const normalizeEditorRecord = getBehaviorValue(
+    config.key,
+    'normalizeEditorRecord',
+  )
+  if (normalizeEditorRecord) {
+    normalized = normalizeEditorRecord(normalized)
+  }
+
+  hydrateFinanceStatementSource(config.key, normalized)
 
   for (const [key, value] of Object.entries(normalized)) {
     normalized[key] = normalizeLabeledValueObject(value)
@@ -157,6 +168,53 @@ function normalizeRecordForEditor(
   }
 
   return normalized
+}
+
+function hydrateFinanceStatementSource(
+  moduleKey: string,
+  record: ModuleRecord,
+) {
+  if (moduleKey === 'ledger-adjustment') {
+    record.customerId =
+      record.counterpartyType === '客户' ? record.counterpartyId : undefined
+  }
+
+  const firstItem = Array.isArray(record.items) ? record.items[0] : undefined
+  if (!firstItem) {
+    return
+  }
+
+  if (moduleKey === 'receipt' && !record.sourceCustomerStatementId) {
+    record.sourceCustomerStatementId =
+      firstItem.sourceCustomerStatementId ?? firstItem.sourceStatementId
+    return
+  }
+
+  if (moduleKey !== 'payment') {
+    return
+  }
+
+  if (
+    !record.sourceSupplierStatementId &&
+    firstItem.sourceSupplierStatementId
+  ) {
+    record.sourceSupplierStatementId = firstItem.sourceSupplierStatementId
+  }
+  if (!record.sourceFreightStatementId && firstItem.sourceFreightStatementId) {
+    record.sourceFreightStatementId = firstItem.sourceFreightStatementId
+  }
+
+  if (
+    !record.sourceSupplierStatementId &&
+    !record.sourceFreightStatementId &&
+    firstItem.sourceStatementId
+  ) {
+    const targetField =
+      record.counterpartyType === '物流商'
+        ? 'sourceFreightStatementId'
+        : 'sourceSupplierStatementId'
+    record[targetField] = firstItem.sourceStatementId
+  }
 }
 
 function isRecordLike(value: unknown): value is Record<string, unknown> {

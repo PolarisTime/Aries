@@ -1,16 +1,5 @@
 import { EditOutlined } from '@ant-design/icons'
-import {
-  Button,
-  Card,
-  Col,
-  Empty,
-  Row,
-  Select,
-  Statistic,
-  Switch,
-  Tooltip,
-  Typography,
-} from 'antd'
+import { Button, Card, Empty, Select, Switch, Tooltip, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SystemTableToolbar } from '@/components/SystemTableToolbar'
@@ -77,7 +66,6 @@ function SettingValue({ value }: { value: ReactNode }) {
 export function GeneralSettingsTableCard({
   keyword,
   statusFilter,
-  filteredRows,
   basicSettingRows,
   switchRows,
   loading,
@@ -90,29 +78,9 @@ export function GeneralSettingsTableCard({
   onToggle,
 }: Props) {
   const { t } = useTranslation()
-  const enabledCount = filteredRows.filter(
-    (row) => asString(row.status) === STATUS.NORMAL,
-  ).length
   const switchEnabledCount = switchRows.filter(
     (row) => asString(row.status) === STATUS.NORMAL,
   ).length
-  const overviewItems = [
-    {
-      key: 'basic',
-      title: t('system.generalSettingsTable.basicParams'),
-      value: basicSettingRows.length,
-    },
-    {
-      key: 'switches',
-      title: t('system.generalSettingsTable.systemSwitches'),
-      value: switchRows.length,
-    },
-    {
-      key: 'enabled',
-      title: t('system.generalSettingsTable.currentEnabled'),
-      value: enabledCount,
-    },
-  ]
   const groupTitles: Record<BasicGroupKey, string> = {
     tax: t('system.generalSettingsTable.groupTax'),
     pagination: t('system.generalSettingsTable.groupPagination'),
@@ -130,42 +98,28 @@ export function GeneralSettingsTableCard({
 
   return (
     <div className="general-settings-flow">
-      <Card
-        className="system-list-card general-settings-summary-card"
-        title={t('system.generalSettingsTable.title')}
-        extra={
-          <SystemTableToolbar
-            keyword={keyword}
-            keywordPlaceholder={t(
-              'system.generalSettingsTable.searchPlaceholder',
-            )}
-            keywordWidth={280}
-            searchId="general-settings-search"
-            searchName="general-settings-search"
-            onKeywordChange={onKeywordChange}
-            onRefresh={onRefresh}
-          >
-            <Select
-              allowClear
-              placeholder={t('system.generalSettingsTable.allStatus')}
-              className="w-140"
-              value={statusFilter}
-              onChange={onStatusFilterChange}
-              options={GENERAL_SETTING_STATUS_OPTIONS}
-            />
-          </SystemTableToolbar>
-        }
-      >
-        <Row gutter={[12, 12]} className="general-settings-overview">
-          {overviewItems.map((item) => (
-            <Col key={item.key} xs={24} sm={8}>
-              <div className="general-settings-stat">
-                <Statistic title={item.title} value={item.value} />
-              </div>
-            </Col>
-          ))}
-        </Row>
-      </Card>
+      <div className="general-settings-page-toolbar">
+        <SystemTableToolbar
+          keyword={keyword}
+          keywordPlaceholder={t(
+            'system.generalSettingsTable.searchPlaceholder',
+          )}
+          keywordWidth={280}
+          searchId="general-settings-search"
+          searchName="general-settings-search"
+          onKeywordChange={onKeywordChange}
+          onRefresh={onRefresh}
+        >
+          <Select
+            allowClear
+            placeholder={t('system.generalSettingsTable.allStatus')}
+            className="w-140"
+            value={statusFilter}
+            onChange={onStatusFilterChange}
+            options={GENERAL_SETTING_STATUS_OPTIONS}
+          />
+        </SystemTableToolbar>
+      </div>
 
       <Card
         className="system-list-card general-settings-config-card"
@@ -206,18 +160,21 @@ export function GeneralSettingsTableCard({
                           ) : null}
                         </div>
                         <div className="general-settings-config-side">
-                          <SettingValue value={formatSettingValue(record)} />
                           <Tooltip
                             title={t('system.generalSettingsTable.edit')}
                           >
                             <Button
                               type="text"
-                              size="small"
-                              icon={<EditOutlined />}
+                              className="general-settings-value-button"
                               disabled={!canEdit}
                               aria-label={`${t('system.generalSettingsTable.edit')} ${settingName}`}
                               onClick={() => onEdit(record)}
-                            />
+                            >
+                              <SettingValue
+                                value={formatSettingValue(record)}
+                              />
+                              <EditOutlined aria-hidden />
+                            </Button>
                           </Tooltip>
                         </div>
                       </div>

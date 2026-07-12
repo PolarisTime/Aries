@@ -6,6 +6,7 @@ const {
   fetchSupplierOptionsMock,
   fetchSettlementCompanyOptionsMock,
   fetchCustomerOptionsMock,
+  fetchProjectOptionsMock,
   fetchCarrierOptionsMock,
   fetchWarehouseOptionsMock,
   fetchMaterialCategoriesMock,
@@ -24,6 +25,7 @@ const {
   fetchSupplierOptionsMock: vi.fn(),
   fetchSettlementCompanyOptionsMock: vi.fn(),
   fetchCustomerOptionsMock: vi.fn(),
+  fetchProjectOptionsMock: vi.fn(),
   fetchCarrierOptionsMock: vi.fn(),
   fetchWarehouseOptionsMock: vi.fn(),
   fetchMaterialCategoriesMock: vi.fn(),
@@ -49,6 +51,10 @@ vi.mock('@/api/carrier-options', () => ({
 
 vi.mock('@/api/customer-options', () => ({
   fetchCustomerOptions: fetchCustomerOptionsMock,
+}))
+
+vi.mock('@/api/project-options', () => ({
+  fetchProjectOptions: fetchProjectOptionsMock,
 }))
 
 vi.mock('@/api/company-settings', () => ({
@@ -87,6 +93,7 @@ vi.mock('@/constants/query-keys', () => ({
     masterOptions: {
       supplier: ['supplier'],
       customer: ['customer'],
+      project: (customerId: string) => ['project', customerId],
       carrier: ['carrier'],
       settlementCompany: ['settlementCompany'],
       warehouse: ['warehouse'],
@@ -118,6 +125,7 @@ describe('useMasterOptions', () => {
     const { result } = renderHook(() => useMasterOptions())
     expect(result.current.suppliers).toEqual([])
     expect(result.current.customers).toEqual([])
+    expect(result.current.projects).toEqual([])
     expect(result.current.carriers).toEqual([])
     expect(result.current.warehouses).toEqual([])
     expect(result.current.materialCategories).toEqual([])
@@ -211,6 +219,26 @@ describe('useMasterOptions', () => {
     expect(fetchMaterialSearchMock).toHaveBeenCalledWith('', 500)
   })
 
+  it('loads project options only for the selected customer id', async () => {
+    const projects = [{ id: '101', value: '101', projectName: '项目A' }]
+    fetchProjectOptionsMock.mockResolvedValue(projects)
+
+    renderHook(() =>
+      useMasterOptions({ customers: true, projects: true }, true, '1'),
+    )
+
+    const projectQueryConfig = useQueryMock.mock.calls.find(
+      ([config]) => config.queryKey[0] === 'project',
+    )?.[0]
+
+    expect(projectQueryConfig).toMatchObject({
+      queryKey: ['project', '1'],
+      enabled: true,
+    })
+    await expect(projectQueryConfig.queryFn()).resolves.toBe(projects)
+    expect(fetchProjectOptionsMock).toHaveBeenCalledWith('1')
+  })
+
   it('returns isLoading true when any query is loading', () => {
     useQueryMock
       .mockReturnValueOnce({ data: undefined, isLoading: true })
@@ -230,6 +258,7 @@ describe('resolveMasterOptionRequirements', () => {
     expect(result).toEqual({
       suppliers: false,
       customers: false,
+      projects: false,
       carriers: false,
       warehouses: false,
       settlementCompanies: false,
@@ -257,6 +286,7 @@ describe('resolveMasterOptionRequirements', () => {
       { options: getCustomerProjectOptionsFn },
     ])
     expect(result.customers).toBe(true)
+    expect(result.projects).toBe(true)
   })
 
   it('detects carrier options', () => {
@@ -304,7 +334,32 @@ describe('resolveMasterOptionRequirements', () => {
     expect(result).toEqual({
       suppliers: false,
       customers: false,
+      projects: false,
       carriers: false,
+      warehouses: false,
+      settlementCompanies: false,
+      materialCategories: false,
+      materials: false,
+    })
+  })
+
+  it('merges explicit dependencies for dynamic option resolvers', () => {
+    const dynamicOptions = {
+      options: vi.fn(),
+      masterOptionRequirements: {
+        suppliers: true,
+        customers: true,
+        carriers: true,
+      },
+    }
+
+    const result = resolveMasterOptionRequirements([dynamicOptions])
+
+    expect(result).toEqual({
+      suppliers: true,
+      customers: true,
+      projects: false,
+      carriers: true,
       warehouses: false,
       settlementCompanies: false,
       materialCategories: false,

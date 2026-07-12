@@ -11,6 +11,7 @@ import {
   Alert,
   Button,
   Card,
+  Divider,
   Form,
   Input,
   Select,
@@ -166,7 +167,7 @@ export function OssSettingsView(): React.JSX.Element {
   )
 
   return (
-    <div className="page-stack oss-settings-page">
+    <div className="page-stack settings-section-page oss-settings-page">
       <Card
         className="oss-settings-card"
         title={
@@ -215,6 +216,12 @@ export function OssSettingsView(): React.JSX.Element {
           }}
         >
           <div className="oss-settings-form-grid">
+            <Divider
+              className="oss-settings-form-section"
+              titlePlacement="start"
+            >
+              {t('system.ossSettings.connectionSection')}
+            </Divider>
             <Form.Item
               name="storageMode"
               label={t('system.ossSettings.storageMode')}
@@ -266,6 +273,13 @@ export function OssSettingsView(): React.JSX.Element {
                 placeholder={t('system.ossSettings.keyPrefixPlaceholder')}
               />
             </Form.Item>
+
+            <Divider
+              className="oss-settings-form-section"
+              titlePlacement="start"
+            >
+              {t('system.ossSettings.securitySection')}
+            </Divider>
 
             {isS3Mode ? (
               <>
@@ -327,41 +341,45 @@ export function OssSettingsView(): React.JSX.Element {
                   ? t('system.ossSettings.secretKeyKeepHint')
                   : t('system.ossSettings.secretKeyRequiredHint')}
             </Typography.Text>
-            <Button
-              htmlType="button"
-              icon={<ThunderboltOutlined aria-hidden />}
-              loading={testStorageMutation.isPending}
-              disabled={!canSave}
-              onClick={() => {
-                testStorageMutation.mutate(toPayload(form.getFieldsValue(true)))
-              }}
-            >
-              {t('system.ossSettings.testStorage')}
-            </Button>
-            <Button
-              htmlType="button"
-              icon={<SettingOutlined aria-hidden />}
-              loading={configureCorsMutation.isPending}
-              disabled={!canSave || !isS3Mode}
-              onClick={() => {
-                configureCorsMutation.mutate({
-                  setting: toPayload(form.getFieldsValue(true)),
-                  origin: resolveCurrentOrigin(),
-                  methods: ['GET', 'PUT', 'HEAD'],
-                })
-              }}
-            >
-              {t('system.ossSettings.configureCors')}
-            </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              icon={<SaveOutlined aria-hidden />}
-              loading={saveMutation.isPending}
-              disabled={!canSave}
-            >
-              {t('common.save')}
-            </Button>
+            <div className="oss-settings-action-buttons">
+              <Button
+                htmlType="button"
+                icon={<ThunderboltOutlined aria-hidden />}
+                loading={testStorageMutation.isPending}
+                disabled={!canSave}
+                onClick={() => {
+                  testStorageMutation.mutate(
+                    toPayload(form.getFieldsValue(true)),
+                  )
+                }}
+              >
+                {t('system.ossSettings.testStorage')}
+              </Button>
+              <Button
+                htmlType="button"
+                icon={<SettingOutlined aria-hidden />}
+                loading={configureCorsMutation.isPending}
+                disabled={!canSave || !isS3Mode}
+                onClick={() => {
+                  configureCorsMutation.mutate({
+                    setting: toPayload(form.getFieldsValue(true)),
+                    origin: resolveCurrentOrigin(),
+                    methods: ['GET', 'PUT', 'HEAD'],
+                  })
+                }}
+              >
+                {t('system.ossSettings.configureCors')}
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<SaveOutlined aria-hidden />}
+                loading={saveMutation.isPending}
+                disabled={!canSave}
+              >
+                {t('common.save')}
+              </Button>
+            </div>
           </div>
         </Form>
       </Card>

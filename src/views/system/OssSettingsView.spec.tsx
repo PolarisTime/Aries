@@ -158,6 +158,17 @@ describe('OssSettingsView', () => {
     expect(
       screen.getByRole('button', { name: 'system.ossSettings.configureCors' }),
     ).toBeInTheDocument()
+    expect(
+      screen
+        .getByRole('button', { name: 'common.save' })
+        .closest('.oss-settings-action-buttons'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.ossSettings.connectionSection'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.ossSettings.securitySection'),
+    ).toBeInTheDocument()
   })
 
   it('renders major s3 provider presets', async () => {

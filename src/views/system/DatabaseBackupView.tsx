@@ -25,8 +25,8 @@ export function DatabaseBackupView() {
     })
 
   return (
-    <div className="page-stack database-status-page">
-      <div className="database-status-header">
+    <div className="page-stack settings-standard-page database-status-page">
+      <header className="database-status-header settings-page-header-with-actions">
         <div>
           <Typography.Title level={4} className="database-status-title">
             {t('system.database.title')}
@@ -43,7 +43,7 @@ export function DatabaseBackupView() {
         >
           {t('system.database.refreshStatus')}
         </Button>
-      </div>
+      </header>
 
       <DatabaseStatusOverview dbStatus={dbStatus} loading={statusLoading} />
 

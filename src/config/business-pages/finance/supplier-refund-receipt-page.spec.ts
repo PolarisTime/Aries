@@ -31,6 +31,7 @@ describe('supplierRefundReceiptsPageConfig', () => {
     expect(supplierRefundReceiptsPageConfig.saveFields?.scalar).toEqual([
       'refundReceiptNo',
       'purchaseRefundId',
+      'supplierId',
       'receiptDate',
       'receiptMethod',
       'amount',
@@ -38,6 +39,15 @@ describe('supplierRefundReceiptsPageConfig', () => {
       'operatorName',
       'remark',
     ])
+  })
+
+  it('filters supplier refunds by stable supplier id', () => {
+    expect(
+      supplierRefundReceiptsPageConfig.filters.map((filter) => filter.key),
+    ).toContain('supplierId')
+    expect(
+      supplierRefundReceiptsPageConfig.filters.map((filter) => filter.key),
+    ).not.toContain('supplierName')
   })
 
   it('keeps authoritative supplier and settlement snapshots readonly', () => {
@@ -75,12 +85,14 @@ describe('supplierRefundReceiptsPageConfig', () => {
         refundNo: 'PR-001',
         supplierCode: 'SUP-001',
         supplierName: '供应商甲',
+        supplierId: '302',
         settlementCompanyId: '401',
         settlementCompanyName: '结算主体甲',
         totalAmount: 1000,
       }),
     ).toEqual({
       purchaseRefundId: '301',
+      supplierId: '302',
       supplierCode: 'SUP-001',
       supplierName: '供应商甲',
       settlementCompanyId: '401',

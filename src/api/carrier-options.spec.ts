@@ -25,6 +25,7 @@ import { QUERY_KEYS } from '@/constants/query-keys'
 import {
   fetchCarrierOptions,
   findCarrierOption,
+  getCarrierEntityOptions,
   getCarrierOptions,
   getCarrierVehiclePlateOptions,
   normalizeCarrierOptions,
@@ -54,6 +55,29 @@ describe('carrier-options', () => {
       const result = getCarrierOptions()
 
       expect(result).toEqual([{ value: '承运商A', label: '承运商A' }])
+    })
+
+    it('builds carrier entity options whose value is the snowflake id', () => {
+      getMock.mockReturnValue([
+        {
+          id: '700520000000000002',
+          carrierCode: 'CAR-001',
+          carrierName: '承运商A',
+          value: '承运商A',
+          label: '承运商A',
+        },
+      ])
+
+      expect(getCarrierEntityOptions()).toEqual([
+        expect.objectContaining({
+          id: '700520000000000002',
+          value: '700520000000000002',
+          label: 'CAR-001 / 承运商A',
+        }),
+      ])
+      expect(findCarrierOption('700520000000000002')?.carrierCode).toBe(
+        'CAR-001',
+      )
     })
   })
 
@@ -164,7 +188,7 @@ describe('carrier-options', () => {
 
       expect(result[0]).toEqual(
         expect.objectContaining({
-          defaultSettlementCompanyId: 9,
+          defaultSettlementCompanyId: '9',
           defaultSettlementCompanyName: '主体A',
         }),
       )
@@ -175,6 +199,18 @@ describe('carrier-options', () => {
         { id: 42 as any, value: 'v', label: 'L' },
       ])
       expect(result[0].id).toBe('42')
+    })
+
+    it('rejects an unsafe numeric carrier id', () => {
+      expect(() =>
+        normalizeCarrierOptions([
+          {
+            id: Number.MAX_SAFE_INTEGER + 1,
+            value: 'v',
+            label: 'L',
+          } as any,
+        ]),
+      ).toThrow('carriers[0].id')
     })
 
     it('keeps id undefined when null', () => {

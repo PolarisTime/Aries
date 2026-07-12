@@ -318,6 +318,65 @@ describe('trimEditorItemsForModule', () => {
 })
 
 describe('applyMaterialToEditorLineItem', () => {
+  it('writes material id, code and snapshots from the selected master record', () => {
+    const item = {
+      id: '1',
+      materialId: '100',
+      materialCode: 'OLD',
+      quantity: 1,
+      pieceWeightTon: 0,
+      weightTon: 0,
+      unitPrice: 0,
+      amount: 0,
+    } as any
+
+    const result = applyMaterialToEditorLineItem(item, {
+      id: '200',
+      materialCode: 'M-200',
+      brand: '品牌A',
+    })
+
+    expect(result).toMatchObject({
+      materialId: '200',
+      materialCode: 'M-200',
+      brand: '品牌A',
+    })
+  })
+
+  it('clears material identity and authoritative snapshots together', () => {
+    const item = {
+      id: '1',
+      materialId: '100',
+      materialCode: 'OLD',
+      brand: '旧品牌',
+      category: '旧类别',
+      material: '旧材质',
+      spec: '旧规格',
+      length: '旧长度',
+      quantity: 1,
+      pieceWeightTon: 1,
+      piecesPerBundle: 2,
+      weightTon: 1,
+      unitPrice: 100,
+      amount: 100,
+    } as any
+
+    const result = applyMaterialToEditorLineItem(item, null)
+
+    expect(result).toMatchObject({
+      materialId: undefined,
+      materialCode: '',
+      brand: '',
+      category: '',
+      material: '',
+      spec: '',
+      length: '',
+      pieceWeightTon: 0,
+      piecesPerBundle: 0,
+      unitPrice: 0,
+    })
+  })
+
   it('returns item unchanged when no materialRecord', () => {
     const item = { id: '1', materialCode: 'M001' } as any
     const result = applyMaterialToEditorLineItem(item, null)

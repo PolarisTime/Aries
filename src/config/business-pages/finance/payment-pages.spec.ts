@@ -7,6 +7,8 @@ vi.mock('i18next', () => ({
 vi.mock('@/constants/module-options', () => ({
   customerOptions: [],
   enabledStatusOptions: [],
+  getCustomerOptions: vi.fn(() => []),
+  getCustomerProjectOptions: vi.fn(() => []),
   getSettlementCompanyOptions: vi.fn(() => []),
   getSupplierOptions: vi.fn(() => []),
 }))

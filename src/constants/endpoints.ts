@@ -116,6 +116,7 @@ export const ENDPOINTS = {
   // Master data option lists (business entities → plural)
   WAREHOUSES_OPTIONS: '/warehouses/options',
   CUSTOMERS_OPTIONS: '/customers/options',
+  PROJECTS_OPTIONS: '/projects/options',
   SUPPLIERS_OPTIONS: '/suppliers/options',
   CARRIERS_OPTIONS: '/carriers/options',
   MATERIAL_CATEGORIES: '/material-categories/options',

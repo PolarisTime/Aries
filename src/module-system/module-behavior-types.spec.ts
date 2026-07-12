@@ -117,6 +117,17 @@ describe('ModuleBehaviorConfig', () => {
     expect(typeof config.normalizeDraftRecord).toBe('function')
   })
 
+  it('accepts normalizeEditorRecord function', () => {
+    const config: ModuleBehaviorConfig = {
+      normalizeEditorRecord: (record) => ({ ...record, editorField: 'value' }),
+    }
+
+    expect(config.normalizeEditorRecord?.({ id: '1' })).toEqual({
+      id: '1',
+      editorField: 'value',
+    })
+  })
+
   it('accepts syncEditorForm function', () => {
     const config: ModuleBehaviorConfig = {
       syncEditorForm: (_editorForm, _ctx) => {},

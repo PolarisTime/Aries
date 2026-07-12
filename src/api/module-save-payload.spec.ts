@@ -30,39 +30,105 @@ describe('module-save-payload', () => {
     void mod
   })
 
-  it('keeps receipt scalar fields in save payload', async () => {
-    const { loadBusinessPageConfig } = await import(
-      '@/config/business-page-loader'
+  it.each([
+    'purchase-order',
+    'purchase-inbound',
+    'purchase-contract',
+    'invoice-receipt',
+    'supplier-statement',
+    'supplier-refund-receipt',
+  ])('rejects %s save payloads without supplierId', async (moduleKey) => {
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: ['supplierId', 'supplierCode', 'supplierName'],
+      },
+    })
+
+    await expect(
+      serializeBusinessRecordForSave(moduleKey, {
+        id: '',
+        supplierCode: 'SUP-001',
+        supplierName: '同名供应商',
+      }),
+    ).rejects.toThrow('supplierId')
+  })
+
+  it('serializes the stable supplier id with its code and name snapshots', async () => {
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: ['supplierId', 'supplierCode', 'supplierName'],
+      },
+    })
+
+    await expect(
+      serializeBusinessRecordForSave('supplier-statement', {
+        id: '',
+        supplierId: '700520000000000001',
+        supplierCode: 'SUP-001',
+        supplierName: '供应商甲',
+      }),
+    ).resolves.toEqual({
+      supplierId: '700520000000000001',
+      supplierCode: 'SUP-001',
+      supplierName: '供应商甲',
+    })
+  })
+
+  it('rejects an unsafe numeric supplierId at the save boundary', async () => {
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: { scalar: ['supplierId'] },
+    })
+
+    await expect(
+      serializeBusinessRecordForSave('invoice-receipt', {
+        id: '',
+        supplierId: Number.MAX_SAFE_INTEGER + 1,
+      }),
+    ).rejects.toThrow('supplierId')
+  })
+
+  it('serializes receipt stable identities and a typed allocation', async () => {
+    const { hasBehavior } = await import(
+      '@/module-system/module-behavior-registry'
     )
-    vi.mocked(loadBusinessPageConfig).mockResolvedValue({
-      key: 'receipt',
-      detailFields: [
-        { key: 'receiptNo', type: 'input', label: '单据编号' },
-        { key: 'customerCode', type: 'input', label: '客户编码' },
-        { key: 'customerName', type: 'input', label: '客户' },
-        { key: 'projectName', type: 'input', label: '项目' },
-        { key: 'settlementCompanyId', type: 'input', label: '结算主体' },
-        { key: 'settlementCompanyName', type: 'input', label: '结算主体名称' },
-        { key: 'sourceStatementId', type: 'input', label: '对账单' },
-        { key: 'receiptDate', type: 'input', label: '日期' },
-        { key: 'payType', type: 'input', label: '方式' },
-        { key: 'amount', type: 'input', label: '金额' },
-        { key: 'status', type: 'input', label: '状态' },
-        { key: 'operatorName', type: 'input', label: '操作人' },
-        { key: 'remark', type: 'input', label: '备注' },
-        { key: 'totalAmount', type: 'input', label: '总计' },
-      ],
-    } as ModulePageConfig)
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: [
+          'receiptNo',
+          'customerId',
+          'customerCode',
+          'customerName',
+          'projectId',
+          'projectName',
+          'settlementCompanyId',
+          'settlementCompanyName',
+          'sourceCustomerStatementId',
+          'receiptDate',
+          'payType',
+          'amount',
+          'status',
+          'operatorName',
+          'remark',
+        ],
+        lineItem: ['sourceCustomerStatementId', 'allocatedAmount'],
+      },
+    })
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadLineItems',
+    )
 
     const payload = await serializeBusinessRecordForSave('receipt', {
       id: '',
       receiptNo: 'RC20260001',
+      customerId: '308251467645452280',
       customerCode: 'C-001',
       customerName: '测试客户',
+      projectId: '308251467645452281',
       projectName: '测试项目',
       settlementCompanyId: '8',
       settlementCompanyName: '主体B',
-      sourceStatementId: '308251467645452288',
+      sourceCustomerStatementId: '308251467645452288',
+      sourceStatementId: '308251467645452299',
       receiptDate: '2026-05-09',
       payType: '银行转账',
       amount: 123456.78,
@@ -73,18 +139,27 @@ describe('module-save-payload', () => {
 
     expect(payload).toMatchObject({
       receiptNo: 'RC20260001',
+      customerId: '308251467645452280',
       customerCode: 'C-001',
       customerName: '测试客户',
+      projectId: '308251467645452281',
       projectName: '测试项目',
       settlementCompanyId: '8',
       settlementCompanyName: '主体B',
-      sourceStatementId: '308251467645452288',
+      sourceCustomerStatementId: '308251467645452288',
       receiptDate: '2026-05-09',
       payType: '银行转账',
       status: '已收款',
       operatorName: 'test9',
       remark: 'ok',
+      items: [
+        {
+          sourceCustomerStatementId: '308251467645452288',
+          allocatedAmount: 123456.78,
+        },
+      ],
     })
+    expect(payload).not.toHaveProperty('sourceStatementId')
     expect(payload).not.toHaveProperty('totalAmount')
   })
 
@@ -146,7 +221,7 @@ describe('module-save-payload', () => {
     })
   })
 
-  it('drops blank settlement company ids after normalization', async () => {
+  it('rejects whitespace-only settlement company ids', async () => {
     const { loadBusinessPageConfig } = await import(
       '@/config/business-page-loader'
     )
@@ -157,45 +232,53 @@ describe('module-save-payload', () => {
       },
     } as ModulePageConfig)
 
-    const payload = await serializeBusinessRecordForSave(
-      'blank-settlement-company-test',
-      {
+    await expect(
+      serializeBusinessRecordForSave('blank-settlement-company-test', {
         id: '',
         settlementCompanyId: '   ',
-      },
-    )
-
-    expect(payload).toEqual({ settlementCompanyId: undefined })
+      }),
+    ).rejects.toThrow('settlementCompanyId')
   })
 
-  it('keeps payment scalar fields in save payload', async () => {
-    const { loadBusinessPageConfig } = await import(
-      '@/config/business-page-loader'
+  it('serializes supplier payment identity and a typed allocation', async () => {
+    const { hasBehavior } = await import(
+      '@/module-system/module-behavior-registry'
     )
-    vi.mocked(loadBusinessPageConfig).mockResolvedValue({
-      key: 'payment',
-      detailFields: [
-        { key: 'paymentNo', type: 'input', label: '单据编号' },
-        { key: 'businessType', type: 'input', label: '类型' },
-        { key: 'counterpartyCode', type: 'input', label: '往来单位编码' },
-        { key: 'counterpartyName', type: 'input', label: '对方' },
-        { key: 'sourceStatementId', type: 'input', label: '对账单' },
-        { key: 'paymentDate', type: 'input', label: '日期' },
-        { key: 'payType', type: 'input', label: '方式' },
-        { key: 'amount', type: 'input', label: '金额' },
-        { key: 'status', type: 'input', label: '状态' },
-        { key: 'operatorName', type: 'input', label: '操作人' },
-        { key: 'remark', type: 'input', label: '备注' },
-      ],
-    } as ModulePageConfig)
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: [
+          'paymentNo',
+          'counterpartyType',
+          'counterpartyId',
+          'counterpartyCode',
+          'counterpartyName',
+          'paymentDate',
+          'payType',
+          'amount',
+          'status',
+          'operatorName',
+          'remark',
+        ],
+        lineItem: [
+          'sourceSupplierStatementId',
+          'sourceFreightStatementId',
+          'allocatedAmount',
+        ],
+      },
+    })
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadLineItems',
+    )
 
     const payload = await serializeBusinessRecordForSave('payment', {
       id: '',
       paymentNo: 'FK20260001',
-      businessType: '供应商',
+      counterpartyType: '供应商',
+      counterpartyId: '308251467645452281',
       counterpartyCode: 'S-001',
       counterpartyName: '测试供应商',
-      sourceStatementId: '308251467645452289',
+      sourceSupplierStatementId: '308251467645452289',
+      sourceStatementId: '308251467645452299',
       paymentDate: '2026-05-09',
       payType: '银行转账',
       amount: 654321.12,
@@ -206,16 +289,141 @@ describe('module-save-payload', () => {
 
     expect(payload).toMatchObject({
       paymentNo: 'FK20260001',
-      businessType: '供应商',
+      counterpartyType: '供应商',
+      counterpartyId: '308251467645452281',
       counterpartyCode: 'S-001',
       counterpartyName: '测试供应商',
-      sourceStatementId: '308251467645452289',
       paymentDate: '2026-05-09',
       payType: '银行转账',
       status: '已付款',
       operatorName: 'test9',
       remark: 'ok',
+      items: [
+        {
+          sourceSupplierStatementId: '308251467645452289',
+          allocatedAmount: 654321.12,
+        },
+      ],
     })
+    expect(payload).not.toHaveProperty('sourceStatementId')
+  })
+
+  it('serializes freight payment with only the freight statement source', async () => {
+    const { hasBehavior } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: ['counterpartyType', 'counterpartyId', 'amount'],
+        lineItem: [
+          'sourceSupplierStatementId',
+          'sourceFreightStatementId',
+          'allocatedAmount',
+        ],
+      },
+    })
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadLineItems',
+    )
+
+    const payload = await serializeBusinessRecordForSave('payment', {
+      id: '',
+      counterpartyType: '物流商',
+      counterpartyId: '308251467645452282',
+      sourceFreightStatementId: '308251467645452290',
+      amount: 200,
+    })
+
+    expect(payload.items).toEqual([
+      {
+        sourceFreightStatementId: '308251467645452290',
+        allocatedAmount: 200,
+      },
+    ])
+  })
+
+  it('updates a single persisted payment allocation from the authoritative selector', async () => {
+    const { hasBehavior } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: ['counterpartyType', 'counterpartyId', 'amount'],
+        lineItem: [
+          'sourceSupplierStatementId',
+          'sourceFreightStatementId',
+          'allocatedAmount',
+        ],
+      },
+    })
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadLineItems',
+    )
+
+    const payload = await serializeBusinessRecordForSave('payment', {
+      id: '900',
+      counterpartyType: '供应商',
+      counterpartyId: '401',
+      sourceSupplierStatementId: '702',
+      amount: 125,
+      items: [
+        {
+          id: '801',
+          sourceSupplierStatementId: '701',
+          allocatedAmount: 100,
+        },
+      ],
+    })
+
+    expect(payload.items).toEqual([
+      {
+        id: '801',
+        sourceSupplierStatementId: '702',
+        allocatedAmount: 125,
+      },
+    ])
+  })
+
+  it.each([
+    {
+      name: 'both typed sources',
+      item: {
+        sourceSupplierStatementId: '308251467645452289',
+        sourceFreightStatementId: '308251467645452290',
+        allocatedAmount: 100,
+      },
+    },
+    {
+      name: 'no typed source',
+      item: { allocatedAmount: 100 },
+    },
+  ])('rejects payment allocation with $name', async ({ item }) => {
+    const { hasBehavior } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: ['counterpartyType', 'counterpartyId', 'amount'],
+        lineItem: [
+          'sourceSupplierStatementId',
+          'sourceFreightStatementId',
+          'allocatedAmount',
+        ],
+      },
+    })
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadLineItems',
+    )
+
+    await expect(
+      serializeBusinessRecordForSave('payment', {
+        id: '',
+        counterpartyType: '供应商',
+        counterpartyId: '308251467645452281',
+        amount: 100,
+        items: [item],
+      }),
+    ).rejects.toThrow('items[0]')
   })
 
   it('keeps sales order hidden scalar fields in save payload', async () => {
@@ -334,7 +542,7 @@ describe('module-save-payload', () => {
     expect(payload.items).toEqual([{ id: '1', quantity: 0, unitPrice: 12.5 }])
   })
 
-  it('omits non-persisted reference ids from line items', async () => {
+  it('rejects malformed reference ids from line items', async () => {
     getModulePageSchemaMock.mockReturnValue({
       saveFields: {
         scalar: ['orderNo'],
@@ -349,9 +557,8 @@ describe('module-save-payload', () => {
     )
     vi.mocked(getBehaviorValue).mockReturnValue([])
 
-    const payload = await serializeBusinessRecordForSave(
-      'schema-reference-test',
-      {
+    await expect(
+      serializeBusinessRecordForSave('schema-reference-test', {
         id: '',
         orderNo: 'PO-ID',
         items: [
@@ -361,10 +568,23 @@ describe('module-save-payload', () => {
             materialCode: 'M001',
           },
         ],
-      },
-    )
+      }),
+    ).rejects.toThrow('sourcePurchaseOrderItemId')
+  })
 
-    expect(payload.items![0]).toEqual({ id: '1', materialCode: 'M001' })
+  it('rejects unsafe number ids before constructing a save payload', async () => {
+    getModulePageSchemaMock.mockReturnValue({
+      saveFields: {
+        scalar: ['customerId'],
+      },
+    })
+
+    await expect(
+      serializeBusinessRecordForSave('unsafe-id-test', {
+        id: '',
+        customerId: Number.MAX_SAFE_INTEGER + 1,
+      }),
+    ).rejects.toThrow('customerId')
   })
 
   it('keeps settlement company fields for purchase order, sales order and freight bill', async () => {
@@ -393,6 +613,8 @@ describe('module-save-payload', () => {
       serializeBusinessRecordForSave('purchase-order', {
         ...baseRecord,
         orderNo: 'PO-TEST9',
+        supplierId: '700520000000000001',
+        supplierCode: 'SUP-001',
         supplierName: '供应商A',
         orderDate: dayjs('2026-06-01'),
         buyerName: '李四',
@@ -465,6 +687,7 @@ describe('module-save-payload', () => {
     const payload = await serializeBusinessRecordForSave('purchase-inbound', {
       id: '',
       inboundNo: 'RK20260001',
+      supplierId: '700520000000000001',
       items: [
         {
           id: '100',
@@ -481,7 +704,7 @@ describe('module-save-payload', () => {
           settlementMode: '过磅',
         },
       ],
-      attachmentIds: ['att-1', 'att-2'],
+      attachmentIds: ['700520000000000011', '700520000000000012'],
     })
 
     expect(payload).toHaveProperty('items')
@@ -491,7 +714,10 @@ describe('module-save-payload', () => {
       materialCode: 'M001',
       quantity: 10,
     })
-    expect(payload).toHaveProperty('attachmentIds', ['att-1', 'att-2'])
+    expect(payload).toHaveProperty('attachmentIds', [
+      '700520000000000011',
+      '700520000000000012',
+    ])
   })
 
   it('includes attachmentIds when behavior allows', async () => {
@@ -516,9 +742,9 @@ describe('module-save-payload', () => {
     const payload = await serializeBusinessRecordForSave('test-module', {
       id: '',
       name: 'test',
-      attachmentIds: ['att-1'],
+      attachmentIds: ['700520000000000013'],
     })
-    expect(payload).toHaveProperty('attachmentIds', ['att-1'])
+    expect(payload).toHaveProperty('attachmentIds', ['700520000000000013'])
   })
 
   it('handles dayjs values correctly', async () => {
@@ -781,7 +1007,7 @@ describe('module-save-payload', () => {
     ).resolves.toMatchObject({ items: [{ id: '1', quantity: 0 }] })
   })
 
-  it('handles persisted line item id as number', async () => {
+  it('handles a safe numeric persisted line item id and omits draft ids', async () => {
     const { loadBusinessPageConfig } = await import(
       '@/config/business-page-loader'
     )
@@ -808,12 +1034,34 @@ describe('module-save-payload', () => {
         { id: 42 as any, materialCode: 'M001' },
         { id: 'abc', materialCode: 'M002' },
         { id: '123', materialCode: 'M003' },
-        { id: -1 as any, materialCode: 'M004' },
       ],
     })
     expect(payload.items![0].id).toBe('42')
     expect(payload.items![1].id).toBeUndefined()
     expect(payload.items![2].id).toBe('123')
-    expect(payload.items![3].id).toBeUndefined()
+  })
+
+  it('rejects an invalid numeric persisted line item id', async () => {
+    const { loadBusinessPageConfig } = await import(
+      '@/config/business-page-loader'
+    )
+    const { hasBehavior, getBehaviorValue } = await import(
+      '@/module-system/module-behavior-registry'
+    )
+    vi.mocked(loadBusinessPageConfig).mockResolvedValue({
+      key: 'invalid-item-id-test',
+      saveFields: { scalar: [], lineItem: ['materialCode'] },
+    } as ModulePageConfig)
+    vi.mocked(hasBehavior).mockImplementation(
+      (_key: string, behavior: string) => behavior === 'savePayloadLineItems',
+    )
+    vi.mocked(getBehaviorValue).mockReturnValue([])
+
+    await expect(
+      serializeBusinessRecordForSave('invalid-item-id-test', {
+        id: '',
+        items: [{ id: -1 as any, materialCode: 'M004' }],
+      }),
+    ).rejects.toThrow('items[].id')
   })
 })

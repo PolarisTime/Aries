@@ -62,7 +62,7 @@ describe('PaymentPrepaymentAllocationModal', () => {
   const detail = {
     ...payment,
     amount: 1000,
-    supplierCode: 'SUP-001',
+    counterpartyId: '401',
     supplierName: '供应商甲',
     settlementCompanyId: '301',
     settlementCompanyName: '结算主体甲',
@@ -70,7 +70,7 @@ describe('PaymentPrepaymentAllocationModal', () => {
       {
         id: '801',
         lineNo: 1,
-        sourceStatementId: '701',
+        sourceSupplierStatementId: '701',
         statementNo: 'GYDZ-001',
         statementBalanceAmount: 300,
         allocatedAmount: 200,
@@ -85,7 +85,7 @@ describe('PaymentPrepaymentAllocationModal', () => {
       {
         id: '701',
         statementNo: 'GYDZ-001',
-        supplierCode: 'SUP-001',
+        supplierId: '401',
         supplierName: '供应商甲',
         settlementCompanyId: '301',
         status: '已确认',
@@ -111,7 +111,7 @@ describe('PaymentPrepaymentAllocationModal', () => {
     expect(screen.getByText(/GYDZ-001/)).toBeInTheDocument()
     expect(mocks.fetchContext).toHaveBeenCalledWith('901')
     expect(mocks.listCandidates).toHaveBeenCalledWith({
-      supplierCode: 'SUP-001',
+      supplierId: '401',
       settlementCompanyId: '301',
     })
     expect(screen.getByRole('spinbutton')).toHaveAttribute(
@@ -139,7 +139,7 @@ describe('PaymentPrepaymentAllocationModal', () => {
       expect(mocks.replaceAllocations).toHaveBeenCalledWith('901', [
         {
           id: '801',
-          sourceStatementId: '701',
+          sourceSupplierStatementId: '701',
           allocatedAmount: 200,
         },
       ])

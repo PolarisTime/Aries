@@ -185,9 +185,7 @@ export function getSettlementCompanyOptions() {
 
 // ── Warehouse ──────────────────────────────────────────────────────────────────
 
-const warehouseFallbackOptions = createOptionList(['一号库', '二号库'] as const)
-
-const _warehouseOptions = warehouseFallbackOptions
+const _warehouseOptions: ReturnType<typeof apiGetWarehouseOptions> = []
 
 export function getWarehouseOptions() {
   const dynamic = apiGetWarehouseOptions()

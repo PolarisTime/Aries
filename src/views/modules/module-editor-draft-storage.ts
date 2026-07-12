@@ -1,16 +1,18 @@
 import type { LoginUser } from '@/shared/schemas'
+import { normalizeEntityIds, parseEntityId } from '@/types/entity-id'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
 
 const STORAGE_PREFIX = 'aries-module-editor-draft:'
-const DRAFT_VERSION = 1
+const DRAFT_VERSION = 2
 const DRAFT_TTL_MS = 24 * 60 * 60 * 1000
 const MAX_DRAFT_STRING_LENGTH = 64 * 1024
 const MAX_DRAFT_STORAGE_BYTES = 512 * 1024
 const SENSITIVE_DRAFT_KEY_PATTERN =
   /(password|token|secret|credential|attachmentContent|fileContent|base64|dataUrl)/i
+const TEMPORARY_LINE_ITEM_ID_PATTERN = /^line-.+$/
 
 export interface ModuleEditorDraftSnapshot {
-  version: 1
+  version: 2
   userKey: string
   moduleKey: string
   recordId: string
@@ -65,6 +67,35 @@ function sanitizeDraftRecord(record: ModuleRecord): ModuleRecord {
   return sanitizeDraftValue(record) as ModuleRecord
 }
 
+function normalizeDraftRecordValues(values: ModuleRecord): ModuleRecord {
+  const { id, ...rest } = values
+  const normalized = normalizeEntityIds({ values: rest }).values
+  return {
+    ...normalized,
+    id:
+      !Object.hasOwn(values, 'id') || id === ''
+        ? ''
+        : parseEntityId(id, 'values.id'),
+  }
+}
+
+function normalizeDraftLineItems(items: ModuleLineItem[]): ModuleLineItem[] {
+  const itemIds = items.map((item) => item.id)
+  const itemsWithoutIds = items.map(({ id: _id, ...item }) => item)
+  const normalizedItems = normalizeEntityIds({ items: itemsWithoutIds }).items
+
+  return normalizedItems.map((item, index) => {
+    const id = itemIds[index]
+    return {
+      ...item,
+      id:
+        typeof id === 'string' && TEMPORARY_LINE_ITEM_ID_PATTERN.test(id)
+          ? id
+          : parseEntityId(id, `items[${index}].id`),
+    }
+  })
+}
+
 function parseDraftSnapshot(value: unknown): ModuleEditorDraftSnapshot | null {
   if (!isPlainObject(value)) {
     return null
@@ -78,7 +109,8 @@ function parseDraftSnapshot(value: unknown): ModuleEditorDraftSnapshot | null {
     typeof value.recordId !== 'string' ||
     typeof value.updatedAt !== 'number' ||
     !isPlainObject(value.values) ||
-    !Array.isArray(value.items)
+    !Array.isArray(value.items) ||
+    !value.items.every(isPlainObject)
   ) {
     return null
   }
@@ -88,8 +120,8 @@ function parseDraftSnapshot(value: unknown): ModuleEditorDraftSnapshot | null {
     userKey: value.userKey,
     moduleKey: value.moduleKey,
     recordId: value.recordId,
-    values: value.values as ModuleRecord,
-    items: value.items as ModuleLineItem[],
+    values: normalizeDraftRecordValues(value.values as ModuleRecord),
+    items: normalizeDraftLineItems(value.items as ModuleLineItem[]),
     authoritativePrimaryNo:
       typeof value.authoritativePrimaryNo === 'string'
         ? value.authoritativePrimaryNo
@@ -124,8 +156,10 @@ export function buildModuleEditorDraftSnapshot({
     userKey,
     moduleKey,
     recordId,
-    values: sanitizeDraftRecord(values),
-    items: items.map((item) => sanitizeDraftRecord(item) as ModuleLineItem),
+    values: sanitizeDraftRecord(normalizeDraftRecordValues(values)),
+    items: normalizeDraftLineItems(items).map(
+      (item) => sanitizeDraftRecord(item) as ModuleLineItem,
+    ),
     authoritativePrimaryNo,
     updatedAt: now,
   }

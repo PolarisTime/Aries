@@ -9,6 +9,9 @@ describe('invoiceIssuePageConfig', () => {
     expect(invoiceIssuePageConfig.title).toBeTruthy()
     expect(invoiceIssuePageConfig.primaryNoKey).toBeTruthy()
     expect(Array.isArray(invoiceIssuePageConfig.columns)).toBe(true)
+    expect(invoiceIssuePageConfig.saveFields?.lineItem).toEqual(
+      expect.arrayContaining(['materialId', 'warehouseId']),
+    )
     expect(invoiceIssuePageConfig.buildOverview).toBeTypeOf('function')
   })
 

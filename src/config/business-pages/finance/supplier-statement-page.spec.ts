@@ -23,6 +23,20 @@ describe('supplierStatementPageConfig', () => {
     expect(supplierStatementPageConfig.saveFields?.scalar).toContain(
       'supplierCode',
     )
+    expect(supplierStatementPageConfig.saveFields?.scalar).toContain(
+      'supplierId',
+    )
+    expect(
+      supplierStatementPageConfig.filters.map((filter) => filter.key),
+    ).toContain('supplierId')
+    expect(
+      supplierStatementPageConfig.formFields?.find(
+        (field) => field.key === 'supplierId',
+      ),
+    ).toEqual(expect.objectContaining({ type: 'select', required: true }))
+    expect(supplierStatementPageConfig.saveFields?.lineItem).toContain(
+      'materialId',
+    )
     expect(supplierStatementPageConfig.buildOverview).toBeTypeOf('function')
   })
 
@@ -54,45 +68,56 @@ describe('supplierStatementPageConfig', () => {
   })
 
   describe('parentImport', () => {
-    it('buildParentFilters only sends filters supported by the candidate API', () => {
+    it('buildParentFilters sends stable supplier and current statement ids', () => {
       const filters = pi.buildParentFilters!({
-        supplierName: ' 供应商A ',
-        settlementCompanyId: 7,
+        id: '700520000000000099',
+        supplierId: '700520000000000001',
+        supplierName: '过期供应商名称',
+        settlementCompanyId: '700520000000000007',
       } as any)
       expect(filters).toEqual({
-        supplierName: '供应商A',
-        settlementCompanyId: 7,
+        supplierId: '700520000000000001',
+        currentRecordId: '700520000000000099',
+        settlementCompanyId: '700520000000000007',
       })
     })
 
-    it('buildParentFilters handles empty supplierName', () => {
+    it('buildParentFilters handles empty identities', () => {
       const filters = pi.buildParentFilters!({ supplierName: '' } as any)
       expect(filters).toEqual({
-        supplierName: '',
+        supplierId: undefined,
+        currentRecordId: undefined,
         settlementCompanyId: undefined,
       })
     })
 
-    it('validateBeforeOpen returns null when supplierName is present', () => {
+    it('validateBeforeOpen returns null when supplierId is present', () => {
       expect(
-        pi.validateBeforeOpen!({ supplierName: '供应商A' } as any),
+        pi.validateBeforeOpen!({
+          supplierId: '700520000000000001',
+          supplierName: '供应商A',
+        } as any),
       ).toBeNull()
     })
 
-    it('validateBeforeOpen returns error when supplierName is empty', () => {
-      expect(pi.validateBeforeOpen!({ supplierName: '' } as any)).toBe(
-        '请先选择供应商，再选择采购入库单',
-      )
+    it('validateBeforeOpen returns error when supplierId is missing', () => {
+      expect(
+        pi.validateBeforeOpen!({ supplierName: '同名供应商' } as any),
+      ).toBe('请先选择供应商，再选择采购入库单')
     })
 
     it('mapParentToDraft maps fields from parent record', () => {
       const draft = pi.mapParentToDraft!({
+        supplierId: '700520000000000001',
+        supplierCode: 'SUP-001',
         supplierName: '供应商A',
         inboundDate: '2024-01-15',
         settlementCompanyId: 7,
         settlementCompanyName: '主体A',
       } as any)
       expect(draft).toEqual({
+        supplierId: '700520000000000001',
+        supplierCode: 'SUP-001',
         supplierName: '供应商A',
         settlementCompanyId: 7,
         settlementCompanyName: '主体A',
@@ -105,6 +130,8 @@ describe('supplierStatementPageConfig', () => {
 
     it('mapParentToDraft handles missing fields', () => {
       const draft = pi.mapParentToDraft!({} as any)
+      expect(draft.supplierId).toBeUndefined()
+      expect(draft.supplierCode).toBe('')
       expect(draft.supplierName).toBe('')
       expect(draft.startDate).toBe('')
       expect(draft.paymentAmount).toBe(0)
@@ -112,10 +139,14 @@ describe('supplierStatementPageConfig', () => {
 
     it('validateParentImport passes for completed inbound from the same supplier', () => {
       const result = pi.validateParentImport!({
-        currentRecord: { supplierName: '供应商A' },
+        currentRecord: {
+          supplierId: '700520000000000001',
+          supplierName: '同名供应商',
+        },
         parentRecord: {
           status: DOCUMENT_STATUS.INBOUND_COMPLETED,
-          supplierName: '供应商A',
+          supplierId: '700520000000000001',
+          supplierName: '同名供应商',
         },
       } as any)
       expect(result).toBeNull()
@@ -123,10 +154,10 @@ describe('supplierStatementPageConfig', () => {
 
     it('validateParentImport rejects statuses other than completed inbound', () => {
       const result = pi.validateParentImport!({
-        currentRecord: { supplierName: '供应商A' },
+        currentRecord: { supplierId: '700520000000000001' },
         parentRecord: {
           status: DOCUMENT_STATUS.PURCHASE_COMPLETED,
-          supplierName: '供应商A',
+          supplierId: '700520000000000001',
         },
       } as any)
       expect(result).toBe('只能选择完成入库的采购入库单生成供应商对账单')
@@ -134,10 +165,14 @@ describe('supplierStatementPageConfig', () => {
 
     it('validateParentImport rejects mismatched supplier', () => {
       const result = pi.validateParentImport!({
-        currentRecord: { supplierName: '供应商A' },
+        currentRecord: {
+          supplierId: '700520000000000001',
+          supplierName: '同名供应商',
+        },
         parentRecord: {
           status: DOCUMENT_STATUS.INBOUND_COMPLETED,
-          supplierName: '供应商B',
+          supplierId: '700520000000000002',
+          supplierName: '同名供应商',
         },
       } as any)
       expect(result).toBe('只能选择同一供应商的采购入库单生成供应商对账单')
@@ -145,9 +180,14 @@ describe('supplierStatementPageConfig', () => {
 
     it('validateParentImport rejects mismatched settlement company', () => {
       const result = pi.validateParentImport!({
-        currentRecord: { supplierName: '供应商A', settlementCompanyId: 1 },
+        currentRecord: {
+          supplierId: '700520000000000001',
+          supplierName: '供应商A',
+          settlementCompanyId: 1,
+        },
         parentRecord: {
           status: DOCUMENT_STATUS.INBOUND_COMPLETED,
+          supplierId: '700520000000000001',
           supplierName: '供应商A',
           settlementCompanyId: 2,
         },

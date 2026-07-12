@@ -327,6 +327,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         'settlementCompanyName',
         'customerName',
         'projectName',
+        'materialId',
         'materialCode',
         'materialName',
         'brand',
@@ -340,6 +341,7 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
         'piecesPerBundle',
         'batchNo',
         'weightTon',
+        'warehouseId',
         'warehouseName',
       ],
     },
@@ -354,14 +356,21 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       ),
       enforceUniqueRelation: true,
       allowMultipleSelection: true,
-      buildParentFilters: () => ({ status: '已审核' }),
+      buildParentFilters: (currentRecord) => ({
+        customerId: currentRecord.customerId,
+        projectId: currentRecord.projectId,
+        currentRecordId: currentRecord.id,
+        status: '已审核',
+      }),
       hiddenSelectorColumnKeys: ['status'],
       validateBeforeOpen: (currentRecord) =>
         asString(currentRecord.carrierName).trim()
           ? null
           : '请先选择物流商，再导入销售出库单',
       mapParentToDraft: (parentRecord) => ({
+        customerId: parentRecord.customerId,
         customerName: parentRecord.customerName || '',
+        projectId: parentRecord.projectId,
         projectName: parentRecord.projectName || '',
       }),
       transformItems: transformFreightItems,

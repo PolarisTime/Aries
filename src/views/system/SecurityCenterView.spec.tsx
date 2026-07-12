@@ -31,6 +31,16 @@ vi.mock('@/views/system/SecurityKeyManagementView', () => ({
 import { SecurityCenterView } from '@/views/system/SecurityCenterView'
 
 describe('SecurityCenterView', () => {
+  it('renders the standard security center page heading', () => {
+    render(<SecurityCenterView />)
+    expect(
+      screen.getByRole('heading', { name: 'system.securityCenter.title' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.securityCenter.description'),
+    ).toBeInTheDocument()
+  })
+
   it('renders merged security tabs', () => {
     render(<SecurityCenterView />)
 

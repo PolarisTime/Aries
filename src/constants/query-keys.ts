@@ -38,6 +38,8 @@ export const QUERY_KEYS = {
   masterOptions: {
     carrier: ['master-options', 'carrier'] as const,
     customer: ['master-options', 'customer'] as const,
+    project: (customerId: string) =>
+      ['master-options', 'project', customerId] as const,
     material: ['master-options', 'material'] as const,
     materialCategories: ['master-options', 'material-categories'] as const,
     settlementCompany: ['master-options', 'settlement-company'] as const,

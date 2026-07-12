@@ -1,50 +1,76 @@
-import { uniqBy } from 'es-toolkit'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { createQueryCachedOptions } from '@/lib/query-cached-options'
-import type { ModuleRecordInput } from '@/types/module-page'
+import type { EntityId } from '@/types/entity-id'
+import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
 import { asString } from '@/utils/type-narrowing'
 
 export type CustomerOption = {
-  id?: string
-  value: string
+  id: EntityId
+  value: EntityId
   label: string
-  customerCode?: string
-  customerName?: string
-  projectName?: string
-  projectNameAbbr?: string
-  defaultSettlementCompanyId?: string | number
+  customerCode: string
+  customerName: string
+  defaultSettlementCompanyId?: EntityId
   defaultSettlementCompanyName?: string
 }
 
-export function normalizeText(value: unknown) {
+type RawCustomerOption = {
+  id?: unknown
+  value?: unknown
+  label?: unknown
+  customerCode?: unknown
+  customerName?: unknown
+  defaultSettlementCompanyId?: unknown
+  defaultSettlementCompanyName?: unknown
+}
+
+export function normalizeText(value: unknown): string {
   return asString(value).trim()
 }
 
-export function normalizeCustomerRows(rows: CustomerOption[]) {
-  return rows.flatMap((row) => {
-    const customerName = normalizeText(
-      row.customerName || row.value || row.label,
+function customerLabel(
+  id: EntityId,
+  customerCode: string,
+  customerName: string,
+): string {
+  if (customerCode && customerName) {
+    return `${customerCode} / ${customerName}`
+  }
+  return customerName ? `${customerName} / #${id}` : `#${id}`
+}
+
+export function normalizeCustomerRows(
+  rows: RawCustomerOption[],
+): CustomerOption[] {
+  return rows.map((row, index) => {
+    const id = parseEntityId(row.id, `customers[${index}].customer.id`)
+    const customerCode = normalizeText(row.customerCode)
+    const customerName = normalizeText(row.customerName || row.value)
+    const defaultSettlementCompanyId = parseOptionalEntityId(
+      row.defaultSettlementCompanyId,
+      `customers[${index}].defaultSettlementCompanyId`,
     )
-    const projectName = normalizeText(row.projectName)
-    return customerName
-      ? [
-          {
-            ...row,
-            id: row.id == null ? undefined : String(row.id),
-            value: customerName,
-            label:
-              row.label ||
-              (projectName ? `${customerName} / ${projectName}` : customerName),
-            customerName,
-            projectName,
-          },
-        ]
-      : []
+
+    return {
+      id,
+      value: id,
+      label: customerLabel(id, customerCode, customerName),
+      customerCode,
+      customerName,
+      ...(defaultSettlementCompanyId ? { defaultSettlementCompanyId } : {}),
+      ...(normalizeText(row.defaultSettlementCompanyName)
+        ? {
+            defaultSettlementCompanyName: normalizeText(
+              row.defaultSettlementCompanyName,
+            ),
+          }
+        : {}),
+    }
   })
 }
 
-const cached = createQueryCachedOptions<CustomerOption>({
+const cached = createQueryCachedOptions<CustomerOption, RawCustomerOption>({
   endpoint: ENDPOINTS.CUSTOMERS_OPTIONS,
   queryKey: QUERY_KEYS.masterOptions.customer,
   normalizer: normalizeCustomerRows,
@@ -53,97 +79,31 @@ const cached = createQueryCachedOptions<CustomerOption>({
 export const fetchCustomerOptions = cached.fetch
 export const reloadCustomerOptions = cached.reload
 
+/** 同名客户不得合并，选项顺序由服务端业务编码排序决定。 */
 export function getCustomerOptions(): CustomerOption[] {
-  return uniqueCustomerNameOptions(cached.get())
+  return cached.get()
 }
 
 export function findCustomerOption(
-  customerName: unknown,
-  projectName?: unknown,
+  customerId: unknown,
 ): CustomerOption | undefined {
-  const normalizedCustomerName = normalizeText(customerName)
-  if (!normalizedCustomerName) return undefined
-
-  const customerRows = cached
-    .get()
-    .filter(
-      (row) =>
-        normalizeText(row.customerName || row.value) === normalizedCustomerName,
-    )
-  const normalizedProjectName = normalizeText(projectName)
-  if (!normalizedProjectName) return customerRows[0]
-
-  return (
-    customerRows.find(
-      (row) => normalizeText(row.projectName) === normalizedProjectName,
-    ) || customerRows[0]
-  )
-}
-
-export function getCustomerProjectOptions(
-  form?: ModuleRecordInput,
-): CustomerOption[] {
-  const customerName = normalizeText(form?.customerName)
-  const rows = cached.get()
-  const filteredRows = customerName
-    ? rows.filter(
-        (row) => normalizeText(row.customerName || row.value) === customerName,
-      )
-    : rows
-  return uniqueProjectOptions(filteredRows, !customerName)
-}
-
-export function uniqueCustomerNameOptions(rows: CustomerOption[]) {
-  return uniqBy(
-    rows.filter((row) => Boolean(normalizeText(row.customerName || row.value))),
-    (row) => normalizeText(row.customerName || row.value),
-  ).map((row) => {
-    const customerName = normalizeText(row.customerName || row.value)
-    return {
-      label: customerName,
-      value: customerName,
-      ...settlementCompanySnapshot(row),
-    }
-  })
-}
-
-export function uniqueProjectOptions(
-  rows: CustomerOption[],
-  includeCustomerInLabel: boolean,
-) {
-  return uniqBy(
-    rows.filter((row) => Boolean(normalizeText(row.projectName))),
-    (row) => normalizeText(row.projectName),
-  ).map((row) => {
-    const projectName = normalizeText(row.projectName)
-    const customerName = normalizeText(row.customerName || row.value)
-    const projectLabel = formatProjectOptionLabel(row, projectName)
-    return {
-      label: includeCustomerInLabel
-        ? `${projectLabel} / ${customerName}`
-        : projectLabel,
-      value: projectName,
-      customerName,
-      projectName,
-      customerCode: row.customerCode,
-      projectNameAbbr: row.projectNameAbbr,
-      ...settlementCompanySnapshot(row),
-    }
-  })
-}
-
-function settlementCompanySnapshot(row: CustomerOption) {
-  if (row.defaultSettlementCompanyId == null) return {}
-  return {
-    defaultSettlementCompanyId: row.defaultSettlementCompanyId,
-    defaultSettlementCompanyName: row.defaultSettlementCompanyName,
+  let normalizedId: EntityId | undefined
+  try {
+    normalizedId = parseOptionalEntityId(customerId, 'customerId')
+  } catch {
+    return undefined
   }
+  if (!normalizedId) {
+    return undefined
+  }
+  return cached.get().find((row) => row.id === normalizedId)
 }
 
-export function formatProjectOptionLabel(
-  row: CustomerOption,
-  projectName: string,
-) {
-  const projectNameAbbr = normalizeText(row.projectNameAbbr)
-  return projectNameAbbr ? `${projectNameAbbr}（${projectName}）` : projectName
+/** @deprecated 使用 getCustomerOptions；保留导出以兼容既有插件。 */
+export function uniqueCustomerNameOptions(
+  rows: CustomerOption[],
+): CustomerOption[] {
+  return [...rows]
 }
+
+export { getCustomerProjectOptions } from './project-options'

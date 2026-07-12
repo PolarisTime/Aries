@@ -197,7 +197,7 @@ export function GeneralSettingsView() {
   }
 
   return (
-    <div className="page-stack">
+    <div className="page-stack settings-section-page">
       <GeneralSettingsTableCard
         keyword={keyword}
         statusFilter={statusFilter}

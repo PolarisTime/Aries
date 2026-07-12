@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { Empty, Tabs } from 'antd'
+import { Empty, Tabs, Typography } from 'antd'
 import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AppPageDefinition } from '@/config/page-registry'
@@ -124,15 +124,24 @@ export function AccessControlView() {
   })()
 
   return (
-    <div className="page-stack page-workspace-stack">
+    <div className="page-stack settings-tabbed-page access-control-page">
+      <header className="settings-page-header">
+        <Typography.Title level={3}>
+          {t('system.accessControl.title')}
+        </Typography.Title>
+        <Typography.Paragraph type="secondary">
+          {t('system.accessControl.description')}
+        </Typography.Paragraph>
+      </header>
       <Tabs
+        className="settings-navigation-tabs"
         activeKey={activeTab}
         onChange={handleTabChange}
         items={tabItems}
         size="large"
         tabBarStyle={{ marginBottom: 0 }}
       />
-      <div className="page-workspace">{activeContent}</div>
+      <div className="settings-page-content">{activeContent}</div>
     </div>
   )
 }

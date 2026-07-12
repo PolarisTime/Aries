@@ -42,14 +42,14 @@ describe('salesOrdersPageConfig', () => {
       (filter) => filter.key === 'keyword',
     )
     const customerFilter = salesOrdersPageConfig.filters!.find(
-      (filter) => filter.key === 'customerName',
+      (filter) => filter.key === 'customerId',
     )
     const statusFilter = salesOrdersPageConfig.filters!.find(
       (filter) => filter.key === 'status',
     )
     const advancedFilterKeys = [
       'productKeyword',
-      'projectName',
+      'projectId',
       'settlementCompanyId',
       'deliveryDate',
     ]
@@ -58,7 +58,7 @@ describe('salesOrdersPageConfig', () => {
       salesOrdersPageConfig
         .filters!.filter((filter) => filter.row == null)
         .map((filter) => filter.key),
-    ).toEqual(['keyword', 'customerName', 'status'])
+    ).toEqual(['keyword', 'customerId', 'status'])
     expect(keywordFilter?.row).toBeUndefined()
     expect(customerFilter?.row).toBeUndefined()
     expect(statusFilter?.row).toBeUndefined()
@@ -80,6 +80,17 @@ describe('salesOrdersPageConfig', () => {
     expect(salesOrdersPageConfig.columns.length).toBeGreaterThan(0)
   })
 
+  it('uses stable customer and project ids as editor select values', () => {
+    const fieldKeys = salesOrdersPageConfig.formFields?.map(
+      (field) => field.key,
+    )
+
+    expect(fieldKeys).toContain('customerId')
+    expect(fieldKeys).toContain('projectId')
+    expect(fieldKeys).not.toContain('customerName')
+    expect(fieldKeys).not.toContain('projectName')
+  })
+
   it('has parentImport config', () => {
     expect(salesOrdersPageConfig.parentImport).toBeDefined()
     expect(salesOrdersPageConfig.parentImport!.parentModuleKey).toBe(
@@ -92,8 +103,14 @@ describe('salesOrdersPageConfig', () => {
       'sales-order',
     )
     expect(
-      salesOrdersPageConfig.parentImport!.buildParentFilters?.({ id: '1' }),
-    ).toEqual({ status: '已审核' })
+      salesOrdersPageConfig.parentImport!.buildParentFilters?.({
+        id: '1',
+        supplierId: '700520000000000001',
+      }),
+    ).toEqual({
+      supplierId: '700520000000000001',
+      status: '已审核',
+    })
     expect(
       salesOrdersPageConfig.parentImport!.hiddenSelectorColumnKeys,
     ).toContain('status')

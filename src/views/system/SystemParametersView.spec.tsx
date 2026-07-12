@@ -22,6 +22,20 @@ vi.mock('@/views/system/OssSettingsView', () => ({
 import { SystemParametersView } from '@/views/system/SystemParametersView'
 
 describe('SystemParametersView', () => {
+  it('renders the settings workspace introduction', () => {
+    render(<SystemParametersView />)
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'system.systemParameters.title',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('system.systemParameters.description'),
+    ).toBeInTheDocument()
+    expect(document.querySelector('.system-parameters-intro')).toBeNull()
+  })
+
   it('renders merged settings tabs', () => {
     render(<SystemParametersView />)
 
@@ -41,6 +55,15 @@ describe('SystemParametersView', () => {
       }),
     ).toBeInTheDocument()
     expect(screen.getByTestId('general-settings-view')).toBeInTheDocument()
+    expect(screen.getByRole('tablist').closest('.ant-tabs')).toHaveClass(
+      'system-parameters-tabs',
+    )
+    expect(screen.getByRole('tablist').closest('.ant-tabs')).not.toHaveClass(
+      'ant-tabs-card',
+    )
+    expect(screen.getByRole('tabpanel')).toHaveClass(
+      'system-parameters-tabs-content',
+    )
   })
 
   it('switches to number rules tab', () => {

@@ -30,7 +30,7 @@ describe('purchaseRefundsPageConfig', () => {
       purchaseRefundsPageConfig.filters.map((filter) => filter.key),
     ).toEqual([
       'keyword',
-      'supplierName',
+      'supplierId',
       'settlementCompanyId',
       'status',
       'refundDate',
@@ -87,7 +87,7 @@ describe('purchaseRefundsPageConfig', () => {
 
     expect(filterRows).toEqual({
       keyword: 1,
-      supplierName: 1,
+      supplierId: 1,
       settlementCompanyId: 2,
       status: 1,
       refundDate: 2,
@@ -101,6 +101,12 @@ describe('purchaseRefundsPageConfig', () => {
     expect(parentImport?.parentFieldKey).toBe('purchaseOrderNo')
     expect(parentImport?.parentDisplayFieldKey).toBe('purchaseOrderNo')
     expect(parentImport?.candidateQueryType).toBe('purchase-refund-source')
+    expect(
+      parentImport?.buildParentFilters?.({
+        id: '1',
+        supplierId: '700520000000000001',
+      }),
+    ).toEqual({ supplierId: '700520000000000001' })
     expect(parentImport?.resolveParentRecord).toBeTypeOf('function')
     expect(parentImport?.mapParentToDraft).toBeTypeOf('function')
     expect(parentImport?.transformItems).toBeTypeOf('function')
@@ -123,6 +129,7 @@ describe('purchaseRefundsPageConfig', () => {
         id: '101',
         sourcePurchaseOrderId: '101',
         purchaseOrderNo: 'PO-001',
+        supplierId: '700520000000000001',
         supplierCode: 'SUP-001',
         supplierName: '供应商甲',
         settlementCompanyId: '9',
@@ -134,6 +141,7 @@ describe('purchaseRefundsPageConfig', () => {
     ).toEqual({
       sourcePurchaseOrderId: '101',
       purchaseOrderNo: 'PO-001',
+      supplierId: '700520000000000001',
       supplierCode: 'SUP-001',
       supplierName: '供应商甲',
       settlementCompanyId: '9',

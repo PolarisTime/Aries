@@ -20,6 +20,24 @@ describe('customerStatementPageConfig', () => {
     expect(customerStatementPageConfig.saveFields?.scalar).toContain(
       'customerCode',
     )
+    expect(customerStatementPageConfig.saveFields?.scalar).toEqual(
+      expect.arrayContaining(['customerId', 'projectId']),
+    )
+    expect(customerStatementPageConfig.saveFields?.lineItem).toEqual(
+      expect.arrayContaining([
+        'sourceSalesOrderItemId',
+        'customerId',
+        'projectId',
+        'materialId',
+        'warehouseId',
+      ]),
+    )
+    expect(
+      customerStatementPageConfig.filters.map((filter) => filter.key),
+    ).toEqual(expect.arrayContaining(['customerId', 'projectId']))
+    expect(
+      customerStatementPageConfig.formFields?.map((field) => field.key),
+    ).toEqual(expect.arrayContaining(['customerId', 'projectId']))
     expect(customerStatementPageConfig.buildOverview).toBeTypeOf('function')
   })
 
@@ -52,16 +70,20 @@ describe('customerStatementPageConfig', () => {
   })
 
   describe('parentImport', () => {
-    it('buildParentFilters filters by customer and project', () => {
+    it('buildParentFilters filters by stable customer and project ids', () => {
       const filters = pi.buildParentFilters!({
-        customerName: ' 客户A ',
-        projectName: ' 项目X ',
-        settlementCompanyId: 8,
+        id: '700520000000000099',
+        customerId: '700520000000000001',
+        projectId: '700520000000000002',
+        customerName: '过期客户名称',
+        projectName: '过期项目名称',
+        settlementCompanyId: '700520000000000008',
       } as any)
       expect(filters).toEqual({
-        customerName: '客户A',
-        projectName: '项目X',
-        settlementCompanyId: 8,
+        customerId: '700520000000000001',
+        projectId: '700520000000000002',
+        currentRecordId: '700520000000000099',
+        settlementCompanyId: '700520000000000008',
         status: '完成销售',
       })
     })
@@ -72,41 +94,48 @@ describe('customerStatementPageConfig', () => {
         projectName: undefined,
       } as any)
       expect(filters).toEqual({
-        customerName: '',
-        projectName: '',
+        customerId: undefined,
+        projectId: undefined,
+        currentRecordId: undefined,
         settlementCompanyId: undefined,
         status: '完成销售',
       })
     })
 
-    it('validateBeforeOpen returns null when customerName is present', () => {
+    it('validateBeforeOpen returns null when customerId is present', () => {
       expect(
-        pi.validateBeforeOpen!({ customerName: '客户A' } as any),
+        pi.validateBeforeOpen!({ customerId: '700520000000000001' } as any),
       ).toBeNull()
     })
 
-    it('validateBeforeOpen returns error when customerName is empty', () => {
-      expect(pi.validateBeforeOpen!({ customerName: '' } as any)).toBe(
+    it('validateBeforeOpen returns error when customerId is empty', () => {
+      expect(pi.validateBeforeOpen!({ customerId: '' } as any)).toBe(
         '请先选择客户，再选择销售订单',
       )
     })
 
-    it('validateBeforeOpen returns error when customerName is only whitespace', () => {
-      expect(pi.validateBeforeOpen!({ customerName: '  ' } as any)).toBe(
+    it('validateBeforeOpen does not infer identity from a customer name', () => {
+      expect(pi.validateBeforeOpen!({ customerName: '客户A' } as any)).toBe(
         '请先选择客户，再选择销售订单',
       )
     })
 
     it('mapParentToDraft maps fields from parent record', () => {
       const draft = pi.mapParentToDraft!({
+        customerId: '700520000000000001',
+        customerCode: 'CUS-001',
         customerName: '客户A',
+        projectId: '700520000000000002',
         projectName: '项目X',
         deliveryDate: '2024-01-15',
         settlementCompanyId: 8,
         settlementCompanyName: '主体B',
       } as any)
       expect(draft).toEqual({
+        customerId: '700520000000000001',
+        customerCode: 'CUS-001',
         customerName: '客户A',
+        projectId: '700520000000000002',
         projectName: '项目X',
         settlementCompanyId: 8,
         settlementCompanyName: '主体B',
@@ -119,7 +148,10 @@ describe('customerStatementPageConfig', () => {
 
     it('mapParentToDraft handles missing optional fields', () => {
       const draft = pi.mapParentToDraft!({} as any)
+      expect(draft.customerId).toBeUndefined()
+      expect(draft.customerCode).toBe('')
       expect(draft.customerName).toBe('')
+      expect(draft.projectId).toBeUndefined()
       expect(draft.projectName).toBe('')
       expect(draft.startDate).toBe('')
       expect(draft.endDate).toBe('')
@@ -127,39 +159,55 @@ describe('customerStatementPageConfig', () => {
 
     it('validateParentImport passes when status matches and customer matches', () => {
       const result = pi.validateParentImport!({
-        currentRecord: { customerName: '客户A' },
+        currentRecord: { customerId: '700520000000000001' },
         currentItems: [],
-        parentRecord: { status: '完成销售', customerName: '客户A' },
+        parentRecord: {
+          status: '完成销售',
+          customerId: '700520000000000001',
+        },
       } as any)
       expect(result).toBeNull()
     })
 
     it('validateParentImport rejects non-完成销售 status', () => {
       const result = pi.validateParentImport!({
-        currentRecord: { customerName: '客户A' },
+        currentRecord: { customerId: '700520000000000001' },
         currentItems: [],
-        parentRecord: { status: '待审核', customerName: '客户A' },
+        parentRecord: {
+          status: '待审核',
+          customerId: '700520000000000001',
+        },
       } as any)
       expect(result).toBe('只能选择完成销售的销售订单生成客户对账单')
     })
 
-    it('validateParentImport rejects mismatched customer', () => {
+    it('validateParentImport rejects same-name customers with different ids', () => {
       const result = pi.validateParentImport!({
-        currentRecord: { customerName: '客户A' },
+        currentRecord: {
+          customerId: '700520000000000001',
+          customerName: '同名客户',
+        },
         currentItems: [],
-        parentRecord: { status: '完成销售', customerName: '客户B' },
+        parentRecord: {
+          status: '完成销售',
+          customerId: '700520000000000002',
+          customerName: '同名客户',
+        },
       } as any)
       expect(result).toBe('只能选择同一客户的销售订单生成客户对账单')
     })
 
     it('validateParentImport rejects mismatched project', () => {
       const result = pi.validateParentImport!({
-        currentRecord: { customerName: '客户A', projectName: '项目Y' },
-        currentItems: [{ projectName: '项目Y' }, { projectName: '项目Z' }],
+        currentRecord: {
+          customerId: '700520000000000001',
+          projectId: '700520000000000010',
+        },
+        currentItems: [{ projectId: '700520000000000010' }],
         parentRecord: {
           status: '完成销售',
-          customerName: '客户A',
-          projectName: '项目X',
+          customerId: '700520000000000001',
+          projectId: '700520000000000011',
         },
       } as any)
       expect(result).toBe('只能选择同一项目的销售订单生成客户对账单')
@@ -167,11 +215,14 @@ describe('customerStatementPageConfig', () => {
 
     it('validateParentImport rejects mismatched settlement company', () => {
       const result = pi.validateParentImport!({
-        currentRecord: { customerName: '客户A', settlementCompanyId: 1 },
+        currentRecord: {
+          customerId: '700520000000000001',
+          settlementCompanyId: 1,
+        },
         currentItems: [],
         parentRecord: {
           status: '完成销售',
-          customerName: '客户A',
+          customerId: '700520000000000001',
           settlementCompanyId: 2,
         },
       } as any)
@@ -180,25 +231,30 @@ describe('customerStatementPageConfig', () => {
 
     it('validateParentImport allows empty current project context', () => {
       const result = pi.validateParentImport!({
-        currentRecord: { customerName: '客户A', projectName: '' },
+        currentRecord: { customerId: '700520000000000001', projectId: '' },
         currentItems: [],
         parentRecord: {
           status: '完成销售',
-          customerName: '客户A',
-          projectName: '项目X',
+          customerId: '700520000000000001',
+          projectId: '700520000000000010',
         },
       } as any)
       expect(result).toBeNull()
     })
 
-    it('validateParentImport matches project when currentItems have multiple projects', () => {
+    it('validateParentImport matches the stable project id', () => {
       const result = pi.validateParentImport!({
-        currentRecord: { customerName: '客户A', projectName: ' 项目X ' },
-        currentItems: [{ projectName: '项目X' }],
+        currentRecord: {
+          customerId: '700520000000000001',
+          projectId: '700520000000000010',
+          projectName: '项目新名称',
+        },
+        currentItems: [{ projectId: '700520000000000010' }],
         parentRecord: {
           status: '完成销售',
-          customerName: '客户A',
-          projectName: '项目X',
+          customerId: '700520000000000001',
+          projectId: '700520000000000010',
+          projectName: '项目旧名称',
         },
       } as any)
       expect(result).toBeNull()
@@ -207,14 +263,27 @@ describe('customerStatementPageConfig', () => {
     it('transformItems maps items from parent record', () => {
       const items = pi.transformItems!({
         orderNo: 'SO-2024-001',
+        customerId: '700520000000000001',
+        projectId: '700520000000000002',
         items: [
-          { id: 1, materialName: '螺纹钢', quantity: 10 },
+          {
+            id: '700520000000000101',
+            materialName: '螺纹钢',
+            quantity: 10,
+            warehouseId: '700520000000000003',
+          },
           { id: 2, materialName: '盘螺', quantity: 5 },
         ],
       } as any)
       expect(items).toHaveLength(2)
-      expect(items[0].id).toBe('SO-2024-001-1')
-      expect(items[0].sourceNo).toBe('SO-2024-001')
+      expect(items[0]).toMatchObject({
+        id: 'SO-2024-001-700520000000000101',
+        sourceNo: 'SO-2024-001',
+        sourceSalesOrderItemId: '700520000000000101',
+        customerId: '700520000000000001',
+        projectId: '700520000000000002',
+        warehouseId: '700520000000000003',
+      })
       expect(items[1].sourceNo).toBe('SO-2024-001')
     })
 

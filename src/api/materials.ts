@@ -1,10 +1,13 @@
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { ApiResponse } from '@/types/api'
+import type { EntityId } from '@/types/entity-id'
+import { parseEntityId } from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
 import { downloadBlob } from '@/utils/download'
 import { assertApiSuccess, http } from './client'
 
-type MaterialSearchResponse = ModuleRecord & {
+export type MaterialSearchResponse = Omit<ModuleRecord, 'id'> & {
+  id: EntityId
   materialCode?: string
   brand?: string
   category?: string
@@ -18,6 +21,19 @@ type MaterialSearchResponse = ModuleRecord & {
   unitPrice?: number
   batchNoEnabled?: boolean
   remark?: string
+}
+
+type RawMaterialSearchResponse = Omit<MaterialSearchResponse, 'id'> & {
+  id?: unknown
+}
+
+export function normalizeMaterialSearchRows(
+  rows: RawMaterialSearchResponse[],
+): MaterialSearchResponse[] {
+  return rows.map((row, index) => ({
+    ...row,
+    id: parseEntityId(row.id, `materials[${index}].id`),
+  }))
 }
 
 export interface MaterialImportError {
@@ -36,8 +52,11 @@ export interface MaterialImportResult {
   successRows?: unknown[]
 }
 
-export async function fetchMaterialSearch(keyword = '', limit = 200) {
-  const response = await http.get<ApiResponse<MaterialSearchResponse[]>>(
+export async function fetchMaterialSearch(
+  keyword = '',
+  limit = 200,
+): Promise<MaterialSearchResponse[]> {
+  const response = await http.get<ApiResponse<RawMaterialSearchResponse[]>>(
     ENDPOINTS.MATERIALS_SEARCH,
     {
       params: {
@@ -48,10 +67,10 @@ export async function fetchMaterialSearch(keyword = '', limit = 200) {
   )
 
   if (Number(response.code) !== 0 || !Array.isArray(response.data)) {
-    return [] as MaterialSearchResponse[]
+    return []
   }
 
-  return response.data
+  return normalizeMaterialSearchRows(response.data)
 }
 
 export async function downloadMaterialImportTemplate() {

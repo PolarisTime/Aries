@@ -6,11 +6,13 @@ import { moduleBehaviorRegistry } from './module-behavior-registry-core'
 const {
   getSettlementCompanyOptionsMock,
   findCustomerOptionMock,
+  findProjectOptionMock,
   findCarrierOptionMock,
   findSupplierOptionMock,
 } = vi.hoisted(() => ({
   getSettlementCompanyOptionsMock: vi.fn(),
   findCustomerOptionMock: vi.fn(),
+  findProjectOptionMock: vi.fn(),
   findCarrierOptionMock: vi.fn(),
   findSupplierOptionMock: vi.fn(),
 }))
@@ -21,6 +23,10 @@ vi.mock('@/api/company-settings', () => ({
 
 vi.mock('@/api/customer-options', () => ({
   findCustomerOption: findCustomerOptionMock,
+}))
+
+vi.mock('@/api/project-options', () => ({
+  findProjectOption: findProjectOptionMock,
 }))
 
 vi.mock('@/api/carrier-options', () => ({
@@ -54,6 +60,7 @@ describe('module-behavior-editor', () => {
     getSettlementCompanyOptionsMock.mockReset()
     getSettlementCompanyOptionsMock.mockReturnValue(settlementCompanyOptions)
     findCustomerOptionMock.mockReset()
+    findProjectOptionMock.mockReset()
     findCarrierOptionMock.mockReset()
     findSupplierOptionMock.mockReset()
   })
@@ -117,23 +124,213 @@ describe('module-behavior-editor', () => {
     expect(hasBehavior('sales-order', 'supportsFreightPickup')).toBe(true)
   })
 
-  it('sales-order uses the selected customer default settlement company', () => {
+  it('sales-order atomically snapshots a selected customer identity', () => {
     findCustomerOptionMock.mockReturnValue({
+      id: '1',
+      customerCode: 'C001',
+      customerName: '客户A',
       defaultSettlementCompanyId: 9,
       defaultSettlementCompanyName: '主体A',
     })
-    const form = { customerName: '客户A', projectName: '项目A' } as Record<
-      string,
-      unknown
-    >
+    const form = {
+      customerId: '1',
+      customerCode: 'OLD',
+      customerName: '旧客户',
+      projectId: '101',
+      projectName: '旧项目',
+    } as Record<string, unknown>
 
     getSyncEditorForm('sales-order')(form, {
-      changedKeys: new Set(['customerName']),
+      changedKeys: new Set(['customerId']),
     })
 
-    expect(findCustomerOptionMock).toHaveBeenCalledWith('客户A', '项目A')
+    expect(findCustomerOptionMock).toHaveBeenCalledWith('1')
+    expect(form.customerCode).toBe('C001')
+    expect(form.customerName).toBe('客户A')
+    expect(form.projectId).toBe('')
+    expect(form.projectName).toBe('')
     expect(form.settlementCompanyId).toBe('9')
     expect(form.settlementCompanyName).toBe('主体A')
+  })
+
+  it('sales-order snapshots a selected project only within its customer', () => {
+    findProjectOptionMock.mockReturnValue({
+      id: '101',
+      customerId: '1',
+      projectCode: 'P001',
+      projectName: '项目A',
+    })
+    const form = {
+      customerId: '1',
+      projectId: '101',
+      projectName: '旧项目',
+    } as Record<string, unknown>
+
+    getSyncEditorForm('sales-order')(form, {
+      changedKeys: new Set(['projectId']),
+    })
+
+    expect(findProjectOptionMock).toHaveBeenCalledWith('101', '1')
+    expect(form.projectId).toBe('101')
+    expect(form.projectName).toBe('项目A')
+  })
+
+  it('receipt atomically snapshots customer identity and clears dependent identity', () => {
+    findCustomerOptionMock.mockReturnValue({
+      id: '1',
+      customerCode: 'C001',
+      customerName: '客户A',
+      defaultSettlementCompanyId: '9',
+      defaultSettlementCompanyName: '主体A',
+    })
+    const form = {
+      customerId: '1',
+      customerCode: 'OLD',
+      customerName: '旧客户',
+      projectId: '101',
+      projectName: '旧项目',
+      sourceCustomerStatementId: '701',
+    } as Record<string, unknown>
+
+    getSyncEditorForm('receipt')(form, {
+      changedKeys: new Set(['customerId']),
+    })
+
+    expect(form).toMatchObject({
+      customerId: '1',
+      customerCode: 'C001',
+      customerName: '客户A',
+      projectId: '',
+      projectName: '',
+      sourceCustomerStatementId: '',
+      settlementCompanyId: '9',
+      settlementCompanyName: '主体A',
+    })
+  })
+
+  it('receipt snapshots project identity and clears the stale statement source', () => {
+    findProjectOptionMock.mockReturnValue({
+      id: '101',
+      customerId: '1',
+      projectCode: 'P001',
+      projectName: '项目A',
+    })
+    const form = {
+      customerId: '1',
+      projectId: '101',
+      projectName: '旧项目',
+      sourceCustomerStatementId: '701',
+    } as Record<string, unknown>
+
+    getSyncEditorForm('receipt')(form, {
+      changedKeys: new Set(['projectId']),
+    })
+
+    expect(form.projectId).toBe('101')
+    expect(form.projectName).toBe('项目A')
+    expect(form.sourceCustomerStatementId).toBe('')
+  })
+
+  it('payment clears counterparty identity and both statement sources when type changes', () => {
+    const form = {
+      counterpartyType: '物流商',
+      counterpartyId: '401',
+      counterpartyCode: 'SUP-001',
+      counterpartyName: '供应商A',
+      sourceSupplierStatementId: '701',
+      sourceFreightStatementId: '702',
+    } as Record<string, unknown>
+
+    getSyncEditorForm('payment')(form, {
+      changedKeys: new Set(['counterpartyType']),
+    })
+
+    expect(form).toMatchObject({
+      counterpartyId: '',
+      counterpartyCode: '',
+      counterpartyName: '',
+      sourceSupplierStatementId: '',
+      sourceFreightStatementId: '',
+    })
+  })
+
+  it('payment snapshots the selected supplier by id and clears the stale source', () => {
+    findSupplierOptionMock.mockReturnValue({
+      id: '401',
+      supplierCode: 'SUP-001',
+      supplierName: '供应商A',
+      value: '401',
+      label: 'SUP-001 / 供应商A',
+    })
+    const form = {
+      counterpartyType: '供应商',
+      counterpartyId: '401',
+      sourceSupplierStatementId: '701',
+      sourceFreightStatementId: '702',
+    } as Record<string, unknown>
+
+    getSyncEditorForm('payment')(form, {
+      changedKeys: new Set(['counterpartyId']),
+    })
+
+    expect(findSupplierOptionMock).toHaveBeenCalledWith('401')
+    expect(form).toMatchObject({
+      counterpartyId: '401',
+      counterpartyCode: 'SUP-001',
+      counterpartyName: '供应商A',
+      sourceSupplierStatementId: '',
+      sourceFreightStatementId: '',
+    })
+  })
+
+  it('ledger adjustment snapshots a customer by id', () => {
+    findCustomerOptionMock.mockReturnValue({
+      id: '501',
+      customerCode: 'CUS-001',
+      customerName: '客户A',
+    })
+    const form = {
+      counterpartyType: '客户',
+      counterpartyId: '501',
+      counterpartyCode: '',
+      counterpartyName: '',
+    } as Record<string, unknown>
+
+    getSyncEditorForm('ledger-adjustment')(form, {
+      changedKeys: new Set(['counterpartyId']),
+    })
+
+    expect(findCustomerOptionMock).toHaveBeenCalledWith('501')
+    expect(form).toMatchObject({
+      counterpartyId: '501',
+      counterpartyCode: 'CUS-001',
+      counterpartyName: '客户A',
+      customerId: '501',
+    })
+  })
+
+  it('ledger adjustment snapshots a project within the selected customer', () => {
+    findProjectOptionMock.mockReturnValue({
+      id: '601',
+      customerId: '501',
+      projectCode: 'P001',
+      projectName: '项目A',
+    })
+    const form = {
+      counterpartyType: '客户',
+      counterpartyId: '501',
+      customerId: '501',
+      projectId: '601',
+      projectName: '旧项目',
+    } as Record<string, unknown>
+
+    getSyncEditorForm('ledger-adjustment')(form, {
+      changedKeys: new Set(['projectId']),
+    })
+
+    expect(findProjectOptionMock).toHaveBeenCalledWith('601', '501')
+    expect(form.projectId).toBe('601')
+    expect(form.projectName).toBe('项目A')
   })
 
   it('freight-bill uses the selected carrier default settlement company', () => {
@@ -237,24 +434,57 @@ describe('module-behavior-editor', () => {
     expect(dayjs.isDayjs(values.orderDate)).toBe(true)
   })
 
-  it('purchase-order snapshots the selected supplier name by stable code', () => {
+  it('supplier modules atomically snapshot the selected stable supplier identity', () => {
     findSupplierOptionMock.mockReturnValue({
+      id: '700520000000000001',
       supplierCode: 'SUP-001',
-      value: '供应商甲',
+      supplierName: '供应商甲',
+      value: '700520000000000001',
       label: '供应商甲',
     })
+    const moduleKeys = [
+      'purchase-order',
+      'purchase-inbound',
+      'purchase-contract',
+      'invoice-receipt',
+      'supplier-statement',
+    ]
+
+    for (const moduleKey of moduleKeys) {
+      const form = {
+        supplierId: '700520000000000001',
+        supplierName: '旧供应商',
+        supplierCode: 'OLD',
+      } as Record<string, unknown>
+
+      getSyncEditorForm(moduleKey)(form, {
+        changedKeys: new Set(['supplierId']),
+      })
+
+      expect(form.supplierId).toBe('700520000000000001')
+      expect(form.supplierCode).toBe('SUP-001')
+      expect(form.supplierName).toBe('供应商甲')
+    }
+    expect(findSupplierOptionMock).toHaveBeenCalledTimes(moduleKeys.length)
+    expect(findSupplierOptionMock).toHaveBeenCalledWith('700520000000000001')
+  })
+
+  it('supplier selection fails closed when the stable id has no option', () => {
     const form = {
-      supplierName: '',
-      supplierCode: 'SUP-001',
+      supplierId: 'not-an-id',
+      supplierName: '旧供应商',
+      supplierCode: 'OLD',
     } as Record<string, unknown>
 
     getSyncEditorForm('purchase-order')(form, {
-      changedKeys: new Set(['supplierCode']),
+      changedKeys: new Set(['supplierId']),
     })
 
-    expect(findSupplierOptionMock).toHaveBeenCalledWith('SUP-001')
-    expect(form.supplierCode).toBe('SUP-001')
-    expect(form.supplierName).toBe('供应商甲')
+    expect(form).toMatchObject({
+      supplierId: '',
+      supplierCode: '',
+      supplierName: '',
+    })
   })
 
   it('purchase-order syncEditorForm snapshots settlement company name changes', () => {
@@ -379,7 +609,7 @@ describe('module-behavior-editor', () => {
     ) => string[]
 
     expect(resolveReadonly({ purchaseOrderNo: 'PO202600001' })).toEqual([
-      'supplierName',
+      'supplierId',
       'settlementCompanyId',
     ])
     expect(resolveReadonly({ purchaseOrderNo: '   ' })).toEqual([])
@@ -393,7 +623,7 @@ describe('module-behavior-editor', () => {
       record: any,
     ) => string[]
     expect(resolveReadonly({ sourcePurchaseOrderNos: 'PO001' })).toEqual([
-      'supplierName',
+      'supplierId',
     ])
     expect(resolveReadonly({ sourcePurchaseOrderNos: '' })).toEqual([])
 

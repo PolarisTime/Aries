@@ -1,5 +1,5 @@
 import i18next from 'i18next'
-import { getSupplierOptions } from '@/constants/module-options'
+import { getSupplierNameFilterOptions } from '@/api/supplier-options'
 import type { ModulePageConfig } from '@/types/module-page'
 import { SUPPLIER_NAME_LABEL } from '../shared/filter-labels'
 import {
@@ -33,7 +33,7 @@ export const pendingInvoiceReceiptReportPageConfig: ModulePageConfig = {
       key: 'supplierName',
       label: SUPPLIER_NAME_LABEL,
       type: 'select',
-      options: getSupplierOptions,
+      options: getSupplierNameFilterOptions,
     },
     {
       key: 'orderDate',

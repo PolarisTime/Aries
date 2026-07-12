@@ -14,6 +14,9 @@ describe('freightOperationsPageConfigs', () => {
     expect(Array.isArray(config.columns)).toBe(true)
     expect(Array.isArray(config.detailFields)).toBe(true)
     expect(Array.isArray(config.formFields)).toBe(true)
+    expect(config.saveFields?.lineItem).toEqual(
+      expect.arrayContaining(['materialId', 'warehouseId']),
+    )
     expect(config.buildOverview).toBeTypeOf('function')
   })
 
@@ -100,7 +103,16 @@ describe('freightOperationsPageConfigs', () => {
     expect(pi?.candidateQueryType).toBe('freight-bill-import')
     expect(pi?.enforceUniqueRelation).toBe(true)
     expect(pi?.allowMultipleSelection).toBe(true)
-    expect(pi?.buildParentFilters?.({ id: '1' })).toEqual({
+    expect(
+      pi?.buildParentFilters?.({
+        id: '700520000000000099',
+        customerId: '700520000000000001',
+        projectId: '700520000000000002',
+      }),
+    ).toEqual({
+      customerId: '700520000000000001',
+      projectId: '700520000000000002',
+      currentRecordId: '700520000000000099',
       status: '已审核',
     })
     expect(pi?.hiddenSelectorColumnKeys).toContain('status')
@@ -119,17 +131,23 @@ describe('freightOperationsPageConfigs', () => {
 
   it('parentImport mapParentToDraft returns default values', () => {
     const draft = config.parentImport?.mapParentToDraft?.({
+      customerId: '700520000000000001',
       customerName: '客户A',
+      projectId: '700520000000000002',
       projectName: '项目X',
     })
+    expect(draft?.customerId).toBe('700520000000000001')
     expect(draft?.customerName).toBe('客户A')
+    expect(draft?.projectId).toBe('700520000000000002')
     expect(draft?.projectName).toBe('项目X')
   })
 
   it('parentImport mapParentToDraft fills empty defaults', () => {
     const draft = config.parentImport?.mapParentToDraft?.({})
     expect(draft).toEqual({
+      customerId: undefined,
       customerName: '',
+      projectId: undefined,
       projectName: '',
     })
   })

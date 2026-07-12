@@ -1,9 +1,8 @@
 import i18next from 'i18next'
-import {
-  getCarrierOptions,
-  getSettlementCompanyOptions,
-} from '@/constants/module-options'
+import { getCarrierEntityOptions } from '@/api/carrier-options'
+import { getSettlementCompanyOptions } from '@/constants/module-options'
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
+import { parseOptionalEntityId } from '@/types/entity-id'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
 import {
@@ -20,6 +19,10 @@ import {
   freightItemColumns,
   statusMap,
 } from '../shared/shared'
+
+function entityIdOf(value: unknown, field: string) {
+  return parseOptionalEntityId(value, field)
+}
 
 export const freightStatementPageConfig: ModulePageConfig = {
   key: 'freight-statement',
@@ -43,10 +46,10 @@ export const freightStatementPageConfig: ModulePageConfig = {
   ],
   filters: [
     {
-      key: 'carrierName',
+      key: 'carrierId',
       label: CARRIER_NAME_LABEL,
       type: 'select',
-      options: getCarrierOptions,
+      options: getCarrierEntityOptions,
     },
     {
       key: 'settlementCompanyId',
@@ -242,11 +245,12 @@ export const freightStatementPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'carrierName',
+      key: 'carrierId',
       label: i18next.t('modules.pages.freightStatement.carrier'),
       type: 'select',
       required: true,
-      options: getCarrierOptions,
+      options: getCarrierEntityOptions,
+      masterOptionRequirements: { carriers: true },
       row: 1,
     },
     {
@@ -343,6 +347,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
     scalar: [
       'statementNo',
       'sourceBillNos',
+      'carrierId',
       'carrierCode',
       'carrierName',
       'settlementCompanyId',
@@ -361,10 +366,15 @@ export const freightStatementPageConfig: ModulePageConfig = {
     lineItem: [
       'sourceNo',
       'sourceSalesOutboundItemId',
+      'sourceFreightBillId',
+      'sourceFreightBillItemId',
       'settlementCompanyId',
       'settlementCompanyName',
+      'customerId',
       'customerName',
+      'projectId',
       'projectName',
+      'materialId',
       'materialCode',
       'materialName',
       'brand',
@@ -378,6 +388,7 @@ export const freightStatementPageConfig: ModulePageConfig = {
       'piecesPerBundle',
       'batchNo',
       'weightTon',
+      'warehouseId',
       'warehouseName',
     ],
   },
@@ -390,22 +401,18 @@ export const freightStatementPageConfig: ModulePageConfig = {
     buttonText: '选择物流单生成明细',
     enforceUniqueRelation: true,
     allowMultipleSelection: true,
-    buildParentFilters: (currentRecord) => {
-      const carrierCode = asString(currentRecord.carrierCode).trim()
-      const carrierIdentityFilter = carrierCode
-        ? { carrierCode }
-        : { carrierName: asString(currentRecord.carrierName).trim() }
-      return {
-        ...carrierIdentityFilter,
-        settlementCompanyId: currentRecord.settlementCompanyId,
-        status: '已审核',
-      }
-    },
+    buildParentFilters: (currentRecord) => ({
+      carrierId: entityIdOf(currentRecord.carrierId, 'carrierId'),
+      currentRecordId: entityIdOf(currentRecord.id, 'currentRecordId'),
+      settlementCompanyId: currentRecord.settlementCompanyId,
+      status: '已审核',
+    }),
     validateBeforeOpen: (currentRecord) =>
-      asString(currentRecord.carrierName).trim()
+      entityIdOf(currentRecord.carrierId, 'carrierId')
         ? null
         : '请先选择物流商，再选择物流单',
     mapParentToDraft: (parentRecord) => ({
+      carrierId: entityIdOf(parentRecord.carrierId, 'carrierId'),
       carrierCode: asString(parentRecord.carrierCode).trim(),
       carrierName: parentRecord.carrierName || '',
       settlementCompanyId: parentRecord.settlementCompanyId,
@@ -420,14 +427,15 @@ export const freightStatementPageConfig: ModulePageConfig = {
       if (asString(parentRecord.status).trim() !== '已审核') {
         return '只能选择已审核的物流单生成物流对账单'
       }
-      const currentCarrierCode = asString(currentRecord.carrierCode).trim()
-      const parentCarrierCode = asString(parentRecord.carrierCode).trim()
-      const isSameCarrier =
-        currentCarrierCode && parentCarrierCode
-          ? currentCarrierCode === parentCarrierCode
-          : asString(currentRecord.carrierName).trim() ===
-            asString(parentRecord.carrierName).trim()
-      if (!isSameCarrier) {
+      const currentCarrierId = entityIdOf(
+        currentRecord.carrierId,
+        'currentRecord.carrierId',
+      )
+      const parentCarrierId = entityIdOf(
+        parentRecord.carrierId,
+        'parentRecord.carrierId',
+      )
+      if (!currentCarrierId || currentCarrierId !== parentCarrierId) {
         return '只能选择同一物流商的物流单生成物流对账单'
       }
       const settlementCompanyError = validateSameSettlementCompany(
@@ -442,11 +450,26 @@ export const freightStatementPageConfig: ModulePageConfig = {
     },
     transformItems: (parentRecord) => {
       const sourceNo = asString(parentRecord.billNo).trim()
+      const parentCustomerId = entityIdOf(
+        parentRecord.customerId,
+        'parentRecord.customerId',
+      )
+      const parentProjectId = entityIdOf(
+        parentRecord.projectId,
+        'parentRecord.projectId',
+      )
       return (Array.isArray(parentRecord.items) ? parentRecord.items : []).map(
         (item, index) => ({
           ...item,
           id: `${sourceNo || 'freight-bill'}-${String(item.id || index)}`,
           sourceNo,
+          sourceFreightBillId: parentRecord.id,
+          sourceFreightBillItemId: item.id,
+          customerId:
+            entityIdOf(item.customerId, 'items[].customerId') ||
+            parentCustomerId,
+          projectId:
+            entityIdOf(item.projectId, 'items[].projectId') || parentProjectId,
           _parentBillTime: parentRecord.billTime || '',
           _parentTotalFreight: Number(parentRecord.totalFreight || 0),
         }),

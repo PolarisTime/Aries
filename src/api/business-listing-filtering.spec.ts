@@ -149,6 +149,27 @@ describe('business-listing-filtering', () => {
     )
   })
 
+  it('filters same-name purchase suppliers by stable supplierId', () => {
+    const rows = [
+      {
+        id: '1',
+        supplierId: '700520000000000001',
+        supplierName: '同名供应商',
+      },
+      {
+        id: '2',
+        supplierId: '700520000000000002',
+        supplierName: '同名供应商',
+      },
+    ]
+
+    expect(
+      applyClientFilters('purchase-order', rows, {
+        supplierId: '700520000000000002',
+      }),
+    ).toEqual([rows[1]])
+  })
+
   it('shouldClientFilter returns false when all keys are server-side', () => {
     expect(shouldClientFilter('purchase-order', { keyword: 'test' })).toBe(
       false,

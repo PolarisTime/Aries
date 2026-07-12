@@ -2107,6 +2107,8 @@ export const zhCN: MessageSchema = {
     },
     printTemplate: {
       title: '打印模板',
+      description:
+        '按单据类型和结算主体维护打印模板，支持预览、复制及文件同步。',
       newTemplate: '新建模板',
       editTemplate: '编辑模板',
       deleteTemplate: '删除打印模板',
@@ -2305,11 +2307,17 @@ export const zhCN: MessageSchema = {
       confirmRotation: '确认轮换 {{type}} 密钥',
     },
     securityCenter: {
+      title: '安全中心',
+      description:
+        '集中管理在线会话、API Key 与系统主密钥。涉及凭证和密钥的操作会立即影响系统访问安全。',
       sessionsTab: '会话',
       apiKeysTab: 'API Key',
       securityKeysTab: '主密钥',
     },
     systemParameters: {
+      title: '系统参数',
+      description:
+        '集中维护业务参数、单据编号与对象存储配置。配置变更会影响后续业务处理，请确认后再保存。',
       generalTab: '基础参数与开关',
       numberRulesTab: '编号与上传规则',
       ossTab: 'OSS 设置',
@@ -2318,6 +2326,8 @@ export const zhCN: MessageSchema = {
       title: 'OSS 设置',
       description:
         '配置附件对象存储连接参数，密钥应由后端加密保存并仅在服务端使用。',
+      connectionSection: '连接配置',
+      securitySection: '凭证与安全策略',
       pendingApi: '服务端保存',
       pendingApiHint: '保存后上传、预览和下载会读取最新服务端配置。',
       saveFailed: '保存 OSS 设置失败',
@@ -2367,6 +2377,8 @@ export const zhCN: MessageSchema = {
     },
     accessControl: {
       title: '权限管理',
+      description:
+        '集中管理用户账户、角色动作权限与权限目录。权限变更会影响对应用户的系统访问范围。',
       tabUsers: '用户账户',
       tabRoles: '角色权限',
       tabPermissions: '权限目录',

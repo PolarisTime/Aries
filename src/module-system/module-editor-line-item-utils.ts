@@ -126,9 +126,28 @@ export function applyMaterialToEditorLineItem(
   moduleKey?: string,
 ) {
   if (!materialRecord) {
-    return item
+    item.materialId = undefined
+    item.materialCode = ''
+    item.materialName = ''
+    item.brand = ''
+    item.category = ''
+    item.material = ''
+    item.spec = ''
+    item.length = ''
+    item.unit = '吨'
+    item.quantityUnit = '件'
+    item.pieceWeightTon = 0
+    item.piecesPerBundle = 0
+    item.unitPrice = 0
+    item.weighWeightTon = undefined
+    item.weightAdjustmentTon = 0
+    item.weightAdjustmentAmount = 0
+    return recalculateEditorLineItem(item, 'quantity')
   }
 
+  item.materialId = materialRecord.id
+  item.materialCode = asString(materialRecord.materialCode).trim()
+  item.materialName = asString(materialRecord.materialName).trim()
   item.brand = materialRecord.brand || ''
   item.category = materialRecord.category || ''
   item.material = materialRecord.material || ''

@@ -7,19 +7,25 @@ import type {
   RawPagePayload,
   SearchParams,
 } from '@/types/api-raw'
+import {
+  normalizeEntityIds,
+  parseEntityId,
+  parseOptionalEntityId,
+} from '@/types/entity-id'
 import type { ModuleRecord } from '@/types/module-page'
 import { getApiMessage } from '@/utils/api-messages'
-import { asId, asString } from '@/utils/type-narrowing'
+import { asString } from '@/utils/type-narrowing'
 
 export function normalizeRecord(raw: RawApiRecord): ModuleRecord {
-  const id = asId(raw.id) || asString(raw.id)
-  const items = Array.isArray(raw.items)
-    ? raw.items.map((item) => ({
+  const normalized = normalizeEntityIds(raw)
+  const id = parseEntityId(normalized.id, 'id')
+  const items = Array.isArray(normalized.items)
+    ? normalized.items.map((item, index) => ({
         ...item,
-        id: asId(item.id) || asString(item.id),
+        id: parseEntityId(item.id, `items[${index}].id`),
       }))
     : undefined
-  return { ...raw, id, items }
+  return { ...normalized, id, items }
 }
 
 type StatementModuleKey =
@@ -35,10 +41,23 @@ async function listStatementCandidates(
   filters: SearchParams = {},
 ) {
   const endpointConfig = getModuleConfig(statementModuleKey)
+  const { currentRecordId, ...candidateFilters } = filters
+  const currentStatementId = parseOptionalEntityId(
+    currentRecordId,
+    'currentRecordId',
+  )
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
       `${endpointConfig.path}/candidates`,
-      { params: { ...filters, keyword: keyword.trim(), page, size } },
+      {
+        params: {
+          ...candidateFilters,
+          ...(currentStatementId ? { currentStatementId } : {}),
+          keyword: keyword.trim(),
+          page,
+          size,
+        },
+      },
     ),
     getApiMessage('queryStatementCandidatesFailed'),
   )

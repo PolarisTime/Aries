@@ -16,6 +16,7 @@ import { isParentImportedEditorLocked } from '@/module-system/module-adapter-edi
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { useModuleEditorItems } from '@/views/modules/use-module-editor-items'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
+import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleEditorFormSection } from './ModuleEditorFormSection'
 import { ModuleEditorItemsSection } from './ModuleEditorItemsSection'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
@@ -47,6 +48,15 @@ const NEXT_MODULE_PATHS: Record<string, { labelKey: string; path: string }> = {
     path: '/freight-bill',
   },
 }
+
+const FINANCE_DOCUMENT_MODULES = new Set([
+  'receipt',
+  'payment',
+  'supplier-refund-receipt',
+  'invoice-receipt',
+  'invoice-issue',
+  'ledger-adjustment',
+])
 
 function isFinanceOrTradeModule(key: string) {
   return (
@@ -176,6 +186,7 @@ export function ModuleEditorWorkspace({
   const canImportParentItems =
     Boolean(config.parentImport) && canManageCurrentItems
   const canSaveAndAuditInEditor = canSaveAndAuditCurrentEditor
+  const useFinanceEditorLayout = FINANCE_DOCUMENT_MODULES.has(moduleKey)
   const {
     clearSelectedItems,
     handleDragOver,
@@ -206,13 +217,33 @@ export function ModuleEditorWorkspace({
           title: config.title,
         })}
         onClose={onClose}
+        className={
+          useFinanceEditorLayout
+            ? 'workspace-overlay-panel--finance-editor'
+            : undefined
+        }
+        footer={
+          useFinanceEditorLayout ? (
+            <EditorFooterActions
+              canSave={canSave}
+              canAudit={canSaveAndAuditInEditor}
+              saving={saving}
+              onCancel={onClose}
+              onSave={(audit) => {
+                void handleSave(audit)
+              }}
+            />
+          ) : undefined
+        }
       >
         <Form
           form={form}
-          layout="horizontal"
+          layout={useFinanceEditorLayout ? 'vertical' : 'horizontal'}
           colon={false}
           labelWrap={false}
-          className="editor-form-shell"
+          className={`editor-form-shell${
+            useFinanceEditorLayout ? ' editor-form-shell--finance' : ''
+          }`}
           onValuesChange={(changedValues) => {
             const activeKey = editorTaskStore.getState().activeKey
             if (activeKey) {
@@ -227,11 +258,12 @@ export function ModuleEditorWorkspace({
             canSave={canSave}
             canAudit={canSaveAndAuditInEditor}
             saving={saving}
-            showActions={!config.itemColumns?.length}
+            showActions={!useFinanceEditorLayout && !config.itemColumns?.length}
             lineItemsLocked={lineItemsLocked}
             lockedLineItemsNotice={lockedLineItemsNotice}
             parentImporting={parentImporting}
             authoritativePrimaryNo={authoritativePrimaryNo}
+            layoutVariant={useFinanceEditorLayout ? 'finance' : 'default'}
             onCancel={onClose}
             onOpenParentSelector={openParentSelector}
             onSave={(audit) => {
@@ -257,6 +289,7 @@ export function ModuleEditorWorkspace({
             audit: canSaveAndAuditInEditor,
           }}
           saving={saving}
+          showFooterActions={!useFinanceEditorLayout}
           onAddItem={addItem}
           onCancel={onClose}
           onSave={(audit) => {

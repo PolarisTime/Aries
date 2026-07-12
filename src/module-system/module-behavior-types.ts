@@ -56,6 +56,7 @@ export interface ModuleBehaviorConfig {
     items: ModuleLineItem[],
     ctx: NormalizeDraftContext,
   ) => void
+  normalizeEditorRecord?: (record: ModuleRecord) => ModuleRecord
   syncEditorForm?: (
     editorForm: ModuleRecord,
     ctx: SyncEditorFormContext,

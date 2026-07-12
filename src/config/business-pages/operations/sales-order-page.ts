@@ -42,7 +42,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       clientSearchKeys: ['orderNo'],
     },
     {
-      key: 'customerName',
+      key: 'customerId',
       label: CUSTOMER_NAME_LABEL,
       type: 'select',
       options: getCustomerOptions,
@@ -69,7 +69,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
-      key: 'projectName',
+      key: 'projectId',
       label: i18next.t('modules.pages.salesOrder.filterProjectName'),
       type: 'select',
       options: getCustomerProjectOptions,
@@ -268,7 +268,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'customerName',
+      key: 'customerId',
       label: i18next.t('modules.pages.salesOrder.colCustomerName'),
       type: 'select',
       required: true,
@@ -276,7 +276,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
-      key: 'projectName',
+      key: 'projectId',
       label: i18next.t('modules.pages.salesOrder.colProjectName'),
       type: 'select',
       required: true,
@@ -314,7 +314,10 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     remainingQuantityKey: 'salesRemainingQuantity',
     candidateQueryType: 'purchase-order-import',
     candidateUsage: 'sales-order',
-    buildParentFilters: () => ({ status: '已审核' }),
+    buildParentFilters: (currentRecord) => ({
+      supplierId: currentRecord.supplierId,
+      status: '已审核',
+    }),
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({
       purchaseOrderNo: parentRecord.orderNo || '',

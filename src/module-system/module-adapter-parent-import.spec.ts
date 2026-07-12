@@ -81,10 +81,16 @@ describe('buildParentImportState', () => {
     })
 
     expect(result.parentNo).toBe('SO001')
+    expect(result.parentId).toBe('1')
     expect(result.hasImportedCurrentParent).toBe(false)
     expect(result.importedItemCount).toBe(2)
     expect(result.parentNosText).toBe('SO001')
     expect(result.nextItems).toHaveLength(2)
+    expect(result.nextItems).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ _parentRelationId: '1' }),
+      ]),
+    )
     expect(result.mappedValues).toEqual({
       customerName: '客户A',
       projectName: '项目X',
@@ -114,6 +120,60 @@ describe('buildParentImportState', () => {
 
     expect(result.hasImportedCurrentParent).toBe(true)
     expect(result.nextItems).toHaveLength(2)
+  })
+
+  it('uses parent id for replacement when different parents share a display number', () => {
+    const result = buildParentImportState({
+      parentImportConfig: {
+        ...parentImportConfig,
+        transformItems: (parent: ModuleRecord) => cloneLineItems(parent.items!),
+      } as any,
+      parentRecord: {
+        ...parentRecord,
+        id: '2',
+        orderNo: 'SO001',
+      },
+      currentParentNos: ['SO001'],
+      currentItems: [
+        makeItem({
+          id: 'existing-1',
+          materialCode: 'M-OLD',
+          _parentRelationId: '1',
+          _parentRelationNo: 'SO001',
+          sourceNo: 'SO001',
+          quantity: 1,
+        }),
+      ],
+      cloneLineItems,
+    })
+
+    expect(result.parentId).toBe('2')
+    expect(result.hasImportedCurrentParent).toBe(false)
+    expect(result.nextItems).toHaveLength(3)
+    expect(result.nextItems[0]).toMatchObject({
+      materialCode: 'M-OLD',
+      _parentRelationId: '1',
+    })
+    expect(result.nextItems.slice(1)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ _parentRelationId: '2' }),
+      ]),
+    )
+  })
+
+  it('fails closed when a parent id is an unsafe number', () => {
+    expect(() =>
+      buildParentImportState({
+        parentImportConfig: parentImportConfig as any,
+        parentRecord: {
+          ...parentRecord,
+          id: Number.MAX_SAFE_INTEGER + 1,
+        } as any,
+        currentParentNos: [],
+        currentItems: [],
+        cloneLineItems,
+      }),
+    ).toThrow('parentRecord.id')
   })
 
   it('maps parent to draft only for first import', () => {
@@ -166,7 +226,7 @@ describe('buildParentImportState', () => {
       items: [
         {
           id: 'p-item-1',
-          sourceSalesOrderItemId: 'so-item-1',
+          sourceSalesOrderItemId: '308251467645452301',
           materialCode: 'M001',
           quantity: 10,
           remainingQuantity: 5,
@@ -204,7 +264,7 @@ describe('buildParentImportState', () => {
       items: [
         {
           id: 'p-item-1',
-          sourceInboundItemId: 'inbound-item-1',
+          sourceInboundItemId: '308251467645452302',
           materialCode: 'M001',
           quantity: 8,
           remainingQuantity: 4,
@@ -249,7 +309,7 @@ describe('buildParentImportState', () => {
       items: [
         {
           id: 'p-item-1',
-          sourceSalesOrderItemId: 'so-item-1',
+          sourceSalesOrderItemId: '308251467645452303',
           materialCode: 'M001',
           quantity: 0,
           weightTon: 0,
@@ -282,7 +342,7 @@ describe('buildParentImportState', () => {
       items: [
         {
           id: 'p-item-1',
-          sourceSalesOrderItemId: 'so-item-1',
+          sourceSalesOrderItemId: '308251467645452304',
           materialCode: 'M001',
           quantity: 10,
           remainingQuantity: 10,
@@ -297,7 +357,7 @@ describe('buildParentImportState', () => {
     const currentItems = [
       makeItem({
         id: 'existing',
-        sourceSalesOrderItemId: 'so-item-1',
+        sourceSalesOrderItemId: '308251467645452304',
         quantity: 3,
         weightTon: 2,
         amount: 200,
@@ -355,6 +415,99 @@ describe('buildParentImportState', () => {
     })
 
     expect(result.nextItems).toHaveLength(2)
+  })
+
+  it('uses the direct freight bill item id before every indirect source id', () => {
+    const record = {
+      id: '6',
+      orderNo: 'FB006',
+      items: [
+        {
+          id: '308251467645452310',
+          sourceFreightBillItemId: '308251467645452311',
+          sourceSalesOutboundItemId: '308251467645452312',
+          sourceInboundItemId: '308251467645452313',
+          sourcePurchaseOrderItemId: '308251467645452314',
+          sourceSalesOrderItemId: '308251467645452315',
+          quantity: 8,
+          remainingQuantity: 8,
+        },
+      ],
+    } as any
+    const currentItems = [
+      makeItem({
+        id: 'existing',
+        sourceFreightBillItemId: '308251467645452311',
+        sourceSalesOutboundItemId: '308251467645452322',
+        sourceInboundItemId: '308251467645452323',
+        sourcePurchaseOrderItemId: '308251467645452324',
+        sourceSalesOrderItemId: '308251467645452325',
+        quantity: 3,
+        _parentRelationNo: 'FB006',
+        sourceNo: 'FB006',
+      }),
+    ]
+
+    const result = buildParentImportState({
+      parentImportConfig: parentImportConfig as any,
+      parentRecord: record,
+      currentParentNos: ['FB006'],
+      currentItems,
+      cloneLineItems,
+    })
+
+    expect(result.nextItems[0].quantity).toBe(3)
+    expect(result.nextItems[0]._maxImportQuantity).toBe(11)
+  })
+
+  it('recognizes a sales outbound item id as the direct parent identity', () => {
+    const record = {
+      id: '7',
+      orderNo: 'SO007',
+      items: [
+        {
+          id: '308251467645452330',
+          sourceSalesOutboundItemId: '308251467645452331',
+          quantity: 0,
+        },
+      ],
+    } as any
+
+    const result = buildParentImportState({
+      parentImportConfig: parentImportConfig as any,
+      parentRecord: record,
+      currentParentNos: [],
+      currentItems: [],
+      cloneLineItems,
+    })
+
+    expect(result.importedItemCount).toBe(0)
+    expect(result.nextItems).toEqual([])
+  })
+
+  it('fails closed on an unsafe numeric direct parent item id', () => {
+    const record = {
+      id: '8',
+      orderNo: 'SO008',
+      items: [
+        {
+          id: '308251467645452340',
+          sourceFreightBillItemId: 9_007_199_254_740_992,
+          sourceInboundItemId: '308251467645452341',
+          quantity: 1,
+        },
+      ],
+    } as any
+
+    expect(() =>
+      buildParentImportState({
+        parentImportConfig: parentImportConfig as any,
+        parentRecord: record,
+        currentParentNos: [],
+        currentItems: [],
+        cloneLineItems,
+      }),
+    ).toThrow('实体 ID 契约无效：sourceFreightBillItemId')
   })
 })
 

@@ -149,7 +149,7 @@ export function NumberRulesView() {
   }
 
   return (
-    <div className="page-stack">
+    <div className="page-stack settings-section-page">
       <NumberRulesTableCard
         keyword={keyword}
         statusFilter={statusFilter}

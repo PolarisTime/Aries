@@ -12,12 +12,16 @@ export async function listFreightBillImportCandidatePage(
   page: number,
   size: number,
 ): Promise<TableResponse<ModuleRecord>> {
+  const { currentRecordId, ...candidateFilters } = filters
   const response = assertApiSuccess(
     await http.get<ApiResponse<RawPagePayload>>(
       ENDPOINTS.FREIGHT_BILL_IMPORT_CANDIDATES,
       {
         params: {
-          ...filters,
+          ...candidateFilters,
+          ...(currentRecordId == null
+            ? {}
+            : { currentBillId: currentRecordId }),
           keyword: asString(filters.keyword).trim(),
           page,
           size,

@@ -26,7 +26,7 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
   ],
   filters: [
     {
-      key: 'supplierName',
+      key: 'supplierId',
       label: SUPPLIER_NAME_LABEL,
       type: 'select',
       options: getSupplierOptions,
@@ -201,7 +201,7 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'supplierName',
+      key: 'supplierId',
       label: i18next.t('modules.pages.invoiceReceipt.supplier'),
       type: 'select',
       required: true,
@@ -294,6 +294,7 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       'modules.pages.invoiceReceipt.importPurchaseOrderItems',
     ),
     mapParentToDraft: (parentRecord) => ({
+      supplierId: parentRecord.supplierId,
       supplierCode: parentRecord.supplierCode || '',
       supplierName: parentRecord.supplierName || '',
       settlementCompanyId: parentRecord.settlementCompanyId,
@@ -320,6 +321,7 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       'receiveNo',
       'invoiceNo',
       'sourcePurchaseOrderNos',
+      'supplierId',
       'supplierCode',
       'supplierName',
       'invoiceTitle',
@@ -334,6 +336,7 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
     lineItem: [
       'sourceNo',
       'sourcePurchaseOrderItemId',
+      'materialId',
       'materialCode',
       'brand',
       'category',
@@ -341,6 +344,7 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
       'spec',
       'length',
       'unit',
+      'warehouseId',
       'warehouseName',
       'batchNo',
       'quantity',

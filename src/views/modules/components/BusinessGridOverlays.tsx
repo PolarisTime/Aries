@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import type { EntityId } from '@/types/entity-id'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import {
   loadModuleAttachmentModal,
@@ -58,16 +59,19 @@ interface Props {
     counterpartyName: string,
     startDate: string,
     endDate: string,
+    counterpartyId?: EntityId,
   ) => Promise<void>
   onGenerateCustomerStatement: (
     counterpartyName: string,
     startDate: string,
     endDate: string,
+    counterpartyId?: EntityId,
   ) => Promise<void>
   onGenerateFreightStatement: (
     counterpartyName: string,
     startDate: string,
     endDate: string,
+    counterpartyId?: EntityId,
   ) => Promise<void>
 }
 

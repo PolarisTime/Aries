@@ -58,6 +58,17 @@ export type ModuleFormFieldOptionResolver = (
   form?: ModuleRecordInput,
 ) => ModuleFormFieldOption[]
 
+export interface ModuleMasterOptionRequirements {
+  suppliers?: boolean
+  customers?: boolean
+  projects?: boolean
+  carriers?: boolean
+  settlementCompanies?: boolean
+  warehouses?: boolean
+  materialCategories?: boolean
+  materials?: boolean
+}
+
 export interface ModuleFilterDefinition {
   key: string
   label: string
@@ -99,6 +110,7 @@ export interface ModuleFormFieldDefinition {
   type: ModuleFormFieldType
   placeholder?: string
   options?: ModuleFormFieldOption[] | ModuleFormFieldOptionResolver
+  masterOptionRequirements?: ModuleMasterOptionRequirements
   required?: boolean
   disabled?: boolean
   disabledWhen?: (form?: ModuleRecordInput) => boolean

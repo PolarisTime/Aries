@@ -23,6 +23,8 @@ describe('module-behavior-save', () => {
     'freight-statement',
     'invoice-receipt',
     'invoice-issue',
+    'receipt',
+    'payment',
   ]
 
   const extraScalarFieldsMap: Record<string, string[]> = {

@@ -1,5 +1,4 @@
 import type { TableColumnsType } from 'antd'
-import { fetchMaterialSearch } from '@/api/materials'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
 import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
@@ -138,11 +137,11 @@ export function useModuleEditorItemColumns({
 
   const materialLookup = (() => {
     const entries = materials.flatMap((record): MaterialLookupEntry[] => {
-      const materialCode = String(record.materialCode || '').trim()
-      if (!materialCode) {
+      const materialId = record.id
+      if (!materialId) {
         return []
       }
-      return [[materialCode.toLowerCase(), record]]
+      return [[materialId, record]]
     })
 
     return new Map(entries)
@@ -152,16 +151,16 @@ export function useModuleEditorItemColumns({
     const seen = new Set<string>()
 
     return materials.flatMap((record): MaterialSelectOption[] => {
+      const materialId = record.id
       const materialCode = String(record.materialCode || '').trim()
-      if (!materialCode) {
+      if (!materialId || !materialCode) {
         return []
       }
 
-      const normalizedCode = materialCode.toLowerCase()
-      if (seen.has(normalizedCode)) {
+      if (seen.has(materialId)) {
         return []
       }
-      seen.add(normalizedCode)
+      seen.add(materialId)
 
       const brand = String(record.brand || '').trim()
       const category = String(record.category || '').trim()
@@ -186,7 +185,7 @@ export function useModuleEditorItemColumns({
             spec,
             length,
           }),
-          value: materialCode,
+          value: materialId,
         },
       ]
     })
@@ -211,35 +210,13 @@ export function useModuleEditorItemColumns({
     )
   })()
 
-  const handleResolvedMaterialSelect = (
-    itemId: string,
-    materialCode: string,
-  ) => {
-    const normalizedCode = materialCode.trim().toLowerCase()
+  const handleResolvedMaterialSelect = (itemId: string, materialId: string) => {
+    const normalizedId = materialId.trim()
     const materialRecord =
-      normalizedCode.length > 0
-        ? materialLookup.get(normalizedCode) || null
-        : null
+      normalizedId.length > 0 ? materialLookup.get(normalizedId) || null : null
 
-    handleMaterialSelect(
-      itemId,
-      materialCode,
-      materialRecord,
-      (item, record) => applyMaterialToEditorLineItem(item, record, moduleKey),
-      async (keyword) => {
-        const normalizedKeyword = keyword.trim()
-        if (!normalizedKeyword) {
-          return null
-        }
-        const matches = await fetchMaterialSearch(normalizedKeyword, 20)
-        const exact = matches.find(
-          (record) =>
-            String(record.materialCode || '')
-              .trim()
-              .toLowerCase() === normalizedKeyword.toLowerCase(),
-        )
-        return exact || null
-      },
+    handleMaterialSelect(itemId, normalizedId, materialRecord, (item, record) =>
+      applyMaterialToEditorLineItem(item, record, moduleKey),
     )
   }
 

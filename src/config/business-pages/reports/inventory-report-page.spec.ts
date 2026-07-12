@@ -25,6 +25,14 @@ describe('inventoryReportPageConfig', () => {
     expect(inventoryReportPageConfig.filters!.length).toBeGreaterThanOrEqual(4)
   })
 
+  it('filters warehouses by stable warehouse ID', () => {
+    const warehouseFilter = inventoryReportPageConfig.filters.find(
+      (filter) => filter.label === 'modules.pages.inventoryReport.warehouse',
+    )
+
+    expect(warehouseFilter?.key).toBe('warehouseId')
+  })
+
   it('adds stock scope filter for shipped-out history', () => {
     const stockScopeFilter = inventoryReportPageConfig.filters!.find(
       (filter) => filter.key === 'includeOutbound',

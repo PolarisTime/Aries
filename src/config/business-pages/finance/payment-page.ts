@@ -1,4 +1,6 @@
 import i18next from 'i18next'
+import { getCarrierEntityOptions } from '@/api/carrier-options'
+import { getSupplierEntityOptions } from '@/api/supplier-options'
 import type { ModulePageConfig, ModuleRecordInput } from '@/types/module-page'
 import { asNumber } from '@/utils/type-narrowing'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
@@ -33,6 +35,20 @@ function isPurchasePrepayment(form?: ModuleRecordInput) {
 
 function isStatementSettlement(form?: ModuleRecordInput) {
   return !form?.paymentPurpose || form.paymentPurpose === STATEMENT_SETTLEMENT
+}
+
+function isSupplierStatementSettlement(form?: ModuleRecordInput) {
+  return isStatementSettlement(form) && form?.counterpartyType === '供应商'
+}
+
+function isFreightStatementSettlement(form?: ModuleRecordInput) {
+  return isStatementSettlement(form) && form?.counterpartyType === '物流商'
+}
+
+function getCounterpartyOptions(form?: ModuleRecordInput) {
+  return form?.counterpartyType === '物流商'
+    ? getCarrierEntityOptions()
+    : getSupplierEntityOptions()
 }
 
 function resolvePurchasePrepaymentAmount(parentRecord: ModuleRecordInput) {
@@ -97,7 +113,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       title: i18next.t('modules.pages.payment.businessType'),
-      dataIndex: 'businessType',
+      dataIndex: 'counterpartyType',
       width: 110,
     },
     {
@@ -177,7 +193,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       label: i18next.t('modules.pages.payment.businessType'),
-      key: 'businessType',
+      key: 'counterpartyType',
       row: 1,
     },
     {
@@ -197,7 +213,12 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       label: i18next.t('modules.pages.payment.relatedStatement'),
-      key: 'sourceStatementId',
+      key: 'sourceSupplierStatementId',
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.payment.relatedStatement'),
+      key: 'sourceFreightStatementId',
       row: 1,
     },
     {
@@ -264,7 +285,7 @@ export const paymentsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'businessType',
+      key: 'counterpartyType',
       label: i18next.t('modules.pages.payment.businessType'),
       type: 'select',
       required: true,
@@ -286,10 +307,25 @@ export const paymentsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
+      key: 'counterpartyId',
+      label: i18next.t('modules.pages.payment.counterparty'),
+      type: 'select',
+      required: true,
+      options: getCounterpartyOptions,
+      masterOptionRequirements: {
+        suppliers: true,
+        carriers: true,
+      },
+      visibleWhen: isStatementSettlement,
+      preserve: false,
+      row: 1,
+    },
+    {
       key: 'counterpartyName',
       label: i18next.t('modules.pages.payment.counterparty'),
       type: 'input',
       required: true,
+      disabled: true,
       visibleWhen: isStatementSettlement,
       preserve: false,
       row: 1,
@@ -304,11 +340,20 @@ export const paymentsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'sourceStatementId',
+      key: 'sourceSupplierStatementId',
       label: i18next.t('modules.pages.payment.relatedStatement'),
       type: 'select',
       required: true,
-      visibleWhen: isStatementSettlement,
+      visibleWhen: isSupplierStatementSettlement,
+      preserve: false,
+      row: 1,
+    },
+    {
+      key: 'sourceFreightStatementId',
+      label: i18next.t('modules.pages.payment.relatedStatement'),
+      type: 'select',
+      required: true,
+      visibleWhen: isFreightStatementSettlement,
       preserve: false,
       row: 1,
     },
@@ -438,8 +483,12 @@ export const paymentsPageConfig: ModulePageConfig = {
     buttonText: i18next.t('modules.pages.payment.selectPurchaseOrder'),
     visibleWhen: isPurchasePrepayment,
     hiddenSelectorColumnKeys: ['buyerName'],
+    buildParentFilters: (currentRecord) => ({
+      supplierId: currentRecord.counterpartyId,
+    }),
     mapParentToDraft: (parentRecord) => ({
-      businessType: '供应商',
+      counterpartyType: '供应商',
+      counterpartyId: parentRecord.supplierId,
       counterpartyCode: parentRecord.supplierCode || '',
       counterpartyName: parentRecord.supplierName || '',
       sourcePurchaseOrderId: parentRecord.id,
@@ -454,11 +503,11 @@ export const paymentsPageConfig: ModulePageConfig = {
   saveFields: {
     scalar: [
       'paymentNo',
-      'businessType',
+      'counterpartyType',
+      'counterpartyId',
       'paymentPurpose',
       'counterpartyCode',
       'counterpartyName',
-      'sourceStatementId',
       'sourcePurchaseOrderId',
       'purchaseOrderNo',
       'supplierCode',

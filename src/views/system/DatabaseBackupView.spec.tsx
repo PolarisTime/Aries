@@ -86,8 +86,11 @@ describe('DatabaseBackupView', () => {
   })
 
   it('renders the page title', () => {
-    render(<DatabaseBackupView />)
+    const { container } = render(<DatabaseBackupView />)
     expect(screen.getByText('system.database.title')).toBeInTheDocument()
+    expect(
+      container.querySelector('.settings-standard-page'),
+    ).toBeInTheDocument()
   })
 
   it('renders the description', () => {

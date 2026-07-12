@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ENTITY_ID_FIELDS } from '@/types/entity-id'
 import {
   moduleRecordSchema,
   purchaseInboundItemSchema,
@@ -15,7 +16,7 @@ describe('module-record schemas', () => {
         remark: '备注',
         items: [
           {
-            id: 'item1',
+            id: '124',
             materialCode: 'M001',
             quantity: 10,
             unitPrice: 100,
@@ -24,8 +25,9 @@ describe('module-record schemas', () => {
             unit: 'kg',
           },
         ],
-        attachmentIds: ['att1', 'att2'],
-        createdBy: 'user1',
+        attachmentIds: ['125', '126'],
+        createdBy: '0',
+        updatedBy: '9223372036854775807',
         createdAt: '2024-01-01',
         updatedAt: '2024-01-02',
       }
@@ -49,6 +51,68 @@ describe('module-record schemas', () => {
       const data = { id: '123', customField: 'value' }
       const result = moduleRecordSchema.safeParse(data)
       expect(result.success).toBe(true)
+    })
+
+    it('should reject numeric and non-decimal entity ids', () => {
+      expect(moduleRecordSchema.safeParse({ id: 123 }).success).toBe(false)
+      expect(moduleRecordSchema.safeParse({ id: 'record-123' }).success).toBe(
+        false,
+      )
+      expect(
+        moduleRecordSchema.safeParse({
+          id: '123',
+          attachmentIds: ['attachment-1'],
+        }).success,
+      ).toBe(false)
+    })
+
+    it.each([
+      '0',
+      '1',
+      '9223372036854775807',
+    ])('should accept canonical audit actor id %s', (auditActorId) => {
+      expect(
+        moduleRecordSchema.safeParse({
+          id: '123',
+          createdBy: auditActorId,
+          updatedBy: auditActorId,
+        }).success,
+      ).toBe(true)
+    })
+
+    it.each([
+      0,
+      1,
+      -1,
+      9_007_199_254_740_992,
+      '-1',
+      '00',
+      '01',
+      '+1',
+      '1.0',
+      ' 1',
+      '1 ',
+      '9223372036854775808',
+      'system',
+      '',
+    ])('should reject invalid audit actor id %j', (auditActorId) => {
+      expect(
+        moduleRecordSchema.safeParse({
+          id: '123',
+          createdBy: auditActorId,
+        }).success,
+      ).toBe(false)
+      expect(
+        moduleRecordSchema.safeParse({
+          id: '123',
+          updatedBy: auditActorId,
+        }).success,
+      ).toBe(false)
+    })
+
+    it('should keep audit actor ids outside the business entity registry', () => {
+      expect(ENTITY_ID_FIELDS.has('createdBy')).toBe(false)
+      expect(ENTITY_ID_FIELDS.has('updatedBy')).toBe(false)
     })
   })
 
@@ -81,6 +145,20 @@ describe('module-record schemas', () => {
       }
       const result = salesOrderItemSchema.safeParse(data)
       expect(result.success).toBe(true)
+    })
+
+    it('should reject numeric source ids', () => {
+      const data = {
+        id: '1',
+        quantity: 10,
+        unitPrice: 100,
+        pieceWeightTon: 0.5,
+        piecesPerBundle: 2,
+        unit: 'kg',
+        materialCode: 'M001',
+        sourceInboundItemId: 42,
+      }
+      expect(salesOrderItemSchema.safeParse(data).success).toBe(false)
     })
   })
 

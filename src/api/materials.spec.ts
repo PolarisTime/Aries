@@ -70,6 +70,31 @@ describe('materials', () => {
         params: { keyword: '', limit: 200 },
       })
     })
+
+    it('normalizes a safe numeric material id to an exact string', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: [{ id: 42, materialCode: 'M042' }],
+      })
+
+      await expect(fetchMaterialSearch()).resolves.toEqual([
+        expect.objectContaining({ id: '42', materialCode: 'M042' }),
+      ])
+    })
+
+    it('fails closed when a material id is an unsafe number', async () => {
+      httpGetMock.mockResolvedValue({
+        code: 0,
+        data: [
+          {
+            id: Number.MAX_SAFE_INTEGER + 1,
+            materialCode: 'M-UNSAFE',
+          },
+        ],
+      })
+
+      await expect(fetchMaterialSearch()).rejects.toThrow('materials[0].id')
+    })
   })
 
   describe('downloadMaterialImportTemplate', () => {

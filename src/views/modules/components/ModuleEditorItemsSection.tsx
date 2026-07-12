@@ -32,6 +32,7 @@ interface Props {
     audit: boolean
   }
   saving: boolean
+  showFooterActions?: boolean
   onAddItem: () => void
   onCancel: () => void
   onSave: (audit: boolean) => void
@@ -56,6 +57,7 @@ export function ModuleEditorItemsSection({
   visibleItemColumnKeys,
   permissions,
   saving,
+  showFooterActions = true,
   onAddItem,
   onCancel,
   onSave,
@@ -148,13 +150,15 @@ export function ModuleEditorItemsSection({
                   {selectedItemIds.length})
                 </Button>
               )}
-              <EditorFooterActions
-                canSave={permissions.save}
-                canAudit={permissions.audit}
-                saving={saving}
-                onCancel={onCancel}
-                onSave={onSave}
-              />
+              {showFooterActions ? (
+                <EditorFooterActions
+                  canSave={permissions.save}
+                  canAudit={permissions.audit}
+                  saving={saving}
+                  onCancel={onCancel}
+                  onSave={onSave}
+                />
+              ) : null}
             </>
           }
         >
