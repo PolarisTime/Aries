@@ -1,3 +1,10 @@
+## [2.3.1](https://github.com/PolarisTime/Aries/compare/v2.3.0...v2.3.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* **react:** 修复草稿日期恢复与下拉选项显示 ([79b9bdb](https://github.com/PolarisTime/Aries/commit/79b9bdb36579b407b00160961222bff6962970f3))
+
 # [2.3.0](https://github.com/PolarisTime/Aries/compare/v2.2.0...v2.3.0) (2026-07-13)
 
 
