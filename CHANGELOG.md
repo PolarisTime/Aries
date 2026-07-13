@@ -1,3 +1,11 @@
+## [2.3.3](https://github.com/PolarisTime/Aries/compare/v2.3.2...v2.3.3) (2026-07-13)
+
+
+### Bug Fixes
+
+* **ci:** 修复前端类型检查和格式校验 ([aea4afa](https://github.com/PolarisTime/Aries/commit/aea4afa51cc7fd3006f12a90b0fee98100bd7ee0))
+* **sales-order:** 修复完成采购订单无法选择 ([32b7265](https://github.com/PolarisTime/Aries/commit/32b72654d8a09a01ec8c677b7251f4aa743e15de))
+
 ## [2.3.2](https://github.com/PolarisTime/Aries/compare/v2.3.1...v2.3.2) (2026-07-13)
 
 
