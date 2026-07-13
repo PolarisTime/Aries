@@ -1841,6 +1841,23 @@ describe('useModuleEditorWorkspace', () => {
     expect(writeModuleEditorDraft).toHaveBeenCalledTimes(1)
   })
 
+  it('does not recreate the local draft when the editor closes after a successful save', async () => {
+    const initialProps = props({ config: cfg({ primaryNoKey: '' }) })
+    const { result, rerender } = renderHook(
+      (hookProps) => useModuleEditorWorkspace(hookProps),
+      { initialProps },
+    )
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+    vi.mocked(writeModuleEditorDraft).mockClear()
+
+    rerender({ ...initialProps, open: false })
+
+    expect(writeModuleEditorDraft).not.toHaveBeenCalled()
+  })
+
   it('disables local drafts without a stable authenticated user key', () => {
     vi.mocked(resolveModuleEditorDraftUserKey).mockReturnValue(null as never)
 

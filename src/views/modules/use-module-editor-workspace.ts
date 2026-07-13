@@ -825,10 +825,12 @@ export function useModuleEditorWorkspace({
     userKey,
   ])
 
+  const draftDirtyRef = useRef(false)
+
   const writeCurrentDraftSnapshot = useCallback(
     (reason?: ClientAutosaveReason, nextItems?: ModuleLineItem[]) => {
       void reason
-      if (!userKey) {
+      if (!userKey || !draftDirtyRef.current) {
         return
       }
 
@@ -852,6 +854,7 @@ export function useModuleEditorWorkspace({
             authoritativePrimaryNo: effectiveAuthoritativePrimaryNo,
           }),
         )
+        draftDirtyRef.current = false
       } catch {
         // 本地草稿是兜底能力，写入失败不应阻断用户编辑。
       }
@@ -893,6 +896,7 @@ export function useModuleEditorWorkspace({
       if (!userKey) {
         return
       }
+      draftDirtyRef.current = true
       pendingDraftItemsRef.current = nextItems
       if (draftWriteTimerRef.current) {
         clearTimeout(draftWriteTimerRef.current)
@@ -1119,6 +1123,12 @@ export function useModuleEditorWorkspace({
         draftRecord,
         savedRecord,
       })
+      draftDirtyRef.current = false
+      if (draftWriteTimerRef.current) {
+        clearTimeout(draftWriteTimerRef.current)
+        draftWriteTimerRef.current = null
+      }
+      pendingDraftItemsRef.current = undefined
       if (userKey) {
         removeModuleEditorDraft(userKey, moduleKey, draftRecordId)
       }
