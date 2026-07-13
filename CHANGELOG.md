@@ -1,3 +1,10 @@
+## [2.3.5](https://github.com/PolarisTime/Aries/compare/v2.3.4...v2.3.5) (2026-07-13)
+
+
+### Bug Fixes
+
+* **sales-order:** 修复草稿订单被无关出库锁定 ([60aed81](https://github.com/PolarisTime/Aries/commit/60aed81792a31a00fe9c6bd909e06691b0f88310))
+
 ## [2.3.4](https://github.com/PolarisTime/Aries/compare/v2.3.3...v2.3.4) (2026-07-13)
 
 
