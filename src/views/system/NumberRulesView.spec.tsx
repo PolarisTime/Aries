@@ -9,6 +9,7 @@ const mockForm = {
   validateFields: vi.fn(),
 }
 const mockRefresh = vi.fn()
+const mockRefetch = vi.fn()
 const mockShowError = vi.fn()
 const mockMessageSuccess = vi.fn()
 const mockMessageWarning = vi.fn()
@@ -53,6 +54,31 @@ vi.mock('@/utils/type-narrowing', () => ({
 }))
 
 vi.mock('antd', () => ({
+  Alert: ({
+    action,
+    title,
+  }: {
+    action?: React.ReactNode
+    title?: React.ReactNode
+  }) => (
+    <div role="alert">
+      {title}
+      {action}
+    </div>
+  ),
+  Button: ({
+    children,
+    loading,
+    onClick,
+  }: {
+    children?: React.ReactNode
+    loading?: boolean
+    onClick?: () => void
+  }) => (
+    <button data-loading={String(Boolean(loading))} onClick={onClick}>
+      {children}
+    </button>
+  ),
   Form: {
     useForm: () => [mockForm],
   },
@@ -242,6 +268,9 @@ describe('NumberRulesView', () => {
     mockUseQuery.mockReturnValue({
       data: [purchaseNumberRule, salesNumberRule, uploadRule],
       isLoading: false,
+      isError: false,
+      isFetching: false,
+      refetch: mockRefetch,
     })
   })
 
@@ -257,6 +286,36 @@ describe('NumberRulesView', () => {
     expect(screen.getByTestId('number-rule-count')).toHaveTextContent('2')
     expect(screen.getByTestId('upload-rule-count')).toHaveTextContent('1')
     expect(screen.getByTestId('can-edit')).toHaveTextContent('true')
+  })
+
+  it('renders a load error instead of empty rules when the query fails', () => {
+    mockUseQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      isFetching: false,
+      refetch: mockRefetch,
+    })
+
+    render(<NumberRulesView />)
+
+    expect(screen.getByRole('alert')).toHaveTextContent('api.loadFailed')
+    expect(screen.queryByTestId('table-card')).not.toBeInTheDocument()
+  })
+
+  it('refetches number rules from the load error action', () => {
+    mockUseQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      isFetching: true,
+      refetch: mockRefetch,
+    })
+
+    render(<NumberRulesView />)
+    fireEvent.click(screen.getByRole('button', { name: 'errorBoundary.retry' }))
+
+    expect(mockRefetch).toHaveBeenCalledTimes(1)
   })
 
   it('defaults rows to an empty list when query data is missing', () => {

@@ -23,6 +23,7 @@ import {
   matchesNumberRuleKeyword,
   type NumberRuleEditorKind,
 } from '@/views/system/number-rules-view-utils'
+import { SystemSettingsLoadError } from '@/views/system/SystemSettingsLoadError'
 
 interface NumberRulesState {
   keyword: string
@@ -57,7 +58,13 @@ export function NumberRulesView() {
   const editingRecord = useRef<ModuleRecord | null>(null)
   const [form] = Form.useForm()
 
-  const { data: rows = [], isLoading } = useQuery<ModuleRecord[]>({
+  const {
+    data: rows = [],
+    isError,
+    isFetching,
+    isLoading,
+    refetch,
+  } = useQuery<ModuleRecord[]>({
     queryKey: QUERY_KEYS.numberRules,
     queryFn: () => listSystemSettings(),
   })
@@ -150,20 +157,27 @@ export function NumberRulesView() {
 
   return (
     <div className="page-stack settings-section-page">
-      <NumberRulesTableCard
-        keyword={keyword}
-        statusFilter={statusFilter}
-        rows={rows}
-        numberRuleRows={numberRuleRows}
-        uploadRuleRows={uploadRuleRows}
-        loading={isLoading}
-        canEdit={canEdit}
-        onKeywordChange={(value) => setState({ keyword: value })}
-        onStatusFilterChange={(value) => setState({ statusFilter: value })}
-        onRefresh={refresh}
-        onEditNumberRule={openNumberRuleEditor}
-        onEditUploadRule={openUploadRuleEditor}
-      />
+      {isError ? (
+        <SystemSettingsLoadError
+          retrying={isFetching}
+          onRetry={() => void refetch()}
+        />
+      ) : (
+        <NumberRulesTableCard
+          keyword={keyword}
+          statusFilter={statusFilter}
+          rows={rows}
+          numberRuleRows={numberRuleRows}
+          uploadRuleRows={uploadRuleRows}
+          loading={isLoading}
+          canEdit={canEdit}
+          onKeywordChange={(value) => setState({ keyword: value })}
+          onStatusFilterChange={(value) => setState({ statusFilter: value })}
+          onRefresh={refresh}
+          onEditNumberRule={openNumberRuleEditor}
+          onEditUploadRule={openUploadRuleEditor}
+        />
+      )}
 
       {editorOpen ? (
         <NumberRulesEditorModal

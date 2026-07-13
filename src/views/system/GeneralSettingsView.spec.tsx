@@ -9,6 +9,7 @@ const mockForm = {
   validateFields: vi.fn(),
 }
 const mockRefresh = vi.fn()
+const mockRefetch = vi.fn()
 const mockShowError = vi.fn()
 const mockMessageSuccess = vi.fn()
 const mockMessageWarning = vi.fn()
@@ -53,6 +54,31 @@ vi.mock('@/utils/type-narrowing', () => ({
 }))
 
 vi.mock('antd', () => ({
+  Alert: ({
+    action,
+    title,
+  }: {
+    action?: React.ReactNode
+    title?: React.ReactNode
+  }) => (
+    <div role="alert">
+      {title}
+      {action}
+    </div>
+  ),
+  Button: ({
+    children,
+    loading,
+    onClick,
+  }: {
+    children?: React.ReactNode
+    loading?: boolean
+    onClick?: () => void
+  }) => (
+    <button data-loading={String(Boolean(loading))} onClick={onClick}>
+      {children}
+    </button>
+  ),
   Form: {
     useForm: () => [mockForm],
   },
@@ -376,6 +402,9 @@ describe('GeneralSettingsView', () => {
         externalRecord,
       ],
       isLoading: false,
+      isError: false,
+      isFetching: false,
+      refetch: mockRefetch,
     })
   })
 
@@ -390,6 +419,37 @@ describe('GeneralSettingsView', () => {
     expect(screen.getByTestId('basic-count')).toHaveTextContent('4')
     expect(screen.getByTestId('switch-count')).toHaveTextContent('3')
     expect(screen.getByTestId('can-edit')).toHaveTextContent('true')
+  })
+
+  it('renders a load error instead of empty settings when the query fails', () => {
+    mockUseQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      isFetching: false,
+      refetch: mockRefetch,
+    })
+
+    render(<GeneralSettingsView />)
+
+    expect(screen.getByRole('alert')).toHaveTextContent('api.loadFailed')
+    expect(screen.queryByTestId('table-card')).not.toBeInTheDocument()
+    expect(screen.getByTestId('rate-limit-card')).toBeInTheDocument()
+  })
+
+  it('refetches system settings from the load error action', () => {
+    mockUseQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      isFetching: true,
+      refetch: mockRefetch,
+    })
+
+    render(<GeneralSettingsView />)
+    fireEvent.click(screen.getByRole('button', { name: 'errorBoundary.retry' }))
+
+    expect(mockRefetch).toHaveBeenCalledTimes(1)
   })
 
   it('loads system settings through query configuration', async () => {

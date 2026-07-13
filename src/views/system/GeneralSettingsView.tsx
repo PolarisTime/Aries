@@ -30,6 +30,7 @@ import {
 } from '@/views/system/general-settings-view-utils'
 import { isSystemSwitch } from '@/views/system/number-rules-view-utils'
 import { RateLimitRulesCard } from '@/views/system/RateLimitRulesCard'
+import { SystemSettingsLoadError } from '@/views/system/SystemSettingsLoadError'
 
 interface GeneralSettingsState {
   keyword: string
@@ -66,7 +67,13 @@ export function GeneralSettingsView() {
     state
   const [form] = Form.useForm()
 
-  const { data: rows = [], isLoading } = useQuery<ModuleRecord[]>({
+  const {
+    data: rows = [],
+    isError,
+    isFetching,
+    isLoading,
+    refetch,
+  } = useQuery<ModuleRecord[]>({
     queryKey: QUERY_KEYS.generalSetting,
     queryFn: () => listSystemSettings(),
   })
@@ -198,23 +205,30 @@ export function GeneralSettingsView() {
 
   return (
     <div className="page-stack settings-section-page">
-      <GeneralSettingsTableCard
-        keyword={keyword}
-        statusFilter={statusFilter}
-        filteredRows={filteredRows}
-        basicSettingRows={basicSettingRows}
-        switchRows={switchRows}
-        loading={isLoading}
-        canEdit={canEdit}
-        toggling={toggling}
-        onKeywordChange={(value) => setState({ keyword: value })}
-        onStatusFilterChange={(value) => setState({ statusFilter: value })}
-        onRefresh={refresh}
-        onEdit={openEditor}
-        onToggle={(record) => {
-          void handleToggle(record)
-        }}
-      />
+      {isError ? (
+        <SystemSettingsLoadError
+          retrying={isFetching}
+          onRetry={() => void refetch()}
+        />
+      ) : (
+        <GeneralSettingsTableCard
+          keyword={keyword}
+          statusFilter={statusFilter}
+          filteredRows={filteredRows}
+          basicSettingRows={basicSettingRows}
+          switchRows={switchRows}
+          loading={isLoading}
+          canEdit={canEdit}
+          toggling={toggling}
+          onKeywordChange={(value) => setState({ keyword: value })}
+          onStatusFilterChange={(value) => setState({ statusFilter: value })}
+          onRefresh={refresh}
+          onEdit={openEditor}
+          onToggle={(record) => {
+            void handleToggle(record)
+          }}
+        />
+      )}
 
       <RateLimitRulesCard />
 
