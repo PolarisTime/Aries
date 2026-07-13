@@ -66,6 +66,21 @@ describe('EditorWorkspaceTabs', () => {
     expect(onActivate).toHaveBeenCalledWith('task-2')
   })
 
+  it('reactivates the current task after navigating away from its page', () => {
+    const onActivate = vi.fn()
+    render(
+      <EditorWorkspaceTabs
+        activeKey="task-1"
+        tasks={[task('task-1', '销售订单 SO-001')]}
+        onActivate={onActivate}
+        onClose={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('销售订单 SO-001'))
+    expect(onActivate).toHaveBeenCalledWith('task-1')
+  })
+
   it('marks dirty tasks and exposes the state to assistive technology', () => {
     render(
       <EditorWorkspaceTabs

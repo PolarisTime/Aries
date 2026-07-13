@@ -89,6 +89,11 @@ export const EditorWorkspaceTabs = ({
         type="editable-card"
         onChange={onActivate}
         onEdit={handleEdit}
+        onTabClick={(key) => {
+          if (key === activeKey) {
+            onActivate(key)
+          }
+        }}
       />
     </section>
   )
