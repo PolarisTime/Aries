@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/PolarisTime/Aries/compare/v2.3.5...v2.4.0) (2026-07-13)
+
+
+### Features
+
+* **import:** 接入服务端来源候选与完成状态反审核 ([dd5272f](https://github.com/PolarisTime/Aries/commit/dd5272f04d5cc355d28d636d5dcf49fa7109c720))
+
 ## [2.3.5](https://github.com/PolarisTime/Aries/compare/v2.3.4...v2.3.5) (2026-07-13)
 
 
