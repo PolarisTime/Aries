@@ -293,6 +293,13 @@ export const invoiceReceiptPageConfig: ModulePageConfig = {
     buttonText: i18next.t(
       'modules.pages.invoiceReceipt.importPurchaseOrderItems',
     ),
+    candidateQueryType: 'invoice-receipt-source',
+    buildParentFilters: (currentRecord) => ({
+      supplierId: currentRecord.supplierId,
+      settlementCompanyId: currentRecord.settlementCompanyId,
+      currentRecordId: currentRecord.id,
+    }),
+    resolveParentRecord: (parentRecord) => Promise.resolve(parentRecord),
     mapParentToDraft: (parentRecord) => ({
       supplierId: parentRecord.supplierId,
       supplierCode: parentRecord.supplierCode || '',

@@ -103,10 +103,13 @@ describe('purchaseRefundsPageConfig', () => {
     expect(parentImport?.candidateQueryType).toBe('purchase-refund-source')
     expect(
       parentImport?.buildParentFilters?.({
-        id: '1',
+        id: '700520000000000099',
         supplierId: '700520000000000001',
       }),
-    ).toEqual({ supplierId: '700520000000000001' })
+    ).toEqual({
+      supplierId: '700520000000000001',
+      currentRecordId: '700520000000000099',
+    })
     expect(parentImport?.resolveParentRecord).toBeTypeOf('function')
     expect(parentImport?.mapParentToDraft).toBeTypeOf('function')
     expect(parentImport?.transformItems).toBeTypeOf('function')

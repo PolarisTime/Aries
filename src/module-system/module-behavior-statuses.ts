@@ -71,6 +71,13 @@ registerModuleBehavior('sales-outbound', {
   auditSourceStatuses: ['草稿', '预出库'],
 })
 
+registerModuleBehavior('purchase-order', {
+  reverseAuditTargetsByStatus: { 完成采购: '已审核' },
+})
+registerModuleBehavior('purchase-inbound', {
+  reverseAuditTargetsByStatus: { 完成入库: '草稿' },
+})
+
 registerModuleBehavior('receipt', { auditStatus: '已收款' })
 registerModuleBehavior('payment', { auditStatus: '已付款' })
 registerModuleBehavior('supplier-refund-receipt', { auditStatus: '已收款' })

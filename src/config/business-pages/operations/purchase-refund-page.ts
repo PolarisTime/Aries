@@ -292,6 +292,7 @@ export const purchaseRefundsPageConfig: ModulePageConfig = {
     enforceUniqueRelation: true,
     buildParentFilters: (currentRecord) => ({
       supplierId: currentRecord.supplierId,
+      currentRecordId: currentRecord.id,
     }),
     hiddenSelectorColumnKeys: ['buyerName', 'status'],
     resolveParentRecord: (parentRecord) =>

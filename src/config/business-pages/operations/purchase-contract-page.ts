@@ -266,6 +266,8 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
     buttonText: i18next.t(
       'modules.pages.purchaseContract.importPurchaseOrderItems',
     ),
+    candidateQueryType: 'purchase-order-import',
+    candidateUsage: 'purchase-contract',
     mapParentToDraft: (parentRecord) => {
       const signDate = parentRecord.orderDate || undefined
       return {
@@ -278,7 +280,7 @@ export const purchaseContractsPageConfig: ModulePageConfig = {
         expireDate: signDate
           ? dayjs(asString(signDate)).add(1, 'year')
           : undefined,
-        status: '已归档',
+        status: '草稿',
       }
     },
     transformItems: (parentRecord) =>

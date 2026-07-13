@@ -5,7 +5,7 @@ import {
 } from '@/api/business'
 import {
   canAuditFromStatus,
-  canReverseAuditFromStatus,
+  resolveReverseAuditTargetForStatus,
 } from '@/module-system/module-adapter-actions'
 import { isDeleteBlockedByStatus } from '@/module-system/module-behavior-registry'
 import type { ModuleRecord } from '@/types/module-page'
@@ -222,13 +222,15 @@ export function useBusinessGridBatchActions({
     }
 
     const selected = selectedRows
-    const eligible = selected.filter((record) =>
-      canReverseAuditFromStatus(
+    const eligible = selected.flatMap((record) => {
+      const targetStatus = resolveReverseAuditTargetForStatus(
+        moduleKey,
         record.status,
         listAuditTarget,
         listReverseAuditTarget,
-      ),
-    )
+      )
+      return targetStatus ? [{ record, targetStatus }] : []
+    })
     const skippedCount = selected.length - eligible.length
 
     if (!eligible.length) {
@@ -247,11 +249,11 @@ export function useBusinessGridBatchActions({
       }),
       onOk: async () => {
         const reverseAuditResults = await Promise.allSettled(
-          eligible.map((record) =>
+          eligible.map(({ record, targetStatus }) =>
             updateBusinessModuleStatus(
               moduleKey,
               String(record.id),
-              listReverseAuditTarget.value,
+              targetStatus,
             ),
           ),
         )

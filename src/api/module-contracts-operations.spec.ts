@@ -15,6 +15,7 @@ describe('module-contracts-operations', () => {
     expect(config.nativeFilterKeys).toContain('keyword')
     expect(config.nativeFilterKeys).toContain('supplierName')
     expect(config.nativeFilterKeys).toContain('supplierId')
+    expect(config.nativeFilterKeys).toContain('currentRecordId')
     expect(config.dateRangeMapping?.orderDate.startKey).toBe('startDate')
     expect(config.dateRangeMapping?.orderDate.endKey).toBe('endDate')
   })

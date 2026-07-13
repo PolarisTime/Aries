@@ -25,6 +25,25 @@ describe('invoiceReceiptPageConfig', () => {
   })
 
   describe('parentImport', () => {
+    it('uses the server source candidates and excludes the current receipt', async () => {
+      expect(pi.candidateQueryType).toBe('invoice-receipt-source')
+      expect(
+        pi.buildParentFilters?.({
+          id: '700520000000000099',
+          supplierId: '700520000000000001',
+          settlementCompanyId: '700520000000000003',
+        }),
+      ).toEqual({
+        supplierId: '700520000000000001',
+        settlementCompanyId: '700520000000000003',
+        currentRecordId: '700520000000000099',
+      })
+      const parentRecord = { id: 'po-1', items: [{ id: 'item-1' }] }
+      await expect(pi.resolveParentRecord?.(parentRecord)).resolves.toBe(
+        parentRecord,
+      )
+    })
+
     it('mapParentToDraft maps fields from parent record', () => {
       const draft = pi.mapParentToDraft!({
         supplierId: '700520000000000001',

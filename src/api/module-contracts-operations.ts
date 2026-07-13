@@ -10,6 +10,7 @@ export const operationModuleEndpointContracts: Record<
       'keyword',
       'supplierId',
       'supplierName',
+      'currentRecordId',
       'settlementCompanyId',
       'status',
       'startDate',

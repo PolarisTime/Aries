@@ -69,7 +69,11 @@ describe('salesOutboundPageConfig', () => {
   describe('parentImport', () => {
     it('filters audited parent sales orders and hides the status selector column', () => {
       expect(pi.candidateQueryType).toBe('sales-order-outbound-import')
-      expect(pi.buildParentFilters?.({ id: '1' } as any)).toEqual({
+      expect(pi.enforceUniqueRelation).not.toBe(true)
+      expect(
+        pi.buildParentFilters?.({ id: '700520000000000099' } as any),
+      ).toEqual({
+        currentRecordId: '700520000000000099',
         status: '已审核',
       })
       expect(pi.hiddenSelectorColumnKeys).toContain('status')

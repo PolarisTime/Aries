@@ -32,7 +32,11 @@ describe('sales-order-candidates', () => {
     })
 
     const result = await listSalesOrderOutboundImportCandidatePage(
-      { keyword: ' SO2026000001 ', customerName: '客户甲' },
+      {
+        keyword: ' SO2026000001 ',
+        customerName: '客户甲',
+        currentRecordId: '700520000000000099',
+      },
       0,
       15,
     )
@@ -43,6 +47,7 @@ describe('sales-order-candidates', () => {
         params: {
           keyword: 'SO2026000001',
           customerName: '客户甲',
+          currentRecordId: '700520000000000099',
           page: 0,
           size: 15,
         },

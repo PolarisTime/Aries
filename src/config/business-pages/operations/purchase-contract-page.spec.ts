@@ -81,9 +81,12 @@ describe('purchaseContractsPageConfig', () => {
   it('has parentImport config', () => {
     expect(purchaseContractsPageConfig.parentImport).toBeDefined()
     expect(parentImport.parentModuleKey).toBe('purchase-order')
+    expect(parentImport.candidateQueryType).toBe('purchase-order-import')
+    expect(parentImport.candidateUsage).toBe('purchase-contract')
+    expect(parentImport.resolveParentRecord).toBeUndefined()
   })
 
-  it('maps parent purchase order fields into an archived contract draft', () => {
+  it('maps parent purchase order fields into a contract draft', () => {
     const draft = parentImport.mapParentToDraft?.({
       orderDate: '2025-03-18',
       supplierId: '700520000000000001',
@@ -99,7 +102,7 @@ describe('purchaseContractsPageConfig', () => {
       buyerName: '采购员A',
       signDate: '2025-03-18',
       effectiveDate: '2025-03-18',
-      status: '已归档',
+      status: '草稿',
     })
     expect(draft?.expireDate?.format('YYYY-MM-DD')).toBe('2026-03-18')
   })
@@ -113,7 +116,7 @@ describe('purchaseContractsPageConfig', () => {
       signDate: undefined,
       effectiveDate: undefined,
       expireDate: undefined,
-      status: '已归档',
+      status: '草稿',
     })
   })
 

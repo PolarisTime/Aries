@@ -7,6 +7,7 @@ import {
   canReverseAuditFromStatus,
   resolveModuleActionKind,
   resolveModuleActionPermissionCodes,
+  resolveReverseAuditTargetForStatus,
   resolveStatusChangeActionLabel,
   resolveStatusOptions,
 } from './module-adapter-actions'
@@ -622,5 +623,37 @@ describe('canReverseAuditFromStatus', () => {
 
   it('returns false when both targets are null', () => {
     expect(canReverseAuditFromStatus('已审核', null, null)).toBe(false)
+  })
+})
+
+describe('resolveReverseAuditTargetForStatus', () => {
+  it('reopens a completed purchase order to audited', () => {
+    register('purchase-order', {
+      reverseAuditTargetsByStatus: { 完成采购: '已审核' },
+    })
+
+    expect(
+      resolveReverseAuditTargetForStatus(
+        'purchase-order',
+        '完成采购',
+        { value: '已审核' },
+        { value: '草稿' },
+      ),
+    ).toBe('已审核')
+  })
+
+  it('reverses a completed purchase inbound directly to draft', () => {
+    register('purchase-inbound', {
+      reverseAuditTargetsByStatus: { 完成入库: '草稿' },
+    })
+
+    expect(
+      resolveReverseAuditTargetForStatus(
+        'purchase-inbound',
+        '完成入库',
+        { value: '已审核' },
+        { value: '草稿' },
+      ),
+    ).toBe('草稿')
   })
 })

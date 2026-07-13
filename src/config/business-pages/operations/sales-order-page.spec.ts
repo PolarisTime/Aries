@@ -104,11 +104,11 @@ describe('salesOrdersPageConfig', () => {
     )
     expect(
       salesOrdersPageConfig.parentImport!.buildParentFilters?.({
-        id: '1',
+        id: '700520000000000099',
         supplierId: '700520000000000001',
       }),
     ).toEqual({
-      supplierId: '700520000000000001',
+      currentRecordId: '700520000000000099',
     })
     expect(
       salesOrdersPageConfig.parentImport!.hiddenSelectorColumnKeys,

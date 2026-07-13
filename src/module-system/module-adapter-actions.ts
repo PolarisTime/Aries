@@ -302,3 +302,22 @@ export function canReverseAuditFromStatus(
   const reverseStatus = asString(reverseAuditTarget?.value).trim()
   return Boolean(auditStatus && reverseStatus && status === auditStatus)
 }
+
+export function resolveReverseAuditTargetForStatus(
+  moduleKey: string,
+  currentStatus: unknown,
+  auditTarget?: { value: string } | null,
+  reverseAuditTarget?: { value: string } | null,
+): string | null {
+  const status = asString(currentStatus).trim()
+  const configuredTargets = getBehaviorValue(
+    moduleKey,
+    'reverseAuditTargetsByStatus',
+  )
+  const configuredTarget = configuredTargets?.[status]?.trim()
+  if (configuredTarget) return configuredTarget
+
+  return canReverseAuditFromStatus(status, auditTarget, reverseAuditTarget)
+    ? asString(reverseAuditTarget?.value).trim()
+    : null
+}

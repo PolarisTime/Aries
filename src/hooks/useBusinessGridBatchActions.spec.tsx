@@ -32,6 +32,12 @@ vi.mock('@/api/business', () => ({
 
 vi.mock('@/module-system/module-behavior-registry', () => ({
   isDeleteBlockedByStatus: (status: unknown) => status === '已审核',
+  getBehaviorValue: (moduleKey: string, key: string) => {
+    if (key !== 'reverseAuditTargetsByStatus') return undefined
+    if (moduleKey === 'purchase-order') return { 完成采购: '已审核' }
+    if (moduleKey === 'purchase-inbound') return { 完成入库: '草稿' }
+    return undefined
+  },
 }))
 
 import { useBusinessGridBatchActions } from './useBusinessGridBatchActions'
@@ -450,6 +456,39 @@ describe('useBusinessGridBatchActions', () => {
     )
     expect(successMock).toHaveBeenCalled()
     expect(refreshAndClearSelection).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['purchase-order', '完成采购', '已审核'],
+    ['purchase-inbound', '完成入库', '草稿'],
+  ])('uses the configured reverse target for completed %s records', async (moduleKey, status, targetStatus) => {
+    updateBusinessModuleStatusMock.mockResolvedValue(undefined)
+    const refreshAndClearSelection = vi.fn().mockResolvedValue(undefined)
+
+    const { result } = renderHook(() =>
+      useBusinessGridBatchActions({
+        moduleKey,
+        selectedRowKeys: ['101'],
+        selectedRows: [{ id: '101', status }],
+        listAuditTarget: { key: 'status', value: '已审核' },
+        listReverseAuditTarget: { key: 'status', value: '草稿' },
+        refreshAndClearSelection,
+      }),
+    )
+
+    act(() => {
+      result.current.handleSelectedReverseAuditRecords()
+    })
+    const confirmArg = confirmMock.mock.calls[0]?.[0]
+    await act(async () => {
+      await confirmArg.onOk()
+    })
+
+    expect(updateBusinessModuleStatusMock).toHaveBeenCalledWith(
+      moduleKey,
+      '101',
+      targetStatus,
+    )
   })
 
   it('handles partially failed reverse audit', async () => {

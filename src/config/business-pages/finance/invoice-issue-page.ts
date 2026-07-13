@@ -352,6 +352,14 @@ export const invoiceIssuePageConfig: ModulePageConfig = {
     parentFieldKey: 'sourceSalesOrderNos',
     parentDisplayFieldKey: 'orderNo',
     buttonText: i18next.t('modules.pages.invoiceIssue.importSalesOrderItems'),
+    candidateQueryType: 'invoice-issue-source',
+    buildParentFilters: (currentRecord) => ({
+      customerId: entityIdOf(currentRecord.customerId, 'customerId'),
+      projectId: entityIdOf(currentRecord.projectId, 'projectId'),
+      settlementCompanyId: currentRecord.settlementCompanyId,
+      currentRecordId: entityIdOf(currentRecord.id, 'currentRecordId'),
+    }),
+    resolveParentRecord: (parentRecord) => Promise.resolve(parentRecord),
     mapParentToDraft: (parentRecord) => ({
       customerId: entityIdOf(
         parentRecord.customerId,

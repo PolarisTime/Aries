@@ -6,6 +6,10 @@ import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail, listBusinessModule } from '@/api/business'
 import { buildFilterParams } from '@/api/business-listing-filtering'
 import { listFreightBillImportCandidatePage } from '@/api/freight-bill-candidates'
+import {
+  listInvoiceIssueSourceCandidatePage,
+  listInvoiceReceiptSourceCandidatePage,
+} from '@/api/invoice-candidates'
 import { getModuleConfig } from '@/api/module-contracts'
 import {
   listPurchaseOrderImportCandidatePage,
@@ -32,7 +36,9 @@ import type {
 import { message } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import {
+  compactParentSelectorFilters,
   filterImportableParentRecords,
+  mergeParentSelectorFilters,
   resolveSelectedParentRows,
   resolveVisibleParentSelectorColumns,
 } from './module-parent-selector-utils'
@@ -447,6 +453,12 @@ function resolveParentSelectorSourceModule(
   if (candidateQueryType === 'sales-order-outbound-import') {
     return 'sales-order-outbound-import'
   }
+  if (candidateQueryType === 'invoice-issue-source') {
+    return 'invoice-issue-source'
+  }
+  if (candidateQueryType === 'invoice-receipt-source') {
+    return 'invoice-receipt-source'
+  }
   return candidateStatementModuleKey || parentModuleKey
 }
 
@@ -461,11 +473,7 @@ function buildOverlayFilterConfig(
     Object.keys(endpointConfig.dateRangeMapping || {}),
   )
   const fixedFilterKeys = new Set(
-    Object.entries(fixedFilters).flatMap(([key, value]) => {
-      if (value === undefined || value === null) return []
-      if (typeof value === 'string' && !value.trim()) return []
-      return [key]
-    }),
+    Object.keys(compactParentSelectorFilters(fixedFilters)),
   )
 
   const supportedFilters = pageConfig.filters.filter((filter) => {
@@ -638,10 +646,11 @@ export function useModuleParentSelectorOverlay({
     parentDisplayFieldKey ||
     parentDisplayFieldFallbackMap[parentModuleKey] ||
     'id'
-  const effectiveSubmittedFilters = {
-    ...submittedFilters,
-    ...fixedFilters,
-  }
+  const effectiveFixedFilters = compactParentSelectorFilters(fixedFilters)
+  const effectiveSubmittedFilters = mergeParentSelectorFilters(
+    submittedFilters,
+    effectiveFixedFilters,
+  )
 
   const { data: parentPageConfig, isLoading: isConfigLoading } = useQuery({
     queryKey: QUERY_KEYS.parentSelectorConfig(parentModuleKey),
@@ -650,7 +659,11 @@ export function useModuleParentSelectorOverlay({
     staleTime: Infinity,
   })
   const overlayFilterConfig = parentPageConfig
-    ? buildOverlayFilterConfig(parentModuleKey, parentPageConfig, fixedFilters)
+    ? buildOverlayFilterConfig(
+        parentModuleKey,
+        parentPageConfig,
+        effectiveFixedFilters,
+      )
     : undefined
 
   const { data, isLoading, isFetching } = useQuery({
@@ -704,6 +717,20 @@ export function useModuleParentSelectorOverlay({
       }
       if (candidateQueryType === 'sales-order-outbound-import') {
         return listSalesOrderOutboundImportCandidatePage(
+          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          Math.max(page - 1, 0),
+          pageSize,
+        )
+      }
+      if (candidateQueryType === 'invoice-issue-source') {
+        return listInvoiceIssueSourceCandidatePage(
+          buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
+          Math.max(page - 1, 0),
+          pageSize,
+        )
+      }
+      if (candidateQueryType === 'invoice-receipt-source') {
+        return listInvoiceReceiptSourceCandidatePage(
           buildFilterParams(parentModuleKey, effectiveSubmittedFilters),
           Math.max(page - 1, 0),
           pageSize,

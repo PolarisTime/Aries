@@ -38,6 +38,27 @@ describe('invoiceIssuePageConfig', () => {
   })
 
   describe('parentImport', () => {
+    it('uses the server source candidates and excludes the current issue', async () => {
+      expect(pi.candidateQueryType).toBe('invoice-issue-source')
+      expect(
+        pi.buildParentFilters?.({
+          id: '700520000000000099',
+          customerId: '700520000000000001',
+          projectId: '700520000000000002',
+          settlementCompanyId: '700520000000000003',
+        }),
+      ).toEqual({
+        customerId: '700520000000000001',
+        projectId: '700520000000000002',
+        settlementCompanyId: '700520000000000003',
+        currentRecordId: '700520000000000099',
+      })
+      const parentRecord = { id: 'so-1', items: [{ id: 'item-1' }] }
+      await expect(pi.resolveParentRecord?.(parentRecord)).resolves.toBe(
+        parentRecord,
+      )
+    })
+
     it('mapParentToDraft maps fields from parent record', () => {
       const draft = pi.mapParentToDraft!({
         customerId: '700520000000000001',

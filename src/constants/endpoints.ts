@@ -109,6 +109,8 @@ export const ENDPOINTS = {
     '/sales-orders/outbound-import-candidates',
   PURCHASE_REFUND_SOURCE_CANDIDATES: '/purchase-refunds/source-candidates',
   PURCHASE_REFUND_PREVIEW: '/purchase-refunds/preview',
+  INVOICE_ISSUE_SOURCE_CANDIDATES: '/invoice-issues/source-candidates',
+  INVOICE_RECEIPT_SOURCE_CANDIDATES: '/invoice-receipts/source-candidates',
 
   // Departments (sub-resource option lists → plural collection)
   DEPARTMENTS_OPTIONS: '/departments/options',

@@ -278,7 +278,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     candidateUsage: 'purchase-inbound',
     buildParentFilters: (currentRecord) => ({
       supplierId: currentRecord.supplierId,
-      status: '已审核',
+      currentRecordId: currentRecord.id,
     }),
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({

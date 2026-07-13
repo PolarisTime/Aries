@@ -97,12 +97,12 @@ describe('purchaseInboundsPageConfig', () => {
     expect(parentImport.candidateUsage).toBe('purchase-inbound')
     expect(
       parentImport.buildParentFilters?.({
-        id: '1',
+        id: '700520000000000099',
         supplierId: '700520000000000001',
       }),
     ).toEqual({
       supplierId: '700520000000000001',
-      status: '已审核',
+      currentRecordId: '700520000000000099',
     })
     expect(parentImport.hiddenSelectorColumnKeys).toContain('status')
   })

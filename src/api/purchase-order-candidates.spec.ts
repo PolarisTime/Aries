@@ -110,8 +110,11 @@ describe('purchase-order-candidates', () => {
     })
 
     const result = await listPurchaseOrderImportCandidatePage(
-      'purchase-inbound',
-      { keyword: ' 321698660075175936 ' },
+      'purchase-contract',
+      {
+        keyword: ' 321698660075175936 ',
+        currentRecordId: '700520000000000099',
+      },
       0,
       15,
     )
@@ -121,7 +124,8 @@ describe('purchase-order-candidates', () => {
       {
         params: {
           keyword: '321698660075175936',
-          usage: 'purchase-inbound',
+          currentRecordId: '700520000000000099',
+          usage: 'purchase-contract',
           page: 0,
           size: 15,
         },

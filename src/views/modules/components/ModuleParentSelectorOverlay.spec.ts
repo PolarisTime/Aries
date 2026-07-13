@@ -19,6 +19,8 @@ const parentSelectorMocks = vi.hoisted(() => ({
   getModuleConfig: vi.fn(),
   listBusinessModule: vi.fn(),
   listFreightBillImportCandidatePage: vi.fn(),
+  listInvoiceIssueSourceCandidatePage: vi.fn(),
+  listInvoiceReceiptSourceCandidatePage: vi.fn(),
   listPurchaseOrderImportCandidatePage: vi.fn(),
   listPurchaseOrderPrepaymentCandidatePage: vi.fn(),
   listPurchaseRefundSourceCandidatePage: vi.fn(),
@@ -58,6 +60,13 @@ vi.mock('@/api/business-listing-filtering', () => ({
 vi.mock('@/api/freight-bill-candidates', () => ({
   listFreightBillImportCandidatePage: (...args: unknown[]) =>
     parentSelectorMocks.listFreightBillImportCandidatePage(...args),
+}))
+
+vi.mock('@/api/invoice-candidates', () => ({
+  listInvoiceIssueSourceCandidatePage: (...args: unknown[]) =>
+    parentSelectorMocks.listInvoiceIssueSourceCandidatePage(...args),
+  listInvoiceReceiptSourceCandidatePage: (...args: unknown[]) =>
+    parentSelectorMocks.listInvoiceReceiptSourceCandidatePage(...args),
 }))
 
 vi.mock('@/api/module-contracts', () => ({
@@ -327,6 +336,18 @@ beforeEach(() => {
     },
   })
   parentSelectorMocks.listFreightBillImportCandidatePage.mockResolvedValue({
+    data: {
+      rows: parentSelectorMocks.parentRows,
+      total: parentSelectorMocks.parentRows.length,
+    },
+  })
+  parentSelectorMocks.listInvoiceIssueSourceCandidatePage.mockResolvedValue({
+    data: {
+      rows: parentSelectorMocks.parentRows,
+      total: parentSelectorMocks.parentRows.length,
+    },
+  })
+  parentSelectorMocks.listInvoiceReceiptSourceCandidatePage.mockResolvedValue({
     data: {
       rows: parentSelectorMocks.parentRows,
       total: parentSelectorMocks.parentRows.length,
@@ -966,6 +987,34 @@ describe('ModuleParentSelectorOverlay keyboard row interactions', () => {
     expect(
       parentSelectorMocks.listPurchaseRefundSourceCandidatePage,
     ).toHaveBeenCalledWith({}, 0, 15)
+
+    render(
+      createElement(ModuleParentSelectorOverlay, {
+        open: true,
+        parentModuleKey: 'sales-order',
+        candidateQueryType: 'invoice-issue-source',
+        fixedFilters: { currentRecordId: '9001' },
+        onSelect: vi.fn(),
+        onClose: vi.fn(),
+      }),
+    )
+    expect(
+      parentSelectorMocks.listInvoiceIssueSourceCandidatePage,
+    ).toHaveBeenCalledWith({ currentRecordId: '9001' }, 0, 15)
+
+    render(
+      createElement(ModuleParentSelectorOverlay, {
+        open: true,
+        parentModuleKey: 'purchase-order',
+        candidateQueryType: 'invoice-receipt-source',
+        fixedFilters: { currentRecordId: '9002' },
+        onSelect: vi.fn(),
+        onClose: vi.fn(),
+      }),
+    )
+    expect(
+      parentSelectorMocks.listInvoiceReceiptSourceCandidatePage,
+    ).toHaveBeenCalledWith({ currentRecordId: '9002' }, 0, 15)
   })
 
   it('uses the dedicated server page for purchase prepayment candidates', () => {

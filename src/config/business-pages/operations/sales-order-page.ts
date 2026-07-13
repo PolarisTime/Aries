@@ -315,7 +315,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     candidateQueryType: 'purchase-order-import',
     candidateUsage: 'sales-order',
     buildParentFilters: (currentRecord) => ({
-      supplierId: currentRecord.supplierId,
+      currentRecordId: currentRecord.id,
     }),
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({

@@ -109,6 +109,15 @@ describe('module-behavior-statuses', () => {
     expect(call).toBeDefined()
   })
 
+  it('registers completed purchase document reverse audit targets', () => {
+    expect(mockedRegister).toHaveBeenCalledWith('purchase-order', {
+      reverseAuditTargetsByStatus: { 完成采购: '已审核' },
+    })
+    expect(mockedRegister).toHaveBeenCalledWith('purchase-inbound', {
+      reverseAuditTargetsByStatus: { 完成入库: '草稿' },
+    })
+  })
+
   it('registers auditStatus for receipt', () => {
     const receiptCalls = mockedRegister.mock.calls.filter(
       ([key]) => key === 'receipt',

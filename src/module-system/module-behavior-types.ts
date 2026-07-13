@@ -20,6 +20,7 @@ export interface ModuleBehaviorConfig {
   defaultStatus?: string
   auditStatus?: string
   auditSourceStatuses?: string[]
+  reverseAuditTargetsByStatus?: Record<string, string>
   protectedEditStatuses?: string[]
   partiallyEditableStatuses?: string[]
   protectedDeleteStatuses?: string[]

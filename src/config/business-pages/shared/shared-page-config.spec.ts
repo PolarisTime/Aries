@@ -282,7 +282,7 @@ describe('page config specific features', () => {
     expect(draft?.supplierName).toBe('供应商A')
     expect(draft?.buyerName).toBe('采购员')
     expect(draft?.signDate).toBe('2024-06-01')
-    expect(draft?.status).toBe('已归档')
+    expect(draft?.status).toBe('草稿')
 
     const draftNoDate = pi?.mapParentToDraft?.({})
     expect(draftNoDate?.signDate).toBeUndefined()
