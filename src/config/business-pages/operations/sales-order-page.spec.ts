@@ -109,7 +109,6 @@ describe('salesOrdersPageConfig', () => {
       }),
     ).toEqual({
       supplierId: '700520000000000001',
-      status: '已审核',
     })
     expect(
       salesOrdersPageConfig.parentImport!.hiddenSelectorColumnKeys,

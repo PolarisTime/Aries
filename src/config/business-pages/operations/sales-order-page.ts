@@ -316,7 +316,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     candidateUsage: 'sales-order',
     buildParentFilters: (currentRecord) => ({
       supplierId: currentRecord.supplierId,
-      status: '已审核',
     }),
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: (parentRecord) => ({
