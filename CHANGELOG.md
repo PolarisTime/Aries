@@ -1,3 +1,10 @@
+## [2.3.4](https://github.com/PolarisTime/Aries/compare/v2.3.3...v2.3.4) (2026-07-13)
+
+
+### Bug Fixes
+
+* **layout:** 修复激活编辑标签无法重新打开单据 ([61a8c5f](https://github.com/PolarisTime/Aries/commit/61a8c5f80ed980486e55dd63d08b2adfa268a1c1))
+
 ## [2.3.3](https://github.com/PolarisTime/Aries/compare/v2.3.2...v2.3.3) (2026-07-13)
 
 
