@@ -72,12 +72,48 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up frontend
         uses: ./.github/actions/setup-frontend
 
       - name: Run tests
-        run: pnpm vitest run --shard=${{ matrix.shard }}/${{ matrix.shardTotal }}
+        env:
+          PR_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+        run: |
+          set -euo pipefail
+
+          run_full=false
+          base_sha="$PR_BASE_SHA"
+          if [[ "$GITHUB_REF" == "refs/heads/main" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            run_full=true
+          elif [[ -z "$base_sha" ]]; then
+            base_sha="$(git merge-base HEAD origin/main 2>/dev/null || true)"
+          fi
+
+          if [[ "$run_full" != "true" ]] && { [[ -z "$base_sha" ]] || ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; }; then
+            run_full=true
+          elif [[ "$run_full" != "true" ]]; then
+            mapfile -t changed_files < <(git diff --name-only "$base_sha" HEAD)
+            for changed_file in "${changed_files[@]}"; do
+              case "$changed_file" in
+                package.json|pnpm-lock.yaml|vite.config.*|vitest.config.*|tsconfig*.json|.github/actions/setup-frontend/*|.github/workflows/ci.yml|src/test/*)
+                  run_full=true
+                  break
+                  ;;
+              esac
+            done
+          fi
+
+          if [[ "$run_full" == "true" ]]; then
+            echo "Running the full frontend test suite"
+            pnpm vitest run --shard=${{ matrix.shard }}/${{ matrix.shardTotal }}
+          else
+            echo "Running frontend tests affected since $base_sha"
+            pnpm vitest run --changed="$base_sha" --passWithNoTests \
+              --shard=${{ matrix.shard }}/${{ matrix.shardTotal }}
+          fi
 
   build:
     name: Build & Artifact
