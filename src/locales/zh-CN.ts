@@ -1948,6 +1948,16 @@ export const zhCN: MessageSchema = {
       noPermission: '暂无{{label}}权限',
       noExtraLogic: '{{label}} 当前没有额外处理逻辑。',
     },
+    contractActions: {
+      startExecution: '开始执行',
+      revertToDraft: '撤回执行',
+      sign: '签署合同',
+      unsign: '反签',
+      archive: '归档',
+      archiveConfirmTitle: '确认归档合同',
+      archiveConfirmContent: '归档后无法恢复，确定归档当前合同吗？',
+      statusUpdated: '合同状态已更新',
+    },
     recordActions: {
       view: '查看',
       edit: '编辑',

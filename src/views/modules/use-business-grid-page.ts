@@ -37,7 +37,7 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
-import { message } from '@/utils/antd-app'
+import { message, modal } from '@/utils/antd-app'
 import { asString } from '@/utils/type-narrowing'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 import { useBusinessGridOverlays } from '@/views/modules/use-business-grid-overlays'
@@ -75,6 +75,63 @@ function withoutListExportActions(config: ModulePageConfig) {
   return actions.length === config.actions.length
     ? config
     : { ...config, actions }
+}
+
+interface ContractStatusAction extends ModuleActionDefinition {
+  targetStatus: string
+  requiresConfirmation?: boolean
+}
+
+const CONTRACT_MODULE_KEYS = new Set(['purchase-contract', 'sales-contract'])
+
+function buildContractStatusActions(
+  currentStatus: unknown,
+): ContractStatusAction[] {
+  switch (asString(currentStatus).trim()) {
+    case '草稿':
+      return [
+        {
+          key: 'contract-start-execution',
+          label: i18next.t('hooks.contractActions.startExecution'),
+          type: 'default',
+          targetStatus: '执行中',
+        },
+      ]
+    case '执行中':
+      return [
+        {
+          key: 'contract-revert-to-draft',
+          label: i18next.t('hooks.contractActions.revertToDraft'),
+          type: 'default',
+          targetStatus: '草稿',
+        },
+        {
+          key: 'contract-sign',
+          label: i18next.t('hooks.contractActions.sign'),
+          type: 'default',
+          targetStatus: '已签署',
+        },
+      ]
+    case '已签署':
+      return [
+        {
+          key: 'contract-unsign',
+          label: i18next.t('hooks.contractActions.unsign'),
+          type: 'default',
+          targetStatus: '执行中',
+        },
+        {
+          key: 'contract-archive',
+          label: i18next.t('hooks.contractActions.archive'),
+          type: 'default',
+          danger: true,
+          targetStatus: '已归档',
+          requiresConfirmation: true,
+        },
+      ]
+    default:
+      return []
+  }
 }
 
 export function useBusinessGridPage({
@@ -275,6 +332,22 @@ export function useBusinessGridPage({
     await refreshModuleQueries()
   }
 
+  const handleContractStatusChange = async (
+    record: ModuleRecord,
+    status: string,
+  ) => {
+    const response = await updateBusinessModuleStatus(
+      moduleKey,
+      String(record.id),
+      status,
+    )
+    message.success(
+      response.message || i18next.t('hooks.contractActions.statusUpdated'),
+    )
+    await refreshModuleQueries()
+    clearSelection()
+  }
+
   const { buildActions } = useModuleRecordActions({
     moduleKey,
     resourceKey: pageDef.resourceKey,
@@ -375,6 +448,14 @@ export function useBusinessGridPage({
 
   const selectedRecords = Object.values(selectedRowMap)
   const selectedSalesOrders = selectedRecords
+  const selectedContract =
+    CONTRACT_MODULE_KEYS.has(moduleKey) && selectedRecords.length === 1
+      ? selectedRecords[0]
+      : null
+  const contractStatusActions =
+    canAuditRecord && selectedContract
+      ? buildContractStatusActions(selectedContract.status)
+      : []
   const selectedRecordActions =
     selectedRecords.length === 1 ? buildActions(selectedRecords[0]) : []
   const selectedRecordToolbarActions: ModuleActionDefinition[] =
@@ -412,6 +493,7 @@ export function useBusinessGridPage({
       : null
   const visibleToolbarActions = [
     ...baseVisibleToolbarActions,
+    ...contractStatusActions,
     ...selectedRecordToolbarActions,
     ...(reopenDeliveryVerificationAction
       ? [reopenDeliveryVerificationAction]
@@ -419,6 +501,32 @@ export function useBusinessGridPage({
     ...(prepaymentAllocationAction ? [prepaymentAllocationAction] : []),
   ]
   const handleAction = async (action: ModuleActionDefinition) => {
+    const contractStatusAction = contractStatusActions.find(
+      (candidate) => candidate.key === action.key,
+    )
+    if (contractStatusAction && selectedContract) {
+      if (contractStatusAction.requiresConfirmation) {
+        modal.confirm({
+          title: i18next.t('hooks.contractActions.archiveConfirmTitle'),
+          content: i18next.t('hooks.contractActions.archiveConfirmContent'),
+          okText: i18next.t('hooks.contractActions.archive'),
+          cancelText: i18next.t('common.cancel'),
+          okType: 'danger',
+          maskClosable: false,
+          onOk: () =>
+            handleContractStatusChange(
+              selectedContract,
+              contractStatusAction.targetStatus,
+            ),
+        })
+        return
+      }
+      await handleContractStatusChange(
+        selectedContract,
+        contractStatusAction.targetStatus,
+      )
+      return
+    }
     const selectedRecordAction = selectedRecordActions.find(
       (candidate) => candidate.key === action.key,
     )

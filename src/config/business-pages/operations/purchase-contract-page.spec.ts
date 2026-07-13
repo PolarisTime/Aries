@@ -78,6 +78,20 @@ describe('purchaseContractsPageConfig', () => {
     ).toEqual(expect.objectContaining({ type: 'select', required: true }))
   })
 
+  it('keeps status read-only so lifecycle changes use explicit commands', () => {
+    expect(
+      purchaseContractsPageConfig.formFields?.find(
+        (field) => field.key === 'status',
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        type: 'select',
+        defaultValue: '草稿',
+        disabled: true,
+      }),
+    )
+  })
+
   it('has parentImport config', () => {
     expect(purchaseContractsPageConfig.parentImport).toBeDefined()
     expect(parentImport.parentModuleKey).toBe('purchase-order')
@@ -89,6 +103,7 @@ describe('purchaseContractsPageConfig', () => {
   it('maps parent purchase order fields into a contract draft', () => {
     const draft = parentImport.mapParentToDraft?.({
       orderDate: '2025-03-18',
+      status: '已归档',
       supplierId: '700520000000000001',
       supplierCode: 'SUP-001',
       supplierName: '供应商A',

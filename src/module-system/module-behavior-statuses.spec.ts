@@ -199,10 +199,13 @@ describe('module-behavior-statuses', () => {
       expect(protectedEditStatuses).toContain('已付款')
       expect(protectedEditStatuses).toContain('已收款')
       expect(protectedEditStatuses).toContain('已签署')
+      expect(protectedEditStatuses).toContain('已开票')
+      expect(protectedEditStatuses).toContain('已收票')
+      expect(protectedEditStatuses).toContain('已归档')
     })
 
-    it('has 10 items', () => {
-      expect(protectedEditStatuses.size).toBe(10)
+    it('has 13 items', () => {
+      expect(protectedEditStatuses.size).toBe(13)
     })
   })
 
@@ -222,10 +225,13 @@ describe('module-behavior-statuses', () => {
       expect(protectedDeleteStatuses).toContain('已付款')
       expect(protectedDeleteStatuses).toContain('已收款')
       expect(protectedDeleteStatuses).toContain('已签署')
+      expect(protectedDeleteStatuses).toContain('已开票')
+      expect(protectedDeleteStatuses).toContain('已收票')
+      expect(protectedDeleteStatuses).toContain('已归档')
     })
 
-    it('has 10 items', () => {
-      expect(protectedDeleteStatuses.size).toBe(10)
+    it('has 13 items', () => {
+      expect(protectedDeleteStatuses.size).toBe(13)
     })
 
     it('has same statuses as protectedEditStatuses', () => {

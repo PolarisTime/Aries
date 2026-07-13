@@ -98,6 +98,9 @@ export const protectedEditStatuses = new Set([
   '已付款',
   '已收款',
   '已签署',
+  '已开票',
+  '已收票',
+  '已归档',
 ])
 
 export const protectedDeleteStatuses = new Set([
@@ -111,4 +114,7 @@ export const protectedDeleteStatuses = new Set([
   '已付款',
   '已收款',
   '已签署',
+  '已开票',
+  '已收票',
+  '已归档',
 ])

@@ -1984,6 +1984,17 @@ export const enUS: MessageSchema = {
       noPermission: 'No permission for {{label}}',
       noExtraLogic: '{{label}} has no additional handling logic.',
     },
+    contractActions: {
+      startExecution: 'Start Execution',
+      revertToDraft: 'Revert Execution',
+      sign: 'Sign Contract',
+      unsign: 'Reopen Signature',
+      archive: 'Archive',
+      archiveConfirmTitle: 'Archive Contract',
+      archiveConfirmContent:
+        'Archived contracts cannot be restored. Archive this contract?',
+      statusUpdated: 'Contract status updated',
+    },
     recordActions: {
       view: 'View',
       edit: 'Edit',

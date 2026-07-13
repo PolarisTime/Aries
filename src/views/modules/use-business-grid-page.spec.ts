@@ -31,6 +31,8 @@ const mocks = vi.hoisted(() => ({
   handleSelectedReverseAuditRecords: vi.fn(),
   handleStatementGenerate: vi.fn(),
   fetchAttachmentCounts: vi.fn(),
+  messageSuccess: vi.fn(),
+  modalConfirm: vi.fn(),
   navigate: vi.fn(),
   onColumnOrderChange: vi.fn(),
   openAttachment: vi.fn(),
@@ -83,6 +85,11 @@ vi.mock('@/hooks/useBusinessGridActions', () => ({
 vi.mock('@/api/business', () => ({
   fetchAttachmentCounts: mocks.fetchAttachmentCounts,
   updateBusinessModuleStatus: mocks.updateBusinessModuleStatus,
+}))
+
+vi.mock('@/utils/antd-app', () => ({
+  message: { success: mocks.messageSuccess },
+  modal: { confirm: mocks.modalConfirm },
 }))
 
 vi.mock('@/hooks/useDefaultPageSize', () => ({
@@ -451,6 +458,217 @@ describe('useBusinessGridPage', () => {
       result.current.visibleToolbarActions.some(
         (item: ModuleActionDefinition) =>
           item.key === 'reopen-delivery-verification',
+      ),
+    ).toBe(false)
+  })
+
+  it.each([
+    'purchase-contract',
+    'sales-contract',
+  ])('%s shows explicit contract commands for the selected status', async (moduleKey) => {
+    const baseProps = props()
+    const { result } = renderHook(() =>
+      useBusinessGridPage({
+        ...baseProps,
+        moduleKey,
+        pageDef: {
+          ...baseProps.pageDef,
+          moduleKey,
+          resourceKey: moduleKey,
+        },
+      }),
+    )
+
+    const expectations = [
+      {
+        status: '草稿',
+        actions: [{ key: 'contract-start-execution', label: '开始执行' }],
+      },
+      {
+        status: '执行中',
+        actions: [
+          { key: 'contract-revert-to-draft', label: '撤回执行' },
+          { key: 'contract-sign', label: '签署合同' },
+        ],
+      },
+      {
+        status: '已签署',
+        actions: [
+          { key: 'contract-unsign', label: '反签' },
+          { key: 'contract-archive', label: '归档' },
+        ],
+      },
+      { status: '已归档', actions: [] },
+    ]
+
+    for (const expectation of expectations) {
+      await act(async () => {
+        result.current.setSelectedRowKeys(['contract-1'])
+        result.current.setSelectedRowMap({
+          'contract-1': { id: 'contract-1', status: expectation.status },
+        })
+      })
+
+      expect(
+        result.current.visibleToolbarActions
+          .filter((action: ModuleActionDefinition) =>
+            action.key?.startsWith('contract-'),
+          )
+          .map(({ key, label }: ModuleActionDefinition) => ({ key, label })),
+      ).toEqual(expectation.actions)
+      expect(
+        result.current.visibleToolbarActions.some(
+          (action: ModuleActionDefinition) =>
+            action.label === '审核' || action.label === '反审核',
+        ),
+      ).toBe(false)
+    }
+  })
+
+  it.each([
+    ['purchase-contract', '草稿', 'contract-start-execution', '执行中'],
+    ['purchase-contract', '执行中', 'contract-revert-to-draft', '草稿'],
+    ['purchase-contract', '执行中', 'contract-sign', '已签署'],
+    ['purchase-contract', '已签署', 'contract-unsign', '执行中'],
+    ['sales-contract', '草稿', 'contract-start-execution', '执行中'],
+    ['sales-contract', '执行中', 'contract-revert-to-draft', '草稿'],
+    ['sales-contract', '执行中', 'contract-sign', '已签署'],
+    ['sales-contract', '已签署', 'contract-unsign', '执行中'],
+  ])('%s sends %s -> %s through the status API', async (moduleKey, currentStatus, actionKey, targetStatus) => {
+    const baseProps = props()
+    const { result } = renderHook(() =>
+      useBusinessGridPage({
+        ...baseProps,
+        moduleKey,
+        pageDef: {
+          ...baseProps.pageDef,
+          moduleKey,
+          resourceKey: moduleKey,
+        },
+      }),
+    )
+
+    await act(async () => {
+      result.current.setSelectedRowKeys(['contract-1'])
+      result.current.setSelectedRowMap({
+        'contract-1': { id: 'contract-1', status: currentStatus },
+      })
+    })
+    const action = result.current.visibleToolbarActions.find(
+      (item: ModuleActionDefinition) => item.key === actionKey,
+    )
+    expect(action).toBeDefined()
+    if (!action) return
+
+    await act(async () => {
+      await result.current.handleAction(action)
+    })
+
+    expect(mocks.updateBusinessModuleStatus).toHaveBeenCalledWith(
+      moduleKey,
+      'contract-1',
+      targetStatus,
+    )
+    expect(mocks.refreshModuleQueries).toHaveBeenCalledTimes(1)
+    expect(result.current.selectedRows).toEqual([])
+  })
+
+  it.each([
+    'purchase-contract',
+    'sales-contract',
+  ])('%s confirms irreversible archive before changing status', async (moduleKey) => {
+    const baseProps = props()
+    const { result } = renderHook(() =>
+      useBusinessGridPage({
+        ...baseProps,
+        moduleKey,
+        pageDef: {
+          ...baseProps.pageDef,
+          moduleKey,
+          resourceKey: moduleKey,
+        },
+      }),
+    )
+
+    await act(async () => {
+      result.current.setSelectedRowKeys(['contract-1'])
+      result.current.setSelectedRowMap({
+        'contract-1': { id: 'contract-1', status: '已签署' },
+      })
+    })
+    const archiveAction = result.current.visibleToolbarActions.find(
+      (item: ModuleActionDefinition) => item.key === 'contract-archive',
+    )
+    expect(archiveAction).toBeDefined()
+    if (!archiveAction) return
+
+    await act(async () => {
+      await result.current.handleAction(archiveAction)
+    })
+
+    expect(archiveAction).toEqual(expect.objectContaining({ danger: true }))
+    expect(mocks.updateBusinessModuleStatus).not.toHaveBeenCalled()
+    expect(mocks.modalConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '确认归档合同',
+        content: '归档后无法恢复，确定归档当前合同吗？',
+        okType: 'danger',
+        maskClosable: false,
+        onOk: expect.any(Function),
+      }),
+    )
+
+    const confirmation = mocks.modalConfirm.mock.calls[0][0] as {
+      onOk: () => Promise<void>
+    }
+    await act(async () => {
+      await confirmation.onOk()
+    })
+
+    expect(mocks.updateBusinessModuleStatus).toHaveBeenCalledWith(
+      moduleKey,
+      'contract-1',
+      '已归档',
+    )
+    expect(mocks.refreshModuleQueries).toHaveBeenCalledTimes(1)
+    expect(result.current.selectedRows).toEqual([])
+  })
+
+  it('hides contract status commands without audit permission', async () => {
+    mocks.useModulePermissions.mockReturnValue({
+      canViewRecords: true,
+      canCreateRecord: true,
+      canUpdateRecord: true,
+      canDeleteRecord: false,
+      canExportData: false,
+      canAuditRecord: false,
+      canPrintRecord: false,
+      can: mocks.can,
+      resolvedResource: 'purchase-contract',
+    })
+    const baseProps = props()
+    const { result } = renderHook(() =>
+      useBusinessGridPage({
+        ...baseProps,
+        moduleKey: 'purchase-contract',
+        pageDef: {
+          ...baseProps.pageDef,
+          moduleKey: 'purchase-contract',
+          resourceKey: 'purchase-contract',
+        },
+      }),
+    )
+
+    await act(async () => {
+      result.current.setSelectedRowKeys(['contract-1'])
+      result.current.setSelectedRowMap({
+        'contract-1': { id: 'contract-1', status: '草稿' },
+      })
+    })
+
+    expect(
+      result.current.visibleToolbarActions.some(
+        (action: ModuleActionDefinition) => action.key?.startsWith('contract-'),
       ),
     ).toBe(false)
   })

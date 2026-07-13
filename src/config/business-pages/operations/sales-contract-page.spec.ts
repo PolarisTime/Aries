@@ -70,6 +70,20 @@ describe('salesContractsPageConfig', () => {
     expect(salesContractsPageConfig.formFields).toBeDefined()
   })
 
+  it('keeps status read-only so lifecycle changes use explicit commands', () => {
+    expect(
+      salesContractsPageConfig.formFields?.find(
+        (field) => field.key === 'status',
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        type: 'select',
+        defaultValue: '草稿',
+        disabled: true,
+      }),
+    )
+  })
+
   it('has itemColumns', () => {
     expect(salesContractsPageConfig.itemColumns).toBeDefined()
   })

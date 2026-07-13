@@ -4,18 +4,39 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   EyeOutlined,
+  FileDoneOutlined,
   FileSearchOutlined,
+  InboxOutlined,
   PaperClipOutlined,
+  PlayCircleOutlined,
   PlusOutlined,
   PrinterOutlined,
   RedoOutlined,
   ReloadOutlined,
+  RollbackOutlined,
   SaveOutlined,
   SearchOutlined,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 
 export function resolveModuleActionIcon(label: string): ReactNode | undefined {
+  if (
+    label.includes('撤回执行') ||
+    label.includes('反签') ||
+    label.includes('Revert Execution') ||
+    label.includes('Reopen Signature')
+  ) {
+    return <RollbackOutlined />
+  }
+  if (label.includes('开始执行') || label.includes('Start Execution')) {
+    return <PlayCircleOutlined />
+  }
+  if (label.includes('签署合同') || label.includes('Sign Contract')) {
+    return <FileDoneOutlined />
+  }
+  if (label.includes('归档') || label.includes('Archive')) {
+    return <InboxOutlined />
+  }
   if (label.includes('查询')) {
     return <SearchOutlined />
   }

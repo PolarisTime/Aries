@@ -66,6 +66,26 @@ describe('resolveModuleActionIcon', () => {
     expect(resolveModuleActionIcon('生成对账单')).toBeDefined()
   })
 
+  it.each([
+    '开始执行',
+    '撤回执行',
+    '签署合同',
+    '反签',
+    '归档',
+  ])('returns an icon for contract action %s', (label) => {
+    expect(resolveModuleActionIcon(label)).toBeDefined()
+  })
+
+  it.each([
+    'Start Execution',
+    'Revert Execution',
+    'Sign Contract',
+    'Reopen Signature',
+    'Archive',
+  ])('returns an icon for translated contract action %s', (label) => {
+    expect(resolveModuleActionIcon(label)).toBeDefined()
+  })
+
   it('returns undefined for unmatched label', () => {
     expect(resolveModuleActionIcon('其他操作')).toBeUndefined()
   })

@@ -232,6 +232,7 @@ export const salesContractsPageConfig: ModulePageConfig = {
       type: 'select',
       defaultValue: '草稿',
       options: contractStatusOptions,
+      disabled: true,
       row: 2,
     },
     {
