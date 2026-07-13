@@ -1,3 +1,10 @@
+## [2.3.2](https://github.com/PolarisTime/Aries/compare/v2.3.1...v2.3.2) (2026-07-13)
+
+
+### Bug Fixes
+
+* **sales-order:** 允许导入完成采购订单 ([d6fd474](https://github.com/PolarisTime/Aries/commit/d6fd4740323242e10ab93ef214616eef9a402045))
+
 ## [2.3.1](https://github.com/PolarisTime/Aries/compare/v2.3.0...v2.3.1) (2026-07-13)
 
 
